@@ -22,7 +22,8 @@ export function issueAccessToken(user: { id: string; phoneNumber: string }) {
     exp: Math.floor(Date.now() / 1000) + env.ACCESS_TOKEN_TTL_MINUTES * 60
   };
 
-  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET);
+  // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
+  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET!);
 }
 
 export function issueAuthChallengeToken(user: {
@@ -37,14 +38,16 @@ export function issueAuthChallengeToken(user: {
     exp: Math.floor(Date.now() / 1000) + 10 * 60
   };
 
-  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET);
+  // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
+  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET!);
 }
 
 export function requireAuthChallengeToken(
   token: string,
   expectedStage?: "pin_setup" | "pin_verify"
 ) {
-  const payload = verifyToken<AuthChallengePayload>(token, env.SESSION_SECRET);
+  // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
+  const payload = verifyToken<AuthChallengePayload>(token, env.SESSION_SECRET!);
 
   if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error("Invalid or expired auth challenge");
@@ -65,7 +68,8 @@ export function requireAuthenticatedUser(request: Request): AuthenticatedUser {
     throw new Error("Missing access token");
   }
 
-  const payload = verifyToken<AccessTokenPayload>(token, env.SESSION_SECRET);
+  // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
+  const payload = verifyToken<AccessTokenPayload>(token, env.SESSION_SECRET!);
 
   if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error("Invalid or expired access token");

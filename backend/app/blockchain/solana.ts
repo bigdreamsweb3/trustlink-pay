@@ -67,7 +67,8 @@ export type SupportedWalletToken = {
 };
 
 function getSecretKey(): Uint8Array {
-  const rawValue = env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY.trim();
+  // Will throw at runtime if SOLANA_ESCROW_AUTHORITY_SECRET_KEY is not set (see env.ts proxy)
+  const rawValue = env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY!.trim();
 
   try {
     const values = JSON.parse(rawValue) as number[];
@@ -114,7 +115,11 @@ export function getEscrowDepositAddress() {
 }
 
 function getProgram(): { program: EscrowProgram; payer: Keypair; connection: Connection } {
-  const connection = new Connection(env.SOLANA_RPC_URL, "confirmed");
+  // These will throw at runtime if not set (see env.ts proxy)
+  const rpcUrl = env.SOLANA_RPC_URL!;
+  const programId = env.SOLANA_PROGRAM_ID!;
+  
+  const connection = new Connection(rpcUrl, "confirmed");
   const payer = Keypair.fromSecretKey(getSecretKey());
   const wallet = new SimpleWallet(payer);
   const provider = new AnchorProvider(connection, wallet, {
@@ -123,7 +128,7 @@ function getProgram(): { program: EscrowProgram; payer: Keypair; connection: Con
 
   // The IDL must match the deployed escrow program. Keep the client minimal here.
   const idl = {
-    address: env.SOLANA_PROGRAM_ID,
+    address: programId,
     metadata: {
       name: "trustlink_escrow",
       version: "0.1.0",
@@ -285,7 +290,8 @@ export async function cancelEscrow(params: {
 }
 
 export async function listSupportedWalletTokens(walletAddress: string): Promise<SupportedWalletToken[]> {
-  const connection = new Connection(env.SOLANA_RPC_URL, "confirmed");
+  const rpcUrl = env.SOLANA_RPC_URL!;
+  const connection = new Connection(rpcUrl, "confirmed");
   const owner = new PublicKey(walletAddress);
   const tokenBalances = new Map<string, SupportedWalletToken>();
 

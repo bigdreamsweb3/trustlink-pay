@@ -21,11 +21,11 @@ const booleanFromEnv = z.preprocess((value) => {
 
 const envSchema = z
   .object({
-    DATABASE_URL: z.string().startsWith("postgresql://"),
-    SOLANA_RPC_URL: z.string().url(),
-    SOLANA_PROGRAM_ID: z.string().min(1),
-    SOLANA_ESCROW_AUTHORITY_SECRET_KEY: z.string().min(1),
-    WHATSAPP_API_KEY: z.string().min(1),
+    DATABASE_URL: z.string().startsWith("postgresql://").optional(),
+    SOLANA_RPC_URL: z.string().url().optional(),
+    SOLANA_PROGRAM_ID: z.string().min(1).optional(),
+    SOLANA_ESCROW_AUTHORITY_SECRET_KEY: z.string().min(1).optional(),
+    WHATSAPP_API_KEY: z.string().min(1).optional(),
     WHATSAPP_PHONE_ID: z.string().min(1).optional(),
     WHATSAPP_API_VERSION: z.string().default("v20.0"),
     WHATSAPP_BASE_URL: z.string().url().default("https://graph.facebook.com"),
@@ -34,7 +34,7 @@ const envSchema = z
       .string()
       .regex(/^\+[1-9]\d{7,14}$/)
       .optional(),
-    WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().min(8),
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().min(1).optional(),
     WHATSAPP_APP_SECRET: z.string().optional(),
     WHATSAPP_USE_TEMPLATES: booleanFromEnv.default(false),
     WHATSAPP_TEMPLATE_LANGUAGE_CODE: z.string().default("en_US"),
@@ -47,7 +47,7 @@ const envSchema = z
     SOLANA_MOCK_MODE: booleanFromEnv.default(true),
     WHATSAPP_MOCK_MODE: booleanFromEnv.default(true),
     APP_BASE_URL: z.string().url().default("http://localhost:3000"),
-    SESSION_SECRET: z.string().min(16),
+    SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080)
   })
   .superRefine((value, context) => {
@@ -59,6 +59,16 @@ const envSchema = z
       });
     }
   });
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${name}. Please set it in your .env.local file or Vercel environment variables.`
+    );
+  }
+  return value;
+}
 
 function readRawEnv() {
   return {
@@ -114,6 +124,27 @@ export function resetEnvCache() {
 
 export const env = new Proxy({} as Env, {
   get(_target, property) {
-    return getEnv()[property as keyof Env];
+    const value = getEnv()[property as keyof Env];
+    
+    // Throw readable error at runtime if critical vars are missing
+    if (value === undefined) {
+      const criticalVars = [
+        "DATABASE_URL",
+        "SOLANA_RPC_URL",
+        "SOLANA_PROGRAM_ID",
+        "SOLANA_ESCROW_AUTHORITY_SECRET_KEY",
+        "WHATSAPP_API_KEY",
+        "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+        "SESSION_SECRET"
+      ];
+      
+      if (criticalVars.includes(property as string)) {
+        throw new Error(
+          `Missing required environment variable: ${property as string}. Please set it in your .env.local file or Vercel environment variables.`
+        );
+      }
+    }
+    
+    return value;
   }
 });

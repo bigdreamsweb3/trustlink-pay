@@ -83,12 +83,6 @@ This bridges traditional finance behavior and blockchain execution without forci
 
 ## How It Works
 
-### Dashboard View
-
-![TrustLink dashboard view](public/screenshots/01-home-dashboard.png)
-
-_The dashboard is where senders see wallet status, supported balances, recent activity, and pending claims at a glance._
-
 ### Sender Flow
 
 1. Sign in with a WhatsApp-linked TrustLink account.

@@ -42,7 +42,7 @@ export function LandingPage() {
         </div>
 
         {/* <div className="hero-device"> */}
-        <div className=" grid gap-3">
+        <div className="my-auto mb-0 grid grid-cols-1 gap-3">
           <div className="device-header">
             <span className="device-chip">Incoming transfer</span>
             <strong>2.50 USDC</strong>

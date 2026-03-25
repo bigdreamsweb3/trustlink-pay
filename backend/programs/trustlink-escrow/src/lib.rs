@@ -196,8 +196,8 @@ pub struct CreatePayment<'info> {
         mut,
         constraint = sender_token_account.owner == sender.key(),
     )]
-    pub sender_token_account: Account<'info, TokenAccount>,
-    pub token_mint: Account<'info, Mint>,
+    pub sender_token_account: Box<Account<'info, TokenAccount>>,
+    pub token_mint: Box<Account<'info, Mint>>,
     #[account(
         init,
         payer = sender,
@@ -205,7 +205,7 @@ pub struct CreatePayment<'info> {
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump
     )]
-    pub payment_account: Account<'info, PaymentAccount>,
+    pub payment_account: Box<Account<'info, PaymentAccount>>,
     /// CHECK: PDA authority only, validated by seeds.
     #[account(
         seeds = [VAULT_AUTHORITY_SEED, payment_id.as_ref()],
@@ -218,7 +218,7 @@ pub struct CreatePayment<'info> {
         token::mint = token_mint,
         token::authority = vault_authority
     )]
-    pub escrow_vault: Account<'info, TokenAccount>,
+    pub escrow_vault: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -245,13 +245,13 @@ pub struct ClaimPayment<'info> {
         seeds = [CONFIG_SEED],
         bump = config.bump
     )]
-    pub config: Account<'info, EscrowConfig>,
+    pub config: Box<Account<'info, EscrowConfig>>,
     #[account(
         mut,
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump = payment_account.payment_bump
     )]
-    pub payment_account: Account<'info, PaymentAccount>,
+    pub payment_account: Box<Account<'info, PaymentAccount>>,
     /// CHECK: PDA authority only, validated by seeds.
     #[account(
         seeds = [VAULT_AUTHORITY_SEED, payment_id.as_ref()],
@@ -263,12 +263,12 @@ pub struct ClaimPayment<'info> {
         constraint = escrow_vault.owner == vault_authority.key(),
         constraint = escrow_vault.mint == payment_account.token_mint
     )]
-    pub escrow_vault: Account<'info, TokenAccount>,
+    pub escrow_vault: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = receiver_token_account.mint == payment_account.token_mint
     )]
-    pub receiver_token_account: Account<'info, TokenAccount>,
+    pub receiver_token_account: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -294,7 +294,7 @@ pub struct CancelPayment<'info> {
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump = payment_account.payment_bump
     )]
-    pub payment_account: Account<'info, PaymentAccount>,
+    pub payment_account: Box<Account<'info, PaymentAccount>>,
     /// CHECK: PDA authority only, validated by seeds.
     #[account(
         seeds = [VAULT_AUTHORITY_SEED, payment_id.as_ref()],
@@ -306,13 +306,13 @@ pub struct CancelPayment<'info> {
         constraint = escrow_vault.owner == vault_authority.key(),
         constraint = escrow_vault.mint == payment_account.token_mint
     )]
-    pub escrow_vault: Account<'info, TokenAccount>,
+    pub escrow_vault: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = sender_refund_token_account.owner == sender.key(),
         constraint = sender_refund_token_account.mint == payment_account.token_mint
     )]
-    pub sender_refund_token_account: Account<'info, TokenAccount>,
+    pub sender_refund_token_account: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -337,7 +337,7 @@ pub struct ExpirePayment<'info> {
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump = payment_account.payment_bump
     )]
-    pub payment_account: Account<'info, PaymentAccount>,
+    pub payment_account: Box<Account<'info, PaymentAccount>>,
     /// CHECK: PDA authority only, validated by seeds.
     #[account(
         seeds = [VAULT_AUTHORITY_SEED, payment_id.as_ref()],
@@ -349,13 +349,13 @@ pub struct ExpirePayment<'info> {
         constraint = escrow_vault.owner == vault_authority.key(),
         constraint = escrow_vault.mint == payment_account.token_mint
     )]
-    pub escrow_vault: Account<'info, TokenAccount>,
+    pub escrow_vault: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = sender_refund_token_account.owner == payment_account.sender_pubkey,
         constraint = sender_refund_token_account.mint == payment_account.token_mint
     )]
-    pub sender_refund_token_account: Account<'info, TokenAccount>,
+    pub sender_refund_token_account: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
 }
 

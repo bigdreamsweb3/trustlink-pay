@@ -17,6 +17,7 @@ type AppMobileShellProps = {
   subtitle: string;
   user: UserProfile;
   children: ReactNode;
+  blockingOverlay?: ReactNode;
   showBackButton?: boolean;
   backHref?: Route;
 };
@@ -37,7 +38,16 @@ const navItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode
   { key: "profile", href: "/app/profile", label: "Profile", icon: <ProfileIcon className="h-[1.05rem] w-[1.05rem]" /> }
 ];
 
-export function AppMobileShell({ currentTab, title, subtitle, user, children, showBackButton = false, backHref = "/app" }: AppMobileShellProps) {
+export function AppMobileShell({
+  currentTab,
+  title,
+  subtitle,
+  user,
+  children,
+  blockingOverlay = null,
+  showBackButton = false,
+  backHref = "/app"
+}: AppMobileShellProps) {
   const router = useRouter();
 
   function handleBack() {
@@ -172,6 +182,8 @@ export function AppMobileShell({ currentTab, title, subtitle, user, children, sh
           );
         })}
       </nav>
+
+      {blockingOverlay}
     </main>
   );
 }

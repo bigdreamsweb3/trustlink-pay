@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
 import { PlusIcon, WalletIcon } from "@/src/components/app-icons";
+import { PinGateModal } from "@/src/components/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
@@ -35,7 +36,7 @@ function formatUsd(value: number) {
 }
 
 export function ReceiveExperience() {
-  const { hydrated, accessToken, user } = useAuthenticatedSession("/app/receive");
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/receive");
   const { showToast } = useToast();
   const [wallets, setWallets] = useState<ReceiverWallet[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
@@ -112,7 +113,19 @@ export function ReceiveExperience() {
   }
 
   return (
-    <AppMobileShell currentTab="receive" title="Receive" subtitle="Keep claim wallets ready and release incoming transfers into a destination you trust." user={user} showBackButton backHref="/app">
+    <AppMobileShell
+      currentTab="receive"
+      title="Receive"
+      subtitle="Keep claim wallets ready and release incoming transfers into a destination you trust."
+      user={user}
+      showBackButton
+      backHref="/app"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+        ) : null
+      }
+    >
       <section className="space-y-5">
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
@@ -142,7 +155,7 @@ export function ReceiveExperience() {
           ) : (
             <div className="space-y-3">
               {visiblePendingPayments.map((payment) => (
-                <Link key={payment.id} href={`/claim/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
+                <Link key={payment.id} href={`/app/activity/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-white">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
@@ -152,7 +165,7 @@ export function ReceiveExperience() {
                     </div>
                     <div className="mt-1 text-[0.72rem] text-white/34">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Claim</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Open</span>
                 </Link>
               ))}
 
@@ -296,7 +309,7 @@ export function ReceiveExperience() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">All pending claims</h2>
-                <p className="text-sm text-white/48">Open any claim below to continue the OTP release flow.</p>
+                <p className="text-sm text-white/48">Open any payment below to review the full details and continue the OTP release flow.</p>
               </div>
               <button
                 type="button"
@@ -318,9 +331,9 @@ export function ReceiveExperience() {
               {pendingPayments.map((payment) => (
                 <Link
                   key={payment.id}
-                  href={`/claim/${payment.id}`}
+                  href={`/app/activity/${payment.id}`}
                   onClick={() => setPendingModalOpen(false)}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4"
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35"
                 >
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-white">
@@ -331,7 +344,7 @@ export function ReceiveExperience() {
                     </div>
                     <div className="mt-1 text-[0.72rem] text-white/34">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Claim</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Open</span>
                 </Link>
               ))}
             </div>
@@ -341,3 +354,6 @@ export function ReceiveExperience() {
     </AppMobileShell>
   );
 }
+
+
+

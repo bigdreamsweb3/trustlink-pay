@@ -1,0 +1,291 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
+import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { SectionLoader } from "@/src/components/section-loader";
+import { apiGet } from "@/src/lib/api";
+import { formatTokenAmount } from "@/src/lib/formatters";
+import type { PaymentDetailResponse } from "@/src/lib/types";
+import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "Pending";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function shortenValue(value: string | null, start = 6, end = 6) {
+  if (!value) {
+    return "Not available";
+  }
+
+  if (value.length <= start + end + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, start)}...${value.slice(-end)}`;
+}
+
+function statusTone(status: PaymentDetailResponse["payment"]["status"]) {
+  switch (status) {
+    case "accepted":
+      return "bg-[#0f261d] text-[#79ffcf]";
+    case "pending":
+      return "bg-[#2a2412] text-[#f3c96b]";
+    default:
+      return "bg-[#321516] text-[#ff9c9c]";
+  }
+}
+
+export function TransactionDetailExperience({ paymentId }: { paymentId: string }) {
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/app/activity/${paymentId}`);
+  const [detail, setDetail] = useState<PaymentDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken || !user) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDetail() {
+      setLoading(true);
+
+      try {
+        const result = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined);
+
+        if (!cancelled) {
+          setDetail(result);
+          setError(null);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Could not load transaction details");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, paymentId, user]);
+
+  const receiptUpdatedAt = useMemo(() => {
+    if (!detail) {
+      return null;
+    }
+
+    return (
+      detail.whatsapp.readAt ??
+      detail.whatsapp.deliveredAt ??
+      detail.whatsapp.sentAt ??
+      detail.whatsapp.failedAt ??
+      null
+    );
+  }, [detail]);
+
+  if (!hydrated || !user) {
+    return null;
+  }
+
+  return (
+    <AppMobileShell
+      currentTab="home"
+      title="Transaction"
+      subtitle="Trace the payment clearly without exposing the wrong personal details to the wrong side."
+      user={user}
+      showBackButton
+      backHref="/app/activity"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+        ) : null
+      }
+    >
+      <section className="space-y-5">
+        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+
+        {loading ? (
+          <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+            <SectionLoader size="md" label="Loading transaction details..." />
+          </section>
+        ) : detail ? (
+          <>
+            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                    {detail.viewerRole === "sender" ? "Sent payment" : "Incoming payment"}
+                  </div>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
+                    {formatTokenAmount(detail.payment.amount)} {detail.payment.token_symbol}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-white/56">
+                    {detail.viewerRole === "sender"
+                      ? `This transfer is being delivered to ${detail.receiver.phone} through TrustLink escrow.`
+                      : `This transfer came from ${detail.sender.displayName}${detail.sender.handle ? ` (@${detail.sender.handle})` : ""} through TrustLink escrow.`}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1.5 text-[0.72rem] font-medium capitalize ${statusTone(detail.payment.status)}`}>
+                  {detail.payment.status}
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                    {detail.viewerRole === "sender" ? "Receiver" : "Sender"}
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    {detail.viewerRole === "sender" ? detail.receiver.phone : detail.sender.displayName}
+                  </div>
+                  <div className="mt-1 text-sm text-white/52">
+                    {detail.viewerRole === "sender"
+                      ? "TrustLink delivers the payment notice from its shared verified WhatsApp number."
+                      : detail.sender.trustVerified
+                        ? `${detail.sender.trustStatusLabel}${detail.sender.phoneMasked ? ` • ${detail.sender.phoneMasked}` : ""}`
+                        : detail.sender.trustStatusLabel}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">WhatsApp receipt</div>
+                  <div className="mt-2 flex items-center gap-3">
+                    <PaymentNotificationReceipt status={detail.payment.notification_status} />
+                    <span className="text-sm text-white/56">{formatDateTime(receiptUpdatedAt)}</span>
+                  </div>
+                  <div className="mt-2 text-sm text-white/46">{detail.privacy.deliveryChannelNote}</div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Trace details</h2>
+                <p className="text-sm text-white/48">Everything the current viewer is allowed to trace for this payment.</p>
+              </div>
+
+              <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Reference</span>
+                  <span className="font-medium text-white">{detail.sender.referenceCode}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Payment ID</span>
+                  <span className="font-medium text-white">{shortenValue(detail.trace.paymentId, 8, 8)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Created</span>
+                  <span className="font-medium text-white">{formatDateTime(detail.payment.created_at)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Escrow account</span>
+                  <span className="font-medium text-white">{shortenValue(detail.trace.escrowAccount)}</span>
+                </div>
+                {detail.trace.depositSignature ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">Deposit tx</span>
+                    {detail.trace.depositExplorerUrl ? (
+                      <a href={detail.trace.depositExplorerUrl} target="_blank" rel="noreferrer" className="font-medium text-[#7dffd9] underline underline-offset-4">
+                        {shortenValue(detail.trace.depositSignature, 8, 8)}
+                      </a>
+                    ) : (
+                      <span className="font-medium text-white">{shortenValue(detail.trace.depositSignature, 8, 8)}</span>
+                    )}
+                  </div>
+                ) : null}
+                {detail.trace.releaseSignature ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">Release tx</span>
+                    {detail.trace.releaseExplorerUrl ? (
+                      <a href={detail.trace.releaseExplorerUrl} target="_blank" rel="noreferrer" className="font-medium text-[#7dffd9] underline underline-offset-4">
+                        {shortenValue(detail.trace.releaseSignature, 8, 8)}
+                      </a>
+                    ) : (
+                      <span className="font-medium text-white">{shortenValue(detail.trace.releaseSignature, 8, 8)}</span>
+                    )}
+                  </div>
+                ) : null}
+                {detail.receiver.releasedWallet ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">Released to wallet</span>
+                    <span className="font-medium text-white">{detail.receiver.releasedWallet}</span>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Timeline</h2>
+                <p className="text-sm text-white/48">A simple view of where the payment stands right now.</p>
+              </div>
+
+              <div className="space-y-3">
+                {detail.timeline.map((entry) => (
+                  <div key={entry.id} className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                    <span className={`mt-1 h-3 w-3 rounded-full ${entry.complete ? "bg-[#58f2b1]" : "bg-white/14"}`} />
+                    <div>
+                      <div className="text-sm font-semibold text-white">{entry.label}</div>
+                      <div className="mt-1 text-sm leading-6 text-white/54">{entry.description}</div>
+                    </div>
+                    <span className="text-right text-[0.78rem] text-white/40">{formatDateTime(entry.occurredAt)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+              <div className="mb-3">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Privacy</h2>
+                <p className="text-sm text-white/48">Trust cues without overexposing anyone's personal details.</p>
+              </div>
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-white/58">
+                <p>{detail.privacy.senderPhonePolicy}</p>
+                <p className="mt-3">Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.</p>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/app/activity" className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78">
+                Back to activity
+              </Link>
+              {detail.receiver.claimReady ? (
+                <Link href={`/claim/${detail.payment.id}`} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]">
+                  Claim payment
+                </Link>
+              ) : (
+                <Link href="/app" className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]">
+                  Done
+                </Link>
+              )}
+            </div>
+          </>
+        ) : (
+          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4 text-sm text-white/48">
+            Transaction details are unavailable right now.
+          </section>
+        )}
+      </section>
+    </AppMobileShell>
+  );
+}
+

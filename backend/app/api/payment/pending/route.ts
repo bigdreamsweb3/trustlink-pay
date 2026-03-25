@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
+import { sanitizePaymentForViewer } from "@/app/services/payment-views";
 import { listPendingPaymentsForUser } from "@/app/services/payments";
 import { enrichPaymentsWithUsd } from "@/app/services/pricing";
 
@@ -10,12 +11,13 @@ export async function GET(request: Request) {
     const authUser = requireAuthenticatedUser(request);
     const payments = await listPendingPaymentsForUser(authUser.phoneNumber);
     const enrichedPayments = await enrichPaymentsWithUsd(payments);
+    const safePayments = enrichedPayments.map((payment) => sanitizePaymentForViewer(payment, authUser));
     const totalPendingUsd = Number(
       enrichedPayments.reduce((sum, payment) => sum + (payment.amount_usd ?? 0), 0).toFixed(2)
     );
 
     return ok({
-      payments: enrichedPayments,
+      payments: safePayments,
       totalPendingUsd
     });
   } catch (error) {

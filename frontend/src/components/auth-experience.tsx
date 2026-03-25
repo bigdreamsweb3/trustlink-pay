@@ -10,11 +10,18 @@ import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
 import type { CountryOption } from "@/src/lib/phone-countries";
 import { rememberCountryUsage } from "@/src/lib/phone-preferences";
-import { getStoredToken, getStoredUser, setStoredToken, setStoredUser } from "@/src/lib/storage";
+import {
+  clearStoredPendingAuth,
+  clearStoredToken,
+  clearStoredUser,
+  getStoredPendingAuth,
+  getStoredToken,
+  getStoredUser,
+  setStoredPendingAuth
+} from "@/src/lib/storage";
 import type { AuthResult } from "@/src/lib/types";
 
 type AuthMode = "login" | "register";
-type PinMode = "setup" | "verify";
 
 export function AuthExperience({
   initialMode,
@@ -26,19 +33,14 @@ export function AuthExperience({
   const router = useRouter();
   const { showToast } = useToast();
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [step, setStep] = useState<"auth" | "pin">("auth");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otpBusy, setOtpBusy] = useState(false);
-  const [pinBusy, setPinBusy] = useState(false);
   const [otpCooldowns, setOtpCooldowns] = useState<{ register: number; login: number }>({
     register: 0,
     login: 0
   });
-  const [pinMode, setPinMode] = useState<PinMode>("verify");
-  const [challengeToken, setChallengeToken] = useState<string | null>(null);
-  const [pin, setPin] = useState("");
   const [registerCountry, setRegisterCountry] = useState<CountryOption | null>(null);
   const [loginCountry, setLoginCountry] = useState<CountryOption | null>(null);
   const [registerForm, setRegisterForm] = useState({
@@ -59,9 +61,15 @@ export function AuthExperience({
   useEffect(() => {
     const token = getStoredToken();
     const user = getStoredUser();
+    const pendingAuth = getStoredPendingAuth();
 
     if (token && user) {
       router.replace(redirectTo as Route);
+      return;
+    }
+
+    if (pendingAuth?.challengeToken) {
+      router.replace((pendingAuth.redirectTo || redirectTo) as Route);
     }
   }, [redirectTo, router]);
 
@@ -134,14 +142,22 @@ export function AuthExperience({
         pinSetupRequired: true;
         user: AuthResult["user"];
       }>("/api/auth/register", registerForm);
+
       if (registerCountry) {
         rememberCountryUsage(registerCountry.iso2);
       }
-      setChallengeToken(result.challengeToken);
-      setPinMode("setup");
-      setStep("pin");
-      setMessage("Number verified. Create your 6-digit transaction PIN to unlock TrustLink.");
-      showToast("Number verified. Set your transaction PIN.");
+
+      clearStoredToken();
+      clearStoredUser();
+      clearStoredPendingAuth();
+      setStoredPendingAuth({
+        challengeToken: result.challengeToken,
+        pinMode: "setup",
+        user: result.user,
+        redirectTo
+      });
+      showToast("Number verified. Create your PIN inside the app.");
+      router.push(redirectTo as Route);
     } catch (registerError) {
       const message = registerError instanceof Error ? registerError.message : "Registration failed";
       setError(message);
@@ -165,50 +181,28 @@ export function AuthExperience({
         pinSetupRequired: boolean;
         user: AuthResult["user"];
       }>("/api/auth/login", loginForm);
+
       if (loginCountry) {
         rememberCountryUsage(loginCountry.iso2);
       }
-      setChallengeToken(result.challengeToken);
-      setPinMode(result.pinRequired ? "verify" : "setup");
-      setStep("pin");
-      setMessage(result.pinRequired ? "OTP confirmed. Enter your PIN to continue." : "OTP confirmed. Create your 6-digit transaction PIN.");
-      showToast(result.pinRequired ? "OTP confirmed. Enter your PIN." : "OTP confirmed. Create your PIN.");
+
+      clearStoredToken();
+      clearStoredUser();
+      clearStoredPendingAuth();
+      setStoredPendingAuth({
+        challengeToken: result.challengeToken,
+        pinMode: result.pinRequired ? "verify" : "setup",
+        user: result.user,
+        redirectTo
+      });
+      showToast(result.pinRequired ? "OTP confirmed. Unlock the app with your PIN." : "OTP confirmed. Create your PIN inside the app.");
+      router.push(redirectTo as Route);
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : "Login failed";
       setError(message);
       showToast(message);
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function handlePin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!challengeToken) {
-      setError("Missing auth challenge. Restart the login or registration flow.");
-      return;
-    }
-
-    setPinBusy(true);
-    setError(null);
-
-    try {
-      const path = pinMode === "setup" ? "/api/auth/pin/setup" : "/api/auth/pin/verify";
-      const result = await apiPost<{ accessGranted: true } & AuthResult>(path, {
-        challengeToken,
-        pin
-      });
-      setStoredToken(result.accessToken);
-      setStoredUser(result.user);
-      showToast(pinMode === "setup" ? "PIN created. Account unlocked." : "Signed in successfully.");
-      router.push(redirectTo as Route);
-    } catch (pinError) {
-      const message = pinError instanceof Error ? pinError.message : "Could not verify PIN";
-      setError(message);
-      showToast(message);
-    } finally {
-      setPinBusy(false);
     }
   }
 
@@ -221,8 +215,8 @@ export function AuthExperience({
           <span className="hero-kicker">Access your transfer desk</span>
           <h1>{mode === "register" ? "Create a TrustLink identity." : "Sign in and continue sending."}</h1>
           <p>
-            Registration starts with WhatsApp OTP. Sign-in also starts with WhatsApp OTP. In both cases, account access
-            is unlocked only after the transaction PIN step is completed.
+            Registration starts with WhatsApp OTP. Sign-in also starts with WhatsApp OTP. After that, TrustLink opens
+            the app and asks for the transaction PIN inside the secure app shell before anything becomes usable.
           </p>
 
           <div className="auth-panel--form">
@@ -252,38 +246,7 @@ export function AuthExperience({
             {message ? <div className="notice notice--success">{message}</div> : null}
             {error ? <div className="notice notice--error">{error}</div> : null}
 
-            {step === "pin" ? (
-              <form className="stack-form" onSubmit={handlePin}>
-                <label className="field-block">
-                  <span>{pinMode === "setup" ? "Create 6-digit PIN" : "Enter 6-digit PIN"}</span>
-                  <input
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={pin}
-                    onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="123456"
-                  />
-                </label>
-                <div className="inline-actions">
-                  <button
-                    className="button button--ghost"
-                    type="button"
-                    onClick={() => {
-                      setStep("auth");
-                      setPin("");
-                      setChallengeToken(null);
-                      setMessage(null);
-                      setError(null);
-                    }}
-                  >
-                    Back
-                  </button>
-                  <button className="button button--primary" type="submit" disabled={pinBusy}>
-                    {pinMode === "setup" ? "Create PIN" : "Unlock account"}
-                  </button>
-                </div>
-              </form>
-            ) : mode === "register" ? (
+            {mode === "register" ? (
               <form className="stack-form" onSubmit={handleRegister}>
                 <PhoneNumberInput
                   label="WhatsApp number"
@@ -320,7 +283,12 @@ export function AuthExperience({
                   />
                 </label>
                 <div className="inline-actions">
-                  <button className="button button--ghost" type="button" disabled={otpBusy || otpCooldowns.register > 0} onClick={() => void sendOtp("register")}>
+                  <button
+                    className="button button--ghost"
+                    type="button"
+                    disabled={otpBusy || otpCooldowns.register > 0}
+                    onClick={() => void sendOtp("register")}
+                  >
                     {otpCooldowns.register > 0 ? `Resend OTP in ${otpCooldowns.register}s` : "Send OTP"}
                   </button>
                   <button className="button button--primary" type="submit" disabled={busy}>
@@ -347,7 +315,12 @@ export function AuthExperience({
                   />
                 </label>
                 <div className="inline-actions">
-                  <button className="button button--ghost" type="button" disabled={otpBusy || otpCooldowns.login > 0} onClick={() => void sendOtp("login")}>
+                  <button
+                    className="button button--ghost"
+                    type="button"
+                    disabled={otpBusy || otpCooldowns.login > 0}
+                    onClick={() => void sendOtp("login")}
+                  >
                     {otpCooldowns.login > 0 ? `Resend OTP in ${otpCooldowns.login}s` : "Send OTP"}
                   </button>
                   <button className="button button--primary" type="submit" disabled={busy}>
@@ -357,7 +330,6 @@ export function AuthExperience({
               </form>
             )}
           </div>
-
         </aside>
 
         <section className="auth-points">
@@ -366,8 +338,8 @@ export function AuthExperience({
             <span>The sender wallet comes from a connected Solana wallet, not a loose text field.</span>
           </div>
           <div>
-            <strong>OTP first, PIN second</strong>
-            <span>OTP confirms the WhatsApp number. PIN is the final unlock before any account access is granted.</span>
+            <strong>OTP first, PIN inside the app</strong>
+            <span>OTP confirms the WhatsApp number. The PIN appears only after the app opens, as a blocking in-app security step.</span>
           </div>
           <div>
             <strong>Claim-safe flow</strong>

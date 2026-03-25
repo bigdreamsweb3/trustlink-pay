@@ -1,36 +1,24 @@
 export const runtime = "nodejs";
 
-import { findPaymentById } from "@/app/db/payments";
-import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-events";
+import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
+import { getPaymentDetailForViewer } from "@/app/services/payment-views";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ paymentId: string }> }
 ) {
   try {
+    const authUser = requireAuthenticatedUser(request);
     const { paymentId } = await context.params;
-    const payment = await findPaymentById(paymentId);
+    const detail = await getPaymentDetailForViewer(authUser, paymentId);
 
-    if (!payment) {
-      return fail("Payment not found", 404);
+    return ok(detail);
+  } catch (error) {
+    if (error instanceof Error && /access token/i.test(error.message)) {
+      return fail(error.message, 401);
     }
 
-    const webhookEvents = await listWhatsAppWebhookEventsByPaymentId(paymentId);
-
-    return ok({
-      payment,
-      whatsapp: {
-        notificationMessageId: payment.notification_message_id,
-        events: webhookEvents
-      },
-      sender: {
-        displayName: payment.sender_display_name_snapshot,
-        handle: payment.sender_handle_snapshot,
-        referenceCode: payment.reference_code
-      }
-    });
-  } catch (error) {
     return toErrorResponse(error);
   }
 }

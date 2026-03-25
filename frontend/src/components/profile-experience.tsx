@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { PinGateModal } from "@/src/components/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/wallet-picker-modal";
 import { apiPatch } from "@/src/lib/api";
@@ -23,7 +24,7 @@ function shortenAddress(value: string) {
 }
 
 export function ProfileExperience() {
-  const { hydrated, accessToken, user, setUser, logout } = useAuthenticatedSession("/app/profile");
+  const { hydrated, accessToken, user, setUser, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/profile");
   const { showToast } = useToast();
   const [walletSession, setWalletSession] = useState<ConnectedWalletSession | null>(null);
   const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
@@ -122,7 +123,19 @@ export function ProfileExperience() {
   const walletAddress = walletSession?.address ?? null;
 
   return (
-    <AppMobileShell currentTab="profile" title="Profile" subtitle="Keep your identity clean, trusted, and ready for the people receiving your payments." user={user} showBackButton backHref="/app">
+    <AppMobileShell
+      currentTab="profile"
+      title="Profile"
+      subtitle="Keep your identity clean, trusted, and ready for the people receiving your payments."
+      user={user}
+      showBackButton
+      backHref="/app"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+        ) : null
+      }
+    >
       <section className="space-y-5">
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}

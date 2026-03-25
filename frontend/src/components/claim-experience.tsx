@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { PinGateModal } from "@/src/components/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
@@ -38,7 +39,7 @@ function formatTokenBalance(balance: number, symbol: string) {
 }
 
 export function ClaimExperience({ paymentId }: { paymentId: string }) {
-  const { hydrated, accessToken, user } = useAuthenticatedSession(`/claim/${paymentId}`);
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/claim/${paymentId}`);
   const { showToast } = useToast();
   const [payment, setPayment] = useState<PaymentDetailsResponse | null>(null);
   const [wallets, setWallets] = useState<ReceiverWallet[]>([]);
@@ -199,7 +200,19 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   }
 
   return (
-    <AppMobileShell currentTab="receive" title="Claim" subtitle="Choose your payout wallet, send the OTP, then your claim completes as soon as the code is confirmed." user={user} showBackButton backHref="/app/receive">
+    <AppMobileShell
+      currentTab="receive"
+      title="Claim"
+      subtitle="Choose your payout wallet, send the OTP, then your claim completes as soon as the code is confirmed."
+      user={user}
+      showBackButton
+      backHref="/app/receive"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+        ) : null
+      }
+    >
       <section className="space-y-5">
         {status ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{status}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}

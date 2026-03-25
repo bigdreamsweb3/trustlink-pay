@@ -9,6 +9,15 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export type PinMode = "setup" | "verify";
+
+export interface PendingAuthSession {
+  challengeToken: string;
+  pinMode: PinMode;
+  user: UserProfile;
+  redirectTo: string;
+}
+
 export interface ReceiverWallet {
   id: string;
   user_id: string;
@@ -17,10 +26,13 @@ export interface ReceiverWallet {
   created_at: string;
 }
 
+export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
+export type PaymentViewerRole = "sender" | "receiver";
+
 export interface PaymentRecord {
   id: string;
   sender_user_id: string | null;
-  sender_wallet: string;
+  sender_wallet: string | null;
   sender_display_name_snapshot: string;
   sender_handle_snapshot: string;
   reference_code: string;
@@ -29,11 +41,75 @@ export interface PaymentRecord {
   token_symbol: string;
   amount: string;
   escrow_account: string | null;
+  deposit_signature: string | null;
+  release_signature: string | null;
+  released_to_wallet: string | null;
+  accepted_at: string | null;
   notification_message_id: string | null;
+  notification_status: PaymentNotificationStatus;
+  notification_sent_at: string | null;
+  notification_delivered_at: string | null;
+  notification_read_at: string | null;
+  notification_failed_at: string | null;
+  notification_attempt_count?: number;
+  notification_last_attempt_at?: string | null;
   status: "pending" | "accepted" | "cancelled" | "expired";
   unit_price_usd?: number | null;
   amount_usd?: number | null;
   created_at: string;
+  viewer_role?: PaymentViewerRole;
+}
+
+export interface PaymentTimelineEntry {
+  id: string;
+  label: string;
+  description: string;
+  occurredAt: string | null;
+  complete: boolean;
+}
+
+export interface PaymentDetailResponse {
+  payment: PaymentRecord;
+  viewerRole: PaymentViewerRole;
+  sender: {
+    displayName: string;
+    handle: string;
+    referenceCode: string;
+    phoneMasked: string | null;
+    trustVerified: boolean;
+    trustStatusLabel: string;
+    contactShared: boolean;
+  };
+  receiver: {
+    phone: string;
+    releasedWallet: string | null;
+    claimReady: boolean;
+  };
+  trace: {
+    paymentId: string;
+    escrowAccount: string | null;
+    depositSignature: string | null;
+    depositExplorerUrl: string | null;
+    releaseSignature: string | null;
+    releaseExplorerUrl: string | null;
+    acceptedAt: string | null;
+  };
+  privacy: {
+    senderWalletVisibleToReceiver: boolean;
+    senderPhoneVisibleToReceiver: boolean;
+    senderPhonePolicy: string;
+    deliveryChannelNote: string;
+  };
+  whatsapp: {
+    notificationMessageId: string | null;
+    status: PaymentNotificationStatus;
+    sentAt: string | null;
+    deliveredAt: string | null;
+    readAt: string | null;
+    failedAt: string | null;
+    eventCount: number;
+  };
+  timeline: PaymentTimelineEntry[];
 }
 
 export interface AuthResult {

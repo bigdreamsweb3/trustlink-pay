@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { findPaymentByNotificationMessageId } from "@/app/db/payments";
+import { findPaymentByNotificationMessageId, updatePaymentNotificationStatus } from "@/app/db/payments";
 import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
+import type { PaymentNotificationStatus } from "@/app/types/payment";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 
@@ -61,6 +62,31 @@ function secureCompare(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function normalizeNotificationStatus(status: string | undefined): PaymentNotificationStatus | null {
+  switch (status) {
+    case "sent":
+    case "delivered":
+    case "read":
+    case "failed":
+      return status;
+    default:
+      return null;
+  }
+}
+
+function parseWhatsAppTimestamp(timestamp: string | undefined): string | null {
+  if (!timestamp) {
+    return null;
+  }
+
+  const numericTimestamp = Number(timestamp);
+  if (!Number.isFinite(numericTimestamp)) {
+    return null;
+  }
+
+  return new Date(numericTimestamp * 1000).toISOString();
+}
+
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
   if (!env.WHATSAPP_APP_SECRET) {
     return true;
@@ -106,6 +132,8 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
 
       for (const status of value?.statuses ?? []) {
         const relatedPayment = status.id ? await findPaymentByNotificationMessageId(status.id) : null;
+        const normalizedStatus = normalizeNotificationStatus(status.status);
+        const occurredAt = parseWhatsAppTimestamp(status.timestamp);
 
         await createWhatsAppWebhookEvent({
           eventType: "message_status",
@@ -120,11 +148,17 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
           }
         });
 
+        if (relatedPayment && normalizedStatus) {
+          await updatePaymentNotificationStatus(relatedPayment.id, normalizedStatus, occurredAt);
+        }
+
         logger.info("whatsapp.webhook.message_status", {
           messageId: status.id,
           status: status.status,
           recipientId: status.recipient_id,
-          relatedPaymentId: relatedPayment?.id ?? null
+          relatedPaymentId: relatedPayment?.id ?? null,
+          normalizedStatus,
+          occurredAt
         });
       }
     }

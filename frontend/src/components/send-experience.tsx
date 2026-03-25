@@ -4,14 +4,17 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
+import { PinGateModal } from "@/src/components/pin-gate-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/wallet-picker-modal";
 import { apiGet, apiPost } from "@/src/lib/api";
+import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import type { CountryOption } from "@/src/lib/phone-countries";
 import { rememberCountryUsage } from "@/src/lib/phone-preferences";
-import type { RecipientLookupResult, WalletTokenOption } from "@/src/lib/types";
+import type { PaymentNotificationStatus, PaymentRecord, RecipientLookupResult, WalletTokenOption } from "@/src/lib/types";
 import {
   connectSolanaWallet,
   disconnectSolanaWallet,
@@ -22,6 +25,8 @@ import {
   type DetectedWallet
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+
+const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
 
 function shortenAddress(value: string) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
@@ -35,8 +40,21 @@ function formatTokenBalance(balance: number, symbol: string) {
   }).format(balance);
 }
 
+function formatReceiptTime(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 export function SendExperience() {
-  const { hydrated, user } = useAuthenticatedSession("/app/send");
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
   const { showToast } = useToast();
   const [walletSession, setWalletSession] = useState<ConnectedWalletSession | null>(null);
   const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
@@ -55,13 +73,20 @@ export function SendExperience() {
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [sendSuccess, setSendSuccess] = useState<{
     paymentId: string;
-    status: string;
+    status: PaymentRecord["status"];
+    notificationStatus: PaymentNotificationStatus;
+    notificationSentAt: string | null;
+    notificationDeliveredAt: string | null;
+    notificationReadAt: string | null;
+    notificationFailedAt: string | null;
     referenceCode: string;
     senderDisplayName: string;
     senderHandle: string;
     escrowAccount: string | null;
     blockchainSignature: string;
     depositAddress: string | null;
+    notificationRetrying: boolean;
+    notificationAttemptCount: number;
     receiverPhone: string;
     recipientName: string;
     amount: string;
@@ -73,10 +98,21 @@ export function SendExperience() {
     token: ""
   });
 
-  const canLookupRecipient = useMemo(() => /^\+[1-9]\d{7,14}$/.test(form.receiverPhone), [form.receiverPhone]);
+  const canLookupRecipient = useMemo(() => {
+    if (!receiverCountry) return false;
+
+    const digits = form.receiverPhone.replace(/\D/g, "");
+    const countryDigits = receiverCountry.dialCode.replace(/\D/g, "");
+
+    const localDigits = digits.slice(countryDigits.length);
+
+    return localDigits.length === 10;
+  }, [form.receiverPhone, receiverCountry]);
   const sendableTokens = useMemo(() => supportedTokens.filter((token) => token.supported), [supportedTokens]);
   const selectedToken = sendableTokens.find((token) => token.symbol === form.token) ?? null;
   const walletAddress = walletSession?.address ?? null;
+  const sendSuccessPaymentId = sendSuccess?.paymentId ?? null;
+  const shouldPollSendSuccessReceipt = sendSuccess ? !isPaymentNotificationFinal(sendSuccess.notificationStatus) : false;
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
@@ -158,6 +194,66 @@ export function SendExperience() {
     return () => window.clearTimeout(timer);
   }, [canLookupRecipient, form.receiverPhone]);
 
+  useEffect(() => {
+    if (!sendSuccessPaymentId || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function refreshReceipt() {
+      try {
+        const result = await apiGet<{ payment: PaymentRecord }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined);
+
+        if (cancelled) {
+          return;
+        }
+
+        setSendSuccess((current) => {
+          if (!current || current.paymentId !== result.payment.id) {
+            return current;
+          }
+
+          return {
+            ...current,
+            status: result.payment.status,
+            notificationStatus: result.payment.notification_status,
+            notificationSentAt: result.payment.notification_sent_at,
+            notificationDeliveredAt: result.payment.notification_delivered_at,
+            notificationReadAt: result.payment.notification_read_at,
+            notificationFailedAt: result.payment.notification_failed_at,
+            notificationRetrying:
+              result.payment.notification_status === "queued" || result.payment.notification_status === "failed",
+            notificationAttemptCount: result.payment.notification_attempt_count ?? current.notificationAttemptCount
+          };
+        });
+      } catch {
+        // Keep the last known receipt state if polling fails.
+      }
+    }
+
+    void refreshReceipt();
+
+    if (!shouldPollSendSuccessReceipt) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const refreshInterval = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshReceipt();
+    }, SEND_RECEIPT_REFRESH_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshInterval);
+    };
+  }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+
   async function handleConnectWallet() {
     setError(null);
     const wallets = listAvailableSolanaWallets();
@@ -231,44 +327,56 @@ export function SendExperience() {
     }
 
     const recipientName = recipientPreview.recipient.displayName;
+    let depositSignature: string | undefined;
 
     setBusy(true);
     setError(null);
     setNotice(null);
 
     try {
-      const depositSignature =
+      depositSignature =
         selectedToken.symbol === "SOL" && walletSession
           ? await sendRealSolTransfer({
             walletId: walletSession.walletId,
             fromAddress: walletAddress,
-            amount: Number(form.amount),
+            amount: Number(form.amount)
           })
           : undefined;
 
       const result = await apiPost<{
         paymentId: string;
-        status: string;
+        status: PaymentRecord["status"];
+        notificationStatus: PaymentNotificationStatus;
+        notificationSentAt: string | null;
+        notificationDeliveredAt: string | null;
+        notificationReadAt: string | null;
+        notificationFailedAt: string | null;
         referenceCode: string;
         senderDisplayName: string;
         senderHandle: string;
         escrowAccount: string | null;
         blockchainSignature: string;
         depositAddress: string | null;
+        notificationRetrying: boolean;
+        notificationAttemptCount: number;
       }>("/api/payment/create", {
         phoneNumber: form.receiverPhone,
         senderPhoneNumber: user.phoneNumber,
         amount: Number(form.amount),
         token: selectedToken.symbol,
         senderWallet: walletAddress,
-        depositSignature,
+        depositSignature
       });
 
       if (receiverCountry) {
         rememberCountryUsage(receiverCountry.iso2);
       }
 
-      setNotice(`Payment queued. Reference ${result.referenceCode}.`);
+      setNotice(
+        result.notificationRetrying
+          ? `Funds are already secured in escrow. WhatsApp delivery is being retried automatically. Reference ${result.referenceCode}.`
+          : `Payment queued. Reference ${result.referenceCode}.`
+      );
       setSendSuccess({
         ...result,
         receiverPhone: form.receiverPhone,
@@ -279,16 +387,72 @@ export function SendExperience() {
       setForm((current) => ({ ...current, receiverPhone: "", amount: "2.5" }));
       setRecipientPreview(null);
       setConfirmOpen(false);
-      showToast(`Payment sent. Reference ${result.referenceCode}.`);
+      showToast(
+        result.notificationRetrying
+          ? `Payment secured. WhatsApp delivery is retrying. Reference ${result.referenceCode}.`
+          : `Payment sent. Reference ${result.referenceCode}.`
+      );
     } catch (submitError) {
+      if (depositSignature) {
+        try {
+          const recovered = await apiPost<{
+            paymentId: string;
+            status: PaymentRecord["status"];
+            notificationStatus: PaymentNotificationStatus;
+            notificationSentAt: string | null;
+            notificationDeliveredAt: string | null;
+            notificationReadAt: string | null;
+            notificationFailedAt: string | null;
+            referenceCode: string;
+            senderDisplayName: string;
+            senderHandle: string;
+            escrowAccount: string | null;
+            blockchainSignature: string;
+            depositAddress: string | null;
+            notificationRetrying: boolean;
+            notificationAttemptCount: number;
+          }>("/api/payment/create", {
+            phoneNumber: form.receiverPhone,
+            senderPhoneNumber: user.phoneNumber,
+            amount: Number(form.amount),
+            token: selectedToken.symbol,
+            senderWallet: walletAddress,
+            depositSignature
+          });
+
+          setNotice(
+            recovered.notificationRetrying
+              ? `Your wallet transfer was already signed. TrustLink recovered the payment and is retrying WhatsApp delivery. Reference ${recovered.referenceCode}.`
+              : `Your wallet transfer was already signed. TrustLink recovered the payment. Reference ${recovered.referenceCode}.`
+          );
+          setSendSuccess({
+            ...recovered,
+            receiverPhone: form.receiverPhone,
+            recipientName,
+            amount: form.amount,
+            token: selectedToken.symbol
+          });
+          setForm((current) => ({ ...current, receiverPhone: "", amount: "2.5" }));
+          setRecipientPreview(null);
+          setConfirmOpen(false);
+          showToast("Signed transfer recovered successfully.");
+          return;
+        } catch {
+          setConfirmOpen(false);
+          setError(
+            `Your wallet transaction was already signed. Do not confirm another transfer yet. Signature: ${shortenAddress(
+              depositSignature
+            )}. Check activity in a moment while TrustLink retries recovery.`
+          );
+          showToast("Signed transfer detected. Do not sign again.");
+          return;
+        }
+      }
+
       setError(submitError instanceof Error ? submitError.message : "Could not create payment");
     } finally {
       setBusy(false);
     }
-  }
-
-  if (!hydrated || !user) {
-    return null;
   }
 
   async function sendRealSolTransfer(params: {
@@ -314,31 +478,56 @@ export function SendExperience() {
       fromAddress: params.fromAddress,
       toAddress: depositTarget.address,
       amountSol: params.amount,
-      rpcUrl: depositTarget.rpcUrl,
+      rpcUrl: depositTarget.rpcUrl
     });
   }
 
+  if (!hydrated || !user) {
+    return null;
+  }
+
+  const receiptTimestamp =
+    sendSuccess?.notificationReadAt ??
+    sendSuccess?.notificationDeliveredAt ??
+    sendSuccess?.notificationSentAt ??
+    sendSuccess?.notificationFailedAt ??
+    null;
+
   return (
-    <AppMobileShell currentTab="send" title="Send" subtitle="Confirm the person, choose a supported token, then move funds into escrow." user={user} showBackButton backHref="/app">
+    <AppMobileShell
+      currentTab="send"
+      title="Send"
+      subtitle="Confirm the person, choose a supported token, then move funds into escrow."
+      user={user}
+      showBackButton
+      backHref="/app"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+        ) : null
+      }
+    >
       <section className="space-y-5">
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
         {sendSuccess ? (
           <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/12 text-[#7dffd9]">✓</div>
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/12 text-sm font-semibold text-[#7dffd9]">OK</div>
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
               {sendSuccess.amount} {sendSuccess.token} queued
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/56">
-              TrustLink sent the transfer details to {sendSuccess.recipientName} on WhatsApp and moved the payment into escrow for claim.
+              {sendSuccess.notificationRetrying
+                ? `TrustLink already secured the funds in escrow for ${sendSuccess.recipientName}. WhatsApp delivery is still retrying in the background, so there is no need to sign again.`
+                : `TrustLink sent the transfer details to ${sendSuccess.recipientName} on WhatsApp and moved the payment into escrow for claim.`}
             </p>
 
             <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">Recipient</span>
-                <span className="font-medium text-right text-white">{sendSuccess.recipientName}</span>
+                <span className="text-right font-medium text-white">{sendSuccess.recipientName}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">WhatsApp</span>
@@ -349,13 +538,33 @@ export function SendExperience() {
                 <span className="font-medium text-white">{sendSuccess.referenceCode}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Status</span>
+                <span className="text-white/46">Payment status</span>
                 <span className="font-medium capitalize text-white">{sendSuccess.status}</span>
               </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-white/46">WhatsApp receipt</span>
+                <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
+              </div>
+              {sendSuccess.notificationRetrying ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Delivery retries</span>
+                  <span className="font-medium text-white">{sendSuccess.notificationAttemptCount}</span>
+                </div>
+              ) : null}
+              {receiptTimestamp ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Receipt updated</span>
+                  <span className="font-medium text-white">{formatReceiptTime(receiptTimestamp)}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">Escrow tx</span>
                 <span className="font-medium text-white">{shortenAddress(sendSuccess.blockchainSignature)}</span>
               </div>
+            </div>
+
+            <div className="mt-3 text-[0.78rem] text-white/44">
+              Delivery receipts refresh from TrustLink records only while the receipt is still unresolved.
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -380,7 +589,7 @@ export function SendExperience() {
               <div>
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/42">Sender wallet</div>
                 <div className="mt-1 text-base font-semibold text-white">
-                  {walletAddress ? `${walletSession?.walletName ?? "Wallet"} • ${shortenAddress(walletAddress)}` : "Not connected"}
+                  {walletAddress ? `${walletSession?.walletName ?? "Wallet"} - ${shortenAddress(walletAddress)}` : "Not connected"}
                 </div>
               </div>
               {walletAddress ? (
@@ -415,8 +624,7 @@ export function SendExperience() {
                 </div>
               ) : recipientPreview ? (
                 <div
-                  className={`rounded-[20px] border px-4 py-3 ${recipientPreview.verified ? "border-[#58f2b1]/18 bg-[#58f2b1]/7" : "border-[#ff7f7f]/18 bg-[#ff7f7f]/8"
-                    }`}
+                  className={`rounded-[20px] border px-4 py-3 ${recipientPreview.verified ? "border-[#58f2b1]/18 bg-[#58f2b1]/7" : "border-[#ff7f7f]/18 bg-[#ff7f7f]/8"}`}
                 >
                   {recipientPreview.status === "registered" ? (
                     <>
@@ -441,7 +649,6 @@ export function SendExperience() {
                 </div>
               ) : null}
 
-              {/* 2. Unified Amount & Token Box */}
               <div className="flex items-stretch rounded-[24px] border border-white/8 bg-black/20 transition-all focus-within:border-[#58f2b1]/40">
                 <div className="flex flex-1 flex-col px-4 py-3">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-white/40">Amount</span>
@@ -461,21 +668,21 @@ export function SendExperience() {
                   className="flex w-[130px] items-center justify-between px-4 py-3 hover:bg-white/[0.02]"
                 >
                   {selectedToken ? (
-                    <div className="flex flex-col text-left overflow-hidden">
+                    <div className="flex flex-col overflow-hidden text-left">
                       <span className="text-sm font-bold text-white">{selectedToken.symbol}</span>
-                      <span className="text-[10px] text-white/40 truncate">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
+                      <span className="truncate text-[10px] text-white/40">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
                     </div>
                   ) : (
                     <span className="text-sm text-white/40">Token</span>
                   )}
-                  <span className="text-[10px] text-white/30">▼</span>
+                  <span className="text-[10px] text-white/30">v</span>
                 </button>
               </div>
+
               <div className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Flow</div>
                 <p className="mt-2 text-sm leading-6 text-white/60">
-                  TrustLink verifies the recipient first, then sends the transfer into escrow while the receiver claims
-                  with OTP on WhatsApp.
+                  TrustLink verifies the recipient first, then sends the transfer into escrow while the receiver claims with OTP on WhatsApp.
                 </p>
               </div>
 
@@ -519,8 +726,7 @@ export function SendExperience() {
                         setForm((current) => ({ ...current, token: token.symbol }));
                         setTokenPickerOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
-                        }`}
+                      className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"}`}
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <span className="grid h-11 w-11 place-items-center rounded-full bg-white/8 text-lg text-white">
@@ -612,3 +818,9 @@ export function SendExperience() {
     </AppMobileShell>
   );
 }
+
+
+
+
+
+

@@ -18,9 +18,16 @@ type PhoneNumberInputProps = {
   value: string;
   onChange: (value: string, country: CountryOption) => void;
   placeholder?: string;
+  maxLocalDigits?: number;
 };
 
-export function PhoneNumberInput({ label, value, onChange, placeholder = "903 700 0000" }: PhoneNumberInputProps) {
+export function PhoneNumberInput({
+  label,
+  value,
+  onChange,
+  placeholder = "903 700 0000",
+  maxLocalDigits
+}: PhoneNumberInputProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountryOption>(COUNTRY_OPTIONS[0]);
   const [localNumber, setLocalNumber] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -85,8 +92,9 @@ export function PhoneNumberInput({ label, value, onChange, placeholder = "903 70
 
   function handlePhoneChange(phoneNumber: string) {
     const normalizedNumber = phoneNumber.replace(/[^\d]/g, "");
-    setLocalNumber(normalizedNumber);
-    onChange(`${selectedCountry.dialCode}${normalizedNumber}`, selectedCountry);
+    const nextNumber = typeof maxLocalDigits === "number" ? normalizedNumber.slice(0, maxLocalDigits) : normalizedNumber;
+    setLocalNumber(nextNumber);
+    onChange(`${selectedCountry.dialCode}${nextNumber}`, selectedCountry);
   }
 
   function handleCountryChange(country: CountryOption) {
@@ -132,6 +140,7 @@ export function PhoneNumberInput({ label, value, onChange, placeholder = "903 70
               onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder={placeholder}
               inputMode="tel"
+              maxLength={typeof maxLocalDigits === "number" ? maxLocalDigits : undefined}
               className="w-full h-full bg-transparent px-4 text-white font-medium text-lg outline-none placeholder:text-white/20"
             />
           </div>

@@ -1,4 +1,6 @@
 export type PaymentStatus = "pending" | "accepted" | "cancelled" | "expired";
+export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
+export type PaymentViewerRole = "sender" | "receiver";
 
 export interface UserRecord {
   id: string;
@@ -16,7 +18,7 @@ export interface UserRecord {
 export interface PaymentRecord {
   id: string;
   sender_user_id: string | null;
-  sender_wallet: string;
+  sender_wallet: string | null;
   sender_display_name_snapshot: string;
   sender_handle_snapshot: string;
   reference_code: string;
@@ -25,9 +27,21 @@ export interface PaymentRecord {
   token_symbol: string;
   amount: string;
   escrow_account: string | null;
+  deposit_signature: string | null;
+  release_signature: string | null;
+  released_to_wallet: string | null;
+  accepted_at: string | null;
   notification_message_id: string | null;
+  notification_status: PaymentNotificationStatus;
+  notification_sent_at: string | null;
+  notification_delivered_at: string | null;
+  notification_read_at: string | null;
+  notification_failed_at: string | null;
+  notification_attempt_count: number;
+  notification_last_attempt_at: string | null;
   status: PaymentStatus;
   created_at: string;
+  viewer_role?: PaymentViewerRole;
 }
 
 export interface PhoneVerificationRecord {
@@ -58,3 +72,4 @@ export interface WhatsAppWebhookEventRecord {
   payload: unknown;
   created_at: string;
 }
+

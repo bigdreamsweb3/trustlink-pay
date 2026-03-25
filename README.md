@@ -33,6 +33,8 @@ On November 23, 2024 at 04:47 UTC, a Solana user reportedly lost $2.91 million a
 
 ![Illustration of an address-poisoning style payment scam](public/nov-23-24-crypto-loss-to-scam.png)
 
+*Illustration: a user in distress after losing funds by sending crypto to the wrong wallet address or falling victim to a scam.*
+
 - Intended: `4yfu48...gnhY`
 - Fake: `4yfuQC...izcY`
 
@@ -81,6 +83,12 @@ This bridges traditional finance behavior and blockchain execution without forci
 
 ## How It Works
 
+### Dashboard View
+
+![TrustLink dashboard view](public/screenshots/01-home-dashboard.png)
+
+*The dashboard is where senders see wallet status, supported balances, recent activity, and pending claims at a glance.*
+
 ### Sender Flow
 
 1. Sign in with a WhatsApp-linked TrustLink account.
@@ -91,6 +99,22 @@ This bridges traditional finance behavior and blockchain execution without forci
 6. Funds move into escrow.
 7. The receiver gets a WhatsApp notification with a secure claim link.
 
+![Send crypto flow](public/screenshots/02-send-flow.png)
+
+*The send flow keeps the experience simple: select a wallet, choose a token, enter the amount, and confirm the transfer into escrow.*
+
+### Recipient Verification Preview
+
+![Recipient verification preview](public/screenshots/03-recipient-preview.png)
+
+*Before funds move, TrustLink shows the recipient identity preview so the sender can confirm the intended WhatsApp destination.*
+
+### WhatsApp Payment Notification
+
+![WhatsApp payment notification](public/screenshots/04-whatsapp-notification.png)
+
+*Once the payment is created, TrustLink sends a WhatsApp notification with a secure claim link, reference details, and clear next steps for the receiver.*
+
 ### Receiver Flow
 
 1. Open the claim link from WhatsApp.
@@ -98,6 +122,16 @@ This bridges traditional finance behavior and blockchain execution without forci
 3. Select or verify a receiving wallet.
 4. Complete claim verification.
 5. Receive the released stablecoins from escrow.
+
+![Claim flow](public/screenshots/05-claim-flow.png)
+
+*The claim flow guides the receiver through wallet connection, verification, and release without exposing them to raw wallet-address complexity.*
+
+### Claim Success State
+
+![Claim success state](public/screenshots/06-success-state.png)
+
+*After a successful claim, TrustLink shows a clear success state with the payment reference and release details for confidence and traceability.*
 
 ## Why WhatsApp
 
@@ -145,28 +179,6 @@ TrustLink uses WhatsApp as a distribution and identity layer because:
   - user-facing payment, send, receive, and claim experience
 - [public](public/README.md)
   - public-facing assets, screenshots, demo files, and shareable brand materials
-
-## Screenshots and Demo Assets
-
-This repository does not yet include polished product screenshots. To make this README feel more visual and pitch-ready, add screenshots to `public/screenshots/` using these names:
-
-- `01-home-dashboard.png`
-- `02-send-flow.png`
-- `03-recipient-preview.png`
-- `04-whatsapp-notification.png`
-- `05-claim-flow.png`
-- `06-success-state.png`
-
-Recommended capture sequence:
-
-1. Dashboard with wallet connected and pending claims visible
-2. Send flow with recipient identity preview
-3. Token selector and supported balances
-4. WhatsApp payment notification on a phone
-5. Claim screen with wallet selection
-6. Claim success screen with reference and release details
-
-Once those are added, place them in this README directly under the matching sections for a more visual, step-by-step walkthrough.
 
 ## Potential Impact
 

@@ -1,4 +1,4 @@
-import { AnchorProvider, Program, Wallet, Idl } from "@coral-xyz/anchor";
+import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import {
   Keypair,
   Connection,
@@ -14,6 +14,31 @@ import { createHash } from "node:crypto";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { sha256 } from "@/app/utils/hash";
+
+// Simple wallet implementation for Anchor provider
+class SimpleWallet {
+  public payer: Keypair;
+
+  constructor(payer: Keypair) {
+    this.payer = payer;
+  }
+
+  get publicKey(): PublicKey {
+    return this.payer.publicKey;
+  }
+
+  async signTransaction(transaction: any): Promise<any> {
+    transaction.partialSign(this.payer);
+    return transaction;
+  }
+
+  async signAllTransactions(transactions: any[]): Promise<any[]> {
+    return transactions.map(tx => {
+      tx.partialSign(this.payer);
+      return tx;
+    });
+  }
+}
 
 type EscrowProgram = Program<Idl>;
 
@@ -91,7 +116,7 @@ export function getEscrowDepositAddress() {
 function getProgram(): { program: EscrowProgram; payer: Keypair; connection: Connection } {
   const connection = new Connection(env.SOLANA_RPC_URL, "confirmed");
   const payer = Keypair.fromSecretKey(getSecretKey());
-  const wallet = new Wallet(payer);
+  const wallet = new SimpleWallet(payer);
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed"
   });
@@ -105,7 +130,7 @@ function getProgram(): { program: EscrowProgram; payer: Keypair; connection: Con
       spec: "0.1.0"
     },
     instructions: []
-  } as Idl;
+  } as unknown as Idl;
 
   const program = new Program(idl, provider);
   return { program, payer, connection };

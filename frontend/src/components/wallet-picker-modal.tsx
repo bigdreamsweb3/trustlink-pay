@@ -1,0 +1,77 @@
+"use client";
+
+import type { DetectedWallet } from "@/src/lib/wallet";
+
+function walletBadge(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export function WalletPickerModal({
+  open,
+  wallets,
+  connectingWalletId,
+  onClose,
+  onSelect
+}: {
+  open: boolean;
+  wallets: DetectedWallet[];
+  connectingWalletId: string | null;
+  onClose: () => void;
+  onSelect: (walletId: string) => void;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={onClose}>
+      <div
+        className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Choose wallet</h2>
+          <p className="text-sm text-white/48">Connect any installed Solana wallet on this device.</p>
+        </div>
+
+        {wallets.length === 0 ? (
+          <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm text-white/58">
+            No Solana wallet was detected in this browser. Install or open a Solana wallet app, then try again.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {wallets.map((wallet) => {
+              const busy = connectingWalletId === wallet.id;
+
+              return (
+                <button
+                  key={wallet.id}
+                  type="button"
+                  onClick={() => onSelect(wallet.id)}
+                  disabled={Boolean(connectingWalletId)}
+                  className="flex w-full items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-left transition hover:border-[#58f2b1]/22 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/8 text-sm font-semibold text-white">
+                      {walletBadge(wallet.name)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-white">{wallet.name}</span>
+                      <span className="block text-[0.72rem] text-white/42">Installed on this browser</span>
+                    </span>
+                  </span>
+                  <span className="text-xs font-medium text-white/46">{busy ? "Connecting..." : "Connect"}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

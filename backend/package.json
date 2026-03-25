@@ -1,0 +1,45 @@
+{
+  "name": "trust-link",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "escrow:build": "cargo build -p trustlink_escrow",
+    "escrow:test": "cargo test -p trustlink_escrow",
+    "escrow:anchor:build": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'C:\\Users\\codepara\\Desktop\\trust-link'; Remove-Item 'C:\\Users\\codepara\\Desktop\\trust-link\\Cargo.lock' -Force -ErrorAction SilentlyContinue; anchor build\"",
+    "escrow:anchor:test": "anchor test",
+    "escrow:anchor:deploy": "anchor deploy",
+    "escrow:anchor:keys": "anchor keys list",
+    "db:init": "tsx scripts/init-db.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "test:payment-flow": "tsx scripts/test-payment-flow.ts",
+    "ngrok:https": "npx ngrok http 3000"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "@neondatabase/serverless": "^0.10.4",
+    "@solana/web3.js": "^1.98.0",
+    "dotenv": "^16.4.7",
+    "next": "^15.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ws": "^8.18.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "^0.4.8",
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "chai": "^5.3.3",
+    "mocha": "^11.7.2",
+    "ts-mocha": "^11.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

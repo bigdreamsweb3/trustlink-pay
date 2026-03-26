@@ -8,6 +8,11 @@ function createGeneratedHandle() {
   return `user_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
 }
 
+function getSeedDisplayName(displayName?: string | null) {
+  const normalizedDisplayName = displayName?.trim();
+  return normalizedDisplayName ? normalizedDisplayName : null;
+}
+
 async function insertUserProfile(params: {
   phoneNumber: string;
   phoneHash: string;
@@ -240,7 +245,7 @@ export async function ensureUserForPhoneNumber(params: {
       return await insertUserProfile({
         phoneNumber: normalizedPhoneNumber,
         phoneHash: params.phoneHash,
-        displayName: params.displayName ?? "TrustLink User",
+        displayName: getSeedDisplayName(params.displayName) ?? "TrustLink User",
         handle: createGeneratedHandle(),
         pinHash: "",
         whatsappOptedIn: params.whatsappOptedIn,
@@ -412,9 +417,11 @@ export async function markUserWhatsAppOptIn(params: {
 }) {
   const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
   const optedInAt = params.optedInAt ?? new Date();
+  const seedDisplayName = getSeedDisplayName(params.displayName);
   const user = await ensureUserForPhoneNumber({
     phoneNumber: normalizedPhoneNumber,
     phoneHash: params.phoneHash,
+    displayName: seedDisplayName ?? undefined,
     whatsappOptedIn: true,
     optInTimestamp: optedInAt,
   });
@@ -422,6 +429,16 @@ export async function markUserWhatsAppOptIn(params: {
   const rows = (await sql`
     UPDATE users
     SET
+      display_name = CASE
+        WHEN ${seedDisplayName ?? null} IS NOT NULL
+          AND (
+            display_name IS NULL
+            OR BTRIM(display_name) = ''
+            OR display_name = 'TrustLink User'
+          )
+        THEN ${seedDisplayName ?? null}
+        ELSE display_name
+      END,
       whatsapp_opted_in = true,
       opt_in_timestamp = ${optedInAt.toISOString()},
       opt_out_timestamp = NULL

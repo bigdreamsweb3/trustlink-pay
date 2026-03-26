@@ -72,6 +72,16 @@ export interface PaymentRecord {
   recipient_onboarded?: boolean;
 }
 
+export interface PendingBalanceSummary {
+  claimableCount: number;
+  totalPendingUsd: number;
+  byToken: Array<{
+    tokenSymbol: string;
+    amount: number;
+    amountUsd: number | null;
+  }>;
+}
+
 export interface PaymentTimelineEntry {
   id: string;
   label: string;

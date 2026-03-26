@@ -15,10 +15,38 @@ export async function GET(request: Request) {
     const totalPendingUsd = Number(
       enrichedPayments.reduce((sum, payment) => sum + (payment.amount_usd ?? 0), 0).toFixed(2)
     );
+    const byTokenMap = new Map<string, { tokenSymbol: string; amount: number; amountUsd: number | null }>();
+
+    for (const payment of enrichedPayments) {
+      const tokenSymbol = payment.token_symbol;
+      const amount = Number(payment.amount);
+      const amountUsd = payment.amount_usd ?? null;
+      const existing = byTokenMap.get(tokenSymbol);
+
+      if (existing) {
+        existing.amount = Number((existing.amount + amount).toFixed(6));
+        existing.amountUsd =
+          existing.amountUsd != null || amountUsd != null
+            ? Number(((existing.amountUsd ?? 0) + (amountUsd ?? 0)).toFixed(2))
+            : null;
+        continue;
+      }
+
+      byTokenMap.set(tokenSymbol, {
+        tokenSymbol,
+        amount: Number(amount.toFixed(6)),
+        amountUsd: amountUsd != null ? Number(amountUsd.toFixed(2)) : null,
+      });
+    }
 
     return ok({
       payments: safePayments,
-      totalPendingUsd
+      totalPendingUsd,
+      summary: {
+        claimableCount: enrichedPayments.length,
+        totalPendingUsd,
+        byToken: Array.from(byTokenMap.values()),
+      },
     });
   } catch (error) {
     if (error instanceof Error && /access token/i.test(error.message)) {

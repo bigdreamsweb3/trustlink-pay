@@ -11,7 +11,7 @@ import { EyeIcon, EyeOffIcon, ProfileIcon, ReceiveIcon, SendIcon } from "@/src/c
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
-import type { PaymentRecord, ReceiverWallet, WalletTokenOption } from "@/src/lib/types";
+import type { PaymentRecord, PendingBalanceSummary, ReceiverWallet, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { getConnectedWalletAddress } from "@/src/lib/wallet";
 
@@ -52,6 +52,11 @@ export function DashboardExperience() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
+  const [pendingBalanceSummary, setPendingBalanceSummary] = useState<PendingBalanceSummary>({
+    claimableCount: 0,
+    totalPendingUsd: 0,
+    byToken: [],
+  });
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
   const [receiverWallets, setReceiverWallets] = useState<ReceiverWallet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +122,11 @@ export function DashboardExperience() {
     () => walletTokens.reduce((sum, token) => sum + (token.balanceUsd ?? 0), 0),
     [walletTokens]
   );
+  const combinedVisibleBalanceUsd = useMemo(
+    () => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)),
+    [supportedBalanceUsd, totalPendingUsd]
+  );
+  const hasAnyBalance = supportedBalanceUsd > 0 || totalPendingUsd > 0;
   const hasPendingSenderReceipt = useMemo(
     () =>
       paymentHistory.some(
@@ -149,13 +159,14 @@ export function DashboardExperience() {
     try {
       const [walletsResult, pendingResult, historyResult] = await Promise.all([
         apiGet<{ wallets: ReceiverWallet[] }>("/api/receiver-wallets", token),
-        apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number }>("/api/payment/pending", token),
+        apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token),
         apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)
       ]);
 
       setReceiverWallets(walletsResult.wallets);
       setPendingPayments(pendingResult.payments);
       setTotalPendingUsd(pendingResult.totalPendingUsd);
+      setPendingBalanceSummary(pendingResult.summary);
       setPaymentHistory(historyResult.payments);
       setError(null);
     } catch (loadError) {
@@ -200,7 +211,7 @@ export function DashboardExperience() {
                 {walletTokenLoading ? (
                   <span className="text-[0.76rem]">...</span>
                 ) : balanceVisible ? (
-                  formatUsd(supportedBalanceUsd)
+                  formatUsd(combinedVisibleBalanceUsd)
                 ) : (
                   "****"
                 )}
@@ -210,7 +221,15 @@ export function DashboardExperience() {
             </div>
 
             <div>
-              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-black/55">{walletAddress ? "Ready to send" : "Wallet not connected"}</span>
+              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-black/55">
+                {walletAddress
+                  ? totalPendingUsd > 0
+                    ? "Wallet + claimable escrow"
+                    : "Ready to send"
+                  : totalPendingUsd > 0
+                    ? "Claimable escrow available"
+                    : "Wallet not connected"}
+              </span>
 
               <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `@${user.handle}`}</div>
             </div>
@@ -233,7 +252,63 @@ export function DashboardExperience() {
               </div>
             </div>
           </div>
+
+          <div className="relative z-10 mt-5 grid gap-3 md:grid-cols-2">
+            <article className="rounded-[22px] border border-black/10 bg-black/12 px-4 py-3">
+              <div className="text-[0.68rem] uppercase tracking-[0.16em] text-black/52">Connected wallet</div>
+              <div className="mt-1 text-base font-semibold text-black">
+                {balanceVisible ? formatUsd(supportedBalanceUsd) : "****"}
+              </div>
+              <div className="mt-1 text-[0.78rem] text-black/58">
+                {walletAddress ? "Spendable balance from the wallet currently connected to TrustLink." : "Connect a wallet to send or hold spendable on-chain balance here."}
+              </div>
+            </article>
+
+            <article className="rounded-[22px] border border-black/10 bg-black/12 px-4 py-3">
+              <div className="text-[0.68rem] uppercase tracking-[0.16em] text-black/52">Unclaimed escrow</div>
+              <div className="mt-1 text-base font-semibold text-black">
+                {balanceVisible ? formatUsd(totalPendingUsd) : "****"}
+              </div>
+              <div className="mt-1 text-[0.78rem] text-black/58">
+                {pendingBalanceSummary.claimableCount > 0
+                  ? `${pendingBalanceSummary.claimableCount} incoming ${pendingBalanceSummary.claimableCount === 1 ? "payment is" : "payments are"} still claimable from escrow.`
+                  : "No unclaimed incoming funds are linked to this account right now."}
+              </div>
+            </article>
+          </div>
         </div>
+
+        {!loading && hasAnyBalance ? (
+          <section className="rounded-[24px] border border-white/8 bg-white/5 px-4 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/72">Balance breakdown</h2>
+                <p className="mt-1 text-sm text-white/48">
+                  Your total balance combines connected-wallet funds and any incoming funds still waiting in escrow.
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-[0.68rem] uppercase tracking-[0.16em] text-white/34">Total</div>
+                <div className="mt-1 text-lg font-semibold text-white">
+                  {balanceVisible ? formatUsd(combinedVisibleBalanceUsd) : "****"}
+                </div>
+              </div>
+            </div>
+
+            {pendingBalanceSummary.byToken.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {pendingBalanceSummary.byToken.map((token) => (
+                  <div key={token.tokenSymbol} className="rounded-full border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-3 py-1.5">
+                    <div className="text-[0.68rem] uppercase tracking-[0.16em] text-[#7dffd9]/78">{token.tokenSymbol} in escrow</div>
+                    <div className="mt-0.5 text-sm font-semibold text-white">
+                      {formatTokenAmount(token.amount.toString())} {token.tokenSymbol}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         {loading ? (
           <div className="flex min-h-[76px] items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-white/5 px-4 py-3">

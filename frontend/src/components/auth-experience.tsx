@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 
+import { OtpModal } from "@/src/components/otp-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SiteHeader } from "@/src/components/site-header";
 import { useToast } from "@/src/components/toast-provider";
@@ -17,46 +18,70 @@ import {
   getStoredPendingAuth,
   getStoredToken,
   getStoredUser,
-  setStoredPendingAuth
+  setStoredPendingAuth,
 } from "@/src/lib/storage";
 import type { AuthResult } from "@/src/lib/types";
 
 type AuthMode = "login" | "register";
+type FlowState = "idle" | "waiting_opt_in" | "otp_ready";
+
+type StartAuthResponse = {
+  phoneNumber: string;
+  status: "awaiting_whatsapp_opt_in" | "otp_sent";
+  authMode: AuthMode;
+  isRegistered: boolean;
+  optedIn: boolean;
+  otpReady: boolean;
+  expiresAt: string | null;
+  whatsappUrl: string | null;
+};
+
+type AuthStatusResponse = {
+  phoneNumber: string;
+  authMode: AuthMode;
+  isRegistered: boolean;
+  optedIn: boolean;
+  otpReady: boolean;
+  expiresAt: string | null;
+};
 
 export function AuthExperience({
-  initialMode,
-  redirectTo
+  redirectTo,
 }: {
-  initialMode: AuthMode;
+  initialMode?: AuthMode;
   redirectTo: string;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<CountryOption | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [flowState, setFlowState] = useState<FlowState>("idle");
+  const [busy, setBusy] = useState(false);
+  const [waitingMessage, setWaitingMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [otp, setOtp] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
-  const [otpCooldowns, setOtpCooldowns] = useState<{ register: number; login: number }>({
-    register: 0,
-    login: 0
-  });
-  const [registerCountry, setRegisterCountry] = useState<CountryOption | null>(null);
-  const [loginCountry, setLoginCountry] = useState<CountryOption | null>(null);
-  const [registerForm, setRegisterForm] = useState({
-    phoneNumber: "",
-    otp: "",
-    displayName: "",
-    handle: ""
-  });
-  const [loginForm, setLoginForm] = useState({
-    phoneNumber: "",
-    otp: ""
-  });
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [optionalDisplayName, setOptionalDisplayName] = useState("");
+  const lastSubmittedOtpRef = useRef<string | null>(null);
+  const otpRequestLockRef = useRef(false);
 
-  useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
+  const otpDescription = useMemo(() => {
+    const base =
+      authMode === "register"
+        ? "Enter the 6-digit code TrustLink sent after your WhatsApp opt-in."
+        : "Enter the 6-digit code TrustLink sent to continue sign-in.";
+
+    if (authMode === "register") {
+      return `${base} You can optionally add a display name now or skip it until later.`;
+    }
+
+    return base;
+  }, [authMode]);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -74,102 +99,150 @@ export function AuthExperience({
   }, [redirectTo, router]);
 
   useEffect(() => {
-    if (otpCooldowns.register === 0 && otpCooldowns.login === 0) {
+    if (otpCooldown === 0) {
       return;
     }
 
     const timer = window.setInterval(() => {
-      setOtpCooldowns((current) => ({
-        register: Math.max(0, current.register - 1),
-        login: Math.max(0, current.login - 1)
-      }));
+      setOtpCooldown((current) => Math.max(0, current - 1));
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [otpCooldowns.login, otpCooldowns.register]);
+  }, [otpCooldown]);
 
-  async function sendOtp(kind: AuthMode) {
-    const phoneNumber = kind === "register" ? registerForm.phoneNumber : loginForm.phoneNumber;
-    const selectedCountry = kind === "register" ? registerCountry : loginCountry;
+  useEffect(() => {
+    if (flowState !== "waiting_opt_in" || !phoneNumber) {
+      return;
+    }
 
-    if (otpCooldowns[kind] > 0) {
+    const timer = window.setInterval(() => {
+      void pollOtpStatus();
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, [flowState, phoneNumber]);
+
+  useEffect(() => {
+    if (otp.length < 6) {
+      lastSubmittedOtpRef.current = null;
+      otpRequestLockRef.current = false;
+    }
+
+    if (!otpModalOpen || otp.length !== 6 || otpBusy || otpRequestLockRef.current) {
+      return;
+    }
+
+    if (lastSubmittedOtpRef.current === otp) {
+      return;
+    }
+
+    lastSubmittedOtpRef.current = otp;
+    void handleVerifyOtp();
+  }, [otp, otpBusy, otpModalOpen]);
+
+  function rememberSelectedCountry() {
+    if (selectedCountry) {
+      rememberCountryUsage(selectedCountry.iso2);
+    }
+  }
+
+  async function startFlow() {
+    if (busy || flowState === "waiting_opt_in") {
       return;
     }
 
     if (!phoneNumber) {
-      setError("Enter your WhatsApp number first.");
-      showToast("Enter your WhatsApp number first.");
+      const nextError = "Enter your WhatsApp number first.";
+      setError(nextError);
+      showToast(nextError);
       return;
     }
 
-    setOtpBusy(true);
-    setError(null);
-    setMessage(null);
-
-    try {
-      const path = kind === "register" ? "/api/auth/register/start" : "/api/auth/login/start";
-      const result = await apiPost<{ expiresAt: string }>(path, { phoneNumber });
-      if (selectedCountry) {
-        rememberCountryUsage(selectedCountry.iso2);
-      }
-      setMessage(
-        `Verification code sent. Expires ${new Date(result.expiresAt).toLocaleTimeString([], {
-          hour: "numeric",
-          minute: "2-digit"
-        })}.`
-      );
-      setOtpCooldowns((current) => ({ ...current, [kind]: 60 }));
-      showToast("Verification code sent to WhatsApp.");
-    } catch (otpError) {
-      const message = otpError instanceof Error ? otpError.message : "Could not send OTP";
-      setError(message);
-      showToast(message);
-    } finally {
-      setOtpBusy(false);
-    }
-  }
-
-  async function handleRegister(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
     setBusy(true);
     setError(null);
     setMessage(null);
+    setWaitingMessage(null);
 
     try {
-      const result = await apiPost<{
-        registered: true;
-        challengeToken: string;
-        pinSetupRequired: true;
-        user: AuthResult["user"];
-      }>("/api/auth/register", registerForm);
+      const result = await apiPost<StartAuthResponse>("/api/auth/phone/start", {
+        phoneNumber,
+      });
 
-      if (registerCountry) {
-        rememberCountryUsage(registerCountry.iso2);
+      rememberSelectedCountry();
+      setAuthMode(result.authMode);
+      setIsRegistered(result.isRegistered);
+
+      if (result.status === "otp_sent") {
+        openOtpFlow(result.expiresAt);
+        setMessage("Verification code sent to your WhatsApp number.");
+        showToast("Verification code sent.");
+        return;
       }
 
-      clearStoredToken();
-      clearStoredUser();
-      clearStoredPendingAuth();
-      setStoredPendingAuth({
-        challengeToken: result.challengeToken,
-        pinMode: "setup",
-        user: result.user,
-        redirectTo
-      });
-      showToast("Number verified. Create your PIN inside the app.");
-      router.push(redirectTo as Route);
-    } catch (registerError) {
-      const message = registerError instanceof Error ? registerError.message : "Registration failed";
-      setError(message);
-      showToast(message);
+      if (result.whatsappUrl) {
+        window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+
+      setFlowState("waiting_opt_in");
+      setWaitingMessage("Send the pre-filled START TRUSTLINK message in WhatsApp. TrustLink will wait here and open OTP automatically when your code is ready.");
+      showToast("Open WhatsApp and send START TRUSTLINK.");
+    } catch (startError) {
+      const nextError = startError instanceof Error ? startError.message : "Could not start authentication";
+      setError(nextError);
+      showToast(nextError);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
+  function openOtpFlow(expiresAt: string | null) {
+    setFlowState("otp_ready");
+    setOtpModalOpen(true);
+    setOtp("");
+    lastSubmittedOtpRef.current = null;
+    otpRequestLockRef.current = false;
+    if (expiresAt) {
+      const seconds = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+      setOtpCooldown(Math.min(seconds, 60));
+    } else {
+      setOtpCooldown(60);
+    }
+  }
+
+  async function pollOtpStatus() {
+    try {
+      const result = await apiPost<AuthStatusResponse>("/api/auth/phone/status", {
+        phoneNumber,
+      });
+
+      setAuthMode(result.authMode);
+      setIsRegistered(result.isRegistered);
+
+      if (result.otpReady) {
+        setWaitingMessage(null);
+        openOtpFlow(result.expiresAt);
+        showToast("Verification code sent.");
+      }
+    } catch {
+      // Keep polling quietly while the user completes WhatsApp opt-in.
+    }
+  }
+
+  async function resendOtp() {
+    if (otpCooldown > 0) {
+      return;
+    }
+
+    await startFlow();
+  }
+
+  async function handleVerifyOtp() {
+    if (otpRequestLockRef.current) {
+      return;
+    }
+
+    otpRequestLockRef.current = true;
+    setOtpBusy(true);
     setError(null);
     setMessage(null);
 
@@ -179,30 +252,34 @@ export function AuthExperience({
         challengeToken: string;
         pinRequired: boolean;
         pinSetupRequired: boolean;
+        isNewUser: boolean;
         user: AuthResult["user"];
-      }>("/api/auth/login", loginForm);
+      }>("/api/auth/phone/verify", {
+        phoneNumber,
+        otp,
+        displayName: authMode === "register" ? optionalDisplayName.trim() : undefined,
+      });
 
-      if (loginCountry) {
-        rememberCountryUsage(loginCountry.iso2);
-      }
-
+      rememberSelectedCountry();
       clearStoredToken();
       clearStoredUser();
       clearStoredPendingAuth();
+      setOtpModalOpen(false);
       setStoredPendingAuth({
         challengeToken: result.challengeToken,
         pinMode: result.pinRequired ? "verify" : "setup",
         user: result.user,
-        redirectTo
+        redirectTo,
       });
       showToast(result.pinRequired ? "OTP confirmed. Unlock the app with your PIN." : "OTP confirmed. Create your PIN inside the app.");
       router.push(redirectTo as Route);
-    } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : "Login failed";
-      setError(message);
-      showToast(message);
+    } catch (verifyError) {
+      otpRequestLockRef.current = false;
+      const nextError = verifyError instanceof Error ? verifyError.message : "Could not verify OTP";
+      setError(nextError);
+      showToast(nextError);
     } finally {
-      setBusy(false);
+      setOtpBusy(false);
     }
   }
 
@@ -213,140 +290,80 @@ export function AuthExperience({
       <section className="auth-layout">
         <aside className="auth-panel auth-panel--lead">
           <span className="hero-kicker">Access your transfer desk</span>
-          <h1>{mode === "register" ? "Create a TrustLink identity." : "Sign in and continue sending."}</h1>
+          <h1>Use your WhatsApp number to continue.</h1>
           <p>
-            Registration starts with WhatsApp OTP. Sign-in also starts with WhatsApp OTP. After that, TrustLink opens
-            the app and asks for the transaction PIN inside the secure app shell before anything becomes usable.
+            TrustLink now starts every sign-in and sign-up with one WhatsApp number. If the number has already opted in,
+            TrustLink sends the OTP immediately. If not, you will send a WhatsApp message first and TrustLink will wait for the reply before sending the code.
           </p>
 
           <div className="auth-panel--form">
-            <div className="auth-switch">
-              <button
-                className={mode === "login" ? "is-active" : ""}
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  router.replace(`/auth?mode=login&redirect=${encodeURIComponent(redirectTo)}`);
-                }}
-              >
-                Sign in
-              </button>
-              <button
-                className={mode === "register" ? "is-active" : ""}
-                type="button"
-                onClick={() => {
-                  setMode("register");
-                  router.replace(`/auth?mode=register&redirect=${encodeURIComponent(redirectTo)}`);
-                }}
-              >
-                Sign up
-              </button>
-            </div>
-
             {message ? <div className="notice notice--success">{message}</div> : null}
+            {waitingMessage ? <div className="notice notice--success">{waitingMessage}</div> : null}
             {error ? <div className="notice notice--error">{error}</div> : null}
 
-            {mode === "register" ? (
-              <form className="stack-form" onSubmit={handleRegister}>
-                <PhoneNumberInput
-                  label="WhatsApp number"
-                  value={registerForm.phoneNumber}
-                  onChange={(value, country) => {
-                    setRegisterForm((current) => ({ ...current, phoneNumber: value }));
-                    setRegisterCountry(country);
-                  }}
-                />
-                <label className="field-block">
-                  <span>Display name</span>
-                  <input
-                    value={registerForm.displayName}
-                    onChange={(event) => setRegisterForm((current) => ({ ...current, displayName: event.target.value }))}
-                    placeholder="Daniel Trust"
-                  />
-                </label>
-                <label className="field-block">
-                  <span>Handle</span>
-                  <input
-                    value={registerForm.handle}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({ ...current, handle: event.target.value.toLowerCase() }))
-                    }
-                    placeholder="daniel_trust"
-                  />
-                </label>
-                <label className="field-block">
-                  <span>Verification code</span>
-                  <input
-                    value={registerForm.otp}
-                    onChange={(event) => setRegisterForm((current) => ({ ...current, otp: event.target.value }))}
-                    placeholder="6-digit code"
-                  />
-                </label>
-                <div className="inline-actions">
-                  <button
-                    className="button button--ghost"
-                    type="button"
-                    disabled={otpBusy || otpCooldowns.register > 0}
-                    onClick={() => void sendOtp("register")}
-                  >
-                    {otpCooldowns.register > 0 ? `Resend OTP in ${otpCooldowns.register}s` : "Send OTP"}
-                  </button>
-                  <button className="button button--primary" type="submit" disabled={busy}>
-                    Create account
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form className="stack-form" onSubmit={handleLogin}>
-                <PhoneNumberInput
-                  label="WhatsApp number"
-                  value={loginForm.phoneNumber}
-                  onChange={(value, country) => {
-                    setLoginForm((current) => ({ ...current, phoneNumber: value }));
-                    setLoginCountry(country);
-                  }}
-                />
-                <label className="field-block">
-                  <span>Verification code</span>
-                  <input
-                    value={loginForm.otp}
-                    onChange={(event) => setLoginForm((current) => ({ ...current, otp: event.target.value }))}
-                    placeholder="6-digit code"
-                  />
-                </label>
-                <div className="inline-actions">
-                  <button
-                    className="button button--ghost"
-                    type="button"
-                    disabled={otpBusy || otpCooldowns.login > 0}
-                    onClick={() => void sendOtp("login")}
-                  >
-                    {otpCooldowns.login > 0 ? `Resend OTP in ${otpCooldowns.login}s` : "Send OTP"}
-                  </button>
-                  <button className="button button--primary" type="submit" disabled={busy}>
-                    Sign in
-                  </button>
-                </div>
-              </form>
-            )}
+            <div className="stack-form">
+              <PhoneNumberInput
+                label="WhatsApp number"
+                value={phoneNumber}
+                maxLocalDigits={10}
+                onChange={(value, country) => {
+                  setPhoneNumber(value);
+                  setSelectedCountry(country);
+                }}
+              />
+
+              <button
+                className="button button--primary"
+                type="button"
+                disabled={busy || flowState === "waiting_opt_in"}
+                onClick={() => void startFlow()}
+              >
+                {flowState === "waiting_opt_in" ? "Waiting for WhatsApp..." : busy ? "Checking number..." : "Continue"}
+              </button>
+            </div>
           </div>
         </aside>
 
         <section className="auth-points">
-          <div>
-            <strong>Wallet-led sending</strong>
-            <span>The sender wallet comes from a connected Solana wallet, not a loose text field.</span>
+          <div className="h-fit">
+            <strong>Phone-first access</strong>
+            <span>Your WhatsApp number decides whether TrustLink continues as sign-in or first-time setup.</span>
           </div>
-          <div>
-            <strong>OTP first, PIN inside the app</strong>
-            <span>OTP confirms the WhatsApp number. The PIN appears only after the app opens, as a blocking in-app security step.</span>
+          <div className="h-fit">
+            <strong>User-initiated messaging</strong>
+            <span>TrustLink only sends the first WhatsApp code after you send the START TRUSTLINK message yourself.</span>
           </div>
-          <div>
-            <strong>Claim-safe flow</strong>
-            <span>Claim uses the signed-in account. The receiver number is never typed again on the claim screen.</span>
-          </div>
+          {/* <div>
+            <strong></strong>
+            <span></span>
+          </div> */}
         </section>
       </section>
+
+      <OtpModal
+        open={otpModalOpen}
+        title={authMode === "register" ? "Verify your WhatsApp number" : "Enter verification code"}
+        description={otpDescription}
+        value={otp}
+        onChange={(nextValue) => setOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6))}
+        onClose={() => setOtpModalOpen(false)}
+        onResend={() => void resendOtp()}
+        resendLabel="Resend OTP"
+        resendDisabled={busy}
+        countdown={otpCooldown}
+        busy={otpBusy}
+      >
+        {authMode === "register" ? (
+          <label className="field-block">
+            <span>Display name (optional)</span>
+            <input
+              value={optionalDisplayName}
+              onChange={(event) => setOptionalDisplayName(event.target.value)}
+              placeholder="TrustLink User"
+            />
+          </label>
+        ) : null}
+      </OtpModal>
     </main>
   );
 }

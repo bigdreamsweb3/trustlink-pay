@@ -221,7 +221,15 @@ export function ActivityExperience() {
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.72rem]">
                         <span className="text-white/34">{formatShortDate(payment.created_at)}</span>
-                        {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}
+                        {isSend ? (
+                          payment.manual_invite_required ? (
+                            <span className="rounded-full border border-[#f3c96b]/20 bg-[#2a2412] px-2.5 py-1 font-medium text-[#f3c96b]">
+                              Invite needed
+                            </span>
+                          ) : (
+                            <PaymentNotificationReceipt status={payment.notification_status} />
+                          )
+                        ) : null}
                       </div>
                     </div>
                     <div className="grid justify-items-end gap-2">
@@ -229,7 +237,9 @@ export function ActivityExperience() {
                         {payment.status}
                       </span>
                       <span className="text-[0.72rem] text-white/46">{formatUsd(payment.amount_usd)}</span>
-                      <span className="text-[0.72rem] font-medium text-white/70">Open</span>
+                      <span className="text-[0.72rem] font-medium text-white/70">
+                        {isSend && payment.manual_invite_required ? "Share invite" : "Open"}
+                      </span>
                     </div>
                   </button>
                 );

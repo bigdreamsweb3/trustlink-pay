@@ -8,8 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
   trustlink_handle VARCHAR(32) NOT NULL UNIQUE,
   pin_hash VARCHAR(255) NOT NULL DEFAULT '',
   wallet_address VARCHAR(64),
+  whatsapp_opted_in BOOLEAN NOT NULL DEFAULT false,
+  opt_in_timestamp TIMESTAMPTZ,
+  opt_out_timestamp TIMESTAMPTZ,
   phone_verified_at TIMESTAMPTZ,
   identity_verified_at TIMESTAMPTZ,
+  referred_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  referral_source_payment_id UUID,
+  referred_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -47,6 +53,8 @@ CREATE TABLE IF NOT EXISTS phone_verifications (
   otp_code VARCHAR(6) NOT NULL,
   purpose VARCHAR(32) NOT NULL DEFAULT 'generic',
   request_ip VARCHAR(64),
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  consumed_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -102,9 +110,21 @@ ALTER TABLE users
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255);
 ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS whatsapp_opted_in BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS opt_in_timestamp TIMESTAMPTZ;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS opt_out_timestamp TIMESTAMPTZ;
+ALTER TABLE users
   ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS identity_verified_at TIMESTAMPTZ;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS referred_by_user_id UUID;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS referral_source_payment_id UUID;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS referred_at TIMESTAMPTZ;
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS sender_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE payments
@@ -117,6 +137,10 @@ ALTER TABLE phone_verifications
   ADD COLUMN IF NOT EXISTS purpose VARCHAR(32) NOT NULL DEFAULT 'generic';
 ALTER TABLE phone_verifications
   ADD COLUMN IF NOT EXISTS request_ip VARCHAR(64);
+ALTER TABLE phone_verifications
+  ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE phone_verifications
+  ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ;
 
 UPDATE users
 SET trustlink_handle = CONCAT('user_', SUBSTRING(REPLACE(id::text, '-', '') FROM 1 FOR 8))
@@ -216,8 +240,29 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$
+BEGIN
+  ALTER TABLE users
+    ADD CONSTRAINT users_referred_by_user_id_fkey
+    FOREIGN KEY (referred_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE users
+    ADD CONSTRAINT users_referral_source_payment_id_fkey
+    FOREIGN KEY (referral_source_payment_id) REFERENCES payments(id) ON DELETE SET NULL;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_users_phone_hash ON users (phone_hash);
+CREATE INDEX IF NOT EXISTS idx_users_whatsapp_opted_in ON users (whatsapp_opted_in);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_trustlink_handle ON users (trustlink_handle);
+CREATE INDEX IF NOT EXISTS idx_users_referred_by_user_id ON users (referred_by_user_id);
+CREATE INDEX IF NOT EXISTS idx_users_referral_source_payment_id ON users (referral_source_payment_id);
 CREATE INDEX IF NOT EXISTS idx_payments_receiver_phone_hash ON payments (receiver_phone_hash);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (status);
 CREATE INDEX IF NOT EXISTS idx_payments_notification_message_id ON payments (notification_message_id);
@@ -228,6 +273,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_deposit_signature
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_reference_code ON payments (reference_code);
 CREATE INDEX IF NOT EXISTS idx_phone_verifications_phone_number ON phone_verifications (phone_number);
 CREATE INDEX IF NOT EXISTS idx_phone_verifications_phone_number_purpose ON phone_verifications (phone_number, purpose);
+CREATE INDEX IF NOT EXISTS idx_phone_verifications_phone_number_purpose_consumed_at
+  ON phone_verifications (phone_number, purpose, consumed_at);
 CREATE INDEX IF NOT EXISTS idx_phone_verifications_request_ip_purpose ON phone_verifications (request_ip, purpose);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_message_id ON whatsapp_webhook_events (message_id);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_related_payment_id ON whatsapp_webhook_events (related_payment_id);

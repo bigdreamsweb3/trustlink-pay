@@ -1,41 +1,106 @@
 # TrustLink Pay Backend
 
-The backend is the private application layer for TrustLink Pay. It orchestrates the product logic that makes phone-number-based crypto payments feel safe, traceable, and familiar.
+The backend is the operational core of TrustLink. It handles identity, consent, OTP issuance, payment creation, recipient lookup, WhatsApp webhooks, notification retries, and the Solana escrow workspace.
 
-## What Lives Here
+## What This Backend Actually Does
 
-- Next.js App Router backend services
-- WhatsApp Business API integration
-- Neon/Postgres data access
-- authentication and OTP flows
-- payment lifecycle orchestration
-- Solana integration and Anchor escrow workspace
+### Phone-First Authentication
 
-## Responsibilities
+TrustLink no longer starts with email or a traditional password flow.
 
-- register and authenticate users with WhatsApp-linked identity
-- generate and track payment intents
-- resolve recipient identity previews
-- send WhatsApp payment and claim notifications
-- verify claim flows before releasing funds
-- store references, statuses, and audit-friendly event history
+Current auth sequence:
+
+1. user enters a WhatsApp number
+2. if the number is not opted in, TrustLink opens a prefilled `START TRUSTLINK` WhatsApp message
+3. inbound webhook marks the number as opted in
+4. backend creates an `auth` OTP
+5. OTP verification returns an app challenge
+6. the app requires PIN setup or PIN verification before use
+
+Users can opt out with `STOP`, and the backend records that state.
+
+### Recipient Handling
+
+The backend now distinguishes carefully between:
+
+- registered and opted-in recipients
+- unregistered or not-opted-in recipients
+
+For registered recipients:
+
+- identity preview is returned to the sender
+- WhatsApp payment notifications can be sent
+- message delivery status can be tracked
+
+For unregistered recipients:
+
+- no automatic WhatsApp business message is sent
+- backend returns a sender-written invite message for manual sharing
+
+This is the current compliance-safe notification model.
+
+### Payment Lifecycle
+
+The backend handles:
+
+- payment creation
+- escrow metadata persistence
+- reference generation
+- sender and receiver view shaping
+- claim OTP start
+- release acceptance state
+- transaction detail payloads
+
+### Notification State
+
+For outbound WhatsApp notifications, TrustLink stores and updates:
+
+- `queued`
+- `sent`
+- `delivered`
+- `read`
+- `failed`
+
+The frontend reads this state from TrustLink's database. It does not need to query WhatsApp directly on page load.
 
 ## Main Areas
 
 - `app/api`
-  - route handlers and API surface
+  - route handlers for auth, payments, profiles, webhooks, wallets, and claim flow
 - `app/services`
-  - business logic orchestration
+  - business logic for auth, recipient resolution, payment orchestration, WhatsApp messaging, and viewer-safe transaction shaping
 - `app/db`
-  - schema and database access
+  - schema and query layer
 - `app/blockchain`
-  - Solana integration
+  - Solana integration helpers
 - `programs/trustlink-escrow`
   - Anchor escrow program workspace
 - `scripts`
-  - local setup and testing utilities
+  - local setup and backend test utilities
 
-## Run Locally
+## Important Backend Behaviors
+
+### Webhook-Driven Opt-In
+
+The backend does not poll WhatsApp for inbound messages. It relies on Meta webhooks delivered to the TrustLink webhook route. If the webhook URL is stale, opt-in and OTP flows will stall.
+
+### OTP Timing
+
+OTP expiry is generated using the database clock, not the application clock. This avoids the server/database time drift bug that previously caused valid OTPs to appear expired immediately.
+
+### Notification Retry Strategy
+
+If a payment is created successfully but the WhatsApp notification fails:
+
+- the payment still remains valid in escrow
+- the sender should still receive a successful payment state
+- backend retries eligible queued or failed notifications using stored DB state and cooldown rules
+
+### Privacy Rules
+
+The backend shapes transaction views so that normal receivers do not get the sender's wallet address by default. Sensitive fields stay internal unless specifically required for authorized review.
+
+## Local Setup
 
 ```bash
 npm install
@@ -43,14 +108,50 @@ npm run db:init
 npm run dev
 ```
 
-Optional test flow:
+## Useful Scripts
 
 ```bash
+npm run db:init
+npm run db:reset
 npm run test:payment-flow
+npm run test:auth-phone-flow
 ```
 
-## Important Notes
+### `test:auth-phone-flow`
 
-- This folder contains hackathon/private backend code and should not expose secrets.
-- `.env` and local environment files are ignored by Git.
-- Build output, escrow artifacts, and local caches are also ignored.
+Exercises the current phone-first auth path:
+
+- start auth
+- inspect auth OTP persistence
+- check auth status
+- verify the exact stored OTP
+
+### `test:payment-flow`
+
+Exercises the payment and claim flow utilities used during local development.
+
+## Environment Notes
+
+Sensitive values belong only in local env files or deployment secrets:
+
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `WHATSAPP_API_KEY`
+- `WHATSAPP_PHONE_ID`
+- `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+- `WHATSAPP_APP_SECRET`
+- Solana program and authority values
+
+Never commit environment files or private keys.
+
+## Current Backend Status
+
+This backend currently supports:
+
+- WhatsApp opt-in and opt-out tracking
+- phone-first OTP auth
+- PIN setup and PIN verify challenge flow
+- manual invite generation for unregistered recipients
+- sender notification receipt state
+- viewer-safe transaction detail responses
+- Anchor escrow workspace under active integration

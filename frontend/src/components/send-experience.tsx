@@ -12,7 +12,7 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/wallet-picker-modal";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
-import type { CountryOption } from "@/src/lib/phone-countries";
+import { splitPhoneNumber, type CountryOption } from "@/src/lib/phone-countries";
 import { rememberCountryUsage } from "@/src/lib/phone-preferences";
 import type { PaymentNotificationStatus, PaymentRecord, RecipientLookupResult, WalletTokenOption } from "@/src/lib/types";
 import {
@@ -53,6 +53,20 @@ function formatReceiptTime(value: string | null) {
   }).format(new Date(value));
 }
 
+async function shareInviteMessage(message: string) {
+  if (typeof navigator !== "undefined" && navigator.share) {
+    await navigator.share({ text: message });
+    return "shared";
+  }
+
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(message);
+    return "copied";
+  }
+
+  throw new Error("Sharing is not available on this device.");
+}
+
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
   const { showToast } = useToast();
@@ -87,32 +101,32 @@ export function SendExperience() {
     depositAddress: string | null;
     notificationRetrying: boolean;
     notificationAttemptCount: number;
+    manualInviteRequired: boolean;
+    inviteShare: {
+      onboardingLink: string;
+      inviteMessage: string;
+    } | null;
     receiverPhone: string;
     recipientName: string;
     amount: string;
     token: string;
   } | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
   const [form, setForm] = useState({
     receiverPhone: "",
     amount: "",
     token: ""
   });
 
-  const canLookupRecipient = useMemo(() => {
-    if (!receiverCountry) return false;
-
-    const digits = form.receiverPhone.replace(/\D/g, "");
-    const countryDigits = receiverCountry.dialCode.replace(/\D/g, "");
-
-    const localDigits = digits.slice(countryDigits.length);
-
-    return localDigits.length === 10;
-  }, [form.receiverPhone, receiverCountry]);
+  const receiverLocalDigits = useMemo(() => splitPhoneNumber(form.receiverPhone).localNumber, [form.receiverPhone]);
+  const canLookupRecipient = useMemo(() => Boolean(receiverCountry) && receiverLocalDigits.length === 10, [receiverCountry, receiverLocalDigits.length]);
   const sendableTokens = useMemo(() => supportedTokens.filter((token) => token.supported), [supportedTokens]);
   const selectedToken = sendableTokens.find((token) => token.symbol === form.token) ?? null;
   const walletAddress = walletSession?.address ?? null;
   const sendSuccessPaymentId = sendSuccess?.paymentId ?? null;
-  const shouldPollSendSuccessReceipt = sendSuccess ? !isPaymentNotificationFinal(sendSuccess.notificationStatus) : false;
+  const shouldPollSendSuccessReceipt = sendSuccess
+    ? !sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus)
+    : false;
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
@@ -359,6 +373,11 @@ export function SendExperience() {
         depositAddress: string | null;
         notificationRetrying: boolean;
         notificationAttemptCount: number;
+        manualInviteRequired: boolean;
+        inviteShare: {
+          onboardingLink: string;
+          inviteMessage: string;
+        } | null;
       }>("/api/payment/create", {
         phoneNumber: form.receiverPhone,
         senderPhoneNumber: user.phoneNumber,
@@ -373,7 +392,9 @@ export function SendExperience() {
       }
 
       setNotice(
-        result.notificationRetrying
+        result.manualInviteRequired
+          ? `Funds are secured in escrow. Share the invite message yourself with reference ${result.referenceCode}.`
+          : result.notificationRetrying
           ? `Funds are already secured in escrow. WhatsApp delivery is being retried automatically. Reference ${result.referenceCode}.`
           : `Payment queued. Reference ${result.referenceCode}.`
       );
@@ -388,7 +409,9 @@ export function SendExperience() {
       setRecipientPreview(null);
       setConfirmOpen(false);
       showToast(
-        result.notificationRetrying
+        result.manualInviteRequired
+          ? `Payment secured. Share the invite manually. Reference ${result.referenceCode}.`
+          : result.notificationRetrying
           ? `Payment secured. WhatsApp delivery is retrying. Reference ${result.referenceCode}.`
           : `Payment sent. Reference ${result.referenceCode}.`
       );
@@ -411,6 +434,11 @@ export function SendExperience() {
             depositAddress: string | null;
             notificationRetrying: boolean;
             notificationAttemptCount: number;
+            manualInviteRequired: boolean;
+            inviteShare: {
+              onboardingLink: string;
+              inviteMessage: string;
+            } | null;
           }>("/api/payment/create", {
             phoneNumber: form.receiverPhone,
             senderPhoneNumber: user.phoneNumber,
@@ -421,7 +449,9 @@ export function SendExperience() {
           });
 
           setNotice(
-            recovered.notificationRetrying
+            recovered.manualInviteRequired
+              ? `Your wallet transfer was already signed. TrustLink recovered the payment. Share the invite message manually. Reference ${recovered.referenceCode}.`
+              : recovered.notificationRetrying
               ? `Your wallet transfer was already signed. TrustLink recovered the payment and is retrying WhatsApp delivery. Reference ${recovered.referenceCode}.`
               : `Your wallet transfer was already signed. TrustLink recovered the payment. Reference ${recovered.referenceCode}.`
           );
@@ -519,9 +549,11 @@ export function SendExperience() {
               {sendSuccess.amount} {sendSuccess.token} queued
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/56">
-              {sendSuccess.notificationRetrying
-                ? `TrustLink already secured the funds in escrow for ${sendSuccess.recipientName}. WhatsApp delivery is still retrying in the background, so there is no need to sign again.`
-                : `TrustLink sent the transfer details to ${sendSuccess.recipientName} on WhatsApp and moved the payment into escrow for claim.`}
+              {sendSuccess.manualInviteRequired
+                ? `TrustLink already secured the funds in escrow for ${sendSuccess.recipientName}. Because this number is not registered or not opted in for TrustLink messaging, you need to share the invite yourself.`
+                : sendSuccess.notificationRetrying
+                  ? `TrustLink already secured the funds in escrow for ${sendSuccess.recipientName}. WhatsApp delivery is still retrying in the background, so there is no need to sign again.`
+                  : `TrustLink sent the transfer details to ${sendSuccess.recipientName} on WhatsApp and moved the payment into escrow for claim.`}
             </p>
 
             <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
@@ -541,17 +573,25 @@ export function SendExperience() {
                 <span className="text-white/46">Payment status</span>
                 <span className="font-medium capitalize text-white">{sendSuccess.status}</span>
               </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">WhatsApp receipt</span>
-                <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
-              </div>
+              {!sendSuccess.manualInviteRequired ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">WhatsApp receipt</span>
+                  <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
+                </div>
+              ) : null}
+              {sendSuccess.manualInviteRequired ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Sender invite</span>
+                  <span className="font-medium text-white">Share manually</span>
+                </div>
+              ) : null}
               {sendSuccess.notificationRetrying ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-white/46">Delivery retries</span>
                   <span className="font-medium text-white">{sendSuccess.notificationAttemptCount}</span>
                 </div>
               ) : null}
-              {receiptTimestamp ? (
+              {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-white/46">Receipt updated</span>
                   <span className="font-medium text-white">{formatReceiptTime(receiptTimestamp)}</span>
@@ -566,6 +606,33 @@ export function SendExperience() {
             <div className="mt-3 text-[0.78rem] text-white/44">
               Delivery receipts refresh from TrustLink records only while the receipt is still unresolved.
             </div>
+
+            {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
+              <div className="mt-5 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Shareable invite</div>
+                <pre className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/72">
+                  {sendSuccess.inviteShare.inviteMessage}
+                </pre>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShareBusy(true);
+                    try {
+                      const outcome = await shareInviteMessage(sendSuccess.inviteShare!.inviteMessage);
+                      showToast(outcome === "shared" ? "Share dialog opened." : "Invite copied to clipboard.");
+                    } catch (shareError) {
+                      setError(shareError instanceof Error ? shareError.message : "Could not share invite");
+                    } finally {
+                      setShareBusy(false);
+                    }
+                  }}
+                  disabled={shareBusy}
+                  className="mt-4 w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {shareBusy ? "Preparing share..." : "Share Invite"}
+                </button>
+              </div>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <Link href="/app" className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78">
@@ -607,12 +674,19 @@ export function SendExperience() {
               <PhoneNumberInput
                 label="Receiver WhatsApp number"
                 value={form.receiverPhone}
+                maxLocalDigits={10}
                 onChange={(value, country) => {
                   setForm((current) => ({ ...current, receiverPhone: value }));
                   setReceiverCountry(country);
                   setConfirmOpen(false);
                 }}
               />
+
+              {!recipientPreview && !lookupError && !previewBusy && receiverLocalDigits.length > 0 && receiverLocalDigits.length < 10 ? (
+                <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-sm text-white/52">
+                  Enter the full 10-digit local number before TrustLink verifies the recipient.
+                </div>
+              ) : null}
 
               {previewBusy ? (
                 <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3">
@@ -631,19 +705,32 @@ export function SendExperience() {
                       <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Recipient</div>
                       <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
                       <div className="mt-1 text-sm text-white/56">@{recipientPreview.recipient.handle}</div>
+                      {recipientPreview.recipient.whatsappProfileName &&
+                      recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
+                        <div className="mt-2 text-sm text-white/48">
+                          WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
+                        </div>
+                      ) : null}
                     </>
                   ) : recipientPreview.status === "whatsapp_only" ? (
                     <>
                       <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#f3c96b]">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">
-                        {recipientPreview.recipient.displayName} (Not registered on TrustLink)
+                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
+                      <div className="mt-2 text-sm text-white/48">
+                        {recipientPreview.recipient.source === "whatsapp" ? "WhatsApp contact hint" : "TrustLink status"}
                       </div>
+                      <div className="mt-1 text-sm text-white/56">{recipientPreview.warning}</div>
+                    </>
+                  ) : recipientPreview.status === "manual_invite_required" ? (
+                    <>
+                      <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#f3c96b]">Recipient</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.phoneNumber}</div>
                       <div className="mt-1 text-sm text-white/56">{recipientPreview.warning}</div>
                     </>
                   ) : (
                     <>
                       <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#ffadad]">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.message}</div>
+                      <div className="mt-1 text-sm font-semibold text-white">Recipient could not be verified.</div>
                     </>
                   )}
                 </div>
@@ -770,10 +857,16 @@ export function SendExperience() {
                   {recipientPreview.recipient.displayName}
                   {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle
                     ? ` (@${recipientPreview.recipient.handle})`
-                    : recipientPreview.status === "whatsapp_only"
+                    : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
                       ? " (Not registered on TrustLink)"
                       : ""}
                 </div>
+                {recipientPreview.recipient.whatsappProfileName &&
+                recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
+                  <div className="mt-1 text-sm text-white/48">
+                    WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
+                  </div>
+                ) : null}
               </div>
               <div className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-3">
                 <span className="text-sm text-white/56">
@@ -818,9 +911,3 @@ export function SendExperience() {
     </AppMobileShell>
   );
 }
-
-
-
-
-
-

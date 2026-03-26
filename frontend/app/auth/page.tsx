@@ -6,8 +6,7 @@ export default async function AuthPage({
   searchParams: Promise<{ mode?: string; redirect?: string }>;
 }) {
   const params = await searchParams;
-  const initialMode = params.mode === "register" ? "register" : "login";
   const redirectTo = params.redirect?.startsWith("/") ? params.redirect : "/app";
 
-  return <AuthExperience initialMode={initialMode} redirectTo={redirectTo} />;
+  return <AuthExperience redirectTo={redirectTo} />;
 }

@@ -1,30 +1,26 @@
 import {
-  findUserById,
+  setUserReferralAttribution,
   findUserByHandle,
+  findUserById,
   findUserByPhoneNumber,
-  updateUserProfileIdentity,
+  updateUserDisplayName,
   updateUserPin,
-  upsertUserProfile,
+  updateUserProfileIdentity,
 } from "@/app/db/users";
+import { findLatestReferralCandidateByReceiverPhone } from "@/app/db/payments";
 import {
   countReceiverWalletsByUserId,
   createReceiverWallet,
   listReceiverWalletsByUserId,
 } from "@/app/db/receiver-wallets";
-import {
-  issueAccessToken,
-  issueAuthChallengeToken,
-  requireAuthChallengeToken,
-} from "@/app/lib/auth";
+import { issueAccessToken, issueAuthChallengeToken, requireAuthChallengeToken } from "@/app/lib/auth";
+import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import { sha256 } from "@/app/utils/hash";
+import { getOtpReadiness, sendPhoneVerificationOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
+import { getTrustLinkWhatsAppOptInLink, sendWelcomeMessage } from "@/app/services/whatsapp";
+import { normalizePhoneNumber } from "@/app/utils/phone";
 import { hashPassword, verifyPassword } from "@/app/utils/password";
-import {
-  verifyPhoneOtp,
-  sendPhoneVerificationOtp,
-} from "@/app/services/phone-verification";
-import { sendWelcomeMessage } from "@/app/services/whatsapp";
 
 export async function registerUser(params: {
   phoneNumber: string;
@@ -33,40 +29,38 @@ export async function registerUser(params: {
   handle: string;
   walletAddress?: string;
 }) {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
   const existingByHandle = await findUserByHandle(params.handle);
-  const existingByPhone = await findUserByPhoneNumber(params.phoneNumber);
+  const existingByPhone = await findUserByPhoneNumber(normalizedPhoneNumber);
 
-  if (existingByPhone) {
+  if (!existingByPhone) {
+    throw new Error("Account not found");
+  }
+
+  if (existingByPhone.phone_verified_at) {
     throw new Error("Phone number is already registered");
   }
 
-  if (existingByHandle) {
+  if (existingByHandle && existingByHandle.id !== existingByPhone.id) {
     throw new Error("Handle is already taken");
   }
 
-  await verifyPhoneOtp(params.phoneNumber, params.otp, {
+  await verifyPhoneOtp(normalizedPhoneNumber, params.otp, {
     consume: true,
-    purpose: "register",
+    purpose: "auth",
   });
 
-  const user = await upsertUserProfile({
-    phoneNumber: params.phoneNumber,
-    phoneHash: sha256(params.phoneNumber),
+  const user = await updateUserProfileIdentity({
+    userId: existingByPhone.id,
     displayName: params.displayName,
     handle: params.handle,
-    pinHash: "",
-    walletAddress: params.walletAddress,
   });
 
   try {
-    await sendWelcomeMessage(
-      params.phoneNumber,
-      params.displayName,
-      params.handle,
-    );
+    await sendWelcomeMessage(normalizedPhoneNumber, params.displayName, params.handle);
   } catch (error) {
     logger.warn("auth.register.welcome_message_failed", {
-      phoneNumber: params.phoneNumber,
+      phoneNumber: normalizedPhoneNumber,
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
@@ -90,17 +84,26 @@ export async function registerUser(params: {
 export async function loginUser(params: {
   phoneNumber: string;
   otp: string;
+  displayName?: string;
 }) {
-  const user = await findUserByPhoneNumber(params.phoneNumber);
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
+  let user = await findUserByPhoneNumber(normalizedPhoneNumber);
 
   if (!user) {
     throw new Error("Account not found");
   }
 
-  await verifyPhoneOtp(params.phoneNumber, params.otp, {
+  await verifyPhoneOtp(normalizedPhoneNumber, params.otp, {
     consume: true,
-    purpose: "login",
+    purpose: "auth",
   });
+
+  if (params.displayName?.trim() && user.display_name === "TrustLink User") {
+    user = await updateUserDisplayName({
+      userId: user.id,
+      displayName: params.displayName.trim(),
+    });
+  }
 
   logger.info("auth.login.succeeded", {
     userId: user.id,
@@ -116,6 +119,7 @@ export async function loginUser(params: {
     user: sanitizeUser(user),
     pinRequired: Boolean(user.pin_hash),
     pinSetupRequired: !user.pin_hash,
+    isNewUser: !user.phone_verified_at,
   };
 }
 
@@ -131,6 +135,21 @@ export async function setupUserPin(params: { challengeToken: string; pin: string
     userId: user.id,
     pinHash: await hashPassword(params.pin),
   });
+
+  if (!user.phone_verified_at && !user.referred_by_user_id) {
+    const referralCandidate = await findLatestReferralCandidateByReceiverPhone(updatedUser.phone_number);
+
+    if (
+      referralCandidate?.sender_user_id &&
+      referralCandidate.sender_user_id !== updatedUser.id
+    ) {
+      await setUserReferralAttribution({
+        userId: updatedUser.id,
+        referredByUserId: referralCandidate.sender_user_id,
+        referralSourcePaymentId: referralCandidate.id,
+      });
+    }
+  }
 
   logger.info("auth.pin_setup.succeeded", {
     userId: updatedUser.id,
@@ -174,21 +193,247 @@ export async function verifyUserPin(params: { challengeToken: string; pin: strin
 }
 
 export async function startRegistrationOtp(phoneNumber: string, requestIp?: string | null) {
-  const existingUser = await findUserByPhoneNumber(phoneNumber);
-  if (existingUser) {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
+  if (existingUser?.phone_verified_at) {
     throw new Error("Phone number is already registered");
   }
 
-  return sendPhoneVerificationOtp(phoneNumber, "register", requestIp);
+  if (env.WHATSAPP_MOCK_MODE) {
+    const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+    return {
+      ...otp,
+      optedIn: true,
+      requiresOptIn: false,
+      whatsappUrl: null,
+    };
+  }
+
+  if (!existingUser?.whatsapp_opted_in) {
+    return {
+      phoneNumber: normalizedPhoneNumber,
+      optedIn: false,
+      requiresOptIn: true,
+      whatsappUrl: getTrustLinkWhatsAppOptInLink(),
+      expiresAt: null,
+    };
+  }
+
+  const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+  return {
+    ...otp,
+    optedIn: true,
+    requiresOptIn: false,
+    whatsappUrl: null,
+  };
 }
 
 export async function startLoginOtp(phoneNumber: string, requestIp?: string | null) {
-  const existingUser = await findUserByPhoneNumber(phoneNumber);
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
   if (!existingUser) {
     throw new Error("Account not found");
   }
 
-  return sendPhoneVerificationOtp(phoneNumber, "login", requestIp);
+  if (env.WHATSAPP_MOCK_MODE) {
+    const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+    return {
+      ...otp,
+      optedIn: true,
+      requiresOptIn: false,
+      whatsappUrl: null,
+    };
+  }
+
+  if (!existingUser.whatsapp_opted_in) {
+    return {
+      phoneNumber: normalizedPhoneNumber,
+      optedIn: false,
+      requiresOptIn: true,
+      whatsappUrl: getTrustLinkWhatsAppOptInLink(),
+      expiresAt: null,
+    };
+  }
+
+  const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+  return {
+    ...otp,
+    optedIn: true,
+    requiresOptIn: false,
+    whatsappUrl: null,
+  };
+}
+
+export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: string | null) {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
+  const isRegistered = Boolean(existingUser?.phone_verified_at);
+
+  logger.info("auth.phone_first.start", {
+    phoneNumber: normalizedPhoneNumber,
+    requestIp: requestIp ?? null,
+    isRegistered,
+    hasUser: Boolean(existingUser),
+    whatsappOptedIn: Boolean(existingUser?.whatsapp_opted_in),
+    optInTimestamp: existingUser?.opt_in_timestamp ?? null,
+    mockMode: env.WHATSAPP_MOCK_MODE,
+  });
+
+  if (env.WHATSAPP_MOCK_MODE) {
+    const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+    return {
+      phoneNumber: normalizedPhoneNumber,
+      status: "otp_sent" as const,
+      authMode: isRegistered ? "login" as const : "register" as const,
+      isRegistered,
+      optedIn: true,
+      otpReady: true,
+      expiresAt: otp.expiresAt,
+      whatsappUrl: null,
+    };
+  }
+
+  if (existingUser?.whatsapp_opted_in) {
+    const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth", requestIp);
+    return {
+      phoneNumber: normalizedPhoneNumber,
+      status: "otp_sent" as const,
+      authMode: isRegistered ? "login" as const : "register" as const,
+      isRegistered,
+      optedIn: true,
+      otpReady: true,
+      expiresAt: otp.expiresAt,
+      whatsappUrl: null,
+    };
+  }
+
+  return {
+    phoneNumber: normalizedPhoneNumber,
+    status: "awaiting_whatsapp_opt_in" as const,
+    authMode: isRegistered ? "login" as const : "register" as const,
+    isRegistered,
+    optedIn: false,
+    otpReady: false,
+    expiresAt: null,
+    whatsappUrl: getTrustLinkWhatsAppOptInLink(),
+  };
+}
+
+export async function getPhoneFirstAuthStatus(phoneNumber: string) {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const user = await findUserByPhoneNumber(normalizedPhoneNumber);
+  let otpStatus = await getOtpReadiness(normalizedPhoneNumber, "auth");
+  const isRegistered = Boolean(user?.phone_verified_at);
+
+  logger.info("auth.phone_first.status_checked", {
+    phoneNumber: normalizedPhoneNumber,
+    isRegistered,
+    hasUser: Boolean(user),
+    whatsappOptedIn: Boolean(user?.whatsapp_opted_in),
+    optInTimestamp: user?.opt_in_timestamp ?? null,
+    otpReady: otpStatus.ready,
+    otpExpiresAt: otpStatus.expiresAt,
+  });
+
+  if (user?.whatsapp_opted_in && !otpStatus.ready) {
+    const otp = await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth");
+    otpStatus = {
+      ready: true,
+      expiresAt: otp.expiresAt,
+    };
+
+    logger.info("auth.phone_first.status_issued_otp", {
+      phoneNumber: normalizedPhoneNumber,
+      otpExpiresAt: otp.expiresAt,
+    });
+  }
+
+  return {
+    phoneNumber: normalizedPhoneNumber,
+    authMode: isRegistered ? "login" as const : "register" as const,
+    isRegistered,
+    optedIn: Boolean(user?.whatsapp_opted_in),
+    otpReady: otpStatus.ready,
+    expiresAt: otpStatus.expiresAt,
+  };
+}
+
+export async function verifyPhoneFirstAuth(params: {
+  phoneNumber: string;
+  otp: string;
+  displayName?: string;
+}) {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
+  let user = await findUserByPhoneNumber(normalizedPhoneNumber);
+
+  logger.info("auth.phone_first.verify_attempt", {
+    phoneNumber: normalizedPhoneNumber,
+    hasUser: Boolean(user),
+    isRegistered: Boolean(user?.phone_verified_at),
+    hasPin: Boolean(user?.pin_hash),
+    displayNameProvided: Boolean(params.displayName?.trim()),
+  });
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  await verifyPhoneOtp(normalizedPhoneNumber, params.otp, {
+    consume: true,
+    purpose: "auth",
+  });
+
+  const isRegistered = Boolean(user.phone_verified_at);
+
+  if (isRegistered) {
+    if (params.displayName?.trim() && user.display_name === "TrustLink User") {
+      user = await updateUserDisplayName({
+        userId: user.id,
+        displayName: params.displayName.trim(),
+      });
+    }
+
+    logger.info("auth.phone_first.verify_login_ready", {
+      userId: user.id,
+      phoneNumber: user.phone_number,
+    });
+
+    return {
+      challengeToken: issueAuthChallengeToken({
+        id: user.id,
+        phoneNumber: user.phone_number,
+        stage: user.pin_hash ? "pin_verify" : "pin_setup",
+      }),
+      user: sanitizeUser(user),
+      pinRequired: Boolean(user.pin_hash),
+      pinSetupRequired: !user.pin_hash,
+      isNewUser: false,
+    };
+  }
+
+  if (params.displayName?.trim() && user.display_name === "TrustLink User") {
+    user = await updateUserDisplayName({
+      userId: user.id,
+      displayName: params.displayName.trim(),
+    });
+  }
+
+  logger.info("auth.phone_first.verify_register_ready", {
+    userId: user.id,
+    phoneNumber: user.phone_number,
+  });
+
+  return {
+    challengeToken: issueAuthChallengeToken({
+      id: user.id,
+      phoneNumber: user.phone_number,
+      stage: "pin_setup",
+    }),
+    user: sanitizeUser(user),
+    pinRequired: false,
+    pinSetupRequired: true,
+    isNewUser: true,
+  };
 }
 
 export async function getRegisteredUserByPhoneNumber(phoneNumber: string) {
@@ -259,8 +504,14 @@ function sanitizeUser(
     displayName: user.display_name,
     handle: user.trustlink_handle,
     walletAddress: user.wallet_address,
+    whatsappOptedIn: user.whatsapp_opted_in,
+    optInTimestamp: user.opt_in_timestamp,
+    optOutTimestamp: user.opt_out_timestamp,
     phoneVerifiedAt: user.phone_verified_at,
     identityVerifiedAt: user.identity_verified_at,
+    referredByUserId: user.referred_by_user_id,
+    referralSourcePaymentId: user.referral_source_payment_id,
+    referredAt: user.referred_at,
     createdAt: user.created_at,
   };
 }

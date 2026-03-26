@@ -1,9 +1,79 @@
+import { randomUUID } from "node:crypto";
+
 import type { UserRecord } from "@/app/types/payment";
 import { sql } from "@/app/db/client";
+import { normalizePhoneNumber } from "@/app/utils/phone";
 
-export async function findUserByPhoneNumber(
-  phoneNumber: string,
-): Promise<UserRecord | null> {
+function createGeneratedHandle() {
+  return `user_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+}
+
+async function insertUserProfile(params: {
+  phoneNumber: string;
+  phoneHash: string;
+  displayName: string;
+  handle: string;
+  pinHash: string;
+  walletAddress?: string;
+  whatsappOptedIn?: boolean;
+  optInTimestamp?: Date | null;
+  phoneVerifiedAt?: Date | null;
+}) {
+  const rows = (await sql`
+    INSERT INTO users (
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at
+    )
+    VALUES (
+      ${params.phoneNumber},
+      ${params.phoneHash},
+      ${params.displayName},
+      ${params.handle},
+      ${params.pinHash},
+      ${params.walletAddress ?? null},
+      ${params.whatsappOptedIn ?? false},
+      ${params.optInTimestamp?.toISOString() ?? null},
+      ${params.phoneVerifiedAt?.toISOString() ?? null},
+      NULL,
+      NULL,
+      NULL,
+      NULL
+    )
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0];
+}
+
+export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRecord | null> {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
   const rows = (await sql`
     SELECT
       id,
@@ -13,11 +83,17 @@ export async function findUserByPhoneNumber(
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
     FROM users
-    WHERE phone_number = ${phoneNumber}
+    WHERE phone_number = ${normalizedPhoneNumber}
     LIMIT 1
   `) as UserRecord[];
 
@@ -34,8 +110,14 @@ export async function findUserById(id: string): Promise<UserRecord | null> {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
     FROM users
     WHERE id = ${id}
@@ -45,9 +127,7 @@ export async function findUserById(id: string): Promise<UserRecord | null> {
   return rows[0] ?? null;
 }
 
-export async function findUserByHandle(
-  handle: string,
-): Promise<UserRecord | null> {
+export async function findUserByHandle(handle: string): Promise<UserRecord | null> {
   const rows = (await sql`
     SELECT
       id,
@@ -57,8 +137,14 @@ export async function findUserByHandle(
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
     FROM users
     WHERE trustlink_handle = ${handle}
@@ -76,6 +162,7 @@ export async function upsertUserProfile(params: {
   pinHash: string;
   walletAddress?: string;
 }): Promise<UserRecord> {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
   const rows = (await sql`
     INSERT INTO users (
       phone_number,
@@ -85,16 +172,22 @@ export async function upsertUserProfile(params: {
       pin_hash,
       wallet_address,
       phone_verified_at,
-      identity_verified_at
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at
     )
     VALUES (
-      ${params.phoneNumber},
+      ${normalizedPhoneNumber},
       ${params.phoneHash},
       ${params.displayName},
       ${params.handle},
       ${params.pinHash},
       ${params.walletAddress ?? null},
       NOW(),
+      NULL,
+      NULL,
+      NULL,
       NULL
     )
     ON CONFLICT (phone_number)
@@ -103,7 +196,8 @@ export async function upsertUserProfile(params: {
       display_name = EXCLUDED.display_name,
       trustlink_handle = EXCLUDED.trustlink_handle,
       pin_hash = EXCLUDED.pin_hash,
-      wallet_address = COALESCE(EXCLUDED.wallet_address, users.wallet_address)
+      wallet_address = COALESCE(EXCLUDED.wallet_address, users.wallet_address),
+      phone_verified_at = COALESCE(users.phone_verified_at, NOW())
     RETURNING
       id,
       phone_number,
@@ -112,12 +206,64 @@ export async function upsertUserProfile(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
   `) as UserRecord[];
 
   return rows[0];
+}
+
+export async function ensureUserForPhoneNumber(params: {
+  phoneNumber: string;
+  phoneHash: string;
+  displayName?: string;
+  whatsappOptedIn?: boolean;
+  optInTimestamp?: Date | null;
+  phoneVerifiedAt?: Date | null;
+}) {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
+  const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await insertUserProfile({
+        phoneNumber: normalizedPhoneNumber,
+        phoneHash: params.phoneHash,
+        displayName: params.displayName ?? "TrustLink User",
+        handle: createGeneratedHandle(),
+        pinHash: "",
+        whatsappOptedIn: params.whatsappOptedIn,
+        optInTimestamp: params.optInTimestamp,
+        phoneVerifiedAt: params.phoneVerifiedAt,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /duplicate key|trustlink_handle|phone_number/i.test(error.message)
+      ) {
+        const user = await findUserByPhoneNumber(normalizedPhoneNumber);
+        if (user) {
+          return user;
+        }
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error("Could not create user record");
 }
 
 export async function updateUserPin(params: {
@@ -138,8 +284,14 @@ export async function updateUserPin(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
   `) as UserRecord[];
 
@@ -165,8 +317,44 @@ export async function updateUserProfileIdentity(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0];
+}
+
+export async function updateUserDisplayName(params: {
+  userId: string;
+  displayName: string;
+}) {
+  const rows = (await sql`
+    UPDATE users
+    SET display_name = ${params.displayName}
+    WHERE id = ${params.userId}
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
   `) as UserRecord[];
 
@@ -179,6 +367,7 @@ export async function updateUserWallet(params: {
   walletAddress: string;
   markPhoneVerified?: boolean;
 }): Promise<UserRecord> {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
   const rows = (await sql`
     UPDATE users
     SET
@@ -192,7 +381,7 @@ export async function updateUserWallet(params: {
         WHEN ${params.markPhoneVerified ?? false} THEN COALESCE(identity_verified_at, NOW())
         ELSE identity_verified_at
       END
-    WHERE phone_number = ${params.phoneNumber}
+    WHERE phone_number = ${normalizedPhoneNumber}
     RETURNING
       id,
       phone_number,
@@ -201,10 +390,130 @@ export async function updateUserWallet(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
       phone_verified_at,
       identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
       created_at
   `) as UserRecord[];
 
   return rows[0];
+}
+
+export async function markUserWhatsAppOptIn(params: {
+  phoneNumber: string;
+  displayName?: string;
+  phoneHash: string;
+  optedInAt?: Date;
+}) {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
+  const optedInAt = params.optedInAt ?? new Date();
+  const user = await ensureUserForPhoneNumber({
+    phoneNumber: normalizedPhoneNumber,
+    phoneHash: params.phoneHash,
+    whatsappOptedIn: true,
+    optInTimestamp: optedInAt,
+  });
+
+  const rows = (await sql`
+    UPDATE users
+    SET
+      whatsapp_opted_in = true,
+      opt_in_timestamp = ${optedInAt.toISOString()},
+      opt_out_timestamp = NULL
+    WHERE id = ${user.id}
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0];
+}
+
+export async function markUserWhatsAppOptOut(params: {
+  phoneNumber: string;
+  optedOutAt?: Date;
+}) {
+  const normalizedPhoneNumber = normalizePhoneNumber(params.phoneNumber);
+  const optedOutAt = params.optedOutAt ?? new Date();
+  const rows = (await sql`
+    UPDATE users
+    SET
+      whatsapp_opted_in = false,
+      opt_out_timestamp = ${optedOutAt.toISOString()}
+    WHERE phone_number = ${normalizedPhoneNumber}
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0] ?? null;
+}
+
+export async function setUserReferralAttribution(params: {
+  userId: string;
+  referredByUserId: string;
+  referralSourcePaymentId: string;
+  referredAt?: Date;
+}): Promise<UserRecord | null> {
+  const referredAt = params.referredAt ?? new Date();
+  const rows = (await sql`
+    UPDATE users
+    SET
+      referred_by_user_id = COALESCE(referred_by_user_id, ${params.referredByUserId}),
+      referral_source_payment_id = COALESCE(referral_source_payment_id, ${params.referralSourcePaymentId}),
+      referred_at = COALESCE(referred_at, ${referredAt.toISOString()})
+    WHERE id = ${params.userId}
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0] ?? null;
 }

@@ -4,8 +4,14 @@ export interface UserProfile {
   displayName: string;
   handle: string;
   walletAddress: string | null;
+  whatsappOptedIn?: boolean;
+  optInTimestamp?: string | null;
+  optOutTimestamp?: string | null;
   phoneVerifiedAt: string | null;
   identityVerifiedAt: string | null;
+  referredByUserId?: string | null;
+  referralSourcePaymentId?: string | null;
+  referredAt?: string | null;
   createdAt: string;
 }
 
@@ -58,6 +64,12 @@ export interface PaymentRecord {
   amount_usd?: number | null;
   created_at: string;
   viewer_role?: PaymentViewerRole;
+  manual_invite_required?: boolean;
+  invite_share?: {
+    onboardingLink: string;
+    inviteMessage: string;
+  } | null;
+  recipient_onboarded?: boolean;
 }
 
 export interface PaymentTimelineEntry {
@@ -84,6 +96,12 @@ export interface PaymentDetailResponse {
     phone: string;
     releasedWallet: string | null;
     claimReady: boolean;
+    onboarded: boolean;
+    manualInviteRequired: boolean;
+    inviteShare: {
+      onboardingLink: string;
+      inviteMessage: string;
+    } | null;
   };
   trace: {
     paymentId: string;
@@ -137,6 +155,7 @@ export type RecipientLookupResult =
         handle: string;
         phoneNumber: string;
         source: "trustlink";
+        whatsappProfileName: string | null;
       };
     }
   | {
@@ -147,11 +166,19 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "whatsapp";
+        whatsappProfileName: string;
       };
       warning: string;
     }
   | {
-      status: "unverified";
-      verified: false;
-      message: string;
+      status: "manual_invite_required";
+      verified: true;
+      recipient: {
+        displayName: string;
+        handle: null;
+        phoneNumber: string;
+        source: "manual_invite";
+        whatsappProfileName: null;
+      };
+      warning: string;
     };

@@ -21,7 +21,7 @@ function formatDateTime(value: string | null) {
     month: "short",
     day: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
@@ -48,11 +48,27 @@ function statusTone(status: PaymentDetailResponse["payment"]["status"]) {
   }
 }
 
+async function shareInviteMessage(message: string) {
+  if (typeof navigator !== "undefined" && navigator.share) {
+    await navigator.share({ text: message });
+    return "shared";
+  }
+
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(message);
+    return "copied";
+  }
+
+  throw new Error("Sharing is not available on this device.");
+}
+
 export function TransactionDetailExperience({ paymentId }: { paymentId: string }) {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/app/activity/${paymentId}`);
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } =
+    useAuthenticatedSession(`/app/activity/${paymentId}`);
   const [detail, setDetail] = useState<PaymentDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
 
   useEffect(() => {
     if (!accessToken || !user) {
@@ -117,12 +133,21 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
       backHref="/app/activity"
       blockingOverlay={
         pendingAuth ? (
-          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
+          <PinGateModal
+            pendingAuth={pendingAuth}
+            user={user}
+            onAuthenticated={completePendingAuth}
+            onSignOut={logout}
+          />
         ) : null
       }
     >
       <section className="space-y-5">
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {error ? (
+          <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">
+            {error}
+          </div>
+        ) : null}
 
         {loading ? (
           <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
@@ -141,11 +166,15 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-white/56">
                     {detail.viewerRole === "sender"
-                      ? `This transfer is being delivered to ${detail.receiver.phone} through TrustLink escrow.`
+                      ? detail.receiver.manualInviteRequired
+                        ? `This transfer is already in escrow for ${detail.receiver.phone}, but the recipient is not onboarded on TrustLink yet. Share the invite again if needed.`
+                        : `This transfer is being delivered to ${detail.receiver.phone} through TrustLink escrow.`
                       : `This transfer came from ${detail.sender.displayName}${detail.sender.handle ? ` (@${detail.sender.handle})` : ""} through TrustLink escrow.`}
                   </p>
                 </div>
-                <span className={`rounded-full px-3 py-1.5 text-[0.72rem] font-medium capitalize ${statusTone(detail.payment.status)}`}>
+                <span
+                  className={`rounded-full px-3 py-1.5 text-[0.72rem] font-medium capitalize ${statusTone(detail.payment.status)}`}
+                >
                   {detail.payment.status}
                 </span>
               </div>
@@ -160,27 +189,80 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   </div>
                   <div className="mt-1 text-sm text-white/52">
                     {detail.viewerRole === "sender"
-                      ? "TrustLink delivers the payment notice from its shared verified WhatsApp number."
+                      ? detail.receiver.manualInviteRequired
+                        ? "Recipient not onboarded. TrustLink cannot auto-message this number yet."
+                        : "TrustLink delivers the payment notice from its shared verified WhatsApp number."
                       : detail.sender.trustVerified
                         ? `${detail.sender.trustStatusLabel}${detail.sender.phoneMasked ? ` • ${detail.sender.phoneMasked}` : ""}`
                         : detail.sender.trustStatusLabel}
                   </div>
                 </div>
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">WhatsApp receipt</div>
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                    {detail.receiver.manualInviteRequired ? "Invite state" : "WhatsApp receipt"}
+                  </div>
                   <div className="mt-2 flex items-center gap-3">
-                    <PaymentNotificationReceipt status={detail.payment.notification_status} />
-                    <span className="text-sm text-white/56">{formatDateTime(receiptUpdatedAt)}</span>
+                    {detail.receiver.manualInviteRequired ? (
+                      <span className="rounded-full border border-[#f3c96b]/20 bg-[#2a2412] px-3 py-1 text-[0.72rem] font-medium text-[#f3c96b]">
+                        Invite needed
+                      </span>
+                    ) : (
+                      <PaymentNotificationReceipt status={detail.payment.notification_status} />
+                    )}
+                    <span className="text-sm text-white/56">
+                      {detail.receiver.manualInviteRequired
+                        ? "Manual sender follow-up required"
+                        : formatDateTime(receiptUpdatedAt)}
+                    </span>
                   </div>
                   <div className="mt-2 text-sm text-white/46">{detail.privacy.deliveryChannelNote}</div>
                 </div>
               </div>
             </section>
 
+            {detail.viewerRole === "sender" && detail.receiver.manualInviteRequired && detail.receiver.inviteShare ? (
+              <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Share invite again</h2>
+                  <p className="text-sm text-white/48">
+                    This payment is already in escrow. You can regenerate and share the invite message again until the recipient joins TrustLink and claims it.
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                  <pre className="whitespace-pre-wrap text-sm leading-6 text-white/72">
+                    {detail.receiver.inviteShare.inviteMessage}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setShareBusy(true);
+                      setError(null);
+
+                      try {
+                        const outcome = await shareInviteMessage(detail.receiver.inviteShare!.inviteMessage);
+                        setError(outcome === "copied" ? "Invite copied to clipboard." : null);
+                      } catch (shareError) {
+                        setError(shareError instanceof Error ? shareError.message : "Could not share invite");
+                      } finally {
+                        setShareBusy(false);
+                      }
+                    }}
+                    disabled={shareBusy}
+                    className="mt-4 w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {shareBusy ? "Preparing share..." : "Share Invite"}
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
             <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Trace details</h2>
-                <p className="text-sm text-white/48">Everything the current viewer is allowed to trace for this payment.</p>
+                <p className="text-sm text-white/48">
+                  Everything the current viewer is allowed to trace for this payment.
+                </p>
               </div>
 
               <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
@@ -204,11 +286,18 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-white/46">Deposit tx</span>
                     {detail.trace.depositExplorerUrl ? (
-                      <a href={detail.trace.depositExplorerUrl} target="_blank" rel="noreferrer" className="font-medium text-[#7dffd9] underline underline-offset-4">
+                      <a
+                        href={detail.trace.depositExplorerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-[#7dffd9] underline underline-offset-4"
+                      >
                         {shortenValue(detail.trace.depositSignature, 8, 8)}
                       </a>
                     ) : (
-                      <span className="font-medium text-white">{shortenValue(detail.trace.depositSignature, 8, 8)}</span>
+                      <span className="font-medium text-white">
+                        {shortenValue(detail.trace.depositSignature, 8, 8)}
+                      </span>
                     )}
                   </div>
                 ) : null}
@@ -216,11 +305,18 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-white/46">Release tx</span>
                     {detail.trace.releaseExplorerUrl ? (
-                      <a href={detail.trace.releaseExplorerUrl} target="_blank" rel="noreferrer" className="font-medium text-[#7dffd9] underline underline-offset-4">
+                      <a
+                        href={detail.trace.releaseExplorerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-[#7dffd9] underline underline-offset-4"
+                      >
                         {shortenValue(detail.trace.releaseSignature, 8, 8)}
                       </a>
                     ) : (
-                      <span className="font-medium text-white">{shortenValue(detail.trace.releaseSignature, 8, 8)}</span>
+                      <span className="font-medium text-white">
+                        {shortenValue(detail.trace.releaseSignature, 8, 8)}
+                      </span>
                     )}
                   </div>
                 ) : null}
@@ -241,7 +337,10 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
 
               <div className="space-y-3">
                 {detail.timeline.map((entry) => (
-                  <div key={entry.id} className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                  <div
+                    key={entry.id}
+                    className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4"
+                  >
                     <span className={`mt-1 h-3 w-3 rounded-full ${entry.complete ? "bg-[#58f2b1]" : "bg-white/14"}`} />
                     <div>
                       <div className="text-sm font-semibold text-white">{entry.label}</div>
@@ -260,20 +359,31 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
               <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-white/58">
                 <p>{detail.privacy.senderPhonePolicy}</p>
-                <p className="mt-3">Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.</p>
+                <p className="mt-3">
+                  Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.
+                </p>
               </div>
             </section>
 
             <div className="grid grid-cols-2 gap-3">
-              <Link href="/app/activity" className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78">
+              <Link
+                href="/app/activity"
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78"
+              >
                 Back to activity
               </Link>
               {detail.receiver.claimReady ? (
-                <Link href={`/claim/${detail.payment.id}`} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]">
+                <Link
+                  href={`/claim/${detail.payment.id}`}
+                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]"
+                >
                   Claim payment
                 </Link>
               ) : (
-                <Link href="/app" className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]">
+                <Link
+                  href="/app"
+                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]"
+                >
                   Done
                 </Link>
               )}
@@ -288,4 +398,3 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
     </AppMobileShell>
   );
 }
-

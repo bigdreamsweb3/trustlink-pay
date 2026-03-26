@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { OtpModal } from "@/src/components/otp-modal";
 import { PinGateModal } from "@/src/components/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
@@ -385,47 +386,19 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         </div>
       ) : null}
 
-      {otpModalOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => !claimBusy && setOtpModalOpen(false)}>
-          <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Enter verification code</h2>
-              <p className="text-sm text-white/48">This is the final step. As soon as the 6-digit code is complete, TrustLink releases the escrow automatically.</p>
-            </div>
-
-            <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-              <input
-                value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/[^\d]/g, "").slice(0, 6))}
-                placeholder="6-digit code"
-                inputMode="numeric"
-                className="w-full border-0 bg-transparent text-lg tracking-[0.35em] text-white outline-none placeholder:tracking-normal placeholder:text-white/24"
-              />
-            </div>
-
-            <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-              <span className="text-white/46">{otpCooldown > 0 ? `Resend available in ${otpCooldown}s` : "You can request another OTP if needed."}</span>
-              <button
-                type="button"
-                onClick={() => void handleSendOtp()}
-                disabled={otpBusy || claimBusy || otpCooldown > 0}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/78 disabled:opacity-40"
-              >
-                {otpBusy ? "Sending..." : "Resend OTP"}
-              </button>
-            </div>
-
-            {claimBusy ? (
-              <div className="mt-4 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                <SectionLoader label="Releasing claim..." />
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      <OtpModal
+        open={otpModalOpen}
+        title="Enter verification code"
+        description="This is the final step. As soon as the 6-digit code is complete, TrustLink releases the escrow automatically."
+        value={otp}
+        onChange={(nextValue) => setOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6))}
+        onClose={() => setOtpModalOpen(false)}
+        onResend={() => void handleSendOtp()}
+        resendLabel={otpBusy ? "Sending..." : "Resend OTP"}
+        resendDisabled={otpBusy}
+        countdown={otpCooldown}
+        busy={claimBusy}
+      />
     </AppMobileShell>
   );
 }

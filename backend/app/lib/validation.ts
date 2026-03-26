@@ -1,9 +1,20 @@
 import { z } from "zod";
+import { normalizePhoneNumber } from "@/app/utils/phone";
 
 const phoneNumberSchema = z
   .string()
   .trim()
-  .regex(/^\+[1-9]\d{7,14}$/, "phoneNumber must be E.164 format");
+  .transform((value, context) => {
+    try {
+      return normalizePhoneNumber(value);
+    } catch (error) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: error instanceof Error ? error.message : "phoneNumber must be E.164 format"
+      });
+      return z.NEVER;
+    }
+  });
 
 const walletAddressSchema = z.string().trim().min(32).max(64);
 const displayNameSchema = z.string().trim().min(2).max(80);
@@ -40,13 +51,13 @@ export const acceptPaymentSchema = z
 
 export const sendOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
-  purpose: z.enum(["generic", "register", "login", "claim"]).default("generic"),
+  purpose: z.enum(["generic", "register", "login", "claim", "auth"]).default("generic"),
 });
 
 export const verifyOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
   otp: z.string().regex(/^\d{6}$/),
-  purpose: z.enum(["generic", "register", "login", "claim"]).default("generic"),
+  purpose: z.enum(["generic", "register", "login", "claim", "auth"]).default("generic"),
 });
 
 export const registerSchema = z.object({
@@ -78,6 +89,16 @@ export const pinVerifySchema = z.object({
 
 export const startAuthOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
+});
+
+export const authPhoneStatusSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+});
+
+export const authPhoneVerifySchema = z.object({
+  phoneNumber: phoneNumberSchema,
+  otp: z.string().regex(/^\d{6}$/),
+  displayName: z.string().trim().min(2).max(80).optional().or(z.literal("")),
 });
 
 export const addReceiverWalletSchema = z.object({

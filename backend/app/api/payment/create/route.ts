@@ -27,8 +27,11 @@ export async function POST(request: Request) {
         blockchainSignature: result.blockchain.signature,
         depositAddress: result.payment.escrow_account,
         notificationRetrying:
-          result.payment.notification_status === "queued" || result.payment.notification_status === "failed",
-        notificationAttemptCount: result.payment.notification_attempt_count
+          !result.manualInviteRequired &&
+          (result.payment.notification_status === "queued" || result.payment.notification_status === "failed"),
+        notificationAttemptCount: result.payment.notification_attempt_count,
+        manualInviteRequired: result.manualInviteRequired,
+        inviteShare: result.inviteShare
       },
       { status: 201 }
     );

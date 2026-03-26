@@ -12,6 +12,7 @@ import {
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { findUserByPhoneNumber, updateUserWallet } from "@/app/db/users";
 import { createEscrowPayment, releaseEscrow } from "@/app/blockchain/solana";
+import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
 import { sha256 } from "@/app/utils/hash";
@@ -26,6 +27,52 @@ import type { PaymentRecord } from "@/app/types/payment";
 
 const NOTIFICATION_RETRY_INTERVAL_MS = 90_000;
 const inFlightNotificationRetries = new Set<string>();
+
+export function buildInviteShareData(payment: PaymentRecord) {
+  const onboardingLink = `${env.APP_BASE_URL.replace(/\/$/, "")}/auth?redirect=${encodeURIComponent(`/claim/${payment.id}`)}`;
+  const inviteMessage = [
+    `I just sent you ${payment.amount} ${payment.token_symbol} using your WhatsApp number through TrustLink.`,
+    "",
+    "To claim it, register your number on TrustLink using this link:",
+    "",
+    onboardingLink,
+    "",
+    `Transaction reference: ${payment.reference_code}`,
+  ].join("\n");
+
+  return {
+    onboardingLink,
+    inviteMessage,
+  };
+}
+
+export async function requiresManualInvite(phoneNumber: string) {
+  const receiver = await findUserByPhoneNumber(phoneNumber);
+  return !receiver?.phone_verified_at || !receiver.whatsapp_opted_in;
+}
+
+export async function resolveManualInviteState(payment: PaymentRecord) {
+  const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
+
+  if (!manualInviteRequired) {
+    return {
+      manualInviteRequired: false,
+      payment,
+      inviteShare: null,
+    };
+  }
+
+  const updatedPayment =
+    payment.notification_status === "failed"
+      ? payment
+      : (await updatePaymentNotificationStatus(payment.id, "failed")) ?? payment;
+
+  return {
+    manualInviteRequired: true,
+    payment: updatedPayment,
+    inviteShare: buildInviteShareData(updatedPayment),
+  };
+}
 
 function canRetryPaymentNotification(payment: PaymentRecord) {
   if (payment.status !== "pending") {
@@ -62,6 +109,18 @@ async function dispatchPaymentNotification(payment: PaymentRecord, reason: "init
       referenceCode: payment.reference_code
     });
 
+    if (notification?.skipped) {
+      const updatedPayment = await updatePaymentNotificationStatus(payment.id, "failed");
+
+      logger.warn("payment.notification_dispatch_skipped", {
+        paymentId: payment.id,
+        reason,
+        phoneNumber: payment.receiver_phone,
+      });
+
+      return updatedPayment ?? payment;
+    }
+
     if (!notification?.messageId) {
       throw new Error("WhatsApp API did not return a message id");
     }
@@ -91,6 +150,11 @@ async function dispatchPaymentNotification(payment: PaymentRecord, reason: "init
 }
 
 export async function retryPaymentNotificationIfNeeded(payment: PaymentRecord) {
+  const manualInviteState = await resolveManualInviteState(payment);
+  if (manualInviteState.manualInviteRequired) {
+    return manualInviteState.payment;
+  }
+
   if (!canRetryPaymentNotification(payment)) {
     return payment;
   }
@@ -117,6 +181,17 @@ async function retryOutstandingNotifications(payments: PaymentRecord[]) {
   return payments.map((payment) => refreshedPayments.get(payment.id) ?? payment);
 }
 
+async function enrichPaymentInviteState(payment: PaymentRecord) {
+  const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
+
+  return {
+    ...payment,
+    manual_invite_required: manualInviteRequired,
+    invite_share: manualInviteRequired ? buildInviteShareData(payment) : null,
+    recipient_onboarded: !manualInviteRequired,
+  };
+}
+
 export async function createPayment(params: {
   phoneNumber: string;
   senderPhoneNumber: string;
@@ -141,9 +216,12 @@ export async function createPayment(params: {
     const existingPayment = await findPaymentByDepositSignature(params.depositSignature);
 
     if (existingPayment) {
-      const updatedPayment = canRetryPaymentNotification(existingPayment)
-        ? await dispatchPaymentNotification(existingPayment, "retry")
-        : existingPayment;
+      const manualInviteState = await resolveManualInviteState(existingPayment);
+      const updatedPayment = manualInviteState.manualInviteRequired
+        ? manualInviteState.payment
+        : canRetryPaymentNotification(existingPayment)
+          ? await dispatchPaymentNotification(existingPayment, "retry")
+          : existingPayment;
 
       logger.info("payment.create.duplicate_deposit_signature", {
         paymentId: existingPayment.id,
@@ -156,12 +234,17 @@ export async function createPayment(params: {
           escrowAccount: updatedPayment.escrow_account ?? "",
           signature: updatedPayment.deposit_signature
         },
-        notificationRetried: updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"
+        notificationRetried:
+          !manualInviteState.manualInviteRequired &&
+          (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
+        manualInviteRequired: manualInviteState.manualInviteRequired,
+        inviteShare: manualInviteState.inviteShare
       };
     }
   }
 
   const phoneHash = sha256(params.phoneNumber);
+  const manualInviteRequired = await requiresManualInvite(params.phoneNumber);
   const escrow = await createEscrowPayment({
     senderWallet: params.senderWallet,
     phoneHash,
@@ -195,9 +278,12 @@ export async function createPayment(params: {
       const existingPayment = await findPaymentByDepositSignature(params.depositSignature);
 
       if (existingPayment) {
-        const updatedPayment = canRetryPaymentNotification(existingPayment)
-          ? await dispatchPaymentNotification(existingPayment, "retry")
-          : existingPayment;
+        const manualInviteState = await resolveManualInviteState(existingPayment);
+        const updatedPayment = manualInviteState.manualInviteRequired
+          ? manualInviteState.payment
+          : canRetryPaymentNotification(existingPayment)
+            ? await dispatchPaymentNotification(existingPayment, "retry")
+            : existingPayment;
 
         logger.info("payment.create.duplicate_deposit_signature_race", {
           paymentId: existingPayment.id,
@@ -210,7 +296,11 @@ export async function createPayment(params: {
             escrowAccount: updatedPayment.escrow_account ?? escrow.escrowAccount,
             signature: updatedPayment.deposit_signature ?? escrow.signature
           },
-          notificationRetried: updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"
+          notificationRetried:
+            !manualInviteState.manualInviteRequired &&
+            (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
+          manualInviteRequired: manualInviteState.manualInviteRequired,
+          inviteShare: manualInviteState.inviteShare
         };
       }
     }
@@ -218,7 +308,14 @@ export async function createPayment(params: {
     throw error;
   }
 
-  const updatedPayment = await dispatchPaymentNotification(payment, "initial");
+  const manualInviteState = manualInviteRequired
+    ? await resolveManualInviteState(payment)
+    : {
+        manualInviteRequired: false,
+        payment: await dispatchPaymentNotification(payment, "initial"),
+        inviteShare: null
+      };
+  const updatedPayment = manualInviteState.payment;
 
   logger.info("payment.create.succeeded", {
     paymentId: payment.id,
@@ -231,7 +328,11 @@ export async function createPayment(params: {
   return {
     payment: updatedPayment ?? payment,
     blockchain: escrow,
-    notificationRetried: updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"
+    notificationRetried:
+      !manualInviteState.manualInviteRequired &&
+      (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
+    manualInviteRequired: manualInviteState.manualInviteRequired,
+    inviteShare: manualInviteState.inviteShare,
   };
 }
 
@@ -385,7 +486,8 @@ export async function startPaymentClaim(params: {
 
 export async function listPendingPaymentsForUser(phoneNumber: string) {
   const payments = await listPendingPaymentsByPhoneNumber(phoneNumber);
-  return retryOutstandingNotifications(payments);
+  const refreshedPayments = await retryOutstandingNotifications(payments);
+  return Promise.all(refreshedPayments.map(enrichPaymentInviteState));
 }
 
 export async function listPaymentHistoryForUser(authUser: AuthenticatedUser, limit?: number) {
@@ -395,5 +497,6 @@ export async function listPaymentHistoryForUser(authUser: AuthenticatedUser, lim
     limit
   });
 
-  return retryOutstandingNotifications(payments);
+  const refreshedPayments = await retryOutstandingNotifications(payments);
+  return Promise.all(refreshedPayments.map(enrichPaymentInviteState));
 }

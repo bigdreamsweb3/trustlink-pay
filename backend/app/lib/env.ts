@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizePhoneNumber } from "@/app/utils/phone";
 
 const booleanFromEnv = z.preprocess((value) => {
   if (typeof value === "boolean") {
@@ -40,6 +41,8 @@ const envSchema = z
     WHATSAPP_TEMPLATE_LANGUAGE_CODE: z.string().default("en_US"),
     WHATSAPP_PAYMENT_TEMPLATE_NAME: z.string().optional(),
     WHATSAPP_OTP_TEMPLATE_NAME: z.string().optional(),
+    TRUSTLINK_BUSINESS_NUMBER: z.string().optional(),
+    OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
     OTP_TTL_MINUTES: z.coerce.number().int().positive().default(5),
     OTP_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
     OTP_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(3),
@@ -93,6 +96,8 @@ function readRawEnv() {
     WHATSAPP_TEMPLATE_LANGUAGE_CODE: process.env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
     WHATSAPP_PAYMENT_TEMPLATE_NAME: process.env.WHATSAPP_PAYMENT_TEMPLATE_NAME,
     WHATSAPP_OTP_TEMPLATE_NAME: process.env.WHATSAPP_OTP_TEMPLATE_NAME,
+    TRUSTLINK_BUSINESS_NUMBER: process.env.TRUSTLINK_BUSINESS_NUMBER,
+    OTP_MAX_ATTEMPTS: process.env.OTP_MAX_ATTEMPTS,
     OTP_TTL_MINUTES: process.env.OTP_TTL_MINUTES,
     OTP_RATE_LIMIT_WINDOW_MINUTES: process.env.OTP_RATE_LIMIT_WINDOW_MINUTES,
     OTP_RATE_LIMIT_MAX_REQUESTS: process.env.OTP_RATE_LIMIT_MAX_REQUESTS,
@@ -115,6 +120,9 @@ export function getEnv(): Env {
   }
 
   cachedEnv = envSchema.parse(readRawEnv());
+  if (cachedEnv.TRUSTLINK_BUSINESS_NUMBER) {
+    cachedEnv.TRUSTLINK_BUSINESS_NUMBER = normalizePhoneNumber(cachedEnv.TRUSTLINK_BUSINESS_NUMBER).replace(/^\+/, "");
+  }
   return cachedEnv;
 }
 

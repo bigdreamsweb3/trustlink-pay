@@ -1,7 +1,11 @@
 import { findPaymentById } from "@/app/db/payments";
 import { findUserById } from "@/app/db/users";
 import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-events";
-import { retryPaymentNotificationIfNeeded } from "@/app/services/payments";
+import {
+  buildInviteShareData,
+  requiresManualInvite,
+  retryPaymentNotificationIfNeeded,
+} from "@/app/services/payments";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentViewerRole } from "@/app/types/payment";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
@@ -44,7 +48,7 @@ function maskWalletAddress(walletAddress: string | null) {
   return `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
 }
 
-function buildTimeline(payment: PaymentRecord) {
+function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
   return [
     {
       id: "created",
@@ -54,25 +58,31 @@ function buildTimeline(payment: PaymentRecord) {
       complete: true
     },
     {
-      id: "sent",
-      label: "WhatsApp sent",
-      description: "TrustLink pushed the payment notice through its shared verified WhatsApp channel.",
-      occurredAt: payment.notification_sent_at,
-      complete: payment.notification_status !== "queued"
+      id: manualInviteRequired ? "invite_needed" : "sent",
+      label: manualInviteRequired ? "Sender invite needed" : "WhatsApp sent",
+      description: manualInviteRequired
+        ? "This recipient is not yet onboarded for TrustLink WhatsApp delivery, so the sender must share the invite manually."
+        : "TrustLink pushed the payment notice through its shared verified WhatsApp channel.",
+      occurredAt: manualInviteRequired ? payment.created_at : payment.notification_sent_at,
+      complete: manualInviteRequired || payment.notification_status !== "queued"
     },
     {
       id: "delivered",
-      label: "WhatsApp delivered",
-      description: "The recipient device received the TrustLink payment message.",
-      occurredAt: payment.notification_delivered_at,
-      complete: payment.notification_status === "delivered" || payment.notification_status === "read"
+      label: manualInviteRequired ? "Recipient onboarded" : "WhatsApp delivered",
+      description: manualInviteRequired
+        ? "Once the recipient joins TrustLink, the same escrowed payment becomes claimable inside the app."
+        : "The recipient device received the TrustLink payment message.",
+      occurredAt: manualInviteRequired ? null : payment.notification_delivered_at,
+      complete: manualInviteRequired ? false : payment.notification_status === "delivered" || payment.notification_status === "read"
     },
     {
       id: "read",
-      label: "WhatsApp seen",
-      description: "The recipient opened the TrustLink payment message.",
-      occurredAt: payment.notification_read_at,
-      complete: payment.notification_status === "read"
+      label: manualInviteRequired ? "Invite confirmed by sender" : "WhatsApp seen",
+      description: manualInviteRequired
+        ? "The sender can regenerate and share the invite again until the recipient completes onboarding."
+        : "The recipient opened the TrustLink payment message.",
+      occurredAt: manualInviteRequired ? payment.created_at : payment.notification_read_at,
+      complete: manualInviteRequired ? true : payment.notification_status === "read"
     },
     {
       id: "claimed",
@@ -97,7 +107,10 @@ export function sanitizePaymentForViewer(payment: PaymentRecord, authUser: Authe
     deposit_signature: viewerRole === "sender" ? payment.deposit_signature : null,
     released_to_wallet:
       viewerRole === "receiver" ? payment.released_to_wallet : maskWalletAddress(payment.released_to_wallet),
-    viewer_role: viewerRole
+    viewer_role: viewerRole,
+    manual_invite_required: payment.manual_invite_required ?? false,
+    invite_share: viewerRole === "sender" ? payment.invite_share ?? null : null,
+    recipient_onboarded: payment.recipient_onboarded ?? false,
   };
 }
 
@@ -109,6 +122,9 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
   }
 
   const payment = await retryPaymentNotificationIfNeeded(paymentRecord);
+  const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
+  const inviteShare = manualInviteRequired ? buildInviteShareData(payment) : null;
+  const recipientOnboarded = !manualInviteRequired;
 
   const viewerRole = getViewerRole(payment, authUser);
 
@@ -121,7 +137,15 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
     listWhatsAppWebhookEventsByPaymentId(paymentId)
   ]);
 
-  const safePayment = sanitizePaymentForViewer(payment, authUser);
+  const safePayment = sanitizePaymentForViewer(
+    {
+      ...payment,
+      manual_invite_required: manualInviteRequired,
+      invite_share: inviteShare,
+      recipient_onboarded: recipientOnboarded,
+    },
+    authUser,
+  );
   const depositExplorerUrl = safePayment.deposit_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.deposit_signature })
     : null;
@@ -144,7 +168,10 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
     receiver: {
       phone: viewerRole === "sender" ? payment.receiver_phone : authUser.phoneNumber,
       releasedWallet: viewerRole === "receiver" ? payment.released_to_wallet : safePayment.released_to_wallet,
-      claimReady: payment.status === "pending" && viewerRole === "receiver"
+      claimReady: payment.status === "pending" && viewerRole === "receiver",
+      onboarded: recipientOnboarded,
+      manualInviteRequired: viewerRole === "sender" ? manualInviteRequired : false,
+      inviteShare: viewerRole === "sender" ? inviteShare : null,
     },
     trace: {
       paymentId: payment.id,
@@ -172,6 +199,6 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
       failedAt: payment.notification_failed_at,
       eventCount: webhookEvents.length
     },
-    timeline: buildTimeline(payment)
+    timeline: buildTimeline(payment, manualInviteRequired)
   };
 }

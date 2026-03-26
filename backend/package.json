@@ -15,6 +15,8 @@
     "escrow:anchor:keys": "anchor keys list",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "tsx scripts/reset-db.ts",
+    "test:auth-phone-flow": "tsx scripts/test-auth-phone-flow.ts",
+    "test:recipient-lookup": "tsx scripts/test-recipient-lookup.ts",
     "test:payment-flow": "tsx scripts/test-payment-flow.ts",
     "ngrok:https": "npx ngrok http 3000"
   },

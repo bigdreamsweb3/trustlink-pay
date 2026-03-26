@@ -1,33 +1,17 @@
-# TrustLink Pay Public Assets
+# TrustLink Public Assets
 
-This folder contains public-facing materials that are safe to expose in the GitHub repository.
+This folder contains public-safe assets used in the repository README, product walkthroughs, and demo materials.
 
-## Intended Contents
+## What Belongs Here
 
-- brand assets
-- logos
-- demo images
-- screenshots
-- shareable docs
-- pitch-supporting visuals
+- README screenshots
+- brand-safe illustrations
+- mockups intended for public viewing
+- presentation assets that can safely ship in a public repository
 
-## Current Assets
+## Current Screenshot Paths
 
-- `trustlink-logo.png`
-- `trustlink-logo-1024x1024.png`
-
-## Recommended Screenshot Set
-
-Add a `screenshots/` folder and capture:
-
-- dashboard overview
-- send flow
-- recipient preview
-- WhatsApp payment notification
-- claim flow
-- claim success state
-
-Suggested filenames:
+The root README expects these files:
 
 - `screenshots/01-home-dashboard.png`
 - `screenshots/02-send-flow.png`
@@ -36,4 +20,12 @@ Suggested filenames:
 - `screenshots/05-claim-flow.png`
 - `screenshots/06-success-state.png`
 
-These assets can then be embedded in the root README for a more visual, pitch-friendly walkthrough.
+It also uses:
+
+- `nov-23-24-crypto-loss-to-scam.png`
+
+## Rules
+
+- do not place secrets, exports, or private documents here
+- only keep assets that are safe for GitHub and public demos
+- use clear, stable filenames so the README image links continue to work

@@ -461,9 +461,11 @@ select {
 }
 
 .auth-points {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-top: 1.5rem;
+  height: fit-content;
 }
 
 .auth-points div {

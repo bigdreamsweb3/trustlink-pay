@@ -478,6 +478,48 @@ export async function listPaymentHistory(params: {
   return rows;
 }
 
+export async function findLatestReferralCandidateByReceiverPhone(
+  phoneNumber: string
+): Promise<PaymentRecord | null> {
+  await ensurePaymentTraceColumns();
+
+  const rows = (await sql`
+    SELECT
+      id,
+      sender_user_id,
+      sender_wallet,
+      sender_display_name_snapshot,
+      sender_handle_snapshot,
+      reference_code,
+      receiver_phone,
+      receiver_phone_hash,
+      token_symbol,
+      amount,
+      escrow_account,
+      deposit_signature,
+      release_signature,
+      released_to_wallet,
+      accepted_at,
+      notification_message_id,
+      notification_status,
+      notification_sent_at,
+      notification_delivered_at,
+      notification_read_at,
+      notification_failed_at,
+      notification_attempt_count,
+      notification_last_attempt_at,
+      status,
+      created_at
+    FROM payments
+    WHERE receiver_phone = ${phoneNumber}
+      AND sender_user_id IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT 1
+  `) as PaymentRecord[];
+
+  return rows[0] ?? null;
+}
+
 export async function findPaymentByDepositSignature(depositSignature: string): Promise<PaymentRecord | null> {
   await ensurePaymentTraceColumns();
 

@@ -1,10 +1,15 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { findPaymentByNotificationMessageId, updatePaymentNotificationStatus } from "@/app/db/payments";
+import { markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
 import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
 import type { PaymentNotificationStatus } from "@/app/types/payment";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
+import { sendPhoneVerificationOtp } from "@/app/services/phone-verification";
+import { isTrustLinkOptInMessage, isTrustLinkStopMessage } from "@/app/services/whatsapp";
+import { normalizePhoneNumber } from "@/app/utils/phone";
+import { sha256 } from "@/app/utils/hash";
 
 interface WhatsAppWebhookPayload {
   object?: string;
@@ -51,6 +56,11 @@ interface WhatsAppWebhookPayload {
   }>;
 }
 
+type WhatsAppEntry = NonNullable<WhatsAppWebhookPayload["entry"]>[number];
+type WhatsAppChange = NonNullable<WhatsAppEntry["changes"]>[number];
+type WhatsAppValue = NonNullable<WhatsAppChange["value"]>;
+type WhatsAppMessage = NonNullable<WhatsAppValue["messages"]>[number];
+
 function secureCompare(left: string, right: string): boolean {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
@@ -87,6 +97,10 @@ function parseWhatsAppTimestamp(timestamp: string | undefined): string | null {
   return new Date(numericTimestamp * 1000).toISOString();
 }
 
+function getInboundText(message: WhatsAppMessage) {
+  return message.text?.body ?? message.button?.text ?? "";
+}
+
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
   if (!env.WHATSAPP_APP_SECRET) {
     return true;
@@ -100,7 +114,81 @@ export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string
   return secureCompare(signatureHeader, `sha256=${expectedSignature}`);
 }
 
+async function processInboundMessage(
+  value: WhatsAppValue,
+  message: WhatsAppMessage,
+) {
+  const normalizedPhoneNumber = message.from ? normalizePhoneNumber(message.from) : null;
+  const inboundText = getInboundText(message);
+  const contactName = value?.contacts?.[0]?.profile?.name;
+
+  logger.info("whatsapp.webhook.inbound_received", {
+    rawFrom: message.from ?? null,
+    normalizedPhoneNumber,
+    contactName: contactName ?? null,
+    messageId: message.id ?? null,
+    type: message.type ?? null,
+    text: inboundText || null,
+  });
+
+  await createWhatsAppWebhookEvent({
+    eventType: "inbound_message",
+    messageId: message.id ?? null,
+    phoneNumber: normalizedPhoneNumber,
+    direction: "inbound",
+    payload: {
+      metadata: value?.metadata,
+      message,
+      contacts: value?.contacts,
+    },
+  });
+
+  if (!normalizedPhoneNumber) {
+    return;
+  }
+
+  if (isTrustLinkStopMessage(inboundText)) {
+    await markUserWhatsAppOptOut({
+      phoneNumber: normalizedPhoneNumber,
+      optedOutAt: message.timestamp ? new Date(Number(message.timestamp) * 1000) : new Date(),
+    });
+
+    logger.info("whatsapp.webhook.opt_out_received", {
+      phoneNumber: normalizedPhoneNumber,
+    });
+    return;
+  }
+
+  if (isTrustLinkOptInMessage(inboundText)) {
+    await markUserWhatsAppOptIn({
+      phoneNumber: normalizedPhoneNumber,
+      phoneHash: sha256(normalizedPhoneNumber),
+      displayName: contactName,
+      optedInAt: message.timestamp ? new Date(Number(message.timestamp) * 1000) : new Date(),
+    });
+
+    await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth");
+
+    logger.info("whatsapp.webhook.opt_in_received", {
+      phoneNumber: normalizedPhoneNumber,
+    });
+    return;
+  }
+
+  logger.info("whatsapp.webhook.inbound_message", {
+    messageId: message.id,
+    from: normalizedPhoneNumber,
+    type: message.type,
+    text: inboundText || null,
+  });
+}
+
 export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayload) {
+  logger.info("whatsapp.webhook.payload_received", {
+    object: payload.object ?? null,
+    entryCount: payload.entry?.length ?? 0,
+  });
+
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
       if (change.field !== "messages") {
@@ -108,44 +196,33 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
       }
 
       const value = change.value;
-
-      for (const message of value?.messages ?? []) {
-        await createWhatsAppWebhookEvent({
-          eventType: "inbound_message",
-          messageId: message.id ?? null,
-          phoneNumber: message.from ?? null,
-          direction: "inbound",
-          payload: {
-            metadata: value?.metadata,
-            message,
-            contacts: value?.contacts
-          }
-        });
-
-        logger.info("whatsapp.webhook.inbound_message", {
-          messageId: message.id,
-          from: message.from,
-          type: message.type,
-          text: message.text?.body ?? message.button?.text ?? null
-        });
+      if (!value) {
+        continue;
       }
 
-      for (const status of value?.statuses ?? []) {
+      for (const message of value.messages ?? []) {
+        await processInboundMessage(value, message);
+      }
+
+      for (const status of value.statuses ?? []) {
         const relatedPayment = status.id ? await findPaymentByNotificationMessageId(status.id) : null;
         const normalizedStatus = normalizeNotificationStatus(status.status);
         const occurredAt = parseWhatsAppTimestamp(status.timestamp);
+        const normalizedPhoneNumber = status.recipient_id
+          ? normalizePhoneNumber(status.recipient_id)
+          : null;
 
         await createWhatsAppWebhookEvent({
           eventType: "message_status",
           messageId: status.id ?? null,
           relatedPaymentId: relatedPayment?.id ?? null,
-          phoneNumber: status.recipient_id ?? null,
+          phoneNumber: normalizedPhoneNumber,
           direction: "outbound",
           status: status.status ?? null,
           payload: {
             metadata: value?.metadata,
-            status
-          }
+            status,
+          },
         });
 
         if (relatedPayment && normalizedStatus) {
@@ -155,10 +232,10 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
         logger.info("whatsapp.webhook.message_status", {
           messageId: status.id,
           status: status.status,
-          recipientId: status.recipient_id,
+          recipientId: normalizedPhoneNumber,
           relatedPaymentId: relatedPayment?.id ?? null,
           normalizedStatus,
-          occurredAt
+          occurredAt,
         });
       }
     }

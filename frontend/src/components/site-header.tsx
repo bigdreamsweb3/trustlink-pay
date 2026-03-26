@@ -21,17 +21,17 @@ export function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-2">
-          <Link
+          {/* <Link
             href="/auth?mode=login"
             className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
               onAuth ? "text-white" : "text-white/62 hover:text-white"
             }`}
           >
             Sign in
-          </Link>
+          </Link> */}
           <Link
             href="/auth?mode=register"
-            className="rounded-xl bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-3 py-2 text-sm font-semibold text-[#05110d] shadow-[0_12px_30px_rgba(88,242,177,0.2)] transition hover:translate-y-[-1px]"
+            className="button button--primary button--compact"
           >
             Create account
           </Link>

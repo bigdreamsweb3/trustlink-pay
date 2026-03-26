@@ -10,8 +10,14 @@ export interface UserRecord {
   trustlink_handle: string;
   pin_hash: string;
   wallet_address: string | null;
+  whatsapp_opted_in: boolean;
+  opt_in_timestamp: string | null;
+  opt_out_timestamp: string | null;
   phone_verified_at: string | null;
   identity_verified_at: string | null;
+  referred_by_user_id: string | null;
+  referral_source_payment_id: string | null;
+  referred_at: string | null;
   created_at: string;
 }
 
@@ -42,6 +48,12 @@ export interface PaymentRecord {
   status: PaymentStatus;
   created_at: string;
   viewer_role?: PaymentViewerRole;
+  manual_invite_required?: boolean;
+  invite_share?: {
+    onboardingLink: string;
+    inviteMessage: string;
+  } | null;
+  recipient_onboarded?: boolean;
 }
 
 export interface PhoneVerificationRecord {
@@ -49,6 +61,8 @@ export interface PhoneVerificationRecord {
   phone_number: string;
   otp_code: string;
   purpose: string;
+  attempt_count: number;
+  consumed_at: string | null;
   expires_at: string;
   created_at: string;
 }

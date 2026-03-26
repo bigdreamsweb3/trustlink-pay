@@ -2,5 +2,17 @@ import { neon } from "@neondatabase/serverless";
 
 import { env } from "@/app/lib/env";
 
-// This will throw at runtime if DATABASE_URL is not set (see env.ts proxy)
-export const sql = neon(env.DATABASE_URL!);
+let sqlInstance: ReturnType<typeof neon> | null = null;
+
+export function getSql() {
+  if (!sqlInstance) {
+    const dbUrl = env.DATABASE_URL;
+    if (!dbUrl) {
+      throw new Error("Missing required environment variable: DATABASE_URL");
+    }
+    sqlInstance = neon(dbUrl);
+  }
+  return sqlInstance;
+}
+
+export const sql = ((...args: Parameters<ReturnType<typeof neon>>) => getSql()(...args)) as ReturnType<typeof neon>;

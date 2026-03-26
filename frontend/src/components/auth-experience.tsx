@@ -30,6 +30,7 @@ type StartAuthResponse = {
   status: "awaiting_whatsapp_opt_in" | "otp_sent";
   authMode: AuthMode;
   isRegistered: boolean;
+  suggestedDisplayName: string | null;
   optedIn: boolean;
   otpReady: boolean;
   expiresAt: string | null;
@@ -40,6 +41,7 @@ type AuthStatusResponse = {
   phoneNumber: string;
   authMode: AuthMode;
   isRegistered: boolean;
+  suggestedDisplayName: string | null;
   optedIn: boolean;
   otpReady: boolean;
   expiresAt: string | null;
@@ -146,6 +148,23 @@ export function AuthExperience({
     }
   }
 
+  function applySuggestedDisplayName(nextAuthMode: AuthMode, suggestedDisplayName: string | null) {
+    const normalizedSuggestion = suggestedDisplayName?.trim();
+
+    if (nextAuthMode !== "register" || !normalizedSuggestion || normalizedSuggestion === "TrustLink User") {
+      return;
+    }
+
+    setOptionalDisplayName((currentValue) => {
+      const normalizedCurrentValue = currentValue.trim();
+      if (!normalizedCurrentValue || normalizedCurrentValue === "TrustLink User") {
+        return normalizedSuggestion;
+      }
+
+      return currentValue;
+    });
+  }
+
   async function startFlow() {
     if (busy || flowState === "waiting_opt_in") {
       return;
@@ -171,6 +190,7 @@ export function AuthExperience({
       rememberSelectedCountry();
       setAuthMode(result.authMode);
       setIsRegistered(result.isRegistered);
+      applySuggestedDisplayName(result.authMode, result.suggestedDisplayName);
 
       if (result.status === "otp_sent") {
         openOtpFlow(result.expiresAt);
@@ -217,6 +237,7 @@ export function AuthExperience({
 
       setAuthMode(result.authMode);
       setIsRegistered(result.isRegistered);
+      applySuggestedDisplayName(result.authMode, result.suggestedDisplayName);
 
       if (result.otpReady) {
         setWaitingMessage(null);

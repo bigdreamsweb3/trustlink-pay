@@ -268,6 +268,7 @@ export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: strin
   const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
   const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
   const isRegistered = Boolean(existingUser?.phone_verified_at);
+  const suggestedDisplayName = existingUser?.display_name ?? null;
 
   logger.info("auth.phone_first.start", {
     phoneNumber: normalizedPhoneNumber,
@@ -286,6 +287,7 @@ export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: strin
       status: "otp_sent" as const,
       authMode: isRegistered ? "login" as const : "register" as const,
       isRegistered,
+      suggestedDisplayName,
       optedIn: true,
       otpReady: true,
       expiresAt: otp.expiresAt,
@@ -300,6 +302,7 @@ export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: strin
       status: "otp_sent" as const,
       authMode: isRegistered ? "login" as const : "register" as const,
       isRegistered,
+      suggestedDisplayName,
       optedIn: true,
       otpReady: true,
       expiresAt: otp.expiresAt,
@@ -312,6 +315,7 @@ export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: strin
     status: "awaiting_whatsapp_opt_in" as const,
     authMode: isRegistered ? "login" as const : "register" as const,
     isRegistered,
+    suggestedDisplayName,
     optedIn: false,
     otpReady: false,
     expiresAt: null,
@@ -324,6 +328,7 @@ export async function getPhoneFirstAuthStatus(phoneNumber: string) {
   const user = await findUserByPhoneNumber(normalizedPhoneNumber);
   let otpStatus = await getOtpReadiness(normalizedPhoneNumber, "auth");
   const isRegistered = Boolean(user?.phone_verified_at);
+  const suggestedDisplayName = user?.display_name ?? null;
 
   logger.info("auth.phone_first.status_checked", {
     phoneNumber: normalizedPhoneNumber,
@@ -352,6 +357,7 @@ export async function getPhoneFirstAuthStatus(phoneNumber: string) {
     phoneNumber: normalizedPhoneNumber,
     authMode: isRegistered ? "login" as const : "register" as const,
     isRegistered,
+    suggestedDisplayName,
     optedIn: Boolean(user?.whatsapp_opted_in),
     otpReady: otpStatus.ready,
     expiresAt: otpStatus.expiresAt,

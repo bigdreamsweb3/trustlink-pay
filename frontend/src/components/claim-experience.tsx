@@ -202,12 +202,12 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
 
   return (
     <AppMobileShell
-      currentTab="receive"
+      currentTab="home"
       title="Claim"
       subtitle="Choose your payout wallet, send the OTP, then your claim completes as soon as the code is confirmed."
       user={user}
       showBackButton
-      backHref="/app/receive"
+      backHref="/app/claim"
       blockingOverlay={
         pendingAuth ? (
           <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
@@ -296,8 +296,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               {wallets.length === 0 ? (
                 <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm text-white/48">
                   No receiver wallet saved yet. Add one in{" "}
-                  <Link href="/app/receive" className="text-[#7dffd9] underline underline-offset-4">
-                    Receive
+                  <Link href="/app/wallets" className="text-[#7dffd9] underline underline-offset-4">
+                    Wallets
                   </Link>{" "}
                   before claiming.
                 </div>

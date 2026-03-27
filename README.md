@@ -2,7 +2,7 @@
 
 Send stablecoins on Solana to a WhatsApp number with the same confidence as a bank alert.
 
-TrustLink Pay is a phone-number-first payment product built for real-world stablecoin transfers. Instead of forcing users to copy wallet addresses, TrustLink lets a sender choose a supported asset, enter a WhatsApp number, move funds into escrow, and let the recipient claim securely through a guided TrustLink flow.
+TrustLink Pay is a phone-number-first payment product built for real-world stablecoin transfers. Instead of forcing users to copy wallet addresses, TrustLink lets a sender choose a supported asset, enter a WhatsApp number, move funds into escrow, and let the recipient complete a guided claim flow.
 
 ![Home dashboard](public/screenshots/01-home-dashboard.png)
 
@@ -54,7 +54,7 @@ References:
 
 ## Our Solution
 
-TrustLink Pay is a Web3 payment system that lets users send stablecoins to a WhatsApp number instead of a wallet address.
+TrustLink Pay is a stablecoin payment system built on Solana that lets users send funds to a WhatsApp number instead of a wallet address.
 
 The sender:
 
@@ -74,6 +74,27 @@ The recipient:
 - claims the payment securely
 
 TrustLink does not just route money. It creates identity confidence before the transfer and controlled release after the transfer.
+
+## Institutional Fit
+
+StableHacks is focused on institutional-grade stablecoin infrastructure, and TrustLink is being built in that direction.
+
+TrustLink already demonstrates:
+
+- recipient-state handling before payout delivery
+- escrow-backed payment control
+- traceable payment references
+- claim-based settlement instead of blind direct transfer
+- privacy-aware transaction views
+
+The architecture is intended to support future layers such as:
+
+- KYC onboarding
+- KYT transaction screening
+- AML monitoring workflows
+- Travel Rule data handling
+- verified payout destination controls
+- fiat payout and off-ramp integrations
 
 ## Current Product Logic
 
@@ -267,7 +288,7 @@ Deeper trace data is stored internally for compliance and support, not casual re
 
 - Next.js
 - TypeScript
-- mobile-first sender, receiver, claim, activity, and transaction detail UI
+- mobile-first sender, receive, claim, activity, wallet, settings, and transaction detail UI
 
 ### Backend
 

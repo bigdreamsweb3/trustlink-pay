@@ -66,6 +66,8 @@ export type SupportedWalletToken = {
   supported: boolean;
 };
 
+export type BlockchainExecutionMode = "mock" | "devnet";
+
 function getSecretKey(): Uint8Array {
   // Will throw at runtime if SOLANA_ESCROW_AUTHORITY_SECRET_KEY is not set (see env.ts proxy)
   const rawValue = env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY!.trim();
@@ -147,7 +149,7 @@ export async function createEscrowPayment(params: {
   amount: number;
   token: string;
   depositSignature?: string;
-}): Promise<{ escrowAccount: string; signature: TransactionSignature | null }> {
+}): Promise<{ escrowAccount: string; signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
   if (env.SOLANA_MOCK_MODE) {
     const escrowAccount = Keypair.generate().publicKey.toBase58();
     const signature = sha256(
@@ -167,7 +169,8 @@ export async function createEscrowPayment(params: {
 
     return {
       escrowAccount,
-      signature
+      signature,
+      mode: "mock",
     };
   }
 
@@ -191,7 +194,8 @@ export async function createEscrowPayment(params: {
 
   return {
     escrowAccount: escrowAuthority.toBase58(),
-    signature: params.depositSignature
+    signature: params.depositSignature,
+    mode: "devnet",
   };
 }
 
@@ -201,7 +205,7 @@ export async function releaseEscrow(params: {
   receiverWallet: string;
   amount: number;
   token: string;
-}): Promise<{ signature: TransactionSignature | null }> {
+}): Promise<{ signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
   if (env.SOLANA_MOCK_MODE) {
     const signature = sha256(
       JSON.stringify({
@@ -218,7 +222,7 @@ export async function releaseEscrow(params: {
       token: params.token
     });
 
-    return { signature };
+    return { signature, mode: "mock" };
   }
 
   if (params.token !== "SOL") {
@@ -260,13 +264,13 @@ export async function releaseEscrow(params: {
     signature,
   });
 
-  return { signature };
+  return { signature, mode: "devnet" };
 }
 
 export async function cancelEscrow(params: {
   paymentId: string;
   escrowAccount: string;
-}): Promise<{ signature: TransactionSignature | null }> {
+}): Promise<{ signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
   if (env.SOLANA_MOCK_MODE) {
     const signature = sha256(
       JSON.stringify({
@@ -280,13 +284,9 @@ export async function cancelEscrow(params: {
       escrowAccount: params.escrowAccount
     });
 
-    return { signature };
+    return { signature, mode: "mock" };
   }
-
-  const { connection, payer } = getProgram();
-  const signature = await connection.requestAirdrop(payer.publicKey, 0);
-
-  return { signature };
+  throw new Error("Real escrow cancellation is not wired yet");
 }
 
 export async function listSupportedWalletTokens(walletAddress: string): Promise<SupportedWalletToken[]> {

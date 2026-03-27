@@ -16,7 +16,20 @@ import { generateOtp } from "@/app/utils/otp";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { sendAuthOtp, sendOtp } from "@/app/services/whatsapp";
 
-type OtpPurpose = "generic" | "register" | "login" | "claim" | "auth";
+type OtpPurpose = "generic" | "register" | "login" | "claim" | "auth" | "pin_change";
+
+async function dispatchOtpMessage(phoneNumber: string, otp: string, purpose: OtpPurpose) {
+  if (purpose === "auth" || purpose === "pin_change") {
+    await sendAuthOtp(phoneNumber, otp);
+  } else {
+    await sendOtp(phoneNumber, otp);
+  }
+
+  logger.info("otp.send.succeeded", {
+    phoneNumber,
+    purpose,
+  });
+}
 
 export async function sendPhoneVerificationOtp(
   phoneNumber: string,
@@ -88,17 +101,17 @@ export async function sendPhoneVerificationOtp(
     expiresAt: verification.expires_at,
   });
 
-  if (purpose === "auth") {
-    await sendAuthOtp(normalizedPhoneNumber, otp);
+  if (purpose === "auth" || purpose === "pin_change") {
+    void dispatchOtpMessage(normalizedPhoneNumber, otp, purpose).catch((error) => {
+      logger.error("otp.send.failed", {
+        phoneNumber: normalizedPhoneNumber,
+        purpose,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    });
   } else {
-    await sendOtp(normalizedPhoneNumber, otp);
+    await dispatchOtpMessage(normalizedPhoneNumber, otp, purpose);
   }
-
-  logger.info("otp.send.succeeded", {
-    phoneNumber: normalizedPhoneNumber,
-    purpose,
-    expiresAt: verification.expires_at,
-  });
 
   return {
     phoneNumber: normalizedPhoneNumber,

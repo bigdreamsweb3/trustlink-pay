@@ -49,15 +49,17 @@ export const acceptPaymentSchema = z
     message: "walletAddress or receiverWalletId is required",
   });
 
+export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change"]);
+
 export const sendOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
-  purpose: z.enum(["generic", "register", "login", "claim", "auth"]).default("generic"),
+  purpose: otpPurposeSchema.default("generic"),
 });
 
 export const verifyOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
   otp: z.string().regex(/^\d{6}$/),
-  purpose: z.enum(["generic", "register", "login", "claim", "auth"]).default("generic"),
+  purpose: otpPurposeSchema.default("generic"),
 });
 
 export const registerSchema = z.object({
@@ -99,6 +101,13 @@ export const authPhoneVerifySchema = z.object({
   phoneNumber: phoneNumberSchema,
   otp: z.string().regex(/^\d{6}$/),
   displayName: z.string().trim().min(2).max(80).optional().or(z.literal("")),
+});
+
+export const pinChangeStartSchema = z.object({});
+
+export const pinChangeVerifySchema = z.object({
+  otp: z.string().regex(/^\d{6}$/),
+  newPin: pinSchema,
 });
 
 export const addReceiverWalletSchema = z.object({

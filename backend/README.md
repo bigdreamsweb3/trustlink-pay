@@ -19,6 +19,8 @@ Current auth sequence:
 
 Users can opt out with `STOP`, and the backend records that state.
 
+The backend also supports OTP-gated PIN change so a user must confirm a fresh WhatsApp code before updating their in-app PIN.
+
 ### Recipient Handling
 
 The backend now distinguishes carefully between:
@@ -50,6 +52,7 @@ The backend handles:
 - claim OTP start
 - release acceptance state
 - transaction detail payloads
+- manual invite regeneration payloads for sender follow-up
 
 ### Notification State
 
@@ -151,6 +154,7 @@ This backend currently supports:
 - WhatsApp opt-in and opt-out tracking
 - phone-first OTP auth
 - PIN setup and PIN verify challenge flow
+- OTP-gated PIN change flow
 - manual invite generation for unregistered recipients
 - sender notification receipt state
 - viewer-safe transaction detail responses

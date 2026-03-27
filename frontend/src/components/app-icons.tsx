@@ -112,3 +112,49 @@ export function EyeOffIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function InfoIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 10.25v5" />
+      <circle cx="12" cy="7.6" r="0.9" fill="currentColor" stroke="none" />
+    </BaseIcon>
+  );
+}
+
+export function SettingsIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="12" cy="12" r="2.75" />
+      <path d="M12 3.75v2.1" />
+      <path d="M12 18.15v2.1" />
+      <path d="M20.25 12h-2.1" />
+      <path d="M5.85 12h-2.1" />
+      <path d="M17.83 6.17l-1.48 1.48" />
+      <path d="M7.65 16.35l-1.48 1.48" />
+      <path d="M17.83 17.83l-1.48-1.48" />
+      <path d="M7.65 7.65L6.17 6.17" />
+    </BaseIcon>
+  );
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5.5 7h13" />
+      <path d="M9.5 4.5h5" />
+      <path d="M8 7l.7 11h6.6L16 7" />
+    </BaseIcon>
+  );
+}
+
+export function ClaimIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 4.5v9" />
+      <path d="M8.5 10.5 12 14l3.5-3.5" />
+      <path d="M5 17.5h14" />
+    </BaseIcon>
+  );
+}

@@ -47,3 +47,14 @@ export async function findReceiverWalletById(id: string, userId: string): Promis
 
   return rows[0] ?? null;
 }
+
+export async function deleteReceiverWalletById(id: string, userId: string): Promise<ReceiverWalletRecord | null> {
+  const rows = (await sql`
+    DELETE FROM receiver_wallets
+    WHERE id = ${id}
+      AND user_id = ${userId}
+    RETURNING id, user_id, wallet_name, wallet_address, created_at
+  `) as ReceiverWalletRecord[];
+
+  return rows[0] ?? null;
+}

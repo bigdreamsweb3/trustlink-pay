@@ -4,12 +4,12 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 
-import { BackIcon, HomeIcon, ProfileIcon, ReceiveIcon, SendIcon } from "@/src/components/app-icons";
+import { BackIcon, HomeIcon, ProfileIcon, ReceiveIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 
-type AppTab = "home" | "send" | "receive" | "profile";
+type AppTab = "home" | "send" | "receive" | "wallets" | "profile" | "settings";
 
 type AppMobileShellProps = {
   currentTab: AppTab;
@@ -31,11 +31,19 @@ function initialsFor(name: string) {
     .join("");
 }
 
-const navItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode }> = [
+const desktopNavItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode }> = [
   { key: "home", href: "/app", label: "Home", icon: <HomeIcon className="h-[1.05rem] w-[1.05rem]" /> },
   { key: "send", href: "/app/send", label: "Send", icon: <SendIcon className="h-[1.05rem] w-[1.05rem]" /> },
   { key: "receive", href: "/app/receive", label: "Receive", icon: <ReceiveIcon className="h-[1.05rem] w-[1.05rem]" /> },
+  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon className="h-[1.05rem] w-[1.05rem]" /> },
   { key: "profile", href: "/app/profile", label: "Profile", icon: <ProfileIcon className="h-[1.05rem] w-[1.05rem]" /> }
+];
+
+const mobileNavItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode }> = [
+  { key: "home", href: "/app", label: "Home", icon: <HomeIcon className="h-[1.05rem] w-[1.05rem]" /> },
+  { key: "send", href: "/app/send", label: "Send", icon: <SendIcon className="h-[1.05rem] w-[1.05rem]" /> },
+  { key: "receive", href: "/app/receive", label: "Receive", icon: <ReceiveIcon className="h-[1.05rem] w-[1.05rem]" /> },
+  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon className="h-[1.05rem] w-[1.05rem]" /> }
 ];
 
 export function AppMobileShell({
@@ -73,7 +81,7 @@ export function AppMobileShell({
             </div>
 
             <nav aria-label="Sidebar navigation" className="mt-10 space-y-2">
-              {navItems.map((item) => {
+              {desktopNavItems.map((item) => {
                 const active = item.key === currentTab;
 
                 return (
@@ -93,19 +101,29 @@ export function AppMobileShell({
             </nav>
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/app/profile")}
-            className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition hover:border-white/16 hover:bg-white/[0.05]"
-          >
-            <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
-              {initialsFor(user.displayName)}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-white">{user.displayName}</span>
-              <span className="block truncate text-[0.76rem] text-white/46">@{user.handle}</span>
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/app/settings")}
+              className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
+              aria-label="Open settings"
+            >
+              <SettingsIcon className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/app/profile")}
+              className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition hover:border-white/16 hover:bg-white/[0.05]"
+            >
+              <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
+                {initialsFor(user.displayName)}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-white">{user.displayName}</span>
+                <span className="block truncate text-[0.76rem] text-white/46">@{user.handle}</span>
+              </span>
+            </button>
+          </div>
         </aside>
 
         <div className="mx-auto w-full md:max-w-[430px]">
@@ -142,15 +160,25 @@ export function AppMobileShell({
                     <p className="mt-2.5 max-w-[19rem] text-[0.92rem] leading-6 text-white/50">{subtitle}</p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => router.push("/app/profile")}
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05]"
-                  >
-                    <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
-                      {initialsFor(user.displayName)}
-                    </span>
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => router.push("/app/settings")}
+                      className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
+                      aria-label="Open settings"
+                    >
+                      <SettingsIcon className="h-4.5 w-4.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/app/profile")}
+                      className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05]"
+                    >
+                      <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
+                        {initialsFor(user.displayName)}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -164,7 +192,7 @@ export function AppMobileShell({
         aria-label="Primary navigation"
         className="fixed bottom-0 right-0 z-40 mx-auto grid w-full max-w-[430px] grid-cols-4 gap-1 rounded-t-[26px] border-t border-white/10 bg-black/70 px-2 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-2xl md:hidden"
       >
-        {navItems.map((item) => {
+        {mobileNavItems.map((item) => {
           const active = item.key === currentTab;
 
           return (

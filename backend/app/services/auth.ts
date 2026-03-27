@@ -11,6 +11,7 @@ import { findLatestReferralCandidateByReceiverPhone } from "@/app/db/payments";
 import {
   countReceiverWalletsByUserId,
   createReceiverWallet,
+  deleteReceiverWalletById,
   listReceiverWalletsByUserId,
 } from "@/app/db/receiver-wallets";
 import { issueAccessToken, issueAuthChallengeToken, requireAuthChallengeToken } from "@/app/lib/auth";
@@ -189,6 +190,48 @@ export async function verifyUserPin(params: { challengeToken: string; pin: strin
       phoneNumber: user.phone_number,
     }),
     user: sanitizeUser(user),
+  };
+}
+
+export async function startPinChangeOtp(authUser: AuthenticatedUser, requestIp?: string | null) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  const otp = await sendPhoneVerificationOtp(user.phone_number, "pin_change", requestIp);
+
+  return {
+    phoneNumber: user.phone_number,
+    expiresAt: otp.expiresAt,
+  };
+}
+
+export async function changeUserPinWithOtp(authUser: AuthenticatedUser, params: { otp: string; newPin: string }) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  await verifyPhoneOtp(user.phone_number, params.otp, {
+    consume: true,
+    purpose: "pin_change",
+  });
+
+  const updatedUser = await updateUserPin({
+    userId: user.id,
+    pinHash: await hashPassword(params.newPin),
+  });
+
+  logger.info("auth.pin_change.succeeded", {
+    userId: updatedUser.id,
+    phoneNumber: updatedUser.phone_number,
+  });
+
+  return {
+    user: sanitizeUser(updatedUser),
   };
 }
 
@@ -474,6 +517,22 @@ export async function addReceiverWalletForUser(
 
 export async function listReceiverWalletsForUser(authUser: AuthenticatedUser) {
   return listReceiverWalletsByUserId(authUser.id);
+}
+
+export async function deleteReceiverWalletForUser(authUser: AuthenticatedUser, walletId: string) {
+  const deletedWallet = await deleteReceiverWalletById(walletId, authUser.id);
+
+  if (!deletedWallet) {
+    throw new Error("Receiver wallet not found");
+  }
+
+  logger.info("receiver_wallet.delete.succeeded", {
+    userId: authUser.id,
+    walletId: deletedWallet.id,
+    walletName: deletedWallet.wallet_name,
+  });
+
+  return deletedWallet;
 }
 
 export async function updateProfileForUser(

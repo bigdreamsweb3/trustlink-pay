@@ -7,11 +7,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
 import { PinGateModal } from "@/src/components/pin-gate-modal";
-import { EyeIcon, EyeOffIcon, ProfileIcon, ReceiveIcon, SendIcon } from "@/src/components/app-icons";
+import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, ReceiveIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
-import type { PaymentRecord, PendingBalanceSummary, ReceiverWallet, WalletTokenOption } from "@/src/lib/types";
+import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { getConnectedWalletAddress } from "@/src/lib/wallet";
 
@@ -58,9 +58,9 @@ export function DashboardExperience() {
     byToken: [],
   });
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
-  const [receiverWallets, setReceiverWallets] = useState<ReceiverWallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
 
   useEffect(() => {
     setWalletAddress(getConnectedWalletAddress());
@@ -110,12 +110,8 @@ export function DashboardExperience() {
   }, [accessToken, user]);
 
   const stats = useMemo(
-    () => [
-      { label: "Pending", value: pendingPayments.length.toString().padStart(2, "0") },
-      { label: "Wallets", value: receiverWallets.length.toString().padStart(2, "0") },
-      { label: "Transfers", value: paymentHistory.length.toString().padStart(2, "0") }
-    ],
-    [paymentHistory.length, pendingPayments.length, receiverWallets.length]
+    () => [{ label: "Pending", value: pendingPayments.length.toString().padStart(2, "0") }],
+    [pendingPayments.length]
   );
 
   const supportedBalanceUsd = useMemo(
@@ -126,7 +122,6 @@ export function DashboardExperience() {
     () => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)),
     [supportedBalanceUsd, totalPendingUsd]
   );
-  const hasAnyBalance = supportedBalanceUsd > 0 || totalPendingUsd > 0;
   const hasPendingSenderReceipt = useMemo(
     () =>
       paymentHistory.some(
@@ -157,13 +152,11 @@ export function DashboardExperience() {
     }
 
     try {
-      const [walletsResult, pendingResult, historyResult] = await Promise.all([
-        apiGet<{ wallets: ReceiverWallet[] }>("/api/receiver-wallets", token),
+      const [pendingResult, historyResult] = await Promise.all([
         apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token),
         apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)
       ]);
 
-      setReceiverWallets(walletsResult.wallets);
       setPendingPayments(pendingResult.payments);
       setTotalPendingUsd(pendingResult.totalPendingUsd);
       setPendingBalanceSummary(pendingResult.summary);
@@ -218,20 +211,29 @@ export function DashboardExperience() {
 
                 {balanceVisible ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
               </button>
+              <button
+                type="button"
+                onClick={() => setBalanceInfoOpen(true)}
+                className="grid h-11 w-11 place-items-center rounded-2xl bg-black/12 text-black/72 transition hover:bg-black/18"
+                aria-label="Show balance details"
+                title="Show balance details"
+              >
+                <InfoIcon className="h-4 w-4" />
+              </button>
             </div>
 
             <div>
-              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-black/55">
+              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-black/55 text-nowrap whitespace-nowrap">
                 {walletAddress
                   ? totalPendingUsd > 0
-                    ? "Wallet + claimable escrow"
-                    : "Ready to send"
+                    ? <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" />  <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div></div>
+                    : <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" /> <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div> </div>
                   : totalPendingUsd > 0
                     ? "Claimable escrow available"
-                    : "Wallet not connected"}
+                    : <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" /> not connected</div>}
               </span>
 
-              <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `@${user.handle}`}</div>
+              <div className="mt-1 text-end text-sm font-semibold">{`@${user.handle}`}</div>
             </div>
           </div>
 
@@ -253,62 +255,7 @@ export function DashboardExperience() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-5 grid gap-3 md:grid-cols-2">
-            <article className="rounded-[22px] border border-black/10 bg-black/12 px-4 py-3">
-              <div className="text-[0.68rem] uppercase tracking-[0.16em] text-black/52">Connected wallet</div>
-              <div className="mt-1 text-base font-semibold text-black">
-                {balanceVisible ? formatUsd(supportedBalanceUsd) : "****"}
-              </div>
-              <div className="mt-1 text-[0.78rem] text-black/58">
-                {walletAddress ? "Spendable balance from the wallet currently connected to TrustLink." : "Connect a wallet to send or hold spendable on-chain balance here."}
-              </div>
-            </article>
-
-            <article className="rounded-[22px] border border-black/10 bg-black/12 px-4 py-3">
-              <div className="text-[0.68rem] uppercase tracking-[0.16em] text-black/52">Unclaimed escrow</div>
-              <div className="mt-1 text-base font-semibold text-black">
-                {balanceVisible ? formatUsd(totalPendingUsd) : "****"}
-              </div>
-              <div className="mt-1 text-[0.78rem] text-black/58">
-                {pendingBalanceSummary.claimableCount > 0
-                  ? `${pendingBalanceSummary.claimableCount} incoming ${pendingBalanceSummary.claimableCount === 1 ? "payment is" : "payments are"} still claimable from escrow.`
-                  : "No unclaimed incoming funds are linked to this account right now."}
-              </div>
-            </article>
-          </div>
         </div>
-
-        {!loading && hasAnyBalance ? (
-          <section className="rounded-[24px] border border-white/8 bg-white/5 px-4 py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/72">Balance breakdown</h2>
-                <p className="mt-1 text-sm text-white/48">
-                  Your total balance combines connected-wallet funds and any incoming funds still waiting in escrow.
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-[0.68rem] uppercase tracking-[0.16em] text-white/34">Total</div>
-                <div className="mt-1 text-lg font-semibold text-white">
-                  {balanceVisible ? formatUsd(combinedVisibleBalanceUsd) : "****"}
-                </div>
-              </div>
-            </div>
-
-            {pendingBalanceSummary.byToken.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {pendingBalanceSummary.byToken.map((token) => (
-                  <div key={token.tokenSymbol} className="rounded-full border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-3 py-1.5">
-                    <div className="text-[0.68rem] uppercase tracking-[0.16em] text-[#7dffd9]/78">{token.tokenSymbol} in escrow</div>
-                    <div className="mt-0.5 text-sm font-semibold text-white">
-                      {formatTokenAmount(token.amount.toString())} {token.tokenSymbol}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
 
         {loading ? (
           <div className="flex min-h-[76px] items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-white/5 px-4 py-3">
@@ -320,7 +267,7 @@ export function DashboardExperience() {
           </div>
         ) : pendingPayments.length > 0 ? (
           <Link
-            href="/app/receive"
+            href="/app/claim"
             className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[22px] border border-[#58f2b1]/14 bg-[#58f2b1]/7 px-4 py-3.5 transition hover:border-[#58f2b1]/24 hover:bg-[#58f2b1]/10"
           >
             <div className="min-w-0">
@@ -353,11 +300,11 @@ export function DashboardExperience() {
             </div>
             <div className="text-sm font-semibold text-white">Receive</div>
           </Link>
-          <Link href="/app/profile" className="text-center">
+          <Link href="/app/claim" className="text-center">
             <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white/7 text-white">
-              <ProfileIcon className="h-[1.05rem] w-[1.05rem]" />
+              <ClaimIcon className="h-[1.05rem] w-[1.05rem]" />
             </div>
-            <div className="text-sm font-semibold text-white">Profile</div>
+            <div className="text-sm font-semibold text-white">Claim</div>
           </Link>
         </div>
 
@@ -441,10 +388,63 @@ export function DashboardExperience() {
           ) : null}
         </section>
       </section>
+
+      {balanceInfoOpen ? (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
+          <div
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Balance details</h2>
+                <p className="text-sm text-white/48">Your total combines what is already spendable and what is still waiting in escrow.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBalanceInfoOpen(false)}
+                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/72"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Total balance</div>
+                <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(combinedVisibleBalanceUsd) : "****"}</div>
+              </div>
+
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Connected wallet</div>
+                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(supportedBalanceUsd) : "****"}</div>
+                  </div>
+                  <div className="text-right text-[0.76rem] text-white/42">
+                    {walletAddress ? shortenAddress(walletAddress) : "Not connected"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Unclaimed escrow</div>
+                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(totalPendingUsd) : "****"}</div>
+                  </div>
+                  <div className="text-right text-[0.76rem] text-white/42">
+                    {pendingBalanceSummary.claimableCount} {pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppMobileShell>
   );
 }
-
 
 
 

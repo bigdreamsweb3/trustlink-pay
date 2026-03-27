@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { AppMobileShell } from "@/src/components/app-mobile-shell";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
@@ -69,6 +70,7 @@ async function shareInviteMessage(message: string) {
 
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [walletSession, setWalletSession] = useState<ConnectedWalletSession | null>(null);
   const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
@@ -98,6 +100,7 @@ export function SendExperience() {
     senderHandle: string;
     escrowAccount: string | null;
     blockchainSignature: string;
+    blockchainMode: "mock" | "devnet";
     depositAddress: string | null;
     notificationRetrying: boolean;
     notificationAttemptCount: number;
@@ -132,6 +135,16 @@ export function SendExperience() {
     setWalletSession(getConnectedWalletSession());
     setAvailableWallets(listAvailableSolanaWallets());
   }, []);
+
+  useEffect(() => {
+    const prefilledPhone = searchParams.get("phone")?.trim();
+
+    if (!prefilledPhone) {
+      return;
+    }
+
+    setForm((current) => (current.receiverPhone === prefilledPhone ? current : { ...current, receiverPhone: prefilledPhone }));
+  }, [searchParams]);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -370,6 +383,7 @@ export function SendExperience() {
         senderHandle: string;
         escrowAccount: string | null;
         blockchainSignature: string;
+        blockchainMode: "mock" | "devnet";
         depositAddress: string | null;
         notificationRetrying: boolean;
         notificationAttemptCount: number;
@@ -431,6 +445,7 @@ export function SendExperience() {
             senderHandle: string;
             escrowAccount: string | null;
             blockchainSignature: string;
+            blockchainMode: "mock" | "devnet";
             depositAddress: string | null;
             notificationRetrying: boolean;
             notificationAttemptCount: number;
@@ -598,13 +613,15 @@ export function SendExperience() {
                 </div>
               ) : null}
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Escrow tx</span>
+                <span className="text-white/46">{sendSuccess.blockchainMode === "mock" ? "Mock reference" : "Deposit tx"}</span>
                 <span className="font-medium text-white">{shortenAddress(sendSuccess.blockchainSignature)}</span>
               </div>
             </div>
 
             <div className="mt-3 text-[0.78rem] text-white/44">
-              Delivery receipts refresh from TrustLink records only while the receipt is still unresolved.
+              {sendSuccess.blockchainMode === "mock"
+                ? "This payment was created in Solana mock mode, so the reference shown is not a real on-chain signature."
+                : "Delivery receipts refresh from TrustLink records only while the receipt is still unresolved."}
             </div>
 
             {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (

@@ -25,6 +25,7 @@ export async function POST(request: Request) {
         senderHandle: result.payment.sender_handle_snapshot,
         escrowAccount: result.payment.escrow_account,
         blockchainSignature: result.blockchain.signature,
+        blockchainMode: result.blockchain.mode,
         depositAddress: result.payment.escrow_account,
         notificationRetrying:
           !result.manualInviteRequired &&

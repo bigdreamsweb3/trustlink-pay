@@ -17,6 +17,10 @@ export function toErrorResponse(error: unknown) {
   }
 
   if (error instanceof Error) {
+    if (/database connection unavailable|error connecting to database|fetch failed/i.test(error.message)) {
+      return fail("Database connection unavailable", 503);
+    }
+
     return fail(error.message, 400);
   }
 

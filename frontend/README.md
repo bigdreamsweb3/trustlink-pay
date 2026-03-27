@@ -35,9 +35,15 @@ The send experience now:
 - creates escrow-backed payments
 - shows compact WhatsApp-style delivery indicators for eligible notifications
 
-### Receive and Claim Flow
+### Receive, Claim, and Wallets
 
-The receive side includes:
+The app now separates recipient identity, claim actions, and wallet management:
+
+- `Receive` is the shareable account-details page
+- `Claim` is the pending-payment and release flow
+- `Wallets` is where receiver wallets are added, viewed, and deleted
+
+The claim side includes:
 
 - pending payment list
 - claim start and OTP confirmation
@@ -83,7 +89,7 @@ The frontend now uses a compact WhatsApp-style indicator instead of long text la
 - `app`
   - routes and app pages
 - `src/components`
-  - send, receive, auth, claim, dashboard, activity, and transaction detail UI
+  - send, receive, auth, claim, wallets, settings, dashboard, activity, and transaction detail UI
 - `src/lib`
   - API utilities, types, storage helpers, and session helpers
 
@@ -104,7 +110,7 @@ The current design goals are:
 - mobile-first interaction patterns
 - compact but traceable transaction feedback
 - less text-heavy notification state
-- strong separation between auth, PIN gating, send, claim, and history
+- strong separation between auth, PIN gating, send, receive, claim, wallets, and history
 
 ## Current Frontend Status
 
@@ -117,6 +123,11 @@ The frontend currently includes:
 - recipient preview before send
 - manual invite sharing for unregistered numbers
 - sender receipt-state indicators
+- shareable receive-details page
+- dedicated claim page for pending payouts
+- wallets page with receiver wallet deletion
+- settings page with OTP-gated PIN change
+- compact total-balance details modal
 - full transaction detail views
 
 ## Notes

@@ -21,7 +21,8 @@ export async function POST(request: Request) {
       status: result.payment?.status,
       referenceCode: result.payment?.reference_code,
       walletAddress: result.user.wallet_address,
-      blockchainSignature: result.blockchain.signature
+      blockchainSignature: result.blockchain.signature,
+      blockchainMode: result.blockchain.mode
     });
   } catch (error) {
     return toErrorResponse(error);

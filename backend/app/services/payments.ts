@@ -228,12 +228,13 @@ export async function createPayment(params: {
         depositSignature: params.depositSignature
       });
 
-      return {
-        payment: updatedPayment,
-        blockchain: {
-          escrowAccount: updatedPayment.escrow_account ?? "",
-          signature: updatedPayment.deposit_signature
-        },
+        return {
+          payment: updatedPayment,
+          blockchain: {
+            escrowAccount: updatedPayment.escrow_account ?? "",
+            signature: updatedPayment.deposit_signature,
+            mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
+          },
         notificationRetried:
           !manualInviteState.manualInviteRequired &&
           (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
@@ -294,7 +295,8 @@ export async function createPayment(params: {
           payment: updatedPayment,
           blockchain: {
             escrowAccount: updatedPayment.escrow_account ?? escrow.escrowAccount,
-            signature: updatedPayment.deposit_signature ?? escrow.signature
+            signature: updatedPayment.deposit_signature ?? escrow.signature,
+            mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
           },
           notificationRetried:
             !manualInviteState.manualInviteRequired &&

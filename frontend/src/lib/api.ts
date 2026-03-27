@@ -1,3 +1,5 @@
+import { clearStoredPendingAuth, clearStoredToken, clearStoredUser } from "@/src/lib/storage";
+
 async function parseResponse(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
 
@@ -20,6 +22,37 @@ async function parseResponse(response: Response) {
   }
 }
 
+function isSessionFailure(status: number, errorMessage: string | undefined) {
+  if (status === 401) {
+    return true;
+  }
+
+  if (!errorMessage) {
+    return false;
+  }
+
+  return /access token|invalid token|expired token|missing token|session secret/i.test(errorMessage);
+}
+
+function handleSessionFailure(status: number, errorMessage: string | undefined) {
+  if (!isSessionFailure(status, errorMessage)) {
+    return;
+  }
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  clearStoredPendingAuth();
+  clearStoredToken();
+  clearStoredUser();
+
+  const nextLocation = `/auth?mode=login&reason=${encodeURIComponent("session_expired")}`;
+  if (window.location.pathname !== "/auth") {
+    window.location.replace(nextLocation);
+  }
+}
+
 export async function apiPost<T>(path: string, body: unknown, accessToken?: string): Promise<T> {
   const response = await fetch(`/backend${path}`, {
     method: "POST",
@@ -33,6 +66,7 @@ export async function apiPost<T>(path: string, body: unknown, accessToken?: stri
   const payload = await parseResponse(response) as { error?: string } | null;
 
   if (!response.ok) {
+    handleSessionFailure(response.status, payload?.error);
     throw new Error(payload?.error ?? "Request failed");
   }
 
@@ -49,6 +83,7 @@ export async function apiGet<T>(path: string, accessToken?: string): Promise<T> 
   const payload = await parseResponse(response) as { error?: string } | null;
 
   if (!response.ok) {
+    handleSessionFailure(response.status, payload?.error);
     throw new Error(payload?.error ?? "Request failed");
   }
 
@@ -68,6 +103,23 @@ export async function apiPatch<T>(path: string, body: unknown, accessToken?: str
   const payload = await parseResponse(response) as { error?: string } | null;
 
   if (!response.ok) {
+    handleSessionFailure(response.status, payload?.error);
+    throw new Error(payload?.error ?? "Request failed");
+  }
+
+  return payload as T;
+}
+
+export async function apiDelete<T>(path: string, accessToken?: string): Promise<T> {
+  const response = await fetch(`/backend${path}`, {
+    method: "DELETE",
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+  });
+
+  const payload = await parseResponse(response) as { error?: string } | null;
+
+  if (!response.ok) {
+    handleSessionFailure(response.status, payload?.error);
     throw new Error(payload?.error ?? "Request failed");
   }
 

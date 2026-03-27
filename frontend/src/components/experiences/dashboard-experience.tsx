@@ -4,43 +4,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { PaymentActivityCard } from "@/src/components/payment-activity-card";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, ReceiveIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
+import { shouldPollPaymentNotification } from "@/src/lib/formatters";
+import { formatPaymentUsd } from "@/src/lib/payment-display";
 import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { getConnectedWalletAddress } from "@/src/lib/wallet";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
 function shortenAddress(value: string) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
-
-function formatUsd(value: number | null | undefined) {
-  if (value == null) {
-    return "--";
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
 }
 
 export function DashboardExperience() {
@@ -180,7 +159,7 @@ export function DashboardExperience() {
   return (
     <AppMobileShell
       currentTab="home"
-      title="Wallet"
+      title="Home"
       subtitle="Move crypto with the calm, speed, and clarity of a modern payments app."
       user={user}
       blockingOverlay={
@@ -198,18 +177,18 @@ export function DashboardExperience() {
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="grid h-11 min-w-[84px] grid-cols-2 place-items-center rounded-2xl bg-black/90 pl-3 text-sm font-bold text-white"
+                className="flex items-center justify-between gap-2 h-11 min-w-[114px] place-items-center rounded-2xl bg-black/90 px-3 text-sm font-bold text-white"
                 onClick={() => setBalanceVisible((current) => !current)}
               >
                 {walletTokenLoading ? (
                   <span className="text-[0.76rem]">...</span>
                 ) : balanceVisible ? (
-                  formatUsd(combinedVisibleBalanceUsd)
+                  formatPaymentUsd(combinedVisibleBalanceUsd)
                 ) : (
-                  "****"
+                  <span className="text-[1.13rem] text-center mt-2 h-fit">****</span>
                 )}
 
-                {balanceVisible ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                {balanceVisible ? <EyeOffIcon className="h-4.5 w-4.5" /> : <EyeIcon className="h-4.5 w-4.5" />}
               </button>
               <button
                 type="button"
@@ -281,7 +260,7 @@ export function DashboardExperience() {
               <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/84">Review</span>
               <div className="text-right">
                 <div className="text-[0.68rem] uppercase tracking-[0.16em] text-white/38">Value</div>
-                <div className="mt-1 text-sm font-semibold text-white">{formatUsd(totalPendingUsd)}</div>
+                <div className="mt-1 text-sm font-semibold text-white">{formatPaymentUsd(totalPendingUsd)}</div>
               </div>
             </div>
           </Link>
@@ -308,8 +287,8 @@ export function DashboardExperience() {
           </Link>
         </div>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 px-4 py-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
+        <section className="rounded-[28px] border border-white/8 bg-white/5 px-3 py-4">
+          <div className="mt-1 mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Recent activity</h2>
               <p className="text-sm text-white/46">Transfers, claims, releases, and WhatsApp delivery status.</p>
@@ -337,44 +316,14 @@ export function DashboardExperience() {
             ) : paymentHistory.length === 0 ? (
               <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-white/46">No transfer activity yet.</div>
             ) : (
-              paymentHistory.slice(0, 10).map((payment) => {
-                const isSend = payment.sender_user_id === user.id;
-                const counterparty = isSend
-                  ? `To ${payment.receiver_phone}`
-                  : `From ${payment.sender_display_name_snapshot}`;
-
-                return (
-                  <button
-                    key={payment.id}
-                    type="button"
-                    onClick={() => router.push(`/app/activity/${payment.id}`)}
-                    className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/25 px-3 py-3 text-left transition hover:border-white/12 hover:bg-black/35"
-                  >
-                    <div className={`grid h-12 w-12 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] ${isSend ? "bg-[#16283a] text-[#99cfff]" : "bg-[#0f261d] text-[#79ffcf]"}`}>
-                      {isSend ? "OUT" : "IN"}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white">
-                        {formatTokenAmount(payment.amount)} {payment.token_symbol}
-                      </div>
-                      <div className="truncate text-sm text-white/50">
-                        {counterparty} - {payment.reference_code}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.72rem]">
-                        <span className="text-white/34">{formatShortDate(payment.created_at)}</span>
-                        {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}
-                      </div>
-                    </div>
-                    <div className="grid justify-items-end gap-2">
-                      <span className={`rounded-full px-2.5 py-1 text-[0.7rem] font-medium capitalize ${payment.status === "accepted" ? "bg-[#0f261d] text-[#79ffcf]" : payment.status === "pending" ? "bg-[#2a2412] text-[#f3c96b]" : "bg-[#321516] text-[#ff9c9c]"}`}>
-                        {payment.status}
-                      </span>
-                      <span className="text-[0.72rem] text-white/46">{formatUsd(payment.amount_usd)}</span>
-                      <span className="text-[0.72rem] font-medium text-white/70">Open</span>
-                    </div>
-                  </button>
-                );
-              })
+              paymentHistory.slice(0, 10).map((payment) => (
+                <PaymentActivityCard
+                  key={payment.id}
+                  payment={payment}
+                  currentUserId={user.id}
+                  onClick={(paymentId) => router.push(`/app/activity/${paymentId}`)}
+                />
+              ))
             )}
           </div>
 
@@ -412,14 +361,14 @@ export function DashboardExperience() {
             <div className="space-y-3">
               <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Total balance</div>
-                <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(combinedVisibleBalanceUsd) : "****"}</div>
+                <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatPaymentUsd(combinedVisibleBalanceUsd) : "****"}</div>
               </div>
 
               <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Connected wallet</div>
-                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(supportedBalanceUsd) : "****"}</div>
+                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****"}</div>
                   </div>
                   <div className="text-right text-[0.76rem] text-white/42">
                     {walletAddress ? shortenAddress(walletAddress) : "Not connected"}
@@ -431,7 +380,7 @@ export function DashboardExperience() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Unclaimed escrow</div>
-                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatUsd(totalPendingUsd) : "****"}</div>
+                    <div className="mt-2 text-base font-semibold text-white">{balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</div>
                   </div>
                   <div className="text-right text-[0.76rem] text-white/42">
                     {pendingBalanceSummary.claimableCount} {pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}
@@ -445,7 +394,4 @@ export function DashboardExperience() {
     </AppMobileShell>
   );
 }
-
-
-
 

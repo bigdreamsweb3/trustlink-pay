@@ -29,8 +29,11 @@ CREATE TABLE IF NOT EXISTS payments (
   receiver_phone VARCHAR(32) NOT NULL,
   receiver_phone_hash VARCHAR(64) NOT NULL,
   token_symbol VARCHAR(10) NOT NULL,
+  token_mint_address VARCHAR(64),
   amount NUMERIC(20, 9) NOT NULL,
+  fee_amount NUMERIC(20, 9),
   escrow_account VARCHAR(64),
+  escrow_vault_address VARCHAR(64),
   deposit_signature VARCHAR(128),
   release_signature VARCHAR(128),
   released_to_wallet VARCHAR(64),
@@ -79,6 +82,12 @@ CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64);
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS fee_amount NUMERIC(20, 9);
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS notification_message_id VARCHAR(128);
 ALTER TABLE payments

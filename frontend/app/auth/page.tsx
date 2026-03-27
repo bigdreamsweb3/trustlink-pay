@@ -1,4 +1,4 @@
-import { AuthExperience } from "@/src/components/auth-experience";
+import { AuthExperience } from "@/src/components/experiences/auth-experience";
 
 export default async function AuthPage({
   searchParams

@@ -4,13 +4,13 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
-import { WalletPickerModal } from "@/src/components/wallet-picker-modal";
+import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { splitPhoneNumber, type CountryOption } from "@/src/lib/phone-countries";
@@ -21,7 +21,7 @@ import {
   disconnectSolanaWallet,
   getConnectedWalletSession,
   listAvailableSolanaWallets,
-  sendSolanaPayment,
+  signAndSendSerializedSolanaTransaction,
   type ConnectedWalletSession,
   type DetectedWallet
 } from "@/src/lib/wallet";
@@ -124,7 +124,7 @@ export function SendExperience() {
   const receiverLocalDigits = useMemo(() => splitPhoneNumber(form.receiverPhone).localNumber, [form.receiverPhone]);
   const canLookupRecipient = useMemo(() => Boolean(receiverCountry) && receiverLocalDigits.length === 10, [receiverCountry, receiverLocalDigits.length]);
   const sendableTokens = useMemo(() => supportedTokens.filter((token) => token.supported), [supportedTokens]);
-  const selectedToken = sendableTokens.find((token) => token.symbol === form.token) ?? null;
+  const selectedToken = sendableTokens.find((token) => token.mintAddress === form.token) ?? null;
   const walletAddress = walletSession?.address ?? null;
   const sendSuccessPaymentId = sendSuccess?.paymentId ?? null;
   const shouldPollSendSuccessReceipt = sendSuccess
@@ -171,8 +171,8 @@ export function SendExperience() {
         setForm((current) => ({
           ...current,
           token:
-            result.tokens.find((token) => token.supported && token.symbol === current.token)?.symbol ??
-            result.tokens.find((token) => token.supported)?.symbol ??
+            result.tokens.find((token) => token.supported && token.mintAddress === current.token)?.mintAddress ??
+            result.tokens.find((token) => token.supported)?.mintAddress ??
             ""
         }));
       } catch (tokenError) {
@@ -354,21 +354,37 @@ export function SendExperience() {
     }
 
     const recipientName = recipientPreview.recipient.displayName;
-    let depositSignature: string | undefined;
-
     setBusy(true);
     setError(null);
     setNotice(null);
 
     try {
-      depositSignature =
-        selectedToken.symbol === "SOL" && walletSession
-          ? await sendRealSolTransfer({
-            walletId: walletSession.walletId,
-            fromAddress: walletAddress,
-            amount: Number(form.amount)
-          })
-          : undefined;
+      const prepared = await apiPost<{
+        paymentId: string;
+        escrowAccount: string | null;
+        escrowVaultAddress: string | null;
+        blockchainMode: "mock" | "devnet";
+        serializedTransaction: string | null;
+        tokenSymbol: string | null;
+      }>("/api/payment/create", {
+        phoneNumber: form.receiverPhone,
+        senderPhoneNumber: user.phoneNumber,
+        amount: Number(form.amount),
+        tokenMintAddress: selectedToken.mintAddress,
+        senderWallet: walletAddress
+      });
+
+      if (!prepared.serializedTransaction || !prepared.escrowVaultAddress) {
+        throw new Error("TrustLink could not prepare the escrow transaction");
+      }
+
+      setNotice(`Approve the ${prepared.tokenSymbol ?? selectedToken.symbol} escrow transaction in ${walletSession?.walletName ?? "your wallet"}...`);
+
+      const depositSignature = await signAndSendSerializedSolanaTransaction({
+        walletId: walletSession!.walletId,
+        rpcUrl: (await apiGet<{ rpcUrl: string }>("/api/wallet/deposit-target")).rpcUrl,
+        serializedTransaction: prepared.serializedTransaction
+      });
 
       const result = await apiPost<{
         paymentId: string;
@@ -385,6 +401,7 @@ export function SendExperience() {
         blockchainSignature: string;
         blockchainMode: "mock" | "devnet";
         depositAddress: string | null;
+        tokenSymbol: string | null;
         notificationRetrying: boolean;
         notificationAttemptCount: number;
         manualInviteRequired: boolean;
@@ -393,11 +410,13 @@ export function SendExperience() {
           inviteMessage: string;
         } | null;
       }>("/api/payment/create", {
+        paymentId: prepared.paymentId,
         phoneNumber: form.receiverPhone,
         senderPhoneNumber: user.phoneNumber,
         amount: Number(form.amount),
-        token: selectedToken.symbol,
+        tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
+        escrowVaultAddress: prepared.escrowVaultAddress,
         depositSignature
       });
 
@@ -409,15 +428,15 @@ export function SendExperience() {
         result.manualInviteRequired
           ? `Funds are secured in escrow. Share the invite message yourself with reference ${result.referenceCode}.`
           : result.notificationRetrying
-          ? `Funds are already secured in escrow. WhatsApp delivery is being retried automatically. Reference ${result.referenceCode}.`
-          : `Payment queued. Reference ${result.referenceCode}.`
+            ? `Funds are already secured in escrow. WhatsApp delivery is being retried automatically. Reference ${result.referenceCode}.`
+            : `Payment queued. Reference ${result.referenceCode}.`
       );
       setSendSuccess({
         ...result,
         receiverPhone: form.receiverPhone,
         recipientName,
         amount: form.amount,
-        token: selectedToken.symbol
+        token: result.tokenSymbol ?? selectedToken.symbol
       });
       setForm((current) => ({ ...current, receiverPhone: "", amount: "2.5" }));
       setRecipientPreview(null);
@@ -426,105 +445,18 @@ export function SendExperience() {
         result.manualInviteRequired
           ? `Payment secured. Share the invite manually. Reference ${result.referenceCode}.`
           : result.notificationRetrying
-          ? `Payment secured. WhatsApp delivery is retrying. Reference ${result.referenceCode}.`
-          : `Payment sent. Reference ${result.referenceCode}.`
+            ? `Payment secured. WhatsApp delivery is retrying. Reference ${result.referenceCode}.`
+            : `Payment sent. Reference ${result.referenceCode}.`
       );
     } catch (submitError) {
-      if (depositSignature) {
-        try {
-          const recovered = await apiPost<{
-            paymentId: string;
-            status: PaymentRecord["status"];
-            notificationStatus: PaymentNotificationStatus;
-            notificationSentAt: string | null;
-            notificationDeliveredAt: string | null;
-            notificationReadAt: string | null;
-            notificationFailedAt: string | null;
-            referenceCode: string;
-            senderDisplayName: string;
-            senderHandle: string;
-            escrowAccount: string | null;
-            blockchainSignature: string;
-            blockchainMode: "mock" | "devnet";
-            depositAddress: string | null;
-            notificationRetrying: boolean;
-            notificationAttemptCount: number;
-            manualInviteRequired: boolean;
-            inviteShare: {
-              onboardingLink: string;
-              inviteMessage: string;
-            } | null;
-          }>("/api/payment/create", {
-            phoneNumber: form.receiverPhone,
-            senderPhoneNumber: user.phoneNumber,
-            amount: Number(form.amount),
-            token: selectedToken.symbol,
-            senderWallet: walletAddress,
-            depositSignature
-          });
-
-          setNotice(
-            recovered.manualInviteRequired
-              ? `Your wallet transfer was already signed. TrustLink recovered the payment. Share the invite message manually. Reference ${recovered.referenceCode}.`
-              : recovered.notificationRetrying
-              ? `Your wallet transfer was already signed. TrustLink recovered the payment and is retrying WhatsApp delivery. Reference ${recovered.referenceCode}.`
-              : `Your wallet transfer was already signed. TrustLink recovered the payment. Reference ${recovered.referenceCode}.`
-          );
-          setSendSuccess({
-            ...recovered,
-            receiverPhone: form.receiverPhone,
-            recipientName,
-            amount: form.amount,
-            token: selectedToken.symbol
-          });
-          setForm((current) => ({ ...current, receiverPhone: "", amount: "2.5" }));
-          setRecipientPreview(null);
-          setConfirmOpen(false);
-          showToast("Signed transfer recovered successfully.");
-          return;
-        } catch {
-          setConfirmOpen(false);
-          setError(
-            `Your wallet transaction was already signed. Do not confirm another transfer yet. Signature: ${shortenAddress(
-              depositSignature
-            )}. Check activity in a moment while TrustLink retries recovery.`
-          );
-          showToast("Signed transfer detected. Do not sign again.");
-          return;
-        }
+      if (submitError instanceof Error && /already signed|recovered|Do not confirm/i.test(submitError.message)) {
+        setError(submitError.message);
+      } else {
+        setError(submitError instanceof Error ? submitError.message : "Could not create payment");
       }
-
-      setError(submitError instanceof Error ? submitError.message : "Could not create payment");
     } finally {
       setBusy(false);
     }
-  }
-
-  async function sendRealSolTransfer(params: {
-    walletId: string;
-    fromAddress: string;
-    amount: number;
-  }) {
-    if (selectedToken?.symbol !== "SOL") {
-      throw new Error("Real on-chain sending currently supports SOL only on devnet");
-    }
-
-    const depositTarget = await apiGet<{
-      address: string;
-      rpcUrl: string;
-      chain: string;
-      network: string;
-    }>("/api/wallet/deposit-target");
-
-    setNotice(`Approve the ${selectedToken.symbol} transfer in ${walletSession?.walletName ?? "your wallet"}...`);
-
-    return sendSolanaPayment({
-      walletId: params.walletId,
-      fromAddress: params.fromAddress,
-      toAddress: depositTarget.address,
-      amountSol: params.amount,
-      rpcUrl: depositTarget.rpcUrl
-    });
   }
 
   if (!hydrated || !user) {
@@ -723,7 +655,7 @@ export function SendExperience() {
                       <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
                       <div className="mt-1 text-sm text-white/56">@{recipientPreview.recipient.handle}</div>
                       {recipientPreview.recipient.whatsappProfileName &&
-                      recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
+                        recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
                         <div className="mt-2 text-sm text-white/48">
                           WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
                         </div>
@@ -824,10 +756,10 @@ export function SendExperience() {
 
                   return (
                     <button
-                      key={token.symbol}
+                      key={token.mintAddress}
                       type="button"
                       onClick={() => {
-                        setForm((current) => ({ ...current, token: token.symbol }));
+                        setForm((current) => ({ ...current, token: token.mintAddress }));
                         setTokenPickerOpen(false);
                       }}
                       className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"}`}
@@ -879,7 +811,7 @@ export function SendExperience() {
                       : ""}
                 </div>
                 {recipientPreview.recipient.whatsappProfileName &&
-                recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
+                  recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
                   <div className="mt-1 text-sm text-white/48">
                     WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
                   </div>

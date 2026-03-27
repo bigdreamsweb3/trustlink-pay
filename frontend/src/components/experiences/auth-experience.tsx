@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 
-import { OtpModal } from "@/src/components/otp-modal";
+import { OtpModal } from "@/src/components/modals/otp-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
-import { SiteHeader } from "@/src/components/site-header";
+import { SiteHeader } from "@/src/components/layout/site-header";
 import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
 import type { CountryOption } from "@/src/lib/phone-countries";

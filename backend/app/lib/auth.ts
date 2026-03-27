@@ -19,11 +19,14 @@ export function issueAccessToken(user: { id: string; phoneNumber: string }) {
   const payload: AccessTokenPayload = {
     sub: user.id,
     phoneNumber: user.phoneNumber,
-    exp: Math.floor(Date.now() / 1000) + env.ACCESS_TOKEN_TTL_MINUTES * 60
+    exp: Math.floor(Date.now() / 1000) + env.ACCESS_TOKEN_TTL_MINUTES * 60,
   };
 
   // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
-  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET!);
+  return signToken(
+    payload as unknown as Record<string, unknown>,
+    env.SESSION_SECRET!,
+  );
 }
 
 export function issueAuthChallengeToken(user: {
@@ -35,16 +38,19 @@ export function issueAuthChallengeToken(user: {
     sub: user.id,
     phoneNumber: user.phoneNumber,
     stage: user.stage,
-    exp: Math.floor(Date.now() / 1000) + 10 * 60
+    exp: Math.floor(Date.now() / 1000) + 10 * 60,
   };
 
   // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
-  return signToken(payload as unknown as Record<string, unknown>, env.SESSION_SECRET!);
+  return signToken(
+    payload as unknown as Record<string, unknown>,
+    env.SESSION_SECRET!,
+  );
 }
 
 export function requireAuthChallengeToken(
   token: string,
-  expectedStage?: "pin_setup" | "pin_verify"
+  expectedStage?: "pin_setup" | "pin_verify",
 ) {
   // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)
   const payload = verifyToken<AuthChallengePayload>(token, env.SESSION_SECRET!);
@@ -62,7 +68,9 @@ export function requireAuthChallengeToken(
 
 export function requireAuthenticatedUser(request: Request): AuthenticatedUser {
   const header = request.headers.get("authorization");
-  const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
+  const token = header?.startsWith("Bearer ")
+    ? header.slice("Bearer ".length)
+    : null;
 
   if (!token) {
     throw new Error("Missing access token");
@@ -77,6 +85,6 @@ export function requireAuthenticatedUser(request: Request): AuthenticatedUser {
 
   return {
     id: payload.sub,
-    phoneNumber: payload.phoneNumber
+    phoneNumber: payload.phoneNumber,
   };
 }

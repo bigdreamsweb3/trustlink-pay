@@ -116,6 +116,7 @@ npm run dev
 ```bash
 npm run db:init
 npm run db:reset
+npm run escrow:init-config
 npm run test:payment-flow
 npm run test:auth-phone-flow
 ```
@@ -144,6 +145,26 @@ Sensitive values belong only in local env files or deployment secrets:
 - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
 - `WHATSAPP_APP_SECRET`
 - Solana program and authority values
+
+Token allowlisting for real escrow tests is configured by mint address, not symbol:
+
+- `SOLANA_ALLOWED_SPL_TOKENS`
+
+Escrow verifier and fee recovery are configured centrally through:
+
+- `app/config/escrow.ts`
+
+Important values:
+
+- `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
+- `TRUSTLINK_TREASURY_OWNER`
+- `TRUSTLINK_CLAIM_FEE_BPS`
+- `TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT`
+
+See:
+
+- [`docs/devnet-testing.md`](../docs/devnet-testing.md)
+- [`docs/wallet-roles.md`](../docs/wallet-roles.md)
 
 Never commit environment files or private keys.
 

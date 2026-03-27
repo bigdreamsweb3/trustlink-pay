@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet } from "@/src/lib/api";
 import { formatTokenAmount } from "@/src/lib/formatters";

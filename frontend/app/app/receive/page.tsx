@@ -1,4 +1,4 @@
-import { ReceiveExperience } from "@/src/components/receive-experience";
+import { ReceiveExperience } from "@/src/components/experiences/receive-experience";
 
 export default function ReceivePage() {
   return <ReceiveExperience />;

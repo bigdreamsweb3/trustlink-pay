@@ -30,11 +30,13 @@ const pinSchema = z.string().trim().regex(/^\d{6}$/, "pin must be exactly 6 digi
 const challengeTokenSchema = z.string().trim().min(20);
 
 export const createPaymentSchema = z.object({
+  paymentId: z.string().uuid().optional(),
   phoneNumber: phoneNumberSchema,
   senderPhoneNumber: phoneNumberSchema,
   amount: z.number().positive(),
-  token: z.string().trim().min(2).max(10).toUpperCase(),
+  tokenMintAddress: walletAddressSchema,
   senderWallet: walletAddressSchema,
+  escrowVaultAddress: walletAddressSchema.optional(),
   depositSignature: z.string().trim().min(32).max(128).optional(),
 });
 

@@ -10,7 +10,7 @@ export async function GET() {
     if (!rpcUrl) {
       throw new Error("SOLANA_RPC_URL environment variable is not set");
     }
-    
+
     return ok({
       address: getEscrowDepositAddress(),
       rpcUrl,

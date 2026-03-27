@@ -6,13 +6,11 @@ pub enum TrustLinkEscrowError {
     InvalidAmount,
     #[msg("Payment is not pending")]
     PaymentNotPending,
-    #[msg("Payment has already been settled")]
-    PaymentAlreadySettled,
     #[msg("Payment has expired")]
     PaymentExpired,
     #[msg("Payment has not expired yet")]
     PaymentNotExpired,
-    #[msg("Unauthorized signer")]
+    #[msg("Unauthorized signer or claim data")]
     Unauthorized,
     #[msg("Invalid claim verifier")]
     InvalidClaimVerifier,
@@ -24,4 +22,10 @@ pub enum TrustLinkEscrowError {
     InvalidReceiverMint,
     #[msg("Sender token account mint does not match the payment mint")]
     InvalidSenderMint,
+    #[msg("Treasury token account mint does not match the payment mint")]
+    InvalidTreasuryMint,
+    #[msg("Fee configuration is invalid")]
+    InvalidFeeConfig,
+    #[msg("Invalid config authority")]
+    InvalidConfigAuthority,
 }

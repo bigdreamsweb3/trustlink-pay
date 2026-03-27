@@ -13,7 +13,9 @@ function isTransientDatabaseError(error: unknown) {
     return false;
   }
 
-  return /fetch failed|networkerror|network error|socket|timeout|ecconnreset|enotfound|eai_again/i.test(error.message);
+  return /fetch failed|networkerror|network error|socket|timeout|ecconnreset|enotfound|eai_again/i.test(
+    error.message,
+  );
 }
 
 async function delay(ms: number) {
@@ -22,7 +24,10 @@ async function delay(ms: number) {
 
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DATABASE_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    DATABASE_FETCH_TIMEOUT_MS,
+  );
 
   try {
     return await globalThis.fetch(input, {
@@ -45,7 +50,10 @@ function configureNeon() {
     return;
   }
 
-  neonConfig.fetchFunction = async (input: RequestInfo | URL, init?: RequestInit) => {
+  neonConfig.fetchFunction = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => {
     let lastError: unknown;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {

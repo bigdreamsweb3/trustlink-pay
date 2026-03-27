@@ -1,4 +1,4 @@
-import { SettingsExperience } from "@/src/components/settings-experience";
+import { SettingsExperience } from "@/src/components/experiences/settings-experience";
 
 export default function SettingsPage() {
   return <SettingsExperience />;

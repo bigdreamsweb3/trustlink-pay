@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { SiteHeader } from "@/src/components/site-header";
+import { SiteHeader } from "@/src/components/layout/site-header";
 
 const highlights = [
   {

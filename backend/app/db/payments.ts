@@ -10,6 +10,9 @@ async function ensurePaymentTraceColumns() {
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS release_signature VARCHAR(128)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS released_to_wallet VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS fee_amount NUMERIC(20, 9)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS notification_attempt_count INTEGER NOT NULL DEFAULT 0`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS notification_last_attempt_at TIMESTAMPTZ`;
       await sql`
@@ -40,6 +43,7 @@ async function ensurePaymentTraceColumns() {
 }
 
 export async function createPaymentRecord(params: {
+  id?: string;
   senderUserId: string;
   senderWallet: string;
   senderDisplayNameSnapshot: string;
@@ -48,14 +52,18 @@ export async function createPaymentRecord(params: {
   receiverPhone: string;
   receiverPhoneHash: string;
   tokenSymbol: string;
+  tokenMintAddress: string;
   amount: number;
+  feeAmount?: number | null;
   escrowAccount: string;
+  escrowVaultAddress: string;
   depositSignature?: string | null;
 }): Promise<PaymentRecord> {
   await ensurePaymentTraceColumns();
 
   const rows = (await sql`
     INSERT INTO payments (
+      id,
       sender_user_id,
       sender_wallet,
       sender_display_name_snapshot,
@@ -64,13 +72,17 @@ export async function createPaymentRecord(params: {
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       status,
       notification_status
     )
     VALUES (
+      COALESCE(${params.id ?? null}, gen_random_uuid()),
       ${params.senderUserId},
       ${params.senderWallet},
       ${params.senderDisplayNameSnapshot},
@@ -79,8 +91,11 @@ export async function createPaymentRecord(params: {
       ${params.receiverPhone},
       ${params.receiverPhoneHash},
       ${params.tokenSymbol},
+      ${params.tokenMintAddress},
       ${params.amount},
+      ${params.feeAmount ?? null},
       ${params.escrowAccount},
+      ${params.escrowVaultAddress},
       ${params.depositSignature ?? null},
       'pending',
       'queued'
@@ -95,8 +110,11 @@ export async function createPaymentRecord(params: {
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -130,8 +148,11 @@ export async function findPaymentById(id: string): Promise<PaymentRecord | null>
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -171,8 +192,11 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -217,8 +241,11 @@ export async function updatePaymentAcceptance(params: {
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -266,8 +293,11 @@ export async function updatePaymentNotificationMessageId(
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -336,8 +366,11 @@ export async function updatePaymentNotificationStatus(
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -371,8 +404,11 @@ export async function findPaymentByNotificationMessageId(messageId: string): Pro
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -409,8 +445,11 @@ export async function listPendingPaymentsByPhoneNumber(phoneNumber: string): Pro
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -452,8 +491,11 @@ export async function listPaymentHistory(params: {
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,
@@ -494,8 +536,10 @@ export async function findLatestReferralCandidateByReceiverPhone(
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
       released_to_wallet,

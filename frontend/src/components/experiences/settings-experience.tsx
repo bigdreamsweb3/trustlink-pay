@@ -2,9 +2,9 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { OtpModal } from "@/src/components/otp-modal";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { OtpModal } from "@/src/components/modals/otp-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
 import { setStoredUser } from "@/src/lib/storage";
@@ -21,13 +21,12 @@ function PinDigitBoxes({ pin }: { pin: string }) {
         return (
           <div
             key={index}
-            className={`grid h-12 place-items-center rounded-[18px] border text-lg font-semibold transition ${
-              isFilled
-                ? "border-[#7dffd9]/70 bg-[#7dffd9]/8 text-white"
-                : isActive
-                  ? "border-[#7dffd9]/40 bg-white/[0.03] text-white/70"
-                  : "border-white/10 bg-white/[0.03] text-white/32"
-            }`}
+            className={`grid h-12 place-items-center rounded-[18px] border text-lg font-semibold transition ${isFilled
+              ? "border-[#7dffd9]/70 bg-[#7dffd9]/8 text-white"
+              : isActive
+                ? "border-[#7dffd9]/40 bg-white/[0.03] text-white/70"
+                : "border-white/10 bg-white/[0.03] text-white/32"
+              }`}
           >
             {isFilled ? "•" : ""}
           </div>

@@ -1,4 +1,4 @@
-import { ClaimExperience } from "@/src/components/claim-experience";
+import { ClaimExperience } from "@/src/components/experiences/claim-experience";
 
 export default async function ClaimPage({
   params

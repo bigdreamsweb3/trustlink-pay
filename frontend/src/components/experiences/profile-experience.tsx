@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { apiPatch } from "@/src/lib/api";
 import { setStoredUser } from "@/src/lib/storage";

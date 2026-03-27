@@ -1,61 +1,50 @@
-import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import {
-  Keypair,
   Connection,
-  LAMPORTS_PER_SOL,
+  Keypair,
   PublicKey,
   SystemProgram,
+  SYSVAR_RENT_PUBKEY,
   Transaction,
+  TransactionInstruction,
   TransactionSignature,
-  type ParsedInstruction,
+  sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
+import { getEscrowFeeConfig } from "@/app/config/escrow";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { sha256 } from "@/app/utils/hash";
 
-// Simple wallet implementation for Anchor provider
-class SimpleWallet {
-  public payer: Keypair;
+const splToken = require("@solana/spl-token") as {
+  TOKEN_PROGRAM_ID: PublicKey;
+  ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey;
+  getAssociatedTokenAddressSync: (mint: PublicKey, owner: PublicKey) => PublicKey;
+  createAssociatedTokenAccountInstruction: (
+    payer: PublicKey,
+    associatedToken: PublicKey,
+    owner: PublicKey,
+    mint: PublicKey,
+    tokenProgramId?: PublicKey,
+    associatedTokenProgramId?: PublicKey,
+  ) => TransactionInstruction;
+};
 
-  constructor(payer: Keypair) {
-    this.payer = payer;
-  }
+const CONFIG_SEED = Buffer.from("config");
+const PAYMENT_SEED = Buffer.from("payment");
+const VAULT_AUTHORITY_SEED = Buffer.from("vault_authority");
+const TOKEN_PROGRAM_ID = splToken.TOKEN_PROGRAM_ID;
+const ASSOCIATED_TOKEN_PROGRAM_ID = splToken.ASSOCIATED_TOKEN_PROGRAM_ID;
+const ESCROW_CONFIG_DISCRIMINATOR = accountDiscriminator("EscrowConfig");
+const PAYMENT_ACCOUNT_DISCRIMINATOR = accountDiscriminator("PaymentAccount");
 
-  get publicKey(): PublicKey {
-    return this.payer.publicKey;
-  }
-
-  async signTransaction(transaction: any): Promise<any> {
-    transaction.partialSign(this.payer);
-    return transaction;
-  }
-
-  async signAllTransactions(transactions: any[]): Promise<any[]> {
-    return transactions.map(tx => {
-      tx.partialSign(this.payer);
-      return tx;
-    });
-  }
-}
-
-type EscrowProgram = Program<Idl>;
-
-const TOKEN_PROGRAM_IDS = [
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-];
-
-const SUPPORTED_TOKENS = [
-  { symbol: "SOL", name: "Solana", logo: "◎" },
-  { symbol: "USDC", name: "USD Coin", logo: "◉" },
-  { symbol: "USDT", name: "Tether", logo: "₮" }
-] as const;
-
-const TOKEN_METADATA_BY_SYMBOL: Record<string, { name: string; logo: string; supported: boolean }> = Object.fromEntries(
-  SUPPORTED_TOKENS.map((token) => [token.symbol, { name: token.name, logo: token.logo, supported: true }])
-);
+type SupportedTokenConfig = {
+  mintAddress: string;
+  symbol: string;
+  name: string;
+  logo: string;
+  decimals: number;
+};
 
 export type SupportedWalletToken = {
   symbol: string;
@@ -68,9 +57,56 @@ export type SupportedWalletToken = {
 
 export type BlockchainExecutionMode = "mock" | "devnet";
 
+type DecodedPaymentAccount = {
+  paymentId: Uint8Array;
+  senderPubkey: PublicKey;
+  receiverPhoneHash: Uint8Array;
+  tokenMint: PublicKey;
+  amount: bigint;
+  feeAmount: bigint;
+  expiryTs: bigint;
+  status: number;
+};
+
+type DecodedEscrowConfig = {
+  claimVerifier: PublicKey;
+  treasuryOwner: PublicKey;
+  feeBps: number;
+  feeCap: bigint;
+  bump: number;
+  layout: "current" | "legacy";
+};
+
+let allowedTokenCache: SupportedTokenConfig[] | null = null;
+
+function instructionDiscriminator(name: string) {
+  return createHash("sha256").update(`global:${name}`).digest().subarray(0, 8);
+}
+
+function accountDiscriminator(name: string) {
+  return createHash("sha256").update(`account:${name}`).digest().subarray(0, 8);
+}
+
+function encodeU64(value: bigint) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64LE(value);
+  return buffer;
+}
+
+function encodeU16(value: number) {
+  const buffer = Buffer.alloc(2);
+  buffer.writeUInt16LE(value);
+  return buffer;
+}
+
+function encodeI64(value: bigint) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigInt64LE(value);
+  return buffer;
+}
+
 function getSecretKey(): Uint8Array {
-  // Will throw at runtime if SOLANA_ESCROW_AUTHORITY_SECRET_KEY is not set (see env.ts proxy)
-  const rawValue = env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY!.trim();
+  const rawValue = (env.SOLANA_CLAIM_VERIFIER_SECRET_KEY ?? env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY)!.trim();
 
   try {
     const values = JSON.parse(rawValue) as number[];
@@ -108,306 +144,706 @@ function getEscrowAuthorityKeypair() {
     // Fall back to deterministic seed derivation for local/devnet compatibility.
   }
 
-  const seed = secretKey.length >= 32 ? secretKey.slice(0, 32) : createHash("sha256").update(secretKey).digest().slice(0, 32);
+  const seed =
+    secretKey.length >= 32 ? secretKey.slice(0, 32) : createHash("sha256").update(secretKey).digest().slice(0, 32);
   return Keypair.fromSeed(Uint8Array.from(seed));
 }
 
-export function getEscrowDepositAddress() {
-  return getEscrowAuthorityKeypair().publicKey.toBase58();
+function getConnection() {
+  return new Connection(env.SOLANA_RPC_URL!, "confirmed");
 }
 
-function getProgram(): { program: EscrowProgram; payer: Keypair; connection: Connection } {
-  // These will throw at runtime if not set (see env.ts proxy)
-  const rpcUrl = env.SOLANA_RPC_URL!;
-  const programId = env.SOLANA_PROGRAM_ID!;
-  
-  const connection = new Connection(rpcUrl, "confirmed");
-  const payer = Keypair.fromSecretKey(getSecretKey());
-  const wallet = new SimpleWallet(payer);
-  const provider = new AnchorProvider(connection, wallet, {
-    commitment: "confirmed"
-  });
-
-  // The IDL must match the deployed escrow program. Keep the client minimal here.
-  const idl = {
-    address: programId,
-    metadata: {
-      name: "trustlink_escrow",
-      version: "0.1.0",
-      spec: "0.1.0"
-    },
-    instructions: []
-  } as unknown as Idl;
-
-  const program = new Program(idl, provider);
-  return { program, payer, connection };
+function getProgramId() {
+  return new PublicKey(env.SOLANA_PROGRAM_ID!);
 }
 
-export async function createEscrowPayment(params: {
-  senderWallet: string;
-  phoneHash: string;
-  amount: number;
-  token: string;
-  depositSignature?: string;
-}): Promise<{ escrowAccount: string; signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
-  if (env.SOLANA_MOCK_MODE) {
-    const escrowAccount = Keypair.generate().publicKey.toBase58();
-    const signature = sha256(
-      JSON.stringify({
-        action: "createEscrowPayment",
-        escrowAccount,
-        ...params
-      })
-    ).slice(0, 64);
+function parseAllowedTokens() {
+  if (allowedTokenCache) {
+    return allowedTokenCache;
+  }
 
-    logger.info("solana.mock.create_escrow", {
-      escrowAccount,
-      senderWallet: params.senderWallet,
-      amount: params.amount,
-      token: params.token
-    });
+  const rawValue = env.SOLANA_ALLOWED_SPL_TOKENS;
+  if (!rawValue) {
+    allowedTokenCache = [];
+    return allowedTokenCache;
+  }
+
+  const parsed = JSON.parse(rawValue) as Array<{
+    mintAddress: string;
+    symbol: string;
+    name?: string;
+    logo?: string;
+    decimals?: number;
+  }>;
+
+  allowedTokenCache = parsed.map((token) => ({
+    mintAddress: new PublicKey(token.mintAddress).toBase58(),
+    symbol: token.symbol.trim().toUpperCase(),
+    name: token.name?.trim() || token.symbol.trim().toUpperCase(),
+    logo: token.logo?.trim() || "o",
+    decimals: Number.isFinite(token.decimals) ? Number(token.decimals) : 6,
+  }));
+
+  return allowedTokenCache;
+}
+
+function getAllowedTokenByMint(mintAddress: string) {
+  return parseAllowedTokens().find((token) => token.mintAddress === mintAddress) ?? null;
+}
+
+function paymentIdToSeed(paymentId: string) {
+  return createHash("sha256").update(`trustlink-payment:${paymentId}`).digest().subarray(0, 32);
+}
+
+function phoneHashHexToBytes(phoneHash: string) {
+  const bytes = Buffer.from(phoneHash, "hex");
+  if (bytes.length !== 32) {
+    throw new Error("Phone hash must resolve to 32 bytes");
+  }
+  return bytes;
+}
+
+function getConfigPda() {
+  return PublicKey.findProgramAddressSync([CONFIG_SEED], getProgramId())[0];
+}
+
+function getPaymentAccountPda(paymentId: string) {
+  return PublicKey.findProgramAddressSync([PAYMENT_SEED, paymentIdToSeed(paymentId)], getProgramId())[0];
+}
+
+function getVaultAuthorityPda(paymentId: string) {
+  return PublicKey.findProgramAddressSync([VAULT_AUTHORITY_SEED, paymentIdToSeed(paymentId)], getProgramId())[0];
+}
+
+function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
+  if (!data.subarray(0, 8).equals(PAYMENT_ACCOUNT_DISCRIMINATOR)) {
+    throw new Error("Payment account discriminator mismatch");
+  }
+
+  let offset = 8;
+  const paymentId = data.subarray(offset, offset + 32);
+  offset += 32;
+  const senderPubkey = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const receiverPhoneHash = data.subarray(offset, offset + 32);
+  offset += 32;
+  const tokenMint = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const amount = data.readBigUInt64LE(offset);
+  offset += 8;
+  const feeAmount = data.readBigUInt64LE(offset);
+  offset += 8;
+  const expiryTs = data.readBigInt64LE(offset);
+  offset += 8;
+  const status = data.readUInt8(offset);
+
+  return {
+    paymentId,
+    senderPubkey,
+    receiverPhoneHash,
+    tokenMint,
+    amount,
+    feeAmount,
+    expiryTs,
+    status,
+  };
+}
+
+function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
+  if (!data.subarray(0, 8).equals(ESCROW_CONFIG_DISCRIMINATOR)) {
+    throw new Error("Escrow config discriminator mismatch");
+  }
+
+  if (data.length < 8 + 32 + 32 + 2 + 8 + 1) {
+    if (data.length < 8 + 32) {
+      throw new Error(`Escrow config account is too small to decode: ${data.length} bytes`);
+    }
+
+    let legacyOffset = 8;
+    const claimVerifier = new PublicKey(data.subarray(legacyOffset, legacyOffset + 32));
+    legacyOffset += 32;
+    const bump = data.length > legacyOffset ? data.readUInt8(legacyOffset) : 0;
 
     return {
-      escrowAccount,
-      signature,
-      mode: "mock",
+      claimVerifier,
+      treasuryOwner: PublicKey.default,
+      feeBps: 0,
+      feeCap: 0n,
+      bump,
+      layout: "legacy",
     };
   }
 
-  if (params.token !== "SOL") {
-    throw new Error("Real on-chain sending currently supports SOL only until SPL escrow transfer is wired");
+  let offset = 8;
+  const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const feeBps = data.readUInt16LE(offset);
+  offset += 2;
+  const feeCap = data.readBigUInt64LE(offset);
+  offset += 8;
+  const bump = data.readUInt8(offset);
+
+  return {
+    claimVerifier,
+    treasuryOwner,
+    feeBps,
+    feeCap,
+    bump,
+    layout: "current",
+  };
+}
+
+export function getEscrowVerifierPublicKey() {
+  return getEscrowAuthorityKeypair().publicKey.toBase58();
+}
+
+export async function isEscrowConfigInitialized() {
+  const connection = getConnection();
+  const configPda = getConfigPda();
+  const existing = await connection.getAccountInfo(configPda, "confirmed");
+
+  return Boolean(existing);
+}
+
+export async function getEscrowConfigState() {
+  const connection = getConnection();
+  const configPda = getConfigPda();
+  const existing = await connection.getAccountInfo(configPda, "confirmed");
+
+  if (!existing) {
+    return null;
   }
 
-  if (!params.depositSignature) {
-    throw new Error("depositSignature is required for real on-chain payments");
+  const decoded = decodeEscrowConfig(existing.data);
+  return {
+    address: configPda.toBase58(),
+    claimVerifier: decoded.claimVerifier.toBase58(),
+    treasuryOwner: decoded.layout === "current" ? decoded.treasuryOwner.toBase58() : null,
+    feeBps: decoded.feeBps,
+    feeCap: decoded.feeCap.toString(),
+    bump: decoded.bump,
+    layout: decoded.layout,
+  };
+}
+
+export async function initializeEscrowConfig() {
+  const connection = getConnection();
+  const payer = getEscrowAuthorityKeypair();
+  const feeConfig = getEscrowFeeConfig();
+  const allowedTokens = parseAllowedTokens();
+  const feeCapDecimals = allowedTokens[0]?.decimals ?? 6;
+  const configPda = getConfigPda();
+  const existing = await connection.getAccountInfo(configPda, "confirmed");
+
+  if (existing) {
+    logger.info("solana.escrow_config_already_initialized", {
+      config: configPda.toBase58(),
+      claimVerifier: payer.publicKey.toBase58(),
+    });
+    return configPda.toBase58();
   }
 
-  const { connection } = getProgram();
-  const escrowAuthority = getEscrowAuthorityKeypair().publicKey;
-  await verifyIncomingSolTransfer({
+  const data = Buffer.concat([
+    instructionDiscriminator("initialize_config"),
+    payer.publicKey.toBuffer(),
+    new PublicKey(feeConfig.treasuryOwner).toBuffer(),
+    encodeU16(feeConfig.feeBps),
+    encodeU64(toBaseUnits(feeConfig.feeCapUiAmount, feeCapDecimals)),
+  ]);
+
+  const transaction = new Transaction().add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data,
+    }),
+  );
+
+  await sendAndConfirmTransaction(connection, transaction, [payer], {
+    commitment: "confirmed",
+  });
+
+  logger.info("solana.escrow_config_initialized", {
+    config: configPda.toBase58(),
+    claimVerifier: payer.publicKey.toBase58(),
+    treasuryOwner: feeConfig.treasuryOwner,
+    feeBps: feeConfig.feeBps,
+    feeCapUiAmount: feeConfig.feeCapUiAmount,
+  });
+
+  return configPda.toBase58();
+}
+
+export async function updateEscrowConfig() {
+  const connection = getConnection();
+  const authority = getEscrowAuthorityKeypair();
+  const feeConfig = getEscrowFeeConfig();
+  const allowedTokens = parseAllowedTokens();
+  const feeCapDecimals = allowedTokens[0]?.decimals ?? 6;
+  const configPda = getConfigPda();
+  const existing = await connection.getAccountInfo(configPda, "confirmed");
+
+  if (!existing) {
+    throw new Error("Escrow config is not initialized. Run escrow:init-config first.");
+  }
+
+  const current = decodeEscrowConfig(existing.data);
+  if (current.layout === "legacy") {
+    throw new Error(
+      `Escrow config ${configPda.toBase58()} uses a legacy layout from the older program version. Deploy the upgraded program successfully, then use a fresh program ID or add a migration/realloc path before updating treasury and fee settings.`,
+    );
+  }
+  const targetClaimVerifier = authority.publicKey.toBase58();
+  const targetTreasuryOwner = new PublicKey(feeConfig.treasuryOwner).toBase58();
+  const targetFeeBps = feeConfig.feeBps;
+  const targetFeeCap = toBaseUnits(feeConfig.feeCapUiAmount, feeCapDecimals);
+
+  if (
+    current.claimVerifier.toBase58() === targetClaimVerifier &&
+    current.treasuryOwner.toBase58() === targetTreasuryOwner &&
+    current.feeBps === targetFeeBps &&
+    current.feeCap === targetFeeCap
+  ) {
+    logger.info("solana.escrow_config_already_matches_target", {
+      config: configPda.toBase58(),
+      claimVerifier: targetClaimVerifier,
+      treasuryOwner: targetTreasuryOwner,
+      feeBps: targetFeeBps,
+      feeCapUiAmount: feeConfig.feeCapUiAmount,
+    });
+    return configPda.toBase58();
+  }
+
+  const data = Buffer.concat([
+    instructionDiscriminator("update_config"),
+    authority.publicKey.toBuffer(),
+    new PublicKey(feeConfig.treasuryOwner).toBuffer(),
+    encodeU16(feeConfig.feeBps),
+    encodeU64(targetFeeCap),
+  ]);
+
+  const transaction = new Transaction().add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: authority.publicKey, isSigner: true, isWritable: false },
+        { pubkey: configPda, isSigner: false, isWritable: true },
+      ],
+      data,
+    }),
+  );
+
+  await sendAndConfirmTransaction(connection, transaction, [authority], {
+    commitment: "confirmed",
+  });
+
+  logger.info("solana.escrow_config_updated", {
+    config: configPda.toBase58(),
+    claimVerifier: targetClaimVerifier,
+    treasuryOwner: targetTreasuryOwner,
+    feeBps: targetFeeBps,
+    feeCapUiAmount: feeConfig.feeCapUiAmount,
+  });
+
+  return configPda.toBase58();
+}
+
+async function requireEscrowConfigInitialized() {
+  const configPda = getConfigPda();
+  const initialized = await isEscrowConfigInitialized();
+  if (!initialized) {
+    throw new Error(
+      `Escrow config is not initialized. Run the one-time config init with verifier ${getEscrowVerifierPublicKey()} before claiming.`,
+    );
+  }
+
+  return configPda;
+}
+
+async function findSenderTokenAccount(params: {
+  connection: Connection;
+  owner: PublicKey;
+  mint: PublicKey;
+  amount: number;
+}) {
+  const accounts = await params.connection.getParsedTokenAccountsByOwner(
+    params.owner,
+    { mint: params.mint },
+    "confirmed",
+  );
+
+  const requiredAmount = params.amount;
+  const matching = accounts.value
+    .map((entry) => {
+      const parsedInfo = (entry.account.data as { parsed?: { info?: Record<string, unknown> } }).parsed?.info;
+      const tokenAmount = parsedInfo?.tokenAmount as { uiAmount?: number; uiAmountString?: string } | undefined;
+      const balance = tokenAmount?.uiAmount ?? Number(tokenAmount?.uiAmountString ?? "0");
+
+      return {
+        address: entry.pubkey,
+        balance,
+      };
+    })
+    .filter((entry) => Number.isFinite(entry.balance) && entry.balance >= requiredAmount)
+    .sort((left, right) => right.balance - left.balance);
+
+  return matching[0]?.address ?? null;
+}
+
+function toBaseUnits(amount: number, decimals: number) {
+  return BigInt(Math.round(amount * 10 ** decimals));
+}
+
+export function getEscrowDepositAddress() {
+  return getProgramId().toBase58();
+}
+
+export function createDraftPaymentId() {
+  return randomUUID();
+}
+
+export async function prepareEscrowPayment(params: {
+  paymentId: string;
+  senderWallet: string;
+  phoneHash: string;
+  amount: number;
+  tokenMintAddress: string;
+}): Promise<{
+  paymentId: string;
+  escrowAccount: string;
+  escrowVaultAddress: string;
+  serializedTransaction: string;
+  mode: BlockchainExecutionMode;
+  tokenSymbol: string;
+}> {
+  const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
+  if (!tokenConfig) {
+    throw new Error("This token mint is not allowlisted by TrustLink");
+  }
+
+  if (env.SOLANA_MOCK_MODE) {
+    return {
+      paymentId: params.paymentId,
+      escrowAccount: Keypair.generate().publicKey.toBase58(),
+      escrowVaultAddress: Keypair.generate().publicKey.toBase58(),
+      serializedTransaction: Buffer.from("mock").toString("base64"),
+      mode: "mock",
+      tokenSymbol: tokenConfig.symbol,
+    };
+  }
+
+  const connection = getConnection();
+  const configPda = await requireEscrowConfigInitialized();
+  const sender = new PublicKey(params.senderWallet);
+  const mint = new PublicKey(params.tokenMintAddress);
+  const senderTokenAccount = await findSenderTokenAccount({
     connection,
-    senderWallet: params.senderWallet,
-    destinationWallet: escrowAuthority.toBase58(),
+    owner: sender,
+    mint,
     amount: params.amount,
-    signature: params.depositSignature,
+  });
+
+  if (!senderTokenAccount) {
+    throw new Error("No supported token account with enough balance was found for the selected mint");
+  }
+
+  const paymentAccount = getPaymentAccountPda(params.paymentId);
+  const vaultAuthority = getVaultAuthorityPda(params.paymentId);
+  const escrowVault = Keypair.generate();
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+  const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7);
+  const data = Buffer.concat([
+    instructionDiscriminator("create_payment"),
+    paymentIdToSeed(params.paymentId),
+    phoneHashHexToBytes(params.phoneHash),
+    encodeU64(toBaseUnits(params.amount, tokenConfig.decimals)),
+    encodeI64(expiryTs),
+  ]);
+
+  const transaction = new Transaction({
+    feePayer: sender,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  }).add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: sender, isSigner: true, isWritable: true },
+        { pubkey: sender, isSigner: true, isWritable: true },
+        { pubkey: senderTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: false },
+        { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: paymentAccount, isSigner: false, isWritable: true },
+        { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+        { pubkey: escrowVault.publicKey, isSigner: true, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+      ],
+      data,
+    }),
+  );
+
+  transaction.partialSign(escrowVault);
+
+  logger.info("solana.prepare_escrow_payment", {
+    paymentId: params.paymentId,
+    senderWallet: params.senderWallet,
+    tokenMintAddress: params.tokenMintAddress,
+    escrowAccount: paymentAccount.toBase58(),
+    escrowVaultAddress: escrowVault.publicKey.toBase58(),
   });
 
   return {
-    escrowAccount: escrowAuthority.toBase58(),
+    paymentId: params.paymentId,
+    escrowAccount: paymentAccount.toBase58(),
+    escrowVaultAddress: escrowVault.publicKey.toBase58(),
+    serializedTransaction: transaction
+      .serialize({ requireAllSignatures: false, verifySignatures: false })
+      .toString("base64"),
+    mode: "devnet",
+    tokenSymbol: tokenConfig.symbol,
+  };
+}
+
+export async function confirmEscrowPayment(params: {
+  paymentId: string;
+  senderWallet: string;
+  phoneHash: string;
+  amount: number;
+  tokenMintAddress: string;
+  depositSignature: string;
+  escrowVaultAddress: string;
+}): Promise<{
+  escrowAccount: string;
+  escrowVaultAddress: string;
+  signature: string;
+  mode: BlockchainExecutionMode;
+  tokenSymbol: string;
+  feeAmountUi: number;
+}> {
+  const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
+  if (!tokenConfig) {
+    throw new Error("This token mint is not allowlisted by TrustLink");
+  }
+
+  if (env.SOLANA_MOCK_MODE) {
+    return {
+      escrowAccount: getPaymentAccountPda(params.paymentId).toBase58(),
+      escrowVaultAddress: params.escrowVaultAddress,
+      signature: params.depositSignature,
+      mode: "mock",
+      tokenSymbol: tokenConfig.symbol,
+      feeAmountUi: 0,
+    };
+  }
+
+  const connection = getConnection();
+  const paymentAccount = getPaymentAccountPda(params.paymentId);
+  const transaction = await connection.getTransaction(params.depositSignature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+
+  if (!transaction || transaction.meta?.err) {
+    throw new Error("The escrow creation transaction could not be confirmed on-chain");
+  }
+
+  const accountInfo = await connection.getAccountInfo(paymentAccount, "confirmed");
+  if (!accountInfo) {
+    throw new Error("The escrow payment account was not created on-chain");
+  }
+
+  const decoded = decodePaymentAccount(accountInfo.data);
+  const expectedAmount = toBaseUnits(params.amount, tokenConfig.decimals);
+
+  if (decoded.senderPubkey.toBase58() !== params.senderWallet) {
+    throw new Error("The on-chain sender does not match the connected wallet");
+  }
+
+  if (decoded.tokenMint.toBase58() !== params.tokenMintAddress) {
+    throw new Error("The on-chain token mint does not match the selected allowlisted mint");
+  }
+
+  if (Buffer.compare(Buffer.from(decoded.receiverPhoneHash), phoneHashHexToBytes(params.phoneHash)) !== 0) {
+    throw new Error("The on-chain receiver hash does not match the verified recipient");
+  }
+
+  if (decoded.amount !== expectedAmount) {
+    throw new Error("The on-chain escrow amount does not match the requested amount");
+  }
+
+  return {
+    escrowAccount: paymentAccount.toBase58(),
+    escrowVaultAddress: params.escrowVaultAddress,
     signature: params.depositSignature,
     mode: "devnet",
+    tokenSymbol: tokenConfig.symbol,
+    feeAmountUi: Number(decoded.feeAmount) / 10 ** tokenConfig.decimals,
   };
 }
 
 export async function releaseEscrow(params: {
   paymentId: string;
   escrowAccount: string;
+  escrowVaultAddress: string;
+  senderWallet: string;
   receiverWallet: string;
-  amount: number;
-  token: string;
+  receiverPhoneHash: string;
+  tokenMintAddress: string;
 }): Promise<{ signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
   if (env.SOLANA_MOCK_MODE) {
-    const signature = sha256(
-      JSON.stringify({
-        action: "releaseEscrow",
-        ...params
-      })
-    ).slice(0, 64);
-
-    logger.info("solana.mock.release_escrow", {
-      paymentId: params.paymentId,
-      escrowAccount: params.escrowAccount,
-      receiverWallet: params.receiverWallet,
-      amount: params.amount,
-      token: params.token
-    });
-
+    const signature = sha256(JSON.stringify({ action: "releaseEscrow", ...params })).slice(0, 64);
+    logger.info("solana.mock.release_escrow", params);
     return { signature, mode: "mock" };
   }
 
-  if (params.token !== "SOL") {
-    throw new Error("Real on-chain release currently supports SOL only until SPL escrow transfer is wired");
-  }
-
-  const { connection, payer } = getProgram();
+  const configPda = await requireEscrowConfigInitialized();
+  const connection = getConnection();
+  const payer = getEscrowAuthorityKeypair();
+  const feeConfig = getEscrowFeeConfig();
+  const mint = new PublicKey(params.tokenMintAddress);
+  const receiverOwner = new PublicKey(params.receiverWallet);
+  const receiverTokenAccount = splToken.getAssociatedTokenAddressSync(mint, receiverOwner);
+  const treasuryOwner = new PublicKey(feeConfig.treasuryOwner);
+  const treasuryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, treasuryOwner);
+  const paymentAccount = new PublicKey(params.escrowAccount);
+  const escrowVault = new PublicKey(params.escrowVaultAddress);
+  const vaultAuthority = getVaultAuthorityPda(params.paymentId);
+  const senderMainAccount = new PublicKey(params.senderWallet);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
   const transaction = new Transaction({
     feePayer: payer.publicKey,
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  }).add(
-    SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: new PublicKey(params.receiverWallet),
-      lamports: Math.round(params.amount * LAMPORTS_PER_SOL),
-    })
+  });
+
+  const receiverAtaInfo = await connection.getAccountInfo(receiverTokenAccount, "confirmed");
+  if (!receiverAtaInfo) {
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        receiverTokenAccount,
+        receiverOwner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+
+  const treasuryAtaInfo = await connection.getAccountInfo(treasuryTokenAccount, "confirmed");
+  if (!treasuryAtaInfo) {
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        treasuryTokenAccount,
+        treasuryOwner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+
+  transaction.add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: payer.publicKey, isSigner: true, isWritable: false },
+        { pubkey: configPda, isSigner: false, isWritable: false },
+        { pubkey: paymentAccount, isSigner: false, isWritable: true },
+        { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+        { pubkey: escrowVault, isSigner: false, isWritable: true },
+        { pubkey: receiverTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: senderMainAccount, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.concat([
+        instructionDiscriminator("claim_payment"),
+        paymentIdToSeed(params.paymentId),
+        phoneHashHexToBytes(params.receiverPhoneHash),
+      ]),
+    }),
   );
 
-  const signature = await connection.sendTransaction(transaction, [payer], {
-    preflightCommitment: "confirmed",
+  const signature = await sendAndConfirmTransaction(connection, transaction, [payer], {
+    commitment: "confirmed",
   });
-  await connection.confirmTransaction(
-    {
-      signature,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-    },
-    "confirmed"
-  );
 
   logger.info("solana.release_escrow", {
     paymentId: params.paymentId,
     escrowAccount: params.escrowAccount,
+    escrowVaultAddress: params.escrowVaultAddress,
     receiverWallet: params.receiverWallet,
-    amount: params.amount,
-    token: params.token,
+    tokenMintAddress: params.tokenMintAddress,
     signature,
   });
 
   return { signature, mode: "devnet" };
 }
 
-export async function cancelEscrow(params: {
-  paymentId: string;
-  escrowAccount: string;
-}): Promise<{ signature: TransactionSignature | null; mode: BlockchainExecutionMode }> {
-  if (env.SOLANA_MOCK_MODE) {
-    const signature = sha256(
-      JSON.stringify({
-        action: "cancelEscrow",
-        ...params
-      })
-    ).slice(0, 64);
-
-    logger.info("solana.mock.cancel_escrow", {
-      paymentId: params.paymentId,
-      escrowAccount: params.escrowAccount
-    });
-
-    return { signature, mode: "mock" };
-  }
-  throw new Error("Real escrow cancellation is not wired yet");
-}
-
 export async function listSupportedWalletTokens(walletAddress: string): Promise<SupportedWalletToken[]> {
-  const rpcUrl = env.SOLANA_RPC_URL!;
-  const connection = new Connection(rpcUrl, "confirmed");
+  const allowedTokens = parseAllowedTokens();
+  const connection = getConnection();
   const owner = new PublicKey(walletAddress);
+
+  if (allowedTokens.length === 0) {
+    logger.warn("solana.wallet_tokens.no_allowlist", { walletAddress });
+    return [];
+  }
+
   const tokenBalances = new Map<string, SupportedWalletToken>();
+  const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+    owner,
+    { programId: TOKEN_PROGRAM_ID },
+    "confirmed",
+  );
 
-  const lamports = await connection.getBalance(owner, "confirmed");
-  const solBalance = Number((lamports / LAMPORTS_PER_SOL).toFixed(9));
+  for (const tokenAccount of tokenAccounts.value) {
+    const parsedInfo = (tokenAccount.account.data as { parsed?: { info?: Record<string, unknown> } }).parsed?.info;
+    const mintAddress = typeof parsedInfo?.mint === "string" ? parsedInfo.mint : null;
+    const tokenAmount = parsedInfo?.tokenAmount as { uiAmount?: number; uiAmountString?: string } | undefined;
+    const balance = tokenAmount?.uiAmount ?? Number(tokenAmount?.uiAmountString ?? "0");
+    const tokenConfig = mintAddress ? getAllowedTokenByMint(mintAddress) : null;
 
-  if (solBalance > 0) {
-    tokenBalances.set("native-sol", {
-      symbol: "SOL",
-      name: TOKEN_METADATA_BY_SYMBOL.SOL.name,
-      balance: solBalance,
-      logo: TOKEN_METADATA_BY_SYMBOL.SOL.logo,
-      mintAddress: "native-sol",
-      supported: true
+    if (!mintAddress || !tokenConfig || !Number.isFinite(balance) || balance <= 0) {
+      continue;
+    }
+
+    const existing = tokenBalances.get(mintAddress);
+    tokenBalances.set(mintAddress, {
+      symbol: tokenConfig.symbol,
+      name: tokenConfig.name,
+      logo: tokenConfig.logo,
+      mintAddress,
+      supported: true,
+      balance: Number(((existing?.balance ?? 0) + balance).toFixed(9)),
     });
   }
 
-  for (const programId of TOKEN_PROGRAM_IDS) {
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      owner,
-      { programId: new PublicKey(programId) },
-      "confirmed"
-    );
-
-    for (const tokenAccount of tokenAccounts.value) {
-      const parsedInfo = (tokenAccount.account.data as { parsed?: { info?: Record<string, unknown> } }).parsed?.info;
-      const mintAddress = typeof parsedInfo?.mint === "string" ? parsedInfo.mint : null;
-      const tokenAmount = parsedInfo?.tokenAmount as { uiAmount?: number; uiAmountString?: string } | undefined;
-      const balance = tokenAmount?.uiAmount ?? Number(tokenAmount?.uiAmountString ?? "0");
-
-      if (!mintAddress || !Number.isFinite(balance) || balance <= 0) {
-        continue;
-      }
-
-      const knownMetadata = TOKEN_METADATA_BY_SYMBOL[mintAddress.toUpperCase()];
-      const existingToken = tokenBalances.get(mintAddress);
-      const symbol = knownMetadata ? mintAddress.toUpperCase() : mintAddress.slice(0, 4).toUpperCase();
-      const name = knownMetadata?.name ?? `Token ${mintAddress.slice(0, 4)}`;
-      const logo = knownMetadata?.logo ?? "◌";
-      const supported = knownMetadata?.supported ?? false;
-
-      tokenBalances.set(mintAddress, {
-        symbol,
-        name,
-        logo,
-        mintAddress,
-        supported,
-        balance: Number(((existingToken?.balance ?? 0) + balance).toFixed(9))
-      });
-    }
-  }
-
-  const supportedTokens = SUPPORTED_TOKENS.map((token) => {
-    const existingToken = [...tokenBalances.values()].find((entry) => entry.symbol === token.symbol);
-
-    return {
-      symbol: token.symbol,
-      name: token.name,
-      logo: token.logo,
-      mintAddress: existingToken?.mintAddress ?? `supported-${token.symbol.toLowerCase()}`,
-      supported: true,
-      balance: Number((existingToken?.balance ?? 0).toFixed(9))
-    };
-  });
-
-  const resolvedTokens = supportedTokens.sort((left, right) => right.balance - left.balance);
+  const resolvedTokens = allowedTokens.map((token) => ({
+    symbol: token.symbol,
+    name: token.name,
+    logo: token.logo,
+    mintAddress: token.mintAddress,
+    supported: true,
+    balance: Number((tokenBalances.get(token.mintAddress)?.balance ?? 0).toFixed(9)),
+  }));
 
   logger.info("solana.wallet_tokens.loaded", {
     walletAddress,
-    tokenCount: resolvedTokens.length
+    tokenCount: resolvedTokens.length,
   });
 
   return resolvedTokens;
 }
 
-async function verifyIncomingSolTransfer(params: {
-  connection: Connection;
-  senderWallet: string;
-  destinationWallet: string;
-  amount: number;
-  signature: string;
-}) {
-  const transaction = await params.connection.getParsedTransaction(params.signature, {
-    commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
-  });
 
-  if (!transaction || transaction.meta?.err) {
-    throw new Error("Could not verify the on-chain payment transaction");
-  }
-
-  const expectedLamports = Math.round(params.amount * LAMPORTS_PER_SOL);
-  const senderWallet = params.senderWallet;
-  const destinationWallet = params.destinationWallet;
-
-  const systemTransferMatched = transaction.transaction.message.instructions.some((instruction) => {
-    if ("parsed" in instruction) {
-      const parsedInstruction = instruction as ParsedInstruction;
-      const parsedInfo = parsedInstruction.parsed as { info?: Record<string, unknown> } | undefined;
-      const lamports = typeof parsedInfo?.info?.lamports === "number" ? parsedInfo.info.lamports : null;
-      const source = typeof parsedInfo?.info?.source === "string" ? parsedInfo.info.source : null;
-      const destination = typeof parsedInfo?.info?.destination === "string" ? parsedInfo.info.destination : null;
-
-      return (
-        parsedInstruction.programId.equals(SystemProgram.programId) &&
-        source === senderWallet &&
-        destination === destinationWallet &&
-        lamports != null &&
-        lamports >= expectedLamports
-      );
-    }
-
-    return false;
-  });
-
-  if (!systemTransferMatched) {
-    throw new Error("The connected wallet transaction does not match the expected escrow deposit");
-  }
-}

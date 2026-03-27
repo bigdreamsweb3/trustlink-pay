@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet } from "@/src/lib/api";

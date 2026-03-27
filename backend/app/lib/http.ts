@@ -12,7 +12,7 @@ export function fail(message: string, status = 400, details?: unknown) {
 export function toErrorResponse(error: unknown) {
   if (error instanceof ZodError) {
     const firstPath = error.issues[0]?.path?.[0];
-    const isRequestBodyError = typeof firstPath === "string" && ["phoneNumber", "otp", "paymentId", "walletAddress", "receiverWalletId", "displayName", "handle", "pin", "challengeToken", "amount", "token", "senderWallet", "senderPhoneNumber", "purpose"].includes(firstPath);
+    const isRequestBodyError = typeof firstPath === "string" && ["phoneNumber", "otp", "paymentId", "walletAddress", "receiverWalletId", "displayName", "handle", "pin", "challengeToken", "amount", "token", "tokenMintAddress", "escrowVaultAddress", "senderWallet", "senderPhoneNumber", "purpose"].includes(firstPath);
     return fail(isRequestBodyError ? "Invalid request body" : "Server configuration error", isRequestBodyError ? 400 : 500, error.flatten());
   }
 

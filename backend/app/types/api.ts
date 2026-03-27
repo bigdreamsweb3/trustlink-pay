@@ -4,11 +4,14 @@ export interface ApiError {
 }
 
 export interface CreatePaymentRequest {
+  paymentId?: string;
   phoneNumber: string;
   senderPhoneNumber: string;
   amount: number;
-  token: string;
+  tokenMintAddress: string;
   senderWallet: string;
+  escrowVaultAddress?: string;
+  depositSignature?: string;
 }
 
 export interface AcceptPaymentRequest {

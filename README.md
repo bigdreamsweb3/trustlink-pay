@@ -344,6 +344,8 @@ TrustLink currently includes:
 ## Repository Structure
 
 - [backend](backend/README.md)
+- [docs/devnet-testing.md](docs/devnet-testing.md)
+- [docs/wallet-roles.md](docs/wallet-roles.md)
 - [frontend](frontend/README.md)
 - [public](public/README.md)
 
@@ -365,6 +367,13 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Devnet Testing
+
+For testers, judges, and new contributors who need Devnet SOL, allowlisted test tokens, and the current TrustLink escrow test flow:
+
+- [Devnet Testing Guide](docs/devnet-testing.md)
+- [Wallet Roles Guide](docs/wallet-roles.md)
 
 ## Local Verification Scripts
 

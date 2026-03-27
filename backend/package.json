@@ -9,12 +9,15 @@
     "typecheck": "tsc --noEmit",
     "escrow:build": "cargo build -p trustlink_escrow",
     "escrow:test": "cargo test -p trustlink_escrow",
-    "escrow:anchor:build": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'C:\\Users\\codepara\\Desktop\\trust-link'; Remove-Item 'C:\\Users\\codepara\\Desktop\\trust-link\\Cargo.lock' -Force -ErrorAction SilentlyContinue; anchor build\"",
+    "escrow:anchor:build": "anchor build",
+    "escrow:anchor:size": "wc -c target/deploy/trustlink_escrow.so && du -b target/deploy/trustlink_escrow.so",
     "escrow:anchor:test": "anchor test",
     "escrow:anchor:deploy": "anchor deploy",
     "escrow:anchor:keys": "anchor keys list",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "tsx scripts/reset-db.ts",
+    "escrow:init-config": "tsx scripts/init-escrow-config.ts",
+    "escrow:update-config": "tsx scripts/update-escrow-config.ts",
     "test:auth-phone-flow": "tsx scripts/test-auth-phone-flow.ts",
     "test:recipient-lookup": "tsx scripts/test-recipient-lookup.ts",
     "test:payment-flow": "tsx scripts/test-payment-flow.ts",
@@ -23,6 +26,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
     "@neondatabase/serverless": "^0.10.4",
+    "@solana/spl-token": "^0.4.8",
     "@solana/web3.js": "^1.98.0",
     "dotenv": "^16.4.7",
     "next": "^15.2.0",
@@ -32,7 +36,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@solana/spl-token": "^0.4.8",
     "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.10",

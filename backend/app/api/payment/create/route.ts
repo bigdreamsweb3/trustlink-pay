@@ -10,31 +10,37 @@ export async function POST(request: Request) {
     const payload = createPaymentSchema.parse(body);
 
     const result = await createPayment(payload);
+    const payment = result.payment;
+    const notificationRetrying =
+      payment != null &&
+      !result.manualInviteRequired &&
+      (payment.notification_status === "queued" || payment.notification_status === "failed");
 
     return ok(
       {
-        paymentId: result.payment.id,
-        status: result.payment.status,
-        notificationStatus: result.payment.notification_status,
-        notificationSentAt: result.payment.notification_sent_at,
-        notificationDeliveredAt: result.payment.notification_delivered_at,
-        notificationReadAt: result.payment.notification_read_at,
-        notificationFailedAt: result.payment.notification_failed_at,
-        referenceCode: result.payment.reference_code,
-        senderDisplayName: result.payment.sender_display_name_snapshot,
-        senderHandle: result.payment.sender_handle_snapshot,
-        escrowAccount: result.payment.escrow_account,
+        paymentId: payment?.id ?? result.paymentId,
+        status: payment?.status ?? null,
+        notificationStatus: payment?.notification_status ?? null,
+        notificationSentAt: payment?.notification_sent_at ?? null,
+        notificationDeliveredAt: payment?.notification_delivered_at ?? null,
+        notificationReadAt: payment?.notification_read_at ?? null,
+        notificationFailedAt: payment?.notification_failed_at ?? null,
+        referenceCode: payment?.reference_code ?? null,
+        senderDisplayName: payment?.sender_display_name_snapshot ?? null,
+        senderHandle: payment?.sender_handle_snapshot ?? null,
+        escrowAccount: payment?.escrow_account ?? result.blockchain.escrowAccount,
+        escrowVaultAddress: payment?.escrow_vault_address ?? result.blockchain.escrowVaultAddress ?? null,
         blockchainSignature: result.blockchain.signature,
         blockchainMode: result.blockchain.mode,
-        depositAddress: result.payment.escrow_account,
-        notificationRetrying:
-          !result.manualInviteRequired &&
-          (result.payment.notification_status === "queued" || result.payment.notification_status === "failed"),
-        notificationAttemptCount: result.payment.notification_attempt_count,
+        serializedTransaction: "serializedTransaction" in result.blockchain ? result.blockchain.serializedTransaction : null,
+        depositAddress: payment?.escrow_account ?? result.blockchain.escrowAccount,
+        tokenSymbol: payment?.token_symbol ?? result.tokenSymbol ?? null,
+        notificationRetrying,
+        notificationAttemptCount: payment?.notification_attempt_count ?? 0,
         manualInviteRequired: result.manualInviteRequired,
         inviteShare: result.inviteShare
       },
-      { status: 201 }
+      { status: payment ? 201 : 200 }
     );
   } catch (error) {
     return toErrorResponse(error);

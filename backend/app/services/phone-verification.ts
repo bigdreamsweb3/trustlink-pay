@@ -199,5 +199,10 @@ export async function verifyPhoneOtp(
   return {
     verified: true,
     phoneNumber: normalizedPhoneNumber,
+    otpId: verification.id,
   };
+}
+
+export async function consumeVerifiedOtp(otpId: string) {
+  await consumeOtp(otpId);
 }

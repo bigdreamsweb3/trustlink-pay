@@ -2,6 +2,9 @@
 members = [
   "programs/trustlink-escrow",
 ]
+exclude = [
+  "programs/trustlink-escrow-backup-*",
+]
 resolver = "2"
 
 [profile.release]

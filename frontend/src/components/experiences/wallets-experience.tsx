@@ -2,12 +2,12 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PlusIcon, TrashIcon, WalletIcon } from "@/src/components/app-icons";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
-import { WalletPickerModal } from "@/src/components/wallet-picker-modal";
+import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { apiDelete, apiGet, apiPost } from "@/src/lib/api";
 import {
   connectSolanaWallet,

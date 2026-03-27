@@ -11,7 +11,7 @@ import {
 } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { findUserByPhoneNumber, updateUserWallet } from "@/app/db/users";
-import { createEscrowPayment, releaseEscrow } from "@/app/blockchain/solana";
+import { confirmEscrowPayment, createDraftPaymentId, prepareEscrowPayment, releaseEscrow } from "@/app/blockchain/solana";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
@@ -22,7 +22,7 @@ import {
   sendPaymentClaimedMessage,
   sendPaymentNotification
 } from "@/app/services/whatsapp";
-import { verifyPhoneOtp } from "@/app/services/phone-verification";
+import { consumeVerifiedOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
 import type { PaymentRecord } from "@/app/types/payment";
 
 const NOTIFICATION_RETRY_INTERVAL_MS = 90_000;
@@ -193,17 +193,19 @@ async function enrichPaymentInviteState(payment: PaymentRecord) {
 }
 
 export async function createPayment(params: {
+  paymentId?: string;
   phoneNumber: string;
   senderPhoneNumber: string;
   amount: number;
-  token: string;
+  tokenMintAddress: string;
   senderWallet: string;
+  escrowVaultAddress?: string;
   depositSignature?: string;
 }) {
   logger.info("payment.create.started", {
     phoneNumber: params.phoneNumber,
     amount: params.amount,
-    token: params.token,
+    tokenMintAddress: params.tokenMintAddress,
     senderWallet: params.senderWallet
   });
 
@@ -245,19 +247,54 @@ export async function createPayment(params: {
   }
 
   const phoneHash = sha256(params.phoneNumber);
+  const paymentId = params.paymentId ?? createDraftPaymentId();
+
+  if (!params.depositSignature) {
+    const prepared = await prepareEscrowPayment({
+      paymentId,
+      senderWallet: params.senderWallet,
+      phoneHash,
+      amount: params.amount,
+      tokenMintAddress: params.tokenMintAddress,
+    });
+
+    return {
+      payment: null,
+      blockchain: {
+        escrowAccount: prepared.escrowAccount,
+        escrowVaultAddress: prepared.escrowVaultAddress,
+        signature: null,
+        mode: prepared.mode,
+        serializedTransaction: prepared.serializedTransaction,
+      },
+      paymentId,
+      tokenSymbol: prepared.tokenSymbol,
+      notificationRetried: false,
+      manualInviteRequired: false,
+      inviteShare: null,
+    };
+  }
+
+  if (!params.escrowVaultAddress) {
+    throw new Error("escrowVaultAddress is required when finalizing an on-chain payment");
+  }
+
   const manualInviteRequired = await requiresManualInvite(params.phoneNumber);
-  const escrow = await createEscrowPayment({
+  const escrow = await confirmEscrowPayment({
+    paymentId,
     senderWallet: params.senderWallet,
     phoneHash,
     amount: params.amount,
-    token: params.token,
-    depositSignature: params.depositSignature
+    tokenMintAddress: params.tokenMintAddress,
+    depositSignature: params.depositSignature,
+    escrowVaultAddress: params.escrowVaultAddress,
   });
 
   let payment: PaymentRecord;
 
   try {
     payment = await createPaymentRecord({
+      id: paymentId,
       senderUserId: sender.id,
       senderWallet: params.senderWallet,
       senderDisplayNameSnapshot: sender.display_name,
@@ -265,9 +302,12 @@ export async function createPayment(params: {
       referenceCode: generatePaymentReference(),
       receiverPhone: params.phoneNumber,
       receiverPhoneHash: phoneHash,
-      tokenSymbol: params.token,
+      tokenSymbol: escrow.tokenSymbol,
+      tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
+      feeAmount: escrow.feeAmountUi,
       escrowAccount: escrow.escrowAccount,
+      escrowVaultAddress: escrow.escrowVaultAddress,
       depositSignature: escrow.signature
     });
   } catch (error) {
@@ -295,6 +335,7 @@ export async function createPayment(params: {
           payment: updatedPayment,
           blockchain: {
             escrowAccount: updatedPayment.escrow_account ?? escrow.escrowAccount,
+            escrowVaultAddress: updatedPayment.escrow_vault_address ?? escrow.escrowVaultAddress,
             signature: updatedPayment.deposit_signature ?? escrow.signature,
             mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
           },
@@ -375,8 +416,8 @@ export async function acceptPayment(params: {
     throw new Error("Signed-in account does not match payment receiver");
   }
 
-  await verifyPhoneOtp(params.authUser.phoneNumber, params.otp, {
-    consume: true,
+  const otpVerification = await verifyPhoneOtp(params.authUser.phoneNumber, params.otp, {
+    consume: false,
     purpose: "claim"
   });
 
@@ -402,9 +443,11 @@ export async function acceptPayment(params: {
   const release = await releaseEscrow({
     paymentId: payment.id,
     escrowAccount: payment.escrow_account ?? "",
+    escrowVaultAddress: payment.escrow_vault_address ?? "",
+    senderWallet: payment.sender_wallet ?? "",
     receiverWallet: receiverWalletAddress,
-    amount: Number(payment.amount),
-    token: payment.token_symbol
+    receiverPhoneHash: payment.receiver_phone_hash,
+    tokenMintAddress: payment.token_mint_address ?? "",
   });
 
   const updatedPayment = await updatePaymentAcceptance({
@@ -412,6 +455,7 @@ export async function acceptPayment(params: {
     releaseSignature: release.signature,
     releasedToWallet: receiverWalletAddress
   });
+  await consumeVerifiedOtp(otpVerification.otpId);
   const transactionUrl = getTransactionExplorerUrl({
     chain: "solana",
     signature: release.signature

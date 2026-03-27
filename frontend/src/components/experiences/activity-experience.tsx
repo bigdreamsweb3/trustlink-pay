@@ -3,39 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { PaymentActivityCard } from "@/src/components/payment-activity-card";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet } from "@/src/lib/api";
-import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
+import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import type { PaymentRecord } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 
 type ActivityFilter = "all" | "transfers" | "claims" | "releases";
 const ACTIVITY_REFRESH_INTERVAL_MS = 20_000;
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
-function formatUsd(value: number | null | undefined) {
-  if (value == null) {
-    return "--";
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 export function ActivityExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/activity");
@@ -163,11 +141,10 @@ export function ActivityExperience() {
                     setFilter(value);
                     setVisibleCount(10);
                   }}
-                  className={`rounded-full px-3 py-2 text-xs font-medium transition ${
-                    active
-                      ? "bg-[#58f2b1]/12 text-[#7dffd9]"
-                      : "border border-white/10 bg-black/20 text-white/62"
-                  }`}
+                  className={`rounded-full px-3 py-2 text-xs font-medium transition ${active
+                    ? "bg-[#58f2b1]/12 text-[#7dffd9]"
+                    : "border border-white/10 bg-black/20 text-white/62"
+                    }`}
                 >
                   {label}
                 </button>
@@ -196,54 +173,14 @@ export function ActivityExperience() {
             ) : visiblePayments.length === 0 ? (
               <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-white/46">No activity for this filter yet.</div>
             ) : (
-              visiblePayments.map((payment) => {
-                const isSend = payment.sender_user_id === user.id;
-                const counterparty = isSend
-                  ? `To ${payment.receiver_phone}`
-                  : `From ${payment.sender_display_name_snapshot}`;
-
-                return (
-                  <button
-                    key={payment.id}
-                    type="button"
-                    onClick={() => router.push(`/app/activity/${payment.id}`)}
-                    className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/25 px-3 py-3 text-left transition hover:border-white/12 hover:bg-black/35"
-                  >
-                    <div className={`grid h-12 w-12 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] ${isSend ? "bg-[#16283a] text-[#99cfff]" : "bg-[#0f261d] text-[#79ffcf]"}`}>
-                      {isSend ? "OUT" : "IN"}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white">
-                        {formatTokenAmount(payment.amount)} {payment.token_symbol}
-                      </div>
-                      <div className="truncate text-sm text-white/50">
-                        {counterparty} - {payment.reference_code}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.72rem]">
-                        <span className="text-white/34">{formatShortDate(payment.created_at)}</span>
-                        {isSend ? (
-                          payment.manual_invite_required ? (
-                            <span className="rounded-full border border-[#f3c96b]/20 bg-[#2a2412] px-2.5 py-1 font-medium text-[#f3c96b]">
-                              Invite needed
-                            </span>
-                          ) : (
-                            <PaymentNotificationReceipt status={payment.notification_status} />
-                          )
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="grid justify-items-end gap-2">
-                      <span className={`rounded-full px-2.5 py-1 text-[0.7rem] font-medium capitalize ${payment.status === "accepted" ? "bg-[#0f261d] text-[#79ffcf]" : payment.status === "pending" ? "bg-[#2a2412] text-[#f3c96b]" : "bg-[#321516] text-[#ff9c9c]"}`}>
-                        {payment.status}
-                      </span>
-                      <span className="text-[0.72rem] text-white/46">{formatUsd(payment.amount_usd)}</span>
-                      <span className="text-[0.72rem] font-medium text-white/70">
-                        {isSend && payment.manual_invite_required ? "Share invite" : "Open"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
+              visiblePayments.map((payment) => (
+                <PaymentActivityCard
+                  key={payment.id}
+                  payment={payment}
+                  currentUserId={user.id}
+                  onClick={(paymentId) => router.push(`/app/activity/${paymentId}`)}
+                />
+              ))
             )}
           </div>
 

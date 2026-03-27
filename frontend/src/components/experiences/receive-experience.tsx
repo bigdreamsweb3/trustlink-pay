@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { ClaimIcon, WalletIcon } from "@/src/components/app-icons";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 

@@ -5,13 +5,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-trustlink_escrow = "HoqZ2tRMGRTrHDGbPLFZB55bnFpsPMbY4jrJrBv7LWB1"
+trustlink_escrow = "9f92sFY2VsDTyHCn4r1kmBTVJsMo7b4ZTYByjQNQx3qV"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

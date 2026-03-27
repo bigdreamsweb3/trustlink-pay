@@ -1,4 +1,4 @@
-import { TransactionDetailExperience } from "@/src/components/transaction-detail-experience";
+import { TransactionDetailExperience } from "@/src/components/experiences/transaction-detail-experience";
 
 export default async function TransactionDetailPage({
   params

@@ -45,8 +45,11 @@ export interface PaymentRecord {
   receiver_phone: string;
   receiver_phone_hash: string;
   token_symbol: string;
+  token_mint_address?: string | null;
   amount: string;
+  fee_amount?: string | null;
   escrow_account: string | null;
+  escrow_vault_address?: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
   released_to_wallet: string | null;

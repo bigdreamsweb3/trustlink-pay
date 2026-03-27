@@ -355,3 +355,36 @@ export async function sendSolanaPayment(params: {
 
   return signature;
 }
+
+export async function signAndSendSerializedSolanaTransaction(params: {
+  walletId: string;
+  rpcUrl: string;
+  serializedTransaction: string;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) {
+    throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  const connection = new Connection(params.rpcUrl, "confirmed");
+  const raw = Uint8Array.from(atob(params.serializedTransaction), (value) => value.charCodeAt(0));
+  const transaction = Transaction.from(raw);
+  let signature: TransactionSignature;
+
+  if (wallet.provider.signAndSendTransaction) {
+    const response = await wallet.provider.signAndSendTransaction(transaction, {
+      preflightCommitment: "confirmed",
+    });
+    signature = response.signature;
+  } else if (wallet.provider.signTransaction) {
+    const signedTransaction = await wallet.provider.signTransaction(transaction);
+    signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+      preflightCommitment: "confirmed",
+    });
+  } else {
+    throw new Error("This wallet cannot sign Solana transactions from the browser");
+  }
+
+  await connection.confirmTransaction(signature, "confirmed");
+  return signature;
+}

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { AppMobileShell } from "@/src/components/app-mobile-shell";
-import { OtpModal } from "@/src/components/otp-modal";
-import { PinGateModal } from "@/src/components/pin-gate-modal";
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { OtpModal } from "@/src/components/modals/otp-modal";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
@@ -39,6 +39,11 @@ function formatTokenBalance(balance: number, symbol: string) {
   }).format(balance);
 }
 
+function toNumericAmount(value: string | number | null | undefined) {
+  const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
 export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/claim/${paymentId}`);
   const { showToast } = useToast();
@@ -57,6 +62,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const [otpBusy, setOtpBusy] = useState(false);
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
+  const [feeInfoOpen, setFeeInfoOpen] = useState(false);
   const lastSubmittedOtpRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -97,6 +103,9 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
     [selectedWalletId, wallets]
   );
   const selectedWalletBalance = selectedWallet ? walletBalances[selectedWallet.id] : null;
+  const grossAmount = toNumericAmount(payment?.payment.amount);
+  const feeAmount = toNumericAmount(payment?.payment.fee_amount);
+  const netAmount = Math.max(grossAmount - feeAmount, 0);
 
   async function loadClaimData(token: string) {
     setLoading(true);
@@ -189,7 +198,6 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       setOtpModalOpen(false);
       showToast("Payment claimed successfully.");
     } catch (acceptError) {
-      lastSubmittedOtpRef.current = null;
       setError(acceptError instanceof Error ? acceptError.message : "Could not complete claim");
     } finally {
       setClaimBusy(false);
@@ -227,7 +235,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             <div className="grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/12 text-[#7dffd9]">✓</div>
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Claim successful</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
-              {formatTokenAmount(payment.payment.amount)} {payment.payment.token_symbol} released
+              {formatTokenAmount(netAmount)} {payment.payment.token_symbol} released
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/56">
               Funds from {payment.sender.displayName} were released successfully to your selected wallet.
@@ -241,6 +249,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">Sender</span>
                 <span className="font-medium text-white">{payment.sender.displayName}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-white/46">TrustLink fee</span>
+                <span className="font-medium text-white">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">Wallet</span>
@@ -266,9 +278,41 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
               <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Incoming payment</div>
               <div className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
-                {formatTokenAmount(payment.payment.amount)} {payment.payment.token_symbol}
+                {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
               </div>
               <div className="mt-2 text-sm text-white/58">
+                This is the net amount that will be released to your wallet after the TrustLink fee is deducted.
+              </div>
+              <div className="mt-4 space-y-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Sent amount</span>
+                  <span className="font-medium text-white">{formatTokenAmount(grossAmount)} {payment.payment.token_symbol}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="inline-flex items-center gap-2 text-white/46">
+                    TrustLink fee
+                    <button
+                      type="button"
+                      onClick={() => setFeeInfoOpen((current) => !current)}
+                      className="grid h-5 w-5 place-items-center rounded-full border border-white/10 text-[0.68rem] font-semibold text-white/58 transition hover:border-white/20 hover:text-white"
+                      aria-label="Why is a TrustLink fee charged?"
+                    >
+                      i
+                    </button>
+                  </span>
+                  <span className="font-medium text-white">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-3 text-sm">
+                  <span className="text-white/72">Amount to wallet</span>
+                  <span className="font-semibold text-[#7dffd9]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</span>
+                </div>
+              </div>
+              {feeInfoOpen ? (
+                <div className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-white/68">
+                  TrustLink charges this fee to fund the relayed Solana claim transaction and keep claiming possible even when the receiver has no SOL for gas. The fee shown here is the actual fee recorded for this payment.
+                </div>
+              ) : null}
+              <div className="mt-4 text-sm text-white/58">
                 From {payment.sender.displayName} (@{payment.sender.handle})
               </div>
               <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/6 bg-black/20 px-3 py-3 text-sm text-white/54">
@@ -320,7 +364,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="mt-4 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Final step</div>
                 <p className="mt-2 text-sm leading-6 text-white/58">
-                  After you tap send OTP, entering the 6-digit code is the final confirmation. TrustLink releases the escrow automatically.
+                  After you tap send OTP, entering the 6-digit code is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
                 </p>
               </div>
 
@@ -365,9 +409,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                       setSelectedWalletId(wallet.id);
                       setWalletModalOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${
-                      active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
+                      }`}
                   >
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-white">{wallet.wallet_name}</span>
@@ -389,9 +432,16 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       <OtpModal
         open={otpModalOpen}
         title="Enter verification code"
-        description="This is the final step. As soon as the 6-digit code is complete, TrustLink releases the escrow automatically."
+        description={
+          payment
+            ? `This is the final step. As soon as the 6-digit code is complete, TrustLink releases ${formatTokenAmount(netAmount)} ${payment.payment.token_symbol} to your selected wallet.`
+            : "This is the final step. As soon as the 6-digit code is complete, TrustLink releases the escrow automatically."
+        }
         value={otp}
-        onChange={(nextValue) => setOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6))}
+        onChange={(nextValue) => {
+          lastSubmittedOtpRef.current = null;
+          setOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6));
+        }}
         onClose={() => setOtpModalOpen(false)}
         onResend={() => void handleSendOtp()}
         resendLabel={otpBusy ? "Sending..." : "Resend OTP"}

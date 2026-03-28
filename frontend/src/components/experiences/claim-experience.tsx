@@ -27,7 +27,7 @@ type ClaimSuccess = {
   referenceCode: string;
   walletAddress: string;
   blockchainSignature: string | null;
-  feeAmount: number | null;
+  claimFeeAmount: number | null;
   netAmount: number | null;
   tokenSymbol: string | null;
 };
@@ -121,7 +121,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   );
   const selectedWalletBalance = selectedWallet ? walletBalances[selectedWallet.id] : null;
   const grossAmount = toNumericAmount(payment?.payment.amount);
-  const feeAmount = claimSuccess?.feeAmount ?? claimFeeEstimate?.feeAmountUi ?? toNumericAmount(payment?.payment.fee_amount);
+  const feeAmount =
+    claimSuccess?.claimFeeAmount ??
+    claimFeeEstimate?.feeAmountUi ??
+    toNumericAmount(payment?.payment.claim_fee_amount);
   const netAmount = claimSuccess?.netAmount ?? claimFeeEstimate?.receiverAmountUi ?? Math.max(grossAmount - feeAmount, 0);
 
   useEffect(() => {
@@ -249,7 +252,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       const result = await apiPost<{
         referenceCode: string;
         walletAddress: string;
-        feeAmount: string | null;
+        claimFeeAmount: string | null;
         netAmount: number | null;
         tokenSymbol: string | null;
         blockchainSignature: string | null;
@@ -266,7 +269,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       setStatus(`Reference ${result.referenceCode} claimed successfully to ${result.walletAddress}.`);
       setClaimSuccess({
         ...result,
-        feeAmount: result.feeAmount != null ? Number(result.feeAmount) : null,
+        claimFeeAmount: result.claimFeeAmount != null ? Number(result.claimFeeAmount) : null,
       });
       setOtpModalOpen(false);
       showToast("Payment claimed successfully.");

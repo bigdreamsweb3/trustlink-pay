@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-trustlink_escrow = "55rSd6RuyQdHiuouzfgXY17xXukPzRyLU5MptP9ZzKip"
+trustlink_escrow = "BQCDZF8gFs35xiEUEZbvgkLufMjrcysw5yPdv3MVZohM"
 
 [registry]
 url = "https://api.apr.dev"

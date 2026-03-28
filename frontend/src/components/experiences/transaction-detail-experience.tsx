@@ -8,9 +8,11 @@ import { PaymentNotificationReceipt } from "@/src/components/payment-notificatio
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet } from "@/src/lib/api";
-import { formatTokenAmount } from "@/src/lib/formatters";
+import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
 import type { PaymentDetailResponse } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+
+const DETAIL_REFRESH_INTERVAL_MS = 20_000;
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -35,6 +37,19 @@ function shortenValue(value: string | null, start = 6, end = 6) {
   }
 
   return `${value.slice(0, start)}...${value.slice(-end)}`;
+}
+
+function formatFeeAmount(value: string | null | undefined, tokenSymbol: string) {
+  if (value == null) {
+    return null;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  return `${formatTokenAmount(numericValue)} ${tokenSymbol}`;
 }
 
 function statusTone(status: PaymentDetailResponse["payment"]["status"]) {
@@ -69,6 +84,8 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
+  const shouldPollReceipt =
+    detail?.viewerRole === "sender" && shouldPollPaymentNotification(detail?.payment.notification_status);
 
   useEffect(() => {
     if (!accessToken || !user) {
@@ -105,6 +122,39 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
     };
   }, [accessToken, paymentId, user]);
 
+  useEffect(() => {
+    if (!accessToken || !user || !shouldPollReceipt) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function refreshDetail() {
+      try {
+        const result = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined);
+
+        if (!cancelled) {
+          setDetail(result);
+        }
+      } catch {
+        // Keep the last known detail state if polling fails.
+      }
+    }
+
+    const refreshInterval = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshDetail();
+    }, DETAIL_REFRESH_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshInterval);
+    };
+  }, [accessToken, paymentId, shouldPollReceipt, user]);
+
   const receiptUpdatedAt = useMemo(() => {
     if (!detail) {
       return null;
@@ -118,6 +168,18 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
       null
     );
   }, [detail]);
+
+  const viewerFeeLabel = detail
+    ? detail.viewerRole === "sender"
+      ? "Send fee"
+      : "Claim fee"
+    : null;
+
+  const viewerFeeAmount = detail
+    ? detail.viewerRole === "sender"
+      ? formatFeeAmount(detail.payment.sender_fee_amount, detail.payment.token_symbol)
+      : formatFeeAmount(detail.payment.claim_fee_amount, detail.payment.token_symbol)
+    : null;
 
   if (!hydrated || !user) {
     return null;
@@ -282,6 +344,12 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   <span className="text-white/46">Escrow account</span>
                   <span className="font-medium text-white">{shortenValue(detail.trace.escrowAccount)}</span>
                 </div>
+                {viewerFeeLabel && viewerFeeAmount ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">{viewerFeeLabel}</span>
+                    <span className="font-medium text-white">{viewerFeeAmount}</span>
+                  </div>
+                ) : null}
                 {detail.trace.depositSignature ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-white/46">Deposit tx</span>
@@ -316,6 +384,25 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                     ) : (
                       <span className="font-medium text-white">
                         {shortenValue(detail.trace.releaseSignature, 8, 8)}
+                      </span>
+                    )}
+                  </div>
+                ) : null}
+                {detail.trace.expirySignature ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">Expiry sweep tx</span>
+                    {detail.trace.expiryExplorerUrl ? (
+                      <a
+                        href={detail.trace.expiryExplorerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-[#7dffd9] underline underline-offset-4"
+                      >
+                        {shortenValue(detail.trace.expirySignature, 8, 8)}
+                      </a>
+                    ) : (
+                      <span className="font-medium text-white">
+                        {shortenValue(detail.trace.expirySignature, 8, 8)}
                       </span>
                     )}
                   </div>

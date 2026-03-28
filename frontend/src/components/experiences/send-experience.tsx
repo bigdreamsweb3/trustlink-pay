@@ -76,10 +76,12 @@ async function shareInviteMessage(message: string) {
 }
 
 type SendCostEstimate = {
+  tokenSymbol: string;
+  senderFeeAmountUi: number;
+  senderFeeAmountUsd: number | null;
+  totalTokenRequiredUi: number;
   networkFeeSol: number;
-  accountRentSol: number;
-  totalSol: number;
-  totalUsd: number | null;
+  networkFeeUsd: number | null;
 };
 
 export function SendExperience() {
@@ -462,6 +464,8 @@ export function SendExperience() {
         blockchainMode: "mock" | "devnet";
         serializedTransaction: string | null;
         tokenSymbol: string | null;
+        senderFeeAmount: string | number | null;
+        totalTokenRequiredAmount: string | number | null;
       }>("/api/payment/create", {
         phoneNumber: form.receiverPhone,
         senderPhoneNumber: user.phoneNumber,
@@ -947,19 +951,23 @@ export function SendExperience() {
               {sendCostEstimate ? (
                 <>
                   <div className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-3">
-                    <span className="text-sm text-white/56">Estimated SOL cost</span>
-                    <span className="text-sm text-white">{sendCostEstimate.totalSol.toFixed(6)} SOL</span>
+                    <span className="text-sm text-white/56">Sender fee</span>
+                    <span className="text-sm text-white">
+                      {sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-[0.72rem] text-white/44">
                     <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2">
                       Network fee: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
                     </div>
                     <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2">
-                      Account setup: {sendCostEstimate.accountRentSol.toFixed(6)} SOL
+                      Total required: {sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}
                     </div>
                   </div>
-                  {sendCostEstimate.totalUsd != null ? (
-                    <div className="text-sm text-white/48">Approx. ${sendCostEstimate.totalUsd.toFixed(4)} at the current SOL market price.</div>
+                  {sendCostEstimate.senderFeeAmountUsd != null ? (
+                    <div className="text-sm text-white/48">
+                      Approx. ${sendCostEstimate.senderFeeAmountUsd.toFixed(4)} sender fee at the current market price.
+                    </div>
                   ) : null}
                 </>
               ) : null}

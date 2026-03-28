@@ -31,13 +31,18 @@ CREATE TABLE IF NOT EXISTS payments (
   token_symbol VARCHAR(10) NOT NULL,
   token_mint_address VARCHAR(64),
   amount NUMERIC(20, 9) NOT NULL,
-  fee_amount NUMERIC(20, 9),
+  sender_fee_amount NUMERIC(20, 9),
+  claim_fee_amount NUMERIC(20, 9),
   escrow_account VARCHAR(64),
   escrow_vault_address VARCHAR(64),
   deposit_signature VARCHAR(128),
   release_signature VARCHAR(128),
+  expiry_signature VARCHAR(128),
   released_to_wallet VARCHAR(64),
   accepted_at TIMESTAMPTZ,
+  expiry_at TIMESTAMPTZ,
+  expired_to_pool_at TIMESTAMPTZ,
+  recovery_wallet_address VARCHAR(64),
   notification_message_id VARCHAR(128),
   notification_status VARCHAR(16) NOT NULL DEFAULT 'queued' CHECK (notification_status IN ('queued', 'sent', 'delivered', 'read', 'failed')),
   notification_sent_at TIMESTAMPTZ,
@@ -85,7 +90,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64);
 ALTER TABLE payments
-  ADD COLUMN IF NOT EXISTS fee_amount NUMERIC(20, 9);
+  ADD COLUMN IF NOT EXISTS sender_fee_amount NUMERIC(20, 9);
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS claim_fee_amount NUMERIC(20, 9);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64);
 ALTER TABLE payments
@@ -95,9 +102,17 @@ ALTER TABLE payments
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS release_signature VARCHAR(128);
 ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS expiry_signature VARCHAR(128);
+ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS released_to_wallet VARCHAR(64);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ;
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS expiry_at TIMESTAMPTZ;
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS expired_to_pool_at TIMESTAMPTZ;
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS recovery_wallet_address VARCHAR(64);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS notification_status VARCHAR(16) DEFAULT 'queued';
 ALTER TABLE payments

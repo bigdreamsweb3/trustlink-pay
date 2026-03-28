@@ -47,13 +47,18 @@ export interface PaymentRecord {
   token_symbol: string;
   token_mint_address?: string | null;
   amount: string;
-  fee_amount?: string | null;
+  sender_fee_amount?: string | null;
+  claim_fee_amount?: string | null;
   escrow_account: string | null;
   escrow_vault_address?: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
+  expiry_signature?: string | null;
   released_to_wallet: string | null;
   accepted_at: string | null;
+  expiry_at?: string | null;
+  expired_to_pool_at?: string | null;
+  recovery_wallet_address?: string | null;
   notification_message_id: string | null;
   notification_status: PaymentNotificationStatus;
   notification_sent_at: string | null;
@@ -123,6 +128,8 @@ export interface PaymentDetailResponse {
     depositExplorerUrl: string | null;
     releaseSignature: string | null;
     releaseExplorerUrl: string | null;
+    expirySignature?: string | null;
+    expiryExplorerUrl?: string | null;
     acceptedAt: string | null;
   };
   privacy: {

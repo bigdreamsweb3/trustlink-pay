@@ -8,13 +8,12 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"vault_authority";
 pub struct EscrowConfig {
     pub claim_verifier: Pubkey,
     pub treasury_owner: Pubkey,
-    pub fee_bps: u16,
-    pub fee_cap: u64,
+    pub default_expiry_seconds: i64,
     pub bump: u8,
 }
 
 impl EscrowConfig {
-    pub const SPACE: usize = 8 + 32 + 32 + 2 + 8 + 1;
+    pub const SPACE: usize = 8 + 32 + 32 + 8 + 1;
 }
 
 #[account]
@@ -24,7 +23,8 @@ pub struct PaymentAccount {
     pub receiver_phone_hash: [u8; 32],
     pub token_mint: Pubkey,
     pub amount: u64,
-    pub fee_amount: u64,
+    pub sender_fee_amount: u64,
+    pub claim_fee_amount: u64,
     pub expiry_ts: i64,
     pub status: PaymentStatus,
     pub payment_bump: u8,
@@ -32,7 +32,7 @@ pub struct PaymentAccount {
 }
 
 impl PaymentAccount {
-    pub const SPACE: usize = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 8 + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 8 + 8 + 1 + 1 + 1;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +40,7 @@ pub enum PaymentStatus {
     Pending,
     Claimed,
     Refunded,
+    ExpiredToPool,
 }
 
 impl PaymentStatus {

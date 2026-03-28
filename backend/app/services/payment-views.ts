@@ -49,7 +49,7 @@ function maskWalletAddress(walletAddress: string | null) {
 }
 
 function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
-  return [
+  const timeline = [
     {
       id: "created",
       label: "Payment created",
@@ -92,6 +92,19 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       complete: payment.status === "accepted"
     }
   ];
+
+  if (payment.status === "expired") {
+    timeline.push({
+      id: "expired_to_pool",
+      label: "Expired to recovery pool",
+      description:
+        "The payment was not claimed before expiry, so TrustLink swept it into a configured recovery wallet for manual follow-up.",
+      occurredAt: payment.expired_to_pool_at ?? payment.expiry_at ?? null,
+      complete: true,
+    });
+  }
+
+  return timeline;
 }
 
 export function sanitizePaymentForViewer(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentRecord {
@@ -152,6 +165,9 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
   const releaseExplorerUrl = safePayment.release_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.release_signature })
     : null;
+  const expiryExplorerUrl = safePayment.expiry_signature
+    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.expiry_signature })
+    : null;
 
   return {
     payment: safePayment,
@@ -180,6 +196,8 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
       depositExplorerUrl,
       releaseSignature: payment.release_signature,
       releaseExplorerUrl,
+      expirySignature: payment.expiry_signature ?? null,
+      expiryExplorerUrl,
       acceptedAt: payment.accepted_at
     },
     privacy: {

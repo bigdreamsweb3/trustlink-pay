@@ -11,7 +11,7 @@ import {
 } from "@solana/web3.js";
 import { createHash, randomUUID } from "node:crypto";
 
-import { getEscrowFeeConfig } from "@/app/config/escrow";
+import { getEscrowPolicyConfig } from "@/app/config/escrow";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getUsdPricesForSymbols } from "@/app/services/pricing";
@@ -38,7 +38,7 @@ const TOKEN_PROGRAM_ID = splToken.TOKEN_PROGRAM_ID;
 const ASSOCIATED_TOKEN_PROGRAM_ID = splToken.ASSOCIATED_TOKEN_PROGRAM_ID;
 const ESCROW_CONFIG_DISCRIMINATOR = accountDiscriminator("EscrowConfig");
 const PAYMENT_ACCOUNT_DISCRIMINATOR = accountDiscriminator("PaymentAccount");
-const PAYMENT_ACCOUNT_SPACE = 163;
+const PAYMENT_ACCOUNT_SPACE = 171;
 const TOKEN_ACCOUNT_SPACE = 165;
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -62,13 +62,20 @@ export type SupportedWalletToken = {
 export type BlockchainExecutionMode = "mock" | "devnet";
 
 export type SenderTransferFeeEstimate = {
-  networkFeeLamports: number;
-  accountRentLamports: number;
-  totalLamports: number;
+  tokenSymbol: string;
+  tokenMintAddress: string;
+  senderFeeAmountUi: number;
+  senderFeeAmountUsd: number | null;
+  totalTokenRequiredUi: number;
+  estimatedNetworkFeeLamports: number;
   networkFeeSol: number;
-  accountRentSol: number;
-  totalSol: number;
-  totalUsd: number | null;
+  networkFeeUsd: number | null;
+};
+
+export type ExpireEscrowResult = {
+  signature: TransactionSignature | null;
+  mode: BlockchainExecutionMode;
+  recoveryWalletAddress: string;
 };
 
 export type ClaimFeeEstimate = {
@@ -91,7 +98,8 @@ type DecodedPaymentAccount = {
   receiverPhoneHash: Uint8Array;
   tokenMint: PublicKey;
   amount: bigint;
-  feeAmount: bigint;
+  senderFeeAmount: bigint;
+  claimFeeAmount: bigint;
   expiryTs: bigint;
   status: number;
 };
@@ -99,8 +107,7 @@ type DecodedPaymentAccount = {
 type DecodedEscrowConfig = {
   claimVerifier: PublicKey;
   treasuryOwner: PublicKey;
-  feeBps: number;
-  feeCap: bigint;
+  defaultExpirySeconds: bigint;
   bump: number;
   layout: "current" | "legacy";
 };
@@ -259,7 +266,9 @@ function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
   offset += 32;
   const amount = data.readBigUInt64LE(offset);
   offset += 8;
-  const feeAmount = data.readBigUInt64LE(offset);
+  const senderFeeAmount = data.readBigUInt64LE(offset);
+  offset += 8;
+  const claimFeeAmount = data.readBigUInt64LE(offset);
   offset += 8;
   const expiryTs = data.readBigInt64LE(offset);
   offset += 8;
@@ -271,7 +280,8 @@ function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
     receiverPhoneHash,
     tokenMint,
     amount,
-    feeAmount,
+    senderFeeAmount,
+    claimFeeAmount,
     expiryTs,
     status,
   };
@@ -282,7 +292,7 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     throw new Error("Escrow config discriminator mismatch");
   }
 
-  if (data.length < 8 + 32 + 32 + 2 + 8 + 1) {
+  if (data.length < 8 + 32 + 32 + 8 + 1) {
     if (data.length < 8 + 32) {
       throw new Error(`Escrow config account is too small to decode: ${data.length} bytes`);
     }
@@ -295,8 +305,7 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     return {
       claimVerifier,
       treasuryOwner: PublicKey.default,
-      feeBps: 0,
-      feeCap: 0n,
+      defaultExpirySeconds: 0n,
       bump,
       layout: "legacy",
     };
@@ -307,17 +316,14 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
   offset += 32;
   const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
-  const feeBps = data.readUInt16LE(offset);
-  offset += 2;
-  const feeCap = data.readBigUInt64LE(offset);
+  const defaultExpirySeconds = data.readBigInt64LE(offset);
   offset += 8;
   const bump = data.readUInt8(offset);
 
   return {
     claimVerifier,
     treasuryOwner,
-    feeBps,
-    feeCap,
+    defaultExpirySeconds,
     bump,
     layout: "current",
   };
@@ -349,8 +355,7 @@ export async function getEscrowConfigState() {
     address: configPda.toBase58(),
     claimVerifier: decoded.claimVerifier.toBase58(),
     treasuryOwner: decoded.layout === "current" ? decoded.treasuryOwner.toBase58() : null,
-    feeBps: decoded.feeBps,
-    feeCap: decoded.feeCap.toString(),
+    defaultExpirySeconds: decoded.defaultExpirySeconds.toString(),
     bump: decoded.bump,
     layout: decoded.layout,
   };
@@ -359,9 +364,7 @@ export async function getEscrowConfigState() {
 export async function initializeEscrowConfig() {
   const connection = getConnection();
   const payer = getEscrowAuthorityKeypair();
-  const feeConfig = getEscrowFeeConfig();
-  const allowedTokens = parseAllowedTokens();
-  const feeCapDecimals = allowedTokens[0]?.decimals ?? 6;
+  const policy = getEscrowPolicyConfig();
   const configPda = getConfigPda();
   const existing = await connection.getAccountInfo(configPda, "confirmed");
 
@@ -376,9 +379,8 @@ export async function initializeEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("initialize_config"),
     payer.publicKey.toBuffer(),
-    new PublicKey(feeConfig.treasuryOwner).toBuffer(),
-    encodeU16(feeConfig.feeBps),
-    encodeU64(toBaseUnits(feeConfig.feeCapUiAmount, feeCapDecimals)),
+    new PublicKey(policy.treasuryOwner).toBuffer(),
+    encodeI64(BigInt(policy.defaultExpirySeconds)),
   ]);
 
   const transaction = new Transaction().add(
@@ -400,9 +402,8 @@ export async function initializeEscrowConfig() {
   logger.info("solana.escrow_config_initialized", {
     config: configPda.toBase58(),
     claimVerifier: payer.publicKey.toBase58(),
-    treasuryOwner: feeConfig.treasuryOwner,
-    feeBps: feeConfig.feeBps,
-    feeCapUiAmount: feeConfig.feeCapUiAmount,
+    treasuryOwner: policy.treasuryOwner,
+    defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
   return configPda.toBase58();
@@ -411,9 +412,7 @@ export async function initializeEscrowConfig() {
 export async function updateEscrowConfig() {
   const connection = getConnection();
   const authority = getEscrowAuthorityKeypair();
-  const feeConfig = getEscrowFeeConfig();
-  const allowedTokens = parseAllowedTokens();
-  const feeCapDecimals = allowedTokens[0]?.decimals ?? 6;
+  const policy = getEscrowPolicyConfig();
   const configPda = getConfigPda();
   const existing = await connection.getAccountInfo(configPda, "confirmed");
 
@@ -428,22 +427,19 @@ export async function updateEscrowConfig() {
     );
   }
   const targetClaimVerifier = authority.publicKey.toBase58();
-  const targetTreasuryOwner = new PublicKey(feeConfig.treasuryOwner).toBase58();
-  const targetFeeBps = feeConfig.feeBps;
-  const targetFeeCap = toBaseUnits(feeConfig.feeCapUiAmount, feeCapDecimals);
+  const targetTreasuryOwner = new PublicKey(policy.treasuryOwner).toBase58();
+  const targetDefaultExpirySeconds = BigInt(policy.defaultExpirySeconds);
 
   if (
     current.claimVerifier.toBase58() === targetClaimVerifier &&
     current.treasuryOwner.toBase58() === targetTreasuryOwner &&
-    current.feeBps === targetFeeBps &&
-    current.feeCap === targetFeeCap
+    current.defaultExpirySeconds === targetDefaultExpirySeconds
   ) {
     logger.info("solana.escrow_config_already_matches_target", {
       config: configPda.toBase58(),
       claimVerifier: targetClaimVerifier,
       treasuryOwner: targetTreasuryOwner,
-      feeBps: targetFeeBps,
-      feeCapUiAmount: feeConfig.feeCapUiAmount,
+      defaultExpirySeconds: policy.defaultExpirySeconds,
     });
     return configPda.toBase58();
   }
@@ -451,9 +447,8 @@ export async function updateEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("update_config"),
     authority.publicKey.toBuffer(),
-    new PublicKey(feeConfig.treasuryOwner).toBuffer(),
-    encodeU16(feeConfig.feeBps),
-    encodeU64(targetFeeCap),
+    new PublicKey(policy.treasuryOwner).toBuffer(),
+    encodeI64(targetDefaultExpirySeconds),
   ]);
 
   const transaction = new Transaction().add(
@@ -475,8 +470,7 @@ export async function updateEscrowConfig() {
     config: configPda.toBase58(),
     claimVerifier: targetClaimVerifier,
     treasuryOwner: targetTreasuryOwner,
-    feeBps: targetFeeBps,
-    feeCapUiAmount: feeConfig.feeCapUiAmount,
+    defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
   return configPda.toBase58();
@@ -487,11 +481,26 @@ async function requireEscrowConfigInitialized() {
   const initialized = await isEscrowConfigInitialized();
   if (!initialized) {
     throw new Error(
-      `Escrow config is not initialized. Run the one-time config init with verifier ${getEscrowVerifierPublicKey()} before claiming.`,
+      `Escrow config is not initialized. Run the one-time config init with verifier ${getEscrowVerifierPublicKey()} before creating or claiming payments.`,
     );
   }
 
   return configPda;
+}
+
+function getActiveRecoveryWallets() {
+  return getEscrowPolicyConfig().recoveryWallets.filter((wallet) => wallet.active);
+}
+
+function selectRecoveryWallet(paymentId: string) {
+  const activeWallets = getActiveRecoveryWallets();
+  if (activeWallets.length === 0) {
+    throw new Error("No active TrustLink recovery wallets are configured");
+  }
+
+  const hash = createHash("sha256").update(`trustlink-recovery:${paymentId}`).digest();
+  const index = hash.readUInt32LE(0) % activeWallets.length;
+  return activeWallets[index];
 }
 
 async function findSenderTokenAccount(params: {
@@ -573,7 +582,7 @@ async function buildCreatePaymentTransaction(params: {
   phoneHash: string;
   amount: number;
   tokenMintAddress: string;
-  feeAmountBaseUnits: bigint;
+  senderFeeAmountBaseUnits: bigint;
 }) {
   const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
   if (!tokenConfig) {
@@ -581,13 +590,17 @@ async function buildCreatePaymentTransaction(params: {
   }
 
   const configPda = await requireEscrowConfigInitialized();
+  const policy = getEscrowPolicyConfig();
+  const payer = getEscrowAuthorityKeypair();
   const sender = new PublicKey(params.senderWallet);
   const mint = new PublicKey(params.tokenMintAddress);
+  const treasuryOwner = new PublicKey(policy.treasuryOwner);
+  const treasuryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, treasuryOwner);
   const senderTokenAccount = await findSenderTokenAccount({
     connection: params.connection,
     owner: sender,
     mint,
-    amount: params.amount,
+    amount: params.amount + fromBaseUnits(params.senderFeeAmountBaseUnits, tokenConfig.decimals),
   });
 
   if (!senderTokenAccount) {
@@ -598,29 +611,44 @@ async function buildCreatePaymentTransaction(params: {
   const vaultAuthority = getVaultAuthorityPda(params.paymentId);
   const escrowVault = Keypair.generate();
   const latestBlockhash = await params.connection.getLatestBlockhash("confirmed");
-  const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7);
   const data = Buffer.concat([
     instructionDiscriminator("create_payment"),
     paymentIdToSeed(params.paymentId),
     phoneHashHexToBytes(params.phoneHash),
     encodeU64(toBaseUnits(params.amount, tokenConfig.decimals)),
-    encodeU64(params.feeAmountBaseUnits),
-    encodeI64(expiryTs),
+    encodeU64(params.senderFeeAmountBaseUnits),
   ]);
 
   const transaction = new Transaction({
-    feePayer: sender,
+    feePayer: payer.publicKey,
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  }).add(
+  });
+
+  const treasuryAtaInfo = await params.connection.getAccountInfo(treasuryTokenAccount, "confirmed");
+  if (!treasuryAtaInfo) {
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        treasuryTokenAccount,
+        treasuryOwner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+
+  transaction.add(
     new TransactionInstruction({
       programId: getProgramId(),
       keys: [
-        { pubkey: sender, isSigner: true, isWritable: true },
+        { pubkey: payer.publicKey, isSigner: true, isWritable: true },
         { pubkey: sender, isSigner: true, isWritable: true },
         { pubkey: senderTokenAccount, isSigner: false, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: false },
         { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
         { pubkey: paymentAccount, isSigner: false, isWritable: true },
         { pubkey: vaultAuthority, isSigner: false, isWritable: false },
         { pubkey: escrowVault.publicKey, isSigner: true, isWritable: true },
@@ -632,12 +660,11 @@ async function buildCreatePaymentTransaction(params: {
     }),
   );
 
-  transaction.partialSign(escrowVault);
+  transaction.partialSign(payer, escrowVault);
 
   return {
     tokenConfig,
     paymentAccount,
-    vaultAuthority,
     escrowVault,
     transaction,
   };
@@ -650,43 +677,56 @@ export async function estimateSenderTransferCost(params: {
   amount: number;
   tokenMintAddress: string;
 }): Promise<SenderTransferFeeEstimate> {
+  const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
+  if (!tokenConfig) {
+    throw new Error("This token mint is not allowlisted by TrustLink");
+  }
+
   if (env.SOLANA_MOCK_MODE) {
     return {
-      networkFeeLamports: 0,
-      accountRentLamports: 0,
-      totalLamports: 0,
+      tokenSymbol: tokenConfig.symbol,
+      tokenMintAddress: tokenConfig.mintAddress,
+      senderFeeAmountUi: 0,
+      senderFeeAmountUsd: 0,
+      totalTokenRequiredUi: params.amount,
+      estimatedNetworkFeeLamports: 0,
       networkFeeSol: 0,
-      accountRentSol: 0,
-      totalSol: 0,
-      totalUsd: 0,
+      networkFeeUsd: 0,
     };
   }
 
+  const policy = getEscrowPolicyConfig();
   const connection = getConnection();
   const built = await buildCreatePaymentTransaction({
     connection,
     ...params,
-    feeAmountBaseUnits: 0n,
+    senderFeeAmountBaseUnits: 0n,
   });
-  const [networkFeeLamports, paymentAccountRentLamports, tokenAccountRentLamports, prices] = await Promise.all([
+  const [networkFeeLamports, prices] = await Promise.all([
     estimateTransactionFeeLamports(connection, built.transaction),
-    connection.getMinimumBalanceForRentExemption(PAYMENT_ACCOUNT_SPACE, "confirmed"),
-    connection.getMinimumBalanceForRentExemption(TOKEN_ACCOUNT_SPACE, "confirmed"),
     getTokenAndSolUsdPrices(built.tokenConfig.symbol),
   ]);
 
-  const accountRentLamports = paymentAccountRentLamports + tokenAccountRentLamports;
-  const totalLamports = networkFeeLamports + accountRentLamports;
-  const totalSol = lamportsToSol(totalLamports);
+  const networkFeeSol = lamportsToSol(networkFeeLamports);
+  const networkFeeUsd = prices.solUsd != null ? roundToDecimals(networkFeeSol * prices.solUsd, 6) : null;
+  const baseTokenFeeUi =
+    networkFeeUsd != null && prices.tokenUsd != null && prices.tokenUsd > 0
+      ? networkFeeUsd / prices.tokenUsd
+      : 0;
+  const markedUpTokenFeeUi = baseTokenFeeUi * (1 + policy.sendFeeBps / 10_000);
+  const cappedTokenFeeUi =
+    policy.sendFeeCapUiAmount > 0 ? Math.min(markedUpTokenFeeUi, policy.sendFeeCapUiAmount) : markedUpTokenFeeUi;
+  const senderFeeAmountUi = roundUpToDecimals(cappedTokenFeeUi, built.tokenConfig.decimals);
 
   return {
-    networkFeeLamports,
-    accountRentLamports,
-    totalLamports,
-    networkFeeSol: lamportsToSol(networkFeeLamports),
-    accountRentSol: lamportsToSol(accountRentLamports),
-    totalSol,
-    totalUsd: prices.solUsd != null ? roundToDecimals(totalSol * prices.solUsd, 6) : null,
+    tokenSymbol: built.tokenConfig.symbol,
+    tokenMintAddress: built.tokenConfig.mintAddress,
+    senderFeeAmountUi,
+    senderFeeAmountUsd: prices.tokenUsd != null ? roundToDecimals(senderFeeAmountUi * prices.tokenUsd, 6) : null,
+    totalTokenRequiredUi: roundToDecimals(params.amount + senderFeeAmountUi, built.tokenConfig.decimals),
+    estimatedNetworkFeeLamports: networkFeeLamports,
+    networkFeeSol,
+    networkFeeUsd,
   };
 }
 
@@ -703,16 +743,15 @@ async function buildClaimTransaction(params: {
   const configPda = await requireEscrowConfigInitialized();
   const connection = getConnection();
   const payer = getEscrowAuthorityKeypair();
-  const feeConfig = getEscrowFeeConfig();
+  const policy = getEscrowPolicyConfig();
   const mint = new PublicKey(params.tokenMintAddress);
   const receiverOwner = new PublicKey(params.receiverWallet);
   const receiverTokenAccount = splToken.getAssociatedTokenAddressSync(mint, receiverOwner);
-  const treasuryOwner = new PublicKey(feeConfig.treasuryOwner);
+  const treasuryOwner = new PublicKey(policy.treasuryOwner);
   const treasuryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, treasuryOwner);
   const paymentAccount = new PublicKey(params.escrowAccount);
   const escrowVault = new PublicKey(params.escrowVaultAddress);
   const vaultAuthority = getVaultAuthorityPda(params.paymentId);
-  const senderMainAccount = new PublicKey(params.senderWallet);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
   const transaction = new Transaction({
     feePayer: payer.publicKey,
@@ -762,7 +801,6 @@ async function buildClaimTransaction(params: {
         { pubkey: escrowVault, isSigner: false, isWritable: true },
         { pubkey: receiverTokenAccount, isSigner: false, isWritable: true },
         { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: senderMainAccount, isSigner: false, isWritable: true },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
       data: Buffer.concat([
@@ -814,7 +852,7 @@ export async function estimateClaimFee(params: {
     };
   }
 
-  const feeConfig = getEscrowFeeConfig();
+  const policy = getEscrowPolicyConfig();
   const built = await buildClaimTransaction({
     ...params,
     feeAmountBaseUnits: 0n,
@@ -837,9 +875,9 @@ export async function estimateClaimFee(params: {
     estimatedNetworkFeeUsd != null && prices.tokenUsd != null && prices.tokenUsd > 0
       ? estimatedNetworkFeeUsd / prices.tokenUsd
       : 0;
-  const markedUpTokenFeeUi = baseTokenFeeUi * (1 + feeConfig.feeBps / 10_000);
+  const markedUpTokenFeeUi = baseTokenFeeUi * (1 + policy.claimFeeBps / 10_000);
   const cappedTokenFeeUi =
-    feeConfig.feeCapUiAmount > 0 ? Math.min(markedUpTokenFeeUi, feeConfig.feeCapUiAmount) : markedUpTokenFeeUi;
+    policy.claimFeeCapUiAmount > 0 ? Math.min(markedUpTokenFeeUi, policy.claimFeeCapUiAmount) : markedUpTokenFeeUi;
   const roundedFeeAmountUi = roundUpToDecimals(cappedTokenFeeUi, tokenConfig.decimals);
   const amountBaseUnits = toBaseUnits(params.amount, tokenConfig.decimals);
   let feeAmountBaseUnits = toBaseUnits(roundedFeeAmountUi, tokenConfig.decimals);
@@ -879,6 +917,8 @@ export async function prepareEscrowPayment(params: {
   serializedTransaction: string;
   mode: BlockchainExecutionMode;
   tokenSymbol: string;
+  senderFeeAmountUi: number;
+  totalTokenRequiredUi: number;
 }> {
   const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
   if (!tokenConfig) {
@@ -893,14 +933,17 @@ export async function prepareEscrowPayment(params: {
       serializedTransaction: Buffer.from("mock").toString("base64"),
       mode: "mock",
       tokenSymbol: tokenConfig.symbol,
+      senderFeeAmountUi: 0,
+      totalTokenRequiredUi: params.amount,
     };
   }
 
+  const feeEstimate = await estimateSenderTransferCost(params);
   const connection = getConnection();
   const built = await buildCreatePaymentTransaction({
     connection,
     ...params,
-    feeAmountBaseUnits: 0n,
+    senderFeeAmountBaseUnits: toBaseUnits(feeEstimate.senderFeeAmountUi, tokenConfig.decimals),
   });
 
   logger.info("solana.prepare_escrow_payment", {
@@ -920,6 +963,8 @@ export async function prepareEscrowPayment(params: {
       .toString("base64"),
     mode: "devnet",
     tokenSymbol: tokenConfig.symbol,
+    senderFeeAmountUi: feeEstimate.senderFeeAmountUi,
+    totalTokenRequiredUi: feeEstimate.totalTokenRequiredUi,
   };
 }
 
@@ -937,7 +982,9 @@ export async function confirmEscrowPayment(params: {
   signature: string;
   mode: BlockchainExecutionMode;
   tokenSymbol: string;
-  feeAmountUi: number;
+  senderFeeAmountUi: number;
+  claimFeeAmountUi: number;
+  expiryAt: string | null;
 }> {
   const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
   if (!tokenConfig) {
@@ -951,7 +998,9 @@ export async function confirmEscrowPayment(params: {
       signature: params.depositSignature,
       mode: "mock",
       tokenSymbol: tokenConfig.symbol,
-      feeAmountUi: 0,
+      senderFeeAmountUi: 0,
+      claimFeeAmountUi: 0,
+      expiryAt: null,
     };
   }
 
@@ -996,7 +1045,9 @@ export async function confirmEscrowPayment(params: {
     signature: params.depositSignature,
     mode: "devnet",
     tokenSymbol: tokenConfig.symbol,
-    feeAmountUi: Number(decoded.feeAmount) / 10 ** tokenConfig.decimals,
+    senderFeeAmountUi: Number(decoded.senderFeeAmount) / 10 ** tokenConfig.decimals,
+    claimFeeAmountUi: Number(decoded.claimFeeAmount) / 10 ** tokenConfig.decimals,
+    expiryAt: new Date(Number(decoded.expiryTs) * 1000).toISOString(),
   };
 }
 
@@ -1037,6 +1088,103 @@ export async function releaseEscrow(params: {
   });
 
   return { signature, mode: "devnet", feeAmountUi: feeEstimate.feeAmountUi };
+}
+
+async function buildExpirePaymentTransaction(params: {
+  paymentId: string;
+  escrowAccount: string;
+  escrowVaultAddress: string;
+  tokenMintAddress: string;
+}) {
+  const configPda = await requireEscrowConfigInitialized();
+  const connection = getConnection();
+  const payer = getEscrowAuthorityKeypair();
+  const mint = new PublicKey(params.tokenMintAddress);
+  const recoveryWallet = selectRecoveryWallet(params.paymentId);
+  const recoveryOwner = new PublicKey(recoveryWallet.address);
+  const recoveryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, recoveryOwner);
+  const paymentAccount = new PublicKey(params.escrowAccount);
+  const escrowVault = new PublicKey(params.escrowVaultAddress);
+  const vaultAuthority = getVaultAuthorityPda(params.paymentId);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+  const transaction = new Transaction({
+    feePayer: payer.publicKey,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+
+  const recoveryAtaInfo = await connection.getAccountInfo(recoveryTokenAccount, "confirmed");
+  if (!recoveryAtaInfo) {
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        recoveryTokenAccount,
+        recoveryOwner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+
+  transaction.add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: false },
+        { pubkey: paymentAccount, isSigner: false, isWritable: true },
+        { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+        { pubkey: escrowVault, isSigner: false, isWritable: true },
+        { pubkey: recoveryTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.concat([instructionDiscriminator("expire_payment_to_pool"), paymentIdToSeed(params.paymentId)]),
+    }),
+  );
+
+  return {
+    connection,
+    payer,
+    transaction,
+    recoveryWalletAddress: recoveryWallet.address,
+  };
+}
+
+export async function expireEscrowPayment(params: {
+  paymentId: string;
+  escrowAccount: string;
+  escrowVaultAddress: string;
+  tokenMintAddress: string;
+}): Promise<ExpireEscrowResult> {
+  if (env.SOLANA_MOCK_MODE) {
+    const signature = sha256(JSON.stringify({ action: "expireEscrowPayment", ...params })).slice(0, 64);
+    return {
+      signature,
+      mode: "mock",
+      recoveryWalletAddress: selectRecoveryWallet(params.paymentId).address,
+    };
+  }
+
+  const built = await buildExpirePaymentTransaction(params);
+  const signature = await sendAndConfirmTransaction(built.connection, built.transaction, [built.payer], {
+    commitment: "confirmed",
+  });
+
+  logger.info("solana.expire_payment_to_pool", {
+    paymentId: params.paymentId,
+    escrowAccount: params.escrowAccount,
+    escrowVaultAddress: params.escrowVaultAddress,
+    tokenMintAddress: params.tokenMintAddress,
+    recoveryWalletAddress: built.recoveryWalletAddress,
+    signature,
+  });
+
+  return {
+    signature,
+    mode: "devnet",
+    recoveryWalletAddress: built.recoveryWalletAddress,
+  };
 }
 
 export async function listSupportedWalletTokens(walletAddress: string): Promise<SupportedWalletToken[]> {

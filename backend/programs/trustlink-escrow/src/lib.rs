@@ -9,7 +9,7 @@ use state::{
     EscrowConfig, PaymentAccount, PaymentStatus, CONFIG_SEED, PAYMENT_SEED, VAULT_AUTHORITY_SEED,
 };
 
-declare_id!("55rSd6RuyQdHiuouzfgXY17xXukPzRyLU5MptP9ZzKip");
+declare_id!("BQCDZF8gFs35xiEUEZbvgkLufMjrcysw5yPdv3MVZohM");
 
 #[program]
 pub mod trustlink_escrow {
@@ -19,16 +19,17 @@ pub mod trustlink_escrow {
         ctx: Context<InitializeConfig>,
         claim_verifier: Pubkey,
         treasury_owner: Pubkey,
-        fee_bps: u16,
-        fee_cap: u64,
+        default_expiry_seconds: i64,
     ) -> Result<()> {
-        require!(fee_bps <= 10_000, TrustLinkEscrowError::InvalidFeeConfig);
+        require!(
+            default_expiry_seconds > 0,
+            TrustLinkEscrowError::InvalidDefaultExpiry
+        );
 
         let config = &mut ctx.accounts.config;
         config.claim_verifier = claim_verifier;
         config.treasury_owner = treasury_owner;
-        config.fee_bps = fee_bps;
-        config.fee_cap = fee_cap;
+        config.default_expiry_seconds = default_expiry_seconds;
         config.bump = ctx.bumps.config;
         Ok(())
     }
@@ -37,10 +38,12 @@ pub mod trustlink_escrow {
         ctx: Context<UpdateConfig>,
         new_claim_verifier: Pubkey,
         new_treasury_owner: Pubkey,
-        new_fee_bps: u16,
-        new_fee_cap: u64,
+        new_default_expiry_seconds: i64,
     ) -> Result<()> {
-        require!(new_fee_bps <= 10_000, TrustLinkEscrowError::InvalidFeeConfig);
+        require!(
+            new_default_expiry_seconds > 0,
+            TrustLinkEscrowError::InvalidDefaultExpiry
+        );
         require_keys_eq!(
             ctx.accounts.authority.key(),
             ctx.accounts.config.claim_verifier,
@@ -50,8 +53,7 @@ pub mod trustlink_escrow {
         let config = &mut ctx.accounts.config;
         config.claim_verifier = new_claim_verifier;
         config.treasury_owner = new_treasury_owner;
-        config.fee_bps = new_fee_bps;
-        config.fee_cap = new_fee_cap;
+        config.default_expiry_seconds = new_default_expiry_seconds;
         Ok(())
     }
 
@@ -60,14 +62,15 @@ pub mod trustlink_escrow {
         payment_id: [u8; 32],
         receiver_phone_hash: [u8; 32],
         amount: u64,
-        fee_amount: u64,
-        expiry_ts: i64,
+        sender_fee_amount: u64,
     ) -> Result<()> {
         require!(amount > 0, TrustLinkEscrowError::InvalidAmount);
 
         let now = Clock::get()?.unix_timestamp;
-        require!(expiry_ts > now, TrustLinkEscrowError::InvalidExpiry);
-        require!(fee_amount < amount, TrustLinkEscrowError::InvalidFeeConfig);
+        require!(
+            ctx.accounts.config.default_expiry_seconds > 0,
+            TrustLinkEscrowError::InvalidDefaultExpiry
+        );
         require_keys_eq!(
             ctx.accounts.sender_token_account.mint,
             ctx.accounts.token_mint.key(),
@@ -75,6 +78,12 @@ pub mod trustlink_escrow {
         );
 
         token::transfer(ctx.accounts.transfer_to_vault_context(), amount)?;
+        if sender_fee_amount > 0 {
+            token::transfer(
+                ctx.accounts.transfer_sender_fee_to_treasury_context(),
+                sender_fee_amount,
+            )?;
+        }
 
         let payment = &mut ctx.accounts.payment_account;
         payment.payment_id = payment_id;
@@ -82,8 +91,11 @@ pub mod trustlink_escrow {
         payment.receiver_phone_hash = receiver_phone_hash;
         payment.token_mint = ctx.accounts.token_mint.key();
         payment.amount = amount;
-        payment.fee_amount = fee_amount;
-        payment.expiry_ts = expiry_ts;
+        payment.sender_fee_amount = sender_fee_amount;
+        payment.claim_fee_amount = 0;
+        payment.expiry_ts = now
+            .checked_add(ctx.accounts.config.default_expiry_seconds)
+            .ok_or(TrustLinkEscrowError::InvalidExpiry)?;
         payment.status = PaymentStatus::Pending;
         payment.payment_bump = ctx.bumps.payment_account;
         payment.vault_authority_bump = ctx.bumps.vault_authority;
@@ -95,7 +107,7 @@ pub mod trustlink_escrow {
         ctx: Context<ClaimPayment>,
         _payment_id: [u8; 32],
         receiver_phone_hash: [u8; 32],
-        fee_amount: u64,
+        claim_fee_amount: u64,
     ) -> Result<()> {
         let payment = &mut ctx.accounts.payment_account;
         let now = Clock::get()?.unix_timestamp;
@@ -127,13 +139,16 @@ pub mod trustlink_escrow {
         );
 
         let payment_amount = payment.amount;
-        require!(payment_amount > fee_amount, TrustLinkEscrowError::InvalidFeeConfig);
+        require!(
+            payment_amount > claim_fee_amount,
+            TrustLinkEscrowError::InvalidFeeConfig
+        );
         let receiver_amount = payment_amount
-            .checked_sub(fee_amount)
+            .checked_sub(claim_fee_amount)
             .ok_or(TrustLinkEscrowError::InvalidFeeConfig)?;
         let payment_id = payment.payment_id;
         let vault_authority_bump = payment.vault_authority_bump;
-        payment.fee_amount = fee_amount;
+        payment.claim_fee_amount = claim_fee_amount;
         let signer_bump = [vault_authority_bump];
         let signer_seeds: &[&[u8]] = &[
             VAULT_AUTHORITY_SEED,
@@ -147,12 +162,12 @@ pub mod trustlink_escrow {
                 .with_signer(&[signer_seeds]),
             receiver_amount,
         )?;
-        if fee_amount > 0 {
+        if claim_fee_amount > 0 {
             token::transfer(
                 ctx.accounts
                     .transfer_to_treasury_context()
                     .with_signer(&[signer_seeds]),
-                fee_amount,
+                claim_fee_amount,
             )?;
         }
         token::close_account(
@@ -165,12 +180,72 @@ pub mod trustlink_escrow {
         Ok(())
     }
 
+    pub fn expire_payment_to_pool(
+        ctx: Context<ExpirePaymentToPool>,
+        _payment_id: [u8; 32],
+    ) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+
+        let payment = &ctx.accounts.payment_account;
+        let payment_status = payment.status;
+        let payment_expiry = payment.expiry_ts;
+        let payment_token_mint = payment.token_mint;
+        let payment_amount = payment.amount;
+        let payment_id = payment.payment_id;
+        let vault_authority_bump = payment.vault_authority_bump;
+
+        require!(payment_status.is_pending(), TrustLinkEscrowError::PaymentNotPending);
+        require!(payment_expiry < now, TrustLinkEscrowError::PaymentNotExpired);
+        require_keys_eq!(
+            ctx.accounts.claim_verifier.key(),
+            ctx.accounts.config.claim_verifier,
+            TrustLinkEscrowError::InvalidClaimVerifier
+        );
+        require_keys_eq!(
+            ctx.accounts.recovery_token_account.mint,
+            payment_token_mint,
+            TrustLinkEscrowError::InvalidRecoveryMint
+        );
+        require!(
+            ctx.accounts.escrow_vault.amount >= payment_amount,
+            TrustLinkEscrowError::VaultBalanceMismatch
+        );
+
+        let signer_bump = [vault_authority_bump];
+        let signer_seeds: &[&[u8]] = &[
+            VAULT_AUTHORITY_SEED,
+            payment_id.as_ref(),
+            &signer_bump,
+        ];
+
+        token::transfer(
+            ctx.accounts
+                .transfer_to_recovery_context()
+                .with_signer(&[signer_seeds]),
+            payment_amount,
+        )?;
+        token::close_account(
+            ctx.accounts
+                .close_vault_context()
+                .with_signer(&[signer_seeds]),
+        )?;
+
+        let payment = &mut ctx.accounts.payment_account;
+        payment.status = PaymentStatus::ExpiredToPool;
+        Ok(())
+    }
+
     pub fn refund_payment(ctx: Context<RefundPayment>, _payment_id: [u8; 32]) -> Result<()> {
         let payment = &ctx.accounts.payment_account;
         let now = Clock::get()?.unix_timestamp;
 
         require!(payment.status.is_pending(), TrustLinkEscrowError::PaymentNotPending);
-        require!(payment.expiry_ts < now, TrustLinkEscrowError::PaymentNotExpired);
+        require!(payment.expiry_ts >= now, TrustLinkEscrowError::PaymentExpired);
+        require_keys_eq!(
+            ctx.accounts.claim_verifier.key(),
+            ctx.accounts.config.claim_verifier,
+            TrustLinkEscrowError::InvalidClaimVerifier
+        );
         require_keys_eq!(
             ctx.accounts.sender.key(),
             payment.sender_pubkey,
@@ -235,7 +310,7 @@ pub struct UpdateConfig<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _amount: u64, _fee_amount: u64, _expiry_ts: i64)]
+#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _amount: u64, _sender_fee_amount: u64)]
 pub struct CreatePayment<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -252,6 +327,12 @@ pub struct CreatePayment<'info> {
     )]
     pub config: Box<Account<'info, EscrowConfig>>,
     pub token_mint: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = treasury_token_account.owner == config.treasury_owner,
+        constraint = treasury_token_account.mint == token_mint.key()
+    )]
+    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
         init,
         payer = payer,
@@ -289,11 +370,25 @@ impl<'info> CreatePayment<'info> {
             },
         )
     }
+
+    fn transfer_sender_fee_to_treasury_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            Transfer {
+                from: self.sender_token_account.to_account_info(),
+                to: self.treasury_token_account.to_account_info(),
+                authority: self.sender.to_account_info(),
+            },
+        )
+    }
 }
 
 #[derive(Accounts)]
-#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _fee_amount: u64)]
+#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _claim_fee_amount: u64)]
 pub struct ClaimPayment<'info> {
+    #[account(mut)]
     pub claim_verifier: Signer<'info>,
     #[account(
         seeds = [CONFIG_SEED],
@@ -302,6 +397,7 @@ pub struct ClaimPayment<'info> {
     pub config: Box<Account<'info, EscrowConfig>>,
     #[account(
         mut,
+        close = claim_verifier,
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump = payment_account.payment_bump
     )]
@@ -329,11 +425,6 @@ pub struct ClaimPayment<'info> {
         constraint = treasury_token_account.mint == payment_account.token_mint
     )]
     pub treasury_token_account: Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        address = payment_account.sender_pubkey
-    )]
-    pub sender_main_account: SystemAccount<'info>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -365,7 +456,68 @@ impl<'info> ClaimPayment<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.escrow_vault.to_account_info(),
-                destination: self.sender_main_account.to_account_info(),
+                destination: self.claim_verifier.to_account_info(),
+                authority: self.vault_authority.to_account_info(),
+            },
+        )
+    }
+}
+
+#[derive(Accounts)]
+#[instruction(payment_id: [u8; 32])]
+pub struct ExpirePaymentToPool<'info> {
+    #[account(mut)]
+    pub claim_verifier: Signer<'info>,
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump = config.bump
+    )]
+    pub config: Box<Account<'info, EscrowConfig>>,
+    #[account(
+        mut,
+        close = claim_verifier,
+        seeds = [PAYMENT_SEED, payment_id.as_ref()],
+        bump = payment_account.payment_bump
+    )]
+    pub payment_account: Box<Account<'info, PaymentAccount>>,
+    /// CHECK: PDA authority only, validated by seeds.
+    #[account(
+        seeds = [VAULT_AUTHORITY_SEED, payment_id.as_ref()],
+        bump = payment_account.vault_authority_bump
+    )]
+    pub vault_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        constraint = escrow_vault.owner == vault_authority.key(),
+        constraint = escrow_vault.mint == payment_account.token_mint
+    )]
+    pub escrow_vault: Box<Account<'info, TokenAccount>>,
+    #[account(
+        mut,
+        constraint = recovery_token_account.mint == payment_account.token_mint
+    )]
+    pub recovery_token_account: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
+}
+
+impl<'info> ExpirePaymentToPool<'info> {
+    fn transfer_to_recovery_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            Transfer {
+                from: self.escrow_vault.to_account_info(),
+                to: self.recovery_token_account.to_account_info(),
+                authority: self.vault_authority.to_account_info(),
+            },
+        )
+    }
+
+    fn close_vault_context(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.escrow_vault.to_account_info(),
+                destination: self.claim_verifier.to_account_info(),
                 authority: self.vault_authority.to_account_info(),
             },
         )
@@ -376,9 +528,16 @@ impl<'info> ClaimPayment<'info> {
 #[instruction(payment_id: [u8; 32])]
 pub struct RefundPayment<'info> {
     #[account(mut)]
+    pub claim_verifier: Signer<'info>,
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump = config.bump
+    )]
+    pub config: Box<Account<'info, EscrowConfig>>,
     pub sender: Signer<'info>,
     #[account(
         mut,
+        close = claim_verifier,
         seeds = [PAYMENT_SEED, payment_id.as_ref()],
         bump = payment_account.payment_bump
     )]
@@ -421,7 +580,7 @@ impl<'info> RefundPayment<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.escrow_vault.to_account_info(),
-                destination: self.sender.to_account_info(),
+                destination: self.claim_verifier.to_account_info(),
                 authority: self.vault_authority.to_account_info(),
             },
         )

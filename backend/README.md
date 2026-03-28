@@ -51,6 +51,8 @@ The backend handles:
 - sender and receiver view shaping
 - claim OTP start
 - release acceptance state
+- sender-fee and claim-fee estimation
+- expiry sweep orchestration
 - transaction detail payloads
 - manual invite regeneration payloads for sender follow-up
 
@@ -65,6 +67,17 @@ For outbound WhatsApp notifications, TrustLink stores and updates:
 - `failed`
 
 The frontend reads this state from TrustLink's database. It does not need to query WhatsApp directly on page load.
+
+### Gasless Payment Handling
+
+TrustLink users do not need SOL for normal send and claim flow.
+
+The backend:
+- estimates live Solana transaction cost
+- pays network fees through the verifier wallet
+- charges sender-side fees in the token being sent
+- charges claim-side fees in the token being claimed
+- reclaims recoverable SOL rent when escrow vaults close
 
 ## Main Areas
 
@@ -117,9 +130,18 @@ npm run dev
 npm run db:init
 npm run db:reset
 npm run escrow:init-config
+npm run escrow:update-config
+npm run escrow:expire-payments
 npm run test:payment-flow
 npm run test:auth-phone-flow
 ```
+
+## Related Docs
+
+- [Devnet testing guide](C:/Users/codepara/Desktop/trust-link/docs/devnet-testing.md)
+- [Wallet roles](C:/Users/codepara/Desktop/trust-link/docs/wallet-roles.md)
+- [Escrow V2 design](C:/Users/codepara/Desktop/trust-link/docs/escrow-v2-design.md)
+- [Payment escrow architecture](C:/Users/codepara/Desktop/trust-link/docs/payment-escrow-architecture.md)
 
 ### `test:auth-phone-flow`
 
@@ -158,8 +180,12 @@ Important values:
 
 - `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
 - `TRUSTLINK_TREASURY_OWNER`
+- `TRUSTLINK_SEND_FEE_BPS`
+- `TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT`
 - `TRUSTLINK_CLAIM_FEE_BPS`
 - `TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT`
+- `TRUSTLINK_DEFAULT_EXPIRY_SECONDS`
+- `TRUSTLINK_RECOVERY_WALLETS`
 
 See:
 
@@ -179,4 +205,6 @@ This backend currently supports:
 - manual invite generation for unregistered recipients
 - sender notification receipt state
 - viewer-safe transaction detail responses
-- Anchor escrow workspace under active integration
+- live escrow-backed payment creation and release
+- gasless send and claim support through the verifier wallet
+- expiry sweep support for unclaimed payments

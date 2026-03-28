@@ -18,6 +18,7 @@ TrustLink Pay combines:
 - OTP verification
 - in-app PIN protection
 - sender-side delivery visibility
+- gasless transaction UX for users
 
 The result is a payment experience that feels closer to OPay, Paytm, or Pix than a traditional crypto dashboard.
 
@@ -74,6 +75,15 @@ The recipient:
 - claims the payment securely
 
 TrustLink does not just route money. It creates identity confidence before the transfer and controlled release after the transfer.
+
+TrustLink is designed for regions where users already trust phone-number-based payments. Instead of teaching users a new financial behavior, TrustLink keeps the familiar phone-number flow and upgrades the settlement rails underneath to stablecoins on Solana.
+
+## Core Docs
+
+- [Devnet testing guide](C:/Users/codepara/Desktop/trust-link/docs/devnet-testing.md)
+- [Wallet roles](C:/Users/codepara/Desktop/trust-link/docs/wallet-roles.md)
+- [Escrow V2 design](C:/Users/codepara/Desktop/trust-link/docs/escrow-v2-design.md)
+- [Payment escrow architecture](C:/Users/codepara/Desktop/trust-link/docs/payment-escrow-architecture.md)
 
 ## Institutional Fit
 
@@ -194,6 +204,7 @@ Once the sender confirms:
 - the payment is recorded with a reference code
 - funds move into escrow
 - TrustLink handles the correct notification path based on recipient state
+- TrustLink sponsors the Solana gas so the user does not need SOL in their wallet
 
 ![Send crypto flow](public/screenshots/02-send-flow.png)
 
@@ -234,6 +245,17 @@ TrustLink is designed around real payment use cases, not speculative token behav
 ### Smart Contract Escrow
 
 Funds are held before release so recipient verification can happen safely.
+
+### Gasless User Experience
+
+TrustLink users do not need SOL to use the product.
+
+- TrustLink pays Solana network fees through its verifier wallets
+- sender-side fee is charged in the token being sent
+- claim-side fee is charged in the token being claimed
+- recoverable account rent is reclaimed by TrustLink when escrow vaults close
+
+This keeps the product closer to a modern payment app than a typical wallet flow.
 
 ### Sender-Side Delivery Visibility
 
@@ -301,7 +323,7 @@ Deeper trace data is stored internally for compliance and support, not casual re
 
 - Solana
 - Anchor-based escrow workspace
-- escrow funding and release integration in progress
+- live escrow funding, claim release, fee charging, and expiry sweep support
 
 ### Messaging Layer
 
@@ -334,6 +356,7 @@ TrustLink currently includes:
 - in-app PIN gating
 - recipient verification before send
 - escrow-backed payment creation
+- gasless send and claim UX for users
 - sender receipt-state indicators
 - manual invite flow for unregistered recipients
 - full transaction detail pages

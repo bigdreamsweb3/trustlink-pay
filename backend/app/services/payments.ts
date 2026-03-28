@@ -2,10 +2,12 @@ import {
   createPaymentRecord,
   findPaymentById,
   findPaymentByDepositSignature,
+  listExpiredPendingPayments,
   listPaymentHistory,
   listPendingPaymentsByPhoneNumber,
   markPaymentNotificationAttempt,
   updatePaymentAcceptance,
+  updatePaymentExpiredToPool,
   updatePaymentNotificationMessageId,
   updatePaymentNotificationStatus
 } from "@/app/db/payments";
@@ -16,6 +18,7 @@ import {
   createDraftPaymentId,
   estimateClaimFee,
   estimateSenderTransferCost,
+  expireEscrowPayment,
   prepareEscrowPayment,
   releaseEscrow
 } from "@/app/blockchain/solana";
@@ -244,13 +247,18 @@ export async function createPayment(params: {
         depositSignature: params.depositSignature
       });
 
-        return {
-          payment: updatedPayment,
-          blockchain: {
-            escrowAccount: updatedPayment.escrow_account ?? "",
-            signature: updatedPayment.deposit_signature,
-            mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
-          },
+      return {
+        payment: updatedPayment,
+        blockchain: {
+          escrowAccount: updatedPayment.escrow_account ?? "",
+          escrowVaultAddress: updatedPayment.escrow_vault_address ?? null,
+          signature: updatedPayment.deposit_signature,
+          mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
+        },
+        paymentId: updatedPayment.id,
+        tokenSymbol: updatedPayment.token_symbol,
+        senderFeeAmount: Number(updatedPayment.sender_fee_amount ?? 0),
+        totalTokenRequiredAmount: Number(updatedPayment.amount) + Number(updatedPayment.sender_fee_amount ?? 0),
         notificationRetried:
           !manualInviteState.manualInviteRequired &&
           (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
@@ -283,6 +291,8 @@ export async function createPayment(params: {
       },
       paymentId,
       tokenSymbol: prepared.tokenSymbol,
+      senderFeeAmount: prepared.senderFeeAmountUi,
+      totalTokenRequiredAmount: prepared.totalTokenRequiredUi,
       notificationRetried: false,
       manualInviteRequired: false,
       inviteShare: null,
@@ -319,10 +329,12 @@ export async function createPayment(params: {
       tokenSymbol: escrow.tokenSymbol,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
-      feeAmount: escrow.feeAmountUi,
+      senderFeeAmount: escrow.senderFeeAmountUi,
+      claimFeeAmount: escrow.claimFeeAmountUi,
       escrowAccount: escrow.escrowAccount,
       escrowVaultAddress: escrow.escrowVaultAddress,
-      depositSignature: escrow.signature
+      depositSignature: escrow.signature,
+      expiryAt: escrow.expiryAt,
     });
   } catch (error) {
     if (
@@ -353,6 +365,10 @@ export async function createPayment(params: {
             signature: updatedPayment.deposit_signature ?? escrow.signature,
             mode: env.SOLANA_MOCK_MODE ? "mock" : "devnet"
           },
+          paymentId: updatedPayment.id,
+          tokenSymbol: updatedPayment.token_symbol,
+          senderFeeAmount: Number(updatedPayment.sender_fee_amount ?? 0),
+          totalTokenRequiredAmount: Number(updatedPayment.amount) + Number(updatedPayment.sender_fee_amount ?? 0),
           notificationRetried:
             !manualInviteState.manualInviteRequired &&
             (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
@@ -385,6 +401,12 @@ export async function createPayment(params: {
   return {
     payment: updatedPayment ?? payment,
     blockchain: escrow,
+    paymentId: (updatedPayment ?? payment).id,
+    tokenSymbol: (updatedPayment ?? payment).token_symbol,
+    senderFeeAmount: Number((updatedPayment ?? payment).sender_fee_amount ?? escrow.senderFeeAmountUi ?? 0),
+    totalTokenRequiredAmount:
+      Number((updatedPayment ?? payment).amount) +
+      Number((updatedPayment ?? payment).sender_fee_amount ?? escrow.senderFeeAmountUi ?? 0),
     notificationRetried:
       !manualInviteState.manualInviteRequired &&
       (updatedPayment.notification_status === "queued" || updatedPayment.notification_status === "failed"),
@@ -418,6 +440,48 @@ export async function estimatePaymentTransfer(params: {
   return {
     paymentId,
     estimate,
+  };
+}
+
+export async function expirePendingPayments(limit = 100) {
+  const expiredPayments = await listExpiredPendingPayments(limit);
+  const results: Array<{
+    paymentId: string;
+    signature: string | null;
+    recoveryWalletAddress: string;
+  }> = [];
+
+  for (const payment of expiredPayments) {
+    if (!payment.escrow_account || !payment.escrow_vault_address || !payment.token_mint_address) {
+      logger.warn("payment.expire.skipped_missing_blockchain_fields", {
+        paymentId: payment.id,
+      });
+      continue;
+    }
+
+    const expired = await expireEscrowPayment({
+      paymentId: payment.id,
+      escrowAccount: payment.escrow_account,
+      escrowVaultAddress: payment.escrow_vault_address,
+      tokenMintAddress: payment.token_mint_address,
+    });
+
+    await updatePaymentExpiredToPool({
+      id: payment.id,
+      expirySignature: expired.signature,
+      recoveryWalletAddress: expired.recoveryWalletAddress,
+    });
+
+    results.push({
+      paymentId: payment.id,
+      signature: expired.signature,
+      recoveryWalletAddress: expired.recoveryWalletAddress,
+    });
+  }
+
+  return {
+    processed: results.length,
+    payments: results,
   };
 }
 
@@ -549,7 +613,7 @@ export async function acceptPayment(params: {
     id: payment.id,
     releaseSignature: release.signature,
     releasedToWallet: receiverWalletAddress,
-    feeAmount: release.feeAmountUi,
+    claimFeeAmount: release.feeAmountUi,
   });
   await consumeVerifiedOtp(otpVerification.otpId);
   const transactionUrl = getTransactionExplorerUrl({

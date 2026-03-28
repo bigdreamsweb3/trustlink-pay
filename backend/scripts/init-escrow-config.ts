@@ -6,16 +6,15 @@ async function main() {
   const { getEscrowVerifierPublicKey, initializeEscrowConfig, isEscrowConfigInitialized } = await import(
     "../app/blockchain/solana"
   );
-  const { getEscrowFeeConfig } = await import("../app/config/escrow");
+  const { getEscrowPolicyConfig } = await import("../app/config/escrow");
 
   const initialized = await isEscrowConfigInitialized();
   const verifier = getEscrowVerifierPublicKey();
-  const feeConfig = getEscrowFeeConfig();
+  const policy = getEscrowPolicyConfig();
 
   console.log(`Escrow verifier pubkey: ${verifier}`);
-  console.log(`Treasury owner: ${feeConfig.treasuryOwner}`);
-  console.log(`Fee bps: ${feeConfig.feeBps}`);
-  console.log(`Fee cap UI amount: ${feeConfig.feeCapUiAmount}`);
+  console.log(`Treasury owner: ${policy.treasuryOwner}`);
+  console.log(`Default expiry seconds: ${policy.defaultExpirySeconds}`);
 
   if (initialized) {
     console.log("Escrow config is already initialized.");

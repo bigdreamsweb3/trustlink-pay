@@ -11,8 +11,13 @@ async function ensurePaymentTraceColumns() {
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS released_to_wallet VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64)`;
-      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS fee_amount NUMERIC(20, 9)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS sender_fee_amount NUMERIC(20, 9)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS claim_fee_amount NUMERIC(20, 9)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS expiry_signature VARCHAR(128)`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS expiry_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS expired_to_pool_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS recovery_wallet_address VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS notification_attempt_count INTEGER NOT NULL DEFAULT 0`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS notification_last_attempt_at TIMESTAMPTZ`;
       await sql`
@@ -54,10 +59,12 @@ export async function createPaymentRecord(params: {
   tokenSymbol: string;
   tokenMintAddress: string;
   amount: number;
-  feeAmount?: number | null;
+  senderFeeAmount?: number | null;
+  claimFeeAmount?: number | null;
   escrowAccount: string;
   escrowVaultAddress: string;
   depositSignature?: string | null;
+  expiryAt?: string | null;
 }): Promise<PaymentRecord> {
   await ensurePaymentTraceColumns();
 
@@ -74,10 +81,12 @@ export async function createPaymentRecord(params: {
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
+      expiry_at,
       status,
       notification_status
     )
@@ -93,10 +102,12 @@ export async function createPaymentRecord(params: {
       ${params.tokenSymbol},
       ${params.tokenMintAddress},
       ${params.amount},
-      ${params.feeAmount ?? null},
+      ${params.senderFeeAmount ?? null},
+      ${params.claimFeeAmount ?? null},
       ${params.escrowAccount},
       ${params.escrowVaultAddress},
       ${params.depositSignature ?? null},
+      ${params.expiryAt ?? null},
       'pending',
       'queued'
     )
@@ -112,13 +123,18 @@ export async function createPaymentRecord(params: {
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -150,13 +166,18 @@ export async function findPaymentById(id: string): Promise<PaymentRecord | null>
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -194,13 +215,18 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -220,7 +246,7 @@ export async function updatePaymentAcceptance(params: {
   id: string;
   releaseSignature?: string | null;
   releasedToWallet: string;
-  feeAmount?: number | null;
+  claimFeeAmount?: number | null;
 }): Promise<PaymentRecord | null> {
   await ensurePaymentTraceColumns();
 
@@ -229,7 +255,7 @@ export async function updatePaymentAcceptance(params: {
     SET
       status = 'accepted',
       accepted_at = COALESCE(accepted_at, NOW()),
-      fee_amount = COALESCE(${params.feeAmount ?? null}, fee_amount),
+      claim_fee_amount = COALESCE(${params.claimFeeAmount ?? null}, claim_fee_amount),
       release_signature = COALESCE(${params.releaseSignature ?? null}, release_signature),
       released_to_wallet = ${params.releasedToWallet}
     WHERE id = ${params.id}
@@ -245,13 +271,76 @@ export async function updatePaymentAcceptance(params: {
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
+      notification_message_id,
+      notification_status,
+      notification_sent_at,
+      notification_delivered_at,
+      notification_read_at,
+      notification_failed_at,
+      notification_attempt_count,
+      notification_last_attempt_at,
+      status,
+      created_at
+  `) as PaymentRecord[];
+
+  return rows[0] ?? null;
+}
+
+export async function updatePaymentExpiredToPool(params: {
+  id: string;
+  expirySignature?: string | null;
+  recoveryWalletAddress: string;
+  occurredAt?: string | null;
+}): Promise<PaymentRecord | null> {
+  await ensurePaymentTraceColumns();
+
+  const occurredAt = params.occurredAt ? new Date(params.occurredAt) : new Date();
+
+  const rows = (await sql`
+    UPDATE payments
+    SET
+      status = 'expired',
+      expiry_signature = COALESCE(${params.expirySignature ?? null}, expiry_signature),
+      recovery_wallet_address = ${params.recoveryWalletAddress},
+      expired_to_pool_at = COALESCE(expired_to_pool_at, ${occurredAt}),
+      expiry_at = COALESCE(expiry_at, ${occurredAt})
+    WHERE id = ${params.id}
+    RETURNING
+      id,
+      sender_user_id,
+      sender_wallet,
+      sender_display_name_snapshot,
+      sender_handle_snapshot,
+      reference_code,
+      receiver_phone,
+      receiver_phone_hash,
+      token_symbol,
+      token_mint_address,
+      amount,
+      sender_fee_amount,
+      claim_fee_amount,
+      escrow_account,
+      escrow_vault_address,
+      deposit_signature,
+      release_signature,
+      expiry_signature,
+      released_to_wallet,
+      accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -297,13 +386,18 @@ export async function updatePaymentNotificationMessageId(
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -370,13 +464,18 @@ export async function updatePaymentNotificationStatus(
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -408,13 +507,18 @@ export async function findPaymentByNotificationMessageId(messageId: string): Pro
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -449,13 +553,18 @@ export async function listPendingPaymentsByPhoneNumber(phoneNumber: string): Pro
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -470,6 +579,55 @@ export async function listPendingPaymentsByPhoneNumber(phoneNumber: string): Pro
     WHERE receiver_phone = ${phoneNumber}
       AND status = 'pending'
     ORDER BY created_at DESC
+  `) as PaymentRecord[];
+
+  return rows;
+}
+
+export async function listExpiredPendingPayments(limit = 100): Promise<PaymentRecord[]> {
+  await ensurePaymentTraceColumns();
+
+  const rows = (await sql`
+    SELECT
+      id,
+      sender_user_id,
+      sender_wallet,
+      sender_display_name_snapshot,
+      sender_handle_snapshot,
+      reference_code,
+      receiver_phone,
+      receiver_phone_hash,
+      token_symbol,
+      token_mint_address,
+      amount,
+      sender_fee_amount,
+      claim_fee_amount,
+      escrow_account,
+      escrow_vault_address,
+      deposit_signature,
+      release_signature,
+      expiry_signature,
+      released_to_wallet,
+      accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
+      notification_message_id,
+      notification_status,
+      notification_sent_at,
+      notification_delivered_at,
+      notification_read_at,
+      notification_failed_at,
+      notification_attempt_count,
+      notification_last_attempt_at,
+      status,
+      created_at
+    FROM payments
+    WHERE status = 'pending'
+      AND expiry_at IS NOT NULL
+      AND expiry_at <= NOW()
+    ORDER BY expiry_at ASC
+    LIMIT ${limit}
   `) as PaymentRecord[];
 
   return rows;
@@ -495,13 +653,18 @@ export async function listPaymentHistory(params: {
       token_symbol,
       token_mint_address,
       amount,
-      fee_amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -540,12 +703,18 @@ export async function findLatestReferralCandidateByReceiverPhone(
       token_symbol,
       token_mint_address,
       amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
       escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -580,12 +749,20 @@ export async function findPaymentByDepositSignature(depositSignature: string): P
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,
@@ -627,12 +804,20 @@ export async function markPaymentNotificationAttempt(id: string): Promise<Paymen
       receiver_phone,
       receiver_phone_hash,
       token_symbol,
+      token_mint_address,
       amount,
+      sender_fee_amount,
+      claim_fee_amount,
       escrow_account,
+      escrow_vault_address,
       deposit_signature,
       release_signature,
+      expiry_signature,
       released_to_wallet,
       accepted_at,
+      expiry_at,
+      expired_to_pool_at,
+      recovery_wallet_address,
       notification_message_id,
       notification_status,
       notification_sent_at,

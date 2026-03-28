@@ -24,8 +24,12 @@ pub enum TrustLinkEscrowError {
     InvalidSenderMint,
     #[msg("Treasury token account mint does not match the payment mint")]
     InvalidTreasuryMint,
+    #[msg("Recovery token account mint does not match the payment mint")]
+    InvalidRecoveryMint,
     #[msg("Fee configuration is invalid")]
     InvalidFeeConfig,
     #[msg("Invalid config authority")]
     InvalidConfigAuthority,
+    #[msg("Default expiry configuration is invalid")]
+    InvalidDefaultExpiry,
 }

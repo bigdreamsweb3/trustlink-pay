@@ -77,7 +77,14 @@ TrustLink does not just route money. It creates identity confidence before the t
 
 ## Institutional Fit
 
-StableHacks is focused on institutional-grade stablecoin infrastructure, and TrustLink is being built in that direction.
+TrustLink Pay is designed as compliance-aware payment infrastructure for stablecoin delivery and payout workflows. While the current MVP focuses on recipient delivery, escrow, and claims, the architecture is intended to support future layers such as:
+
+- KYC onboarding
+- KYT transaction screening
+- AML monitoring workflows
+- Travel Rule data handling
+- verified payout destination controls
+- fiat payout and off-ramp integrations
 
 TrustLink already demonstrates:
 
@@ -86,15 +93,6 @@ TrustLink already demonstrates:
 - traceable payment references
 - claim-based settlement instead of blind direct transfer
 - privacy-aware transaction views
-
-The architecture is intended to support future layers such as:
-
-- KYC onboarding
-- KYT transaction screening
-- AML monitoring workflows
-- Travel Rule data handling
-- verified payout destination controls
-- fiat payout and off-ramp integrations
 
 ## Current Product Logic
 

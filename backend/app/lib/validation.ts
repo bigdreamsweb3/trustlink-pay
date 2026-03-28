@@ -38,6 +38,15 @@ export const createPaymentSchema = z.object({
   senderWallet: walletAddressSchema,
   escrowVaultAddress: walletAddressSchema.optional(),
   depositSignature: z.string().trim().min(32).max(128).optional(),
+  skipWhatsAppCheck: z.boolean().optional(),
+});
+
+export const estimatePaymentSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+  senderPhoneNumber: phoneNumberSchema,
+  amount: z.number().positive(),
+  tokenMintAddress: walletAddressSchema,
+  senderWallet: walletAddressSchema,
 });
 
 export const acceptPaymentSchema = z
@@ -81,6 +90,16 @@ export const startClaimSchema = z.object({
   paymentId: z.string().uuid(),
 });
 
+export const estimateClaimFeeSchema = z
+  .object({
+    paymentId: z.string().uuid(),
+    walletAddress: walletAddressSchema.optional(),
+    receiverWalletId: z.string().uuid().optional(),
+  })
+  .refine((value) => Boolean(value.walletAddress || value.receiverWalletId), {
+    message: "walletAddress or receiverWalletId is required",
+  });
+
 export const pinSetupSchema = z.object({
   challengeToken: challengeTokenSchema,
   pin: pinSchema,
@@ -93,6 +112,7 @@ export const pinVerifySchema = z.object({
 
 export const startAuthOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
+  skipWhatsAppCheck: z.boolean().optional(),
 });
 
 export const authPhoneStatusSchema = z.object({
@@ -123,6 +143,11 @@ export const updateProfileSchema = z.object({
 });
 
 export const recipientLookupSchema = z.object({
+  phoneNumber: phoneNumberSchema,
+  skipWhatsAppCheck: z.boolean().optional(),
+});
+
+export const verifyWhatsAppNumberSchema = z.object({
   phoneNumber: phoneNumberSchema,
 });
 

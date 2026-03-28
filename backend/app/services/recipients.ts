@@ -1,8 +1,21 @@
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { findLatestWhatsAppProfileNameByPhoneNumber } from "@/app/db/whatsapp-webhook-events";
 import { logger } from "@/app/lib/logger";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
 
 export type RecipientLookupResult =
+  | {
+      status: "invalid_whatsapp_number";
+      verified: false;
+      recipient: {
+        displayName: string;
+        handle: null;
+        phoneNumber: string;
+        source: "invalid";
+        whatsappProfileName: null;
+      };
+      warning: string;
+    }
   | {
       status: "registered";
       verified: true;
@@ -39,25 +52,29 @@ export type RecipientLookupResult =
       warning: string;
     };
 
-export async function lookupRecipientIdentity(phoneNumber: string): Promise<RecipientLookupResult> {
+export async function lookupRecipientIdentity(
+  phoneNumber: string,
+  options?: { skipWhatsAppCheck?: boolean },
+): Promise<RecipientLookupResult> {
   const whatsappDisplayName = await findLatestWhatsAppProfileNameByPhoneNumber(phoneNumber);
   const trustLinkUser = await findUserByPhoneNumber(phoneNumber);
   const resolvedDisplayName =
     trustLinkUser?.display_name?.trim() || whatsappDisplayName || phoneNumber;
 
-  logger.info("recipient.lookup.checked", {
-    phoneNumber,
-    hasTrustLinkUser: Boolean(trustLinkUser),
-    trustLinkUserId: trustLinkUser?.id ?? null,
-    trustLinkDisplayName: trustLinkUser?.display_name ?? null,
-    trustLinkHandle: trustLinkUser?.trustlink_handle ?? null,
-    trustLinkPhoneVerifiedAt: trustLinkUser?.phone_verified_at ?? null,
-    trustLinkWhatsappOptedIn: trustLinkUser?.whatsapp_opted_in ?? null,
-    trustLinkPinHashPresent: trustLinkUser ? Boolean(trustLinkUser.pin_hash) : null,
-    whatsappDisplayName,
-  });
-
   if (trustLinkUser?.phone_verified_at) {
+    logger.info("recipient.lookup.checked", {
+      phoneNumber,
+      hasTrustLinkUser: true,
+      trustLinkUserId: trustLinkUser.id,
+      trustLinkDisplayName: trustLinkUser.display_name ?? null,
+      trustLinkHandle: trustLinkUser.trustlink_handle ?? null,
+      trustLinkPhoneVerifiedAt: trustLinkUser.phone_verified_at ?? null,
+      trustLinkWhatsappOptedIn: trustLinkUser.whatsapp_opted_in ?? null,
+      trustLinkPinHashPresent: Boolean(trustLinkUser.pin_hash),
+      whatsappDisplayName,
+      skippedWhatsAppCheck: Boolean(options?.skipWhatsAppCheck),
+    });
+
     return {
       status: "registered",
       verified: true,
@@ -70,6 +87,40 @@ export async function lookupRecipientIdentity(phoneNumber: string): Promise<Reci
       }
     };
   }
+
+  const whatsappVerification = await verifyWhatsAppNumber(phoneNumber);
+  if (!whatsappVerification.exists && !options?.skipWhatsAppCheck) {
+    logger.info("recipient.lookup.invalid_whatsapp_number", {
+      phoneNumber,
+      isInvalid: whatsappVerification.isInvalid,
+      source: whatsappVerification.source,
+    });
+
+    return {
+      status: "invalid_whatsapp_number",
+      verified: false,
+      recipient: {
+        displayName: phoneNumber,
+        handle: null,
+        phoneNumber,
+        source: "invalid",
+        whatsappProfileName: null,
+      },
+      warning: "This phone number is not currently available on WhatsApp.",
+    };
+  }
+
+  logger.info("recipient.lookup.checked", {
+    phoneNumber,
+    hasTrustLinkUser: Boolean(trustLinkUser),
+    trustLinkUserId: trustLinkUser?.id ?? null,
+    trustLinkDisplayName: trustLinkUser?.display_name ?? null,
+    trustLinkHandle: trustLinkUser?.trustlink_handle ?? null,
+    trustLinkPhoneVerifiedAt: trustLinkUser?.phone_verified_at ?? null,
+    trustLinkWhatsappOptedIn: trustLinkUser?.whatsapp_opted_in ?? null,
+    trustLinkPinHashPresent: trustLinkUser ? Boolean(trustLinkUser.pin_hash) : null,
+    whatsappDisplayName,
+  });
 
   if (trustLinkUser) {
     return {

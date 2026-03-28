@@ -303,7 +303,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 ) : null}
                 {detail.trace.releaseSignature ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Release tx</span>
+                    <span className="text-white/46">Claim tx</span>
                     {detail.trace.releaseExplorerUrl ? (
                       <a
                         href={detail.trace.releaseExplorerUrl}

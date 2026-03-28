@@ -5,13 +5,14 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-trustlink_escrow = "9f92sFY2VsDTyHCn4r1kmBTVJsMo7b4ZTYByjQNQx3qV"
+trustlink_escrow = "55rSd6RuyQdHiuouzfgXY17xXukPzRyLU5MptP9ZzKip"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
+url = "https://devnet.helius-rpc.com/?api-key=bbd5bcd1-ee1b-419e-a226-00455f2e295d"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -11,7 +11,14 @@ import {
 } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { findUserByPhoneNumber, updateUserWallet } from "@/app/db/users";
-import { confirmEscrowPayment, createDraftPaymentId, prepareEscrowPayment, releaseEscrow } from "@/app/blockchain/solana";
+import {
+  confirmEscrowPayment,
+  createDraftPaymentId,
+  estimateClaimFee,
+  estimateSenderTransferCost,
+  prepareEscrowPayment,
+  releaseEscrow
+} from "@/app/blockchain/solana";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
@@ -23,6 +30,7 @@ import {
   sendPaymentNotification
 } from "@/app/services/whatsapp";
 import { consumeVerifiedOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
 import type { PaymentRecord } from "@/app/types/payment";
 
 const NOTIFICATION_RETRY_INTERVAL_MS = 90_000;
@@ -201,6 +209,7 @@ export async function createPayment(params: {
   senderWallet: string;
   escrowVaultAddress?: string;
   depositSignature?: string;
+  skipWhatsAppCheck?: boolean;
 }) {
   logger.info("payment.create.started", {
     phoneNumber: params.phoneNumber,
@@ -212,6 +221,11 @@ export async function createPayment(params: {
   const sender = await findUserByPhoneNumber(params.senderPhoneNumber);
   if (!sender) {
     throw new Error("Sender must register a TrustLink identity before creating payments");
+  }
+
+  const whatsappVerification = await verifyWhatsAppNumber(params.phoneNumber);
+  if (!whatsappVerification.exists && !params.skipWhatsAppCheck) {
+    throw new Error("Receiver phone number is not available on WhatsApp");
   }
 
   if (params.depositSignature) {
@@ -379,6 +393,86 @@ export async function createPayment(params: {
   };
 }
 
+export async function estimatePaymentTransfer(params: {
+  phoneNumber: string;
+  senderPhoneNumber: string;
+  amount: number;
+  tokenMintAddress: string;
+  senderWallet: string;
+}) {
+  const sender = await findUserByPhoneNumber(params.senderPhoneNumber);
+  if (!sender) {
+    throw new Error("Sender must register a TrustLink identity before estimating payments");
+  }
+
+  const paymentId = createDraftPaymentId();
+  const phoneHash = sha256(params.phoneNumber);
+  const estimate = await estimateSenderTransferCost({
+    paymentId,
+    senderWallet: params.senderWallet,
+    phoneHash,
+    amount: params.amount,
+    tokenMintAddress: params.tokenMintAddress,
+  });
+
+  return {
+    paymentId,
+    estimate,
+  };
+}
+
+export async function estimatePaymentClaim(params: {
+  authUser: AuthenticatedUser;
+  paymentId: string;
+  walletAddress?: string;
+  receiverWalletId?: string;
+}) {
+  const payment = await findPaymentById(params.paymentId);
+
+  if (!payment) {
+    throw new Error("Payment not found");
+  }
+
+  if (payment.status !== "pending") {
+    throw new Error(`Payment is already ${payment.status}`);
+  }
+
+  if (payment.receiver_phone !== params.authUser.phoneNumber) {
+    throw new Error("Signed-in account does not match payment receiver");
+  }
+
+  const existingUser = await findUserByPhoneNumber(params.authUser.phoneNumber);
+  if (!existingUser || existingUser.id !== params.authUser.id) {
+    throw new Error("Receiver must register a TrustLink identity before estimating claim");
+  }
+
+  const receiverWalletAddress =
+    params.receiverWalletId != null
+      ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
+      : params.walletAddress;
+
+  if (!receiverWalletAddress) {
+    throw new Error("Receiver wallet not found");
+  }
+
+  const estimate = await estimateClaimFee({
+    paymentId: payment.id,
+    escrowAccount: payment.escrow_account ?? "",
+    escrowVaultAddress: payment.escrow_vault_address ?? "",
+    senderWallet: payment.sender_wallet ?? "",
+    receiverWallet: receiverWalletAddress,
+    receiverPhoneHash: payment.receiver_phone_hash,
+    tokenMintAddress: payment.token_mint_address ?? "",
+    amount: Number(payment.amount),
+  });
+
+  return {
+    payment,
+    receiverWalletAddress,
+    estimate,
+  };
+}
+
 export async function acceptPayment(params: {
   authUser: AuthenticatedUser;
   paymentId: string;
@@ -448,12 +542,14 @@ export async function acceptPayment(params: {
     receiverWallet: receiverWalletAddress,
     receiverPhoneHash: payment.receiver_phone_hash,
     tokenMintAddress: payment.token_mint_address ?? "",
+    amount: Number(payment.amount),
   });
 
   const updatedPayment = await updatePaymentAcceptance({
     id: payment.id,
     releaseSignature: release.signature,
-    releasedToWallet: receiverWalletAddress
+    releasedToWallet: receiverWalletAddress,
+    feeAmount: release.feeAmountUi,
   });
   await consumeVerifiedOtp(otpVerification.otpId);
   const transactionUrl = getTransactionExplorerUrl({

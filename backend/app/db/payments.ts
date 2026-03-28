@@ -220,6 +220,7 @@ export async function updatePaymentAcceptance(params: {
   id: string;
   releaseSignature?: string | null;
   releasedToWallet: string;
+  feeAmount?: number | null;
 }): Promise<PaymentRecord | null> {
   await ensurePaymentTraceColumns();
 
@@ -228,6 +229,7 @@ export async function updatePaymentAcceptance(params: {
     SET
       status = 'accepted',
       accepted_at = COALESCE(accepted_at, NOW()),
+      fee_amount = COALESCE(${params.feeAmount ?? null}, fee_amount),
       release_signature = COALESCE(${params.releaseSignature ?? null}, release_signature),
       released_to_wallet = ${params.releasedToWallet}
     WHERE id = ${params.id}

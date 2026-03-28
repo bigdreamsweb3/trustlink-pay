@@ -7,6 +7,7 @@ import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { OtpModal } from "@/src/components/modals/otp-modal";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
+import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { formatTokenAmount } from "@/src/lib/formatters";
@@ -25,6 +26,20 @@ type PaymentDetailsResponse = {
 type ClaimSuccess = {
   referenceCode: string;
   walletAddress: string;
+  blockchainSignature: string | null;
+  feeAmount: number | null;
+  netAmount: number | null;
+  tokenSymbol: string | null;
+};
+
+type ClaimFeeEstimate = {
+  feeAmountUi: number;
+  feeAmountUsd: number | null;
+  estimatedNetworkFeeSol: number;
+  estimatedNetworkFeeUsd: number | null;
+  markupAmountUi: number;
+  receiverAmountUi: number;
+  totalAmountUi: number;
 };
 
 function shortenAddress(value: string) {
@@ -62,6 +77,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const [otpBusy, setOtpBusy] = useState(false);
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
+  const [claimFeeEstimate, setClaimFeeEstimate] = useState<ClaimFeeEstimate | null>(null);
+  const [claimFeeBusy, setClaimFeeBusy] = useState(false);
   const [feeInfoOpen, setFeeInfoOpen] = useState(false);
   const lastSubmittedOtpRef = useRef<string | null>(null);
 
@@ -104,8 +121,51 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   );
   const selectedWalletBalance = selectedWallet ? walletBalances[selectedWallet.id] : null;
   const grossAmount = toNumericAmount(payment?.payment.amount);
-  const feeAmount = toNumericAmount(payment?.payment.fee_amount);
-  const netAmount = Math.max(grossAmount - feeAmount, 0);
+  const feeAmount = claimSuccess?.feeAmount ?? claimFeeEstimate?.feeAmountUi ?? toNumericAmount(payment?.payment.fee_amount);
+  const netAmount = claimSuccess?.netAmount ?? claimFeeEstimate?.receiverAmountUi ?? Math.max(grossAmount - feeAmount, 0);
+
+  useEffect(() => {
+    if (!accessToken || !payment || !selectedWalletId || claimSuccess || payment.payment.status !== "pending") {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadClaimEstimate() {
+      setClaimFeeBusy(true);
+
+      try {
+        const result = await apiPost<{
+          estimate: ClaimFeeEstimate;
+        }>(
+          "/api/payment/claim/estimate",
+          {
+            paymentId,
+            receiverWalletId: selectedWalletId,
+          },
+          accessToken ?? undefined
+        );
+
+        if (!cancelled) {
+          setClaimFeeEstimate(result.estimate);
+        }
+      } catch {
+        if (!cancelled) {
+          setClaimFeeEstimate(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setClaimFeeBusy(false);
+        }
+      }
+    }
+
+    void loadClaimEstimate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, claimSuccess, payment, paymentId, selectedWalletId]);
 
   async function loadClaimData(token: string) {
     setLoading(true);
@@ -123,9 +183,11 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       const balances = await Promise.all(
         walletResult.wallets.map(async (wallet) => {
           try {
-            const result = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", {
-              walletAddress: wallet.wallet_address
-            }, token);
+            const result = await apiPost<{ tokens: WalletTokenOption[] }>(
+              "/api/wallet/tokens",
+              { walletAddress: wallet.wallet_address },
+              token
+            );
             const walletToken = result.tokens.find((tokenOption) => tokenOption.symbol === paymentResult.payment.token_symbol) ?? null;
             return [wallet.id, walletToken] as const;
           } catch {
@@ -187,14 +249,25 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       const result = await apiPost<{
         referenceCode: string;
         walletAddress: string;
-      }>("/api/payment/accept", {
-        paymentId,
-        otp,
-        receiverWalletId: selectedWalletId
-      }, accessToken);
+        feeAmount: string | null;
+        netAmount: number | null;
+        tokenSymbol: string | null;
+        blockchainSignature: string | null;
+      }>(
+        "/api/payment/accept",
+        {
+          paymentId,
+          otp,
+          receiverWalletId: selectedWalletId
+        },
+        accessToken
+      );
 
       setStatus(`Reference ${result.referenceCode} claimed successfully to ${result.walletAddress}.`);
-      setClaimSuccess(result);
+      setClaimSuccess({
+        ...result,
+        feeAmount: result.feeAmount != null ? Number(result.feeAmount) : null,
+      });
       setOtpModalOpen(false);
       showToast("Payment claimed successfully.");
     } catch (acceptError) {
@@ -223,8 +296,16 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       }
     >
       <section className="space-y-5">
-        {status ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{status}</div> : null}
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {status && !claimSuccess ? (
+          <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">
+            {status}
+          </div>
+        ) : null}
+        {error ? (
+          <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">
+            {error}
+          </div>
+        ) : null}
 
         {loading ? (
           <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
@@ -232,7 +313,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
           </section>
         ) : claimSuccess && payment ? (
           <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/12 text-[#7dffd9]">✓</div>
+            <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Claim successful</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
               {formatTokenAmount(netAmount)} {payment.payment.token_symbol} released
@@ -252,21 +333,32 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">TrustLink fee</span>
-                <span className="font-medium text-white">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
+                <span className="font-medium text-white">
+                  {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-white/46">Wallet</span>
                 <span className="font-medium text-white">{shortenAddress(claimSuccess.walletAddress)}</span>
               </div>
+              {claimSuccess.blockchainSignature ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-white/46">Claim tx</span>
+                  <span className="font-medium text-white">{shortenAddress(claimSuccess.blockchainSignature)}</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <Link href="/app" className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78">
+              <Link
+                href="/app"
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78"
+              >
                 Back home
               </Link>
               <button
                 type="button"
-                onClick={() => window.history.length > 1 ? history.back() : window.location.assign("/app")}
+                onClick={() => (window.history.length > 1 ? history.back() : window.location.assign("/app"))}
                 className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]"
               >
                 Close
@@ -286,7 +378,9 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="mt-4 space-y-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-white/46">Sent amount</span>
-                  <span className="font-medium text-white">{formatTokenAmount(grossAmount)} {payment.payment.token_symbol}</span>
+                  <span className="font-medium text-white">
+                    {formatTokenAmount(grossAmount)} {payment.payment.token_symbol}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="inline-flex items-center gap-2 text-white/46">
@@ -300,16 +394,28 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                       i
                     </button>
                   </span>
-                  <span className="font-medium text-white">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
+                  <span className="font-medium text-white">
+                    {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
+                  </span>
                 </div>
+                {!claimSuccess && claimFeeEstimate?.estimatedNetworkFeeSol != null ? (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-white/46">Est. Solana cost</span>
+                    <span className="font-medium text-white">
+                      {claimFeeEstimate.estimatedNetworkFeeSol.toFixed(6)} SOL
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-3 text-sm">
                   <span className="text-white/72">Amount to wallet</span>
-                  <span className="font-semibold text-[#7dffd9]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</span>
+                  <span className="font-semibold text-[#7dffd9]">
+                    {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
+                  </span>
                 </div>
               </div>
               {feeInfoOpen ? (
                 <div className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-white/68">
-                  TrustLink charges this fee to fund the relayed Solana claim transaction and keep claiming possible even when the receiver has no SOL for gas. The fee shown here is the actual fee recorded for this payment.
+                  TrustLink calculates this from the current Solana claim cost for your selected wallet, then adds the configured TrustLink margin. That keeps claiming possible even when the receiver has no SOL for gas.
                 </div>
               ) : null}
               <div className="mt-4 text-sm text-white/58">
@@ -366,6 +472,9 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 <p className="mt-2 text-sm leading-6 text-white/58">
                   After you tap send OTP, entering the 6-digit code is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
                 </p>
+                {claimFeeBusy ? (
+                  <div className="mt-3 text-xs text-white/42">Refreshing claim fee estimate...</div>
+                ) : null}
               </div>
 
               <button
@@ -409,8 +518,9 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                       setSelectedWalletId(wallet.id);
                       setWalletModalOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${
+                      active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
+                    }`}
                   >
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-white">{wallet.wallet_name}</span>

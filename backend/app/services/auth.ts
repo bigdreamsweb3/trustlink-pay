@@ -19,6 +19,7 @@ import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import { getOtpReadiness, sendPhoneVerificationOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
 import { getTrustLinkWhatsAppOptInLink, sendWelcomeMessage } from "@/app/services/whatsapp";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { hashPassword, verifyPassword } from "@/app/utils/password";
@@ -307,8 +308,16 @@ export async function startLoginOtp(phoneNumber: string, requestIp?: string | nu
   };
 }
 
-export async function startPhoneFirstAuth(phoneNumber: string, requestIp?: string | null) {
+export async function startPhoneFirstAuth(
+  phoneNumber: string,
+  requestIp?: string | null,
+  options?: { skipWhatsAppCheck?: boolean },
+) {
   const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const whatsappVerification = await verifyWhatsAppNumber(normalizedPhoneNumber);
+  if (!whatsappVerification.exists && !options?.skipWhatsAppCheck) {
+    throw new Error("This phone number is not available on WhatsApp");
+  }
   const existingUser = await findUserByPhoneNumber(normalizedPhoneNumber);
   const isRegistered = Boolean(existingUser?.phone_verified_at);
   const suggestedDisplayName = existingUser?.display_name ?? null;

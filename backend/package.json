@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "escrow:build": "cargo build -p trustlink_escrow",
-    "escrow:test": "cargo test -p trustlink_escrow",
+    "get:all:solana:pubkey": "solana-keygen pubkey ~/.config/solana/id.json && solana-keygen pubkey ~/.config/solana/trustlink-verifier.json && solana-keygen pubkey ~/.config/solana/trustlink-treasury.json",
+    "escrow:declare:id": "cp target/deploy/trustlink_escrow-keypair.json target/deploy/trustlink_escrow-keypair.backup.json && solana-keygen new --no-bip39-passphrase --force -o target/deploy/trustlink_escrow-keypair.json && solana address -k target/deploy/trustlink_escrow-keypair.json && anchor keys sync",
     "escrow:anchor:build": "anchor build",
     "escrow:anchor:size": "wc -c target/deploy/trustlink_escrow.so && du -b target/deploy/trustlink_escrow.so",
     "escrow:anchor:test": "anchor test",
@@ -19,6 +19,7 @@
     "escrow:init-config": "tsx scripts/init-escrow-config.ts",
     "escrow:update-config": "tsx scripts/update-escrow-config.ts",
     "test:auth-phone-flow": "tsx scripts/test-auth-phone-flow.ts",
+    "test:whatsapp-number": "tsx scripts/test-whatsapp-number.ts",
     "test:recipient-lookup": "tsx scripts/test-recipient-lookup.ts",
     "test:payment-flow": "tsx scripts/test-payment-flow.ts",
     "ngrok:https": "npx ngrok http 3000"

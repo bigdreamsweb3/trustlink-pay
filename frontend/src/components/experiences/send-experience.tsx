@@ -9,13 +9,20 @@ import { PaymentNotificationReceipt } from "@/src/components/payment-notificatio
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SectionLoader } from "@/src/components/section-loader";
+import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { splitPhoneNumber, type CountryOption } from "@/src/lib/phone-countries";
 import { rememberCountryUsage } from "@/src/lib/phone-preferences";
-import type { PaymentNotificationStatus, PaymentRecord, RecipientLookupResult, WalletTokenOption } from "@/src/lib/types";
+import type {
+  PaymentNotificationStatus,
+  PaymentRecord,
+  RecipientLookupResult,
+  WalletTokenOption,
+  WhatsAppNumberVerificationResult,
+} from "@/src/lib/types";
 import {
   connectSolanaWallet,
   disconnectSolanaWallet,
@@ -68,6 +75,13 @@ async function shareInviteMessage(message: string) {
   throw new Error("Sharing is not available on this device.");
 }
 
+type SendCostEstimate = {
+  networkFeeSol: number;
+  accountRentSol: number;
+  totalSol: number;
+  totalUsd: number | null;
+};
+
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
   const searchParams = useSearchParams();
@@ -81,12 +95,25 @@ export function SendExperience() {
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [recipientPreview, setRecipientPreview] = useState<RecipientLookupResult | null>(null);
+  const [phoneVerificationState, setPhoneVerificationState] = useState<"idle" | "checking" | "valid" | "warning" | "invalid">("idle");
+  const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<string | null>(null);
+  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{
+    displayName: string | null;
+    profilePic: string | null;
+    exists: boolean;
+    isBusiness: boolean;
+    url: string;
+  } | null>(null);
+  const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] = useState(false);
+  const [receiverCheckSkipped, setReceiverCheckSkipped] = useState(false);
   const [supportedTokens, setSupportedTokens] = useState<WalletTokenOption[]>([]);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [tokenBusy, setTokenBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [estimateBusy, setEstimateBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
+  const [sendCostEstimate, setSendCostEstimate] = useState<SendCostEstimate | null>(null);
   const [sendSuccess, setSendSuccess] = useState<{
     paymentId: string;
     status: PaymentRecord["status"];
@@ -130,6 +157,13 @@ export function SendExperience() {
   const shouldPollSendSuccessReceipt = sendSuccess
     ? !sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus)
     : false;
+  const hasAmount = Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
+  const canContinueWithRecipient =
+    Boolean(walletAddress) &&
+    Boolean(selectedToken) &&
+    hasAmount &&
+    Boolean(recipientPreview?.verified) &&
+    (receiverWhatsAppVerified || receiverCheckSkipped || recipientPreview?.status === "registered");
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
@@ -194,6 +228,11 @@ export function SendExperience() {
 
   useEffect(() => {
     if (!canLookupRecipient) {
+      setPhoneVerificationState("idle");
+      setPhoneVerificationLabel(null);
+      setPhoneVerificationDetails(null);
+      setReceiverWhatsAppVerified(false);
+      setReceiverCheckSkipped(false);
       setRecipientPreview(null);
       setLookupError(null);
       setPreviewBusy(false);
@@ -203,23 +242,59 @@ export function SendExperience() {
     const timer = window.setTimeout(async () => {
       setPreviewBusy(true);
       setLookupError(null);
+      setPhoneVerificationState("checking");
+      setPhoneVerificationLabel("Checking WhatsApp availability...");
 
       try {
-        const result = await apiPost<RecipientLookupResult>("/api/recipient/lookup", {
+        const verification = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
           phoneNumber: form.receiverPhone
         });
+
+        setReceiverWhatsAppVerified(verification.isBusiness);
+        setPhoneVerificationDetails({
+          displayName: verification.displayName,
+          profilePic: verification.profilePic,
+          exists: verification.exists,
+          isBusiness: verification.isBusiness,
+          url: verification.url,
+        });
+        setPhoneVerificationState(verification.isBusiness ? "valid" : "warning");
+        setPhoneVerificationLabel(null);
+
+        if (!verification.exists && !receiverCheckSkipped) {
+          setRecipientPreview(null);
+          return;
+        }
+
+        const result = await apiPost<RecipientLookupResult>("/api/recipient/lookup", {
+          phoneNumber: form.receiverPhone,
+          skipWhatsAppCheck: receiverCheckSkipped || !verification.isBusiness,
+        });
         setRecipientPreview(result);
+        if (result.status === "registered") {
+          setReceiverWhatsAppVerified(true);
+        }
       } catch (lookupRequestError) {
         const message = lookupRequestError instanceof Error ? lookupRequestError.message : "Could not verify recipient";
         setLookupError(message);
         setRecipientPreview(null);
+        setPhoneVerificationDetails({
+          displayName: null,
+          profilePic: null,
+          exists: false,
+          isBusiness: false,
+          url: `https://api.whatsapp.com/send?phone=${form.receiverPhone.replace(/\D/g, "")}`,
+        });
+        setReceiverWhatsAppVerified(false);
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
       } finally {
         setPreviewBusy(false);
       }
     }, 420);
 
     return () => window.clearTimeout(timer);
-  }, [canLookupRecipient, form.receiverPhone]);
+  }, [canLookupRecipient, form.receiverPhone, receiverCheckSkipped]);
 
   useEffect(() => {
     if (!sendSuccessPaymentId || !accessToken) {
@@ -339,7 +414,28 @@ export function SendExperience() {
       return;
     }
 
-    setConfirmOpen(true);
+    setEstimateBusy(true);
+    setError(null);
+
+    try {
+      const result = await apiPost<{
+        estimate: SendCostEstimate;
+      }>("/api/payment/estimate", {
+        phoneNumber: form.receiverPhone,
+        senderPhoneNumber: user.phoneNumber,
+        amount: Number(form.amount),
+        tokenMintAddress: selectedToken.mintAddress,
+        senderWallet: walletAddress,
+      });
+
+      setSendCostEstimate(result.estimate);
+      setConfirmOpen(true);
+    } catch (estimateError) {
+      setError(estimateError instanceof Error ? estimateError.message : "Could not estimate Solana transfer cost");
+      showToast("Could not estimate the Solana transfer cost.");
+    } finally {
+      setEstimateBusy(false);
+    }
   }
 
   async function handleConfirmSend() {
@@ -371,7 +467,8 @@ export function SendExperience() {
         senderPhoneNumber: user.phoneNumber,
         amount: Number(form.amount),
         tokenMintAddress: selectedToken.mintAddress,
-        senderWallet: walletAddress
+        senderWallet: walletAddress,
+        skipWhatsAppCheck: receiverCheckSkipped,
       });
 
       if (!prepared.serializedTransaction || !prepared.escrowVaultAddress) {
@@ -417,20 +514,15 @@ export function SendExperience() {
         tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
         escrowVaultAddress: prepared.escrowVaultAddress,
-        depositSignature
+        depositSignature,
+        skipWhatsAppCheck: receiverCheckSkipped,
       });
 
       if (receiverCountry) {
         rememberCountryUsage(receiverCountry.iso2);
       }
 
-      setNotice(
-        result.manualInviteRequired
-          ? `Funds are secured in escrow. Share the invite message yourself with reference ${result.referenceCode}.`
-          : result.notificationRetrying
-            ? `Funds are already secured in escrow. WhatsApp delivery is being retried automatically. Reference ${result.referenceCode}.`
-            : `Payment queued. Reference ${result.referenceCode}.`
-      );
+      setNotice(null);
       setSendSuccess({
         ...result,
         receiverPhone: form.receiverPhone,
@@ -485,12 +577,14 @@ export function SendExperience() {
       }
     >
       <section className="space-y-5">
-        {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
+        {notice && !sendSuccess ? (
+          <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div>
+        ) : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
         {sendSuccess ? (
           <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/12 text-sm font-semibold text-[#7dffd9]">OK</div>
+            <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
               {sendSuccess.amount} {sendSuccess.token} queued
@@ -624,18 +718,27 @@ export function SendExperience() {
                 label="Receiver WhatsApp number"
                 value={form.receiverPhone}
                 maxLocalDigits={10}
+                verificationState={phoneVerificationState}
+                verificationLabel={phoneVerificationLabel}
+                verificationDetails={phoneVerificationDetails}
+                showVerificationActions={recipientPreview?.status !== "registered"}
                 onChange={(value, country) => {
                   setForm((current) => ({ ...current, receiverPhone: value }));
                   setReceiverCountry(country);
                   setConfirmOpen(false);
+                  setSendCostEstimate(null);
+                  setLookupError(null);
+                  setRecipientPreview(null);
+                  setPhoneVerificationDetails(null);
+                  setReceiverCheckSkipped(false);
                 }}
+                onSkipVerification={() => {
+                  setReceiverCheckSkipped(true);
+                  setLookupError(null);
+                  setPhoneVerificationState("warning");
+                }}
+                skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
               />
-
-              {!recipientPreview && !lookupError && !previewBusy && receiverLocalDigits.length > 0 && receiverLocalDigits.length < 10 ? (
-                <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-sm text-white/52">
-                  Enter the full 10-digit local number before TrustLink verifies the recipient.
-                </div>
-              ) : null}
 
               {previewBusy ? (
                 <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3">
@@ -647,39 +750,53 @@ export function SendExperience() {
                 </div>
               ) : recipientPreview ? (
                 <div
-                  className={`rounded-[20px] border px-4 py-3 ${recipientPreview.verified ? "border-[#58f2b1]/18 bg-[#58f2b1]/7" : "border-[#ff7f7f]/18 bg-[#ff7f7f]/8"}`}
+                  className={`rounded-[20px] border px-4 py-3 ${
+                    recipientPreview.status === "registered"
+                      ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
+                      : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
+                        ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
+                        : "border-white/10 bg-black/20"
+                  }`}
                 >
                   {recipientPreview.status === "registered" ? (
                     <>
-                      <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
-                      <div className="mt-1 text-sm text-white/56">@{recipientPreview.recipient.handle}</div>
-                      {recipientPreview.recipient.whatsappProfileName &&
-                        recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
-                        <div className="mt-2 text-sm text-white/48">
-                          WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
+                          <div className="mt-1 text-[0.74rem] text-white/50">@{recipientPreview.recipient.handle}</div>
                         </div>
-                      ) : null}
+                        <span className="rounded-full bg-[#58f2b1]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#7dffd9]">
+                          On TrustLink
+                        </span>
+                      </div>
                     </>
                   ) : recipientPreview.status === "whatsapp_only" ? (
                     <>
-                      <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#f3c96b]">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
-                      <div className="mt-2 text-sm text-white/48">
-                        {recipientPreview.recipient.source === "whatsapp" ? "WhatsApp contact hint" : "TrustLink status"}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
+                          <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
+                        </div>
+                        <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
+                          Not a TrustLink user
+                        </span>
                       </div>
-                      <div className="mt-1 text-sm text-white/56">{recipientPreview.warning}</div>
                     </>
                   ) : recipientPreview.status === "manual_invite_required" ? (
                     <>
-                      <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#f3c96b]">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{recipientPreview.recipient.phoneNumber}</div>
-                      <div className="mt-1 text-sm text-white/56">{recipientPreview.warning}</div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.phoneNumber}</div>
+                          <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
+                        </div>
+                        <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
+                          Not a TrustLink user
+                        </span>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#ffadad]">Recipient</div>
-                      <div className="mt-1 text-sm font-semibold text-white">Recipient could not be verified.</div>
+                      <div className="text-sm font-semibold text-white">Recipient could not be verified.</div>
                     </>
                   )}
                 </div>
@@ -692,7 +809,10 @@ export function SendExperience() {
                     type="number"
                     step="any"
                     value={form.amount}
-                    onChange={(e) => setForm((current) => ({ ...current, amount: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((current) => ({ ...current, amount: e.target.value }));
+                      setSendCostEstimate(null);
+                    }}
                     placeholder="0.00"
                     className="w-full bg-transparent text-lg font-semibold text-white outline-none"
                   />
@@ -724,10 +844,10 @@ export function SendExperience() {
 
               <button
                 type="submit"
-                disabled={busy || !walletAddress || !recipientPreview?.verified || !selectedToken}
+                disabled={busy || estimateBusy || !canContinueWithRecipient}
                 className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Review payment
+                {estimateBusy ? "Calculating network fee..." : "Review payment"}
               </button>
             </form>
           </div>
@@ -760,6 +880,7 @@ export function SendExperience() {
                       type="button"
                       onClick={() => {
                         setForm((current) => ({ ...current, token: token.mintAddress }));
+                        setSendCostEstimate(null);
                         setTokenPickerOpen(false);
                       }}
                       className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"}`}
@@ -823,6 +944,25 @@ export function SendExperience() {
                 </span>
                 <span className="text-sm text-white/44">{form.receiverPhone}</span>
               </div>
+              {sendCostEstimate ? (
+                <>
+                  <div className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-3">
+                    <span className="text-sm text-white/56">Estimated SOL cost</span>
+                    <span className="text-sm text-white">{sendCostEstimate.totalSol.toFixed(6)} SOL</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-[0.72rem] text-white/44">
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2">
+                      Network fee: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
+                    </div>
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2">
+                      Account setup: {sendCostEstimate.accountRentSol.toFixed(6)} SOL
+                    </div>
+                  </div>
+                  {sendCostEstimate.totalUsd != null ? (
+                    <div className="text-sm text-white/48">Approx. ${sendCostEstimate.totalUsd.toFixed(4)} at the current SOL market price.</div>
+                  ) : null}
+                </>
+              ) : null}
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">

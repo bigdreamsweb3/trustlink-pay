@@ -9,7 +9,7 @@ use state::{
     EscrowConfig, PaymentAccount, PaymentStatus, CONFIG_SEED, PAYMENT_SEED, VAULT_AUTHORITY_SEED,
 };
 
-declare_id!("9f92sFY2VsDTyHCn4r1kmBTVJsMo7b4ZTYByjQNQx3qV");
+declare_id!("55rSd6RuyQdHiuouzfgXY17xXukPzRyLU5MptP9ZzKip");
 
 #[program]
 pub mod trustlink_escrow {
@@ -60,13 +60,14 @@ pub mod trustlink_escrow {
         payment_id: [u8; 32],
         receiver_phone_hash: [u8; 32],
         amount: u64,
+        fee_amount: u64,
         expiry_ts: i64,
     ) -> Result<()> {
         require!(amount > 0, TrustLinkEscrowError::InvalidAmount);
 
         let now = Clock::get()?.unix_timestamp;
         require!(expiry_ts > now, TrustLinkEscrowError::InvalidExpiry);
-        require!(ctx.accounts.config.fee_bps <= 10_000, TrustLinkEscrowError::InvalidFeeConfig);
+        require!(fee_amount < amount, TrustLinkEscrowError::InvalidFeeConfig);
         require_keys_eq!(
             ctx.accounts.sender_token_account.mint,
             ctx.accounts.token_mint.key(),
@@ -81,7 +82,7 @@ pub mod trustlink_escrow {
         payment.receiver_phone_hash = receiver_phone_hash;
         payment.token_mint = ctx.accounts.token_mint.key();
         payment.amount = amount;
-        payment.fee_amount = calculate_fee_amount(amount, ctx.accounts.config.fee_bps, ctx.accounts.config.fee_cap)?;
+        payment.fee_amount = fee_amount;
         payment.expiry_ts = expiry_ts;
         payment.status = PaymentStatus::Pending;
         payment.payment_bump = ctx.bumps.payment_account;
@@ -94,8 +95,9 @@ pub mod trustlink_escrow {
         ctx: Context<ClaimPayment>,
         _payment_id: [u8; 32],
         receiver_phone_hash: [u8; 32],
+        fee_amount: u64,
     ) -> Result<()> {
-        let payment = &ctx.accounts.payment_account;
+        let payment = &mut ctx.accounts.payment_account;
         let now = Clock::get()?.unix_timestamp;
 
         require!(payment.status.is_pending(), TrustLinkEscrowError::PaymentNotPending);
@@ -125,13 +127,13 @@ pub mod trustlink_escrow {
         );
 
         let payment_amount = payment.amount;
-        let fee_amount = payment.fee_amount;
         require!(payment_amount > fee_amount, TrustLinkEscrowError::InvalidFeeConfig);
         let receiver_amount = payment_amount
             .checked_sub(fee_amount)
             .ok_or(TrustLinkEscrowError::InvalidFeeConfig)?;
         let payment_id = payment.payment_id;
         let vault_authority_bump = payment.vault_authority_bump;
+        payment.fee_amount = fee_amount;
         let signer_bump = [vault_authority_bump];
         let signer_seeds: &[&[u8]] = &[
             VAULT_AUTHORITY_SEED,
@@ -233,7 +235,7 @@ pub struct UpdateConfig<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _amount: u64, _expiry_ts: i64)]
+#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _amount: u64, _fee_amount: u64, _expiry_ts: i64)]
 pub struct CreatePayment<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -290,7 +292,7 @@ impl<'info> CreatePayment<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32])]
+#[instruction(payment_id: [u8; 32], _receiver_phone_hash: [u8; 32], _fee_amount: u64)]
 pub struct ClaimPayment<'info> {
     pub claim_verifier: Signer<'info>,
     #[account(
@@ -368,16 +370,6 @@ impl<'info> ClaimPayment<'info> {
             },
         )
     }
-}
-
-fn calculate_fee_amount(amount: u64, fee_bps: u16, fee_cap: u64) -> Result<u64> {
-    let proportional_fee = (amount as u128)
-        .checked_mul(fee_bps as u128)
-        .ok_or(TrustLinkEscrowError::InvalidFeeConfig)?
-        / 10_000u128;
-    let fee = proportional_fee.min(fee_cap as u128);
-    require!(fee < amount as u128, TrustLinkEscrowError::InvalidFeeConfig);
-    Ok(fee as u64)
 }
 
 #[derive(Accounts)]

@@ -68,7 +68,7 @@ export function AppMobileShell({
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(88,242,177,0.14),transparent_28%),linear-gradient(180deg,#05090d_0%,#091019_100%)] pb-28 md:px-6 md:py-6 md:pb-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(88,242,177,0.14),transparent_28%),linear-gradient(180deg,#05090d_0%,#091019_100%)] pb-13 md:px-6 md:py-6 md:pb-6">
       <div className="mx-auto md:grid md:max-w-[1180px] md:grid-cols-[220px_minmax(0,1fr)] md:gap-8">
         <aside className="hidden md:sticky md:top-6 md:flex md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:flex-col md:justify-between md:self-start md:overflow-hidden md:rounded-[32px] md:border md:border-white/8 md:bg-[#080b10]/92 md:p-5 md:shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
           <div>
@@ -101,15 +101,17 @@ export function AppMobileShell({
             </nav>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => router.push("/app/settings")}
-              className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
-              aria-label="Open settings"
-            >
-              <SettingsIcon className="h-5 w-5" />
-            </button>
+          <div className="flex flex-col shrink-0 items-center gap-2">
+            <div className="w-full flex items-center justify-start mb-3">
+              <button
+                type="button"
+                onClick={() => router.push("/app/settings")}
+                className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
+                aria-label="Open settings"
+              >
+                <SettingsIcon className="h-5 w-5" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => router.push("/app/profile")}

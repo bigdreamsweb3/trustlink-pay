@@ -8,7 +8,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = recipientLookupSchema.parse(body);
-    const result = await lookupRecipientIdentity(payload.phoneNumber);
+    const result = await lookupRecipientIdentity(payload.phoneNumber, {
+      skipWhatsAppCheck: payload.skipWhatsAppCheck,
+    });
 
     return ok(result);
   } catch (error) {

@@ -159,7 +159,32 @@ export interface WalletTokenOption {
   balanceUsd?: number | null;
 }
 
+export interface WhatsAppNumberVerificationResult {
+  phoneNumber: string;
+  exists: boolean;
+  accountType: "business" | "personal_or_none";
+  displayName: string | null;
+  profilePic: string | null;
+  hasProfilePic: boolean;
+  isBusiness: boolean;
+  isInvalid: boolean;
+  url: string;
+  source: "trustlink_scraper" | "mock";
+}
+
 export type RecipientLookupResult =
+  | {
+      status: "invalid_whatsapp_number";
+      verified: false;
+      recipient: {
+        displayName: string;
+        handle: null;
+        phoneNumber: string;
+        source: "invalid";
+        whatsappProfileName: null;
+      };
+      warning: string;
+    }
   | {
       status: "registered";
       verified: true;

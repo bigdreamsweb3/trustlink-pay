@@ -21,6 +21,12 @@ export async function POST(request: Request) {
       status: result.payment?.status,
       referenceCode: result.payment?.reference_code,
       walletAddress: result.user.wallet_address,
+      feeAmount: result.payment?.fee_amount ?? null,
+      tokenSymbol: result.payment?.token_symbol ?? null,
+      netAmount:
+        result.payment != null
+          ? Math.max(Number(result.payment.amount) - Number(result.payment.fee_amount ?? 0), 0)
+          : null,
       blockchainSignature: result.blockchain.signature,
       blockchainMode: result.blockchain.mode
     });

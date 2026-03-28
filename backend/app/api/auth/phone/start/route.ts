@@ -9,7 +9,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = startAuthOtpSchema.parse(body);
-    const result = await startPhoneFirstAuth(payload.phoneNumber, getClientIp(request));
+    const result = await startPhoneFirstAuth(payload.phoneNumber, getClientIp(request), {
+      skipWhatsAppCheck: payload.skipWhatsAppCheck,
+    });
 
     return ok(result);
   } catch (error) {

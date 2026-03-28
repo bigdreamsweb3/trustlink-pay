@@ -20,7 +20,7 @@ import {
   getStoredUser,
   setStoredPendingAuth,
 } from "@/src/lib/storage";
-import type { AuthResult } from "@/src/lib/types";
+import type { AuthResult, WhatsAppNumberVerificationResult } from "@/src/lib/types";
 
 type AuthMode = "login" | "register";
 type FlowState = "idle" | "waiting_opt_in" | "otp_ready";
@@ -69,6 +69,17 @@ export function AuthExperience({
   const [otpModalOpen, setOtpModalOpen] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [optionalDisplayName, setOptionalDisplayName] = useState("");
+  const [phoneVerificationState, setPhoneVerificationState] = useState<"idle" | "checking" | "valid" | "warning" | "invalid">("idle");
+  const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<string | null>(null);
+  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{
+    displayName: string | null;
+    profilePic: string | null;
+    exists: boolean;
+    isBusiness: boolean;
+    url: string;
+  } | null>(null);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneCheckSkipped, setPhoneCheckSkipped] = useState(false);
   const lastSubmittedOtpRef = useRef<string | null>(null);
   const otpRequestLockRef = useRef(false);
 
@@ -111,6 +122,52 @@ export function AuthExperience({
 
     return () => window.clearInterval(timer);
   }, [otpCooldown]);
+
+  useEffect(() => {
+    const localDigits = phoneNumber.replace(/^\+\d{1,3}/, "").replace(/[^\d]/g, "");
+    if (!phoneNumber || localDigits.length < 10) {
+      setPhoneVerificationState("idle");
+      setPhoneVerificationLabel(null);
+      setPhoneVerificationDetails(null);
+      setPhoneVerified(false);
+      setPhoneCheckSkipped(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setPhoneVerificationState("checking");
+      setPhoneVerificationLabel("Checking WhatsApp availability...");
+
+      try {
+        const result = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
+          phoneNumber,
+        });
+        setPhoneVerified(result.isBusiness);
+        setPhoneVerificationDetails({
+          displayName: result.displayName,
+          profilePic: result.profilePic,
+          exists: result.exists,
+          isBusiness: result.isBusiness,
+          url: result.url,
+        });
+        setPhoneVerificationState(result.isBusiness ? "valid" : "warning");
+        setPhoneVerificationLabel(result.exists ? null : null);
+      } catch (verificationError) {
+        setPhoneVerified(false);
+        setPhoneVerificationDetails({
+          displayName: null,
+          profilePic: null,
+          exists: false,
+          isBusiness: false,
+          url: `https://api.whatsapp.com/send?phone=${phoneNumber.replace(/\D/g, "")}`,
+        });
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
+      }
+    }, 420);
+
+    return () => window.clearTimeout(timer);
+  }, [phoneNumber]);
 
   useEffect(() => {
     if (flowState !== "waiting_opt_in" || !phoneNumber) {
@@ -177,6 +234,13 @@ export function AuthExperience({
       return;
     }
 
+    if (!phoneVerified && !phoneCheckSkipped) {
+      const nextError = "Verify a valid WhatsApp number before continuing.";
+      setError(nextError);
+      showToast(nextError);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -185,6 +249,7 @@ export function AuthExperience({
     try {
       const result = await apiPost<StartAuthResponse>("/api/auth/phone/start", {
         phoneNumber,
+        skipWhatsAppCheck: phoneCheckSkipped,
       });
 
       rememberSelectedCountry();
@@ -327,16 +392,31 @@ export function AuthExperience({
                 label="WhatsApp number"
                 value={phoneNumber}
                 maxLocalDigits={10}
+                verificationState={phoneVerificationState}
+                verificationLabel={phoneVerificationLabel}
+                verificationDetails={phoneVerificationDetails}
                 onChange={(value, country) => {
                   setPhoneNumber(value);
                   setSelectedCountry(country);
+                  setFlowState("idle");
+                  setWaitingMessage(null);
+                  setMessage(null);
+                  setError(null);
+                  setPhoneVerificationDetails(null);
+                  setPhoneCheckSkipped(false);
                 }}
+                onSkipVerification={() => {
+                  setPhoneCheckSkipped(true);
+                  setPhoneVerified(true);
+                  setError(null);
+                }}
+                skipVerificationLabel={phoneCheckSkipped ? null : "Skip"}
               />
 
               <button
                 className="button button--primary"
                 type="button"
-                disabled={busy || flowState === "waiting_opt_in"}
+                disabled={busy || flowState === "waiting_opt_in" || (!phoneVerified && !phoneCheckSkipped)}
                 onClick={() => void startFlow()}
               >
                 {flowState === "waiting_opt_in" ? "Waiting for WhatsApp..." : busy ? "Checking number..." : "Continue"}

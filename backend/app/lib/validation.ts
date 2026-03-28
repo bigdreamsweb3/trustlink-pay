@@ -52,7 +52,7 @@ export const estimatePaymentSchema = z.object({
 export const acceptPaymentSchema = z
   .object({
     paymentId: z.string().uuid(),
-    otp: z.string().regex(/^\d{6}$/),
+    pin: pinSchema,
     walletAddress: walletAddressSchema.optional(),
     receiverWalletId: z.string().uuid().optional(),
   })
@@ -60,7 +60,7 @@ export const acceptPaymentSchema = z
     message: "walletAddress or receiverWalletId is required",
   });
 
-export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change"]);
+export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change", "wallet_add"]);
 
 export const sendOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
@@ -110,6 +110,8 @@ export const pinVerifySchema = z.object({
   pin: pinSchema,
 });
 
+export const pinChallengeSchema = z.object({});
+
 export const startAuthOtpSchema = z.object({
   phoneNumber: phoneNumberSchema,
   skipWhatsAppCheck: z.boolean().optional(),
@@ -135,7 +137,10 @@ export const pinChangeVerifySchema = z.object({
 export const addReceiverWalletSchema = z.object({
   walletName: z.string().trim().min(2).max(64),
   walletAddress: walletAddressSchema,
+  otp: z.string().regex(/^\d{6}$/),
 });
+
+export const startReceiverWalletVerificationSchema = z.object({});
 
 export const updateProfileSchema = z.object({
   displayName: displayNameSchema,

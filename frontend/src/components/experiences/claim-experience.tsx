@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
-import { OtpModal } from "@/src/components/modals/otp-modal";
+import { PinEntryModal } from "@/src/components/modals/pin-entry-modal";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { SuccessIcon } from "@/src/components/success-icon";
@@ -50,7 +50,7 @@ function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: digits
+    maximumFractionDigits: digits,
   }).format(balance);
 }
 
@@ -60,27 +60,25 @@ function toNumericAmount(value: string | number | null | undefined) {
 }
 
 export function ClaimExperience({ paymentId }: { paymentId: string }) {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/claim/${paymentId}`);
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } =
+    useAuthenticatedSession(`/claim/${paymentId}`);
   const { showToast } = useToast();
   const [payment, setPayment] = useState<PaymentDetailsResponse | null>(null);
   const [wallets, setWallets] = useState<ReceiverWallet[]>([]);
   const [walletBalances, setWalletBalances] = useState<Record<string, WalletTokenOption | null>>({});
   const [selectedWalletId, setSelectedWalletId] = useState("");
   const [walletModalOpen, setWalletModalOpen] = useState(false);
-  const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpRequested, setOtpRequested] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [otpBusy, setOtpBusy] = useState(false);
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
   const [claimFeeEstimate, setClaimFeeEstimate] = useState<ClaimFeeEstimate | null>(null);
   const [claimFeeBusy, setClaimFeeBusy] = useState(false);
   const [feeInfoOpen, setFeeInfoOpen] = useState(false);
-  const lastSubmittedOtpRef = useRef<string | null>(null);
+  const lastSubmittedPinRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!accessToken || !user) {
@@ -91,33 +89,21 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   }, [accessToken, user, paymentId]);
 
   useEffect(() => {
-    if (otpCooldown === 0) {
+    if (!pinModalOpen || !selectedWalletId || pin.length !== 6 || claimBusy || !accessToken) {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      setOtpCooldown((current) => Math.max(0, current - 1));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [otpCooldown]);
-
-  useEffect(() => {
-    if (!otpRequested || !selectedWalletId || otp.length !== 6 || claimBusy || !accessToken) {
+    if (lastSubmittedPinRef.current === pin) {
       return;
     }
 
-    if (lastSubmittedOtpRef.current === otp) {
-      return;
-    }
-
-    lastSubmittedOtpRef.current = otp;
+    lastSubmittedPinRef.current = pin;
     void handleClaim();
-  }, [accessToken, claimBusy, otp, otpRequested, selectedWalletId]);
+  }, [accessToken, claimBusy, pin, pinModalOpen, selectedWalletId]);
 
   const selectedWallet = useMemo(
     () => wallets.find((wallet) => wallet.id === selectedWalletId) ?? null,
-    [selectedWalletId, wallets]
+    [selectedWalletId, wallets],
   );
   const selectedWalletBalance = selectedWallet ? walletBalances[selectedWallet.id] : null;
   const grossAmount = toNumericAmount(payment?.payment.amount);
@@ -146,7 +132,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             paymentId,
             receiverWalletId: selectedWalletId,
           },
-          accessToken ?? undefined
+          accessToken ?? undefined,
         );
 
         if (!cancelled) {
@@ -176,7 +162,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
     try {
       const [paymentResult, walletResult] = await Promise.all([
         apiGet<PaymentDetailsResponse>(`/api/payment/${paymentId}`, token),
-        apiGet<{ wallets: ReceiverWallet[] }>("/api/receiver-wallets", token)
+        apiGet<{ wallets: ReceiverWallet[] }>("/api/receiver-wallets", token),
       ]);
 
       setPayment(paymentResult);
@@ -189,14 +175,15 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             const result = await apiPost<{ tokens: WalletTokenOption[] }>(
               "/api/wallet/tokens",
               { walletAddress: wallet.wallet_address },
-              token
+              token,
             );
-            const walletToken = result.tokens.find((tokenOption) => tokenOption.symbol === paymentResult.payment.token_symbol) ?? null;
+            const walletToken =
+              result.tokens.find((tokenOption) => tokenOption.symbol === paymentResult.payment.token_symbol) ?? null;
             return [wallet.id, walletToken] as const;
           } catch {
             return [wallet.id, null] as const;
           }
-        })
+        }),
       );
 
       setWalletBalances(Object.fromEntries(balances));
@@ -208,35 +195,17 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
     }
   }
 
-  async function handleSendOtp() {
-    if (!accessToken || !selectedWalletId) {
-      setError("Select a receiver wallet before requesting claim OTP.");
+  function handleOpenPinConfirmation() {
+    if (!selectedWalletId) {
+      setError("Select a receiver wallet before confirming claim.");
       return;
     }
 
-    setOtpBusy(true);
     setError(null);
     setStatus(null);
-
-    try {
-      const result = await apiPost<{
-        referenceCode: string;
-        senderDisplayName: string;
-        senderHandle: string;
-      }>("/api/payment/claim/start", { paymentId }, accessToken);
-
-      setOtpRequested(true);
-      setOtpModalOpen(true);
-      setOtpCooldown(60);
-      setOtp("");
-      lastSubmittedOtpRef.current = null;
-      setStatus(`OTP sent. Enter it to release ${result.referenceCode} from ${result.senderDisplayName}.`);
-      showToast("Claim verification code sent.");
-    } catch (claimError) {
-      setError(claimError instanceof Error ? claimError.message : "Could not send claim OTP");
-    } finally {
-      setOtpBusy(false);
-    }
+    setPin("");
+    lastSubmittedPinRef.current = null;
+    setPinModalOpen(true);
   }
 
   async function handleClaim() {
@@ -260,10 +229,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         "/api/payment/accept",
         {
           paymentId,
-          otp,
-          receiverWalletId: selectedWalletId
+          pin,
+          receiverWalletId: selectedWalletId,
         },
-        accessToken
+        accessToken,
       );
 
       setStatus(`Reference ${result.referenceCode} claimed successfully to ${result.walletAddress}.`);
@@ -271,7 +240,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         ...result,
         claimFeeAmount: result.claimFeeAmount != null ? Number(result.claimFeeAmount) : null,
       });
-      setOtpModalOpen(false);
+      setPinModalOpen(false);
       showToast("Payment claimed successfully.");
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "Could not complete claim");
@@ -288,7 +257,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
     <AppMobileShell
       currentTab="home"
       title="Claim"
-      subtitle="Choose your payout wallet, send the OTP, then your claim completes as soon as the code is confirmed."
+      subtitle="Choose your payout wallet, confirm with your PIN, and TrustLink releases the escrow immediately."
       user={user}
       showBackButton
       backHref="/app/claim"
@@ -434,7 +403,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Receiver wallet</h2>
-                  <p className="text-sm text-white/48">This wallet gets the release once your WhatsApp OTP is confirmed.</p>
+                  <p className="text-sm text-white/48">This wallet gets the release once your TrustLink PIN is confirmed.</p>
                 </div>
                 <button
                   type="button"
@@ -473,7 +442,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="mt-4 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Final step</div>
                 <p className="mt-2 text-sm leading-6 text-white/58">
-                  After you tap send OTP, entering the 6-digit code is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
+                  After you tap continue, entering your 6-digit PIN is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
                 </p>
                 {claimFeeBusy ? (
                   <div className="mt-3 text-xs text-white/42">Refreshing claim fee estimate...</div>
@@ -482,11 +451,11 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
 
               <button
                 type="button"
-                onClick={() => void handleSendOtp()}
-                disabled={otpBusy || claimBusy || !selectedWalletId || otpCooldown > 0}
+                onClick={handleOpenPinConfirmation}
+                disabled={claimBusy || !selectedWalletId}
                 className="mt-4 w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {otpBusy ? "Sending OTP..." : otpCooldown > 0 ? `Resend OTP in ${otpCooldown}s` : "Send OTP to claim"}
+                {claimBusy ? "Checking PIN..." : "Continue with PIN"}
               </button>
             </section>
           </>
@@ -542,24 +511,20 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         </div>
       ) : null}
 
-      <OtpModal
-        open={otpModalOpen}
-        title="Enter verification code"
+      <PinEntryModal
+        open={pinModalOpen}
+        title="Confirm claim with PIN"
         description={
           payment
-            ? `This is the final step. As soon as the 6-digit code is complete, TrustLink releases ${formatTokenAmount(netAmount)} ${payment.payment.token_symbol} to your selected wallet.`
-            : "This is the final step. As soon as the 6-digit code is complete, TrustLink releases the escrow automatically."
+            ? `Enter your TrustLink PIN to release ${formatTokenAmount(netAmount)} ${payment.payment.token_symbol} to your selected wallet.`
+            : "Enter your TrustLink PIN to release this escrow."
         }
-        value={otp}
+        value={pin}
         onChange={(nextValue) => {
-          lastSubmittedOtpRef.current = null;
-          setOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6));
+          lastSubmittedPinRef.current = null;
+          setPin(nextValue.replace(/[^\d]/g, "").slice(0, 6));
         }}
-        onClose={() => setOtpModalOpen(false)}
-        onResend={() => void handleSendOtp()}
-        resendLabel={otpBusy ? "Sending..." : "Resend OTP"}
-        resendDisabled={otpBusy}
-        countdown={otpCooldown}
+        onClose={() => !claimBusy && setPinModalOpen(false)}
         busy={claimBusy}
       />
     </AppMobileShell>

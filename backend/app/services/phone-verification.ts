@@ -16,10 +16,10 @@ import { generateOtp } from "@/app/utils/otp";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { sendAuthOtp, sendOtp } from "@/app/services/whatsapp";
 
-type OtpPurpose = "generic" | "register" | "login" | "claim" | "auth" | "pin_change";
+type OtpPurpose = "generic" | "register" | "login" | "claim" | "auth" | "pin_change" | "wallet_add";
 
 async function dispatchOtpMessage(phoneNumber: string, otp: string, purpose: OtpPurpose) {
-  if (purpose === "auth" || purpose === "pin_change") {
+  if (purpose === "auth" || purpose === "pin_change" || purpose === "wallet_add") {
     await sendAuthOtp(phoneNumber, otp);
   } else {
     await sendOtp(phoneNumber, otp);
@@ -101,7 +101,7 @@ export async function sendPhoneVerificationOtp(
     expiresAt: verification.expires_at,
   });
 
-  if (purpose === "auth" || purpose === "pin_change") {
+  if (purpose === "auth" || purpose === "pin_change" || purpose === "wallet_add") {
     void dispatchOtpMessage(normalizedPhoneNumber, otp, purpose).catch((error) => {
       logger.error("otp.send.failed", {
         phoneNumber: normalizedPhoneNumber,

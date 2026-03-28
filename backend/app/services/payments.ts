@@ -32,7 +32,7 @@ import {
   sendPaymentClaimedMessage,
   sendPaymentNotification
 } from "@/app/services/whatsapp";
-import { consumeVerifiedOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
+import { verifyUserActionPin } from "@/app/services/auth";
 import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
 import type { PaymentRecord } from "@/app/types/payment";
 
@@ -540,7 +540,7 @@ export async function estimatePaymentClaim(params: {
 export async function acceptPayment(params: {
   authUser: AuthenticatedUser;
   paymentId: string;
-  otp: string;
+  pin: string;
   walletAddress?: string;
   receiverWalletId?: string;
 }) {
@@ -574,10 +574,7 @@ export async function acceptPayment(params: {
     throw new Error("Signed-in account does not match payment receiver");
   }
 
-  const otpVerification = await verifyPhoneOtp(params.authUser.phoneNumber, params.otp, {
-    consume: false,
-    purpose: "claim"
-  });
+  await verifyUserActionPin(params.authUser, params.pin);
 
   const receiverWalletAddress =
     params.receiverWalletId != null
@@ -615,7 +612,6 @@ export async function acceptPayment(params: {
     releasedToWallet: receiverWalletAddress,
     claimFeeAmount: release.feeAmountUi,
   });
-  await consumeVerifiedOtp(otpVerification.otpId);
   const transactionUrl = getTransactionExplorerUrl({
     chain: "solana",
     signature: release.signature
@@ -677,16 +673,12 @@ export async function startPaymentClaim(params: {
     throw new Error("Receiver must register a TrustLink identity before claiming");
   }
 
-  const otp = await import("@/app/services/phone-verification").then((module) =>
-    module.sendPhoneVerificationOtp(params.authUser.phoneNumber, "claim")
-  );
-
   return {
     paymentId: payment.id,
     referenceCode: payment.reference_code,
     senderDisplayName: payment.sender_display_name_snapshot,
     senderHandle: payment.sender_handle_snapshot,
-    expiresAt: otp.expiresAt
+    expiresAt: null,
   };
 }
 

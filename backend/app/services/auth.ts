@@ -194,6 +194,47 @@ export async function verifyUserPin(params: { challengeToken: string; pin: strin
   };
 }
 
+export async function startUserPinChallenge(authUser: AuthenticatedUser) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  if (!user.pin_hash) {
+    throw new Error("PIN is not set up for this account");
+  }
+
+  return {
+    challengeToken: issueAuthChallengeToken({
+      id: user.id,
+      phoneNumber: user.phone_number,
+      stage: "pin_verify",
+    }),
+    user: sanitizeUser(user),
+  };
+}
+
+export async function verifyUserActionPin(authUser: AuthenticatedUser, pin: string) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  const valid = await verifyPassword(pin, user.pin_hash);
+  if (!valid) {
+    throw new Error("Invalid PIN");
+  }
+
+  logger.info("auth.pin_action_verify.succeeded", {
+    userId: user.id,
+    phoneNumber: user.phone_number,
+  });
+
+  return sanitizeUser(user);
+}
+
 export async function startPinChangeOtp(authUser: AuthenticatedUser, requestIp?: string | null) {
   const user = await findUserById(authUser.id);
 
@@ -501,8 +542,19 @@ export async function getRegisteredUserByPhoneNumber(phoneNumber: string) {
 
 export async function addReceiverWalletForUser(
   authUser: AuthenticatedUser,
-  params: { walletName: string; walletAddress: string },
+  params: { walletName: string; walletAddress: string; otp: string },
 ) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  await verifyPhoneOtp(user.phone_number, params.otp, {
+    consume: true,
+    purpose: "wallet_add",
+  });
+
   const walletCount = await countReceiverWalletsByUserId(authUser.id);
 
   if (walletCount >= 3) {
@@ -522,6 +574,21 @@ export async function addReceiverWalletForUser(
   });
 
   return wallet;
+}
+
+export async function startAddReceiverWalletOtp(authUser: AuthenticatedUser, requestIp?: string | null) {
+  const user = await findUserById(authUser.id);
+
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  const otp = await sendPhoneVerificationOtp(user.phone_number, "wallet_add", requestIp);
+
+  return {
+    phoneNumber: user.phone_number,
+    expiresAt: otp.expiresAt,
+  };
 }
 
 export async function listReceiverWalletsForUser(authUser: AuthenticatedUser) {

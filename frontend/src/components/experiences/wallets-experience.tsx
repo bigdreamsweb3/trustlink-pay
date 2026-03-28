@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PlusIcon, TrashIcon, WalletIcon } from "@/src/components/app-icons";
+import { OtpModal } from "@/src/components/modals/otp-modal";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
@@ -15,7 +16,7 @@ import {
   getConnectedWalletSession,
   listAvailableSolanaWallets,
   type ConnectedWalletSession,
-  type DetectedWallet
+  type DetectedWallet,
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import type { ReceiverWallet } from "@/src/lib/types";
@@ -29,12 +30,13 @@ function formatShortDate(value: string) {
     month: "short",
     day: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
 export function WalletsExperience() {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/wallets");
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } =
+    useAuthenticatedSession("/app/wallets");
   const { showToast } = useToast();
   const [walletSession, setWalletSession] = useState<ConnectedWalletSession | null>(null);
   const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
@@ -42,15 +44,20 @@ export function WalletsExperience() {
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
   const [receiverWallets, setReceiverWallets] = useState<ReceiverWallet[]>([]);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [walletOtp, setWalletOtp] = useState("");
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [otpBusy, setOtpBusy] = useState(false);
   const [deletingWalletId, setDeletingWalletId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     walletName: "",
-    walletAddress: ""
+    walletAddress: "",
   });
+  const lastSubmittedOtpRef = useRef<string | null>(null);
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
@@ -64,6 +71,31 @@ export function WalletsExperience() {
 
     void loadWallets(accessToken);
   }, [accessToken, user]);
+
+  useEffect(() => {
+    if (otpCooldown === 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setOtpCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [otpCooldown]);
+
+  useEffect(() => {
+    if (!otpModalOpen || !accessToken || busy || walletOtp.length !== 6) {
+      return;
+    }
+
+    if (lastSubmittedOtpRef.current === walletOtp) {
+      return;
+    }
+
+    lastSubmittedOtpRef.current = walletOtp;
+    void finalizeWalletAdd();
+  }, [accessToken, busy, walletOtp, otpModalOpen]);
 
   async function loadWallets(token: string) {
     setLoading(true);
@@ -118,9 +150,32 @@ export function WalletsExperience() {
     showToast("Wallet disconnected.");
   }
 
-  async function handleAddWallet(event: FormEvent<HTMLFormElement>) {
+  async function handleStartWalletOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!accessToken) {
+      return;
+    }
+
+    setOtpBusy(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await apiPost<{ expiresAt: string | null }>("/api/receiver-wallets/start", {}, accessToken);
+      setWalletOtp("");
+      setOtpCooldown(60);
+      setOtpModalOpen(true);
+      lastSubmittedOtpRef.current = null;
+      showToast("Verification code sent for wallet add.");
+    } catch (otpError) {
+      setError(otpError instanceof Error ? otpError.message : "Could not send wallet verification code");
+    } finally {
+      setOtpBusy(false);
+    }
+  }
+
+  async function finalizeWalletAdd() {
     if (!accessToken) {
       return;
     }
@@ -130,10 +185,19 @@ export function WalletsExperience() {
     setNotice(null);
 
     try {
-      const result = await apiPost<{ wallet: ReceiverWallet }>("/api/receiver-wallets", form, accessToken);
+      const result = await apiPost<{ wallet: ReceiverWallet }>(
+        "/api/receiver-wallets",
+        {
+          ...form,
+          otp: walletOtp,
+        },
+        accessToken,
+      );
       setReceiverWallets((current) => [...current, result.wallet]);
       setForm({ walletName: "", walletAddress: "" });
       setWalletModalOpen(false);
+      setOtpModalOpen(false);
+      setWalletOtp("");
       setNotice("Receiver wallet saved.");
       showToast("Receiver wallet added.");
     } catch (saveError) {
@@ -309,7 +373,7 @@ export function WalletsExperience() {
               <p className="text-sm text-white/48">Give the wallet a clear name so claim decisions stay easy and safe.</p>
             </div>
 
-            <form className="space-y-4" onSubmit={handleAddWallet}>
+            <form className="space-y-4" onSubmit={handleStartWalletOtp}>
               <label className="block">
                 <span className="mb-2 block text-sm text-white/56">Wallet name</span>
                 <input
@@ -339,16 +403,33 @@ export function WalletsExperience() {
                 </button>
                 <button
                   type="submit"
-                  disabled={busy}
+                  disabled={otpBusy}
                   className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {busy ? "Saving..." : "Save wallet"}
+                  {otpBusy ? "Sending code..." : "Verify with OTP"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
+
+      <OtpModal
+        open={otpModalOpen}
+        title="Verify wallet with OTP"
+        description="Enter the 6-digit code sent to your verified WhatsApp number to save this payout wallet."
+        value={walletOtp}
+        onChange={(nextValue) => {
+          lastSubmittedOtpRef.current = null;
+          setWalletOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6));
+        }}
+        onClose={() => !busy && setOtpModalOpen(false)}
+        onResend={() => void handleStartWalletOtp({ preventDefault() {} } as FormEvent<HTMLFormElement>)}
+        resendLabel={otpBusy ? "Sending..." : "Resend OTP"}
+        resendDisabled={otpBusy}
+        countdown={otpCooldown}
+        busy={busy}
+      />
     </AppMobileShell>
   );
 }

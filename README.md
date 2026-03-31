@@ -8,6 +8,10 @@ TrustLink Pay is a phone-number-first payment product built for real-world stabl
 
 _TrustLink Pay turns a WhatsApp number into a safer payment destination without making users think like blockchain operators first._
 
+## Pitch Video
+
+- [TrustLink Pay pitch video](https://youtube.com/shorts/9IH888rWwDo?si=Pe3-PPU3oUjhVezq)
+
 ## Overview
 
 TrustLink Pay combines:

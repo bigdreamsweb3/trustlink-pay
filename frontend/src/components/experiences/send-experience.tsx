@@ -591,7 +591,7 @@ export function SendExperience() {
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
-              {sendSuccess.amount} {sendSuccess.token} queued
+              {sendSuccess.amount} {sendSuccess.token}
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/56">
               {sendSuccess.manualInviteRequired
@@ -754,13 +754,12 @@ export function SendExperience() {
                 </div>
               ) : recipientPreview ? (
                 <div
-                  className={`rounded-[20px] border px-4 py-3 ${
-                    recipientPreview.status === "registered"
+                  className={`rounded-[20px] border px-4 py-3 ${recipientPreview.status === "registered"
                       ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
                       : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
                         ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
                         : "border-white/10 bg-black/20"
-                  }`}
+                    }`}
                 >
                   {recipientPreview.status === "registered" ? (
                     <>

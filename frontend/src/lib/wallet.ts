@@ -192,6 +192,24 @@ function writeStoredSession(session: ConnectedWalletSession) {
   window.localStorage.setItem(CONNECTED_WALLET_KEY, JSON.stringify(session));
 }
 
+async function ensureWalletAuthorization(wallet: DetectedWallet, expectedAddress?: string) {
+  const currentAddress = wallet.provider.publicKey?.toString() ?? null;
+  if (currentAddress && (!expectedAddress || currentAddress === expectedAddress)) {
+    return currentAddress;
+  }
+
+  const response = await wallet.provider.connect();
+  const authorizedAddress = response.publicKey.toString();
+
+  if (expectedAddress && authorizedAddress !== expectedAddress) {
+    throw new Error(
+      `Connected wallet account changed. Expected ${expectedAddress}, but wallet authorized ${authorizedAddress}. Reconnect the intended wallet account and try again.`,
+    );
+  }
+
+  return authorizedAddress;
+}
+
 function getWalletById(walletId: string) {
   if (typeof window === "undefined") {
     return null;
@@ -306,6 +324,8 @@ export async function sendSolanaPayment(params: {
     throw new Error("Selected wallet is no longer available in this browser");
   }
 
+  await ensureWalletAuthorization(wallet, params.fromAddress);
+
   const connection = new Connection(params.rpcUrl, "confirmed");
   const fromPublicKey = new PublicKey(params.fromAddress);
   const toPublicKey = new PublicKey(params.toAddress);
@@ -364,6 +384,20 @@ export async function signAndSendSerializedSolanaTransaction(params: {
   const wallet = getWalletById(params.walletId);
   if (!wallet) {
     throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  const storedSession = readStoredSession();
+  const authorizedAddress = await ensureWalletAuthorization(
+    wallet,
+    storedSession?.walletId === params.walletId ? storedSession.address : undefined,
+  );
+
+  if (storedSession?.walletId === params.walletId && storedSession.address !== authorizedAddress) {
+    writeStoredSession({
+      walletId: storedSession.walletId,
+      walletName: storedSession.walletName,
+      address: authorizedAddress,
+    });
   }
 
   const connection = new Connection(params.rpcUrl, "confirmed");

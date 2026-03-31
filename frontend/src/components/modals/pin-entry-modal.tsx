@@ -94,8 +94,8 @@ export function PinEntryModal({
                 inputMode="numeric"
                 autoComplete={index === 0 ? "current-password" : "off"}
                 maxLength={1}
-                className="h-12 w-11 rounded-2xl border border-white/10 bg-[#111722] text-center text-lg font-semibold text-transparent outline-none transition focus:border-[#58f2b1]/50 focus:ring-1 focus:ring-[#58f2b1]/20"
-                style={{ textShadow: digit ? "0 0 0 #ffffff" : "none" }}
+                type="password"
+                className="h-12 w-11 rounded-2xl border border-white/10 bg-[#111722] text-center text-lg font-semibold text-white outline-none transition focus:border-[#58f2b1]/50 focus:ring-1 focus:ring-[#58f2b1]/20"
                 aria-label={`PIN digit ${index + 1}`}
               />
             ))}

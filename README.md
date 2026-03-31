@@ -220,7 +220,7 @@ The recipient claims through TrustLink by:
 - selecting or confirming a wallet
 - releasing the escrowed funds
 
-![Claim flow](public/screenshots/05-claim-flow.png)
+![Claim flow](public/screenshots/05-claim-flow.gif)
 
 _TrustLink guides the recipient from message to claim without exposing raw blockchain complexity._
 

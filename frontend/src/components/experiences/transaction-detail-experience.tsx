@@ -241,7 +241,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 </span>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-5 grid gap-3 sm:grid-cols-1">
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
                   <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
                     {detail.viewerRole === "sender" ? "Receiver" : "Sender"}

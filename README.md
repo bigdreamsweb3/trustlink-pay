@@ -206,7 +206,7 @@ Once the sender confirms:
 - TrustLink handles the correct notification path based on recipient state
 - TrustLink sponsors the Solana gas so the user does not need SOL in their wallet
 
-![Send crypto flow](public/screenshots/02-send-flow.png)
+![Send crypto flow](public/screenshots/02-send-flow.gif)
 
 _The sender flow is built around identity confidence first, then escrow-backed payment creation._
 

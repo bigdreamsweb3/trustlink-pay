@@ -16,10 +16,10 @@ _TrustLink Pay turns a WhatsApp number into a safer payment destination without 
 
 ## Core Docs
 
-- [Devnet testing guide](C:/Users/codepara/Desktop/trust-link/docs/devnet-testing.md)
-- [Wallet roles](C:/Users/codepara/Desktop/trust-link/docs/wallet-roles.md)
-- [Escrow V2 design](C:/Users/codepara/Desktop/trust-link/docs/escrow-v2-design.md)
-- [Payment escrow architecture](C:/Users/codepara/Desktop/trust-link/docs/payment-escrow-architecture.md)
+- [Devnet testing guide](/docs/devnet-testing.md)
+- [Wallet roles](/docs/wallet-roles.md)
+- [Escrow V2 design](/docs/escrow-v2-design.md)
+- [Payment escrow architecture](/docs/payment-escrow-architecture.md)
 
 ## Overview
 

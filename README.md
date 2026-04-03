@@ -1,6 +1,6 @@
 # TrustLink Pay
 
-Send stablecoins on Solana to a WhatsApp number with the same confidence as a bank alert.
+> Send stablecoins on Solana to a WhatsApp number with the same confidence as a bank alert.
 
 TrustLink Pay is a phone-number-first payment product built for real-world stablecoin transfers. Instead of forcing users to copy wallet addresses, TrustLink lets a sender choose a supported asset, enter a WhatsApp number, move funds into escrow, and let the recipient complete a guided claim flow.
 

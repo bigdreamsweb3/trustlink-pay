@@ -1,6 +1,20 @@
-import type { SVGProps } from "react";
+import Image from "next/image";
+import type { ReactNode, SVGProps } from "react";
 
-type IconProps = SVGProps<SVGSVGElement>;
+type IconProps = SVGProps<SVGSVGElement> & { children?: ReactNode };
+
+type AppIconProps = { children?: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>;
+
+function AppIcon({ children, className = "", ...props }: AppIconProps) {
+  return (
+    <div
+      className={`h-fit w-fit rounded-md border border-white/10 bg-[#76ffd8] text-white/72 shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white inline-flex items-center justify-center ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
 
 function BaseIcon(props: IconProps) {
   return (
@@ -27,13 +41,16 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
-export function SendIcon(props: IconProps) {
+export function SendIcon(props?: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <BaseIcon {...props}>
-      <path d="M4 12h12" />
-      <path d="M12 6l6 6-6 6" />
-      <path d="M5.5 6.5h4" />
-    </BaseIcon>
+    <AppIcon {...props}>
+      <Image
+        src="/icons/tlp/send.png"
+        alt="send icon"
+        width={24}
+        height={24}
+      />
+    </AppIcon>
   );
 }
 
@@ -56,13 +73,16 @@ export function ProfileIcon(props: IconProps) {
   );
 }
 
-export function WalletIcon(props: IconProps) {
+export function WalletIcon(props?: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <BaseIcon {...props}>
-      <path d="M4.5 8.5A2.5 2.5 0 0 1 7 6h10a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 17 18H7a2.5 2.5 0 0 1-2.5-2.5z" />
-      <path d="M15.5 12h4" />
-      <circle cx="15.25" cy="12" r="0.75" fill="currentColor" stroke="none" />
-    </BaseIcon>
+    <AppIcon {...props}>
+      <Image
+        src="/icons/tlp/wallet.png"
+        alt="settings icon"
+        width={24}
+        height={24}
+      />
+    </AppIcon>
   );
 }
 
@@ -123,19 +143,16 @@ export function InfoIcon(props: IconProps) {
   );
 }
 
-export function SettingsIcon(props: IconProps) {
+export function SettingsIcon(props?: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <BaseIcon {...props}>
-      <circle cx="12" cy="12" r="2.75" />
-      <path d="M12 3.75v2.1" />
-      <path d="M12 18.15v2.1" />
-      <path d="M20.25 12h-2.1" />
-      <path d="M5.85 12h-2.1" />
-      <path d="M17.83 6.17l-1.48 1.48" />
-      <path d="M7.65 16.35l-1.48 1.48" />
-      <path d="M17.83 17.83l-1.48-1.48" />
-      <path d="M7.65 7.65L6.17 6.17" />
-    </BaseIcon>
+    <AppIcon {...props}>
+      <Image
+        src="/icons/tlp/setting.png"
+        alt="settings icon"
+        width={24}
+        height={24}
+      />
+    </AppIcon>
   );
 }
 

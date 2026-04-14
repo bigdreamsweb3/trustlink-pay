@@ -106,10 +106,9 @@ export function AppMobileShell({
               <button
                 type="button"
                 onClick={() => router.push("/app/settings")}
-                className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
-                aria-label="Open settings"
+
               >
-                <SettingsIcon className="h-5 w-5" />
+                <SettingsIcon className="" />
               </button>
             </div>
             <button
@@ -166,10 +165,9 @@ export function AppMobileShell({
                     <button
                       type="button"
                       onClick={() => router.push("/app/settings")}
-                      className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-white/72 shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05] hover:text-white"
                       aria-label="Open settings"
                     >
-                      <SettingsIcon className="h-4.5 w-4.5" />
+                      <SettingsIcon className="" />
                     </button>
                     <button
                       type="button"

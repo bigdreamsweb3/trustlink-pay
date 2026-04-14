@@ -1,6 +1,6 @@
 # TrustLink Pay
 
-Send stablecoins on Solana to a WhatsApp number with the same confidence as a bank alert.
+> Send stablecoins on Solana to a WhatsApp number with the same confidence as a bank alert.
 
 TrustLink Pay is a phone-number-first payment product built for real-world stablecoin transfers. Instead of forcing users to copy wallet addresses, TrustLink lets a sender choose a supported asset, enter a WhatsApp number, move funds into escrow, and let the recipient complete a guided claim flow.
 
@@ -8,9 +8,17 @@ TrustLink Pay is a phone-number-first payment product built for real-world stabl
 
 _TrustLink Pay turns a WhatsApp number into a safer payment destination without making users think like blockchain operators first._
 
-## Pitch Video
+## Pitch Links
 
-- [TrustLink Pay pitch video](https://youtube.com/shorts/9IH888rWwDo?si=Pe3-PPU3oUjhVezq)
+- [Pitch video - 60 seconds edition](https://youtube.com/shorts/9IH888rWwDo?si=Pe3-PPU3oUjhVezq)
+
+- [Pitch Deck Slides](https://pitch.com/v/trustlink-pay-pitch-7d8h4e)
+
+## Core Docs
+
+- [Wallet roles](/docs/wallet-roles.md)
+- [Escrow V2 design](/docs/escrow-v2-design.md)
+- [Payment escrow architecture](/docs/payment-escrow-architecture.md)
 
 ## Overview
 
@@ -81,13 +89,6 @@ The recipient:
 TrustLink does not just route money. It creates identity confidence before the transfer and controlled release after the transfer.
 
 TrustLink is designed for regions where users already trust phone-number-based payments. Instead of teaching users a new financial behavior, TrustLink keeps the familiar phone-number flow and upgrades the settlement rails underneath to stablecoins on Solana.
-
-## Core Docs
-
-- [Devnet testing guide](C:/Users/codepara/Desktop/trust-link/docs/devnet-testing.md)
-- [Wallet roles](C:/Users/codepara/Desktop/trust-link/docs/wallet-roles.md)
-- [Escrow V2 design](C:/Users/codepara/Desktop/trust-link/docs/escrow-v2-design.md)
-- [Payment escrow architecture](C:/Users/codepara/Desktop/trust-link/docs/payment-escrow-architecture.md)
 
 ## Institutional Fit
 

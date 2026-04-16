@@ -4,12 +4,12 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 
-import { BackIcon, HomeIcon, ProfileIcon, ReceiveIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 
-type AppTab = "home" | "send" | "receive" | "wallets" | "profile" | "settings";
+type AppTab = "home" | "send" | "receive" | "claim" | "wallets" | "profile" | "settings";
 
 type AppMobileShellProps = {
   currentTab: AppTab;
@@ -32,18 +32,19 @@ function initialsFor(name: string) {
 }
 
 const desktopNavItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode }> = [
-  { key: "home", href: "/app", label: "Home", icon: <HomeIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "send", href: "/app/send", label: "Send", icon: <SendIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "receive", href: "/app/receive", label: "Receive", icon: <ReceiveIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "profile", href: "/app/profile", label: "Profile", icon: <ProfileIcon className="h-[1.05rem] w-[1.05rem]" /> }
+  { key: "home", href: "/app", label: "Home", icon: <HomeIcon size={19} className="text-current" /> },
+  { key: "send", href: "/app/send", label: "Send", icon: <SendIcon size={19} className="text-current" /> },
+  { key: "claim", href: "/app/claim", label: "Claim", icon: <ClaimIcon size={19} className="text-current" /> },
+  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon size={19} className="text-current" /> },
+  { key: "settings", href: "/app/settings", label: "Settings", icon: <SettingsIcon size={19} className="text-current" /> }
 ];
 
 const mobileNavItems: Array<{ key: AppTab; href: Route; label: string; icon: ReactNode }> = [
-  { key: "home", href: "/app", label: "Home", icon: <HomeIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "send", href: "/app/send", label: "Send", icon: <SendIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "receive", href: "/app/receive", label: "Receive", icon: <ReceiveIcon className="h-[1.05rem] w-[1.05rem]" /> },
-  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon className="h-[1.05rem] w-[1.05rem]" /> }
+  { key: "home", href: "/app", label: "Home", icon: <HomeIcon size={20} className="text-current" /> },
+  { key: "send", href: "/app/send", label: "Send", icon: <SendIcon size={20} className="text-current" /> },
+  { key: "claim", href: "/app/claim", label: "Claim", icon: <ClaimIcon size={20} className="text-current" /> },
+  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon size={20} className="text-current" /> },
+  { key: "settings", href: "/app/settings", label: "Settings", icon: <SettingsIcon size={20} className="text-current" /> }
 ];
 
 export function AppMobileShell({
@@ -68,7 +69,7 @@ export function AppMobileShell({
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(88,242,177,0.14),transparent_28%),linear-gradient(180deg,#05090d_0%,#091019_100%)] pb-13 md:px-6 md:py-6 md:pb-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(88,242,177,0.14),transparent_28%),linear-gradient(180deg,#05090d_0%,#091019_100%)] pb-13 md:px-6 md:pt-6 md:pb-6">
       <div className="mx-auto md:grid md:max-w-[1180px] md:grid-cols-[220px_minmax(0,1fr)] md:gap-8">
         <aside className="hidden md:sticky md:top-6 md:flex md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:flex-col md:justify-between md:self-start md:overflow-hidden md:rounded-[32px] md:border md:border-white/8 md:bg-[#080b10]/92 md:p-5 md:shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
           <div>
@@ -102,19 +103,10 @@ export function AppMobileShell({
           </div>
 
           <div className="flex flex-col shrink-0 items-center gap-2">
-            <div className="w-full flex items-center justify-start mb-3">
-              <button
-                type="button"
-                onClick={() => router.push("/app/settings")}
-
-              >
-                <SettingsIcon className="" />
-              </button>
-            </div>
             <button
               type="button"
               onClick={() => router.push("/app/profile")}
-              className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition hover:border-white/16 hover:bg-white/[0.05]"
+              className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition hover:border-white/16 hover:bg-white/[0.05] button"
             >
               <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
                 {initialsFor(user.displayName)}
@@ -129,7 +121,7 @@ export function AppMobileShell({
 
         <div className="mx-auto w-full md:max-w-[430px]">
           <div className="min-h-screen overflow-hidden bg-[#080b10] md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:border md:border-white/8 md:shadow-[0_28px_100px_rgba(0,0,0,0.48)]">
-            <div className="relative min-h-screen bg-[radial-gradient(circle_at_16%_12%,rgba(88,242,177,0.1),transparent_22%),radial-gradient(circle_at_84%_10%,rgba(255,255,255,0.08),transparent_20%),linear-gradient(180deg,#0a0d12_0%,#090c11_100%)] px-5 pb-8 pt-6 md:min-h-[calc(100vh-3rem)]">
+            <div className="relative min-h-screen bg-[radial-gradient(circle_at_16%_12%,rgba(88,242,177,0.1),transparent_22%),radial-gradient(circle_at_84%_10%,rgba(255,255,255,0.08),transparent_20%),linear-gradient(180deg,#0a0d12_0%,#090c11_100%)] px-5 pb-8 pt-3 md:min-h-[calc(100vh-3rem)]">
 
               <div className="min-w-0 mb-6">
                 <div className="mb-3 flex items-start justify-between gap-4">
@@ -158,23 +150,16 @@ export function AppMobileShell({
                       </span>
                     </div>
 
-                    <p className="mt-2.5 max-w-[19rem] text-[0.92rem] leading-6 text-white/50">{subtitle}</p>
+                    <p className="mt-2 max-w-[18.5rem] text-[0.88rem] leading-5.5 tracking-[-0.01em] text-white/56">{subtitle}</p>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => router.push("/app/settings")}
-                      aria-label="Open settings"
-                    >
-                      <SettingsIcon className="" />
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => router.push("/app/profile")}
                       className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-white/16 hover:bg-white/[0.05]"
                     >
-                      <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8]">
+                      <span className="grid h-12 w-12 place-items-center rounded-full border border-[#76ffd8]/60 bg-[linear-gradient(135deg,rgba(118,255,216,0.18),rgba(255,255,255,0.06))] text-sm font-bold text-[#bfffe8] button">
                         {initialsFor(user.displayName)}
                       </span>
                     </button>
@@ -190,7 +175,7 @@ export function AppMobileShell({
 
       <nav
         aria-label="Primary navigation"
-        className="fixed bottom-0 right-0 z-40 mx-auto grid w-full max-w-[430px] grid-cols-4 gap-1 rounded-t-[26px] border-t border-white/10 bg-black/70 px-2 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-2xl md:hidden"
+        className="fixed bottom-3 left-1/2 z-40 grid w-[calc(100%-1rem)] max-w-[398px] -translate-x-1/2 grid-cols-5 items-start gap-0.5 rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,13,18,0.94)_0%,rgba(5,8,12,0.99)_100%)] px-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_24px_70px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-2xl md:hidden"
       >
         {mobileNavItems.map((item) => {
           const active = item.key === currentTab;
@@ -199,13 +184,22 @@ export function AppMobileShell({
             <Link
               key={item.key}
               href={item.href}
-              className={`grid justify-items-center gap-1 rounded-[18px] px-2 py-2 text-center transition ${active
-                ? "bg-white/10 text-[#7dffd9] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                : "text-white/55 hover:bg-white/5 hover:text-white/88"
+              className={`grid justify-items-center gap-0 rounded-[20px] px-1 py-1.5 text-center transition button ${active
+                ? "bg-white/[0.04] text-[#86ffda] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                : "text-white/46 hover:bg-white/[0.02] hover:text-white/78"
                 }`}
             >
-              <span className={`grid place-items-center ${active ? "text-[#7dffd9]" : ""}`}>{item.icon}</span>
-              <span className="text-[0.72rem] font-medium">{item.label}</span>
+              <span
+                className={`grid h-8 w-8 place-items-center rounded-full transition ${active
+                  ? "translate-y-[-1px] text-[#86ffda]"
+                  : "opacity-80 text-current"
+                  }`}
+              >
+                {item.icon}
+              </span>
+              <span className={`text-[0.68rem] font-medium tracking-[-0.01em] ${active ? "text-white" : "text-white/54"}`}>
+                {item.label}
+              </span>
             </Link>
           );
         })}

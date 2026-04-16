@@ -74,7 +74,7 @@ export function ClaimListExperience() {
 
   return (
     <AppMobileShell
-      currentTab="home"
+      currentTab="claim"
       title="Claim"
       subtitle="Review every incoming payment waiting in escrow and continue into the claim flow when you are ready."
       user={user}
@@ -90,7 +90,7 @@ export function ClaimListExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Pending claims</h2>
@@ -146,7 +146,7 @@ export function ClaimListExperience() {
       {pendingModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setPendingModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">

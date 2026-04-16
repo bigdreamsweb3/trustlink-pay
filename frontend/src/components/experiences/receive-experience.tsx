@@ -111,7 +111,7 @@ export function ReceiveExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">TrustLink receive details</h2>
             <p className="text-sm text-white/48">Share these details so someone can open TrustLink and send straight to your number.</p>
@@ -151,7 +151,7 @@ export function ReceiveExperience() {
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Next actions</h2>

@@ -171,7 +171,7 @@ export function SettingsExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Preferences</h2>
             <p className="text-sm text-white/48">This is where personal app preferences will live as TrustLink grows.</p>
@@ -189,7 +189,7 @@ export function SettingsExperience() {
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Security</h2>
             <p className="text-sm text-white/48">Changing your TrustLink PIN now requires a fresh WhatsApp OTP verification.</p>
@@ -205,7 +205,7 @@ export function SettingsExperience() {
           </button>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Account</h2>
             <p className="text-sm text-white/48">Sign out from this device when you are done.</p>

@@ -31,7 +31,7 @@ export function WalletPickerModal({
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={onClose}>
       <div
-        className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        className="w-full rounded-t-[28px] border border-white/10 bg-[#5CD2EB] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4">

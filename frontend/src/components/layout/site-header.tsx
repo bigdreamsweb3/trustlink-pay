@@ -31,7 +31,7 @@ export function SiteHeader() {
           </Link> */}
           <Link
             href="/auth?mode=register"
-            className="button button--primary button--compact"
+            className="button inline-flex items-center justify-center rounded-[16px] border border-[#76ffd8]/24 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.18),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.035)_100%)] px-4 py-2.5 text-sm font-semibold tracking-[-0.02em] text-white shadow-[0_10px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:border-[#76ffd8]/38 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.22),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.04)_100%)]"
           >
             Create account
           </Link>

@@ -129,7 +129,7 @@ export function PhoneNumberInput({
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-black/20"
           : isOpen
-            ? "border-[#58f2b1]/50 bg-[#0b1017] ring-1 ring-[#58f2b1]/20"
+            ? "border-[#58f2b1]/50 bg-[#111B1C]/5 ring-1 ring-[#58f2b1]/20"
             : "border-white/10 bg-black/20 hover:border-white/20";
 
   const indicatorClass =
@@ -165,7 +165,7 @@ export function PhoneNumberInput({
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="min-w-fit rounded-l-2xl border-r border-white/10 px-4 transition-colors hover:bg-white/5"
+            className="min-w-fit rounded-l-2xl border-r border-white/10 px-4 transition-colors hover:bg-[#5CD2EB]/5"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">{selectedCountry.flag}</span>
@@ -203,7 +203,7 @@ export function PhoneNumberInput({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#0b1017] shadow-2xl backdrop-blur-xl"
+              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#111B1C]/5 shadow-2xl backdrop-blur-xl"
             >
               <div className="border-b border-white/5 p-2">
                 <div className="relative">
@@ -214,7 +214,7 @@ export function PhoneNumberInput({
                     placeholder="Search countries..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-xl border border-transparent bg-white/5 py-2 pl-9 pr-4 text-sm text-white outline-none focus:border-white/10"
+                    className="w-full rounded-xl border border-transparent bg-[#111B1C]/5 py-2 pl-9 pr-4 text-sm text-white outline-none focus:border-white/10"
                   />
                 </div>
               </div>
@@ -229,7 +229,7 @@ export function PhoneNumberInput({
                       setIsOpen(false);
                       setSearch("");
                     }}
-                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-white/5 ${selectedCountry.iso2 === country.iso2 ? "bg-white/5" : ""
+                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[#111B1C]/5 ${selectedCountry.iso2 === country.iso2 ? "bg-[#5CD2EB]/5" : ""
                       }`}
                   >
                     <div className="flex items-center justify-between">

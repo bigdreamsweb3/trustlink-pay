@@ -70,7 +70,7 @@ export function PinEntryModal({
       onClick={() => !busy && onClose?.()}
     >
       <div
-        className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4">

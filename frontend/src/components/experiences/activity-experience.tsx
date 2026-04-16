@@ -123,7 +123,7 @@ export function ActivityExperience() {
       <section className="space-y-5">
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-4 flex flex-wrap gap-2">
             {([
               ["all", "All"],

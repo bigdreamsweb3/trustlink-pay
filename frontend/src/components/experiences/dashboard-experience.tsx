@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, ReceiveIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
+import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, ReceiveIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
+import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
 import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { getConnectedWalletAddress } from "@/src/lib/wallet";
+import { getConnectedWalletAddress, type DetectedWallet } from "@/src/lib/wallet";
+import { connectTrustLinkWallet, getWalletConnectionErrorMessage, getWalletsForConnection } from "@/src/lib/wallet-actions";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
@@ -24,8 +27,12 @@ function shortenAddress(value: string) {
 
 export function DashboardExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
+  const { showToast } = useToast();
   const router = useRouter();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -44,6 +51,36 @@ export function DashboardExperience() {
   useEffect(() => {
     setWalletAddress(getConnectedWalletAddress());
   }, []);
+
+  async function handleConnectWallet() {
+    setError(null);
+
+    try {
+      const wallets = getWalletsForConnection();
+      setAvailableWallets(wallets);
+      setWalletPickerOpen(true);
+    } catch (walletError) {
+      const nextError = getWalletConnectionErrorMessage(walletError);
+      setError(nextError);
+      showToast("No Solana wallet detected on this browser.");
+    }
+  }
+
+  async function handleWalletSelect(walletId: string) {
+    setConnectingWalletId(walletId);
+    setError(null);
+
+    try {
+      const session = await connectTrustLinkWallet(walletId);
+      setWalletAddress(session.address);
+      setWalletPickerOpen(false);
+      showToast(`${session.walletName} connected successfully.`);
+    } catch (connectError) {
+      setError(getWalletConnectionErrorMessage(connectError));
+    } finally {
+      setConnectingWalletId(null);
+    }
+  }
 
   useEffect(() => {
     if (!walletAddress) {
@@ -171,13 +208,14 @@ export function DashboardExperience() {
       <section className="space-y-5">
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.88)_0%,rgba(206,206,206,0.92)_20%,rgba(120,120,120,0.94)_42%,rgba(238,238,238,0.98)_62%,rgba(56,56,56,0.98)_100%)] p-5 text-[#050505] shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
-          <div className="absolute right-[-20%] top-[-30%] h-44 w-44 rounded-full bg-white/45 blur-3xl" />
+        <div className="relative overflow-hidden rounded-[30px] border border-[#76ffd8]/14 bg-[radial-gradient(circle_at_center,rgba(118,255,216,0.6),rgba(118,255,216,0.5)_20%,rgba(90,255,216,0.4)_42%,rgba(118,255,216,0.3)_62%,rgba(92,210,235,0.2)_100%)] p-5 text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+          <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-[#76ffd8]/10 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
           <div className="relative z-10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="flex items-center justify-between gap-2 h-11 min-w-[114px] place-items-center rounded-2xl bg-black/90 px-3 text-sm font-bold text-white"
+                className="flex h-11 min-w-[114px] place-items-center items-center justify-between gap-2 rounded-2xl border border-white/8 bg-black/72 px-3 text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
                 onClick={() => setBalanceVisible((current) => !current)}
               >
                 {walletTokenLoading ? (
@@ -193,7 +231,7 @@ export function DashboardExperience() {
               <button
                 type="button"
                 onClick={() => setBalanceInfoOpen(true)}
-                className="grid h-11 w-11 place-items-center rounded-2xl bg-black/12 text-black/72 transition hover:bg-black/18"
+                className="grid h-11 w-11 place-items-center rounded-2xl border border-white/8 bg-white/[0.06] text-white/76 transition hover:bg-white/[0.1] button"
                 aria-label="Show balance details"
                 title="Show balance details"
               >
@@ -202,30 +240,30 @@ export function DashboardExperience() {
             </div>
 
             <div>
-              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-black/55 text-nowrap whitespace-nowrap">
+              <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-white/48 text-nowrap whitespace-nowrap flex justify-end">
                 {walletAddress
                   ? totalPendingUsd > 0
-                    ? <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" />  <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div></div>
-                    : <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" /> <div className="mt-1 text-end text-sm font-semibold">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div> </div>
+                    ? <div className="flex items-center gap-1.5 whitespace-nowrap text-[#8fffe0]"><WalletIcon size={16} className="opacity-90" />  <div className="mt-1 text-end text-sm font-semibold text-white/42">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div></div>
+                    : <div className="flex items-center gap-1.5 whitespace-nowrap text-[#8fffe0]"><WalletIcon size={16} className="opacity-90" /> <div className="mt-1 text-end text-sm font-semibold text-white/42">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div> </div>
                   : totalPendingUsd > 0
                     ? "Claimable escrow available"
-                    : <div className="flex items-center gap-1 whitespace-nowrap"><WalletIcon className="h-[1.05rem] w-[1.05rem]" /> not connected</div>}
+                    : <button type="button" onClick={() => void handleConnectWallet()} className="flex items-center gap-1.5 whitespace-nowrap text-[#8fffe0] text-sm py-1 button"><WalletIcon size={16} className="opacity-90" /> Connect</button>}
               </span>
 
-              <div className="mt-1 text-end text-sm font-semibold">{`@${user.handle}`}</div>
+              <div className="mt-1 text-end text-sm font-semibold text-[#76ffd8]">{`@${user.handle}`}</div>
             </div>
           </div>
 
           <div className="relative z-10 mt-8 flex items-end justify-between gap-4">
             <div>
-              <div className="text-[0.74rem] uppercase tracking-[0.16em] text-black/52">Holder</div>
+              <div className="text-[0.74rem] uppercase tracking-[0.16em] text-white/42">Holder</div>
               <div className="mt-1 whitespace-nowrap text-base font-semibold">{user.displayName}</div>
             </div>
 
             <div className="text-right">
               <div className="flex flex-wrap items-center justify-end gap-2.5">
                 {stats.map((stat) => (
-                  <article key={stat.label} className="flex w-fit items-center gap-2 rounded-full border border-white/8 bg-black/90 px-3 py-1.5">
+                  <article key={stat.label} className="flex w-fit items-center gap-2 rounded-full border border-white/8 bg-black/72 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <div className="text-[0.44rem] uppercase tracking-[0.16em] text-white/42">{stat.label}</div>
                     <div className="text-[0.6rem] font-semibold tracking-[-0.04em] text-white">{loading ? "--" : stat.value}</div>
                   </article>
@@ -237,7 +275,7 @@ export function DashboardExperience() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[76px] items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-white/5 px-4 py-3">
+          <div className="flex min-h-[76px] items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-[#111B1C]/5 px-4 py-3">
             <div className="space-y-2">
               <div className="h-2.5 w-20 rounded-full bg-white/8" />
               <div className="h-3.5 w-44 rounded-full bg-white/8" />
@@ -266,32 +304,32 @@ export function DashboardExperience() {
           </Link>
         ) : null}
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4 px-2">
           <Link href="/app/send" className="text-center">
-            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white/7 text-white">
-              <SendIcon className="h-[1.05rem] w-[1.05rem]" />
+            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-[16px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.08),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] text-white shadow-[0_10px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[#76ffd8]/34 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.11),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] button">
+              <SendIcon size={22} className="text-current" />
             </div>
-            <div className="text-sm font-semibold text-white">Send</div>
-          </Link>
-          <Link href="/app/receive" className="text-center">
-            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white/7 text-white">
-              <ReceiveIcon className="h-[1.05rem] w-[1.05rem]" />
-            </div>
-            <div className="text-sm font-semibold text-white">Receive</div>
+            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-white">Send</div>
           </Link>
           <Link href="/app/claim" className="text-center">
-            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white/7 text-white">
-              <ClaimIcon className="h-[1.05rem] w-[1.05rem]" />
+            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-[16px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.08),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] text-white shadow-[0_10px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[#76ffd8]/34 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.11),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] button">
+              <ClaimIcon size={22} className="text-current" />
             </div>
-            <div className="text-sm font-semibold text-white">Claim</div>
+            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-white">Claim</div>
+          </Link>
+          <Link href="/app/settings" className="text-center">
+            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-[16px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.08),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] text-white shadow-[0_10px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[#76ffd8]/34 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.11),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] button">
+              <SettingsIcon size={22} className="text-current" />
+            </div>
+            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-white">Settings</div>
           </Link>
         </div>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 px-3 py-4">
+        <section className="rounded-[28px] border border-[#76ffd8]/20 bg-[#111B1C]/5 px-3 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="mt-1 mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Recent activity</h2>
-              <p className="text-sm text-white/46">Transfers, claims, releases, and WhatsApp delivery status.</p>
+            <div className="flex flex-col text-xs sm:text-sm">
+              <h2 className="font-semibold tracking-[-0.04em] text-white">Recent activity</h2>
+              <p className="leading-5 text-white/50">Transfers, claims, releases, and WhatsApp delivery status.</p>
             </div>
           </div>
 
@@ -314,7 +352,7 @@ export function DashboardExperience() {
                 ))}
               </>
             ) : paymentHistory.length === 0 ? (
-              <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-white/46">No transfer activity yet.</div>
+              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-5 text-sm text-white/46">No transfer activity yet.</div>
             ) : (
               paymentHistory.slice(0, 10).map((payment) => (
                 <PaymentActivityCard
@@ -330,7 +368,7 @@ export function DashboardExperience() {
           {!loading ? (
             <Link
               href="/app/activity"
-              className="mt-4 block w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-center text-sm font-medium text-white/76 transition hover:bg-white/[0.05]"
+              className="mt-4 block w-full rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3 text-center text-sm font-medium text-white/80 transition hover:bg-white/[0.05]"
             >
               View all activity
             </Link>
@@ -341,7 +379,7 @@ export function DashboardExperience() {
       {balanceInfoOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -391,7 +429,18 @@ export function DashboardExperience() {
           </div>
         </div>
       ) : null}
+
+      <WalletPickerModal
+        open={walletPickerOpen}
+        wallets={availableWallets}
+        connectingWalletId={connectingWalletId}
+        onClose={() => {
+          if (!connectingWalletId) {
+            setWalletPickerOpen(false);
+          }
+        }}
+        onSelect={(walletId) => void handleWalletSelect(walletId)}
+      />
     </AppMobileShell>
   );
 }
-

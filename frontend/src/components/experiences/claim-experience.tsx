@@ -280,11 +280,11 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         ) : null}
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
             <SectionLoader size="md" label="Loading claim details..." />
           </section>
         ) : claimSuccess && payment ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Claim successful</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -339,7 +339,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
           </section>
         ) : payment ? (
           <>
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
               <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Incoming payment</div>
               <div className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
                 {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
@@ -399,7 +399,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Receiver wallet</h2>
@@ -460,7 +460,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             </section>
           </>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4 text-sm text-white/48">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4 text-sm text-white/48">
             Claim details are unavailable right now.
           </section>
         )}
@@ -469,7 +469,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       {walletModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
@@ -490,9 +490,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                       setSelectedWalletId(wallet.id);
                       setWalletModalOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${
-                      active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
+                      }`}
                   >
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-white">{wallet.wallet_name}</span>

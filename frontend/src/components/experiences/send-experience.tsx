@@ -587,7 +587,7 @@ export function SendExperience() {
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
         {sendSuccess ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -698,7 +698,7 @@ export function SendExperience() {
             </div>
           </section>
         ) : (
-          <div className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+          <div className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/42">Sender wallet</div>
@@ -755,10 +755,10 @@ export function SendExperience() {
               ) : recipientPreview ? (
                 <div
                   className={`rounded-[20px] border px-4 py-3 ${recipientPreview.status === "registered"
-                      ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
-                      : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
-                        ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
-                        : "border-white/10 bg-black/20"
+                    ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
+                    : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
+                      ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
+                      : "border-white/10 bg-black/20"
                     }`}
                 >
                   {recipientPreview.status === "registered" ? (
@@ -860,7 +860,7 @@ export function SendExperience() {
       {tokenPickerOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
@@ -915,7 +915,7 @@ export function SendExperience() {
       {confirmOpen && recipientPreview?.verified && selectedToken ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setConfirmOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">

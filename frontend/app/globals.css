@@ -1,16 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #07111f;
-  --bg-elevated: #0d1829;
+  --bg: #111b1c;
+  --bg-elevated: #0d0e15;
   --panel: #101d31;
   --panel-soft: #13233a;
   --surface: rgba(15, 29, 49, 0.94);
   --surface-border: rgba(132, 163, 204, 0.18);
   --text: #eef5ff;
   --muted: #8ea2bf;
-  --accent: #58f2b1;
+  --accent: #a4f3dc;
   --accent-deep: #14b97a;
+  --primary-accent: #5cd2eb;
   --warning: #f3c96b;
   --danger: #ff7f7f;
   --shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
@@ -151,17 +152,18 @@ select {
 }
 
 .button {
-  /* border: 1px solid transparent; */
-  border-radius: 12px;
-  padding: 0.66rem 0.84rem;
+  position: relative;
+  color: white;
+  /* border: none; */
+  overflow: hidden;
   cursor: pointer;
   white-space: nowrap;
   transition:
     transform 140ms ease,
     opacity 140ms ease,
-    background 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease;
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .button--compact {
@@ -169,12 +171,41 @@ select {
   font-size: 0.82rem;
 }
 
-.button:hover {
-  transform: translateY(-2px);
+.button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: blur(0px);
+  background: rgba(255, 255, 255, 0);
+  opacity: 0;
+  transition:
+    opacity 180ms ease,
+    background 180ms ease,
+    backdrop-filter 180ms ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.button:hover::after {
+  opacity: 1;
+  backdrop-filter: blur(0.5px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.button > * {
+  position: relative;
+  z-index: 2;
 }
 
 .button:active {
   animation: buttonPress 200ms ease;
+}
+
+/* Ensure text stays on top of the blur */
+.button span {
+  position: relative;
+  z-index: 2;
 }
 
 .button:disabled {
@@ -417,23 +448,47 @@ select {
 .auth-layout {
   display: grid;
   grid-template-columns: 0.95fr 1.05fr;
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 .auth-panel {
-  border-radius: 22px;
-  padding: 1.5rem;
+  position: relative;
+  border-radius: 28px;
+  padding: 1.65rem;
 }
 
 .auth-panel--lead {
   background:
-    linear-gradient(180deg, rgba(11, 24, 40, 0.96), rgba(8, 18, 31, 0.96)),
+    radial-gradient(
+      circle at 20% 18%,
+      rgba(88, 242, 177, 0.12),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 82% 14%,
+      rgba(255, 255, 255, 0.06),
+      transparent 18%
+    ),
+    linear-gradient(180deg, rgba(10, 15, 22, 0.98), rgba(7, 13, 20, 0.98)),
     var(--surface);
 }
 
 .auth-panel--form {
   display: grid;
   gap: 1rem;
+}
+
+.auth-panel--lead::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14),
+    transparent
+  );
 }
 
 .auth-switch {
@@ -460,18 +515,27 @@ select {
 }
 
 .auth-points {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.95rem;
   height: fit-content;
 }
 
 .auth-points div {
-  padding: 1rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(132, 163, 204, 0.12);
+  padding: 1.1rem 1rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(88, 242, 177, 0.06),
+      transparent 42%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.025)
+    );
+  border: 1px solid rgba(132, 163, 204, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .auth-points strong,
@@ -479,6 +543,7 @@ select {
   display: block;
   margin: 0;
   font-size: 1.05rem;
+  letter-spacing: -0.02em;
 }
 
 .auth-points span,
@@ -494,7 +559,7 @@ select {
 
 .stack-form {
   display: grid;
-  gap: 0.95rem;
+  gap: 1rem;
 }
 
 .field-block {
@@ -529,6 +594,7 @@ select {
   padding: 0.95rem 1rem;
   border: 1px solid rgba(132, 163, 204, 0.14);
   background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .notice--success {

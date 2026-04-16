@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "// Dev Commands": "--------------------Dev Commands-------------------",
+    "dev:run:frontend": "cd frontend && npm run dev",
+    "dev:run:backend": "cd backend && npm run dev",
+    "dev:run:all": "echo \"Run each command in a separate terminal:\" && echo \"Terminal 1: npm run dev:run:backend\" && echo \"Terminal 2: npm run dev:run:frontend\"",
     "// Git Commands": "--------------------Git Commands-------------------",
     "git-commit-push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
     "git-commit-push-force": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force",

@@ -212,12 +212,12 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
         ) : null}
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
             <SectionLoader size="md" label="Loading transaction details..." />
           </section>
         ) : detail ? (
           <>
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
@@ -283,7 +283,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             </section>
 
             {detail.viewerRole === "sender" && detail.receiver.manualInviteRequired && detail.receiver.inviteShare ? (
-              <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+              <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Share invite again</h2>
                   <p className="text-sm text-white/48">
@@ -319,7 +319,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </section>
             ) : null}
 
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Trace details</h2>
                 <p className="text-sm text-white/48">
@@ -416,7 +416,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Timeline</h2>
                 <p className="text-sm text-white/48">A simple view of where the payment stands right now.</p>
@@ -439,7 +439,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-white/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
               <div className="mb-3">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Privacy</h2>
                 <p className="text-sm text-white/48">Trust cues without overexposing anyone's personal details.</p>
@@ -477,7 +477,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             </div>
           </>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4 text-sm text-white/48">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4 text-sm text-white/48">
             Transaction details are unavailable right now.
           </section>
         )}

@@ -37,12 +37,11 @@ export function PaymentActivityCard({
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/25 px-3 py-3 text-left transition hover:border-white/12 hover:bg-black/35"
+      className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] px-0 py-3 text-left transition hover:border-white/12 hover:bg-black/35"
     >
       <div
-        className={`grid h-12 w-12 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] ${
-          isSend ? "bg-[#16283a] text-[#99cfff]" : "bg-[#0f261d] text-[#79ffcf]"
-        }`}
+        className={`grid h-8 w-8 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] border-b border-[#76ffd8]/60 ${isSend ? "text-[#99cfff]" : "text-[#79ffcf]"
+          }`}
       >
         {isSend ? <SendIcon className="h-4.5 w-4.5" /> : <ReceiveIcon className="h-4.5 w-4.5" />}
       </div>
@@ -51,9 +50,9 @@ export function PaymentActivityCard({
         <div className="whitespace-nowrap text-[0.76rem] font-semibold text-white">
           {counterparty} - {payment.reference_code}
         </div>
-        <div className="truncate text-[0.7rem] text-white/50">
-          {formatTokenAmount(payment.amount)} {payment.token_symbol}
-        </div>
+        {/* <div className="truncate text-[0.7rem] text-white/50">
+          {formatPaymentUsd(payment.amount_usd)}
+        </div> */}
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.72rem]">
           <span className="text-white/34">{formatPaymentShortDate(payment.created_at)}</span>
           {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}
@@ -61,7 +60,7 @@ export function PaymentActivityCard({
       </div>
 
       <div className="grid h-full justify-items-end gap-2">
-        <span className="text-[0.72rem] text-white/46">{formatPaymentUsd(payment.amount_usd)}</span>
+        <span className="text-[0.72rem] text-white/46">{formatTokenAmount(payment.amount)} {payment.token_symbol}</span>
         <span className={`h-fit rounded-full px-2.5 py-1 text-[0.7rem] font-medium capitalize ${statusTone(payment.status)}`}>
           {payment.status}
         </span>

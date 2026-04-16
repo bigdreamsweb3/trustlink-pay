@@ -269,8 +269,8 @@ export function AuthExperience({
       }
 
       setFlowState("waiting_opt_in");
-      setWaitingMessage("Send the pre-filled START TRUSTLINK message in WhatsApp. TrustLink will wait here and open OTP automatically when your code is ready.");
-      showToast("Open WhatsApp and send START TRUSTLINK.");
+      setWaitingMessage("Send START TRUSTLINK to TrustLink’s business number on WhatsApp. If the automatic WhatsApp handoff does not open on your device, open WhatsApp manually and send the message yourself.");
+      showToast("Send START TRUSTLINK to TrustLink on WhatsApp.");
     } catch (startError) {
       const nextError = startError instanceof Error ? startError.message : "Could not start authentication";
       setError(nextError);
@@ -378,8 +378,8 @@ export function AuthExperience({
           <span className="hero-kicker">Access your transfer desk</span>
           <h1>Use your WhatsApp number to continue.</h1>
           <p>
-            TrustLink now starts every sign-in and sign-up with one WhatsApp number. If the number has already opted in,
-            TrustLink sends the OTP immediately. If not, you will send a WhatsApp message first and TrustLink will wait for the reply before sending the code.
+            TrustLink starts every sign-in and sign-up with one WhatsApp number. If your number has already opted in,
+            TrustLink sends the OTP immediately. If not, send <strong>START TRUSTLINK</strong> to TrustLink’s business number on WhatsApp and we will continue from there.
           </p>
 
           <div className="auth-panel--form">
@@ -414,7 +414,7 @@ export function AuthExperience({
               />
 
               <button
-                className="button button--primary"
+                className="button w-full rounded-[20px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.16),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] px-4 py-3 text-sm font-semibold tracking-[-0.02em] text-white shadow-[0_12px_28px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:border-[#76ffd8]/36 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.2),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.035)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 disabled={busy || flowState === "waiting_opt_in" || (!phoneVerified && !phoneCheckSkipped)}
                 onClick={() => void startFlow()}
@@ -431,13 +431,13 @@ export function AuthExperience({
             <span>Your WhatsApp number decides whether TrustLink continues as sign-in or first-time setup.</span>
           </div>
           <div className="h-fit">
-            <strong>User-initiated messaging</strong>
-            <span>TrustLink only sends the first WhatsApp code after you send the START TRUSTLINK message yourself.</span>
+            <strong>Send START TRUSTLINK</strong>
+            <span>If automatic WhatsApp opening fails on your device, open WhatsApp manually and send START TRUSTLINK to TrustLink’s business number.</span>
           </div>
-          {/* <div>
-            <strong></strong>
-            <span></span>
-          </div> */}
+          <div className="h-fit">
+            <strong>OTP follows automatically</strong>
+            <span>Once TrustLink receives your WhatsApp opt-in, the verification code is prepared and the sign-in flow continues here.</span>
+          </div>
         </section>
       </section>
 

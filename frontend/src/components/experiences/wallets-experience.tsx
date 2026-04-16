@@ -11,13 +11,17 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { apiDelete, apiGet, apiPost } from "@/src/lib/api";
 import {
-  connectSolanaWallet,
-  disconnectSolanaWallet,
   getConnectedWalletSession,
-  listAvailableSolanaWallets,
   type ConnectedWalletSession,
   type DetectedWallet,
 } from "@/src/lib/wallet";
+import {
+  connectTrustLinkWallet,
+  disconnectTrustLinkWallet,
+  getWalletConnectionErrorMessage,
+  getWalletDisconnectionErrorMessage,
+  getWalletsForConnection,
+} from "@/src/lib/wallet-actions";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import type { ReceiverWallet } from "@/src/lib/types";
 
@@ -61,7 +65,11 @@ export function WalletsExperience() {
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
-    setAvailableWallets(listAvailableSolanaWallets());
+    try {
+      setAvailableWallets(getWalletsForConnection());
+    } catch {
+      setAvailableWallets([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -113,17 +121,16 @@ export function WalletsExperience() {
 
   async function handleConnectWallet() {
     setError(null);
-    const wallets = listAvailableSolanaWallets();
-    setAvailableWallets(wallets);
 
-    if (wallets.length === 0) {
-      const nextError = "Install or open a Solana wallet on this device to connect a sender wallet.";
+    try {
+      const wallets = getWalletsForConnection();
+      setAvailableWallets(wallets);
+      setWalletPickerOpen(true);
+    } catch (walletError) {
+      const nextError = getWalletConnectionErrorMessage(walletError);
       setError(nextError);
       showToast("No Solana wallet detected on this browser.");
-      return;
     }
-
-    setWalletPickerOpen(true);
   }
 
   async function handleWalletSelect(walletId: string) {
@@ -131,23 +138,27 @@ export function WalletsExperience() {
     setError(null);
 
     try {
-      const session = await connectSolanaWallet(walletId);
+      const session = await connectTrustLinkWallet(walletId);
       setWalletSession(session);
       setWalletPickerOpen(false);
       setNotice(`${session.walletName} connected.`);
       showToast(`${session.walletName} connected successfully.`);
     } catch (connectError) {
-      setError(connectError instanceof Error ? connectError.message : "Could not connect wallet");
+      setError(getWalletConnectionErrorMessage(connectError));
     } finally {
       setConnectingWalletId(null);
     }
   }
 
   async function handleDisconnectWallet() {
-    await disconnectSolanaWallet();
-    setWalletSession(null);
-    setNotice("Wallet disconnected.");
-    showToast("Wallet disconnected.");
+    try {
+      await disconnectTrustLinkWallet();
+      setWalletSession(null);
+      setNotice("Wallet disconnected.");
+      showToast("Wallet disconnected.");
+    } catch (disconnectError) {
+      setError(getWalletDisconnectionErrorMessage(disconnectError));
+    }
   }
 
   async function handleStartWalletOtp(event: FormEvent<HTMLFormElement>) {
@@ -252,7 +263,7 @@ export function WalletsExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Sender wallet</h2>
             <p className="text-sm text-white/48">This is the wallet TrustLink uses as the payment source when you send into escrow.</p>
@@ -281,7 +292,7 @@ export function WalletsExperience() {
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Receiver wallets</h2>
@@ -299,11 +310,11 @@ export function WalletsExperience() {
         </section>
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
             <SectionLoader label="Loading wallets..." />
           </section>
         ) : receiverWallets.length > 0 ? (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
             <div className="space-y-3">
               {receiverWallets.map((wallet) => (
                 <article key={wallet.id} className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
@@ -338,7 +349,7 @@ export function WalletsExperience() {
             </div>
           </section>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-white/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
             <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-6 text-center">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-white/74">
                 <WalletIcon className="h-5 w-5" />
@@ -365,7 +376,7 @@ export function WalletsExperience() {
       {walletModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#0b1017] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
@@ -424,7 +435,7 @@ export function WalletsExperience() {
           setWalletOtp(nextValue.replace(/[^\d]/g, "").slice(0, 6));
         }}
         onClose={() => !busy && setOtpModalOpen(false)}
-        onResend={() => void handleStartWalletOtp({ preventDefault() {} } as FormEvent<HTMLFormElement>)}
+        onResend={() => void handleStartWalletOtp({ preventDefault() { } } as FormEvent<HTMLFormElement>)}
         resendLabel={otpBusy ? "Sending..." : "Resend OTP"}
         resendDisabled={otpBusy}
         countdown={otpCooldown}

@@ -327,9 +327,9 @@ export function DashboardExperience() {
 
         <section className="rounded-[28px] border border-[#76ffd8]/20 bg-[#111B1C]/5 px-3 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="mt-1 mb-3 flex items-center justify-between gap-3">
-            <div className="flex flex-col text-xs sm:text-sm">
-              <h2 className="font-semibold tracking-[-0.04em] text-white">Recent activity</h2>
-              <p className="leading-5 text-white/50">Transfers, claims, releases, and WhatsApp delivery status.</p>
+            <div className="flex flex-col">
+              <h2 className="font-semibold text-sm sm:text-base tracking-[-0.016em] text-white">Recent activity</h2>
+              <p className="leading-5 text-xs sm:text-sm text-white/50">Transfers, claims, releases, and WhatsApp delivery status.</p>
             </div>
           </div>
 

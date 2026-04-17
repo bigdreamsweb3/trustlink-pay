@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ngrok:https": "npx ngrok http 3001"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
-import { getConnectedWalletAddress, type DetectedWallet } from "@/src/lib/wallet";
-import { connectTrustLinkWallet, getWalletConnectionErrorMessage, getWalletsForConnection } from "@/src/lib/wallet-actions";
-import { useToast } from "../toast-provider";
-
+import { useWallet } from "@/src/lib/wallet-provider";
 
 type AppTab = "home" | "send" | "receive" | "claim" | "wallets" | "profile" | "settings";
 
@@ -66,29 +63,7 @@ export function AppMobileShell({
   backHref = "/app"
 }: AppMobileShellProps) {
   const router = useRouter();
-
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
-  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
-  const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
-
-  const { showToast } = useToast();
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleConnectWallet() {
-    setError(null);
-
-    try {
-      const wallets = getWalletsForConnection();
-      setAvailableWallets(wallets);
-      setWalletPickerOpen(true);
-    } catch (walletError) {
-      const nextError = getWalletConnectionErrorMessage(walletError);
-      setError(nextError);
-      showToast("No Solana wallet detected on this browser.");
-    }
-  }
+  const { walletAddress, requestWalletConnection } = useWallet();
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -153,9 +128,8 @@ export function AppMobileShell({
         <div className="mx-auto w-full md:max-w-[430px]">
           <div className="tl-phone-frame min-h-screen overflow-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px]">
             <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-3 md:min-h-[calc(100vh-3rem)]">
-
               <div className="min-w-0 mb-6">
-                <div className="mb-3 flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex items-center gap-2">
                       {showBackButton ? (
@@ -172,53 +146,63 @@ export function AppMobileShell({
 
                       <TrustLinkMark />
                     </div>
-
-                    {/* <div className="flex items-center gap-2">
-                      <span className="tl-text-muted text-[0.68rem] uppercase tracking-[0.22em]">TrustLink</span>
-                      <span className="tl-text-muted">/</span>
-                      <span className="text-[0.8rem] font-semibold tracking-[0.01em] text-accent-deep dark:text-accent">
-                        {title}
-                      </span>
-                    </div> */}
-                    <p className="tl-text-soft mt-2 max-w-[17.75rem] text-[0.8rem] leading-5 tracking-[0.01em] opacity-88">
-                      {subtitle}
-                    </p>
-
-                    <div className="tl-coord-text mt-2.5 flex items-center justify-between gap-2">
-
-
-                      <div className="flex items-center gap-2">
-                        <span>Sector </span>
-                        <span className="opacity-45">::</span>
-                        <span>{currentTab.toUpperCase()}</span>
-                      </div>
-
-
-
-                    </div>
+                    <h1 className="sr-only">
+                      {title}
+                    </h1>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-text/48 text-nowrap whitespace-nowrap flex justify-end">
-                      {walletAddress
-                        ? totalPendingUsd > 0
-                          ? <div className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button"><WalletIcon size={16} className="opacity-90" />  <div className="mt-1 text-end text-sm font-semibold text-muted">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div></div>
-                          : <div className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button"><WalletIcon size={16} className="opacity-90" /> <div className="mt-1 text-end text-sm font-semibold text-muted">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div> </div>
-                        : totalPendingUsd > 0
-                          ? "Claimable escrow available"
-                          : <button type="button" onClick={() => void handleConnectWallet()} className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button text-sm py-1 button"><WalletIcon size={16} className="opacity-90" /> Connect</button>}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={requestWalletConnection}
+                      className="tl-field flex h-10 items-center gap-1.5 rounded-full px-3 transition hover:bg-surface-soft button"
+                      aria-label={walletAddress ? "Manage wallet connection" : "Connect wallet"}
+                    >
+                      <WalletIcon size={15} className="text-current" />
+                      <span className="tl-coord-text !text-[0.56rem] leading-none">
+                        {walletAddress ? shortenAddress(walletAddress) : "Connect"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/app/settings")}
+                      className="tl-field grid h-10 w-10 place-items-center rounded-full transition hover:bg-surface-soft button"
+                      aria-label="Open settings"
+                    >
+                      <span className="grid h-5 w-5 place-items-center">
+                        <SettingsIcon size={16} className="text-current" />
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => router.push("/app/profile")}
-                      className="tl-field grid h-12 w-12 place-items-center rounded-full text-left transition hover:bg-surface-soft"
+                      className="tl-field grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
+                      aria-label="Open profile"
                     >
-                      <span className="grid h-12 w-12 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-sm font-bold text-accent-deep dark:text-accent button">
+                      <span className="grid h-10 w-10 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.72rem] font-bold text-accent-deep dark:text-accent">
                         {initialsFor(user.displayName)}
                       </span>
                     </button>
                   </div>
                 </div>
+
+                <div className="tl-coord-text mt-1 flex w-full items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="opacity-58">Sector</span>
+                    <span className="opacity-40">//</span>
+                    <span className="truncate">{currentTab.toUpperCase()}</span>
+                  </div>
+
+                  <div className="flex min-w-0 items-center justify-end gap-1.5 text-right">
+                    {/* <span className="opacity-40">::</span> */}
+                    <span className="truncate">@{user.handle}</span>
+                  </div>
+                </div>
+
+
+                <p className="tl-text-soft mt-2 max-w-[17.75rem] text-[0.8rem] leading-5 tracking-[0.01em] opacity-88">
+                  {subtitle}
+                </p>
               </div>
 
               {children}

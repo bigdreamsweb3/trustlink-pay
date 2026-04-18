@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
-import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, ReceiveIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, SettingsIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
@@ -16,8 +15,7 @@ import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
 import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { getConnectedWalletAddress, type DetectedWallet } from "@/src/lib/wallet";
-import { connectTrustLinkWallet, getWalletConnectionErrorMessage, getWalletsForConnection } from "@/src/lib/wallet-actions";
+import { getConnectedWalletAddress } from "@/src/lib/wallet";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
@@ -37,9 +35,6 @@ export function DashboardExperience() {
   const { showToast } = useToast();
   const router = useRouter();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
-  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -58,36 +53,6 @@ export function DashboardExperience() {
   useEffect(() => {
     setWalletAddress(getConnectedWalletAddress());
   }, []);
-
-  async function handleConnectWallet() {
-    setError(null);
-
-    try {
-      const wallets = getWalletsForConnection();
-      setAvailableWallets(wallets);
-      setWalletPickerOpen(true);
-    } catch (walletError) {
-      const nextError = getWalletConnectionErrorMessage(walletError);
-      setError(nextError);
-      showToast("No Solana wallet detected on this browser.");
-    }
-  }
-
-  async function handleWalletSelect(walletId: string) {
-    setConnectingWalletId(walletId);
-    setError(null);
-
-    try {
-      const session = await connectTrustLinkWallet(walletId);
-      setWalletAddress(session.address);
-      setWalletPickerOpen(false);
-      showToast(`${session.walletName} connected successfully.`);
-    } catch (connectError) {
-      setError(getWalletConnectionErrorMessage(connectError));
-    } finally {
-      setConnectingWalletId(null);
-    }
-  }
 
   useEffect(() => {
     if (!walletAddress) {
@@ -200,6 +165,20 @@ export function DashboardExperience() {
     return null;
   }
 
+  const userPhoneNumber = user.phoneNumber;
+
+  async function handleCopyPhoneNumber() {
+    if (!navigator.clipboard?.writeText) {
+      const nextError = "Copy is not available on this device.";
+      setError(nextError);
+      showToast(nextError);
+      return;
+    }
+
+    await navigator.clipboard.writeText(userPhoneNumber);
+    showToast("TrustLink number copied.");
+  }
+
   return (
     <AppMobileShell
       currentTab="home"
@@ -225,7 +204,7 @@ export function DashboardExperience() {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  className="tl-balance-inset flex h-11 min-w-[114px] place-items-center items-center justify-between gap-2 rounded-2xl border border-white/8 bg-accent-deep/48 px-3 text-primary"
+                  className="tl-balance-inset flex h-11 min-w-28.5 place-items-center items-center justify-between gap-2 rounded-2xl border border-white/8 bg-accent-deep/48 px-3 text-primary"
                   onClick={() => setBalanceVisible((current) => !current)}
                 >
                   {walletTokenLoading ? (
@@ -243,7 +222,7 @@ export function DashboardExperience() {
                 <button
                   type="button"
                   onClick={() => setBalanceInfoOpen(true)}
-                  className="grid h-11 w-11 place-items-center rounded-2xl border border-primary-accent/42  bg-pop-bg text-text/40 transition button"
+                  className="grid h-9 w-9 place-items-center rounded-2xl bg-pop-bg text-text/40 transition button"
                   aria-label="Show balance details"
                   title="Show balance details"
                 >
@@ -251,18 +230,21 @@ export function DashboardExperience() {
                 </button>
               </div>
 
-              <div>
-                <span className="text-[0.76rem] font-medium uppercase tracking-[0.16em] text-text/48 text-nowrap whitespace-nowrap flex justify-end">
-                  {walletAddress
-                    ? totalPendingUsd > 0
-                      ? <div className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button"><WalletIcon size={16} className="opacity-90" />  <div className="mt-1 text-end text-sm font-semibold text-muted">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div></div>
-                      : <div className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button"><WalletIcon size={16} className="opacity-90" /> <div className="mt-1 text-end text-sm font-semibold text-muted">{walletAddress ? shortenAddress(walletAddress) : `loading...`}</div> </div>
-                    : totalPendingUsd > 0
-                      ? "Claimable escrow available"
-                      : <button type="button" onClick={() => void handleConnectWallet()} className="flex items-center gap-1.5 whitespace-nowrap text-accent-deep dark:text-accent button text-sm py-1 button"><WalletIcon size={16} className="opacity-90" /> Connect</button>}
-                </span>
-
-                <div className="mt-1 text-end text-sm font-semibold tl-text-soft">{`@${user.handle}`}</div>
+              <div className="text-right">
+                <div className="text-[0.64rem] font-medium uppercase tracking-[0.16em] text-text/42">TL.Number</div>
+                <div className="mt-1 flex items-center justify-end gap-1.5">
+                  <div className="text-xs font-semibold text-text/82">{userPhoneNumber}</div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyPhoneNumber()}
+                    className="grid h-7 w-7 place-items-center rounded-full border border-white/8 bg-white/4 text-text/52 transition button"
+                    aria-label={`Copy ${userPhoneNumber}`}
+                    title="Copy TrustLink number"
+                  >
+                    <CopyIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {/* <div className="mt-1 text-end text-sm font-semibold tl-text-soft">{`@${user.handle}`}</div> */}
               </div>
             </div>
 
@@ -456,18 +438,6 @@ export function DashboardExperience() {
           </div>
         </div>
       ) : null}
-
-      <WalletPickerModal
-        open={walletPickerOpen}
-        wallets={availableWallets}
-        connectingWalletId={connectingWalletId}
-        onClose={() => {
-          if (!connectingWalletId) {
-            setWalletPickerOpen(false);
-          }
-        }}
-        onSelect={(walletId) => void handleWalletSelect(walletId)}
-      />
     </AppMobileShell>
   );
 }

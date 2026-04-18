@@ -260,49 +260,49 @@ export function WalletsExperience() {
       }
     >
       <section className="space-y-5">
-        {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {notice ? <div className="tl-badge rounded-[22px] px-4 py-3 text-sm">{notice}</div> : null}
+        {error ? <div className="tl-button-danger rounded-[22px] px-4 py-3 text-sm">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="tl-panel rounded-[28px] p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Sender wallet</h2>
-            <p className="text-sm text-white/48">This is the wallet TrustLink uses as the payment source when you send into escrow.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Sender wallet</h2>
+            <p className="tl-text-muted text-sm">This is the wallet TrustLink uses as the payment source when you send into escrow.</p>
           </div>
 
-          <div className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
-            <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Current wallet</div>
-            <div className="mt-2 text-base font-semibold text-white">
+          <div className="tl-field rounded-[22px] px-4 py-4">
+            <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Current wallet</div>
+            <div className="mt-2 text-base font-semibold text-[var(--text)]">
               {senderWalletAddress ? `${walletSession?.walletName ?? "Wallet"} - ${shortenAddress(senderWalletAddress)}` : "No wallet connected"}
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             {senderWalletAddress ? (
-              <button type="button" onClick={() => void handleDisconnectWallet()} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+              <button type="button" onClick={() => void handleDisconnectWallet()} className="tl-button-secondary rounded-[20px] px-4 py-3 text-sm font-medium">
                 Disconnect
               </button>
             ) : (
-              <button type="button" onClick={() => void handleConnectWallet()} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]">
+              <button type="button" onClick={() => void handleConnectWallet()} className="tl-button-primary rounded-[20px] px-4 py-3 text-sm font-semibold">
                 Connect wallet
               </button>
             )}
-            <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-sm text-white/52">
+            <div className="tl-field rounded-[20px] px-4 py-3 text-sm tl-text-muted">
               Solana wallets only
             </div>
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="tl-panel rounded-[28px] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Receiver wallets</h2>
-              <p className="text-sm text-white/48">Manage the payout wallets used during claim flow.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Receiver wallets</h2>
+              <p className="tl-text-muted text-sm">Manage the payout wallets used during claim flow.</p>
             </div>
             <button
               type="button"
               aria-label="Add receiver wallet"
               onClick={() => setWalletModalOpen(true)}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] text-[#04110a] shadow-[0_12px_30px_rgba(88,242,177,0.16)]"
+              className="tl-button-primary grid h-11 w-11 shrink-0 place-items-center rounded-full"
             >
               <PlusIcon className="h-4 w-4" />
             </button>
@@ -310,27 +310,27 @@ export function WalletsExperience() {
         </section>
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
             <SectionLoader label="Loading wallets..." />
           </section>
         ) : receiverWallets.length > 0 ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
             <div className="space-y-3">
               {receiverWallets.map((wallet) => (
                 <article key={wallet.id} className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-white">{wallet.wallet_name}</div>
-                      <div className="mt-1 text-[0.72rem] uppercase tracking-[0.18em] text-white/34">Receiver payout wallet</div>
+                      <div className="text-sm font-semibold text-text">{wallet.wallet_name}</div>
+                      <div className="mt-1 text-[0.72rem] uppercase tracking-[0.18em] text-text/34">Receiver payout wallet</div>
                     </div>
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-white/8 text-white/78">
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-pop-bg text-text/78">
                       <WalletIcon className="h-4 w-4" />
                     </span>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/6 bg-white/[0.03] px-3 py-3">
-                    <span className="text-sm text-white/66">{shortenAddress(wallet.wallet_address)}</span>
-                    <span className="text-[0.72rem] text-white/34">{formatShortDate(wallet.created_at)}</span>
+                    <span className="text-sm text-text/66">{shortenAddress(wallet.wallet_address)}</span>
+                    <span className="text-[0.72rem] text-text/34">{formatShortDate(wallet.created_at)}</span>
                   </div>
 
                   <div className="mt-3 flex justify-end">
@@ -349,13 +349,13 @@ export function WalletsExperience() {
             </div>
           </section>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
             <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-6 text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/8 text-white/74">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-pop-bg text-text/74">
                 <WalletIcon className="h-5 w-5" />
               </div>
-              <div className="mt-4 text-sm font-semibold text-white">No receiver wallet saved yet</div>
-              <p className="mt-2 text-sm leading-6 text-white/46">Add a payout wallet here so future claims are easier to review and release.</p>
+              <div className="mt-4 text-sm font-semibold text-text">No receiver wallet saved yet</div>
+              <p className="mt-2 text-sm leading-6 text-text/46">Add a payout wallet here so future claims are easier to review and release.</p>
             </div>
           </section>
         )}
@@ -376,31 +376,31 @@ export function WalletsExperience() {
       {walletModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5   shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Add receiver wallet</h2>
-              <p className="text-sm text-white/48">Give the wallet a clear name so claim decisions stay easy and safe.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Add receiver wallet</h2>
+              <p className="text-sm text-text/48">Give the wallet a clear name so claim decisions stay easy and safe.</p>
             </div>
 
             <form className="space-y-4" onSubmit={handleStartWalletOtp}>
               <label className="block">
-                <span className="mb-2 block text-sm text-white/56">Wallet name</span>
+                <span className="mb-2 block text-sm text-text/56">Wallet name</span>
                 <input
                   value={form.walletName}
                   onChange={(event) => setForm((current) => ({ ...current, walletName: event.target.value }))}
                   placeholder="Primary Solana"
-                  className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-[#58f2b1]/35"
+                  className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-text outline-none transition focus:border-[#58f2b1]/35"
                 />
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm text-white/56">Wallet address</span>
+                <span className="mb-2 block text-sm text-text/56">Wallet address</span>
                 <input
                   value={form.walletAddress}
                   onChange={(event) => setForm((current) => ({ ...current, walletAddress: event.target.value }))}
                   placeholder="Destination public key"
-                  className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-[#58f2b1]/35"
+                  className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-text outline-none transition focus:border-[#58f2b1]/35"
                 />
               </label>
 
@@ -408,14 +408,14 @@ export function WalletsExperience() {
                 <button
                   type="button"
                   onClick={() => setWalletModalOpen(false)}
-                  className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-white/72"
+                  className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/72"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={otpBusy}
-                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]   shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {otpBusy ? "Sending code..." : "Verify with OTP"}
                 </button>

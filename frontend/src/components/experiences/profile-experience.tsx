@@ -78,52 +78,52 @@ export function ProfileExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Identity</h2>
-            <p className="text-sm text-white/48">This is the sender identity other people see when funds come from you.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Identity</h2>
+            <p className="text-sm text-text/48">This is the sender identity other people see when funds come from you.</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleProfileSave}>
             <label className="block">
-              <span className="mb-2 block text-sm text-white/56">Display name</span>
+              <span className="mb-2 block text-sm text-text/56">Display name</span>
               <input
                 value={form.displayName}
                 onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
                 placeholder="Daniel Trust"
-                className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-[#58f2b1]/35"
+                className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-text outline-none transition focus:border-[#58f2b1]/35"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-white/56">Handle</span>
+              <span className="mb-2 block text-sm text-text/56">Handle</span>
               <input
                 value={form.handle}
                 onChange={(event) => setForm((current) => ({ ...current, handle: event.target.value.toLowerCase() }))}
                 placeholder="daniel_trust"
-                className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-[#58f2b1]/35"
+                className="w-full rounded-[20px] border border-white/8 bg-black/20 px-4 py-3 text-text outline-none transition focus:border-[#58f2b1]/35"
               />
             </label>
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]  shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? "Saving..." : "Save profile"}
             </button>
           </form>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Wallets and settings</h2>
-            <p className="text-sm text-white/48">Wallet connections, payout wallets, currency preferences, and account controls now live in their own pages.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Wallets and settings</h2>
+            <p className="text-sm text-text/48">Wallet connections, payout wallets, currency preferences, and account controls now live in their own pages.</p>
           </div>
 
           <div className="grid gap-3">
-            <a href="/app/wallets" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+            <a href="/app/wallets" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
               Open Wallets
             </a>
-            <a href="/app/settings" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+            <a href="/app/settings" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
               Open Settings
             </a>
           </div>

@@ -143,7 +143,7 @@ export function ActivityExperience() {
                   }}
                   className={`rounded-full px-3 py-2 text-xs font-medium transition ${active
                     ? "bg-[#58f2b1]/12 text-[#7dffd9]"
-                    : "border border-white/10 bg-black/20 text-white/62"
+                    : "border border-white/10 bg-black/20 text-text/62"
                     }`}
                 >
                   {label}
@@ -156,7 +156,7 @@ export function ActivityExperience() {
             {loading ? (
               <>
                 {[0, 1, 2, 3].map((index) => (
-                  <div key={index} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/25 px-3 py-3">
+                  <div key={index} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-surface px-3 py-3">
                     <div className="h-12 w-12 rounded-[18px] bg-white/8" />
                     <div className="space-y-2">
                       <div className="h-3.5 w-24 rounded-full bg-white/8" />
@@ -171,7 +171,7 @@ export function ActivityExperience() {
                 ))}
               </>
             ) : visiblePayments.length === 0 ? (
-              <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-white/46">No activity for this filter yet.</div>
+              <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-text/46">No activity for this filter yet.</div>
             ) : (
               visiblePayments.map((payment) => (
                 <PaymentActivityCard
@@ -188,7 +188,7 @@ export function ActivityExperience() {
             <button
               type="button"
               onClick={() => setVisibleCount((current) => current + 10)}
-              className="mt-4 w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-white/76 transition hover:bg-white/[0.05]"
+              className="mt-4 w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-text/76 transition hover:bg-white/[0.05]"
             >
               Load more activity
             </button>

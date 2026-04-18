@@ -587,13 +587,13 @@ export function SendExperience() {
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
         {sendSuccess ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+          <section className="rounded-[28px] tl-panel p-4">
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
               {sendSuccess.amount} {sendSuccess.token}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-white/56">
+            <p className="mt-2 text-sm leading-6 text-text/56">
               {sendSuccess.manualInviteRequired
                 ? `TrustLink already secured the funds in escrow for ${sendSuccess.recipientName}. Because this number is not registered or not opted in for TrustLink messaging, you need to share the invite yourself.`
                 : sendSuccess.notificationRetrying
@@ -601,63 +601,63 @@ export function SendExperience() {
                   : `TrustLink sent the transfer details to ${sendSuccess.recipientName} on WhatsApp and moved the payment into escrow for claim.`}
             </p>
 
-            <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+            <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-pop-bg px-4 py-4">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Recipient</span>
-                <span className="text-right font-medium text-white">{sendSuccess.recipientName}</span>
+                <span className="text-text/46">Recipient</span>
+                <span className="text-right font-medium text-text">{sendSuccess.recipientName}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">WhatsApp</span>
-                <span className="font-medium text-white">{sendSuccess.receiverPhone}</span>
+                <span className="text-text/46">WhatsApp</span>
+                <span className="font-medium text-text">{sendSuccess.receiverPhone}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Reference</span>
-                <span className="font-medium text-white">{sendSuccess.referenceCode}</span>
+                <span className="text-text/46">Reference</span>
+                <span className="font-medium text-text">{sendSuccess.referenceCode}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Payment status</span>
-                <span className="font-medium capitalize text-white">{sendSuccess.status}</span>
+                <span className="text-text/46">Payment status</span>
+                <span className="font-medium capitalize text-text">{sendSuccess.status}</span>
               </div>
               {!sendSuccess.manualInviteRequired ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">WhatsApp receipt</span>
+                  <span className="text-text/46">WhatsApp receipt</span>
                   <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
                 </div>
               ) : null}
               {sendSuccess.manualInviteRequired ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Sender invite</span>
-                  <span className="font-medium text-white">Share manually</span>
+                  <span className="text-text/46">Sender invite</span>
+                  <span className="font-medium text-text">Share manually</span>
                 </div>
               ) : null}
               {sendSuccess.notificationRetrying ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Delivery retries</span>
-                  <span className="font-medium text-white">{sendSuccess.notificationAttemptCount}</span>
+                  <span className="text-text/46">Delivery retries</span>
+                  <span className="font-medium text-text">{sendSuccess.notificationAttemptCount}</span>
                 </div>
               ) : null}
               {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Receipt updated</span>
-                  <span className="font-medium text-white">{formatReceiptTime(receiptTimestamp)}</span>
+                  <span className="text-text/46">Receipt updated</span>
+                  <span className="font-medium text-text">{formatReceiptTime(receiptTimestamp)}</span>
                 </div>
               ) : null}
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">{sendSuccess.blockchainMode === "mock" ? "Mock reference" : "Deposit tx"}</span>
-                <span className="font-medium text-white">{shortenAddress(sendSuccess.blockchainSignature)}</span>
+                <span className="text-text/46">{sendSuccess.blockchainMode === "mock" ? "Mock reference" : "Deposit tx"}</span>
+                <span className="font-medium text-text">{shortenAddress(sendSuccess.blockchainSignature)}</span>
               </div>
             </div>
 
-            <div className="mt-3 text-[0.78rem] text-white/44">
+            <div className="mt-3 text-[0.78rem] text-text/44">
               {sendSuccess.blockchainMode === "mock"
                 ? "This payment was created in Solana mock mode, so the reference shown is not a real on-chain signature."
                 : "Delivery receipts refresh from TrustLink records only while the receipt is still unresolved."}
             </div>
 
             {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
-              <div className="mt-5 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Shareable invite</div>
-                <pre className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/72">
+              <div className="mt-5 rounded-[22px] border border-white/8 bg-pop-bg px-4 py-4">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Shareable invite</div>
+                <pre className="mt-3 whitespace-pre-wrap text-sm leading-6 text-text/72">
                   {sendSuccess.inviteShare.inviteMessage}
                 </pre>
                 <button
@@ -682,7 +682,7 @@ export function SendExperience() {
             ) : null}
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <Link href="/app" className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78">
+              <Link href="/app" className="rounded-[20px] border border-white/10 bg-pop-bg px-4 py-3 text-center text-sm font-medium text-text/78">
                 Back home
               </Link>
               <button
@@ -698,16 +698,16 @@ export function SendExperience() {
             </div>
           </section>
         ) : (
-          <div className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+          <div className="rounded-[28px] tl-panel p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/42">Sender wallet</div>
-                <div className="mt-1 text-base font-semibold text-white">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">Sender wallet</div>
+                <div className="mt-1 text-base font-semibold text-text">
                   {walletAddress ? `${walletSession?.walletName ?? "Wallet"} - ${shortenAddress(walletAddress)}` : "Not connected"}
                 </div>
               </div>
               {walletAddress ? (
-                <button type="button" onClick={() => void handleDisconnectWallet()} className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/78">
+                <button type="button" onClick={() => void handleDisconnectWallet()} className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-text/78">
                   Disconnect
                 </button>
               ) : (
@@ -745,7 +745,7 @@ export function SendExperience() {
               />
 
               {previewBusy ? (
-                <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3">
+                <div className="rounded-[20px] border border-white/8 bg-pop-bg px-4 py-3">
                   <SectionLoader label="Verifying recipient..." />
                 </div>
               ) : lookupError ? (
@@ -758,15 +758,15 @@ export function SendExperience() {
                     ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
                     : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
                       ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
-                      : "border-white/10 bg-black/20"
+                      : "border-white/10 bg-pop-bg"
                     }`}
                 >
                   {recipientPreview.status === "registered" ? (
                     <>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
-                          <div className="mt-1 text-[0.74rem] text-white/50">@{recipientPreview.recipient.handle}</div>
+                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.displayName}</div>
+                          <div className="mt-1 text-[0.74rem] text-text/50">@{recipientPreview.recipient.handle}</div>
                         </div>
                         <span className="rounded-full bg-[#58f2b1]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#7dffd9]">
                           On TrustLink
@@ -777,7 +777,7 @@ export function SendExperience() {
                     <>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.displayName}</div>
+                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.displayName}</div>
                           <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
                         </div>
                         <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
@@ -789,7 +789,7 @@ export function SendExperience() {
                     <>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-white">{recipientPreview.recipient.phoneNumber}</div>
+                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.phoneNumber}</div>
                           <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
                         </div>
                         <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
@@ -799,15 +799,15 @@ export function SendExperience() {
                     </>
                   ) : (
                     <>
-                      <div className="text-sm font-semibold text-white">Recipient could not be verified.</div>
+                      <div className="text-sm font-semibold text-text">Recipient could not be verified.</div>
                     </>
                   )}
                 </div>
               ) : null}
 
-              <div className="flex items-stretch rounded-[24px] border border-white/8 bg-black/20 transition-all focus-within:border-[#58f2b1]/40">
+              <div className="flex items-stretch rounded-[24px] border border-white/8 bg-pop-bg transition-all focus-within:border-[#58f2b1]/40">
                 <div className="flex flex-1 flex-col px-4 py-3">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-white/40">Amount</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-text/40">Amount</span>
                   <input
                     type="number"
                     step="any"
@@ -817,7 +817,7 @@ export function SendExperience() {
                       setSendCostEstimate(null);
                     }}
                     placeholder="0.00"
-                    className="w-full bg-transparent text-lg font-semibold text-white outline-none"
+                    className="w-full bg-transparent text-lg font-semibold text-text outline-none"
                   />
                 </div>
                 <div className="my-3 w-[1px] bg-white/10" />
@@ -828,19 +828,19 @@ export function SendExperience() {
                 >
                   {selectedToken ? (
                     <div className="flex flex-col overflow-hidden text-left">
-                      <span className="text-sm font-bold text-white">{selectedToken.symbol}</span>
-                      <span className="truncate text-[10px] text-white/40">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
+                      <span className="text-sm font-bold text-text">{selectedToken.symbol}</span>
+                      <span className="truncate text-[10px] text-text/40">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-white/40">Token</span>
+                    <span className="text-sm text-text/40">Token</span>
                   )}
-                  <span className="text-[10px] text-white/30">v</span>
+                  <span className="text-[10px] text-text/30">v</span>
                 </button>
               </div>
 
-              <div className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
-                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Flow</div>
-                <p className="mt-2 text-sm leading-6 text-white/60">
+              <div className="rounded-[22px] border border-white/6 bg-pop-bg px-4 py-4">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Flow</div>
+                <p className="mt-2 text-sm leading-6 text-text/60">
                   TrustLink verifies the recipient first, then sends the transfer into escrow while the receiver claims with OTP on WhatsApp.
                 </p>
               </div>
@@ -848,7 +848,7 @@ export function SendExperience() {
               <button
                 type="submit"
                 disabled={busy || estimateBusy || !canContinueWithRecipient}
-                className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]  shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {estimateBusy ? "Calculating network fee..." : "Review payment"}
               </button>
@@ -860,17 +860,17 @@ export function SendExperience() {
       {tokenPickerOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 tl-panel px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Choose token</h2>
-              <p className="text-sm text-white/48">Supported TrustLink tokens from your connected wallet.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Choose token</h2>
+              <p className="text-sm text-text/48">Supported TrustLink tokens from your connected wallet.</p>
             </div>
 
             <div className="space-y-3">
               {tokenBusy ? (
-                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="rounded-[22px] border border-white/8 bg-pop-bg px-4 py-4">
                   <SectionLoader size="md" label="Loading supported tokens..." />
                 </div>
               ) : (
@@ -886,22 +886,22 @@ export function SendExperience() {
                         setSendCostEstimate(null);
                         setTokenPickerOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"}`}
+                      className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-pop-bg"}`}
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <span className="grid h-11 w-11 place-items-center rounded-full bg-white/8 text-lg text-white">
+                        <span className="grid h-11 w-11 place-items-center rounded-full bg-pop-bg text-lg text-text">
                           {token.logo}
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-white">{token.symbol}</span>
-                          <span className="block text-[0.72rem] text-white/46">{token.name}</span>
+                          <span className="block text-sm font-semibold text-text">{token.symbol}</span>
+                          <span className="block text-[0.72rem] text-text/46">{token.name}</span>
                         </span>
                       </span>
                       <span className="text-right">
-                        <span className="block text-sm font-semibold text-white">
+                        <span className="block text-sm font-semibold text-text">
                           {formatTokenBalance(token.balance, token.symbol)}
                         </span>
-                        <span className="block text-[0.72rem] text-white/40">Available</span>
+                        <span className="block text-[0.72rem] text-text/40">Available</span>
                       </span>
                     </button>
                   );
@@ -915,18 +915,18 @@ export function SendExperience() {
       {confirmOpen && recipientPreview?.verified && selectedToken ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setConfirmOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Confirm transfer</h2>
-              <p className="text-sm text-white/48">Please verify the recipient before funds move into escrow.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Confirm transfer</h2>
+              <p className="text-sm text-text/48">Please verify the recipient before funds move into escrow.</p>
             </div>
 
-            <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+            <div className="space-y-3 rounded-[22px] border border-white/8 bg-pop-bg px-4 py-4">
               <div>
-                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">You are sending to</div>
-                <div className="mt-1 text-base font-semibold text-white">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">You are sending to</div>
+                <div className="mt-1 text-base font-semibold text-text">
                   {recipientPreview.recipient.displayName}
                   {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle
                     ? ` (@${recipientPreview.recipient.handle})`
@@ -936,26 +936,26 @@ export function SendExperience() {
                 </div>
                 {recipientPreview.recipient.whatsappProfileName &&
                   recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
-                  <div className="mt-1 text-sm text-white/48">
+                  <div className="mt-1 text-sm text-text/48">
                     WhatsApp profile: {recipientPreview.recipient.whatsappProfileName}
                   </div>
                 ) : null}
               </div>
               <div className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-3">
-                <span className="text-sm text-white/56">
+                <span className="text-sm text-text/56">
                   {form.amount} {selectedToken.symbol}
                 </span>
-                <span className="text-sm text-white/44">{form.receiverPhone}</span>
+                <span className="text-sm text-text/44">{form.receiverPhone}</span>
               </div>
               {sendCostEstimate ? (
                 <>
                   <div className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-3">
-                    <span className="text-sm text-white/56">Sender fee</span>
-                    <span className="text-sm text-white">
+                    <span className="text-sm text-text/56">Sender fee</span>
+                    <span className="text-sm text-text">
                       {sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-[0.72rem] text-white/44">
+                  <div className="grid grid-cols-2 gap-3 text-[0.72rem] text-text/44">
                     <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2">
                       Network fee: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
                     </div>
@@ -964,7 +964,7 @@ export function SendExperience() {
                     </div>
                   </div>
                   {sendCostEstimate.senderFeeAmountUsd != null ? (
-                    <div className="text-sm text-white/48">
+                    <div className="text-sm text-text/48">
                       Approx. ${sendCostEstimate.senderFeeAmountUsd.toFixed(4)} sender fee at the current market price.
                     </div>
                   ) : null}
@@ -976,7 +976,7 @@ export function SendExperience() {
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-white/72"
+                className="rounded-[20px] border border-white/10 bg-pop-bg px-4 py-3 text-sm font-medium text-text/72"
               >
                 Cancel
               </button>
@@ -984,7 +984,7 @@ export function SendExperience() {
                 type="button"
                 onClick={() => void handleConfirmSend()}
                 disabled={busy}
-                className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]  shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy ? "Sending..." : "Confirm send"}
               </button>

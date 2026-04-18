@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   opt_out_timestamp TIMESTAMPTZ,
   phone_verified_at TIMESTAMPTZ,
   identity_verified_at TIMESTAMPTZ,
+  last_login_at TIMESTAMPTZ,
+  last_login_ip VARCHAR(64),
   referred_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   referral_source_payment_id UUID,
   referred_at TIMESTAMPTZ,
@@ -143,6 +145,10 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS identity_verified_at TIMESTAMPTZ;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(64);
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS referred_by_user_id UUID;
 ALTER TABLE users

@@ -414,7 +414,7 @@ export function AuthExperience({
               />
 
               <button
-                className="button w-full rounded-[20px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.16),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] px-4 py-3 text-sm font-semibold tracking-[-0.02em] text-white shadow-[0_12px_28px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:border-[#76ffd8]/36 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.2),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.035)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="button w-full rounded-[20px] border border-[#76ffd8]/22 bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.16),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] px-4 py-3 text-sm font-semibold tracking-[-0.02em] text-text shadow-softbox transition hover:border-[#76ffd8]/36 hover:bg-[radial-gradient(circle_at_top,rgba(118,255,216,0.2),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.035)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 disabled={busy || flowState === "waiting_opt_in" || (!phoneVerified && !phoneCheckSkipped)}
                 onClick={() => void startFlow()}

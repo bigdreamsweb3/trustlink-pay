@@ -54,14 +54,14 @@ function ToastCard({
       onMouseLeave={resume}
       onFocus={pause}
       onBlur={resume}
-      className="pointer-events-auto flex items-start gap-3 rounded-[18px] border border-white/10 bg-[#0d131b]/96 px-4 py-3 text-sm text-white shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+      className="tl-modal pointer-events-auto flex items-start gap-3 rounded-[18px] px-4 py-3 text-sm text-[var(--text)]"
     >
-      <div className="mt-[2px] h-2.5 w-2.5 shrink-0 rounded-full bg-[#58f2b1]" />
-      <div className="min-w-0 flex-1 leading-6 text-white/86">{toast.message}</div>
+      <div className="mt-[2px] h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--accent-deep)] dark:bg-[var(--accent)]" />
+      <div className="min-w-0 flex-1 leading-6 text-[var(--text-soft)]">{toast.message}</div>
       <button
         type="button"
         onClick={() => onClose(toast.id)}
-        className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white/48 transition hover:bg-white/8 hover:text-white"
+        className="tl-text-muted grid h-6 w-6 shrink-0 place-items-center rounded-full transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
         aria-label="Dismiss notification"
       >
         x

@@ -212,21 +212,21 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
         ) : null}
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
             <SectionLoader size="md" label="Loading transaction details..." />
           </section>
         ) : detail ? (
           <>
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
                     {detail.viewerRole === "sender" ? "Sent payment" : "Incoming payment"}
                   </div>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
                     {formatTokenAmount(detail.payment.amount)} {detail.payment.token_symbol}
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-white/56">
+                  <p className="mt-2 text-sm leading-6 text-text/56">
                     {detail.viewerRole === "sender"
                       ? detail.receiver.manualInviteRequired
                         ? `This transfer is already in escrow for ${detail.receiver.phone}, but the recipient is not onboarded on TrustLink yet. Share the invite again if needed.`
@@ -243,13 +243,13 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
 
               <div className="mt-5 grid gap-3 sm:grid-cols-1">
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
                     {detail.viewerRole === "sender" ? "Receiver" : "Sender"}
                   </div>
-                  <div className="mt-2 text-sm font-semibold text-white">
+                  <div className="mt-2 text-sm font-semibold text-text">
                     {detail.viewerRole === "sender" ? detail.receiver.phone : detail.sender.displayName}
                   </div>
-                  <div className="mt-1 text-sm text-white/52">
+                  <div className="mt-1 text-sm text-text/52">
                     {detail.viewerRole === "sender"
                       ? detail.receiver.manualInviteRequired
                         ? "Recipient not onboarded. TrustLink cannot auto-message this number yet."
@@ -260,7 +260,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   </div>
                 </div>
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
                     {detail.receiver.manualInviteRequired ? "Invite state" : "WhatsApp receipt"}
                   </div>
                   <div className="mt-2 flex items-center gap-3">
@@ -271,28 +271,28 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                     ) : (
                       <PaymentNotificationReceipt status={detail.payment.notification_status} />
                     )}
-                    <span className="text-sm text-white/56">
+                    <span className="text-sm text-text/56">
                       {detail.receiver.manualInviteRequired
                         ? "Manual sender follow-up required"
                         : formatDateTime(receiptUpdatedAt)}
                     </span>
                   </div>
-                  <div className="mt-2 text-sm text-white/46">{detail.privacy.deliveryChannelNote}</div>
+                  <div className="mt-2 text-sm text-text/46">{detail.privacy.deliveryChannelNote}</div>
                 </div>
               </div>
             </section>
 
             {detail.viewerRole === "sender" && detail.receiver.manualInviteRequired && detail.receiver.inviteShare ? (
-              <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+              <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Share invite again</h2>
-                  <p className="text-sm text-white/48">
+                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Share invite again</h2>
+                  <p className="text-sm text-text/48">
                     This payment is already in escrow. You can regenerate and share the invite message again until the recipient joins TrustLink and claims it.
                   </p>
                 </div>
 
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                  <pre className="whitespace-pre-wrap text-sm leading-6 text-white/72">
+                  <pre className="whitespace-pre-wrap text-sm leading-6 text-text/72">
                     {detail.receiver.inviteShare.inviteMessage}
                   </pre>
                   <button
@@ -319,40 +319,40 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </section>
             ) : null}
 
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Trace details</h2>
-                <p className="text-sm text-white/48">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Trace details</h2>
+                <p className="text-sm text-text/48">
                   Everything the current viewer is allowed to trace for this payment.
                 </p>
               </div>
 
               <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Reference</span>
-                  <span className="font-medium text-white">{detail.sender.referenceCode}</span>
+                  <span className="text-text/46">Reference</span>
+                  <span className="font-medium text-text">{detail.sender.referenceCode}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Payment ID</span>
-                  <span className="font-medium text-white">{shortenValue(detail.trace.paymentId, 8, 8)}</span>
+                  <span className="text-text/46">Payment ID</span>
+                  <span className="font-medium text-text">{shortenValue(detail.trace.paymentId, 8, 8)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Created</span>
-                  <span className="font-medium text-white">{formatDateTime(detail.payment.created_at)}</span>
+                  <span className="text-text/46">Created</span>
+                  <span className="font-medium text-text">{formatDateTime(detail.payment.created_at)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Escrow account</span>
-                  <span className="font-medium text-white">{shortenValue(detail.trace.escrowAccount)}</span>
+                  <span className="text-text/46">Escrow account</span>
+                  <span className="font-medium text-text">{shortenValue(detail.trace.escrowAccount)}</span>
                 </div>
                 {viewerFeeLabel && viewerFeeAmount ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">{viewerFeeLabel}</span>
-                    <span className="font-medium text-white">{viewerFeeAmount}</span>
+                    <span className="text-text/46">{viewerFeeLabel}</span>
+                    <span className="font-medium text-text">{viewerFeeAmount}</span>
                   </div>
                 ) : null}
                 {detail.trace.depositSignature ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Deposit tx</span>
+                    <span className="text-text/46">Deposit tx</span>
                     {detail.trace.depositExplorerUrl ? (
                       <a
                         href={detail.trace.depositExplorerUrl}
@@ -363,7 +363,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                         {shortenValue(detail.trace.depositSignature, 8, 8)}
                       </a>
                     ) : (
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-text">
                         {shortenValue(detail.trace.depositSignature, 8, 8)}
                       </span>
                     )}
@@ -371,7 +371,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 ) : null}
                 {detail.trace.releaseSignature ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Claim tx</span>
+                    <span className="text-text/46">Claim tx</span>
                     {detail.trace.releaseExplorerUrl ? (
                       <a
                         href={detail.trace.releaseExplorerUrl}
@@ -382,7 +382,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                         {shortenValue(detail.trace.releaseSignature, 8, 8)}
                       </a>
                     ) : (
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-text">
                         {shortenValue(detail.trace.releaseSignature, 8, 8)}
                       </span>
                     )}
@@ -390,7 +390,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 ) : null}
                 {detail.trace.expirySignature ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Expiry sweep tx</span>
+                    <span className="text-text/46">Expiry sweep tx</span>
                     {detail.trace.expiryExplorerUrl ? (
                       <a
                         href={detail.trace.expiryExplorerUrl}
@@ -401,7 +401,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                         {shortenValue(detail.trace.expirySignature, 8, 8)}
                       </a>
                     ) : (
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-text">
                         {shortenValue(detail.trace.expirySignature, 8, 8)}
                       </span>
                     )}
@@ -409,17 +409,17 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 ) : null}
                 {detail.receiver.releasedWallet ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Released to wallet</span>
-                    <span className="font-medium text-white">{detail.receiver.releasedWallet}</span>
+                    <span className="text-text/46">Released to wallet</span>
+                    <span className="font-medium text-text">{detail.receiver.releasedWallet}</span>
                   </div>
                 ) : null}
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Timeline</h2>
-                <p className="text-sm text-white/48">A simple view of where the payment stands right now.</p>
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Timeline</h2>
+                <p className="text-sm text-text/48">A simple view of where the payment stands right now.</p>
               </div>
 
               <div className="space-y-3">
@@ -430,21 +430,21 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   >
                     <span className={`mt-1 h-3 w-3 rounded-full ${entry.complete ? "bg-[#58f2b1]" : "bg-white/14"}`} />
                     <div>
-                      <div className="text-sm font-semibold text-white">{entry.label}</div>
-                      <div className="mt-1 text-sm leading-6 text-white/54">{entry.description}</div>
+                      <div className="text-sm font-semibold text-text">{entry.label}</div>
+                      <div className="mt-1 text-sm leading-6 text-text/54">{entry.description}</div>
                     </div>
-                    <span className="text-right text-[0.78rem] text-white/40">{formatDateTime(entry.occurredAt)}</span>
+                    <span className="text-right text-[0.78rem] text-text/40">{formatDateTime(entry.occurredAt)}</span>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
               <div className="mb-3">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Privacy</h2>
-                <p className="text-sm text-white/48">Trust cues without overexposing anyone's personal details.</p>
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Privacy</h2>
+                <p className="text-sm text-text/48">Trust cues without overexposing anyone's personal details.</p>
               </div>
-              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-white/58">
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-text/58">
                 <p>{detail.privacy.senderPhonePolicy}</p>
                 <p className="mt-3">
                   Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.
@@ -455,7 +455,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/app/activity"
-                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78"
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-text/78"
               >
                 Back to activity
               </Link>
@@ -477,7 +477,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             </div>
           </>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4 text-sm text-white/48">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4 text-sm text-text/48">
             Transaction details are unavailable right now.
           </section>
         )}

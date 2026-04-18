@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, Plus_Jakarta_Sans, Sora } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { AppProviders } from "@/app/providers";
 
 import "./globals.css";
 
-const manrope = Manrope({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-body",
   display: "swap"
 });
 
-const spaceGrotesk = Space_Grotesk({
+const sora = Sora({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-display-face",
+  display: "swap"
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-tactical-face",
+  weight: ["400", "500", "600"],
   display: "swap"
 });
 
@@ -25,8 +32,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${manrope.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${plusJakartaSans.variable} ${sora.variable} ${ibmPlexMono.variable}`}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

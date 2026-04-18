@@ -29,18 +29,18 @@ export function WalletPickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={onClose}>
+    <div className="tl-overlay fixed inset-0 z-50 grid place-items-end md:place-items-center" onClick={onClose}>
       <div
-        className="w-full rounded-t-[28px] border border-white/10 bg-[#5CD2EB] px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        className="tl-modal w-full rounded-t-[28px] px-5 pb-6 pt-5 md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4">
-          <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Choose wallet</h2>
-          <p className="text-sm text-white/48">Connect any installed Solana wallet on this device.</p>
+          <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Choose wallet</h2>
+          <p className="tl-text-muted text-sm">Connect any installed Solana wallet on this device.</p>
         </div>
 
         {wallets.length === 0 ? (
-          <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm text-white/58">
+          <div className="tl-field rounded-[22px] px-4 py-4 text-sm tl-text-soft">
             No Solana wallet was detected in this browser. Install or open a Solana wallet app, then try again.
           </div>
         ) : (
@@ -54,18 +54,18 @@ export function WalletPickerModal({
                   type="button"
                   onClick={() => onSelect(wallet.id)}
                   disabled={Boolean(connectingWalletId)}
-                  className="flex w-full items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-left transition hover:border-[#58f2b1]/22 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="tl-field flex w-full items-center justify-between rounded-[22px] px-4 py-4 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/8 text-sm font-semibold text-white">
+                    <span className="tl-icon-surface grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-semibold text-[var(--text)]">
                       {walletBadge(wallet.name)}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-white">{wallet.name}</span>
-                      <span className="block text-[0.72rem] text-white/42">Installed on this browser</span>
+                      <span className="block text-sm font-semibold text-[var(--text)]">{wallet.name}</span>
+                      <span className="tl-text-muted block text-[0.72rem]">Installed on this browser</span>
                     </span>
                   </span>
-                  <span className="text-xs font-medium text-white/46">{busy ? "Connecting..." : "Connect"}</span>
+                  <span className="tl-text-muted text-xs font-medium">{busy ? "Connecting..." : "Connect"}</span>
                 </button>
               );
             })}

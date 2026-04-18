@@ -16,13 +16,12 @@ function PinDigitBoxes({ pin }: { pin: string }) {
         return (
           <div
             key={index}
-            className={`grid h-14 place-items-center rounded-[18px] border text-lg font-semibold transition ${
-              isFilled
-                ? "border-[#7dffd9]/70 bg-[#7dffd9]/8 text-white"
+            className={`grid h-14 place-items-center rounded-[18px] border text-lg font-semibold transition ${isFilled
+                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
                 : isActive
-                  ? "border-[#7dffd9]/40 bg-white/[0.03] text-white/70"
-                  : "border-white/10 bg-white/[0.03] text-white/32"
-            }`}
+                  ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
+                  : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
+              }`}
           >
             {isFilled ? "•" : ""}
           </div>
@@ -103,33 +102,33 @@ export function PinGateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-[#03080e]/82 p-4 backdrop-blur-xl md:items-center">
-      <div className="w-full max-w-[430px] rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,#0b1118_0%,#091019_100%)] p-5 shadow-[0_30px_120px_rgba(0,0,0,0.55)]">
+    <div className="tl-overlay fixed inset-0 z-[90] flex items-end justify-center p-4 md:items-center">
+      <div className="tl-modal w-full max-w-[430px] rounded-[30px] p-5">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <div className="text-[0.72rem] uppercase tracking-[0.2em] text-[#7dffd9]/70">TrustLink secure access</div>
-            <h2 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.05em] text-white">{heading}</h2>
-            <p className="mt-2 max-w-[24rem] text-sm leading-6 text-white/56">{description}</p>
+            <div className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--accent-deep)] dark:text-[#7dffd9]">TrustLink secure access</div>
+            <h2 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.05em] text-[var(--text)]">{heading}</h2>
+            <p className="tl-text-soft mt-2 max-w-[24rem] text-sm leading-6">{description}</p>
           </div>
-          <div className="rounded-full border border-[#7dffd9]/20 bg-[#7dffd9]/10 px-3 py-1 text-[0.72rem] font-medium text-[#7dffd9]">
+          <div className="tl-badge rounded-full px-3 py-1 text-[0.72rem] font-medium">
             @{user.handle}
           </div>
         </div>
 
-        <div className="mb-4 rounded-[22px] border border-white/8 bg-black/20 px-4 py-3">
-          <div className="text-sm font-semibold text-white">{user.displayName}</div>
-          <div className="mt-1 text-sm text-white/48">
+        <div className="tl-field mb-4 rounded-[22px] px-4 py-3">
+          <div className="text-sm font-semibold text-[var(--text)]">{user.displayName}</div>
+          <div className="tl-text-muted mt-1 text-sm">
             {pendingAuth.pinMode === "setup"
               ? "Set the transaction PIN that will protect future sessions and high-trust actions."
               : "This session stays blocked until the correct transaction PIN is entered."}
           </div>
         </div>
 
-        {error ? <div className="mb-4 rounded-[18px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {error ? <div className="tl-button-danger mb-4 rounded-[18px] px-4 py-3 text-sm">{error}</div> : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
-            <span className="mb-2 block text-[0.78rem] font-medium uppercase tracking-[0.16em] text-white/42">6-digit PIN</span>
+            <span className="tl-text-muted mb-2 block text-[0.78rem] font-medium uppercase tracking-[0.16em]">6-digit PIN</span>
             <div className="relative" onClick={() => inputRef.current?.focus()}>
               <input
                 ref={inputRef}
@@ -149,14 +148,14 @@ export function PinGateModal({
             <button
               type="button"
               onClick={onSignOut}
-              className="rounded-[18px] border border-white/10 px-4 py-3 text-sm font-medium text-white/64 transition hover:border-white/18 hover:text-white"
+              className="tl-button-secondary rounded-[18px] px-4 py-3 text-sm font-medium transition hover:text-[var(--text)]"
             >
               Sign out
             </button>
             <button
               type="submit"
               disabled={busy || pin.length !== 6}
-              className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-5 py-3 text-sm font-semibold text-[#05110d] shadow-[0_16px_36px_rgba(88,242,177,0.18)] transition disabled:cursor-not-allowed disabled:opacity-45"
+              className="tl-button-primary rounded-[18px] px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45"
             >
               {busy ? "Checking PIN..." : pendingAuth.pinMode === "setup" ? "Create PIN" : "Unlock app"}
             </button>

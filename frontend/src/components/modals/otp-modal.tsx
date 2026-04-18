@@ -83,22 +83,19 @@ export function OtpModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center"
-      onClick={() => !busy && onClose?.()}
-    >
+    <div className="tl-overlay fixed inset-0 z-50 grid place-items-end md:place-items-center" onClick={() => !busy && onClose?.()}>
       <div
-        className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        className="tl-modal w-full rounded-t-[28px] px-5 pb-6 pt-5 md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4">
-          <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">{title}</h2>
-          <p className="text-sm text-white/48">{description}</p>
+          <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">{title}</h2>
+          <p className="tl-text-muted text-sm">{description}</p>
         </div>
 
         {children ? <div className="mb-4">{children}</div> : null}
 
-        <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+        <div className="tl-field rounded-[22px] px-4 py-4">
           <div className="flex items-center justify-between gap-2">
             {digits.map((digit, index) => (
               <input
@@ -113,14 +110,14 @@ export function OtpModal({
                 inputMode="numeric"
                 autoComplete={index === 0 ? "one-time-code" : "off"}
                 maxLength={1}
-                className="h-12 w-11 rounded-2xl border border-white/10 bg-[#111722] text-center text-lg font-semibold text-white outline-none transition focus:border-[#58f2b1]/50 focus:ring-1 focus:ring-[#58f2b1]/20"
+                className="tl-field-strong h-12 w-11 rounded-2xl text-center text-lg font-semibold text-[var(--text)] outline-none transition focus:border-[var(--accent-border)] focus:ring-1 focus:ring-[var(--accent-soft)]"
               />
             ))}
           </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-          <span className="text-white/46">
+          <span className="tl-text-muted">
             {countdown > 0 ? `Resend available in ${countdown}s` : "You can request another OTP if needed."}
           </span>
           {onResend ? (
@@ -128,7 +125,7 @@ export function OtpModal({
               type="button"
               onClick={onResend}
               disabled={resendDisabled || countdown > 0 || busy}
-              className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/78 disabled:opacity-40"
+              className="tl-button-secondary rounded-full px-3 py-2 text-xs font-medium disabled:opacity-40"
             >
               {resendLabel}
             </button>
@@ -136,7 +133,7 @@ export function OtpModal({
         </div>
 
         {busy ? (
-          <div className="mt-4 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+          <div className="tl-field mt-4 rounded-[22px] px-4 py-4">
             <SectionLoader label="Verifying code..." />
           </div>
         ) : null}

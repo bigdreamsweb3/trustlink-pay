@@ -280,43 +280,43 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         ) : null}
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
             <SectionLoader size="md" label="Loading claim details..." />
           </section>
         ) : claimSuccess && payment ? (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-5">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Claim successful</div>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
               {formatTokenAmount(netAmount)} {payment.payment.token_symbol} released
             </h2>
-            <p className="mt-2 text-sm leading-6 text-white/56">
+            <p className="mt-2 text-sm leading-6 text-text/56">
               Funds from {payment.sender.displayName} were released successfully to your selected wallet.
             </p>
 
             <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Reference</span>
-                <span className="font-medium text-white">{claimSuccess.referenceCode}</span>
+                <span className="text-text/46">Reference</span>
+                <span className="font-medium text-text">{claimSuccess.referenceCode}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Sender</span>
-                <span className="font-medium text-white">{payment.sender.displayName}</span>
+                <span className="text-text/46">Sender</span>
+                <span className="font-medium text-text">{payment.sender.displayName}</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">TrustLink fee</span>
-                <span className="font-medium text-white">
+                <span className="text-text/46">TrustLink fee</span>
+                <span className="font-medium text-text">
                   {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-white/46">Wallet</span>
-                <span className="font-medium text-white">{shortenAddress(claimSuccess.walletAddress)}</span>
+                <span className="text-text/46">Wallet</span>
+                <span className="font-medium text-text">{shortenAddress(claimSuccess.walletAddress)}</span>
               </div>
               {claimSuccess.blockchainSignature ? (
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Claim tx</span>
-                  <span className="font-medium text-white">{shortenAddress(claimSuccess.blockchainSignature)}</span>
+                  <span className="text-text/46">Claim tx</span>
+                  <span className="font-medium text-text">{shortenAddress(claimSuccess.blockchainSignature)}</span>
                 </div>
               ) : null}
             </div>
@@ -324,7 +324,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             <div className="mt-5 grid grid-cols-2 gap-3">
               <Link
                 href="/app"
-                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-white/78"
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-text/78"
               >
                 Back home
               </Link>
@@ -339,84 +339,84 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
           </section>
         ) : payment ? (
           <>
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
-              <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Incoming payment</div>
-              <div className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+              <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Incoming payment</div>
+              <div className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-text">
                 {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
               </div>
-              <div className="mt-2 text-sm text-white/58">
+              <div className="mt-2 text-sm text-text/58">
                 This is the net amount that will be released to your wallet after the TrustLink fee is deducted.
               </div>
               <div className="mt-4 space-y-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-white/46">Sent amount</span>
-                  <span className="font-medium text-white">
+                  <span className="text-text/46">Sent amount</span>
+                  <span className="font-medium text-text">
                     {formatTokenAmount(grossAmount)} {payment.payment.token_symbol}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="inline-flex items-center gap-2 text-white/46">
+                  <span className="inline-flex items-center gap-2 text-text/46">
                     TrustLink fee
                     <button
                       type="button"
                       onClick={() => setFeeInfoOpen((current) => !current)}
-                      className="grid h-5 w-5 place-items-center rounded-full border border-white/10 text-[0.68rem] font-semibold text-white/58 transition hover:border-white/20 hover:text-white"
+                      className="grid h-5 w-5 place-items-center rounded-full border border-white/10 text-[0.68rem] font-semibold text-text/58 transition hover:border-white/20 hover:text-text"
                       aria-label="Why is a TrustLink fee charged?"
                     >
                       i
                     </button>
                   </span>
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-text">
                     {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
                   </span>
                 </div>
                 {!claimSuccess && claimFeeEstimate?.estimatedNetworkFeeSol != null ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-white/46">Est. Solana cost</span>
-                    <span className="font-medium text-white">
+                    <span className="text-text/46">Est. Solana cost</span>
+                    <span className="font-medium text-text">
                       {claimFeeEstimate.estimatedNetworkFeeSol.toFixed(6)} SOL
                     </span>
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-3 text-sm">
-                  <span className="text-white/72">Amount to wallet</span>
+                  <span className="text-text/72">Amount to wallet</span>
                   <span className="font-semibold text-[#7dffd9]">
                     {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
                   </span>
                 </div>
               </div>
               {feeInfoOpen ? (
-                <div className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-white/68">
+                <div className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-text/68">
                   TrustLink calculates this from the current Solana claim cost for your selected wallet, then adds the configured TrustLink margin. That keeps claiming possible even when the receiver has no SOL for gas.
                 </div>
               ) : null}
-              <div className="mt-4 text-sm text-white/58">
+              <div className="mt-4 text-sm text-text/58">
                 From {payment.sender.displayName} (@{payment.sender.handle})
               </div>
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/6 bg-black/20 px-3 py-3 text-sm text-white/54">
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/6 bg-black/20 px-3 py-3 text-sm text-text/54">
                 <span>Reference {payment.sender.referenceCode}</span>
-                <span className="uppercase text-white/36">{payment.payment.status}</span>
+                <span className="uppercase text-text/36">{payment.payment.status}</span>
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Receiver wallet</h2>
-                  <p className="text-sm text-white/48">This wallet gets the release once your TrustLink PIN is confirmed.</p>
+                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Receiver wallet</h2>
+                  <p className="text-sm text-text/48">This wallet gets the release once your TrustLink PIN is confirmed.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setWalletModalOpen(true)}
                   disabled={wallets.length === 0}
-                  className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/78 disabled:opacity-40"
+                  className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-text/78 disabled:opacity-40"
                 >
                   Choose
                 </button>
               </div>
 
               {wallets.length === 0 ? (
-                <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm text-white/48">
+                <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm text-text/48">
                   No receiver wallet saved yet. Add one in{" "}
                   <Link href="/app/wallets" className="text-[#7dffd9] underline underline-offset-4">
                     Wallets
@@ -427,10 +427,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-white">{selectedWallet.wallet_name}</div>
-                      <div className="mt-1 text-sm text-white/52">{shortenAddress(selectedWallet.wallet_address)}</div>
+                      <div className="text-sm font-semibold text-text">{selectedWallet.wallet_name}</div>
+                      <div className="mt-1 text-sm text-text/52">{shortenAddress(selectedWallet.wallet_address)}</div>
                     </div>
-                    <div className="text-right text-[0.72rem] text-white/40">
+                    <div className="text-right text-[0.72rem] text-text/40">
                       {selectedWalletBalance
                         ? `${formatTokenBalance(selectedWalletBalance.balance, selectedWalletBalance.symbol)} ${selectedWalletBalance.symbol}`
                         : `${payment.payment.token_symbol} preview unavailable`}
@@ -440,12 +440,12 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               ) : null}
 
               <div className="mt-4 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
-                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Final step</div>
-                <p className="mt-2 text-sm leading-6 text-white/58">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Final step</div>
+                <p className="mt-2 text-sm leading-6 text-text/58">
                   After you tap continue, entering your 6-digit PIN is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
                 </p>
                 {claimFeeBusy ? (
-                  <div className="mt-3 text-xs text-white/42">Refreshing claim fee estimate...</div>
+                  <div className="mt-3 text-xs text-text/42">Refreshing claim fee estimate...</div>
                 ) : null}
               </div>
 
@@ -453,14 +453,14 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 type="button"
                 onClick={handleOpenPinConfirmation}
                 disabled={claimBusy || !selectedWalletId}
-                className="mt-4 w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-[0_14px_40px_rgba(88,242,177,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]  shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {claimBusy ? "Checking PIN..." : "Continue with PIN"}
               </button>
             </section>
           </>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4 text-sm text-white/48">
+          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4 text-sm text-text/48">
             Claim details are unavailable right now.
           </section>
         )}
@@ -469,12 +469,12 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       {walletModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Select receiver wallet</h2>
-              <p className="text-sm text-white/48">Choose the destination wallet that should receive this release.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Select receiver wallet</h2>
+              <p className="text-sm text-text/48">Choose the destination wallet that should receive this release.</p>
             </div>
 
             <div className="space-y-3">
@@ -494,10 +494,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                       }`}
                   >
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-white">{wallet.wallet_name}</span>
-                      <span className="mt-1 block text-sm text-white/52">{shortenAddress(wallet.wallet_address)}</span>
+                      <span className="block text-sm font-semibold text-text">{wallet.wallet_name}</span>
+                      <span className="mt-1 block text-sm text-text/52">{shortenAddress(wallet.wallet_address)}</span>
                     </span>
-                    <span className="text-right text-[0.72rem] text-white/44">
+                    <span className="text-right text-[0.72rem] text-text/44">
                       {balancePreview
                         ? `${formatTokenBalance(balancePreview.balance, balancePreview.symbol)} ${balancePreview.symbol}`
                         : `${payment?.payment.token_symbol ?? "Token"} preview unavailable`}

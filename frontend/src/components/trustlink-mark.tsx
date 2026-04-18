@@ -10,7 +10,7 @@ export function TrustLinkMark({ className = "", compact = false }: TrustLinkMark
 
   return (
     <div
-      className={`relative grid place-items-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_14px_40px_rgba(0,0,0,0.28)] ${className}`}
+      className={`relative grid place-items-center overflow-hidden rounded-2xl ${className}`}
       style={{ width: size, height: size }}
       aria-label="TrustLink"
     >

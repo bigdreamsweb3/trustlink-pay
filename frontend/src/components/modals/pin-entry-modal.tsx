@@ -70,12 +70,12 @@ export function PinEntryModal({
       onClick={() => !busy && onClose?.()}
     >
       <div
-        className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+        className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5  shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4">
-          <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">{title}</h2>
-          <p className="text-sm text-white/48">{description}</p>
+          <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">{title}</h2>
+          <p className="text-sm text-text/48">{description}</p>
         </div>
 
         {children ? <div className="mb-4">{children}</div> : null}
@@ -95,14 +95,14 @@ export function PinEntryModal({
                 autoComplete={index === 0 ? "current-password" : "off"}
                 maxLength={1}
                 type="password"
-                className="h-12 w-11 rounded-2xl border border-white/10 bg-[#111722] text-center text-lg font-semibold text-white outline-none transition focus:border-[#58f2b1]/50 focus:ring-1 focus:ring-[#58f2b1]/20"
+                className="h-12 w-11 rounded-2xl border border-white/10 bg-[#111722] text-center text-lg font-semibold text-text outline-none transition focus:border-[#58f2b1]/50 focus:ring-1 focus:ring-[#58f2b1]/20"
                 aria-label={`PIN digit ${index + 1}`}
               />
             ))}
           </div>
         </div>
 
-        <div className="mt-4 text-sm text-white/46">
+        <div className="mt-4 text-sm text-text/46">
           TrustLink uses your PIN here so money actions stay fast without waiting for a fresh OTP every time.
         </div>
 

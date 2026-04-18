@@ -123,14 +123,14 @@ export function PhoneNumberInput({
 
   const toneClass =
     verificationState === "valid"
-      ? "border-[#58f2b1]/45 bg-black/20"
+      ? "border-[var(--accent-border)] bg-[var(--field)]"
       : verificationState === "warning"
-        ? "border-[#f3c96b]/35 bg-black/20"
+        ? "border-[#f3c96b]/35 bg-[var(--field)]"
         : verificationState === "invalid"
-          ? "border-[#ff7f7f]/35 bg-black/20"
+          ? "border-[#ff7f7f]/35 bg-[var(--field)]"
           : isOpen
-            ? "border-[#58f2b1]/50 bg-[#111B1C]/5 ring-1 ring-[#58f2b1]/20"
-            : "border-white/10 bg-black/20 hover:border-white/20";
+            ? "border-[var(--accent-border)] bg-[var(--surface)] ring-1 ring-[var(--accent-soft)]"
+            : "border-[var(--field-border)] bg-[var(--field)] hover:border-[var(--accent-border)]";
 
   const indicatorClass =
     verificationState === "valid"
@@ -139,7 +139,7 @@ export function PhoneNumberInput({
         ? "border-[#f3c96b]/35 bg-[#f3c96b]/12 text-[#f3c96b]"
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-[#ff7f7f]/12 text-[#ffadad]"
-          : "border-white/12 bg-white/8 text-white/55";
+          : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]";
 
   const indicatorText =
     verificationState === "valid" ? "✓" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "x" : "...";
@@ -155,7 +155,7 @@ export function PhoneNumberInput({
   return (
     <div className="space-y-2">
       {label ? (
-        <label className="ml-1 text-xs font-medium uppercase tracking-widest text-white/40">
+        <label className="tl-text-muted ml-1 text-xs font-medium uppercase tracking-widest">
           {label}
         </label>
       ) : null}
@@ -165,12 +165,12 @@ export function PhoneNumberInput({
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="min-w-fit rounded-l-2xl border-r border-white/10 px-4 transition-colors hover:bg-[#5CD2EB]/5"
+            className="min-w-fit rounded-l-2xl border-r border-[var(--field-border)] px-4 transition-colors hover:bg-[var(--surface-soft)]"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">{selectedCountry.flag}</span>
-              <span className="whitespace-nowrap text-sm font-semibold text-white">{selectedCountry.dialCode}</span>
-              <ChevronDown className={`h-4 w-4 text-white/40 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+              <span className="whitespace-nowrap text-sm font-semibold text-[var(--text)]">{selectedCountry.dialCode}</span>
+              <ChevronDown className={`tl-text-muted h-4 w-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
             </div>
           </button>
 
@@ -182,7 +182,7 @@ export function PhoneNumberInput({
               placeholder={placeholder}
               inputMode="tel"
               maxLength={typeof maxLocalDigits === "number" ? maxLocalDigits : undefined}
-              className="h-full w-full bg-transparent px-4 text-lg font-medium text-white outline-none placeholder:text-white/20"
+              className="h-full w-full bg-transparent px-4 text-lg font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
             />
           </div>
 
@@ -203,18 +203,18 @@ export function PhoneNumberInput({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#111B1C]/5 shadow-2xl backdrop-blur-xl"
+              className="tl-modal absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl shadow-softbox -2xl"
             >
-              <div className="border-b border-white/5 p-2">
+              <div className="border-b border-[var(--field-border)] p-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" />
                   <input
                     autoFocus
                     type="text"
                     placeholder="Search countries..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-xl border border-transparent bg-[#111B1C]/5 py-2 pl-9 pr-4 text-sm text-white outline-none focus:border-white/10"
+                    className="tl-field w-full rounded-xl py-2 pl-9 pr-4 text-sm text-[var(--text)] outline-none"
                   />
                 </div>
               </div>
@@ -229,18 +229,18 @@ export function PhoneNumberInput({
                       setIsOpen(false);
                       setSearch("");
                     }}
-                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[#111B1C]/5 ${selectedCountry.iso2 === country.iso2 ? "bg-[#5CD2EB]/5" : ""
+                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[var(--surface-soft)] ${selectedCountry.iso2 === country.iso2 ? "bg-[var(--accent-soft)]" : ""
                       }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{country.flag}</span>
                         <div>
-                          <div className="text-sm font-semibold text-white">{country.name}</div>
-                          <div className="text-[10px] text-white/40">{country.iso2}</div>
+                          <div className="text-sm font-semibold text-[var(--text)]">{country.name}</div>
+                          <div className="tl-text-muted text-[10px]">{country.iso2}</div>
                         </div>
                       </div>
-                      <div className="text-sm font-medium text-white">{country.dialCode}</div>
+                      <div className="text-sm font-medium text-[var(--text)]">{country.dialCode}</div>
                     </div>
                   </button>
                 ))}
@@ -251,21 +251,21 @@ export function PhoneNumberInput({
       </div>
 
       {verificationLabel && verificationState === "checking" ? (
-        <div className="ml-1 text-[0.72rem] text-white/42">
+        <div className="tl-text-muted ml-1 text-[0.72rem]">
           {verificationLabel}
         </div>
       ) : null}
 
       {showSummaryCard ? (
-        <div className="rounded-[20px] border border-white/8 bg-black/20 px-4 py-3">
+        <div className="tl-field rounded-[20px] px-4 py-3">
           <div className="flex items-center gap-3">
             {isBusiness ? (
-              <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/6">
+              <div className="tl-icon-surface grid h-12 w-12 place-items-center overflow-hidden rounded-full">
                 {avatarSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarSrc} alt={displayName ?? "Business WhatsApp profile"} className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-[0.62rem] font-semibold tracking-[0.12em] text-white/50">BIZ</span>
+                  <span className="tl-text-muted text-[0.62rem] font-semibold tracking-[0.12em]">BIZ</span>
                 )}
               </div>
             ) : null}
@@ -275,11 +275,11 @@ export function PhoneNumberInput({
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-[#25D366]/16">
                   <WhatsAppIcon className="h-3.5 w-3.5" />
                 </span>
-                <div className="truncate text-sm font-semibold text-white">
+                <div className="truncate text-sm font-semibold text-[var(--text)]">
                   {isBusiness ? displayName ?? "Business profile detected" : "Personal or unknown profile"}
                 </div>
               </div>
-              <div className="mt-1 text-[0.72rem] text-white/50">
+              <div className="tl-text-muted mt-1 text-[0.72rem]">
                 {isBusiness
                   ? "Business WhatsApp profile"
                   : "This number is not a business number. Please verify if this profile is a real personal WhatsApp account."}
@@ -293,7 +293,7 @@ export function PhoneNumberInput({
                 href={verificationDetails.url}
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-1.5 text-[0.72rem] font-semibold text-[#86ffda]"
+                className="px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] dark:text-[#86ffda]"
               >
                 Verify on WhatsApp
               </a>
@@ -301,7 +301,7 @@ export function PhoneNumberInput({
                 <button
                   type="button"
                   onClick={onSkipVerification}
-                  className="text-[0.72rem] font-medium text-white/68 transition hover:text-white"
+                  className="tl-text-soft text-[0.72rem] font-medium transition hover:text-[var(--text)]"
                 >
                   {skipVerificationLabel}
                 </button>

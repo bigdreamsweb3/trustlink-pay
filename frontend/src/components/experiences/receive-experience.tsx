@@ -111,24 +111,24 @@ export function ReceiveExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">TrustLink receive details</h2>
-            <p className="text-sm text-white/48">Share these details so someone can open TrustLink and send straight to your number.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">TrustLink receive details</h2>
+            <p className="text-sm text-text/48">Share these details so someone can open TrustLink and send straight to your number.</p>
           </div>
 
           <div className="space-y-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-white/46">Display name</span>
-              <span className="font-medium text-white">{user.displayName}</span>
+              <span className="text-text/46">Display name</span>
+              <span className="font-medium text-text">{user.displayName}</span>
             </div>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-white/46">Handle</span>
-              <span className="font-medium text-white">@{user.handle}</span>
+              <span className="text-text/46">Handle</span>
+              <span className="font-medium text-text">@{user.handle}</span>
             </div>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-white/46">TrustLink number</span>
-              <span className="font-medium text-white">{user.phoneNumber}</span>
+              <span className="text-text/46">TrustLink number</span>
+              <span className="font-medium text-text">{user.phoneNumber}</span>
             </div>
           </div>
 
@@ -144,39 +144,39 @@ export function ReceiveExperience() {
             <button
               type="button"
               onClick={() => void handleCopyLink()}
-              className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-white/78"
+              className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/78"
             >
               Copy send link
             </button>
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Next actions</h2>
-              <p className="text-sm text-white/48">Share your receive identity or jump straight to claim incoming funds.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Next actions</h2>
+              <p className="text-sm text-text/48">Share your receive identity or jump straight to claim incoming funds.</p>
             </div>
           </div>
 
           <div className="mt-4 grid gap-3">
-            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
               <span>Open send with my number filled in</span>
-              <span className="text-white/40">Open</span>
+              <span className="text-text/40">Open</span>
             </Link>
-            <Link href="/app/claim" className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+            <Link href="/app/claim" className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
               <span className="inline-flex items-center gap-2">
                 <ClaimIcon className="h-4 w-4" />
                 Claim incoming funds
               </span>
-              <span className="text-white/40">Open</span>
+              <span className="text-text/40">Open</span>
             </Link>
-            <Link href="/app/wallets" className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-white/78">
+            <Link href="/app/wallets" className="inline-flex items-center justify-between rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
               <span className="inline-flex items-center gap-2">
                 <WalletIcon className="h-4 w-4" />
                 Manage payout wallets
               </span>
-              <span className="text-white/40">Open</span>
+              <span className="text-text/40">Open</span>
             </Link>
           </div>
         </section>

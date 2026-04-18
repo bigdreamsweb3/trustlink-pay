@@ -54,7 +54,7 @@ export function PaymentNotificationReceipt({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-white/8 bg-black/20 px-2 py-1 text-white/88 ${className}`.trim()}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-white/8 bg-pop-bg px-2 py-1 text-text/88 ${className}`.trim()}
       title={label}
       aria-label={label}
     >

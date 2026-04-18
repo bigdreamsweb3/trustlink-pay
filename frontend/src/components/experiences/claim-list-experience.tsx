@@ -90,16 +90,16 @@ export function ClaimListExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Pending claims</h2>
-              <p className="text-sm text-white/48">Incoming transfers waiting for your OTP confirmation.</p>
+              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Pending claims</h2>
+              <p className="text-sm text-text/48">Incoming transfers waiting for your OTP confirmation.</p>
             </div>
             {!loading && pendingPayments.length > 0 ? (
               <div className="rounded-[18px] border border-[#58f2b1]/14 bg-[#58f2b1]/7 px-3 py-2 text-right">
                 <div className="text-[0.68rem] uppercase tracking-[0.18em] text-[#7dffd9]/70">Unclaimed</div>
-                <div className="mt-1 text-sm font-semibold text-white">
+                <div className="mt-1 text-sm font-semibold text-text">
                   {formatUsd(pendingClaimTotal)}
                 </div>
               </div>
@@ -111,21 +111,21 @@ export function ClaimListExperience() {
               <SectionLoader label="Loading claims..." />
             </div>
           ) : pendingPayments.length === 0 ? (
-            <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-white/46">No pending claims right now.</div>
+            <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-text/46">No pending claims right now.</div>
           ) : (
             <div className="space-y-3">
               {visiblePendingPayments.map((payment) => (
                 <Link key={payment.id} href={`/claim/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-sm font-semibold text-text">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
-                    <div className="truncate text-sm text-white/54">
+                    <div className="truncate text-sm text-text/54">
                       {payment.sender_display_name_snapshot} - {payment.reference_code}
                     </div>
-                    <div className="mt-1 text-[0.72rem] text-white/34">{formatShortDate(payment.created_at)}</div>
+                    <div className="mt-1 text-[0.72rem] text-text/34">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Open</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-text/82">Open</span>
                 </Link>
               ))}
 
@@ -133,7 +133,7 @@ export function ClaimListExperience() {
                 <button
                   type="button"
                   onClick={() => setPendingModalOpen(true)}
-                  className="w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-white/76 transition hover:bg-white/[0.05]"
+                  className="w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-text/76 transition hover:bg-white/[0.05]"
                 >
                   View {hiddenPendingCount} more pending {hiddenPendingCount === 1 ? "claim" : "claims"}
                 </button>
@@ -146,18 +146,18 @@ export function ClaimListExperience() {
       {pendingModalOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setPendingModalOpen(false)}>
           <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-[#111B1C]/5 px-5 pb-6 pt-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:max-w-[430px] md:rounded-[28px]"
+            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">All pending claims</h2>
-                <p className="text-sm text-white/48">Open any payment below to review the full details and continue the OTP release flow.</p>
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">All pending claims</h2>
+                <p className="text-sm text-text/48">Open any payment below to review the full details and continue the OTP release flow.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setPendingModalOpen(false)}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-white/72"
+                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-text/72"
               >
                 Close
               </button>
@@ -172,15 +172,15 @@ export function ClaimListExperience() {
                   className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-sm font-semibold text-text">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
-                    <div className="truncate text-sm text-white/54">
+                    <div className="truncate text-sm text-text/54">
                       {payment.sender_display_name_snapshot} - {payment.reference_code}
                     </div>
-                    <div className="mt-1 text-[0.72rem] text-white/34">{formatShortDate(payment.created_at)}</div>
+                    <div className="mt-1 text-[0.72rem] text-text/34">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-white/82">Open</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-text/82">Open</span>
                 </Link>
               ))}
             </div>

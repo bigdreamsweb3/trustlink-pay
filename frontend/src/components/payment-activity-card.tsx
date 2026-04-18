@@ -37,7 +37,7 @@ export function PaymentActivityCard({
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[22px] px-0 py-3 text-left transition hover:border-white/12 hover:bg-black/35"
+      className="tl-scanline grid w-[calc(100%+2rem)] -mx-4.5 grid-cols-[auto_1fr_auto] items-center gap-3 py-3 px-4 sm:px-4.5 text-left transition button"
     >
       <div
         className={`grid h-8 w-8 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] border-b border-[#76ffd8]/60 ${isSend ? "text-[#99cfff]" : "text-[#79ffcf]"
@@ -47,20 +47,26 @@ export function PaymentActivityCard({
       </div>
 
       <div className="min-w-0">
-        <div className="whitespace-nowrap text-[0.76rem] font-semibold text-white">
-          {counterparty} - {payment.reference_code}
+        <div className="flex items-center gap-1.5 whitespace-nowrap text-[0.76rem] font-semibold text-text">
+          <span className="truncate">{counterparty}</span>
+          <span className="shrink-0 text-text/28">-</span>
+          <span className="tl-coord-text inline-flex shrink-0 items-center gap-1.5 !text-[0.56rem] leading-none">
+            <span>{payment.reference_code}</span>
+            <span className="opacity-45">::</span>
+            <span>{isSend ? "Sent" : "Received"}</span>
+          </span>
         </div>
-        {/* <div className="truncate text-[0.7rem] text-white/50">
+        {/* <div className="truncate text-[0.7rem] text-text/50">
           {formatPaymentUsd(payment.amount_usd)}
         </div> */}
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.72rem]">
-          <span className="text-white/34">{formatPaymentShortDate(payment.created_at)}</span>
+          <span className="text-text/34">{formatPaymentShortDate(payment.created_at)}</span>
           {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}
         </div>
       </div>
 
       <div className="grid h-full justify-items-end gap-2">
-        <span className="text-[0.72rem] text-white/46">{formatTokenAmount(payment.amount)} {payment.token_symbol}</span>
+        <span className="text-[0.72rem] text-text/46">{formatTokenAmount(payment.amount)} {payment.token_symbol}</span>
         <span className={`h-fit rounded-full px-2.5 py-1 text-[0.7rem] font-medium capitalize ${statusTone(payment.status)}`}>
           {payment.status}
         </span>

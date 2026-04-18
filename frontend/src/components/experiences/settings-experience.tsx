@@ -8,6 +8,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
 import { setStoredUser } from "@/src/lib/storage";
+import { useTheme } from "@/src/lib/theme";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import type { UserProfile } from "@/src/lib/types";
 
@@ -22,10 +23,10 @@ function PinDigitBoxes({ pin }: { pin: string }) {
           <div
             key={index}
             className={`grid h-12 place-items-center rounded-[18px] border text-lg font-semibold transition ${isFilled
-              ? "border-[#7dffd9]/70 bg-[#7dffd9]/8 text-white"
+              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
               : isActive
-                ? "border-[#7dffd9]/40 bg-white/[0.03] text-white/70"
-                : "border-white/10 bg-white/[0.03] text-white/32"
+                ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
+                : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
               }`}
           >
             {isFilled ? "•" : ""}
@@ -39,6 +40,7 @@ function PinDigitBoxes({ pin }: { pin: string }) {
 export function SettingsExperience() {
   const { hydrated, user, setUser, accessToken, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/settings");
   const { showToast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [changePinOpen, setChangePinOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -168,50 +170,71 @@ export function SettingsExperience() {
       }
     >
       <section className="space-y-5">
-        {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {notice ? <div className="tl-badge rounded-[22px] px-4 py-3 text-sm">{notice}</div> : null}
+        {error ? <div className="tl-button-danger rounded-[22px] px-4 py-3 text-sm">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="tl-panel rounded-[28px] p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Preferences</h2>
-            <p className="text-sm text-white/48">This is where personal app preferences will live as TrustLink grows.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Preferences</h2>
+            <p className="tl-text-muted text-sm">This is where personal app preferences will live as TrustLink grows.</p>
           </div>
 
-          <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-            <div className="text-[0.72rem] uppercase tracking-[0.18em] text-white/40">Display currency</div>
+          <div className="tl-field rounded-[22px] px-4 py-4">
+            <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Display currency</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-white">USD</div>
-                <div className="mt-1 text-sm text-white/46">Multi-currency balance conversion is planned for a future update.</div>
+                <div className="text-sm font-semibold text-[var(--text)]">USD</div>
+                <div className="tl-text-muted mt-1 text-sm">Multi-currency balance conversion is planned for a future update.</div>
               </div>
-              <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] text-white/60">Coming soon</span>
+              <span className="tl-button-secondary rounded-full px-3 py-1.5 text-[0.72rem]">Coming soon</span>
             </div>
+          </div>
+
+          <div className="tl-field mt-4 rounded-[22px] px-4 py-4">
+            <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Theme</div>
+            <div className="mt-2 flex items-center gap-2 rounded-[20px] bg-[var(--surface-soft)] p-1">
+              <button
+                type="button"
+                onClick={() => setTheme("light")}
+                className={`flex-1 rounded-[16px] px-4 py-3 text-sm font-semibold transition ${theme === "light" ? "tl-button-primary" : "tl-button-secondary"}`}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme("dark")}
+                className={`flex-1 rounded-[16px] px-4 py-3 text-sm font-semibold transition ${theme === "dark" ? "tl-button-primary" : "tl-button-secondary"}`}
+              >
+                Dark
+              </button>
+            </div>
+            <p className="tl-text-muted mt-3 text-sm">Switch between the bright mint-and-white TrustLink Pay look and the existing dark mode.</p>
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="tl-panel rounded-[28px] p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Security</h2>
-            <p className="text-sm text-white/48">Changing your TrustLink PIN now requires a fresh WhatsApp OTP verification.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Security</h2>
+            <p className="tl-text-muted text-sm">Changing your TrustLink PIN now requires a fresh WhatsApp OTP verification.</p>
           </div>
 
           <button
             type="button"
             onClick={() => void openChangePinFlow()}
             disabled={otpBusy}
-            className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-50"
+            className="tl-button-primary w-full rounded-[22px] px-4 py-3 text-sm font-semibold disabled:opacity-50"
           >
             {otpBusy ? "Sending OTP..." : "Change PIN"}
           </button>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#111B1C]/5 p-4">
+        <section className="tl-panel rounded-[28px] p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-white">Account</h2>
-            <p className="text-sm text-white/48">Sign out from this device when you are done.</p>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Account</h2>
+            <p className="tl-text-muted text-sm">Sign out from this device when you are done.</p>
           </div>
 
-          <button type="button" onClick={logout} className="w-full rounded-[22px] border border-[#ff7f7f]/16 bg-[#ff7f7f]/8 px-4 py-3 text-sm font-semibold text-[#ffb2b2]">
+          <button type="button" onClick={logout} className="tl-button-danger w-full rounded-[22px] px-4 py-3 text-sm font-semibold">
             Log out
           </button>
         </section>
@@ -236,7 +259,7 @@ export function SettingsExperience() {
       >
         <form className="space-y-4" onSubmit={handlePinChangeSubmit}>
           <label className="block">
-            <span className="mb-2 block text-[0.78rem] font-medium uppercase tracking-[0.16em] text-white/42">New 6-digit PIN</span>
+            <span className="tl-text-muted mb-2 block text-[0.78rem] font-medium uppercase tracking-[0.16em]">New 6-digit PIN</span>
             <div className="relative" onClick={() => pinInputRef.current?.focus()}>
               <input
                 ref={pinInputRef}
@@ -255,7 +278,7 @@ export function SettingsExperience() {
           <button
             type="submit"
             disabled={pinBusy || otp.length !== 6 || newPin.length !== 6}
-            className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-50"
+            className="tl-button-primary w-full rounded-[20px] px-4 py-3 text-sm font-semibold disabled:opacity-50"
           >
             {pinBusy ? "Updating PIN..." : "Save new PIN"}
           </button>

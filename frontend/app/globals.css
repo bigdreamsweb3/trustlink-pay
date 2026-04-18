@@ -1,20 +1,159 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #111b1c;
-  --bg-elevated: #0d0e15;
-  --panel: #101d31;
-  --panel-soft: #13233a;
-  --surface: rgba(15, 29, 49, 0.94);
-  --surface-border: rgba(132, 163, 204, 0.18);
-  --text: #eef5ff;
-  --muted: #8ea2bf;
-  --accent: #a4f3dc;
-  --accent-deep: #14b97a;
-  --primary-accent: #5cd2eb;
+  --bg: #f4f6f1;
+  --bg-elevated: #fbfcf8;
+  --panel: #fbfcf8;
+  --panel-soft: #eff3ec;
+  --surface: rgba(251, 252, 248, 0.9);
+  --surface-border: rgba(89, 126, 110, 0.12);
+  --text: #152019;
+  --primary: #ffffff;
+  --muted: rgba(76, 95, 100, 0.78);
+  --accent: #7fe8c8;
+  --accent-deep: #2a8d73;
+  --primary-accent: #9fdccc;
+  --accent-gradient: radial-gradient(
+    circle at 30% 28%,
+    rgba(127, 232, 200, 0.78) 0%,
+    rgba(152, 226, 203, 0.62) 26%,
+    rgba(197, 236, 223, 0.58) 56%,
+    rgba(237, 245, 240, 0.92) 100%
+  );
   --warning: #f3c96b;
   --danger: #ff7f7f;
-  --shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+  --shadow: 0 1px 6px rgba(34, 56, 50, 0.032);
+  --overlay: rgba(7, 14, 18, 0.22);
+  --phone-shell: #f7faf6;
+  --phone-screen: linear-gradient(180deg, #fcfdf9 0%, #eef4ef 100%);
+  --dock: rgba(249, 251, 247, 0.86);
+  --dock-border: rgba(39, 71, 63, 0.08);
+  --card-strong: rgba(251, 252, 248, 0.94);
+  --field: rgba(250, 251, 247, 0.82);
+  --field-strong: #fbfcf8;
+  --field-border: rgba(39, 71, 63, 0.09);
+  --surface-soft: rgba(240, 244, 238, 0.94);
+  --text-soft: rgba(21, 32, 25, 0.72);
+  --text-faint: rgba(21, 32, 25, 0.46);
+  --icon-soft: rgba(42, 141, 115, 0.08);
+  --accent-soft: rgba(127, 232, 200, 0.2);
+  --accent-border: rgba(42, 141, 115, 0.18);
+  --danger-soft: rgba(255, 127, 127, 0.14);
+
+  --pop-bg:
+    radial-gradient(circle at top, rgba(127, 232, 200, 0.12), transparent 55%),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.18) 100%
+    );
+
+  --gradient-bg:
+    radial-gradient(circle at top, rgba(127, 232, 200, 0.16), transparent 28%),
+    linear-gradient(180deg, #05090d 0%, #091019 100%);
+}
+
+.dark {
+  --bg: #111b1c;
+  --bg-elevated: #101717;
+  --panel: #141c1d;
+  --panel-soft: #182324;
+  --surface: #0d1314;
+  --surface-border: rgba(118, 255, 216, 0.18);
+  --text: #fef5ff;
+  --primary: #ffffff;
+  --muted: rgba(255, 255, 255, 0.42);
+  --accent: #76ffd8;
+  --accent-deep: #14b97a;
+  --primary-accent: #5cd2eb;
+  --accent-gradient: radial-gradient(
+    circle at center,
+    rgba(118, 255, 216, 0.6),
+    rgba(118, 255, 216, 0.5) 20%,
+    rgba(90, 255, 216, 0.4) 42%,
+    rgba(118, 255, 216, 0.3) 62%,
+    rgba(92, 210, 235, 0.2) 100%
+  );
+  --shadow: 0 2px 11px rgba(0, 0, 0, 0.24);
+  --overlay: rgba(3, 8, 14, 0.7);
+  --phone-shell: #0e1515;
+  --phone-screen: linear-gradient(180deg, #101717 0%, #0d1415 52%, #0b1212 100%);
+  --dock: rgba(12, 18, 18, 0.92);
+  --dock-border: rgba(255, 255, 255, 0.08);
+  --card-strong: rgba(15, 22, 23, 0.9);
+  --field: rgba(0, 0, 0, 0.2);
+  --field-strong: #111722;
+  --field-border: rgba(255, 255, 255, 0.1);
+  --surface-soft: rgba(255, 255, 255, 0.03);
+  --text-soft: rgba(238, 245, 255, 0.78);
+  --text-faint: rgba(238, 245, 255, 0.48);
+  --icon-soft: rgba(255, 255, 255, 0.08);
+  --accent-soft: rgba(88, 242, 177, 0.12);
+  --accent-border: rgba(88, 242, 177, 0.2);
+  --danger-soft: rgba(255, 127, 127, 0.08);
+
+  --pop-bg:
+    radial-gradient(circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.025) 100%
+    );
+
+  --gradient-bg:
+    radial-gradient(circle at top, rgba(88, 242, 177, 0.14), transparent 28%),
+    linear-gradient(180deg, #05090d 0%, #091019 100%);
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-tactical-face);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-panel: var(--panel);
+  --color-panel-soft: var(--panel-soft);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --color-text: var(--text);
+  --color-primary: var(--text-primary);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-primary-accent: var(--primary-accent);
+  --color-muted: var(--muted);
+  --color-overlay: var(--overlay);
+  --color-phone-shell: var(--phone-shell);
+  --color-phone-screen: var(--phone-screen);
+  --color-dock: var(--dock);
+  --color-dock-border: var(--dock-border);
+  --color-card-strong: var(--card-strong);
+  --color-field: var(--field);
+  --color-field-strong: var(--field-strong);
+  --color-field-border: var(--field-border);
+  --color-surface-soft: var(--surface-soft);
+  --color-text-soft: var(--text-soft);
+  --color-text-faint: var(--text-faint);
+  --color-icon-soft: var(--icon-soft);
+  /* --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px); */
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border: var(--accent-border);
+  --color-danger-soft: var(--danger-soft);
+
+  --background-image-gradient-bg:
+    radial-gradient(circle at 16% 12%, var(--accent-soft), transparent 22%),
+    radial-gradient(
+      circle at 84% 10%,
+      rgba(255, 255, 255, 0.08),
+      transparent 20%
+    ),
+    var(--phone-screen);
+  --background-image-pop-bg: var(--pop-bg);
+  --background-image-accent-gradient: var(--accent-gradient);
+
+  /* ✅ shadows */
+  --shadow-softbox: var(--shadow);
 }
 
 * {
@@ -30,7 +169,18 @@ body {
 body {
   color: var(--text);
   font-family:
-    var(--font-sans), "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    var(--font-body), "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(127, 232, 200, 0.14), transparent 30%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(159, 220, 204, 0.2),
+      transparent 26%
+    ),
+    linear-gradient(180deg, #fcfdf9 0%, #f1f5ef 48%, #e9f0e8 100%);
+}
+
+.dark body {
   background:
     radial-gradient(circle at top, rgba(88, 242, 177, 0.16), transparent 30%),
     radial-gradient(
@@ -54,6 +204,221 @@ select {
 input,
 select {
   appearance: none;
+}
+
+.tl-topbar {
+  border-bottom: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.tl-sidebar,
+.tl-phone-frame,
+.tl-panel,
+.tl-modal {
+  border: 1px solid var(--dock-border);
+  box-shadow: var(--shadow);
+}
+
+.tl-sidebar,
+.tl-modal,
+.tl-panel {
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+  background-image: var(--pop-bg);
+  backdrop-filter: blur(24px);
+}
+
+.tl-phone-frame {
+  background: var(--phone-shell);
+}
+
+.tl-phone-screen {
+  background: var(--bg)
+    /* radial-gradient(circle at 16% 12%, var(--accent-soft), transparent 22%),
+    radial-gradient(
+      circle at 84% 10%,
+      rgba(255, 255, 255, 0.08),
+      transparent 20%
+    ), */
+    var(--phone-screen);
+}
+
+.tl-text-muted {
+  color: var(--text-faint);
+}
+
+.tl-text-soft {
+  color: var(--text-soft);
+}
+
+.tl-surface-soft {
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-border);
+}
+
+.tl-field {
+  background: var(--pop-bg);
+  border: 1px solid var(--field-border);
+}
+
+.tl-field-strong {
+  background: var(--field-strong);
+  border: 1px solid var(--field-border);
+}
+
+.tl-badge {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-deep);
+}
+
+.dark .tl-badge {
+  color: var(--accent);
+}
+
+.tl-button-primary {
+  color: #04110a;
+  background: linear-gradient(135deg, var(--accent), #c6efe2);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--accent-deep) 6%, transparent);
+}
+
+.tl-button-secondary {
+  color: var(--text);
+  background-image:
+    radial-gradient(circle at top, rgba(127, 232, 200, 0.14), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.035) 100%
+    );
+
+  border: 1px solid var(--accent-border);
+}
+
+.tl-button-danger {
+  color: #d95959;
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 127, 127, 0.22);
+}
+
+.dark .tl-button-danger {
+  color: #ffb2b2;
+}
+
+.tl-icon-surface {
+  background: var(--icon-soft);
+  border: 1px solid var(--field-border);
+}
+
+.tl-balance-readout {
+  font-family:
+    var(--font-display-face), "Aptos Display", "Segoe UI Variable Display",
+    "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: -0.045em;
+}
+
+.tl-balance-inset {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 1px 4px color-mix(in srgb, var(--accent-deep) 6%, transparent);
+}
+
+.tl-overlay {
+  background: var(--overlay);
+  backdrop-filter: blur(16px);
+}
+
+.tl-grid-overlay {
+  position: relative;
+}
+
+.tl-grid-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--accent-border) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent-border) 32%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.16;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.08));
+}
+
+.tl-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.tl-scanline::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 72%, white 12%), transparent);
+  opacity: 0.45;
+}
+
+.tl-meta-label {
+  font-family:
+    var(--font-tactical-face), "IBM Plex Mono", "Aptos Mono", "Consolas", monospace;
+  font-size: 0.64rem;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tl-coord-text {
+  font-family:
+    var(--font-tactical-face), "IBM Plex Mono", "Aptos Mono", "Consolas", monospace;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-faint) 88%, var(--accent) 12%);
+}
+
+.tl-chain-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-faint);
+}
+
+.tl-chain-divider::before,
+.tl-chain-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-border), transparent);
+}
+
+.tl-chain-divider > span {
+  font-family:
+    var(--font-tactical-face), "IBM Plex Mono", "Aptos Mono", "Consolas", monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tl-chain-divider > span::before,
+.tl-chain-divider > span::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--accent-border);
+  transform: rotate(45deg);
+  border-radius: 1px;
 }
 
 /* Animation keyframes for interactive elements */
@@ -80,13 +445,13 @@ select {
 
 @keyframes hoverGlow {
   0% {
-    box-shadow: 0 16px 36px rgba(88, 242, 177, 0.22);
+    box-shadow: 0 2px 7px rgba(42, 141, 115, 0.056);
   }
   50% {
-    box-shadow: 0 20px 48px rgba(88, 242, 177, 0.32);
+    box-shadow: 0 3px 8px rgba(42, 141, 115, 0.07);
   }
   100% {
-    box-shadow: 0 16px 36px rgba(88, 242, 177, 0.22);
+    box-shadow: 0 2px 7px rgba(42, 141, 115, 0.056);
   }
 }
 
@@ -153,7 +518,7 @@ select {
 
 .button {
   position: relative;
-  color: white;
+  /* color: inherit; */
   /* border: none; */
   overflow: hidden;
   cursor: pointer;
@@ -177,7 +542,7 @@ select {
   inset: 0;
   border-radius: inherit;
   backdrop-filter: blur(0px);
-  background: rgba(255, 255, 255, 0);
+  /* background: rgba(255, 255, 255, 0); */
   opacity: 0;
   transition:
     opacity 180ms ease,
@@ -216,16 +581,16 @@ select {
 
 .button--primary {
   color: #04111a;
-  background: linear-gradient(135deg, var(--accent), #78ffe5);
-  box-shadow: 0 16px 36px rgba(88, 242, 177, 0.22);
+  background: linear-gradient(135deg, var(--accent), #c8f0e4);
+  box-shadow: 0 2px 7px rgba(42, 141, 115, 0.056);
 }
 
 .button--primary:hover {
-  box-shadow: 0 20px 48px rgba(88, 242, 177, 0.32);
+  box-shadow: 0 3px 8px rgba(42, 141, 115, 0.07);
 }
 
 .button--primary:active {
-  box-shadow: 0 8px 20px rgba(88, 242, 177, 0.16);
+  box-shadow: 0 1px 4px rgba(42, 141, 115, 0.056);
 }
 
 .button--secondary {
@@ -247,6 +612,16 @@ select {
   color: var(--text);
   background: rgba(88, 242, 177, 0.08);
   border-color: rgba(88, 242, 177, 0.18);
+}
+
+.pop-bg {
+  background-color:
+    (circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.025) 100%
+    );
 }
 
 .hero-block,
@@ -302,11 +677,18 @@ select {
 .claim-lead h1 {
   margin: 1rem 0 0;
   font-family:
-    var(--font-display), "Aptos Display", "Segoe UI Variable Display",
+    var(--font-display-face), "Aptos Display", "Segoe UI Variable Display",
     "Segoe UI", sans-serif;
   font-size: clamp(1.4rem, 6vw, 3.8rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
+}
+
+.wallet-card h1,
+.phone-title {
+  font-family:
+    var(--font-display-face), "Aptos Display", "Segoe UI Variable Display",
+    "Segoe UI", sans-serif;
 }
 
 .hero-copy p,
@@ -681,7 +1063,7 @@ select {
 
 .phone-title {
   margin: 0.35rem 0 0;
-  font-family: var(--font-display);
+  font-family: var(--font-display-face);
   font-size: clamp(2.2rem, 7vw, 3.1rem);
   line-height: 0.96;
   letter-spacing: -0.06em;
@@ -1552,4 +1934,8 @@ select {
     width: calc(100vw - 0.8rem);
     bottom: max(0.45rem, env(safe-area-inset-bottom));
   }
+}
+
+.text-primary {
+  color: #ffffff;
 }

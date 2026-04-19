@@ -39,13 +39,33 @@ export function SettingsSheetModal({
     >
       <section className="tl-panel rounded-[26px] p-4">
         <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.76rem] font-bold text-accent-deep dark:text-accent">
+          <div className="grid h-12 min-w-12 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.76rem] font-bold text-accent-deep dark:text-accent">
             {initialsFor(user.displayName)}
           </div>
 
-          <div className="min-w-0">
-            <div className="truncate text-[0.92rem] font-semibold text-[var(--text)]">{user.displayName}</div>
-            <div className="tl-text-soft mt-1 text-[0.78rem]">@{user.handle}</div>
+          <div className="flex items-center justify-between gap-3 w-full">
+            <div className="min-w-0">
+              <div className="truncate text-[0.92rem] font-semibold text-[var(--text)]">{user.displayName}</div>
+              <div className="tl-text-soft mt-1 text-[0.78rem]">@{user.handle}</div>
+            </div>
+
+
+            <Link
+              href="/app/profile"
+              className="tl-field button flex items-center justify-between rounded-[18px] px-2 py-1.5 transition hover:bg-[var(--surface-soft)]"
+            >
+              {/* <span className="flex items-center gap-3">
+              <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">
+                <UserRound className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+              </span>
+              <span>
+                <span className="block text-[0.84rem] font-semibold text-[var(--text)]">Profile</span>
+                <span className="tl-text-soft block text-[0.72rem]">Identity and sender details</span>
+              </span>
+            </span> */}
+              <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
+            </Link>
+
           </div>
         </div>
       </section>
@@ -104,21 +124,6 @@ export function SettingsSheetModal({
       <section className="tl-panel mt-4 rounded-[26px] p-4">
         <div className="tl-text-muted text-[0.66rem] uppercase tracking-[0.18em]">Sections</div>
         <div className="mt-3 space-y-2">
-          <Link
-            href="/app/profile"
-            className="tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
-          >
-            <span className="flex items-center gap-3">
-              <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">
-                <UserRound className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              </span>
-              <span>
-                <span className="block text-[0.84rem] font-semibold text-[var(--text)]">Profile</span>
-                <span className="tl-text-soft block text-[0.72rem]">Identity and sender details</span>
-              </span>
-            </span>
-            <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
-          </Link>
 
           <Link
             href="/app/wallets"

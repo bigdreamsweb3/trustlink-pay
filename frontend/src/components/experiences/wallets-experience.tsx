@@ -212,6 +212,7 @@ export function WalletsExperience() {
       setNotice("Receiver wallet saved.");
       showToast("Receiver wallet added.");
     } catch (saveError) {
+      setOtpModalOpen(false);
       setError(saveError instanceof Error ? saveError.message : "Could not save wallet");
     } finally {
       setBusy(false);

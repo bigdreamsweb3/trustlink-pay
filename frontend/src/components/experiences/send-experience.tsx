@@ -275,17 +275,24 @@ export function SendExperience() {
     return resolved;
   }
 
+  function applyRecipientVerificationState(resolved: ResolvedRecipientLookup) {
+    const trustLinkVerified = resolved.recipient?.status === "registered";
+    const whatsappVerified = resolved.verification.exists || receiverCheckSkipped;
+
+    setReceiverWhatsAppVerified(whatsappVerified);
+    setPhoneVerificationState(trustLinkVerified || whatsappVerified ? (whatsappVerified ? "valid" : "warning") : "warning");
+    setPhoneVerificationLabel(
+      trustLinkVerified && !whatsappVerified ? "Verify on WhatsApp or skip to continue." : null,
+    );
+  }
+
   function applyResolvedRecipient(resolved: ResolvedRecipientLookup) {
     setForm((current) => ({ ...current, receiverPhone: resolved.normalizedPhone }));
     setReceiverCountry(resolved.country);
     setShowCountryFallback(false);
     setSuggestedCountries([]);
     setLookupError(null);
-    setReceiverWhatsAppVerified(resolved.verification.exists || resolved.recipient?.status === "registered");
-    setPhoneVerificationState(
-      resolved.recipient?.status === "registered" || resolved.verification.exists ? "valid" : "warning",
-    );
-    setPhoneVerificationLabel(null);
+    applyRecipientVerificationState(resolved);
     setPhoneVerificationDetails({
       displayName: resolved.verification.displayName,
       profilePic: resolved.verification.profilePic,
@@ -307,11 +314,7 @@ export function SendExperience() {
     setShowCountryFallback(Boolean(options?.revealCountryFallback));
     setSuggestedCountries(resolved.country ? [resolved.country, ...suggestedCountries].filter((country, index, array) => array.findIndex((item) => item.iso2 === country.iso2) === index) : suggestedCountries);
     setLookupError(null);
-    setReceiverWhatsAppVerified(resolved.verification.exists || resolved.recipient?.status === "registered");
-    setPhoneVerificationState(
-      resolved.recipient?.status === "registered" || resolved.verification.exists ? "valid" : "warning",
-    );
-    setPhoneVerificationLabel(null);
+    applyRecipientVerificationState(resolved);
     setPhoneVerificationDetails({
       displayName: resolved.verification.displayName,
       profilePic: resolved.verification.profilePic,
@@ -913,7 +916,7 @@ export function SendExperience() {
                 verificationState={phoneVerificationState}
                 verificationLabel={phoneVerificationLabel}
                 verificationDetails={phoneVerificationDetails}
-                showVerificationActions={recipientPreview?.status !== "registered"}
+                showVerificationActions={!receiverCheckSkipped && !receiverWhatsAppVerified}
                 showCountryFallback={showCountryFallback}
                 selectedCountry={manualCountry}
                 suggestedCountries={suggestedCountries}
@@ -941,8 +944,9 @@ export function SendExperience() {
                 }}
                 onSkipVerification={() => {
                   setReceiverCheckSkipped(true);
+                  setReceiverWhatsAppVerified(true);
                   setLookupError(null);
-                  setPhoneVerificationState("warning");
+                  setPhoneVerificationState("valid");
                   setPhoneVerificationLabel(manualCountry ? `Continuing with ${manualCountry.name}...` : null);
                 }}
                 skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}

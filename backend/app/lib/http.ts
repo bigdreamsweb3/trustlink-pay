@@ -12,8 +12,45 @@ export function fail(message: string, status = 400, details?: unknown) {
 export function toErrorResponse(error: unknown) {
   if (error instanceof ZodError) {
     const firstPath = error.issues[0]?.path?.[0];
-    const isRequestBodyError = typeof firstPath === "string" && ["phoneNumber", "otp", "paymentId", "walletAddress", "receiverWalletId", "displayName", "handle", "pin", "challengeToken", "amount", "token", "tokenMintAddress", "escrowVaultAddress", "senderWallet", "senderPhoneNumber", "purpose"].includes(firstPath);
+    const isRequestBodyError =
+      typeof firstPath === "string" &&
+      [
+        "phoneNumber",
+        "otp",
+        "paymentId",
+        "walletAddress",
+        "walletName",
+        "receiverWalletId",
+        "displayName",
+        "handle",
+        "pin",
+        "challengeToken",
+        "amount",
+        "token",
+        "tokenMintAddress",
+        "escrowVaultAddress",
+        "senderWallet",
+        "senderPhoneNumber",
+        "purpose",
+      ].includes(firstPath);
     return fail(isRequestBodyError ? "Invalid request body" : "Server configuration error", isRequestBodyError ? 400 : 500, error.flatten());
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const code = "code" in error ? String(error.code) : "";
+    const constraint = "constraint" in error ? String(error.constraint) : "";
+
+    if (code === "23505") {
+      if (constraint === "idx_receiver_wallets_user_wallet_name") {
+        return fail("You already saved a wallet with this name", 400);
+      }
+
+      if (constraint === "idx_receiver_wallets_user_wallet_address") {
+        return fail("This wallet address is already saved", 400);
+      }
+
+      return fail("This record already exists", 400);
+    }
   }
 
   if (error instanceof Error) {

@@ -5,6 +5,7 @@ import type { Route } from "next";
 import type { ReactNode } from "react";
 
 import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
 import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
 import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
@@ -76,7 +77,8 @@ export function AppMobileShell({
   } = useWallet();
   const walletPanelOpen = activePanel === "wallet";
   const settingsPanelOpen = activePanel === "settings";
-  const desktopPanelOpen = walletPanelOpen || settingsPanelOpen;
+  const profilePanelOpen = activePanel === "profile";
+  const desktopPanelOpen = walletPanelOpen || settingsPanelOpen || profilePanelOpen;
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -133,7 +135,7 @@ export function AppMobileShell({
           <div className="flex flex-col shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => router.push("/app/profile")}
+              onClick={() => openPanel("profile")}
               className="tl-field flex items-center gap-3 rounded-[22px] px-3 py-3 text-left transition button"
             >
               <span className="grid h-12 w-12 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-sm font-bold text-accent-deep dark:text-accent">
@@ -199,7 +201,7 @@ export function AppMobileShell({
                         </button>
                         <button
                           type="button"
-                          onClick={() => router.push("/app/profile")}
+                          onClick={() => openPanel("profile")}
                           className="tl-field grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
                           aria-label="Open profile"
                         >
@@ -233,7 +235,7 @@ export function AppMobileShell({
             </div>
 
             {desktopPanelOpen ? (
-              <div className="relative hidden md:sticky md:top-6 md:block md:h-[calc(100vh-3rem)] md:w-[360px] md:min-w-[340px] md:self-start">
+              <div className="relative hidden md:sticky md:top-6 md:block min-h-screen md:max-h-screen md:w-[360px] md:min-w-[340px] md:self-start">
                 <WalletSheetModal
                   open={walletPanelOpen}
                   session={session}
@@ -246,6 +248,12 @@ export function AppMobileShell({
                 />
                 <SettingsSheetModal
                   open={settingsPanelOpen}
+                  user={user}
+                  desktopInline
+                  onClose={closePanel}
+                />
+                <ProfileSheetModal
+                  open={profilePanelOpen}
                   user={user}
                   desktopInline
                   onClose={closePanel}
@@ -300,6 +308,11 @@ export function AppMobileShell({
       />
       <SettingsSheetModal
         open={settingsPanelOpen}
+        user={user}
+        onClose={closePanel}
+      />
+      <ProfileSheetModal
+        open={profilePanelOpen}
         user={user}
         onClose={closePanel}
       />

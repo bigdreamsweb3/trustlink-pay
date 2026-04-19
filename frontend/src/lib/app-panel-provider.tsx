@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-type AppPanelId = "wallet" | "settings" | null;
+type AppPanelId = "wallet" | "settings" | "profile" | null;
 
 type AppPanelContextValue = {
   activePanel: AppPanelId;

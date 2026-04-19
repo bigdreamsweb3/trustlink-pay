@@ -12,6 +12,8 @@ import {
   countReceiverWalletsByUserId,
   createReceiverWallet,
   deleteReceiverWalletById,
+  findReceiverWalletByAddress,
+  findReceiverWalletByName,
   listReceiverWalletsByUserId,
 } from "@/app/db/receiver-wallets";
 import { issueAccessToken, issueAuthChallengeToken, requireAuthChallengeToken } from "@/app/lib/auth";
@@ -561,10 +563,23 @@ export async function addReceiverWalletForUser(
     throw new Error("You can add up to 3 receiver wallets");
   }
 
+  const normalizedWalletName = params.walletName.trim();
+  const normalizedWalletAddress = params.walletAddress.trim();
+
+  const existingByName = await findReceiverWalletByName(authUser.id, normalizedWalletName);
+  if (existingByName) {
+    throw new Error("You already saved a wallet with this name");
+  }
+
+  const existingByAddress = await findReceiverWalletByAddress(authUser.id, normalizedWalletAddress);
+  if (existingByAddress) {
+    throw new Error("This wallet address is already saved");
+  }
+
   const wallet = await createReceiverWallet({
     userId: authUser.id,
-    walletName: params.walletName,
-    walletAddress: params.walletAddress,
+    walletName: normalizedWalletName,
+    walletAddress: normalizedWalletAddress,
   });
 
   logger.info("receiver_wallet.create.succeeded", {

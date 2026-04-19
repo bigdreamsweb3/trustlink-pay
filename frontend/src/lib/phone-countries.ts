@@ -3,35 +3,20 @@ export type CountryOption = {
   name: string;
   dialCode: string;
   flag: string;
+  localPrefix?: string;
+  localLength?: number;
 };
 
 export const COUNTRY_OPTIONS: CountryOption[] = [
-  { iso2: "NG", name: "Nigeria", dialCode: "+234", flag: "🇳🇬" },
-  // { iso2: "US", name: "United States", dialCode: "+1", flag: "🇺🇸" },
-  // { iso2: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },
-  // { iso2: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦" },
-  // { iso2: "GH", name: "Ghana", dialCode: "+233", flag: "🇬🇭" },
-  // { iso2: "KE", name: "Kenya", dialCode: "+254", flag: "🇰🇪" },
-  // { iso2: "ZA", name: "South Africa", dialCode: "+27", flag: "🇿🇦" },
-  // { iso2: "AE", name: "United Arab Emirates", dialCode: "+971", flag: "🇦🇪" },
-  // { iso2: "DE", name: "Germany", dialCode: "+49", flag: "🇩🇪" },
-  // { iso2: "FR", name: "France", dialCode: "+33", flag: "🇫🇷" },
-  // { iso2: "NL", name: "Netherlands", dialCode: "+31", flag: "🇳🇱" },
-  // { iso2: "IT", name: "Italy", dialCode: "+39", flag: "🇮🇹" },
-  // { iso2: "ES", name: "Spain", dialCode: "+34", flag: "🇪🇸" },
-  // { iso2: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹" },
-  // { iso2: "BR", name: "Brazil", dialCode: "+55", flag: "🇧🇷" },
-  // { iso2: "MX", name: "Mexico", dialCode: "+52", flag: "🇲🇽" },
-  // { iso2: "IN", name: "India", dialCode: "+91", flag: "🇮🇳" },
-  // { iso2: "PK", name: "Pakistan", dialCode: "+92", flag: "🇵🇰" },
-  // { iso2: "BD", name: "Bangladesh", dialCode: "+880", flag: "🇧🇩" },
-  // { iso2: "ID", name: "Indonesia", dialCode: "+62", flag: "🇮🇩" },
-  // { iso2: "SG", name: "Singapore", dialCode: "+65", flag: "🇸🇬" },
-  // { iso2: "MY", name: "Malaysia", dialCode: "+60", flag: "🇲🇾" },
-  // { iso2: "TH", name: "Thailand", dialCode: "+66", flag: "🇹🇭" },
-  // { iso2: "PH", name: "Philippines", dialCode: "+63", flag: "🇵🇭" },
-  // { iso2: "AU", name: "Australia", dialCode: "+61", flag: "🇦🇺" },
-  // { iso2: "NZ", name: "New Zealand", dialCode: "+64", flag: "🇳🇿" }
+  { iso2: "NG", name: "Nigeria", dialCode: "+234", flag: "🇳🇬", localPrefix: "0", localLength: 10 },
+  { iso2: "GH", name: "Ghana", dialCode: "+233", flag: "🇬🇭", localPrefix: "0", localLength: 9 },
+  { iso2: "KE", name: "Kenya", dialCode: "+254", flag: "🇰🇪", localPrefix: "0", localLength: 9 },
+  { iso2: "ZA", name: "South Africa", dialCode: "+27", flag: "🇿🇦", localPrefix: "0", localLength: 9 },
+  { iso2: "US", name: "United States", dialCode: "+1", flag: "🇺🇸", localLength: 10 },
+  { iso2: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦", localLength: 10 },
+  { iso2: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧", localPrefix: "0", localLength: 10 },
+  { iso2: "AE", name: "United Arab Emirates", dialCode: "+971", flag: "🇦🇪", localPrefix: "0", localLength: 9 },
+  { iso2: "IN", name: "India", dialCode: "+91", flag: "🇮🇳", localLength: 10 },
 ];
 
 export function getCountryByIso2(iso2: string | null | undefined) {
@@ -39,22 +24,14 @@ export function getCountryByIso2(iso2: string | null | undefined) {
     return null;
   }
 
-  return (
-    COUNTRY_OPTIONS.find((option) => option.iso2 === iso2.toUpperCase()) ?? null
-  );
+  return COUNTRY_OPTIONS.find((option) => option.iso2 === iso2.toUpperCase()) ?? null;
 }
 
 export function getCountryByDialCode(phoneNumber: string) {
   const normalized = phoneNumber.trim();
-  const matches = COUNTRY_OPTIONS.filter((option) =>
-    normalized.startsWith(option.dialCode),
-  );
+  const matches = COUNTRY_OPTIONS.filter((option) => normalized.startsWith(option.dialCode));
 
-  return (
-    matches.sort(
-      (left, right) => right.dialCode.length - left.dialCode.length,
-    )[0] ?? null
-  );
+  return matches.sort((left, right) => right.dialCode.length - left.dialCode.length)[0] ?? null;
 }
 
 export function splitPhoneNumber(phoneNumber: string) {
@@ -94,4 +71,145 @@ export function detectCountryFromLocale() {
   }
 
   return COUNTRY_OPTIONS[0];
+}
+
+export function digitsOnly(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function formatGroupedDigits(digits: string, groupSizes: number[]) {
+  const groups: string[] = [];
+  let cursor = 0;
+
+  for (const size of groupSizes) {
+    if (cursor >= digits.length) {
+      break;
+    }
+
+    groups.push(digits.slice(cursor, cursor + size));
+    cursor += size;
+  }
+
+  while (cursor < digits.length) {
+    groups.push(digits.slice(cursor, cursor + 4));
+    cursor += 4;
+  }
+
+  return groups.filter(Boolean).join(" ");
+}
+
+export function formatPhoneInput(value: string) {
+  const trimmed = value.trim();
+  const hasPlus = trimmed.startsWith("+");
+  const digits = digitsOnly(trimmed);
+
+  if (!digits) {
+    return hasPlus ? "+" : "";
+  }
+
+  if (hasPlus) {
+    return `+${formatGroupedDigits(digits, [3, 3, 4])}`;
+  }
+
+  return formatGroupedDigits(digits, [3, 3, 4]);
+}
+
+export function getCountryFromBareDialCode(value: string) {
+  const digits = digitsOnly(value);
+
+  if (!digits || value.trim().startsWith("+") || value.trim().startsWith("0")) {
+    return null;
+  }
+
+  const country = getCountryByDialCode(`+${digits}`);
+
+  if (!country) {
+    return null;
+  }
+
+  const dialDigits = digitsOnly(country.dialCode);
+
+  return digits.length > dialDigits.length ? country : null;
+}
+
+export function normalizePhoneInput(value: string, country?: CountryOption | null) {
+  const trimmed = value.trim();
+  const digits = digitsOnly(trimmed);
+
+  if (!digits) {
+    return null;
+  }
+
+  if (trimmed.startsWith("+")) {
+    return `+${digits}`;
+  }
+
+  if (!country) {
+    return null;
+  }
+
+  if (trimmed.startsWith("0")) {
+    const localDigits = digits.slice(1);
+    return localDigits ? `${country.dialCode}${localDigits}` : null;
+  }
+
+  return `${country.dialCode}${digits}`;
+}
+
+export function getHeuristicCountries(localDigits: string) {
+  if (!/^\d{10}$/.test(localDigits)) {
+    return [] as CountryOption[];
+  }
+
+  const heuristicMatches: CountryOption[] = [];
+
+  // NANP-like 10-digit numbers.
+  if (/^[2-9]\d{9}$/.test(localDigits)) {
+    const us = getCountryByIso2("US");
+    const ca = getCountryByIso2("CA");
+
+    if (us) {
+      heuristicMatches.push(us);
+    }
+
+    if (ca) {
+      heuristicMatches.push(ca);
+    }
+  }
+
+  // Nigeria commonly entered as 10 digits without the leading 0.
+  if (/^[7-9]\d{9}$/.test(localDigits)) {
+    const ng = getCountryByIso2("NG");
+
+    if (ng) {
+      heuristicMatches.push(ng);
+    }
+  }
+
+  return heuristicMatches;
+}
+
+export function getCandidateCountries(params: {
+  localDigits: string;
+  preferredCountry?: CountryOption | null;
+  localeCountry?: CountryOption | null;
+  manualCountry?: CountryOption | null;
+}) {
+  const ordered = [
+    params.manualCountry ?? null,
+    params.preferredCountry ?? null,
+    params.localeCountry ?? null,
+    ...getHeuristicCountries(params.localDigits),
+  ].filter(Boolean) as CountryOption[];
+
+  const seen = new Set<string>();
+
+  return ordered.filter((country) => {
+    if (seen.has(country.iso2)) {
+      return false;
+    }
+
+    seen.add(country.iso2);
+    return true;
+  });
 }

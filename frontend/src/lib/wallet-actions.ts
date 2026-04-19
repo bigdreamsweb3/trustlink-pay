@@ -3,19 +3,17 @@
 import {
   connectSolanaWallet,
   disconnectSolanaWallet,
+  getWalletEnvironment,
   listAvailableSolanaWallets,
   type ConnectedWalletSession,
   type DetectedWallet,
 } from "@/src/lib/wallet";
 
-const NO_WALLET_ERROR =
-  "Install or open a Solana wallet on this device to connect a sender wallet.";
-
 export function getWalletsForConnection(): DetectedWallet[] {
   const wallets = listAvailableSolanaWallets();
 
   if (wallets.length === 0) {
-    throw new Error(NO_WALLET_ERROR);
+    throw new Error(getWalletEnvironment().helpMessage);
   }
 
   return wallets;
@@ -36,4 +34,3 @@ export function getWalletConnectionErrorMessage(error: unknown) {
 export function getWalletDisconnectionErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Could not disconnect wallet";
 }
-

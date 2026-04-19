@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
@@ -14,8 +14,14 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
-import { splitPhoneNumber, type CountryOption } from "@/src/lib/phone-countries";
-import { rememberCountryUsage } from "@/src/lib/phone-preferences";
+import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
+import {
+  detectCountryFromLocale,
+  formatPhoneInput,
+  getCountryByIso2,
+  type CountryOption,
+} from "@/src/lib/phone-countries";
+import { loadPreferredCountryIso2, rememberCountryUsage } from "@/src/lib/phone-preferences";
 import type {
   PaymentNotificationStatus,
   PaymentRecord,
@@ -84,6 +90,49 @@ type SendCostEstimate = {
   networkFeeUsd: number | null;
 };
 
+type ResolvedRecipientLookup = {
+  verification: WhatsAppNumberVerificationResult;
+  recipient: RecipientLookupResult | null;
+  normalizedPhone: string;
+  country: CountryOption | null;
+};
+
+function resetRecipientResolution(params: {
+  setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
+  setPhoneVerificationLabel: (value: string | null) => void;
+  setPhoneVerificationDetails: (value: {
+    displayName: string | null;
+    profilePic: string | null;
+    exists: boolean;
+    isBusiness: boolean;
+    url: string;
+    resolvedPhoneNumber?: string | null;
+    detectedCountry?: CountryOption | null;
+  } | null) => void;
+  setReceiverWhatsAppVerified: (value: boolean) => void;
+  setReceiverCheckSkipped: (value: boolean) => void;
+  setRecipientPreview: (value: RecipientLookupResult | null) => void;
+  setLookupError: (value: string | null) => void;
+  setPreviewBusy: (value: boolean) => void;
+  setShowCountryFallback: (value: boolean) => void;
+  setSuggestedCountries: (value: CountryOption[]) => void;
+  setReceiverCountry: (value: CountryOption | null) => void;
+  setForm: Dispatch<SetStateAction<{ receiverPhone: string; amount: string; token: string }>>;
+}) {
+  params.setPhoneVerificationState("idle");
+  params.setPhoneVerificationLabel(null);
+  params.setPhoneVerificationDetails(null);
+  params.setReceiverWhatsAppVerified(false);
+  params.setReceiverCheckSkipped(false);
+  params.setRecipientPreview(null);
+  params.setLookupError(null);
+  params.setPreviewBusy(false);
+  params.setShowCountryFallback(false);
+  params.setSuggestedCountries([]);
+  params.setReceiverCountry(null);
+  params.setForm((current) => ({ ...current, receiverPhone: "" }));
+}
+
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
   const searchParams = useSearchParams();
@@ -92,7 +141,12 @@ export function SendExperience() {
   const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
+  const [receiverPhoneInput, setReceiverPhoneInput] = useState("");
   const [receiverCountry, setReceiverCountry] = useState<CountryOption | null>(null);
+  const [manualCountry, setManualCountry] = useState<CountryOption | null>(null);
+  const [manualCountryLocked, setManualCountryLocked] = useState(false);
+  const [showCountryFallback, setShowCountryFallback] = useState(false);
+  const [suggestedCountries, setSuggestedCountries] = useState<CountryOption[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -105,6 +159,8 @@ export function SendExperience() {
     exists: boolean;
     isBusiness: boolean;
     url: string;
+    resolvedPhoneNumber?: string | null;
+    detectedCountry?: CountryOption | null;
   } | null>(null);
   const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] = useState(false);
   const [receiverCheckSkipped, setReceiverCheckSkipped] = useState(false);
@@ -144,14 +200,19 @@ export function SendExperience() {
     token: string;
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
+  const resolutionCache = useRef(new Map<string, ResolvedRecipientLookup>());
+  const latestLookupRequestId = useRef(0);
   const [form, setForm] = useState({
     receiverPhone: "",
     amount: "",
     token: ""
   });
 
-  const receiverLocalDigits = useMemo(() => splitPhoneNumber(form.receiverPhone).localNumber, [form.receiverPhone]);
-  const canLookupRecipient = useMemo(() => Boolean(receiverCountry) && receiverLocalDigits.length === 10, [receiverCountry, receiverLocalDigits.length]);
+  const localeCountry = useMemo(() => detectCountryFromLocale(), []);
+  const preferredCountry = useMemo(() => {
+    const preferredIso2 = loadPreferredCountryIso2();
+    return getCountryByIso2(preferredIso2) ?? localeCountry;
+  }, [localeCountry]);
   const sendableTokens = useMemo(() => supportedTokens.filter((token) => token.supported), [supportedTokens]);
   const selectedToken = sendableTokens.find((token) => token.mintAddress === form.token) ?? null;
   const walletAddress = walletSession?.address ?? null;
@@ -164,8 +225,7 @@ export function SendExperience() {
     Boolean(walletAddress) &&
     Boolean(selectedToken) &&
     hasAmount &&
-    Boolean(recipientPreview?.verified) &&
-    (receiverWhatsAppVerified || receiverCheckSkipped || recipientPreview?.status === "registered");
+    Boolean(recipientPreview?.verified);
 
   useEffect(() => {
     setWalletSession(getConnectedWalletSession());
@@ -179,8 +239,90 @@ export function SendExperience() {
       return;
     }
 
-    setForm((current) => (current.receiverPhone === prefilledPhone ? current : { ...current, receiverPhone: prefilledPhone }));
+    setReceiverPhoneInput(prefilledPhone);
   }, [searchParams]);
+
+  async function lookupResolvedRecipient(
+    normalizedPhone: string,
+    country: CountryOption | null,
+    options?: { allowUnverified?: boolean },
+  ) {
+    const cacheKey = `${normalizedPhone}:${options?.allowUnverified ? "manual" : "auto"}`;
+    const cached = resolutionCache.current.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const [verification, recipient] = await Promise.all([
+      apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
+        phoneNumber: normalizedPhone,
+      }),
+      apiPost<RecipientLookupResult>("/api/recipient/lookup", {
+        phoneNumber: normalizedPhone,
+        skipWhatsAppCheck: options?.allowUnverified,
+      }),
+    ]);
+
+    const resolved = {
+      verification,
+      recipient,
+      normalizedPhone,
+      country,
+    } satisfies ResolvedRecipientLookup;
+
+    resolutionCache.current.set(cacheKey, resolved);
+    return resolved;
+  }
+
+  function applyResolvedRecipient(resolved: ResolvedRecipientLookup) {
+    setForm((current) => ({ ...current, receiverPhone: resolved.normalizedPhone }));
+    setReceiverCountry(resolved.country);
+    setShowCountryFallback(false);
+    setSuggestedCountries([]);
+    setLookupError(null);
+    setReceiverWhatsAppVerified(resolved.verification.exists || resolved.recipient?.status === "registered");
+    setPhoneVerificationState(
+      resolved.recipient?.status === "registered" || resolved.verification.exists ? "valid" : "warning",
+    );
+    setPhoneVerificationLabel(null);
+    setPhoneVerificationDetails({
+      displayName: resolved.verification.displayName,
+      profilePic: resolved.verification.profilePic,
+      exists: resolved.verification.exists,
+      isBusiness: resolved.verification.isBusiness,
+      url: resolved.verification.url,
+      resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone),
+      detectedCountry: resolved.country,
+    });
+    setRecipientPreview(resolved.recipient);
+  }
+
+  function applyRecipientResolutionPreview(
+    resolved: ResolvedRecipientLookup,
+    options?: { revealCountryFallback?: boolean },
+  ) {
+    setForm((current) => ({ ...current, receiverPhone: resolved.normalizedPhone }));
+    setReceiverCountry(resolved.country);
+    setShowCountryFallback(Boolean(options?.revealCountryFallback));
+    setSuggestedCountries(resolved.country ? [resolved.country, ...suggestedCountries].filter((country, index, array) => array.findIndex((item) => item.iso2 === country.iso2) === index) : suggestedCountries);
+    setLookupError(null);
+    setReceiverWhatsAppVerified(resolved.verification.exists || resolved.recipient?.status === "registered");
+    setPhoneVerificationState(
+      resolved.recipient?.status === "registered" || resolved.verification.exists ? "valid" : "warning",
+    );
+    setPhoneVerificationLabel(null);
+    setPhoneVerificationDetails({
+      displayName: resolved.verification.displayName,
+      profilePic: resolved.verification.profilePic,
+      exists: resolved.verification.exists,
+      isBusiness: resolved.verification.isBusiness,
+      url: resolved.verification.url,
+      resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone),
+      detectedCountry: resolved.country,
+    });
+    setRecipientPreview(resolved.recipient);
+  }
 
   useEffect(() => {
     if (!walletAddress) {
@@ -229,74 +371,115 @@ export function SendExperience() {
   }, [walletAddress]);
 
   useEffect(() => {
-    if (!canLookupRecipient) {
-      setPhoneVerificationState("idle");
-      setPhoneVerificationLabel(null);
-      setPhoneVerificationDetails(null);
-      setReceiverWhatsAppVerified(false);
-      setReceiverCheckSkipped(false);
-      setRecipientPreview(null);
-      setLookupError(null);
-      setPreviewBusy(false);
+    const trimmed = receiverPhoneInput.trim();
+
+    if (!trimmed) {
+      resetRecipientResolution({
+        setPhoneVerificationState,
+        setPhoneVerificationLabel,
+        setPhoneVerificationDetails,
+        setReceiverWhatsAppVerified,
+        setReceiverCheckSkipped,
+        setRecipientPreview,
+        setLookupError,
+        setPreviewBusy,
+        setShowCountryFallback,
+        setSuggestedCountries,
+        setReceiverCountry,
+        setForm,
+      });
       return;
     }
+
+    const requestId = latestLookupRequestId.current + 1;
+    latestLookupRequestId.current = requestId;
 
     const timer = window.setTimeout(async () => {
       setPreviewBusy(true);
       setLookupError(null);
+      setPhoneVerificationDetails(null);
+      setRecipientPreview(null);
+      setReceiverWhatsAppVerified(false);
+      setShowCountryFallback(false);
       setPhoneVerificationState("checking");
-      setPhoneVerificationLabel("Checking WhatsApp availability...");
+      setPhoneVerificationLabel("Detecting recipient...");
 
       try {
-        const verification = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
-          phoneNumber: form.receiverPhone
+        let resolved: ResolvedRecipientLookup | null = null;
+        const plan = buildPhoneResolutionPlan({
+          input: trimmed,
+          localeCountry,
+          preferredCountry,
+          selectedCountry: manualCountry,
+          selectedCountryLocked: manualCountryLocked,
         });
 
-        setReceiverWhatsAppVerified(verification.isBusiness);
-        setPhoneVerificationDetails({
-          displayName: verification.displayName,
-          profilePic: verification.profilePic,
-          exists: verification.exists,
-          isBusiness: verification.isBusiness,
-          url: verification.url,
-        });
-        setPhoneVerificationState(verification.isBusiness ? "valid" : "warning");
-        setPhoneVerificationLabel(null);
-
-        if (!verification.exists && !receiverCheckSkipped) {
-          setRecipientPreview(null);
+        if (plan.kind === "idle") {
+          setPhoneVerificationState("idle");
+          setPhoneVerificationLabel(null);
+          setPreviewBusy(false);
           return;
         }
 
-        const result = await apiPost<RecipientLookupResult>("/api/recipient/lookup", {
-          phoneNumber: form.receiverPhone,
-          skipWhatsAppCheck: receiverCheckSkipped || !verification.isBusiness,
-        });
-        setRecipientPreview(result);
-        if (result.status === "registered") {
-          setReceiverWhatsAppVerified(true);
+        if (plan.kind === "fallback") {
+          setForm((current) => ({ ...current, receiverPhone: "" }));
+          setReceiverCountry(null);
+          setSuggestedCountries(plan.suggestedCountries);
+          setShowCountryFallback(!manualCountryLocked);
+          setPhoneVerificationState("warning");
+          setPhoneVerificationLabel(null);
+          setPreviewBusy(false);
+          return;
         }
+
+        setSuggestedCountries(plan.suggestedCountries);
+
+        const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates;
+
+        for (const candidate of candidates) {
+          resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, {
+            allowUnverified: receiverCheckSkipped,
+          });
+
+          if (latestLookupRequestId.current !== requestId) {
+            return;
+          }
+
+          if (resolved.recipient?.verified) {
+            applyResolvedRecipient(resolved);
+            return;
+          }
+
+          if (plan.kind === "single") {
+            applyRecipientResolutionPreview(resolved, {
+              revealCountryFallback: candidate.revealFallback,
+            });
+            return;
+          }
+        }
+
+        setForm((current) => ({ ...current, receiverPhone: "" }));
+        setReceiverCountry(null);
+        setShowCountryFallback(!manualCountryLocked);
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
       } catch (lookupRequestError) {
         const message = lookupRequestError instanceof Error ? lookupRequestError.message : "Could not verify recipient";
         setLookupError(message);
         setRecipientPreview(null);
-        setPhoneVerificationDetails({
-          displayName: null,
-          profilePic: null,
-          exists: false,
-          isBusiness: false,
-          url: `https://api.whatsapp.com/send?phone=${form.receiverPhone.replace(/\D/g, "")}`,
-        });
         setReceiverWhatsAppVerified(false);
         setPhoneVerificationState("warning");
         setPhoneVerificationLabel(null);
+        setShowCountryFallback(!manualCountryLocked);
       } finally {
-        setPreviewBusy(false);
+        if (latestLookupRequestId.current === requestId) {
+          setPreviewBusy(false);
+        }
       }
     }, 420);
 
     return () => window.clearTimeout(timer);
-  }, [canLookupRecipient, form.receiverPhone, receiverCheckSkipped]);
+  }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
   useEffect(() => {
     if (!sendSuccessPaymentId || !accessToken) {
@@ -534,6 +717,11 @@ export function SendExperience() {
         amount: form.amount,
         token: result.tokenSymbol ?? selectedToken.symbol
       });
+      setReceiverPhoneInput("");
+      setManualCountry(null);
+      setManualCountryLocked(false);
+      setShowCountryFallback(false);
+      setSuggestedCountries([]);
       setForm((current) => ({ ...current, receiverPhone: "", amount: "2.5" }));
       setRecipientPreview(null);
       setConfirmOpen(false);
@@ -698,7 +886,7 @@ export function SendExperience() {
             </div>
           </section>
         ) : (
-          <div className="rounded-[28px] tl-panel p-4">
+          <div className="rounded-[28px] tl-panel p-4 relative">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">Sender wallet</div>
@@ -720,26 +908,42 @@ export function SendExperience() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               <PhoneNumberInput
                 label="Receiver WhatsApp number"
-                value={form.receiverPhone}
-                maxLocalDigits={10}
+                value={receiverPhoneInput}
+                placeholder="Enter phone number"
                 verificationState={phoneVerificationState}
                 verificationLabel={phoneVerificationLabel}
                 verificationDetails={phoneVerificationDetails}
                 showVerificationActions={recipientPreview?.status !== "registered"}
-                onChange={(value, country) => {
-                  setForm((current) => ({ ...current, receiverPhone: value }));
-                  setReceiverCountry(country);
+                showCountryFallback={showCountryFallback}
+                selectedCountry={manualCountry}
+                suggestedCountries={suggestedCountries}
+                onChange={(value) => {
+                  setReceiverPhoneInput(value);
+                  setManualCountry(null);
+                  setManualCountryLocked(false);
                   setConfirmOpen(false);
                   setSendCostEstimate(null);
                   setLookupError(null);
                   setRecipientPreview(null);
                   setPhoneVerificationDetails(null);
                   setReceiverCheckSkipped(false);
+                  setForm((current) => ({ ...current, receiverPhone: "" }));
+                }}
+                onCountrySelect={(country) => {
+                  setManualCountry(country);
+                  setManualCountryLocked(true);
+                  setReceiverCountry(country);
+                  setReceiverCheckSkipped(false);
+                  setLookupError(null);
+                  setShowCountryFallback(false);
+                  setPhoneVerificationState("checking");
+                  setPhoneVerificationLabel(`Retrying with ${country.name}...`);
                 }}
                 onSkipVerification={() => {
                   setReceiverCheckSkipped(true);
                   setLookupError(null);
                   setPhoneVerificationState("warning");
+                  setPhoneVerificationLabel(manualCountry ? `Continuing with ${manualCountry.name}...` : null);
                 }}
                 skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
               />
@@ -754,54 +958,75 @@ export function SendExperience() {
                 </div>
               ) : recipientPreview ? (
                 <div
-                  className={`rounded-[20px] border px-4 py-3 ${recipientPreview.status === "registered"
+                  className={`rounded-[20px] border px-4 py-3 relative z-0 ${recipientPreview.status === "registered"
                     ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
                     : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
                       ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
-                      : "border-white/10 bg-pop-bg"
+                      : "hidden"
                     }`}
                 >
                   {recipientPreview.status === "registered" ? (
                     <>
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.displayName}</div>
-                          <div className="mt-1 text-[0.74rem] text-text/50">@{recipientPreview.recipient.handle}</div>
+                        <div className="min-w-full">
+                          <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
+
+
+                            <span className="rounded-full bg-[#58f2b1]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#7dffd9]">
+                              On TrustLink
+                            </span>
+                          </div>
+
+                          <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between mt-1">
+                            <div className="text-[0.72rem] text-text/40">{recipientPreview.recipient.phoneNumber}</div>
+
+                            <div className="text-[0.74rem] text-text/50">@{recipientPreview.recipient.handle}</div>
+                          </div>
                         </div>
-                        <span className="rounded-full bg-[#58f2b1]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#7dffd9]">
-                          On TrustLink
-                        </span>
+
                       </div>
                     </>
-                  ) : recipientPreview.status === "whatsapp_only" ? (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.displayName}</div>
-                          <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
+                  )
+                    // : recipientPreview.status === "whatsapp_only" ? (
+                    //   <>
+                    //     <div className="flex items-center justify-between gap-3">
+                    //       <div className="min-w-full">
+                    //         <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
+
+
+                    //           <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
+                    //         Not a TrustLink user
+                    //       </span>
+                    //         </div>
+
+                    //         <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
+                    //       </div>
+
+                    //     </div>
+                    //   </>
+                    // ) 
+                    : recipientPreview.status === "manual_invite_required" ? (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-full">
+                            <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
+
+
+                              <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
+                                Not a TrustLink user
+                              </span>
+                            </div>
+
+                            <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
+                          </div>
+
                         </div>
-                        <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
-                          Not a TrustLink user
-                        </span>
-                      </div>
-                    </>
-                  ) : recipientPreview.status === "manual_invite_required" ? (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-text">{recipientPreview.recipient.phoneNumber}</div>
-                          <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
-                        </div>
-                        <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
-                          Not a TrustLink user
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-sm font-semibold text-text">Recipient could not be verified.</div>
-                    </>
-                  )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-semibold text-text">Recipient could not be verified.</div>
+                      </>
+                    )}
                 </div>
               ) : null}
 

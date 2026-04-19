@@ -10,7 +10,15 @@ import { SiteHeader } from "@/src/components/layout/site-header";
 import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
 import type { CountryOption } from "@/src/lib/phone-countries";
-import { rememberCountryUsage } from "@/src/lib/phone-preferences";
+import {
+  detectCountryFromLocale,
+  digitsOnly,
+  formatPhoneInput,
+  getCountryByDialCode,
+  getCountryByIso2,
+} from "@/src/lib/phone-countries";
+import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
+import { loadPreferredCountryIso2, rememberCountryUsage } from "@/src/lib/phone-preferences";
 import {
   clearStoredPendingAuth,
   clearStoredToken,
@@ -56,7 +64,10 @@ export function AuthExperience({
   const router = useRouter();
   const { showToast } = useToast();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [resolvedPhoneNumber, setResolvedPhoneNumber] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<CountryOption | null>(null);
+  const [showCountryFallback, setShowCountryFallback] = useState(false);
+  const [suggestedCountries, setSuggestedCountries] = useState<CountryOption[]>([]);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [flowState, setFlowState] = useState<FlowState>("idle");
   const [busy, setBusy] = useState(false);
@@ -77,11 +88,18 @@ export function AuthExperience({
     exists: boolean;
     isBusiness: boolean;
     url: string;
+    resolvedPhoneNumber?: string | null;
+    detectedCountry?: CountryOption | null;
   } | null>(null);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneCheckSkipped, setPhoneCheckSkipped] = useState(false);
   const lastSubmittedOtpRef = useRef<string | null>(null);
   const otpRequestLockRef = useRef(false);
+  const localeCountry = useMemo(() => detectCountryFromLocale(), []);
+  const preferredCountry = useMemo(() => {
+    const preferredIso2 = loadPreferredCountryIso2();
+    return getCountryByIso2(preferredIso2) ?? localeCountry;
+  }, [localeCountry]);
 
   const otpDescription = useMemo(() => {
     const base =
@@ -124,24 +142,31 @@ export function AuthExperience({
   }, [otpCooldown]);
 
   useEffect(() => {
-    const localDigits = phoneNumber.replace(/^\+\d{1,3}/, "").replace(/[^\d]/g, "");
-    if (!phoneNumber || localDigits.length < 10) {
+    const trimmed = phoneNumber.trim();
+
+    if (!trimmed) {
+      setResolvedPhoneNumber("");
       setPhoneVerificationState("idle");
       setPhoneVerificationLabel(null);
       setPhoneVerificationDetails(null);
       setPhoneVerified(false);
       setPhoneCheckSkipped(false);
+      setShowCountryFallback(false);
+      setSuggestedCountries([]);
       return;
     }
 
-    const timer = window.setTimeout(async () => {
-      setPhoneVerificationState("checking");
-      setPhoneVerificationLabel("Checking WhatsApp availability...");
-
+    async function verifyResolvedPhone(
+      normalizedPhone: string,
+      country: CountryOption | null,
+      options?: { revealFallback?: boolean; suppressDetailsOnFailure?: boolean },
+    ) {
       try {
         const result = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
-          phoneNumber,
+          phoneNumber: normalizedPhone,
         });
+
+        setResolvedPhoneNumber(normalizedPhone);
         setPhoneVerified(result.isBusiness);
         setPhoneVerificationDetails({
           displayName: result.displayName,
@@ -149,28 +174,128 @@ export function AuthExperience({
           exists: result.exists,
           isBusiness: result.isBusiness,
           url: result.url,
+          resolvedPhoneNumber: formatPhoneInput(normalizedPhone),
+          detectedCountry: country,
         });
         setPhoneVerificationState(result.isBusiness ? "valid" : "warning");
-        setPhoneVerificationLabel(result.exists ? null : null);
-      } catch (verificationError) {
+        setPhoneVerificationLabel(null);
+        if (!result.isBusiness && options?.suppressDetailsOnFailure) {
+          setResolvedPhoneNumber("");
+          setPhoneVerificationDetails(null);
+          setPhoneVerificationState("warning");
+          setShowCountryFallback(Boolean(options?.revealFallback));
+          return;
+        }
+
+        setShowCountryFallback(Boolean(options?.revealFallback));
+      } catch {
+        if (options?.suppressDetailsOnFailure) {
+          setResolvedPhoneNumber("");
+          setPhoneVerificationDetails(null);
+          setPhoneVerificationState("warning");
+          setPhoneVerificationLabel(null);
+          setShowCountryFallback(Boolean(options?.revealFallback));
+          return;
+        }
+
+        setResolvedPhoneNumber(normalizedPhone);
         setPhoneVerified(false);
         setPhoneVerificationDetails({
           displayName: null,
           profilePic: null,
           exists: false,
           isBusiness: false,
-          url: `https://api.whatsapp.com/send?phone=${phoneNumber.replace(/\D/g, "")}`,
+          url: `https://api.whatsapp.com/send?phone=${normalizedPhone.replace(/\D/g, "")}`,
+          resolvedPhoneNumber: formatPhoneInput(normalizedPhone),
+          detectedCountry: country,
         });
         setPhoneVerificationState("warning");
         setPhoneVerificationLabel(null);
+        setShowCountryFallback(Boolean(options?.revealFallback));
       }
+    }
+
+    const timer = window.setTimeout(async () => {
+      setPhoneVerificationState("checking");
+      setPhoneVerificationLabel("Checking WhatsApp availability...");
+      setPhoneVerificationDetails(null);
+      setPhoneVerified(false);
+      setShowCountryFallback(false);
+      const plan = buildPhoneResolutionPlan({
+        input: trimmed,
+        localeCountry,
+        preferredCountry,
+        selectedCountry,
+      });
+
+      if (plan.kind === "idle") {
+        setPhoneVerificationState("idle");
+        setPhoneVerificationLabel(null);
+        return;
+      }
+
+      if (plan.kind === "fallback") {
+        setResolvedPhoneNumber("");
+        setPhoneVerified(false);
+        setSuggestedCountries(plan.suggestedCountries);
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
+        setShowCountryFallback(true);
+        return;
+      }
+
+      setSuggestedCountries(plan.suggestedCountries);
+
+      if (plan.kind === "single") {
+        await verifyResolvedPhone(plan.candidate.normalizedPhone, plan.candidate.country, {
+          revealFallback: plan.candidate.revealFallback,
+          suppressDetailsOnFailure: plan.candidate.revealFallback,
+        });
+        return;
+      }
+
+      for (const candidate of plan.candidates) {
+        try {
+          const result = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
+            phoneNumber: candidate.normalizedPhone,
+          });
+
+          if (result.isBusiness) {
+            setResolvedPhoneNumber(candidate.normalizedPhone);
+            setPhoneVerified(true);
+            setPhoneVerificationDetails({
+              displayName: result.displayName,
+              profilePic: result.profilePic,
+              exists: result.exists,
+              isBusiness: result.isBusiness,
+              url: result.url,
+              resolvedPhoneNumber: formatPhoneInput(candidate.normalizedPhone),
+              detectedCountry: candidate.country,
+            });
+            setPhoneVerificationState("valid");
+            setPhoneVerificationLabel(null);
+            setShowCountryFallback(false);
+            return;
+          }
+        } catch {
+          // Keep the first automatic pass silent. We only show fallback first,
+          // then reveal personal/unknown details after the user picks a country.
+        }
+      }
+
+      setPhoneVerified(false);
+      setResolvedPhoneNumber("");
+      setPhoneVerificationDetails(null);
+      setPhoneVerificationState("warning");
+      setPhoneVerificationLabel(null);
+      setShowCountryFallback(true);
     }, 420);
 
     return () => window.clearTimeout(timer);
-  }, [phoneNumber]);
+  }, [localeCountry, phoneNumber, preferredCountry, selectedCountry]);
 
   useEffect(() => {
-    if (flowState !== "waiting_opt_in" || !phoneNumber) {
+    if (flowState !== "waiting_opt_in" || !resolvedPhoneNumber) {
       return;
     }
 
@@ -179,7 +304,7 @@ export function AuthExperience({
     }, 3000);
 
     return () => window.clearInterval(timer);
-  }, [flowState, phoneNumber]);
+  }, [flowState, resolvedPhoneNumber]);
 
   useEffect(() => {
     if (otp.length < 6) {
@@ -227,7 +352,7 @@ export function AuthExperience({
       return;
     }
 
-    if (!phoneNumber) {
+    if (!resolvedPhoneNumber) {
       const nextError = "Enter your WhatsApp number first.";
       setError(nextError);
       showToast(nextError);
@@ -248,7 +373,7 @@ export function AuthExperience({
 
     try {
       const result = await apiPost<StartAuthResponse>("/api/auth/phone/start", {
-        phoneNumber,
+        phoneNumber: resolvedPhoneNumber,
         skipWhatsAppCheck: phoneCheckSkipped,
       });
 
@@ -297,7 +422,7 @@ export function AuthExperience({
   async function pollOtpStatus() {
     try {
       const result = await apiPost<AuthStatusResponse>("/api/auth/phone/status", {
-        phoneNumber,
+        phoneNumber: resolvedPhoneNumber,
       });
 
       setAuthMode(result.authMode);
@@ -341,7 +466,7 @@ export function AuthExperience({
         isNewUser: boolean;
         user: AuthResult["user"];
       }>("/api/auth/phone/verify", {
-        phoneNumber,
+        phoneNumber: resolvedPhoneNumber,
         otp,
         displayName: authMode === "register" ? optionalDisplayName.trim() : undefined,
       });
@@ -391,19 +516,32 @@ export function AuthExperience({
               <PhoneNumberInput
                 label="WhatsApp number"
                 value={phoneNumber}
-                maxLocalDigits={10}
                 verificationState={phoneVerificationState}
                 verificationLabel={phoneVerificationLabel}
                 verificationDetails={phoneVerificationDetails}
-                onChange={(value, country) => {
+                showCountryFallback={showCountryFallback}
+                selectedCountry={selectedCountry}
+                suggestedCountries={suggestedCountries}
+                fallbackMessage="We couldn't detect this number automatically."
+                onChange={(value) => {
                   setPhoneNumber(value);
-                  setSelectedCountry(country);
+                  setResolvedPhoneNumber("");
+                  setSelectedCountry(null);
+                  setShowCountryFallback(false);
+                  setSuggestedCountries([]);
                   setFlowState("idle");
                   setWaitingMessage(null);
                   setMessage(null);
                   setError(null);
                   setPhoneVerificationDetails(null);
                   setPhoneCheckSkipped(false);
+                }}
+                onCountrySelect={(country) => {
+                  setSelectedCountry(country);
+                  setShowCountryFallback(false);
+                  setPhoneVerificationState("checking");
+                  setPhoneVerificationLabel(`Retrying with ${country.name}...`);
+                  setError(null);
                 }}
                 onSkipVerification={() => {
                   setPhoneCheckSkipped(true);

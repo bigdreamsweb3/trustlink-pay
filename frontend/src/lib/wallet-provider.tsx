@@ -11,7 +11,9 @@ import {
 
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import {
+  getWalletEnvironment,
   getConnectedWalletSession,
+  type WalletEnvironment,
   type ConnectedWalletSession,
   type DetectedWallet,
 } from "@/src/lib/wallet";
@@ -28,6 +30,7 @@ type WalletContextValue = {
   session: ConnectedWalletSession | null;
   walletAddress: string | null;
   wallets: DetectedWallet[];
+  environment: WalletEnvironment;
   connectingWalletId: string | null;
   walletPickerOpen: boolean;
   requestWalletConnection: () => void;
@@ -49,20 +52,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const [session, setSession] = useState<ConnectedWalletSession | null>(readInitialSession);
   const [wallets, setWallets] = useState<DetectedWallet[]>([]);
+  const [environment, setEnvironment] = useState<WalletEnvironment>(() => getWalletEnvironment());
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
 
   useEffect(() => {
     setSession(readInitialSession());
+    setEnvironment(getWalletEnvironment());
   }, []);
 
   function requestWalletConnection() {
     try {
       const detectedWallets = getWalletsForConnection();
       setWallets(detectedWallets);
+      setEnvironment(getWalletEnvironment());
       setWalletPickerOpen(true);
     } catch (error) {
+      setWallets([]);
+      setEnvironment(getWalletEnvironment());
       showToast(getWalletConnectionErrorMessage(error));
+      setWalletPickerOpen(true);
     }
   }
 
@@ -72,6 +81,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const nextSession = await connectTrustLinkWallet(walletId);
       setSession(nextSession);
+      setEnvironment(getWalletEnvironment());
       setWalletPickerOpen(false);
       showToast(`${nextSession.walletName} connected successfully.`);
     } catch (error) {
@@ -85,6 +95,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       await disconnectTrustLinkWallet();
       setSession(null);
+      setEnvironment(getWalletEnvironment());
       showToast("Wallet disconnected.");
     } catch (error) {
       showToast(getWalletDisconnectionErrorMessage(error));
@@ -96,6 +107,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       session,
       walletAddress: session?.address ?? null,
       wallets,
+      environment,
       connectingWalletId,
       walletPickerOpen,
       requestWalletConnection,
@@ -106,7 +118,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [connectingWalletId, session, walletPickerOpen, wallets],
+    [connectingWalletId, environment, session, walletPickerOpen, wallets],
   );
 
   return (
@@ -116,6 +128,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         open={walletPickerOpen}
         wallets={wallets}
         connectingWalletId={connectingWalletId}
+        emptyStateMessage={environment.helpMessage}
         onClose={value.closeWalletPicker}
         onSelect={(walletId) => {
           void handleWalletSelect(walletId);

@@ -5,7 +5,10 @@ import type { Route } from "next";
 import type { ReactNode } from "react";
 
 import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
+import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
+import { useAppPanel } from "@/src/lib/app-panel-provider";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
@@ -63,7 +66,17 @@ export function AppMobileShell({
   backHref = "/app"
 }: AppMobileShellProps) {
   const router = useRouter();
-  const { walletAddress, requestWalletConnection } = useWallet();
+  const { activePanel, openPanel, closePanel } = useAppPanel();
+  const {
+    walletAddress,
+    session,
+    environment,
+    disconnectWallet,
+    requestWalletConnection,
+  } = useWallet();
+  const walletPanelOpen = activePanel === "wallet";
+  const settingsPanelOpen = activePanel === "settings";
+  const desktopPanelOpen = walletPanelOpen || settingsPanelOpen;
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -72,6 +85,15 @@ export function AppMobileShell({
     }
 
     router.push(backHref);
+  }
+
+  function handleWalletButtonPress() {
+    if (walletAddress) {
+      openPanel("wallet");
+      return;
+    }
+
+    requestWalletConnection();
   }
 
   return (
@@ -125,88 +147,111 @@ export function AppMobileShell({
           </div>
         </aside>
 
-        <div className="mx-auto w-full md:max-w-[430px]">
-          <div className="tl-phone-frame min-h-screen overflow-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px]">
-            <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-3 md:min-h-[calc(100vh-3rem)]">
-              <div className="min-w-0 mb-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex items-center gap-2">
-                      {showBackButton ? (
+        <div className="mx-auto w-full md:overflow-x-auto">
+          <div className={`md:flex md:w-fit md:min-w-full md:items-start md:justify-center md:transition-[gap,transform] md:duration-500 md:ease-out ${desktopPanelOpen ? "md:gap-6" : "md:gap-0"}`}>
+            <div className={`min-w-0 flex-1 md:transition-[max-width,min-width,transform] md:duration-500 md:ease-out ${desktopPanelOpen ? "md:min-w-[390px]" : ""} md:max-w-[430px]`}>
+              <div className="tl-phone-frame min-h-screen overflow-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px]">
+                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-3 md:min-h-[calc(100vh-3rem)]">
+                  <div className="min-w-0 mb-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex items-center gap-2">
+                          {showBackButton ? (
+                            <button
+                              type="button"
+                              onClick={handleBack}
+                              className="tl-text-soft inline-flex items-center gap-1.5 text-[0.8rem] font-medium transition hover:text-[var(--text)]"
+                              aria-label="Go back"
+                            >
+                              <BackIcon className="h-4 w-4" />
+                              <span>Back</span>
+                            </button>
+                          ) : null}
+
+                          <TrustLinkMark />
+                        </div>
+                        <h1 className="sr-only">
+                          {title}
+                        </h1>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
                         <button
                           type="button"
-                          onClick={handleBack}
-                          className="tl-text-soft inline-flex items-center gap-1.5 text-[0.8rem] font-medium transition hover:text-[var(--text)]"
-                          aria-label="Go back"
+                          onClick={handleWalletButtonPress}
+                          className="tl-field flex h-10 items-center gap-1.5 rounded-full px-3 transition hover:bg-surface-soft button"
+                          aria-label={walletAddress ? "Manage wallet connection" : "Connect wallet"}
                         >
-                          <BackIcon className="h-4 w-4" />
-                          <span>Back</span>
+                          <WalletIcon size={15} className="text-current" />
+                          <span className="tl-coord-text !text-[0.56rem] leading-none">
+                            {walletAddress ? shortenAddress(walletAddress) : "Connect"}
+                          </span>
                         </button>
-                      ) : null}
-
-                      <TrustLinkMark />
+                        <button
+                          type="button"
+                          onClick={() => openPanel("settings")}
+                          className="tl-field grid h-10 w-10 place-items-center rounded-full transition hover:bg-surface-soft button"
+                          aria-label="Open settings"
+                        >
+                          <span className="grid h-5 w-5 place-items-center">
+                            <SettingsIcon size={16} className="text-current" />
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/app/profile")}
+                          className="tl-field grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
+                          aria-label="Open profile"
+                        >
+                          <span className="grid h-10 w-10 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.72rem] font-bold text-accent-deep dark:text-accent">
+                            {initialsFor(user.displayName)}
+                          </span>
+                        </button>
+                      </div>
                     </div>
-                    <h1 className="sr-only">
-                      {title}
-                    </h1>
+
+                    <div className="tl-coord-text mt-1 flex w-full items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="opacity-58">Sector</span>
+                        <span className="opacity-40">//</span>
+                        <span className="truncate">{currentTab.toUpperCase()}</span>
+                      </div>
+
+                      <div className="flex min-w-0 items-center justify-end gap-1.5 text-right">
+                        <span className="truncate">@{user.handle}</span>
+                      </div>
+                    </div>
+
+                    <p className="tl-text-soft mt-2 max-w-[17.75rem] text-[0.8rem] leading-5 tracking-[0.01em] opacity-88">
+                      {subtitle}
+                    </p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={requestWalletConnection}
-                      className="tl-field flex h-10 items-center gap-1.5 rounded-full px-3 transition hover:bg-surface-soft button"
-                      aria-label={walletAddress ? "Manage wallet connection" : "Connect wallet"}
-                    >
-                      <WalletIcon size={15} className="text-current" />
-                      <span className="tl-coord-text !text-[0.56rem] leading-none">
-                        {walletAddress ? shortenAddress(walletAddress) : "Connect"}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/app/settings")}
-                      className="tl-field grid h-10 w-10 place-items-center rounded-full transition hover:bg-surface-soft button"
-                      aria-label="Open settings"
-                    >
-                      <span className="grid h-5 w-5 place-items-center">
-                        <SettingsIcon size={16} className="text-current" />
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/app/profile")}
-                      className="tl-field grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
-                      aria-label="Open profile"
-                    >
-                      <span className="grid h-10 w-10 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.72rem] font-bold text-accent-deep dark:text-accent">
-                        {initialsFor(user.displayName)}
-                      </span>
-                    </button>
-                  </div>
+                  {children}
                 </div>
-
-                <div className="tl-coord-text mt-1 flex w-full items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="opacity-58">Sector</span>
-                    <span className="opacity-40">//</span>
-                    <span className="truncate">{currentTab.toUpperCase()}</span>
-                  </div>
-
-                  <div className="flex min-w-0 items-center justify-end gap-1.5 text-right">
-                    {/* <span className="opacity-40">::</span> */}
-                    <span className="truncate">@{user.handle}</span>
-                  </div>
-                </div>
-
-
-                <p className="tl-text-soft mt-2 max-w-[17.75rem] text-[0.8rem] leading-5 tracking-[0.01em] opacity-88">
-                  {subtitle}
-                </p>
               </div>
-
-              {children}
             </div>
+
+            {desktopPanelOpen ? (
+              <div className="relative hidden md:sticky md:top-6 md:block md:h-[calc(100vh-3rem)] md:w-[360px] md:min-w-[340px] md:self-start">
+                <WalletSheetModal
+                  open={walletPanelOpen}
+                  session={session}
+                  environment={environment}
+                  desktopInline
+                  onClose={closePanel}
+                  onDisconnect={() => {
+                    void disconnectWallet();
+                  }}
+                />
+                <SettingsSheetModal
+                  open={settingsPanelOpen}
+                  user={user}
+                  desktopInline
+                  onClose={closePanel}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -244,6 +289,20 @@ export function AppMobileShell({
       </nav>
 
       {blockingOverlay}
+      <WalletSheetModal
+        open={walletPanelOpen}
+        session={session}
+        environment={environment}
+        onClose={closePanel}
+        onDisconnect={() => {
+          void disconnectWallet();
+        }}
+      />
+      <SettingsSheetModal
+        open={settingsPanelOpen}
+        user={user}
+        onClose={closePanel}
+      />
     </main>
   );
 }

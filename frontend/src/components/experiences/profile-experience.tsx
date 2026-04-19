@@ -113,7 +113,7 @@ export function ProfileExperience() {
           </form>
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+        {/* <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Wallets and settings</h2>
             <p className="text-sm text-text/48">Wallet connections, payout wallets, currency preferences, and account controls now live in their own pages.</p>
@@ -127,7 +127,7 @@ export function ProfileExperience() {
               Open Settings
             </a>
           </div>
-        </section>
+        </section> */}
       </section>
     </AppMobileShell>
   );

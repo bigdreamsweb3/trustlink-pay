@@ -4,96 +4,83 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Search } from "lucide-react";
 
-import {
-  COUNTRY_OPTIONS,
-  detectCountryFromLocale,
-  getCountryByIso2,
-  splitPhoneNumber,
-  type CountryOption
-} from "@/src/lib/phone-countries";
-import { loadPreferredCountryIso2 } from "@/src/lib/phone-preferences";
+import type { CountryOption } from "@/src/lib/phone-countries";
+import { COUNTRY_OPTIONS, formatPhoneInput } from "@/src/lib/phone-countries";
 import { WhatsAppIcon } from "@/src/components/whatsapp-icon";
+
+type PhoneVerificationDetails = {
+  displayName: string | null;
+  profilePic: string | null;
+  exists: boolean;
+  isBusiness: boolean;
+  url: string;
+  resolvedPhoneNumber?: string | null;
+  detectedCountry?: CountryOption | null;
+};
 
 type PhoneNumberInputProps = {
   label: string;
   value: string;
-  onChange: (value: string, country: CountryOption) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
-  maxLocalDigits?: number;
   verificationState?: "idle" | "checking" | "valid" | "warning" | "invalid";
   verificationLabel?: string | null;
-  verificationDetails?: {
-    displayName: string | null;
-    profilePic: string | null;
-    exists: boolean;
-    isBusiness: boolean;
-    url: string;
-  } | null;
+  verificationDetails?: PhoneVerificationDetails | null;
   onSkipVerification?: (() => void) | null;
   skipVerificationLabel?: string | null;
   showVerificationActions?: boolean;
+  showCountryFallback?: boolean;
+  fallbackMessage?: string | null;
+  selectedCountry?: CountryOption | null;
+  suggestedCountries?: CountryOption[];
+  onCountrySelect?: ((country: CountryOption) => void) | null;
 };
+
+function buildCountryList(suggestedCountries: CountryOption[]) {
+  const seen = new Set<string>();
+  const ordered = [...suggestedCountries, ...COUNTRY_OPTIONS];
+
+  return ordered.filter((country) => {
+    if (seen.has(country.iso2)) {
+      return false;
+    }
+
+    seen.add(country.iso2);
+    return true;
+  });
+}
 
 export function PhoneNumberInput({
   label,
   value,
   onChange,
-  placeholder = "903 700 0000",
-  maxLocalDigits,
+  placeholder = "Enter phone number",
   verificationState = "idle",
   verificationLabel = null,
   verificationDetails = null,
   onSkipVerification = null,
   skipVerificationLabel = "Skip",
   showVerificationActions = true,
+  showCountryFallback = false,
+  fallbackMessage = "We couldn't find this number automatically.",
+  selectedCountry = null,
+  suggestedCountries = [],
+  onCountrySelect = null,
 }: PhoneNumberInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<CountryOption>(COUNTRY_OPTIONS[0]);
-  const [localNumber, setLocalNumber] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const initialized = useRef(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const defaultCountry = useMemo(() => {
-    const preferred = getCountryByIso2(loadPreferredCountryIso2());
-    return preferred ?? detectCountryFromLocale();
-  }, []);
-
+  const formattedValue = useMemo(() => formatPhoneInput(value), [value]);
   const filteredCountries = useMemo(() => {
-    return COUNTRY_OPTIONS.filter((country) =>
-      country.name?.toLowerCase().includes(search.toLowerCase()) ||
-      country.dialCode?.includes(search) ||
-      country.iso2?.toLowerCase().includes(search.toLowerCase())
+    const orderedCountries = buildCountryList(suggestedCountries);
+
+    return orderedCountries.filter((country) =>
+      country.name.toLowerCase().includes(search.toLowerCase()) ||
+      country.dialCode.includes(search) ||
+      country.iso2.toLowerCase().includes(search.toLowerCase()),
     );
-  }, [search]);
-
-  useEffect(() => {
-    const parsed = splitPhoneNumber(value);
-
-    if (value && parsed.country) {
-      setSelectedCountry(parsed.country);
-      setLocalNumber(parsed.localNumber);
-      initialized.current = true;
-      return;
-    }
-
-    if (!value && !initialized.current) {
-      setSelectedCountry(defaultCountry);
-      setLocalNumber("");
-      onChange(defaultCountry.dialCode, defaultCountry);
-      initialized.current = true;
-      return;
-    }
-
-    if (!value) {
-      setSelectedCountry(defaultCountry);
-      setLocalNumber("");
-      return;
-    }
-
-    setSelectedCountry(defaultCountry);
-    setLocalNumber(parsed.localNumber);
-  }, [defaultCountry, onChange, value]);
+  }, [search, suggestedCountries]);
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -109,18 +96,6 @@ export function PhoneNumberInput({
     return () => window.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen]);
 
-  function handlePhoneChange(phoneNumber: string) {
-    const normalizedNumber = phoneNumber.replace(/[^\d]/g, "");
-    const nextNumber = typeof maxLocalDigits === "number" ? normalizedNumber.slice(0, maxLocalDigits) : normalizedNumber;
-    setLocalNumber(nextNumber);
-    onChange(`${selectedCountry.dialCode}${nextNumber}`, selectedCountry);
-  }
-
-  function handleCountryChange(country: CountryOption) {
-    setSelectedCountry(country);
-    onChange(`${country.dialCode}${localNumber}`, country);
-  }
-
   const toneClass =
     verificationState === "valid"
       ? "border-[var(--accent-border)] bg-[var(--field)]"
@@ -128,9 +103,7 @@ export function PhoneNumberInput({
         ? "border-[#f3c96b]/35 bg-[var(--field)]"
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-[var(--field)]"
-          : isOpen
-            ? "border-[var(--accent-border)] bg-[var(--surface)] ring-1 ring-[var(--accent-soft)]"
-            : "border-[var(--field-border)] bg-[var(--field)] hover:border-[var(--accent-border)]";
+          : "border-[var(--field-border)] bg-[var(--field)] hover:border-[var(--accent-border)]";
 
   const indicatorClass =
     verificationState === "valid"
@@ -142,7 +115,7 @@ export function PhoneNumberInput({
           : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]";
 
   const indicatorText =
-    verificationState === "valid" ? "✓" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "x" : "...";
+    verificationState === "valid" ? "✓" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "×" : "...";
 
   const showSummaryCard = verificationDetails && verificationState !== "checking";
   const isBusiness = Boolean(verificationDetails?.isBusiness);
@@ -162,26 +135,13 @@ export function PhoneNumberInput({
 
       <div className="relative group">
         <div className={`flex h-14 items-stretch rounded-2xl border transition-all duration-300 ${toneClass}`}>
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="min-w-fit rounded-l-2xl border-r border-[var(--field-border)] px-4 transition-colors hover:bg-[var(--surface-soft)]"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-xl">{selectedCountry.flag}</span>
-              <span className="whitespace-nowrap text-sm font-semibold text-[var(--text)]">{selectedCountry.dialCode}</span>
-              <ChevronDown className={`tl-text-muted h-4 w-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
-            </div>
-          </button>
-
           <div className="flex-1">
             <input
               type="tel"
-              value={localNumber}
-              onChange={(e) => handlePhoneChange(e.target.value)}
+              value={formattedValue}
+              onChange={(event) => onChange(event.target.value)}
               placeholder={placeholder}
               inputMode="tel"
-              maxLength={typeof maxLocalDigits === "number" ? maxLocalDigits : undefined}
               className="h-full w-full bg-transparent px-4 text-lg font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
             />
           </div>
@@ -195,59 +155,88 @@ export function PhoneNumberInput({
           ) : null}
         </div>
 
-        <AnimatePresence>
-          {isOpen ? (
-            <motion.div
-              ref={dropdownRef}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="tl-modal absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl shadow-softbox -2xl"
-            >
-              <div className="border-b border-[var(--field-border)] p-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" />
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder="Search countries..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="tl-field w-full rounded-xl py-2 pl-9 pr-4 text-sm text-[var(--text)] outline-none"
-                  />
-                </div>
-              </div>
+        {showCountryFallback ? (
+          <div className="mt-2.5 tl-field rounded-[18px] px-3.5 py-3">
+            <div className="text-[0.84rem] font-medium leading-5 text-[var(--text)]">
+              {fallbackMessage}
+            </div>
+            <div className="tl-text-muted mt-0.5 text-[0.68rem] leading-4.5">
+              Pick the country to retry verification.
+            </div>
 
-              <div className="custom-scrollbar max-h-64 overflow-y-auto">
-                {filteredCountries.map((country) => (
-                  <button
-                    key={country.iso2}
-                    type="button"
-                    onClick={() => {
-                      handleCountryChange(country);
-                      setIsOpen(false);
-                      setSearch("");
-                    }}
-                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[var(--surface-soft)] ${selectedCountry.iso2 === country.iso2 ? "bg-[var(--accent-soft)]" : ""
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{country.flag}</span>
-                        <div>
-                          <div className="text-sm font-semibold text-[var(--text)]">{country.name}</div>
-                          <div className="tl-text-muted text-[10px]">{country.iso2}</div>
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium text-[var(--text)]">{country.dialCode}</div>
+            <button
+              type="button"
+              onClick={() => setIsOpen((current) => !current)}
+              className="tl-field mt-2.5 flex w-full items-center justify-between rounded-[16px] px-3.5 py-2.5 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)]"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="text-lg">{selectedCountry?.flag ?? "🌐"}</span>
+                <span className="min-w-0">
+                  <span className="block text-[0.86rem] font-semibold leading-4.5 text-[var(--text)]">
+                    {selectedCountry ? selectedCountry.name : "Select Country"}
+                  </span>
+                  <span className="tl-text-muted block text-[0.66rem] leading-4">
+                    {selectedCountry ? selectedCountry.dialCode : "Suggested countries first"}
+                  </span>
+                </span>
+              </span>
+              <ChevronDown className={`tl-text-muted h-4 w-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {isOpen ? (
+                <motion.div
+                  ref={dropdownRef}
+                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="tl-modal absolute left-0 right-0 top-[calc(100%+0.75rem)] z-50 overflow-hidden rounded-2xl shadow-softbox"
+                >
+                  <div className="border-b border-[var(--field-border)] p-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" />
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Search countries..."
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        className="tl-field w-full rounded-xl py-2 pl-9 pr-4 text-sm text-[var(--text)] outline-none"
+                      />
                     </div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {filteredCountries.map((country) => (
+                      <button
+                        key={country.iso2}
+                        type="button"
+                        onClick={() => {
+                          onCountrySelect?.(country);
+                          setIsOpen(false);
+                          setSearch("");
+                        }}
+                        className={`w-full px-4 py-3 text-left transition-colors hover:bg-[var(--surface-soft)] ${selectedCountry?.iso2 === country.iso2 ? "bg-[var(--accent-soft)]" : ""}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{country.flag}</span>
+                            <div>
+                              <div className="text-sm font-semibold text-[var(--text)]">{country.name}</div>
+                              <div className="tl-text-muted text-[10px]">{country.iso2}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium text-[var(--text)]">{country.dialCode}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        ) : null}
       </div>
 
       {verificationLabel && verificationState === "checking" ? (
@@ -257,26 +246,33 @@ export function PhoneNumberInput({
       ) : null}
 
       {showSummaryCard ? (
-        <div className="tl-field rounded-[20px] px-4 py-3">
-          <div className="flex items-center gap-3">
+        <div className="tl-field rounded-[20px] px-4 py-3 relative z-10">
+          <div className="flex items-center gap-3 w-full">
             {isBusiness ? (
-              <div className="tl-icon-surface grid h-12 w-12 place-items-center overflow-hidden rounded-full">
+              <div className="tl-icon-surface grid h-12 min-w-12 place-items-center overflow-hidden rounded-full">
                 {avatarSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarSrc} alt={displayName ?? "Business WhatsApp profile"} className="h-full w-full object-cover" />
+                  <img src={avatarSrc} alt={displayName ?? "WhatsApp profile"} className="h-full w-full object-cover" />
                 ) : (
-                  <span className="tl-text-muted text-[0.62rem] font-semibold tracking-[0.12em]">BIZ</span>
+                  <span className="tl-text-muted text-[0.62rem] font-semibold tracking-[0.12em]">WA</span>
                 )}
               </div>
             ) : null}
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
+            <div className="min-w-[80%]">
+              <div className="flex items-center gap-2 w-full">
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-[#25D366]/16">
                   <WhatsAppIcon className="h-3.5 w-3.5" />
                 </span>
-                <div className="truncate text-sm font-semibold text-[var(--text)]">
-                  {isBusiness ? displayName ?? "Business profile detected" : "Personal or unknown profile"}
+                <div className="truncate text-sm font-semibold text-[var(--text)] flex items-center justify-between w-full">
+                  {displayName ?? "Personal or unknown profile"}
+
+
+                  {verificationDetails?.detectedCountry ? (
+                    <div className="tl-text-muted text-[0.72rem]">
+                      {verificationDetails.detectedCountry.flag} {verificationDetails.detectedCountry.name}
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="tl-text-muted mt-1 text-[0.72rem]">
@@ -284,6 +280,11 @@ export function PhoneNumberInput({
                   ? "Business WhatsApp profile"
                   : "This number is not a business number. Please verify if this profile is a real personal WhatsApp account."}
               </div>
+              {/* {verificationDetails?.resolvedPhoneNumber ? (
+                <div className="mt-2 text-sm font-medium text-[var(--text)]">
+                  {verificationDetails.resolvedPhoneNumber}
+                </div>
+              ) : null} */}
             </div>
           </div>
 

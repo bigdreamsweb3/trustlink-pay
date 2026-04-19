@@ -15,12 +15,14 @@ export function WalletPickerModal({
   open,
   wallets,
   connectingWalletId,
+  emptyStateMessage,
   onClose,
   onSelect
 }: {
   open: boolean;
   wallets: DetectedWallet[];
   connectingWalletId: string | null;
+  emptyStateMessage?: string;
   onClose: () => void;
   onSelect: (walletId: string) => void;
 }) {
@@ -41,7 +43,7 @@ export function WalletPickerModal({
 
         {wallets.length === 0 ? (
           <div className="tl-field rounded-[22px] px-4 py-4 text-sm tl-text-soft">
-            No Solana wallet was detected in this browser. Install or open a Solana wallet app, then try again.
+            {emptyStateMessage ?? "No Solana wallet was detected in this browser. Install or open a Solana wallet app, then try again."}
           </div>
         ) : (
           <div className="space-y-3">

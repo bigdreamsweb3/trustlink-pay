@@ -65,6 +65,12 @@ export type ConnectedWalletSession = {
   address: string;
 };
 
+export type WalletEnvironment = {
+  isMobile: boolean;
+  hasDetectedWallets: boolean;
+  helpMessage: string;
+};
+
 type WalletDefinition = {
   id: string;
   name: string;
@@ -256,6 +262,23 @@ export function listAvailableSolanaWallets() {
       } satisfies DetectedWallet,
     ];
   });
+}
+
+export function getWalletEnvironment(): WalletEnvironment {
+  const wallets = listAvailableSolanaWallets();
+  const isMobile =
+    typeof window !== "undefined" &&
+    /Android|webOS|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(
+      window.navigator.userAgent,
+    );
+
+  return {
+    isMobile,
+    hasDetectedWallets: wallets.length > 0,
+    helpMessage: isMobile
+      ? "No wallet is exposed in this browser yet. On mobile, open TrustLink inside your wallet app browser like Phantom, Solflare, Backpack, or Trust Wallet, then try again."
+      : "No Solana wallet was detected in this browser. Install or enable a wallet extension like Phantom, Solflare, Backpack, or Trust Wallet and try again.",
+  };
 }
 
 export function getInjectedSolanaProvider() {

@@ -178,10 +178,10 @@ export function AppMobileShell({
             <div
               ref={frameScrollRef}
               onScroll={handleShellScroll}
-              className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px] tl-scrollbar-mobile-hidden md:overflow-y-auto md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] min-h-screen"
+              className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px] tl-scrollbar-mobile-hidden md:overflow-y-auto md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] min-h-screen overflow-x-clip md:overflow-x-hidden"
             >
               <div
-                className="tl-phone-frame overflow-x-clip md:overflow-x-hidden"
+                className="tl-phone-frame"
               >
                 <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-0 md:min-h-[calc(100vh-3rem)]">
                   {/* MOBILE HEADER */}

@@ -182,12 +182,12 @@ export function AppMobileShell({
               className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px] tl-scrollbar-mobile-hidden md:overflow-y-auto md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] min-h-screen overflow-x-clip md:overflow-x-hidden"
             >
               <div
-                className="tl-phone-frame"
+                className="tl-phone-frame max-w-full max-h-full"
               >
-                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-0 pt-0 md:min-h-[calc(97vh-3rem)]">
+                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-0 pt-0 md:min-h-[calc(100vh-3rem)]">
                   {/* MOBILE HEADER */}
                   <div
-                    className={`sticky top-0 z-[100] -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
+                    className={`sticky top-0 z-100 -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
                       ? "bg-phone-shell shadow  border-b border-accent-soft"
                       : "bg-transparent backdrop-blur-0"
                       }`}
@@ -276,7 +276,7 @@ export function AppMobileShell({
                   <div className="min-w-0 mb-26">{children}</div>
                   {/* BOTTOM SCREEN EDGE */}
                   {/* BOTTOM SCREEN EDGE — must be last, sticky anchors to scroll container */}
-                  <div className="sticky bottom-0 z-30 -mx-5 h-4 w-[calc(100%+2.5rem)] bg-[var(--phone-shell)]" />
+                  <div className="sticky bottom-0 z-30 -mx-5 h-4 w-[calc(100%+2.5rem)] bg-phone-shell/88 backdrop-blur-3xl" />
                 </div>
               </div>
             </div>

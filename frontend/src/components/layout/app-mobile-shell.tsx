@@ -309,7 +309,7 @@ export function AppMobileShell({
 
       <nav
         aria-label="Primary navigation"
-        className="fixed bottom-3 left-1/2 z-40 grid w-[calc(100%-1rem)] max-w-[398px] -translate-x-1/2 grid-cols-5 items-start gap-0.5 rounded-[28px] border border-[var(--dock-border)] bg-[var(--dock)] px-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.2  shadow-softbox  backdrop-blur-2xl md:hidden max-h-21"
+        className="fixed bottom-3 left-1/2 z-40 grid w-[calc(100%-1rem)] max-w-[398px] -translate-x-1/2 grid-cols-5 items-start gap-0.5 rounded-[28px] border border-[var(--dock-border)] bg-[var(--dock)] px-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.5  shadow-softbox  backdrop-blur-2xl md:hidden max-h-21"
       >
         {mobileNavItems.map((item) => {
           const active = item.key === currentTab;

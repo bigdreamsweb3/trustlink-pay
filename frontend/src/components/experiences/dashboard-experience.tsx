@@ -324,7 +324,7 @@ export function DashboardExperience() {
           </Link>
         </div>
 
-        <section className="">
+        <section className="mb-6">
           <div className="tl-panel tl-scanline relative overflow-hidden rounded-2xl pb-0 text-sm">
             <div className="p-3 sm:p-3.5">
               <div className="mt-1 mb-3 flex items-center justify-between gap-3">

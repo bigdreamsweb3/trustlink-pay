@@ -226,12 +226,12 @@ export function PhoneNumberInput({
   return (
     <div className="space-y-2">
       {label ? (
-        <label className="tl-text-muted ml-1 text-xs font-medium uppercase tracking-widest">
+        <label className="tl-text-muted ml-1 font-medium uppercase text-[0.72rem] uppercase tracking-[0.18em]">
           {label}
         </label>
       ) : null}
 
-      <div className="relative group">
+      <div className="relative group mt-1">
         <div className={`flex h-14 items-stretch rounded-2xl border transition-all duration-300 ${toneClass}`}>
           <div className="flex-1">
             <input
@@ -362,13 +362,12 @@ export function PhoneNumberInput({
                     {recipientPreview.recipient.displayName}
                   </div>
                   <span
-                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${
-                      recipientPreview.status === "registered"
-                        ? "bg-[#58f2b1]/12 text-[#7dffd9]"
-                        : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
-                          ? "bg-[#f3c96b]/14 text-[#f3c96b]"
-                          : "bg-[#ff7f7f]/14 text-[#ffadad]"
-                    }`}
+                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${recipientPreview.status === "registered"
+                      ? "bg-[#58f2b1]/12 text-[#7dffd9]"
+                      : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
+                        ? "bg-[#f3c96b]/14 text-[#f3c96b]"
+                        : "bg-[#ff7f7f]/14 text-[#ffadad]"
+                      }`}
                   >
                     {recipientPreview.status === "registered"
                       ? "On TrustLink"
@@ -391,9 +390,8 @@ export function PhoneNumberInput({
 
                 {"warning" in recipientPreview ? (
                   <div
-                    className={`mt-1 text-[0.74rem] ${
-                      recipientPreview.status === "invalid_whatsapp_number" ? "text-[#ffadad]" : "text-[#f3c96b]"
-                    }`}
+                    className={`mt-1 text-[0.74rem] ${recipientPreview.status === "invalid_whatsapp_number" ? "text-[#ffadad]" : "text-[#f3c96b]"
+                      }`}
                   >
                     {recipientPreview.warning}
                   </div>

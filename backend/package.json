@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
     "get:all:solana:pubkey": "solana-keygen pubkey ~/.config/solana/id.json && solana-keygen pubkey ~/.config/solana/trustlink-verifier.json && solana-keygen pubkey ~/.config/solana/trustlink-treasury.json",
     "escrow:declare:id": "cp target/deploy/trustlink_escrow-keypair.json target/deploy/trustlink_escrow-keypair.backup.json && solana-keygen new --no-bip39-passphrase --force -o target/deploy/trustlink_escrow-keypair.json && solana address -k target/deploy/trustlink_escrow-keypair.json && anchor keys sync",

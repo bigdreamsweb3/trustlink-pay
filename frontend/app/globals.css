@@ -31,7 +31,9 @@
   --dock-border: rgba(39, 71, 63, 0.08);
   --card-strong: rgba(251, 252, 248, 0.94);
   --field: rgba(250, 251, 247, 0.82);
-  --field-strong: #fbfcf8;
+  --field-strong:
+    radial-gradient(circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
+    linear-gradient(135deg, #fbfcf8, var(--surface));
   --field-border: rgba(39, 71, 63, 0.09);
   --surface-soft: rgba(240, 244, 238, 0.94);
   --text-soft: rgba(21, 32, 25, 0.72);
@@ -88,7 +90,9 @@
   --dock-border: rgba(255, 255, 255, 0.08);
   --card-strong: rgba(15, 22, 23, 0.9);
   --field: rgba(0, 0, 0, 0.2);
-  --field-strong: #111722;
+  --field-strong:
+    radial-gradient(circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
+    linear-gradient(135deg, #111722, var(--surface));
   --field-border: rgba(255, 255, 255, 0.1);
   --surface-soft: rgba(255, 255, 255, 0.03);
   --text-soft: rgba(238, 245, 255, 0.78);
@@ -135,7 +139,7 @@
   --color-dock-border: var(--dock-border);
   --color-card-strong: var(--card-strong);
   --color-field: var(--field);
-  --color-field-strong: var(--field-strong);
+
   --color-field-border: var(--field-border);
   --color-surface-soft: var(--surface-soft);
   --color-text-soft: var(--text-soft);
@@ -148,6 +152,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
   --color-danger-soft: var(--danger-soft);
+
+  --background-image-field-strong: var(--field-strong);
 
   --background-image-gradient-bg:
     radial-gradient(circle at 16% 12%, var(--accent-soft), transparent 22%),

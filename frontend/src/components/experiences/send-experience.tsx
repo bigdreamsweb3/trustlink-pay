@@ -778,6 +778,7 @@ export function SendExperience() {
         ) : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
+        {/* SEND SUCCESS */}
         {sendSuccess ? (
           <section className="tl-panel tl-scanline p-3 sm:p-3.5">
             <SuccessIcon className="h-14 w-14" />
@@ -890,8 +891,10 @@ export function SendExperience() {
             </div>
           </section>
         ) : (
+          // SEND FORM
           <div className="tl-panel tl-scanline p-3 sm:p-3.5 relative">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            {/* WALLET CONNECT DISPLAY */}
+            {/* <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">Sender wallet</div>
                 <div className="mt-1 text-base font-semibold text-text">
@@ -907,7 +910,7 @@ export function SendExperience() {
                   Connect
                 </button>
               )}
-            </div>
+            </div> */}
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <PhoneNumberInput
@@ -977,7 +980,7 @@ export function SendExperience() {
                 <button
                   type="button"
                   onClick={() => setTokenPickerOpen(true)}
-                  className="flex w-[130px] items-center justify-between px-4 py-3 bg-field-strong button"
+                  className="flex w-[130px] items-center justify-between px-4 py-3 border-l border-accent-soft bg-field-strong button"
                 >
                   {selectedToken ? (
                     <div className="flex flex-col overflow-hidden text-left">

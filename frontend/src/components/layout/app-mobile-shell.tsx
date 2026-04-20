@@ -188,7 +188,7 @@ export function AppMobileShell({
                   {/* MOBILE HEADER */}
                   <div
                     className={`sticky top-0 z-[100] -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
-                      ? "bg-[var(--phone-shell)] shadow-[0_10px_28px_rgba(0,0,0,0.18)]"
+                      ? "bg-phone-shell shadow  border-b border-accent-soft"
                       : "bg-transparent backdrop-blur-0"
                       }`}
                   >

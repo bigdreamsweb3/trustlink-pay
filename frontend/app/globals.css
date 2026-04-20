@@ -272,14 +272,15 @@ select {
 @media (min-width: 768px) {
   .tl-scrollbar-mobile-hidden {
     -ms-overflow-style: auto;
-    scrollbar-width: none;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
     scrollbar-color: transparent transparent;
   }
 
   .tl-scrollbar-mobile-hidden::-webkit-scrollbar {
     display: block;
-    width: 0;
-    height: 0;
+    width: 8px;
+    height: 8px;
   }
 
   .tl-scrollbar-mobile-hidden::-webkit-scrollbar-track {
@@ -292,18 +293,12 @@ select {
     border-radius: 999px;
     border: 1px solid transparent;
     transition:
-      background 180ms ease,
-      border-color 180ms ease;
+        background 180ms ease,
+        border-color 180ms ease;
   }
 
   .tl-scrollbar-mobile-hidden:hover {
     scrollbar-color: rgba(118, 255, 216, 0.32) rgba(255, 255, 255, 0.03);
-    scrollbar-width: thin;
-  }
-
-  .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
   }
 
   .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar-track {

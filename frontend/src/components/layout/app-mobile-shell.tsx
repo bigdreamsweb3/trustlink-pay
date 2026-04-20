@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type UIEvent } from "react";
 
 import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
@@ -83,22 +83,21 @@ export function AppMobileShell({
   const frameScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    function handleScroll() {
-      const pageScrolled = window.scrollY > 8;
-      const frameScrolled = (frameScrollRef.current?.scrollTop ?? 0) > 8;
-      setMobileHeaderScrolled(pageScrolled || frameScrolled);
+    function handleWindowScroll() {
+      setMobileHeaderScrolled(window.scrollY > 8);
     }
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    const frame = frameScrollRef.current;
-    frame?.addEventListener("scroll", handleScroll, { passive: true });
+    handleWindowScroll();
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      frame?.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleWindowScroll);
     };
   }, []);
+
+  function handleShellScroll(event: UIEvent<HTMLDivElement>) {
+    setMobileHeaderScrolled(event.currentTarget.scrollTop > 8);
+  }
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -176,10 +175,13 @@ export function AppMobileShell({
               : "md:grid-cols-[minmax(390px,430px)] md:gap-0"
               }`}
           >
-            <div className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px]">
+            <div
+              ref={frameScrollRef}
+              onScroll={handleShellScroll}
+              className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px] tl-scrollbar-mobile-hidden md:overflow-y-auto md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] min-h-screen"
+            >
               <div
-                ref={frameScrollRef}
-                className="tl-phone-frame tl-scrollbar-mobile-hidden min-h-screen overflow-x-clip md:overflow-x-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:overflow-y-auto"
+                className="tl-phone-frame overflow-x-clip md:overflow-x-hidden"
               >
                 <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-0 md:min-h-[calc(100vh-3rem)]">
                   {/* MOBILE HEADER */}

@@ -13,6 +13,7 @@ import {
 } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { findUserByPhoneNumber, updateUserWallet } from "@/app/db/users";
+import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
 import {
   confirmEscrowPayment,
   createDraftPaymentId,
@@ -137,6 +138,21 @@ async function dispatchPaymentNotification(payment: PaymentRecord, reason: "init
     }
 
     const updatedPayment = await updatePaymentNotificationMessageId(payment.id, notification.messageId);
+
+    await createWhatsAppWebhookEvent({
+      eventType: "payment_notification_dispatched",
+      messageId: notification.messageId,
+      relatedPaymentId: payment.id,
+      phoneNumber: payment.receiver_phone,
+      direction: "outbound",
+      status: "sent",
+      payload: {
+        paymentId: payment.id,
+        reason,
+        category: "payment_notification",
+        referenceCode: payment.reference_code,
+      },
+    });
 
     logger.info("payment.notification_dispatch_succeeded", {
       paymentId: payment.id,

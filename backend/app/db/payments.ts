@@ -537,6 +537,56 @@ export async function findPaymentByNotificationMessageId(messageId: string): Pro
   return rows[0] ?? null;
 }
 
+export async function findPaymentByNotificationMessageEventId(messageId: string): Promise<PaymentRecord | null> {
+  await ensurePaymentTraceColumns();
+
+  const rows = (await sql`
+    SELECT
+      p.id,
+      p.sender_user_id,
+      p.sender_wallet,
+      p.sender_display_name_snapshot,
+      p.sender_handle_snapshot,
+      p.reference_code,
+      p.receiver_phone,
+      p.receiver_phone_hash,
+      p.token_symbol,
+      p.token_mint_address,
+      p.amount,
+      p.sender_fee_amount,
+      p.claim_fee_amount,
+      p.escrow_account,
+      p.escrow_vault_address,
+      p.deposit_signature,
+      p.release_signature,
+      p.expiry_signature,
+      p.released_to_wallet,
+      p.accepted_at,
+      p.expiry_at,
+      p.expired_to_pool_at,
+      p.recovery_wallet_address,
+      p.notification_message_id,
+      p.notification_status,
+      p.notification_sent_at,
+      p.notification_delivered_at,
+      p.notification_read_at,
+      p.notification_failed_at,
+      p.notification_attempt_count,
+      p.notification_last_attempt_at,
+      p.status,
+      p.created_at
+    FROM payments p
+    INNER JOIN whatsapp_webhook_events e
+      ON e.related_payment_id = p.id
+    WHERE e.message_id = ${messageId}
+      AND e.related_payment_id IS NOT NULL
+    ORDER BY e.created_at DESC
+    LIMIT 1
+  `) as PaymentRecord[];
+
+  return rows[0] ?? null;
+}
+
 export async function listPendingPaymentsByPhoneNumber(phoneNumber: string): Promise<PaymentRecord[]> {
   await ensurePaymentTraceColumns();
 

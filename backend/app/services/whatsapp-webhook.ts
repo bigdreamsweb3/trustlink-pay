@@ -1,6 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { findPaymentByNotificationMessageId, updatePaymentNotificationStatus } from "@/app/db/payments";
+import {
+  findPaymentByNotificationMessageEventId,
+  findPaymentByNotificationMessageId,
+  updatePaymentNotificationMessageId,
+  updatePaymentNotificationStatus
+} from "@/app/db/payments";
 import { markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
 import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
 import type { PaymentNotificationStatus } from "@/app/types/payment";
@@ -205,7 +210,17 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
       }
 
       for (const status of value.statuses ?? []) {
-        const relatedPayment = status.id ? await findPaymentByNotificationMessageId(status.id) : null;
+        let relatedPayment = status.id ? await findPaymentByNotificationMessageId(status.id) : null;
+
+        if (!relatedPayment && status.id) {
+          relatedPayment = await findPaymentByNotificationMessageEventId(status.id);
+
+          if (relatedPayment && relatedPayment.notification_message_id !== status.id) {
+            relatedPayment =
+              (await updatePaymentNotificationMessageId(relatedPayment.id, status.id)) ?? relatedPayment;
+          }
+        }
+
         const normalizedStatus = normalizeNotificationStatus(status.status);
         const occurredAt = parseWhatsAppTimestamp(status.timestamp);
         const normalizedPhoneNumber = status.recipient_id

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
@@ -79,6 +79,26 @@ export function AppMobileShell({
   const settingsPanelOpen = activePanel === "settings";
   const profilePanelOpen = activePanel === "profile";
   const desktopPanelOpen = walletPanelOpen || settingsPanelOpen || profilePanelOpen;
+  const [mobileHeaderScrolled, setMobileHeaderScrolled] = useState(false);
+  const frameScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleScroll() {
+      const pageScrolled = window.scrollY > 8;
+      const frameScrolled = (frameScrollRef.current?.scrollTop ?? 0) > 8;
+      setMobileHeaderScrolled(pageScrolled || frameScrolled);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    const frame = frameScrollRef.current;
+    frame?.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      frame?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -149,15 +169,29 @@ export function AppMobileShell({
           </div>
         </aside>
 
-        <div className="mx-auto w-full md:overflow-x-auto">
-          <div className={`md:flex md:w-fit md:min-w-full md:items-start md:justify-center md:transition-[gap,transform] md:duration-500 md:ease-out ${desktopPanelOpen ? "md:gap-6" : "md:gap-0"}`}>
-            <div className={`min-w-0 flex-1 md:transition-[max-width,min-width,transform] md:duration-500 md:ease-out ${desktopPanelOpen ? "md:min-w-[390px]" : ""} md:max-w-[430px]`}>
-              <div className="tl-phone-frame min-h-screen overflow-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px]">
-                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-3 md:min-h-[calc(100vh-3rem)]">
-                  <div className="min-w-0 mb-6">
-                    <div className="flex items-start justify-between gap-4">
+        <div className="mx-auto w-full md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:overflow-x-auto">
+          <div
+            className={`md:grid md:w-fit md:min-w-full md:items-start md:justify-center ${desktopPanelOpen
+              ? "md:grid-cols-[minmax(390px,430px)_360px] md:gap-6"
+              : "md:grid-cols-[minmax(390px,430px)] md:gap-0"
+              }`}
+          >
+            <div className="min-w-0 md:w-[min(100%,430px)] md:min-w-[390px]">
+              <div
+                ref={frameScrollRef}
+                className="tl-phone-frame tl-scrollbar-mobile-hidden min-h-screen overflow-x-clip md:overflow-x-hidden md:min-h-[calc(100vh-3rem)] md:rounded-[34px] md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:overflow-y-auto"
+              >
+                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-0 md:min-h-[calc(100vh-3rem)]">
+                  {/* MOBILE HEADER */}
+                  <div
+                    className={`sticky top-0 z-[100] -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
+                      ? "bg-[var(--phone-shell)] shadow-[0_10px_28px_rgba(0,0,0,0.18)]"
+                      : "bg-transparent backdrop-blur-0"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between gap-4 my-auto">
                       <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           {showBackButton ? (
                             <button
                               type="button"
@@ -211,8 +245,11 @@ export function AppMobileShell({
                         </button>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="tl-coord-text mt-1 flex w-full items-center justify-between gap-3">
+                  <div className="min-w-0 mb-6">
+
+                    <div className="tl-coord-text mt-3 flex w-full items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-1.5">
                         <span className="opacity-58">Sector</span>
                         <span className="opacity-40">//</span>
@@ -235,31 +272,35 @@ export function AppMobileShell({
             </div>
 
             {desktopPanelOpen ? (
-              <div className="relative hidden md:sticky md:top-6 md:block min-h-screen md:max-h-screen md:w-[360px] md:min-w-[340px] md:self-start">
-                <WalletSheetModal
-                  open={walletPanelOpen}
-                  session={session}
-                  environment={environment}
-                  desktopInline
-                  onClose={closePanel}
-                  onDisconnect={() => {
-                    void disconnectWallet();
-                  }}
-                />
-                <SettingsSheetModal
-                  open={settingsPanelOpen}
-                  user={user}
-                  desktopInline
-                  onClose={closePanel}
-                />
-                <ProfileSheetModal
-                  open={profilePanelOpen}
-                  user={user}
-                  desktopInline
-                  onClose={closePanel}
-                />
+              <div className="h-full flex flex-row items-start">
+                <div className="relative hidden md:sticky md:top-3 md:block md:h-[calc(94vh-3rem)] md:w-[360px] md:min-w-[340px] md:self-start">
+
+                  <WalletSheetModal
+                    open={walletPanelOpen}
+                    session={session}
+                    environment={environment}
+                    desktopInline
+                    onClose={closePanel}
+                    onDisconnect={() => {
+                      void disconnectWallet();
+                    }}
+                  />
+                  <SettingsSheetModal
+                    open={settingsPanelOpen}
+                    user={user}
+                    desktopInline
+                    onClose={closePanel}
+                  />
+                  <ProfileSheetModal
+                    open={profilePanelOpen}
+                    user={user}
+                    desktopInline
+                    onClose={closePanel}
+                  />
+                </div>
               </div>
             ) : null}
+
           </div>
         </div>
       </div>

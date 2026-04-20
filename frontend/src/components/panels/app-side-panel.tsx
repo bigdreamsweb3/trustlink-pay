@@ -23,7 +23,7 @@ export function AppSidePanel({
     <AnimatePresence>
       {open ? (
         <div
-          className={desktopInline ? "hidden md:block" : "tl-overlay fixed inset-0 z-50 md:hidden"}
+          className={desktopInline ? "hidden md:block" : "tl-overlay fixed inset-0 z-999 md:hidden"}
           onClick={desktopInline ? undefined : onClose}
         >
           {!desktopInline ? (
@@ -41,7 +41,7 @@ export function AppSidePanel({
             exit={desktopInline ? { opacity: 0, x: 28 } : { x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 34 }}
             className={desktopInline
-              ? "tl-panel absolute inset-0 flex h-[calc(100vh-3rem)] w-full flex-col overflow-hidden rounded-[34px]"
+              ? "tl-panel absolute inset-0 flex h-[calc(93vh-3rem)] w-full flex-col overflow-hidden rounded-[34px]"
               : "absolute right-0 top-0 flex h-full w-full max-w-[430px] flex-col border-l border-[var(--dock-border)] bg-[color-mix(in_srgb,var(--bg-elevated)_96%,transparent)] bg-[image:var(--pop-bg)] backdrop-blur-2xl"}
             onClick={(event) => event.stopPropagation()}
           >

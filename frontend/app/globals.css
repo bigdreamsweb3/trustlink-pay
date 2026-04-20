@@ -247,6 +247,127 @@ select {
     var(--phone-screen);
 }
 
+.tl-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tl-scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.tl-scrollbar-mobile-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tl-scrollbar-mobile-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .tl-scrollbar-mobile-hidden {
+    -ms-overflow-style: auto;
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
+  }
+
+  .tl-scrollbar-mobile-hidden::-webkit-scrollbar {
+    display: block;
+    width: 0;
+    height: 0;
+  }
+
+  .tl-scrollbar-mobile-hidden::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  .tl-scrollbar-mobile-hidden::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .tl-scrollbar-mobile-hidden:hover {
+    scrollbar-color: rgba(118, 255, 216, 0.32) rgba(255, 255, 255, 0.03);
+    scrollbar-width: thin;
+  }
+
+  .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      rgba(118, 255, 216, 0.42),
+      rgba(118, 255, 216, 0.22)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      rgba(118, 255, 216, 0.58),
+      rgba(118, 255, 216, 0.3)
+    );
+  }
+}
+
+.tl-scroll-fade {
+  position: relative;
+}
+
+.tl-scroll-fade::before,
+.tl-scroll-fade::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22px;
+  pointer-events: none;
+  z-index: 30;
+  transition: opacity 180ms ease;
+}
+
+.tl-scroll-fade::before {
+  top: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--phone-shell) 94%, transparent),
+    transparent
+  );
+  opacity: 0;
+}
+
+.tl-scroll-fade::after {
+  bottom: 0;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--phone-shell) 94%, transparent),
+    transparent
+  );
+  opacity: 1;
+}
+
+.tl-scroll-fade.is-scrolled::before {
+  opacity: 1;
+}
+
 .tl-text-muted {
   color: var(--text-faint);
 }

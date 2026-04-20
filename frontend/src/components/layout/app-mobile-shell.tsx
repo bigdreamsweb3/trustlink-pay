@@ -118,7 +118,7 @@ export function AppMobileShell({
   }
 
   return (
-    <main className="min-h-screen bg-bg pb-13 md:px-6 md:pt-6 md:pb-6">
+    <main className="min-h-screen bg-bg pb-0 md:px-6 md:pt-6 md:pb-6">
       <div className="mx-auto md:grid md:max-w-[1180px] md:grid-cols-[220px_minmax(0,1fr)] md:gap-8">
         <aside className="tl-sidebar hidden md:sticky md:top-6 md:flex md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:flex-col md:justify-between md:self-start md:overflow-hidden md:rounded-[32px] md:p-5">
           <div>
@@ -155,7 +155,7 @@ export function AppMobileShell({
             <button
               type="button"
               onClick={() => openPanel("profile")}
-              className="tl-field flex items-center gap-3 rounded-[22px] px-3 py-3 text-left transition button"
+              className="tl-field-btn flex items-center gap-3 rounded-[22px] px-3 py-3 text-left transition button"
             >
               <span className="grid h-12 w-12 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-sm font-bold text-accent-deep dark:text-accent">
                 {initialsFor(user.displayName)}
@@ -169,6 +169,7 @@ export function AppMobileShell({
         </aside>
 
         <div className="mx-auto w-full md:h-[calc(100vh-3rem)] md:max-h-[calc(100vh-3rem)] md:overflow-x-auto">
+
           <div
             className={`md:grid md:w-fit md:min-w-full md:items-start md:justify-center ${desktopPanelOpen
               ? "md:grid-cols-[minmax(390px,430px)_360px] md:gap-6"
@@ -183,7 +184,7 @@ export function AppMobileShell({
               <div
                 className="tl-phone-frame"
               >
-                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-0 md:min-h-[calc(100vh-3rem)]">
+                <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-8 pt-0 md:min-h-[calc(97vh-3rem)]">
                   {/* MOBILE HEADER */}
                   <div
                     className={`sticky top-0 z-[100] -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
@@ -217,7 +218,7 @@ export function AppMobileShell({
                         <button
                           type="button"
                           onClick={handleWalletButtonPress}
-                          className="tl-field flex h-10 items-center gap-1.5 rounded-full px-3 transition hover:bg-surface-soft button"
+                          className="tl-field-btn flex h-10 items-center gap-1.5 rounded-full px-3 transition hover:bg-surface-soft button"
                           aria-label={walletAddress ? "Manage wallet connection" : "Connect wallet"}
                         >
                           <WalletIcon size={15} className="text-current" />
@@ -225,26 +226,29 @@ export function AppMobileShell({
                             {walletAddress ? shortenAddress(walletAddress) : "Connect"}
                           </span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => openPanel("settings")}
-                          className="tl-field grid h-10 w-10 place-items-center rounded-full transition hover:bg-surface-soft button"
+                          className="tl-field-btn grid h-10 w-10 place-items-center rounded-full transition hover:bg-surface-soft button"
                           aria-label="Open settings"
                         >
                           <span className="grid h-5 w-5 place-items-center">
                             <SettingsIcon size={16} className="text-current" />
                           </span>
                         </button>
-                        <button
+
+                        {/* PROFILE BUTTON */}
+                        {/* <button
                           type="button"
                           onClick={() => openPanel("profile")}
-                          className="tl-field grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
+                          className="tl-field-btn grid h-10 w-10 place-items-center rounded-full text-left transition hover:bg-surface-soft button"
                           aria-label="Open profile"
                         >
                           <span className="grid h-10 w-10 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.72rem] font-bold text-accent-deep dark:text-accent">
                             {initialsFor(user.displayName)}
                           </span>
-                        </button>
+                        </button> */}
                       </div>
                     </div>
                   </div>
@@ -267,8 +271,8 @@ export function AppMobileShell({
                       {subtitle}
                     </p>
                   </div>
+                  <div className="min-w-0 mb-20"> {children}</div>
 
-                  {children}
                 </div>
               </div>
             </div>

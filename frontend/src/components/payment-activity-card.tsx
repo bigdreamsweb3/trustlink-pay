@@ -37,7 +37,7 @@ export function PaymentActivityCard({
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="tl-scanline grid w-[calc(100%+2rem)] -mx-4.5 grid-cols-[auto_1fr_auto] items-center gap-3 py-3 px-4 sm:px-4.5 text-left transition button"
+      className="grid w-[calc(100%+autorem)]  grid-cols-[auto_1fr_auto] items-center gap-3 py-3 px-4 sm:px-4.5 text-left transition button tl-field"
     >
       <div
         className={`grid h-8 w-8 place-items-center rounded-[18px] text-[0.68rem] font-bold tracking-[0.14em] border-b border-[#76ffd8]/60 ${isSend ? "text-[#99cfff]" : "text-[#79ffcf]"

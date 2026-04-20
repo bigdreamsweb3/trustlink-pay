@@ -71,7 +71,7 @@ export function WalletSheetModal({
             </div>
           </div>
 
-          <div className="mt-4 rounded-[20px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-3.5">
+          <div className="mt-4 rounded-[20px] border tl-field px-4 py-3.5">
             <div className="tl-text-muted text-[0.66rem] uppercase tracking-[0.18em]">
               Address
             </div>

@@ -66,7 +66,7 @@ export function PinEntryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center"
+      className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center"
       onClick={() => !busy && onClose?.()}
     >
       <div
@@ -80,7 +80,7 @@ export function PinEntryModal({
 
         {children ? <div className="mb-4">{children}</div> : null}
 
-        <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+        <div className="tl-field px-4 py-4">
           <div className="flex items-center justify-between gap-2">
             {digits.map((digit, index) => (
               <input
@@ -107,7 +107,7 @@ export function PinEntryModal({
         </div>
 
         {busy ? (
-          <div className="mt-4 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+          <div className="mt-4 tl-field px-4 py-4">
             <SectionLoader label="Checking PIN..." />
           </div>
         ) : null}

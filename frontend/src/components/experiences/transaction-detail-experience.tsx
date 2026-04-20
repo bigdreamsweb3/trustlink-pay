@@ -212,12 +212,12 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
         ) : null}
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+          <section className="tl-panel p-5">
             <SectionLoader size="md" label="Loading transaction details..." />
           </section>
         ) : detail ? (
           <>
-            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+            <section className="tl-panel p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
@@ -242,7 +242,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-1">
-                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="tl-field px-4 py-4">
                   <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
                     {detail.viewerRole === "sender" ? "Receiver" : "Sender"}
                   </div>
@@ -259,7 +259,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                         : detail.sender.trustStatusLabel}
                   </div>
                 </div>
-                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="tl-field px-4 py-4">
                   <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
                     {detail.receiver.manualInviteRequired ? "Invite state" : "WhatsApp receipt"}
                   </div>
@@ -283,7 +283,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             </section>
 
             {detail.viewerRole === "sender" && detail.receiver.manualInviteRequired && detail.receiver.inviteShare ? (
-              <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+              <section className="tl-panel p-5">
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Share invite again</h2>
                   <p className="text-sm text-text/48">
@@ -291,7 +291,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="tl-field px-4 py-4">
                   <pre className="whitespace-pre-wrap text-sm leading-6 text-text/72">
                     {detail.receiver.inviteShare.inviteMessage}
                   </pre>
@@ -319,7 +319,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </section>
             ) : null}
 
-            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+            <section className="tl-panel p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Trace details</h2>
                 <p className="text-sm text-text/48">
@@ -327,7 +327,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 </p>
               </div>
 
-              <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+              <div className="space-y-3 tl-field px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-text/46">Reference</span>
                   <span className="font-medium text-text">{detail.sender.referenceCode}</span>
@@ -416,7 +416,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+            <section className="tl-panel p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Timeline</h2>
                 <p className="text-sm text-text/48">A simple view of where the payment stands right now.</p>
@@ -426,7 +426,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 {detail.timeline.map((entry) => (
                   <div
                     key={entry.id}
-                    className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4"
+                    className="grid grid-cols-[auto_1fr_auto] items-start gap-3 tl-field px-4 py-4"
                   >
                     <span className={`mt-1 h-3 w-3 rounded-full ${entry.complete ? "bg-[#58f2b1]" : "bg-white/14"}`} />
                     <div>
@@ -439,12 +439,12 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
+            <section className="tl-panel p-5">
               <div className="mb-3">
                 <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Privacy</h2>
                 <p className="text-sm text-text/48">Trust cues without overexposing anyone's personal details.</p>
               </div>
-              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-text/58">
+              <div className="tl-field px-4 py-4 text-sm leading-6 text-text/58">
                 <p>{detail.privacy.senderPhonePolicy}</p>
                 <p className="mt-3">
                   Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.
@@ -455,21 +455,21 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/app/activity"
-                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-text/78"
+                className="rounded-[20px] tl-button-secondary px-4 py-3 text-center text-sm font-medium button"
               >
                 Back to activity
               </Link>
               {detail.receiver.claimReady ? (
                 <Link
                   href={`/claim/${detail.payment.id}`}
-                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]"
+                  className="tl-button-primary rounded-[20px] px-4 py-3 text-center button"
                 >
                   Claim payment
                 </Link>
               ) : (
                 <Link
                   href="/app"
-                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]"
+                  className="tl-button-primary rounded-[20px] px-4 py-3 text-center button"
                 >
                   Done
                 </Link>
@@ -477,7 +477,7 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
             </div>
           </>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4 text-sm text-text/48">
+          <section className="tl-panel text-sm text-text/48">
             Transaction details are unavailable right now.
           </section>
         )}

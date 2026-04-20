@@ -56,7 +56,7 @@ export function AppSidePanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="tl-field button grid h-10 w-10 place-items-center rounded-full transition hover:bg-[var(--surface-soft)]"
+                className="tl-field-btn button grid h-10 w-10 place-items-center rounded-full transition hover:bg-[var(--surface-soft)]"
                 aria-label={`Close ${title}`}
               >
                 <X className="h-4.5 w-4.5 text-[var(--text-soft)]" />

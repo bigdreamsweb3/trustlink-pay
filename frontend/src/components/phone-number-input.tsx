@@ -4,9 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Search } from "lucide-react";
 
+import { SectionLoader } from "@/src/components/section-loader";
+
 import type { CountryOption } from "@/src/lib/phone-countries";
 import { COUNTRY_OPTIONS, formatPhoneInput } from "@/src/lib/phone-countries";
-import { WhatsAppIcon } from "@/src/components/whatsapp-icon";
+import type { RecipientLookupResult } from "@/src/lib/types";
+import { WhatsAppIcon } from "./whatsapp-icon";
 
 type PhoneVerificationDetails = {
   displayName: string | null;
@@ -26,6 +29,9 @@ type PhoneNumberInputProps = {
   verificationState?: "idle" | "checking" | "valid" | "warning" | "invalid";
   verificationLabel?: string | null;
   verificationDetails?: PhoneVerificationDetails | null;
+  recipientPreview?: RecipientLookupResult | null;
+  lookupBusy?: boolean;
+  lookupError?: string | null;
   onSkipVerification?: (() => void) | null;
   skipVerificationLabel?: string | null;
   showVerificationActions?: boolean;
@@ -58,6 +64,9 @@ export function PhoneNumberInput({
   verificationState = "idle",
   verificationLabel = null,
   verificationDetails = null,
+  recipientPreview = null,
+  lookupBusy = false,
+  lookupError = null,
   onSkipVerification = null,
   skipVerificationLabel = "Skip",
   showVerificationActions = true,
@@ -69,6 +78,7 @@ export function PhoneNumberInput({
 }: PhoneNumberInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [avatarBroken, setAvatarBroken] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const formattedValue = useMemo(() => formatPhoneInput(value), [value]);
@@ -103,7 +113,7 @@ export function PhoneNumberInput({
         ? "border-[#f3c96b]/35 bg-[var(--field)]"
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-[var(--field)]"
-          : "border-[var(--field-border)] bg-[var(--field)] hover:border-[var(--accent-border)]";
+          : "tl-field hover:border-[var(--accent-border)]";
 
   const indicatorClass =
     verificationState === "valid"
@@ -115,15 +125,103 @@ export function PhoneNumberInput({
           : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]";
 
   const indicatorText =
-    verificationState === "valid" ? "✓" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "×" : "...";
+    verificationState === "valid" ? "OK" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "X" : "...";
 
   const showSummaryCard = verificationDetails && verificationState !== "checking";
+  const showLookupCard = lookupBusy || Boolean(lookupError) || Boolean(recipientPreview) || Boolean(showSummaryCard);
   const isBusiness = Boolean(verificationDetails?.isBusiness);
   const displayName = verificationDetails?.displayName?.trim() || null;
   const avatarSrc =
     isBusiness && verificationDetails?.profilePic
       ? `/backend/api/whatsapp/avatar?url=${encodeURIComponent(verificationDetails.profilePic)}`
       : null;
+
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [avatarSrc]);
+
+  const trustLinkToneClass =
+    recipientPreview?.status === "registered"
+      ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
+      : recipientPreview?.status === "whatsapp_only" || recipientPreview?.status === "manual_invite_required"
+        ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
+        : recipientPreview?.status === "invalid_whatsapp_number" || lookupError
+          ? "border-[#ff7f7f]/18 bg-[#ff7f7f]/8"
+          : "border-[var(--field-border)] bg-[var(--field)]";
+
+  function renderWhatsAppCard() {
+    if (!showSummaryCard || !verificationDetails) {
+      return null;
+    }
+
+    return (
+      <div className="tl-field relative z-10 rounded-[20px] px-4 py-3">
+        <div className="flex items-center gap-3 w-full">
+          {isBusiness ? (
+            <div className="tl-icon-surface grid h-12 w-12 min-w-12 shrink-0 place-items-center overflow-hidden rounded-full">
+              {avatarSrc && !avatarBroken ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarSrc}
+                  alt={displayName ?? "WhatsApp profile"}
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarBroken(true)}
+                />
+              ) : (
+                <span className="tl-text-muted text-[0.62rem] font-semibold tracking-[0.12em]">WA</span>
+              )}
+            </div>
+          ) : null}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 w-full">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#25D366]/16">
+                <WhatsAppIcon className="h-3.5 w-3.5" />
+              </span>
+              <div className="min-w-0 flex w-full items-center justify-between gap-3">
+                <div className="truncate text-sm font-semibold text-[var(--text)]">
+                  {displayName ?? "Personal or unknown profile"}
+                </div>
+                {verificationDetails.detectedCountry ? (
+                  <div className="tl-text-muted shrink-0 text-[0.72rem]">
+                    {verificationDetails.detectedCountry.flag} {verificationDetails.detectedCountry.name}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="tl-text-muted mt-1 text-[0.72rem]">
+              {isBusiness
+                ? "Business WhatsApp profile"
+                : "This number is not a business number. Please verify if this profile is a real personal WhatsApp account."}
+            </div>
+          </div>
+        </div>
+
+        {!isBusiness && showVerificationActions ? (
+          <div className="mt-3 flex items-center justify-end gap-3">
+            <a
+              href={verificationDetails.url}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] dark:text-[#86ffda]"
+            >
+              Verify on WhatsApp
+            </a>
+            {onSkipVerification && skipVerificationLabel ? (
+              <button
+                type="button"
+                onClick={onSkipVerification}
+                className="tl-text-soft text-[0.72rem] font-medium transition hover:text-[var(--text)]"
+              >
+                {skipVerificationLabel}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -142,13 +240,16 @@ export function PhoneNumberInput({
               onChange={(event) => onChange(event.target.value)}
               placeholder={placeholder}
               inputMode="tel"
-              className="h-full w-full bg-transparent px-4 text-lg font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+              className="h-full w-full bg-transparent px-4 tl-balance-readout text-[0.96rem] sm:text-[1.04rem] font-bold outline-none placeholder:text-[var(--text-faint)] leading-3.5"
             />
           </div>
 
           {verificationState !== "idle" ? (
             <div className="flex items-center pr-4">
-              <span className={`grid h-7 min-w-7 place-items-center rounded-full border px-2 text-[0.68rem] font-semibold ${indicatorClass}`} title={verificationLabel ?? undefined}>
+              <span
+                className={`grid h-7 min-w-7 place-items-center rounded-full border px-2 text-[0.68rem] font-semibold ${indicatorClass}`}
+                title={verificationLabel ?? undefined}
+              >
                 {indicatorText}
               </span>
             </div>
@@ -245,70 +346,69 @@ export function PhoneNumberInput({
         </div>
       ) : null}
 
-      {showSummaryCard ? (
-        <div className="tl-field rounded-[20px] px-4 py-3 relative z-10">
-          <div className="flex items-center gap-3 w-full">
-            {isBusiness ? (
-              <div className="tl-icon-surface grid h-12 min-w-12 place-items-center overflow-hidden rounded-full">
-                {avatarSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarSrc} alt={displayName ?? "WhatsApp profile"} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="tl-text-muted text-[0.62rem] font-semibold tracking-[0.12em]">WA</span>
-                )}
-              </div>
-            ) : null}
+      {showLookupCard ? (
+        <div className={`relative z-10 rounded-[20px] border px-4 py-3 ${trustLinkToneClass}`}>
+          {lookupBusy ? (
+            <SectionLoader label="Verifying recipient..." />
+          ) : lookupError ? (
+            <div className="text-sm text-[#ffadad]">{lookupError}</div>
+          ) : null}
 
-            <div className="min-w-[80%]">
-              <div className="flex items-center gap-2 w-full">
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-[#25D366]/16">
-                  <WhatsAppIcon className="h-3.5 w-3.5" />
-                </span>
-                <div className="truncate text-sm font-semibold text-[var(--text)] flex items-center justify-between w-full">
-                  {displayName ?? "Personal or unknown profile"}
+          {!lookupBusy && !lookupError && recipientPreview ? (
+            <div className="space-y-3">
+              <div className="min-w-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="truncate text-sm font-semibold text-[var(--text)]">
+                    {recipientPreview.recipient.displayName}
+                  </div>
+                  <span
+                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${
+                      recipientPreview.status === "registered"
+                        ? "bg-[#58f2b1]/12 text-[#7dffd9]"
+                        : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
+                          ? "bg-[#f3c96b]/14 text-[#f3c96b]"
+                          : "bg-[#ff7f7f]/14 text-[#ffadad]"
+                    }`}
+                  >
+                    {recipientPreview.status === "registered"
+                      ? "On TrustLink"
+                      : recipientPreview.status === "invalid_whatsapp_number"
+                        ? "Could not verify"
+                        : "Not on TrustLink"}
+                  </span>
+                </div>
 
-
-                  {verificationDetails?.detectedCountry ? (
-                    <div className="tl-text-muted text-[0.72rem]">
-                      {verificationDetails.detectedCountry.flag} {verificationDetails.detectedCountry.name}
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <div className="truncate text-[0.72rem] text-[var(--text-faint)]">
+                    {recipientPreview.recipient.phoneNumber}
+                  </div>
+                  {recipientPreview.recipient.handle ? (
+                    <div className="text-[0.74rem] text-[var(--text-faint)]">
+                      @{recipientPreview.recipient.handle}
                     </div>
                   ) : null}
                 </div>
-              </div>
-              <div className="tl-text-muted mt-1 text-[0.72rem]">
-                {isBusiness
-                  ? "Business WhatsApp profile"
-                  : "This number is not a business number. Please verify if this profile is a real personal WhatsApp account."}
-              </div>
-              {/* {verificationDetails?.resolvedPhoneNumber ? (
-                <div className="mt-2 text-sm font-medium text-[var(--text)]">
-                  {verificationDetails.resolvedPhoneNumber}
-                </div>
-              ) : null} */}
-            </div>
-          </div>
 
-          {!isBusiness && showVerificationActions ? (
-            <div className="mt-3 flex items-center justify-end gap-3">
-              <a
-                href={verificationDetails.url}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] dark:text-[#86ffda]"
-              >
-                Verify on WhatsApp
-              </a>
-              {onSkipVerification && skipVerificationLabel ? (
-                <button
-                  type="button"
-                  onClick={onSkipVerification}
-                  className="tl-text-soft text-[0.72rem] font-medium transition hover:text-[var(--text)]"
-                >
-                  {skipVerificationLabel}
-                </button>
+                {"warning" in recipientPreview ? (
+                  <div
+                    className={`mt-1 text-[0.74rem] ${
+                      recipientPreview.status === "invalid_whatsapp_number" ? "text-[#ffadad]" : "text-[#f3c96b]"
+                    }`}
+                  >
+                    {recipientPreview.warning}
+                  </div>
+                ) : null}
+              </div>
+
+              {showSummaryCard ? (
+                <div className="border-t border-[var(--field-border)] pt-3">
+                  {renderWhatsAppCard()}
+                </div>
               ) : null}
             </div>
           ) : null}
+
+          {!lookupBusy && !lookupError && !recipientPreview && showSummaryCard ? renderWhatsAppCard() : null}
         </div>
       ) : null}
     </div>

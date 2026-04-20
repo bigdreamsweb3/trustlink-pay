@@ -467,7 +467,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       </section>
 
       {walletModalOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
+        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
             className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}

@@ -78,7 +78,7 @@ export function ProfileExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+        <section className="tl-panel rounded-[28px]">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Identity</h2>
             <p className="text-sm text-text/48">This is the sender identity other people see when funds come from you.</p>
@@ -113,17 +113,17 @@ export function ProfileExperience() {
           </form>
         </section>
 
-        {/* <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+        {/* <section className="tl-panel rounded-[28px]">
           <div className="mb-3">
             <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Wallets and settings</h2>
             <p className="text-sm text-text/48">Wallet connections, payout wallets, currency preferences, and account controls now live in their own pages.</p>
           </div>
 
           <div className="grid gap-3">
-            <a href="/app/wallets" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
+            <a href="/app/wallets" className="tl-field px-4 py-3 text-sm font-medium text-text/78">
               Open Wallets
             </a>
-            <a href="/app/settings" className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-3 text-sm font-medium text-text/78">
+            <a href="/app/settings" className="tl-field px-4 py-3 text-sm font-medium text-text/78">
               Open Settings
             </a>
           </div>

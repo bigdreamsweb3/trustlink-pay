@@ -311,14 +311,14 @@ export function WalletsExperience() {
         </section>
 
         {loading ? (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+          <section className="tl-panel p-4">
             <SectionLoader label="Loading wallets..." />
           </section>
         ) : receiverWallets.length > 0 ? (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+          <section className="tl-panel p-4">
             <div className="space-y-3">
               {receiverWallets.map((wallet) => (
-                <article key={wallet.id} className="rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
+                <article key={wallet.id} className="tl-field px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-text">{wallet.wallet_name}</div>
@@ -350,8 +350,8 @@ export function WalletsExperience() {
             </div>
           </section>
         ) : (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
-            <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-6 text-center">
+          <section className="tl-panel p-4">
+            <div className="tl-field px-4 py-6 text-center">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-pop-bg text-text/74">
                 <WalletIcon className="h-5 w-5" />
               </div>
@@ -375,7 +375,7 @@ export function WalletsExperience() {
       />
 
       {walletModalOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
+        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
           <div
             className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5   shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}

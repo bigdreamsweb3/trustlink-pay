@@ -343,7 +343,7 @@ export function DashboardExperience() {
                   <>
                     {[0, 1, 2].map((index) => (
                       <div key={index} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 bg-surface/1  
-                      -mx-4.5 px-3 py-3">
+                      px-3 py-3 tl-field">
                         <div className="h-12 w-12 rounded-[18px] bg-pop-bg" />
                         <div className="space-y-2">
                           <div className="h-3.5 w-24 rounded-full bg-pop-bg" />
@@ -351,7 +351,7 @@ export function DashboardExperience() {
                           <div className="h-2.5 w-20 rounded-full bg-pop-bg" />
                         </div>
                         <div className="justify-self-end space-y-2">
-                          <div className="h-6 w-16 rounded-full bg-pop-bg" />
+                          {/* <div className="h-6 w-16 rounded-full bg-pop-bg" /> */}
                           <div className="h-6 w-12 rounded-full bg-pop-bg" />
                         </div>
                       </div>
@@ -386,7 +386,7 @@ export function DashboardExperience() {
       </section>
 
       {balanceInfoOpen ? (
-        <div className="tl-overlay fixed inset-0 z-50 grid place-items-end md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
+        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
           <div
             className="tl-modal w-full rounded-t-[28px] px-5 pb-6 pt-5 md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}

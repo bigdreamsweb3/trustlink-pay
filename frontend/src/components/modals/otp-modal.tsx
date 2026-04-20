@@ -83,7 +83,7 @@ export function OtpModal({
   }
 
   return (
-    <div className="tl-overlay fixed inset-0 z-50 grid place-items-end md:place-items-center" onClick={() => !busy && onClose?.()}>
+    <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => !busy && onClose?.()}>
       <div
         className="tl-modal w-full rounded-t-[28px] px-5 pb-6 pt-5 md:max-w-[430px] md:rounded-[28px]"
         onClick={(event) => event.stopPropagation()}

@@ -90,7 +90,7 @@ export function ClaimListExperience() {
         {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
-        <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
+        <section className="tl-panel p-3 sm:p-3.5">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Pending claims</h2>
@@ -107,15 +107,15 @@ export function ClaimListExperience() {
           </div>
 
           {loading ? (
-            <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-5">
+            <div className="tl-field px-4 py-5">
               <SectionLoader label="Loading claims..." />
             </div>
           ) : pendingPayments.length === 0 ? (
-            <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-5 text-sm text-text/46">No pending claims right now.</div>
+            <div className="tl-field px-4 py-5 text-sm text-text/46">No pending claims right now.</div>
           ) : (
             <div className="space-y-3">
               {visiblePendingPayments.map((payment) => (
-                <Link key={payment.id} href={`/claim/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35">
+                <Link key={payment.id} href={`/claim/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 tl-field px-4 py-4 transition hover:border-white/12 hover:bg-black/35">
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-text">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
@@ -144,7 +144,7 @@ export function ClaimListExperience() {
       </section>
 
       {pendingModalOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setPendingModalOpen(false)}>
+        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setPendingModalOpen(false)}>
           <div
             className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
@@ -169,7 +169,7 @@ export function ClaimListExperience() {
                   key={payment.id}
                   href={`/claim/${payment.id}`}
                   onClick={() => setPendingModalOpen(false)}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4 transition hover:border-white/12 hover:bg-black/35"
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 tl-field px-4 py-4 transition hover:border-white/12 hover:bg-black/35"
                 >
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-text">

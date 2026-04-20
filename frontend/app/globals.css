@@ -13,6 +13,7 @@
   --accent: #7fe8c8;
   --accent-deep: #2a8d73;
   --primary-accent: #9fdccc;
+  --accent-icon: #c6efe2;
   --accent-gradient: radial-gradient(
     circle at 30% 28%,
     rgba(127, 232, 200, 0.78) 0%,
@@ -65,6 +66,7 @@
   --accent: #76ffd8;
   --accent-deep: #14b97a;
   --primary-accent: #5cd2eb;
+  --accent-icon: #c6efe2;
   --accent-gradient: radial-gradient(
     circle at center,
     rgba(118, 255, 216, 0.6),
@@ -122,7 +124,9 @@
   --color-primary: var(--text-primary);
   --color-accent: var(--accent);
   --color-accent-deep: var(--accent-deep);
+  --color-accent-icon: var(--accent-icon);
   --color-primary-accent: var(--primary-accent);
+
   --color-muted: var(--muted);
   --color-overlay: var(--overlay);
   --color-phone-shell: var(--phone-shell);
@@ -221,6 +225,7 @@ select {
 .tl-panel,
 .tl-modal {
   border: 1px solid var(--dock-border);
+  border-radius: 1rem;
   box-shadow: var(--shadow);
 }
 
@@ -293,8 +298,8 @@ select {
     border-radius: 999px;
     border: 1px solid transparent;
     transition:
-        background 180ms ease,
-        border-color 180ms ease;
+      background 180ms ease,
+      border-color 180ms ease;
   }
 
   .tl-scrollbar-mobile-hidden:hover {
@@ -377,8 +382,15 @@ select {
 }
 
 .tl-field {
+  background: var(--field);
+  border: 1px solid var(--field-border);
+  border-radius: 0.75rem;
+}
+
+.tl-field-btn {
   background: var(--pop-bg);
   border: 1px solid var(--field-border);
+  border-radius: 3.40282e38px;
 }
 
 .tl-field-strong {
@@ -399,7 +411,11 @@ select {
 .tl-button-primary {
   color: #04110a;
   background: linear-gradient(135deg, var(--accent), #c6efe2);
-  box-shadow: 0 1px 6px color-mix(in srgb, var(--accent-deep) 6%, transparent);
+  box-shadow: var(--shadow);
+
+  font-size: 0.875rem;
+  line-height: calc(1.25 / 0.875);
+  font-weight: 600;
 }
 
 .tl-button-secondary {
@@ -413,6 +429,10 @@ select {
     );
 
   border: 1px solid var(--accent-border);
+
+  font-size: 0.875rem;
+  line-height: calc(1.25 / 0.875);
+  font-weight: 600;
 }
 
 .tl-button-danger {

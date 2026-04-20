@@ -76,7 +76,7 @@ export function SettingsSheetModal({
           <div className="text-[0.9rem] font-semibold text-[var(--text)]">Quick settings</div>
         </div>
 
-        <div className="mt-4 rounded-[20px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-3.5">
+        <div className="mt-4 rounded-[20px] border tl-field px-4 py-3.5">
           <div className="flex items-start gap-3">
             <span className="tl-icon-surface grid h-10 w-10 shrink-0 place-items-center rounded-[14px]">
               <Landmark className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />

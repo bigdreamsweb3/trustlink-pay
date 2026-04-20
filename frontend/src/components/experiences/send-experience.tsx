@@ -39,6 +39,7 @@ import {
   type DetectedWallet
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+import { Search } from "lucide-react";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
 
@@ -778,7 +779,7 @@ export function SendExperience() {
         {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
 
         {sendSuccess ? (
-          <section className="rounded-[28px] tl-panel p-4">
+          <section className="tl-panel tl-scanline p-3 sm:p-3.5">
             <SuccessIcon className="h-14 w-14" />
             <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Transfer sent</div>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
@@ -889,7 +890,7 @@ export function SendExperience() {
             </div>
           </section>
         ) : (
-          <div className="rounded-[28px] tl-panel p-4 relative">
+          <div className="tl-panel tl-scanline p-3 sm:p-3.5 relative">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">Sender wallet</div>
@@ -916,6 +917,9 @@ export function SendExperience() {
                 verificationState={phoneVerificationState}
                 verificationLabel={phoneVerificationLabel}
                 verificationDetails={phoneVerificationDetails}
+                recipientPreview={recipientPreview}
+                lookupBusy={previewBusy}
+                lookupError={lookupError}
                 showVerificationActions={!receiverCheckSkipped && !receiverWhatsAppVerified}
                 showCountryFallback={showCountryFallback}
                 selectedCountry={manualCountry}
@@ -952,89 +956,7 @@ export function SendExperience() {
                 skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
               />
 
-              {previewBusy ? (
-                <div className="rounded-[20px] border border-white/8 bg-pop-bg px-4 py-3">
-                  <SectionLoader label="Verifying recipient..." />
-                </div>
-              ) : lookupError ? (
-                <div className="rounded-[20px] border border-[#ff7f7f]/18 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ffadad]">
-                  {lookupError}
-                </div>
-              ) : recipientPreview ? (
-                <div
-                  className={`rounded-[20px] border px-4 py-3 relative z-0 ${recipientPreview.status === "registered"
-                    ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
-                    : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
-                      ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
-                      : "hidden"
-                    }`}
-                >
-                  {recipientPreview.status === "registered" ? (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-full">
-                          <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
-
-
-                            <span className="rounded-full bg-[#58f2b1]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#7dffd9]">
-                              On TrustLink
-                            </span>
-                          </div>
-
-                          <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between mt-1">
-                            <div className="text-[0.72rem] text-text/40">{recipientPreview.recipient.phoneNumber}</div>
-
-                            <div className="text-[0.74rem] text-text/50">@{recipientPreview.recipient.handle}</div>
-                          </div>
-                        </div>
-
-                      </div>
-                    </>
-                  )
-                    // : recipientPreview.status === "whatsapp_only" ? (
-                    //   <>
-                    //     <div className="flex items-center justify-between gap-3">
-                    //       <div className="min-w-full">
-                    //         <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
-
-
-                    //           <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
-                    //         Not a TrustLink user
-                    //       </span>
-                    //         </div>
-
-                    //         <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
-                    //       </div>
-
-                    //     </div>
-                    //   </>
-                    // ) 
-                    : recipientPreview.status === "manual_invite_required" ? (
-                      <>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-full">
-                            <div className="truncate text-sm font-semibold text-text w-full flex items-center justify-between">{recipientPreview.recipient.displayName}
-
-
-                              <span className="whitespace-nowrap rounded-full bg-[#f3c96b]/14 px-2.5 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
-                                Not a TrustLink user
-                              </span>
-                            </div>
-
-                            <div className="mt-1 text-[0.74rem] text-[#f3c96b]">{recipientPreview.warning}</div>
-                          </div>
-
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-sm font-semibold text-text">Recipient could not be verified.</div>
-                      </>
-                    )}
-                </div>
-              ) : null}
-
-              <div className="flex items-stretch rounded-[24px] border border-white/8 bg-pop-bg transition-all focus-within:border-[#58f2b1]/40">
+              <div className="flex items-stretch rounded-[24px] tl-field transition-all focus-within:border-accent-deep/40 overflow-hidden">
                 <div className="flex flex-1 flex-col px-4 py-3">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-text/40">Amount</span>
                   <input
@@ -1046,28 +968,30 @@ export function SendExperience() {
                       setSendCostEstimate(null);
                     }}
                     placeholder="0.00"
-                    className="w-full bg-transparent text-lg font-semibold text-text outline-none"
+                    className="w-full bg-transparent tl-balance-readout text-[0.96rem] sm:text-[1.04rem] font-bold outline-none placeholder:text-[var(--text-faint)] leading-3.5"
                   />
                 </div>
                 <div className="my-3 w-[1px] bg-white/10" />
+
+                {/* SEND TOKEN SELECTOR BUTTON */}
                 <button
                   type="button"
                   onClick={() => setTokenPickerOpen(true)}
-                  className="flex w-[130px] items-center justify-between px-4 py-3 hover:bg-white/[0.02]"
+                  className="flex w-[130px] items-center justify-between px-4 py-3 bg-field-strong button"
                 >
                   {selectedToken ? (
                     <div className="flex flex-col overflow-hidden text-left">
                       <span className="text-sm font-bold text-text">{selectedToken.symbol}</span>
-                      <span className="truncate text-[10px] text-text/40">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
+                      <span className="truncate text-[10px] text-accent">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
                     </div>
                   ) : (
                     <span className="text-sm text-text/40">Token</span>
                   )}
-                  <span className="text-[10px] text-text/30">v</span>
+                  <span className="text-[10px] text-text/30"><Search className="h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" /></span>
                 </button>
               </div>
 
-              <div className="rounded-[22px] border border-white/6 bg-pop-bg px-4 py-4">
+              <div className="tl-field px-4 py-4 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Flow</div>
                 <p className="mt-2 text-sm leading-6 text-text/60">
                   TrustLink verifies the recipient first, then sends the transfer into escrow while the receiver claims with OTP on WhatsApp.
@@ -1087,7 +1011,7 @@ export function SendExperience() {
       </section>
 
       {tokenPickerOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
+        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
           <div
             className="w-full rounded-t-[28px] border border-white/10 tl-panel px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}
@@ -1142,7 +1066,7 @@ export function SendExperience() {
       ) : null}
 
       {confirmOpen && recipientPreview?.verified && selectedToken ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setConfirmOpen(false)}>
+        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setConfirmOpen(false)}>
           <div
             className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
             onClick={(event) => event.stopPropagation()}

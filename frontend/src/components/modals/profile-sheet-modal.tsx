@@ -46,7 +46,7 @@ export function ProfileSheetModal({
           </div>
         </div>
 
-        <div className="mt-4 rounded-[20px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-3.5">
+        <div className="mt-4 rounded-[20px] border tl-field px-4 py-3.5">
           <div className="tl-text-muted text-[0.66rem] uppercase tracking-[0.18em]">Phone</div>
           <div className="mt-1.5 text-[0.86rem] font-medium text-[var(--text)]">{user.phoneNumber}</div>
         </div>

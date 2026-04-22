@@ -5,11 +5,8 @@ import { Copy, LogOut, Wallet } from "lucide-react";
 
 import { AppSidePanel } from "@/src/components/panels/app-side-panel";
 import { useToast } from "@/src/components/toast-provider";
+import { shortenAddress } from "@/src/lib/address";
 import type { ConnectedWalletSession, WalletEnvironment } from "@/src/lib/wallet";
-
-function shortenAddress(value: string) {
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
 
 export function WalletSheetModal({
   open,

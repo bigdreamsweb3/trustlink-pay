@@ -4,7 +4,7 @@ const backendUrl = process.env.BACKEND_URL?.replace(/\/+$/, "");
 
 function buildTargetUrl(path: string[], request: NextRequest) {
   if (!backendUrl) {
-    throw new Error("BACKEND_URL is not configured");
+    throw new Error("BACKEND_URL is not configured for the frontend proxy route");
   }
 
   if (path.length === 0 || path[0] !== "api") {

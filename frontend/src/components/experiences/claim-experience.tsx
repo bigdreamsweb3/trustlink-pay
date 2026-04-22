@@ -9,6 +9,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
+import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { formatTokenAmount } from "@/src/lib/formatters";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
@@ -41,10 +42,6 @@ type ClaimFeeEstimate = {
   receiverAmountUi: number;
   totalAmountUi: number;
 };
-
-function shortenAddress(value: string) {
-  return `${value.slice(0, 6)}...${value.slice(-6)}`;
-}
 
 function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
@@ -268,16 +265,16 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       }
     >
       <section className="space-y-5">
-        {status && !claimSuccess ? (
+        {/* {status && !claimSuccess ? (
           <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">
             {status}
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">
+          <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">
             {error}
           </div>
-        ) : null}
+        ) : null} */}
 
         {loading ? (
           <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">

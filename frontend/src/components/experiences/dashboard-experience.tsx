@@ -10,6 +10,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, SettingsIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
+import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
@@ -18,10 +19,6 @@ import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { getConnectedWalletAddress } from "@/src/lib/wallet";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
-
-function shortenAddress(value: string) {
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
 
 function formatGuardTimestamp(value: string) {
   return new Date(value).toLocaleTimeString([], {
@@ -192,7 +189,7 @@ export function DashboardExperience() {
       }
     >
       <section className="space-y-5">
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {/* {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit text-[#ff9e9e]">{error}</div> : null} */}
 
 
 

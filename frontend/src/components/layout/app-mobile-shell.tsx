@@ -4,15 +4,17 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useEffect, useRef, useState, type ReactNode, type UIEvent } from "react";
 
-import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { BackIcon, ClaimIcon, HomeIcon, InfoIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
 import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
 import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
+import { shortenAddress } from "@/src/lib/address";
 import { useAppPanel } from "@/src/lib/app-panel-provider";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
+import ExpandableMetaRow from "../ui/ExpandableMetaRow";
 
 type AppTab = "home" | "send" | "receive" | "claim" | "wallets" | "profile" | "settings";
 
@@ -51,10 +53,6 @@ const mobileNavItems: Array<{ key: AppTab; href: Route; label: string; icon: Rea
   { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon size={20} className="text-current" /> },
   { key: "settings", href: "/app/settings", label: "Settings", icon: <SettingsIcon size={20} className="text-current" /> }
 ];
-
-function shortenAddress(value: string) {
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
 
 export function AppMobileShell({
   currentTab,
@@ -152,7 +150,7 @@ export function AppMobileShell({
           </div>
 
           <div className="flex flex-col shrink-0 items-center gap-2">
-            <button
+            {/* <button
               type="button"
               onClick={() => openPanel("profile")}
               className="tl-field-btn flex items-center gap-3 rounded-[22px] px-3 py-3 text-left transition button"
@@ -164,7 +162,7 @@ export function AppMobileShell({
                 <span className="block truncate text-sm font-semibold text-text">{user.displayName}</span>
                 <span className="tl-text-muted block truncate text-[0.76rem]">@{user.handle}</span>
               </span>
-            </button>
+            </button> */}
           </div>
         </aside>
 
@@ -187,9 +185,9 @@ export function AppMobileShell({
                 <div className="tl-phone-screen tl-grid-overlay relative min-h-screen px-5 pb-0 pt-0 md:min-h-[calc(100vh-3rem)]">
                   {/* MOBILE HEADER */}
                   <div
-                    className={`sticky top-0 z-100 -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center ${mobileHeaderScrolled
-                      ? "bg-phone-shell shadow  border-b border-accent-soft"
-                      : "bg-transparent backdrop-blur-0"
+                    className={`sticky top-0 z-100 -mx-5 h-14 w-[calc(100%+2.5rem)] px-5 pt-1 transition-all duration-300 ease-out grid grid-cols-1 items-center border-b ${mobileHeaderScrolled
+                      ? "bg-phone-shell shadow border-accent-soft"
+                      : "bg-transparent backdrop-blur-0 border-transparent"
                       }`}
                   >
                     <div className="flex items-start justify-between gap-4 my-auto">
@@ -208,6 +206,17 @@ export function AppMobileShell({
                           ) : null}
 
                           <TrustLinkMark />
+
+                          {!showBackButton ? (
+                            <div>
+                              <div className={`tl-text-muted text-[0.68rem] uppercase tracking-[0.22em] max-w-fit ${showBackButton
+                                ? "hidden"
+                                : null}`}>TrustLink</div>
+
+                              <div className="flex min-w-0 items-center justify-end gap-1.5 text-right tl-coord-text">
+                                <span className="truncate">@{user.handle}</span>
+                              </div>
+                            </div>) : null}
                         </div>
                         <h1 className="sr-only">
                           {title}
@@ -255,21 +264,29 @@ export function AppMobileShell({
 
                   <div className="min-w-0 mb-6">
 
-                    <div className="tl-coord-text mt-3 flex w-full items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="opacity-58">Sector</span>
-                        <span className="opacity-40">//</span>
-                        <span className="truncate">{currentTab.toUpperCase()}</span>
-                      </div>
 
-                      <div className="flex min-w-0 items-center justify-end gap-1.5 text-right">
-                        <span className="truncate">@{user.handle}</span>
+                    <div className="tl-coord-text mt-3 ">
+                      <div className="flex w-full items-center justify-between gap-0 text-[0.7rem] leading-5 tracking-[0.01em]">
+
+                        {/* LEFT */}
+                        <div className="flex flex-1 items-center gap-1.5 max-w-fit whitespace-nowrap opacity-70 text-[9px]  leading-3">
+                          <span className="opacity-58">Sector</span>
+                          <span className="opacity-40"> › </span>
+                          <span className="text-accent">{currentTab.toUpperCase()}</span>
+                        </div>
+
+                        <ExpandableMetaRow
+                          currentTab={currentTab}
+                          subtitle={subtitle}
+                        />
+                        {/* RIGHT */}
+                        {/* <div className="flex-1 ml-0.5 text-right text-[9px] opacity-70 leading-3 wrap-break-word">
+                          {subtitle}
+                        </div> */}
+
                       </div>
                     </div>
 
-                    <p className="tl-text-soft mt-2 max-w-[17.75rem] text-[0.8rem] leading-5 tracking-[0.01em] opacity-88">
-                      {subtitle}
-                    </p>
                   </div>
 
                   {/* PAGE CONTENT */}

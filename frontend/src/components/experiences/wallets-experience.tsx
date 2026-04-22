@@ -9,6 +9,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
+import { shortenAddress } from "@/src/lib/address";
 import { apiDelete, apiGet, apiPost } from "@/src/lib/api";
 import {
   getConnectedWalletSession,
@@ -24,10 +25,6 @@ import {
 } from "@/src/lib/wallet-actions";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import type { ReceiverWallet } from "@/src/lib/types";
-
-function shortenAddress(value: string) {
-  return `${value.slice(0, 6)}...${value.slice(-6)}`;
-}
 
 function formatShortDate(value: string) {
   return new Intl.DateTimeFormat("en", {

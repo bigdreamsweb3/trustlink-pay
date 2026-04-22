@@ -108,8 +108,8 @@ export function ReceiveExperience() {
       }
     >
       <section className="space-y-5">
-        {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {/* {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
+        {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">{error}</div> : null} */}
 
         <section className="tl-panel rounded-[28px]">
           <div className="mb-3">

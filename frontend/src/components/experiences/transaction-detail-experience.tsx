@@ -9,6 +9,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet } from "@/src/lib/api";
 import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
+import { shareInviteMessage } from "@/src/lib/share";
 import type { PaymentDetailResponse } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 
@@ -61,20 +62,6 @@ function statusTone(status: PaymentDetailResponse["payment"]["status"]) {
     default:
       return "bg-[#321516] text-[#ff9c9c]";
   }
-}
-
-async function shareInviteMessage(message: string) {
-  if (typeof navigator !== "undefined" && navigator.share) {
-    await navigator.share({ text: message });
-    return "shared";
-  }
-
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(message);
-    return "copied";
-  }
-
-  throw new Error("Sharing is not available on this device.");
 }
 
 export function TransactionDetailExperience({ paymentId }: { paymentId: string }) {
@@ -205,11 +192,11 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
       }
     >
       <section className="space-y-5">
-        {error ? (
-          <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">
+        {/* {error ? (
+          <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">
             {error}
           </div>
-        ) : null}
+        ) : null} */}
 
         {loading ? (
           <section className="tl-panel p-5">

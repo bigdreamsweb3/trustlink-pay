@@ -3,6 +3,7 @@ import {
   clearStoredToken,
   clearStoredUser,
 } from "@/src/lib/storage";
+import { buildBackendUrl } from "@/src/lib/backend";
 
 async function parseResponse(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
@@ -69,7 +70,7 @@ export async function apiPost<T>(
   body: unknown,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(`/backend${path}`, {
+  const response = await fetch(buildBackendUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -92,7 +93,7 @@ export async function apiGet<T>(
   path: string,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(`/backend${path}`, {
+  const response = await fetch(buildBackendUrl(path), {
     method: "GET",
     headers: accessToken
       ? { Authorization: `Bearer ${accessToken}` }
@@ -115,7 +116,7 @@ export async function apiPatch<T>(
   body: unknown,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(`/backend${path}`, {
+  const response = await fetch(buildBackendUrl(path), {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -138,7 +139,7 @@ export async function apiDelete<T>(
   path: string,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(`/backend${path}`, {
+  const response = await fetch(buildBackendUrl(path), {
     method: "DELETE",
     headers: accessToken
       ? { Authorization: `Bearer ${accessToken}` }

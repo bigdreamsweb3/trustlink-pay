@@ -12,6 +12,7 @@ import { SectionLoader } from "@/src/components/section-loader";
 import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
+import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
@@ -22,6 +23,7 @@ import {
   type CountryOption,
 } from "@/src/lib/phone-countries";
 import { loadPreferredCountryIso2, rememberCountryUsage } from "@/src/lib/phone-preferences";
+import { shareInviteMessage } from "@/src/lib/share";
 import type {
   PaymentNotificationStatus,
   PaymentRecord,
@@ -43,10 +45,6 @@ import { Search } from "lucide-react";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
 
-function shortenAddress(value: string) {
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
-
 function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
   return new Intl.NumberFormat("en-US", {
@@ -66,20 +64,6 @@ function formatReceiptTime(value: string | null) {
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
-}
-
-async function shareInviteMessage(message: string) {
-  if (typeof navigator !== "undefined" && navigator.share) {
-    await navigator.share({ text: message });
-    return "shared";
-  }
-
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(message);
-    return "copied";
-  }
-
-  throw new Error("Sharing is not available on this device.");
 }
 
 type SendCostEstimate = {
@@ -773,10 +757,10 @@ export function SendExperience() {
       }
     >
       <section className="space-y-5">
-        {notice && !sendSuccess ? (
+        {/* {notice && !sendSuccess ? (
           <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div>
         ) : null}
-        {error ? <div className="rounded-[22px] border border-[#ff7f7f]/20 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ff9e9e]">{error}</div> : null}
+        {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">{error}</div> : null} */}
 
         {/* SEND SUCCESS */}
         {sendSuccess ? (

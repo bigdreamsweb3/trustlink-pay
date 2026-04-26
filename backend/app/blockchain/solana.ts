@@ -1,5 +1,10 @@
 export {
   createDraftPaymentId,
+  prepareAddRecoveryWalletTransaction,
+  prepareRequestRecoveryTransaction,
+  prepareSetIdentityFreezeTransaction,
+  getIdentityBindingPda,
+  getIdentityBindingState,
   getEscrowConfigState,
   getEscrowDepositAddress,
   getEscrowVerifierPublicKey,

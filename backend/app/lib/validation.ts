@@ -55,9 +55,6 @@ export const acceptPaymentSchema = z
     pin: pinSchema,
     walletAddress: walletAddressSchema.optional(),
     receiverWalletId: z.string().uuid().optional(),
-  })
-  .refine((value) => Boolean(value.walletAddress || value.receiverWalletId), {
-    message: "walletAddress or receiverWalletId is required",
   });
 
 export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change", "wallet_add"]);
@@ -95,9 +92,6 @@ export const estimateClaimFeeSchema = z
     paymentId: z.string().uuid(),
     walletAddress: walletAddressSchema.optional(),
     receiverWalletId: z.string().uuid().optional(),
-  })
-  .refine((value) => Boolean(value.walletAddress || value.receiverWalletId), {
-    message: "walletAddress or receiverWalletId is required",
   });
 
 export const pinSetupSchema = z.object({
@@ -158,4 +152,18 @@ export const verifyWhatsAppNumberSchema = z.object({
 
 export const walletTokenLookupSchema = z.object({
   walletAddress: walletAddressSchema,
+});
+
+export const addRecoveryWalletSchema = z.object({
+  walletAddress: walletAddressSchema,
+  allowUpdate: z.boolean().optional(),
+});
+
+export const setIdentityFreezeSchema = z.object({
+  authorityWallet: walletAddressSchema,
+  frozen: z.boolean(),
+});
+
+export const requestRecoverySchema = z.object({
+  authorityWallet: walletAddressSchema,
 });

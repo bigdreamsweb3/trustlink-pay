@@ -32,4 +32,20 @@ pub enum TrustLinkEscrowError {
     InvalidConfigAuthority,
     #[msg("Default expiry configuration is invalid")]
     InvalidDefaultExpiry,
+    #[msg("Identity binding already exists")]
+    IdentityAlreadyBound,
+    #[msg("Identity binding is required")]
+    IdentityNotBound,
+    #[msg("Identity binding is frozen")]
+    IdentityFrozen,
+    #[msg("Recovery wallet is not configured")]
+    RecoveryNotConfigured,
+    #[msg("Recovery wallet is already configured")]
+    RecoveryAlreadyConfigured,
+    #[msg("Receiver wallet does not match the bound main wallet")]
+    InvalidBoundWallet,
+    #[msg("Recovery wallet does not match the bound recovery wallet")]
+    InvalidRecoveryWallet,
+    #[msg("Recovery cannot complete yet")]
+    RecoveryNotReady,
 }

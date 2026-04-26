@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, CheckCircle2, ShieldCheck, Wallet2 } from "lucide-react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { GuidedFlowModal } from "@/src/components/modals/guided-flow-modal";
 import { PinEntryModal } from "@/src/components/modals/pin-entry-modal";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
@@ -12,8 +15,10 @@ import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { formatTokenAmount } from "@/src/lib/formatters";
+import type { IdentitySecurityState, PaymentRecord } from "@/src/lib/types";
+import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import type { PaymentRecord, ReceiverWallet, WalletTokenOption } from "@/src/lib/types";
+import { useWallet } from "@/src/lib/wallet-provider";
 
 type PaymentDetailsResponse = {
   payment: PaymentRecord;
@@ -43,28 +48,290 @@ type ClaimFeeEstimate = {
   totalAmountUi: number;
 };
 
-function formatTokenBalance(balance: number, symbol: string) {
-  const digits = symbol === "SOL" ? 4 : 2;
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: digits,
-  }).format(balance);
-}
+type BackupFlowStep = "intro" | "connect" | "success";
 
 function toNumericAmount(value: string | number | null | undefined) {
   const numericValue = typeof value === "number" ? value : Number(value ?? 0);
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
+function looksLikeWalletAddress(value: string) {
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.trim());
+}
+
+function SuccessSummaryCard({
+  payment,
+  claimSuccess,
+  feeAmount,
+  netAmount,
+}: {
+  payment: PaymentDetailsResponse;
+  claimSuccess: ClaimSuccess;
+  feeAmount: number;
+  netAmount: number;
+}) {
+  return (
+    <div className="mt-5 space-y-3 rounded-[24px] border border-white/8 bg-black/20 px-4 py-4">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-text/46">Reference</span>
+        <span className="font-medium text-text">{claimSuccess.referenceCode}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-text/46">From</span>
+        <span className="font-medium text-text">{payment.sender.displayName}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-text/46">Amount received</span>
+        <span className="font-medium text-[#7dffd9]">
+          {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-text/46">Service fee</span>
+        <span className="font-medium text-text">
+          {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="text-text/46">Wallet</span>
+        <span className="font-medium text-text">{shortenAddress(claimSuccess.walletAddress)}</span>
+      </div>
+      {claimSuccess.blockchainSignature ? (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-text/46">Transaction</span>
+          <span className="font-medium text-text">{shortenAddress(claimSuccess.blockchainSignature)}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function BackupWalletFlow({
+  open,
+  step,
+  connectedWallet,
+  mainWallet,
+  backupWalletInput,
+  busy,
+  onClose,
+  onSkip,
+  onContinue,
+  onWalletInputChange,
+  onSave,
+  onUseConnectedWallet,
+  onConnectWallet,
+}: {
+  open: boolean;
+  step: BackupFlowStep;
+  connectedWallet: string | null;
+  mainWallet: string | null;
+  backupWalletInput: string;
+  busy: boolean;
+  onClose: () => void;
+  onSkip: () => void;
+  onContinue: () => void;
+  onWalletInputChange: (value: string) => void;
+  onSave: () => void;
+  onUseConnectedWallet: () => void;
+  onConnectWallet: () => void;
+}) {
+  const connectedWalletIsMain = Boolean(mainWallet && connectedWallet && connectedWallet === mainWallet);
+  const connectedWalletCanBeBackup = Boolean(connectedWallet && mainWallet && connectedWallet !== mainWallet);
+  const needsMainWalletApproval = Boolean(mainWallet && connectedWallet && connectedWallet !== mainWallet);
+
+  return (
+    <GuidedFlowModal
+      open={open}
+      onClose={busy ? () => undefined : onClose}
+      dismissible={!busy}
+      title={
+        step === "intro"
+          ? "Protect your funds"
+          : step === "connect"
+            ? "Connect a backup wallet"
+            : "Backup wallet added"
+      }
+      description={
+        step === "intro"
+          ? "If you lose access to your main wallet, your backup wallet lets you recover your money. You can skip this for now."
+          : step === "connect"
+            ? "This wallet is only used if you need to recover your account later."
+            : "Your account now has recovery protection."
+      }
+    >
+      <AnimatePresence mode="wait">
+        {step === "intro" ? (
+          <motion.div
+            key="intro"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="space-y-4"
+          >
+            <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#58f2b1]/14 text-[#7dffd9]">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-text">Stay in control</div>
+                  <p className="mt-1 text-sm leading-6 text-text/60">
+                    Your main wallet keeps receiving payments. A backup wallet is there only for emergencies.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={onContinue}
+                className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={onSkip}
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/72"
+              >
+                Skip
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+
+        {step === "connect" ? (
+          <motion.div
+            key="connect"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="space-y-4"
+          >
+            <div className="rounded-[24px] border border-white/8 bg-black/20 px-4 py-4">
+              <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Main wallet</div>
+              <div className="mt-2 text-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not connected yet"}</div>
+              <p className="mt-2 text-sm leading-6 text-text/56">This wallet stays in charge of your account and approves the backup wallet.</p>
+            </div>
+
+            <div className="rounded-[24px] border border-white/8 bg-black/20 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Backup wallet</div>
+                  <div className="mt-2 text-sm font-semibold text-text">
+                    {connectedWallet ? shortenAddress(connectedWallet) : "No wallet connected yet"}
+                  </div>
+                </div>
+                <div className="grid h-10 w-10 place-items-center rounded-[16px] bg-[#58f2b1]/12 text-[#7dffd9]">
+                  <Wallet2 className="h-4.5 w-4.5" />
+                </div>
+              </div>
+
+              <p className="mt-2 text-sm leading-6 text-text/56">
+                Connect the wallet you want to keep as your backup, or paste its address below.
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={onConnectWallet}
+                  className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/78"
+                >
+                  Connect wallet
+                </button>
+
+                {connectedWalletCanBeBackup ? (
+                  <button
+                    type="button"
+                    onClick={onUseConnectedWallet}
+                    className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3 text-sm font-medium text-[#7dffd9]"
+                  >
+                    Use connected wallet
+                  </button>
+                ) : null}
+
+                <div className="rounded-[20px] border border-white/6 bg-black/20 px-4 py-4">
+                  <label className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Wallet address</label>
+                  <input
+                    value={backupWalletInput}
+                    onChange={(event) => onWalletInputChange(event.target.value)}
+                    placeholder="Paste backup wallet address"
+                    className="mt-3 w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/26 focus:border-[#58f2b1]/28"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-[20px] border border-white/6 bg-black/20 px-4 py-4 text-sm leading-6 text-text/58">
+                {connectedWalletIsMain
+                  ? "Your main wallet is connected right now. You can paste your backup wallet address, or switch wallets and come back."
+                  : needsMainWalletApproval
+                    ? "Reconnect your main wallet before saving this change. That approval keeps your account secure."
+                    : "When you continue, your main wallet will approve this backup wallet for emergencies only."}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={busy}
+                className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-60"
+              >
+                {busy ? "Saving..." : needsMainWalletApproval ? "Reconnect main wallet" : "Add backup wallet"}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={busy}
+                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/72 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+
+        {step === "success" ? (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="space-y-5"
+          >
+            <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-5 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-[#7dffd9]">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <p className="mt-3 text-sm leading-6 text-text/62">
+                If you ever lose access to your main wallet, your backup wallet can help you recover safely.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]"
+            >
+              Done
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </GuidedFlowModal>
+  );
+}
+
 export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } =
     useAuthenticatedSession(`/claim/${paymentId}`);
+  const { session, walletAddress, requestWalletConnection } = useWallet();
   const { showToast } = useToast();
   const [payment, setPayment] = useState<PaymentDetailsResponse | null>(null);
-  const [wallets, setWallets] = useState<ReceiverWallet[]>([]);
-  const [walletBalances, setWalletBalances] = useState<Record<string, WalletTokenOption | null>>({});
-  const [selectedWalletId, setSelectedWalletId] = useState("");
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -72,9 +339,15 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const [loading, setLoading] = useState(true);
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
+  const [identitySecurity, setIdentitySecurity] = useState<IdentitySecurityState | null>(null);
+  const [dismissRecoveryPrompt, setDismissRecoveryPrompt] = useState(false);
   const [claimFeeEstimate, setClaimFeeEstimate] = useState<ClaimFeeEstimate | null>(null);
   const [claimFeeBusy, setClaimFeeBusy] = useState(false);
   const [feeInfoOpen, setFeeInfoOpen] = useState(false);
+  const [backupFlowOpen, setBackupFlowOpen] = useState(false);
+  const [backupFlowStep, setBackupFlowStep] = useState<BackupFlowStep>("intro");
+  const [backupWalletInput, setBackupWalletInput] = useState("");
+  const [backupFlowBusy, setBackupFlowBusy] = useState(false);
   const lastSubmittedPinRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -84,9 +357,21 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
 
     void loadClaimData(accessToken);
   }, [accessToken, user, paymentId]);
+  const activeWalletAddress = walletAddress ?? null;
+  const grossAmount = toNumericAmount(payment?.payment.amount);
+  const feeAmount =
+    claimSuccess?.claimFeeAmount ??
+    claimFeeEstimate?.feeAmountUi ??
+    toNumericAmount(payment?.payment.claim_fee_amount);
+  const netAmount = claimSuccess?.netAmount ?? claimFeeEstimate?.receiverAmountUi ?? Math.max(grossAmount - feeAmount, 0);
+  const boundMainWallet = identitySecurity?.mainWallet ?? null;
+  const requiresBoundWalletConnection = Boolean(boundMainWallet);
+  const isConnectedToRequiredWallet = requiresBoundWalletConnection
+    ? activeWalletAddress === boundMainWallet
+    : Boolean(activeWalletAddress);
 
   useEffect(() => {
-    if (!pinModalOpen || !selectedWalletId || pin.length !== 6 || claimBusy || !accessToken) {
+    if (!pinModalOpen || !activeWalletAddress || pin.length !== 6 || claimBusy || !accessToken) {
       return;
     }
 
@@ -96,22 +381,10 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
 
     lastSubmittedPinRef.current = pin;
     void handleClaim();
-  }, [accessToken, claimBusy, pin, pinModalOpen, selectedWalletId]);
-
-  const selectedWallet = useMemo(
-    () => wallets.find((wallet) => wallet.id === selectedWalletId) ?? null,
-    [selectedWalletId, wallets],
-  );
-  const selectedWalletBalance = selectedWallet ? walletBalances[selectedWallet.id] : null;
-  const grossAmount = toNumericAmount(payment?.payment.amount);
-  const feeAmount =
-    claimSuccess?.claimFeeAmount ??
-    claimFeeEstimate?.feeAmountUi ??
-    toNumericAmount(payment?.payment.claim_fee_amount);
-  const netAmount = claimSuccess?.netAmount ?? claimFeeEstimate?.receiverAmountUi ?? Math.max(grossAmount - feeAmount, 0);
+  }, [accessToken, activeWalletAddress, claimBusy, pin, pinModalOpen]);
 
   useEffect(() => {
-    if (!accessToken || !payment || !selectedWalletId || claimSuccess || payment.payment.status !== "pending") {
+    if (!accessToken || !payment || !activeWalletAddress || claimSuccess || payment.payment.status !== "pending") {
       return;
     }
 
@@ -121,13 +394,11 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       setClaimFeeBusy(true);
 
       try {
-        const result = await apiPost<{
-          estimate: ClaimFeeEstimate;
-        }>(
+        const result = await apiPost<{ estimate: ClaimFeeEstimate }>(
           "/api/payment/claim/estimate",
           {
             paymentId,
-            receiverWalletId: selectedWalletId,
+            ...(activeWalletAddress ? { walletAddress: activeWalletAddress } : {}),
           },
           accessToken ?? undefined,
         );
@@ -151,50 +422,37 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, claimSuccess, payment, paymentId, selectedWalletId]);
+  }, [accessToken, activeWalletAddress, claimSuccess, payment, paymentId]);
 
   async function loadClaimData(token: string) {
     setLoading(true);
 
     try {
-      const [paymentResult, walletResult] = await Promise.all([
+      const [paymentResult, identityResult] = await Promise.all([
         apiGet<PaymentDetailsResponse>(`/api/payment/${paymentId}`, token),
-        apiGet<{ wallets: ReceiverWallet[] }>("/api/receiver-wallets", token),
+        apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", token),
       ]);
 
       setPayment(paymentResult);
-      setWallets(walletResult.wallets);
-      setSelectedWalletId(walletResult.wallets[0]?.id ?? "");
-
-      const balances = await Promise.all(
-        walletResult.wallets.map(async (wallet) => {
-          try {
-            const result = await apiPost<{ tokens: WalletTokenOption[] }>(
-              "/api/wallet/tokens",
-              { walletAddress: wallet.wallet_address },
-              token,
-            );
-            const walletToken =
-              result.tokens.find((tokenOption) => tokenOption.symbol === paymentResult.payment.token_symbol) ?? null;
-            return [wallet.id, walletToken] as const;
-          } catch {
-            return [wallet.id, null] as const;
-          }
-        }),
-      );
-
-      setWalletBalances(Object.fromEntries(balances));
+      setIdentitySecurity(identityResult.identity);
       setError(null);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Could not load claim details");
+      setError(loadError instanceof Error ? loadError.message : "Could not load payment details");
     } finally {
       setLoading(false);
     }
   }
 
   function handleOpenPinConfirmation() {
-    if (!selectedWalletId) {
-      setError("Select a receiver wallet before confirming claim.");
+    if (!activeWalletAddress) {
+      setError("Connect your wallet before continuing.");
+      requestWalletConnection();
+      return;
+    }
+
+    if (boundMainWallet && activeWalletAddress !== boundMainWallet) {
+      setError(`Connect your main wallet ${shortenAddress(boundMainWallet)} to continue.`);
+      requestWalletConnection();
       return;
     }
 
@@ -206,8 +464,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   }
 
   async function handleClaim() {
-    if (!accessToken || !selectedWalletId) {
-      setError("Select a receiver wallet before confirming claim.");
+    if (!accessToken || !activeWalletAddress) {
+      setError("Connect a wallet before continuing.");
       return;
     }
 
@@ -227,22 +485,92 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         {
           paymentId,
           pin,
-          receiverWalletId: selectedWalletId,
+          ...(activeWalletAddress ? { walletAddress: activeWalletAddress } : {}),
         },
         accessToken,
       );
 
-      setStatus(`Reference ${result.referenceCode} claimed successfully to ${result.walletAddress}.`);
+      setStatus(`Reference ${result.referenceCode} received successfully in ${result.walletAddress}.`);
       setClaimSuccess({
         ...result,
         claimFeeAmount: result.claimFeeAmount != null ? Number(result.claimFeeAmount) : null,
       });
       setPinModalOpen(false);
-      showToast("Payment claimed successfully.");
+      showToast("Payment received successfully.");
     } catch (acceptError) {
-      setError(acceptError instanceof Error ? acceptError.message : "Could not complete claim");
+      setError(acceptError instanceof Error ? acceptError.message : "Could not receive payment");
     } finally {
       setClaimBusy(false);
+    }
+  }
+
+  function openBackupFlow() {
+    setBackupFlowStep("intro");
+    setBackupFlowOpen(true);
+  }
+
+  function closeBackupFlow() {
+    if (backupFlowBusy) {
+      return;
+    }
+    setBackupFlowOpen(false);
+    setBackupFlowStep("intro");
+  }
+
+  async function handleAddBackupWallet() {
+    if (!accessToken || !identitySecurity) {
+      setError("Receive a payment first to secure this wallet.");
+      return;
+    }
+
+    const trimmedWallet = backupWalletInput.trim();
+    if (!looksLikeWalletAddress(trimmedWallet)) {
+      setError("Enter a valid backup wallet address.");
+      return;
+    }
+    if (trimmedWallet === identitySecurity.mainWallet) {
+      setError("Your backup wallet must be different from your main wallet.");
+      return;
+    }
+
+    if (!walletAddress || walletAddress !== identitySecurity.mainWallet || !session) {
+      requestWalletConnection();
+      setError("Reconnect your main wallet to approve this backup wallet.");
+      return;
+    }
+
+    setBackupFlowBusy(true);
+    setError(null);
+    try {
+      const prepared = await apiPost<{
+        serializedTransaction: string;
+        rpcUrl: string;
+      }>(
+        "/api/identity/add-recovery-wallet",
+        {
+          walletAddress: trimmedWallet,
+          allowUpdate: Boolean(identitySecurity.recoveryWallet),
+        },
+        accessToken,
+      );
+
+      await signAndSendSerializedSolanaTransaction({
+        walletId: session.walletId,
+        rpcUrl: prepared.rpcUrl,
+        serializedTransaction: prepared.serializedTransaction,
+      });
+
+      const refreshed = await apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", accessToken);
+      setIdentitySecurity(refreshed.identity);
+      setBackupFlowStep("success");
+      setDismissRecoveryPrompt(true);
+      showToast("Backup wallet added.");
+    } catch (actionError) {
+      const nextError = actionError instanceof Error ? actionError.message : "Could not add backup wallet";
+      setError(nextError);
+      showToast(nextError);
+    } finally {
+      setBackupFlowBusy(false);
     }
   }
 
@@ -253,8 +581,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   return (
     <AppMobileShell
       currentTab="home"
-      title="Claim"
-      subtitle="Choose your payout wallet, confirm with your PIN, and TrustLink releases the escrow immediately."
+      title="Receive payment"
+      subtitle="Connect the right wallet, confirm with your PIN, and receive the payment instantly."
       user={user}
       showBackButton
       backHref="/app/claim"
@@ -265,74 +593,90 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       }
     >
       <section className="space-y-5">
-        {/* {status && !claimSuccess ? (
+        {status && !claimSuccess ? (
           <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">
             {status}
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">
+          <div className="rounded-[22px] border border-[#ff7f7f]/15 bg-[#ff7f7f]/8 px-4 py-3 text-sm text-[#ffb4b4]">
             {error}
           </div>
-        ) : null} */}
+        ) : null}
 
         {loading ? (
           <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
-            <SectionLoader size="md" label="Loading claim details..." />
+            <SectionLoader size="md" label="Loading payment details..." />
           </section>
         ) : claimSuccess && payment ? (
-          <section className="rounded-[28px] border border-white/8 bg-pop-bg p-5">
-            <SuccessIcon className="h-14 w-14" />
-            <div className="mt-5 text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Claim successful</div>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
-              {formatTokenAmount(netAmount)} {payment.payment.token_symbol} released
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-text/56">
-              Funds from {payment.sender.displayName} were released successfully to your selected wallet.
-            </p>
+          <section className="rounded-[30px] border border-white/8 bg-pop-bg p-5">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.34, ease: "easeOut" }}
+              className="flex justify-center"
+            >
+              <SuccessIcon className="h-16 w-16" />
+            </motion.div>
 
-            <div className="mt-5 space-y-3 rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-text/46">Reference</span>
-                <span className="font-medium text-text">{claimSuccess.referenceCode}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-text/46">Sender</span>
-                <span className="font-medium text-text">{payment.sender.displayName}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-text/46">TrustLink fee</span>
-                <span className="font-medium text-text">
-                  {formatTokenAmount(feeAmount)} {payment.payment.token_symbol}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-text/46">Wallet</span>
-                <span className="font-medium text-text">{shortenAddress(claimSuccess.walletAddress)}</span>
-              </div>
-              {claimSuccess.blockchainSignature ? (
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-text/46">Claim tx</span>
-                  <span className="font-medium text-text">{shortenAddress(claimSuccess.blockchainSignature)}</span>
-                </div>
-              ) : null}
+            <div className="mt-5 text-center">
+              <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Payment received</div>
+              <h2 className="mt-2 text-[2rem] font-semibold tracking-[-0.06em] text-text">Payment received 🎉</h2>
+              <p className="mt-3 text-sm leading-6 text-text/60">
+                Your money is now secured to your wallet. Add a backup wallet to protect your funds in case you lose access.
+              </p>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <Link
-                href="/app"
-                className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-text/78"
+            <SuccessSummaryCard
+              payment={payment}
+              claimSuccess={claimSuccess}
+              feeAmount={feeAmount}
+              netAmount={netAmount}
+            />
+
+            {!identitySecurity?.recoveryWallet && !dismissRecoveryPrompt ? (
+              <motion.div
+                initial={{ opacity: 0, y: 26 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.34, delay: 0.08, ease: "easeOut" }}
+                className="mt-5 grid gap-3"
               >
-                Back home
-              </Link>
-              <button
-                type="button"
-                onClick={() => (window.history.length > 1 ? history.back() : window.location.assign("/app"))}
-                className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]"
+                <button
+                  type="button"
+                  onClick={openBackupFlow}
+                  className="w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]"
+                >
+                  Add Backup Wallet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDismissRecoveryPrompt(true)}
+                  className="w-full rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/72"
+                >
+                  Not now
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+                className="mt-5 grid grid-cols-2 gap-3"
               >
-                Close
-              </button>
-            </div>
+                <Link
+                  href="/app"
+                  className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-center text-sm font-medium text-text/78"
+                >
+                  Back home
+                </Link>
+                <Link
+                  href="/app/settings"
+                  className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-center text-sm font-semibold text-[#04110a]"
+                >
+                  Security
+                </Link>
+              </motion.div>
+            )}
           </section>
         ) : payment ? (
           <>
@@ -342,7 +686,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 {formatTokenAmount(netAmount)} {payment.payment.token_symbol}
               </div>
               <div className="mt-2 text-sm text-text/58">
-                This is the net amount that will be released to your wallet after the TrustLink fee is deducted.
+                This is the amount that will arrive in your wallet after the service fee is deducted.
               </div>
               <div className="mt-4 space-y-3 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
@@ -353,12 +697,12 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="inline-flex items-center gap-2 text-text/46">
-                    TrustLink fee
+                    Service fee
                     <button
                       type="button"
                       onClick={() => setFeeInfoOpen((current) => !current)}
                       className="grid h-5 w-5 place-items-center rounded-full border border-white/10 text-[0.68rem] font-semibold text-text/58 transition hover:border-white/20 hover:text-text"
-                      aria-label="Why is a TrustLink fee charged?"
+                      aria-label="Why is a service fee charged?"
                     >
                       i
                     </button>
@@ -369,7 +713,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 </div>
                 {!claimSuccess && claimFeeEstimate?.estimatedNetworkFeeSol != null ? (
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">Est. Solana cost</span>
+                    <span className="text-text/46">Estimated Solana cost</span>
                     <span className="font-medium text-text">
                       {claimFeeEstimate.estimatedNetworkFeeSol.toFixed(6)} SOL
                     </span>
@@ -382,11 +726,19 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                   </span>
                 </div>
               </div>
-              {feeInfoOpen ? (
-                <div className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-text/68">
-                  TrustLink calculates this from the current Solana claim cost for your selected wallet, then adds the configured TrustLink margin. That keeps claiming possible even when the receiver has no SOL for gas.
-                </div>
-              ) : null}
+              <AnimatePresence>
+                {feeInfoOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.24, ease: "easeOut" }}
+                    className="mt-3 rounded-[20px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-sm leading-6 text-text/68"
+                  >
+                    TrustLink covers the receive path even when the receiver has no SOL for gas. This fee combines the current network cost and the configured TrustLink margin.
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
               <div className="mt-4 text-sm text-text/58">
                 From {payment.sender.displayName} (@{payment.sender.handle})
               </div>
@@ -397,123 +749,108 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             </section>
 
             <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Receiver wallet</h2>
-                  <p className="text-sm text-text/48">This wallet gets the release once your TrustLink PIN is confirmed.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setWalletModalOpen(true)}
-                  disabled={wallets.length === 0}
-                  className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-text/78 disabled:opacity-40"
-                >
-                  Choose
-                </button>
+              <div className="mb-3">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Wallet</h2>
+                <p className="text-sm text-text/48">
+                  {boundMainWallet
+                    ? "This payment is protected by your bound main wallet."
+                    : "Connect the wallet you want to use for this first receive."}
+                </p>
               </div>
 
-              {wallets.length === 0 ? (
-                <div className="rounded-[22px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm text-text/48">
-                  No receiver wallet saved yet. Add one in{" "}
-                  <Link href="/app/wallets" className="text-[#7dffd9] underline underline-offset-4">
-                    Wallets
-                  </Link>{" "}
-                  before claiming.
+              <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
+                <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
+                  {boundMainWallet ? "Required wallet" : "Wallet to connect"}
                 </div>
-              ) : selectedWallet ? (
-                <div className="rounded-[22px] border border-white/8 bg-black/20 px-4 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-text">{selectedWallet.wallet_name}</div>
-                      <div className="mt-1 text-sm text-text/52">{shortenAddress(selectedWallet.wallet_address)}</div>
-                    </div>
-                    <div className="text-right text-[0.72rem] text-text/40">
-                      {selectedWalletBalance
-                        ? `${formatTokenBalance(selectedWalletBalance.balance, selectedWalletBalance.symbol)} ${selectedWalletBalance.symbol}`
-                        : `${payment.payment.token_symbol} preview unavailable`}
-                    </div>
-                  </div>
+                <div className="mt-2 text-sm font-semibold text-text">
+                  {boundMainWallet
+                    ? shortenAddress(boundMainWallet)
+                    : activeWalletAddress
+                      ? shortenAddress(activeWalletAddress)
+                      : "No wallet connected"}
                 </div>
-              ) : null}
+                <p className="mt-2 text-sm leading-6 text-text/56">
+                  {boundMainWallet
+                    ? activeWalletAddress === boundMainWallet
+                      ? "You are connected to the correct main wallet for this identity."
+                      : activeWalletAddress
+                        ? `You are connected to ${shortenAddress(activeWalletAddress)}. Switch to your main wallet to continue.`
+                        : "Connect your main wallet to continue with this payment."
+                    : activeWalletAddress
+                      ? "This connected wallet will be bound to your identity after the payment is received."
+                      : "Connect your wallet to continue. Saved wallets no longer control where a claim goes."}
+                </p>
+                <button
+                  type="button"
+                  onClick={requestWalletConnection}
+                  className="mt-4 rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/78"
+                >
+                  {activeWalletAddress ? "Switch wallet" : "Connect wallet"}
+                </button>
+              </div>
 
               <div className="mt-4 rounded-[22px] border border-white/6 bg-black/20 px-4 py-4">
                 <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">Final step</div>
                 <p className="mt-2 text-sm leading-6 text-text/58">
-                  After you tap continue, entering your 6-digit PIN is the final confirmation. TrustLink releases {formatTokenAmount(netAmount)} {payment.payment.token_symbol} to your selected wallet automatically.
+                  {isConnectedToRequiredWallet
+                    ? "Tap continue, enter your 6-digit PIN, and your payment will move straight into your wallet."
+                    : "Tap continue to connect the correct wallet first. After that, you will confirm with your 6-digit PIN."}
                 </p>
-                {claimFeeBusy ? (
-                  <div className="mt-3 text-xs text-text/42">Refreshing claim fee estimate...</div>
-                ) : null}
+                {claimFeeBusy ? <div className="mt-3 text-xs text-text/42">Refreshing estimate...</div> : null}
               </div>
 
               <button
                 type="button"
-                onClick={handleOpenPinConfirmation}
-                disabled={claimBusy || !selectedWalletId}
-                className="mt-4 w-full rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a]  shadow-softbox  disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={isConnectedToRequiredWallet ? handleOpenPinConfirmation : requestWalletConnection}
+                disabled={claimBusy}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-[22px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {claimBusy ? "Checking PIN..." : "Continue with PIN"}
+                <span>
+                  {claimBusy
+                    ? "Checking PIN..."
+                    : isConnectedToRequiredWallet
+                      ? "Continue"
+                      : boundMainWallet
+                        ? "Connect main wallet"
+                        : "Connect wallet"}
+                </span>
+                {!claimBusy ? <ArrowRight className="h-4 w-4" /> : null}
               </button>
             </section>
           </>
         ) : (
           <section className="rounded-[28px] border border-white/8 bg-pop-bg p-4 text-sm text-text/48">
-            Claim details are unavailable right now.
+            Payment details are unavailable right now.
           </section>
         )}
       </section>
 
-      {walletModalOpen ? (
-        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setWalletModalOpen(false)}>
-          <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Select receiver wallet</h2>
-              <p className="text-sm text-text/48">Choose the destination wallet that should receive this release.</p>
-            </div>
-
-            <div className="space-y-3">
-              {wallets.map((wallet) => {
-                const active = wallet.id === selectedWalletId;
-                const balancePreview = walletBalances[wallet.id];
-
-                return (
-                  <button
-                    key={wallet.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedWalletId(wallet.id);
-                      setWalletModalOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-left transition ${active ? "border-[#58f2b1]/30 bg-[#58f2b1]/8" : "border-white/8 bg-black/20"
-                      }`}
-                  >
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-text">{wallet.wallet_name}</span>
-                      <span className="mt-1 block text-sm text-text/52">{shortenAddress(wallet.wallet_address)}</span>
-                    </span>
-                    <span className="text-right text-[0.72rem] text-text/44">
-                      {balancePreview
-                        ? `${formatTokenBalance(balancePreview.balance, balancePreview.symbol)} ${balancePreview.symbol}`
-                        : `${payment?.payment.token_symbol ?? "Token"} preview unavailable`}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <BackupWalletFlow
+        open={backupFlowOpen}
+        step={backupFlowStep}
+        connectedWallet={walletAddress}
+        mainWallet={identitySecurity?.mainWallet ?? null}
+        backupWalletInput={backupWalletInput}
+        busy={backupFlowBusy}
+        onClose={closeBackupFlow}
+        onSkip={() => {
+          setDismissRecoveryPrompt(true);
+          closeBackupFlow();
+        }}
+        onContinue={() => setBackupFlowStep("connect")}
+        onWalletInputChange={setBackupWalletInput}
+        onSave={() => void handleAddBackupWallet()}
+        onUseConnectedWallet={() => setBackupWalletInput(walletAddress ?? "")}
+        onConnectWallet={requestWalletConnection}
+      />
 
       <PinEntryModal
         open={pinModalOpen}
-        title="Confirm claim with PIN"
+        title="Confirm receipt with PIN"
         description={
           payment
-            ? `Enter your TrustLink PIN to release ${formatTokenAmount(netAmount)} ${payment.payment.token_symbol} to your selected wallet.`
-            : "Enter your TrustLink PIN to release this escrow."
+            ? `Enter your TrustLink PIN to receive ${formatTokenAmount(netAmount)} ${payment.payment.token_symbol} in your wallet.`
+            : "Enter your TrustLink PIN to receive this payment."
         }
         value={pin}
         onChange={(nextValue) => {

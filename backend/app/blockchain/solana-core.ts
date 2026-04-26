@@ -32,8 +32,10 @@ const splToken = require("@solana/spl-token") as {
 const CONFIG_SEED = Buffer.from("config");
 const PAYMENT_SEED = Buffer.from("payment");
 const VAULT_AUTHORITY_SEED = Buffer.from("vault_authority");
+const IDENTITY_BINDING_SEED = Buffer.from("identity_binding");
 const ESCROW_CONFIG_DISCRIMINATOR = accountDiscriminator("EscrowConfig");
 const PAYMENT_ACCOUNT_DISCRIMINATOR = accountDiscriminator("PaymentAccount");
+const IDENTITY_BINDING_DISCRIMINATOR = accountDiscriminator("IdentityBinding");
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 type SupportedTokenConfig = {
@@ -96,6 +98,17 @@ type DecodedPaymentAccount = {
   claimFeeAmount: bigint;
   expiryTs: bigint;
   status: number;
+};
+
+type DecodedIdentityBinding = {
+  receiverPhoneHash: Uint8Array;
+  mainWallet: PublicKey;
+  recoveryWallet: PublicKey | null;
+  isFrozen: boolean;
+  recoveryCooldown: bigint;
+  createdAt: bigint;
+  updatedAt: bigint;
+  bump: number;
 };
 
 type DecodedEscrowConfig = {
@@ -236,6 +249,13 @@ export function getVaultAuthorityPda(paymentId: string) {
   return PublicKey.findProgramAddressSync([VAULT_AUTHORITY_SEED, paymentIdToSeed(paymentId)], getProgramId())[0];
 }
 
+export function getIdentityBindingPda(phoneHash: string) {
+  return PublicKey.findProgramAddressSync(
+    [IDENTITY_BINDING_SEED, phoneHashHexToBytes(phoneHash)],
+    getProgramId(),
+  )[0];
+}
+
 export function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
   if (!data.subarray(0, 8).equals(PAYMENT_ACCOUNT_DISCRIMINATOR)) {
     throw new Error("Payment account discriminator mismatch");
@@ -270,6 +290,45 @@ export function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
     claimFeeAmount,
     expiryTs,
     status,
+  };
+}
+
+export function decodeIdentityBinding(data: Buffer): DecodedIdentityBinding {
+  if (!data.subarray(0, 8).equals(IDENTITY_BINDING_DISCRIMINATOR)) {
+    throw new Error("Identity binding discriminator mismatch");
+  }
+
+  let offset = 8;
+  const receiverPhoneHash = data.subarray(offset, offset + 32);
+  offset += 32;
+  const mainWallet = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const recoveryWalletOption = data.readUInt8(offset);
+  offset += 1;
+  const recoveryWallet =
+    recoveryWalletOption === 1 ? new PublicKey(data.subarray(offset, offset + 32)) : null;
+  if (recoveryWalletOption === 1) {
+    offset += 32;
+  }
+  const isFrozen = data.readUInt8(offset) === 1;
+  offset += 1;
+  const recoveryCooldown = data.readBigInt64LE(offset);
+  offset += 8;
+  const createdAt = data.readBigInt64LE(offset);
+  offset += 8;
+  const updatedAt = data.readBigInt64LE(offset);
+  offset += 8;
+  const bump = data.readUInt8(offset);
+
+  return {
+    receiverPhoneHash,
+    mainWallet,
+    recoveryWallet,
+    isFrozen,
+    recoveryCooldown,
+    createdAt,
+    updatedAt,
+    bump,
   };
 }
 
@@ -473,6 +532,138 @@ export async function requireEscrowConfigInitialized() {
   }
 
   return configPda;
+}
+
+export async function getIdentityBindingState(phoneHash: string) {
+  const connection = getConnection();
+  const bindingPda = getIdentityBindingPda(phoneHash);
+  const existing = await connection.getAccountInfo(bindingPda, "confirmed");
+
+  if (!existing) {
+    return null;
+  }
+
+  const decoded = decodeIdentityBinding(existing.data);
+  return {
+    address: bindingPda.toBase58(),
+    mainWallet: decoded.mainWallet.toBase58(),
+    recoveryWallet: decoded.recoveryWallet?.toBase58() ?? null,
+    isFrozen: decoded.isFrozen,
+    recoveryCooldown: decoded.recoveryCooldown.toString(),
+    createdAt: decoded.createdAt.toString(),
+    updatedAt: decoded.updatedAt.toString(),
+    bump: decoded.bump,
+  };
+}
+
+export async function prepareAddRecoveryWalletTransaction(params: {
+  phoneHash: string;
+  authorityWallet: string;
+  recoveryWallet: string;
+  allowUpdate: boolean;
+}) {
+  const connection = getConnection();
+  const authority = new PublicKey(params.authorityWallet);
+  const recoveryWallet = new PublicKey(params.recoveryWallet);
+  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+
+  const transaction = new Transaction({
+    feePayer: authority,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  }).add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: authority, isSigner: true, isWritable: false },
+        { pubkey: identityBinding, isSigner: false, isWritable: true },
+      ],
+      data: Buffer.concat([
+        instructionDiscriminator("add_recovery_wallet"),
+        recoveryWallet.toBuffer(),
+        Buffer.from([params.allowUpdate ? 1 : 0]),
+      ]),
+    }),
+  );
+
+  return {
+    identityBinding: identityBinding.toBase58(),
+    serializedTransaction: transaction
+      .serialize({ requireAllSignatures: false, verifySignatures: false })
+      .toString("base64"),
+    rpcUrl: env.SOLANA_RPC_URL!,
+  };
+}
+
+export async function prepareSetIdentityFreezeTransaction(params: {
+  phoneHash: string;
+  authorityWallet: string;
+  frozen: boolean;
+}) {
+  const connection = getConnection();
+  const authority = new PublicKey(params.authorityWallet);
+  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+
+  const transaction = new Transaction({
+    feePayer: authority,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  }).add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: authority, isSigner: true, isWritable: false },
+        { pubkey: identityBinding, isSigner: false, isWritable: true },
+      ],
+      data: Buffer.concat([
+        instructionDiscriminator("set_identity_freeze"),
+        Buffer.from([params.frozen ? 1 : 0]),
+      ]),
+    }),
+  );
+
+  return {
+    identityBinding: identityBinding.toBase58(),
+    serializedTransaction: transaction
+      .serialize({ requireAllSignatures: false, verifySignatures: false })
+      .toString("base64"),
+    rpcUrl: env.SOLANA_RPC_URL!,
+  };
+}
+
+export async function prepareRequestRecoveryTransaction(params: {
+  phoneHash: string;
+  authorityWallet: string;
+}) {
+  const connection = getConnection();
+  const authority = new PublicKey(params.authorityWallet);
+  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+
+  const transaction = new Transaction({
+    feePayer: authority,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  }).add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: authority, isSigner: true, isWritable: false },
+        { pubkey: identityBinding, isSigner: false, isWritable: true },
+      ],
+      data: Buffer.from(instructionDiscriminator("request_recovery")),
+    }),
+  );
+
+  return {
+    identityBinding: identityBinding.toBase58(),
+    serializedTransaction: transaction
+      .serialize({ requireAllSignatures: false, verifySignatures: false })
+      .toString("base64"),
+    rpcUrl: env.SOLANA_RPC_URL!,
+  };
 }
 
 function getActiveRecoveryWallets() {

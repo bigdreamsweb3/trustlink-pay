@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const PAYMENT_SEED: &[u8] = b"payment";
 pub const VAULT_AUTHORITY_SEED: &[u8] = b"vault_authority";
+pub const IDENTITY_BINDING_SEED: &[u8] = b"identity_binding";
 
 #[account]
 pub struct EscrowConfig {
@@ -14,6 +15,22 @@ pub struct EscrowConfig {
 
 impl EscrowConfig {
     pub const SPACE: usize = 8 + 32 + 32 + 8 + 1;
+}
+
+#[account]
+pub struct IdentityBinding {
+    pub receiver_phone_hash: [u8; 32],
+    pub main_wallet: Pubkey,
+    pub recovery_wallet: Option<Pubkey>,
+    pub is_frozen: bool,
+    pub recovery_cooldown: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub bump: u8,
+}
+
+impl IdentityBinding {
+    pub const SPACE: usize = 8 + 32 + 32 + (1 + 32) + 1 + 8 + 8 + 8 + 1;
 }
 
 #[account]

@@ -1,7 +1,7 @@
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { findUserByPhoneNumber, updateUserWallet } from "@/app/db/users";
-import { estimateClaimFee, releaseEscrow } from "@/app/blockchain/solana";
+import { estimateClaimFee, getIdentityBindingState, releaseEscrow } from "@/app/blockchain/solana";
 import { updatePaymentAcceptance } from "@/app/db/payments";
 import { logger } from "@/app/lib/logger";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
@@ -35,24 +35,33 @@ export async function estimatePaymentClaim(params: {
     throw new Error("Receiver must register a TrustLink identity before estimating claim");
   }
 
-  const receiverWalletAddress =
+  const requestedReceiverWalletAddress =
     params.receiverWalletId != null
       ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
-      : params.walletAddress;
+      : params.walletAddress ?? existingUser.wallet_address ?? undefined;
 
+  const binding = await getIdentityBindingState(payment.receiver_phone_hash);
+  if (!requestedReceiverWalletAddress && !binding) {
+    throw new Error("Receiver wallet not found");
+  }
+  const receiverWalletAddress = binding?.mainWallet ?? requestedReceiverWalletAddress;
   if (!receiverWalletAddress) {
     throw new Error("Receiver wallet not found");
   }
+  if (binding && requestedReceiverWalletAddress && binding.mainWallet !== requestedReceiverWalletAddress) {
+    throw new Error(`This TrustLink identity is already bound to ${binding.mainWallet}`);
+  }
+  const recoveryWalletAddress = binding?.recoveryWallet ?? null;
 
   const estimate = await estimateClaimFee({
     paymentId: payment.id,
     escrowAccount: payment.escrow_account ?? "",
     escrowVaultAddress: payment.escrow_vault_address ?? "",
-    senderWallet: payment.sender_wallet ?? "",
     receiverWallet: receiverWalletAddress,
     receiverPhoneHash: payment.receiver_phone_hash,
     tokenMintAddress: payment.token_mint_address ?? "",
     amount: Number(payment.amount),
+    recoveryWallet: recoveryWalletAddress,
   });
 
   return {
@@ -101,14 +110,23 @@ export async function acceptPayment(params: {
 
   await verifyUserActionPin(params.authUser, params.pin);
 
-  const receiverWalletAddress =
+  const requestedReceiverWalletAddress =
     params.receiverWalletId != null
       ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
-      : params.walletAddress;
+      : params.walletAddress ?? existingUser.wallet_address ?? undefined;
 
+  const binding = await getIdentityBindingState(payment.receiver_phone_hash);
+  if (!requestedReceiverWalletAddress && !binding) {
+    throw new Error("Receiver wallet not found");
+  }
+  const receiverWalletAddress = binding?.mainWallet ?? requestedReceiverWalletAddress;
   if (!receiverWalletAddress) {
     throw new Error("Receiver wallet not found");
   }
+  if (binding && requestedReceiverWalletAddress && binding.mainWallet !== requestedReceiverWalletAddress) {
+    throw new Error(`This TrustLink identity is already bound to ${binding.mainWallet}`);
+  }
+  const recoveryWalletAddress = binding?.recoveryWallet ?? null;
 
   const user =
     existingUser.wallet_address === receiverWalletAddress
@@ -124,11 +142,11 @@ export async function acceptPayment(params: {
     paymentId: payment.id,
     escrowAccount: payment.escrow_account ?? "",
     escrowVaultAddress: payment.escrow_vault_address ?? "",
-    senderWallet: payment.sender_wallet ?? "",
     receiverWallet: receiverWalletAddress,
     receiverPhoneHash: payment.receiver_phone_hash,
     tokenMintAddress: payment.token_mint_address ?? "",
     amount: Number(payment.amount),
+    recoveryWallet: recoveryWalletAddress,
   });
 
   const updatedPayment = await updatePaymentAcceptance({

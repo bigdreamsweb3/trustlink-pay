@@ -32,6 +32,17 @@ export interface ReceiverWallet {
   created_at: string;
 }
 
+export interface IdentitySecurityState {
+  address: string;
+  mainWallet: string;
+  recoveryWallet: string | null;
+  isFrozen: boolean;
+  recoveryCooldown: string;
+  createdAt: string;
+  updatedAt: string;
+  bump: number;
+}
+
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
 

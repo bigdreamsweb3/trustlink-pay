@@ -213,7 +213,7 @@ export function AppMobileShell({
                                 ? "hidden"
                                 : null}`}>TrustLink</div>
 
-                              <div className="flex min-w-0 items-center justify-end gap-1.5 text-right tl-coord-text">
+                              <div className="flex min-w-0 items-center justify-end gap-1.5 text-right tl-coord-text text-xs">
                                 <span className="truncate">@{user.handle}</span>
                               </div>
                             </div>) : null}
@@ -266,7 +266,7 @@ export function AppMobileShell({
 
 
                     <div className="tl-coord-text mt-3 ">
-                      <div className="flex w-full items-center justify-between gap-0 text-[0.7rem] leading-5 tracking-[0.01em]">
+                      <div className="flex w-full items-start justify-between gap-0 text-[0.7rem] leading-5 tracking-[0.01em]">
 
                         {/* LEFT */}
                         <div className="flex flex-1 items-center gap-1.5 max-w-fit whitespace-nowrap opacity-70 text-[9px]  leading-3">

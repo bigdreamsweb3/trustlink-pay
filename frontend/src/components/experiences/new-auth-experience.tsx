@@ -342,12 +342,12 @@ export function NewAuthExperience({
       </div> */}
 
       {/* ── Auth Card ── */}
-      <div className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[28px] border"
-        style={{
-          background: "var(--panel)",
-          borderColor: "var(--surface-border)",
-          boxShadow: "var(--shadow)",
-        }}
+      <div className="relative z-10 w-full max-w-[420px] overflow-hidden"
+        // style={{
+        //   background: "var(--panel)",
+        //   borderColor: "var(--surface-border)",
+        //   boxShadow: "var(--shadow)",
+        // }}
       >
         {/* Card top accent line */}
         <div className="absolute inset-x-0 top-0 h-px"
@@ -360,7 +360,7 @@ export function NewAuthExperience({
           {flowState === "idle" && (
             <div className="space-y-6" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
               {/* WhatsApp branded header */}
-              <div className="text-center">
+              {/* <div className="text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
                   style={{ background: "rgba(37, 211, 102, 0.10)", border: "1px solid rgba(37, 211, 102, 0.12)" }}
                 >
@@ -372,7 +372,7 @@ export function NewAuthExperience({
                 <p className="mx-auto mt-2 max-w-[280px] text-[0.8rem] leading-relaxed" style={{ color: "var(--muted)" }}>
                   Generate a secure session code and verify it instantly through WhatsApp.
                 </p>
-              </div>
+              </div> */}
 
               {/* Error display */}
               {error && (
@@ -658,7 +658,7 @@ export function NewAuthExperience({
       </div>
 
       {/* ── Trust badges ── */}
-      {flowState === "idle" && (
+      {/* {flowState === "idle" && (
         <div className="relative z-10 mt-7 flex w-full max-w-[420px] items-start gap-2" style={{ animation: "fadeIn 0.4s 0.15s var(--ease-out-expo) both" }}>
           {[
             { icon: ShieldIcon, label: "End-to-end secure" },
@@ -675,7 +675,7 @@ export function NewAuthExperience({
             </div>
           ))}
         </div>
-      )}
+      )} */}
     </main>
   );
 }

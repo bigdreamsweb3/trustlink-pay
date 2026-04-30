@@ -480,8 +480,121 @@ The devnet guide includes:
 - How to verify payments on Solscan
 - Troubleshooting common issues
 
+## Authentication in TrustLink Pay
+
+TrustLink Pay uses a sophisticated WhatsApp-based authentication system that provides both security and user-friendly experience. The authentication is designed to be phone-number-first while maintaining cryptographic security guarantees.
+
+### Core Authentication Principles
+
+1. **Phone Number as Primary Identity** - Users authenticate with their WhatsApp number
+2. **Zero-Knowledge Proof Architecture** - TrustLink never stores user private keys
+3. **Multi-Layer Security** - WhatsApp OTP + in-app PIN + cryptographic proofs
+4. **Device-Aware Flows** - Different experiences for mobile vs desktop users
+5. **Session-Based Verification** - Time-limited, one-time use session codes
+
+### The Authentication Flow
+
+#### Phase 1: Identity Verification
+
+1. **Session Code Authentication (New Flow)**
+   - System generates a unique session code (e.g., `TL-8821`)
+   - User sends the code via WhatsApp to verify identity
+   - Real-time verification using Server-Sent Events or fallback polling
+
+#### Phase 2: Access Control
+
+2. **PIN Setup/Verification**
+   - New users set up a 6-digit PIN for account access
+   - Returning users enter their existing PIN
+   - PIN provides second-factor authentication
+
+3. **Wallet Connection**
+   - Users connect their Solana wallet for payment operations
+   - Wallet signatures prove ownership without exposing private keys
+
+### Security Architecture
+
+#### Identity Layer
+
+- **Phone Hash**: SHA-256 hash of phone number stored on-chain as `IdentityBinding` PDA
+- **WhatsApp OTP**: Confirms physical control of the phone number
+- **Session Codes**: Time-limited (10 minutes), one-time use verification codes
+
+#### Cryptographic Layer
+
+- **Master Privacy Keys**: User-controlled keys for payment operations
+- **Ephemeral Child Keys**: Derived per-payment keys for privacy
+- **Derivation Proofs**: Cryptographic proof that child keys belong to master key
+- **Nonce Consumption**: Prevents replay attacks on-chain
+
+#### Access Control Layer
+
+- **6-Digit PIN**: In-app security gate for sensitive operations
+- **Session Tokens**: JWT-based session management
+- **Device Binding**: Optional device-specific access controls
+
+### Device-Aware Authentication
+
+#### Mobile Users
+
+- Direct WhatsApp link integration
+- "Open WhatsApp to Verify" button
+- Seamless transition from app to WhatsApp and back
+
+#### Desktop Users
+
+- QR code containing WhatsApp verification link
+- Phone camera scanning for quick verification
+- Manual code entry as fallback
+
+#### Real-time Verification
+
+- **Server-Sent Events**: Instant verification updates
+- **Fallback Polling**: 10-second interval polling if SSE fails
+- **Automatic Redirect**: Direct to dashboard upon successful verification
+
+### Security Features
+
+#### Anti-Replay Protection
+
+- Session codes expire after 10 minutes
+- One-time use codes prevent replay attacks
+- On-chain nonce consumption for payment operations
+
+#### Privacy Preservation
+
+- Phone numbers hashed before storage
+- Ephemeral keys for each payment
+- No on-chain phone number linkage
+
+#### Rate Limiting
+
+- Session generation rate limits
+- OTP request throttling
+- Failed attempt lockouts
+
+### Troubleshooting Authentication
+
+#### Common Issues
+
+1. **Session Code Not Working**
+   - Check code expiration (10-minute window)
+   - Verify WhatsApp webhook is receiving messages
+   - Ensure session storage is active
+
+2. **Real-time Updates Not Working**
+   - Server-Sent Events may be blocked by network
+   - Fallback polling activates automatically
+   - Check browser console for connection errors
+
+3. **PIN Verification Failed**
+   - Ensure correct 6-digit PIN
+   - Check for account lockout after multiple attempts
+   - Use PIN recovery flow if available
+
 ## Core Documentation
 
+- [WhatsApp authentication flow](docs/whatsapp-auth-flow.md) - Detailed authentication implementation
 - [Wallet roles and payment flow](docs/wallet-roles.md)
 - [Payment escrow v2 architecture](docs/payment-escrow-architecture.md)
 - [Escrow v3 hardened design](docs/escrow-design.md)

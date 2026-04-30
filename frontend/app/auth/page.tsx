@@ -1,4 +1,4 @@
-import { AuthExperience } from "@/src/components/experiences/auth-experience";
+import { NewAuthExperience } from "@/src/components/experiences/new-auth-experience";
 
 export default async function AuthPage({
   searchParams
@@ -8,5 +8,5 @@ export default async function AuthPage({
   const params = await searchParams;
   const redirectTo = params.redirect?.startsWith("/") ? params.redirect : "/app";
 
-  return <AuthExperience redirectTo={redirectTo} />;
+  return <NewAuthExperience redirectTo={redirectTo} />;
 }

@@ -6,13 +6,16 @@ import {
   updatePaymentNotificationMessageId,
   updatePaymentNotificationStatus
 } from "@/app/db/payments";
-import { markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
+import { findUserByPhoneNumber, updateUserProfileIdentity, markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
 import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
 import type { PaymentNotificationStatus } from "@/app/types/payment";
+import { issueAuthChallengeToken } from "@/app/lib/auth";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { sendPhoneVerificationOtp } from "@/app/services/phone-verification";
 import { isTrustLinkOptInMessage, isTrustLinkStopMessage } from "@/app/services/whatsapp";
+import { verifySessionCode } from "@/app/lib/session-codes";
+import { sanitizeUser } from "@/app/services/auth/shared";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { sha256 } from "@/app/utils/hash";
 
@@ -180,11 +183,107 @@ async function processInboundMessage(
     return;
   }
 
+  // Check for session code verification
+  const sessionCodeMatch = inboundText.match(/Verify\s+TLinkPay\s+Code:\s+(TL-[A-Z0-9]{6})/i);
+  
+  logger.info("whatsapp.webhook.session_code_check", {
+    inboundText,
+    hasMatch: !!sessionCodeMatch,
+    match: sessionCodeMatch?.[1] || null,
+  });
+  
+  if (sessionCodeMatch) {
+    const sessionCode = sessionCodeMatch[1];
+    logger.info("whatsapp.webhook.session_code_found", {
+      sessionCode,
+      phoneNumber: normalizedPhoneNumber,
+    });
+    await handleSessionCodeVerification(sessionCode, normalizedPhoneNumber, contactName);
+    return;
+  }
+
   logger.info("whatsapp.webhook.inbound_message", {
     messageId: message.id,
     from: normalizedPhoneNumber,
     type: message.type,
     text: inboundText || null,
+  });
+}
+
+async function handleSessionCodeVerification(
+  sessionCode: string,
+  phoneNumber: string,
+  contactName?: string
+) {
+  logger.info("whatsapp.webhook.session_code_verification_attempt", {
+    sessionCode,
+    phoneNumber,
+  });
+
+  const verifiedSession = verifySessionCode(sessionCode, phoneNumber);
+  
+  logger.info("whatsapp.webhook.session_code_verification_result", {
+    sessionCode,
+    phoneNumber,
+    verifiedSession: !!verifiedSession,
+    sessionId: verifiedSession?.sessionId || null,
+  });
+  
+  if (!verifiedSession) {
+    logger.warn("whatsapp.webhook.session_code_verification_failed", {
+      sessionCode,
+      phoneNumber,
+    });
+    return;
+  }
+
+  logger.info("whatsapp.webhook.session_code_verification_success", {
+    sessionCode,
+    phoneNumber,
+    sessionId: verifiedSession.sessionId,
+  });
+
+  // Find or create user
+  let user = await findUserByPhoneNumber(phoneNumber);
+  
+  if (!user) {
+    // Create new user if doesn't exist
+    user = await updateUserProfileIdentity({
+      userId: crypto.randomUUID(),
+      displayName: contactName || "TrustLink User",
+      handle: `user_${phoneNumber.slice(-8)}`, // Simple handle generation
+    });
+  }
+
+  // Issue auth challenge token
+  const challengeToken = issueAuthChallengeToken({
+    id: user.id,
+    phoneNumber: user.phone_number,
+    stage: user.pin_hash ? "pin_verify" : "pin_setup",
+  });
+
+  // Store the verification result for real-time updates
+  // Use server-sent events to notify the frontend
+  try {
+    const { notifySessionVerification } = await import("@/app/api/auth/session/events/route");
+    notifySessionVerification(verifiedSession.sessionId, {
+      challengeToken,
+      user: sanitizeUser(user),
+      stage: user.pin_hash ? "pin_verify" : "pin_setup",
+    });
+  } catch (error) {
+    logger.warn("whatsapp.webhook.push_notification_failed", {
+      sessionId: verifiedSession.sessionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
+  logger.info("whatsapp.webhook.auth_ready", {
+    sessionId: verifiedSession.sessionId,
+    userId: user.id,
+    phoneNumber,
+    challengeToken,
+    stage: user.pin_hash ? "pin_verify" : "pin_setup",
   });
 }
 

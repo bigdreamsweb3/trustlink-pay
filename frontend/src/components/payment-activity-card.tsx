@@ -14,9 +14,13 @@ type PaymentActivityCardProps = {
 
 function statusTone(status: PaymentRecord["status"]) {
   switch (status) {
-    case "accepted":
+    case "locked":
       return "bg-[#0f261d] text-[#79ffcf]";
-    case "pending":
+    case "created":
+      return "bg-[#2a2412] text-[#f3c96b]";
+    case "claimed":
+      return "bg-[#0f261d] text-[#79ffcf]";
+    case "refund_requested":
       return "bg-[#2a2412] text-[#f3c96b]";
     default:
       return "bg-[#321516] text-[#ff9c9c]";

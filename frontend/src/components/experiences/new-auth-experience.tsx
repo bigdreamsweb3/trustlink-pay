@@ -100,7 +100,7 @@ export function NewAuthExperience({
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
-  const [whatsappPopupStatus, setWhatsappPopupStatus] = useState<"opening" | "opened" | "closed">("opening");
+  const [whatsappPopupStatus, setWhatsappPopupStatus] = useState<"opening" | "opened" | "closed" | "desktop_app">("opening");
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
@@ -200,10 +200,24 @@ export function NewAuthExperience({
             
             // Monitor popup status
             const checkPopup = setInterval(() => {
-              if (popup.closed) {
-                console.log("[Auth] WhatsApp popup closed by user");
-                setWhatsappPopupStatus("closed");
-                clearInterval(checkPopup);
+              try {
+                if (popup.closed) {
+                  console.log("[Auth] WhatsApp popup closed - likely desktop app took over");
+                  setWhatsappPopupStatus("desktop_app");
+                  clearInterval(checkPopup);
+                  
+                  // Auto-close the popup window reference after 2 seconds
+                  setTimeout(() => {
+                    try {
+                      popup.close();
+                    } catch (e) {
+                      // Popup already closed by desktop app
+                    }
+                  }, 2000);
+                }
+              } catch (error) {
+                // Cross-origin error - popup is still open but we can't check it
+                console.log("[Auth] Popup still open (cross-origin restriction)");
               }
             }, 1000);
             
@@ -342,10 +356,24 @@ export function NewAuthExperience({
       
       // Monitor popup status
       const checkPopup = setInterval(() => {
-        if (popup.closed) {
-          console.log("[Auth] WhatsApp popup closed by user");
-          setWhatsappPopupStatus("closed");
-          clearInterval(checkPopup);
+        try {
+          if (popup.closed) {
+            console.log("[Auth] WhatsApp popup closed - likely desktop app took over");
+            setWhatsappPopupStatus("desktop_app");
+            clearInterval(checkPopup);
+            
+            // Auto-close the popup window reference after 2 seconds
+            setTimeout(() => {
+              try {
+                popup.close();
+              } catch (e) {
+                // Popup already closed by desktop app
+              }
+            }, 2000);
+          }
+        } catch (error) {
+          // Cross-origin error - popup is still open but we can't check it
+          console.log("[Auth] Popup still open (cross-origin restriction)");
         }
       }, 1000);
       
@@ -664,6 +692,16 @@ export function NewAuthExperience({
                         </div>
                         <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
                           WhatsApp opened - Send the verification message
+                        </span>
+                      </>
+                    )}
+                    {whatsappPopupStatus === "desktop_app" && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <WhatsAppIcon className="h-2.5 w-2.5 text-white" />
+                        </div>
+                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                          WhatsApp desktop app opened - Send verification message
                         </span>
                       </>
                     )}

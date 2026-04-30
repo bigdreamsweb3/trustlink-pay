@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function addCorsHeaders(response: NextResponse, origin?: string | null) {
-  // Allow the frontend origin
-  const allowedOrigin = origin || "http://localhost:3001";
+  // Allow both development and production frontend origins
+  const allowedOrigins = [
+    "http://localhost:3001",
+    "https://trustlink-pay.vercel.app"
+  ];
   
-  response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+  const allowedOrigin = allowedOrigins.includes(origin || "") ? origin : "http://localhost:3001";
+  
+  response.headers.set("Access-Control-Allow-Origin", allowedOrigin || "http://localhost:3001");
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
   response.headers.set("Access-Control-Allow-Credentials", "true");

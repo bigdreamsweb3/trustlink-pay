@@ -9,6 +9,7 @@ import { SectionLoader } from "@/src/components/section-loader";
 import type { CountryOption } from "@/src/lib/phone-countries";
 import { COUNTRY_OPTIONS, formatPhoneInput } from "@/src/lib/phone-countries";
 import type { RecipientLookupResult } from "@/src/lib/types";
+import { buildBackendUrl } from "@/src/lib/backend";
 import { WhatsAppIcon } from "./whatsapp-icon";
 
 type PhoneVerificationDetails = {
@@ -122,7 +123,7 @@ export function PhoneNumberInput({
   const displayName = verificationDetails?.displayName?.trim() || null;
   const avatarSrc =
     isBusiness && verificationDetails?.profilePic
-      ? `/backend/api/whatsapp/avatar?url=${encodeURIComponent(verificationDetails.profilePic)}`
+      ? `${buildBackendUrl("/api/whatsapp/avatar")}?url=${encodeURIComponent(verificationDetails.profilePic)}`
       : null;
 
   useEffect(() => { setAvatarBroken(false); }, [avatarSrc]);

@@ -1,4 +1,5 @@
 import { apiPost } from "@/src/lib/api";
+import { buildBackendUrl } from "@/src/lib/backend";
 
 export interface SessionVerificationResult {
   success: boolean;
@@ -46,7 +47,7 @@ export class SessionEventManager {
 
   private connectToEvents() {
     try {
-      const eventsUrl = `/backend/api/auth/session/events?sessionId=${this.sessionId}`;
+      const eventsUrl = `${buildBackendUrl("/api/auth/session/events")}?sessionId=${this.sessionId}`;
       this.eventSource = new EventSource(eventsUrl);
 
       this.eventSource.onopen = () => {

@@ -100,6 +100,7 @@ export function NewAuthExperience({
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
+  const [whatsappPopupStatus, setWhatsappPopupStatus] = useState<"opening" | "opened" | "closed">("opening");
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
@@ -183,6 +184,7 @@ export function NewAuthExperience({
       if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
         const whatsappUrl = generateWhatsAppUrl(businessNumber, newSessionData.sessionCode);
         console.log("[Auth] Auto-opening WhatsApp on mobile", whatsappUrl);
+        setWhatsappPopupStatus("opening");
         
         // Try to open WhatsApp in a popup
         setTimeout(() => {
@@ -192,10 +194,46 @@ export function NewAuthExperience({
             'width=400,height=600,scrollbars=yes,resizable=yes'
           );
           
-          // Fallback: if popup is blocked, open in same tab
-          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-            console.log("[Auth] Popup blocked, opening in same tab");
-            window.location.href = whatsappUrl;
+          if (popup && !popup.closed) {
+            setWhatsappPopupStatus("opened");
+            console.log("[Auth] WhatsApp popup opened successfully");
+            
+            // Monitor popup status
+            const checkPopup = setInterval(() => {
+              if (popup.closed) {
+                console.log("[Auth] WhatsApp popup closed by user");
+                setWhatsappPopupStatus("closed");
+                clearInterval(checkPopup);
+              }
+            }, 1000);
+            
+            // Auto-cleanup after 10 minutes (session expiry)
+            setTimeout(() => {
+              clearInterval(checkPopup);
+            }, 600000);
+            
+          } else {
+            // Fallback: if popup is blocked, try different approaches
+            console.log("[Auth] Popup blocked, trying desktop WhatsApp detection");
+            setWhatsappPopupStatus("closed");
+            
+            // Check if desktop WhatsApp might be available
+            if (!deviceInfo.isMobile) {
+              // For desktop, try smaller popup that might trigger desktop app
+              const desktopPopup = window.open(
+                whatsappUrl,
+                'whatsapp-desktop',
+                'width=300,height=400,left=100,top=100'
+              );
+              
+              if (!desktopPopup || desktopPopup.closed) {
+                console.log("[Auth] Desktop WhatsApp not available, opening web WhatsApp");
+                window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+              }
+            } else {
+              // Mobile fallback: open in same tab
+              window.location.href = whatsappUrl;
+            }
           }
         }, 500);
         
@@ -289,17 +327,52 @@ export function NewAuthExperience({
   function handleWhatsAppClick() {
     if (!sessionData) return;
     const whatsappUrl = generateWhatsAppUrl(businessNumber, sessionData.sessionCode);
+    setWhatsappPopupStatus("opening");
     
-    // Try to open in popup first, fallback to new tab
+    // Try to open in popup first
     const popup = window.open(
       whatsappUrl,
       'whatsapp',
       'width=400,height=600,scrollbars=yes,resizable=yes'
     );
     
-    // Fallback: if popup is blocked, open in new tab
-    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    if (popup && !popup.closed) {
+      setWhatsappPopupStatus("opened");
+      console.log("[Auth] WhatsApp popup opened successfully");
+      
+      // Monitor popup status
+      const checkPopup = setInterval(() => {
+        if (popup.closed) {
+          console.log("[Auth] WhatsApp popup closed by user");
+          setWhatsappPopupStatus("closed");
+          clearInterval(checkPopup);
+        }
+      }, 1000);
+      
+      // Auto-cleanup after 10 minutes
+      setTimeout(() => {
+        clearInterval(checkPopup);
+      }, 600000);
+      
+    } else {
+      // Fallback handling
+      setWhatsappPopupStatus("closed");
+      
+      // Check for desktop WhatsApp
+      if (!deviceInfo.isMobile) {
+        const desktopPopup = window.open(
+          whatsappUrl,
+          'whatsapp-desktop',
+          'width=300,height=400,left=100,top=100'
+        );
+        
+        if (!desktopPopup || desktopPopup.closed) {
+          console.log("[Auth] Opening web WhatsApp in new tab");
+          window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+        }
+      } else {
+        window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      }
     }
   }
 
@@ -572,13 +645,39 @@ export function NewAuthExperience({
                 </button>
               )}
 
-              {/* Auto-opening indicator for mobile */}
+              {/* WhatsApp status indicator */}
               {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
-                <div className="flex items-center justify-center gap-2 py-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
-                  <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                    Opening WhatsApp...
-                  </span>
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <div className="flex items-center justify-center gap-2">
+                    {whatsappPopupStatus === "opening" && (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                          Opening WhatsApp...
+                        </span>
+                      </>
+                    )}
+                    {whatsappPopupStatus === "opened" && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <CheckCircleIcon className="h-2.5 w-2.5 text-white" />
+                        </div>
+                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                          WhatsApp opened - Send the verification message
+                        </span>
+                      </>
+                    )}
+                    {whatsappPopupStatus === "closed" && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-orange-500 flex items-center justify-center">
+                          <span className="text-white text-xs">!</span>
+                        </div>
+                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                          WhatsApp closed - Use button below to reopen
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 

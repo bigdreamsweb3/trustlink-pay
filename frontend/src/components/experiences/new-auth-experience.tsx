@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WhatsAppIcon } from "@/src/components/whatsapp-icon";
+import { WhatsAppIframe } from "@/src/components/whatsapp-iframe";
 import type { Route } from "next";
 
 import { QRCodeDisplay } from "@/src/components/qr-code-display";
@@ -101,6 +103,8 @@ export function NewAuthExperience({
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
   const [whatsappPopupStatus, setWhatsappPopupStatus] = useState<"opening" | "opened" | "closed" | "desktop_app">("opening");
+  const [showWhatsAppIframe, setShowWhatsAppIframe] = useState(false);
+  const [whatsappIframeStatus, setWhatsappIframeStatus] = useState<"opening" | "opened" | "closed" | "error">("opening");
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
@@ -180,81 +184,21 @@ export function NewAuthExperience({
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
       
-      // Auto-open WhatsApp on mobile for Google Auth-like experience
+      // Auto-open WhatsApp iframe for better control
       if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
         const whatsappUrl = generateWhatsAppUrl(businessNumber, newSessionData.sessionCode);
-        console.log("[Auth] Auto-opening WhatsApp on mobile", whatsappUrl);
-        setWhatsappPopupStatus("opening");
+        console.log("[Auth] Opening WhatsApp iframe", whatsappUrl);
         
-        // Try to open WhatsApp in a popup
+        // Open WhatsApp in iframe after a short delay
         setTimeout(() => {
-          const popup = window.open(
-            whatsappUrl,
-            'whatsapp',
-            'width=400,height=600,scrollbars=yes,resizable=yes'
-          );
-          
-          if (popup && !popup.closed) {
-            setWhatsappPopupStatus("opened");
-            console.log("[Auth] WhatsApp popup opened successfully");
-            
-            // Monitor popup status
-            const checkPopup = setInterval(() => {
-              try {
-                if (popup.closed) {
-                  console.log("[Auth] WhatsApp popup closed - likely desktop app took over");
-                  setWhatsappPopupStatus("desktop_app");
-                  clearInterval(checkPopup);
-                  
-                  // Auto-close the popup window reference after 2 seconds
-                  setTimeout(() => {
-                    try {
-                      popup.close();
-                    } catch (e) {
-                      // Popup already closed by desktop app
-                    }
-                  }, 2000);
-                }
-              } catch (error) {
-                // Cross-origin error - popup is still open but we can't check it
-                console.log("[Auth] Popup still open (cross-origin restriction)");
-              }
-            }, 1000);
-            
-            // Auto-cleanup after 10 minutes (session expiry)
-            setTimeout(() => {
-              clearInterval(checkPopup);
-            }, 600000);
-            
-          } else {
-            // Fallback: if popup is blocked, try different approaches
-            console.log("[Auth] Popup blocked, trying desktop WhatsApp detection");
-            setWhatsappPopupStatus("closed");
-            
-            // Check if desktop WhatsApp might be available
-            if (!deviceInfo.isMobile) {
-              // For desktop, try smaller popup that might trigger desktop app
-              const desktopPopup = window.open(
-                whatsappUrl,
-                'whatsapp-desktop',
-                'width=300,height=400,left=100,top=100'
-              );
-              
-              if (!desktopPopup || desktopPopup.closed) {
-                console.log("[Auth] Desktop WhatsApp not available, opening web WhatsApp");
-                window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-              }
-            } else {
-              // Mobile fallback: open in same tab
-              window.location.href = whatsappUrl;
-            }
-          }
+          setShowWhatsAppIframe(true);
+          setWhatsappIframeStatus("opening");
         }, 500);
         
-        // Show manual button as fallback after 3 seconds
+        // Show manual button as fallback after 5 seconds
         setTimeout(() => {
           setShowManualWhatsAppButton(true);
-        }, 3000);
+        }, 5000);
       }
       
       showToast("Session code generated. Verify via WhatsApp.");
@@ -341,67 +285,11 @@ export function NewAuthExperience({
   function handleWhatsAppClick() {
     if (!sessionData) return;
     const whatsappUrl = generateWhatsAppUrl(businessNumber, sessionData.sessionCode);
-    setWhatsappPopupStatus("opening");
+    console.log("[Auth] Manual WhatsApp iframe open", whatsappUrl);
     
-    // Try to open in popup first
-    const popup = window.open(
-      whatsappUrl,
-      'whatsapp',
-      'width=400,height=600,scrollbars=yes,resizable=yes'
-    );
-    
-    if (popup && !popup.closed) {
-      setWhatsappPopupStatus("opened");
-      console.log("[Auth] WhatsApp popup opened successfully");
-      
-      // Monitor popup status
-      const checkPopup = setInterval(() => {
-        try {
-          if (popup.closed) {
-            console.log("[Auth] WhatsApp popup closed - likely desktop app took over");
-            setWhatsappPopupStatus("desktop_app");
-            clearInterval(checkPopup);
-            
-            // Auto-close the popup window reference after 2 seconds
-            setTimeout(() => {
-              try {
-                popup.close();
-              } catch (e) {
-                // Popup already closed by desktop app
-              }
-            }, 2000);
-          }
-        } catch (error) {
-          // Cross-origin error - popup is still open but we can't check it
-          console.log("[Auth] Popup still open (cross-origin restriction)");
-        }
-      }, 1000);
-      
-      // Auto-cleanup after 10 minutes
-      setTimeout(() => {
-        clearInterval(checkPopup);
-      }, 600000);
-      
-    } else {
-      // Fallback handling
-      setWhatsappPopupStatus("closed");
-      
-      // Check for desktop WhatsApp
-      if (!deviceInfo.isMobile) {
-        const desktopPopup = window.open(
-          whatsappUrl,
-          'whatsapp-desktop',
-          'width=300,height=400,left=100,top=100'
-        );
-        
-        if (!desktopPopup || desktopPopup.closed) {
-          console.log("[Auth] Opening web WhatsApp in new tab");
-          window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-        }
-      } else {
-        window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      }
-    }
+    // Open WhatsApp in iframe
+    setShowWhatsAppIframe(true);
+    setWhatsappIframeStatus("opening");
   }
 
   function copySessionCode() {
@@ -411,6 +299,17 @@ export function NewAuthExperience({
     }).catch(() => {
       showToast("Failed to copy session code");
     });
+  }
+
+  function handleWhatsAppIframeStatus(status: "opening" | "opened" | "closed" | "error") {
+    setWhatsappIframeStatus(status);
+    console.log("[Auth] WhatsApp iframe status changed:", status);
+  }
+
+  function handleWhatsAppIframeClose() {
+    setShowWhatsAppIframe(false);
+    setWhatsappIframeStatus("closed");
+    console.log("[Auth] WhatsApp iframe closed");
   }
 
   function formatTimeRemaining(expiresAt: string): string {
@@ -433,9 +332,9 @@ export function NewAuthExperience({
 
   async function handleManualVerification() {
     if (!sessionData) return;
+    
     try {
-      const testPhoneNumber = "+1234567890";
-      const result = await apiPost<{
+      const response = await apiPost<{
         success: boolean;
         challengeToken?: string;
         user?: { id: string; displayName: string; phoneNumber: string };
@@ -443,10 +342,13 @@ export function NewAuthExperience({
         error?: string;
       }>("/api/auth/session/manual-verify", {
         sessionCode: sessionData.sessionCode,
-        phoneNumber: testPhoneNumber,
       });
-      if (result.success) handleVerificationSuccess(result);
-      else showToast(result.error || "Manual verification failed");
+      
+      if (response.success) {
+        handleVerificationSuccess(response);
+      } else {
+        showToast(response.error || "Manual verification failed");
+      }
     } catch (error) {
       showToast("Manual verification error: " + (error instanceof Error ? error.message : "Unknown error"));
     }
@@ -677,7 +579,7 @@ export function NewAuthExperience({
               {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
                 <div className="flex flex-col items-center gap-2 py-2">
                   <div className="flex items-center justify-center gap-2">
-                    {whatsappPopupStatus === "opening" && (
+                    {whatsappIframeStatus === "opening" && (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
                         <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
@@ -685,33 +587,23 @@ export function NewAuthExperience({
                         </span>
                       </>
                     )}
-                    {whatsappPopupStatus === "opened" && (
+                    {whatsappIframeStatus === "opened" && (
                       <>
                         <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
                           <CheckCircleIcon className="h-2.5 w-2.5 text-white" />
                         </div>
                         <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp opened - Send the verification message
+                          WhatsApp ready - Send verification message
                         </span>
                       </>
                     )}
-                    {whatsappPopupStatus === "desktop_app" && (
+                    {whatsappIframeStatus === "error" && (
                       <>
-                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                          <WhatsAppIcon className="h-2.5 w-2.5 text-white" />
-                        </div>
-                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp desktop app opened - Send verification message
-                        </span>
-                      </>
-                    )}
-                    {whatsappPopupStatus === "closed" && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-orange-500 flex items-center justify-center">
+                        <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
                           <span className="text-white text-xs">!</span>
                         </div>
                         <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp closed - Use button below to reopen
+                          Failed to load WhatsApp - Try manual button
                         </span>
                       </>
                     )}
@@ -863,5 +755,15 @@ export function NewAuthExperience({
         </div>
       )} */}
     </main>
+
+  {/* WhatsApp Iframe Modal */}
+  {sessionData && (
+    <WhatsAppIframe
+      url={generateWhatsAppUrl(businessNumber, sessionData.sessionCode)}
+      isOpen={showWhatsAppIframe}
+      onClose={handleWhatsAppIframeClose}
+      onStatusChange={handleWhatsAppIframeStatus}
+    />
+  )}
   );
 }

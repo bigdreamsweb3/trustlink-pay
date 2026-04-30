@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { sessionCode, phoneNumber } = body;
 
-    if (!sessionCode || !phoneNumber) {
+    if (!sessionCode) {
       return NextResponse.json(
-        { error: "Session code and phone number are required" },
+        { error: "Session code is required" },
         { status: 400 }
       );
     }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       phoneNumber,
     });
 
-    // Verify the session code
+    // Verify the session code (phoneNumber is optional for manual verify)
     const verifiedSession = verifySessionCode(sessionCode, phoneNumber);
     
     if (!verifiedSession) {
@@ -43,12 +43,13 @@ export async function POST(request: NextRequest) {
       sessionId: verifiedSession.sessionId,
     });
 
-    // Find or create user
-    let user = await findUserByPhoneNumber(phoneNumber);
+    // Find user - use phone number from session if not provided
+    const userPhoneNumber = phoneNumber || verifiedSession.phoneNumber;
+    let user = await findUserByPhoneNumber(userPhoneNumber);
     
     if (!user) {
       logger.warn("auth.manual_verify.user_not_found", {
-        phoneNumber,
+        phoneNumber: userPhoneNumber,
       });
       return NextResponse.json({
         success: false,

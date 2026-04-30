@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { verifySessionCode } from "@/app/lib/session-codes";
+import { verifySessionCode, manualVerifySessionCode } from "@/app/lib/session-codes";
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { issueAuthChallengeToken } from "@/app/lib/auth";
 import { logger } from "@/app/lib/logger";
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       phoneNumber,
     });
 
-    // Verify the session code (phoneNumber is optional for manual verify)
-    const verifiedSession = verifySessionCode(sessionCode, phoneNumber);
+    // Verify the session code using manual verification (phoneNumber is optional)
+    const verifiedSession = manualVerifySessionCode(sessionCode, phoneNumber);
     
     if (!verifiedSession) {
       logger.warn("auth.manual_verify.failed", {

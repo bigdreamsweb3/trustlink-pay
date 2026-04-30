@@ -103,6 +103,42 @@ export function verifySessionCode(code: string, phoneNumber: string): SessionCod
 }
 
 /**
+ * Manual verification of session code (allows pending status)
+ */
+export function manualVerifySessionCode(code: string, phoneNumber?: string): SessionCode | null {
+  const sessionCode = findSessionCode(code);
+  
+  if (!sessionCode) {
+    return null;
+  }
+  
+  // For manual verification, allow both pending and verified status
+  if (sessionCode.status !== "pending" && sessionCode.status !== "verified") {
+    return null;
+  }
+  
+  // If phone number provided, update it
+  if (phoneNumber) {
+    sessionCode.phoneNumber = phoneNumber;
+  }
+  
+  // Mark as verified if not already
+  if (sessionCode.status === "pending") {
+    sessionCode.status = "verified";
+    sessionCode.verifiedAt = new Date();
+  }
+  
+  logger.info("session_code.manual_verified", {
+    code,
+    sessionId: sessionCode.sessionId,
+    phoneNumber: sessionCode.phoneNumber,
+    verifiedAt: sessionCode.verifiedAt?.toISOString() || new Date().toISOString(),
+  });
+  
+  return sessionCode;
+}
+
+/**
  * Clean up expired session codes
  */
 export function cleanupExpiredSessionCodes(): number {

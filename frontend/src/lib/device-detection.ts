@@ -62,8 +62,8 @@ export function shouldUseDirectLink(deviceInfo: DeviceInfo): boolean {
  */
 export function generateWhatsAppUrl(businessNumber: string, sessionCode: string): string {
   const message = `Verify TrustLink Pay Code: ${sessionCode}`;
-  const encodedMessage = encodeURIComponent(message);
-  return `https://wa.me/${businessNumber.replace(/\D/g, "")}?text=${encodedMessage}`;
+  const cleanNumber = businessNumber.replace(/\D/g, "");
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
 }
 
 /**

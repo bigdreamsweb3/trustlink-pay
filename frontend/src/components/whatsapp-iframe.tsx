@@ -31,9 +31,15 @@ export function WhatsAppIframe({ url, isOpen, onClose, onStatusChange }: WhatsAp
       };
 
       const handleError = () => {
-        console.error("[WhatsAppIframe] Failed to load WhatsApp");
+        console.error("[WhatsAppIframe] Failed to load WhatsApp in iframe");
         setIframeStatus("error");
         onStatusChange("error");
+        
+        // Fallback: open in new tab
+        setTimeout(() => {
+          console.log("[WhatsAppIframe] Opening WhatsApp in new tab as fallback");
+          window.open(url, "_blank", "noopener,noreferrer");
+        }, 1000);
       };
 
       iframe.addEventListener("load", handleLoad);

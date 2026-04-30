@@ -31,8 +31,6 @@ That still does **not** mean TrustLink Pay is a native WhatsApp app today. Trust
 
 In the future, TrustLink may support a more native bot-style WhatsApp payment experience, where users can trigger payments through a conversational flow. That is a future direction, not the current product.
 
----
-
 ## The Problem TrustLink Solves
 
 ### Wallet addresses are a UX catastrophe
@@ -73,8 +71,6 @@ The sender sees a familiar identity:
 - a verified WhatsApp Business identity when available
 
 Under the hood, the payment is routed into a per-transaction escrow PDA. The recipient proves ownership with ephemeral privacy keys and derivation proofs. The platform does not hold the funds, does not hold recipient private keys, and cannot arbitrarily redirect the payment.
-
----
 
 ## How TrustLink Pay Works
 
@@ -315,8 +311,6 @@ This is especially valuable for:
 - **Remittances** — send money home to a family member's phone number
 - **B2B payments** — pay a supplier whose WhatsApp Business identity you have already verified
 
----
-
 ## The Gasless Experience
 
 TrustLink users do not need SOL to send or receive payments.
@@ -328,8 +322,6 @@ TrustLink users do not need SOL to send or receive payments.
 
 This makes TrustLink feel like a modern payment app, not a blockchain tool.
 
----
-
 ## Sender Delivery Visibility
 
 For registered recipients, TrustLink gives the sender real-time delivery receipts:
@@ -339,8 +331,6 @@ For registered recipients, TrustLink gives the sender real-time delivery receipt
 - **Seen** — the recipient opened the notification
 
 This is the same delivery confidence a sender gets from a bank alert, applied to a crypto payment.
-
----
 
 ## Architecture Overview
 
@@ -387,8 +377,6 @@ This is the same delivery confidence a sender gets from a bank alert, applied to
 - Delivery receipt tracking (sent / delivered / seen)
 - Manual invite generation for unregistered recipients
 
----
-
 ## Security Model Summary
 
 | Property                     | Guarantee                                                                               |
@@ -403,10 +391,6 @@ This is the same delivery confidence a sender gets from a bank alert, applied to
 | Address poisoning prevention | Sender never types or sees a wallet address                                             |
 | Public auditability          | All escrow transactions on Solana's public ledger                                       |
 
----
-
----
-
 ## Why This Matters For Solana
 
 TrustLink Pay lowers one of the biggest UX barriers to stablecoin adoption on Solana: address-based payments.
@@ -420,8 +404,6 @@ By replacing wallet addresses with a familiar phone-number identity layer, Trust
 - **First-time crypto users** — onboarding without blockchain complexity
 
 This is especially important in emerging markets (Nigeria, India, Brazil, Southeast Asia) where phone-number payments are already a trusted mental model and billions of people already use UPI, Pix, OPay, or similar systems daily.
-
----
 
 ## Current Product Status
 
@@ -440,8 +422,6 @@ TrustLink Pay currently includes:
 - ✅ hardened v3 escrow with derivation proof verification
 - ✅ backend referral attribution foundation (preparation for future rewards)
 
----
-
 ## Repository Structure
 
 - [backend/programs/trustlink-escrow](backend/programs/trustlink-escrow): Anchor escrow program (v2 production, v3 hardened)
@@ -453,8 +433,6 @@ TrustLink Pay currently includes:
 - [docs/devnet-testing.md](docs/devnet-testing.md): devnet testing and setup guide
 - [frontend](frontend): Next.js 15 frontend
 - [backend](backend): Next.js App Router backend
-
----
 
 ## Quick Start
 
@@ -487,8 +465,6 @@ npm run test:payment-flow
 npm run test:whatsapp-number
 ```
 
----
-
 ## Devnet Testing
 
 For testers, judges, and new contributors who need devnet SOL, allowlisted test tokens, and the complete TrustLink payment flow:
@@ -504,16 +480,12 @@ The devnet guide includes:
 - How to verify payments on Solscan
 - Troubleshooting common issues
 
----
-
 ## Core Documentation
 
 - [Wallet roles and payment flow](docs/wallet-roles.md)
 - [Payment escrow v2 architecture](docs/payment-escrow-architecture.md)
 - [Escrow v3 hardened design](docs/escrow-design.md)
 - [Devnet testing guide](docs/devnet-testing.md)
-
----
 
 ## Short Explanation
 

@@ -184,7 +184,7 @@ async function processInboundMessage(
   }
 
   // Check for session code verification
-  const sessionCodeMatch = inboundText.match(/Verify\s+TLinkPay\s+Code:\s+(TL[A-Z0-9]{6})/i);
+  const sessionCodeMatch = inboundText.match(/Verify\s+TrustLink Pay\s+Code:\s+(TL[A-Z0-9]{6})/i);
   
   logger.info("whatsapp.webhook.session_code_check", {
     inboundText,

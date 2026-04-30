@@ -99,6 +99,7 @@ export function NewAuthExperience({
   const [eventManager, setEventManager] = useState<SessionEventManager | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
@@ -177,6 +178,33 @@ export function NewAuthExperience({
       setSessionData(newSessionData);
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
+      
+      // Auto-open WhatsApp on mobile for Google Auth-like experience
+      if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
+        const whatsappUrl = generateWhatsAppUrl(businessNumber, newSessionData.sessionCode);
+        console.log("[Auth] Auto-opening WhatsApp on mobile", whatsappUrl);
+        
+        // Try to open WhatsApp in a popup
+        setTimeout(() => {
+          const popup = window.open(
+            whatsappUrl,
+            'whatsapp',
+            'width=400,height=600,scrollbars=yes,resizable=yes'
+          );
+          
+          // Fallback: if popup is blocked, open in same tab
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            console.log("[Auth] Popup blocked, opening in same tab");
+            window.location.href = whatsappUrl;
+          }
+        }, 500);
+        
+        // Show manual button as fallback after 3 seconds
+        setTimeout(() => {
+          setShowManualWhatsAppButton(true);
+        }, 3000);
+      }
+      
       showToast("Session code generated. Verify via WhatsApp.");
     } catch (error) {
       // Enhanced error logging for mobile
@@ -261,7 +289,18 @@ export function NewAuthExperience({
   function handleWhatsAppClick() {
     if (!sessionData) return;
     const whatsappUrl = generateWhatsAppUrl(businessNumber, sessionData.sessionCode);
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    
+    // Try to open in popup first, fallback to new tab
+    const popup = window.open(
+      whatsappUrl,
+      'whatsapp',
+      'width=400,height=600,scrollbars=yes,resizable=yes'
+    );
+    
+    // Fallback: if popup is blocked, open in new tab
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }
   }
 
   function copySessionCode() {
@@ -517,7 +556,7 @@ export function NewAuthExperience({
               )}
 
               {/* WhatsApp direct link for mobile */}
-              {useDirectLink && (
+              {useDirectLink && (showManualWhatsAppButton || !deviceInfo.isMobile) && (
                 <button
                   type="button"
                   onClick={handleWhatsAppClick}
@@ -529,8 +568,18 @@ export function NewAuthExperience({
                   }}
                 >
                   <WhatsAppIcon className="h-5 w-5" />
-                  Open WhatsApp to Verify
+                  {deviceInfo.isMobile ? "Open WhatsApp Manually" : "Open WhatsApp to Verify"}
                 </button>
+              )}
+
+              {/* Auto-opening indicator for mobile */}
+              {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                  <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                    Opening WhatsApp...
+                  </span>
+                </div>
               )}
 
               {/* Waiting indicator */}

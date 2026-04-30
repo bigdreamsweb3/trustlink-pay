@@ -69,7 +69,7 @@ const useQRCode = shouldUseQRCode(deviceInfo);
 
 **Mobile Users:**
 - Display "Open WhatsApp to Verify" button
-- Link: `https://wa.me/{businessNumber}?text=Verify%20TLPay%20Code:%20TL8821`
+- Link: `https://wa.me/{businessNumber}?text=Verify%20TLinkPay%20Code:%20TLA1B2C3`
 - User taps send, verification happens automatically
 
 **Desktop Users:**

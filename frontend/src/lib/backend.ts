@@ -10,15 +10,11 @@ export function buildBackendUrl(path: string) {
     path
   });
 
-  // Check if we're in development by looking at the hostname or environment
-  const isDevelopment = 
-    process.env.NODE_ENV === "development" ||
-    (typeof window !== "undefined" && window.location.hostname === "localhost") ||
-    !process.env.NEXT_PUBLIC_BACKEND_URL; // Fallback: if no backend URL is set, assume development
+  // Always use middleware proxy in this Next.js app (both dev and prod)
+  // The middleware will handle routing to the correct backend
+  const finalUrl = `${BACKEND_PROXY_PREFIX}${path}`;
   
-  const finalUrl = isDevelopment ? `${BACKEND_PROXY_PREFIX}${path}` : `${BACKEND_URL}${path}`;
-  
-  console.log("[Backend] Final URL:", finalUrl, "(isDevelopment:", isDevelopment, ")");
+  console.log("[Backend] Final URL:", finalUrl, "(using middleware proxy)");
   
   return finalUrl;
 }

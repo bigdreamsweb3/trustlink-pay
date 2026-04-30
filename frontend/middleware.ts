@@ -9,8 +9,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // Handle EventSource requests for session events
-  if (request.nextUrl.pathname.startsWith("/api/auth/session/events")) {
+  // Handle API auth session requests
+  if (request.nextUrl.pathname.startsWith("/api/auth/session")) {
     const url = request.nextUrl.clone();
     url.port = "3000"; // Backend port
     return NextResponse.rewrite(url);
@@ -20,5 +20,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/backend/:path*", "/api/auth/session/events/:path*"],
+  matcher: ["/backend/:path*", "/api/auth/session/:path*"],
 };

@@ -61,7 +61,7 @@ export function shouldUseDirectLink(deviceInfo: DeviceInfo): boolean {
  * Generate WhatsApp URL with session code
  */
 export function generateWhatsAppUrl(businessNumber: string, sessionCode: string): string {
-  const message = `Verify TLinkPay Code: ${sessionCode}`;
+  const message = `Verify TLPay Code: ${sessionCode}`;
   const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/${businessNumber.replace(/\D/g, "")}?text=${encodedMessage}`;
 }

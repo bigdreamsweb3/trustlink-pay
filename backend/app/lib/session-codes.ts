@@ -20,11 +20,11 @@ const SESSION_EXPIRY_MINUTES = 10;
 const sessionCodes = new Map<string, SessionCode>();
 
 /**
- * Generate a unique session code in format TL-XXXXXX
+ * Generate a unique session code in format TLXXXXXX
  */
 export function generateSessionCode(): string {
   const randomPart = randomBytes(3).toString("hex").toUpperCase().slice(0, SESSION_CODE_LENGTH);
-  return `${SESSION_CODE_PREFIX}-${randomPart}`;
+  return `${SESSION_CODE_PREFIX}${randomPart}`;
 }
 
 /**

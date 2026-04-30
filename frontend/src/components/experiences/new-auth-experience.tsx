@@ -146,11 +146,25 @@ export function NewAuthExperience({
 
     try {
       const sessionId = crypto.randomUUID();
+      
+      // Debug logging for mobile
+      if (deviceInfo.isMobile) {
+        console.log("[Auth] Mobile session generation started", {
+          sessionId,
+          userAgent: deviceInfo.userAgent,
+          hasWhatsAppApp: deviceInfo.hasWhatsAppApp,
+        });
+      }
+
       const response = await apiPost<{
         success: boolean;
         sessionCode: string;
         expiresAt: string;
       }>("/api/auth/session", { sessionId });
+
+      if (deviceInfo.isMobile) {
+        console.log("[Auth] Mobile session response", response);
+      }
 
       if (!response.success) throw new Error("Failed to generate session code");
 
@@ -165,10 +179,32 @@ export function NewAuthExperience({
       startEventListening(newSessionData);
       showToast("Session code generated. Verify via WhatsApp.");
     } catch (error) {
+      // Enhanced error logging for mobile
       const errorMessage = error instanceof Error ? error.message : "Failed to generate session";
-      setError(errorMessage);
+      
+      if (deviceInfo.isMobile) {
+        console.error("[Auth] Mobile session generation failed", {
+          error: errorMessage,
+          errorDetails: error instanceof Error ? error.stack : "No stack trace",
+          deviceInfo,
+        });
+        
+        // Mobile-specific troubleshooting
+        if (error instanceof Error && error.message.includes("fetch")) {
+          console.error("[Auth] Network error - make sure frontend middleware is working");
+          console.log("[Auth] Current URL:", window.location.href);
+        }
+      }
+      
+      // Enhanced error message for mobile
+      let displayError = errorMessage;
+      if (deviceInfo.isMobile && errorMessage.includes("fetch")) {
+        displayError = "Connection issue. Please check both servers are running and try again.";
+      }
+      
+      setError(displayError);
       setFlowState("error");
-      showToast(errorMessage);
+      showToast(displayError);
     }
   }
 
@@ -564,19 +600,58 @@ export function NewAuthExperience({
                 {error && (
                   <p className="mt-2 text-[0.78rem]" style={{ color: "var(--danger)" }}>{error}</p>
                 )}
+                
+                {/* Mobile-specific troubleshooting */}
+                {deviceInfo.isMobile && (
+                  <div className="mt-4 text-left rounded-[14px] px-3 py-3 text-[0.7rem]"
+                    style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}
+                  >
+                    <p className="font-medium mb-2" style={{ color: "var(--text)" }}>Mobile troubleshooting:</p>
+                    <ul className="space-y-1" style={{ color: "var(--text-soft)" }}>
+                      <li>• Check your internet connection</li>
+                      <li>• Make sure both servers are running</li>
+                      <li>• Try refreshing the page</li>
+                      <li>• Clear browser cache and retry</li>
+                    </ul>
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={handleStartOver}
-                className="flex w-full items-center justify-center gap-2 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold transition-all active:scale-[0.97] cursor-pointer"
-                style={{
-                  background: "var(--field)",
-                  color: "var(--text)",
-                  border: "1px solid var(--field-border)",
-                }}
-              >
-                Try Again
-              </button>
+              
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleStartOver}
+                  className="flex w-full items-center justify-center gap-2 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold transition-all active:scale-[0.97] cursor-pointer"
+                  style={{
+                    background: "var(--field)",
+                    color: "var(--text)",
+                    border: "1px solid var(--field-border)",
+                  }}
+                >
+                  Try Again
+                </button>
+                
+                {/* Debug info for mobile */}
+                {deviceInfo.isMobile && process.env.NODE_ENV === "development" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log("[Auth] Debug info:", {
+                        deviceInfo,
+                        flowState,
+                        error,
+                        sessionData,
+                        connectionStatus,
+                      });
+                      showToast("Debug info logged to console");
+                    }}
+                    className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium"
+                    style={{ background: "var(--warning-soft)", color: "var(--warning)" }}
+                  >
+                    Debug: Log Info
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

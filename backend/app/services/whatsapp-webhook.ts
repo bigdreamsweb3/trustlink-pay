@@ -184,7 +184,7 @@ async function processInboundMessage(
   }
 
   // Check for session code verification
-  const sessionCodeMatch = inboundText.match(/Verify\s+TLinkPay\s+Code:\s+(TL-[A-Z0-9]{6})/i);
+  const sessionCodeMatch = inboundText.match(/Verify\s+TLPay\s+Code:\s+(TL[A-Z0-9]{6})/i);
   
   logger.info("whatsapp.webhook.session_code_check", {
     inboundText,
@@ -265,7 +265,7 @@ async function handleSessionCodeVerification(
   // Store the verification result for real-time updates
   // Use server-sent events to notify the frontend
   try {
-    const { notifySessionVerification } = await import("@/app/api/auth/session/events/route");
+    const { notifySessionVerification } = await import("@/app/lib/session-events");
     notifySessionVerification(verifiedSession.sessionId, {
       challengeToken,
       user: sanitizeUser(user),

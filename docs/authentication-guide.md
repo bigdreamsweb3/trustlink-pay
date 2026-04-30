@@ -216,7 +216,7 @@ export class SessionCodeManager {
 ```typescript
 // backend/app/services/whatsapp-webhook.ts
 export async function processWhatsAppMessage(message: WhatsAppMessage) {
-  const sessionCodeMatch = message.text.match(/Verify\s+TLinkPay\s+Code:\s+(TL-[A-Z0-9]{6})/i);
+  const sessionCodeMatch = message.text.match(/Verify\s+TLPay\s+Code:\s+(TL-[A-Z0-9]{6})/i);
   
   if (sessionCodeMatch) {
     const sessionCode = sessionCodeMatch[1];

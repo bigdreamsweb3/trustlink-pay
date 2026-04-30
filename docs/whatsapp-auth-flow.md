@@ -34,11 +34,11 @@ The new flow uses unique, time-limited session codes that users send via WhatsAp
 **Location**: `backend/app/lib/session-codes.ts`
 
 ```typescript
-// Generates codes like "TL-8821"
-const sessionCode = generateSessionCode(); // TL-8821
+// Generates codes like "TLA1B2C3"
+const sessionCode = generateSessionCode(); // TLA1B2C3
 ```
 
-- **Format**: TL-XXXXXX (6 characters)
+- **Format**: TLXXXXXX (7 characters)
 - **Expiry**: 10 minutes
 - **Storage**: In-memory (replace with Redis/DB in production)
 - **Prefix**: TL for TrustLink branding
@@ -62,14 +62,14 @@ const useQRCode = shouldUseQRCode(deviceInfo);
 
 1. User clicks "Sign in with WhatsApp"
 2. Frontend generates unique session ID
-3. Backend creates session code (e.g., TL-8821)
+3. Backend creates session code (e.g., TL8821)
 4. Code stored with 10-minute expiry
 
 #### Phase B: Device-Aware Verification
 
 **Mobile Users:**
 - Display "Open WhatsApp to Verify" button
-- Link: `https://wa.me/{businessNumber}?text=Verify%20TLinkPay%20Code:%20TL-8821`
+- Link: `https://wa.me/{businessNumber}?text=Verify%20TLPay%20Code:%20TL8821`
 - User taps send, verification happens automatically
 
 **Desktop Users:**
@@ -83,7 +83,7 @@ const useQRCode = shouldUseQRCode(deviceInfo);
 
 ```typescript
 // Pattern matching for session codes
-const sessionCodeMatch = inboundText.match(/Verify\s+TLinkPay\s+Code:\s+(TL-[A-Z0-9]{6})/i);
+const sessionCodeMatch = inboundText.match(/Verify\s+TLPay\s+Code:\s+(TL[A-Z0-9]{6})/i);
 ```
 
 1. WhatsApp webhook receives message
@@ -134,7 +134,7 @@ Creates a new session code.
 ```json
 {
   "success": true,
-  "sessionCode": "TL-8821",
+  "sessionCode": "TL8821",
   "expiresAt": "2024-04-30T12:00:00Z"
 }
 ```

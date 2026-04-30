@@ -13,7 +13,6 @@ async function main() {
   const policy = getEscrowPolicyConfig();
 
   console.log(`Escrow verifier pubkey: ${verifier}`);
-  console.log(`Treasury owner: ${policy.treasuryOwner}`);
   console.log(`Default expiry seconds: ${policy.defaultExpirySeconds}`);
 
   if (initialized) {

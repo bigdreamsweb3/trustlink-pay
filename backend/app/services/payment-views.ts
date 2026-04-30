@@ -61,7 +61,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: manualInviteRequired ? "invite_needed" : "sent",
       label: manualInviteRequired ? "Sender invite needed" : "WhatsApp sent",
       description: manualInviteRequired
-        ? "This recipient is not yet onboarded for TrustLink WhatsApp delivery, so the sender must share the invite manually."
+        ? "This recipient is not yet onboarded for TrustLink secure claiming, so the payment stays in invite escrow until onboarding completes or the sender later starts a refund."
         : "TrustLink pushed the payment notice through its shared verified WhatsApp channel.",
       occurredAt: manualInviteRequired ? payment.created_at : payment.notification_sent_at,
       complete: manualInviteRequired || payment.notification_status !== "queued"
@@ -70,7 +70,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "delivered",
       label: manualInviteRequired ? "Recipient onboarded" : "WhatsApp delivered",
       description: manualInviteRequired
-        ? "Once the recipient joins TrustLink, the same escrowed payment becomes claimable inside the app."
+        ? "Once the recipient joins TrustLink and completes secure setup, the same escrowed payment becomes claimable inside the app."
         : "The recipient device received the TrustLink payment message.",
       occurredAt: manualInviteRequired ? null : payment.notification_delivered_at,
       complete: manualInviteRequired ? false : payment.notification_status === "delivered" || payment.notification_status === "read"
@@ -79,7 +79,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "read",
       label: manualInviteRequired ? "Invite confirmed by sender" : "WhatsApp seen",
       description: manualInviteRequired
-        ? "The sender can regenerate and share the invite again until the recipient completes onboarding."
+        ? "The sender can keep nudging the recipient until onboarding completes or the invite expiry window ends."
         : "The recipient opened the TrustLink payment message.",
       occurredAt: manualInviteRequired ? payment.created_at : payment.notification_read_at,
       complete: manualInviteRequired ? true : payment.notification_status === "read"
@@ -88,18 +88,40 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "claimed",
       label: "Claim completed",
       description: "TrustLink released the escrow after claim verification succeeded.",
-      occurredAt: payment.accepted_at,
-      complete: payment.status === "accepted"
+      occurredAt: payment.release_signature ? payment.created_at : null,
+      complete: payment.status === "claimed"
     }
   ];
 
+  if (payment.status === "refund_requested") {
+    timeline.push({
+      id: "refund_requested",
+      label: "Refund waiting period",
+      description:
+        "The sender requested a refund. TrustLink gives the recipient a final response window before the sender can claim the refund escrow back.",
+      occurredAt: payment.refund_requested_at ?? payment.expiry_at ?? null,
+      complete: true,
+    });
+  }
+
   if (payment.status === "expired") {
     timeline.push({
-      id: "expired_to_pool",
-      label: "Expired to recovery pool",
+      id: "expired",
+      label: "Escrow expired",
       description:
-        "The payment was not claimed before expiry, so TrustLink swept it into a configured recovery wallet for manual follow-up.",
-      occurredAt: payment.expired_to_pool_at ?? payment.expiry_at ?? null,
+        "The claim window elapsed, but the funds remain in the original program vault. The recipient can still late-claim, or the sender can reclaim the escrow back on-chain.",
+      occurredAt: payment.expiry_at ?? null,
+      complete: true,
+    });
+  }
+
+  if (payment.status === "refunded") {
+    timeline.push({
+      id: "refunded",
+      label: "Refund claimed",
+      description:
+        "The sender completed the refund flow and claimed the expired invite payment back into their wallet.",
+      occurredAt: payment.refund_claimed_at ?? payment.refund_requested_at ?? payment.expiry_at ?? null,
       complete: true,
     });
   }
@@ -123,7 +145,7 @@ export function sanitizePaymentForViewer(payment: PaymentRecord, authUser: Authe
     viewer_role: viewerRole,
     manual_invite_required: payment.manual_invite_required ?? false,
     invite_share: viewerRole === "sender" ? payment.invite_share ?? null : null,
-    recipient_onboarded: payment.recipient_onboarded ?? false,
+    receiver_onboarded: payment.receiver_onboarded ?? false,
   };
 }
 
@@ -137,7 +159,7 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
   const payment = await retryPaymentNotificationIfNeeded(paymentRecord);
   const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
   const inviteShare = manualInviteRequired ? buildInviteShareData(payment) : null;
-  const recipientOnboarded = !manualInviteRequired;
+  const recipientOnboarded = payment.receiver_onboarded ?? !manualInviteRequired;
 
   const viewerRole = getViewerRole(payment, authUser);
 
@@ -155,7 +177,7 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
       ...payment,
       manual_invite_required: manualInviteRequired,
       invite_share: inviteShare,
-      recipient_onboarded: recipientOnboarded,
+      receiver_onboarded: recipientOnboarded,
     },
     authUser,
   );
@@ -165,10 +187,6 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
   const releaseExplorerUrl = safePayment.release_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.release_signature })
     : null;
-  const expiryExplorerUrl = safePayment.expiry_signature
-    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.expiry_signature })
-    : null;
-
   return {
     payment: safePayment,
     viewerRole,
@@ -184,7 +202,7 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
     receiver: {
       phone: viewerRole === "sender" ? payment.receiver_phone : authUser.phoneNumber,
       releasedWallet: viewerRole === "receiver" ? payment.released_to_wallet : safePayment.released_to_wallet,
-      claimReady: payment.status === "pending" && viewerRole === "receiver",
+      claimReady: (payment.status === "locked" || payment.status === "expired") && viewerRole === "receiver",
       onboarded: recipientOnboarded,
       manualInviteRequired: viewerRole === "sender" ? manualInviteRequired : false,
       inviteShare: viewerRole === "sender" ? inviteShare : null,
@@ -196,9 +214,7 @@ export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, pay
       depositExplorerUrl,
       releaseSignature: payment.release_signature,
       releaseExplorerUrl,
-      expirySignature: payment.expiry_signature ?? null,
-      expiryExplorerUrl,
-      acceptedAt: payment.accepted_at
+      claimed: payment.status === "claimed",
     },
     privacy: {
       senderWalletVisibleToReceiver: false,

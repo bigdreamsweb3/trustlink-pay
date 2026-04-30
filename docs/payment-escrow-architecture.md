@@ -1,199 +1,169 @@
-# TrustLink Escrow And Payment Architecture
+# TrustLink Pay Escrow Architecture
 
-This document explains how TrustLink moves funds through Solana, how fees are handled, and how the verifier, treasury, and expiry flow work together.
+## One Sentence
 
-## Core Escrow Model
+TrustLink Pay is a noncustodial Solana payment dApp that routes stablecoin payments through per-payment escrow PDAs while using WhatsApp-linked identity and verified business confidence signals as the user-facing routing layer.
 
-TrustLink uses a **per-payment escrow** model.
+## Product Clarification
 
-For each payment:
-- a unique on-chain payment account is created
-- a unique escrow vault token account is created
-- the selected SPL token amount is moved into that vault
+TrustLink Pay is not a WhatsApp-native wallet app.
 
-TrustLink keeps vaults per payment instead of reusing one sender vault across many payments. This costs more than a pooled model, but it is much better for privacy because payments are harder to correlate over time.
+It is:
 
-## Main Roles
+- a Solana stablecoin escrow system
+- a phone-first payment routing experience
+- a business-confidence layer for safer recipient selection
 
-### Sender
+WhatsApp is the identity proxy and notification channel.
+The escrow program is the settlement engine.
 
-The sender:
-- chooses a WhatsApp number
-- chooses a supported token
-- enters an amount
-- signs the token movement with their wallet
+## TrustLink v3 Flow
 
-### Receiver
+### 1. Recipient registry
 
-The receiver:
-- signs in with the matching phone number
-- passes OTP verification
-- selects a payout wallet
-- claims the escrowed funds
+Off-chain registry stores:
 
-### Claim Verifier
+- `master_privacy_pubkey`
+- `auto_claim_destination`
+- registry metadata
 
-TrustLink runs a backend-controlled verifier wallet.
+The backend must never store the recipient master private key.
 
-The verifier:
-- initializes and updates the escrow config
-- pays Solana network fees for sponsored send
-- pays Solana network fees for claim
-- signs claim transactions
-- receives recovered SOL rent when escrow vaults and terminal payment PDAs are closed
+### 2. Child key derivation
 
-This is configured by:
-- `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
+For each payment or claim context, the recipient derives an ephemeral child key.
 
-### Treasury Owner
+The master key signs a derivation proof that binds:
 
-TrustLink uses a treasury owner wallet for token-denominated fees.
+- `child_pubkey`
+- `escrow_pubkey`
+- `nonce`
+- `expiry`
+- destination
 
-Treasury token accounts receive:
-- sender-side token fees
-- claim-side token fees
+### 3. Sender creates escrow
 
-This is configured by:
-- `TRUSTLINK_TREASURY_OWNER`
+The sender creates a dedicated escrow PDA using:
 
-### Recovery Wallets
+- `"escrow_v3"`
+- `recipient_child_hash`
+- `nonce`
+- `token_mint`
 
-TrustLink maintains one or more recovery wallets for expired payments.
+The vault authority is another PDA derived from the same escrow tuple.
 
-Expired payments are swept into one of these wallets instead of a single permanent pool wallet.
+The escrow stores:
 
-This is configured by:
-- `TRUSTLINK_RECOVERY_WALLETS`
+- sender
+- master registry public key
+- recipient child hash
+- amount
+- token mint
+- nonce
+- expiry
+- auto-claim destination hash
+- derivation proof signature
+- state
 
-## Send Flow
+### 4. Manual claim
 
-### 1. Recipient verification
+Before expiry, the recipient claims by presenting:
 
-Before a payment is prepared, TrustLink verifies the recipient's WhatsApp identity state through the app.
+- child public key
+- child signature over escrow-bound claim message
+- derivation proof signature from the master registry key
+- destination
 
-### 2. Sender fee estimate
+The program verifies both Ed25519 proofs through the instructions sysvar, checks the destination binding, consumes the nonce, releases funds, and closes the escrow.
 
-Before signing, TrustLink estimates the sender-side fee.
+### 5. Auto-claim
 
-Sender-side fee includes:
-- the current Solana network transaction fee
-- TrustLink markup, if configured
+After expiry, a crank can submit auto-claim to the recipient’s pre-approved destination.
 
-Sender-side fee does **not** include:
-- payment account rent
-- escrow vault rent
-- other recoverable setup rent
+The crank is not a custodian.
 
-Those setup costs are fronted by TrustLink because they are recovered later when vaults close and terminal payment PDAs are closed.
+It only submits a transaction that the program will reject unless:
 
-### 3. Sender fee is added on top
+- derivation proof is valid
+- child public key hash matches the escrow
+- destination hash matches the escrow
+- nonce has not already been consumed
 
-TrustLink does not silently reduce the sender's intended payment amount.
+## Safety Invariants
 
-Example:
-- sender wants to send `5.00 USDC`
-- sender fee is `0.004 USDC`
-- total required is `5.004 USDC`
+### Per-payment isolation
 
-### 4. Sponsored send
+Every escrow has its own PDA and vault.
 
-For sponsored send:
-- the sender signs as token owner
-- the verifier wallet pays the Solana transaction fee
-- the verifier also fronts setup rent
+### Noncustodial release
 
-### 5. On-chain payment creation
+No operator key is sufficient to move user funds without valid user-linked proofs.
 
-On-chain, the contract:
-- transfers the main payment amount into the escrow vault
-- transfers the sender fee amount to the treasury token account
-- stores payment metadata, including expiry
+### Replay resistance
 
-## Claim Flow
+A consumed nonce PDA prevents a signature from being reused.
 
-### 1. OTP verification
+### Front-run resistance
 
-The receiver proves ownership of the destination phone number with OTP.
+Destination is part of the signed payload and also checked against the escrow’s stored destination hash.
 
-### 2. Live claim fee estimate
+### Identity privacy
 
-Before claim, TrustLink estimates the live claim cost based on:
-- Solana network fee
-- receiver ATA creation, if needed
-- treasury ATA creation, if needed
-- TrustLink markup
+The chain stores a child-key hash, not a reusable phone-hash identity anchor.
 
-### 3. Claimer does not need SOL
+## Threat Review
 
-The verifier wallet pays the Solana network fee for claim.
+### Stolen child key
 
-### 4. On-chain claim split
+Risk:
+An attacker with only the child key tries to claim.
 
-On-chain, the contract:
-- sends `amount - claim_fee_amount` to the receiver token account
-- sends `claim_fee_amount` to the treasury token account
-- closes the escrow vault
-- closes the payment PDA
-- returns recovered SOL rent to the verifier wallet
+Mitigation:
+They still need the valid derivation proof tied to escrow, nonce, expiry, and destination.
 
-## Expiry Flow
+### Stolen master key
 
-TrustLink config stores a default expiry duration:
-- `TRUSTLINK_DEFAULT_EXPIRY_SECONDS`
+Risk:
+A master key compromise is more serious because it can sign derivation proofs.
 
-Each payment gets its own expiry timestamp at creation time.
+Mitigation:
 
-If a payment is still pending after expiry:
-- TrustLink sweeps the token balance from the escrow vault to one configured recovery wallet
-- the escrow vault is closed
-- the payment PDA is closed
-- recovered SOL rent returns to the verifier wallet
-- the payment is marked expired in TrustLink records
+- isolate by encouraging per-device protection
+- keep master private key client-side only
+- use child keys per payment to reduce exposure
+- keep destination binding strict so a leaked proof cannot reroute to arbitrary wallets
 
-The current manual sweeper entrypoint is:
-- `npm run escrow:expire-payments`
+### Replay
 
-## Why Sender Fee Excludes Account Rent
+Risk:
+A valid signature is replayed.
 
-TrustLink does not charge sender-side token fees for setup rent because setup rent is recoverable later.
+Mitigation:
+Nonce PDA creation is single-use and enforced on-chain.
 
-When the escrow vault and terminal payment PDA close:
-- the verifier wallet gets the SOL rent back
+### Front-running
 
-So the sender-side fee is meant to reflect only the immediate non-recoverable network cost, plus TrustLink markup.
+Risk:
+An attacker copies a transaction and swaps the destination.
 
-## Why Claim Fee Is Deducted From Payout
+Mitigation:
+Destination is included in the signed messages and checked on-chain.
 
-Claim is different because TrustLink completes the release on behalf of the receiver.
+## Backend Responsibilities
 
-So the claim fee is deducted from the payout amount itself. This keeps claim simple because the receiver does not need SOL in their wallet.
+- build `create_escrow_v3`, `claim_v3`, and `auto_claim_v3` transactions
+- expose registry-aware APIs
+- never store master private keys
+- log proof submissions and nonce usage
+- run auto-claim crank logic without taking custody
 
-## Important Environment Variables
+## User Experience Layer
 
-### Blockchain and verifier
+TrustLink Pay can still feel simple:
 
-- `SOLANA_RPC_URL`
-- `SOLANA_PROGRAM_ID`
-- `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
+- sender chooses a phone-linked recipient
+- sender sees business identity confidence if available
+- recipient can auto-claim to a verified wallet
+- advanced cryptography stays behind the scenes
 
-### Treasury and fees
-
-- `TRUSTLINK_TREASURY_OWNER`
-- `TRUSTLINK_SEND_FEE_BPS`
-- `TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT`
-- `TRUSTLINK_CLAIM_FEE_BPS`
-- `TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT`
-
-### Expiry and recovery
-
-- `TRUSTLINK_DEFAULT_EXPIRY_SECONDS`
-- `TRUSTLINK_RECOVERY_WALLETS`
-
-## Operational Summary
-
-- TrustLink keeps per-payment vaults for privacy.
-- TrustLink sponsors network fees for send and claim.
-- Sender fee is added on top of the sent amount.
-- Claim fee is deducted from the claimed payout.
-- Recoverable rent is not charged to the sender as a token fee.
-- Expired payments move into rotating recovery wallets for manual operational follow-up later.
+That combination is the product advantage: familiar identity in front, hardened escrow underneath.

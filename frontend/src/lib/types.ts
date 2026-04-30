@@ -43,18 +43,32 @@ export interface IdentitySecurityState {
   bump: number;
 }
 
+export interface AutoclaimSettings {
+  enabled: boolean;
+  maxAmountUsd: number;
+}
+
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
+export type PaymentMode = "secure" | "invite";
 
 export interface PaymentRecord {
   id: string;
   sender_user_id: string | null;
   sender_wallet: string | null;
+  sender_phone_identity_pubkey?: string | null;
   sender_display_name_snapshot: string;
   sender_handle_snapshot: string;
   reference_code: string;
   receiver_phone: string;
   receiver_phone_hash: string;
+  payment_mode?: PaymentMode;
+  recipient_onboarded_at_creation?: boolean;
+  phone_identity_pubkey?: string | null;
+  payment_receiver_pubkey?: string | null;
+  ephemeral_pubkey?: string | null;
+  refund_receiver_pubkey?: string | null;
+  refund_ephemeral_pubkey?: string | null;
   token_symbol: string;
   token_mint_address?: string | null;
   amount: string;
@@ -64,9 +78,15 @@ export interface PaymentRecord {
   escrow_vault_address?: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
+  refund_release_signature?: string | null;
   expiry_signature?: string | null;
   released_to_wallet: string | null;
+  refund_released_to_wallet?: string | null;
   accepted_at: string | null;
+  refund_requested_at?: string | null;
+  refund_claim_available_at?: string | null;
+  refund_extension_count?: number;
+  refund_claimed_at?: string | null;
   expiry_at?: string | null;
   expired_to_pool_at?: string | null;
   recovery_wallet_address?: string | null;
@@ -78,7 +98,7 @@ export interface PaymentRecord {
   notification_failed_at: string | null;
   notification_attempt_count?: number;
   notification_last_attempt_at?: string | null;
-  status: "pending" | "accepted" | "cancelled" | "expired";
+  status: "created" | "locked" | "claimed" | "refund_requested" | "refunded";
   unit_price_usd?: number | null;
   amount_usd?: number | null;
   created_at: string;

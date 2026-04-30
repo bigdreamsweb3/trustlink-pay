@@ -1,25 +1,32 @@
 import {
   createPaymentRecord,
   findPaymentByDepositSignature,
-  listExpiredPendingPayments,
-  updatePaymentExpiredToPool,
 } from "@/app/db/payments";
-import { findUserByPhoneNumber } from "@/app/db/users";
+import { ensureUserForPhoneNumber, ensureUserPhoneIdentityPublicKey, findUserByPhoneNumber } from "@/app/db/users";
 import {
   confirmEscrowPayment,
   createDraftPaymentId,
   estimateSenderTransferCost,
-  expireEscrowPayment,
   prepareEscrowPayment,
 } from "@/app/blockchain/solana";
+import { getEscrowPolicyConfig } from "@/app/config/escrow";
+import { getAllowedTokenByMint } from "@/app/blockchain/solana-core";
 import { env } from "@/app/lib/env";
+import { deriveStealthPaymentAddress, generatePaymentIdentityPublicKey } from "@/app/lib/privacy-keys";
 import { logger } from "@/app/lib/logger";
+import { getUsdPricesForSymbols } from "@/app/services/pricing";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
+import type { PaymentRecord } from "@/app/types/payment";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
-import type { PaymentRecord } from "@/app/types/payment";
-import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
 
 import { requiresManualInvite } from "./invite";
+import { AutoclaimEngine } from "./autoclaim-engine";
+import {
+  enforceInvitePaymentCap,
+  getInviteExpiryAt,
+  hasSecurePrivacyRouting,
+} from "./policy";
 import {
   resolveManualInviteState,
   retryPaymentNotificationIfNeeded,
@@ -49,6 +56,85 @@ function buildDuplicateCreateResponse(
     manualInviteRequired: manualInviteState.manualInviteRequired,
     inviteShare: manualInviteState.inviteShare,
   };
+}
+
+async function resolveInviteEligibility(params: {
+  receiverPhone: string;
+  receiverPhoneHash: string;
+  amount: number;
+  tokenMintAddress: string;
+  sender: NonNullable<Awaited<ReturnType<typeof findUserByPhoneNumber>>>;
+}) {
+  const receiverUser = await ensureUserForPhoneNumber({
+    phoneNumber: params.receiverPhone,
+    phoneHash: params.receiverPhoneHash,
+  });
+  const receiverIdentityPublicKey = await ensureUserPhoneIdentityPublicKey(
+    receiverUser.id,
+    receiverUser.phone_identity_pubkey,
+  );
+  const paymentIdentityPublicKey = generatePaymentIdentityPublicKey();
+  const receiverSecure = hasSecurePrivacyRouting({
+    phone_identity_pubkey: receiverIdentityPublicKey,
+    privacy_view_pubkey: receiverUser.privacy_view_pubkey,
+    privacy_spend_pubkey: receiverUser.privacy_spend_pubkey,
+  });
+
+  if (receiverSecure) {
+    const receiverRouting = deriveStealthPaymentAddress({
+      receiverViewPublicKey: receiverUser.privacy_view_pubkey!,
+      receiverSpendPublicKey: receiverUser.privacy_spend_pubkey!,
+    });
+
+    return {
+      receiverUser,
+      receiverIdentityPublicKey: paymentIdentityPublicKey,
+      paymentMode: "secure" as const,
+      receiverOnboarded: true,
+      receiverAutoclaimAllowed: receiverUser.receiver_autoclaim_enabled ?? false,
+      receiverWallet: receiverUser.wallet_address ?? null,
+      paymentReceiverPublicKey: receiverRouting.paymentReceiverPublicKey,
+      ephemeralPublicKey: receiverRouting.ephemeralPublicKey,
+      expiryAtOverride: null,
+    };
+  }
+
+  if (!hasSecurePrivacyRouting(params.sender)) {
+    throw new Error("Sender must finish secure wallet setup before sending invite escrow payments");
+  }
+
+  const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
+  if (!tokenConfig) {
+    throw new Error("This token mint is not allowlisted by TrustLink");
+  }
+  const prices = await getUsdPricesForSymbols([tokenConfig.symbol]);
+  const unitPriceUsd = prices[tokenConfig.symbol.toUpperCase()] ?? null;
+  const amountUsd = unitPriceUsd != null ? Number((params.amount * unitPriceUsd).toFixed(2)) : null;
+  enforceInvitePaymentCap({
+    amountUsd,
+    tokenSymbol: tokenConfig.symbol,
+    amount: params.amount,
+  });
+
+  return {
+    receiverUser,
+    receiverIdentityPublicKey: paymentIdentityPublicKey,
+    paymentMode: "invite" as const,
+    receiverOnboarded: false,
+    receiverAutoclaimAllowed: receiverUser.receiver_autoclaim_enabled ?? false,
+    receiverWallet: receiverUser.wallet_address ?? null,
+    paymentReceiverPublicKey: generatePaymentIdentityPublicKey(),
+    ephemeralPublicKey: null,
+    expiryAtOverride: getInviteExpiryAt().toISOString(),
+  };
+}
+
+function resolvePaymentExpiryIso(expiryAtOverride: string | null) {
+  if (expiryAtOverride) {
+    return expiryAtOverride;
+  }
+
+  return new Date(Date.now() + getEscrowPolicyConfig().defaultExpirySeconds * 1000).toISOString();
 }
 
 export async function createPayment(params: {
@@ -98,15 +184,30 @@ export async function createPayment(params: {
   }
 
   const phoneHash = sha256(params.phoneNumber);
+  const receiverPaymentPolicy = await resolveInviteEligibility({
+    receiverPhone: params.phoneNumber,
+    receiverPhoneHash: phoneHash,
+    amount: params.amount,
+    tokenMintAddress: params.tokenMintAddress,
+    sender,
+  });
+  const paymentExpiryAt = resolvePaymentExpiryIso(receiverPaymentPolicy.expiryAtOverride);
+  const senderPhoneIdentityPublicKey = sender.phone_identity_pubkey;
+  if (!senderPhoneIdentityPublicKey) {
+    throw new Error("Sender must finish TrustLink identity setup before creating payments");
+  }
   const paymentId = params.paymentId ?? createDraftPaymentId();
 
   if (!params.depositSignature) {
     const prepared = await prepareEscrowPayment({
       paymentId,
       senderWallet: params.senderWallet,
-      phoneHash,
+      phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+      paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
+      paymentMode: receiverPaymentPolicy.paymentMode,
       amount: params.amount,
       tokenMintAddress: params.tokenMintAddress,
+      expiryUnixSeconds: Math.floor(new Date(paymentExpiryAt).getTime() / 1000),
     });
 
     return {
@@ -123,7 +224,7 @@ export async function createPayment(params: {
       senderFeeAmount: prepared.senderFeeAmountUi,
       totalTokenRequiredAmount: prepared.totalTokenRequiredUi,
       notificationRetried: false,
-      manualInviteRequired: false,
+      manualInviteRequired: receiverPaymentPolicy.paymentMode === "invite",
       inviteShare: null,
     };
   }
@@ -132,11 +233,14 @@ export async function createPayment(params: {
     throw new Error("escrowVaultAddress is required when finalizing an on-chain payment");
   }
 
-  const manualInviteRequired = await requiresManualInvite(params.phoneNumber);
+  const manualInviteRequired =
+    receiverPaymentPolicy.paymentMode === "invite" || (await requiresManualInvite(params.phoneNumber));
+
   const escrow = await confirmEscrowPayment({
     paymentId,
     senderWallet: params.senderWallet,
-    phoneHash,
+    phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+    paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
     amount: params.amount,
     tokenMintAddress: params.tokenMintAddress,
     depositSignature: params.depositSignature,
@@ -150,11 +254,20 @@ export async function createPayment(params: {
       id: paymentId,
       senderUserId: sender.id,
       senderWallet: params.senderWallet,
+      senderPhoneIdentityPublicKey: sender.phone_identity_pubkey ?? null,
       senderDisplayNameSnapshot: sender.display_name,
       senderHandleSnapshot: sender.trustlink_handle,
       referenceCode: generatePaymentReference(),
       receiverPhone: params.phoneNumber,
       receiverPhoneHash: phoneHash,
+      paymentMode: receiverPaymentPolicy.paymentMode,
+      senderAutoclaimEnabled: true,
+      receiverAutoclaimAllowed: receiverPaymentPolicy.receiverAutoclaimAllowed,
+      receiverWallet: receiverPaymentPolicy.receiverWallet,
+      receiverOnboarded: receiverPaymentPolicy.receiverOnboarded,
+      receiverIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+      paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
+      ephemeralPublicKey: receiverPaymentPolicy.ephemeralPublicKey,
       tokenSymbol: escrow.tokenSymbol,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
@@ -163,7 +276,7 @@ export async function createPayment(params: {
       escrowAccount: escrow.escrowAccount,
       escrowVaultAddress: escrow.escrowVaultAddress,
       depositSignature: escrow.signature,
-      expiryAt: escrow.expiryAt,
+      expiryAt: paymentExpiryAt,
     });
   } catch (error) {
     if (
@@ -203,8 +316,14 @@ export async function createPayment(params: {
       };
   const updatedPayment = manualInviteState.payment;
 
+  await AutoclaimEngine.triggerPaymentLocked({
+    paymentId: payment.id,
+    triggerSource: "payment.locked",
+  });
+
   logger.info("payment.create.succeeded", {
     paymentId: payment.id,
+    paymentMode: payment.payment_mode,
     escrowAccount: payment.escrow_account,
     status: updatedPayment?.status,
     notificationMessageId: updatedPayment?.notification_message_id ?? null,
@@ -242,58 +361,45 @@ export async function estimatePaymentTransfer(params: {
 
   const paymentId = createDraftPaymentId();
   const phoneHash = sha256(params.phoneNumber);
+  const receiverPaymentPolicy = await resolveInviteEligibility({
+    receiverPhone: params.phoneNumber,
+    receiverPhoneHash: phoneHash,
+    amount: params.amount,
+    tokenMintAddress: params.tokenMintAddress,
+    sender,
+  });
+  const senderPhoneIdentityPublicKey = sender.phone_identity_pubkey;
+  if (!senderPhoneIdentityPublicKey) {
+    throw new Error("Sender must finish TrustLink identity setup before estimating payments");
+  }
+  const paymentExpiryAt = resolvePaymentExpiryIso(receiverPaymentPolicy.expiryAtOverride);
+
   const estimate = await estimateSenderTransferCost({
     paymentId,
     senderWallet: params.senderWallet,
-    phoneHash,
+    phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+    paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
+    paymentMode: receiverPaymentPolicy.paymentMode,
     amount: params.amount,
     tokenMintAddress: params.tokenMintAddress,
+    expiryUnixSeconds: Math.floor(new Date(paymentExpiryAt).getTime() / 1000),
   });
 
   return {
     paymentId,
+    paymentMode: receiverPaymentPolicy.paymentMode,
+    inviteExpiryAt: receiverPaymentPolicy.expiryAtOverride,
     estimate,
   };
 }
 
 export async function expirePendingPayments(limit = 100) {
-  const expiredPayments = await listExpiredPendingPayments(limit);
-  const results: Array<{
-    paymentId: string;
-    signature: string | null;
-    recoveryWalletAddress: string;
-  }> = [];
-
-  for (const payment of expiredPayments) {
-    if (!payment.escrow_account || !payment.escrow_vault_address || !payment.token_mint_address) {
-      logger.warn("payment.expire.skipped_missing_blockchain_fields", {
-        paymentId: payment.id,
-      });
-      continue;
-    }
-
-    const expired = await expireEscrowPayment({
-      paymentId: payment.id,
-      escrowAccount: payment.escrow_account,
-      escrowVaultAddress: payment.escrow_vault_address,
-      tokenMintAddress: payment.token_mint_address,
-    });
-
-    await updatePaymentExpiredToPool({
-      id: payment.id,
-      expirySignature: expired.signature,
-      recoveryWalletAddress: expired.recoveryWalletAddress,
-    });
-
-    results.push({
-      paymentId: payment.id,
-      signature: expired.signature,
-      recoveryWalletAddress: expired.recoveryWalletAddress,
-    });
-  }
+  logger.info("payment.expire.sweep_disabled", {
+    expiredCandidateCount: 0,
+  });
 
   return {
-    processed: results.length,
-    payments: results,
+    processed: 0,
+    payments: [],
   };
 }

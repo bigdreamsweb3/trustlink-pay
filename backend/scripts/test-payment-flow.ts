@@ -84,6 +84,9 @@ async function main() {
   const receiverWalletAddress =
     process.env.TEST_RECEIVER_WALLET_ADDRESS ??
     "ReceiverWalletMock111111111111111111111111111";
+  const tokenMintAddress =
+    process.env.TEST_TOKEN_MINT_ADDRESS ??
+    "So11111111111111111111111111111111111111112";
   let accessToken: string;
   let receiverWalletId: string | undefined;
 
@@ -221,6 +224,34 @@ async function main() {
     console.log("receiver wallets:", walletList.wallets);
   }
 
+  const preparePaymentResult = await invokeRoute<{
+    paymentId: string;
+    escrowAccount: string;
+    escrowVaultAddress: string | null;
+    blockchainMode: string;
+    serializedTransaction: string | null;
+  }>(createPaymentRoute.POST, "/api/payment/create", {
+    phoneNumber,
+    senderPhoneNumber: phoneNumber,
+    amount: 2.5,
+    tokenMintAddress,
+    senderWallet: senderWalletAddress,
+  });
+  console.log("prepare payment:", preparePaymentResult);
+
+  const depositSignature =
+    process.env.TEST_DEPOSIT_SIGNATURE ??
+    (preparePaymentResult.blockchainMode === "mock"
+      ? "MockDepositSignature111111111111111111111111111111111111"
+      : null);
+
+  if (!depositSignature || !preparePaymentResult.escrowVaultAddress) {
+    console.log(
+      "payment finalization skipped. Provide TEST_DEPOSIT_SIGNATURE for a real signed transaction, or enable mock mode.",
+    );
+    return;
+  }
+
   const createPaymentResult = await invokeRoute<{
     paymentId: string;
     status: string;
@@ -228,13 +259,17 @@ async function main() {
     senderDisplayName: string;
     senderHandle: string;
     escrowAccount: string;
-    blockchainSignature: string;
+    escrowVaultAddress: string | null;
+    blockchainSignature: string | null;
   }>(createPaymentRoute.POST, "/api/payment/create", {
+    paymentId: preparePaymentResult.paymentId,
     phoneNumber,
     senderPhoneNumber: phoneNumber,
     amount: 2.5,
-    token: "USDC",
+    tokenMintAddress,
     senderWallet: senderWalletAddress,
+    escrowVaultAddress: preparePaymentResult.escrowVaultAddress,
+    depositSignature,
   });
   console.log("create payment:", createPaymentResult);
 
@@ -256,22 +291,14 @@ async function main() {
   }, accessToken);
   console.log("start claim:", claimStartResult);
 
-  const latestOtp = await findLatestOtpForPhoneNumber(phoneNumber, "claim");
-
-  if (!latestOtp) {
-    throw new Error("No OTP found for test phone number");
-  }
-
-  console.log("loaded otp from database:", latestOtp.otp_code);
-
   const acceptPaymentResult = await invokeRoute<{
     paymentId: string;
     status: string;
     walletAddress: string;
-    blockchainSignature: string;
+    blockchainSignature: string | null;
   }>(acceptPaymentRoute.POST, "/api/payment/accept", {
     paymentId: createPaymentResult.paymentId,
-    otp: latestOtp.otp_code,
+    pin: senderPin,
     receiverWalletId,
   }, accessToken);
   console.log("accept payment:", acceptPaymentResult);

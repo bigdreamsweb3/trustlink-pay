@@ -16,38 +16,31 @@ export default function ExpandableMetaRow({
         <div className="flex items-start gap-1.5 max-w-[12.75rem] text-[9px] leading-3">
 
             {/* PREFIX */}
-            <span className={`${open ? "opacity-0" : "opacity-40"} transition-opacity`}>
-                ::
-            </span>
+
+            <InfoIcon
+                className={`h-3.5 w-3.5 transition-transform duration-300 ease-out ${open ? "rotate-180" : ""
+                    }`}
+            />
+
 
             {/* TEXT WRAPPER */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-w-0 overflow-hidden " onClick={(e) => {
+                e.stopPropagation();
+                setOpen((prev) => !prev);
+            }}>
                 <div
-                    className={`
-            transition-all duration-300 ease-in-out
-            ${open ? "max-h-40 opacity-100" : "max-h-3 opacity-80"}
-          `}
+                    className={`transition-all duration-300 ease-out ${open
+                        ? "max-h-40 opacity-100"
+                        : "max-h-3 opacity-70"
+                        }`}
                 >
-                    <p className="break-words">
+                    <p className="break-words leading-[1.45] text-[var(--text-soft)]">
                         {subtitle}
                     </p>
                 </div>
             </div>
 
-            {/* TOGGLE */}
-            <button
-                type="button"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setOpen((prev) => !prev);
-                }}
-                className="grid place-items-center rounded-full bg-pop-bg text-text"
-            >
-                <InfoIcon
-                    className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""
-                        }`}
-                />
-            </button>
+
         </div>
     );
 }

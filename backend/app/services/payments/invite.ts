@@ -26,12 +26,16 @@ export async function requiresManualInvite(phoneNumber: string) {
 }
 
 export async function enrichPaymentInviteState(payment: PaymentRecord) {
-  const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
+  const currentlyRequiresManualInvite = await requiresManualInvite(payment.receiver_phone);
+  const manualInviteRequired =
+    payment.status === "locked" &&
+    payment.payment_mode === "invite" &&
+    currentlyRequiresManualInvite;
 
   return {
     ...payment,
     manual_invite_required: manualInviteRequired,
     invite_share: manualInviteRequired ? buildInviteShareData(payment) : null,
-    recipient_onboarded: !manualInviteRequired,
+    receiver_onboarded: payment.receiver_onboarded ?? !manualInviteRequired,
   };
 }

@@ -37,7 +37,7 @@ export async function resolveManualInviteState(payment: PaymentRecord) {
 }
 
 function canRetryPaymentNotification(payment: PaymentRecord) {
-  if (payment.status !== "pending") {
+  if (payment.status !== "locked") {
     return false;
   }
 

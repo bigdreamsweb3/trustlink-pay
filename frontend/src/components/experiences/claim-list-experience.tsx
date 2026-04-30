@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
@@ -13,21 +14,11 @@ import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import type { PaymentRecord } from "@/src/lib/types";
 
 function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
 function formatUsd(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 }
 
 export function ClaimListExperience() {
@@ -37,95 +28,60 @@ export function ClaimListExperience() {
   const [totalPendingUsd, setTotalPendingUsd] = useState(0);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const visiblePendingPayments = pendingPayments.slice(0, 2);
   const hiddenPendingCount = Math.max(0, pendingPayments.length - visiblePendingPayments.length);
-  const pendingClaimTotal = useMemo(() => totalPendingUsd, [totalPendingUsd]);
 
-  useEffect(() => {
-    if (!accessToken || !user) {
-      return;
-    }
+  useEffect(() => { if (!accessToken || !user) return; void loadClaimData(accessToken); }, [accessToken, user]);
 
-    void loadClaimData(accessToken);
-  }, [accessToken, user]);
+  async function loadClaimData(token: string) { setLoading(true); try { const r = await apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number }>("/api/payment/pending", token); setPendingPayments(r.payments); setTotalPendingUsd(r.totalPendingUsd); setError(null); } catch (e) { const msg = e instanceof Error ? e.message : "Could not load claims"; setError(msg); showToast(msg); } finally { setLoading(false); } }
 
-  async function loadClaimData(token: string) {
-    setLoading(true);
-
-    try {
-      const pendingResult = await apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number }>("/api/payment/pending", token);
-      setPendingPayments(pendingResult.payments);
-      setTotalPendingUsd(pendingResult.totalPendingUsd);
-      setError(null);
-    } catch (loadError) {
-      const nextError = loadError instanceof Error ? loadError.message : "Could not load claim screen";
-      setError(nextError);
-      showToast(nextError);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!hydrated || !user) {
-    return null;
-  }
+  if (!hydrated || !user) return null;
 
   return (
-    <AppMobileShell
-      currentTab="claim"
-      title="Claim"
-      subtitle="Review every incoming payment waiting in escrow and continue into the claim flow when you are ready."
-      user={user}
-      showBackButton
-      backHref="/app"
-      blockingOverlay={
-        pendingAuth ? (
-          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
-        ) : null
-      }
+    <AppMobileShell currentTab="claim" title="Claim" subtitle="Review incoming payments waiting in escrow." user={user} showBackButton backHref="/app"
+      blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
       <section className="space-y-5">
-        {/* {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
-        {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">{error}</div> : null} */}
 
-        <section className="tl-panel p-3 sm:p-3.5">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Pending claims</h2>
-              <p className="text-sm text-text/48">Incoming transfers waiting for your OTP confirmation.</p>
+        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[0.82rem] text-[#ffb1b1]">{error}</div> : null}
+
+        {/* Summary card */}
+        {!loading && pendingPayments.length > 0 ? (
+          <div className="tl-field rounded-[22px] px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Unclaimed</div>
+              <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">{pendingPayments.length} {pendingPayments.length === 1 ? "payment" : "payments"}</div>
             </div>
-            {!loading && pendingPayments.length > 0 ? (
-              <div className="rounded-[18px] border border-[#58f2b1]/14 bg-[#58f2b1]/7 px-3 py-2 text-right">
-                <div className="text-[0.68rem] uppercase tracking-[0.18em] text-[#7dffd9]/70">Unclaimed</div>
-                <div className="mt-1 text-sm font-semibold text-text">
-                  {formatUsd(pendingClaimTotal)}
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-2.5 text-[1.4rem] font-bold tracking-tight text-[var(--text)]">{formatUsd(totalPendingUsd)}</div>
+            <div className="mt-1.5 h-1 w-8 rounded-full bg-[var(--accent-deep)] dark:bg-[var(--accent)]" />
           </div>
+        ) : null}
+
+        {/* Claim list */}
+        <div>
+          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Pending claims</div>
 
           {loading ? (
-            <div className="tl-field px-4 py-5">
-              <SectionLoader label="Loading claims..." />
-            </div>
+            <div className="tl-field rounded-[22px] px-5 py-8"><SectionLoader label="Loading claims..." /></div>
           ) : pendingPayments.length === 0 ? (
-            <div className="tl-field px-4 py-5 text-sm text-text/46">No pending claims right now.</div>
+            <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No pending claims right now.</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {visiblePendingPayments.map((payment) => (
-                <Link key={payment.id} href={`/claim/${payment.id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 tl-field px-4 py-4 transition hover:border-white/12 hover:bg-black/35">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-text">
+                <Link key={payment.id} href={`/claim/${payment.id}`}
+                  className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.84rem] font-semibold text-[var(--text)]">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
-                    <div className="truncate text-sm text-text/54">
-                      {payment.sender_display_name_snapshot} - {payment.reference_code}
+                    <div className="mt-0.5 truncate text-[0.74rem] text-[var(--text-soft)]">
+                      {payment.sender_display_name_snapshot} · {payment.reference_code}
                     </div>
-                    <div className="mt-1 text-[0.72rem] text-text/34">{formatShortDate(payment.created_at)}</div>
+                    <div className="mt-0.5 text-[0.64rem] text-[var(--text-faint)]">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-text/82">Open</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ))}
 
@@ -133,54 +89,42 @@ export function ClaimListExperience() {
                 <button
                   type="button"
                   onClick={() => setPendingModalOpen(true)}
-                  className="w-full rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm font-medium text-text/76 transition hover:bg-white/[0.05]"
+                  className="tl-field group w-full flex items-center justify-center rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
-                  View {hiddenPendingCount} more pending {hiddenPendingCount === 1 ? "claim" : "claims"}
+                  View {hiddenPendingCount} more {hiddenPendingCount === 1 ? "claim" : "claims"}
                 </button>
               ) : null}
             </div>
           )}
-        </section>
+        </div>
       </section>
 
+      {/* All claims modal */}
       {pendingModalOpen ? (
-        <div className="fixed inset-0 z-999 grid place-items-end bg-black/65 backdrop-blur-md md:place-items-center" onClick={() => setPendingModalOpen(false)}>
-          <div
-            className="w-full rounded-t-[28px] border border-white/10 bg-pop-bg px-5 pb-6 pt-5 shadow-softbox  md:max-w-[430px] md:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">All pending claims</h2>
-                <p className="text-sm text-text/48">Open any payment below to review the full details and continue the OTP release flow.</p>
+        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setPendingModalOpen(false)}>
+          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">All pending claims</h2>
+                <p className="tl-text-muted mt-1 text-[0.82rem] leading-relaxed">Tap any payment to review and claim.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setPendingModalOpen(false)}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs font-medium text-text/72"
-              >
-                Close
-              </button>
+              <button type="button" onClick={() => setPendingModalOpen(false)} className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 text-xs font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]">Close</button>
             </div>
-
-            <div className="space-y-3">
+            <div className="space-y-2">
               {pendingPayments.map((payment) => (
-                <Link
-                  key={payment.id}
-                  href={`/claim/${payment.id}`}
-                  onClick={() => setPendingModalOpen(false)}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 tl-field px-4 py-4 transition hover:border-white/12 hover:bg-black/35"
+                <Link key={payment.id} href={`/claim/${payment.id}`} onClick={() => setPendingModalOpen(false)}
+                  className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-text">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.84rem] font-semibold text-[var(--text)]">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
-                    <div className="truncate text-sm text-text/54">
-                      {payment.sender_display_name_snapshot} - {payment.reference_code}
+                    <div className="mt-0.5 truncate text-[0.74rem] text-[var(--text-soft)]">
+                      {payment.sender_display_name_snapshot} · {payment.reference_code}
                     </div>
-                    <div className="mt-1 text-[0.72rem] text-text/34">{formatShortDate(payment.created_at)}</div>
+                    <div className="mt-0.5 text-[0.64rem] text-[var(--text-faint)]">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-text/82">Open</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ))}
             </div>

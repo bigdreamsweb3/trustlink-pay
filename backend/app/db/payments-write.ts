@@ -1,4 +1,4 @@
-import type { PaymentNotificationStatus, PaymentRecord, PaymentStatus } from "@/app/types/payment";
+import type { PaymentMode, PaymentNotificationStatus, PaymentRecord, PaymentStatus } from "@/app/types/payment";
 import { sql } from "@/app/db/client";
 
 import { ensurePaymentTraceColumns } from "./payment-trace";
@@ -7,11 +7,19 @@ export async function createPaymentRecord(params: {
   id?: string;
   senderUserId: string;
   senderWallet: string;
+  senderPhoneIdentityPublicKey?: string | null;
   senderDisplayNameSnapshot: string;
   senderHandleSnapshot: string;
   referenceCode: string;
   receiverPhone: string;
   receiverPhoneHash: string;
+  paymentMode?: PaymentMode;
+  receiverIdentityPublicKey: string;
+  paymentReceiverPublicKey?: string | null;
+  ephemeralPublicKey?: string | null;
+  receiverAutoclaimAllowed?: boolean;
+  receiverWallet?: string | null;
+  receiverOnboarded?: boolean;
   tokenSymbol: string;
   tokenMintAddress: string;
   amount: number;
@@ -21,27 +29,32 @@ export async function createPaymentRecord(params: {
   escrowVaultAddress: string;
   depositSignature?: string | null;
   expiryAt?: string | null;
+  senderAutoclaimEnabled?: boolean;
 }): Promise<PaymentRecord> {
   await ensurePaymentTraceColumns();
 
   const rows = (await sql`
     INSERT INTO payments (
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_wallet, receiver_onboarded,
+      receiver_autoclaim_allowed, phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
       claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, expiry_at, status, notification_status
     )
     VALUES (
       COALESCE(${params.id ?? null}, gen_random_uuid()), ${params.senderUserId}, ${params.senderWallet},
-      ${params.senderDisplayNameSnapshot}, ${params.senderHandleSnapshot}, ${params.referenceCode}, ${params.receiverPhone},
-      ${params.receiverPhoneHash}, ${params.tokenSymbol}, ${params.tokenMintAddress}, ${params.amount},
+      ${params.senderPhoneIdentityPublicKey ?? null}, ${params.senderDisplayNameSnapshot}, ${params.senderHandleSnapshot}, ${params.referenceCode}, ${params.receiverPhone},
+      ${params.receiverPhoneHash}, ${params.paymentMode ?? "secure"}, ${params.senderAutoclaimEnabled ?? false},
+      ${params.receiverWallet ?? null}, ${params.receiverOnboarded ?? false}, ${params.receiverAutoclaimAllowed ?? false}, ${params.receiverIdentityPublicKey},
+      ${params.paymentReceiverPublicKey ?? null}, ${params.ephemeralPublicKey ?? null}, ${params.tokenSymbol}, ${params.tokenMintAddress}, ${params.amount},
       ${params.senderFeeAmount ?? null}, ${params.claimFeeAmount ?? null}, ${params.escrowAccount},
-      ${params.escrowVaultAddress}, ${params.depositSignature ?? null}, ${params.expiryAt ?? null}, 'pending', 'queued'
+      ${params.escrowVaultAddress}, ${params.depositSignature ?? null}, ${params.expiryAt ?? null}, 'locked', 'queued'
     )
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -58,10 +71,11 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
     SET status = ${status}
     WHERE id = ${id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -70,7 +84,7 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
   return rows[0] ?? null;
 }
 
-export async function updatePaymentAcceptance(params: {
+export async function markPaymentClaimed(params: {
   id: string;
   releaseSignature?: string | null;
   releasedToWallet: string;
@@ -81,17 +95,17 @@ export async function updatePaymentAcceptance(params: {
   const rows = (await sql`
     UPDATE payments
     SET
-      status = 'accepted',
-      accepted_at = COALESCE(accepted_at, NOW()),
+      status = 'claimed',
       claim_fee_amount = COALESCE(${params.claimFeeAmount ?? null}, claim_fee_amount),
       release_signature = COALESCE(${params.releaseSignature ?? null}, release_signature),
       released_to_wallet = ${params.releasedToWallet}
     WHERE id = ${params.id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -100,29 +114,61 @@ export async function updatePaymentAcceptance(params: {
   return rows[0] ?? null;
 }
 
-export async function updatePaymentExpiredToPool(params: {
+export async function markPaymentRefundRequested(params: {
   id: string;
-  expirySignature?: string | null;
-  recoveryWalletAddress: string;
-  occurredAt?: string | null;
+  refundReceiverPublicKey: string;
+  refundEphemeralPublicKey: string;
+  requestedAt?: Date;
+  refundAvailableAt?: Date;
 }): Promise<PaymentRecord | null> {
   await ensurePaymentTraceColumns();
-  const occurredAt = params.occurredAt ? new Date(params.occurredAt) : new Date();
+  const requestedAt = params.requestedAt ?? new Date();
+  const refundAvailableAt = params.refundAvailableAt ?? requestedAt;
 
   const rows = (await sql`
     UPDATE payments
     SET
-      status = 'expired',
-      expiry_signature = COALESCE(${params.expirySignature ?? null}, expiry_signature),
-      recovery_wallet_address = ${params.recoveryWalletAddress},
-      expired_to_pool_at = COALESCE(expired_to_pool_at, ${occurredAt}),
-      expiry_at = COALESCE(expiry_at, ${occurredAt})
+      status = 'refund_requested',
+      refund_receiver_pubkey = ${params.refundReceiverPublicKey},
+      refund_ephemeral_pubkey = ${params.refundEphemeralPublicKey},
+      refund_requested_at = COALESCE(refund_requested_at, ${requestedAt}),
+      refund_available_at = COALESCE(refund_available_at, ${refundAvailableAt})
     WHERE id = ${params.id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
+      notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
+      notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
+      status, created_at
+  `) as PaymentRecord[];
+
+  return rows[0] ?? null;
+}
+
+export async function markPaymentRefundClaimed(params: {
+  id: string;
+  refundReleaseSignature?: string | null;
+  releasedToWallet: string;
+}): Promise<PaymentRecord | null> {
+  await ensurePaymentTraceColumns();
+
+  const rows = (await sql`
+    UPDATE payments
+    SET
+      status = 'refunded',
+      refund_claimed_at = COALESCE(refund_claimed_at, NOW()),
+      refund_release_signature = COALESCE(${params.refundReleaseSignature ?? null}, refund_release_signature),
+      refund_released_to_wallet = ${params.releasedToWallet}
+    WHERE id = ${params.id}
+    RETURNING
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -150,10 +196,11 @@ export async function updatePaymentNotificationMessageId(
         notification_last_attempt_at = COALESCE(notification_last_attempt_at, NOW())
     WHERE id = ${id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -201,10 +248,11 @@ export async function updatePaymentNotificationStatus(
         END
     WHERE id = ${id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
@@ -227,14 +275,49 @@ export async function markPaymentNotificationAttempt(id: string): Promise<Paymen
       END
     WHERE id = ${id}
     RETURNING
-      id, sender_user_id, sender_wallet, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
-      receiver_phone, receiver_phone_hash, token_symbol, token_mint_address, amount, sender_fee_amount,
-      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature,
-      expiry_signature, released_to_wallet, accepted_at, expiry_at, expired_to_pool_at, recovery_wallet_address,
+      id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,
+      receiver_phone, receiver_phone_hash, payment_mode, sender_autoclaim_enabled, receiver_autoclaim_allowed, receiver_wallet, receiver_onboarded,
+      phone_identity_pubkey, payment_receiver_pubkey, ephemeral_pubkey, refund_receiver_pubkey, refund_ephemeral_pubkey, token_symbol, token_mint_address, amount, sender_fee_amount,
+      claim_fee_amount, escrow_account, escrow_vault_address, deposit_signature, release_signature, refund_release_signature,
+      released_to_wallet, refund_released_to_wallet, refund_requested_at, refund_available_at, refund_claimed_at, expiry_at,
       notification_message_id, notification_status, notification_sent_at, notification_delivered_at,
       notification_read_at, notification_failed_at, notification_attempt_count, notification_last_attempt_at,
       status, created_at
   `) as PaymentRecord[];
 
   return rows[0] ?? null;
+}
+
+export async function markPaymentsReceiverOnboarded(params: {
+  receiverPhone: string;
+  receiverWallet: string;
+}): Promise<number> {
+  await ensurePaymentTraceColumns();
+
+  const result = await sql`
+    UPDATE payments
+    SET
+      receiver_onboarded = true,
+      receiver_wallet = COALESCE(receiver_wallet, ${params.receiverWallet})
+    WHERE receiver_phone = ${params.receiverPhone}
+      AND status = 'locked'
+  `;
+
+  return (result as unknown as { rowCount?: number }).rowCount ?? 0;
+}
+
+export async function updatePaymentsReceiverAutoclaimAllowed(params: {
+  receiverPhone: string;
+  enabled: boolean;
+}): Promise<number> {
+  await ensurePaymentTraceColumns();
+
+  const result = await sql`
+    UPDATE payments
+    SET receiver_autoclaim_allowed = ${params.enabled}
+    WHERE receiver_phone = ${params.receiverPhone}
+      AND status = 'locked'
+  `;
+
+  return (result as unknown as { rowCount?: number }).rowCount ?? 0;
 }

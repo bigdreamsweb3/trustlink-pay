@@ -68,12 +68,6 @@ export type SenderTransferFeeEstimate = {
   networkFeeUsd: number | null;
 };
 
-export type ExpireEscrowResult = {
-  signature: TransactionSignature | null;
-  mode: BlockchainExecutionMode;
-  recoveryWalletAddress: string;
-};
-
 export type ClaimFeeEstimate = {
   tokenSymbol: string;
   tokenMintAddress: string;
@@ -91,18 +85,25 @@ export type ClaimFeeEstimate = {
 type DecodedPaymentAccount = {
   paymentId: Uint8Array;
   senderPubkey: PublicKey;
-  receiverPhoneHash: Uint8Array;
+  phoneIdentityPublicKey: PublicKey;
+  paymentReceiverPublicKey: PublicKey;
   tokenMint: PublicKey;
   amount: bigint;
-  senderFeeAmount: bigint;
-  claimFeeAmount: bigint;
   expiryTs: bigint;
   status: number;
+  paymentBump: number | null;
+  vaultAuthorityBump: number | null;
+  senderPhoneIdentityPublicKey: PublicKey | null;
+  paymentMode: number | null;
+  refundReceiverPublicKey: PublicKey | null;
+  refundRequestedAtTs: bigint | null;
+  refundAvailableAtTs: bigint | null;
+  expiredAtTs: bigint | null;
 };
 
 type DecodedIdentityBinding = {
-  receiverPhoneHash: Uint8Array;
-  mainWallet: PublicKey;
+  receiverIdentityPublicKey: PublicKey;
+  settlementWallet: PublicKey;
   recoveryWallet: PublicKey | null;
   isFrozen: boolean;
   recoveryCooldown: bigint;
@@ -113,10 +114,10 @@ type DecodedIdentityBinding = {
 
 type DecodedEscrowConfig = {
   claimVerifier: PublicKey;
-  treasuryOwner: PublicKey;
   defaultExpirySeconds: bigint;
   bump: number;
   layout: "current" | "legacy";
+  treasuryOwner?: PublicKey | null;
 };
 
 let allowedTokenCache: SupportedTokenConfig[] | null = null;
@@ -229,12 +230,8 @@ export function paymentIdToSeed(paymentId: string) {
   return createHash("sha256").update(`trustlink-payment:${paymentId}`).digest().subarray(0, 32);
 }
 
-export function phoneHashHexToBytes(phoneHash: string) {
-  const bytes = Buffer.from(phoneHash, "hex");
-  if (bytes.length !== 32) {
-    throw new Error("Phone hash must resolve to 32 bytes");
-  }
-  return bytes;
+export function identityPublicKeyToBytes(identityPublicKey: string) {
+  return new PublicKey(identityPublicKey).toBuffer();
 }
 
 function getConfigPda() {
@@ -249,9 +246,9 @@ export function getVaultAuthorityPda(paymentId: string) {
   return PublicKey.findProgramAddressSync([VAULT_AUTHORITY_SEED, paymentIdToSeed(paymentId)], getProgramId())[0];
 }
 
-export function getIdentityBindingPda(phoneHash: string) {
+export function getIdentityBindingPda(identityPublicKey: string) {
   return PublicKey.findProgramAddressSync(
-    [IDENTITY_BINDING_SEED, phoneHashHexToBytes(phoneHash)],
+    [IDENTITY_BINDING_SEED, identityPublicKeyToBytes(identityPublicKey)],
     getProgramId(),
   )[0];
 }
@@ -266,30 +263,71 @@ export function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
   offset += 32;
   const senderPubkey = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
-  const receiverPhoneHash = data.subarray(offset, offset + 32);
+  const phoneIdentityPublicKey = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const paymentReceiverPublicKey = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
   const tokenMint = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
   const amount = data.readBigUInt64LE(offset);
   offset += 8;
-  const senderFeeAmount = data.readBigUInt64LE(offset);
-  offset += 8;
-  const claimFeeAmount = data.readBigUInt64LE(offset);
-  offset += 8;
   const expiryTs = data.readBigInt64LE(offset);
   offset += 8;
   const status = data.readUInt8(offset);
+  offset += 1;
+  const paymentBump = data.length > offset ? data.readUInt8(offset) : null;
+  if (paymentBump != null) {
+    offset += 1;
+  }
+  const vaultAuthorityBump = data.length > offset ? data.readUInt8(offset) : null;
+  if (vaultAuthorityBump != null) {
+    offset += 1;
+  }
+  const senderPhoneIdentityPublicKey =
+    data.length >= offset + 32 ? new PublicKey(data.subarray(offset, offset + 32)) : null;
+  if (senderPhoneIdentityPublicKey) {
+    offset += 32;
+  }
+  const paymentMode = data.length > offset ? data.readUInt8(offset) : null;
+  if (paymentMode != null) {
+    offset += 1;
+  }
+  const refundReceiverOption = data.length > offset ? data.readUInt8(offset) : null;
+  if (refundReceiverOption != null) {
+    offset += 1;
+  }
+  const refundReceiverPublicKey =
+    refundReceiverOption === 1 && data.length >= offset + 32 ? new PublicKey(data.subarray(offset, offset + 32)) : null;
+  if (refundReceiverOption === 1) {
+    offset += 32;
+  }
+  const refundRequestedAtTs = data.length >= offset + 8 ? data.readBigInt64LE(offset) : null;
+  if (refundRequestedAtTs != null) {
+    offset += 8;
+  }
+  const refundAvailableAtTs = data.length >= offset + 8 ? data.readBigInt64LE(offset) : null;
+  if (refundAvailableAtTs != null) {
+    offset += 8;
+  }
+  const expiredAtTs = data.length >= offset + 8 ? data.readBigInt64LE(offset) : null;
 
   return {
     paymentId,
     senderPubkey,
-    receiverPhoneHash,
+    phoneIdentityPublicKey,
+    paymentReceiverPublicKey,
     tokenMint,
     amount,
-    senderFeeAmount,
-    claimFeeAmount,
     expiryTs,
     status,
+    paymentBump,
+    vaultAuthorityBump,
+    senderPhoneIdentityPublicKey,
+    paymentMode,
+    refundReceiverPublicKey,
+    refundRequestedAtTs,
+    refundAvailableAtTs,
+    expiredAtTs,
   };
 }
 
@@ -299,9 +337,9 @@ export function decodeIdentityBinding(data: Buffer): DecodedIdentityBinding {
   }
 
   let offset = 8;
-  const receiverPhoneHash = data.subarray(offset, offset + 32);
+  const receiverIdentityPublicKey = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
-  const mainWallet = new PublicKey(data.subarray(offset, offset + 32));
+  const settlementWallet = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
   const recoveryWalletOption = data.readUInt8(offset);
   offset += 1;
@@ -321,8 +359,8 @@ export function decodeIdentityBinding(data: Buffer): DecodedIdentityBinding {
   const bump = data.readUInt8(offset);
 
   return {
-    receiverPhoneHash,
-    mainWallet,
+    receiverIdentityPublicKey,
+    settlementWallet,
     recoveryWallet,
     isFrozen,
     recoveryCooldown,
@@ -337,7 +375,31 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     throw new Error("Escrow config discriminator mismatch");
   }
 
-  if (data.length < 8 + 32 + 32 + 8 + 1) {
+  const currentLayoutSize = 8 + 32 + 8 + 1;
+  const legacyLayoutSize = 8 + 32 + 32 + 8 + 1;
+
+  if (data.length >= legacyLayoutSize) {
+    let offset = 8;
+    const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
+    offset += 32;
+    const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
+    offset += 32;
+    const defaultExpirySeconds = data.readBigInt64LE(offset);
+    offset += 8;
+    const bump = data.readUInt8(offset);
+
+    if (data.length > currentLayoutSize) {
+      return {
+        claimVerifier,
+        defaultExpirySeconds,
+        bump,
+        layout: "legacy",
+        treasuryOwner,
+      };
+    }
+  }
+
+  if (data.length < currentLayoutSize) {
     if (data.length < 8 + 32) {
       throw new Error(`Escrow config account is too small to decode: ${data.length} bytes`);
     }
@@ -349,17 +411,15 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
 
     return {
       claimVerifier,
-      treasuryOwner: PublicKey.default,
       defaultExpirySeconds: 0n,
       bump,
       layout: "legacy",
+      treasuryOwner: null,
     };
   }
 
   let offset = 8;
   const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
-  offset += 32;
-  const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
   const defaultExpirySeconds = data.readBigInt64LE(offset);
   offset += 8;
@@ -367,10 +427,10 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
 
   return {
     claimVerifier,
-    treasuryOwner,
     defaultExpirySeconds,
     bump,
     layout: "current",
+    treasuryOwner: null,
   };
 }
 
@@ -399,7 +459,7 @@ export async function getEscrowConfigState() {
   return {
     address: configPda.toBase58(),
     claimVerifier: decoded.claimVerifier.toBase58(),
-    treasuryOwner: decoded.layout === "current" ? decoded.treasuryOwner.toBase58() : null,
+    treasuryOwner: decoded.treasuryOwner?.toBase58() ?? null,
     defaultExpirySeconds: decoded.defaultExpirySeconds.toString(),
     bump: decoded.bump,
     layout: decoded.layout,
@@ -424,7 +484,6 @@ export async function initializeEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("initialize_config"),
     payer.publicKey.toBuffer(),
-    new PublicKey(policy.treasuryOwner).toBuffer(),
     encodeI64(BigInt(policy.defaultExpirySeconds)),
   ]);
 
@@ -447,7 +506,6 @@ export async function initializeEscrowConfig() {
   logger.info("solana.escrow_config_initialized", {
     config: configPda.toBase58(),
     claimVerifier: payer.publicKey.toBase58(),
-    treasuryOwner: policy.treasuryOwner,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
@@ -467,24 +525,24 @@ export async function updateEscrowConfig() {
 
   const current = decodeEscrowConfig(existing.data);
   if (current.layout === "legacy") {
-    throw new Error(
-      `Escrow config ${configPda.toBase58()} uses a legacy layout from the older program version. Deploy the upgraded program successfully, then use a fresh program ID or add a migration/realloc path before updating treasury and fee settings.`,
-    );
+    logger.warn("solana.escrow_config_legacy_layout_detected", {
+      config: configPda.toBase58(),
+      claimVerifier: current.claimVerifier.toBase58(),
+      treasuryOwner: current.treasuryOwner?.toBase58() ?? null,
+      defaultExpirySeconds: current.defaultExpirySeconds.toString(),
+    });
   }
 
   const targetClaimVerifier = authority.publicKey.toBase58();
-  const targetTreasuryOwner = new PublicKey(policy.treasuryOwner).toBase58();
   const targetDefaultExpirySeconds = BigInt(policy.defaultExpirySeconds);
 
   if (
     current.claimVerifier.toBase58() === targetClaimVerifier &&
-    current.treasuryOwner.toBase58() === targetTreasuryOwner &&
     current.defaultExpirySeconds === targetDefaultExpirySeconds
   ) {
     logger.info("solana.escrow_config_already_matches_target", {
       config: configPda.toBase58(),
       claimVerifier: targetClaimVerifier,
-      treasuryOwner: targetTreasuryOwner,
       defaultExpirySeconds: policy.defaultExpirySeconds,
     });
     return configPda.toBase58();
@@ -493,7 +551,6 @@ export async function updateEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("update_config"),
     authority.publicKey.toBuffer(),
-    new PublicKey(policy.treasuryOwner).toBuffer(),
     encodeI64(targetDefaultExpirySeconds),
   ]);
 
@@ -515,7 +572,6 @@ export async function updateEscrowConfig() {
   logger.info("solana.escrow_config_updated", {
     config: configPda.toBase58(),
     claimVerifier: targetClaimVerifier,
-    treasuryOwner: targetTreasuryOwner,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
@@ -534,9 +590,9 @@ export async function requireEscrowConfigInitialized() {
   return configPda;
 }
 
-export async function getIdentityBindingState(phoneHash: string) {
+export async function getIdentityBindingState(identityPublicKey: string) {
   const connection = getConnection();
-  const bindingPda = getIdentityBindingPda(phoneHash);
+  const bindingPda = getIdentityBindingPda(identityPublicKey);
   const existing = await connection.getAccountInfo(bindingPda, "confirmed");
 
   if (!existing) {
@@ -546,7 +602,7 @@ export async function getIdentityBindingState(phoneHash: string) {
   const decoded = decodeIdentityBinding(existing.data);
   return {
     address: bindingPda.toBase58(),
-    mainWallet: decoded.mainWallet.toBase58(),
+    settlementWallet: decoded.settlementWallet.toBase58(),
     recoveryWallet: decoded.recoveryWallet?.toBase58() ?? null,
     isFrozen: decoded.isFrozen,
     recoveryCooldown: decoded.recoveryCooldown.toString(),
@@ -557,7 +613,7 @@ export async function getIdentityBindingState(phoneHash: string) {
 }
 
 export async function prepareAddRecoveryWalletTransaction(params: {
-  phoneHash: string;
+  identityPublicKey: string;
   authorityWallet: string;
   recoveryWallet: string;
   allowUpdate: boolean;
@@ -565,7 +621,7 @@ export async function prepareAddRecoveryWalletTransaction(params: {
   const connection = getConnection();
   const authority = new PublicKey(params.authorityWallet);
   const recoveryWallet = new PublicKey(params.recoveryWallet);
-  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const identityBinding = getIdentityBindingPda(params.identityPublicKey);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction({
@@ -597,13 +653,13 @@ export async function prepareAddRecoveryWalletTransaction(params: {
 }
 
 export async function prepareSetIdentityFreezeTransaction(params: {
-  phoneHash: string;
+  identityPublicKey: string;
   authorityWallet: string;
   frozen: boolean;
 }) {
   const connection = getConnection();
   const authority = new PublicKey(params.authorityWallet);
-  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const identityBinding = getIdentityBindingPda(params.identityPublicKey);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction({
@@ -634,12 +690,12 @@ export async function prepareSetIdentityFreezeTransaction(params: {
 }
 
 export async function prepareRequestRecoveryTransaction(params: {
-  phoneHash: string;
+  identityPublicKey: string;
   authorityWallet: string;
 }) {
   const connection = getConnection();
   const authority = new PublicKey(params.authorityWallet);
-  const identityBinding = getIdentityBindingPda(params.phoneHash);
+  const identityBinding = getIdentityBindingPda(params.identityPublicKey);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction({

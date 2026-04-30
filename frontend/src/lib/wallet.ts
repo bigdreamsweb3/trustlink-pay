@@ -2,6 +2,7 @@
 
 import {
   Connection,
+  Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
@@ -403,6 +404,8 @@ export async function signAndSendSerializedSolanaTransaction(params: {
   walletId: string;
   rpcUrl: string;
   serializedTransaction: string;
+  partialSignerSecretKeys?: string[];
+  inspectTransaction?: (transaction: Transaction) => void | Promise<void>;
 }) {
   const wallet = getWalletById(params.walletId);
   if (!wallet) {
@@ -426,18 +429,25 @@ export async function signAndSendSerializedSolanaTransaction(params: {
   const connection = new Connection(params.rpcUrl, "confirmed");
   const raw = Uint8Array.from(atob(params.serializedTransaction), (value) => value.charCodeAt(0));
   const transaction = Transaction.from(raw);
+  if (params.partialSignerSecretKeys?.length) {
+    const signers = params.partialSignerSecretKeys.map((secretKeyHex) =>
+      Keypair.fromSeed(Uint8Array.from(secretKeyHex.match(/.{1,2}/g)?.map((value) => Number.parseInt(value, 16)) ?? []))
+    );
+    transaction.partialSign(...signers);
+  }
+  await params.inspectTransaction?.(transaction);
   let signature: TransactionSignature;
 
-  if (wallet.provider.signAndSendTransaction) {
-    const response = await wallet.provider.signAndSendTransaction(transaction, {
-      preflightCommitment: "confirmed",
-    });
-    signature = response.signature;
-  } else if (wallet.provider.signTransaction) {
+  if (wallet.provider.signTransaction) {
     const signedTransaction = await wallet.provider.signTransaction(transaction);
     signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
       preflightCommitment: "confirmed",
     });
+  } else if (wallet.provider.signAndSendTransaction) {
+    const response = await wallet.provider.signAndSendTransaction(transaction, {
+      preflightCommitment: "confirmed",
+    });
+    signature = response.signature;
   } else {
     throw new Error("This wallet cannot sign Solana transactions from the browser");
   }

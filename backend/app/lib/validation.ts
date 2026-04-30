@@ -55,6 +55,9 @@ export const acceptPaymentSchema = z
     pin: pinSchema,
     walletAddress: walletAddressSchema.optional(),
     receiverWalletId: z.string().uuid().optional(),
+    derivedPaymentReceiverPublicKey: walletAddressSchema.optional(),
+    privacySpendSignature: z.string().trim().min(64).optional(),
+    blockchainSignature: z.string().trim().min(32).max(128).optional(),
   });
 
 export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change", "wallet_add"]);
@@ -76,6 +79,15 @@ export const registerSchema = z.object({
   displayName: displayNameSchema,
   handle: handleSchema,
   walletAddress: walletAddressSchema.optional(),
+});
+
+export const identityKeyRegistrationSchema = z.object({
+  phoneIdentityPublicKey: walletAddressSchema,
+  privacyViewPublicKey: z.string().trim().length(64),
+  privacySpendPublicKey: walletAddressSchema,
+  settlementWalletPublicKey: walletAddressSchema,
+  recoveryWalletPublicKey: walletAddressSchema.optional().nullable(),
+  bindingSignature: z.string().trim().min(64).optional().nullable(),
 });
 
 export const loginSchema = z.object({
@@ -166,4 +178,23 @@ export const setIdentityFreezeSchema = z.object({
 
 export const requestRecoverySchema = z.object({
   authorityWallet: walletAddressSchema,
+});
+
+export const updateAutoclaimSettingsSchema = z.object({
+  enabled: z.boolean(),
+});
+
+export const requestPaymentRefundSchema = z.object({
+  paymentId: z.string().uuid(),
+  pin: pinSchema,
+  blockchainSignature: z.string().trim().min(32).max(128).optional(),
+});
+
+export const claimPaymentRefundSchema = z.object({
+  paymentId: z.string().uuid(),
+  pin: pinSchema,
+  walletAddress: walletAddressSchema.optional(),
+  derivedPaymentReceiverPublicKey: walletAddressSchema.optional(),
+  privacySpendSignature: z.string().trim().min(64).optional(),
+  blockchainSignature: z.string().trim().min(32).max(128).optional(),
 });

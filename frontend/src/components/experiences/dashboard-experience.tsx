@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, SettingsIcon } from "@/src/components/app-icons";
+import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
@@ -17,424 +17,273 @@ import { formatPaymentUsd } from "@/src/lib/payment-display";
 import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { getConnectedWalletAddress } from "@/src/lib/wallet";
+import { ChevronRight, Landmark } from "lucide-react";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
 function formatGuardTimestamp(value: string) {
-  return new Date(value).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+    return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function splitPhoneDisplay(phone: string): { countryCode: string; localNumber: string } {
+    const cleaned = phone.replace(/[^\d+]/g, "");
+    if (!cleaned.startsWith("+")) return { countryCode: "", localNumber: phone };
+    const digits = cleaned.slice(1);
+    let ccLen = 1;
+    const oneDigitCodes = ["1", "7"];
+    const twoDigitCodes = ["20", "27", "30", "31", "32", "33", "34", "36", "39", "40", "41", "43", "44", "45", "46", "47", "48", "49", "51", "52", "53", "54", "55", "56", "57", "58", "60", "61", "62", "63", "64", "65", "66", "81", "82", "84", "86", "90", "91", "92", "93", "94", "95", "98"];
+    if (oneDigitCodes.includes(digits.slice(0, 1))) ccLen = 1;
+    else if (twoDigitCodes.includes(digits.slice(0, 2))) ccLen = 2;
+    else ccLen = 3;
+    const countryCode = "+" + digits.slice(0, ccLen);
+    const local = digits.slice(ccLen);
+    const localFormatted = local.length === 10
+        ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+        : local.length === 9
+            ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+            : local.length === 8
+                ? `${local.slice(0, 4)} ${local.slice(4)}`
+                : local.replace(/(\d{3})(?=\d)/g, "$1 ");
+    return { countryCode, localNumber: localFormatted };
 }
 
 export function DashboardExperience() {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
-  const { showToast } = useToast();
-  const router = useRouter();
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
-  const [walletTokenLoading, setWalletTokenLoading] = useState(false);
-  const [balanceVisible, setBalanceVisible] = useState(true);
-  const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
-  const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
-  const [pendingBalanceSummary, setPendingBalanceSummary] = useState<PendingBalanceSummary>({
-    claimableCount: 0,
-    totalPendingUsd: 0,
-    byToken: [],
-  });
-  const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
+    const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
+    const { showToast } = useToast();
+    const router = useRouter();
+    const [walletAddress, setWalletAddress] = useState<string | null>(null);
+    const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
+    const [walletTokenLoading, setWalletTokenLoading] = useState(false);
+    const [balanceVisible, setBalanceVisible] = useState(true);
+    const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
+    const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
+    const [pendingBalanceSummary, setPendingBalanceSummary] = useState<PendingBalanceSummary>({ claimableCount: 0, totalPendingUsd: 0, byToken: [] });
+    const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
 
-  useEffect(() => {
-    setWalletAddress(getConnectedWalletAddress());
-  }, []);
+    useEffect(() => { setWalletAddress(getConnectedWalletAddress()); }, []);
+    useEffect(() => { if (!walletAddress) { setWalletTokens([]); return; } const ctrl = new AbortController(); async function load() { setWalletTokenLoading(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }); if (!ctrl.signal.aborted) setWalletTokens(r.tokens.filter((t) => t.supported)); } catch { if (!ctrl.signal.aborted) setWalletTokens([]); } finally { if (!ctrl.signal.aborted) setWalletTokenLoading(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
+    useEffect(() => { if (!accessToken || !user) return; void loadDashboard(accessToken); }, [accessToken, user]);
 
-  useEffect(() => {
-    if (!walletAddress) {
-      setWalletTokens([]);
-      return;
-    }
+    const stats = useMemo(() => [{ label: "Pending", value: pendingPayments.length.toString().padStart(2, "0") }], [pendingPayments.length]);
+    const supportedBalanceUsd = useMemo(() => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0), [walletTokens]);
+    const combinedVisibleBalanceUsd = useMemo(() => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)), [supportedBalanceUsd, totalPendingUsd]);
+    const hasPendingSenderReceipt = useMemo(() => paymentHistory.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [paymentHistory, user?.id]);
 
-    const controller = new AbortController();
+    useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadDashboard(accessToken, { background: true }); }, DASHBOARD_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);
 
-    async function loadWalletTokens() {
-      setWalletTokenLoading(true);
+    async function loadDashboard(token: string, options?: { background?: boolean }) { if (!options?.background) setLoading(true); try { const [pr, hr] = await Promise.all([apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token), apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)]); setPendingPayments(pr.payments); setTotalPendingUsd(pr.totalPendingUsd); setPendingBalanceSummary(pr.summary); setPaymentHistory(hr.payments); setError(null); } catch (e) { if (!options?.background) setError(e instanceof Error ? e.message : "Could not load dashboard"); } finally { if (!options?.background) setLoading(false); } }
 
-      try {
-        const result = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", {
-          walletAddress
-        });
+    if (!hydrated || !user) return null;
 
-        if (!controller.signal.aborted) {
-          setWalletTokens(result.tokens.filter((token) => token.supported));
-        }
-      } catch {
-        if (!controller.signal.aborted) {
-          setWalletTokens([]);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setWalletTokenLoading(false);
-        }
-      }
-    }
+    const userPhoneNumber = user.phoneNumber;
+    const { countryCode, localNumber } = splitPhoneDisplay(userPhoneNumber);
 
-    void loadWalletTokens();
+    async function handleCopyPhoneNumber() { if (!navigator.clipboard?.writeText) { setError("Copy not available."); showToast("Copy not available."); return; } await navigator.clipboard.writeText(userPhoneNumber); showToast("TrustLink number copied."); }
 
-    return () => controller.abort();
-  }, [walletAddress]);
+    return (
+        <AppMobileShell currentTab="home" title="Home" subtitle="Move crypto with the calm, speed, and clarity of a modern payments app." user={user}
+            blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
+        >
+            <section className="space-y-5">
 
-  useEffect(() => {
-    if (!accessToken || !user) {
-      return;
-    }
+                {/* BALANCE HERO CARD */}
+                <div className="tl-scanline relative overflow-hidden rounded-[30px] text-text border border-accent-border/14 bg-accent-gradient p-5 shadow-softbox">
+                    <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
 
-    void loadDashboard(accessToken);
-  }, [accessToken, user]);
+                    {/* Row 1: Balance label + eye | TL Number */}
+                    <div className="relative z-10 flex items-start justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-text/38">Balance</div>
+                                <button
+                                    type="button"
+                                    onClick={() => setBalanceVisible((c) => !c)}
+                                    className="text-text/40 transition-colors hover:text-text/60 cursor-pointer active:scale-[0.9]"
+                                    aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                                >
+                                    {balanceVisible ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                                </button>
+                            </div>
+                            <div className="mt-1 flex items-center gap-2.5">
+                                {walletTokenLoading ? (
+                                    <div className="text-[1.8rem] font-bold tracking-tight text-text">...</div>
+                                ) : balanceVisible ? (
+                                    <div className="text-[1.8rem] font-bold tracking-tight text-text">{formatPaymentUsd(combinedVisibleBalanceUsd)}</div>
+                                ) : (
+                                    <div className="text-[1.8rem] font-bold tracking-tight text-text">****</div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setBalanceInfoOpen(true)}
+                                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/6 text-text/40 transition-colors hover:text-text/60 cursor-pointer active:scale-[0.9]"
+                                    aria-label="Balance details"
+                                >
+                                    <InfoIcon className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                            {balanceVisible && totalPendingUsd > 0 ? (
+                                <div className="mt-0.5 text-[0.68rem] text-text/40">+ {formatPaymentUsd(totalPendingUsd)} in escrow</div>
+                            ) : null}
+                        </div>
 
-  const stats = useMemo(
-    () => [{ label: "Pending", value: pendingPayments.length.toString().padStart(2, "0") }],
-    [pendingPayments.length]
-  );
+                        <button
+                            type="button"
+                            onClick={() => void handleCopyPhoneNumber()}
+                            className="flex flex-col items-end gap-1.5 group cursor-pointer active:scale-[0.97] transition-transform"
+                            aria-label={`Copy ${userPhoneNumber}`}
+                        >
 
-  const supportedBalanceUsd = useMemo(
-    () => walletTokens.reduce((sum, token) => sum + (token.balanceUsd ?? 0), 0),
-    [walletTokens]
-  );
-  const combinedVisibleBalanceUsd = useMemo(
-    () => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)),
-    [supportedBalanceUsd, totalPendingUsd]
-  );
-  const hasPendingSenderReceipt = useMemo(
-    () =>
-      paymentHistory.some(
-        (payment) => payment.sender_user_id === user?.id && shouldPollPaymentNotification(payment.notification_status)
-      ),
-    [paymentHistory, user?.id]
-  );
+                            <div className="flex items-center gap-1.5">
+                                <span className="rounded-[6px] border border-white/10 bg-white/6 px-1.5 py-0.5 text-[0.66rem] font-semibold text-text/58">{countryCode}</span>
+                                <span className="text-[0.84rem] font-bold tracking-wide text-text/82">{localNumber}</span>
+                                <CopyIcon className="h-3 w-3 text-text/30 transition-colors group-hover:text-text/50" />
+                            </div>
 
-  useEffect(() => {
-    if (!accessToken || !user || !hasPendingSenderReceipt) {
-      return;
-    }
+                            {/* <div className="flex items-center gap-1.5">
+                                <span className="rounded-[6px] border border-white/10 bg-white/6 px-1.5 py-0.5 text-[0.66rem] font-semibold text-text/58">{countryCode}</span>
+                                <div className="text-[0.58rem] font-medium uppercase tracking-[0.2em] text-text/34">TL Number</div>
+                            </div> */}
+                        </button>
+                    </div>
 
-    const refreshInterval = window.setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
-      }
+                    {/* Row 2: Send/Claim buttons + Pending badge */}
+                    <div className="relative z-10 mt-6 flex items-end justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <Link href="/app/send" className="group flex flex-col items-center gap-1.5 cursor-pointer">
+                                <div className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/6 transition-all duration-200 group-hover:bg-white/10 group-active:scale-[0.93]">
+                                    <SendIcon size={18} className="text-text" />
+                                </div>
+                                <span className="text-[0.62rem] font-medium text-text/60">Send</span>
+                            </Link>
+                            <Link href="/app/claim" className="group flex flex-col items-center gap-1.5 cursor-pointer">
+                                <div className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/6 transition-all duration-200 group-hover:bg-white/10 group-active:scale-[0.93]">
+                                    <ClaimIcon size={18} className="text-text" />
+                                </div>
+                                <span className="text-[0.62rem] font-medium text-text/60">Claim</span>
+                            </Link>
+                        </div>
 
-      void loadDashboard(accessToken, { background: true });
-    }, DASHBOARD_REFRESH_INTERVAL_MS);
+                        <div className="flex flex-col items-end gap-2 justify-end">
+                            {/* <div className="flex items-center gap-1.5">
+                                <span className="rounded-[6px] border border-white/10 bg-white/6 px-1.5 py-0.5 text-[0.66rem] font-semibold text-text/58">{countryCode}</span>
+                                <span className="text-[0.84rem] font-bold tracking-wide text-text/82">{localNumber}</span>
+                                <CopyIcon className="h-3 w-3 text-text/30 transition-colors group-hover:text-text/50" />
+                            </div> */}
 
-    return () => window.clearInterval(refreshInterval);
-  }, [accessToken, hasPendingSenderReceipt, user]);
+                            {stats.map((stat) => (
+                                <div key={stat.label} className="w-fit flex items-center gap-1.5 rounded-[14px] border border-white/8 bg-white/4 px-3 py-2">
 
-  async function loadDashboard(token: string, options?: { background?: boolean }) {
-    if (!options?.background) {
-      setLoading(true);
-    }
-
-    try {
-      const [pendingResult, historyResult] = await Promise.all([
-        apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token),
-        apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)
-      ]);
-
-      setPendingPayments(pendingResult.payments);
-      setTotalPendingUsd(pendingResult.totalPendingUsd);
-      setPendingBalanceSummary(pendingResult.summary);
-      setPaymentHistory(historyResult.payments);
-      setError(null);
-    } catch (loadError) {
-      if (!options?.background) {
-        setError(loadError instanceof Error ? loadError.message : "Could not load dashboard");
-      }
-    } finally {
-      if (!options?.background) {
-        setLoading(false);
-      }
-    }
-  }
-
-  if (!hydrated || !user) {
-    return null;
-  }
-
-  const userPhoneNumber = user.phoneNumber;
-
-  async function handleCopyPhoneNumber() {
-    if (!navigator.clipboard?.writeText) {
-      const nextError = "Copy is not available on this device.";
-      setError(nextError);
-      showToast(nextError);
-      return;
-    }
-
-    await navigator.clipboard.writeText(userPhoneNumber);
-    showToast("TrustLink number copied.");
-  }
-
-  return (
-    <AppMobileShell
-      currentTab="home"
-      title="Home"
-      subtitle="Move crypto with the calm, speed, and clarity of a modern payments app."
-      user={user}
-      blockingOverlay={
-        pendingAuth ? (
-          <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} />
-        ) : null
-      }
-    >
-      <section className="space-y-5">
-        {/* {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit text-[#ff9e9e]">{error}</div> : null} */}
-
-
-
-        <div className="tl-scanline relative overflow-hidden rounded-[30px] text-text border border-accent-border/14 bg-accent-gradient p-5 shadow-softbox">
-          <div className="">
-            <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
-            <div className="relative z-10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  className="tl-balance-inset flex h-11 min-w-28.5 place-items-center items-center justify-between gap-2 rounded-2xl border border-white/8 bg-accent-deep/48 px-3 text-primary"
-                  onClick={() => setBalanceVisible((current) => !current)}
-                >
-                  {walletTokenLoading ? (
-                    <span className="tl-balance-readout text-[0.92rem] sm:text-[1rem] font-semibold">...</span>
-                  ) : balanceVisible ? (
-                    <span className="tl-balance-readout text-[0.96rem] sm:text-[1.04rem] font-bold">
-                      {formatPaymentUsd(combinedVisibleBalanceUsd)}
-                    </span>
-                  ) : (
-                    <span className="tl-balance-readout text-[1rem] text-center mt-1 h-fit font-bold">****</span>
-                  )}
-
-                  {balanceVisible ? <EyeOffIcon className="h-4.5 w-4.5" /> : <EyeIcon className="h-4.5 w-4.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBalanceInfoOpen(true)}
-                  className="grid h-9 w-9 place-items-center rounded-2xl bg-pop-bg text-text/40 transition button"
-                  aria-label="Show balance details"
-                  title="Show balance details"
-                >
-                  <InfoIcon className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="text-right">
-                <div className="text-[0.64rem] font-medium uppercase tracking-[0.16em] text-text/42">TL.Number</div>
-                <div className="mt-1 flex items-center justify-end gap-1.5">
-                  <div className="text-xs font-semibold text-text/82">{userPhoneNumber}</div>
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyPhoneNumber()}
-                    className="grid h-7 w-7 place-items-center rounded-full border border-white/8 bg-white/4 text-text/52 transition button"
-                    aria-label={`Copy ${userPhoneNumber}`}
-                    title="Copy TrustLink number"
-                  >
-                    <CopyIcon className="h-3.5 w-3.5" />
-                  </button>
+                                    <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+                                    <span className="text-[0.76rem] font-semibold text-text">{stat.label}</span>
+                                    <span className="text-[0.62rem] text-text/40">{loading ? "\u2014" : stat.value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-                {/* <div className="mt-1 text-end text-sm font-semibold tl-text-soft">{`@${user.handle}`}</div> */}
-              </div>
-            </div>
 
-            <div className="relative z-10 mt-8 flex items-end justify-between gap-4">
-              <div>
-                <div className="text-[0.74rem] uppercase tracking-[0.16em] text-muted">Holder</div>
-                <div className="mt-1 whitespace-nowrap text-text text-base font-semibold">{user.displayName}</div>
-              </div>
-
-              <div className="text-right">
-                <div className="flex flex-wrap items-center justify-end gap-2.5">
-                  {stats.map((stat) => (
-                    <article key={stat.label} className="flex w-fit items-center gap-2 rounded-full border border-white/8 bg-accent-deep/48 px-3 py-1.5  shadow-softbox ">
-                      <div className="text-[0.44rem] uppercase tracking-[0.16em] text-primary">{stat.label}</div>
-                      <div className="text-[0.6rem] font-semibold tracking-[-0.04em] text-primary">{loading ? "--" : stat.value}</div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="tl-coord-text relative z-10 mt-5 flex items-center justify-between gap-3">
-              <span>Grid // TL.PAY</span>
-              <span>{paymentHistory[0] ? `Log ${formatGuardTimestamp(paymentHistory[0].created_at)}` : "Standby"}</span>
-            </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex min-h-[76px] items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-pop-bg px-4 py-3">
-            <div className="space-y-2">
-              <div className="h-2.5 w-20 rounded-full bg-pop-bg" />
-              <div className="h-3.5 w-44 rounded-full bg-pop-bg" />
-            </div>
-            <SectionLoader label="Checking claims..." />
-          </div>
-        ) : pendingPayments.length > 0 ? (
-          <Link
-            href="/app/claim"
-            className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[22px] border border-[#58f2b1]/14 bg-[#58f2b1]/7 px-4 py-3.5 transition hover:border-[#58f2b1]/24 hover:bg-[#58f2b1]/10"
-          >
-            <div className="min-w-0">
-              <div className="text-[0.72rem] uppercase tracking-[0.18em] text-[#7dffd9]/72">Pending claims</div>
-              <div className="mt-1 text-sm font-medium leading-6 text-text">
-                You have {pendingPayments.length} unclaimed {pendingPayments.length === 1 ? "payment" : "payments"} waiting.
-              </div>
-              <div className="mt-1 text-[0.78rem] text-text/52">Tap to review and continue claim flow.</div>
-            </div>
-            <div className="grid justify-items-end gap-2">
-              <span className="rounded-full border border-white/10 px-3 py-1.5 text-[0.72rem] font-medium text-text/84">Review</span>
-              <div className="text-right">
-                <div className="text-[0.68rem] uppercase tracking-[0.16em] text-text/38">Value</div>
-                <div className="mt-1 text-sm font-semibold text-text">{formatPaymentUsd(totalPendingUsd)}</div>
-              </div>
-            </div>
-          </Link>
-        ) : null}
-
-        <div className="grid grid-cols-3 gap-4 px-2">
-          <Link href="/app/send" className="text-center">
-            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-2xl border border-accent-border bg-pop-bg bg-accent-soft text-text  shadow-softbox  transition button">
-              <SendIcon size={22} className="text-current" />
-            </div>
-            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-text">Send</div>
-          </Link>
-          <Link href="/app/claim" className="text-center">
-            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-2xl border border-accent-border bg-pop-bg bg-accent-soft text-text  shadow-softbox  transition button">
-              <ClaimIcon size={22} className="text-current" />
-            </div>
-            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-text">Claim</div>
-          </Link>
-          <Link href="/app/settings" className="text-center">
-            <div className="mx-auto mb-3 grid h-13 w-13 place-items-center rounded-2xl border border-accent-border bg-pop-bg bg-accent-soft text-text  shadow-softbox  transition button">
-              <SettingsIcon size={22} className="text-current" />
-            </div>
-            <div className="text-[0.92rem] font-semibold tracking-[-0.02em] text-text">Settings</div>
-          </Link>
-        </div>
-
-        <section className="mb-6">
-          <div className="tl-panel tl-scanline relative overflow-hidden rounded-2xl pb-0 text-sm">
-            <div className="p-3 sm:p-3.5">
-              <div className="mt-1 mb-3 flex items-center justify-between gap-3">
-                <div className="flex flex-col">
-                  <h2 className="font-semibold text-sm sm:text-base tracking-[-0.016em] text-[var(--text)]">Recent activity</h2>
-                  <p className="tl-text-muted leading-5 text-xs sm:text-sm">Transfers, claims, releases, and WhatsApp delivery status.</p>
-                </div>
-              </div>
-
-              <div className="tl-chain-divider mb-3">
-                <span>Chain Log</span>
-              </div>
-
-              <div className="space-y-3">
+                {/* PENDING CLAIMS */}
                 {loading ? (
-                  <>
-                    {[0, 1, 2].map((index) => (
-                      <div key={index} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 bg-surface/1  
-                      px-3 py-3 tl-field">
-                        <div className="h-12 w-12 rounded-[18px] bg-pop-bg" />
-                        <div className="space-y-2">
-                          <div className="h-3.5 w-24 rounded-full bg-pop-bg" />
-                          <div className="h-3 w-36 rounded-full bg-pop-bg" />
-                          <div className="h-2.5 w-20 rounded-full bg-pop-bg" />
+                    <div className="tl-field flex min-h-[68px] items-center justify-between gap-3 rounded-[22px] px-4 py-3.5">
+                        <div className="space-y-2.5">
+                            <div className="h-2.5 w-20 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                            <div className="h-3.5 w-44 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                         </div>
-                        <div className="justify-self-end space-y-2">
-                          {/* <div className="h-6 w-16 rounded-full bg-pop-bg" /> */}
-                          <div className="h-6 w-12 rounded-full bg-pop-bg" />
+                        <SectionLoader label="Checking claims..." />
+                    </div>
+                ) : pendingPayments.length > 0 ? (
+                    <Link href="/app/claim" className="tl-field group flex items-center justify-between rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+                        <div className="min-w-0 flex-1">
+                            <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#7dffd9]/72">Pending claims</div>
+                            <div className="mt-1 text-[0.84rem] font-medium text-[var(--text)]">
+                                {pendingPayments.length} unclaimed {pendingPayments.length === 1 ? "payment" : "payments"}
+                            </div>
                         </div>
-                      </div>
-                    ))}
-                  </>
-                ) : paymentHistory.length === 0 ? (
-                  <div className="tl-field rounded-[16px] px-4 py-5 text-sm tl-text-muted">No transfer activity yet.</div>
-                ) : (
-                  paymentHistory.slice(0, 10).map((payment) => (
-                    <PaymentActivityCard
-                      key={payment.id}
-                      payment={payment}
-                      currentUserId={user.id}
-                      onClick={(paymentId) => router.push(`/app/activity/${paymentId}`)}
-                    />
-                  ))
-                )}
-              </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[0.84rem] font-semibold text-[var(--text)]">{formatPaymentUsd(totalPendingUsd)}</span>
+                            <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                        </div>
+                    </Link>
+                ) : null}
 
-              {!loading ? (
-                <Link
-                  href="/app/activity"
-                  className="tl-button-secondary mt-4 block w-full rounded-2xl px-4 py-3 text-center text-sm font-medium transition button"
-                >
-                  View all activity
-                </Link>
-              ) : null}
-            </div>
-          </div>
-
-        </section>
-      </section>
-
-      {balanceInfoOpen ? (
-        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
-          <div
-            className="tl-modal w-full rounded-t-[28px] px-5 pb-6 pt-5 md:max-w-[430px] md:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Balance details</h2>
-                <p className="tl-text-muted text-sm">Your total combines what is already spendable and what is still waiting in escrow.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setBalanceInfoOpen(false)}
-                className="tl-button-secondary rounded-full px-3 py-2 text-xs font-medium"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="tl-field rounded-[22px] px-4 py-4">
-                <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Total balance</div>
-                <div className="mt-2 text-base font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(combinedVisibleBalanceUsd) : "****"}</div>
-              </div>
-
-              <div className="tl-field rounded-[22px] px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Connected wallet</div>
-                    <div className="mt-2 text-base font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****"}</div>
-                  </div>
-                  <div className="tl-text-muted text-right text-[0.76rem]">
-                    {walletAddress ? shortenAddress(walletAddress) : "Not connected"}
-                  </div>
+                {/* ACTIVITY */}
+                <div>
+                    <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Activity</div>
+                    <div className="space-y-2">
+                        {loading ? (
+                            <>
+                                {[0, 1, 2].map((i) => (
+                                    <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+                                        <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
+                                        <div className="space-y-2">
+                                            <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                                            <div className="h-2.5 w-36 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                                        </div>
+                                        <div className="h-5 w-12 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                                    </div>
+                                ))}
+                            </>
+                        ) : paymentHistory.length === 0 ? (
+                            <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No transfer activity yet.</div>
+                        ) : (
+                            paymentHistory.slice(0, 6).map((payment) => (
+                                <PaymentActivityCard key={payment.id} payment={payment} currentUserId={user.id} onClick={(id) => router.push(`/app/activity/${id}`)} />
+                            ))
+                        )}
+                    </div>
+                    {!loading && paymentHistory.length > 0 ? (
+                        <Link href="/app/activity" className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+                            <span className="text-[0.84rem] font-medium text-[var(--text)]">View all activity</span>
+                            <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                    ) : null}
                 </div>
-              </div>
+            </section>
 
-              <div className="tl-field rounded-[22px] px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Unclaimed escrow</div>
-                    <div className="mt-2 text-base font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</div>
-                  </div>
-                  <div className="tl-text-muted text-right text-[0.76rem]">
-                    {pendingBalanceSummary.claimableCount} {pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}
-                  </div>
+            {/* BALANCE DETAILS MODAL */}
+            {balanceInfoOpen ? (
+                <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
+                    <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+                        <div className="mb-5 flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Balance details</h2>
+                                <p className="tl-text-muted mt-1 text-[0.82rem] leading-relaxed">Spendable balance plus funds waiting in escrow.</p>
+                            </div>
+                            <button type="button" onClick={() => setBalanceInfoOpen(false)} className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 text-xs font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]">Close</button>
+                        </div>
+                        <div className="space-y-2.5">
+                            <div className="tl-field rounded-[18px] px-4 py-3.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[0.78rem] text-[var(--text-soft)]">Total</span>
+                                    <span className="text-[0.92rem] font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(combinedVisibleBalanceUsd) : "****"}</span>
+                                </div>
+                            </div>
+                            <div className="tl-field rounded-[18px] px-4 py-3.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[0.78rem] text-[var(--text-soft)]">Wallet</span>
+                                    <div className="text-right">
+                                        <span className="block text-[0.84rem] font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****"}</span>
+                                        <span className="block text-[0.68rem] text-[var(--text-soft)]">{walletAddress ? shortenAddress(walletAddress) : "Not connected"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="tl-field rounded-[18px] px-4 py-3.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[0.78rem] text-[var(--text-soft)]">Escrow</span>
+                                    <div className="text-right">
+                                        <span className="block text-[0.84rem] font-semibold text-[var(--text)]">{balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
+                                        <span className="block text-[0.68rem] text-[var(--text-soft)]">{pendingBalanceSummary.claimableCount} {pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </AppMobileShell>
-  );
+            ) : null}
+        </AppMobileShell>
+    );
 }

@@ -15,7 +15,6 @@ export {
 export type {
   BlockchainExecutionMode,
   ClaimFeeEstimate,
-  ExpireEscrowResult,
   SenderTransferFeeEstimate,
   SupportedWalletToken,
 } from "@/app/blockchain/solana-core";
@@ -23,8 +22,9 @@ export {
   confirmEscrowPayment,
   estimateClaimFee,
   estimateSenderTransferCost,
-  expireEscrowPayment,
   listSupportedWalletTokens,
+  markPaymentExpiredOnChain,
+  prepareExpiredRefundClaim,
+  prepareEscrowClaim,
   prepareEscrowPayment,
-  releaseEscrow,
 } from "@/app/blockchain/solana-payments";

@@ -1,16 +1,36 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════
+   TrustLink — Refined Global Theme
+   Improvements: spring curves, font smoothing, focus rings,
+   selection colors, reduced-motion, color-scheme, overscroll,
+   smooth scroll, theme transition layer
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #e9efed;
+  /* ── Motion tokens ──────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --dur-fast: 120ms;
+  --dur-normal: 160ms;
+  --dur-enter: 280ms;
+  --dur-exit: 200ms;
+
+  color-scheme: light;
+
+  --bg: #fbfff7;
   --bg-elevated: #fbfcf8;
   --panel: #fbfcf8;
   --panel-soft: #eff3ec;
   --surface: rgba(251, 252, 248, 0.9);
   --surface-border: rgba(89, 126, 110, 0.12);
-  --text: #152019;
+  --text: #0c1a10;
   --primary: #ffffff;
-  --muted: rgba(76, 95, 100, 0.78);
-  --accent: #7fe8c8;
+  --muted: rgba(22, 52, 34, 0.82);
+  --accent: #55c3a2;
   --accent-deep: #2a8d73;
   --primary-accent: #9fdccc;
   --accent-icon: #c6efe2;
@@ -36,15 +56,14 @@
     linear-gradient(135deg, #fbfcf8, var(--surface));
   --field-border: rgba(39, 71, 63, 0.09);
   --surface-soft: rgba(240, 244, 238, 0.94);
-  --text-soft: rgba(21, 32, 25, 0.72);
-  --text-faint: rgba(21, 32, 25, 0.46);
+  --text-soft: rgba(10, 28, 18, 0.78);
+  --text-faint: rgba(10, 28, 18, 0.87);
   --icon-soft: rgba(42, 141, 115, 0.08);
   --accent-soft: rgba(127, 232, 200, 0.2);
   --accent-border: rgba(42, 141, 115, 0.18);
   --danger-soft: rgba(255, 127, 127, 0.14);
 
-  --pop-bg:
-    /* radial-gradient(circle at top, rgba(127, 232, 200, 0.12), transparent 55%), */ linear-gradient(
+  --pop-bg: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.28) 0%,
     rgba(255, 255, 255, 0.18) 100%
@@ -56,7 +75,9 @@
 }
 
 .dark {
-  --bg: #111b1c;
+  color-scheme: dark;
+
+  --bg: #091309;
   --bg-elevated: #101717;
   --panel: #141c1d;
   --panel-soft: #182324;
@@ -89,7 +110,7 @@
   --dock: rgba(12, 18, 18, 0.92);
   --dock-border: rgba(255, 255, 255, 0.08);
   --card-strong: rgba(15, 22, 23, 0.9);
-  --field: rgba(0, 0, 0, 0.2);
+  --field: #111b1c;
   --field-strong:
     radial-gradient(circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
     linear-gradient(135deg, #111722, var(--surface));
@@ -145,10 +166,6 @@
   --color-text-soft: var(--text-soft);
   --color-text-faint: var(--text-faint);
   --color-icon-soft: var(--icon-soft);
-  /* --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px); */
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
   --color-danger-soft: var(--danger-soft);
@@ -166,12 +183,31 @@
   --background-image-pop-bg: var(--pop-bg);
   --background-image-accent-gradient: var(--accent-gradient);
 
-  /* ✅ shadows */
   --shadow-softbox: var(--shadow);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   🆕 GLOBAL SMOOTHNESS LAYER
+   ═══════════════════════════════════════════════════════════════ */
+
 * {
   box-sizing: border-box;
+}
+
+html {
+  /* Font smoothing — the biggest single improvement */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
@@ -184,25 +220,75 @@ body {
   color: var(--text);
   font-family:
     var(--font-body), "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  background:
-    radial-gradient(circle at top, rgba(127, 232, 200, 0.14), transparent 30%),
-    radial-gradient(
-      circle at bottom right,
-      rgba(159, 220, 204, 0.2),
-      transparent 26%
-    ),
-    linear-gradient(180deg, #fcfdf9 0%, #f1f5ef 48%, #e9f0e8 100%);
+  background: radial-gradient(
+    circle at top,
+    rgba(127, 232, 200, 0.14),
+    transparent 30%
+  );
 }
 
 .dark body {
-  background:
-    radial-gradient(circle at top, rgba(88, 242, 177, 0.16), transparent 30%),
-    radial-gradient(
-      circle at bottom right,
-      rgba(69, 128, 255, 0.18),
-      transparent 26%
-    ),
-    linear-gradient(180deg, #06101c 0%, #091320 48%, #08111c 100%);
+  background: radial-gradient(
+    circle at top,
+    rgba(88, 242, 177, 0.16),
+    transparent 30%
+  );
+}
+
+/* 🆕 Branded text selection */
+::selection {
+  background: rgba(85, 195, 162, 0.28);
+  color: var(--text);
+}
+
+.dark ::selection {
+  background: rgba(118, 255, 216, 0.3);
+  color: var(--text);
+}
+
+/* 🆕 Global focus-visible ring (keyboard nav only, not clicks) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* 🆕 Smooth dark/light theme transitions */
+body,
+body *,
+body *::before,
+body *::after {
+  transition-property:
+    color, background-color, border-color, box-shadow, opacity;
+  transition-duration: 0ms;
+  transition-timing-function: var(--ease-smooth);
+}
+
+/* Enable theme transitions only when toggling (add .theme-transition to body via JS) */
+body.theme-transition,
+body.theme-transition *,
+body.theme-transition *::before,
+body.theme-transition *::after {
+  transition-duration: 320ms !important;
+}
+
+/* 🆕 Accessibility: respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 a {
@@ -220,13 +306,18 @@ select {
   appearance: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT SHELLS
+   ═══════════════════════════════════════════════════════════════ */
+
 .tl-topbar {
   border-bottom: 1px solid var(--surface-border);
   background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
   backdrop-filter: blur(20px);
+  /* 🆕 GPU-accelerated for smoother blur */
+  will-change: backdrop-filter;
 }
 
-.tl-sidebar,
 .tl-phone-frame,
 .tl-panel,
 .tl-modal {
@@ -248,15 +339,12 @@ select {
 }
 
 .tl-phone-screen {
-  background: var(--bg)
-    /* radial-gradient(circle at 16% 12%, var(--accent-soft), transparent 22%),
-    radial-gradient(
-      circle at 84% 10%,
-      rgba(255, 255, 255, 0.08),
-      transparent 20%
-    ), */
-    var(--phone-screen);
+  background: var(--bg) var(--phone-screen);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBAR SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
 
 .tl-scrollbar-hidden {
   -ms-overflow-style: none;
@@ -303,9 +391,10 @@ select {
     background: transparent;
     border-radius: 999px;
     border: 1px solid transparent;
+    /* 🆕 spring curve for scrollbar reveal */
     transition:
-      background 180ms ease,
-      border-color 180ms ease;
+      background var(--dur-normal) var(--ease-smooth),
+      border-color var(--dur-normal) var(--ease-smooth);
   }
 
   .tl-scrollbar-mobile-hidden:hover {
@@ -334,6 +423,10 @@ select {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL FADE EDGES
+   ═══════════════════════════════════════════════════════════════ */
+
 .tl-scroll-fade {
   position: relative;
 }
@@ -347,7 +440,8 @@ select {
   height: 22px;
   pointer-events: none;
   z-index: 30;
-  transition: opacity 180ms ease;
+  /* 🆕 smoother fade reveal */
+  transition: opacity var(--dur-normal) var(--ease-smooth);
 }
 
 .tl-scroll-fade::before {
@@ -373,6 +467,10 @@ select {
 .tl-scroll-fade.is-scrolled::before {
   opacity: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════ */
 
 .tl-text-muted {
   color: var(--text-faint);
@@ -414,11 +512,14 @@ select {
   color: var(--accent);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   BUTTONS — with spring curves
+   ═══════════════════════════════════════════════════════════════ */
+
 .tl-button-primary {
   color: #04110a;
   background: linear-gradient(135deg, var(--accent), #c6efe2);
   box-shadow: var(--shadow);
-
   font-size: 0.875rem;
   line-height: calc(1.25 / 0.875);
   font-weight: 600;
@@ -433,9 +534,7 @@ select {
       rgba(255, 255, 255, 0.07) 0%,
       rgba(255, 255, 255, 0.035) 100%
     );
-
   border: 1px solid var(--accent-border);
-
   font-size: 0.875rem;
   line-height: calc(1.25 / 0.875);
   font-weight: 600;
@@ -456,6 +555,10 @@ select {
   border: 1px solid var(--field-border);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   BALANCE DISPLAY
+   ═══════════════════════════════════════════════════════════════ */
+
 .tl-balance-readout {
   font-family:
     var(--font-display-face), "Aptos Display", "Segoe UI Variable Display",
@@ -473,6 +576,10 @@ select {
     inset 0 -1px 0 rgba(0, 0, 0, 0.1),
     0 1px 4px color-mix(in srgb, var(--accent-deep) 6%, transparent);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   OVERLAY + DECORATIVE
+   ═══════════════════════════════════════════════════════════════ */
 
 .tl-overlay {
   background: var(--overlay);
@@ -525,6 +632,10 @@ select {
   );
   opacity: 0.45;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TACTICAL / MONOSPACE TYPE
+   ═══════════════════════════════════════════════════════════════ */
 
 .tl-meta-label {
   font-family:
@@ -590,13 +701,17 @@ select {
   border-radius: 1px;
 }
 
-/* Animation keyframes for interactive elements */
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATION KEYFRAMES
+   🆕 Improved with spring-like curves
+   ═══════════════════════════════════════════════════════════════ */
+
 @keyframes buttonPress {
   0% {
     transform: scale(1);
   }
-  50% {
-    transform: scale(0.95);
+  40% {
+    transform: scale(0.96);
   }
   100% {
     transform: scale(1);
@@ -605,10 +720,12 @@ select {
 
 @keyframes fadeIn {
   from {
-    opacity: 0.7;
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -617,12 +734,40 @@ select {
     box-shadow: 0 2px 7px rgba(42, 141, 115, 0.056);
   }
   50% {
-    box-shadow: 0 3px 8px rgba(42, 141, 115, 0.07);
+    box-shadow: 0 3px 10px rgba(42, 141, 115, 0.08);
   }
   100% {
     box-shadow: 0 2px 7px rgba(42, 141, 115, 0.056);
   }
 }
+
+/* 🆕 Slide up for sheets/modals */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🆕 Scale in for toasts */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════════════════════ */
 
 .app-shell {
   min-height: 100vh;
@@ -632,6 +777,10 @@ select {
 .app-shell--dashboard {
   padding: 1rem 1rem 6.8rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SITE HEADER
+   ═══════════════════════════════════════════════════════════════ */
 
 .site-header {
   position: fixed;
@@ -678,6 +827,8 @@ select {
 .nav-link {
   color: var(--muted);
   font-size: 0.95rem;
+  /* 🆕 spring curve transition */
+  transition: color var(--dur-normal) var(--ease-smooth);
 }
 
 .nav-link.is-active,
@@ -685,19 +836,22 @@ select {
   color: var(--text);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON SYSTEM — spring curves throughout
+   ═══════════════════════════════════════════════════════════════ */
+
 .button {
   position: relative;
-  /* color: inherit; */
-  /* border: none; */
   overflow: hidden;
   cursor: pointer;
   white-space: nowrap;
+  /* 🆕 spring-feel transitions */
   transition:
-    transform 140ms ease,
-    opacity 140ms ease,
-    background 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease;
+    transform var(--dur-fast) var(--ease-spring),
+    opacity var(--dur-normal) var(--ease-smooth),
+    background var(--dur-normal) var(--ease-smooth),
+    border-color var(--dur-normal) var(--ease-smooth),
+    box-shadow var(--dur-normal) var(--ease-smooth);
 }
 
 .button--compact {
@@ -711,12 +865,11 @@ select {
   inset: 0;
   border-radius: inherit;
   backdrop-filter: blur(0px);
-  /* background: rgba(255, 255, 255, 0); */
   opacity: 0;
   transition:
-    opacity 180ms ease,
-    background 180ms ease,
-    backdrop-filter 180ms ease;
+    opacity var(--dur-normal) var(--ease-smooth),
+    background var(--dur-normal) var(--ease-smooth),
+    backdrop-filter var(--dur-enter) var(--ease-out-expo);
   z-index: 1;
   pointer-events: none;
 }
@@ -733,10 +886,9 @@ select {
 }
 
 .button:active {
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
-/* Ensure text stays on top of the blur */
 .button span {
   position: relative;
   z-index: 2;
@@ -755,11 +907,14 @@ select {
 }
 
 .button--primary:hover {
-  box-shadow: 0 3px 8px rgba(42, 141, 115, 0.07);
+  box-shadow: 0 3px 10px rgba(42, 141, 115, 0.08);
+  /* 🆕 subtle lift */
+  transform: translateY(-1px);
 }
 
 .button--primary:active {
   box-shadow: 0 1px 4px rgba(42, 141, 115, 0.056);
+  transform: translateY(0);
 }
 
 .button--secondary {
@@ -784,14 +939,18 @@ select {
 }
 
 .pop-bg {
-  background-color:
-    (circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
+  background:
+    radial-gradient(circle at top, rgba(118, 255, 216, 0.08), transparent 55%),
     linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.05) 0%,
       rgba(255, 255, 255, 0.025) 100%
     );
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO + AUTH + DASHBOARD LAYOUTS
+   ═══════════════════════════════════════════════════════════════ */
 
 .hero-block,
 .auth-layout,
@@ -881,17 +1040,9 @@ select {
   margin-top: 1.4rem;
 }
 
-/* .device-frame {
-  display: grid;
-  gap: 1rem;
-  min-height: 100%;
-  border-radius: 20px;
-  padding: 1rem;
-  background:
-    linear-gradient(180deg, rgba(18, 32, 52, 0.98), rgba(9, 17, 28, 0.96)),
-    var(--panel);
-  border: 1px solid rgba(132, 163, 204, 0.16);
-} */
+/* ═══════════════════════════════════════════════════════════════
+   DEVICE / CARD PRIMITIVES
+   ═══════════════════════════════════════════════════════════════ */
 
 .device-header,
 .device-card,
@@ -996,6 +1147,10 @@ select {
   line-height: 1.55;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   AUTH SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
 .auth-layout {
   display: grid;
   grid-template-columns: 0.95fr 1.05fr;
@@ -1058,6 +1213,10 @@ select {
   cursor: pointer;
   color: var(--muted);
   background: transparent;
+  /* 🆕 smooth tab switch */
+  transition:
+    color var(--dur-normal) var(--ease-smooth),
+    background var(--dur-enter) var(--ease-out-expo);
 }
 
 .auth-switch button.is-active {
@@ -1108,6 +1267,10 @@ select {
   line-height: 1.6;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   FORM FIELDS
+   ═══════════════════════════════════════════════════════════════ */
+
 .stack-form {
   display: grid;
   gap: 1rem;
@@ -1127,12 +1290,25 @@ select {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   outline: none;
+  /* 🆕 smooth focus with spring */
+  transition:
+    border-color var(--dur-normal) var(--ease-smooth),
+    box-shadow var(--dur-enter) var(--ease-out-expo);
 }
 
 .field-block input:focus,
 .field-block select:focus {
   border-color: rgba(88, 242, 177, 0.4);
   box-shadow: 0 0 0 3px rgba(88, 242, 177, 0.1);
+}
+
+/* 🆕 autofill styling to match theme */
+.field-block input:-webkit-autofill,
+.field-block input:-webkit-autofill:hover,
+.field-block input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface) inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .field-inline {
@@ -1151,14 +1327,16 @@ select {
 .notice--success {
   color: var(--accent);
 }
-
 .notice--error {
   color: var(--danger);
 }
-
 .notice--warning {
   color: var(--warning);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════════════ */
 
 .dashboard-wrap {
   display: grid;
@@ -1175,6 +1353,10 @@ select {
 .wallet-home--premium {
   place-items: center;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE FRAME
+   ═══════════════════════════════════════════════════════════════ */
 
 .phone-frame {
   width: min(430px, 100%);
@@ -1213,6 +1395,8 @@ select {
   gap: 1rem;
   position: relative;
   overflow: hidden;
+  /* 🆕 contain scroll inside phone frame */
+  overscroll-behavior: contain;
 }
 
 .phone-topbar {
@@ -1246,6 +1430,10 @@ select {
   font-size: 0.92rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   AVATAR
+   ═══════════════════════════════════════════════════════════════ */
+
 .avatar-pill {
   width: 54px;
   height: 54px;
@@ -1256,7 +1444,8 @@ select {
   color: #03110d;
   background: linear-gradient(135deg, #6bffd0, #bfffe8);
   box-shadow: 0 8px 20px rgba(88, 242, 177, 0.2);
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
   cursor: pointer;
 }
 
@@ -1268,8 +1457,12 @@ select {
 .avatar-pill:active {
   box-shadow: 0 4px 12px rgba(88, 242, 177, 0.12);
   transform: translateY(0);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TOASTS
+   ═══════════════════════════════════════════════════════════════ */
 
 .mini-toast {
   padding: 0.8rem 0.95rem;
@@ -1278,19 +1471,23 @@ select {
   line-height: 1.45;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
+  /* 🆕 animate in */
+  animation: scaleIn var(--dur-enter) var(--ease-out-expo);
 }
 
 .mini-toast--success {
   color: var(--accent);
 }
-
 .mini-toast--error {
   color: var(--danger);
 }
-
 .mini-toast--warning {
   color: var(--warning);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   METAL CARD (payment card)
+   ═══════════════════════════════════════════════════════════════ */
 
 .metal-card {
   position: relative;
@@ -1377,6 +1574,10 @@ select {
   text-align: right;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   QUICK ACTIONS
+   ═══════════════════════════════════════════════════════════════ */
+
 .quick-actions--wallet {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1393,7 +1594,8 @@ select {
   justify-items: center;
   gap: 0.45rem;
   cursor: pointer;
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
 }
 
 .quick-action:hover {
@@ -1405,7 +1607,7 @@ select {
 .quick-action:active {
   background: rgba(255, 255, 255, 0.05);
   transform: translateY(0);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .quick-action__icon {
@@ -1418,7 +1620,8 @@ select {
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  transition: background 140ms ease;
+  /* 🆕 smooth icon bg */
+  transition: background var(--dur-normal) var(--ease-smooth);
 }
 
 .quick-action:hover .quick-action__icon {
@@ -1428,6 +1631,10 @@ select {
 .quick-action strong {
   font-size: 0.88rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT STRIP
+   ═══════════════════════════════════════════════════════════════ */
 
 .stat-strip {
   display: grid;
@@ -1442,7 +1649,8 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.06);
   display: grid;
   gap: 0.25rem;
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
   cursor: pointer;
 }
 
@@ -1453,7 +1661,7 @@ select {
 
 .stat-pill:active {
   background: rgba(255, 255, 255, 0.05);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .stat-pill span {
@@ -1466,6 +1674,10 @@ select {
 .stat-pill strong {
   font-size: 1.2rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   WALLET + ACTIVITY CARDS
+   ═══════════════════════════════════════════════════════════════ */
 
 .wallet-card,
 .activity-card {
@@ -1543,7 +1755,8 @@ select {
   cursor: pointer;
   display: grid;
   gap: 0.3rem;
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
 }
 
 .action-button:hover {
@@ -1555,7 +1768,7 @@ select {
 .action-button:active {
   background: rgba(255, 255, 255, 0.05);
   transform: translateY(0);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .action-button strong {
@@ -1591,6 +1804,10 @@ select {
 .wallet-stat strong {
   font-size: 1.35rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ACTIVITY LIST
+   ═══════════════════════════════════════════════════════════════ */
 
 .activity-card {
   padding: 1.15rem;
@@ -1630,7 +1847,6 @@ select {
 .activity-icon.is-send {
   color: #8cc6ff;
 }
-
 .activity-icon.is-receive {
   color: var(--accent);
 }
@@ -1643,7 +1859,8 @@ select {
   padding: 0.95rem 0;
   border-bottom: 1px solid rgba(132, 163, 204, 0.1);
   cursor: pointer;
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
   border-radius: 12px;
   margin: 0 -0.5rem;
   padding-left: 0.5rem;
@@ -1657,7 +1874,7 @@ select {
 
 .activity-item:active {
   background: rgba(255, 255, 255, 0.02);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .activity-item:last-child {
@@ -1670,7 +1887,8 @@ select {
   border-radius: 999px;
   text-align: center;
   font-size: 0.8rem;
-  transition: all 140ms ease;
+  /* 🆕 spring scale on hover */
+  transition: all var(--dur-normal) var(--ease-spring);
 }
 
 .activity-item:hover .activity-badge {
@@ -1719,15 +1937,17 @@ select {
 .activity-status.pending {
   color: var(--warning);
 }
-
 .activity-status.accepted {
   color: var(--accent);
 }
-
 .activity-status.cancelled,
 .activity-status.expired {
   color: var(--danger);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTTOM SHEET
+   ═══════════════════════════════════════════════════════════════ */
 
 .sheet-overlay {
   position: fixed;
@@ -1738,7 +1958,13 @@ select {
   background: rgba(3, 8, 14, 0.7);
   backdrop-filter: blur(12px);
   padding: 1rem;
+  /* 🆕 fade in */
+  animation: fadeIn var(--dur-enter) var(--ease-out-expo);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTTOM DOCK
+   ═══════════════════════════════════════════════════════════════ */
 
 .bottom-dock {
   position: fixed;
@@ -1766,7 +1992,8 @@ select {
   gap: 0.2rem;
   padding: 0.36rem 0.1rem;
   cursor: pointer;
-  transition: all 140ms ease;
+  /* 🆕 spring curve */
+  transition: all var(--dur-normal) var(--ease-spring);
   border-radius: 16px;
 }
 
@@ -1776,14 +2003,15 @@ select {
 }
 
 .bottom-dock__item:active {
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .bottom-dock__item span {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  transition: all 140ms ease;
+  /* 🆕 smooth color transitions */
+  transition: all var(--dur-normal) var(--ease-smooth);
 }
 
 .bottom-dock__item strong {
@@ -1806,7 +2034,8 @@ select {
   background: linear-gradient(135deg, var(--accent), #94ffe6);
   color: #05110e;
   box-shadow: 0 16px 34px rgba(88, 242, 177, 0.24);
-  transition: all 200ms ease;
+  /* 🆕 spring curve for primary action */
+  transition: all var(--dur-normal) var(--ease-spring);
 }
 
 .bottom-dock__item--primary:hover {
@@ -1819,6 +2048,10 @@ select {
   box-shadow: 0 8px 20px rgba(88, 242, 177, 0.16);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   BOTTOM SHEET CARD
+   ═══════════════════════════════════════════════════════════════ */
+
 .sheet-card {
   width: min(560px, 100%);
   max-height: min(85vh, 720px);
@@ -1830,6 +2063,9 @@ select {
   padding: 1.2rem;
   display: grid;
   gap: 1rem;
+  /* 🆕 slide up animation + overscroll contain */
+  animation: slideUp var(--dur-enter) var(--ease-out-expo);
+  overscroll-behavior: contain;
 }
 
 .sheet-actions {
@@ -1862,6 +2098,10 @@ select {
   color: var(--text);
   font-size: 0.92rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD HERO
+   ═══════════════════════════════════════════════════════════════ */
 
 .dashboard-hero {
   display: grid;
@@ -1933,7 +2173,8 @@ select {
   padding: 0.95rem 1rem;
   align-items: center;
   cursor: pointer;
-  transition: all 140ms ease;
+  /* 🆕 spring curve for card interactions */
+  transition: all var(--dur-normal) var(--ease-spring);
 }
 
 .list-card:hover,
@@ -1946,7 +2187,7 @@ select {
 .list-card:active,
 .payment-card:active {
   background: rgba(255, 255, 255, 0.04);
-  animation: buttonPress 200ms ease;
+  animation: buttonPress 180ms var(--ease-spring);
 }
 
 .list-card strong,
@@ -1978,7 +2219,8 @@ select {
   border-radius: 999px;
   background: var(--accent);
   box-shadow: 0 0 0 6px rgba(88, 242, 177, 0.12);
-  transition: box-shadow 140ms ease;
+  /* 🆕 smooth glow pulse on hover */
+  transition: box-shadow var(--dur-normal) var(--ease-smooth);
 }
 
 .payment-card:hover .status-dot {
@@ -2011,6 +2253,10 @@ select {
 .claim-footer {
   margin-top: 0.2rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ═══════════════════════════════════════════════════════════════ */
 
 @media (max-width: 980px) {
   .hero-block,

@@ -3,13 +3,13 @@ export const runtime = "nodejs";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { sanitizePaymentForViewer } from "@/app/services/payment-views";
-import { listPendingPaymentsForUser } from "@/app/services/payments";
+import { listLockedPaymentsForUser } from "@/app/services/payments";
 import { enrichPaymentsWithUsd } from "@/app/services/pricing";
 
 export async function GET(request: Request) {
   try {
     const authUser = requireAuthenticatedUser(request);
-    const payments = await listPendingPaymentsForUser(authUser.phoneNumber);
+    const payments = await listLockedPaymentsForUser(authUser.phoneNumber);
     const enrichedPayments = await enrichPaymentsWithUsd(payments);
     const safePayments = enrichedPayments.map((payment) => sanitizePaymentForViewer(payment, authUser));
     const totalPendingUsd = Number(

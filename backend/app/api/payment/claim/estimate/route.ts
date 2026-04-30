@@ -17,7 +17,8 @@ export async function POST(request: Request) {
 
     return ok({
       paymentId: result.payment.id,
-      walletAddress: result.receiverWalletAddress,
+      settlementWalletAddress: result.settlementWalletAddress,
+      paymentReceiverPublicKey: result.paymentReceiverPublicKey,
       estimate: result.estimate,
     });
   } catch (error) {

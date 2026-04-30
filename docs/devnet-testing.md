@@ -1,154 +1,127 @@
-# Devnet Testing Guide
+# Devnet Testing
 
-This guide explains how to get the assets needed to test TrustLink Pay on Solana Devnet and where TrustLink's supported test tokens are configured.
+## Goal
 
-## What To Fund For Testing
+Validate the hardened TrustLink Pay v3 escrow path:
 
-To test the current on-chain TrustLink escrow flow, you need:
+- create per-payment escrow PDA
+- verify manual claim with derivation proof and child signature
+- verify auto-claim after expiry
+- verify nonce replay protection
+- verify destination binding
 
-- Devnet SOL for wallet transaction fees
-- an allowlisted SPL test token such as devnet USDC
+## Program Surface
 
-Native `SOL` is useful for gas, but the real escrow flow is now built around SPL token mints that TrustLink explicitly allowlists.
+- `create_escrow_v3`
+- `claim_v3`
+- `auto_claim_v3`
 
-## Where TrustLink Supported Tokens Are Defined
+## Backend Surface
 
-TrustLink does not decide supported tokens by symbol.
+- `POST /api/escrow/create`
+- `POST /api/escrow/claim`
+- `POST /api/escrow/auto-claim`
 
-Supported test tokens are configured by mint address in the backend environment variable:
+## Manual Happy Path
 
-- `SOLANA_ALLOWED_SPL_TOKENS`
-- treasury and claim fee policy live in `backend/app/config/escrow.ts`
+1. Generate or load:
+   - sender wallet
+   - recipient master registry keypair
+   - recipient child keypair
+   - recipient destination wallet
+2. Compute:
+   - `recipient_child_hash = sha256(child_pubkey)`
+   - `auto_claim_dest_hash = sha256(destination_pubkey)`
+3. Create derivation proof over:
+   - `TLP_DERIVE_V1`
+   - `child_pubkey`
+   - `escrow_pubkey`
+   - `nonce`
+   - `expiry`
+   - destination
+4. Call `POST /api/escrow/create`.
+5. Sign claim payload with child key over:
+   - `TLP_CLAIM_V1`
+   - `escrow_pubkey`
+   - `nonce`
+   - `expiry`
+   - destination
+6. Call `POST /api/escrow/claim`.
+7. Prepend Ed25519 verification instructions for:
+   - derivation proof
+   - child claim proof
+8. Submit transaction.
+9. Confirm:
+   - destination token account received funds
+   - escrow account closed
+   - nonce PDA exists
 
-The backend reads that value here:
+## Auto-Claim Happy Path
 
-- `backend/app/lib/env.ts`
-- `backend/app/blockchain/solana.ts`
+1. Create escrow with a short expiry.
+2. Wait until `expiry_ts` passes.
+3. Call `POST /api/escrow/auto-claim`.
+4. Prepend Ed25519 verification instruction for derivation proof.
+5. Submit transaction.
+6. Confirm:
+   - approved auto-claim destination received funds
+   - escrow account closed
+   - nonce PDA exists
 
-Example:
+## Negative Tests
 
-```env
-SOLANA_ALLOWED_SPL_TOKENS=[{"mintAddress":"4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU","symbol":"USDC","name":"USD Coin","logo":"$","decimals":6}]
-```
+### Replay test
 
-That means:
+- submit a valid claim
+- submit the same claim again
+- expect nonce PDA collision or replay failure
 
-- only the listed mint addresses are treated as supported
-- token symbols are display metadata only
-- changing the allowlist requires updating the env var and restarting the backend
+### Forged derivation proof
 
-## Treasury And Fee Recovery Configuration
+- provide wrong `derivation_proof_sig`
+- expect `InvalidDerivationProof`
 
-TrustLink's fee recovery configuration is centralized in:
+### Wrong child key
 
-- `backend/app/config/escrow.ts`
+- provide child public key whose hash does not match escrow
+- expect `InvalidChildPublicKey`
 
-The values it reads are:
+### Destination substitution
 
-- `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
-- `TRUSTLINK_TREASURY_OWNER`
-- `TRUSTLINK_CLAIM_FEE_BPS`
-- `TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT`
+- sign proof for destination A
+- try to claim to destination B
+- expect destination mismatch or signature verification failure
 
-Example:
+### Premature auto-claim
 
-```env
-SOLANA_CLAIM_VERIFIER_SECRET_KEY=[1,2,3]
-TRUSTLINK_TREASURY_OWNER=YourTreasuryWalletPubkey
-TRUSTLINK_CLAIM_FEE_BPS=75
-TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT=100
-```
+- call `auto_claim_v3` before expiry
+- expect `AutoClaimNotReady`
 
-That example means:
+### Expired manual claim
 
-- TrustLink uses a 0.75% fee
-- the fee is capped at `100` token units for supported stablecoins
-- claim transactions are signed and fee-paid by the backend verifier wallet
-- token fee recovery goes to the configured treasury owner
+- call `claim_v3` after expiry
+- expect `ExpiredEscrow`
 
-## How To Get Devnet SOL
+## Verification Checklist
 
-In WSL:
+- escrow PDA matches seeds
+- vault authority PDA matches seeds
+- vault token account mint matches escrow mint
+- nonce PDA is unique per `(master_registry_pubkey, nonce)`
+- proofs are bound to destination
+- platform private key alone cannot release funds
 
-```bash
-solana config set --url https://api.devnet.solana.com
-solana airdrop 2
-solana balance
-```
+## Current Verification Status
 
-If the public Devnet faucet rate-limits you, retry later or use your preferred Devnet RPC and faucet workflow.
+What is already in the repo:
 
-## How To Get Devnet USDC
+- Anchor v3 escrow account and nonce account definitions
+- Anchor v3 create/claim/auto-claim entrypoints
+- Ed25519 instruction payload checking in the program
+- backend `/api/escrow/*` builders
 
-The easiest path is to use a Devnet faucet that supports Solana test stablecoins, then send the tokens to the same wallet you use inside TrustLink.
+What still deserves deeper integration testing:
 
-Suggested flow:
-
-1. copy your wallet address from Phantom, Solflare, Backpack, or your chosen Solana wallet
-2. use a Devnet USDC faucet
-3. confirm the USDC token shows in the wallet
-4. make sure the mint address is included in `SOLANA_ALLOWED_SPL_TOKENS`
-
-Current devnet USDC mint used by TrustLink docs:
-
-- `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
-
-## Future Sponsored Send Support
-
-The escrow program is now shaped to support a separate payer account on create_payment.
-
-That means a future TrustLink relayer can pay the SOL account-creation and transaction costs for senders while the sender still signs as the token owner.
-
-Current behavior remains:
-
-- sender still pays send-time SOL fees today
-- TrustLink verifier pays claim-time SOL fees today
-
-So this is future-ready contract support, not a live frontend feature yet.
-
-## Test Flow
-
-Once your wallet has Devnet SOL and an allowlisted SPL token:
-
-1. start the backend
-
-```bash
-cd backend
-npm install
-npm run db:init
-npm run dev
-```
-
-2. start the frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-3. connect a wallet in the app
-4. verify the receiver in TrustLink
-5. choose an allowlisted token
-6. create the escrow payment
-7. claim it from the receiver side
-
-## One-Time Escrow Config Setup
-
-Claim flow depends on the on-chain escrow config being initialized with the backend verifier wallet.
-
-Run this once from the backend directory after setting the correct verifier secret key in `.env.local`:
-
-```bash
-cd backend
-npm run escrow:init-config
-```
-
-This should not happen lazily during live claim requests.
-
-Recommended production pattern:
-
-- initialize config once
-- verify the expected verifier pubkey
-- keep the verifier wallet low-balance and backend-only
-
+- end-to-end client assembly of Ed25519 pre-instructions
+- real registry-side proof generation helpers
+- devnet fixture scripts for child-key derivation and proof creation

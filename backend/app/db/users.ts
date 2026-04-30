@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import type { UserRecord } from "@/app/types/payment";
 import { sql } from "@/app/db/client";
+import { generatePhoneIdentityPublicKey } from "@/app/lib/privacy-keys";
 import { normalizePhoneNumber } from "@/app/utils/phone";
+
+let userAutoclaimColumnReady: Promise<void> | null = null;
 
 function createGeneratedHandle() {
   return `user_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
@@ -11,6 +14,19 @@ function createGeneratedHandle() {
 function getSeedDisplayName(displayName?: string | null) {
   const normalizedDisplayName = displayName?.trim();
   return normalizedDisplayName ? normalizedDisplayName : null;
+}
+
+async function ensureUserAutoclaimColumn() {
+  if (!userAutoclaimColumnReady) {
+    userAutoclaimColumnReady = (async () => {
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receiver_autoclaim_enabled BOOLEAN NOT NULL DEFAULT false`;
+    })().catch((error) => {
+      userAutoclaimColumnReady = null;
+      throw error;
+    });
+  }
+
+  await userAutoclaimColumnReady;
 }
 
 async function insertUserProfile(params: {
@@ -24,6 +40,7 @@ async function insertUserProfile(params: {
   optInTimestamp?: Date | null;
   phoneVerifiedAt?: Date | null;
 }) {
+  await ensureUserAutoclaimColumn();
   const rows = (await sql`
     INSERT INTO users (
       phone_number,
@@ -32,6 +49,7 @@ async function insertUserProfile(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       phone_verified_at,
@@ -59,10 +77,17 @@ async function insertUserProfile(params: {
       id,
       phone_number,
       phone_hash,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature,
       display_name,
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       opt_out_timestamp,
@@ -78,16 +103,24 @@ async function insertUserProfile(params: {
 }
 
 export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRecord | null> {
+  await ensureUserAutoclaimColumn();
   const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
   const rows = (await sql`
     SELECT
       id,
       phone_number,
       phone_hash,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature,
       display_name,
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       opt_out_timestamp,
@@ -106,15 +139,23 @@ export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRe
 }
 
 export async function findUserById(id: string): Promise<UserRecord | null> {
+  await ensureUserAutoclaimColumn();
   const rows = (await sql`
     SELECT
       id,
       phone_number,
       phone_hash,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature,
       display_name,
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       opt_out_timestamp,
@@ -142,6 +183,7 @@ export async function findUserByHandle(handle: string): Promise<UserRecord | nul
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       opt_out_timestamp,
@@ -211,6 +253,7 @@ export async function upsertUserProfile(params: {
       trustlink_handle,
       pin_hash,
       wallet_address,
+      receiver_autoclaim_enabled,
       whatsapp_opted_in,
       opt_in_timestamp,
       opt_out_timestamp,
@@ -409,6 +452,44 @@ export async function updateUserWallet(params: {
   return rows[0];
 }
 
+export async function updateUserReceiverAutoclaimSetting(params: {
+  userId: string;
+  enabled: boolean;
+}): Promise<UserRecord> {
+  await ensureUserAutoclaimColumn();
+  const rows = (await sql`
+    UPDATE users
+    SET receiver_autoclaim_enabled = ${params.enabled}
+    WHERE id = ${params.userId}
+    RETURNING
+      id,
+      phone_number,
+      phone_hash,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      receiver_autoclaim_enabled,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+  `) as UserRecord[];
+
+  return rows[0];
+}
+
 export async function markUserWhatsAppOptIn(params: {
   phoneNumber: string;
   displayName?: string;
@@ -533,4 +614,107 @@ export async function setUserReferralAttribution(params: {
   `) as UserRecord[];
 
   return rows[0] ?? null;
+}
+
+export async function getUserKeyMaterialById(userId: string): Promise<{
+  id: string;
+  phone_identity_pubkey: string | null;
+  privacy_view_pubkey: string | null;
+  privacy_spend_pubkey: string | null;
+  settlement_wallet_pubkey: string | null;
+  recovery_wallet_pubkey: string | null;
+  binding_signature: string | null;
+} | null> {
+  const rows = (await sql`
+    SELECT
+      id,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature
+    FROM users
+    WHERE id = ${userId}
+    LIMIT 1
+  `) as Array<{
+    id: string;
+    phone_identity_pubkey: string | null;
+    privacy_view_pubkey: string | null;
+    privacy_spend_pubkey: string | null;
+    settlement_wallet_pubkey: string | null;
+    recovery_wallet_pubkey: string | null;
+    binding_signature: string | null;
+  }>;
+
+  return rows[0] ?? null;
+}
+
+export async function updateUserPublicKeyMaterial(params: {
+  userId: string;
+  phoneIdentityPublicKey: string;
+  privacyViewPublicKey: string;
+  privacySpendPublicKey: string;
+  settlementWalletPublicKey: string;
+  recoveryWalletPublicKey?: string | null;
+  bindingSignature?: string | null;
+}): Promise<{
+  id: string;
+  phone_identity_pubkey: string | null;
+  privacy_view_pubkey: string | null;
+  privacy_spend_pubkey: string | null;
+  settlement_wallet_pubkey: string | null;
+  recovery_wallet_pubkey: string | null;
+  binding_signature: string | null;
+}> {
+  const rows = (await sql`
+    UPDATE users
+    SET
+      phone_identity_pubkey = ${params.phoneIdentityPublicKey},
+      privacy_view_pubkey = ${params.privacyViewPublicKey},
+      privacy_spend_pubkey = ${params.privacySpendPublicKey},
+      settlement_wallet_pubkey = ${params.settlementWalletPublicKey},
+      recovery_wallet_pubkey = ${params.recoveryWalletPublicKey ?? null},
+      binding_signature = ${params.bindingSignature ?? null}
+    WHERE id = ${params.userId}
+    RETURNING
+      id,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature
+  `) as Array<{
+    id: string;
+    phone_identity_pubkey: string | null;
+    privacy_view_pubkey: string | null;
+    privacy_spend_pubkey: string | null;
+    settlement_wallet_pubkey: string | null;
+    recovery_wallet_pubkey: string | null;
+    binding_signature: string | null;
+  }>;
+
+  return rows[0];
+}
+
+export async function ensureUserPhoneIdentityPublicKey(userId: string, existingPublicKey?: string | null) {
+  if (existingPublicKey) {
+    return existingPublicKey;
+  }
+
+  const generatedPublicKey = generatePhoneIdentityPublicKey();
+  const rows = (await sql`
+    UPDATE users
+    SET phone_identity_pubkey = COALESCE(phone_identity_pubkey, ${generatedPublicKey})
+    WHERE id = ${userId}
+    RETURNING phone_identity_pubkey
+  `) as Array<{ phone_identity_pubkey: string | null }>;
+
+  const phoneIdentityPublicKey = rows[0]?.phone_identity_pubkey;
+  if (!phoneIdentityPublicKey) {
+    throw new Error("Could not assign a phone identity public key");
+  }
+
+  return phoneIdentityPublicKey;
 }

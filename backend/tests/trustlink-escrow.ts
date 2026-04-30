@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import {
   createMint,
   getAccount,
@@ -16,77 +16,44 @@ describe("trustlink_escrow", () => {
   const program = anchor.workspace.TrustlinkEscrow as Program;
   const sender = provider.wallet as anchor.Wallet;
   const verifier = anchor.web3.Keypair.generate();
-  const receiver = anchor.web3.Keypair.generate();
-  const outsider = anchor.web3.Keypair.generate();
-
-  const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => index + 1));
-  const receiverPhoneHash = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 255 - index));
+  const receiverSettlementWallet = anchor.web3.Keypair.generate();
+  const senderPhoneIdentity = anchor.web3.Keypair.generate().publicKey;
+  const receiverPhoneIdentity = anchor.web3.Keypair.generate().publicKey;
+  const secureReceiverAuthority = anchor.web3.Keypair.generate();
+  const refundReceiverAuthority = anchor.web3.Keypair.generate();
 
   let mint: anchor.web3.PublicKey;
   let senderTokenAccount: anchor.web3.PublicKey;
-  let receiverTokenAccount: anchor.web3.PublicKey;
-  let senderRefundTokenAccount: anchor.web3.PublicKey;
   let configPda: anchor.web3.PublicKey;
-  let paymentPda: anchor.web3.PublicKey;
-  let vaultAuthorityPda: anchor.web3.PublicKey;
-  let vaultTokenAccount: anchor.web3.PublicKey;
 
   before(async () => {
-    await provider.connection.requestAirdrop(verifier.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
-    await provider.connection.requestAirdrop(receiver.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
-    await provider.connection.requestAirdrop(outsider.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
-
-    mint = await createMint(
-      provider.connection,
-      sender.payer,
-      sender.publicKey,
-      null,
-      6
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(verifier.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL),
+      "confirmed",
+    );
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(
+        receiverSettlementWallet.publicKey,
+        2 * anchor.web3.LAMPORTS_PER_SOL,
+      ),
+      "confirmed",
     );
 
+    mint = await createMint(provider.connection, sender.payer, sender.publicKey, null, 6);
     senderTokenAccount = (
       await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, sender.publicKey)
     ).address;
-    receiverTokenAccount = (
-      await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, receiver.publicKey)
-    ).address;
-    senderRefundTokenAccount = (
-      await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, sender.publicKey)
-    ).address;
-
-    await mintTo(
-      provider.connection,
-      sender.payer,
-      mint,
-      senderTokenAccount,
-      sender.publicKey,
-      5_000_000_000
-    );
+    await mintTo(provider.connection, sender.payer, mint, senderTokenAccount, sender.publicKey, 5_000_000_000);
 
     [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
-      program.programId
+      program.programId,
     );
-
-    [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("payment"), Buffer.from(paymentId)],
-      program.programId
-    );
-
-    [vaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("vault_authority"), Buffer.from(paymentId)],
-      program.programId
-    );
-
-    vaultTokenAccount = await anchor.utils.token.associatedAddress({
-      mint,
-      owner: vaultAuthorityPda,
-    });
   });
 
-  it("initializes config", async () => {
+  it("initializes config with verifier", async () => {
     await program.methods
-      .initializeConfig(verifier.publicKey)
+      .initializeConfig(verifier.publicKey, new anchor.BN(3600))
       .accounts({
         payer: sender.publicKey,
         config: configPda,
@@ -96,171 +63,112 @@ describe("trustlink_escrow", () => {
 
     const config = await program.account.escrowConfig.fetch(configPda);
     expect(config.claimVerifier.toBase58()).to.equal(verifier.publicKey.toBase58());
+    expect(config.defaultExpirySeconds.toNumber()).to.equal(3600);
   });
 
-  it("creates and funds escrow", async () => {
+  it("creates a secure payment with locked escrow state", async () => {
+    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => index + 1));
+    const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("payment"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const [vaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault_authority"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const escrowVault = anchor.web3.Keypair.generate();
     const expiryTs = new anchor.BN(Math.floor(Date.now() / 1000) + 3600);
 
     await program.methods
-      .createPayment([...paymentId], [...receiverPhoneHash], new anchor.BN(1_500_000), expiryTs)
+      .createPayment(
+        [...paymentId],
+        receiverPhoneIdentity,
+        secureReceiverAuthority.publicKey,
+        { secure: {} } as any,
+        new anchor.BN(1_500_000),
+        expiryTs,
+      )
       .accounts({
+        payer: sender.publicKey,
         sender: sender.publicKey,
         senderTokenAccount,
+        config: configPda,
         tokenMint: mint,
         paymentAccount: paymentPda,
         vaultAuthority: vaultAuthorityPda,
-        escrowVault: vaultTokenAccount,
+        escrowVault: escrowVault.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
+      .signers([escrowVault])
       .rpc();
 
     const payment = await program.account.paymentAccount.fetch(paymentPda);
-    const vault = await getAccount(provider.connection, vaultTokenAccount);
+    const vault = await getAccount(provider.connection, escrowVault.publicKey);
 
+    expect(payment.senderPhoneIdentityPubkey.toBase58()).to.equal(anchor.web3.PublicKey.default.toBase58());
+    expect(payment.paymentMode.secure).to.not.equal(undefined);
     expect(payment.amount.toNumber()).to.equal(1_500_000);
-    expect(payment.status.pending).to.not.equal(undefined);
+    expect(payment.status.locked).to.not.equal(undefined);
     expect(Number(vault.amount)).to.equal(1_500_000);
   });
 
-  it("prevents double claim", async () => {
+  it("marks expired invite payments as expired without sweeping funds", async () => {
+    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 100 + index));
+    const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("payment"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const [vaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault_authority"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const escrowVault = anchor.web3.Keypair.generate();
+    const expiryTs = new anchor.BN(Math.floor(Date.now() / 1000) + 1);
+
     await program.methods
-      .claimPayment([...paymentId], [...receiverPhoneHash])
+      .createPayment(
+        [...paymentId],
+        receiverPhoneIdentity,
+        receiverPhoneIdentity,
+        { invite: {} } as any,
+        new anchor.BN(500_000),
+        expiryTs,
+      )
+      .accounts({
+        payer: sender.publicKey,
+        sender: sender.publicKey,
+        senderTokenAccount,
+        config: configPda,
+        tokenMint: mint,
+        paymentAccount: paymentPda,
+        vaultAuthority: vaultAuthorityPda,
+        escrowVault: escrowVault.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([escrowVault])
+      .rpc();
+
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    await program.methods
+      .markExpired([...paymentId])
       .accounts({
         claimVerifier: verifier.publicKey,
         config: configPda,
         paymentAccount: paymentPda,
-        vaultAuthority: vaultAuthorityPda,
-        escrowVault: vaultTokenAccount,
-        receiverTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
       })
       .signers([verifier])
       .rpc();
 
     const payment = await program.account.paymentAccount.fetch(paymentPda);
-    expect(payment.status.claimed).to.not.equal(undefined);
+    const vault = await getAccount(provider.connection, escrowVault.publicKey);
 
-    try {
-      await program.methods
-        .claimPayment([...paymentId], [...receiverPhoneHash])
-        .accounts({
-          claimVerifier: verifier.publicKey,
-          config: configPda,
-          paymentAccount: paymentPda,
-          vaultAuthority: vaultAuthorityPda,
-          escrowVault: vaultTokenAccount,
-          receiverTokenAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .signers([verifier])
-        .rpc();
-
-      expect.fail("second claim should fail");
-    } catch (error) {
-      expect(String(error)).to.include("PaymentNotPending");
-    }
-  });
-
-  it("cancels expired payments", async () => {
-    const secondPaymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 10 + index));
-    const [secondPaymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("payment"), Buffer.from(secondPaymentId)],
-      program.programId
-    );
-    const [secondVaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("vault_authority"), Buffer.from(secondPaymentId)],
-      program.programId
-    );
-    const secondVaultTokenAccount = await anchor.utils.token.associatedAddress({
-      mint,
-      owner: secondVaultAuthorityPda,
-    });
-
-    await program.methods
-      .createPayment(
-        [...secondPaymentId],
-        [...receiverPhoneHash],
-        new anchor.BN(500_000),
-        new anchor.BN(Math.floor(Date.now() / 1000) - 5)
-      )
-      .accounts({
-        sender: sender.publicKey,
-        senderTokenAccount,
-        tokenMint: mint,
-        paymentAccount: secondPaymentPda,
-        vaultAuthority: secondVaultAuthorityPda,
-        escrowVault: secondVaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      })
-      .rpc();
-
-    await program.methods
-      .cancelPayment([...secondPaymentId])
-      .accounts({
-        sender: sender.publicKey,
-        paymentAccount: secondPaymentPda,
-        vaultAuthority: secondVaultAuthorityPda,
-        escrowVault: secondVaultTokenAccount,
-        senderRefundTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-
-    const payment = await program.account.paymentAccount.fetch(secondPaymentPda);
-    expect(payment.status.cancelled).to.not.equal(undefined);
-  });
-
-  it("expires and refunds pending payments", async () => {
-    const thirdPaymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 20 + index));
-    const [thirdPaymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("payment"), Buffer.from(thirdPaymentId)],
-      program.programId
-    );
-    const [thirdVaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("vault_authority"), Buffer.from(thirdPaymentId)],
-      program.programId
-    );
-    const thirdVaultTokenAccount = await anchor.utils.token.associatedAddress({
-      mint,
-      owner: thirdVaultAuthorityPda,
-    });
-
-    await program.methods
-      .createPayment(
-        [...thirdPaymentId],
-        [...receiverPhoneHash],
-        new anchor.BN(250_000),
-        new anchor.BN(Math.floor(Date.now() / 1000) - 5)
-      )
-      .accounts({
-        sender: sender.publicKey,
-        senderTokenAccount,
-        tokenMint: mint,
-        paymentAccount: thirdPaymentPda,
-        vaultAuthority: thirdVaultAuthorityPda,
-        escrowVault: thirdVaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      })
-      .rpc();
-
-    await program.methods
-      .expirePayment([...thirdPaymentId])
-      .accounts({
-        paymentAccount: thirdPaymentPda,
-        vaultAuthority: thirdVaultAuthorityPda,
-        escrowVault: thirdVaultTokenAccount,
-        senderRefundTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-
-    const payment = await program.account.paymentAccount.fetch(thirdPaymentPda);
     expect(payment.status.expired).to.not.equal(undefined);
+    expect(payment.expiredAtTs.toNumber()).to.be.greaterThan(0);
+    expect(Number(vault.amount)).to.equal(500_000);
   });
 });

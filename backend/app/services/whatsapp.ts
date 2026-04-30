@@ -273,3 +273,22 @@ export async function sendPaymentClaimedMessage(params: {
 
   return sendWhatsAppTextMessage(params.phoneNumber, message.join("\n"), { category: "notification" });
 }
+
+export async function sendPaymentRefundPendingMessage(params: {
+  phoneNumber: string;
+  referenceCode: string;
+  amount: number;
+  token: string;
+  refundClaimAvailableAt: string;
+}) {
+  const message = [
+    "A sender has started a refund request for a pending TrustLink payment.",
+    `Reference: ${params.referenceCode}`,
+    `Amount: ${params.amount} ${params.token}`,
+    "",
+    "If this payment is yours, open TrustLink and complete your claim before the waiting window closes.",
+    `Sender refund may become available after: ${params.refundClaimAvailableAt}`,
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(params.phoneNumber, message, { category: "notification" });
+}

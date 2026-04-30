@@ -31,6 +31,7 @@ export function AppSidePanel({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="absolute inset-0 bg-[var(--overlay)]"
             />
           ) : null}
@@ -39,16 +40,21 @@ export function AppSidePanel({
             initial={desktopInline ? { opacity: 0, x: 28 } : { x: "100%" }}
             animate={desktopInline ? { opacity: 1, x: 0 } : { x: 0 }}
             exit={desktopInline ? { opacity: 0, x: 28 } : { x: "100%" }}
-            transition={{ type: "spring", stiffness: 320, damping: 34 }}
+            transition={{ type: "spring", stiffness: 280, damping: 30 }}
             className={desktopInline
-              ? "tl-panel absolute inset-0 flex h-[calc(93vh-3rem)] w-full flex-col overflow-hidden rounded-[34px]"
-              : "absolute right-0 top-0 flex h-full w-full max-w-[430px] flex-col border-l border-[var(--dock-border)] bg-[color-mix(in_srgb,var(--bg-elevated)_96%,transparent)] bg-[image:var(--pop-bg)] backdrop-blur-2xl"}
+              ? "tl-panel absolute inset-0 flex md:h-screen md:max-h-[calc(100vh-3rem)] w-full flex-col overflow-hidden rounded-tl-[34px] z-999"
+              : "absolute right-0 top-0 flex h-full w-full max-w-[430px] flex-col gap-3 border-l border-[var(--dock-border)] bg-[color-mix(in_srgb,var(--bg-elevated)_96%,transparent)] bg-[image:var(--pop-bg)] rounded-tl-[34px] backdrop-blur-2xl"}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4">
-              <div>
-                {kicker ? <div className="tl-text-muted text-[0.68rem] uppercase tracking-[0.2em]">{kicker}</div> : null}
-                <h2 className="mt-1 text-[1rem] font-semibold tracking-[-0.03em] text-[var(--text)]">
+            {/* ── Panel Header ── */}
+            <div className="flex items-center justify-between px-6 pt-5">
+              <div className="min-w-0 flex-1">
+                {kicker ? (
+                  <div className="tl-text-muted text-[0.65rem] uppercase tracking-[0.22em]">
+                    {kicker}
+                  </div>
+                ) : null}
+                <h2 className={`text-lg font-semibold tracking-[-0.03em] text-[var(--text)] ${kicker ? "mt-1.5" : ""}`}>
                   {title}
                 </h2>
               </div>
@@ -56,14 +62,18 @@ export function AppSidePanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="tl-field-btn button grid h-10 w-10 place-items-center rounded-full transition hover:bg-[var(--surface-soft)]"
+                className="tl-field-btn button grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-[var(--surface-soft)] active:scale-[0.96]"
                 aria-label={`Close ${title}`}
               >
                 <X className="h-4.5 w-4.5 text-[var(--text-soft)]" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 pb-5">
+            {/* ── Header/Content Divider ── */}
+            <div className="mx-6 h-px bg-[var(--surface-soft)] opacity-60" />
+
+            {/* ── Scrollable Content ── */}
+            <div className="flex-1 overflow-y-auto px-6 pt-0 pb-5">
               {children}
             </div>
           </motion.aside>

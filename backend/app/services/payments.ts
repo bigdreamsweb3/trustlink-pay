@@ -13,7 +13,8 @@ export {
   estimatePaymentClaim,
   startPaymentClaim,
 } from "@/app/services/payments/claim";
+export { claimPaymentRefund, requestPaymentRefund } from "@/app/services/payments/refund";
 export {
   listPaymentHistoryForUser,
-  listPendingPaymentsForUser,
+  listLockedPaymentsForUser,
 } from "@/app/services/payments/read";

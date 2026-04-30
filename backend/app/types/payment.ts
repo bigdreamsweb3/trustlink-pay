@@ -1,15 +1,23 @@
-export type PaymentStatus = "pending" | "accepted" | "cancelled" | "expired";
+export type PaymentStatus = "created" | "locked" | "expired" | "claimed" | "refund_requested" | "refunded";
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
+export type PaymentMode = "secure" | "invite";
 
 export interface UserRecord {
   id: string;
   phone_number: string;
   phone_hash: string;
+  phone_identity_pubkey?: string | null;
+  privacy_view_pubkey?: string | null;
+  privacy_spend_pubkey?: string | null;
+  settlement_wallet_pubkey?: string | null;
+  recovery_wallet_pubkey?: string | null;
+  binding_signature?: string | null;
   display_name: string;
   trustlink_handle: string;
   pin_hash: string;
   wallet_address: string | null;
+  receiver_autoclaim_enabled?: boolean;
   whatsapp_opted_in: boolean;
   opt_in_timestamp: string | null;
   opt_out_timestamp: string | null;
@@ -25,11 +33,22 @@ export interface PaymentRecord {
   id: string;
   sender_user_id: string | null;
   sender_wallet: string | null;
+  sender_phone_identity_pubkey?: string | null;
   sender_display_name_snapshot: string;
   sender_handle_snapshot: string;
   reference_code: string;
   receiver_phone: string;
   receiver_phone_hash: string;
+  payment_mode?: PaymentMode;
+  sender_autoclaim_enabled?: boolean;
+  receiver_autoclaim_allowed?: boolean;
+  receiver_wallet?: string | null;
+  receiver_onboarded?: boolean;
+  phone_identity_pubkey?: string | null;
+  payment_receiver_pubkey?: string | null;
+  ephemeral_pubkey?: string | null;
+  refund_receiver_pubkey?: string | null;
+  refund_ephemeral_pubkey?: string | null;
   token_symbol: string;
   token_mint_address: string | null;
   amount: string;
@@ -39,12 +58,13 @@ export interface PaymentRecord {
   escrow_vault_address: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
-  expiry_signature?: string | null;
+  refund_release_signature?: string | null;
   released_to_wallet: string | null;
-  accepted_at: string | null;
+  refund_released_to_wallet?: string | null;
+  refund_requested_at?: string | null;
+  refund_available_at?: string | null;
+  refund_claimed_at?: string | null;
   expiry_at?: string | null;
-  expired_to_pool_at?: string | null;
-  recovery_wallet_address?: string | null;
   notification_message_id: string | null;
   notification_status: PaymentNotificationStatus;
   notification_sent_at: string | null;
@@ -61,7 +81,6 @@ export interface PaymentRecord {
     onboardingLink: string;
     inviteMessage: string;
   } | null;
-  recipient_onboarded?: boolean;
 }
 
 export interface PhoneVerificationRecord {

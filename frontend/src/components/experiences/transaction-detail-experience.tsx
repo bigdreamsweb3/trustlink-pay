@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
@@ -16,457 +17,211 @@ import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 const DETAIL_REFRESH_INTERVAL_MS = 20_000;
 
 function formatDateTime(value: string | null) {
-  if (!value) {
-    return "Pending";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  if (!value) return "Pending";
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
-function shortenValue(value: string | null, start = 6, end = 6) {
-  if (!value) {
-    return "Not available";
-  }
-
-  if (value.length <= start + end + 3) {
-    return value;
-  }
-
+function shortenValue(value: string | null | undefined, start = 6, end = 6) {
+  if (!value) return "Not available";
+  if (value.length <= start + end + 3) return value;
   return `${value.slice(0, start)}...${value.slice(-end)}`;
 }
 
 function formatFeeAmount(value: string | null | undefined, tokenSymbol: string) {
-  if (value == null) {
-    return null;
-  }
-
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
-    return null;
-  }
-
-  return `${formatTokenAmount(numericValue)} ${tokenSymbol}`;
+  if (value == null) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return `${formatTokenAmount(n)} ${tokenSymbol}`;
 }
 
-function statusTone(status: PaymentDetailResponse["payment"]["status"]) {
+function statusTone(status: PaymentDetailResponse["payment"]["status"] | "accepted" | "pending") {
   switch (status) {
-    case "accepted":
-      return "bg-[#0f261d] text-[#79ffcf]";
-    case "pending":
-      return "bg-[#2a2412] text-[#f3c96b]";
-    default:
-      return "bg-[#321516] text-[#ff9c9c]";
+    case "accepted": return "bg-[#58f2b1]/12 text-[#7dffd9]";
+    case "pending": return "bg-[#f3c96b]/12 text-[#f3c96b]";
+    default: return "bg-[#ff7f7f]/12 text-[#ffadad]";
   }
 }
 
 export function TransactionDetailExperience({ paymentId }: { paymentId: string }) {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } =
-    useAuthenticatedSession(`/app/activity/${paymentId}`);
+  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/app/activity/${paymentId}`);
   const [detail, setDetail] = useState<PaymentDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
-  const shouldPollReceipt =
-    detail?.viewerRole === "sender" && shouldPollPaymentNotification(detail?.payment.notification_status);
+  const shouldPollReceipt = detail?.viewerRole === "sender" && shouldPollPaymentNotification(detail?.payment.notification_status);
 
-  useEffect(() => {
-    if (!accessToken || !user) {
-      return;
-    }
+  useEffect(() => { if (!accessToken || !user) return; let cancelled = false; async function load() { setLoading(true); try { const r = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined); if (!cancelled) { setDetail(r); setError(null); } } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load details"); } finally { if (!cancelled) setLoading(false); } } void load(); return () => { cancelled = true; }; }, [accessToken, paymentId, user]);
 
-    let cancelled = false;
+  useEffect(() => { if (!accessToken || !user || !shouldPollReceipt) return; let cancelled = false; async function refresh() { try { const r = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined); if (!cancelled) setDetail(r); } catch { } } const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, DETAIL_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, paymentId, shouldPollReceipt, user]);
 
-    async function loadDetail() {
-      setLoading(true);
+  const receiptUpdatedAt = useMemo(() => { if (!detail) return null; return detail.whatsapp.readAt ?? detail.whatsapp.deliveredAt ?? detail.whatsapp.sentAt ?? detail.whatsapp.failedAt ?? null; }, [detail]);
 
-      try {
-        const result = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined);
+  const viewerFeeLabel = detail ? (detail.viewerRole === "sender" ? "Send fee" : "Claim fee") : null;
+  const viewerFeeAmount = detail ? (detail.viewerRole === "sender" ? formatFeeAmount(detail.payment.sender_fee_amount, detail.payment.token_symbol) : formatFeeAmount(detail.payment.claim_fee_amount, detail.payment.token_symbol)) : null;
 
-        if (!cancelled) {
-          setDetail(result);
-          setError(null);
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Could not load transaction details");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadDetail();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken, paymentId, user]);
-
-  useEffect(() => {
-    if (!accessToken || !user || !shouldPollReceipt) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function refreshDetail() {
-      try {
-        const result = await apiGet<PaymentDetailResponse>(`/api/payment/${paymentId}`, accessToken ?? undefined);
-
-        if (!cancelled) {
-          setDetail(result);
-        }
-      } catch {
-        // Keep the last known detail state if polling fails.
-      }
-    }
-
-    const refreshInterval = window.setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
-      }
-
-      void refreshDetail();
-    }, DETAIL_REFRESH_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(refreshInterval);
-    };
-  }, [accessToken, paymentId, shouldPollReceipt, user]);
-
-  const receiptUpdatedAt = useMemo(() => {
-    if (!detail) {
-      return null;
-    }
-
-    return (
-      detail.whatsapp.readAt ??
-      detail.whatsapp.deliveredAt ??
-      detail.whatsapp.sentAt ??
-      detail.whatsapp.failedAt ??
-      null
-    );
-  }, [detail]);
-
-  const viewerFeeLabel = detail
-    ? detail.viewerRole === "sender"
-      ? "Send fee"
-      : "Claim fee"
-    : null;
-
-  const viewerFeeAmount = detail
-    ? detail.viewerRole === "sender"
-      ? formatFeeAmount(detail.payment.sender_fee_amount, detail.payment.token_symbol)
-      : formatFeeAmount(detail.payment.claim_fee_amount, detail.payment.token_symbol)
-    : null;
-
-  if (!hydrated || !user) {
-    return null;
-  }
+  if (!hydrated || !user) return null;
 
   return (
-    <AppMobileShell
-      currentTab="home"
-      title="Transaction"
-      subtitle="Trace the payment clearly without exposing the wrong personal details to the wrong side."
-      user={user}
-      showBackButton
-      backHref="/app/activity"
-      blockingOverlay={
-        pendingAuth ? (
-          <PinGateModal
-            pendingAuth={pendingAuth}
-            user={user}
-            onAuthenticated={completePendingAuth}
-            onSignOut={logout}
-          />
-        ) : null
-      }
+    <AppMobileShell currentTab="home" title="Transaction" subtitle="Trace the payment clearly without exposing the wrong personal details." user={user} showBackButton backHref="/app/activity"
+      blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
       <section className="space-y-5">
-        {/* {error ? (
-          <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">
-            {error}
-          </div>
-        ) : null} */}
+
+        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[0.82rem] text-[#ffb1b1]">{error}</div> : null}
 
         {loading ? (
-          <section className="tl-panel p-5">
-            <SectionLoader size="md" label="Loading transaction details..." />
-          </section>
+          <div className="tl-field rounded-[22px] px-5 py-8">
+            <SectionLoader size="md" label="Loading transaction..." />
+          </div>
         ) : detail ? (
           <>
-            <section className="tl-panel p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
-                    {detail.viewerRole === "sender" ? "Sent payment" : "Incoming payment"}
-                  </div>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text">
-                    {formatTokenAmount(detail.payment.amount)} {detail.payment.token_symbol}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-text/56">
-                    {detail.viewerRole === "sender"
-                      ? detail.receiver.manualInviteRequired
-                        ? `This transfer is already in escrow for ${detail.receiver.phone}, but the recipient is not onboarded on TrustLink yet. Share the invite again if needed.`
-                        : `This transfer is being delivered to ${detail.receiver.phone} through TrustLink escrow.`
-                      : `This transfer came from ${detail.sender.displayName}${detail.sender.handle ? ` (@${detail.sender.handle})` : ""} through TrustLink escrow.`}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-3 py-1.5 text-[0.72rem] font-medium capitalize ${statusTone(detail.payment.status)}`}
-                >
+            {/* HERO — Amount + Status */}
+            <div className="text-center py-1">
+              <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">
+                {detail.viewerRole === "sender" ? "Sent payment" : "Incoming payment"}
+              </div>
+              <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-[var(--text)]">
+                {formatTokenAmount(detail.payment.amount)} {detail.payment.token_symbol}
+              </h2>
+              <div className="mt-2 flex justify-center">
+                <span className={`rounded-full px-3 py-1 text-[0.68rem] font-semibold capitalize ${statusTone(detail.payment.status)}`}>
                   {detail.payment.status}
                 </span>
               </div>
+              <p className="mt-3 text-[0.78rem] leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">
+                {detail.viewerRole === "sender"
+                  ? detail.receiver.manualInviteRequired
+                    ? `In escrow for ${detail.receiver.phone}. Recipient not yet on TrustLink.`
+                    : `Being delivered to ${detail.receiver.phone} via escrow.`
+                  : `From ${detail.sender.displayName}${detail.sender.handle ? ` (@${detail.sender.handle})` : ""} via escrow.`}
+              </p>
+            </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-1">
-                <div className="tl-field px-4 py-4">
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
-                    {detail.viewerRole === "sender" ? "Receiver" : "Sender"}
-                  </div>
-                  <div className="mt-2 text-sm font-semibold text-text">
+            {/* PARTIES */}
+            <div className="space-y-2.5">
+              <div className="tl-field rounded-[18px] px-4 py-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.78rem] text-[var(--text-soft)]">{detail.viewerRole === "sender" ? "Receiver" : "Sender"}</span>
+                  <span className="text-[0.84rem] font-semibold text-[var(--text)]">
                     {detail.viewerRole === "sender" ? detail.receiver.phone : detail.sender.displayName}
-                  </div>
-                  <div className="mt-1 text-sm text-text/52">
-                    {detail.viewerRole === "sender"
-                      ? detail.receiver.manualInviteRequired
-                        ? "Recipient not onboarded. TrustLink cannot auto-message this number yet."
-                        : "TrustLink delivers the payment notice from its shared verified WhatsApp number."
-                      : detail.sender.trustVerified
-                        ? `${detail.sender.trustStatusLabel}${detail.sender.phoneMasked ? ` • ${detail.sender.phoneMasked}` : ""}`
-                        : detail.sender.trustStatusLabel}
-                  </div>
+                  </span>
                 </div>
-                <div className="tl-field px-4 py-4">
-                  <div className="text-[0.72rem] uppercase tracking-[0.18em] text-text/40">
-                    {detail.receiver.manualInviteRequired ? "Invite state" : "WhatsApp receipt"}
-                  </div>
-                  <div className="mt-2 flex items-center gap-3">
+              </div>
+
+              <div className="tl-field rounded-[18px] px-4 py-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.78rem] text-[var(--text-soft)]">
+                    {detail.receiver.manualInviteRequired ? "Invite" : "WhatsApp"}
+                  </span>
+                  <div className="flex items-center gap-2">
                     {detail.receiver.manualInviteRequired ? (
-                      <span className="rounded-full border border-[#f3c96b]/20 bg-[#2a2412] px-3 py-1 text-[0.72rem] font-medium text-[#f3c96b]">
-                        Invite needed
-                      </span>
+                      <span className="rounded-full bg-[#f3c96b]/12 px-2.5 py-1 text-[0.64rem] font-semibold text-[#f3c96b]">Invite needed</span>
                     ) : (
                       <PaymentNotificationReceipt status={detail.payment.notification_status} />
                     )}
-                    <span className="text-sm text-text/56">
-                      {detail.receiver.manualInviteRequired
-                        ? "Manual sender follow-up required"
-                        : formatDateTime(receiptUpdatedAt)}
-                    </span>
+                    <span className="text-[0.74rem] text-[var(--text-soft)]">{detail.receiver.manualInviteRequired ? "Manual follow-up" : formatDateTime(receiptUpdatedAt)}</span>
                   </div>
-                  <div className="mt-2 text-sm text-text/46">{detail.privacy.deliveryChannelNote}</div>
                 </div>
               </div>
-            </section>
+            </div>
 
+            {/* MANUAL INVITE */}
             {detail.viewerRole === "sender" && detail.receiver.manualInviteRequired && detail.receiver.inviteShare ? (
-              <section className="tl-panel p-5">
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Share invite again</h2>
-                  <p className="text-sm text-text/48">
-                    This payment is already in escrow. You can regenerate and share the invite message again until the recipient joins TrustLink and claims it.
-                  </p>
-                </div>
-
-                <div className="tl-field px-4 py-4">
-                  <pre className="whitespace-pre-wrap text-sm leading-6 text-text/72">
-                    {detail.receiver.inviteShare.inviteMessage}
-                  </pre>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setShareBusy(true);
-                      setError(null);
-
-                      try {
-                        const outcome = await shareInviteMessage(detail.receiver.inviteShare!.inviteMessage);
-                        setError(outcome === "copied" ? "Invite copied to clipboard." : null);
-                      } catch (shareError) {
-                        setError(shareError instanceof Error ? shareError.message : "Could not share invite");
-                      } finally {
-                        setShareBusy(false);
-                      }
-                    }}
-                    disabled={shareBusy}
-                    className="mt-4 w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {shareBusy ? "Preparing share..." : "Share Invite"}
-                  </button>
-                </div>
-              </section>
+              <div className="tl-field rounded-[22px] px-5 py-4">
+                <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Share invite</div>
+                <pre className="mt-3 whitespace-pre-wrap text-[0.78rem] leading-relaxed text-[var(--text-soft)]">{detail.receiver.inviteShare.inviteMessage}</pre>
+                <button
+                  type="button"
+                  onClick={async () => { setShareBusy(true); setError(null); try { const outcome = await shareInviteMessage(detail.receiver.inviteShare!.inviteMessage); if (outcome === "copied") setError("Invite copied to clipboard."); } catch (e) { setError(e instanceof Error ? e.message : "Could not share"); } finally { setShareBusy(false); } }}
+                  disabled={shareBusy}
+                  className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
+                >
+                  {shareBusy ? "Preparing..." : "Share Invite"}
+                </button>
+              </div>
             ) : null}
 
-            <section className="tl-panel p-5">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Trace details</h2>
-                <p className="text-sm text-text/48">
-                  Everything the current viewer is allowed to trace for this payment.
-                </p>
-              </div>
+            {/* TRACE DETAILS */}
+            <div>
+              <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Trace</div>
+              <div className="space-y-2">
+                {[
+                  { label: "Reference", value: detail.sender.referenceCode },
+                  { label: "Payment ID", value: shortenValue(detail.trace.paymentId, 8, 8) },
+                  { label: "Created", value: formatDateTime(detail.payment.created_at) },
+                  { label: "Escrow", value: shortenValue(detail.trace.escrowAccount) },
+                  ...(viewerFeeLabel && viewerFeeAmount ? [{ label: viewerFeeLabel, value: viewerFeeAmount }] : []),
+                ].map((row) => (
+                  <div key={row.label} className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                    <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
+                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{row.value}</span>
+                  </div>
+                ))}
 
-              <div className="space-y-3 tl-field px-4 py-4">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-text/46">Reference</span>
-                  <span className="font-medium text-text">{detail.sender.referenceCode}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-text/46">Payment ID</span>
-                  <span className="font-medium text-text">{shortenValue(detail.trace.paymentId, 8, 8)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-text/46">Created</span>
-                  <span className="font-medium text-text">{formatDateTime(detail.payment.created_at)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-text/46">Escrow account</span>
-                  <span className="font-medium text-text">{shortenValue(detail.trace.escrowAccount)}</span>
-                </div>
-                {viewerFeeLabel && viewerFeeAmount ? (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">{viewerFeeLabel}</span>
-                    <span className="font-medium text-text">{viewerFeeAmount}</span>
-                  </div>
-                ) : null}
-                {detail.trace.depositSignature ? (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">Deposit tx</span>
-                    {detail.trace.depositExplorerUrl ? (
-                      <a
-                        href={detail.trace.depositExplorerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-[#7dffd9] underline underline-offset-4"
-                      >
-                        {shortenValue(detail.trace.depositSignature, 8, 8)}
-                      </a>
+                {[
+                  { label: "Deposit tx", sig: detail.trace.depositSignature, url: detail.trace.depositExplorerUrl },
+                  { label: "Claim tx", sig: detail.trace.releaseSignature, url: detail.trace.releaseExplorerUrl },
+                  { label: "Expiry tx", sig: detail.trace.expirySignature, url: detail.trace.expiryExplorerUrl },
+                ].filter((r) => r.sig).map((row) => (
+                  <div key={row.label} className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                    <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
+                    {row.url ? (
+                      <a href={row.url} target="_blank" rel="noreferrer" className="text-[0.82rem] font-medium text-[var(--accent-deep)] dark:text-[var(--accent)] underline underline-offset-4 cursor-pointer">{shortenValue(row.sig, 8, 8)}</a>
                     ) : (
-                      <span className="font-medium text-text">
-                        {shortenValue(detail.trace.depositSignature, 8, 8)}
-                      </span>
+                      <span className="text-[0.82rem] font-medium text-[var(--text)]">{shortenValue(row.sig, 8, 8)}</span>
                     )}
                   </div>
-                ) : null}
-                {detail.trace.releaseSignature ? (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">Claim tx</span>
-                    {detail.trace.releaseExplorerUrl ? (
-                      <a
-                        href={detail.trace.releaseExplorerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-[#7dffd9] underline underline-offset-4"
-                      >
-                        {shortenValue(detail.trace.releaseSignature, 8, 8)}
-                      </a>
-                    ) : (
-                      <span className="font-medium text-text">
-                        {shortenValue(detail.trace.releaseSignature, 8, 8)}
-                      </span>
-                    )}
-                  </div>
-                ) : null}
-                {detail.trace.expirySignature ? (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">Expiry sweep tx</span>
-                    {detail.trace.expiryExplorerUrl ? (
-                      <a
-                        href={detail.trace.expiryExplorerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-[#7dffd9] underline underline-offset-4"
-                      >
-                        {shortenValue(detail.trace.expirySignature, 8, 8)}
-                      </a>
-                    ) : (
-                      <span className="font-medium text-text">
-                        {shortenValue(detail.trace.expirySignature, 8, 8)}
-                      </span>
-                    )}
-                  </div>
-                ) : null}
+                ))}
+
                 {detail.receiver.releasedWallet ? (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-text/46">Released to wallet</span>
-                    <span className="font-medium text-text">{detail.receiver.releasedWallet}</span>
+                  <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                    <span className="text-[0.78rem] text-[var(--text-soft)]">Released to</span>
+                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{shortenValue(detail.receiver.releasedWallet, 8, 8)}</span>
                   </div>
                 ) : null}
               </div>
-            </section>
+            </div>
 
-            <section className="tl-panel p-5">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Timeline</h2>
-                <p className="text-sm text-text/48">A simple view of where the payment stands right now.</p>
-              </div>
-
-              <div className="space-y-3">
+            {/* TIMELINE */}
+            <div>
+              <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Timeline</div>
+              <div className="space-y-2">
                 {detail.timeline.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="grid grid-cols-[auto_1fr_auto] items-start gap-3 tl-field px-4 py-4"
-                  >
-                    <span className={`mt-1 h-3 w-3 rounded-full ${entry.complete ? "bg-[#58f2b1]" : "bg-white/14"}`} />
-                    <div>
-                      <div className="text-sm font-semibold text-text">{entry.label}</div>
-                      <div className="mt-1 text-sm leading-6 text-text/54">{entry.description}</div>
+                  <div key={entry.id} className="tl-field flex items-start gap-3 rounded-[18px] px-4 py-3.5">
+                    <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${entry.complete ? "bg-[#4ae8c0]" : "bg-[var(--surface-soft)]"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[0.84rem] font-semibold text-[var(--text)]">{entry.label}</span>
+                        <span className="shrink-0 text-[0.68rem] text-[var(--text-soft)]">{formatDateTime(entry.occurredAt)}</span>
+                      </div>
+                      <div className="mt-0.5 text-[0.74rem] leading-relaxed text-[var(--text-soft)]">{entry.description}</div>
                     </div>
-                    <span className="text-right text-[0.78rem] text-text/40">{formatDateTime(entry.occurredAt)}</span>
                   </div>
                 ))}
               </div>
-            </section>
+            </div>
 
-            <section className="tl-panel p-5">
-              <div className="mb-3">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Privacy</h2>
-                <p className="text-sm text-text/48">Trust cues without overexposing anyone's personal details.</p>
-              </div>
-              <div className="tl-field px-4 py-4 text-sm leading-6 text-text/58">
+            {/* PRIVACY */}
+            <div>
+              <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Privacy</div>
+              <div className="tl-field rounded-[18px] px-4 py-3.5 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">
                 <p>{detail.privacy.senderPhonePolicy}</p>
-                <p className="mt-3">
-                  Any deeper disclosure should happen only through TrustLink's legal or compliance process, not through the payment interface.
-                </p>
+                <p className="mt-2">Deeper disclosure requires TrustLink's compliance process.</p>
               </div>
-            </section>
+            </div>
 
+            {/* ACTIONS */}
             <div className="grid grid-cols-2 gap-3">
-              <Link
-                href="/app/activity"
-                className="rounded-[20px] tl-button-secondary px-4 py-3 text-center text-sm font-medium button"
-              >
-                Back to activity
-              </Link>
+              <Link href="/app/activity" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Back to activity</Link>
               {detail.receiver.claimReady ? (
-                <Link
-                  href={`/claim/${detail.payment.id}`}
-                  className="tl-button-primary rounded-[20px] px-4 py-3 text-center button"
-                >
-                  Claim payment
-                </Link>
+                <Link href={`/claim/${detail.payment.id}`} className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Claim payment</Link>
               ) : (
-                <Link
-                  href="/app"
-                  className="tl-button-primary rounded-[20px] px-4 py-3 text-center button"
-                >
-                  Done
-                </Link>
+                <Link href="/app" className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</Link>
               )}
             </div>
           </>
         ) : (
-          <section className="tl-panel text-sm text-text/48">
-            Transaction details are unavailable right now.
-          </section>
+          <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">Transaction details unavailable.</div>
         )}
       </section>
     </AppMobileShell>

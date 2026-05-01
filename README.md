@@ -88,7 +88,7 @@ WhatsApp is the identity and notification layer — TrustLink Pay is **not** a W
 
 ### Key architecture (v3 hardened)
 
-- **Ephemeral child keys** derived from a master privacy key per payment
+- **[Ephemeral child keys](https://docs.google.com/document/d/1WFINNgwcLLsc6C6NDVg-Ncre6VgR9VdUsZ5kyFHOPNo/edit?usp=drivesdk)** derived from a master privacy key per payment
 - **Derivation proofs** verified on-chain via Ed25519 sysvar introspection
 - **Nonce-consumption PDAs** for O(1) replay prevention
 - **Destination-hash binding** at escrow creation — cannot change after the fact

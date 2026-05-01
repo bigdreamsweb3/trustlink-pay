@@ -158,7 +158,7 @@ Device-aware: mobile gets a direct WhatsApp link; desktop gets a QR code.
 
 ### Milestone 1: StableHacks 2026 — Programmable Stablecoin Payments
 
-[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) · $220K Prize Pool
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail)
 
 TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackathon for institutional-grade stablecoin infrastructure on Solana, organized by [Tenity](https://dorahacks.io/org/14594/hackathon).
 
@@ -178,7 +178,7 @@ TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackath
 
 ### Milestone 2: The Bags Hackathon — Creator Token Payments
 
-[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) · $1M Prize Pool
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail)
 
 TrustLink integrates with the [Bags SDK](https://docs.bags.fm/) to support **creator token payments via phone number** — making TrustLink the first dApp where any Bags creator token can be sent to a WhatsApp number with noncustodial escrow.
 

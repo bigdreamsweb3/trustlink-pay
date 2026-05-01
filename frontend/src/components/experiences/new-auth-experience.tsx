@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { WhatsAppWhiteIcon } from "@/src/components/whatsapp-icon";
 import { WhatsAppIframe } from "@/src/components/whatsapp-iframe";
 import type { Route } from "next";
@@ -66,6 +68,16 @@ function ArrowLeftIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
+    </svg>
+  );
+}
+
+function WalletIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+      <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
     </svg>
   );
 }
@@ -336,394 +348,318 @@ export function NewAuthExperience({
       </div>
 
       {/* ── Logo + tagline ── */}
-      {/* <div className="relative z-10 mb-8 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[18px]"
-          style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-icon))" }}
-        >
-          <span className="text-xl font-bold" style={{ color: "#04110a" }}>TL</span>
+      <div className="relative z-10 mb-8 text-center">
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white/5 p-2 backdrop-blur-sm">
+          <Image
+            src="/trustlink-logo.png"
+            alt="TrustLink Logo"
+            width={64}
+            height={64}
+            className="h-full w-full object-contain"
+          />
         </div>
-        <h1 className="text-lg font-bold tracking-[-0.03em]" style={{ color: "var(--text)" }}>
+        <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
           TrustLink Pay
         </h1>
-        <p className="mt-1 text-[0.78rem]" style={{ color: "var(--muted)" }}>
+        <p className="mt-1 text-sm font-medium" style={{ color: "var(--muted)" }}>
           Secure crypto payments, simplified
         </p>
-      </div> */}
+      </div>
 
-      {/* ── Auth Card ── */}
-      <div className="relative z-10 w-full max-w-[420px] overflow-hidden"
-      // style={{
-      //   background: "var(--panel)",
-      //   borderColor: "var(--surface-border)",
-      //   boxShadow: "var(--shadow)",
-      // }}
-      >
-        {/* Card top accent line */}
-        <div className="absolute inset-x-0 top-0 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, var(--accent-border), transparent)" }}
-        />
+      {/* ── Auth Actions ── */}
+      <div className="relative z-10 w-full max-w-[420px]">
+        {/* ─── IDLE STATE ─── */}
+        {flowState === "idle" && (
+          <div className="space-y-8" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
+            {/* Error display */}
+            {error && (
+              <div className="rounded-[14px] px-4 py-3 text-[0.8rem]"
+                style={{ background: "var(--danger-soft)", border: "1px solid rgba(217, 80, 80, 0.12)", color: "var(--danger)" }}
+              >
+                {error}
+              </div>
+            )}
 
-        <div className="p-6">
-
-          {/* ─── IDLE STATE ─── */}
-          {flowState === "idle" && (
-            <div className="space-y-6" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
-              {/* WhatsApp branded header */}
-              {/* <div className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                  style={{ background: "rgba(37, 211, 102, 0.10)", border: "1px solid rgba(37, 211, 102, 0.12)" }}
-                >
-                  <WhatsAppWhiteIcon className="h-8 w-8 text-green-500" />
-                </div>
-                <h2 className="text-[1.18rem] font-bold tracking-[-0.03em]" style={{ color: "var(--text)" }}>
-                  Sign in with WhatsApp
-                </h2>
-                <p className="mx-auto mt-2 max-w-[280px] text-[0.8rem] leading-relaxed" style={{ color: "var(--muted)" }}>
-                  Generate a secure session code and verify it instantly through WhatsApp.
-                </p>
-              </div> */}
-
-              {/* Error display */}
-              {error && (
-                <div className="rounded-[14px] px-4 py-3 text-[0.8rem]"
-                  style={{ background: "var(--danger-soft)", border: "1px solid rgba(217, 80, 80, 0.12)", color: "var(--danger)" }}
-                >
-                  {error}
-                </div>
-              )}
-
-              {/* Main CTA */}
+            {/* WhatsApp Section */}
+            <div className="space-y-3">
               <button
                 type="button"
                 onClick={() => void generateSession()}
+                className="group flex w-full items-center justify-center gap-3 rounded-[20px] px-6 py-4 text-[0.95rem] font-bold transition-all duration-200 active:scale-[0.97] cursor-pointer"
+                style={{
+                  background: "#25D366",
+                  color: "#ffffff",
+                }}
+              >
+                <WhatsAppWhiteIcon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" />
+                Verify via WhatsApp
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 px-2 opacity-50">
+              <div className="h-px flex-1 bg-[var(--surface-border)]" />
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--text-faint)]">OR</span>
+              <div className="h-px flex-1 bg-[var(--surface-border)]" />
+            </div>
+
+            {/* Web3 Section */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  showToast("Web3 Wallet support coming soon!");
+                }}
+                className="group flex w-full items-center justify-center gap-3 rounded-[20px] px-6 py-4 text-[0.95rem] font-bold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]"
+                style={{
+                  background: "var(--panel)",
+                  color: "var(--text)",
+                }}
+              >
+                <WalletIcon className="h-6 w-6 text-[var(--accent)] transition-transform duration-200 group-hover:scale-110" />
+                Sign in via Web3 Wallet
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── GENERATING STATE ─── */}
+        {flowState === "generating_session" && (
+          <div className="flex flex-col items-center justify-center py-12 rounded-3xl border bg-[var(--panel)] border-[var(--surface-border)]" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
+            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-transparent"
+              style={{ borderTopColor: "var(--accent)", borderRightColor: "var(--accent-border)" }}
+            />
+            <p className="text-[0.84rem] font-medium" style={{ color: "var(--text-soft)" }}>
+              Generating secure session…
+            </p>
+          </div>
+        )}
+
+        {/* ─── WAITING VERIFICATION STATE ─── */}
+        {flowState === "waiting_verification" && sessionData && (
+          <div className="space-y-5 p-6 rounded-3xl border bg-[var(--panel)] border-[var(--surface-border)] shadow-xl" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
+            {/* Back + title row */}
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={handleStartOver}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors active:scale-[0.93] cursor-pointer"
+                style={{ background: "var(--surface-soft)", color: "var(--text-soft)" }}
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+              </button>
+              <div>
+                <h2 className="text-[1rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
+                  Secure Verification
+                </h2>
+                <p className="text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
+                  Send this code to our verified business number
+                </p>
+              </div>
+            </div>
+
+            {/* Session code display */}
+            <div className="rounded-[20px] p-5 text-center"
+              style={{
+                background: "var(--field-strong)",
+                border: "1px solid var(--field-border)",
+              }}
+            >
+              <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
+                Verification Code
+              </div>
+              <div className="my-2.5 font-mono text-[1.8rem] font-bold tracking-[0.12em]" style={{ color: "var(--accent)" }}>
+                {sessionData.sessionCode}
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <button type="button" onClick={copySessionCode}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.7rem] font-medium transition-colors active:scale-[0.95] cursor-pointer"
+                  style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
+                >
+                  <CopySmIcon className="h-3 w-3" />
+                  Copy
+                </button>
+                {timeRemaining && (
+                  <span className="flex items-center gap-1 text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
+                    <ClockIcon className="h-3 w-3" />
+                    {timeRemaining}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* QR Code for desktop */}
+            {useQRCode && (
+              <div className="rounded-[18px] p-4 text-center"
+                style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}
+              >
+                <p className="mb-3 text-[0.72rem] font-medium" style={{ color: "var(--text-soft)" }}>
+                  Scan with your phone camera
+                </p>
+                <div className="mx-auto inline-flex rounded-[14px] bg-white p-3">
+                  <QRCodeDisplay
+                    value={generateQRCodeData(businessNumber, sessionData.sessionCode)}
+                    size={180}
+                    logoUrl="/brand-logos/trustlink.svg"
+                  />
+                </div>
+                <p className="mt-3 text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
+                  Or send code to <span className="font-semibold text-[var(--accent)]">{businessNumber}</span>
+                </p>
+              </div>
+            )}
+
+            {/* WhatsApp direct link for mobile */}
+            {useDirectLink && (showManualWhatsAppButton || !deviceInfo.isMobile) && (
+              <button
+                type="button"
+                onClick={handleWhatsAppClick}
                 className="group flex w-full items-center justify-center gap-2.5 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold tracking-[-0.01em] transition-all duration-200 active:scale-[0.97] cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, #25D366, #20BA5C)",
+                  background: "#25D366",
                   color: "#ffffff",
-                  boxShadow: "0 4px 16px rgba(37, 211, 102, 0.20), 0 1px 3px rgba(37, 211, 102, 0.10)",
                 }}
               >
-                <WhatsAppWhiteIcon className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
-                Continue with WhatsApp
+                <WhatsAppWhiteIcon className="h-5 w-5" />
+                {deviceInfo.isMobile ? "Open WhatsApp Manually" : "Verify via WhatsApp"}
               </button>
+            )}
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 px-2">
-                <div className="h-px flex-1" style={{ background: "var(--surface-border)" }} />
-                <span className="text-[0.62rem] font-medium uppercase tracking-[0.16em]" style={{ color: "var(--text-faint)" }}>
-                  How it works
-                </span>
-                <div className="h-px flex-1" style={{ background: "var(--surface-border)" }} />
-              </div>
-
-              {/* Steps */}
-              <div className="space-y-3">
-                {[
-                  { step: "1", text: "Generate a unique session code" },
-                  { step: "2", text: "Send it to TrustLink via WhatsApp" },
-                  { step: "3", text: "Verified automatically — you're in" },
-                ].map((item) => (
-                  <div key={item.step} className="flex items-center gap-3 rounded-[14px] px-3.5 py-2.5"
-                    style={{ background: "var(--surface-soft)" }}
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.68rem] font-bold"
-                      style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
-                    >
-                      {item.step}
-                    </div>
-                    <span className="text-[0.78rem] font-medium" style={{ color: "var(--text-soft)" }}>
-                      {item.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ─── GENERATING STATE ─── */}
-          {flowState === "generating_session" && (
-            <div className="flex flex-col items-center justify-center py-12" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
-              <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-transparent"
-                style={{ borderTopColor: "var(--accent)", borderRightColor: "var(--accent-border)" }}
-              />
-              <p className="text-[0.84rem] font-medium" style={{ color: "var(--text-soft)" }}>
-                Generating secure session…
-              </p>
-            </div>
-          )}
-
-          {/* ─── WAITING VERIFICATION STATE ─── */}
-          {flowState === "waiting_verification" && sessionData && (
-            <div className="space-y-5" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
-
-              {/* Back + title row */}
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={handleStartOver}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors active:scale-[0.93] cursor-pointer"
-                  style={{ background: "var(--surface-soft)", color: "var(--text-soft)" }}
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                </button>
-                <div>
-                  <h2 className="text-[1rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
-                    Verify Session
-                  </h2>
-                  <p className="text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
-                    Send this code via WhatsApp to sign in
-                  </p>
-                </div>
-              </div>
-
-              {/* Session code display */}
-              <div className="rounded-[20px] p-5 text-center"
-                style={{
-                  background: "var(--field-strong)",
-                  border: "1px solid var(--field-border)",
-                }}
-              >
-                <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-                  Session Code
-                </div>
-                <div className="my-2.5 font-mono text-[1.8rem] font-bold tracking-[0.12em]" style={{ color: "var(--accent)" }}>
-                  {sessionData.sessionCode}
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <button type="button" onClick={copySessionCode}
-                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.7rem] font-medium transition-colors active:scale-[0.95] cursor-pointer"
-                    style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
-                  >
-                    <CopySmIcon className="h-3 w-3" />
-                    Copy
-                  </button>
-                  {timeRemaining && (
-                    <span className="flex items-center gap-1 text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
-                      <ClockIcon className="h-3 w-3" />
-                      {timeRemaining}
-                    </span>
+            {/* WhatsApp status indicator */}
+            {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
+              <div className="flex flex-col items-center gap-2 py-2">
+                <div className="flex items-center justify-center gap-2">
+                  {whatsappPopupStatus === "opening" && (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                      <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                        Opening WhatsApp...
+                      </span>
+                    </>
+                  )}
+                  {whatsappPopupStatus === "opened" && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <CheckCircleIcon className="h-2.5 w-2.5 text-white" />
+                      </div>
+                      <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                        WhatsApp opened - Send verification message
+                      </span>
+                    </>
+                  )}
+                  {whatsappPopupStatus === "closed" && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-orange-500 flex items-center justify-center">
+                        <span className="text-white text-xs">!</span>
+                      </div>
+                      <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
+                        WhatsApp closed - Use button below to reopen
+                      </span>
+                    </>
                   )}
                 </div>
               </div>
+            )}
 
-              {/* QR Code for desktop */}
-              {useQRCode && (
-                <div className="rounded-[18px] p-4 text-center"
-                  style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}
-                >
-                  <p className="mb-3 text-[0.72rem] font-medium" style={{ color: "var(--text-soft)" }}>
-                    Scan with your phone camera
-                  </p>
-                  <div className="mx-auto inline-flex rounded-[14px] bg-white p-3">
-                    <QRCodeDisplay
-                      value={generateQRCodeData(businessNumber, sessionData.sessionCode)}
-                      size={180}
-                      logoUrl="/brand-logos/trustlink.svg"
-                    />
-                  </div>
-                  <p className="mt-3 text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
-                    Or send "<span className="font-semibold" style={{ color: "var(--accent)" }}>{sessionData.sessionCode}</span>" to {businessNumber}
-                  </p>
-                </div>
-              )}
-
-              {/* WhatsApp direct link for mobile */}
-              {useDirectLink && (showManualWhatsAppButton || !deviceInfo.isMobile) && (
-                <button
-                  type="button"
-                  onClick={handleWhatsAppClick}
-                  className="group flex w-full items-center justify-center gap-2.5 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold tracking-[-0.01em] transition-all duration-200 active:scale-[0.97] cursor-pointer"
-                  style={{
-                    background: "linear-gradient(135deg, #25D366, #20BA5C)",
-                    color: "#ffffff",
-                    boxShadow: "0 4px 16px rgba(37, 211, 102, 0.20)",
-                  }}
-                >
-                  <WhatsAppWhiteIcon className="h-5 w-5" />
-                  {deviceInfo.isMobile ? "Open WhatsApp Manually" : "Open WhatsApp to Verify"}
-                </button>
-              )}
-
-              {/* WhatsApp status indicator */}
-              {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
-                <div className="flex flex-col items-center gap-2 py-2">
-                  <div className="flex items-center justify-center gap-2">
-                    {whatsappPopupStatus === "opening" && (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
-                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          Opening WhatsApp...
-                        </span>
-                      </>
-                    )}
-                    {whatsappPopupStatus === "opened" && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                          <CheckCircleIcon className="h-2.5 w-2.5 text-white" />
-                        </div>
-                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp opened - Send verification message
-                        </span>
-                      </>
-                    )}
-                    {whatsappPopupStatus === "desktop_app" && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                          <WhatsAppWhiteIcon className="h-2.5 w-2.5 text-white" />
-                        </div>
-                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp desktop app opened - Send verification message
-                        </span>
-                      </>
-                    )}
-                    {whatsappPopupStatus === "closed" && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-orange-500 flex items-center justify-center">
-                          <span className="text-white text-xs">!</span>
-                        </div>
-                        <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
-                          WhatsApp closed - Use button below to reopen
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Waiting indicator */}
-              <div className="flex flex-col items-center gap-2 pt-1">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    {connectionStatus === "connected" && (
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: "var(--accent)" }} />
-                    )}
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full"
-                      style={{
-                        background: connectionStatus === "connected" ? "var(--accent)"
-                          : connectionStatus === "connecting" ? "var(--warning)"
-                            : "var(--danger)",
-                      }}
-                    />
-                  </span>
-                  <span className="text-[0.7rem] font-medium" style={{ color: "var(--text-faint)" }}>
-                    {connectionStatus === "connected" ? "Listening for verification…"
-                      : connectionStatus === "connecting" ? "Connecting…"
-                        : "Reconnecting…"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Dev-only manual verify */}
-              {process.env.NODE_ENV === "development" && (
-                <button type="button" onClick={handleManualVerification}
-                  className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium"
-                  style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
-                >
-                  Debug: Manual Verify
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* ─── VERIFIED STATE ─── */}
-          {flowState === "verified" && (
-            <div className="flex flex-col items-center justify-center py-12" style={{ animation: "scaleIn 0.4s var(--ease-out-expo)" }}>
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
-              >
-                <CheckCircleIcon className="h-8 w-8 text-accent" />
-              </div>
-              <h3 className="text-[1.05rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
-                Verified!
-              </h3>
-              <p className="mt-1 text-[0.78rem]" style={{ color: "var(--muted)" }}>
-                Redirecting to your dashboard…
-              </p>
-            </div>
-          )}
-
-          {/* ─── ERROR STATE ─── */}
-          {flowState === "error" && (
-            <div className="space-y-5 py-4" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
-              <div className="text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full"
-                  style={{ background: "var(--danger-soft)" }}
-                >
-                  <span className="text-xl" style={{ color: "var(--danger)" }}>!</span>
-                </div>
-                <h3 className="text-[1rem] font-bold" style={{ color: "var(--text)" }}>
-                  Something went wrong
-                </h3>
-                {error && (
-                  <p className="mt-2 text-[0.78rem]" style={{ color: "var(--danger)" }}>{error}</p>
-                )}
-
-                {/* Mobile-specific troubleshooting */}
-                {deviceInfo.isMobile && (
-                  <div className="mt-4 text-left rounded-[14px] px-3 py-3 text-[0.7rem]"
-                    style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}
-                  >
-                    <p className="font-medium mb-2" style={{ color: "var(--text)" }}>Mobile troubleshooting:</p>
-                    <ul className="space-y-1" style={{ color: "var(--text-soft)" }}>
-                      <li>• Check your internet connection</li>
-                      <li>• Make sure both servers are running</li>
-                      <li>• Try refreshing the page</li>
-                      <li>• Clear browser cache and retry</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={handleStartOver}
-                  className="flex w-full items-center justify-center gap-2 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold transition-all active:scale-[0.97] cursor-pointer"
-                  style={{
-                    background: "var(--field)",
-                    color: "var(--text)",
-                    border: "1px solid var(--field-border)",
-                  }}
-                >
-                  Try Again
-                </button>
-
-                {/* Debug info for mobile */}
-                {deviceInfo.isMobile && process.env.NODE_ENV === "development" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      showToast("Debug info sent to console");
+            {/* Waiting indicator */}
+            <div className="flex flex-col items-center gap-2 pt-1">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  {connectionStatus === "connected" && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: "var(--accent)" }} />
+                  )}
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                    style={{
+                      background: connectionStatus === "connected" ? "var(--accent)"
+                        : connectionStatus === "connecting" ? "var(--warning)"
+                          : "var(--danger)",
                     }}
-                    className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium"
-                    style={{ background: "var(--warning-soft)", color: "var(--warning)" }}
-                  >
-                    Debug: Captured
-                  </button>
-                )}
+                  />
+                </span>
+                <span className="text-[0.7rem] font-medium" style={{ color: "var(--text-faint)" }}>
+                  {connectionStatus === "connected" ? "Listening for verification…"
+                    : connectionStatus === "connecting" ? "Connecting…"
+                      : "Reconnecting…"}
+                </span>
               </div>
             </div>
-          )}
-        </div>
+
+            {/* Dev-only manual verify */}
+            {process.env.NODE_ENV === "development" && (
+              <button type="button" onClick={handleManualVerification}
+                className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium"
+                style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+              >
+                Debug: Manual Verify
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ─── VERIFIED STATE ─── */}
+        {flowState === "verified" && (
+          <div className="flex flex-col items-center justify-center py-12 rounded-3xl border bg-[var(--panel)] border-[var(--surface-border)]" style={{ animation: "scaleIn 0.4s var(--ease-out-expo)" }}>
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
+            >
+              <CheckCircleIcon className="h-8 w-8 text-accent" />
+            </div>
+            <h3 className="text-[1.05rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
+              Verified!
+            </h3>
+            <p className="mt-1 text-[0.78rem]" style={{ color: "var(--muted)" }}>
+              Redirecting to your dashboard…
+            </p>
+          </div>
+        )}
+
+        {/* ─── ERROR STATE ─── */}
+        {flowState === "error" && (
+          <div className="space-y-5 py-4 p-6 rounded-3xl border bg-[var(--panel)] border-[var(--surface-border)]" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
+            <div className="text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full"
+                style={{ background: "var(--danger-soft)" }}
+              >
+                <span className="text-xl" style={{ color: "var(--danger)" }}>!</span>
+              </div>
+              <h3 className="text-[1rem] font-bold" style={{ color: "var(--text)" }}>
+                Something went wrong
+              </h3>
+              {error && (
+                <p className="mt-2 text-[0.78rem]" style={{ color: "var(--danger)" }}>{error}</p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleStartOver}
+                className="flex w-full items-center justify-center gap-2 rounded-[18px] px-5 py-3.5 text-[0.88rem] font-semibold transition-all active:scale-[0.97] cursor-pointer"
+                style={{
+                  background: "var(--field)",
+                  color: "var(--text)",
+                  border: "1px solid var(--field-border)",
+                }}
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Trust badges ── */}
-      {/* {flowState === "idle" && (
-        <div className="relative z-10 mt-7 flex w-full max-w-[420px] items-start gap-2" style={{ animation: "fadeIn 0.4s 0.15s var(--ease-out-expo) both" }}>
-          {[
-            { icon: ShieldIcon, label: "End-to-end secure" },
-            { icon: ZapIcon, label: "Instant verification" },
-            { icon: ClockIcon, label: "Time-limited codes" },
-          ].map((badge) => (
-            <div key={badge.label} className="flex flex-1 flex-col items-center gap-1.5 rounded-[14px] px-2 py-3 text-center"
-              style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}
-            >
-              <badge.icon className="h-4 w-4 text-accent" />
-              <span className="text-[0.62rem] font-medium leading-tight" style={{ color: "var(--text-faint)" }}>
-                {badge.label}
-              </span>
-            </div>
-          ))}
+      {/* ── Footer ── */}
+      <footer className="relative z-20 mt-10 w-full max-w-[420px] px-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-wrap justify-center gap-6 text-[0.7rem] font-bold uppercase tracking-widest" style={{ color: "var(--text-soft)" }}>
+            <Link href={"/privacy" as Route} className="transition-colors hover:text-[var(--accent)]">Privacy Policy</Link>
+            <Link href={"/terms" as Route} className="transition-colors hover:text-[var(--accent)]">Terms of Service</Link>
+            <Link href={"/support" as Route} className="transition-colors hover:text-[var(--accent)]">Support</Link>
+          </div>
+          <div className="text-[0.65rem] font-medium" style={{ color: "var(--text-faint)" }}>
+            © 2024 TrustLink Labs. All rights reserved.
+          </div>
         </div>
-      )} */}
+      </footer>
     </main>
   );
 }
+

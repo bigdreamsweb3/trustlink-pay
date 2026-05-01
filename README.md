@@ -23,17 +23,6 @@ A Solana address (`4yfu48GhqFBMDrHJr9VBnGMDHJr9VBnGMDHJr9gnhY`) is 44 random cha
 
 On 23 Nov 2024 a user lost **$2.91 M** by copying a lookalike address seeded into their transaction history. TrustLink eliminates this: the sender never sees a wallet address.
 
-![Illustration of an address-poisoning style payment scam](public/nov-23-24-crypto-loss-to-scam.png)
-
-_Illustration: a user confused after losing funds by sending crypto to the wrong wallet address or falling victim to a scam._
-
-- Intended: `4yfu48...gnhY`
-- Fake: `4yfuQC...izcY`
-
-[Source: Solscan transaction](https://solscan.io/tx/T3vqZjMEi8MrJ34pwgnPG1ZjrFwygw6KYzij4Rt8dcFp2gZMqurHxC2Ta9gK7gELq2XXr4xpyotUYZryvQ2h5RP)
-
-TrustLink eliminates this attack vector entirely. The sender never sees or types a wallet address. They type a phone number they already know.
-
 ### Crypto isn't accessible yet
 
 Hundreds of millions of people in Nigeria, India, Brazil, and Southeast Asia already pay with phone numbers (UPI, Pix, OPay). TrustLink keeps that familiar UX and upgrades settlement to stablecoins on Solana.
@@ -50,12 +39,12 @@ TrustLink Pay replaces "paste a wallet string" with:
 
 ### WhatsApp's role
 
-| Layer               | Purpose                                           |
-| ------------------- | ------------------------------------------------- |
-| Identity proxy      | Route payments by phone number, not raw addresses |
-| Business confidence | Surface verified merchant identity to senders     |
-| Notifications       | Payment sent / received / ready-to-claim alerts   |
-| Authentication      | OTP + session-code verification                   |
+| Layer | Purpose |
+|---|---|
+| Identity proxy | Route payments by phone number, not raw addresses |
+| Business confidence | Surface verified merchant identity to senders |
+| Notifications | Payment sent / received / ready-to-claim alerts |
+| Authentication | OTP + session-code verification |
 
 WhatsApp is the identity and notification layer — TrustLink Pay is **not** a WhatsApp chat app or custodial wallet.
 
@@ -88,14 +77,14 @@ WhatsApp is the identity and notification layer — TrustLink Pay is **not** a W
 
 ### Core guarantees
 
-| Property                     | How                                                                 |
-| ---------------------------- | ------------------------------------------------------------------- |
-| Noncustodial                 | TrustLink never holds user funds or private keys                    |
-| Per-payment isolation        | Each payment gets its own escrow vault PDA                          |
-| Replay prevention            | On-chain nonce bitmask; consumed nonces can't reuse                 |
-| Derivation proof             | Master key binds child key to escrow + nonce + expiry + destination |
-| Front-run resistance         | Destination hash checked before any transfer                        |
-| Address poisoning eliminated | Sender never sees a wallet address                                  |
+| Property | How |
+|---|---|
+| Noncustodial | TrustLink never holds user funds or private keys |
+| Per-payment isolation | Each payment gets its own escrow vault PDA |
+| Replay prevention | On-chain nonce bitmask; consumed nonces can't reuse |
+| Derivation proof | Master key binds child key to escrow + nonce + expiry + destination |
+| Front-run resistance | Destination hash checked before any transfer |
+| Address poisoning eliminated | Sender never sees a wallet address |
 
 ### Key architecture (v3 hardened)
 
@@ -107,12 +96,12 @@ WhatsApp is the identity and notification layer — TrustLink Pay is **not** a W
 
 ### Threat model
 
-| Threat             | Defense                                                                   |
-| ------------------ | ------------------------------------------------------------------------- |
-| Forged child key   | Program requires derivation proof signed by master key + child hash match |
-| Replayed signature | On-chain nonce consumed; reuse fails                                      |
-| Destination swap   | Destination bound in signed payload; mismatch rejected                    |
-| Operator custody   | Escrow requires valid user proofs; platform cannot author claims          |
+| Threat | Defense |
+|---|---|
+| Forged child key | Program requires derivation proof signed by master key + child hash match |
+| Replayed signature | On-chain nonce consumed; reuse fails |
+| Destination swap | Destination bound in signed payload; mismatch rejected |
+| Operator custody | Escrow requires valid user proofs; platform cannot author claims |
 
 ---
 
@@ -144,11 +133,9 @@ Real-time WhatsApp delivery receipts: **Sent → Delivered → Seen** — the sa
 ```
 
 ### Identity layer
-
 Phone → SHA-256 hash → on-chain `IdentityBinding` PDA · WhatsApp OTP · In-app PIN · Master → ephemeral child keys
 
 ### Escrow layer (v3)
-
 `EscrowV3` PDA seeded by `child_hash + nonce + mint` · Ed25519 derivation proofs · Bitmask nonce PDAs · Destination hash binding · Auto-claim crank
 
 ---
@@ -166,6 +153,52 @@ Device-aware: mobile gets a direct WhatsApp link; desktop gets a QR code.
 
 ---
 
+
+## Milestones
+
+### Milestone 1: StableHacks 2026 — Programmable Stablecoin Payments
+
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) · $220K Prize Pool
+
+TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackathon for institutional-grade stablecoin infrastructure on Solana, organized by [Tenity](https://dorahacks.io/org/14594/hackathon).
+
+**Track:** Programmable Stablecoin Payments
+
+**What was built:**
+- Noncustodial per-payment escrow on Solana (v2 + v3 hardened architecture)
+- Phone-number-first identity layer with WhatsApp verification
+- Gasless send and claim UX (TrustLink sponsors Solana fees)
+- WhatsApp Business identity verification for merchant payments
+- Delivery receipts (sent / delivered / seen)
+- Hardened v3 escrow with Ed25519 derivation proofs and replay prevention
+- Compliance-aware architecture (KYC/KYT/AML/Travel Rule ready)
+
+
+---
+
+### Milestone 2: The Bags Hackathon — Creator Token Payments
+
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) · $1M Prize Pool
+
+TrustLink integrates with the [Bags SDK](https://docs.bags.fm/) to support **creator token payments via phone number** — making TrustLink the first dApp where any Bags creator token can be sent to a WhatsApp number with noncustodial escrow.
+
+**Track:** Payments — *"Enable real-world and peer-to-peer payment flows using creator tokens on Solana."*
+
+**Three payment modes:**
+
+| Mode | Sender pays | Recipient gets | Use case |
+|---|---|---|---|
+| Stablecoin | USDC | USDC | Standard payments, remittances |
+| Creator token | $CREATOR | $CREATOR | Community tipping, token distribution |
+| Cross-token | $CREATOR | USDC | Real-world payments with creator tokens |
+
+**Integration:** [Trade Quote API](https://docs.bags.fm/api-reference/get-trade-quote) · [Swap API](https://docs.bags.fm/api-reference/create-swap-transaction) · [Bags Pools](https://docs.bags.fm/api-reference/get-bags-pools) · $TL token launched on [Bags](https://bags.fm/)
+
+
+---
+
+*Future milestones, hackathon results, and grants will be recorded here as TrustLink grows.*
+
 ## Current Status
 
 - ✅ WhatsApp OTP authentication + session codes
@@ -181,13 +214,13 @@ Device-aware: mobile gets a direct WhatsApp link; desktop gets a QR code.
 
 ## Repository Structure
 
-| Path                                         | Description                                             |
-| -------------------------------------------- | ------------------------------------------------------- |
-| `backend/programs/trustlink-escrow`          | Anchor escrow program (v2 + v3)                         |
-| `backend/app/blockchain/trustlink-pay-v3.ts` | Transaction builders                                    |
-| `backend/app/lib/privacy-keys.ts`            | Privacy key derivation + proofs                         |
-| `frontend`                                   | Next.js 15 frontend                                     |
-| `docs/`                                      | Architecture, escrow design, wallet roles, devnet guide |
+| Path | Description |
+|---|---|
+| `backend/programs/trustlink-escrow` | Anchor escrow program (v2 + v3) |
+| `backend/app/blockchain/trustlink-pay-v3.ts` | Transaction builders |
+| `backend/app/lib/privacy-keys.ts` | Privacy key derivation + proofs |
+| `frontend` | Next.js 15 frontend |
+| `docs/` | Architecture, escrow design, wallet roles, devnet guide |
 
 ## Quick Start
 

@@ -31,10 +31,10 @@ const ibmPlexMono = IBM_Plex_Mono({
 const baseUrl = "https://trustlink-pay.vercel.app/";
 
 const title =
-  "TrustLink Pay — Send Crypto to a Phone Number";
+  "TrustLink Pay - Web3 Payment Infrastructure";
 
 const description =
-  "TrustLink Pay is a noncustodial crypto payment protocol on Solana that lets you send stablecoins using a phone number. Secure, gasless, and protected from address poisoning.";
+  "Securely verify your identity and send stablecoins using your phone number. TrustLink Pay is a noncustodial crypto payment protocol on Solana.";
 
 /* ---------------- METADATA ---------------- */
 

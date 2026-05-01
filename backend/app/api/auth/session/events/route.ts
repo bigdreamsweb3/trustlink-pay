@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addSessionConnection, removeSessionConnection } from "@/app/lib/session-events";
 import { addCorsHeaders, handleCors } from "@/app/lib/cors";
+import { logger } from "@/app/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,15 @@ export async function GET(request: NextRequest) {
   // Create a new stream for Server-Sent Events
   const stream = new ReadableStream({
     start(controller) {
+      logger.info("sse.connection.started", { sessionId });
+      
       // Add this connection to the session's connection set
       addSessionConnection(sessionId, controller);
 
       // Send initial connection event
       controller.enqueue(`data: ${JSON.stringify({ type: "connected" })}\n\n`);
+      
+      logger.info("sse.connection.established", { sessionId });
 
       // Cleanup on disconnect
       request.signal.addEventListener("abort", () => {

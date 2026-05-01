@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Apply dark mode selector globally */
+@supports selector(:is(.dark *)) {
+  :is(.dark) {
+    color-scheme: dark;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    TrustLink — Refined Global Theme v2
    CHANGES: Smoother color palette, Airbills-inspired depth,
@@ -30,11 +37,11 @@
   --surface-border: rgba(30, 138, 108, 0.06);
   --text: #111f18;
   --primary: #ffffff;
-  --muted: rgba(17, 31, 24, 0.50);
+  --muted: rgba(17, 31, 24, 0.5);
   --accent: #2ea886;
   --accent-deep: #1e7a60;
   --primary-accent: #5ab8aa;
-  --accent-icon: #b0ddd2;
+  --accent-icon: #b0ddd200;
   --accent-gradient: linear-gradient(
     145deg,
     rgba(46, 168, 134, 0.14) 0%,
@@ -45,12 +52,11 @@
   --warning: #d9970f;
   --danger: #d95050;
   --shadow:
-    0 1px 2px rgba(17, 31, 24, 0.03),
-    0 4px 14px rgba(17, 31, 24, 0.025);
+    0 1px 2px rgba(17, 31, 24, 0.03), 0 4px 14px rgba(17, 31, 24, 0.025);
   --overlay: rgba(17, 31, 24, 0.18);
   --phone-shell: #f3f7f5;
   --phone-screen: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
-  --dock: rgba(255, 255, 255, 0.90);
+  --dock: rgba(255, 255, 255, 0.9);
   --dock-border: rgba(30, 122, 96, 0.05);
   --card-strong: rgba(255, 255, 255, 0.96);
   --field: rgba(245, 249, 247, 0.88);
@@ -58,12 +64,12 @@
     radial-gradient(circle at top, rgba(46, 168, 134, 0.04), transparent 50%),
     linear-gradient(135deg, #ffffff, #f7faf8);
   --field-border: rgba(30, 122, 96, 0.07);
-  --surface-soft: rgba(240, 245, 242, 0.60);
+  --surface-soft: rgba(240, 245, 242, 0.6);
   --text-soft: rgba(17, 31, 24, 0.64);
-  --text-faint: rgba(17, 31, 24, 0.40);
+  --text-faint: rgba(17, 31, 24, 0.4);
   --icon-soft: rgba(46, 168, 134, 0.05);
   --accent-soft: rgba(46, 168, 134, 0.06);
-  --accent-border: rgba(46, 168, 134, 0.10);
+  --accent-border: rgba(46, 168, 134, 0.1);
   --danger-soft: rgba(217, 80, 80, 0.07);
 
   --pop-bg: linear-gradient(
@@ -103,10 +109,8 @@
   );
   --warning: #e8a840;
   --danger: #f08080;
-  --shadow:
-    0 2px 8px rgba(0, 0, 0, 0.28),
-    0 8px 24px rgba(0, 0, 0, 0.16);
-  --overlay: rgba(0, 0, 0, 0.70);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.16);
+  --overlay: rgba(0, 0, 0, 0.7);
   --phone-shell: #090f0d;
   --phone-screen: linear-gradient(
     180deg,
@@ -123,7 +127,7 @@
     linear-gradient(135deg, #131d1a, #0a100e);
   --field-border: rgba(255, 255, 255, 0.05);
   --surface-soft: rgba(255, 255, 255, 0.02);
-  --text-soft: rgba(236, 244, 239, 0.70);
+  --text-soft: rgba(236, 244, 239, 0.7);
   --text-faint: rgba(236, 244, 239, 0.36);
   --icon-soft: rgba(255, 255, 255, 0.04);
   --accent-soft: rgba(93, 219, 167, 0.06);
@@ -395,7 +399,7 @@ select {
   .tl-scrollbar-mobile-hidden:hover::-webkit-scrollbar-thumb {
     background: linear-gradient(
       180deg,
-      rgba(93, 219, 167, 0.30),
+      rgba(93, 219, 167, 0.3),
       rgba(93, 219, 167, 0.14)
     );
     border: 1px solid rgba(255, 255, 255, 0.04);
@@ -593,7 +597,7 @@ select {
       transparent 1px
     );
   background-size: 24px 24px;
-  opacity: 0.10;
+  opacity: 0.1;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04));
 }
 
@@ -1139,11 +1143,7 @@ select {
 
 .auth-panel--lead {
   background:
-    radial-gradient(
-      circle at 20% 18%,
-      var(--accent-soft),
-      transparent 24%
-    ),
+    radial-gradient(circle at 20% 18%, var(--accent-soft), transparent 24%),
     radial-gradient(
       circle at 82% 14%,
       rgba(255, 255, 255, 0.03),
@@ -1414,7 +1414,7 @@ select {
 }
 
 .avatar-pill:hover {
-  box-shadow: 0 12px 28px rgba(93, 219, 167, 0.20);
+  box-shadow: 0 12px 28px rgba(93, 219, 167, 0.2);
   transform: translateY(-2px);
 }
 
@@ -1998,7 +1998,7 @@ select {
 
 .bottom-dock__item--primary:active {
   transform: scale(0.96);
-  box-shadow: 0 6px 16px rgba(93, 219, 167, 0.10);
+  box-shadow: 0 6px 16px rgba(93, 219, 167, 0.1);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2062,11 +2062,7 @@ select {
   border-radius: 24px;
   border: 1px solid var(--surface-border);
   background:
-    linear-gradient(
-      135deg,
-      var(--accent-soft),
-      rgba(74, 190, 208, 0.02)
-    ),
+    linear-gradient(135deg, var(--accent-soft), rgba(74, 190, 208, 0.02)),
     var(--surface);
   box-shadow: var(--shadow);
 }
@@ -2174,7 +2170,7 @@ select {
 }
 
 .payment-card:hover .status-dot {
-  box-shadow: 0 0 0 7px rgba(93, 219, 167, 0.10);
+  box-shadow: 0 0 0 7px rgba(93, 219, 167, 0.1);
 }
 
 .empty-state {

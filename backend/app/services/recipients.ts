@@ -56,7 +56,8 @@ export async function lookupRecipientIdentity(
   phoneNumber: string,
   options?: { skipWhatsAppCheck?: boolean },
 ): Promise<RecipientLookupResult> {
-  const whatsappDisplayName = await findLatestWhatsAppProfileNameByPhoneNumber(phoneNumber);
+  const whatsappDisplayName =
+    await findLatestWhatsAppProfileNameByPhoneNumber(phoneNumber);
   const trustLinkUser = await findUserByPhoneNumber(phoneNumber);
   const resolvedDisplayName =
     trustLinkUser?.display_name?.trim() || whatsappDisplayName || phoneNumber;
@@ -83,8 +84,8 @@ export async function lookupRecipientIdentity(
         handle: trustLinkUser.trustlink_handle,
         phoneNumber: trustLinkUser.phone_number,
         source: "trustlink",
-        whatsappProfileName: whatsappDisplayName
-      }
+        whatsappProfileName: whatsappDisplayName,
+      },
     };
   }
 
@@ -106,7 +107,7 @@ export async function lookupRecipientIdentity(
         source: "invalid",
         whatsappProfileName: null,
       },
-      warning: "This phone number is not currently available on WhatsApp.",
+      warning: "",
     };
   }
 
@@ -118,7 +119,9 @@ export async function lookupRecipientIdentity(
     trustLinkHandle: trustLinkUser?.trustlink_handle ?? null,
     trustLinkPhoneVerifiedAt: trustLinkUser?.phone_verified_at ?? null,
     trustLinkWhatsappOptedIn: trustLinkUser?.whatsapp_opted_in ?? null,
-    trustLinkPinHashPresent: trustLinkUser ? Boolean(trustLinkUser.pin_hash) : null,
+    trustLinkPinHashPresent: trustLinkUser
+      ? Boolean(trustLinkUser.pin_hash)
+      : null,
     whatsappDisplayName,
   });
 
@@ -131,11 +134,11 @@ export async function lookupRecipientIdentity(
         handle: null,
         phoneNumber: trustLinkUser.phone_number,
         source: "whatsapp",
-        whatsappProfileName: whatsappDisplayName ?? trustLinkUser.display_name
+        whatsappProfileName: whatsappDisplayName ?? trustLinkUser.display_name,
       },
       warning: trustLinkUser.whatsapp_opted_in
         ? "This number has started TrustLink onboarding but has not completed account setup yet."
-        : "This number exists in TrustLink records but is not available for automatic TrustLink WhatsApp delivery right now."
+        : "This number exists in TrustLink records but is not available for automatic TrustLink WhatsApp delivery right now.",
     };
   }
 
@@ -148,9 +151,10 @@ export async function lookupRecipientIdentity(
         handle: null,
         phoneNumber,
         source: "whatsapp",
-        whatsappProfileName: whatsappDisplayName
+        whatsappProfileName: whatsappDisplayName,
       },
-      warning: "This number has interacted on WhatsApp but is not yet registered on TrustLink."
+      warning:
+        "This number has interacted on WhatsApp but is not yet registered on TrustLink.",
     };
   }
 
@@ -162,8 +166,9 @@ export async function lookupRecipientIdentity(
       handle: null,
       phoneNumber,
       source: "manual_invite",
-      whatsappProfileName: null
+      whatsappProfileName: null,
     },
-    warning: "This number is not yet known to TrustLink. You can still send funds, but you will need to share the claim invite yourself."
+    warning:
+      "This number is not yet known to TrustLink. You can still send funds, but you will need to share the claim invite yourself.",
   };
 }

@@ -23,21 +23,18 @@ export function WhatsAppIframe({ url, isOpen, onClose, onStatusChange }: WhatsAp
 
       // Monitor iframe loading
       const iframe = iframeRef.current;
-      
+
       const handleLoad = () => {
-        console.log("[WhatsAppIframe] WhatsApp loaded successfully");
         setIframeStatus("opened");
         onStatusChange("opened");
       };
 
       const handleError = () => {
-        console.error("[WhatsAppIframe] Failed to load WhatsApp in iframe");
         setIframeStatus("error");
         onStatusChange("error");
-        
+
         // Fallback: open in new tab
         setTimeout(() => {
-          console.log("[WhatsAppIframe] Opening WhatsApp in new tab as fallback");
           window.open(url, "_blank", "noopener,noreferrer");
         }, 1000);
       };
@@ -68,7 +65,7 @@ export function WhatsAppIframe({ url, isOpen, onClose, onStatusChange }: WhatsAp
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.768.967-.941.967-.173.149-.349.149-.67-.149-.322-.149-1.086-.149-1.086-.149-.617 0-1.086.149-1.086.149-.173.173-.322.447-.322.447-.322.768-.322 1.086-.322.322 0 .67.149.67.149.297.149 1.707.867 2.03.967.322.099.471.149.67.149.197 0 .471-.149.941-.967.471-.818.941-1.663.941-1.663.173-.322.322-.447.322-.447.322-.617.149-1.086.149-1.086.149-.617 0-1.086-.149-1.086-.149-.322-.173-.67-.322-1.086-.322-.416 0-.768.149-1.086.322-.322.173-.471.447-.471.447l-.67 1.086c-.322.521-.471.818-.471.818s-.149.471-.149 1.086c0 .617.149 1.086.149 1.086.149.322.322.67.322 1.086.322.416 0 .768-.149 1.086-.322.322-.173.471-.447.471-.447l.67-1.086c.322-.521.471-.818.471-.818s.149-.471.149-1.086c0-.617-.149-1.086-.149-1.086-.149-.322-.322-.67-.322-1.086-.322-.416 0-.768.149-1.086.322z"/>
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.768.967-.941.967-.173.149-.349.149-.67-.149-.322-.149-1.086-.149-1.086-.149-.617 0-1.086.149-1.086.149-.173.173-.322.447-.322.447-.322.768-.322 1.086-.322.322 0 .67.149.67.149.297.149 1.707.867 2.03.967.322.099.471.149.67.149.197 0 .471-.149.941-.967.471-.818.941-1.663.941-1.663.173-.322.322-.447.322-.447.322-.617.149-1.086.149-1.086.149-.617 0-1.086-.149-1.086-.149-.322-.173-.67-.322-1.086-.322-.416 0-.768.149-1.086.322-.322.173-.471.447-.471.447l-.67 1.086c-.322.521-.471.818-.471.818s-.149.471-.149 1.086c0 .617.149 1.086.149 1.086.149.322.322.67.322 1.086.322.416 0 .768-.149 1.086-.322.322-.173.471-.447.471-.447l.67-1.086c.322-.521.471-.818.471-.818s.149-.471.149-1.086c0-.617-.149-1.086-.149-1.086-.149-.322-.322-.67-.322-1.086-.322-.416 0-.768.149-1.086.322z" />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900">WhatsApp</h3>
@@ -96,7 +93,7 @@ export function WhatsAppIframe({ url, isOpen, onClose, onStatusChange }: WhatsAp
               <>
                 <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
                   <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
                 <span className="text-sm text-gray-600">WhatsApp ready - Send verification message</span>
@@ -122,7 +119,7 @@ export function WhatsAppIframe({ url, isOpen, onClose, onStatusChange }: WhatsAp
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
             allow="clipboard-read; clipboard-write; microphone; camera; payment; ambient-light-sensor; accelerometer; gyroscope; magnetometer"
           />
-          
+
           {/* Loading overlay */}
           {iframeStatus === "opening" && (
             <div className="absolute inset-0 flex items-center justify-center bg-white">

@@ -330,7 +330,7 @@ export function PhoneNumberInput({
 
       {/* ── Lookup Result Card ── */}
       {showLookupCard ? (
-        <div className={`relative z-10 rounded-[18px] border px-4 py-3.5 ${trustLinkToneClass}`}>
+        <div className={`relative z-10 rounded-[18px] px-4 py-3.5 ${trustLinkToneClass}`}>
           {lookupBusy ? (
             <SectionLoader label="Verifying recipient..." />
           ) : lookupError ? (
@@ -342,7 +342,7 @@ export function PhoneNumberInput({
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-3">
                   <div className="truncate text-[0.84rem] font-semibold text-[var(--text)]">
-                    {recipientPreview.recipient.displayName}
+                    @{recipientPreview.recipient.handle}
                   </div>
                   <span
                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.64rem] font-semibold ${recipientPreview.status === "registered"
@@ -360,12 +360,12 @@ export function PhoneNumberInput({
                   </span>
                 </div>
 
-                <div className="mt-1 flex items-center justify-between gap-3">
+                {/* <div className="mt-1 flex items-center justify-between gap-3">
                   <div className="truncate text-[0.68rem] text-[var(--text-faint)]">{recipientPreview.recipient.phoneNumber}</div>
                   {recipientPreview.recipient.handle ? (
                     <div className="text-[0.7rem] text-[var(--text-faint)]">@{recipientPreview.recipient.handle}</div>
                   ) : null}
-                </div>
+                </div> */}
 
                 {"warning" in recipientPreview ? (
                   <div className={`mt-1.5 text-[0.72rem] leading-relaxed ${recipientPreview.status === "invalid_whatsapp_number" ? "text-[#ffadad]" : "text-[#f3c96b]"}`}>
@@ -374,17 +374,21 @@ export function PhoneNumberInput({
                 ) : null}
               </div>
 
+
               {showSummaryCard ? (
-                <div className="border-t border-[var(--field-border)] pt-3">
+                <div className="">
                   {renderWhatsAppCard()}
                 </div>
               ) : null}
             </div>
           ) : null}
 
+
+
           {!lookupBusy && !lookupError && !recipientPreview && showSummaryCard ? renderWhatsAppCard() : null}
         </div>
       ) : null}
+
     </div>
   );
 }

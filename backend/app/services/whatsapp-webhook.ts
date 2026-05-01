@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 
 import {
   findPaymentByNotificationMessageEventId,
@@ -6,7 +6,7 @@ import {
   updatePaymentNotificationMessageId,
   updatePaymentNotificationStatus
 } from "@/app/db/payments";
-import { findUserByPhoneNumber, updateUserProfileIdentity, markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
+import { findUserByPhoneNumber, upsertUserProfile, markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
 import { createWhatsAppWebhookEvent } from "@/app/db/whatsapp-webhook-events";
 import type { PaymentNotificationStatus } from "@/app/types/payment";
 import { issueAuthChallengeToken } from "@/app/lib/auth";
@@ -183,13 +183,16 @@ async function processInboundMessage(
     return;
   }
 
-  // Check for session code verification
-  const sessionCodeMatch = inboundText.match(/Verify\s+TrustLink Pay\s+Code:\s+(TL[A-Z0-9]{6})/i);
+  // Check for session code verification (accept both formats)
+  const fullFormatMatch = inboundText.match(/Verify\s+TrustLink Pay\s+Code:\s+(TL[A-Z0-9]{6})/i);
+  const codeOnlyMatch = inboundText.match(/^(TL[A-Z0-9]{6})$/i);
+  const sessionCodeMatch = fullFormatMatch || codeOnlyMatch;
   
   logger.info("whatsapp.webhook.session_code_check", {
     inboundText,
     hasMatch: !!sessionCodeMatch,
     match: sessionCodeMatch?.[1] || null,
+    format: fullFormatMatch ? "full" : codeOnlyMatch ? "code_only" : "none",
   });
   
   if (sessionCodeMatch) {
@@ -220,7 +223,16 @@ async function handleSessionCodeVerification(
     phoneNumber,
   });
 
-  const verifiedSession = verifySessionCode(sessionCode, phoneNumber);
+  // Debug: Check what session codes exist
+  const { RedisSessionStorage } = await import("@/app/lib/redis");
+  const allSessions = await RedisSessionStorage.getAllSessions();
+  logger.info("whatsapp.webhook.debug_existing_codes", {
+    totalCodes: Object.keys(allSessions).length,
+    codes: Object.keys(allSessions),
+    lookingFor: sessionCode,
+  });
+
+  const verifiedSession = await verifySessionCode(sessionCode, phoneNumber);
   
   logger.info("whatsapp.webhook.session_code_verification_result", {
     sessionCode,
@@ -246,16 +258,44 @@ async function handleSessionCodeVerification(
   // Find or create user
   let user = await findUserByPhoneNumber(phoneNumber);
   
+  logger.info("whatsapp.webhook.user_lookup", {
+    phoneNumber,
+    userFound: !!user,
+    userId: user?.id || null,
+    userPhone: user?.phone_number || null,
+  });
+  
   if (!user) {
     // Create new user if doesn't exist
-    user = await updateUserProfileIdentity({
-      userId: crypto.randomUUID(),
+    logger.info("whatsapp.webhook.creating_user", {
+      phoneNumber,
+      contactName,
+    });
+    
+    // Generate phone hash for user creation
+    const phoneHash = createHash('sha256').update(phoneNumber).digest('hex');
+    
+    user = await upsertUserProfile({
+      phoneNumber,
+      phoneHash,
       displayName: contactName || "TrustLink User",
       handle: `user_${phoneNumber.slice(-8)}`, // Simple handle generation
+      pinHash: '', // Empty pin hash for now
+    });
+    
+    logger.info("whatsapp.webhook.user_created", {
+      userId: user?.id || null,
+      userPhone: user?.phone_number || null,
     });
   }
 
   // Issue auth challenge token
+  logger.info("whatsapp.webhook.issuing_token", {
+    userId: user?.id || null,
+    userPhone: user?.phone_number || null,
+    hasPinHash: !!user?.pin_hash,
+  });
+  
   const challengeToken = issueAuthChallengeToken({
     id: user.id,
     phoneNumber: user.phone_number,
@@ -265,11 +305,21 @@ async function handleSessionCodeVerification(
   // Store the verification result for real-time updates
   // Use server-sent events to notify the frontend
   try {
+    logger.info("whatsapp.webhook.sending_sse_notification", {
+      sessionId: verifiedSession.sessionId,
+      hasChallengeToken: !!challengeToken,
+      userId: user.id,
+    });
+    
     const { notifySessionVerification } = await import("@/app/lib/session-events");
     notifySessionVerification(verifiedSession.sessionId, {
       challengeToken,
       user: sanitizeUser(user),
       stage: user.pin_hash ? "pin_verify" : "pin_setup",
+    });
+    
+    logger.info("whatsapp.webhook.sse_notification_sent", {
+      sessionId: verifiedSession.sessionId,
     });
   } catch (error) {
     logger.warn("whatsapp.webhook.push_notification_failed", {

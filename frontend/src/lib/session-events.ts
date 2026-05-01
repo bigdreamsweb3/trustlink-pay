@@ -28,70 +28,78 @@ export class SessionEventManager {
     private sessionCode: string,
     private onVerification: (result: SessionVerificationResult) => void,
     private onError?: (error: string) => void,
-    private onConnectionChange?: (connected: boolean) => void
-  ) {}
+    private onConnectionChange?: (connected: boolean) => void,
+  ) {
+    this.isListening = false;
+    this.fallbackAttempts = 0;
+    this.maxFallbackAttempts = 6; // 1 minute of fallback polling
+  }
 
   start() {
-    if (this.isListening) {
-      return;
-    }
-
+    if (this.isListening) return;
     this.isListening = true;
     this.fallbackAttempts = 0;
 
-    console.log(`[SessionEvents] Starting real-time listening for session ${this.sessionId}`);
+    // Start immediate polling as backup while SSE connects
+    this.startImmediatePolling();
 
     // Try to connect to Server-Sent Events
     this.connectToEvents();
   }
 
-  private connectToEvents() {
+  private connectToEvents(retryCount = 0) {
     try {
-      const eventsUrl = `${buildBackendUrl("/api/auth/session/events")}?sessionId=${this.sessionId}`;
+      // EventSource doesn't work through middleware proxy, use direct backend URL
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+      const eventsUrl = `${backendUrl}/api/auth/session/events?sessionId=${this.sessionId}`;
+
       this.eventSource = new EventSource(eventsUrl);
 
       this.eventSource.onopen = () => {
-        console.log(`[SessionEvents] Connected to real-time events`);
         this.onConnectionChange?.(true);
-        
-        // Stop fallback polling if it was running
+
+        // Stop immediate polling when SSE connects successfully
         this.stopFallbackPolling();
       };
 
       this.eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log(`[SessionEvents] Received event:`, data);
 
           if (data.type === "verified") {
-            console.log(`[SessionEvents] Verification received via real-time events`);
             this.stop();
             this.onVerification(data);
           }
         } catch (error) {
-          console.error(`[SessionEvents] Failed to parse event:`, error);
+          // Silent error handling for malformed messages
         }
       };
 
       this.eventSource.onerror = (error) => {
-        console.error(`[SessionEvents] EventSource error:`, error);
-        console.error(`[SessionEvents] URL attempted:`, eventsUrl);
-        console.error(`[SessionEvents] ReadyState:`, this.eventSource?.readyState);
         this.onConnectionChange?.(false);
-        
-        // Start fallback polling if SSE fails
+
+        // Retry connection if it failed and we haven't exceeded retry limit
+        if (
+          retryCount < 3 &&
+          this.eventSource?.readyState !== EventSource.OPEN
+        ) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
+
+          setTimeout(() => {
+            this.connectToEvents(retryCount + 1);
+          }, delay);
+          return;
+        }
+
+        // Start fallback polling if SSE fails after retries
         if (this.fallbackAttempts < this.maxFallbackAttempts) {
           this.startFallbackPolling();
         } else {
-          this.stop();
-          if (this.onError) {
-            this.onError("Real-time connection failed. Please refresh and try again.");
-          }
+          this.onError?.("Connection failed after multiple attempts");
         }
       };
-
     } catch (error) {
-      console.error(`[SessionEvents] Failed to create EventSource:`, error);
       // Fallback to polling immediately
       this.startFallbackPolling();
     }
@@ -102,18 +110,19 @@ export class SessionEventManager {
       return;
     }
 
-    console.log(`[SessionEvents] Starting fallback polling attempt ${this.fallbackAttempts + 1}`);
     this.fallbackAttempts++;
 
     this.fallbackPollingInterval = setInterval(async () => {
       try {
-        const result = await apiPost<SessionVerificationResult>("/api/auth/session/verify", {
-          sessionId: this.sessionId,
-          sessionCode: this.sessionCode,
-        });
+        const result = await apiPost<SessionVerificationResult>(
+          "/api/auth/session/verify",
+          {
+            sessionId: this.sessionId,
+            sessionCode: this.sessionCode,
+          },
+        );
 
         if (result.success) {
-          console.log(`[SessionEvents] Verification successful via fallback polling`);
           this.stop();
           this.onVerification(result);
         } else if (result.error && this.shouldStopPolling(result.error)) {
@@ -123,9 +132,43 @@ export class SessionEventManager {
           }
         }
       } catch (error) {
-        console.error(`[SessionEvents] Fallback polling error:`, error);
+        // Silent error handling for polling failures
       }
     }, 10000); // 10 seconds
+  }
+
+  private startImmediatePolling() {
+    // Poll immediately, then every 2 seconds for ultra-fast verification
+    const pollImmediately = async () => {
+      if (!this.isListening) {
+        return;
+      }
+
+      try {
+        const result = await this.checkVerificationStatus();
+
+        if (result.success) {
+          this.stop();
+          this.onVerification(result);
+          return;
+        } else if (
+          result.error &&
+          result.error !== "Session not yet verified"
+        ) {
+          // Don't stop on "Session not yet verified" - keep polling
+        }
+      } catch (error) {
+        // Silent error handling for immediate polling
+      }
+
+      // Schedule next poll if still listening
+      if (this.isListening) {
+        setTimeout(pollImmediately, 2000); // 2 seconds
+      }
+    };
+
+    // Start polling immediately
+    pollImmediately();
   }
 
   private stopFallbackPolling() {
@@ -135,29 +178,47 @@ export class SessionEventManager {
     }
   }
 
+  private async checkVerificationStatus(): Promise<SessionVerificationResult> {
+    try {
+      const result = await apiPost<SessionVerificationResult>(
+        "/api/auth/session/verify",
+        {
+          sessionId: this.sessionId,
+          sessionCode: this.sessionCode,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: "Failed to check verification status",
+        stage: "pin_setup",
+      };
+    }
+  }
+
   private shouldStopPolling(error?: string): boolean {
     if (!error) return false;
-    
+
     const stopErrors = [
       "Invalid or expired session code",
-      "Session mismatch", 
+      "Session mismatch",
       "User not found",
-      "Session verification incomplete"
+      "Session verification incomplete",
     ];
-    
-    return stopErrors.some(stopError => error.includes(stopError));
+
+    return stopErrors.some((stopError) => error.includes(stopError));
   }
 
   stop() {
-    console.log(`[SessionEvents] Stopping session event manager`);
-    
     this.isListening = false;
-    
+
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
     }
-    
+
     this.stopFallbackPolling();
   }
 

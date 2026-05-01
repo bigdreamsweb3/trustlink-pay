@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { logger } from "@/app/lib/logger";
+import { RedisSessionStorage } from "@/app/lib/redis";
 
 export interface SessionCode {
   code: string;
@@ -16,9 +17,6 @@ const SESSION_CODE_PREFIX = "TL";
 const SESSION_CODE_LENGTH = 6;
 const SESSION_EXPIRY_MINUTES = 10;
 
-// In-memory storage for session codes (replace with Redis/DB in production)
-const sessionCodes = new Map<string, SessionCode>();
-
 /**
  * Generate a unique session code in format TLXXXXXX
  */
@@ -30,7 +28,7 @@ export function generateSessionCode(): string {
 /**
  * Create a new session code for authentication
  */
-export function createSessionCode(sessionId: string): SessionCode {
+export async function createSessionCode(sessionId: string): Promise<SessionCode> {
   const code = generateSessionCode();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_EXPIRY_MINUTES * 60 * 1000);
@@ -43,70 +41,132 @@ export function createSessionCode(sessionId: string): SessionCode {
     createdAt: now,
   };
   
-  sessionCodes.set(code, sessionCode);
-  
-  logger.info("session_code.created", {
-    code,
-    sessionId,
-    expiresAt: expiresAt.toISOString(),
-  });
-  
-  return sessionCode;
+  try {
+    await RedisSessionStorage.setSession(code, sessionCode);
+    
+    logger.info("session_code.created", {
+      code,
+      sessionId,
+      expiresAt: expiresAt.toISOString(),
+    });
+    
+    return sessionCode;
+  } catch (error) {
+    logger.error("session_code.create.error", {
+      code,
+      sessionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    throw error;
+  }
 }
 
 /**
  * Find a session code by its value
  */
-export function findSessionCode(code: string): SessionCode | null {
-  const sessionCode = sessionCodes.get(code);
-  
-  if (!sessionCode) {
+export async function findSessionCode(code: string): Promise<SessionCode | null> {
+  try {
+    const sessionCode = await RedisSessionStorage.getSession(code);
+    
+    logger.info("session_code.find_debug", {
+      lookingFor: code,
+      found: !!sessionCode,
+    });
+    
+    if (!sessionCode) {
+      logger.warn("session_code.not_found", { code });
+      return null;
+    }
+    
+    // Convert date strings back to Date objects
+    const sessionCodeWithDates: SessionCode = {
+      ...sessionCode,
+      expiresAt: new Date(sessionCode.expiresAt),
+      createdAt: new Date(sessionCode.createdAt),
+      verifiedAt: sessionCode.verifiedAt ? new Date(sessionCode.verifiedAt) : undefined,
+    };
+    
+    logger.info("session_code.found", { 
+      code, 
+      sessionId: sessionCodeWithDates.sessionId,
+      status: sessionCodeWithDates.status,
+      expiresAt: sessionCodeWithDates.expiresAt.toISOString()
+    });
+    
+    // Check if expired
+    const now = new Date();
+    if (sessionCodeWithDates.expiresAt < now) {
+      logger.warn("session_code.expired", { 
+        code, 
+        expiresAt: sessionCodeWithDates.expiresAt.toISOString(),
+        now: now.toISOString(),
+        expired: sessionCodeWithDates.expiresAt < now
+      });
+      sessionCodeWithDates.status = "expired";
+      await RedisSessionStorage.deleteSession(code);
+      return null;
+    }
+    
+    return sessionCodeWithDates;
+  } catch (error) {
+    logger.error("session_code.find.error", {
+      code,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
-  
-  // Check if expired
-  if (sessionCode.expiresAt < new Date()) {
-    sessionCode.status = "expired";
-    sessionCodes.delete(code);
-    return null;
-  }
-  
-  return sessionCode;
 }
 
 /**
  * Verify and mark a session code as verified
  */
-export function verifySessionCode(code: string, phoneNumber: string): SessionCode | null {
-  const sessionCode = findSessionCode(code);
+export async function verifySessionCode(code: string, phoneNumber: string): Promise<SessionCode | null> {
+  const sessionCode = await findSessionCode(code);
   
   if (!sessionCode) {
     return null;
   }
   
-  if (sessionCode.status !== "pending") {
+  if (sessionCode.status !== "pending" && sessionCode.status !== "verified") {
     return null;
   }
   
-  sessionCode.phoneNumber = phoneNumber;
-  sessionCode.status = "verified";
-  sessionCode.verifiedAt = new Date();
+  // If already verified, don't update again
+  if (sessionCode.status === "verified") {
+    logger.info("session_code.already_verified", {
+      code,
+      sessionId: sessionCode.sessionId,
+      verifiedAt: sessionCode.verifiedAt?.toISOString(),
+    });
+    return sessionCode;
+  }
+  
+  // Update session code with verification details
+  const updatedSessionCode = {
+    ...sessionCode,
+    phoneNumber,
+    status: "verified" as const,
+    verifiedAt: new Date(),
+  };
+  
+  // Update in Redis
+  await RedisSessionStorage.updateSession(code, updatedSessionCode);
   
   logger.info("session_code.verified", {
     code,
-    sessionId: sessionCode.sessionId,
+    sessionId: updatedSessionCode.sessionId,
     phoneNumber,
-    verifiedAt: sessionCode.verifiedAt.toISOString(),
+    verifiedAt: updatedSessionCode.verifiedAt.toISOString(),
   });
   
-  return sessionCode;
+  return updatedSessionCode;
 }
 
 /**
  * Manual verification of session code (allows pending status)
  */
-export function manualVerifySessionCode(code: string, phoneNumber?: string): SessionCode | null {
-  const sessionCode = findSessionCode(code);
+export async function manualVerifySessionCode(code: string, phoneNumber?: string): Promise<SessionCode | null> {
+  const sessionCode = await findSessionCode(code);
   
   if (!sessionCode) {
     return null;
@@ -117,59 +177,63 @@ export function manualVerifySessionCode(code: string, phoneNumber?: string): Ses
     return null;
   }
   
-  // If phone number provided, update it
-  if (phoneNumber) {
-    sessionCode.phoneNumber = phoneNumber;
-  }
+  // Update session code with verification details
+  const updatedSessionCode = {
+    ...sessionCode,
+    phoneNumber: phoneNumber || sessionCode.phoneNumber,
+    status: "verified" as const,
+    verifiedAt: sessionCode.verifiedAt || new Date(),
+  };
   
-  // Mark as verified if not already
-  if (sessionCode.status === "pending") {
-    sessionCode.status = "verified";
-    sessionCode.verifiedAt = new Date();
-  }
+  // Update in Redis
+  await RedisSessionStorage.updateSession(code, updatedSessionCode);
   
   logger.info("session_code.manual_verified", {
     code,
-    sessionId: sessionCode.sessionId,
-    phoneNumber: sessionCode.phoneNumber,
-    verifiedAt: sessionCode.verifiedAt?.toISOString() || new Date().toISOString(),
+    sessionId: updatedSessionCode.sessionId,
+    phoneNumber: updatedSessionCode.phoneNumber,
+    verifiedAt: updatedSessionCode.verifiedAt.toISOString(),
   });
   
-  return sessionCode;
+  return updatedSessionCode;
 }
 
 /**
  * Clean up expired session codes
  */
-export function cleanupExpiredSessionCodes(): number {
-  const now = new Date();
-  let cleanedCount = 0;
-  
-  for (const [code, sessionCode] of sessionCodes.entries()) {
-    if (sessionCode.expiresAt < now) {
-      sessionCode.status = "expired";
-      sessionCodes.delete(code);
-      cleanedCount++;
-    }
+export async function cleanupExpiredSessionCodes(): Promise<number> {
+  try {
+    const cleanedCount = await RedisSessionStorage.cleanupExpiredSessions();
+    return cleanedCount;
+  } catch (error) {
+    logger.error("session_code.cleanup.error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return 0;
   }
-  
-  if (cleanedCount > 0) {
-    logger.info("session_code.cleanup", { cleanedCount });
-  }
-  
-  return cleanedCount;
 }
 
 /**
  * Get session code by session ID
  */
-export function getSessionCodeBySessionId(sessionId: string): SessionCode | null {
-  for (const sessionCode of sessionCodes.values()) {
-    if (sessionCode.sessionId === sessionId && sessionCode.status === "pending") {
-      return findSessionCode(sessionCode.code);
+export async function getSessionCodeBySessionId(sessionId: string): Promise<SessionCode | null> {
+  try {
+    const sessions = await RedisSessionStorage.getAllSessions();
+    
+    for (const [code, sessionData] of Object.entries(sessions)) {
+      if (sessionData.sessionId === sessionId && sessionData.status === "pending") {
+        return await findSessionCode(code);
+      }
     }
+    
+    return null;
+  } catch (error) {
+    logger.error("session_code.get_by_session_id.error", {
+      sessionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return null;
   }
-  return null;
 }
 
 // Auto-cleanup expired codes every 5 minutes

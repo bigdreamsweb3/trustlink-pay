@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { WhatsAppIcon } from "@/src/components/whatsapp-icon";
+import { WhatsAppWhiteIcon } from "@/src/components/whatsapp-icon";
 import { WhatsAppIframe } from "@/src/components/whatsapp-iframe";
 import type { Route } from "next";
 
@@ -16,6 +16,8 @@ import {
   clearStoredToken,
   clearStoredUser,
   setStoredPendingAuth,
+  setStoredToken,
+  setStoredUser,
 } from "@/src/lib/storage";
 
 
@@ -23,7 +25,7 @@ import {
 function ShieldIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   );
 }
@@ -31,7 +33,7 @@ function ShieldIcon({ className = "" }: { className?: string }) {
 function ClockIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
@@ -39,7 +41,7 @@ function ClockIcon({ className = "" }: { className?: string }) {
 function ZapIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   );
 }
@@ -47,7 +49,7 @@ function ZapIcon({ className = "" }: { className?: string }) {
 function CopySmIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
     </svg>
   );
 }
@@ -55,7 +57,7 @@ function CopySmIcon({ className = "" }: { className?: string }) {
 function CheckCircleIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   );
 }
@@ -63,7 +65,7 @@ function CheckCircleIcon({ className = "" }: { className?: string }) {
 function ArrowLeftIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+      <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
     </svg>
   );
 }
@@ -144,25 +146,12 @@ export function NewAuthExperience({
 
     try {
       const sessionId = crypto.randomUUID();
-      
-      // Debug logging for mobile
-      if (deviceInfo.isMobile) {
-        console.log("[Auth] Mobile session generation started", {
-          sessionId,
-          userAgent: deviceInfo.userAgent,
-          hasWhatsAppApp: deviceInfo.hasWhatsAppApp,
-        });
-      }
 
       const response = await apiPost<{
         success: boolean;
         sessionCode: string;
         expiresAt: string;
       }>("/api/auth/session", { sessionId });
-
-      if (deviceInfo.isMobile) {
-        console.log("[Auth] Mobile session response", response);
-      }
 
       if (!response.success) throw new Error("Failed to generate session code");
 
@@ -175,51 +164,34 @@ export function NewAuthExperience({
       setSessionData(newSessionData);
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
-      
+
       // Auto-open WhatsApp popup with better error handling
       if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
         const whatsappUrl = generateWhatsAppUrl(businessNumber, newSessionData.sessionCode);
-        console.log("[Auth] Opening WhatsApp popup", whatsappUrl);
         setWhatsappPopupStatus("opening");
-        
+
         // Open WhatsApp in same tab for better UX
         setTimeout(() => {
-          console.log("[Auth] Opening WhatsApp in same tab", whatsappUrl);
           setWhatsappPopupStatus("opened");
           window.location.href = whatsappUrl;
         }, 500);
-        
+
         // Show manual button as fallback after 3 seconds
         setTimeout(() => {
           setShowManualWhatsAppButton(true);
         }, 3000);
       }
-      
+
       showToast("Session code generated. Verify via WhatsApp.");
     } catch (error) {
       // Enhanced error logging for mobile
       const errorMessage = error instanceof Error ? error.message : "Failed to generate session";
-      
-      if (deviceInfo.isMobile) {
-        console.error("[Auth] Mobile session generation failed", {
-          error: errorMessage,
-          errorDetails: error instanceof Error ? error.stack : "No stack trace",
-          deviceInfo,
-        });
-        
-        // Mobile-specific troubleshooting
-        if (error instanceof Error && error.message.includes("fetch")) {
-          console.error("[Auth] Network error - make sure frontend middleware is working");
-          console.log("[Auth] Current URL:", window.location.href);
-        }
-      }
-      
-      // Enhanced error message for mobile
+
       let displayError = errorMessage;
       if (deviceInfo.isMobile && errorMessage.includes("fetch")) {
         displayError = "Connection issue. Please check both servers are running and try again.";
       }
-      
+
       setError(displayError);
       setFlowState("error");
       showToast(displayError);
@@ -244,18 +216,21 @@ export function NewAuthExperience({
     setFlowState("verified");
     setMessage("Verification successful! Redirecting...");
 
-    clearStoredToken();
-    clearStoredUser();
-    clearStoredPendingAuth();
-
+    // Store the authentication token and user data
     const completeUser = {
-      ...result.user!,
+      id: result.user!.id,
+      displayName: result.user!.displayName,
+      phoneNumber: result.user!.phoneNumber,
       handle: "",
       walletAddress: null,
       phoneVerifiedAt: new Date().toISOString(),
       identityVerifiedAt: null,
       createdAt: new Date().toISOString(),
     };
+
+    setStoredToken(result.challengeToken!);
+    setStoredUser(completeUser);
+    clearStoredPendingAuth();
 
     setStoredPendingAuth({
       challengeToken: result.challengeToken!,
@@ -279,11 +254,9 @@ export function NewAuthExperience({
   function handleWhatsAppClick() {
     if (!sessionData) return;
     const whatsappUrl = generateWhatsAppUrl(businessNumber, sessionData.sessionCode);
-    console.log("[Auth] Manual WhatsApp popup open", whatsappUrl);
     setWhatsappPopupStatus("opening");
-    
+
     // Open WhatsApp in same tab
-    console.log("[Auth] Opening WhatsApp in same tab", whatsappUrl);
     setWhatsappPopupStatus("opened");
     window.location.href = whatsappUrl;
   }
@@ -299,13 +272,11 @@ export function NewAuthExperience({
 
   function handleWhatsAppIframeStatus(status: "opening" | "opened" | "closed" | "error") {
     setWhatsappIframeStatus(status);
-    console.log("[Auth] WhatsApp iframe status changed:", status);
   }
 
   function handleWhatsAppIframeClose() {
     setShowWhatsAppIframe(false);
     setWhatsappIframeStatus("closed");
-    console.log("[Auth] WhatsApp iframe closed");
   }
 
   function formatTimeRemaining(expiresAt: string): string {
@@ -328,7 +299,7 @@ export function NewAuthExperience({
 
   async function handleManualVerification() {
     if (!sessionData) return;
-    
+
     try {
       const response = await apiPost<{
         success: boolean;
@@ -339,7 +310,7 @@ export function NewAuthExperience({
       }>("/api/auth/session/manual-verify", {
         sessionCode: sessionData.sessionCode,
       });
-      
+
       if (response.success) {
         handleVerificationSuccess(response);
       } else {
@@ -381,11 +352,11 @@ export function NewAuthExperience({
 
       {/* ── Auth Card ── */}
       <div className="relative z-10 w-full max-w-[420px] overflow-hidden"
-        // style={{
-        //   background: "var(--panel)",
-        //   borderColor: "var(--surface-border)",
-        //   boxShadow: "var(--shadow)",
-        // }}
+      // style={{
+      //   background: "var(--panel)",
+      //   borderColor: "var(--surface-border)",
+      //   boxShadow: "var(--shadow)",
+      // }}
       >
         {/* Card top accent line */}
         <div className="absolute inset-x-0 top-0 h-px"
@@ -402,7 +373,7 @@ export function NewAuthExperience({
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
                   style={{ background: "rgba(37, 211, 102, 0.10)", border: "1px solid rgba(37, 211, 102, 0.12)" }}
                 >
-                  <WhatsAppIcon className="h-8 w-8 text-green-500" />
+                  <WhatsAppWhiteIcon className="h-8 w-8 text-green-500" />
                 </div>
                 <h2 className="text-[1.18rem] font-bold tracking-[-0.03em]" style={{ color: "var(--text)" }}>
                   Sign in with WhatsApp
@@ -432,7 +403,7 @@ export function NewAuthExperience({
                   boxShadow: "0 4px 16px rgba(37, 211, 102, 0.20), 0 1px 3px rgba(37, 211, 102, 0.10)",
                 }}
               >
-                <WhatsAppIcon className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+                <WhatsAppWhiteIcon className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
                 Continue with WhatsApp
               </button>
 
@@ -566,7 +537,7 @@ export function NewAuthExperience({
                     boxShadow: "0 4px 16px rgba(37, 211, 102, 0.20)",
                   }}
                 >
-                  <WhatsAppIcon className="h-5 w-5" />
+                  <WhatsAppWhiteIcon className="h-5 w-5" />
                   {deviceInfo.isMobile ? "Open WhatsApp Manually" : "Open WhatsApp to Verify"}
                 </button>
               )}
@@ -596,7 +567,7 @@ export function NewAuthExperience({
                     {whatsappPopupStatus === "desktop_app" && (
                       <>
                         <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                          <WhatsAppIcon className="h-2.5 w-2.5 text-white" />
+                          <WhatsAppWhiteIcon className="h-2.5 w-2.5 text-white" />
                         </div>
                         <span className="text-[0.8rem]" style={{ color: "var(--text-soft)" }}>
                           WhatsApp desktop app opened - Send verification message
@@ -628,14 +599,14 @@ export function NewAuthExperience({
                       style={{
                         background: connectionStatus === "connected" ? "var(--accent)"
                           : connectionStatus === "connecting" ? "var(--warning)"
-                          : "var(--danger)",
+                            : "var(--danger)",
                       }}
                     />
                   </span>
                   <span className="text-[0.7rem] font-medium" style={{ color: "var(--text-faint)" }}>
                     {connectionStatus === "connected" ? "Listening for verification…"
                       : connectionStatus === "connecting" ? "Connecting…"
-                      : "Reconnecting…"}
+                        : "Reconnecting…"}
                   </span>
                 </div>
               </div>
@@ -658,7 +629,7 @@ export function NewAuthExperience({
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
                 style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
               >
-                <CheckCircleIcon className="h-8 w-8 text-accent"  />
+                <CheckCircleIcon className="h-8 w-8 text-accent" />
               </div>
               <h3 className="text-[1.05rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
                 Verified!
@@ -684,7 +655,7 @@ export function NewAuthExperience({
                 {error && (
                   <p className="mt-2 text-[0.78rem]" style={{ color: "var(--danger)" }}>{error}</p>
                 )}
-                
+
                 {/* Mobile-specific troubleshooting */}
                 {deviceInfo.isMobile && (
                   <div className="mt-4 text-left rounded-[14px] px-3 py-3 text-[0.7rem]"
@@ -700,7 +671,7 @@ export function NewAuthExperience({
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-3">
                 <button
                   type="button"
@@ -714,25 +685,18 @@ export function NewAuthExperience({
                 >
                   Try Again
                 </button>
-                
+
                 {/* Debug info for mobile */}
                 {deviceInfo.isMobile && process.env.NODE_ENV === "development" && (
                   <button
                     type="button"
                     onClick={() => {
-                      console.log("[Auth] Debug info:", {
-                        deviceInfo,
-                        flowState,
-                        error,
-                        sessionData,
-                        connectionStatus,
-                      });
-                      showToast("Debug info logged to console");
+                      showToast("Debug info sent to console");
                     }}
                     className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium"
                     style={{ background: "var(--warning-soft)", color: "var(--warning)" }}
                   >
-                    Debug: Log Info
+                    Debug: Captured
                   </button>
                 )}
               </div>

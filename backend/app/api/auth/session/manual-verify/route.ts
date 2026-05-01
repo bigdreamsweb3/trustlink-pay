@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Verify the session code using manual verification (phoneNumber is optional)
-    const verifiedSession = manualVerifySessionCode(sessionCode, phoneNumber);
+    const verifiedSession = await manualVerifySessionCode(sessionCode, phoneNumber);
     
     if (!verifiedSession) {
       logger.warn("auth.manual_verify.failed", {

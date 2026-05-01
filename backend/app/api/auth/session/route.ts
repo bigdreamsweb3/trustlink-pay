@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if there's already a pending session code for this session
-    const existingCode = getSessionCodeBySessionId(sessionId);
+    const existingCode = await getSessionCodeBySessionId(sessionId);
     if (existingCode) {
       logger.info("auth.session.existing_code", {
         sessionId,
@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new session code
-    const sessionCode = createSessionCode(sessionId);
+    logger.info("auth.session.creating", { sessionId });
+    const sessionCode = await createSessionCode(sessionId);
 
     logger.info("auth.session.created", {
       sessionId,
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const sessionCode = getSessionCodeBySessionId(sessionId);
+    const sessionCode = await getSessionCodeBySessionId(sessionId);
 
     if (!sessionCode) {
       const response = NextResponse.json({

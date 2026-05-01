@@ -13,7 +13,7 @@ type AppIconProps = {
 function AppIcon({ children, className = "", size = 24, ...props }: AppIconProps) {
   return (
     <div
-      className={`bg-accent-icon inline-flex items-center justify-center rounded-md border border-accent/10  text-text shadow-soft transition ${className}`}
+      className={`bg-accent-icon inline-flex items-center justify-center rounded-md border border-accent/5 p-[1px]  text-text shadow-soft transition ${className}`}
       {...props}
     >
       <div style={{ width: size, height: size }} className="inline-flex items-center justify-center">

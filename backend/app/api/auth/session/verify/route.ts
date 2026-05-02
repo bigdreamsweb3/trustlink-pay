@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (session.status === "declined") {
+      return NextResponse.json({
+        success: false,
+        error: "Session was declined",
+      });
+    }
+
     if (session.status !== "verified") {
       return NextResponse.json({
         success: false,

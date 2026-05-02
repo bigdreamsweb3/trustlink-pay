@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { sessionId } = body;
+    const { sessionId, device, location, requestedAt } = body;
 
     if (!sessionId) {
       const response = NextResponse.json(
@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
 
     // Create new session code
     logger.info("auth.session.creating", { sessionId });
-    const sessionCode = await createSessionCode(sessionId);
+    const sessionCode = await createSessionCode(sessionId, {
+      device: typeof device === "string" ? device : undefined,
+      location: typeof location === "string" ? location : undefined,
+      requestedAt: typeof requestedAt === "string" ? requestedAt : undefined,
+    });
 
     logger.info("auth.session.created", {
       sessionId,

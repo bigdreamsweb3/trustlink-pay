@@ -65,6 +65,7 @@ async function insertUserProfile(params: {
       ${params.handle},
       ${params.pinHash},
       ${params.walletAddress ?? null},
+      false,
       ${params.whatsappOptedIn ?? false},
       ${params.optInTimestamp?.toISOString() ?? null},
       ${params.phoneVerifiedAt?.toISOString() ?? null},

@@ -14,9 +14,12 @@ import { detectDevice, generateWhatsAppUrl, generateQRCodeData, shouldUseQRCode,
 import { SessionEventManager, type SessionVerificationResult } from "@/src/lib/session-events";
 import {
   clearStoredPendingAuth,
+  clearStoredPendingSession,
   clearStoredToken,
   clearStoredUser,
+  getStoredPendingSession,
   setStoredPendingAuth,
+  setStoredPendingSession,
   setStoredToken,
   setStoredUser,
 } from "@/src/lib/storage";
@@ -73,6 +76,33 @@ interface SessionData {
   expiresAt: string;
 }
 
+const SESSION_QUERY_PARAM = "session";
+
+function formatSessionDevice(userAgent: string) {
+  const ua = userAgent.toLowerCase();
+  const browser = ua.includes("edg/")
+    ? "Edge"
+    : ua.includes("chrome/")
+      ? "Chrome"
+      : ua.includes("safari/") && !ua.includes("chrome/")
+        ? "Safari"
+        : ua.includes("firefox/")
+          ? "Firefox"
+          : "Browser";
+
+  const os = ua.includes("windows")
+    ? "Windows"
+    : ua.includes("android")
+      ? "Android"
+      : ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios")
+        ? "iOS"
+        : ua.includes("mac os")
+          ? "macOS"
+          : "Device";
+
+  return `${browser} on ${os}`;
+}
+
 /* ─── Component ─── */
 export function NewAuthExperience({
   redirectTo,
@@ -104,6 +134,38 @@ export function NewAuthExperience({
     if (token && user) { router.replace(redirectTo as Route); }
   }, [redirectTo, router]);
 
+  useEffect(() => {
+    const restorePendingSession = async () => {
+      const storedSession = getStoredPendingSession();
+      if (!storedSession) {
+        return;
+      }
+
+      if (new Date(storedSession.expiresAt).getTime() <= Date.now()) {
+        clearStoredPendingSession();
+        clearSessionQueryParam();
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const sessionFromUrl = url.searchParams.get(SESSION_QUERY_PARAM);
+      if (sessionFromUrl && sessionFromUrl !== storedSession.sessionId) {
+        return;
+      }
+
+      setSessionData(storedSession);
+      setFlowState("waiting_verification");
+      setError(null);
+      setMessage(null);
+      setShowManualWhatsAppButton(true);
+      setWhatsappPopupStatus("opened");
+      setSessionQueryParam(storedSession.sessionId);
+      startEventListening(storedSession);
+    };
+
+    void restorePendingSession();
+  }, []);
+
   useEffect(() => { return () => { if (eventManager) eventManager.stop(); }; }, [eventManager]);
   useEffect(() => { if (flowState !== "waiting_verification" && eventManager) { eventManager.stop(); setEventManager(null); } }, [flowState, eventManager]);
 
@@ -113,6 +175,42 @@ export function NewAuthExperience({
     return () => clearInterval(timer);
   }, [sessionData]);
 
+  function setSessionQueryParam(sessionId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set(SESSION_QUERY_PARAM, sessionId);
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function clearSessionQueryParam() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete(SESSION_QUERY_PARAM);
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function persistPendingSession(session: SessionData) {
+    setStoredPendingSession(session);
+    setSessionQueryParam(session.sessionId);
+  }
+
+  function clearPendingSessionState() {
+    clearStoredPendingSession();
+    clearSessionQueryParam();
+  }
+
+  function openWhatsApp(session: SessionData, preferNewTab = false) {
+    const whatsappUrl = generateWhatsAppUrl(businessNumber, session.sessionCode);
+    setWhatsappPopupStatus("opened");
+
+    if (preferNewTab) {
+      const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      if (popup) {
+        return;
+      }
+    }
+
+    window.location.href = whatsappUrl;
+  }
+
   async function generateSession() {
     if (flowState === "generating_session" || flowState === "waiting_verification") return;
     setFlowState("generating_session");
@@ -120,16 +218,24 @@ export function NewAuthExperience({
     setMessage(null);
     try {
       const sessionId = crypto.randomUUID();
-      const response = await apiPost<{ success: boolean; sessionCode: string; expiresAt: string }>("/api/auth/session", { sessionId });
+      const response = await apiPost<{ success: boolean; sessionCode: string; expiresAt: string }>("/api/auth/session", {
+        sessionId,
+        device: formatSessionDevice(deviceInfo.userAgent),
+        location: "Unavailable",
+        requestedAt: new Intl.DateTimeFormat("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date()),
+      });
       if (!response.success) throw new Error("Failed to generate session code");
       const newSessionData: SessionData = { sessionId, sessionCode: response.sessionCode, expiresAt: response.expiresAt };
       setSessionData(newSessionData);
+      persistPendingSession(newSessionData);
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
       if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
-        const whatsappUrl = generateWhatsAppUrl(businessNumber, newSessionData.sessionCode);
         setWhatsappPopupStatus("opening");
-        setTimeout(() => { setWhatsappPopupStatus("opened"); window.location.href = whatsappUrl; }, 500);
+        setTimeout(() => { openWhatsApp(newSessionData, true); }, 500);
         setTimeout(() => { setShowManualWhatsAppButton(true); }, 3000);
       }
       showToast("Session code generated. Verify via WhatsApp.");
@@ -157,21 +263,24 @@ export function NewAuthExperience({
     setStoredToken(result.challengeToken!);
     setStoredUser(completeUser);
     clearStoredPendingAuth();
+    clearPendingSessionState();
     setStoredPendingAuth({ challengeToken: result.challengeToken!, pinMode: result.stage === "pin_verify" ? "verify" : "setup", user: completeUser, redirectTo });
     showToast("Verification successful!");
     setTimeout(() => router.push(redirectTo as Route), 1000);
   }
 
   function handleVerificationError(error: string) {
-    if (error !== "Session not yet verified") { setError(error); showToast(error); }
+    if (error !== "Session not yet verified") {
+      clearPendingSessionState();
+      setError(error);
+      showToast(error);
+    }
     if (eventManager) eventManager.stop();
   }
 
   function handleWhatsAppClick() {
     if (!sessionData) return;
-    const whatsappUrl = generateWhatsAppUrl(businessNumber, sessionData.sessionCode);
-    setWhatsappPopupStatus("opened");
-    window.location.href = whatsappUrl;
+    openWhatsApp(sessionData, true);
   }
 
   function copySessionCode() {
@@ -181,7 +290,10 @@ export function NewAuthExperience({
 
   function formatTimeRemaining(expiresAt: string): string {
     const diff = new Date(expiresAt).getTime() - Date.now();
-    if (diff <= 0) return "Expired";
+    if (diff <= 0) {
+      clearPendingSessionState();
+      return "Expired";
+    }
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -189,6 +301,7 @@ export function NewAuthExperience({
 
   function handleStartOver() {
     if (eventManager) eventManager.stop();
+    clearPendingSessionState();
     setEventManager(null); setSessionData(null); setFlowState("idle"); setError(null); setMessage(null); setConnectionStatus("disconnected"); setShowManualWhatsAppButton(false);
   }
 

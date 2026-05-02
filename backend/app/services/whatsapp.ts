@@ -14,8 +14,10 @@ interface WhatsAppTemplatePayload {
     code: string;
   };
   components?: Array<{
-    type: "body";
+    type: "body" | "button";
     parameters: WhatsAppTemplateComponentParameter[];
+    sub_type?: "quick_reply";
+    index?: string;
   }>;
 }
 
@@ -215,7 +217,7 @@ export async function sendOtp(phoneNumber: string, otp: string) {
           },
         ],
       },
-      { category: "auth" },
+      { bypassOptInCheck: true, category: "auth" },
     );
   }
 
@@ -234,6 +236,82 @@ export async function sendAuthOtp(phoneNumber: string, otp: string) {
     bypassOptInCheck: false,
     category: "auth",
   });
+}
+
+export async function sendSessionReviewRequest(params: {
+  phoneNumber: string;
+  sessionCode: string;
+  device: string;
+  location: string;
+  requestedAt: string;
+  expiresIn: string;
+}) {
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME) {
+    return sendWhatsAppTemplateMessage(
+      params.phoneNumber,
+      {
+        name: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+        language: {
+          code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: params.sessionCode },
+              { type: "text", text: params.device },
+              { type: "text", text: params.location },
+              { type: "text", text: params.requestedAt },
+              { type: "text", text: params.expiresIn },
+            ],
+          },
+        ],
+      },
+      { bypassOptInCheck: true, category: "auth" },
+    );
+  }
+
+  const message = [
+    "Your sign-in session is active.",
+    "",
+    `Session code: ${params.sessionCode}`,
+    `Device: ${params.device}`,
+    `Location: ${params.location}`,
+    `Requested at: ${params.requestedAt}`,
+    `Expires in: ${params.expiresIn}`,
+    "",
+    "Reply with APPROVE SESSION to continue signing in.",
+    "Reply with DECLINE SESSION to reject this sign-in.",
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(params.phoneNumber, message, {
+    bypassOptInCheck: true,
+    category: "auth",
+  });
+}
+
+export async function sendInvalidSessionMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "That session code is invalid or has expired. Start a new sign-in and send the new code.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
+}
+
+export async function sendSessionApprovedMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "Session approved. Continue signing in on your device.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
+}
+
+export async function sendSessionDeclinedMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "Session declined. If this wasn't you, no further action is needed.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
 }
 
 export async function sendWelcomeMessage(phoneNumber: string, displayName: string, handle: string) {

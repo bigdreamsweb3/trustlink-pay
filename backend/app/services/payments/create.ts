@@ -64,6 +64,9 @@ async function resolveInviteEligibility(params: {
   amount: number;
   tokenMintAddress: string;
   sender: NonNullable<Awaited<ReturnType<typeof findUserByPhoneNumber>>>;
+  preparedPhoneIdentityPublicKey?: string;
+  preparedPaymentReceiverPublicKey?: string;
+  preparedEphemeralPublicKey?: string | null;
 }) {
   const receiverUser = await ensureUserForPhoneNumber({
     phoneNumber: params.receiverPhone,
@@ -73,7 +76,6 @@ async function resolveInviteEligibility(params: {
     receiverUser.id,
     receiverUser.phone_identity_pubkey,
   );
-  const paymentIdentityPublicKey = generatePaymentIdentityPublicKey();
   const receiverSecure = hasSecurePrivacyRouting({
     phone_identity_pubkey: receiverIdentityPublicKey,
     privacy_view_pubkey: receiverUser.privacy_view_pubkey,
@@ -81,14 +83,21 @@ async function resolveInviteEligibility(params: {
   });
 
   if (receiverSecure) {
-    const receiverRouting = deriveStealthPaymentAddress({
-      receiverViewPublicKey: receiverUser.privacy_view_pubkey!,
-      receiverSpendPublicKey: receiverUser.privacy_spend_pubkey!,
-    });
+    const receiverRouting =
+      params.preparedPaymentReceiverPublicKey && params.preparedEphemeralPublicKey
+        ? {
+            paymentReceiverPublicKey: params.preparedPaymentReceiverPublicKey,
+            ephemeralPublicKey: params.preparedEphemeralPublicKey,
+          }
+        : deriveStealthPaymentAddress({
+            receiverViewPublicKey: receiverUser.privacy_view_pubkey!,
+            receiverSpendPublicKey: receiverUser.privacy_spend_pubkey!,
+          });
 
     return {
       receiverUser,
-      receiverIdentityPublicKey: paymentIdentityPublicKey,
+      receiverIdentityPublicKey:
+        params.preparedPhoneIdentityPublicKey ?? receiverIdentityPublicKey,
       paymentMode: "secure" as const,
       receiverOnboarded: true,
       receiverAutoclaimAllowed: receiverUser.receiver_autoclaim_enabled ?? false,
@@ -118,13 +127,15 @@ async function resolveInviteEligibility(params: {
 
   return {
     receiverUser,
-    receiverIdentityPublicKey: paymentIdentityPublicKey,
+    receiverIdentityPublicKey:
+      params.preparedPhoneIdentityPublicKey ?? receiverIdentityPublicKey,
     paymentMode: "invite" as const,
     receiverOnboarded: false,
     receiverAutoclaimAllowed: receiverUser.receiver_autoclaim_enabled ?? false,
     receiverWallet: receiverUser.wallet_address ?? null,
-    paymentReceiverPublicKey: generatePaymentIdentityPublicKey(),
-    ephemeralPublicKey: null,
+    paymentReceiverPublicKey:
+      params.preparedPaymentReceiverPublicKey ?? generatePaymentIdentityPublicKey(),
+    ephemeralPublicKey: params.preparedEphemeralPublicKey ?? null,
     expiryAtOverride: getInviteExpiryAt().toISOString(),
   };
 }
@@ -146,6 +157,9 @@ export async function createPayment(params: {
   senderWallet: string;
   escrowVaultAddress?: string;
   depositSignature?: string;
+  preparedPhoneIdentityPublicKey?: string;
+  preparedPaymentReceiverPublicKey?: string;
+  preparedEphemeralPublicKey?: string | null;
   skipWhatsAppCheck?: boolean;
 }) {
   logger.info("payment.create.started", {
@@ -190,6 +204,9 @@ export async function createPayment(params: {
     amount: params.amount,
     tokenMintAddress: params.tokenMintAddress,
     sender,
+    preparedPhoneIdentityPublicKey: params.preparedPhoneIdentityPublicKey,
+    preparedPaymentReceiverPublicKey: params.preparedPaymentReceiverPublicKey,
+    preparedEphemeralPublicKey: params.preparedEphemeralPublicKey,
   });
   const paymentExpiryAt = resolvePaymentExpiryIso(receiverPaymentPolicy.expiryAtOverride);
   const senderPhoneIdentityPublicKey = sender.phone_identity_pubkey;
@@ -220,6 +237,9 @@ export async function createPayment(params: {
         serializedTransaction: prepared.serializedTransaction,
       },
       paymentId,
+      phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+      paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
+      ephemeralPublicKey: receiverPaymentPolicy.ephemeralPublicKey,
       tokenSymbol: prepared.tokenSymbol,
       senderFeeAmount: prepared.senderFeeAmountUi,
       totalTokenRequiredAmount: prepared.totalTokenRequiredUi,

@@ -11,6 +11,7 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPatch, apiPost } from "@/src/lib/api";
+import { getOrCreatePrivacyKeyBundle } from "@/src/lib/privacy-keys";
 import { setStoredUser } from "@/src/lib/storage";
 import { useTheme } from "@/src/lib/theme";
 import type { AutoclaimSettings, IdentitySecurityState, UserProfile } from "@/src/lib/types";
@@ -267,6 +268,7 @@ export function SettingsExperience() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentity] = useState<IdentitySecurityState | null>(null);
+  const [secureSetupReady, setSecureSetupReady] = useState(false);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [autoclaim, setAutoclaim] = useState<AutoclaimSettings | null>(null);
   const [autoclaimBusy, setAutoclaimBusy] = useState(false);
@@ -294,7 +296,8 @@ export function SettingsExperience() {
   async function openChangePinFlow() { if (!accessToken) return; setOtpBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ otpSent: true; expiresAt: string | null }>("/api/auth/pin/change/start", {}, accessToken); setChangePinOpen(true); if (result.expiresAt) { const seconds = Math.max(0, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000)); setOtpCooldown(Math.min(seconds, 60)); } else { setOtpCooldown(60); } setNotice("WhatsApp OTP sent. Verify to change your PIN."); showToast("WhatsApp OTP sent for PIN change."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start PIN change"; setError(msg); showToast(msg); } finally { setOtpBusy(false); } }
   async function resendChangePinOtp() { await openChangePinFlow(); }
   async function handlePinChangeSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!accessToken) return; if (otp.length !== 6) { setError("Enter the 6-digit WhatsApp OTP."); return; } if (newPin.length !== 6) { setError("Enter the new 6-digit PIN."); return; } setPinBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ pinChanged: true; user: UserProfile }>("/api/auth/pin/change/verify", { otp, newPin }, accessToken); setUser(result.user); setStoredUser(result.user); setChangePinOpen(false); setOtp(""); setNewPin(""); setNotice("PIN updated."); showToast("PIN changed successfully."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not change PIN"; setError(msg); showToast(msg); } finally { setPinBusy(false); } }
-  async function loadIdentitySecurity(token: string) { try { const result = await apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", token); setIdentity(result.identity); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } }
+  async function loadIdentitySecurity(token: string) { try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null; receiverAutoclaimEnabled: boolean }>("/api/identity", token); setIdentity(result.identity); setSecureSetupReady(Boolean(result.phoneIdentityPublicKey && result.privacyViewPublicKey && result.privacySpendPublicKey)); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } }
+  async function handleCompleteSecureSetup() { if (!accessToken) return; if (!walletAddress) { requestWalletConnection(); setError("Connect your main wallet to finish secure setup."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { const bundle = getOrCreatePrivacyKeyBundle(); await apiPost("/api/identity", { phoneIdentityPublicKey: bundle.phoneIdentityPublicKey, privacyViewPublicKey: bundle.privacyViewPublicKey, privacySpendPublicKey: bundle.privacySpendPublicKey, settlementWalletPublicKey: walletAddress, recoveryWalletPublicKey: identity?.recoveryWallet ?? null }, accessToken); await loadIdentitySecurity(accessToken); const msg = "Secure wallet setup completed."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not complete secure setup"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function loadAutoclaimSettings(token: string) { try { const result = await apiGet<AutoclaimSettings>("/api/settings/autoclaim", token); setAutoclaim(result); } catch (e) { setError(e instanceof Error ? e.message : "Could not load autoclaim settings"); } }
   async function handleAutoclaimToggle(nextEnabled: boolean) { if (!accessToken) return; setAutoclaimBusy(true); setError(null); setNotice(null); try { const result = await apiPatch<AutoclaimSettings>("/api/settings/autoclaim", { enabled: nextEnabled }, accessToken); setAutoclaim(result); const msg = nextEnabled ? `Autoclaim enabled for payments up to $${result.maxAmountUsd}.` : "Autoclaim turned off."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update autoclaim"; setError(msg); showToast(msg); } finally { setAutoclaimBusy(false); } }
   async function handleAddBackupWallet() { if (!accessToken || !identity) { setError("Receive a payment first so your main wallet can be secured."); return; } const trimmed = backupWalletInput.trim(); if (!looksLikeWalletAddress(trimmed)) { setError("Enter a valid backup wallet address."); return; } if (trimmed === identity.mainWallet) { setError("Backup wallet must differ from main wallet."); return; } if (!walletAddress || walletAddress !== identity.mainWallet || !session) { requestWalletConnection(); setError("Reconnect your main wallet to approve."); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/add-recovery-wallet", { walletAddress: trimmed, allowUpdate: Boolean(identity.recoveryWallet) }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setBackupFlowStep("success"); const msg = identity.recoveryWallet ? "Backup wallet updated." : "Backup wallet added."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not add backup wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
@@ -318,6 +321,32 @@ export function SettingsExperience() {
         {/* ═══════════ SECURITY ═══════════ */}
         <div>
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Security</div>
+
+          {!secureSetupReady ? (
+            <div className="mb-2.5 rounded-[18px] border border-[#ffb86b]/18 bg-[#ffb86b]/10 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[0.84rem] font-semibold text-[var(--text)]">Complete secure setup</div>
+                  <div className="mt-1.5 text-[0.76rem] leading-relaxed text-[var(--text-soft)]">
+                    Finish your privacy identity binding before sending payments to recipients who are not fully onboarded to TrustLink.
+                  </div>
+                </div>
+                <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#ffcf8c]" />
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleCompleteSecureSetup()}
+                disabled={identityBusy}
+                className="mt-3 rounded-[16px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-[0.78rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+              >
+                {identityBusy ? "Setting up..." : walletAddress ? "Complete Secure Setup" : "Connect Wallet to Continue"}
+              </button>
+            </div>
+          ) : (
+            <div className="mb-2.5 rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3 text-[0.78rem] text-[var(--text-soft)]">
+              Secure setup is active. You can send invite payments to recipients who have not fully onboarded yet.
+            </div>
+          )}
 
           {/* Main wallet row */}
           <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">

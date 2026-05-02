@@ -38,6 +38,9 @@ export const createPaymentSchema = z.object({
   senderWallet: walletAddressSchema,
   escrowVaultAddress: walletAddressSchema.optional(),
   depositSignature: z.string().trim().min(32).max(128).optional(),
+  preparedPhoneIdentityPublicKey: walletAddressSchema.optional(),
+  preparedPaymentReceiverPublicKey: walletAddressSchema.optional(),
+  preparedEphemeralPublicKey: walletAddressSchema.optional().nullable(),
   skipWhatsAppCheck: z.boolean().optional(),
 });
 

@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { logger } from '@/app/lib/logger';
+import { env } from "@/app/lib/env";
 
 // Redis client configuration
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -20,7 +21,7 @@ redis.on('close', () => {
 
 // Session storage keys
 const SESSION_KEY_PREFIX = 'session:';
-const SESSION_EXPIRY_SECONDS = 600; // 10 minutes
+const SESSION_EXPIRY_SECONDS = env.AUTH_SESSION_CODE_TTL_MINUTES * 60;
 
 export { redis };
 

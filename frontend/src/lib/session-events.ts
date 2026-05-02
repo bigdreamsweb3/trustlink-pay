@@ -151,11 +151,10 @@ export class SessionEventManager {
           this.stop();
           this.onVerification(result);
           return;
-        } else if (
-          result.error &&
-          result.error !== "Session not yet verified"
-        ) {
-          // Don't stop on "Session not yet verified" - keep polling
+        } else if (result.error && this.shouldStopPolling(result.error)) {
+          this.stop();
+          this.onError?.(result.error);
+          return;
         }
       } catch (error) {
         // Silent error handling for immediate polling
@@ -204,6 +203,7 @@ export class SessionEventManager {
     const stopErrors = [
       "Invalid or expired session code",
       "Session mismatch",
+      "Session was declined",
       "User not found",
       "Session verification incomplete",
     ];

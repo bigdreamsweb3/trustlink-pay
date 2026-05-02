@@ -60,6 +60,31 @@ type SendCostEstimate = { tokenSymbol: string; senderFeeAmountUi: number; sender
 
 type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
 
+type SendGuidance = {
+  title: string;
+  message: string;
+  ctaLabel?: string;
+  ctaHref?: "/app/settings";
+};
+
+function getSendGuidance(errorMessage: string | null): SendGuidance | null {
+  if (!errorMessage) {
+    return null;
+  }
+
+  if (/secure wallet setup before sending invite escrow payments/i.test(errorMessage)) {
+    return {
+      title: "Finish secure wallet setup first",
+      message:
+        "Before you can send invite escrow payments, add and verify your backup wallet in Settings. This protects the sender account before funds move into escrow.",
+      ctaLabel: "Open Settings",
+      ctaHref: "/app/settings",
+    };
+  }
+
+  return null;
+}
+
 function resetRecipientResolution(params: {
   setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
   setPhoneVerificationLabel: (value: string | null) => void;
@@ -153,6 +178,7 @@ export function SendExperience() {
   const shouldPollSendSuccessReceipt = sendSuccess ? !sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus) : false;
   const hasAmount = Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const canContinueWithRecipient = Boolean(walletAddress) && Boolean(selectedToken) && hasAmount && Boolean(recipientPreview?.verified);
+  const sendGuidance = useMemo(() => getSendGuidance(error), [error]);
 
   useEffect(() => { setWalletSession(getConnectedWalletSession()); setAvailableWallets(listAvailableSolanaWallets()); }, []);
   useEffect(() => { const p = searchParams.get("phone")?.trim(); if (p) setReceiverPhoneInput(p); }, [searchParams]);
@@ -206,9 +232,9 @@ export function SendExperience() {
   async function handleWalletSelect(walletId: string) { setConnectingWalletId(walletId); setError(null); try { const s = await connectSolanaWallet(walletId); setWalletSession(s); setWalletPickerOpen(false); setNotice(`${s.walletName} connected.`); showToast(`${s.walletName} connected.`); } catch (e) { setError(e instanceof Error ? e.message : "Could not connect wallet"); } finally { setConnectingWalletId(null); } }
   async function handleDisconnectWallet() { await disconnectSolanaWallet(); setWalletSession(null); setNotice("Wallet disconnected."); showToast("Wallet disconnected."); }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!user || !walletAddress) { setError("Connect a sender wallet first."); return; } if (!recipientPreview?.verified) { setError("Verify the recipient before sending."); showToast("Verify the recipient first."); return; } if (!selectedToken) { setError("Choose a token before sending."); showToast("Choose a token first."); return; } setEstimateBusy(true); setError(null); try { const r = await apiPost<{ estimate: SendCostEstimate }>("/api/payment/estimate", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress }); setSendCostEstimate(r.estimate); setConfirmOpen(true); } catch (e) { const msg = e instanceof Error ? e.message : "Could not estimate transfer cost"; setError(msg); showToast(msg); } finally { setEstimateBusy(false); } }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!user || !walletAddress) { setError("Connect a sender wallet first."); return; } if (!recipientPreview?.verified) { setError("Verify the recipient before sending."); showToast("Verify the recipient first."); return; } if (!selectedToken) { setError("Choose a token before sending."); showToast("Choose a token first."); return; } setEstimateBusy(true); setError(null); try { const r = await apiPost<{ estimate: SendCostEstimate }>("/api/payment/estimate", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress }); setSendCostEstimate(r.estimate); setConfirmOpen(true); } catch (e) { const rawMessage = e instanceof Error ? e.message : "Could not estimate transfer cost"; const guidance = getSendGuidance(rawMessage); const msg = guidance?.message ?? rawMessage; setError(rawMessage); showToast(guidance?.title ?? msg); } finally { setEstimateBusy(false); } }
 
-  async function handleConfirmSend() { if (!user || !walletAddress || !selectedToken) { setError("Connect wallet and choose token first."); return; } if (!recipientPreview?.verified) { setError("Verify the recipient first."); return; } const recipientName = recipientPreview.recipient.displayName; setBusy(true); setError(null); setNotice(null); try { const prepared = await apiPost<{ paymentId: string; escrowAccount: string | null; escrowVaultAddress: string | null; blockchainMode: "mock" | "devnet"; serializedTransaction: string | null; tokenSymbol: string | null; senderFeeAmount: string | number | null; totalTokenRequiredAmount: string | number | null }>("/api/payment/create", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress, skipWhatsAppCheck: receiverCheckSkipped }); if (!prepared.serializedTransaction || !prepared.escrowVaultAddress) throw new Error("Could not prepare escrow transaction"); setNotice(`Approve the ${prepared.tokenSymbol ?? selectedToken.symbol} escrow in ${walletSession?.walletName ?? "your wallet"}...`); const sig = await signAndSendSerializedSolanaTransaction({ walletId: walletSession!.walletId, rpcUrl: (await apiGet<{ rpcUrl: string }>("/api/wallet/deposit-target")).rpcUrl, serializedTransaction: prepared.serializedTransaction }); const result = await apiPost<{ paymentId: string; status: PaymentRecord["status"]; notificationStatus: PaymentNotificationStatus; notificationSentAt: string | null; notificationDeliveredAt: string | null; notificationReadAt: string | null; notificationFailedAt: string | null; referenceCode: string; senderDisplayName: string; senderHandle: string; escrowAccount: string | null; blockchainSignature: string; blockchainMode: "mock" | "devnet"; depositAddress: string | null; tokenSymbol: string | null; notificationRetrying: boolean; notificationAttemptCount: number; manualInviteRequired: boolean; inviteShare: { onboardingLink: string; inviteMessage: string } | null }>("/api/payment/create", { paymentId: prepared.paymentId, phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress, escrowVaultAddress: prepared.escrowVaultAddress, depositSignature: sig, skipWhatsAppCheck: receiverCheckSkipped }); if (receiverCountry) rememberCountryUsage(receiverCountry.iso2); setNotice(null); setSendSuccess({ ...result, receiverPhone: form.receiverPhone, recipientName, amount: form.amount, token: result.tokenSymbol ?? selectedToken.symbol }); setReceiverPhoneInput(""); setManualCountry(null); setManualCountryLocked(false); setShowCountryFallback(false); setSuggestedCountries([]); setForm((c) => ({ ...c, receiverPhone: "", amount: "2.5" })); setRecipientPreview(null); setConfirmOpen(false); showToast(result.manualInviteRequired ? `Payment secured. Share invite manually. Ref ${result.referenceCode}.` : result.notificationRetrying ? `Payment secured. WhatsApp retrying. Ref ${result.referenceCode}.` : `Payment sent. Ref ${result.referenceCode}.`); } catch (e) { if (e instanceof Error && /already signed|recovered|Do not confirm/i.test(e.message)) { setError(e.message); showToast(e.message); } else { const msg = e instanceof Error ? e.message : "Could not create payment"; setError(msg); showToast(msg); } } finally { setBusy(false); } }
+  async function handleConfirmSend() { if (busy) return; if (!user || !walletAddress || !selectedToken) { setError("Connect wallet and choose token first."); return; } if (!recipientPreview?.verified) { setError("Verify the recipient first."); return; } const recipientName = recipientPreview.recipient.displayName; setBusy(true); setError(null); setNotice(null); try { const prepared = await apiPost<{ paymentId: string; escrowAccount: string | null; escrowVaultAddress: string | null; blockchainMode: "mock" | "devnet"; serializedTransaction: string | null; tokenSymbol: string | null; senderFeeAmount: string | number | null; totalTokenRequiredAmount: string | number | null; phoneIdentityPublicKey: string | null; paymentReceiverPublicKey: string | null; ephemeralPublicKey: string | null }>("/api/payment/create", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress, skipWhatsAppCheck: receiverCheckSkipped }); if (!prepared.serializedTransaction || !prepared.escrowVaultAddress) throw new Error("Could not prepare escrow transaction"); if (prepared.senderFeeAmount != null && prepared.totalTokenRequiredAmount != null) { setSendCostEstimate((current) => ({ tokenSymbol: prepared.tokenSymbol ?? selectedToken.symbol, senderFeeAmountUi: Number(prepared.senderFeeAmount), senderFeeAmountUsd: current?.senderFeeAmountUsd ?? null, totalTokenRequiredUi: Number(prepared.totalTokenRequiredAmount), networkFeeSol: current?.networkFeeSol ?? 0, networkFeeUsd: current?.networkFeeUsd ?? null })); } setNotice(`Approve the ${prepared.tokenSymbol ?? selectedToken.symbol} escrow in ${walletSession?.walletName ?? "your wallet"}...`); const sig = await signAndSendSerializedSolanaTransaction({ walletId: walletSession!.walletId, rpcUrl: (await apiGet<{ rpcUrl: string }>("/api/wallet/deposit-target")).rpcUrl, serializedTransaction: prepared.serializedTransaction }); const result = await apiPost<{ paymentId: string; status: PaymentRecord["status"]; notificationStatus: PaymentNotificationStatus; notificationSentAt: string | null; notificationDeliveredAt: string | null; notificationReadAt: string | null; notificationFailedAt: string | null; referenceCode: string; senderDisplayName: string; senderHandle: string; escrowAccount: string | null; blockchainSignature: string; blockchainMode: "mock" | "devnet"; depositAddress: string | null; tokenSymbol: string | null; notificationRetrying: boolean; notificationAttemptCount: number; manualInviteRequired: boolean; inviteShare: { onboardingLink: string; inviteMessage: string } | null }>("/api/payment/create", { paymentId: prepared.paymentId, phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress, escrowVaultAddress: prepared.escrowVaultAddress, depositSignature: sig, preparedPhoneIdentityPublicKey: prepared.phoneIdentityPublicKey ?? undefined, preparedPaymentReceiverPublicKey: prepared.paymentReceiverPublicKey ?? undefined, preparedEphemeralPublicKey: prepared.ephemeralPublicKey ?? undefined, skipWhatsAppCheck: receiverCheckSkipped }); if (receiverCountry) rememberCountryUsage(receiverCountry.iso2); setNotice(null); setSendSuccess({ ...result, receiverPhone: form.receiverPhone, recipientName, amount: form.amount, token: result.tokenSymbol ?? selectedToken.symbol }); setReceiverPhoneInput(""); setManualCountry(null); setManualCountryLocked(false); setShowCountryFallback(false); setSuggestedCountries([]); setForm((c) => ({ ...c, receiverPhone: "", amount: "2.5" })); setRecipientPreview(null); setConfirmOpen(false); showToast(result.manualInviteRequired ? `Payment secured. Share invite manually. Ref ${result.referenceCode}.` : result.notificationRetrying ? `Payment secured. WhatsApp retrying. Ref ${result.referenceCode}.` : `Payment sent. Ref ${result.referenceCode}.`); } catch (e) { if (e instanceof Error && /already signed|recovered|Do not confirm/i.test(e.message)) { setError(e.message); showToast(e.message); } else if (e instanceof Error && /already been processed|already processed/i.test(e.message)) { const msg = "This wallet transaction was already submitted. Please wait a few seconds and check whether the payment completes before retrying."; setError(msg); showToast(msg); } else { const msg = e instanceof Error ? e.message : "Could not create payment"; setError(msg); showToast(msg); } } finally { setBusy(false); } }
 
   if (!hydrated || !user) return null;
 
@@ -225,7 +251,23 @@ export function SendExperience() {
           <div className="tl-badge rounded-[18px] px-4 py-3 text-[0.82rem]">{notice}</div>
         ) : null}
         {error ? (
-          <div className="rounded-[18px] border border-[var(--danger)]/14 bg-danger-soft px-4 py-3 text-[0.82rem] text-[var(--danger)]">{error}</div>
+          <div className="rounded-[18px] border border-[var(--danger)]/14 bg-danger-soft px-4 py-3 text-[0.82rem] text-[var(--danger)]">
+            {sendGuidance?.message ?? error}
+          </div>
+        ) : null}
+        {sendGuidance ? (
+          <div className="rounded-[20px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-4">
+            <div className="text-[0.8rem] font-semibold text-[var(--text)]">{sendGuidance.title}</div>
+            <div className="mt-1.5 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">{sendGuidance.message}</div>
+            {sendGuidance.ctaHref && sendGuidance.ctaLabel ? (
+              <Link
+                href={sendGuidance.ctaHref}
+                className="mt-3 inline-flex items-center rounded-[14px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-3.5 py-2 text-[0.76rem] font-semibold text-[#04110a]"
+              >
+                {sendGuidance.ctaLabel}
+              </Link>
+            ) : null}
+          </div>
         ) : null}
 
         {/* ═══════════ SEND SUCCESS ═══════════ */}

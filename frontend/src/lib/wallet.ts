@@ -438,20 +438,32 @@ export async function signAndSendSerializedSolanaTransaction(params: {
   await params.inspectTransaction?.(transaction);
   let signature: TransactionSignature;
 
-  if (wallet.provider.signTransaction) {
-    const signedTransaction = await wallet.provider.signTransaction(transaction);
-    signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-      preflightCommitment: "confirmed",
-    });
-  } else if (wallet.provider.signAndSendTransaction) {
+  if (wallet.provider.signAndSendTransaction) {
     const response = await wallet.provider.signAndSendTransaction(transaction, {
       preflightCommitment: "confirmed",
     });
     signature = response.signature;
+  } else if (wallet.provider.signTransaction) {
+    const signedTransaction = await wallet.provider.signTransaction(transaction);
+    signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+      preflightCommitment: "confirmed",
+    });
   } else {
     throw new Error("This wallet cannot sign Solana transactions from the browser");
   }
 
-  await connection.confirmTransaction(signature, "confirmed");
+  try {
+    await connection.confirmTransaction(signature, "confirmed");
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      /already been processed|already processed/i.test(error.message)
+    ) {
+      return signature;
+    }
+
+    throw error;
+  }
+
   return signature;
 }

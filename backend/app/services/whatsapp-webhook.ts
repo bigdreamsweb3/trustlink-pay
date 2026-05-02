@@ -13,8 +13,22 @@ import { issueAuthChallengeToken } from "@/app/lib/auth";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { sendPhoneVerificationOtp } from "@/app/services/phone-verification";
-import { isTrustLinkOptInMessage, isTrustLinkStopMessage } from "@/app/services/whatsapp";
-import { verifySessionCode } from "@/app/lib/session-codes";
+import {
+  isTrustLinkOptInMessage,
+  isTrustLinkStopMessage,
+  sendInvalidSessionMessage,
+  sendSessionApprovedMessage,
+  sendSessionDeclinedMessage,
+  sendSessionReviewRequest,
+} from "@/app/services/whatsapp";
+import {
+  findPendingSessionForPhone,
+  findSessionCode,
+  markSessionAwaitingConfirmation,
+  markSessionDeclined,
+  verifySessionCode,
+  type SessionCode,
+} from "@/app/lib/session-codes";
 import { sanitizeUser } from "@/app/services/auth/shared";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { sha256 } from "@/app/utils/hash";
@@ -47,6 +61,9 @@ interface WhatsAppWebhookPayload {
           };
           button?: {
             text?: string;
+          };
+          context?: {
+            id?: string;
           };
           interactive?: unknown;
         }>;
@@ -107,6 +124,125 @@ function parseWhatsAppTimestamp(timestamp: string | undefined): string | null {
 
 function getInboundText(message: WhatsAppMessage) {
   return message.text?.body ?? message.button?.text ?? "";
+}
+
+function normalizeReviewAction(message: string) {
+  const normalized = message.trim().toUpperCase();
+
+  if (normalized === "APPROVE SESSION") {
+    return "approve" as const;
+  }
+
+  if (normalized === "DECLINE SESSION") {
+    return "decline" as const;
+  }
+
+  return null;
+}
+
+function formatRequestedAt(value: Date | undefined) {
+  const date = value ?? new Date();
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Africa/Lagos",
+  }).format(date);
+}
+
+function formatExpiresIn(expiresAt: Date) {
+  const remainingMs = Math.max(expiresAt.getTime() - Date.now(), 0);
+  const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+  return `${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
+}
+
+async function ensureSessionUser(
+  phoneNumber: string,
+  contactName: string | undefined,
+) {
+  let user = await findUserByPhoneNumber(phoneNumber);
+
+  logger.info("whatsapp.webhook.user_lookup", {
+    phoneNumber,
+    userFound: !!user,
+    userId: user?.id || null,
+    userPhone: user?.phone_number || null,
+  });
+
+  if (!user) {
+    logger.info("whatsapp.webhook.creating_user", {
+      phoneNumber,
+      contactName,
+    });
+
+    const phoneHash = createHash("sha256").update(phoneNumber).digest("hex");
+
+    user = await upsertUserProfile({
+      phoneNumber,
+      phoneHash,
+      displayName: contactName || "TrustLink User",
+      handle: `user_${phoneNumber.slice(-8)}`,
+      pinHash: "",
+    });
+
+    logger.info("whatsapp.webhook.user_created", {
+      userId: user?.id || null,
+      userPhone: user?.phone_number || null,
+    });
+  }
+
+  return user;
+}
+
+async function completeSessionApproval(
+  verifiedSession: SessionCode,
+  phoneNumber: string,
+  contactName?: string,
+) {
+  const user = await ensureSessionUser(phoneNumber, contactName);
+
+  logger.info("whatsapp.webhook.issuing_token", {
+    userId: user?.id || null,
+    userPhone: user?.phone_number || null,
+    hasPinHash: !!user?.pin_hash,
+  });
+
+  const challengeToken = issueAuthChallengeToken({
+    id: user.id,
+    phoneNumber: user.phone_number,
+    stage: user.pin_hash ? "pin_verify" : "pin_setup",
+  });
+
+  try {
+    logger.info("whatsapp.webhook.sending_sse_notification", {
+      sessionId: verifiedSession.sessionId,
+      hasChallengeToken: !!challengeToken,
+      userId: user.id,
+    });
+
+    const { notifySessionVerification } = await import("@/app/lib/session-events");
+    notifySessionVerification(verifiedSession.sessionId, {
+      challengeToken,
+      user: sanitizeUser(user),
+      stage: user.pin_hash ? "pin_verify" : "pin_setup",
+    });
+
+    logger.info("whatsapp.webhook.sse_notification_sent", {
+      sessionId: verifiedSession.sessionId,
+    });
+  } catch (error) {
+    logger.warn("whatsapp.webhook.push_notification_failed", {
+      sessionId: verifiedSession.sessionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
+  logger.info("whatsapp.webhook.auth_ready", {
+    sessionId: verifiedSession.sessionId,
+    userId: user.id,
+    phoneNumber,
+    challengeToken,
+    stage: user.pin_hash ? "pin_verify" : "pin_setup",
+  });
 }
 
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
@@ -183,6 +319,17 @@ async function processInboundMessage(
     return;
   }
 
+  const reviewAction = normalizeReviewAction(inboundText);
+  if (reviewAction) {
+    await handleSessionReviewResponse({
+      action: reviewAction,
+      phoneNumber: normalizedPhoneNumber,
+      contactName,
+      replyMessageId: message.context?.id ?? null,
+    });
+    return;
+  }
+
   // Check for session code verification (accept both formats)
   const fullFormatMatch = inboundText.match(/Verify\s+TrustLink Pay\s+Code:\s+(TL[A-Z0-9]{6})/i);
   const codeOnlyMatch = inboundText.match(/^(TL[A-Z0-9]{6})$/i);
@@ -223,118 +370,94 @@ async function handleSessionCodeVerification(
     phoneNumber,
   });
 
-  // Debug: Check what session codes exist
-  const { RedisSessionStorage } = await import("@/app/lib/redis");
-  const allSessions = await RedisSessionStorage.getAllSessions();
-  logger.info("whatsapp.webhook.debug_existing_codes", {
-    totalCodes: Object.keys(allSessions).length,
-    codes: Object.keys(allSessions),
-    lookingFor: sessionCode,
-  });
+  const activeSession = await findSessionCode(sessionCode);
 
-  const verifiedSession = await verifySessionCode(sessionCode, phoneNumber);
-  
-  logger.info("whatsapp.webhook.session_code_verification_result", {
+  logger.info("whatsapp.webhook.session_code_lookup_result", {
     sessionCode,
     phoneNumber,
-    verifiedSession: !!verifiedSession,
-    sessionId: verifiedSession?.sessionId || null,
+    activeSession: !!activeSession,
+    sessionId: activeSession?.sessionId || null,
+    status: activeSession?.status ?? null,
   });
-  
-  if (!verifiedSession) {
+
+  if (!activeSession || activeSession.status !== "pending") {
     logger.warn("whatsapp.webhook.session_code_verification_failed", {
       sessionCode,
       phoneNumber,
     });
+    await sendInvalidSessionMessage(phoneNumber);
     return;
   }
 
-  logger.info("whatsapp.webhook.session_code_verification_success", {
+  const reviewMessage = await sendSessionReviewRequest({
+    phoneNumber,
+    sessionCode: activeSession.code,
+    device: activeSession.requestContext?.device ?? "Web browser",
+    location: activeSession.requestContext?.location ?? "Unavailable",
+    requestedAt:
+      activeSession.requestContext?.requestedAt ??
+      formatRequestedAt(activeSession.createdAt),
+    expiresIn: formatExpiresIn(activeSession.expiresAt),
+  });
+
+  const updatedSession = await markSessionAwaitingConfirmation(
     sessionCode,
     phoneNumber,
-    sessionId: verifiedSession.sessionId,
-  });
+    reviewMessage.messageId,
+  );
 
-  // Find or create user
-  let user = await findUserByPhoneNumber(phoneNumber);
-  
-  logger.info("whatsapp.webhook.user_lookup", {
+  logger.info("whatsapp.webhook.session_review_requested", {
+    sessionCode,
     phoneNumber,
-    userFound: !!user,
-    userId: user?.id || null,
-    userPhone: user?.phone_number || null,
+    sessionId: updatedSession?.sessionId ?? activeSession.sessionId,
+    reviewMessageId: reviewMessage.messageId,
+    skipped: reviewMessage.skipped,
   });
-  
-  if (!user) {
-    // Create new user if doesn't exist
-    logger.info("whatsapp.webhook.creating_user", {
-      phoneNumber,
-      contactName,
+}
+
+async function handleSessionReviewResponse(params: {
+  action: "approve" | "decline";
+  phoneNumber: string;
+  contactName?: string;
+  replyMessageId?: string | null;
+}) {
+  const pendingSession = await findPendingSessionForPhone(
+    params.phoneNumber,
+    params.replyMessageId,
+  );
+
+  if (!pendingSession) {
+    logger.warn("whatsapp.webhook.session_review_response_missing", {
+      action: params.action,
+      phoneNumber: params.phoneNumber,
+      replyMessageId: params.replyMessageId ?? null,
     });
-    
-    // Generate phone hash for user creation
-    const phoneHash = createHash('sha256').update(phoneNumber).digest('hex');
-    
-    user = await upsertUserProfile({
-      phoneNumber,
-      phoneHash,
-      displayName: contactName || "TrustLink User",
-      handle: `user_${phoneNumber.slice(-8)}`, // Simple handle generation
-      pinHash: '', // Empty pin hash for now
-    });
-    
-    logger.info("whatsapp.webhook.user_created", {
-      userId: user?.id || null,
-      userPhone: user?.phone_number || null,
-    });
+    await sendInvalidSessionMessage(params.phoneNumber);
+    return;
   }
 
-  // Issue auth challenge token
-  logger.info("whatsapp.webhook.issuing_token", {
-    userId: user?.id || null,
-    userPhone: user?.phone_number || null,
-    hasPinHash: !!user?.pin_hash,
-  });
-  
-  const challengeToken = issueAuthChallengeToken({
-    id: user.id,
-    phoneNumber: user.phone_number,
-    stage: user.pin_hash ? "pin_verify" : "pin_setup",
-  });
-
-  // Store the verification result for real-time updates
-  // Use server-sent events to notify the frontend
-  try {
-    logger.info("whatsapp.webhook.sending_sse_notification", {
-      sessionId: verifiedSession.sessionId,
-      hasChallengeToken: !!challengeToken,
-      userId: user.id,
-    });
-    
-    const { notifySessionVerification } = await import("@/app/lib/session-events");
-    notifySessionVerification(verifiedSession.sessionId, {
-      challengeToken,
-      user: sanitizeUser(user),
-      stage: user.pin_hash ? "pin_verify" : "pin_setup",
-    });
-    
-    logger.info("whatsapp.webhook.sse_notification_sent", {
-      sessionId: verifiedSession.sessionId,
-    });
-  } catch (error) {
-    logger.warn("whatsapp.webhook.push_notification_failed", {
-      sessionId: verifiedSession.sessionId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+  if (params.action === "decline") {
+    await markSessionDeclined(pendingSession.code, params.phoneNumber);
+    await sendSessionDeclinedMessage(params.phoneNumber);
+    return;
   }
 
-  logger.info("whatsapp.webhook.auth_ready", {
-    sessionId: verifiedSession.sessionId,
-    userId: user.id,
-    phoneNumber,
-    challengeToken,
-    stage: user.pin_hash ? "pin_verify" : "pin_setup",
-  });
+  const verifiedSession = await verifySessionCode(
+    pendingSession.code,
+    params.phoneNumber,
+  );
+
+  if (!verifiedSession) {
+    await sendInvalidSessionMessage(params.phoneNumber);
+    return;
+  }
+
+  await completeSessionApproval(
+    verifiedSession,
+    params.phoneNumber,
+    params.contactName,
+  );
+  await sendSessionApprovedMessage(params.phoneNumber);
 }
 
 export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayload) {

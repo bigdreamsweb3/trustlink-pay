@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { RedisSessionStorage } from "@/app/lib/redis";
 
@@ -7,15 +8,22 @@ export interface SessionCode {
   code: string;
   sessionId: string;
   phoneNumber?: string;
-  status: "pending" | "verified" | "expired";
+  status: "pending" | "awaiting_confirmation" | "verified" | "declined" | "expired";
   expiresAt: Date;
   createdAt: Date;
   verifiedAt?: Date;
+  declinedAt?: Date;
+  reviewMessageId?: string;
+  requestContext?: {
+    device?: string;
+    location?: string;
+    requestedAt?: string;
+  };
 }
 
 const SESSION_CODE_PREFIX = "TL";
 const SESSION_CODE_LENGTH = 6;
-const SESSION_EXPIRY_MINUTES = 10;
+const SESSION_EXPIRY_MINUTES = env.AUTH_SESSION_CODE_TTL_MINUTES;
 
 /**
  * Generate a unique session code in format TLXXXXXX
@@ -28,7 +36,10 @@ export function generateSessionCode(): string {
 /**
  * Create a new session code for authentication
  */
-export async function createSessionCode(sessionId: string): Promise<SessionCode> {
+export async function createSessionCode(
+  sessionId: string,
+  requestContext?: SessionCode["requestContext"],
+): Promise<SessionCode> {
   const code = generateSessionCode();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_EXPIRY_MINUTES * 60 * 1000);
@@ -39,6 +50,7 @@ export async function createSessionCode(sessionId: string): Promise<SessionCode>
     status: "pending",
     expiresAt,
     createdAt: now,
+    requestContext,
   };
   
   try {
@@ -84,6 +96,7 @@ export async function findSessionCode(code: string): Promise<SessionCode | null>
       expiresAt: new Date(sessionCode.expiresAt),
       createdAt: new Date(sessionCode.createdAt),
       verifiedAt: sessionCode.verifiedAt ? new Date(sessionCode.verifiedAt) : undefined,
+      declinedAt: sessionCode.declinedAt ? new Date(sessionCode.declinedAt) : undefined,
     };
     
     logger.info("session_code.found", { 
@@ -127,7 +140,11 @@ export async function verifySessionCode(code: string, phoneNumber: string): Prom
     return null;
   }
   
-  if (sessionCode.status !== "pending" && sessionCode.status !== "verified") {
+  if (
+    sessionCode.status !== "pending" &&
+    sessionCode.status !== "awaiting_confirmation" &&
+    sessionCode.status !== "verified"
+  ) {
     return null;
   }
   
@@ -173,7 +190,11 @@ export async function manualVerifySessionCode(code: string, phoneNumber?: string
   }
   
   // For manual verification, allow both pending and verified status
-  if (sessionCode.status !== "pending" && sessionCode.status !== "verified") {
+  if (
+    sessionCode.status !== "pending" &&
+    sessionCode.status !== "awaiting_confirmation" &&
+    sessionCode.status !== "verified"
+  ) {
     return null;
   }
   
@@ -196,6 +217,96 @@ export async function manualVerifySessionCode(code: string, phoneNumber?: string
   });
   
   return updatedSessionCode;
+}
+
+export async function markSessionAwaitingConfirmation(
+  code: string,
+  phoneNumber: string,
+  reviewMessageId?: string | null,
+): Promise<SessionCode | null> {
+  const sessionCode = await findSessionCode(code);
+
+  if (!sessionCode || sessionCode.status !== "pending") {
+    return null;
+  }
+
+  const updatedSessionCode: SessionCode = {
+    ...sessionCode,
+    phoneNumber,
+    status: "awaiting_confirmation",
+    reviewMessageId: reviewMessageId ?? undefined,
+  };
+
+  await RedisSessionStorage.updateSession(code, updatedSessionCode);
+  return updatedSessionCode;
+}
+
+export async function markSessionDeclined(code: string, phoneNumber?: string): Promise<SessionCode | null> {
+  const sessionCode = await findSessionCode(code);
+
+  if (!sessionCode) {
+    return null;
+  }
+
+  if (
+    sessionCode.status !== "pending" &&
+    sessionCode.status !== "awaiting_confirmation" &&
+    sessionCode.status !== "declined"
+  ) {
+    return null;
+  }
+
+  const updatedSessionCode: SessionCode = {
+    ...sessionCode,
+    phoneNumber: phoneNumber || sessionCode.phoneNumber,
+    status: "declined",
+    declinedAt: sessionCode.declinedAt || new Date(),
+  };
+
+  await RedisSessionStorage.updateSession(code, updatedSessionCode);
+  return updatedSessionCode;
+}
+
+export async function findPendingSessionForPhone(
+  phoneNumber: string,
+  reviewMessageId?: string | null,
+): Promise<SessionCode | null> {
+  try {
+    const sessions = await RedisSessionStorage.getAllSessions();
+    const matchingSessions = Object.values(sessions)
+      .map((session) => ({
+        ...session,
+        expiresAt: new Date(session.expiresAt),
+        createdAt: new Date(session.createdAt),
+        verifiedAt: session.verifiedAt ? new Date(session.verifiedAt) : undefined,
+        declinedAt: session.declinedAt ? new Date(session.declinedAt) : undefined,
+      }))
+      .filter((session): session is SessionCode => {
+        return (
+          session.phoneNumber === phoneNumber &&
+          session.status === "awaiting_confirmation"
+        );
+      })
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+
+    if (reviewMessageId) {
+      const matchedByMessage = matchingSessions.find(
+        (session) => session.reviewMessageId === reviewMessageId,
+      );
+      if (matchedByMessage) {
+        return matchedByMessage;
+      }
+    }
+
+    return matchingSessions[0] ?? null;
+  } catch (error) {
+    logger.error("session_code.find_pending_for_phone.error", {
+      phoneNumber,
+      reviewMessageId: reviewMessageId ?? null,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return null;
+  }
 }
 
 /**

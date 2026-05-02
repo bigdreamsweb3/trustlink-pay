@@ -38,7 +38,7 @@ export function issueAuthChallengeToken(user: {
     sub: user.id,
     phoneNumber: user.phoneNumber,
     stage: user.stage,
-    exp: Math.floor(Date.now() / 1000) + 10 * 60,
+    exp: Math.floor(Date.now() / 1000) + env.AUTH_CHALLENGE_TTL_MINUTES * 60,
   };
 
   // Will throw at runtime if SESSION_SECRET is not set (see env.ts proxy)

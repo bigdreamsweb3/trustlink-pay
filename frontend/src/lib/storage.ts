@@ -4,6 +4,7 @@ const TOKEN_KEY = "trustlink.accessToken";
 const USER_KEY = "trustlink.user";
 const PENDING_AUTH_KEY = "trustlink.pendingAuth";
 const PENDING_SESSION_KEY = "trustlink.pendingSessionReview";
+const SESSION_ACTIVITY_KEY = "trustlink.sessionActivityAt";
 
 export interface PendingSessionReview {
   sessionId: string;
@@ -76,4 +77,26 @@ export function setStoredPendingSession(session: PendingSessionReview) {
 
 export function clearStoredPendingSession() {
   window.localStorage.removeItem(PENDING_SESSION_KEY);
+}
+
+export function getStoredSessionActivityAt() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(SESSION_ACTIVITY_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function setStoredSessionActivityAt(timestamp = Date.now()) {
+  window.localStorage.setItem(SESSION_ACTIVITY_KEY, String(timestamp));
+}
+
+export function clearStoredSessionActivityAt() {
+  window.localStorage.removeItem(SESSION_ACTIVITY_KEY);
 }

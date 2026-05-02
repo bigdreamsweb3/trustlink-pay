@@ -15,12 +15,19 @@ export async function POST(request: Request) {
       ...payload,
       authUser,
     });
+    const estimate = {
+      ...result.estimate,
+      feeAmountBaseUnits:
+        "feeAmountBaseUnits" in result.estimate
+          ? result.estimate.feeAmountBaseUnits.toString()
+          : undefined,
+    };
 
     return ok({
       paymentId: result.payment.id,
       settlementWalletAddress: result.settlementWalletAddress,
       paymentReceiverPublicKey: result.paymentReceiverPublicKey,
-      estimate: result.estimate,
+      estimate,
     });
   } catch (error) {
     logger.error("api.payment.claim_estimate.failed", {

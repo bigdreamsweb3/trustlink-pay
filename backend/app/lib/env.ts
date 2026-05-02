@@ -61,6 +61,7 @@ const envSchema = z
     WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME: z.string().optional(),
     TRUSTLINK_BUSINESS_NUMBER: z.string().optional(),
     AUTH_SESSION_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+    AUTH_CHALLENGE_TTL_MINUTES: z.coerce.number().int().positive().default(30),
     OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
     OTP_TTL_MINUTES: z.coerce.number().int().positive().default(5),
     OTP_RATE_LIMIT_WINDOW_MINUTES: z.coerce
@@ -147,6 +148,7 @@ function readRawEnv() {
       process.env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
     TRUSTLINK_BUSINESS_NUMBER: process.env.TRUSTLINK_BUSINESS_NUMBER,
     AUTH_SESSION_CODE_TTL_MINUTES: process.env.AUTH_SESSION_CODE_TTL_MINUTES,
+    AUTH_CHALLENGE_TTL_MINUTES: process.env.AUTH_CHALLENGE_TTL_MINUTES,
     OTP_MAX_ATTEMPTS: process.env.OTP_MAX_ATTEMPTS,
     OTP_TTL_MINUTES: process.env.OTP_TTL_MINUTES,
     OTP_RATE_LIMIT_WINDOW_MINUTES: process.env.OTP_RATE_LIMIT_WINDOW_MINUTES,

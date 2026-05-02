@@ -1,9 +1,9 @@
 import { findUserByPhoneNumber } from "@/app/db/users";
-import { env } from "@/app/lib/env";
+import { resolveAppBaseUrl } from "@/app/lib/app-url";
 import type { PaymentRecord } from "@/app/types/payment";
 
-export function buildInviteShareData(payment: PaymentRecord) {
-  const onboardingLink = `${env.APP_BASE_URL.replace(/\/$/, "")}/auth?redirect=${encodeURIComponent(`/claim/${payment.id}`)}`;
+export function buildInviteShareData(payment: PaymentRecord, appBaseUrl?: string | null) {
+  const onboardingLink = `${resolveAppBaseUrl(appBaseUrl)}/auth?redirect=${encodeURIComponent(`/claim/${payment.id}`)}`;
   const inviteMessage = [
     `I just sent you ${payment.amount} ${payment.token_symbol} using your WhatsApp number through TrustLink.`,
     "",

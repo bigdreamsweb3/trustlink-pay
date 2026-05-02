@@ -65,8 +65,24 @@ export async function ensurePaymentTraceColumns() {
       await sql`
         DO $$
         BEGIN
+          ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check;
+        EXCEPTION
+          WHEN undefined_object THEN NULL;
+        END $$;
+      `;
+      await sql`
+        DO $$
+        BEGIN
+          ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_state_check;
+        EXCEPTION
+          WHEN undefined_object THEN NULL;
+        END $$;
+      `;
+      await sql`
+        DO $$
+        BEGIN
           ALTER TABLE payments
-            ADD CONSTRAINT payments_state_check
+            ADD CONSTRAINT payments_status_check
             CHECK (status IN ('created', 'locked', 'expired', 'claimed', 'refund_requested', 'refunded'));
         EXCEPTION
           WHEN duplicate_object THEN NULL;

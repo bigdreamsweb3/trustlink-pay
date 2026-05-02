@@ -2,14 +2,17 @@ export const runtime = "nodejs";
 
 import { createPaymentSchema } from "@/app/lib/validation";
 import { ok, toErrorResponse } from "@/app/lib/http";
+import { resolveAppBaseUrlFromRequest } from "@/app/lib/app-url";
+import { logger } from "@/app/lib/logger";
 import { createPayment } from "@/app/services/payments";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = createPaymentSchema.parse(body);
+    const appBaseUrl = resolveAppBaseUrlFromRequest(request);
 
-    const result = await createPayment(payload);
+    const result = await createPayment({ ...payload, appBaseUrl });
     const payment = result.payment;
     const notificationRetrying =
       payment != null &&
@@ -30,17 +33,23 @@ export async function POST(request: Request) {
         senderHandle: payment?.sender_handle_snapshot ?? null,
         paymentMode: payment?.payment_mode ?? null,
         receiverOnboarded: payment?.receiver_onboarded ?? null,
-        phoneIdentityPublicKey: payment?.phone_identity_pubkey ?? null,
-        paymentReceiverPublicKey: payment?.payment_receiver_pubkey ?? null,
-        ephemeralPublicKey: payment?.ephemeral_pubkey ?? null,
+        phoneIdentityPublicKey:
+          "phoneIdentityPublicKey" in result
+            ? result.phoneIdentityPublicKey
+            : payment?.phone_identity_pubkey ?? null,
+        paymentReceiverPublicKey:
+          "paymentReceiverPublicKey" in result
+            ? result.paymentReceiverPublicKey
+            : payment?.payment_receiver_pubkey ?? null,
+        ephemeralPublicKey:
+          "ephemeralPublicKey" in result
+            ? result.ephemeralPublicKey
+            : payment?.ephemeral_pubkey ?? null,
         escrowAccount: payment?.escrow_account ?? result.blockchain.escrowAccount,
         escrowVaultAddress: payment?.escrow_vault_address ?? result.blockchain.escrowVaultAddress ?? null,
         blockchainSignature: result.blockchain.signature,
         blockchainMode: result.blockchain.mode,
         serializedTransaction: "serializedTransaction" in result.blockchain ? result.blockchain.serializedTransaction : null,
-        phoneIdentityPublicKey: "phoneIdentityPublicKey" in result ? result.phoneIdentityPublicKey : payment?.phone_identity_pubkey ?? null,
-        paymentReceiverPublicKey: "paymentReceiverPublicKey" in result ? result.paymentReceiverPublicKey : payment?.payment_receiver_pubkey ?? null,
-        ephemeralPublicKey: "ephemeralPublicKey" in result ? result.ephemeralPublicKey : payment?.ephemeral_pubkey ?? null,
         depositAddress: payment?.escrow_account ?? result.blockchain.escrowAccount,
         tokenSymbol: payment?.token_symbol ?? result.tokenSymbol ?? null,
         senderFeeAmount: payment?.sender_fee_amount ?? result.senderFeeAmount ?? null,
@@ -55,6 +64,9 @@ export async function POST(request: Request) {
       { status: payment ? 201 : 200 }
     );
   } catch (error) {
+    logger.error("api.payment.create.failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return toErrorResponse(error);
   }
 }

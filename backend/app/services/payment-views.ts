@@ -149,16 +149,20 @@ export function sanitizePaymentForViewer(payment: PaymentRecord, authUser: Authe
   };
 }
 
-export async function getPaymentDetailForViewer(authUser: AuthenticatedUser, paymentId: string) {
+export async function getPaymentDetailForViewer(
+  authUser: AuthenticatedUser,
+  paymentId: string,
+  appBaseUrl?: string | null,
+) {
   const paymentRecord = await findPaymentById(paymentId);
 
   if (!paymentRecord) {
     throw new Error("Payment not found");
   }
 
-  const payment = await retryPaymentNotificationIfNeeded(paymentRecord);
+  const payment = await retryPaymentNotificationIfNeeded(paymentRecord, appBaseUrl);
   const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
-  const inviteShare = manualInviteRequired ? buildInviteShareData(payment) : null;
+  const inviteShare = manualInviteRequired ? buildInviteShareData(payment, appBaseUrl) : null;
   const recipientOnboarded = payment.receiver_onboarded ?? !manualInviteRequired;
 
   const viewerRole = getViewerRole(payment, authUser);

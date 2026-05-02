@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { resolveAppBaseUrlFromRequest } from "@/app/lib/app-url";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { getPaymentDetailForViewer } from "@/app/services/payment-views";
 
@@ -11,7 +12,11 @@ export async function GET(
   try {
     const authUser = requireAuthenticatedUser(request);
     const { paymentId } = await context.params;
-    const detail = await getPaymentDetailForViewer(authUser, paymentId);
+    const detail = await getPaymentDetailForViewer(
+      authUser,
+      paymentId,
+      resolveAppBaseUrlFromRequest(request),
+    );
 
     return ok(detail);
   } catch (error) {

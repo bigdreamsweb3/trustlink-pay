@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { acceptPaymentSchema } from "@/app/lib/validation";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { ok, toErrorResponse } from "@/app/lib/http";
+import { logger } from "@/app/lib/logger";
 import { acceptPayment } from "@/app/services/payments";
 
 export async function POST(request: Request) {
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
       requiresClientSignature: "requiresClientSignature" in result ? result.requiresClientSignature : false,
     });
   } catch (error) {
+    logger.error("api.payment.accept.failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return toErrorResponse(error);
   }
 }

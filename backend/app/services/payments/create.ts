@@ -1,5 +1,6 @@
 import {
   createPaymentRecord,
+  findPaymentById,
   findPaymentByDepositSignature,
 } from "@/app/db/payments";
 import { ensureUserForPhoneNumber, ensureUserPhoneIdentityPublicKey, findUserByPhoneNumber } from "@/app/db/users";
@@ -20,7 +21,7 @@ import type { PaymentRecord } from "@/app/types/payment";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
 
-import { requiresManualInvite } from "./invite";
+import { buildInviteShareData, requiresManualInvite } from "./invite";
 import { AutoclaimEngine } from "./autoclaim-engine";
 import {
   enforceInvitePaymentCap,
@@ -58,6 +59,19 @@ function buildDuplicateCreateResponse(
   };
 }
 
+async function buildExistingPaymentRecoveryResponse(payment: PaymentRecord, appBaseUrl?: string | null) {
+  const manualInviteState = await resolveManualInviteState(payment, appBaseUrl);
+  const updatedPayment = manualInviteState.manualInviteRequired
+    ? manualInviteState.payment
+    : await retryPaymentNotificationIfNeeded(payment, appBaseUrl);
+
+  return buildDuplicateCreateResponse(updatedPayment, manualInviteState, {
+    escrowAccount: payment.escrow_account ?? "",
+    escrowVaultAddress: payment.escrow_vault_address ?? "",
+    signature: payment.deposit_signature ?? "",
+  });
+}
+
 async function resolveInviteEligibility(params: {
   receiverPhone: string;
   receiverPhoneHash: string;
@@ -67,6 +81,7 @@ async function resolveInviteEligibility(params: {
   preparedPhoneIdentityPublicKey?: string;
   preparedPaymentReceiverPublicKey?: string;
   preparedEphemeralPublicKey?: string | null;
+  skipInvitePolicyValidation?: boolean;
 }) {
   const receiverUser = await ensureUserForPhoneNumber({
     phoneNumber: params.receiverPhone,
@@ -112,18 +127,20 @@ async function resolveInviteEligibility(params: {
     throw new Error("Sender must finish secure wallet setup before sending invite escrow payments");
   }
 
-  const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
-  if (!tokenConfig) {
-    throw new Error("This token mint is not allowlisted by TrustLink");
+  if (!params.skipInvitePolicyValidation) {
+    const tokenConfig = getAllowedTokenByMint(params.tokenMintAddress);
+    if (!tokenConfig) {
+      throw new Error("This token mint is not allowlisted by TrustLink");
+    }
+    const prices = await getUsdPricesForSymbols([tokenConfig.symbol]);
+    const unitPriceUsd = prices[tokenConfig.symbol.toUpperCase()] ?? null;
+    const amountUsd = unitPriceUsd != null ? Number((params.amount * unitPriceUsd).toFixed(2)) : null;
+    enforceInvitePaymentCap({
+      amountUsd,
+      tokenSymbol: tokenConfig.symbol,
+      amount: params.amount,
+    });
   }
-  const prices = await getUsdPricesForSymbols([tokenConfig.symbol]);
-  const unitPriceUsd = prices[tokenConfig.symbol.toUpperCase()] ?? null;
-  const amountUsd = unitPriceUsd != null ? Number((params.amount * unitPriceUsd).toFixed(2)) : null;
-  enforceInvitePaymentCap({
-    amountUsd,
-    tokenSymbol: tokenConfig.symbol,
-    amount: params.amount,
-  });
 
   return {
     receiverUser,
@@ -161,6 +178,7 @@ export async function createPayment(params: {
   preparedPaymentReceiverPublicKey?: string;
   preparedEphemeralPublicKey?: string | null;
   skipWhatsAppCheck?: boolean;
+  appBaseUrl?: string | null;
 }) {
   logger.info("payment.create.started", {
     phoneNumber: params.phoneNumber,
@@ -174,26 +192,35 @@ export async function createPayment(params: {
     throw new Error("Sender must register a TrustLink identity before creating payments");
   }
 
-  const whatsappVerification = await verifyWhatsAppNumber(params.phoneNumber);
-  if (!whatsappVerification.exists && !params.skipWhatsAppCheck) {
-    throw new Error("Receiver phone number is not available on WhatsApp");
+  if (!params.depositSignature) {
+    const whatsappVerification = await verifyWhatsAppNumber(params.phoneNumber);
+    if (!whatsappVerification.exists && !params.skipWhatsAppCheck) {
+      throw new Error("Receiver phone number is not available on WhatsApp");
+    }
   }
 
   if (params.depositSignature) {
     const existingPayment = await findPaymentByDepositSignature(params.depositSignature);
 
     if (existingPayment) {
-      const manualInviteState = await resolveManualInviteState(existingPayment);
-      const updatedPayment = manualInviteState.manualInviteRequired
-        ? manualInviteState.payment
-        : await retryPaymentNotificationIfNeeded(existingPayment);
-
       logger.info("payment.create.duplicate_deposit_signature", {
         paymentId: existingPayment.id,
         depositSignature: params.depositSignature,
       });
 
-      return buildDuplicateCreateResponse(updatedPayment, manualInviteState);
+      return buildExistingPaymentRecoveryResponse(existingPayment, params.appBaseUrl);
+    }
+
+    if (params.paymentId) {
+      const existingPaymentById = await findPaymentById(params.paymentId);
+      if (existingPaymentById?.status === "locked") {
+        logger.info("payment.create.duplicate_payment_id_recovered", {
+          paymentId: existingPaymentById.id,
+          depositSignature: params.depositSignature,
+        });
+
+        return buildExistingPaymentRecoveryResponse(existingPaymentById, params.appBaseUrl);
+      }
     }
   }
 
@@ -207,6 +234,7 @@ export async function createPayment(params: {
     preparedPhoneIdentityPublicKey: params.preparedPhoneIdentityPublicKey,
     preparedPaymentReceiverPublicKey: params.preparedPaymentReceiverPublicKey,
     preparedEphemeralPublicKey: params.preparedEphemeralPublicKey,
+    skipInvitePolicyValidation: Boolean(params.depositSignature),
   });
   const paymentExpiryAt = resolvePaymentExpiryIso(receiverPaymentPolicy.expiryAtOverride);
   const senderPhoneIdentityPublicKey = sender.phone_identity_pubkey;
@@ -256,16 +284,37 @@ export async function createPayment(params: {
   const manualInviteRequired =
     receiverPaymentPolicy.paymentMode === "invite" || (await requiresManualInvite(params.phoneNumber));
 
-  const escrow = await confirmEscrowPayment({
-    paymentId,
-    senderWallet: params.senderWallet,
-    phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
-    paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
-    amount: params.amount,
-    tokenMintAddress: params.tokenMintAddress,
-    depositSignature: params.depositSignature,
-    escrowVaultAddress: params.escrowVaultAddress,
-  });
+  let escrow;
+  try {
+    escrow = await confirmEscrowPayment({
+      paymentId,
+      senderWallet: params.senderWallet,
+      phoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
+      paymentReceiverPublicKey: receiverPaymentPolicy.paymentReceiverPublicKey,
+      amount: params.amount,
+      tokenMintAddress: params.tokenMintAddress,
+      depositSignature: params.depositSignature,
+      escrowVaultAddress: params.escrowVaultAddress,
+    });
+  } catch (error) {
+    if (params.depositSignature) {
+      const existingPayment =
+        (await findPaymentByDepositSignature(params.depositSignature)) ??
+        (params.paymentId ? await findPaymentById(params.paymentId) : null);
+
+      if (existingPayment?.status === "locked") {
+        logger.warn("payment.create.confirm_recovered_from_existing_payment", {
+          paymentId: existingPayment.id,
+          depositSignature: params.depositSignature,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+
+        return buildExistingPaymentRecoveryResponse(existingPayment, params.appBaseUrl);
+      }
+    }
+
+    throw error;
+  }
 
   let payment: PaymentRecord;
 
@@ -306,10 +355,10 @@ export async function createPayment(params: {
       const existingPayment = await findPaymentByDepositSignature(params.depositSignature);
 
       if (existingPayment) {
-        const manualInviteState = await resolveManualInviteState(existingPayment);
+        const manualInviteState = await resolveManualInviteState(existingPayment, params.appBaseUrl);
         const updatedPayment = manualInviteState.manualInviteRequired
           ? manualInviteState.payment
-          : await retryPaymentNotificationIfNeeded(existingPayment);
+          : await retryPaymentNotificationIfNeeded(existingPayment, params.appBaseUrl);
 
         logger.info("payment.create.duplicate_deposit_signature_race", {
           paymentId: existingPayment.id,
@@ -327,19 +376,46 @@ export async function createPayment(params: {
     throw error;
   }
 
-  const manualInviteState = manualInviteRequired
-    ? await resolveManualInviteState(payment)
-    : {
-        manualInviteRequired: false,
-        payment: await sendInitialPaymentNotification(payment),
-        inviteShare: null,
-      };
+  let manualInviteState: {
+    manualInviteRequired: boolean;
+    payment: PaymentRecord;
+    inviteShare: { onboardingLink: string; inviteMessage: string } | null;
+  };
+
+  try {
+    manualInviteState = manualInviteRequired
+      ? await resolveManualInviteState(payment, params.appBaseUrl)
+      : {
+          manualInviteRequired: false,
+          payment: await sendInitialPaymentNotification(payment),
+          inviteShare: null,
+        };
+  } catch (error) {
+    logger.warn("payment.create.post_lock_followup_failed", {
+      paymentId: payment.id,
+      manualInviteRequired,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
+    manualInviteState = {
+      manualInviteRequired,
+      payment,
+      inviteShare: manualInviteRequired ? buildInviteShareData(payment, params.appBaseUrl) : null,
+    };
+  }
   const updatedPayment = manualInviteState.payment;
 
-  await AutoclaimEngine.triggerPaymentLocked({
-    paymentId: payment.id,
-    triggerSource: "payment.locked",
-  });
+  try {
+    await AutoclaimEngine.triggerPaymentLocked({
+      paymentId: payment.id,
+      triggerSource: "payment.locked",
+    });
+  } catch (error) {
+    logger.warn("payment.create.autoclaim_trigger_failed", {
+      paymentId: payment.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 
   logger.info("payment.create.succeeded", {
     paymentId: payment.id,

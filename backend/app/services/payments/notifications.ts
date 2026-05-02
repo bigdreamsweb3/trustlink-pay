@@ -13,7 +13,7 @@ import { buildInviteShareData, requiresManualInvite } from "./invite";
 const NOTIFICATION_RETRY_INTERVAL_MS = 90_000;
 const inFlightNotificationRetries = new Set<string>();
 
-export async function resolveManualInviteState(payment: PaymentRecord) {
+export async function resolveManualInviteState(payment: PaymentRecord, appBaseUrl?: string | null) {
   const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
 
   if (!manualInviteRequired) {
@@ -32,7 +32,7 @@ export async function resolveManualInviteState(payment: PaymentRecord) {
   return {
     manualInviteRequired: true,
     payment: updatedPayment,
-    inviteShare: buildInviteShareData(updatedPayment),
+    inviteShare: buildInviteShareData(updatedPayment, appBaseUrl),
   };
 }
 
@@ -126,8 +126,8 @@ async function dispatchPaymentNotification(payment: PaymentRecord, reason: "init
   }
 }
 
-export async function retryPaymentNotificationIfNeeded(payment: PaymentRecord) {
-  const manualInviteState = await resolveManualInviteState(payment);
+export async function retryPaymentNotificationIfNeeded(payment: PaymentRecord, appBaseUrl?: string | null) {
+  const manualInviteState = await resolveManualInviteState(payment, appBaseUrl);
   if (manualInviteState.manualInviteRequired) {
     return manualInviteState.payment;
   }

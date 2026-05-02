@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find and verify the session code
-    const session = findSessionCode(sessionCode);
+    const session = await findSessionCode(sessionCode);
     
     if (!session) {
       return NextResponse.json({

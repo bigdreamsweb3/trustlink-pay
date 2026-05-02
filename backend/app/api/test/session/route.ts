@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const { action, code, phoneNumber, sessionId } = body;
 
     if (action === "create") {
-      const session = createSessionCode(sessionId || "test-session");
+      const session = await createSessionCode(sessionId || "test-session");
       return NextResponse.json({
         success: true,
         sessionCode: session.code,
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "verify") {
-      const verified = verifySessionCode(code, phoneNumber || "+1234567890");
+      const verified = await verifySessionCode(code, phoneNumber || "+1234567890");
       return NextResponse.json({
         success: !!verified,
         session: verified,

@@ -34,7 +34,7 @@ export class SessionCleanupService {
 
   private async runCleanup() {
     try {
-      const cleanedCount = cleanupExpiredSessionCodes();
+      const cleanedCount = await cleanupExpiredSessionCodes();
       
       if (cleanedCount > 0) {
         logger.info("session_cleanup.completed", { cleanedCount });

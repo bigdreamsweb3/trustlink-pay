@@ -33,7 +33,7 @@
   --bg-elevated: #ffffff;
   --panel: #ffffff;
   --panel-soft: #f0f5f2;
-  --surface: rgba(255, 255, 255, 0.95);
+  --surface: #203236;
   --surface-border: rgba(30, 138, 108, 0.06);
   --text: #111f18;
   --primary: #ffffff;
@@ -67,6 +67,7 @@
   --surface-soft: rgba(240, 245, 242, 0.6);
   --text-soft: rgba(17, 31, 24, 0.64);
   --text-faint: rgba(17, 31, 24, 0.4);
+  --text-popper: rgb(17, 31, 24);
   --icon-soft: rgba(46, 168, 134, 0.05);
   --accent-soft: rgba(46, 168, 134, 0.06);
   --accent-border: rgba(46, 168, 134, 0.1);
@@ -91,7 +92,7 @@
   --bg-elevated: #0d1311;
   --panel: #111918;
   --panel-soft: #172220;
-  --surface: #0a100e;
+  --surface: #203236;
   --surface-border: rgba(93, 219, 167, 0.05);
   --text: #ecf4ef;
   --primary: #ffffff;
@@ -129,6 +130,7 @@
   --surface-soft: rgba(255, 255, 255, 0.02);
   --text-soft: rgba(236, 244, 239, 0.7);
   --text-faint: rgba(236, 244, 239, 0.36);
+  --text-popper: rgb(236, 244, 239);
   --icon-soft: rgba(255, 255, 255, 0.04);
   --accent-soft: rgba(93, 219, 167, 0.06);
   --accent-border: rgba(93, 219, 167, 0.08);
@@ -176,6 +178,7 @@
   --color-surface-soft: var(--surface-soft);
   --color-text-soft: var(--text-soft);
   --color-text-faint: var(--text-faint);
+  --color-text-popper: var(--text-popper);
   --color-icon-soft: var(--icon-soft);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);

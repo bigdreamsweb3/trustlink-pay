@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon } from "@/src/components/app-icons";
+import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
@@ -91,7 +91,7 @@ export function DashboardExperience() {
       <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr] md:items-start">
 
         {/* ─── LEFT COLUMN: Balance + Actions ─── */}
-        <div className="space-y-4">
+        <div className="space-y-0 md:space-y-4">
 
           {/* BALANCE HERO CARD */}
           <div className="tl-scanline relative overflow-hidden rounded-[28px] text-text border border-accent-border bg-accent-gradient p-5 shadow-softbox">
@@ -196,7 +196,7 @@ export function DashboardExperience() {
         </div>
 
         {/* ─── RIGHT COLUMN: Info Cards ─── */}
-        <div className="space-y-4">
+        <div className="space-y-4 mt-1.5">
 
           {/* PENDING CLAIMS CARD */}
           {loading ? (
@@ -230,22 +230,27 @@ export function DashboardExperience() {
                 </div>
               ) : null}
             </Link>
-          ) : (
-            <div className="tl-field rounded-[22px] px-4 py-4">
-              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Pending claims</div>
-              <div className="mt-2 text-[0.82rem] text-[var(--muted)]">No pending claims</div>
-            </div>
-          )}
+          ) : null}
 
           {/* WALLET TOKENS CARD */}
           <div className="tl-field rounded-[22px] px-4 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Wallet</div>
-              {walletAddress ? (
-                <span className="rounded-[6px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-2 py-0.5 text-[0.62rem] font-medium text-[var(--text-faint)]">
-                  {shortenAddress(walletAddress)}
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-popper)]">Wallet</div>
+
+              <div className="flex h-8 items-center gap-1.5 rounded-[10px] border border-field-border bg-accent-icon pl-2 pr-0.5 py-0.5">
+                <WalletIcon size={13} className="shrink-0 text-[#203236]" />
+                <span className="text-[0.72rem] font-bold text-[#203236]  whitespace-nowrap">
+                  {walletAddress
+                    ? (balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****")
+                    : "Connect"
+                  }
                 </span>
-              ) : null}
+                {walletAddress ? (
+                  <span className="rounded-full border border-[var(--field-border)] bg-[var(--surface)] px-2 py-0.5 text-[0.58rem] font-medium text-primary ">
+                    {shortenAddress(walletAddress)}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             {walletTokenLoading ? (
@@ -284,15 +289,6 @@ export function DashboardExperience() {
                 ))}
               </div>
             )}
-
-            {walletAddress && walletTokens.length > 0 ? (
-              <div className="mt-3 flex items-center justify-between rounded-[12px] bg-[var(--surface-soft)] px-3 py-2">
-                <span className="text-[0.72rem] text-[var(--text-faint)]">Wallet total</span>
-                <span className="text-[0.82rem] font-bold text-[var(--text)]">
-                  {balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****"}
-                </span>
-              </div>
-            ) : null}
           </div>
 
           {/* MOBILE-ONLY STATS ROW */}
@@ -321,7 +317,7 @@ export function DashboardExperience() {
                 ═══════════════════════════════════════════════════════ */}
       <div className="mt-6">
         <div className="flex items-center justify-between mb-3">
-          <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Activity</div>
+          <div className="text-text-popper text-[0.62rem] uppercase tracking-[0.2em]">Activity</div>
           {!loading && paymentHistory.length > 6 ? (
             <Link href="/app/activity" className="text-[0.68rem] font-medium text-accent hover:text-accent-deep transition-colors">
               View all

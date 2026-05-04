@@ -12,13 +12,12 @@ export function PinDigitBoxes({ pin, size = "md" }: { pin: string; size?: "md" |
         return (
           <div
             key={index}
-            className={`grid ${heightClass} place-items-center rounded-[18px] border text-lg font-semibold transition ${
-              isFilled
-                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
-                : isActive
-                  ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
-                  : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
-            }`}
+            className={`grid ${heightClass} place-items-center rounded-[18px] border text-lg font-semibold transition ${isFilled
+              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
+              : isActive
+                ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
+                : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
+              }`}
           >
             {isFilled ? "â€¢" : ""}
           </div>

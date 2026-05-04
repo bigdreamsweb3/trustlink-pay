@@ -657,8 +657,7 @@ pub struct InitializeIdentityBinding<'info> {
     pub claim_verifier: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump)]
     pub config: Box<Account<'info, EscrowConfig>>,
-    /// CHECK: recorded as payout destination authority.
-    pub bound_settlement_wallet: UncheckedAccount<'info>,
+    pub bound_settlement_wallet: Signer<'info>,
     #[account(init, payer = claim_verifier, space = IdentityBinding::SPACE, seeds = [IDENTITY_BINDING_SEED, phone_identity_pubkey.as_ref()], bump)]
     pub identity_binding: Box<Account<'info, IdentityBinding>>,
     pub system_program: Program<'info, System>,

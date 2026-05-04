@@ -91,6 +91,7 @@ export const identityKeyRegistrationSchema = z.object({
   settlementWalletPublicKey: walletAddressSchema,
   recoveryWalletPublicKey: walletAddressSchema.optional().nullable(),
   bindingSignature: z.string().trim().min(64).optional().nullable(),
+  blockchainSignature: z.string().trim().min(32).max(128).optional().nullable(),
 });
 
 export const loginSchema = z.object({

@@ -1,6 +1,8 @@
 export {
+  confirmIdentityBindingState,
   createDraftPaymentId,
   prepareAddRecoveryWalletTransaction,
+  prepareInitializeIdentityBindingTransaction,
   prepareRequestRecoveryTransaction,
   prepareSetIdentityFreezeTransaction,
   getIdentityBindingPda,

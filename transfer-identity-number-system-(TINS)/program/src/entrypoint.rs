@@ -16,7 +16,7 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("Entrypoint");
+    msg!("TINS entrypoint");
     if let Err(error) = Processor::process_instruction(program_id, accounts, instruction_data) {
         error.print::<Error>();
         return Err(error);
@@ -30,16 +30,19 @@ impl PrintProgramError for Error {
         E: 'static + std::error::Error + DecodeError<E> + PrintProgramError + FromPrimitive,
     {
         match self {
-            Error::Overflow => {
-                msg!("Error: Numerical overflow")
-            }
-            Error::WrongCollection => msg!("Error: Wrong collection"),
-            Error::AlreadyRegistered => {
-                msg!("Error: The domain name is already registered")
-            }
-            Error::DeprecatedInstruction => {
-                msg!("Error: The instruction is deprecated")
-            }
+            Error::InvalidInstruction => msg!("Error: invalid instruction"),
+            Error::Overflow => msg!("Error: overflow"),
+            Error::InvalidName => msg!("Error: invalid identity name"),
+            Error::NameTooLong => msg!("Error: identity name too long"),
+            Error::GlobalStateAlreadyInitialized => msg!("Error: global state already initialized"),
+            Error::RegistryAlreadyInitialized => msg!("Error: registry already initialized"),
+            Error::InvalidPda => msg!("Error: invalid PDA"),
+            Error::TinExhausted => msg!("Error: TIN counter exhausted"),
+            Error::InvalidTin => msg!("Error: invalid TIN"),
+            Error::InvalidAmount => msg!("Error: invalid amount"),
+            Error::EscrowAlreadyClaimed => msg!("Error: escrow already claimed"),
+            Error::UnauthorizedClaimant => msg!("Error: unauthorized claimant"),
+            Error::InvalidAccountOwner => msg!("Error: invalid account owner"),
         }
     }
 }

@@ -20,6 +20,7 @@ import {
   type SupportedWalletToken,
   TOKEN_ACCOUNT_SPACE,
   TOKEN_PROGRAM_ID,
+  calculateFeeAmountUi,
   createDraftPaymentId,
   decodePaymentAccount,
   estimateTransactionFeeLamports,
@@ -66,6 +67,24 @@ function encodeI64(value: bigint) {
   const buffer = Buffer.alloc(8);
   buffer.writeBigInt64LE(value);
   return buffer;
+}
+
+function getSenderFeeAmountUi(amount: number, decimals: number) {
+  return calculateFeeAmountUi({
+    amount,
+    decimals,
+    basisPoints: env.TRUSTLINK_SEND_FEE_BPS,
+    maxUiAmount: env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+  });
+}
+
+function getClaimFeeAmountUi(amount: number, decimals: number) {
+  return calculateFeeAmountUi({
+    amount,
+    decimals,
+    basisPoints: env.TRUSTLINK_CLAIM_FEE_BPS,
+    maxUiAmount: env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+  });
 }
 
 async function buildCreatePaymentTransaction(params: {
@@ -163,14 +182,16 @@ export async function estimateSenderTransferCost(params: {
   if (!tokenConfig) {
     throw new Error("This token mint is not allowlisted by TrustLink");
   }
+  const senderFeeAmountUi = getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+  const totalTokenRequiredUi = roundToDecimals(params.amount + senderFeeAmountUi, tokenConfig.decimals);
 
   if (env.SOLANA_MOCK_MODE) {
     return {
       tokenSymbol: tokenConfig.symbol,
       tokenMintAddress: tokenConfig.mintAddress,
-      senderFeeAmountUi: 0,
+      senderFeeAmountUi,
       senderFeeAmountUsd: 0,
-      totalTokenRequiredUi: params.amount,
+      totalTokenRequiredUi,
       estimatedNetworkFeeLamports: 0,
       networkFeeSol: 0,
       networkFeeUsd: 0,
@@ -186,13 +207,15 @@ export async function estimateSenderTransferCost(params: {
 
   const networkFeeSol = lamportsToSol(networkFeeLamports);
   const networkFeeUsd = prices.solUsd != null ? roundToDecimals(networkFeeSol * prices.solUsd, 6) : null;
+  const senderFeeAmountUsd =
+    prices.tokenUsd != null ? roundToDecimals(senderFeeAmountUi * prices.tokenUsd, 6) : null;
 
   return {
     tokenSymbol: built.tokenConfig.symbol,
     tokenMintAddress: built.tokenConfig.mintAddress,
-    senderFeeAmountUi: 0,
-    senderFeeAmountUsd: 0,
-    totalTokenRequiredUi: roundToDecimals(params.amount, built.tokenConfig.decimals),
+    senderFeeAmountUi,
+    senderFeeAmountUsd,
+    totalTokenRequiredUi,
     estimatedNetworkFeeLamports: networkFeeLamports,
     networkFeeSol,
     networkFeeUsd,
@@ -370,20 +393,24 @@ export async function estimateClaimFee(params: {
   if (!tokenConfig) {
     throw new Error("This token mint is not allowlisted by TrustLink");
   }
+  const feeAmountUi = getClaimFeeAmountUi(params.amount, tokenConfig.decimals);
+  const feeAmountBaseUnits = toBaseUnits(feeAmountUi, tokenConfig.decimals);
+  const receiverAmountUi = roundToDecimals(Math.max(params.amount - feeAmountUi, 0), tokenConfig.decimals);
+  const totalAmountUi = roundToDecimals(params.amount, tokenConfig.decimals);
 
   if (env.SOLANA_MOCK_MODE) {
     return {
       tokenSymbol: tokenConfig.symbol,
       tokenMintAddress: tokenConfig.mintAddress,
-      feeAmountUi: 0,
-      feeAmountBaseUnits: 0n,
+      feeAmountUi,
+      feeAmountBaseUnits,
       feeAmountUsd: 0,
       estimatedNetworkFeeLamports: 0,
       estimatedNetworkFeeSol: 0,
       estimatedNetworkFeeUsd: 0,
-      markupAmountUi: 0,
-      receiverAmountUi: params.amount,
-      totalAmountUi: params.amount,
+      markupAmountUi: feeAmountUi,
+      receiverAmountUi,
+      totalAmountUi,
     };
   }
 
@@ -399,19 +426,20 @@ export async function estimateClaimFee(params: {
   const estimatedNetworkFeeSol = lamportsToSol(totalLamports);
   const estimatedNetworkFeeUsd =
     prices.solUsd != null ? roundToDecimals(estimatedNetworkFeeSol * prices.solUsd, 6) : null;
+  const feeAmountUsd = prices.tokenUsd != null ? roundToDecimals(feeAmountUi * prices.tokenUsd, 6) : null;
 
   return {
     tokenSymbol: tokenConfig.symbol,
     tokenMintAddress: tokenConfig.mintAddress,
-    feeAmountUi: 0,
-    feeAmountBaseUnits: 0n,
-    feeAmountUsd: 0,
+    feeAmountUi,
+    feeAmountBaseUnits,
+    feeAmountUsd,
     estimatedNetworkFeeLamports: totalLamports,
     estimatedNetworkFeeSol,
     estimatedNetworkFeeUsd,
-    markupAmountUi: 0,
-    receiverAmountUi: roundToDecimals(params.amount, tokenConfig.decimals),
-    totalAmountUi: params.amount,
+    markupAmountUi: feeAmountUi,
+    receiverAmountUi,
+    totalAmountUi,
   };
 }
 
@@ -431,6 +459,7 @@ export async function prepareEscrowPayment(params: {
   }
 
   if (env.SOLANA_MOCK_MODE) {
+    const feeEstimate = await estimateSenderTransferCost(params);
     return {
       paymentId: params.paymentId,
       escrowAccount: Keypair.generate().publicKey.toBase58(),
@@ -438,8 +467,8 @@ export async function prepareEscrowPayment(params: {
       serializedTransaction: Buffer.from("mock").toString("base64"),
       mode: "mock" as const,
       tokenSymbol: tokenConfig.symbol,
-      senderFeeAmountUi: 0,
-      totalTokenRequiredUi: params.amount,
+      senderFeeAmountUi: feeEstimate.senderFeeAmountUi,
+      totalTokenRequiredUi: feeEstimate.totalTokenRequiredUi,
     };
   }
 
@@ -485,16 +514,18 @@ export async function confirmEscrowPayment(params: {
   }
 
   if (env.SOLANA_MOCK_MODE) {
+    const senderFeeAmountUi = getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+    const claimFeeAmountUi = getClaimFeeAmountUi(params.amount, tokenConfig.decimals);
     return {
       escrowAccount: getPaymentAccountPda(params.paymentId).toBase58(),
       escrowVaultAddress: params.escrowVaultAddress,
       signature: params.depositSignature,
       mode: "mock" as const,
-    tokenSymbol: tokenConfig.symbol,
-    senderFeeAmountUi: 0,
-    claimFeeAmountUi: 0,
-    expiryAt: null,
-  };
+      tokenSymbol: tokenConfig.symbol,
+      senderFeeAmountUi,
+      claimFeeAmountUi,
+      expiryAt: null,
+    };
   }
 
   const connection = getConnection();
@@ -535,14 +566,17 @@ export async function confirmEscrowPayment(params: {
     throw new Error("The on-chain escrow amount does not match the requested amount");
   }
 
+  const senderFeeAmountUi = getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+  const claimFeeAmountUi = getClaimFeeAmountUi(params.amount, tokenConfig.decimals);
+
   return {
     escrowAccount: paymentAccount.toBase58(),
     escrowVaultAddress: params.escrowVaultAddress,
     signature: params.depositSignature,
     mode: "devnet" as const,
     tokenSymbol: tokenConfig.symbol,
-    senderFeeAmountUi: 0,
-    claimFeeAmountUi: 0,
+    senderFeeAmountUi,
+    claimFeeAmountUi,
     expiryAt: new Date(Number(decoded.expiryTs) * 1000).toISOString(),
   };
 }

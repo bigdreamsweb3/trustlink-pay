@@ -23,9 +23,11 @@
     "autoclaim:worker": "tsx scripts/autoclaim-worker.ts",
     "autoclaim:tick": "tsx scripts/autoclaim-worker.ts --once --tick",
     "test:auth-phone-flow": "tsx scripts/test-auth-phone-flow.ts",
+    "test:identity-binding": "tsx scripts/test-identity-binding.ts",
     "test:whatsapp-number": "tsx scripts/test-whatsapp-number.ts",
     "test:recipient-lookup": "tsx scripts/test-recipient-lookup.ts",
     "test:payment-flow": "tsx scripts/test-payment-flow.ts",
+    "test:tins:phase1": "tsx scripts/test-tins-phase1.ts",
     "ngrok:https": "npx ngrok http 3000"
   },
   "dependencies": {

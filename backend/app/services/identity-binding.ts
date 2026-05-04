@@ -3,8 +3,10 @@ import { PublicKey } from "@solana/web3.js";
 import { findUserById, updateUserPublicKeyMaterial } from "@/app/db/users";
 import { markPaymentsReceiverOnboarded } from "@/app/db/payments";
 import {
+  confirmIdentityBindingState,
   getIdentityBindingState,
   prepareAddRecoveryWalletTransaction,
+  prepareInitializeIdentityBindingTransaction,
   prepareRequestRecoveryTransaction,
   prepareSetIdentityFreezeTransaction,
 } from "@/app/blockchain/solana";
@@ -42,26 +44,100 @@ export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
   };
 }
 
-export async function registerIdentityKeysForUser(
+type IdentityKeyRegistrationParams = {
+  phoneIdentityPublicKey: string;
+  privacyViewPublicKey: string;
+  privacySpendPublicKey: string;
+  settlementWalletPublicKey: string;
+  recoveryWalletPublicKey?: string | null;
+  bindingSignature?: string | null;
+  blockchainSignature?: string | null;
+};
+
+export async function prepareIdentityKeyRegistrationForUser(
   authUser: AuthenticatedUser,
-  params: {
-    phoneIdentityPublicKey: string;
-    privacyViewPublicKey: string;
-    privacySpendPublicKey: string;
-    settlementWalletPublicKey: string;
-    recoveryWalletPublicKey?: string | null;
-    bindingSignature?: string | null;
-  }
+  params: IdentityKeyRegistrationParams,
 ) {
   const user = await findUserById(authUser.id);
   if (!user) {
     throw new Error("Account not found");
   }
 
+  const phoneIdentityPublicKey = new PublicKey(params.phoneIdentityPublicKey).toBase58();
+  const settlementWalletPublicKey = new PublicKey(params.settlementWalletPublicKey).toBase58();
+  const existingBinding = await getIdentityBindingState(phoneIdentityPublicKey);
+
+  if (existingBinding && existingBinding.settlementWallet !== settlementWalletPublicKey) {
+    throw new Error("This identity is already bound to a different settlement wallet on-chain");
+  }
+
+  const bindingPreview =
+    existingBinding ??
+    (await prepareInitializeIdentityBindingTransaction({
+      identityPublicKey: phoneIdentityPublicKey,
+      settlementWallet: settlementWalletPublicKey,
+    }));
+
+  return {
+    phoneIdentityPublicKey,
+    settlementWalletPublicKey,
+    requiresBlockchainSignature: !existingBinding,
+    binding:
+      existingBinding
+        ? {
+            mode: "already-bound" as const,
+            identityBinding: existingBinding.address,
+            settlementWallet: existingBinding.settlementWallet,
+            recoveryWallet: existingBinding.recoveryWallet,
+            isFrozen: existingBinding.isFrozen,
+          }
+        : {
+            mode: "prepare-bind" as const,
+            identityBinding: bindingPreview.identityBinding,
+            serializedTransaction: bindingPreview.serializedTransaction,
+            rpcUrl: bindingPreview.rpcUrl,
+            programId: bindingPreview.programId,
+            feePayer: bindingPreview.feePayer,
+            estimatedNetworkFeeLamports: bindingPreview.estimatedNetworkFeeLamports,
+            estimatedNetworkFeeSol: bindingPreview.estimatedNetworkFeeSol,
+          },
+    notice:
+      "Creating your TrustLink Pay identity will ask your wallet to sign a binding transaction. TrustLink Pay pays the network fee for this bind.",
+  };
+}
+
+export async function confirmIdentityKeyRegistrationForUser(
+  authUser: AuthenticatedUser,
+  params: IdentityKeyRegistrationParams,
+) {
+  const user = await findUserById(authUser.id);
+  if (!user) {
+    throw new Error("Account not found");
+  }
+
+  const phoneIdentityPublicKey = new PublicKey(params.phoneIdentityPublicKey).toBase58();
+
   const settlementWalletPublicKey = new PublicKey(params.settlementWalletPublicKey).toBase58();
   const recoveryWalletPublicKey = params.recoveryWalletPublicKey
     ? new PublicKey(params.recoveryWalletPublicKey).toBase58()
     : null;
+
+  const existingBinding = await getIdentityBindingState(phoneIdentityPublicKey);
+  if (!existingBinding && !params.blockchainSignature) {
+    throw new Error("A wallet-signed blockchain binding transaction is required before saving identity keys");
+  }
+
+  const bindingState = existingBinding
+    ? existingBinding
+    : await confirmIdentityBindingState({
+        identityPublicKey: phoneIdentityPublicKey,
+        settlementWallet: settlementWalletPublicKey,
+        blockchainSignature: params.blockchainSignature!,
+      });
+
+  if (bindingState.settlementWallet !== settlementWalletPublicKey) {
+    throw new Error("The verified on-chain settlement wallet does not match the submitted wallet");
+  }
 
   const bindingSignature =
     params.bindingSignature ??
@@ -75,7 +151,7 @@ export async function registerIdentityKeysForUser(
 
   const updated = await updateUserPublicKeyMaterial({
     userId: authUser.id,
-    phoneIdentityPublicKey: new PublicKey(params.phoneIdentityPublicKey).toBase58(),
+    phoneIdentityPublicKey,
     privacyViewPublicKey: params.privacyViewPublicKey,
     privacySpendPublicKey: new PublicKey(params.privacySpendPublicKey).toBase58(),
     settlementWalletPublicKey,
@@ -99,6 +175,8 @@ export async function registerIdentityKeysForUser(
     settlementWalletPublicKey: updated.settlement_wallet_pubkey,
     recoveryWalletPublicKey: updated.recovery_wallet_pubkey,
     bindingSignature: updated.binding_signature,
+    blockchainSignature: params.blockchainSignature ?? null,
+    identityBindingAddress: bindingState.address,
   };
 }
 

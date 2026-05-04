@@ -4,8 +4,9 @@ import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { identityKeyRegistrationSchema } from "@/app/lib/validation";
 import {
+  confirmIdentityKeyRegistrationForUser,
   getIdentitySecurityForUser,
-  registerIdentityKeysForUser,
+  prepareIdentityKeyRegistrationForUser,
 } from "@/app/services/identity-binding";
 
 export async function GET(request: Request) {
@@ -29,7 +30,13 @@ export async function POST(request: Request) {
     try {
       const body = await request.json();
       const payload = identityKeyRegistrationSchema.parse(body);
-      const result = await registerIdentityKeysForUser(authUser, payload);
+
+      if (!payload.blockchainSignature) {
+        const result = await prepareIdentityKeyRegistrationForUser(authUser, payload);
+        return ok(result);
+      }
+
+      const result = await confirmIdentityKeyRegistrationForUser(authUser, payload);
 
       return ok({
         phoneIdentityPublicKey: result.phoneIdentityPublicKey,
@@ -38,6 +45,8 @@ export async function POST(request: Request) {
         settlementWalletPublicKey: result.settlementWalletPublicKey,
         recoveryWalletPublicKey: result.recoveryWalletPublicKey,
         bindingSignature: result.bindingSignature,
+        identityBindingAddress: result.identityBindingAddress,
+        blockchainSignature: result.blockchainSignature,
       });
     } catch (error) {
       if (error instanceof Error) {

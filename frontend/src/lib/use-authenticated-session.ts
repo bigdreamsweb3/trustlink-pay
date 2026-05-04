@@ -76,7 +76,7 @@ export function useAuthenticatedSession(redirectPath: string) {
         const result = await apiPost<{
           challengeToken: string;
           user: UserProfile;
-        }>("/api/auth/pin/challenge", {}, accessToken);
+        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined);
         const nextPendingAuth = {
           challengeToken: result.challengeToken,
           pinMode: "verify" as const,
@@ -120,7 +120,7 @@ export function useAuthenticatedSession(redirectPath: string) {
         const result = await apiPost<{
           challengeToken: string;
           user: UserProfile;
-        }>("/api/auth/pin/challenge", {}, accessToken);
+        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined);
         const nextPendingAuth = {
           challengeToken: result.challengeToken,
           pinMode: "verify" as const,

@@ -17,10 +17,10 @@ function PinDigitBoxes({ pin }: { pin: string }) {
           <div
             key={index}
             className={`grid h-14 place-items-center rounded-[18px] border text-lg font-semibold transition ${isFilled
-                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
-                : isActive
-                  ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
-                  : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
+              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
+              : isActive
+                ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]"
+                : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
               }`}
           >
             {isFilled ? "•" : ""}

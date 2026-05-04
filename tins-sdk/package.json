@@ -1,0 +1,16 @@
+{
+  "name": "@trustlink-pay/tins-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrustLink Pay Transfer Identity Number System SDK",
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "@solana/web3.js": "^1.98.0"
+  }
+}

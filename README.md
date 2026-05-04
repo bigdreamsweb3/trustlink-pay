@@ -4,6 +4,8 @@
 
 TrustLink Pay is a phone-number-first, noncustodial stablecoin payment dApp on Solana. Instead of pasting wallet addresses, senders enter a WhatsApp number, funds move into a per-payment escrow, and the recipient completes a guided claim flow.
 
+TrustLink Pay team is also building **TINS**: the **Transfer Identity Number System**, an open on-chain registry and escrow routing program for Solana. T.I.N.S is the protocol track that moves identity-based routing beyond TrustLink Pay's app database and into a native blockchain system other Solana developers can integrate directly.
+
 ![Home dashboard](public/screenshots/01-home-dashboard.png)
 
 ## Pitch Links
@@ -31,6 +33,19 @@ Hundreds of millions of people in Nigeria, India, Brazil, and Southeast Asia alr
 
 ## The Solution
 
+### TINS: The On-Chain Program Track
+
+Alongside the live TrustLink Pay product, the team is building TINS as a blockchain-native identity and payment-routing layer.
+
+TINS is designed to:
+
+- create permanent transfer identities on Solana
+- issue a 10-digit transfer number that behaves like an account number
+- route incoming funds into escrow instead of directly exposing a visible receiving wallet
+- allow any Solana builder to call the program without depending on the TrustLink Pay database
+
+This matters because TrustLink Pay today proves the user experience, while TINS is the protocol layer that turns identity-based transfer routing into a reusable on-chain primitive.
+
 TrustLink Pay replaces "paste a wallet string" with:
 
 - **Pay a phone number** the sender already knows
@@ -39,12 +54,12 @@ TrustLink Pay replaces "paste a wallet string" with:
 
 ### WhatsApp's role
 
-| Layer | Purpose |
-|---|---|
-| Identity proxy | Route payments by phone number, not raw addresses |
-| Business confidence | Surface verified merchant identity to senders |
-| Notifications | Payment sent / received / ready-to-claim alerts |
-| Authentication | OTP + session-code verification |
+| Layer               | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| Identity proxy      | Route payments by phone number, not raw addresses |
+| Business confidence | Surface verified merchant identity to senders     |
+| Notifications       | Payment sent / received / ready-to-claim alerts   |
+| Authentication      | OTP + session-code verification                   |
 
 WhatsApp is the identity and notification layer — TrustLink Pay is **not** a WhatsApp chat app or custodial wallet.
 
@@ -77,14 +92,14 @@ WhatsApp is the identity and notification layer — TrustLink Pay is **not** a W
 
 ### Core guarantees
 
-| Property | How |
-|---|---|
-| Noncustodial | TrustLink never holds user funds or private keys |
-| Per-payment isolation | Each payment gets its own escrow vault PDA |
-| Replay prevention | On-chain nonce bitmask; consumed nonces can't reuse |
-| Derivation proof | Master key binds child key to escrow + nonce + expiry + destination |
-| Front-run resistance | Destination hash checked before any transfer |
-| Address poisoning eliminated | Sender never sees a wallet address |
+| Property                     | How                                                                 |
+| ---------------------------- | ------------------------------------------------------------------- |
+| Noncustodial                 | TrustLink never holds user funds or private keys                    |
+| Per-payment isolation        | Each payment gets its own escrow vault PDA                          |
+| Replay prevention            | On-chain nonce bitmask; consumed nonces can't reuse                 |
+| Derivation proof             | Master key binds child key to escrow + nonce + expiry + destination |
+| Front-run resistance         | Destination hash checked before any transfer                        |
+| Address poisoning eliminated | Sender never sees a wallet address                                  |
 
 ### Key architecture (v3 hardened)
 
@@ -96,12 +111,12 @@ WhatsApp is the identity and notification layer — TrustLink Pay is **not** a W
 
 ### Threat model
 
-| Threat | Defense |
-|---|---|
-| Forged child key | Program requires derivation proof signed by master key + child hash match |
-| Replayed signature | On-chain nonce consumed; reuse fails |
-| Destination swap | Destination bound in signed payload; mismatch rejected |
-| Operator custody | Escrow requires valid user proofs; platform cannot author claims |
+| Threat             | Defense                                                                   |
+| ------------------ | ------------------------------------------------------------------------- |
+| Forged child key   | Program requires derivation proof signed by master key + child hash match |
+| Replayed signature | On-chain nonce consumed; reuse fails                                      |
+| Destination swap   | Destination bound in signed payload; mismatch rejected                    |
+| Operator custody   | Escrow requires valid user proofs; platform cannot author claims          |
 
 ---
 
@@ -133,10 +148,29 @@ Real-time WhatsApp delivery receipts: **Sent → Delivered → Seen** — the sa
 ```
 
 ### Identity layer
+
 Phone → SHA-256 hash → on-chain `IdentityBinding` PDA · WhatsApp OTP · In-app PIN · Master → ephemeral child keys
 
 ### Escrow layer (v3)
+
 `EscrowV3` PDA seeded by `child_hash + nonce + mint` · Ed25519 derivation proofs · Bitmask nonce PDAs · Destination hash binding · Auto-claim crank
+
+---
+
+## TINS In This Workspace
+
+The Transfer Identity Number System is being developed in this workspace as a dedicated program track:
+
+- [TINS Overview](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\README.md>)
+- [TINS Phase 1 Scope](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\docs\phase-1-scope.md>)
+- [TINS Change Log vs SNS](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\docs\tins-change-log.md>)
+
+Why auditors, investors, and ecosystem partners should care:
+
+- TLPay already proves demand for identity-first stablecoin transfers
+- TINS is the team's push toward a fully on-chain identity registry and escrow routing system
+- the TINS program follows an SNS-derived Solana registry structure because that architectural pattern is already practiced and understood in the ecosystem
+- the long-term goal is to let TrustLink Pay and third-party Solana apps use the same on-chain transfer identity system
 
 ---
 
@@ -144,15 +178,14 @@ Phone → SHA-256 hash → on-chain `IdentityBinding` PDA · WhatsApp OTP · In-
 
 TrustLink uses WhatsApp-based, session-code authentication:
 
-1. **Session code generated** (e.g. `TL-8821`, expires in 10 min)
-2. **User sends code via WhatsApp** — verified in real-time (SSE with polling fallback)
+1. **Session code generated** (e.g. `TLXXXXXX`, expires in 5 min)
+2. **User sends code via WhatsApp** — Appoves session and verified in real-time (SSE with polling fallback)
 3. **PIN setup / verify** — 6-digit second factor
 4. **Wallet connection** — Solana wallet signature proves ownership
 
 Device-aware: mobile gets a direct WhatsApp link; desktop gets a QR code.
 
 ---
-
 
 ## Milestones
 
@@ -165,6 +198,7 @@ TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackath
 **Track:** Programmable Stablecoin Payments
 
 **What was built:**
+
 - Noncustodial per-payment escrow on Solana (v2 + v3 hardened architecture)
 - Phone-number-first identity layer with WhatsApp verification
 - Gasless send and claim UX (TrustLink sponsors Solana fees)
@@ -172,7 +206,6 @@ TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackath
 - Delivery receipts (sent / delivered / seen)
 - Hardened v3 escrow with Ed25519 derivation proofs and replay prevention
 - Compliance-aware architecture (KYC/KYT/AML/Travel Rule ready)
-
 
 ---
 
@@ -182,22 +215,46 @@ TrustLink Pay was built and submitted for **StableHacks 2026**, a global hackath
 
 TrustLink integrates with the [Bags SDK](https://docs.bags.fm/) to support **creator token payments via phone number** — making TrustLink the first dApp where any Bags creator token can be sent to a WhatsApp number with noncustodial escrow.
 
-**Track:** Payments — *"Enable real-world and peer-to-peer payment flows using creator tokens on Solana."*
+**Track:** Payments — _"Enable real-world and peer-to-peer payment flows using creator tokens on Solana."_
 
 **Three payment modes:**
 
-| Mode | Sender pays | Recipient gets | Use case |
-|---|---|---|---|
-| Stablecoin | USDC | USDC | Standard payments, remittances |
-| Creator token | $CREATOR | $CREATOR | Community tipping, token distribution |
-| Cross-token | $CREATOR | USDC | Real-world payments with creator tokens |
+| Mode          | Sender pays | Recipient gets | Use case                                |
+| ------------- | ----------- | -------------- | --------------------------------------- |
+| Stablecoin    | USDC        | USDC           | Standard payments, remittances          |
+| Creator token | $CREATOR    | $CREATOR       | Community tipping, token distribution   |
+| Cross-token   | $CREATOR    | USDC           | Real-world payments with creator tokens |
 
 **Integration:** [Trade Quote API](https://docs.bags.fm/api-reference/get-trade-quote) · [Swap API](https://docs.bags.fm/api-reference/create-swap-transaction) · [Bags Pools](https://docs.bags.fm/api-reference/get-bags-pools) · $TL token launched on [Bags](https://bags.fm/)
 
+---
+
+### Milestone 3: TINS â€” Transfer Identity Number System
+
+TrustLink Pay is actively developing **TINS**, a blockchain-native identity, escrow, and transfer-routing program for Solana.
+
+**What TINS adds:**
+
+- Permanent 10-digit transfer identities
+- On-chain registry-based identity lookup
+- Escrow-first receiving designed to keep visible wallets out of the public payment path
+- A protocol direction that reduces dependence on TrustLink Pay's own database for identity routing
+
+**Why this matters:**
+
+- It expands TrustLink Pay from product experience into protocol infrastructure
+- It gives other Solana developers a path to integrate the same identity-routing system directly on-chain
+- It signals that the team is building long-term payment privacy infrastructure, not only a single consumer app flow
+
+**Track documentation:**
+
+- [TINS Overview](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\README.md>)
+- [Phase 1 Scope](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\docs\phase-1-scope.md>)
+- [Change Log](<C:\Users\codepara\Desktop\trust-link\transfer-identity-number-system-(TINS)\docs\tins-change-log.md>)
 
 ---
 
-*Future milestones, hackathon results, and grants will be recorded here as TrustLink grows.*
+_Future milestones, hackathon results, and grants will be recorded here as TrustLink grows._
 
 ## Current Status
 
@@ -210,17 +267,20 @@ TrustLink integrates with the [Bags SDK](https://docs.bags.fm/) to support **cre
 - ✅ Hardened v3 escrow with derivation proofs
 - ✅ In-app PIN security gating
 
+- TINS Phase 1 architecture, documentation, migration tracking, and core program scaffold are now in progress
+
 ---
 
 ## Repository Structure
 
-| Path | Description |
-|---|---|
-| `backend/programs/trustlink-escrow` | Anchor escrow program (v2 + v3) |
-| `backend/app/blockchain/trustlink-pay-v3.ts` | Transaction builders |
-| `backend/app/lib/privacy-keys.ts` | Privacy key derivation + proofs |
-| `frontend` | Next.js 15 frontend |
-| `docs/` | Architecture, escrow design, wallet roles, devnet guide |
+| Path                                         | Description                                                       |
+| -------------------------------------------- | ----------------------------------------------------------------- |
+| `backend/programs/trustlink-escrow`          | Anchor escrow program (v2 + v3)                                   |
+| `backend/app/blockchain/trustlink-pay-v3.ts` | Transaction builders                                              |
+| `backend/app/lib/privacy-keys.ts`            | Privacy key derivation + proofs                                   |
+| `frontend`                                   | Next.js 15 frontend                                               |
+| `docs/`                                      | Architecture, escrow design, wallet roles, devnet guide           |
+| `transfer-identity-number-system-(TINS)`     | TINS program track, docs, and SNS-derived registry evolution work |
 
 ## Quick Start
 

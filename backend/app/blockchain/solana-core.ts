@@ -140,6 +140,21 @@ function encodeI64(value: bigint) {
   return buffer;
 }
 
+export function calculateFeeAmountUi(params: {
+  amount: number;
+  decimals: number;
+  basisPoints: number;
+  maxUiAmount: number;
+}) {
+  if (!Number.isFinite(params.amount) || params.amount <= 0 || params.basisPoints <= 0) {
+    return 0;
+  }
+
+  const rawFee = (params.amount * params.basisPoints) / 10_000;
+  const cappedFee = params.maxUiAmount > 0 ? Math.min(rawFee, params.maxUiAmount) : rawFee;
+  return roundUpToDecimals(cappedFee, params.decimals);
+}
+
 function getSecretKey(): Uint8Array {
   const rawValue = (env.SOLANA_CLAIM_VERIFIER_SECRET_KEY ?? env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY)!.trim();
 
@@ -609,6 +624,86 @@ export async function getIdentityBindingState(identityPublicKey: string) {
     createdAt: decoded.createdAt.toString(),
     updatedAt: decoded.updatedAt.toString(),
     bump: decoded.bump,
+  };
+}
+
+export async function prepareInitializeIdentityBindingTransaction(params: {
+  identityPublicKey: string;
+  settlementWallet: string;
+}) {
+  const connection = getConnection();
+  const claimVerifier = getEscrowAuthorityKeypair();
+  const configPda = await requireEscrowConfigInitialized();
+  const settlementWallet = new PublicKey(params.settlementWallet);
+  const identityBinding = getIdentityBindingPda(params.identityPublicKey);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+
+  const transaction = new Transaction({
+    feePayer: claimVerifier.publicKey,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  }).add(
+    new TransactionInstruction({
+      programId: getProgramId(),
+      keys: [
+        { pubkey: claimVerifier.publicKey, isSigner: true, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: false },
+        { pubkey: settlementWallet, isSigner: true, isWritable: false },
+        { pubkey: identityBinding, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.concat([
+        instructionDiscriminator("initialize_identity_binding"),
+        identityPublicKeyToBytes(params.identityPublicKey),
+      ]),
+    }),
+  );
+
+  transaction.partialSign(claimVerifier);
+
+  const estimatedNetworkFeeLamports = await estimateTransactionFeeLamports(connection, transaction);
+  return {
+    identityBinding: identityBinding.toBase58(),
+    serializedTransaction: transaction
+      .serialize({ requireAllSignatures: false, verifySignatures: false })
+      .toString("base64"),
+    rpcUrl: env.SOLANA_RPC_URL!,
+    programId: getProgramId().toBase58(),
+    feePayer: claimVerifier.publicKey.toBase58(),
+    estimatedNetworkFeeLamports,
+    estimatedNetworkFeeSol: lamportsToSol(estimatedNetworkFeeLamports),
+  };
+}
+
+export async function confirmIdentityBindingState(params: {
+  identityPublicKey: string;
+  settlementWallet: string;
+  blockchainSignature: string;
+}) {
+  const connection = getConnection();
+  const transaction = await connection.getTransaction(params.blockchainSignature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+
+  if (!transaction || transaction.meta?.err) {
+    throw new Error("The identity binding transaction could not be confirmed on-chain");
+  }
+
+  const binding = await getIdentityBindingState(params.identityPublicKey);
+  if (!binding) {
+    throw new Error("Identity binding was not created on-chain");
+  }
+
+  const settlementWallet = new PublicKey(params.settlementWallet).toBase58();
+  if (binding.settlementWallet !== settlementWallet) {
+    throw new Error("The bound settlement wallet on-chain does not match the requested wallet");
+  }
+
+  return {
+    ...binding,
+    signature: params.blockchainSignature,
+    mode: "devnet" as const,
   };
 }
 

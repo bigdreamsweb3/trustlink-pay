@@ -107,7 +107,7 @@ export function AppMobileShell({
         <div className="flex min-w-0 flex-1 flex-col">
 
           {/* Desktop top bar */}
-          <header className={`hidden md:flex items-center justify-between gap-4 px-6 py-4 sticky top-0 z-50 transition-all duration-200 ${headerScrolled ? "bg-bg/90 backdrop-blur-lg border-b border-[var(--field-border)]" : "bg-transparent"}`}>
+          <header className={`hidden md:flex items-center justify-between gap-4 px-6 py-4 sticky top-0 z-50 transition-all duration-200 ${headerScrolled ? "bg-bg/90 backdrop-blur-lg border-b border-field-border" : "bg-transparent"}`}>
             <div className="flex items-center gap-3">
               {showBackButton ? (
                 <button type="button" onClick={handleBack} className="tl-text-soft inline-flex items-center gap-1.5 text-[0.82rem] font-medium transition hover:text-[var(--text)] cursor-pointer active:scale-[0.97]">
@@ -159,8 +159,8 @@ export function AppMobileShell({
                 <div className="tl-coord-text mt-2">
                   <div className="flex w-full items-center justify-between gap-2 text-[0.66rem] leading-4 tracking-[0.01em]">
                     <div className="flex items-center gap-1.5 whitespace-nowrap">
-                      <span className="opacity-45">Sector</span>
-                      <span className="opacity-25">›</span>
+                      <span className="opacity-75">Sector</span>
+                      <span className="opacity-55">›</span>
                       <span className="text-accent font-medium">{currentTab.toUpperCase()}</span>
                     </div>
                     <ExpandableMetaRow currentTab={currentTab} subtitle={subtitle} />
@@ -189,7 +189,7 @@ export function AppMobileShell({
       </div>
 
       {/* ═══ MOBILE BOTTOM DOCK ═══ */}
-      <nav aria-label="Primary navigation" className="fixed bottom-3 left-1/2 z-40 grid w-[calc(100%-1rem)] max-w-[398px] -translate-x-1/2 grid-cols-5 items-start gap-0 rounded-[24px] border border-[var(--dock-border)] bg-[var(--dock)] px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-softbox backdrop-blur-2xl md:hidden">
+      <nav aria-label="Primary navigation" className="fixed bottom-3 left-1/2 z-40 grid max-h-17 w-[calc(100%-1rem)] max-w-99.5 -translate-x-1/2 grid-cols-5 items-start gap-0 rounded-3xl border border-dock-border bg-dock px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-softbox backdrop-blur-2xl md:hidden">
         {mobileNavItems.map((item) => {
           const active = item.key === currentTab;
           return (

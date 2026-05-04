@@ -246,32 +246,7 @@ export async function sendSessionReviewRequest(params: {
   requestedAt: string;
   expiresIn: string;
 }) {
-  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME) {
-    return sendWhatsAppTemplateMessage(
-      params.phoneNumber,
-      {
-        name: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
-        language: {
-          code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
-        },
-        components: [
-          {
-            type: "body",
-            parameters: [
-              { type: "text", text: params.sessionCode },
-              { type: "text", text: params.device },
-              { type: "text", text: params.location },
-              { type: "text", text: params.requestedAt },
-              { type: "text", text: params.expiresIn },
-            ],
-          },
-        ],
-      },
-      { bypassOptInCheck: true, category: "auth" },
-    );
-  }
-
-  const message = [
+  const fallbackMessage = [
     "Your sign-in session is active.",
     "",
     `Session code: ${params.sessionCode}`,
@@ -284,7 +259,50 @@ export async function sendSessionReviewRequest(params: {
     "Reply with DECLINE SESSION to reject this sign-in.",
   ].join("\n");
 
-  return sendWhatsAppTextMessage(params.phoneNumber, message, {
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME) {
+    try {
+      logger.info("whatsapp.session_review.template_attempt", {
+        phoneNumber: normalizePhoneNumber(params.phoneNumber),
+        templateName: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+        languageCode: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+      });
+
+      return await sendWhatsAppTemplateMessage(
+        params.phoneNumber,
+        {
+          name: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+          language: {
+            code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+          },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: params.sessionCode },
+                { type: "text", text: params.device },
+                { type: "text", text: params.location },
+                { type: "text", text: params.requestedAt },
+                { type: "text", text: params.expiresIn },
+              ],
+            },
+          ],
+        },
+        { bypassOptInCheck: true, category: "auth" },
+      );
+    } catch (error) {
+      logger.warn("whatsapp.session_review.template_fallback", {
+        phoneNumber: normalizePhoneNumber(params.phoneNumber),
+        templateName: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return sendWhatsAppTextMessage(params.phoneNumber, fallbackMessage, {
+        bypassOptInCheck: true,
+        category: "auth",
+      });
+    }
+  }
+
+  return sendWhatsAppTextMessage(params.phoneNumber, fallbackMessage, {
     bypassOptInCheck: true,
     category: "auth",
   });

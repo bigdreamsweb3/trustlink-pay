@@ -71,36 +71,42 @@ export async function prepareIdentityKeyRegistrationForUser(
     throw new Error("This identity is already bound to a different settlement wallet on-chain");
   }
 
-  const bindingPreview =
-    existingBinding ??
-    (await prepareInitializeIdentityBindingTransaction({
-      identityPublicKey: phoneIdentityPublicKey,
-      settlementWallet: settlementWalletPublicKey,
-    }));
+  if (existingBinding) {
+    return {
+      phoneIdentityPublicKey,
+      settlementWalletPublicKey,
+      requiresBlockchainSignature: false,
+      binding: {
+        mode: "already-bound" as const,
+        identityBinding: existingBinding.address,
+        settlementWallet: existingBinding.settlementWallet,
+        recoveryWallet: existingBinding.recoveryWallet,
+        isFrozen: existingBinding.isFrozen,
+      },
+      notice:
+        "Creating your TrustLink Pay identity will ask your wallet to sign a binding transaction. TrustLink Pay pays the network fee for this bind.",
+    };
+  }
+
+  const bindingPreview = await prepareInitializeIdentityBindingTransaction({
+    identityPublicKey: phoneIdentityPublicKey,
+    settlementWallet: settlementWalletPublicKey,
+  });
 
   return {
     phoneIdentityPublicKey,
     settlementWalletPublicKey,
-    requiresBlockchainSignature: !existingBinding,
-    binding:
-      existingBinding
-        ? {
-            mode: "already-bound" as const,
-            identityBinding: existingBinding.address,
-            settlementWallet: existingBinding.settlementWallet,
-            recoveryWallet: existingBinding.recoveryWallet,
-            isFrozen: existingBinding.isFrozen,
-          }
-        : {
-            mode: "prepare-bind" as const,
-            identityBinding: bindingPreview.identityBinding,
-            serializedTransaction: bindingPreview.serializedTransaction,
-            rpcUrl: bindingPreview.rpcUrl,
-            programId: bindingPreview.programId,
-            feePayer: bindingPreview.feePayer,
-            estimatedNetworkFeeLamports: bindingPreview.estimatedNetworkFeeLamports,
-            estimatedNetworkFeeSol: bindingPreview.estimatedNetworkFeeSol,
-          },
+    requiresBlockchainSignature: true,
+    binding: {
+      mode: "prepare-bind" as const,
+      identityBinding: bindingPreview.identityBinding,
+      serializedTransaction: bindingPreview.serializedTransaction,
+      rpcUrl: bindingPreview.rpcUrl,
+      programId: bindingPreview.programId,
+      feePayer: bindingPreview.feePayer,
+      estimatedNetworkFeeLamports: bindingPreview.estimatedNetworkFeeLamports,
+      estimatedNetworkFeeSol: bindingPreview.estimatedNetworkFeeSol,
+    },
     notice:
       "Creating your TrustLink Pay identity will ask your wallet to sign a binding transaction. TrustLink Pay pays the network fee for this bind.",
   };

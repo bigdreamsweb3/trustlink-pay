@@ -25,5 +25,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "frontend", "tests"]
+  "exclude": ["node_modules", "frontend", "tests", "scripts/test-tins-phase1.ts", "../tins-sdk"]
 }

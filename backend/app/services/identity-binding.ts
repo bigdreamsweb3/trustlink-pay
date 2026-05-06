@@ -30,6 +30,13 @@ export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
   }
 
   const binding = await getIdentityBindingState(user.phone_identity_pubkey);
+  const normalizedBinding = binding
+    ? {
+        ...binding,
+        mainWallet: binding.settlementWallet,
+      }
+    : null;
+
   return {
     user,
     phoneIdentity: { publicKey: user.phone_identity_pubkey },
@@ -40,7 +47,7 @@ export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
             spendPublicKey: user.privacy_spend_pubkey,
           }
         : null,
-    binding,
+    binding: normalizedBinding,
   };
 }
 

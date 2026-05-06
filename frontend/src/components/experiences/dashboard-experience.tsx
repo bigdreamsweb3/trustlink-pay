@@ -10,13 +10,16 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
+import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
-import type { PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
+import { getOrCreatePrivacyKeyBundle } from "@/src/lib/privacy-keys";
+import type { IdentitySecurityState, PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { getConnectedWalletAddress } from "@/src/lib/wallet";
+import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
+import { useWallet } from "@/src/lib/wallet-provider";
 import { ChevronRight, Landmark, ArrowUpRight, ArrowDownLeft, Wallet } from "lucide-react";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
@@ -45,9 +48,9 @@ function splitPhoneDisplay(phone: string): { countryCode: string; localNumber: s
 
 export function DashboardExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
+  const { session, walletAddress, requestWalletConnection } = useWallet();
   const { showToast } = useToast();
   const router = useRouter();
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -58,10 +61,13 @@ export function DashboardExperience() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
+  const [identitySecurity, setIdentitySecurity] = useState<IdentitySecurityState | null>(null);
+  const [identityLoading, setIdentityLoading] = useState(true);
+  const [identityBusy, setIdentityBusy] = useState(false);
 
-  useEffect(() => { setWalletAddress(getConnectedWalletAddress()); }, []);
   useEffect(() => { if (!walletAddress) { setWalletTokens([]); return; } const ctrl = new AbortController(); async function load() { setWalletTokenLoading(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }); if (!ctrl.signal.aborted) setWalletTokens(r.tokens.filter((t) => t.supported)); } catch { if (!ctrl.signal.aborted) setWalletTokens([]); } finally { if (!ctrl.signal.aborted) setWalletTokenLoading(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
   useEffect(() => { if (!accessToken || !user) return; void loadDashboard(accessToken); }, [accessToken, user]);
+  useEffect(() => { if (!accessToken || !user) return; void loadIdentitySecurity(accessToken); }, [accessToken, user]);
 
   const supportedBalanceUsd = useMemo(() => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0), [walletTokens]);
   const combinedVisibleBalanceUsd = useMemo(() => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)), [supportedBalanceUsd, totalPendingUsd]);
@@ -72,6 +78,69 @@ export function DashboardExperience() {
   useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadDashboard(accessToken, { background: true }); }, DASHBOARD_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);
 
   async function loadDashboard(token: string, options?: { background?: boolean }) { if (!options?.background) setLoading(true); try { const [pr, hr] = await Promise.all([apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token), apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)]); setPendingPayments(pr.payments); setTotalPendingUsd(pr.totalPendingUsd); setPendingBalanceSummary(pr.summary); setPaymentHistory(hr.payments); setError(null); } catch (e) { if (!options?.background) setError(e instanceof Error ? e.message : "Could not load dashboard"); } finally { if (!options?.background) setLoading(false); } }
+  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", token); setIdentitySecurity(result.identity); } catch (e) { setError(e instanceof Error ? e.message : "Could not load wallet binding"); } finally { setIdentityLoading(false); } }
+  async function handleBindMainWallet() {
+    if (!accessToken) return;
+    if (!walletAddress || !session) {
+      requestWalletConnection();
+      showToast("Connect the wallet you want to use as your TrustLink Pay main wallet.");
+      return;
+    }
+
+    setIdentityBusy(true);
+    setError(null);
+
+    try {
+      const bundle = getOrCreatePrivacyKeyBundle();
+      const payload = {
+        phoneIdentityPublicKey: bundle.phoneIdentityPublicKey,
+        privacyViewPublicKey: bundle.privacyViewPublicKey,
+        privacySpendPublicKey: bundle.privacySpendPublicKey,
+        settlementWalletPublicKey: walletAddress,
+        recoveryWalletPublicKey: null,
+      };
+      const prepared = await apiPost<{
+        requiresBlockchainSignature: boolean;
+        binding: {
+          mode: "prepare-bind" | "already-bound";
+          serializedTransaction?: string;
+          rpcUrl?: string;
+          identityBinding?: string;
+        };
+      }>("/api/identity", payload, accessToken);
+
+      if (!prepared.requiresBlockchainSignature) {
+        await loadIdentitySecurity(accessToken);
+        showToast("This wallet is already bound on-chain.");
+        return;
+      }
+
+      if (!prepared.binding.serializedTransaction || !prepared.binding.rpcUrl) {
+        throw new Error("TrustLink could not prepare the wallet binding transaction");
+      }
+
+      showToast("Your wallet will ask you to approve this main wallet binding.");
+      const blockchainSignature = await signAndSendSerializedSolanaTransaction({
+        walletId: session.walletId,
+        rpcUrl: prepared.binding.rpcUrl,
+        serializedTransaction: prepared.binding.serializedTransaction,
+      });
+
+      const confirmed = await apiPost<{
+        identityBindingAddress: string;
+        settlementWalletPublicKey: string | null;
+      }>("/api/identity", { ...payload, blockchainSignature }, accessToken);
+
+      await loadIdentitySecurity(accessToken);
+      showToast(`Main wallet bound: ${shortenAddress(confirmed.settlementWalletPublicKey ?? walletAddress)}`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not bind main wallet";
+      setError(message);
+      showToast(message);
+    } finally {
+      setIdentityBusy(false);
+    }
+  }
 
   if (!hydrated || !user) return null;
 
@@ -92,6 +161,45 @@ export function DashboardExperience() {
 
         {/* ─── LEFT COLUMN: Balance + Actions ─── */}
         <div className="space-y-0 md:space-y-4">
+          {!identityLoading && !identitySecurity?.mainWallet ? (
+            <div className="mb-4">
+              <TrustLinkGuidance
+                tone="warning"
+                title="Bind your main wallet"
+                description="Any wallet you bind here becomes your main TrustLink Pay wallet. Choose the wallet you want to receive with and approve payments from."
+                steps={[
+                  {
+                    title: "Connect the right wallet",
+                    description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want as your main wallet.",
+                    done: Boolean(walletAddress),
+                  },
+                  {
+                    title: "Approve one Solana transaction",
+                    description: "The transaction binds this wallet to your phone identity. TrustLink pays the network fee.",
+                  },
+                  {
+                    title: "Keep control of your funds",
+                    description: "This does not give TrustLink custody of your wallet or permission to move funds.",
+                  },
+                ]}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => void handleBindMainWallet()}
+                    disabled={identityBusy}
+                    className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-[0.82rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+                  >
+                    {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
+                  </button>
+                }
+                secondaryAction={
+                  <Link href="/app/settings" className="tl-button-secondary rounded-[18px] px-4 py-3 text-center text-[0.82rem] font-medium">
+                    Security settings
+                  </Link>
+                }
+              />
+            </div>
+          ) : null}
 
           {/* BALANCE HERO CARD */}
           <div className="tl-scanline relative overflow-hidden rounded-[28px] text-text border border-accent-border bg-accent-gradient p-5 shadow-softbox">

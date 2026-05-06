@@ -225,7 +225,18 @@ TrustLink integrates with the [Bags SDK](https://docs.bags.fm/) to support **cre
 | Creator token | $CREATOR    | $CREATOR       | Community tipping, token distribution   |
 | Cross-token   | $CREATOR    | USDC           | Real-world payments with creator tokens |
 
-**Integration:** [Trade Quote API](https://docs.bags.fm/api-reference/get-trade-quote) · [Swap API](https://docs.bags.fm/api-reference/create-swap-transaction) · [Bags Pools](https://docs.bags.fm/api-reference/get-bags-pools) · $TL token launched on [Bags](https://bags.fm/)
+**Integration:** [Trade Quote API](https://docs.bags.fm/api-reference/get-trade-quote) · [Swap API](https://docs.bags.fm/api-reference/create-swap-transaction) · [Bags Pools](https://docs.bags.fm/api-reference/get-bags-pools)
+
+**Milestone 2 token:** `$OOPS` on [Bags](https://bags.fm/)
+
+`$OOPS` is TrustLink Pay's community invite and reward token for the Bags milestone. It is not the main TrustLink network token. It is a meme-driven growth token built around one of crypto's most relatable payment failures: sending funds to the wrong wallet address.
+
+**How `$OOPS` fits TrustLink Pay:**
+
+- Rewards users for inviting new people into TrustLink Pay
+- Gives the community a fun, social token tied to a real payments pain point
+- Turns "wrong address" anxiety into a viral story that points back to TrustLink Pay as the fix
+- Supports referral campaigns, onboarding rewards, and community participation as the product grows
 
 ---
 

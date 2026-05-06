@@ -35,6 +35,7 @@ export interface ReceiverWallet {
 export interface IdentitySecurityState {
   address: string;
   mainWallet: string;
+  settlementWallet?: string;
   recoveryWallet: string | null;
   isFrozen: boolean;
   recoveryCooldown: string;

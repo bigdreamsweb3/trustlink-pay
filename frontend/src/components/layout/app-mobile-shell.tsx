@@ -75,7 +75,7 @@ export function AppMobileShell({
             <div className="flex items-center gap-3 px-2 mb-8">
               <TrustLinkMark />
               <div className="min-w-0">
-                <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none">TrustLink</div>
+                <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none hidden">TrustLink</div>
                 <div className="tl-text-soft mt-0.5 truncate text-[0.78rem] leading-tight">@{user.handle}</div>
               </div>
             </div>
@@ -138,7 +138,7 @@ export function AppMobileShell({
                 </button>
               ) : null}
               <TrustLinkMark />
-              {!showBackButton ? <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none">TrustLink</div> : null}
+              {!showBackButton ? <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none hidden">TrustLink</div> : null}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <button type="button" onClick={handleWalletButtonPress} className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]">

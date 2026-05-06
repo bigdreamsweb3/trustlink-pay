@@ -4,10 +4,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, ChevronRight, LockKeyhole, MoonStar, ShieldCheck, SunMedium, Wallet2 } from "lucide-react";
 
+import { FloatingGuidanceOverlay } from "@/src/components/floating-guidance-overlay";
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { GuidedFlowModal } from "@/src/components/modals/guided-flow-modal";
 import { OtpModal } from "@/src/components/modals/otp-modal";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
+import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPatch, apiPost } from "@/src/lib/api";
@@ -268,13 +270,14 @@ export function SettingsExperience() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentity] = useState<IdentitySecurityState | null>(null);
-  const [secureSetupReady, setSecureSetupReady] = useState(false);
+  const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [autoclaim, setAutoclaim] = useState<AutoclaimSettings | null>(null);
   const [autoclaimBusy, setAutoclaimBusy] = useState(false);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [backupFlowStep, setBackupFlowStep] = useState<BackupFlowStep>("intro");
   const [backupWalletInput, setBackupWalletInput] = useState("");
+  const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] = useState(false);
   const [freezeModalOpen, setFreezeModalOpen] = useState(false);
   const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
   const [recoveryFlowStep, setRecoveryFlowStep] = useState<RecoveryFlowStep>("start");
@@ -290,13 +293,14 @@ export function SettingsExperience() {
 
   const cooldownSeconds = useMemo(() => { if (!identity?.recoveryCooldown) return 0; return Math.max(0, Math.ceil((Number(identity.recoveryCooldown) * 1000 - nowMs) / 1000)); }, [identity?.recoveryCooldown, nowMs]);
   const cooldownDate = identity != null && Number(identity.recoveryCooldown) > 0 ? new Date(Number(identity.recoveryCooldown) * 1000) : null;
+  const showMainWalletGuidance = !identityLoading && !identity?.mainWallet && !mainWalletGuidanceDismissed;
 
   if (!hydrated || !user) return null;
 
   async function openChangePinFlow() { if (!accessToken) return; setOtpBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ otpSent: true; expiresAt: string | null }>("/api/auth/pin/change/start", {}, accessToken); setChangePinOpen(true); if (result.expiresAt) { const seconds = Math.max(0, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000)); setOtpCooldown(Math.min(seconds, 60)); } else { setOtpCooldown(60); } setNotice("WhatsApp OTP sent. Verify to change your PIN."); showToast("WhatsApp OTP sent for PIN change."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start PIN change"; setError(msg); showToast(msg); } finally { setOtpBusy(false); } }
   async function resendChangePinOtp() { await openChangePinFlow(); }
   async function handlePinChangeSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!accessToken) return; if (otp.length !== 6) { setError("Enter the 6-digit WhatsApp OTP."); return; } if (newPin.length !== 6) { setError("Enter the new 6-digit PIN."); return; } setPinBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ pinChanged: true; user: UserProfile }>("/api/auth/pin/change/verify", { otp, newPin }, accessToken); setUser(result.user); setStoredUser(result.user); setChangePinOpen(false); setOtp(""); setNewPin(""); setNotice("PIN updated."); showToast("PIN changed successfully."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not change PIN"; setError(msg); showToast(msg); } finally { setPinBusy(false); } }
-  async function loadIdentitySecurity(token: string) { try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null; receiverAutoclaimEnabled: boolean }>("/api/identity", token); setIdentity(result.identity); setSecureSetupReady(Boolean(result.phoneIdentityPublicKey && result.privacyViewPublicKey && result.privacySpendPublicKey && result.identity?.mainWallet)); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } }
+  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null; receiverAutoclaimEnabled: boolean }>("/api/identity", token); setIdentity(result.identity); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
   async function handleCompleteSecureSetup() { if (!accessToken) return; if (!walletAddress || !session) { requestWalletConnection(); setError("Connect the wallet you want as your main TrustLink Pay wallet."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { const bundle = getOrCreatePrivacyKeyBundle(); const payload = { phoneIdentityPublicKey: bundle.phoneIdentityPublicKey, privacyViewPublicKey: bundle.privacyViewPublicKey, privacySpendPublicKey: bundle.privacySpendPublicKey, settlementWalletPublicKey: walletAddress, recoveryWalletPublicKey: identity?.recoveryWallet ?? null }; const prepared = await apiPost<{ requiresBlockchainSignature: boolean; binding: { mode: "prepare-bind" | "already-bound"; serializedTransaction?: string; rpcUrl?: string } }>("/api/identity", payload, accessToken); if (prepared.requiresBlockchainSignature) { if (!prepared.binding.serializedTransaction || !prepared.binding.rpcUrl) throw new Error("TrustLink could not prepare the wallet binding transaction"); showToast("Approve the main wallet binding in your wallet."); const blockchainSignature = await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.binding.rpcUrl, serializedTransaction: prepared.binding.serializedTransaction }); await apiPost("/api/identity", { ...payload, blockchainSignature }, accessToken); } await loadIdentitySecurity(accessToken); const msg = "Main wallet bound on-chain. Your TrustLink Pay identity is ready."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not bind main wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function loadAutoclaimSettings(token: string) { try { const result = await apiGet<AutoclaimSettings>("/api/settings/autoclaim", token); setAutoclaim(result); } catch (e) { setError(e instanceof Error ? e.message : "Could not load autoclaim settings"); } }
   async function handleAutoclaimToggle(nextEnabled: boolean) { if (!accessToken) return; setAutoclaimBusy(true); setError(null); setNotice(null); try { const result = await apiPatch<AutoclaimSettings>("/api/settings/autoclaim", { enabled: nextEnabled }, accessToken); setAutoclaim(result); const msg = nextEnabled ? `Autoclaim enabled for payments up to $${result.maxAmountUsd}.` : "Autoclaim turned off."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update autoclaim"; setError(msg); showToast(msg); } finally { setAutoclaimBusy(false); } }
@@ -312,6 +316,43 @@ export function SettingsExperience() {
     <AppMobileShell currentTab="settings" title="Settings" subtitle="Keep everyday payments simple while adding stronger protection only when you want it." user={user} showBackButton backHref="/app"
       blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
+      <FloatingGuidanceOverlay
+        open={showMainWalletGuidance}
+        dismissible
+        onClose={() => setMainWalletGuidanceDismissed(true)}
+      >
+        <TrustLinkGuidance
+          tone="warning"
+          title="Bind your main wallet"
+          description="Any wallet you bind here becomes your main TrustLink Pay wallet. Choose the wallet you want to receive with and approve payments from."
+          steps={[
+            {
+              title: "Connect the right wallet",
+              description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want as your main wallet.",
+              done: Boolean(walletAddress),
+            },
+            {
+              title: "Approve one Solana transaction",
+              description: "The transaction binds this wallet to your phone identity immediately, so this page only shows complete wallet status.",
+            },
+            {
+              title: "Keep control of your funds",
+              description: "This does not give TrustLink custody of your wallet or permission to move funds.",
+            },
+          ]}
+          action={
+            <button
+              type="button"
+              onClick={() => void handleCompleteSecureSetup()}
+              disabled={identityBusy}
+              className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-[0.82rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+            >
+              {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
+            </button>
+          }
+        />
+      </FloatingGuidanceOverlay>
+
       <section className="space-y-5">
 
         {/* ── Notices ── */}
@@ -321,32 +362,6 @@ export function SettingsExperience() {
         {/* ═══════════ SECURITY ═══════════ */}
         <div>
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Security</div>
-
-          {!secureSetupReady ? (
-            <div className="mb-2.5 rounded-[18px] border border-[#ffb86b]/18 bg-[#ffb86b]/10 px-4 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-[0.84rem] font-semibold text-[var(--text)]">Prepare secure setup</div>
-                  <div className="mt-1.5 text-[0.76rem] leading-relaxed text-[var(--text-soft)]">
-                    Bind the wallet you want to use as your main TrustLink Pay wallet. Your wallet will ask you to approve one Solana transaction.
-                  </div>
-                </div>
-                <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#ffcf8c]" />
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleCompleteSecureSetup()}
-                disabled={identityBusy}
-                className="mt-3 rounded-[16px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-[0.78rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
-              >
-                {identityBusy ? "Binding..." : walletAddress ? "Bind Main Wallet" : "Connect Wallet to Continue"}
-              </button>
-            </div>
-          ) : (
-            <div className="mb-2.5 rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3 text-[0.78rem] text-[var(--text-soft)]">
-              Secure setup is active on-chain. Your main wallet binding is ready for secure payment routing.
-            </div>
-          )}
 
           {/* Main wallet row */}
           <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">

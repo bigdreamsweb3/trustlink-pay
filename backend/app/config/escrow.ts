@@ -9,6 +9,11 @@ export type RecoveryWalletConfig = {
 };
 
 export type EscrowPolicyConfig = {
+  treasuryOwner: string;
+  sendFeeBps: number;
+  sendFeeMaxUiAmount: number;
+  claimFeeBps: number;
+  claimFeeMaxUiAmount: number;
   defaultExpirySeconds: number;
   autoclaimMaxUsd: number;
   recoveryWallets: RecoveryWalletConfig[];
@@ -64,6 +69,11 @@ function parseRecoveryWallets(): RecoveryWalletConfig[] {
 
 export function getEscrowPolicyConfig(): EscrowPolicyConfig {
   return {
+    treasuryOwner: normalizePubkey(env.TRUSTLINK_TREASURY_OWNER ?? "", "TRUSTLINK_TREASURY_OWNER"),
+    sendFeeBps: normalizeBps(env.TRUSTLINK_SEND_FEE_BPS, "TRUSTLINK_SEND_FEE_BPS"),
+    sendFeeMaxUiAmount: normalizeUiAmount(env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT, "TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT"),
+    claimFeeBps: normalizeBps(env.TRUSTLINK_CLAIM_FEE_BPS, "TRUSTLINK_CLAIM_FEE_BPS"),
+    claimFeeMaxUiAmount: normalizeUiAmount(env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT, "TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT"),
     defaultExpirySeconds: normalizeExpirySeconds(env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS),
     autoclaimMaxUsd: normalizeUiAmount(env.TRUSTLINK_AUTOCLAIM_MAX_USD, "TRUSTLINK_AUTOCLAIM_MAX_USD"),
     recoveryWallets: parseRecoveryWallets(),

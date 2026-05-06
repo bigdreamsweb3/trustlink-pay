@@ -21,7 +21,6 @@ const MOCK_CREATOR_COINS: TokenEntry[] = [
   { symbol: "BAGS", name: "Bags FM", balance: "1,200", usd: "$36.00", icon: "🎒" },
   { symbol: "VIBE", name: "VibeDAO", balance: "500", usd: "$12.50", icon: "🎵" },
 ];
-/* ── End mock data ── */
 
 type WalletTab = "stablecoins" | "creator";
 
@@ -48,26 +47,20 @@ export function WalletSheetModal({
   const totalUsd = activeTab === "stablecoins" ? "$168.30" : "$48.50";
 
   async function handleCopyAddress(address: string) {
-    if (copyBusy || typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-      return;
-    }
-
+    if (copyBusy || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return;
     setCopyBusy(true);
-
     try {
       await navigator.clipboard.writeText(address);
       showToast("Wallet address copied.");
     } finally {
-      window.setTimeout(() => {
-        setCopyBusy(false);
-      }, 600);
+      window.setTimeout(() => setCopyBusy(false), 600);
     }
   }
 
   return (
     <AppSidePanel
       open={open}
-      title={session ? session.walletName : "Wallet connection"}
+      title={session ? session.walletName : "Connect Wallet"}
       kicker="Wallet"
       desktopInline={desktopInline}
       onClose={onClose}
@@ -76,97 +69,92 @@ export function WalletSheetModal({
 
         {session ? (
           <>
-            {/* ── Wallet Header ── */}
-            {/* <div className="flex items-center gap-3.5">
-              <div className="tl-icon-surface grid h-12 w-12 shrink-0 place-items-center rounded-[16px]">
-                <Wallet className="h-5 w-5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+            {/* ── Address pill ── */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-40" style={{ background: "var(--accent)" }} />
+                  <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
+                </span>
+                <span className="text-[0.72rem] font-medium" style={{ color: "var(--text-soft)" }}>Connected</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[0.95rem] font-semibold text-[var(--text)]">{session.walletName}</span>
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyAddress(session.address)}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-[var(--text-soft)] transition-colors hover:text-[var(--text)] cursor-pointer active:scale-[0.9]"
-                    aria-label="Copy wallet address"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="tl-text-soft mt-0.5 text-[0.76rem]">{shortenAddress(session.address)}</div>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-[12px] bg-[var(--surface-soft)] px-2.5 py-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#4ae8c0]" />
-                <span className="text-[0.68rem] font-medium text-[var(--text-soft)]">Active</span>
-              </div>
-            </div> */}
+              <button
+                type="button"
+                onClick={() => void handleCopyAddress(session.address)}
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors cursor-pointer active:scale-[0.95]"
+                style={{ background: "var(--surface-soft)", border: "1px solid var(--field-border)" }}
+              >
+                <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-soft)" }}>{shortenAddress(session.address)}</span>
+                <Copy className="h-3 w-3" style={{ color: "var(--text-faint)" }} />
+              </button>
+            </div>
 
-            {/* ── Balance Card ── */}
-            <div className="tl-field mt-5 rounded-[22px] px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--text-soft)]">
-                  Total Balance
-                </div>
-                <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">
-                  {tokens.length} tokens
-                </div>
+            {/* ── Balance card ── */}
+            <div className="mt-4 rounded-[20px] p-4" style={{ background: "var(--field)", border: "1px solid var(--field-border)" }}>
+              <div className="text-[0.58rem] font-medium uppercase tracking-[0.18em]" style={{ color: "var(--text-faint)" }}>
+                Total Balance
               </div>
-              <div className="mt-3 text-[1.5rem] font-bold tracking-tight text-[var(--text)]">
+              <div className="mt-2 text-[1.5rem] font-bold tracking-tight" style={{ color: "var(--text)" }}>
                 {totalUsd}
               </div>
-              <div className="mt-2 h-1 w-10 rounded-full bg-[var(--accent-deep)] dark:bg-[var(--accent)]" />
+              <div className="mt-2 flex items-center justify-between">
+                <div className="h-1 w-10 rounded-full" style={{ background: "var(--accent)" }} />
+                <span className="text-[0.62rem] font-medium" style={{ color: "var(--text-faint)" }}>
+                  {tokens.length} tokens
+                </span>
+              </div>
             </div>
 
-            {/* ── Tab Switcher ── */}
-            <div className="mt-5 flex items-center gap-1 rounded-[14px] bg-[var(--surface-soft)] p-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("stablecoins")}
-                className={`flex-1 rounded-[11px] px-3 py-2.5 text-center text-[0.76rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.97] ${activeTab === "stablecoins"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--text-soft)]"
-                  }`}
-              >
-                Stablecoins
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("creator")}
-                className={`flex-1 rounded-[11px] px-3 py-2.5 text-center text-[0.76rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.97] ${activeTab === "creator"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--text-soft)]"
-                  }`}
-              >
-                Creator Coins
-              </button>
+            {/* ── Tab switcher ── */}
+            <div className="mt-5 flex items-center gap-1 rounded-[14px] p-1" style={{ background: "var(--surface-soft)" }}>
+              {(["stablecoins", "creator"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className="flex-1 rounded-[11px] px-3 py-2 text-center text-[0.74rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                  style={activeTab === tab
+                    ? { background: "var(--bg-elevated)", color: "var(--text)", boxShadow: "var(--shadow)" }
+                    : { color: "var(--text-soft)" }
+                  }
+                >
+                  {tab === "stablecoins" ? "Stablecoins" : "Creator Coins"}
+                </button>
+              ))}
             </div>
 
-            {/* ── Token List ── */}
-            <div className="mt-4 space-y-2">
+            {/* ── Token list ── */}
+            <div className="mt-4 space-y-1.5">
               {tokens.map((token) => (
                 <div
                   key={token.symbol}
-                  className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5"
+                  className="flex items-center justify-between rounded-[16px] px-3.5 py-3 transition-colors hover:bg-[var(--surface-soft)]"
+                  style={{ border: "1px solid var(--field-border)", background: "var(--field)" }}
                 >
-                  <span className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.82rem]">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[0.78rem]"
+                      style={{ background: "var(--surface-soft)", border: "1px solid var(--field-border)" }}
+                    >
                       {token.icon}
-                    </span>
-                    <span>
-                      <span className="block text-[0.84rem] font-semibold leading-tight text-[var(--text)]">{token.symbol}</span>
-                      <span className="tl-text-soft block mt-0.5 text-[0.68rem] leading-tight">{token.name}</span>
-                    </span>
-                  </span>
-                  <span className="text-right">
-                    <span className="block text-[0.84rem] font-semibold leading-tight text-[var(--text)]">{token.balance}</span>
-                    <span className="tl-text-soft block mt-0.5 text-[0.68rem] leading-tight">{token.usd}</span>
-                  </span>
+                    </div>
+                    <div>
+                      <div className="text-[0.82rem] font-semibold leading-tight" style={{ color: "var(--text)" }}>{token.symbol}</div>
+                      <div className="mt-0.5 text-[0.66rem] leading-tight" style={{ color: "var(--text-faint)" }}>{token.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[0.82rem] font-semibold leading-tight" style={{ color: "var(--text)" }}>{token.balance}</div>
+                    <div className="mt-0.5 text-[0.66rem] leading-tight" style={{ color: "var(--text-faint)" }}>{token.usd}</div>
+                  </div>
                 </div>
               ))}
 
               {tokens.length === 0 ? (
-                <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">
-                  No tokens found.
+                <div className="rounded-[16px] px-4 py-6 text-center text-[0.78rem]"
+                  style={{ background: "var(--field)", border: "1px solid var(--field-border)", color: "var(--muted)" }}
+                >
+                  No tokens found
                 </div>
               ) : null}
             </div>
@@ -179,33 +167,48 @@ export function WalletSheetModal({
               <button
                 type="button"
                 onClick={() => void onDisconnect()}
-                className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#ff7f7f]/18 bg-[#ff7f7f]/8 px-4 py-3.5 text-[0.84rem] font-semibold text-[#ffb1b1] transition-colors hover:bg-[#ff7f7f]/14 cursor-pointer active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-[16px] px-4 py-3 text-[0.82rem] font-semibold transition-colors cursor-pointer active:scale-[0.98]"
+                style={{
+                  background: "var(--danger-soft)",
+                  border: "1px solid rgba(240, 128, 128, 0.10)",
+                  color: "var(--danger)",
+                }}
               >
                 <LogOut className="h-4 w-4" />
-                Disconnect
+                Disconnect Wallet
               </button>
             </div>
           </>
         ) : (
           <>
-            {/* ── No Wallet ── */}
-            <div className="flex items-center gap-3.5">
-              <div className="tl-icon-surface grid h-12 w-12 shrink-0 place-items-center rounded-[16px]">
-                <Wallet className="h-5 w-5 text-[var(--text-soft)]" />
+            {/* ── No wallet state ── */}
+            <div className="flex flex-col items-center justify-center py-10">
+              <div
+                className="grid h-16 w-16 place-items-center rounded-full"
+                style={{ background: "var(--surface-soft)", border: "1px solid var(--field-border)" }}
+              >
+                <Wallet className="h-7 w-7" style={{ color: "var(--text-faint)" }} />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[0.95rem] font-semibold text-[var(--text)]">No wallet connected</div>
-                <div className="tl-text-soft mt-0.5 text-[0.76rem] leading-relaxed">{environment.helpMessage}</div>
-              </div>
+              <h3 className="mt-4 text-[0.95rem] font-semibold" style={{ color: "var(--text)" }}>
+                No wallet connected
+              </h3>
+              <p className="mt-1.5 max-w-[260px] text-center text-[0.78rem] leading-relaxed" style={{ color: "var(--muted)" }}>
+                {environment.helpMessage}
+              </p>
             </div>
 
             <div className="flex-1" />
 
-            <div className="pt-6 pb-2">
+            <div className="pt-4 pb-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="tl-button-secondary w-full rounded-[18px] px-4 py-3.5 text-center text-[0.84rem] font-semibold transition-colors cursor-pointer hover:opacity-90 active:scale-[0.98]"
+                className="flex w-full items-center justify-center rounded-[16px] px-4 py-3 text-[0.82rem] font-semibold transition-colors cursor-pointer active:scale-[0.98]"
+                style={{
+                  background: "var(--field)",
+                  border: "1px solid var(--field-border)",
+                  color: "var(--text)",
+                }}
               >
                 Close
               </button>

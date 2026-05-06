@@ -55,7 +55,7 @@ export function AppSidePanel({
               backgroundImage: "var(--pop-bg)",
               borderColor: "var(--field-border)",
               backdropFilter: "blur(24px)",
-              borderTopLeftRadius: desktopInline ? 0 : 28,
+              // borderTopLeftRadius: desktopInline ? 0 : 28,
             }}
             onClick={(event) => event.stopPropagation()}
           >

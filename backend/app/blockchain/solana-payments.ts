@@ -9,7 +9,6 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-import { getEscrowPolicyConfig } from "@/app/config/escrow";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import {
@@ -29,6 +28,7 @@ import {
   getAllowedTokenByMint,
   getConnection,
   getEscrowAuthorityKeypair,
+  getEscrowConfigState,
   getIdentityBindingPda,
   getPaymentAccountPda,
   getProgramId,
@@ -87,6 +87,89 @@ function getClaimFeeAmountUi(amount: number, decimals: number) {
   });
 }
 
+type ActiveEscrowFeePolicy = {
+  treasuryOwner: string;
+  sendFeeBps: number;
+  sendFeeMaxUiAmount: number;
+  claimFeeBps: number;
+  claimFeeMaxUiAmount: number;
+};
+
+async function getActiveEscrowFeePolicy(): Promise<ActiveEscrowFeePolicy> {
+  const config = await getEscrowConfigState();
+  if (config?.treasuryOwner) {
+    return {
+      treasuryOwner: config.treasuryOwner,
+      sendFeeBps: config.sendFeeBps ?? env.TRUSTLINK_SEND_FEE_BPS,
+      sendFeeMaxUiAmount: config.sendFeeMaxUiAmount ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+      claimFeeBps: config.claimFeeBps ?? env.TRUSTLINK_CLAIM_FEE_BPS,
+      claimFeeMaxUiAmount: config.claimFeeMaxUiAmount ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+    };
+  }
+
+  if (!env.TRUSTLINK_TREASURY_OWNER) {
+    throw new Error("TrustLink treasury owner is not configured");
+  }
+
+  return {
+    treasuryOwner: env.TRUSTLINK_TREASURY_OWNER,
+    sendFeeBps: env.TRUSTLINK_SEND_FEE_BPS,
+    sendFeeMaxUiAmount: env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+    claimFeeBps: env.TRUSTLINK_CLAIM_FEE_BPS,
+    claimFeeMaxUiAmount: env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+  };
+}
+
+function getSenderFeeAmountUiFromPolicy(
+  policy: ActiveEscrowFeePolicy,
+  amount: number,
+  decimals: number,
+) {
+  return calculateFeeAmountUi({
+    amount,
+    decimals,
+    basisPoints: policy.sendFeeBps,
+    maxUiAmount: policy.sendFeeMaxUiAmount,
+  });
+}
+
+function getClaimFeeAmountUiFromPolicy(
+  policy: ActiveEscrowFeePolicy,
+  amount: number,
+  decimals: number,
+) {
+  return calculateFeeAmountUi({
+    amount,
+    decimals,
+    basisPoints: policy.claimFeeBps,
+    maxUiAmount: policy.claimFeeMaxUiAmount,
+  });
+}
+
+async function ensureAssociatedTokenAccount(params: {
+  connection: Connection;
+  transaction: Transaction;
+  payer: PublicKey;
+  owner: PublicKey;
+  mint: PublicKey;
+}) {
+  const ata = splToken.getAssociatedTokenAddressSync(params.mint, params.owner);
+  const existing = await params.connection.getAccountInfo(ata, "confirmed");
+  if (!existing) {
+    params.transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        params.payer,
+        ata,
+        params.owner,
+        params.mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+  return ata;
+}
+
 async function buildCreatePaymentTransaction(params: {
   connection: Connection;
   paymentId: string;
@@ -104,14 +187,17 @@ async function buildCreatePaymentTransaction(params: {
   }
 
   const configPda = await requireEscrowConfigInitialized();
+  const feePolicy = await getActiveEscrowFeePolicy();
   const payer = getEscrowAuthorityKeypair();
   const sender = new PublicKey(params.senderWallet);
   const mint = new PublicKey(params.tokenMintAddress);
+  const senderFeeAmountUi = getSenderFeeAmountUiFromPolicy(feePolicy, params.amount, tokenConfig.decimals);
+  const senderFeeAmountBaseUnits = toBaseUnits(senderFeeAmountUi, tokenConfig.decimals);
   const senderTokenAccount = await findSenderTokenAccount({
     connection: params.connection,
     owner: sender,
     mint,
-    amount: params.amount,
+    amount: roundToDecimals(params.amount + senderFeeAmountUi, tokenConfig.decimals),
   });
 
   if (!senderTokenAccount) {
@@ -129,6 +215,7 @@ async function buildCreatePaymentTransaction(params: {
     identityPublicKeyToBytes(params.paymentReceiverPublicKey),
     Buffer.from([params.paymentMode === "invite" ? 1 : 0]),
     encodeU64(toBaseUnits(params.amount, tokenConfig.decimals)),
+    encodeU64(senderFeeAmountBaseUnits),
     encodeI64(BigInt(params.expiryUnixSeconds)),
   ]);
 
@@ -136,6 +223,14 @@ async function buildCreatePaymentTransaction(params: {
     feePayer: payer.publicKey,
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+  const treasuryOwner = new PublicKey(feePolicy.treasuryOwner);
+  const treasuryTokenAccount = await ensureAssociatedTokenAccount({
+    connection: params.connection,
+    transaction,
+    payer: payer.publicKey,
+    owner: treasuryOwner,
+    mint,
   });
 
   transaction.add(
@@ -147,6 +242,7 @@ async function buildCreatePaymentTransaction(params: {
         { pubkey: senderTokenAccount, isSigner: false, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: false },
         { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
         { pubkey: paymentAccount, isSigner: false, isWritable: true },
         { pubkey: vaultAuthority, isSigner: false, isWritable: false },
         { pubkey: escrowVault.publicKey, isSigner: true, isWritable: true },
@@ -162,8 +258,11 @@ async function buildCreatePaymentTransaction(params: {
 
   return {
     tokenConfig,
+    senderFeeAmountUi,
+    senderFeeAmountBaseUnits,
     paymentAccount,
     escrowVault,
+    treasuryTokenAccount: treasuryTokenAccount.toBase58(),
     transaction,
   };
 }
@@ -182,7 +281,8 @@ export async function estimateSenderTransferCost(params: {
   if (!tokenConfig) {
     throw new Error("This token mint is not allowlisted by TrustLink");
   }
-  const senderFeeAmountUi = getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+  const feePolicy = await getActiveEscrowFeePolicy();
+  const senderFeeAmountUi = getSenderFeeAmountUiFromPolicy(feePolicy, params.amount, tokenConfig.decimals);
   const totalTokenRequiredUi = roundToDecimals(params.amount + senderFeeAmountUi, tokenConfig.decimals);
 
   if (env.SOLANA_MOCK_MODE) {

@@ -95,6 +95,7 @@ type DecodedPaymentAccount = {
   vaultAuthorityBump: number | null;
   senderPhoneIdentityPublicKey: PublicKey | null;
   paymentMode: number | null;
+  senderFeeAmount: bigint | null;
   refundReceiverPublicKey: PublicKey | null;
   refundRequestedAtTs: bigint | null;
   refundAvailableAtTs: bigint | null;
@@ -114,10 +115,14 @@ type DecodedIdentityBinding = {
 
 type DecodedEscrowConfig = {
   claimVerifier: PublicKey;
+  treasuryOwner: PublicKey | null;
+  sendFeeBps: number;
+  claimFeeBps: number;
+  sendFeeMaxUiMicros: bigint;
+  claimFeeMaxUiMicros: bigint;
   defaultExpirySeconds: bigint;
   bump: number;
   layout: "current" | "legacy";
-  treasuryOwner?: PublicKey | null;
 };
 
 let allowedTokenCache: SupportedTokenConfig[] | null = null;
@@ -138,6 +143,26 @@ function encodeI64(value: bigint) {
   const buffer = Buffer.alloc(8);
   buffer.writeBigInt64LE(value);
   return buffer;
+}
+
+function encodeU16(value: number) {
+  const buffer = Buffer.alloc(2);
+  buffer.writeUInt16LE(value);
+  return buffer;
+}
+
+function encodeU64(value: bigint) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64LE(value);
+  return buffer;
+}
+
+function uiAmountToMicros(value: number) {
+  return BigInt(Math.round(value * 1_000_000));
+}
+
+function microsToUiAmount(value: bigint) {
+  return Number(value) / 1_000_000;
 }
 
 export function calculateFeeAmountUi(params: {
@@ -307,6 +332,10 @@ export function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
   if (paymentMode != null) {
     offset += 1;
   }
+  const senderFeeAmount = data.length >= offset + 8 ? data.readBigUInt64LE(offset) : null;
+  if (senderFeeAmount != null) {
+    offset += 8;
+  }
   const refundReceiverOption = data.length > offset ? data.readUInt8(offset) : null;
   if (refundReceiverOption != null) {
     offset += 1;
@@ -339,6 +368,7 @@ export function decodePaymentAccount(data: Buffer): DecodedPaymentAccount {
     vaultAuthorityBump,
     senderPhoneIdentityPublicKey,
     paymentMode,
+    senderFeeAmount,
     refundReceiverPublicKey,
     refundRequestedAtTs,
     refundAvailableAtTs,
@@ -390,31 +420,10 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     throw new Error("Escrow config discriminator mismatch");
   }
 
-  const currentLayoutSize = 8 + 32 + 8 + 1;
-  const legacyLayoutSize = 8 + 32 + 32 + 8 + 1;
+  const currentLayoutSize = 8 + 32 + 32 + 2 + 2 + 8 + 8 + 8 + 1;
+  const legacyLayoutSize = 8 + 32 + 8 + 1;
 
-  if (data.length >= legacyLayoutSize) {
-    let offset = 8;
-    const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
-    offset += 32;
-    const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
-    offset += 32;
-    const defaultExpirySeconds = data.readBigInt64LE(offset);
-    offset += 8;
-    const bump = data.readUInt8(offset);
-
-    if (data.length > currentLayoutSize) {
-      return {
-        claimVerifier,
-        defaultExpirySeconds,
-        bump,
-        layout: "legacy",
-        treasuryOwner,
-      };
-    }
-  }
-
-  if (data.length < currentLayoutSize) {
+  if (data.length < legacyLayoutSize) {
     if (data.length < 8 + 32) {
       throw new Error(`Escrow config account is too small to decode: ${data.length} bytes`);
     }
@@ -426,26 +435,65 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
 
     return {
       claimVerifier,
+      treasuryOwner: null,
+      sendFeeBps: 0,
+      claimFeeBps: 0,
+      sendFeeMaxUiMicros: 0n,
+      claimFeeMaxUiMicros: 0n,
       defaultExpirySeconds: 0n,
       bump,
       layout: "legacy",
+    };
+  }
+
+  if (data.length < currentLayoutSize) {
+    let offset = 8;
+    const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
+    offset += 32;
+    const defaultExpirySeconds = data.readBigInt64LE(offset);
+    offset += 8;
+    const bump = data.readUInt8(offset);
+
+    return {
+      claimVerifier,
       treasuryOwner: null,
+      sendFeeBps: 0,
+      claimFeeBps: 0,
+      sendFeeMaxUiMicros: 0n,
+      claimFeeMaxUiMicros: 0n,
+      defaultExpirySeconds,
+      bump,
+      layout: "legacy",
     };
   }
 
   let offset = 8;
   const claimVerifier = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
+  const treasuryOwner = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+  const sendFeeBps = data.readUInt16LE(offset);
+  offset += 2;
+  const claimFeeBps = data.readUInt16LE(offset);
+  offset += 2;
+  const sendFeeMaxUiMicros = data.readBigUInt64LE(offset);
+  offset += 8;
+  const claimFeeMaxUiMicros = data.readBigUInt64LE(offset);
+  offset += 8;
   const defaultExpirySeconds = data.readBigInt64LE(offset);
   offset += 8;
   const bump = data.readUInt8(offset);
 
   return {
     claimVerifier,
+    treasuryOwner,
+    sendFeeBps,
+    claimFeeBps,
+    sendFeeMaxUiMicros,
+    claimFeeMaxUiMicros,
     defaultExpirySeconds,
     bump,
     layout: "current",
-    treasuryOwner: null,
   };
 }
 
@@ -475,6 +523,10 @@ export async function getEscrowConfigState() {
     address: configPda.toBase58(),
     claimVerifier: decoded.claimVerifier.toBase58(),
     treasuryOwner: decoded.treasuryOwner?.toBase58() ?? null,
+    sendFeeBps: decoded.sendFeeBps,
+    claimFeeBps: decoded.claimFeeBps,
+    sendFeeMaxUiAmount: microsToUiAmount(decoded.sendFeeMaxUiMicros),
+    claimFeeMaxUiAmount: microsToUiAmount(decoded.claimFeeMaxUiMicros),
     defaultExpirySeconds: decoded.defaultExpirySeconds.toString(),
     bump: decoded.bump,
     layout: decoded.layout,
@@ -499,6 +551,11 @@ export async function initializeEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("initialize_config"),
     payer.publicKey.toBuffer(),
+    new PublicKey(policy.treasuryOwner).toBuffer(),
+    encodeU16(policy.sendFeeBps),
+    encodeU64(uiAmountToMicros(policy.sendFeeMaxUiAmount)),
+    encodeU16(policy.claimFeeBps),
+    encodeU64(uiAmountToMicros(policy.claimFeeMaxUiAmount)),
     encodeI64(BigInt(policy.defaultExpirySeconds)),
   ]);
 
@@ -521,6 +578,9 @@ export async function initializeEscrowConfig() {
   logger.info("solana.escrow_config_initialized", {
     config: configPda.toBase58(),
     claimVerifier: payer.publicKey.toBase58(),
+    treasuryOwner: policy.treasuryOwner,
+    sendFeeBps: policy.sendFeeBps,
+    claimFeeBps: policy.claimFeeBps,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
@@ -549,10 +609,20 @@ export async function updateEscrowConfig() {
   }
 
   const targetClaimVerifier = authority.publicKey.toBase58();
+  const targetTreasuryOwner = policy.treasuryOwner;
+  const targetSendFeeBps = policy.sendFeeBps;
+  const targetClaimFeeBps = policy.claimFeeBps;
+  const targetSendFeeMaxUiMicros = uiAmountToMicros(policy.sendFeeMaxUiAmount);
+  const targetClaimFeeMaxUiMicros = uiAmountToMicros(policy.claimFeeMaxUiAmount);
   const targetDefaultExpirySeconds = BigInt(policy.defaultExpirySeconds);
 
   if (
     current.claimVerifier.toBase58() === targetClaimVerifier &&
+    current.treasuryOwner?.toBase58() === targetTreasuryOwner &&
+    current.sendFeeBps === targetSendFeeBps &&
+    current.claimFeeBps === targetClaimFeeBps &&
+    current.sendFeeMaxUiMicros === targetSendFeeMaxUiMicros &&
+    current.claimFeeMaxUiMicros === targetClaimFeeMaxUiMicros &&
     current.defaultExpirySeconds === targetDefaultExpirySeconds
   ) {
     logger.info("solana.escrow_config_already_matches_target", {
@@ -566,6 +636,11 @@ export async function updateEscrowConfig() {
   const data = Buffer.concat([
     instructionDiscriminator("update_config"),
     authority.publicKey.toBuffer(),
+    new PublicKey(targetTreasuryOwner).toBuffer(),
+    encodeU16(targetSendFeeBps),
+    encodeU64(targetSendFeeMaxUiMicros),
+    encodeU16(targetClaimFeeBps),
+    encodeU64(targetClaimFeeMaxUiMicros),
     encodeI64(targetDefaultExpirySeconds),
   ]);
 
@@ -587,6 +662,9 @@ export async function updateEscrowConfig() {
   logger.info("solana.escrow_config_updated", {
     config: configPda.toBase58(),
     claimVerifier: targetClaimVerifier,
+    treasuryOwner: targetTreasuryOwner,
+    sendFeeBps: targetSendFeeBps,
+    claimFeeBps: targetClaimFeeBps,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 

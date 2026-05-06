@@ -79,10 +79,39 @@ export async function prepareIdentityKeyRegistrationForUser(
   }
 
   if (existingBinding) {
+    const bindingSignature =
+      params.bindingSignature ??
+      hashBindingSignaturePayload({
+        phoneIdentityPublicKey,
+        privacyViewPublicKey: params.privacyViewPublicKey,
+        privacySpendPublicKey: params.privacySpendPublicKey,
+        settlementWalletPublicKey,
+        recoveryWalletPublicKey: existingBinding.recoveryWallet,
+      });
+
+    await updateUserPublicKeyMaterial({
+      userId: authUser.id,
+      phoneIdentityPublicKey,
+      privacyViewPublicKey: params.privacyViewPublicKey,
+      privacySpendPublicKey: new PublicKey(params.privacySpendPublicKey).toBase58(),
+      settlementWalletPublicKey: existingBinding.settlementWallet,
+      recoveryWalletPublicKey: existingBinding.recoveryWallet,
+      bindingSignature,
+    });
+    await markPaymentsReceiverOnboarded({
+      receiverPhone: authUser.phoneNumber,
+      receiverWallet: existingBinding.settlementWallet,
+    });
+    await AutoclaimEngine.triggerReceiverOnboarded({
+      receiverPhone: authUser.phoneNumber,
+      triggerSource: "receiver.onboarded",
+    });
+
     return {
       phoneIdentityPublicKey,
-      settlementWalletPublicKey,
+      settlementWalletPublicKey: existingBinding.settlementWallet,
       requiresBlockchainSignature: false,
+      restoredFromChain: true,
       binding: {
         mode: "already-bound" as const,
         identityBinding: existingBinding.address,

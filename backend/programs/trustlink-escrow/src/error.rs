@@ -26,6 +26,12 @@ pub enum TrustLinkEscrowError {
     InvalidRecoveryMint,
     #[msg("Invalid config authority")]
     InvalidConfigAuthority,
+    #[msg("Treasury token account does not match the configured treasury owner")]
+    InvalidTreasuryTokenAccount,
+    #[msg("Treasury fee amount is invalid")]
+    InvalidFeeAmount,
+    #[msg("Treasury fee configuration is invalid")]
+    InvalidFeeConfig,
     #[msg("Default expiry configuration is invalid")]
     InvalidDefaultExpiry,
     #[msg("Identity binding already exists")]

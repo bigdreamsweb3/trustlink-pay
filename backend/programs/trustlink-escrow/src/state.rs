@@ -8,12 +8,17 @@ pub const IDENTITY_BINDING_SEED: &[u8] = b"identity_binding";
 #[account]
 pub struct EscrowConfig {
     pub claim_verifier: Pubkey,
+    pub treasury_owner: Pubkey,
+    pub send_fee_bps: u16,
+    pub claim_fee_bps: u16,
+    pub send_fee_max_ui_micros: u64,
+    pub claim_fee_max_ui_micros: u64,
     pub default_expiry_seconds: i64,
     pub bump: u8,
 }
 
 impl EscrowConfig {
-    pub const SPACE: usize = 8 + 32 + 8 + 1;
+    pub const SPACE: usize = 8 + 32 + 32 + 2 + 2 + 8 + 8 + 8 + 1;
 }
 
 #[account]
@@ -46,6 +51,7 @@ pub struct PaymentAccount {
     pub vault_authority_bump: u8,
     pub sender_phone_identity_pubkey: Pubkey,
     pub payment_mode: PaymentMode,
+    pub sender_fee_amount: u64,
     pub refund_receiver_pubkey: Option<Pubkey>,
     pub refund_requested_at_ts: i64,
     pub refund_available_at_ts: i64,
@@ -54,7 +60,7 @@ pub struct PaymentAccount {
 
 impl PaymentAccount {
     pub const SPACE: usize =
-        8 + 32 + 32 + 32 + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 32 + 1 + (1 + 32) + 8 + 8 + 8;
+        8 + 32 + 32 + 32 + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 32 + 1 + 8 + (1 + 32) + 8 + 8 + 8;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]

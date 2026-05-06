@@ -23,6 +23,16 @@ pub struct UpdateConfig<'info> {
 }
 
 #[derive(Accounts)]
+pub struct MigrateLegacyConfig<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    /// CHECK: The instruction validates discriminator, owner, seeds, and legacy authority before reallocating.
+    #[account(mut, seeds = [CONFIG_SEED], bump)]
+    pub config: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(payment_id: [u8; 32], _phone_identity_pubkey: Pubkey, _payment_receiver_pubkey: Pubkey, _payment_mode: PaymentMode, _amount: u64, _sender_fee_amount: u64, _expiry_ts: i64)]
 pub struct CreatePayment<'info> {
     #[account(mut)]
@@ -54,7 +64,9 @@ pub struct CreatePayment<'info> {
 }
 
 impl<'info> CreatePayment<'info> {
-    pub(crate) fn transfer_to_vault_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+    pub(crate) fn transfer_to_vault_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Transfer {
@@ -65,7 +77,9 @@ impl<'info> CreatePayment<'info> {
         )
     }
 
-    pub(crate) fn transfer_sender_fee_to_treasury_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+    pub(crate) fn transfer_sender_fee_to_treasury_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Transfer {
@@ -389,4 +403,3 @@ pub struct RefundPayment<'info> {
     pub sender_refund_token_account: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
 }
-

@@ -10,10 +10,12 @@ pub mod v3_state;
 
 pub use contexts::*;
 pub use v3::{
-    AutoClaimEscrowArgs, AutoClaimEscrowV3, ClaimEscrowArgs, ClaimEscrowV3, CreateEscrowArgs, CreateEscrowV3,
+    AutoClaimEscrowArgs, AutoClaimEscrowV3, ClaimEscrowArgs, ClaimEscrowV3, CreateEscrowArgs,
+    CreateEscrowV3,
 };
 use v3::{
-    __client_accounts_auto_claim_escrow_v3, __client_accounts_claim_escrow_v3, __client_accounts_create_escrow_v3,
+    __client_accounts_auto_claim_escrow_v3, __client_accounts_claim_escrow_v3,
+    __client_accounts_create_escrow_v3,
 };
 
 use state::PaymentMode;
@@ -57,6 +59,28 @@ pub mod trustlink_escrow {
         new_default_expiry_seconds: i64,
     ) -> Result<()> {
         instructions::update_config(
+            ctx,
+            new_claim_verifier,
+            new_treasury_owner,
+            new_send_fee_bps,
+            new_send_fee_max_ui_micros,
+            new_claim_fee_bps,
+            new_claim_fee_max_ui_micros,
+            new_default_expiry_seconds,
+        )
+    }
+
+    pub fn migrate_legacy_config(
+        ctx: Context<MigrateLegacyConfig>,
+        new_claim_verifier: Pubkey,
+        new_treasury_owner: Pubkey,
+        new_send_fee_bps: u16,
+        new_send_fee_max_ui_micros: u64,
+        new_claim_fee_bps: u16,
+        new_claim_fee_max_ui_micros: u64,
+        new_default_expiry_seconds: i64,
+    ) -> Result<()> {
+        instructions::migrate_legacy_config(
             ctx,
             new_claim_verifier,
             new_treasury_owner,
@@ -173,14 +197,22 @@ pub mod trustlink_escrow {
         payment_phone_identity_pubkey: Pubkey,
         claim_fee_amount: u64,
     ) -> Result<()> {
-        instructions::claim_invite_payment(ctx, payment_id, payment_phone_identity_pubkey, claim_fee_amount)
+        instructions::claim_invite_payment(
+            ctx,
+            payment_id,
+            payment_phone_identity_pubkey,
+            claim_fee_amount,
+        )
     }
 
     pub fn mark_expired(ctx: Context<MarkExpired>, payment_id: [u8; 32]) -> Result<()> {
         instructions::mark_expired(ctx, payment_id)
     }
 
-    pub fn refund_expired_payment(ctx: Context<RefundExpiredPayment>, payment_id: [u8; 32]) -> Result<()> {
+    pub fn refund_expired_payment(
+        ctx: Context<RefundExpiredPayment>,
+        payment_id: [u8; 32],
+    ) -> Result<()> {
         instructions::refund_expired_payment(ctx, payment_id)
     }
 
@@ -190,7 +222,12 @@ pub mod trustlink_escrow {
         sender_phone_identity_pubkey: Pubkey,
         refund_receiver_pubkey: Pubkey,
     ) -> Result<()> {
-        instructions::request_refund(ctx, payment_id, sender_phone_identity_pubkey, refund_receiver_pubkey)
+        instructions::request_refund(
+            ctx,
+            payment_id,
+            sender_phone_identity_pubkey,
+            refund_receiver_pubkey,
+        )
     }
 
     pub fn claim_refund(ctx: Context<ClaimRefund>, payment_id: [u8; 32]) -> Result<()> {
@@ -208,7 +245,10 @@ pub mod trustlink_escrow {
         instructions::request_recovery(ctx)
     }
 
-    pub fn complete_recovery(ctx: Context<CompleteRecovery>, new_settlement_wallet: Pubkey) -> Result<()> {
+    pub fn complete_recovery(
+        ctx: Context<CompleteRecovery>,
+        new_settlement_wallet: Pubkey,
+    ) -> Result<()> {
         instructions::complete_recovery(ctx, new_settlement_wallet)
     }
 
@@ -222,10 +262,18 @@ pub mod trustlink_escrow {
         payment_phone_identity_pubkey: Pubkey,
         payment_receiver_pubkey: Pubkey,
     ) -> Result<()> {
-        instructions::recover_payment(ctx, payment_id, payment_phone_identity_pubkey, payment_receiver_pubkey)
+        instructions::recover_payment(
+            ctx,
+            payment_id,
+            payment_phone_identity_pubkey,
+            payment_receiver_pubkey,
+        )
     }
 
-    pub fn expire_payment_to_pool(ctx: Context<ExpirePaymentToPool>, payment_id: [u8; 32]) -> Result<()> {
+    pub fn expire_payment_to_pool(
+        ctx: Context<ExpirePaymentToPool>,
+        payment_id: [u8; 32],
+    ) -> Result<()> {
         instructions::expire_payment_to_pool(ctx, payment_id)
     }
 

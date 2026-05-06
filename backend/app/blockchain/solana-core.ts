@@ -633,8 +633,9 @@ export async function updateEscrowConfig() {
     return configPda.toBase58();
   }
 
+  const instructionName = current.layout === "legacy" ? "migrate_legacy_config" : "update_config";
   const data = Buffer.concat([
-    instructionDiscriminator("update_config"),
+    instructionDiscriminator(instructionName),
     authority.publicKey.toBuffer(),
     new PublicKey(targetTreasuryOwner).toBuffer(),
     encodeU16(targetSendFeeBps),
@@ -648,19 +649,34 @@ export async function updateEscrowConfig() {
     new TransactionInstruction({
       programId: getProgramId(),
       keys: [
-        { pubkey: authority.publicKey, isSigner: true, isWritable: false },
+        { pubkey: authority.publicKey, isSigner: true, isWritable: current.layout === "legacy" },
         { pubkey: configPda, isSigner: false, isWritable: true },
+        ...(current.layout === "legacy"
+          ? [{ pubkey: SystemProgram.programId, isSigner: false, isWritable: false }]
+          : []),
       ],
       data,
     }),
   );
 
-  await sendAndConfirmTransaction(connection, transaction, [authority], {
-    commitment: "confirmed",
-  });
+  try {
+    await sendAndConfirmTransaction(connection, transaction, [authority], {
+      commitment: "confirmed",
+    });
+  } catch (error) {
+    const logs = (error as { transactionLogs?: string[] }).transactionLogs ?? [];
+    if (current.layout === "legacy" && logs.some((entry) => entry.includes("InstructionFallbackNotFound"))) {
+      throw new Error(
+        "The deployed escrow program does not include migrate_legacy_config yet. Build and deploy the updated Anchor program, then rerun escrow:init-config or escrow:update-config.",
+        { cause: error },
+      );
+    }
+    throw error;
+  }
 
   logger.info("solana.escrow_config_updated", {
     config: configPda.toBase58(),
+    instruction: instructionName,
     claimVerifier: targetClaimVerifier,
     treasuryOwner: targetTreasuryOwner,
     sendFeeBps: targetSendFeeBps,

@@ -16,6 +16,7 @@ describe("trustlink_escrow", () => {
   const program = anchor.workspace.TrustlinkEscrow as Program;
   const sender = provider.wallet as anchor.Wallet;
   const verifier = anchor.web3.Keypair.generate();
+  const treasuryOwner = anchor.web3.Keypair.generate();
   const receiverSettlementWallet = anchor.web3.Keypair.generate();
   const senderPhoneIdentity = anchor.web3.Keypair.generate().publicKey;
   const receiverPhoneIdentity = anchor.web3.Keypair.generate().publicKey;
@@ -24,6 +25,7 @@ describe("trustlink_escrow", () => {
 
   let mint: anchor.web3.PublicKey;
   let senderTokenAccount: anchor.web3.PublicKey;
+  let treasuryTokenAccount: anchor.web3.PublicKey;
   let configPda: anchor.web3.PublicKey;
 
   before(async () => {
@@ -43,6 +45,9 @@ describe("trustlink_escrow", () => {
     senderTokenAccount = (
       await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, sender.publicKey)
     ).address;
+    treasuryTokenAccount = (
+      await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, treasuryOwner.publicKey)
+    ).address;
     await mintTo(provider.connection, sender.payer, mint, senderTokenAccount, sender.publicKey, 5_000_000_000);
 
     [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -53,7 +58,15 @@ describe("trustlink_escrow", () => {
 
   it("initializes config with verifier", async () => {
     await program.methods
-      .initializeConfig(verifier.publicKey, new anchor.BN(3600))
+      .initializeConfig(
+        verifier.publicKey,
+        treasuryOwner.publicKey,
+        0,
+        new anchor.BN(0),
+        0,
+        new anchor.BN(0),
+        new anchor.BN(3600),
+      )
       .accounts({
         payer: sender.publicKey,
         config: configPda,
@@ -63,6 +76,7 @@ describe("trustlink_escrow", () => {
 
     const config = await program.account.escrowConfig.fetch(configPda);
     expect(config.claimVerifier.toBase58()).to.equal(verifier.publicKey.toBase58());
+    expect(config.treasuryOwner.toBase58()).to.equal(treasuryOwner.publicKey.toBase58());
     expect(config.defaultExpirySeconds.toNumber()).to.equal(3600);
   });
 
@@ -86,6 +100,7 @@ describe("trustlink_escrow", () => {
         secureReceiverAuthority.publicKey,
         { secure: {} } as any,
         new anchor.BN(1_500_000),
+        new anchor.BN(0),
         expiryTs,
       )
       .accounts({
@@ -94,6 +109,7 @@ describe("trustlink_escrow", () => {
         senderTokenAccount,
         config: configPda,
         tokenMint: mint,
+        treasuryTokenAccount,
         paymentAccount: paymentPda,
         vaultAuthority: vaultAuthorityPda,
         escrowVault: escrowVault.publicKey,
@@ -134,6 +150,7 @@ describe("trustlink_escrow", () => {
         receiverPhoneIdentity,
         { invite: {} } as any,
         new anchor.BN(500_000),
+        new anchor.BN(0),
         expiryTs,
       )
       .accounts({
@@ -142,6 +159,7 @@ describe("trustlink_escrow", () => {
         senderTokenAccount,
         config: configPda,
         tokenMint: mint,
+        treasuryTokenAccount,
         paymentAccount: paymentPda,
         vaultAuthority: vaultAuthorityPda,
         escrowVault: escrowVault.publicKey,

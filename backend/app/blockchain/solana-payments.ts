@@ -87,6 +87,41 @@ function getClaimFeeAmountUi(amount: number, decimals: number) {
   });
 }
 
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getConfirmedTransactionWithRetry(connection: Connection, signature: string) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const transaction = await connection.getTransaction(signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0,
+    });
+
+    if (transaction) {
+      return transaction;
+    }
+
+    await sleep(750);
+  }
+
+  return null;
+}
+
+async function getAccountInfoWithRetry(connection: Connection, account: PublicKey) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const accountInfo = await connection.getAccountInfo(account, "confirmed");
+
+    if (accountInfo) {
+      return accountInfo;
+    }
+
+    await sleep(750);
+  }
+
+  return null;
+}
+
 type ActiveEscrowFeePolicy = {
   treasuryOwner: string;
   sendFeeBps: number;
@@ -630,16 +665,13 @@ export async function confirmEscrowPayment(params: {
 
   const connection = getConnection();
   const paymentAccount = getPaymentAccountPda(params.paymentId);
-  const transaction = await connection.getTransaction(params.depositSignature, {
-    commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
-  });
+  const transaction = await getConfirmedTransactionWithRetry(connection, params.depositSignature);
 
   if (!transaction || transaction.meta?.err) {
     throw new Error("The escrow creation transaction could not be confirmed on-chain");
   }
 
-  const accountInfo = await connection.getAccountInfo(paymentAccount, "confirmed");
+  const accountInfo = await getAccountInfoWithRetry(connection, paymentAccount);
   if (!accountInfo) {
     throw new Error("The escrow payment account was not created on-chain");
   }

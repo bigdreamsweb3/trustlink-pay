@@ -23,15 +23,15 @@ export function WhatsAppModal({
   sessionCode,
   phoneNumber,
   onClose,
-  onSuccess,
 }: WhatsAppModalProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [handoffStatus, setHandoffStatus] = useState<"idle" | "opening" | "waiting" | "fallback">("idle");
-  const handoffStatusRef = useRef(handoffStatus);
+  const handoffStatusRef = useRef<"idle" | "opening" | "waiting" | "fallback">("idle");
+  const [handoffStatus, setHandoffStatusState] = useState<"idle" | "opening" | "waiting" | "fallback">("idle");
   const waWindowRef = useRef<Window | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const portalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const formattedNumber = phoneNumber.replace(/[^0-9]/g, "");
   const rawMessage = `Hello, I'm initiating my secure session. My code is: ${sessionCode}`;
@@ -40,31 +40,29 @@ export function WhatsAppModal({
     typeof navigator !== "undefined" &&
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  useEffect(() => {
-    handoffStatusRef.current = handoffStatus;
-  }, [handoffStatus]);
+  const setHandoffStatus = useCallback((status: "idle" | "opening" | "waiting" | "fallback") => {
+    handoffStatusRef.current = status;
+    setHandoffStatusState(status);
+  }, []);
 
   useEffect(() => {
     return () => {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+      if (portalCloseTimerRef.current) clearTimeout(portalCloseTimerRef.current);
     };
   }, []);
 
   useEffect(() => {
     const handleBlur = () => {
-      if (isOpen && handoffStatusRef.current === "opening") {
+      if (handoffStatusRef.current === "opening") {
         setHandoffStatus("waiting");
       }
     };
 
     const handleFocus = () => {
-      if (isOpen && handoffStatusRef.current === "waiting") {
-        focusTimerRef.current = setTimeout(() => {
-          setIsOpen(false);
-          onSuccess?.();
-          onClose();
-        }, 800);
+      if (handoffStatusRef.current === "waiting") {
+        setIsConnecting(false);
       }
     };
 
@@ -74,7 +72,7 @@ export function WhatsAppModal({
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [isOpen, onClose, onSuccess]);
+  }, [setHandoffStatus]);
 
   const closeModal = useCallback(() => {
     setIsOpen(false);
@@ -82,68 +80,86 @@ export function WhatsAppModal({
   }, [onClose]);
 
   const handleOpenWhatsApp = useCallback(() => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    if (portalCloseTimerRef.current) clearTimeout(portalCloseTimerRef.current);
+
     setIsConnecting(true);
     setHandoffStatus("opening");
 
     const webWhatsAppUrl = `https://api.whatsapp.com/send/?phone=${formattedNumber}&text=${encodedMessage}&type=phone_number&app_absent=0`;
 
     if (isMobile) {
-      const anchor = document.createElement("a");
-      anchor.href = `whatsapp://send?phone=${formattedNumber}&text=${encodedMessage}`;
-      anchor.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;";
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
+      window.location.href = `whatsapp://send?phone=${formattedNumber}&text=${encodedMessage}`;
 
       fallbackTimerRef.current = setTimeout(() => {
         if (handoffStatusRef.current === "opening" && document.hasFocus()) {
           setHandoffStatus("fallback");
           setIsConnecting(false);
           window.open(webWhatsAppUrl, "_blank", "noopener,noreferrer");
+        } else {
+          setHandoffStatus("waiting");
         }
       }, 2000);
 
       return;
     }
 
-    waWindowRef.current = window.open(
-      webWhatsAppUrl,
-      "_blank",
-      "noopener,noreferrer,width=800,height=600,left=99999,top=99999",
-    );
-
-    if (!waWindowRef.current) {
-      setHandoffStatus("fallback");
-      setIsConnecting(false);
-      return;
-    }
-
-    focusTimerRef.current = setTimeout(() => {
-      window.focus();
-      waWindowRef.current?.blur();
-      setHandoffStatus("waiting");
-    }, 80);
+    const anchor = document.createElement("a");
+    anchor.href = `whatsapp://send?phone=${formattedNumber}&text=${encodedMessage}`;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
 
     fallbackTimerRef.current = setTimeout(() => {
-      if (handoffStatusRef.current === "opening") {
-        setHandoffStatus("fallback");
-        setIsConnecting(false);
+      if (document.hasFocus() && handoffStatusRef.current === "opening") {
+        const portal = window.open(
+          webWhatsAppUrl,
+          "whatsapp_portal",
+          "width=800,height=600,left=200,top=100,menubar=no,status=no,location=no",
+        );
+
+        if (portal) {
+          waWindowRef.current = portal;
+          setHandoffStatus("waiting");
+          window.focus();
+
+          portalCloseTimerRef.current = setTimeout(() => {
+            try {
+              if (!portal.closed) {
+                portal.close();
+              }
+            } catch (error) {
+              console.log("WhatsApp portal auto-close prevented:", error);
+            }
+
+            if (waWindowRef.current === portal) {
+              waWindowRef.current = null;
+            }
+          }, 4000);
+        } else {
+          setHandoffStatus("fallback");
+          setIsConnecting(false);
+        }
+      } else if (!document.hasFocus()) {
+        setHandoffStatus("waiting");
       }
-    }, 3000);
-  }, [encodedMessage, formattedNumber, isMobile]);
+    }, 1000);
+  }, [encodedMessage, formattedNumber, isMobile, setHandoffStatus]);
 
   if (!isOpen) return null;
 
   const statusLabel = {
     idle: null,
-    opening: isMobile ? "Opening WhatsApp..." : "Loading WhatsApp silently...",
+    opening: isMobile ? "Opening WhatsApp..." : "Opening WhatsApp...",
     waiting: "Waiting for your verification...",
     fallback: "Could not open WhatsApp automatically.",
   }[handoffStatus];
 
   return (
     <AnimatePresence>
-      <div className="tl-overlay fixed inset-0 z-[999] flex items-end justify-center p-4 md:items-center">
+      <div className="tl-overlay fixed inset-0 z-[999] flex items-center justify-center p-4">
         <div className="absolute inset-0" onClick={() => !isConnecting && closeModal()} />
 
         <motion.div
@@ -158,8 +174,8 @@ export function WhatsAppModal({
             <div className="absolute left-0 right-0 top-0 h-[2px] overflow-hidden" style={{ background: "var(--surface-soft)" }}>
               <motion.div
                 initial={{ width: "0%" }}
-                animate={{ width: handoffStatus === "waiting" ? "80%" : "45%" }}
-                transition={{ duration: handoffStatus === "waiting" ? 0.4 : 2, ease: "easeOut" }}
+                animate={{ width: handoffStatus === "waiting" ? "84%" : "45%" }}
+                transition={{ duration: handoffStatus === "opening" ? 2 : 0.4, ease: "easeOut" }}
                 className="h-full"
                 style={{ background: "var(--accent)" }}
               />
@@ -207,7 +223,7 @@ export function WhatsAppModal({
             </div>
 
             <div
-              className="relative mb-5 flex min-h-[128px] flex-col justify-end gap-2 overflow-hidden rounded-[18px] p-3"
+              className="relative mb-5 flex min-h-[154px] flex-col justify-end gap-2 overflow-hidden rounded-[18px] p-3"
               style={{ background: "var(--field)", border: "1px solid var(--field-border)" }}
             >
               <div
@@ -243,16 +259,26 @@ export function WhatsAppModal({
                 </div>
               </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.5 }} className="flex justify-end">
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 2.4, duration: 0.25 }}
+                className="flex justify-end"
+              >
                 <div className="rounded-[8px] rounded-tr-[3px] px-2.5 py-1" style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.14)" }}>
                   <p className="text-[0.6rem] font-semibold" style={{ color: "var(--text)" }}>Approve Session</p>
                 </div>
               </motion.div>
 
-              <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 3.5 }} className="flex justify-start">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 3.25, duration: 0.25 }}
+                className="flex justify-start"
+              >
                 <div className="flex items-center gap-1 rounded-[8px] rounded-tl-[3px] px-2.5 py-1" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
                   <Check className="h-3 w-3" style={{ color: "var(--accent)" }} />
-                  <p className="text-[0.6rem] font-semibold" style={{ color: "var(--accent)" }}>Verified</p>
+                  <p className="text-[0.6rem] font-semibold" style={{ color: "var(--accent)" }}>Session approved</p>
                 </div>
               </motion.div>
             </div>
@@ -283,7 +309,7 @@ export function WhatsAppModal({
                   {handoffStatus === "opening" ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>{isMobile ? "Opening WhatsApp..." : "Loading silently..."}</span>
+                      <span>Opening WhatsApp...</span>
                     </>
                   ) : handoffStatus === "fallback" ? (
                     <>

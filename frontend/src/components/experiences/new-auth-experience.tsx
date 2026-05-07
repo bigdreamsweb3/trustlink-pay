@@ -26,14 +26,6 @@ import {
 } from "@/src/lib/storage";
 
 /* ─── Inline icons ─── */
-function ClockIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
 function CopySmIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -46,14 +38,6 @@ function CheckCircleIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function ArrowLeftIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
     </svg>
   );
 }
@@ -81,35 +65,13 @@ const SESSION_QUERY_PARAM = "session";
 
 function formatSessionDevice(userAgent: string) {
   const ua = userAgent.toLowerCase();
-  const browser = ua.includes("edg/")
-    ? "Edge"
-    : ua.includes("chrome/")
-      ? "Chrome"
-      : ua.includes("safari/") && !ua.includes("chrome/")
-        ? "Safari"
-        : ua.includes("firefox/")
-          ? "Firefox"
-          : "Browser";
-
-  const os = ua.includes("windows")
-    ? "Windows"
-    : ua.includes("android")
-      ? "Android"
-      : ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios")
-        ? "iOS"
-        : ua.includes("mac os")
-          ? "macOS"
-          : "Device";
-
+  const browser = ua.includes("edg/") ? "Edge" : ua.includes("chrome/") ? "Chrome" : ua.includes("safari/") && !ua.includes("chrome/") ? "Safari" : ua.includes("firefox/") ? "Firefox" : "Browser";
+  const os = ua.includes("windows") ? "Windows" : ua.includes("android") ? "Android" : ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios") ? "iOS" : ua.includes("mac os") ? "macOS" : "Device";
   return `${browser} on ${os}`;
 }
 
 /* ─── Component ─── */
-export function NewAuthExperience({
-  redirectTo,
-}: {
-  redirectTo: string;
-}) {
+export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -120,97 +82,59 @@ export function NewAuthExperience({
   const [eventManager, setEventManager] = useState<SessionEventManager | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
-  const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
-
   const businessNumber = process.env.NEXT_PUBLIC_TRUSTLINK_BUSINESS_NUMBER || "+1234567890";
 
+  /* ── Auth check ── */
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
     if (token && user) { router.replace(redirectTo as Route); }
   }, [redirectTo, router]);
 
+  /* ── Restore pending session ── */
   useEffect(() => {
     const restorePendingSession = async () => {
       const storedSession = getStoredPendingSession();
-      if (!storedSession) {
-        return;
-      }
-
-      if (new Date(storedSession.expiresAt).getTime() <= Date.now()) {
-        clearStoredPendingSession();
-        clearSessionQueryParam();
-        return;
-      }
-
+      if (!storedSession) return;
+      if (new Date(storedSession.expiresAt).getTime() <= Date.now()) { clearStoredPendingSession(); clearSessionQueryParam(); return; }
       const url = new URL(window.location.href);
       const sessionFromUrl = url.searchParams.get(SESSION_QUERY_PARAM);
-      if (sessionFromUrl && sessionFromUrl !== storedSession.sessionId) {
-        return;
-      }
-
+      if (sessionFromUrl && sessionFromUrl !== storedSession.sessionId) return;
       setSessionData(storedSession);
       setFlowState("waiting_verification");
       setError(null);
       setMessage(null);
-      setShowManualWhatsAppButton(true);
       setSessionQueryParam(storedSession.sessionId);
       startEventListening(storedSession);
     };
-
     void restorePendingSession();
   }, []);
 
   useEffect(() => { return () => { if (eventManager) eventManager.stop(); }; }, [eventManager]);
   useEffect(() => { if (flowState !== "waiting_verification" && eventManager) { eventManager.stop(); setEventManager(null); } }, [flowState, eventManager]);
-
   useEffect(() => {
     if (!sessionData?.expiresAt) return;
     const timer = setInterval(() => { setTimeRemaining(formatTimeRemaining(sessionData.expiresAt)); }, 1000);
     return () => clearInterval(timer);
   }, [sessionData]);
 
-  function setSessionQueryParam(sessionId: string) {
-    const url = new URL(window.location.href);
-    url.searchParams.set(SESSION_QUERY_PARAM, sessionId);
-    window.history.replaceState({}, "", url.toString());
-  }
-
-  function clearSessionQueryParam() {
-    const url = new URL(window.location.href);
-    url.searchParams.delete(SESSION_QUERY_PARAM);
-    window.history.replaceState({}, "", url.toString());
-  }
-
-  function persistPendingSession(session: SessionData) {
-    setStoredPendingSession(session);
-    setSessionQueryParam(session.sessionId);
-  }
-
-  function clearPendingSessionState() {
-    clearStoredPendingSession();
-    clearSessionQueryParam();
-  }
+  function setSessionQueryParam(sessionId: string) { const url = new URL(window.location.href); url.searchParams.set(SESSION_QUERY_PARAM, sessionId); window.history.replaceState({}, "", url.toString()); }
+  function clearSessionQueryParam() { const url = new URL(window.location.href); url.searchParams.delete(SESSION_QUERY_PARAM); window.history.replaceState({}, "", url.toString()); }
+  function persistPendingSession(session: SessionData) { setStoredPendingSession(session); setSessionQueryParam(session.sessionId); }
+  function clearPendingSessionState() { clearStoredPendingSession(); clearSessionQueryParam(); }
 
   async function generateSession() {
     if (flowState === "generating_session" || flowState === "waiting_verification") return;
-    setFlowState("generating_session");
-    setError(null);
-    setMessage(null);
+    setFlowState("generating_session"); setError(null); setMessage(null);
     try {
       const sessionId = crypto.randomUUID();
       const response = await apiPost<{ success: boolean; sessionCode: string; expiresAt: string }>("/api/auth/session", {
-        sessionId,
-        device: formatSessionDevice(deviceInfo.userAgent),
-        location: "Unavailable",
-        requestedAt: new Intl.DateTimeFormat("en-US", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).format(new Date()),
+        sessionId, device: formatSessionDevice(deviceInfo.userAgent), location: "Unavailable",
+        requestedAt: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date()),
       });
       if (!response.success) throw new Error("Failed to generate session code");
       const newSessionData: SessionData = { sessionId, sessionCode: response.sessionCode, expiresAt: response.expiresAt };
@@ -219,50 +143,30 @@ export function NewAuthExperience({
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
       setShowWhatsAppModal(true);
-      setShowManualWhatsAppButton(true);
-      showToast("Session code generated. Verify via WhatsApp.");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to generate session";
-      let displayError = errorMessage;
-      if (deviceInfo.isMobile && errorMessage.includes("fetch")) { displayError = "Connection issue. Please check your network and try again."; }
-      setError(displayError);
+      setError(deviceInfo.isMobile && errorMessage.includes("fetch") ? "Connection issue. Please check your network and try again." : errorMessage);
       setFlowState("error");
-      showToast(displayError);
     }
   }
 
   function startEventListening(session: SessionData) {
     const manager = new SessionEventManager(session.sessionId, session.sessionCode, handleVerificationSuccess, handleVerificationError, (connected) => setConnectionStatus(connected ? "connected" : "disconnected"));
-    manager.start();
-    setEventManager(manager);
-    setConnectionStatus("connecting");
+    manager.start(); setEventManager(manager); setConnectionStatus("connecting");
   }
 
   function handleVerificationSuccess(result: SessionVerificationResult) {
-    setFlowState("verified");
-    setMessage("Verification successful! Redirecting...");
+    setFlowState("verified"); setMessage("Verification successful! Redirecting...");
     const completeUser = { id: result.user!.id, displayName: result.user!.displayName, phoneNumber: result.user!.phoneNumber, handle: "", walletAddress: null, phoneVerifiedAt: new Date().toISOString(), identityVerifiedAt: null, createdAt: new Date().toISOString() };
-    setStoredToken(result.challengeToken!);
-    setStoredUser(completeUser);
-    clearStoredPendingAuth();
-    clearPendingSessionState();
+    setStoredToken(result.challengeToken!); setStoredUser(completeUser); clearStoredPendingAuth(); clearPendingSessionState();
     setStoredPendingAuth({ challengeToken: result.challengeToken!, pinMode: result.stage === "pin_verify" ? "verify" : "setup", user: completeUser, redirectTo });
     showToast("Verification successful!");
     setTimeout(() => router.push(redirectTo as Route), 1000);
   }
 
   function handleVerificationError(error: string) {
-    if (error !== "Session not yet verified") {
-      clearPendingSessionState();
-      setError(error);
-      showToast(error);
-    }
+    if (error !== "Session not yet verified") { clearPendingSessionState(); setError(error); showToast(error); }
     if (eventManager) eventManager.stop();
-  }
-
-  function handleWhatsAppClick() {
-    if (!sessionData) return;
-    setShowWhatsAppModal(true);
   }
 
   function copySessionCode() {
@@ -272,10 +176,7 @@ export function NewAuthExperience({
 
   function formatTimeRemaining(expiresAt: string): string {
     const diff = new Date(expiresAt).getTime() - Date.now();
-    if (diff <= 0) {
-      clearPendingSessionState();
-      return "Expired";
-    }
+    if (diff <= 0) { clearPendingSessionState(); return "Expired"; }
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -284,70 +185,41 @@ export function NewAuthExperience({
   function handleStartOver() {
     if (eventManager) eventManager.stop();
     clearPendingSessionState();
-    setEventManager(null); setSessionData(null); setFlowState("idle"); setError(null); setMessage(null); setConnectionStatus("disconnected"); setShowManualWhatsAppButton(false); setShowWhatsAppModal(false);
-  }
-
-  async function handleManualVerification() {
-    if (!sessionData) return;
-    try {
-      const response = await apiPost<{ success: boolean; challengeToken?: string; user?: { id: string; displayName: string; phoneNumber: string }; stage: "pin_verify" | "pin_setup"; error?: string }>("/api/auth/session/manual-verify", { sessionCode: sessionData.sessionCode });
-      if (response.success) handleVerificationSuccess(response);
-      else showToast(response.error || "Manual verification failed");
-    } catch (error) { showToast("Manual verification error: " + (error instanceof Error ? error.message : "Unknown error")); }
+    setEventManager(null); setSessionData(null); setFlowState("idle"); setError(null); setMessage(null);
+    setConnectionStatus("disconnected"); setShowWhatsAppModal(false);
   }
 
   /* ═══════════════════════════════════════════════════════════
-     RENDER — CodeWords-style layout:
-     Full-page dark bg with grid overlay → centered logo →
-     heading + subtitle → auth buttons → footer pinned bottom
+     RENDER
      ═══════════════════════════════════════════════════════════ */
   return (
     <main className="tl-grid-overlay relative flex min-h-[100dvh] flex-col items-center justify-between overflow-hidden"
       style={{ background: "var(--bg)" }}
     >
-      {/* ── Content: centered vertically ── */}
       <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 w-full max-w-[440px]">
 
-        {/* ─── IDLE STATE ─── */}
+        {/* ─── IDLE ─── */}
         {flowState === "idle" && (
           <div className="flex flex-col items-center w-full" style={{ animation: "fadeIn 0.4s var(--ease-out-expo)" }}>
-            {/* Logo */}
             <div className="mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] bg-white/[0.03] p-2.5 backdrop-blur-sm border border-[var(--surface-border)]">
               <Image src="/trustlink-logo.png" alt="TrustLink Logo" width={80} height={80} className="h-full w-full object-contain" />
             </div>
-
-            {/* Heading */}
-            <h1 className="text-[1.45rem] font-bold tracking-[-0.04em] text-center" style={{ color: "var(--text)" }}>
-              Sign in to TrustLink Pay
-            </h1>
-            <p className="mt-2 text-[0.84rem] text-center" style={{ color: "var(--muted)" }}>
-              Secure crypto payments, simplified.
-            </p>
-
-            {/* Error */}
+            <h1 className="text-[1.45rem] font-bold tracking-[-0.04em] text-center" style={{ color: "var(--text)" }}>Sign in to TrustLink Pay</h1>
+            <p className="mt-2 text-[0.84rem] text-center" style={{ color: "var(--muted)" }}>Secure crypto payments, simplified.</p>
             {error && (
               <div className="mt-5 w-full rounded-[14px] px-4 py-3 text-[0.8rem]"
                 style={{ background: "var(--danger-soft)", border: "1px solid var(--accent-border)", color: "var(--danger)" }}
-              >
-                {error}
-              </div>
+              >{error}</div>
             )}
-
-            {/* Auth buttons */}
             <div className="mt-8 w-full space-y-3">
-              <button
-                type="button"
-                onClick={() => void generateSession()}
+              <button type="button" onClick={() => void generateSession()}
                 className="group flex w-full items-center justify-center gap-3 rounded-[16px] px-5 py-4 text-[0.92rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
                 style={{ background: "var(--panel)", color: "var(--text)" }}
               >
                 <WhatsAppWhiteIcon className="h-5 w-5 text-[#25D366]" />
                 Continue with WhatsApp
               </button>
-
-              <button
-                type="button"
-                onClick={() => showToast("Web3 Wallet support coming soon!")}
+              <button type="button" onClick={() => showToast("Web3 Wallet support coming soon!")}
                 className="group flex w-full items-center justify-center gap-3 rounded-[16px] px-5 py-4 text-[0.92rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
                 style={{ background: "var(--panel)", color: "var(--text)" }}
               >
@@ -358,82 +230,64 @@ export function NewAuthExperience({
           </div>
         )}
 
-        {/* ─── GENERATING STATE ─── */}
+        {/* ─── GENERATING ─── */}
         {flowState === "generating_session" && (
           <div className="flex flex-col items-center justify-center" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
             <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-transparent"
               style={{ borderTopColor: "var(--accent)", borderRightColor: "var(--accent-border)" }}
             />
-            <p className="text-[0.84rem] font-medium" style={{ color: "var(--text-soft)" }}>
-              Generating secure session…
-            </p>
+            <p className="text-[0.84rem] font-medium" style={{ color: "var(--text-soft)" }}>Generating secure session…</p>
           </div>
         )}
 
-        {/* ─── WAITING VERIFICATION STATE ─── */}
+        {/* ─── WAITING — Coinbase-style: centered, QR prominent ─── */}
         {flowState === "waiting_verification" && sessionData && (
-          <div className="w-full space-y-5" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
-            {/* Back + title */}
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={handleStartOver}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors active:scale-[0.93] cursor-pointer"
-                style={{ background: "var(--surface-soft)", color: "var(--text-soft)" }}
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-              </button>
-              <div>
-                <h2 className="text-[1rem] font-bold tracking-[-0.02em]" style={{ color: "var(--text)" }}>Verify via WhatsApp</h2>
-                <p className="text-[0.68rem]" style={{ color: "var(--text-faint)" }}>Send this code to our verified business number</p>
-              </div>
-            </div>
+          <div className="flex w-full flex-col items-center text-center" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
 
-            {/* Session code */}
-            <div className="rounded-[20px] p-5 text-center"
-              style={{ background: "var(--field-strong)", border: "1px solid var(--field-border)" }}
-            >
-              <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>Verification Code</div>
-              <div className="my-2.5 font-mono text-[1.8rem] font-bold tracking-[0.12em]" style={{ color: "var(--accent)" }}>{sessionData.sessionCode}</div>
-              <div className="flex items-center justify-center gap-3">
+            {/* Top label */}
+            <p className="mb-6 text-[0.78rem] font-medium" style={{ color: "var(--text-soft)" }}>
+              Verify with WhatsApp
+            </p>
+
+            {/* QR code — desktop primary, mobile hidden */}
+            {useQRCode ? (
+              <>
+                <div className="rounded-[20px] bg-white p-4 shadow-softbox mb-5">
+                  <QRCodeDisplay
+                    value={generateQRCodeData(businessNumber, sessionData.sessionCode)}
+                    size={240}
+                    logoUrl="/trustlink-logo.png"
+                  />
+                </div>
+                <p className="mb-2 text-[0.8rem] font-medium" style={{ color: "var(--text-soft)" }}>
+                  Open WhatsApp and scan this code
+                </p>
+                <p className="mb-6 text-[0.72rem]" style={{ color: "var(--text-faint)" }}>
+                  Or send <span className="font-semibold" style={{ color: "var(--accent)" }}>{sessionData.sessionCode}</span> to {businessNumber}
+                </p>
+              </>
+            ) : (
+              /* Mobile: large session code instead of QR */
+              <div className="w-full rounded-[22px] p-6 mb-5 text-center"
+                style={{ background: "var(--field-strong)", border: "1px solid var(--field-border)" }}
+              >
+                <p className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] mb-2" style={{ color: "var(--text-faint)" }}>
+                  Verification Code
+                </p>
+                <div className="font-mono text-[2rem] font-bold tracking-[0.16em]" style={{ color: "var(--accent)" }}>
+                  {sessionData.sessionCode}
+                </div>
                 <button type="button" onClick={copySessionCode}
-                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.7rem] font-medium transition-colors active:scale-[0.95] cursor-pointer"
+                  className="mt-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.7rem] font-medium mx-auto transition-colors active:scale-[0.95] cursor-pointer"
                   style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
                 >
                   <CopySmIcon className="h-3 w-3" />Copy
                 </button>
-                {timeRemaining && (
-                  <span className="flex items-center gap-1 text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
-                    <ClockIcon className="h-3 w-3" />{timeRemaining}
-                  </span>
-                )}
               </div>
-            </div>
-
-            {/* QR Code — desktop */}
-            {useQRCode && (
-              <div className="rounded-[18px] p-4 text-center" style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}>
-                <p className="mb-3 text-[0.72rem] font-medium" style={{ color: "var(--text-soft)" }}>Scan with your phone camera</p>
-                <div className="mx-auto inline-flex rounded-[14px] bg-white p-3">
-                  <QRCodeDisplay value={generateQRCodeData(businessNumber, sessionData.sessionCode)} size={180} logoUrl="/brand-logos/trustlink.svg" />
-                </div>
-                <p className="mt-3 text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
-                  Or send code to <span className="font-semibold text-[var(--accent)]">{businessNumber}</span>
-                </p>
-              </div>
-            )}
-
-            {/* WhatsApp button */}
-            {showManualWhatsAppButton && (
-              <button type="button" onClick={handleWhatsAppClick}
-                className="group flex w-full items-center justify-center gap-2.5 rounded-[16px] px-5 py-4 text-[0.88rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
-                style={{ background: "var(--panel)", color: "var(--text)" }}
-              >
-                <WhatsAppWhiteIcon className="h-5 w-5 text-[#25D366]" />
-                Open WhatsApp to Verify
-              </button>
             )}
 
             {/* Connection status */}
-            <div className="flex items-center justify-center gap-2 pt-1">
+            <div className="flex items-center justify-center gap-2 mb-6">
               <span className="relative flex h-2 w-2">
                 {connectionStatus === "connected" && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: "var(--accent)" }} />
@@ -445,15 +299,41 @@ export function NewAuthExperience({
               <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
                 {connectionStatus === "connected" ? "Listening for verification…" : connectionStatus === "connecting" ? "Connecting…" : "Reconnecting…"}
               </span>
+              {timeRemaining && timeRemaining !== "Expired" && (
+                <>
+                  <span style={{ color: "var(--text-faint)", fontSize: "0.62rem" }}>·</span>
+                  <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
+                    {timeRemaining}
+                  </span>
+                </>
+              )}
             </div>
 
-            {process.env.NODE_ENV === "development" && (
-              <button type="button" onClick={handleManualVerification} className="mx-auto block rounded-md px-2 py-1 text-[0.64rem] font-medium" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>Debug: Manual Verify</button>
-            )}
+            {/* Bottom actions — like Coinbase's bottom bar */}
+            <div className="flex w-full items-center justify-between">
+              <button type="button" onClick={handleStartOver}
+                className="text-[0.72rem] font-medium transition-colors cursor-pointer hover:text-[var(--text-soft)] active:scale-[0.97]"
+                style={{ color: "var(--text-faint)" }}
+              >
+                ← Start over
+              </button>
+
+              <button type="button" onClick={() => setShowWhatsAppModal(true)}
+                className="flex items-center gap-2 rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg, #25D366, #20BA5C)",
+                  color: "#ffffff",
+                  boxShadow: "0 4px 12px rgba(37,211,102,0.18)",
+                }}
+              >
+                <WhatsAppWhiteIcon className="h-4 w-4" />
+                Open WhatsApp
+              </button>
+            </div>
           </div>
         )}
 
-        {/* ─── VERIFIED STATE ─── */}
+        {/* ─── VERIFIED ─── */}
         {flowState === "verified" && (
           <div className="flex flex-col items-center justify-center" style={{ animation: "scaleIn 0.4s var(--ease-out-expo)" }}>
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
@@ -464,7 +344,7 @@ export function NewAuthExperience({
           </div>
         )}
 
-        {/* ─── ERROR STATE ─── */}
+        {/* ─── ERROR ─── */}
         {flowState === "error" && (
           <div className="flex flex-col items-center w-full" style={{ animation: "fadeIn 0.3s var(--ease-out-expo)" }}>
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "var(--danger-soft)" }}>
@@ -482,6 +362,7 @@ export function NewAuthExperience({
         )}
       </div>
 
+      {/* WhatsApp Modal */}
       {flowState === "waiting_verification" && sessionData && showWhatsAppModal ? (
         <WhatsAppModal
           sessionCode={sessionData.sessionCode}
@@ -490,7 +371,7 @@ export function NewAuthExperience({
         />
       ) : null}
 
-      {/* ── Footer — pinned to bottom ── */}
+      {/* Footer */}
       <footer className="relative z-20 w-full px-6 py-5">
         <div className="flex flex-wrap items-center justify-center gap-6 text-[0.7rem] font-medium" style={{ color: "var(--text-faint)" }}>
           <Link href={"/privacy" as Route} className="transition-colors hover:text-[var(--text-soft)]">Privacy Policy</Link>

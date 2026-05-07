@@ -174,6 +174,10 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     navigator.clipboard.writeText(sessionData.sessionCode).then(() => { showToast("Session code copied!"); }).catch(() => { showToast("Failed to copy session code"); });
   }
 
+  function copyBusinessNumber() {
+    navigator.clipboard.writeText(businessNumber).then(() => { showToast("WhatsApp number copied!"); }).catch(() => { showToast("Failed to copy WhatsApp number"); });
+  }
+
   function formatTimeRemaining(expiresAt: string): string {
     const diff = new Date(expiresAt).getTime() - Date.now();
     if (diff <= 0) { clearPendingSessionState(); return "Expired"; }
@@ -262,8 +266,25 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
                 <p className="mb-2 text-[0.8rem] font-medium" style={{ color: "var(--text-soft)" }}>
                   Open WhatsApp and scan this code
                 </p>
-                <p className="mb-6 text-[0.72rem]" style={{ color: "var(--text-faint)" }}>
-                  Or send <span className="font-semibold" style={{ color: "var(--accent)" }}>{sessionData.sessionCode}</span> to {businessNumber}
+                <p className="mb-6 text-[0.78rem] leading-relaxed" style={{ color: "var(--text-faint)" }}>
+                  Or send{" "}
+                  <button
+                    type="button"
+                    onClick={copySessionCode}
+                    className="cursor-pointer font-mono text-[1rem] font-bold tracking-[0.12em] transition-opacity hover:opacity-80 active:scale-[0.98]"
+                    style={{ color: "var(--accent)" }}
+                  >
+                    {sessionData.sessionCode}
+                  </button>{" "}
+                  to{" "}
+                  <button
+                    type="button"
+                    onClick={copyBusinessNumber}
+                    className="cursor-pointer font-bold transition-opacity hover:opacity-80 active:scale-[0.98]"
+                    style={{ color: "var(--text-soft)" }}
+                  >
+                    {businessNumber}
+                  </button>
                 </p>
               </>
             ) : (
@@ -283,6 +304,20 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
                 >
                   <CopySmIcon className="h-3 w-3" />Copy
                 </button>
+                <div className="mt-5 rounded-[16px] px-4 py-3" style={{ background: "var(--surface-soft)", border: "1px solid var(--surface-border)" }}>
+                  <p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-faint)" }}>
+                    Send to WhatsApp number
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyBusinessNumber}
+                    className="mt-2 inline-flex items-center justify-center gap-1.5 font-mono text-[1rem] font-bold transition-opacity hover:opacity-80 active:scale-[0.98] cursor-pointer"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {businessNumber}
+                    <CopySmIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             )}
 

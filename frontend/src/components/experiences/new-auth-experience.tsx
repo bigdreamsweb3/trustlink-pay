@@ -402,6 +402,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
         <WhatsAppModal
           sessionCode={sessionData.sessionCode}
           phoneNumber={businessNumber}
+          qr={{ logoUrl: "/trustlink-logo.png" }}
           onClose={() => setShowWhatsAppModal(false)}
         />
       ) : null}

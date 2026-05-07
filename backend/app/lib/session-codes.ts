@@ -1,8 +1,7 @@
-import { randomBytes } from "node:crypto";
-
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { RedisSessionStorage } from "@/app/lib/redis";
+import { generateTrustLinkSessionCode } from "@/app/trustlink-whatsapp-sdk/auth";
 
 export interface SessionCode {
   code: string;
@@ -21,16 +20,13 @@ export interface SessionCode {
   };
 }
 
-const SESSION_CODE_PREFIX = "TL";
-const SESSION_CODE_LENGTH = 6;
 const SESSION_EXPIRY_MINUTES = env.AUTH_SESSION_CODE_TTL_MINUTES;
 
 /**
- * Generate a unique session code in format TLXXXXXX
+ * Generate a unique session code in format TLSXXXXXX
  */
 export function generateSessionCode(): string {
-  const randomPart = randomBytes(3).toString("hex").toUpperCase().slice(0, SESSION_CODE_LENGTH);
-  return `${SESSION_CODE_PREFIX}${randomPart}`;
+  return generateTrustLinkSessionCode();
 }
 
 /**

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       {
         error: "Missing 'message' parameter",
         usage:
-          "GET /api/test/webhook?message=Verify%20TrustLink%20Pay%20Code%3ATL123456&phone=+1234567890",
+          "GET /api/test/webhook?message=Verify%20TrustLink%20Pay%20Code%3ATLS123456&phone=+1234567890",
       },
       { status: 400 },
     );

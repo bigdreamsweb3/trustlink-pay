@@ -1,0 +1,420 @@
+import { env } from "@/app/lib/env";
+import { logger } from "@/app/lib/logger";
+import { findUserByPhoneNumber } from "@/app/db/users";
+import { normalizePhoneNumber, toWhatsAppRecipient } from "@/app/utils/phone";
+
+interface WhatsAppTemplateComponentParameter {
+  type: "text";
+  text: string;
+}
+
+interface WhatsAppTemplatePayload {
+  name: string;
+  language: {
+    code: string;
+  };
+  components?: Array<{
+    type: "body" | "button";
+    parameters: WhatsAppTemplateComponentParameter[];
+    sub_type?: "quick_reply";
+    index?: string;
+  }>;
+}
+
+type SendMessageOptions = {
+  bypassOptInCheck?: boolean;
+  category?: "auth" | "notification";
+};
+
+async function canSendWhatsApp(phoneNumber: string, options?: SendMessageOptions) {
+  if (options?.bypassOptInCheck) {
+    return true;
+  }
+
+  const user = await findUserByPhoneNumber(phoneNumber);
+  return Boolean(user?.whatsapp_opted_in);
+}
+
+async function sendWhatsAppMessage(
+  phoneNumber: string,
+  payload: Record<string, unknown>,
+  options?: SendMessageOptions,
+) {
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  const allowed = await canSendWhatsApp(normalizedPhoneNumber, options);
+
+  if (!allowed) {
+    logger.warn("whatsapp.send.skipped_opt_out", {
+      phoneNumber: normalizedPhoneNumber,
+      category: options?.category ?? "notification",
+    });
+    return { messageId: null, skipped: true as const };
+  }
+
+  if (env.WHATSAPP_MOCK_MODE) {
+    const mockMessageId = `mocked-${Date.now()}`;
+    logger.info("whatsapp.mock.send", {
+      phoneNumber: normalizedPhoneNumber,
+      payload,
+    });
+    return { messageId: mockMessageId, skipped: false as const };
+  }
+
+  const endpoint = `${env.WHATSAPP_BASE_URL}/${env.WHATSAPP_API_VERSION}/${env.WHATSAPP_PHONE_ID}/messages`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.WHATSAPP_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    logger.error("whatsapp.send.failed", {
+      phoneNumber: normalizedPhoneNumber,
+      details,
+    });
+    throw new Error(`WhatsApp API request failed: ${details}`);
+  }
+
+  logger.info("whatsapp.send.succeeded", {
+    phoneNumber: normalizedPhoneNumber,
+  });
+
+  const data = (await response.json()) as {
+    messages?: Array<{
+      id?: string;
+    }>;
+  };
+
+  return {
+    messageId: data.messages?.[0]?.id ?? null,
+    skipped: false as const,
+  };
+}
+
+async function sendWhatsAppTextMessage(
+  phoneNumber: string,
+  body: string,
+  options?: SendMessageOptions,
+) {
+  return sendWhatsAppMessage(
+    phoneNumber,
+    {
+      messaging_product: "whatsapp",
+      to: toWhatsAppRecipient(phoneNumber),
+      type: "text",
+      text: { body },
+    },
+    options,
+  );
+}
+
+async function sendWhatsAppTemplateMessage(
+  phoneNumber: string,
+  template: WhatsAppTemplatePayload,
+  options?: SendMessageOptions,
+) {
+  return sendWhatsAppMessage(
+    phoneNumber,
+    {
+      messaging_product: "whatsapp",
+      to: toWhatsAppRecipient(phoneNumber),
+      type: "template",
+      template,
+    },
+    options,
+  );
+}
+
+export function getTrustLinkWhatsAppOptInLink() {
+  if (!env.TRUSTLINK_BUSINESS_NUMBER) {
+    throw new Error("TRUSTLINK_BUSINESS_NUMBER is not configured");
+  }
+
+  return `https://wa.me/${env.TRUSTLINK_BUSINESS_NUMBER}?text=${encodeURIComponent("START TRUSTLINK")}`;
+}
+
+export function isTrustLinkOptInMessage(message: string) {
+  return message.trim().toUpperCase() === "START TRUSTLINK";
+}
+
+export function isTrustLinkStopMessage(message: string) {
+  return message.trim().toUpperCase() === "STOP";
+}
+
+export async function sendIncomingTransferAlert(phoneNumber: string, referenceCode: string) {
+  const message = `Incoming transfer\nReference: ${referenceCode}`;
+  return sendWhatsAppTextMessage(phoneNumber, message, { category: "notification" });
+}
+
+export async function sendPaymentNotification(params: {
+  phoneNumber: string;
+  amount: number;
+  token: string;
+  paymentId: string;
+  senderDisplayName: string;
+  senderHandle: string;
+  referenceCode: string;
+}) {
+  const claimUrl = `${env.TRUSTLINK_CLAIM_BASE_URL}/${params.paymentId}`;
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_PAYMENT_TEMPLATE_NAME) {
+    return sendWhatsAppTemplateMessage(
+      params.phoneNumber,
+      {
+        name: env.WHATSAPP_PAYMENT_TEMPLATE_NAME,
+        language: {
+          code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: params.senderDisplayName },
+              { type: "text", text: `@${params.senderHandle}` },
+              { type: "text", text: params.referenceCode },
+              { type: "text", text: `${params.amount}` },
+              { type: "text", text: params.token },
+              { type: "text", text: claimUrl },
+            ],
+          },
+        ],
+      },
+      { category: "notification" },
+    );
+  }
+
+  const message = [
+    `${params.senderDisplayName} (@${params.senderHandle}) sent you ${params.amount} ${params.token}`,
+    `Reference: ${params.referenceCode}`,
+    "",
+    `Claim: ${claimUrl}`,
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(params.phoneNumber, message, { category: "notification" });
+}
+
+export async function sendPaymentNotificationRetryMessage(phoneNumber: string) {
+  const message = [
+    "We are still trying to deliver your TrustLink payment notification.",
+    "If you have not received it, please check your WhatsApp privacy settings and make sure you can receive messages from businesses.",
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(phoneNumber, message, { category: "notification" });
+}
+
+export async function sendWhatsAppOtp(phoneNumber: string, otp: string) {
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_OTP_TEMPLATE_NAME) {
+    return sendWhatsAppTemplateMessage(
+      phoneNumber,
+      {
+        name: env.WHATSAPP_OTP_TEMPLATE_NAME,
+        language: {
+          code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [{ type: "text", text: otp }],
+          },
+        ],
+      },
+      { bypassOptInCheck: false, category: "auth" },
+    );
+  }
+
+  const message = `Your TrustLink verification code is ${otp}`;
+  return sendWhatsAppTextMessage(phoneNumber, message, {
+    bypassOptInCheck: false,
+    category: "auth",
+  });
+}
+
+// Backwards-compatible exports used by existing OTP flows.
+// - sendOtp respects opt-in (default behavior)
+// - sendAuthOtp bypasses opt-in so auth/security handshakes never get blocked
+export async function sendOtp(phoneNumber: string, otp: string) {
+  return sendWhatsAppOtp(phoneNumber, otp);
+}
+
+export async function sendAuthOtp(phoneNumber: string, otp: string) {
+  // Prefer the template if configured, but always bypass opt-in for auth messages.
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_OTP_TEMPLATE_NAME) {
+    return sendWhatsAppTemplateMessage(
+      phoneNumber,
+      {
+        name: env.WHATSAPP_OTP_TEMPLATE_NAME,
+        language: {
+          code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [{ type: "text", text: otp }],
+          },
+        ],
+      },
+      { bypassOptInCheck: true, category: "auth" },
+    );
+  }
+
+  const message = `Your TrustLink security code is ${otp}`;
+  return sendWhatsAppTextMessage(phoneNumber, message, {
+    bypassOptInCheck: true,
+    category: "auth",
+  });
+}
+
+export async function sendSessionReviewRequest(params: {
+  phoneNumber: string;
+  sessionCode: string;
+  device: string;
+  location: string;
+  requestedAt: string;
+  expiresIn: string;
+}) {
+  const fallbackMessage = [
+    "Your sign-in session is active.",
+    "",
+    `Session code: ${params.sessionCode}`,
+    `Device: ${params.device}`,
+    `Location: ${params.location}`,
+    `Requested at: ${params.requestedAt}`,
+    `Expires in: ${params.expiresIn}`,
+    "",
+    "Reply with APPROVE SESSION to continue signing in.",
+    "Reply with DECLINE SESSION to reject this sign-in.",
+  ].join("\n");
+
+  if (env.WHATSAPP_USE_TEMPLATES && env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME) {
+    try {
+      logger.info("whatsapp.session_review.template_attempt", {
+        phoneNumber: normalizePhoneNumber(params.phoneNumber),
+        templateName: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+        languageCode: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+      });
+
+      return await sendWhatsAppTemplateMessage(
+        params.phoneNumber,
+        {
+          name: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+          language: {
+            code: env.WHATSAPP_TEMPLATE_LANGUAGE_CODE,
+          },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: params.sessionCode },
+                { type: "text", text: params.device },
+                { type: "text", text: params.location },
+                { type: "text", text: params.requestedAt },
+                { type: "text", text: params.expiresIn },
+              ],
+            },
+          ],
+        },
+        { bypassOptInCheck: true, category: "auth" },
+      );
+    } catch (error) {
+      logger.warn("whatsapp.session_review.template_fallback", {
+        phoneNumber: normalizePhoneNumber(params.phoneNumber),
+        templateName: env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      return sendWhatsAppTextMessage(params.phoneNumber, fallbackMessage, {
+        bypassOptInCheck: true,
+        category: "auth",
+      });
+    }
+  }
+
+  return sendWhatsAppTextMessage(params.phoneNumber, fallbackMessage, {
+    bypassOptInCheck: true,
+    category: "auth",
+  });
+}
+
+export async function sendInvalidSessionMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "That session code is invalid or has expired. Start a new sign-in and send the new code.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
+}
+
+export async function sendSessionApprovedMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "Session approved. Continue signing in on your device.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
+}
+
+export async function sendSessionDeclinedMessage(phoneNumber: string) {
+  return sendWhatsAppTextMessage(
+    phoneNumber,
+    "Session declined. If this wasn't you, no further action is needed.",
+    { bypassOptInCheck: true, category: "auth" },
+  );
+}
+
+export async function sendWelcomeMessage(phoneNumber: string, displayName: string, handle: string) {
+  const message = [
+    `Welcome to TrustLink, ${displayName}.`,
+    "",
+    "Your account has been created successfully.",
+    `Your TrustLink handle: @${handle}`,
+    "",
+    "You can now send and receive crypto payments with TrustLink.",
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(phoneNumber, message, { category: "notification" });
+}
+
+export async function sendPaymentClaimedMessage(params: {
+  phoneNumber: string;
+  referenceCode: string;
+  amount: number;
+  token: string;
+  walletAddress: string;
+  senderDisplayName: string;
+  senderHandle: string;
+  transactionUrl: string | null;
+}) {
+  const message = [
+    "Payment claimed successfully.",
+    `From: ${params.senderDisplayName} (@${params.senderHandle})`,
+    `Reference: ${params.referenceCode}`,
+    `Amount: ${params.amount} ${params.token}`,
+    `Claimed to wallet: ${params.walletAddress}`,
+  ];
+
+  if (params.transactionUrl) {
+    message.push(`Transaction: ${params.transactionUrl}`);
+  }
+
+  return sendWhatsAppTextMessage(params.phoneNumber, message.join("\n"), { category: "notification" });
+}
+
+export async function sendPaymentRefundPendingMessage(params: {
+  phoneNumber: string;
+  referenceCode: string;
+  amount: number;
+  token: string;
+  refundClaimAvailableAt: string;
+}) {
+  const message = [
+    "A sender has started a refund request for a pending TrustLink payment.",
+    `Reference: ${params.referenceCode}`,
+    `Amount: ${params.amount} ${params.token}`,
+    "",
+    "If this payment is yours, open TrustLink and complete your claim before the waiting window closes.",
+    `Sender refund may become available after: ${params.refundClaimAvailableAt}`,
+  ].join("\n");
+
+  return sendWhatsAppTextMessage(params.phoneNumber, message, { category: "notification" });
+}

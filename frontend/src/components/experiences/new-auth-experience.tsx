@@ -9,8 +9,9 @@ import type { Route } from "next";
 
 import { QRCodeDisplay } from "@/src/components/qr-code-display";
 import { useToast } from "@/src/components/toast-provider";
+import { WhatsAppModal } from "@/src/components/modals/whatsapp-modal";
 import { apiPost } from "@/src/lib/api";
-import { detectDevice, generateWhatsAppUrl, generateQRCodeData, shouldUseQRCode, shouldUseDirectLink } from "@/src/lib/device-detection";
+import { detectDevice, generateQRCodeData, shouldUseQRCode } from "@/src/lib/device-detection";
 import { SessionEventManager, type SessionVerificationResult } from "@/src/lib/session-events";
 import {
   clearStoredPendingAuth,
@@ -120,11 +121,10 @@ export function NewAuthExperience({
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [showManualWhatsAppButton, setShowManualWhatsAppButton] = useState(false);
-  const [whatsappPopupStatus, setWhatsappPopupStatus] = useState<"opening" | "opened" | "closed" | "desktop_app">("opening");
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
-  const useDirectLink = useMemo(() => shouldUseDirectLink(deviceInfo), [deviceInfo]);
 
   const businessNumber = process.env.NEXT_PUBLIC_TRUSTLINK_BUSINESS_NUMBER || "+1234567890";
 
@@ -158,7 +158,6 @@ export function NewAuthExperience({
       setError(null);
       setMessage(null);
       setShowManualWhatsAppButton(true);
-      setWhatsappPopupStatus("opened");
       setSessionQueryParam(storedSession.sessionId);
       startEventListening(storedSession);
     };
@@ -197,20 +196,6 @@ export function NewAuthExperience({
     clearSessionQueryParam();
   }
 
-  function openWhatsApp(session: SessionData, preferNewTab = false) {
-    const whatsappUrl = generateWhatsAppUrl(businessNumber, session.sessionCode);
-    setWhatsappPopupStatus("opened");
-
-    if (preferNewTab) {
-      const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-      if (popup) {
-        return;
-      }
-    }
-
-    window.location.href = whatsappUrl;
-  }
-
   async function generateSession() {
     if (flowState === "generating_session" || flowState === "waiting_verification") return;
     setFlowState("generating_session");
@@ -233,11 +218,8 @@ export function NewAuthExperience({
       persistPendingSession(newSessionData);
       setFlowState("waiting_verification");
       startEventListening(newSessionData);
-      if (deviceInfo.isMobile && deviceInfo.hasWhatsAppApp) {
-        setWhatsappPopupStatus("opening");
-        setTimeout(() => { openWhatsApp(newSessionData, true); }, 500);
-        setTimeout(() => { setShowManualWhatsAppButton(true); }, 3000);
-      }
+      setShowWhatsAppModal(true);
+      setShowManualWhatsAppButton(true);
       showToast("Session code generated. Verify via WhatsApp.");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to generate session";
@@ -280,7 +262,7 @@ export function NewAuthExperience({
 
   function handleWhatsAppClick() {
     if (!sessionData) return;
-    openWhatsApp(sessionData, true);
+    setShowWhatsAppModal(true);
   }
 
   function copySessionCode() {
@@ -302,7 +284,7 @@ export function NewAuthExperience({
   function handleStartOver() {
     if (eventManager) eventManager.stop();
     clearPendingSessionState();
-    setEventManager(null); setSessionData(null); setFlowState("idle"); setError(null); setMessage(null); setConnectionStatus("disconnected"); setShowManualWhatsAppButton(false);
+    setEventManager(null); setSessionData(null); setFlowState("idle"); setError(null); setMessage(null); setConnectionStatus("disconnected"); setShowManualWhatsAppButton(false); setShowWhatsAppModal(false);
   }
 
   async function handleManualVerification() {
@@ -439,23 +421,15 @@ export function NewAuthExperience({
               </div>
             )}
 
-            {/* WhatsApp button — mobile */}
-            {useDirectLink && (showManualWhatsAppButton || !deviceInfo.isMobile) && (
+            {/* WhatsApp button */}
+            {showManualWhatsAppButton && (
               <button type="button" onClick={handleWhatsAppClick}
                 className="group flex w-full items-center justify-center gap-2.5 rounded-[16px] px-5 py-4 text-[0.88rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
                 style={{ background: "var(--panel)", color: "var(--text)" }}
               >
                 <WhatsAppWhiteIcon className="h-5 w-5 text-[#25D366]" />
-                {deviceInfo.isMobile ? "Open WhatsApp Manually" : "Open WhatsApp to Verify"}
+                Open WhatsApp to Verify
               </button>
-            )}
-
-            {/* Mobile WhatsApp auto-open status */}
-            {useDirectLink && deviceInfo.isMobile && !showManualWhatsAppButton && (
-              <div className="flex items-center justify-center gap-2 py-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--accent)] border-t-transparent" />
-                <span className="text-[0.78rem]" style={{ color: "var(--text-soft)" }}>Opening WhatsApp…</span>
-              </div>
             )}
 
             {/* Connection status */}
@@ -507,6 +481,14 @@ export function NewAuthExperience({
           </div>
         )}
       </div>
+
+      {flowState === "waiting_verification" && sessionData && showWhatsAppModal ? (
+        <WhatsAppModal
+          sessionCode={sessionData.sessionCode}
+          phoneNumber={businessNumber}
+          onClose={() => setShowWhatsAppModal(false)}
+        />
+      ) : null}
 
       {/* ── Footer — pinned to bottom ── */}
       <footer className="relative z-20 w-full px-6 py-5">

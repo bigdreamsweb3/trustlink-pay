@@ -1,0 +1,114 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+use crate::tsn::{
+    constants::TSN_CRANKER_VAULT_AUTHORITY_SEED,
+    errors::TsnError,
+    events::TsnProofSubmitted,
+    state::{Cranker, CrankerVault, IntentStatus, MotherEscrow, PaymentIntent},
+    utils::compute_cranker_dna,
+};
+
+#[derive(Accounts)]
+pub struct SubmitProof<'info> {
+    #[account(mut)]
+    pub operator: Signer<'info>,
+
+    pub mother_escrow: Box<Account<'info, MotherEscrow>>,
+
+    #[account(mut, has_one = mother_escrow)]
+    pub intent: Box<Account<'info, PaymentIntent>>,
+
+    #[account(
+        mut,
+        has_one = mother_escrow,
+        constraint = cranker.operator == operator.key()
+    )]
+    pub cranker: Box<Account<'info, Cranker>>,
+
+    #[account(
+        mut,
+        has_one = mother_escrow,
+        constraint = cranker_vault.cranker == cranker.key(),
+        constraint = cranker_vault.token_mint == intent.token_mint,
+        constraint = cranker_vault.vault_token_account == vault_token_account.key()
+    )]
+    pub cranker_vault: Box<Account<'info, CrankerVault>>,
+
+    /// CHECK: PDA authority for the vault token account.
+    #[account(
+        seeds = [TSN_CRANKER_VAULT_AUTHORITY_SEED, cranker_vault.key().as_ref()],
+        bump = cranker_vault.vault_authority_bump
+    )]
+    pub vault_authority: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        constraint = vault_token_account.mint == intent.token_mint
+    )]
+    pub vault_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = recipient_token_account.mint == intent.token_mint
+    )]
+    pub recipient_token_account: Box<Account<'info, TokenAccount>>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_amount: u64) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    let mother_escrow = &ctx.accounts.mother_escrow;
+    let operator = ctx.accounts.operator.key();
+
+    let expected_dna = compute_cranker_dna(&mother_escrow.key(), &operator, &mother_escrow.protocol_seed);
+    require!(ctx.accounts.cranker.dna_hash == expected_dna, TsnError::CrankerDnaMismatch);
+
+    let intent = &mut ctx.accounts.intent;
+    require!(intent.status == IntentStatus::Claimed, TsnError::IntentNotClaimable);
+    require!(now <= intent.lease_expiry_ts, TsnError::LeaseExpired);
+    require!(
+        intent.assigned_cranker == ctx.accounts.cranker.key(),
+        TsnError::NotAssignedCranker
+    );
+    require!(!intent.proof_submitted, TsnError::ProofAlreadySubmitted);
+    require!(payout_amount <= intent.amount, TsnError::InvalidPayoutAmount);
+
+    let cranker_vault_key = ctx.accounts.cranker_vault.key();
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        TSN_CRANKER_VAULT_AUTHORITY_SEED,
+        cranker_vault_key.as_ref(),
+        &[ctx.accounts.cranker_vault.vault_authority_bump],
+    ]];
+
+    token::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.vault_token_account.to_account_info(),
+                to: ctx.accounts.recipient_token_account.to_account_info(),
+                authority: ctx.accounts.vault_authority.to_account_info(),
+            },
+            signer_seeds,
+        ),
+        payout_amount,
+    )?;
+
+    ctx.accounts.cranker_vault.total_liquidity =
+        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(payout_amount);
+
+    intent.payout_tx_sig = payout_tx_sig;
+    intent.proof_submitted = true;
+    intent.status = IntentStatus::Executed;
+    intent.executed_at_ts = now;
+
+    ctx.accounts.cranker.total_executes = ctx.accounts.cranker.total_executes.saturating_add(1);
+    ctx.accounts.cranker.last_active_ts = now;
+
+    emit!(TsnProofSubmitted {
+        intent: intent.key(),
+        cranker: ctx.accounts.cranker.key(),
+    });
+    Ok(())
+}

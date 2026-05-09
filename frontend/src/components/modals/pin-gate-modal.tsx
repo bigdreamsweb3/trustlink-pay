@@ -106,7 +106,7 @@ export function PinGateModal({
       <div className="tl-modal w-full max-w-[430px] rounded-[30px] p-5">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <div className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--accent-deep)] dark:text-[#7dffd9]">TrustLink secure access</div>
+            <div className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--accent-deep)] dark:text-accent-deep">TrustLink secure access</div>
             <h2 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.05em] text-[var(--text)]">{heading}</h2>
             <p className="tl-text-soft mt-2 max-w-[24rem] text-sm leading-6">{description}</p>
           </div>

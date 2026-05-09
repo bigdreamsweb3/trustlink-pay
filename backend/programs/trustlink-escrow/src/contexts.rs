@@ -43,7 +43,6 @@ pub struct CreatePayment<'info> {
     pub sender_token_account: Box<Account<'info, TokenAccount>>,
     #[account(seeds = [CONFIG_SEED], bump)]
     pub config: Box<Account<'info, EscrowConfig>>,
-    #[account(constraint = token_mint.key() == payment_account.token_mint @ TrustLinkEscrowError::InvalidReceiverMint)]
     pub token_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,

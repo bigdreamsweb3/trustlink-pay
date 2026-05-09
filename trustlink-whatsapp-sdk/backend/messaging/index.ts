@@ -32,6 +32,10 @@ async function canSendWhatsApp(phoneNumber: string, options?: SendMessageOptions
   }
 
   const user = await findUserByPhoneNumber(phoneNumber);
+  if (options?.category === "notification") {
+    return Boolean(user?.phone_verified_at || user?.whatsapp_opted_in);
+  }
+
   return Boolean(user?.whatsapp_opted_in);
 }
 

@@ -31,6 +31,7 @@ const envSchema = z
     TRUSTLINK_TREASURY_OWNER: z.string().min(1).optional(),
     TRUSTLINK_SEND_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
     TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
+    TRUSTLINK_FEE_COVERAGE_TX_COUNT: z.coerce.number().int().positive().default(4),
     TRUSTLINK_CLAIM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
     TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
     TRUSTLINK_DEFAULT_EXPIRY_SECONDS: z.coerce.number().int().positive().default(604800),
@@ -80,6 +81,9 @@ const envSchema = z
     APP_BASE_URL: z.string().url().default("http://localhost:3000"),
     SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080),
+    TSN_ENABLED: booleanFromEnv.default(false),
+    TSN_CREATE_INTENTS_ONCHAIN: booleanFromEnv.default(false),
+    TSN_SYNC_ONCHAIN: booleanFromEnv.default(true),
   })
   .superRefine((value, context) => {
     if (!value.WHATSAPP_MOCK_MODE && !value.WHATSAPP_PHONE_ID) {
@@ -117,6 +121,7 @@ function readRawEnv() {
     TRUSTLINK_TREASURY_OWNER: process.env.TRUSTLINK_TREASURY_OWNER,
     TRUSTLINK_SEND_FEE_BPS: process.env.TRUSTLINK_SEND_FEE_BPS,
     TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+    TRUSTLINK_FEE_COVERAGE_TX_COUNT: process.env.TRUSTLINK_FEE_COVERAGE_TX_COUNT,
     TRUSTLINK_CLAIM_FEE_BPS: process.env.TRUSTLINK_CLAIM_FEE_BPS,
     TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
     TRUSTLINK_DEFAULT_EXPIRY_SECONDS: process.env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS,
@@ -160,6 +165,9 @@ function readRawEnv() {
     APP_BASE_URL: process.env.APP_BASE_URL,
     SESSION_SECRET: process.env.SESSION_SECRET,
     ACCESS_TOKEN_TTL_MINUTES: process.env.ACCESS_TOKEN_TTL_MINUTES,
+    TSN_ENABLED: process.env.TSN_ENABLED,
+    TSN_CREATE_INTENTS_ONCHAIN: process.env.TSN_CREATE_INTENTS_ONCHAIN,
+    TSN_SYNC_ONCHAIN: process.env.TSN_SYNC_ONCHAIN,
   };
 }
 

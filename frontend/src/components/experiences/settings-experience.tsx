@@ -95,7 +95,7 @@ function BackupWalletModal({
           <motion.div key="backup-intro" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-5">
               <div className="flex items-start gap-3.5">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#58f2b1]/14 text-[#7dffd9]">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#58f2b1]/14 text-accent-deep">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
@@ -124,12 +124,12 @@ function BackupWalletModal({
                   <div className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Detected wallet</div>
                   <div className="mt-2 text-sm font-semibold text-text">{connectedWallet ? shortenAddress(connectedWallet) : "No wallet connected"}</div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-[16px] bg-[#58f2b1]/12 text-[#7dffd9]"><Wallet2 className="h-4.5 w-4.5" /></div>
+                <div className="grid h-10 w-10 place-items-center rounded-[16px] bg-[#58f2b1]/12 text-accent-deep"><Wallet2 className="h-4.5 w-4.5" /></div>
               </div>
               <div className="mt-4 space-y-3">
                 <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
                 {connectedWalletCanBeBackup ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-[#7dffd9] cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
+                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
                 ) : null}
                 <div className="rounded-[20px] border border-white/6 bg-black/20 px-4 py-4">
                   <label className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Wallet address</label>
@@ -150,7 +150,7 @@ function BackupWalletModal({
         {step === "success" ? (
           <motion.div key="backup-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-[#7dffd9]"><CheckCircle2 className="h-7 w-7" /></div>
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
               <p className="mt-4 text-sm leading-relaxed text-text/62">Your backup wallet is ready if you ever need to protect or recover this account.</p>
             </div>
             <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
@@ -211,7 +211,7 @@ function RecoveryFlowModal({
         {step === "cooldown" ? (
           <motion.div key="recovery-cooldown" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-6 text-center">
-              <motion.div animate={{ scale: [1, 1.04, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#58f2b1]/10 text-[#7dffd9]"><ShieldCheck className="h-7 w-7" /></motion.div>
+              <motion.div animate={{ scale: [1, 1.04, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#58f2b1]/10 text-accent-deep"><ShieldCheck className="h-7 w-7" /></motion.div>
               <div className="mt-4 text-[2rem] font-semibold tracking-[-0.06em] text-text">{formatCountdown(countdownSeconds)}</div>
               <p className="mt-2 text-sm leading-relaxed text-text/60">Your funds are locked and protected. No one can move them during this countdown.</p>
             </div>
@@ -232,7 +232,7 @@ function RecoveryFlowModal({
               <div className="mt-4 grid gap-3">
                 <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
                 {connectedWallet && connectedWallet !== mainWallet ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-[#7dffd9] cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
+                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
                 ) : null}
               </div>
             </div>
@@ -243,7 +243,7 @@ function RecoveryFlowModal({
         {step === "success" ? (
           <motion.div key="recovery-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-[#7dffd9]"><CheckCircle2 className="h-7 w-7" /></div>
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
               <p className="mt-4 text-sm leading-relaxed text-text/62">Your next wallet is ready for the final secure handoff.</p>
             </div>
             <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
@@ -387,7 +387,7 @@ export function SettingsExperience() {
             {identity?.recoveryWallet ? (
               <span className="flex items-center gap-1.5 rounded-[12px] bg-[#58f2b1]/10 px-2.5 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#4ae8c0]" />
-                <span className="text-[0.68rem] font-medium text-[#7dffd9]">Verified</span>
+                <span className="text-[0.68rem] font-medium text-accent-deep">Verified</span>
               </span>
             ) : (
               <span className="flex items-center gap-1 text-[0.74rem] font-medium text-[#ffb86b]">

@@ -122,6 +122,44 @@ CREATE TABLE IF NOT EXISTS autoclaim_jobs (
   PRIMARY KEY (payment_id, job_type)
 );
 
+-- --- TSN (Milestone 4) off-chain ledgers ---
+CREATE TABLE IF NOT EXISTS payment_intents (
+  id UUID PRIMARY KEY,
+  payment_id UUID NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+  intent_seed_hash VARCHAR(64) NOT NULL,
+  recipient_hash VARCHAR(64) NOT NULL,
+  token_mint_address VARCHAR(64),
+  amount NUMERIC(20, 9) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'claimed', 'executed', 'settled', 'expired')),
+  assigned_cranker_pubkey VARCHAR(64),
+  lease_expiry_at TIMESTAMPTZ,
+  claim_tx_sig VARCHAR(128),
+  proof_tx_sig VARCHAR(128),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_intents_payment_id ON payment_intents (payment_id);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_status ON payment_intents (status);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_recipient_hash ON payment_intents (recipient_hash);
+
+ALTER TABLE payment_intents
+  ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128);
+
+CREATE TABLE IF NOT EXISTS claim_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  payment_id UUID NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+  intent_id UUID NOT NULL REFERENCES payment_intents(id) ON DELETE CASCADE,
+  recipient_hash VARCHAR(64) NOT NULL,
+  destination_wallet VARCHAR(64),
+  autoclaim BOOLEAN NOT NULL DEFAULT false,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'canceled', 'failed')),
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_claim_requests_intent_status ON claim_requests (intent_id, status);
+CREATE INDEX IF NOT EXISTS idx_claim_requests_payment_id ON claim_requests (payment_id);
+
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64);
 ALTER TABLE payments

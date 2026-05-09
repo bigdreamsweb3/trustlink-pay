@@ -20,6 +20,7 @@ import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verificatio
 import type { PaymentRecord } from "@/app/types/payment";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
+import { createTsnIntentForPayment } from "@/app/services/tsn/intent";
 
 import { buildInviteShareData, requiresManualInvite } from "./invite";
 import { AutoclaimEngine } from "./autoclaim-engine";
@@ -253,6 +254,8 @@ export async function createPayment(params: {
       amount: params.amount,
       tokenMintAddress: params.tokenMintAddress,
       expiryUnixSeconds: Math.floor(new Date(paymentExpiryAt).getTime() / 1000),
+      receiverWallet: receiverPaymentPolicy.receiverWallet,
+      bindingPhoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
     });
 
     return {
@@ -417,6 +420,15 @@ export async function createPayment(params: {
     });
   }
 
+  try {
+    await createTsnIntentForPayment(updatedPayment ?? payment);
+  } catch (error) {
+    logger.warn("payment.create.tsn_intent_failed", {
+      paymentId: payment.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
   logger.info("payment.create.succeeded", {
     paymentId: payment.id,
     paymentMode: payment.payment_mode,
@@ -479,6 +491,8 @@ export async function estimatePaymentTransfer(params: {
     amount: params.amount,
     tokenMintAddress: params.tokenMintAddress,
     expiryUnixSeconds: Math.floor(new Date(paymentExpiryAt).getTime() / 1000),
+    receiverWallet: receiverPaymentPolicy.receiverWallet,
+    bindingPhoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
   });
 
   return {

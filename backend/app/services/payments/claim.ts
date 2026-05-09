@@ -15,6 +15,8 @@ import { sha256 } from "@/app/utils/hash";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import { verifyUserActionPin } from "@/app/services/auth";
 import { sendPaymentClaimedMessage } from "@/app/services/whatsapp";
+import { env } from "@/app/lib/env";
+import { requestPaymentClaimViaTsn } from "@/app/services/tsn/claim-request";
 
 function paymentCanStillBeClaimed(status: string) {
   return status === "locked" || status === "expired";
@@ -209,6 +211,32 @@ export async function acceptPayment(params: {
           walletAddress: settlementWalletAddress,
           markPhoneVerified: true,
         });
+
+  if (env.TSN_ENABLED) {
+    const tsnClaim = await requestPaymentClaimViaTsn({
+      authUser: params.authUser,
+      paymentId: activePayment.id,
+      pin: params.pin,
+      walletAddress: settlementWalletAddress,
+      receiverWalletId: params.receiverWalletId,
+      derivedPaymentReceiverPublicKey: params.derivedPaymentReceiverPublicKey,
+      privacySpendSignature: params.privacySpendSignature,
+      autoclaim: true,
+    });
+
+    logger.info("payment.accept.tsn_claim_requested", {
+      paymentId: activePayment.id,
+      intentId: tsnClaim.intentId,
+      claimRequestId: tsnClaim.claimRequestId,
+    });
+
+    return {
+      payment: activePayment,
+      user,
+      tsn: tsnClaim,
+      requiresClientSignature: false,
+    };
+  }
 
   const release = await prepareEscrowClaim({
     paymentId: payment.id,

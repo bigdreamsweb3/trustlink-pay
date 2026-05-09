@@ -1,7 +1,21 @@
+import type { ClaimRequestStatus, PaymentIntentStatus } from "./tsn";
+
 export type PaymentStatus = "created" | "locked" | "expired" | "claimed" | "refund_requested" | "refunded";
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
 export type PaymentMode = "secure" | "invite";
+
+export type TsnUiStage = "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled";
+
+export interface PaymentTsnState {
+  stage: TsnUiStage;
+  intentStatus: PaymentIntentStatus;
+  claimRequestStatus: ClaimRequestStatus | null;
+  destinationWallet: string | null;
+  assignedCrankerPubkey: string | null;
+  claimTxSig: string | null;
+  proofTxSig: string | null;
+}
 
 export interface UserRecord {
   id: string;
@@ -81,6 +95,7 @@ export interface PaymentRecord {
     onboardingLink: string;
     inviteMessage: string;
   } | null;
+  tsn?: PaymentTsnState;
 }
 
 export interface PhoneVerificationRecord {

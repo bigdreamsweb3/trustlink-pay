@@ -100,6 +100,15 @@ export interface PaymentRecord {
   notification_attempt_count?: number;
   notification_last_attempt_at?: string | null;
   status: "created" | "locked" | "claimed" | "refund_requested" | "refunded";
+  tsn?: {
+    stage: "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled";
+    intentStatus: "pending" | "claimed" | "executed" | "settled" | "expired";
+    claimRequestStatus: "pending" | "processing" | "completed" | "canceled" | "failed" | null;
+    destinationWallet: string | null;
+    assignedCrankerPubkey: string | null;
+    claimTxSig: string | null;
+    proofTxSig: string | null;
+  };
   unit_price_usd?: number | null;
   amount_usd?: number | null;
   created_at: string;
@@ -110,6 +119,15 @@ export interface PaymentRecord {
     inviteMessage: string;
   } | null;
   recipient_onboarded?: boolean;
+}
+
+export interface TsnClaimRequestResult {
+  paymentId: string;
+  intentId: string;
+  claimRequestId: string;
+  destinationWallet: string;
+  autoclaim: boolean;
+  status: "pending" | "processing" | "completed" | "canceled" | "failed";
 }
 
 export interface PendingBalanceSummary {
@@ -160,6 +178,10 @@ export interface PaymentDetailResponse {
     depositExplorerUrl: string | null;
     releaseSignature: string | null;
     releaseExplorerUrl: string | null;
+    tsnClaimSignature?: string | null;
+    tsnClaimExplorerUrl?: string | null;
+    tsnProofSignature?: string | null;
+    tsnProofExplorerUrl?: string | null;
     expirySignature?: string | null;
     expiryExplorerUrl?: string | null;
     acceptedAt: string | null;

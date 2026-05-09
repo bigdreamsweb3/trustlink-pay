@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
+import { ActivityIcon, BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, WalletIcon } from "@/src/components/app-icons";
 import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
 import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
 import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
 import ExpandableMetaRow from "../ui/ExpandableMetaRow";
 
-type AppTab = "home" | "send" | "receive" | "claim" | "wallets" | "profile" | "settings";
+type AppTab = "home" | "send" | "receive" | "claim" | "activity" | "wallets" | "profile" | "settings";
 
 type AppMobileShellProps = {
   currentTab: AppTab;
@@ -37,7 +37,7 @@ const sidebarNavItems: Array<{ key: AppTab; href: Route; label: string; icon: Re
   { key: "home", href: "/app", label: "Home", icon: <HomeIcon size={18} className="text-current" /> },
   { key: "send", href: "/app/send", label: "Send", icon: <SendIcon size={18} className="text-current" /> },
   { key: "claim", href: "/app/claim", label: "Claim", icon: <ClaimIcon size={18} className="text-current" /> },
-  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon size={18} className="text-current" /> },
+  { key: "activity", href: "/app/activity", label: "History", icon: <ActivityIcon size={18} className="text-current" /> },
   { key: "settings", href: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} className="text-current" /> },
 ];
 
@@ -45,7 +45,7 @@ const mobileNavItems: Array<{ key: AppTab; href: Route; label: string; icon: Rea
   { key: "home", href: "/app", label: "Home", icon: <HomeIcon size={18} className="text-current" /> },
   { key: "send", href: "/app/send", label: "Send", icon: <SendIcon size={18} className="text-current" /> },
   { key: "claim", href: "/app/claim", label: "Claim", icon: <ClaimIcon size={18} className="text-current" /> },
-  { key: "wallets", href: "/app/wallets", label: "Wallets", icon: <WalletIcon size={18} className="text-current" /> },
+  { key: "activity", href: "/app/activity", label: "History", icon: <ActivityIcon size={18} className="text-current" /> },
   { key: "settings", href: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} className="text-current" /> },
 ];
 
@@ -75,8 +75,8 @@ export function AppMobileShell({
             <div className="flex items-center gap-3 px-2 mb-8">
               <TrustLinkMark />
               <div className="min-w-0">
-                <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none hidden">TrustLink</div>
-                <div className="tl-text-soft mt-0.5 truncate text-[0.78rem] leading-tight">@{user.handle}</div>
+                <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none">TrustLink</div>
+                {/* <div className="tl-text-soft mt-0.5 truncate text-[0.78rem] leading-tight">@{user.handle}</div> */}
               </div>
             </div>
             <nav aria-label="Sidebar navigation" className="space-y-1">

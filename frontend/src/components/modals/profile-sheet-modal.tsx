@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Shield, UserRound, Wallet } from "lucide-react";
+import { ChevronRight, Shield, UserRound, Clock3 } from "lucide-react";
 
 import { AppSidePanel } from "@/src/components/panels/app-side-panel";
 import type { UserProfile } from "@/src/lib/types";
@@ -72,16 +72,16 @@ export function ProfileSheetModal({
           </Link>
 
           <Link
-            href="/app/wallets"
+            href="/app/activity"
             className="tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
           >
             <span className="flex items-center gap-3">
               <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">
-                <Wallet className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+                <Clock3 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
               </span>
               <span>
-                <span className="block text-[0.84rem] font-semibold text-[var(--text)]">Wallets</span>
-                <span className="tl-text-soft block text-[0.72rem]">Connections and payout wallets</span>
+                <span className="block text-[0.84rem] font-semibold text-[var(--text)]">Transaction history</span>
+                <span className="tl-text-soft block text-[0.72rem]">Transfers, claims, and receipts</span>
               </span>
             </span>
             <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />

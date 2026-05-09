@@ -107,7 +107,7 @@ export function PhoneNumberInput({
 
   const indicatorClass =
     verificationState === "valid"
-      ? "border-[#58f2b1]/35 bg-[#58f2b1]/12 text-[#7dffd9]"
+      ? "border-[#58f2b1]/35 bg-[#58f2b1]/12 text-accent-deep"
       : verificationState === "warning"
         ? "border-[#f3c96b]/35 bg-[#f3c96b]/12 text-[#f3c96b]"
         : verificationState === "invalid"
@@ -130,7 +130,7 @@ export function PhoneNumberInput({
 
   const trustLinkToneClass =
     recipientPreview?.status === "registered"
-      ? "border-[#58f2b1]/18 bg-[#58f2b1]/7"
+      ? "border-[#58f2b1]/18 bg-accent-deep/17"
       : recipientPreview?.status === "whatsapp_only" || recipientPreview?.status === "manual_invite_required"
         ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
         : recipientPreview?.status === "invalid_whatsapp_number" || lookupError
@@ -346,7 +346,7 @@ export function PhoneNumberInput({
                   </div>
                   <span
                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.64rem] font-semibold ${recipientPreview.status === "registered"
-                      ? "bg-[#58f2b1]/12 text-[#7dffd9]"
+                      ? "bg-[#58f2b1]/12 text-accent-deep"
                       : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
                         ? "bg-[#f3c96b]/14 text-[#f3c96b]"
                         : "bg-[#ff7f7f]/14 text-[#ffadad]"

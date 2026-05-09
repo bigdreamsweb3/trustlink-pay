@@ -17,6 +17,26 @@ export async function POST(request: Request) {
       authUser
     });
 
+    if ("tsn" in result) {
+      return ok({
+        paymentId: result.payment?.id,
+        status: result.payment?.status,
+        referenceCode: result.payment?.reference_code,
+        walletAddress: result.user.wallet_address,
+        tsn: result.tsn,
+        serializedTransaction: null,
+        rpcUrl: null,
+        programId: null,
+        preview: null,
+        claimFeeAmount: null,
+        tokenSymbol: result.payment?.token_symbol ?? null,
+        netAmount: result.payment != null ? Number(result.payment.amount) : null,
+        blockchainSignature: null,
+        blockchainMode: "tsn",
+        requiresClientSignature: false,
+      });
+    }
+
     return ok({
       paymentId: result.payment?.id,
       status: result.payment?.status,

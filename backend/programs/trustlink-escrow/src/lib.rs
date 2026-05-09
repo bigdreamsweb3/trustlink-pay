@@ -5,10 +5,12 @@ pub mod error;
 pub mod helpers;
 pub mod instructions;
 pub mod state;
+pub mod tsn;
 pub mod v3;
 pub mod v3_state;
 
 pub use contexts::*;
+pub use tsn::instructions::*;
 pub use v3::{
     AutoClaimEscrowArgs, AutoClaimEscrowV3, ClaimEscrowArgs, ClaimEscrowV3, CreateEscrowArgs,
     CreateEscrowV3,
@@ -279,6 +281,107 @@ pub mod trustlink_escrow {
 
     pub fn refund_payment(ctx: Context<RefundPayment>, payment_id: [u8; 32]) -> Result<()> {
         instructions::refund_payment(ctx, payment_id)
+    }
+
+    // --- TSN (Milestone 4) settlement layer ---
+    pub fn tsn_initialize_mother_escrow(
+        ctx: Context<InitializeMotherEscrow>,
+        protocol_seed: [u8; 32],
+        epoch_seconds: i64,
+        lease_seconds: i64,
+        fee_split_cranker_bps: Option<u16>,
+        fee_split_lp_bps: Option<u16>,
+        fee_split_treasury_bps: Option<u16>,
+    ) -> Result<()> {
+        tsn::instructions::initialize_mother_escrow(
+            ctx,
+            protocol_seed,
+            epoch_seconds,
+            lease_seconds,
+            fee_split_cranker_bps,
+            fee_split_lp_bps,
+            fee_split_treasury_bps,
+        )
+    }
+
+    pub fn tsn_register_cranker(ctx: Context<RegisterCranker>) -> Result<()> {
+        tsn::instructions::register_cranker(ctx)
+    }
+
+    pub fn tsn_migrate_mother_escrow(
+        ctx: Context<MigrateMotherEscrow>,
+        protocol_seed: [u8; 32],
+        epoch_seconds: i64,
+        lease_seconds: i64,
+        fee_split_cranker_bps: Option<u16>,
+        fee_split_lp_bps: Option<u16>,
+        fee_split_treasury_bps: Option<u16>,
+    ) -> Result<()> {
+        tsn::instructions::migrate_mother_escrow(
+            ctx,
+            protocol_seed,
+            epoch_seconds,
+            lease_seconds,
+            fee_split_cranker_bps,
+            fee_split_lp_bps,
+            fee_split_treasury_bps,
+        )
+    }
+
+    pub fn tsn_set_cranker_funding_policy(
+        ctx: Context<SetCrankerFundingPolicy>,
+        allow_external_funding: bool,
+    ) -> Result<()> {
+        tsn::instructions::set_cranker_funding_policy(ctx, allow_external_funding)
+    }
+
+    pub fn tsn_initialize_cranker_vault(ctx: Context<InitializeCrankerVault>) -> Result<()> {
+        tsn::instructions::initialize_cranker_vault(ctx)
+    }
+
+    pub fn tsn_fund_cranker(ctx: Context<FundCranker>, amount: u64) -> Result<()> {
+        tsn::instructions::fund_cranker(ctx, amount)
+    }
+
+    pub fn tsn_withdraw_cranker_funds(
+        ctx: Context<WithdrawCrankerFunds>,
+        amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::withdraw_cranker_funds(ctx, amount)
+    }
+
+    pub fn tsn_create_intent(
+        ctx: Context<CreateIntent>,
+        intent_id: [u8; 32],
+        underlying_payment: Pubkey,
+        token_mint: Pubkey,
+        amount: u64,
+        recipient_hash: [u8; 32],
+    ) -> Result<()> {
+        tsn::instructions::create_intent(
+            ctx,
+            intent_id,
+            underlying_payment,
+            token_mint,
+            amount,
+            recipient_hash,
+        )
+    }
+
+    pub fn tsn_claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {
+        tsn::instructions::claim_intent(ctx)
+    }
+
+    pub fn tsn_reassign_intent(ctx: Context<ReassignIntent>) -> Result<()> {
+        tsn::instructions::reassign_intent(ctx)
+    }
+
+    pub fn tsn_submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_amount: u64) -> Result<()> {
+        tsn::instructions::submit_proof(ctx, payout_tx_sig, payout_amount)
+    }
+
+    pub fn tsn_settle_epoch(ctx: Context<SettleEpoch>, force: bool) -> Result<()> {
+        tsn::instructions::settle_epoch(ctx, force)
     }
 }
 #[cfg(test)]

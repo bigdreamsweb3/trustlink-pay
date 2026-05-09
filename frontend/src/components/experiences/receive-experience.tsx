@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
-import { ClaimIcon, WalletIcon } from "@/src/components/app-icons";
+import { ActivityIcon, ClaimIcon } from "@/src/components/app-icons";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
@@ -108,7 +108,7 @@ export function ReceiveExperience() {
       }
     >
       <section className="space-y-5">
-        {/* {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-[#7dffd9]">{notice}</div> : null}
+        {/* {notice ? <div className="rounded-[22px] border border-[#58f2b1]/15 bg-[#58f2b1]/8 px-4 py-3 text-sm text-accent-deep">{notice}</div> : null}
         {error ? <div className="rounded-[22px] bg-field-strong/22 px-2 py-1.5 text-xs w-fit w-fit text-[#ff9e9e]">{error}</div> : null} */}
 
         <section className="tl-panel rounded-[28px]">
@@ -171,10 +171,10 @@ export function ReceiveExperience() {
               </span>
               <span className="text-text/40">Open</span>
             </Link>
-            <Link href="/app/wallets" className="inline-flex items-center justify-between tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href="/app/activity" className="inline-flex items-center justify-between tl-field px-4 py-3 text-sm font-medium text-text/78">
               <span className="inline-flex items-center gap-2">
-                <WalletIcon className="h-4 w-4" />
-                Manage payout wallets
+                <ActivityIcon className="h-4 w-4" />
+                View transaction history
               </span>
               <span className="text-text/40">Open</span>
             </Link>

@@ -22,7 +22,9 @@ export function buildInviteShareData(payment: PaymentRecord, appBaseUrl?: string
 
 export async function requiresManualInvite(phoneNumber: string) {
   const receiver = await findUserByPhoneNumber(phoneNumber);
-  return !receiver?.phone_verified_at || !receiver.whatsapp_opted_in;
+  // Treat any phone-verified TrustLink user as onboarded for notifications.
+  // Manual invites are only for numbers not yet onboarded in the TrustLink DB.
+  return !receiver?.phone_verified_at;
 }
 
 export async function enrichPaymentInviteState(payment: PaymentRecord) {

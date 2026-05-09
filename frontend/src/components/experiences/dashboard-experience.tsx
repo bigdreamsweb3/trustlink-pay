@@ -102,7 +102,7 @@ export function DashboardExperience() {
   const combinedVisibleBalanceUsd = useMemo(() => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)), [supportedBalanceUsd, totalPendingUsd]);
   const hasPendingSenderReceipt = useMemo(() => paymentHistory.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [paymentHistory, user?.id]);
   const sentCount = useMemo(() => paymentHistory.filter((p) => p.sender_user_id === user?.id).length, [paymentHistory, user?.id]);
-  const receivedCount = useMemo(() => paymentHistory.filter((p) => p.sender_user_id !== user?.id).length, [paymentHistory, user?.id]);
+  const receivedCount = useMemo(() => paymentHistory.filter((p) => p.receiver_phone === user?.phoneNumber).length, [paymentHistory, user?.phoneNumber]);
   const showMainWalletGuidance = !identityLoading && !identitySecurity?.mainWallet && !mainWalletGuidanceDismissed;
 
   useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadDashboard(accessToken, { background: true }); }, DASHBOARD_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);

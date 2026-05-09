@@ -36,7 +36,7 @@ function formatFeeAmount(value: string | null | undefined, tokenSymbol: string) 
 
 function statusTone(status: PaymentDetailResponse["payment"]["status"] | "accepted" | "pending") {
   switch (status) {
-    case "accepted": return "bg-[#58f2b1]/12 text-[#7dffd9]";
+    case "accepted": return "bg-[#58f2b1]/12 text-accent-deep";
     case "pending": return "bg-[#f3c96b]/12 text-[#f3c96b]";
     default: return "bg-[#ff7f7f]/12 text-[#ffadad]";
   }
@@ -161,6 +161,8 @@ export function TransactionDetailExperience({ paymentId }: { paymentId: string }
                 {[
                   { label: "Deposit tx", sig: detail.trace.depositSignature, url: detail.trace.depositExplorerUrl },
                   { label: "Claim tx", sig: detail.trace.releaseSignature, url: detail.trace.releaseExplorerUrl },
+                  { label: "TSN lease claim", sig: detail.trace.tsnClaimSignature, url: detail.trace.tsnClaimExplorerUrl },
+                  { label: "TSN proof", sig: detail.trace.tsnProofSignature, url: detail.trace.tsnProofExplorerUrl },
                   { label: "Expiry tx", sig: detail.trace.expirySignature, url: detail.trace.expiryExplorerUrl },
                 ].filter((r) => r.sig).map((row) => (
                   <div key={row.label} className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">

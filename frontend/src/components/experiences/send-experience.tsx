@@ -512,7 +512,7 @@ export function SendExperience() {
                     {[
                       { step: "1", text: "Verify recipient via WhatsApp" },
                       { step: "2", text: "Funds move into secure escrow" },
-                      { step: "3", text: "Receiver claims via WhatsApp OTP" },
+                      { step: "3", text: "Cranker settles after claim request" },
                     ].map((item) => (
                       <div key={item.step} className="flex items-center gap-2.5">
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.58rem] font-bold bg-[var(--accent-soft)] text-accent border border-accent-border">

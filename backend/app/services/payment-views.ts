@@ -7,8 +7,10 @@ import {
   retryPaymentNotificationIfNeeded,
 } from "@/app/services/payments";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import type { PaymentRecord, PaymentViewerRole } from "@/app/types/payment";
+import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
+import { env } from "@/app/lib/env";
+import { enrichPaymentsWithTsnState } from "@/app/services/tsn/payment-state";
 
 function getViewerRole(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentViewerRole | null {
   if (payment.sender_user_id === authUser.id) {
@@ -49,6 +51,12 @@ function maskWalletAddress(walletAddress: string | null) {
 }
 
 function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
+  const tsnState = payment.tsn as PaymentTsnState | undefined;
+  const isTsnPaid = Boolean(
+    payment.status === "claimed" ||
+      (tsnState && (tsnState.stage === "cranker_paid" || tsnState.stage === "epoch_settled")),
+  );
+
   const timeline = [
     {
       id: "created",
@@ -86,12 +94,32 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     },
     {
       id: "claimed",
-      label: "Claim completed",
-      description: "TrustLink released the escrow after claim verification succeeded.",
+      label: isTsnPaid ? "Settled" : "Claim completed",
+      description: isTsnPaid
+        ? "A Cranker paid the recipient and the payment is no longer claimable from escrow."
+        : "TrustLink released the escrow after claim verification succeeded.",
       occurredAt: payment.release_signature ? payment.created_at : null,
-      complete: payment.status === "claimed"
+      complete: payment.status === "claimed" || isTsnPaid
     }
   ];
+
+  if (env.TSN_ENABLED && tsnState) {
+    timeline.splice(4, 0, {
+      id: "tsn_claim_requested",
+      label: "Claim requested",
+      description: "A claim request is queued for a Cranker to process (no receiver transaction needed).",
+      occurredAt: null,
+      complete: isTsnPaid || tsnState.stage !== "intent_pending",
+    });
+
+    timeline.splice(5, 0, {
+      id: "tsn_cranker_paid",
+      label: "Cranker payout",
+      description: "A Cranker paid the recipient from PDA vault liquidity and submitted proof.",
+      occurredAt: null,
+      complete: isTsnPaid,
+    });
+  }
 
   if (payment.status === "refund_requested") {
     timeline.push({
@@ -160,7 +188,8 @@ export async function getPaymentDetailForViewer(
     throw new Error("Payment not found");
   }
 
-  const payment = await retryPaymentNotificationIfNeeded(paymentRecord, appBaseUrl);
+  const paymentWithReceipts = await retryPaymentNotificationIfNeeded(paymentRecord, appBaseUrl);
+  const payment = (await enrichPaymentsWithTsnState([paymentWithReceipts]))[0];
   const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
   const inviteShare = manualInviteRequired ? buildInviteShareData(payment, appBaseUrl) : null;
   const recipientOnboarded = payment.receiver_onboarded ?? !manualInviteRequired;
@@ -191,6 +220,12 @@ export async function getPaymentDetailForViewer(
   const releaseExplorerUrl = safePayment.release_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.release_signature })
     : null;
+  const tsnClaimExplorerUrl = safePayment.tsn?.claimTxSig
+    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.claimTxSig })
+    : null;
+  const tsnProofExplorerUrl = safePayment.tsn?.proofTxSig
+    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.proofTxSig })
+    : null;
   return {
     payment: safePayment,
     viewerRole,
@@ -218,6 +253,10 @@ export async function getPaymentDetailForViewer(
       depositExplorerUrl,
       releaseSignature: payment.release_signature,
       releaseExplorerUrl,
+      tsnClaimSignature: safePayment.tsn?.claimTxSig ?? null,
+      tsnClaimExplorerUrl,
+      tsnProofSignature: safePayment.tsn?.proofTxSig ?? null,
+      tsnProofExplorerUrl,
       claimed: payment.status === "claimed",
     },
     privacy: {

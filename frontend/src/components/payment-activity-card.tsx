@@ -25,6 +25,34 @@ function statusTone(status: PaymentRecord["status"]) {
   }
 }
 
+function tsnTone(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
+  switch (stage) {
+    case "intent_pending":
+      return "bg-[rgba(232,168,64,0.06)] text-[var(--warning)] border border-[rgba(232,168,64,0.10)]";
+    case "claim_requested":
+    case "lease_claimed":
+      return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
+    case "cranker_paid":
+    case "epoch_settled":
+      return "bg-[rgba(74,190,208,0.06)] text-[var(--primary-accent)] border border-[rgba(74,190,208,0.10)]";
+  }
+}
+
+function tsnLabel(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
+  switch (stage) {
+    case "intent_pending":
+      return "Escrow locked";
+    case "claim_requested":
+      return "Claim queued";
+    case "lease_claimed":
+      return "Cranker processing";
+    case "cranker_paid":
+      return "Paid";
+    case "epoch_settled":
+      return "Settled";
+  }
+}
+
 export function PaymentActivityCard({
   payment,
   currentUserId,
@@ -34,6 +62,9 @@ export function PaymentActivityCard({
   const counterparty = isSend
     ? `To ${payment.receiver_phone}`
     : `From ${payment.sender_display_name_snapshot}`;
+
+  const statusLabel = !isSend && payment.tsn ? tsnLabel(payment.tsn.stage) : payment.status.replace(/_/g, " ");
+  const statusClass = !isSend && payment.tsn ? tsnTone(payment.tsn.stage) : statusTone(payment.status);
 
   return (
     <button
@@ -76,8 +107,8 @@ export function PaymentActivityCard({
         <span className="text-[0.82rem] font-semibold" style={{ color: "var(--text)" }}>
           {isSend ? "-" : "+"}{formatTokenAmount(payment.amount)} {payment.token_symbol}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-[0.62rem] font-medium capitalize ${statusTone(payment.status)}`}>
-          {payment.status.replace(/_/g, " ")}
+        <span className={`rounded-full px-2 py-0.5 text-[0.62rem] font-medium ${statusClass}`}>
+          {statusLabel}
         </span>
       </div>
     </button>

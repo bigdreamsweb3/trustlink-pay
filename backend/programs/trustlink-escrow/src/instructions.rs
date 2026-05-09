@@ -280,14 +280,8 @@ pub fn claim_and_bind_first_wallet(
         ctx.accounts.escrow_vault.amount >= payment.amount,
         TrustLinkEscrowError::VaultBalanceMismatch
     );
-    let expected_claim_fee = calculate_fee_amount(
-        payment.amount,
-        ctx.accounts.config.claim_fee_bps,
-        ctx.accounts.config.claim_fee_max_ui_micros,
-        ctx.accounts.token_mint.decimals,
-    )?;
     require!(
-        claim_fee_amount == expected_claim_fee,
+        claim_fee_amount <= payment.amount,
         TrustLinkEscrowError::InvalidFeeAmount
     );
 
@@ -397,14 +391,8 @@ pub fn claim_payment(
         ctx.accounts.escrow_vault.amount >= payment.amount,
         TrustLinkEscrowError::VaultBalanceMismatch
     );
-    let expected_claim_fee = calculate_fee_amount(
-        payment.amount,
-        ctx.accounts.config.claim_fee_bps,
-        ctx.accounts.config.claim_fee_max_ui_micros,
-        ctx.accounts.token_mint.decimals,
-    )?;
     require!(
-        claim_fee_amount == expected_claim_fee,
+        claim_fee_amount <= payment.amount,
         TrustLinkEscrowError::InvalidFeeAmount
     );
 
@@ -467,14 +455,8 @@ pub fn claim_invite_and_bind_first_wallet(
         ctx.accounts.escrow_vault.amount >= payment.amount,
         TrustLinkEscrowError::VaultBalanceMismatch
     );
-    let expected_claim_fee = calculate_fee_amount(
-        payment.amount,
-        ctx.accounts.config.claim_fee_bps,
-        ctx.accounts.config.claim_fee_max_ui_micros,
-        ctx.accounts.token_mint.decimals,
-    )?;
     require!(
-        claim_fee_amount == expected_claim_fee,
+        claim_fee_amount <= payment.amount,
         TrustLinkEscrowError::InvalidFeeAmount
     );
 
@@ -552,14 +534,8 @@ pub fn claim_invite_payment(
         ctx.accounts.escrow_vault.amount >= payment.amount,
         TrustLinkEscrowError::VaultBalanceMismatch
     );
-    let expected_claim_fee = calculate_fee_amount(
-        payment.amount,
-        ctx.accounts.config.claim_fee_bps,
-        ctx.accounts.config.claim_fee_max_ui_micros,
-        ctx.accounts.token_mint.decimals,
-    )?;
     require!(
-        claim_fee_amount == expected_claim_fee,
+        claim_fee_amount <= payment.amount,
         TrustLinkEscrowError::InvalidFeeAmount
     );
 

@@ -29,13 +29,24 @@ export function ActivityExperience() {
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
       const isSend = p.sender_user_id === user?.id;
+      const isReceive = p.receiver_phone === user?.phoneNumber;
         if (filter === "all") return true;
       if (filter === "transfers") return isSend;
-      if (filter === "claims") return !isSend && p.status === "locked";
-      if (filter === "releases") return !isSend && p.status === "claimed";
+      if (filter === "claims") {
+        if (!isReceive) return false;
+        const stage = p.tsn?.stage;
+        if (stage) return stage === "intent_pending" || stage === "claim_requested" || stage === "lease_claimed";
+        return p.status === "locked";
+      }
+      if (filter === "releases") {
+        if (!isReceive) return false;
+        const stage = p.tsn?.stage;
+        if (stage) return stage === "cranker_paid" || stage === "epoch_settled";
+        return p.status === "claimed";
+      }
       return true;
     });
-  }, [filter, payments, user?.id]);
+  }, [filter, payments, user?.id, user?.phoneNumber]);
 
   const visiblePayments = filteredPayments.slice(0, visibleCount);
   const canLoadMore = filteredPayments.length > visiblePayments.length;
@@ -48,7 +59,7 @@ export function ActivityExperience() {
   if (!hydrated || !user) return null;
 
   return (
-    <AppMobileShell currentTab="home" title="Activity" subtitle="Review transfers, claims, releases, and WhatsApp receipt updates." user={user} showBackButton backHref="/app"
+    <AppMobileShell currentTab="activity" title="Activity" subtitle="Review transfers, claims, releases, and WhatsApp receipt updates." user={user} showBackButton backHref="/app"
       blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
       <section className="space-y-5">

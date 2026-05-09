@@ -99,6 +99,29 @@ export function WalletIcon(props?: AppIconProps) {
   );
 }
 
+export function ActivityIcon(props?: AppIconProps) {
+  return (
+    <AppIcon {...props}>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className="h-5 w-5"
+      >
+        <path d="M4.5 7h15" />
+        <path d="M4.5 12h10.5" />
+        <path d="M4.5 17h15" />
+        <path d="M17.5 10.5v3.5" />
+        <path d="M16 12.5h3" />
+      </svg>
+    </AppIcon>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

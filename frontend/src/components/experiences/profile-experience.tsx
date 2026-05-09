@@ -105,7 +105,7 @@ export function ProfileExperience() {
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Quick links</div>
           <div className="space-y-2.5">
             {[
-              { href: "/app/wallets", label: "Wallets", desc: "Connections & payout" },
+              { href: "/app/activity", label: "Transaction history", desc: "Transfers, claims & receipts" },
               { href: "/app/settings", label: "Settings", desc: "Security, PIN & more" },
             ].map((item) => (
               <a key={item.label} href={item.href} className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">

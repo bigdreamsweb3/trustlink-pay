@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Copy, Landmark, MoonStar, Shield, SunMedium, Wallet } from "lucide-react";
+import { ChevronRight, Copy, Landmark, MoonStar, Shield, SunMedium, Clock3 } from "lucide-react";
 
 import { AppSidePanel } from "@/src/components/panels/app-side-panel";
 import { useTheme } from "@/src/lib/theme";
@@ -125,14 +125,14 @@ export function SettingsSheetModal({
             </div>
           </div>
 
-          {/* Wallets */}
+          {/* Transaction history */}
           <Link
-            href="/app/wallets"
+            href="/app/activity"
             className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5">
-              <Wallet className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              <span className="text-[0.84rem] font-medium text-[var(--text)]">Wallets</span>
+              <Clock3 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+              <span className="text-[0.84rem] font-medium text-[var(--text)]">Transaction history</span>
             </span>
             <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
           </Link>

@@ -41,6 +41,11 @@ pub struct TsnLeaseExpired {
 pub struct TsnProofSubmitted {
     pub intent: Pubkey,
     pub cranker: Pubkey,
+    pub payout_amount: u64,
+    pub fee_amount: u64,
+    pub operator_fee_amount: u64,
+    pub lp_fee_amount: u64,
+    pub treasury_fee_amount: u64,
 }
 
 #[event]

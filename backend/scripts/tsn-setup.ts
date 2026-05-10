@@ -58,8 +58,10 @@ async function main() {
   }
 
   if (cmd === "init-mother") {
+    const authority = await loadDefaultCrankerKeypair();
     const seed = sha256Bytes("tsn-dev-seed");
     const result = await tsnInitializeMotherEscrowOnChain({
+      authority,
       protocolSeed32: seed,
       epochSeconds: BigInt(7 * 60 * 60),
       leaseSeconds: BigInt(30),
@@ -72,8 +74,10 @@ async function main() {
   }
 
   if (cmd === "migrate-mother") {
+    const authority = await loadDefaultCrankerKeypair();
     const seed = sha256Bytes("tsn-dev-seed");
     const result = await tsnMigrateMotherEscrowOnChain({
+      authority,
       protocolSeed32: seed,
       epochSeconds: BigInt(7 * 60 * 60),
       leaseSeconds: BigInt(30),

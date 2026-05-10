@@ -40,6 +40,7 @@ export {
   getTsnLiquidityPositionPda,
   getTsnMotherEscrowPda,
   estimateTsnClaimNetworkFeeLamports,
+  tsnFetchIntentOnChain,
   tsnFetchMotherEscrowOnChain,
   sha256Bytes,
   tsnClaimIntentOnChain,

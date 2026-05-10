@@ -34,4 +34,6 @@ pub enum TsnError {
     InvalidPayoutAmount,
     #[msg("Invalid mother escrow account")]
     InvalidMotherEscrowAccount,
+    #[msg("Fee split math overflowed")]
+    FeeSplitOverflow,
 }

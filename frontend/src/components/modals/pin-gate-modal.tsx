@@ -115,7 +115,7 @@ export function PinGateModal({
           </div>
         </div>
 
-        <div className="tl-field mb-4 rounded-[22px] px-4 py-3">
+        <div className="tl-panel-header tl-field mb-4 rounded-[22px] px-4 py-3">
           <div className="text-sm font-semibold text-[var(--text)]">{user.displayName}</div>
           <div className="tl-text-muted mt-1 text-sm">
             {pendingAuth.pinMode === "setup"

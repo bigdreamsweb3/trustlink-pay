@@ -7,7 +7,6 @@ async function main() {
     getEscrowConfigState,
     getEscrowVerifierPublicKey,
     initializeEscrowConfig,
-    updateEscrowConfig,
   } = await import("../app/blockchain/solana");
   const { getEscrowPolicyConfig } = await import("../app/config/escrow");
 
@@ -17,8 +16,12 @@ async function main() {
 
   console.log(`Escrow verifier pubkey: ${verifier}`);
   console.log(`Treasury owner target: ${policy.treasuryOwner}`);
-  console.log(`Send fee target: ${policy.sendFeeBps} bps, max ${policy.sendFeeMaxUiAmount}`);
-  console.log(`Claim fee target: ${policy.claimFeeBps} bps, max ${policy.claimFeeMaxUiAmount}`);
+  console.log(
+    `Send fee target: ${policy.sendFeeBps} bps, max UI ${policy.sendFeeMaxUiAmount}, max margin USD ${policy.sendFeeMaxUsd}`,
+  );
+  console.log(
+    `Claim fee target: ${policy.claimFeeBps} bps, max UI ${policy.claimFeeMaxUiAmount}, max margin USD ${policy.claimFeeMaxUsd}`,
+  );
   console.log(`Default expiry seconds: ${policy.defaultExpirySeconds}`);
 
   if (before) {
@@ -44,27 +47,18 @@ async function main() {
       return;
     }
 
-    console.log("Escrow config exists but does not match target policy. Updating config...");
-    const configAddress = await updateEscrowConfig();
-    const after = await getEscrowConfigState();
-
-    console.log(`Escrow config updated at: ${configAddress}`);
-    if (after) {
-      console.log(`Updated config layout: ${after.layout}`);
-      console.log(`Updated claim verifier: ${after.claimVerifier}`);
-      console.log(`Updated treasury owner: ${after.treasuryOwner ?? "(unset)"}`);
-      console.log(`Updated send fee: ${after.sendFeeBps} bps, max ${after.sendFeeMaxUiAmount}`);
-      console.log(`Updated claim fee: ${after.claimFeeBps} bps, max ${after.claimFeeMaxUiAmount}`);
-      console.log(`Updated default expiry seconds: ${after.defaultExpirySeconds}`);
-    }
+    console.log("Escrow config exists but does not match target policy.");
+    console.log("This command is read-only and will not update on-chain state.");
+    console.log("Run `npm run escrow:update-config` to apply the target policy.");
     return;
   }
 
+  console.log("Escrow config is not initialized on-chain yet.");
+  console.log("Initializing escrow config on-chain...");
   const configAddress = await initializeEscrowConfig();
   const after = await getEscrowConfigState();
 
   console.log(`Escrow config initialized at: ${configAddress}`);
-
   if (after) {
     console.log(`Initialized config layout: ${after.layout}`);
     console.log(`Initialized claim verifier: ${after.claimVerifier}`);

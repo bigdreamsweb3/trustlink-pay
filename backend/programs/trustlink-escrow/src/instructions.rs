@@ -6,8 +6,7 @@ use anchor_spl::token;
 use crate::contexts::*;
 use crate::error::TrustLinkEscrowError;
 use crate::helpers::{
-    calculate_fee_amount, release_to_destination, require_claim_window, require_fee_config,
-    require_verifier,
+    release_to_destination, require_claim_window, require_fee_config, require_verifier,
 };
 use crate::state::{EscrowConfig, PaymentMode, PaymentStatus};
 
@@ -173,15 +172,10 @@ pub fn create_payment(
 
     let now = Clock::get()?.unix_timestamp;
     require!(expiry_ts > now, TrustLinkEscrowError::InvalidExpiry);
-    let expected_sender_fee = calculate_fee_amount(
-        amount,
-        ctx.accounts.config.send_fee_bps,
-        ctx.accounts.config.send_fee_max_ui_micros,
-        ctx.accounts.token_mint.decimals,
-    )?;
-    require!(
-        sender_fee_amount == expected_sender_fee,
-        TrustLinkEscrowError::InvalidFeeAmount
+    require_keys_eq!(
+        ctx.accounts.payer.key(),
+        ctx.accounts.config.claim_verifier,
+        TrustLinkEscrowError::InvalidConfigAuthority
     );
     token::transfer(ctx.accounts.transfer_to_vault_context(), amount)?;
     if sender_fee_amount > 0 {

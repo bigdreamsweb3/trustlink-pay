@@ -364,7 +364,7 @@ export function SettingsExperience() {
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Security</div>
 
           {/* Main wallet row */}
-          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
+          <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <span className="flex items-center gap-2.5">
               <Wallet2 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
               <span className="text-[0.84rem] font-medium text-[var(--text)]">Main wallet</span>
@@ -378,7 +378,7 @@ export function SettingsExperience() {
           <button
             type="button"
             onClick={openBackupWalletFlow}
-            className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+            className="tl-panel-header tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5">
               <ShieldCheck className={`h-4 w-4 ${identity?.recoveryWallet ? "text-[#4ae8c0]" : "text-[#ffb86b]"}`} />
@@ -403,7 +403,7 @@ export function SettingsExperience() {
               type="button"
               onClick={() => (identity.isFrozen ? void handleFreeze(false) : setFreezeModalOpen(true))}
               disabled={identityBusy}
-              className="tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
+              className="tl-panel-header tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
             >
               <span className="flex items-center gap-2.5">
                 <LockKeyhole className={`h-4 w-4 ${identity.isFrozen ? "text-[#ffb86b]" : "text-[var(--accent-deep)] dark:text-[var(--accent)]"}`} />
@@ -426,7 +426,7 @@ export function SettingsExperience() {
               type="button"
               onClick={openRecoveryFlow}
               disabled={identityBusy}
-              className="tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
+              className="tl-panel-header tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
             >
               <span className="flex items-center gap-2.5">
                 <AlertTriangle className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -437,7 +437,7 @@ export function SettingsExperience() {
           ) : null}
 
           {cooldownDate ? (
-            <div className="mt-2.5 tl-field rounded-[18px] px-4 py-3 text-[0.76rem] text-[var(--text-soft)]">
+            <div className="mt-2.5 tl-panel-header tl-field rounded-[18px] px-4 py-3 text-[0.76rem] text-[var(--text-soft)]">
               Cooldown ends {cooldownDate.toLocaleString()}
             </div>
           ) : null}
@@ -448,7 +448,7 @@ export function SettingsExperience() {
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Preferences</div>
 
           {/* Theme */}
-          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
+          <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <span className="text-[0.84rem] font-medium text-[var(--text)]">Theme</span>
             <div className="flex items-center gap-1 rounded-[12px] bg-[var(--surface-soft)] p-1">
               <button
@@ -477,7 +477,7 @@ export function SettingsExperience() {
           </div>
 
           {/* Autoclaim */}
-          <div className="tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
+          <div className="tl-panel-header tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <div className="min-w-0 flex-1 mr-3">
               <span className="text-[0.84rem] font-medium text-[var(--text)]">Autoclaim</span>
               <div className="tl-text-soft mt-0.5 text-[0.68rem] leading-tight">Up to ${autoclaim?.maxAmountUsd ?? 100}</div>
@@ -500,7 +500,7 @@ export function SettingsExperience() {
             type="button"
             onClick={() => void openChangePinFlow()}
             disabled={otpBusy}
-            className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
+            className="tl-panel-header tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
           >
             <span className="flex items-center gap-2.5">
               <LockKeyhole className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />

@@ -20,6 +20,13 @@ const booleanFromEnv = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const emptyStringToUndefined = z.preprocess((value) => {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+  return value;
+}, z.any());
+
 const envSchema = z
   .object({
     DATABASE_URL: z.string().startsWith("postgresql://").optional(),
@@ -31,9 +38,11 @@ const envSchema = z
     TRUSTLINK_TREASURY_OWNER: z.string().min(1).optional(),
     TRUSTLINK_SEND_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
     TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
+    TRUSTLINK_SEND_FEE_MAX_USD: emptyStringToUndefined.pipe(z.coerce.number().min(0)).optional(),
     TRUSTLINK_FEE_COVERAGE_TX_COUNT: z.coerce.number().int().positive().default(4),
     TRUSTLINK_CLAIM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
     TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
+    TRUSTLINK_CLAIM_FEE_MAX_USD: emptyStringToUndefined.pipe(z.coerce.number().min(0)).optional(),
     TRUSTLINK_DEFAULT_EXPIRY_SECONDS: z.coerce.number().int().positive().default(604800),
     TRUSTLINK_INVITE_PAYMENT_MAX_USD: z.coerce.number().positive().default(10),
     TRUSTLINK_AUTOCLAIM_MAX_USD: z.coerce.number().positive().default(100),
@@ -121,9 +130,11 @@ function readRawEnv() {
     TRUSTLINK_TREASURY_OWNER: process.env.TRUSTLINK_TREASURY_OWNER,
     TRUSTLINK_SEND_FEE_BPS: process.env.TRUSTLINK_SEND_FEE_BPS,
     TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+    TRUSTLINK_SEND_FEE_MAX_USD: process.env.TRUSTLINK_SEND_FEE_MAX_USD,
     TRUSTLINK_FEE_COVERAGE_TX_COUNT: process.env.TRUSTLINK_FEE_COVERAGE_TX_COUNT,
     TRUSTLINK_CLAIM_FEE_BPS: process.env.TRUSTLINK_CLAIM_FEE_BPS,
     TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+    TRUSTLINK_CLAIM_FEE_MAX_USD: process.env.TRUSTLINK_CLAIM_FEE_MAX_USD,
     TRUSTLINK_DEFAULT_EXPIRY_SECONDS: process.env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS,
     TRUSTLINK_INVITE_PAYMENT_MAX_USD: process.env.TRUSTLINK_INVITE_PAYMENT_MAX_USD,
     TRUSTLINK_AUTOCLAIM_MAX_USD: process.env.TRUSTLINK_AUTOCLAIM_MAX_USD,

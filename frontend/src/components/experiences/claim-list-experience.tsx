@@ -48,7 +48,7 @@ export function ClaimListExperience() {
 
         {/* Summary card */}
         {!loading && pendingPayments.length > 0 ? (
-          <div className="tl-field rounded-[22px] px-5 py-4">
+          <div className="tl-panel-header tl-field rounded-[22px] px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Unclaimed</div>
               <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">{pendingPayments.length} {pendingPayments.length === 1 ? "payment" : "payments"}</div>
@@ -63,14 +63,14 @@ export function ClaimListExperience() {
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Pending claims</div>
 
           {loading ? (
-            <div className="tl-field rounded-[22px] px-5 py-8"><SectionLoader label="Loading claims..." /></div>
+            <div className="tl-panel-header tl-field rounded-[22px] px-5 py-8"><SectionLoader label="Loading claims..." /></div>
           ) : pendingPayments.length === 0 ? (
-            <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No pending claims right now.</div>
+            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No pending claims right now.</div>
           ) : (
             <div className="space-y-2">
               {visiblePendingPayments.map((payment) => (
                 <Link key={payment.id} href={`/claim/${payment.id}`}
-                  className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+                  className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.84rem] font-semibold text-[var(--text)]">
@@ -89,7 +89,7 @@ export function ClaimListExperience() {
                 <button
                   type="button"
                   onClick={() => setPendingModalOpen(true)}
-                  className="tl-field group w-full flex items-center justify-center rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+                  className="tl-panel-header tl-field group w-full flex items-center justify-center rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
                   View {hiddenPendingCount} more {hiddenPendingCount === 1 ? "claim" : "claims"}
                 </button>
@@ -113,7 +113,7 @@ export function ClaimListExperience() {
             <div className="space-y-2">
               {pendingPayments.map((payment) => (
                 <Link key={payment.id} href={`/claim/${payment.id}`} onClick={() => setPendingModalOpen(false)}
-                  className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+                  className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.84rem] font-semibold text-[var(--text)]">

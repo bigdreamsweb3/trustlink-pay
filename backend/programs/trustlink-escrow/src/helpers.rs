@@ -28,33 +28,6 @@ pub(crate) fn require_fee_config(bps: u16, max_ui_micros: u64) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn ui_micros_to_base_units(ui_micros: u64, decimals: u8) -> Result<u64> {
-    if decimals >= 6 {
-        let multiplier = 10u128.pow((decimals - 6) as u32);
-        let value = (ui_micros as u128)
-            .checked_mul(multiplier)
-            .ok_or(TrustLinkEscrowError::InvalidFeeConfig)?;
-        u64::try_from(value).map_err(|_| TrustLinkEscrowError::InvalidFeeConfig.into())
-    } else {
-        Ok(ui_micros / 10u64.pow((6 - decimals) as u32))
-    }
-}
-
-pub(crate) fn calculate_fee_amount(amount: u64, bps: u16, max_ui_micros: u64, decimals: u8) -> Result<u64> {
-    if amount == 0 || bps == 0 {
-        return Ok(0);
-    }
-
-    let raw_fee = ((amount as u128)
-        .checked_mul(bps as u128)
-        .ok_or(TrustLinkEscrowError::InvalidFeeConfig)?
-        + 9_999)
-        / 10_000;
-    let max_fee = ui_micros_to_base_units(max_ui_micros, decimals)? as u128;
-    let capped_fee = if max_fee > 0 { raw_fee.min(max_fee) } else { raw_fee };
-    u64::try_from(capped_fee).map_err(|_| TrustLinkEscrowError::InvalidFeeConfig.into())
-}
-
 pub(crate) fn release_to_destination<'info>(
     payment_id: [u8; 32],
     amount: u64,

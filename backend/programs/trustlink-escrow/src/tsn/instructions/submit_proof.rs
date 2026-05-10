@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::tsn::{
-    constants::TSN_CRANKER_VAULT_AUTHORITY_SEED,
+    constants::{BPS_DENOMINATOR, TSN_CRANKER_VAULT_AUTHORITY_SEED},
     errors::TsnError,
     events::TsnProofSubmitted,
     state::{Cranker, CrankerVault, IntentStatus, MotherEscrow, PaymentIntent},
@@ -50,6 +50,20 @@ pub struct SubmitProof<'info> {
 
     #[account(
         mut,
+        constraint = operator_token_account.owner == operator.key(),
+        constraint = operator_token_account.mint == intent.token_mint
+    )]
+    pub operator_token_account: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK: Fee destination for protocol revenue (validated off-chain by the TSN runner).
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == intent.token_mint
+    )]
+    pub treasury_token_account: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
         constraint = recipient_token_account.mint == intent.token_mint
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
@@ -75,12 +89,55 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
     require!(!intent.proof_submitted, TsnError::ProofAlreadySubmitted);
     require!(payout_amount <= intent.amount, TsnError::InvalidPayoutAmount);
 
+    let fee_amount = intent.amount.saturating_sub(payout_amount);
+    let operator_fee_amount = ((fee_amount as u128)
+        .checked_mul(mother_escrow.fee_split_cranker_bps as u128)
+        .ok_or(TsnError::FeeSplitOverflow)?
+        / (BPS_DENOMINATOR as u128)) as u64;
+    let lp_fee_amount = ((fee_amount as u128)
+        .checked_mul(mother_escrow.fee_split_lp_bps as u128)
+        .ok_or(TsnError::FeeSplitOverflow)?
+        / (BPS_DENOMINATOR as u128)) as u64;
+    let treasury_fee_amount = fee_amount
+        .saturating_sub(operator_fee_amount)
+        .saturating_sub(lp_fee_amount);
+
     let cranker_vault_key = ctx.accounts.cranker_vault.key();
     let signer_seeds: &[&[&[u8]]] = &[&[
         TSN_CRANKER_VAULT_AUTHORITY_SEED,
         cranker_vault_key.as_ref(),
         &[ctx.accounts.cranker_vault.vault_authority_bump],
     ]];
+
+    if operator_fee_amount > 0 {
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault_token_account.to_account_info(),
+                    to: ctx.accounts.operator_token_account.to_account_info(),
+                    authority: ctx.accounts.vault_authority.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            operator_fee_amount,
+        )?;
+    }
+
+    if treasury_fee_amount > 0 {
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault_token_account.to_account_info(),
+                    to: ctx.accounts.treasury_token_account.to_account_info(),
+                    authority: ctx.accounts.vault_authority.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            treasury_fee_amount,
+        )?;
+    }
 
     token::transfer(
         CpiContext::new_with_signer(
@@ -97,6 +154,11 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
 
     ctx.accounts.cranker_vault.total_liquidity =
         ctx.accounts.cranker_vault.total_liquidity.saturating_sub(payout_amount);
+    ctx.accounts.cranker_vault.total_rewards_accrued = ctx
+        .accounts
+        .cranker_vault
+        .total_rewards_accrued
+        .saturating_add(lp_fee_amount);
 
     intent.payout_tx_sig = payout_tx_sig;
     intent.proof_submitted = true;
@@ -109,6 +171,11 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
     emit!(TsnProofSubmitted {
         intent: intent.key(),
         cranker: ctx.accounts.cranker.key(),
+        payout_amount,
+        fee_amount,
+        operator_fee_amount,
+        lp_fee_amount,
+        treasury_fee_amount,
     });
     Ok(())
 }

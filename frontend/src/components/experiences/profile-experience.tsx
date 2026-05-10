@@ -66,7 +66,7 @@ export function ProfileExperience() {
           <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Identity</div>
 
           <form className="space-y-3" onSubmit={handleProfileSave}>
-            <div className="tl-field rounded-[18px] px-4 py-3.5">
+            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
               <label className="block">
                 <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Display name</span>
                 <input
@@ -78,7 +78,7 @@ export function ProfileExperience() {
               </label>
             </div>
 
-            <div className="tl-field rounded-[18px] px-4 py-3.5">
+            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
               <label className="block">
                 <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Handle</span>
                 <input
@@ -108,7 +108,7 @@ export function ProfileExperience() {
               { href: "/app/activity", label: "Transaction history", desc: "Transfers, claims & receipts" },
               { href: "/app/settings", label: "Settings", desc: "Security, PIN & more" },
             ].map((item) => (
-              <a key={item.label} href={item.href} className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+              <a key={item.label} href={item.href} className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
                 <div>
                   <span className="block text-[0.84rem] font-medium text-[var(--text)]">{item.label}</span>
                   <span className="block mt-0.5 text-[0.68rem] text-[var(--text-soft)]">{item.desc}</span>

@@ -30,7 +30,7 @@ export function ActivityExperience() {
     return payments.filter((p) => {
       const isSend = p.sender_user_id === user?.id;
       const isReceive = p.receiver_phone === user?.phoneNumber;
-        if (filter === "all") return true;
+      if (filter === "all") return true;
       if (filter === "transfers") return isSend;
       if (filter === "claims") {
         if (!isReceive) return false;
@@ -96,7 +96,7 @@ export function ActivityExperience() {
           {loading ? (
             <>
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+                <div key={i} className="tl-panel-header tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
                   <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
                   <div className="space-y-2">
                     <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -111,7 +111,7 @@ export function ActivityExperience() {
               ))}
             </>
           ) : visiblePayments.length === 0 ? (
-            <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No activity for this filter yet.</div>
+            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No activity for this filter yet.</div>
           ) : (
             visiblePayments.map((payment) => (
               <PaymentActivityCard
@@ -129,7 +129,7 @@ export function ActivityExperience() {
           <button
             type="button"
             onClick={() => setVisibleCount((c) => c + 10)}
-            className="tl-field group w-full flex items-center justify-center rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+            className="tl-panel-header tl-field group w-full flex items-center justify-center rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
           >
             Load more activity
           </button>

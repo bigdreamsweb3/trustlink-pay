@@ -95,7 +95,7 @@ export function OtpModal({
 
         {children ? <div className="mb-4">{children}</div> : null}
 
-        <div className="tl-field rounded-[22px] px-4 py-4">
+        <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
           <div className="flex items-center justify-between gap-2">
             {digits.map((digit, index) => (
               <input
@@ -110,7 +110,7 @@ export function OtpModal({
                 inputMode="numeric"
                 autoComplete={index === 0 ? "one-time-code" : "off"}
                 maxLength={1}
-                className="tl-field-strong h-12 w-11 rounded-2xl text-center text-lg font-semibold text-[var(--text)] outline-none transition focus:border-[var(--accent-border)] focus:ring-1 focus:ring-[var(--accent-soft)]"
+                className="tl-panel-header tl-field-strong h-12 w-11 rounded-2xl text-center text-lg font-semibold text-[var(--text)] outline-none transition focus:border-[var(--accent-border)] focus:ring-1 focus:ring-[var(--accent-soft)]"
               />
             ))}
           </div>
@@ -133,7 +133,7 @@ export function OtpModal({
         </div>
 
         {busy ? (
-          <div className="tl-field mt-4 rounded-[22px] px-4 py-4">
+          <div className="tl-panel-header tl-field mt-4 rounded-[22px] px-4 py-4">
             <SectionLoader label="Verifying code..." />
           </div>
         ) : null}

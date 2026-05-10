@@ -34,7 +34,7 @@ pub fn migrate_mother_escrow(
     fee_split_treasury_bps: Option<u16>,
 ) -> Result<()> {
     require_keys_eq!(
-        ctx.accounts.mother_escrow.owner,
+        *ctx.accounts.mother_escrow.owner,
         crate::ID,
         TsnError::InvalidMotherEscrowAccount
     );
@@ -77,7 +77,7 @@ pub fn migrate_mother_escrow(
     let mut data = ctx.accounts.mother_escrow.try_borrow_mut_data()?;
     let mut offset = 0;
 
-    data[offset..offset + 8].copy_from_slice(MotherEscrow::DISCRIMINATOR);
+        data[offset..offset + 8].copy_from_slice(&MotherEscrow::DISCRIMINATOR);
     offset += 8;
     data[offset..offset + 32].copy_from_slice(ctx.accounts.authority.key().as_ref());
     offset += 32;

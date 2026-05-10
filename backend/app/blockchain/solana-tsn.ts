@@ -22,6 +22,7 @@ import {
   estimateTransactionFeeLamports,
   getConnection,
   getEscrowAuthorityKeypair,
+  getEscrowConfigState,
   getProgramId,
   instructionDiscriminator,
   TOKEN_PROGRAM_ID,
@@ -105,6 +106,7 @@ function encodeOptionU16(value?: number | null) {
 }
 
 export async function tsnCreateIntentOnChain(params: {
+  payer?: Keypair;
   intentSeed32: Buffer;
   underlyingPayment: PublicKey;
   tokenMint: PublicKey;
@@ -116,7 +118,7 @@ export async function tsnCreateIntentOnChain(params: {
   }
 
   const connection = getConnection();
-  const payer: Keypair = getEscrowAuthorityKeypair();
+  const payer: Keypair = params.payer ?? getEscrowAuthorityKeypair();
   const motherEscrow = getTsnMotherEscrowPda();
   const intent = getTsnIntentPda({ motherEscrow, intentSeed32: params.intentSeed32 });
 
@@ -250,6 +252,16 @@ export async function tsnRegisterCrankerOnChain(params: { operator: Keypair }) {
   const connection = getConnection();
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+
+  const existing = await connection.getAccountInfo(cranker, "confirmed");
+  if (existing) {
+    logger.info("tsn.cranker.already_registered", {
+      motherEscrow: motherEscrow.toBase58(),
+      operator: params.operator.publicKey.toBase58(),
+      cranker: cranker.toBase58(),
+    });
+    return { mode: "devnet" as const, signature: null as string | null, cranker: cranker.toBase58() };
+  }
 
   const ix = new TransactionInstruction({
     programId: getProgramId(),
@@ -501,6 +513,14 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
   const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
   const recipientTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.recipientWallet);
+  const operatorTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, operator.publicKey);
+  const escrowConfig = await getEscrowConfigState();
+  const treasuryOwnerRaw = env.TRUSTLINK_TREASURY_OWNER ?? escrowConfig?.treasuryOwner ?? null;
+  if (!treasuryOwnerRaw) {
+    throw new Error("TRUSTLINK_TREASURY_OWNER is not configured (required for TSN fee routing).");
+  }
+  const treasuryOwner = new PublicKey(treasuryOwnerRaw);
+  const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
   const claimTx = new Transaction({
@@ -526,6 +546,8 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   });
   const recipientTokenAccountInfo = await connection.getAccountInfo(recipientTokenAccount, "confirmed");
+  const operatorTokenAccountInfo = await connection.getAccountInfo(operatorTokenAccount, "confirmed");
+  const treasuryTokenAccountInfo = await connection.getAccountInfo(treasuryTokenAccount, "confirmed");
   if (!recipientTokenAccountInfo) {
     proofTx.add(
       createAssociatedTokenAccountInstruction(
@@ -549,6 +571,8 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
         { pubkey: crankerVault, isSigner: false, isWritable: true },
         { pubkey: vaultAuthority, isSigner: false, isWritable: false },
         { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: operatorTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
         { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
@@ -560,11 +584,12 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
     estimateTransactionFeeLamports(connection, claimTx),
     estimateTransactionFeeLamports(connection, proofTx),
   ]);
-  const recipientAtaRentLamports = recipientTokenAccountInfo
-    ? 0
-    : await connection.getMinimumBalanceForRentExemption(165, "confirmed");
+  const rentLamports = await connection.getMinimumBalanceForRentExemption(165, "confirmed");
+  const recipientAtaRentLamports = recipientTokenAccountInfo ? 0 : rentLamports;
+  const operatorAtaRentLamports = operatorTokenAccountInfo ? 0 : rentLamports;
+  const treasuryAtaRentLamports = treasuryTokenAccountInfo ? 0 : rentLamports;
 
-  return claimFeeLamports + proofFeeLamports + recipientAtaRentLamports;
+  return claimFeeLamports + proofFeeLamports + recipientAtaRentLamports + operatorAtaRentLamports + treasuryAtaRentLamports;
 }
 
 export async function tsnSubmitProofOnChain(params: {
@@ -590,6 +615,14 @@ export async function tsnSubmitProofOnChain(params: {
   const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
   const recipientTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.recipientWallet);
+  const operatorTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.operator.publicKey);
+  const escrowConfig = await getEscrowConfigState();
+  const treasuryOwnerRaw = env.TRUSTLINK_TREASURY_OWNER ?? escrowConfig?.treasuryOwner ?? null;
+  if (!treasuryOwnerRaw) {
+    throw new Error("TRUSTLINK_TREASURY_OWNER is not configured (required for TSN fee routing).");
+  }
+  const treasuryOwner = new PublicKey(treasuryOwnerRaw);
+  const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner);
 
   const ix = new TransactionInstruction({
     programId: getProgramId(),
@@ -601,6 +634,8 @@ export async function tsnSubmitProofOnChain(params: {
       { pubkey: crankerVault, isSigner: false, isWritable: true },
       { pubkey: vaultAuthority, isSigner: false, isWritable: false },
       { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: operatorTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
       { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
@@ -613,12 +648,38 @@ export async function tsnSubmitProofOnChain(params: {
 
   const tx = new Transaction();
   const recipientTokenAccountInfo = await connection.getAccountInfo(recipientTokenAccount, "confirmed");
+  const operatorTokenAccountInfo = await connection.getAccountInfo(operatorTokenAccount, "confirmed");
+  const treasuryTokenAccountInfo = await connection.getAccountInfo(treasuryTokenAccount, "confirmed");
   if (!recipientTokenAccountInfo) {
     tx.add(
       createAssociatedTokenAccountInstruction(
         params.operator.publicKey,
         recipientTokenAccount,
         params.recipientWallet,
+        params.tokenMint,
+        SPL_TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+  if (!operatorTokenAccountInfo) {
+    tx.add(
+      createAssociatedTokenAccountInstruction(
+        params.operator.publicKey,
+        operatorTokenAccount,
+        params.operator.publicKey,
+        params.tokenMint,
+        SPL_TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
+  if (!treasuryTokenAccountInfo) {
+    tx.add(
+      createAssociatedTokenAccountInstruction(
+        params.operator.publicKey,
+        treasuryTokenAccount,
+        treasuryOwner,
         params.tokenMint,
         SPL_TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID,

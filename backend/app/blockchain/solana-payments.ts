@@ -61,14 +61,6 @@ const splToken = require("@solana/spl-token") as {
     tokenProgramId?: PublicKey,
     associatedTokenProgramId?: PublicKey,
   ) => TransactionInstruction;
-  createTransferInstruction: (
-    source: PublicKey,
-    destination: PublicKey,
-    owner: PublicKey,
-    amount: number | bigint,
-    multiSigners?: PublicKey[],
-    programId?: PublicKey,
-  ) => TransactionInstruction;
 };
 
 function encodeU64(value: bigint) {
@@ -131,8 +123,10 @@ type ActiveEscrowFeePolicy = {
   treasuryOwner: string;
   sendFeeBps: number;
   sendFeeMaxUiAmount: number;
+  sendFeeMaxUsd: number;
   claimFeeBps: number;
   claimFeeMaxUiAmount: number;
+  claimFeeMaxUsd: number;
 };
 
 async function getActiveEscrowFeePolicy(): Promise<ActiveEscrowFeePolicy> {
@@ -142,8 +136,10 @@ async function getActiveEscrowFeePolicy(): Promise<ActiveEscrowFeePolicy> {
       treasuryOwner: config.treasuryOwner,
       sendFeeBps: config.sendFeeBps ?? env.TRUSTLINK_SEND_FEE_BPS,
       sendFeeMaxUiAmount: config.sendFeeMaxUiAmount ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+      sendFeeMaxUsd: env.TRUSTLINK_SEND_FEE_MAX_USD ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
       claimFeeBps: config.claimFeeBps ?? env.TRUSTLINK_CLAIM_FEE_BPS,
       claimFeeMaxUiAmount: config.claimFeeMaxUiAmount ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+      claimFeeMaxUsd: env.TRUSTLINK_CLAIM_FEE_MAX_USD ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
     };
   }
 
@@ -155,8 +151,10 @@ async function getActiveEscrowFeePolicy(): Promise<ActiveEscrowFeePolicy> {
     treasuryOwner: env.TRUSTLINK_TREASURY_OWNER,
     sendFeeBps: env.TRUSTLINK_SEND_FEE_BPS,
     sendFeeMaxUiAmount: env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+    sendFeeMaxUsd: env.TRUSTLINK_SEND_FEE_MAX_USD ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
     claimFeeBps: env.TRUSTLINK_CLAIM_FEE_BPS,
     claimFeeMaxUiAmount: env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+    claimFeeMaxUsd: env.TRUSTLINK_CLAIM_FEE_MAX_USD ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
   };
 }
 
@@ -179,7 +177,7 @@ function getProtocolFeeAmountUiFromNetwork(params: {
   tokenUsd: number | null;
   tokenDecimals: number;
   feeBps: number;
-  maxUiAmount: number;
+  maxMarginUsd: number;
 }) {
   if (
     params.estimatedNetworkFeeLamports <= 0 ||
@@ -193,12 +191,12 @@ function getProtocolFeeAmountUiFromNetwork(params: {
   const networkFeeSol = lamportsToSol(params.estimatedNetworkFeeLamports);
   const networkFeeUsd = networkFeeSol * params.solUsd;
   const coveredNetworkFeeUsd = networkFeeUsd * env.TRUSTLINK_FEE_COVERAGE_TX_COUNT;
-  const protocolFeeUsd = (coveredNetworkFeeUsd * params.feeBps) / 10_000;
-  const uncappedTokenFee = (coveredNetworkFeeUsd + protocolFeeUsd) / params.tokenUsd;
-  const cappedTokenFee =
-    params.maxUiAmount > 0 ? Math.min(uncappedTokenFee, params.maxUiAmount) : uncappedTokenFee;
+  const uncappedMarginUsd = (coveredNetworkFeeUsd * params.feeBps) / 10_000;
+  const marginUsd =
+    params.maxMarginUsd > 0 ? Math.min(uncappedMarginUsd, params.maxMarginUsd) : uncappedMarginUsd;
+  const tokenFee = (coveredNetworkFeeUsd + marginUsd) / params.tokenUsd;
 
-  return roundUpToDecimals(cappedTokenFee, params.tokenDecimals);
+  return roundUpToDecimals(tokenFee, params.tokenDecimals);
 }
 
 async function ensureAssociatedTokenAccount(params: {
@@ -247,14 +245,9 @@ async function buildCreatePaymentTransaction(params: {
   const payer = getEscrowAuthorityKeypair();
   const sender = new PublicKey(params.senderWallet);
   const mint = new PublicKey(params.tokenMintAddress);
-  const onChainSenderFeeAmountUi = getSenderFeeAmountUiFromPolicy(feePolicy, params.amount, tokenConfig.decimals);
-  const senderFeeAmountUi = params.senderFeeAmountUiOverride ?? onChainSenderFeeAmountUi;
-  const onChainSenderFeeAmountBaseUnits = toBaseUnits(onChainSenderFeeAmountUi, tokenConfig.decimals);
+  const senderFeeAmountUi =
+    params.senderFeeAmountUiOverride ?? getSenderFeeAmountUiFromPolicy(feePolicy, params.amount, tokenConfig.decimals);
   const senderFeeAmountBaseUnits = toBaseUnits(senderFeeAmountUi, tokenConfig.decimals);
-  const senderFeeTopUpBaseUnits =
-    senderFeeAmountBaseUnits > onChainSenderFeeAmountBaseUnits
-      ? senderFeeAmountBaseUnits - onChainSenderFeeAmountBaseUnits
-      : 0n;
   const senderTokenAccount = await findSenderTokenAccount({
     connection: params.connection,
     owner: sender,
@@ -277,7 +270,7 @@ async function buildCreatePaymentTransaction(params: {
     identityPublicKeyToBytes(params.paymentReceiverPublicKey),
     Buffer.from([params.paymentMode === "invite" ? 1 : 0]),
     encodeU64(toBaseUnits(params.amount, tokenConfig.decimals)),
-    encodeU64(onChainSenderFeeAmountBaseUnits),
+    encodeU64(senderFeeAmountBaseUnits),
     encodeI64(BigInt(params.expiryUnixSeconds)),
   ]);
 
@@ -315,18 +308,6 @@ async function buildCreatePaymentTransaction(params: {
       data,
     }),
   );
-  if (senderFeeTopUpBaseUnits > 0n) {
-    transaction.add(
-      splToken.createTransferInstruction(
-        senderTokenAccount,
-        treasuryTokenAccount,
-        sender,
-        senderFeeTopUpBaseUnits,
-        [],
-        TOKEN_PROGRAM_ID,
-      ),
-    );
-  }
 
   transaction.partialSign(payer, escrowVault);
 
@@ -402,7 +383,7 @@ export async function estimateSenderTransferCost(params: {
     tokenUsd: prices.tokenUsd,
     tokenDecimals: built.tokenConfig.decimals,
     feeBps: feePolicy.sendFeeBps,
-    maxUiAmount: feePolicy.sendFeeMaxUiAmount,
+    maxMarginUsd: feePolicy.sendFeeMaxUsd,
   });
   const senderFeeAmountUsd =
     prices.tokenUsd != null ? roundToDecimals(senderFeeAmountUi * prices.tokenUsd, 6) : null;
@@ -717,7 +698,7 @@ export async function estimateClaimFee(params: {
       tokenUsd: prices.tokenUsd,
       tokenDecimals: tokenConfig.decimals,
       feeBps: feePolicy.claimFeeBps,
-      maxUiAmount: feePolicy.claimFeeMaxUiAmount,
+      maxMarginUsd: feePolicy.claimFeeMaxUsd,
     });
     const feeAmountBaseUnits = toBaseUnits(feeAmountUi, tokenConfig.decimals);
     const receiverAmountUi = roundToDecimals(Math.max(params.amount - feeAmountUi, 0), tokenConfig.decimals);
@@ -762,7 +743,7 @@ export async function estimateClaimFee(params: {
     tokenUsd: prices.tokenUsd,
     tokenDecimals: tokenConfig.decimals,
     feeBps: feePolicy.claimFeeBps,
-    maxUiAmount: feePolicy.claimFeeMaxUiAmount,
+    maxMarginUsd: feePolicy.claimFeeMaxUsd,
   });
   const dynamicFeeAmountBaseUnits = toBaseUnits(dynamicFeeAmountUi, tokenConfig.decimals);
   const receiverAmountUi = roundToDecimals(Math.max(params.amount - dynamicFeeAmountUi, 0), tokenConfig.decimals);

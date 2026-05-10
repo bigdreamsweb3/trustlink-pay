@@ -117,7 +117,7 @@ export function ReceiveExperience() {
             <p className="text-sm text-text/48">Share these details so someone can open TrustLink and send straight to your number.</p>
           </div>
 
-          <div className="space-y-3 tl-field px-4 py-4">
+          <div className="space-y-3 tl-panel-header tl-field px-4 py-4">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="text-text/46">Display name</span>
               <span className="font-medium text-text">{user.displayName}</span>
@@ -160,18 +160,18 @@ export function ReceiveExperience() {
           </div>
 
           <div className="mt-4 grid gap-3">
-            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
               <span>Open send with my number filled in</span>
               <span className="text-text/40">Open</span>
             </Link>
-            <Link href="/app/claim" className="inline-flex items-center justify-between tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href="/app/claim" className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
               <span className="inline-flex items-center gap-2">
                 <ClaimIcon className="h-4 w-4" />
                 Claim incoming funds
               </span>
               <span className="text-text/40">Open</span>
             </Link>
-            <Link href="/app/activity" className="inline-flex items-center justify-between tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href="/app/activity" className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
               <span className="inline-flex items-center gap-2">
                 <ActivityIcon className="h-4 w-4" />
                 View transaction history

@@ -104,7 +104,7 @@ describe("trustlink_escrow", () => {
         expiryTs,
       )
       .accounts({
-        payer: sender.publicKey,
+        payer: verifier.publicKey,
         sender: sender.publicKey,
         senderTokenAccount,
         config: configPda,
@@ -117,7 +117,7 @@ describe("trustlink_escrow", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([escrowVault])
+      .signers([verifier, escrowVault])
       .rpc();
 
     const payment = await program.account.paymentAccount.fetch(paymentPda);
@@ -128,6 +128,71 @@ describe("trustlink_escrow", () => {
     expect(payment.amount.toNumber()).to.equal(1_500_000);
     expect(payment.status.locked).to.not.equal(undefined);
     expect(Number(vault.amount)).to.equal(1_500_000);
+  });
+
+  it("uses the verifier-signed dynamic sender fee instead of recalculating a max UI fee", async () => {
+    await program.methods
+      .updateConfig(
+        verifier.publicKey,
+        treasuryOwner.publicKey,
+        100,
+        new anchor.BN(500_000),
+        0,
+        new anchor.BN(0),
+        new anchor.BN(3600),
+      )
+      .accounts({
+        authority: verifier.publicKey,
+        config: configPda,
+      })
+      .signers([verifier])
+      .rpc();
+
+    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 50 + index));
+    const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("payment"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const [vaultAuthorityPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault_authority"), Buffer.from(paymentId)],
+      program.programId,
+    );
+    const escrowVault = anchor.web3.Keypair.generate();
+    const expiryTs = new anchor.BN(Math.floor(Date.now() / 1000) + 3600);
+    const treasuryBefore = await getAccount(provider.connection, treasuryTokenAccount);
+
+    await program.methods
+      .createPayment(
+        [...paymentId],
+        receiverPhoneIdentity,
+        secureReceiverAuthority.publicKey,
+        { secure: {} } as any,
+        new anchor.BN(1_000_000),
+        new anchor.BN(180),
+        expiryTs,
+      )
+      .accounts({
+        payer: verifier.publicKey,
+        sender: sender.publicKey,
+        senderTokenAccount,
+        config: configPda,
+        tokenMint: mint,
+        treasuryTokenAccount,
+        paymentAccount: paymentPda,
+        vaultAuthority: vaultAuthorityPda,
+        escrowVault: escrowVault.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([verifier, escrowVault])
+      .rpc();
+
+    const payment = await program.account.paymentAccount.fetch(paymentPda);
+    const treasuryAfter = await getAccount(provider.connection, treasuryTokenAccount);
+
+    expect(payment.senderFeeAmount.toNumber()).to.equal(180);
+    expect(Number(treasuryAfter.amount - treasuryBefore.amount)).to.equal(180);
   });
 
   it("marks expired invite payments as expired without sweeping funds", async () => {
@@ -154,7 +219,7 @@ describe("trustlink_escrow", () => {
         expiryTs,
       )
       .accounts({
-        payer: sender.publicKey,
+        payer: verifier.publicKey,
         sender: sender.publicKey,
         senderTokenAccount,
         config: configPda,
@@ -167,7 +232,7 @@ describe("trustlink_escrow", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([escrowVault])
+      .signers([verifier, escrowVault])
       .rpc();
 
     await new Promise((resolve) => setTimeout(resolve, 1500));

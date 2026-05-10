@@ -103,7 +103,7 @@ export function PhoneNumberInput({
         ? "border-[#f3c96b]/35 bg-[var(--field)]"
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-[var(--field)]"
-          : "tl-field hover:border-[var(--accent-border)]";
+          : "tl-panel-header tl-field hover:border-[var(--accent-border)]";
 
   const indicatorClass =
     verificationState === "valid"
@@ -141,7 +141,7 @@ export function PhoneNumberInput({
     if (!showSummaryCard || !verificationDetails) return null;
 
     return (
-      <div className="tl-field relative z-10 rounded-[18px] px-4 py-3.5">
+      <div className="tl-panel-header tl-field relative z-10 rounded-[18px] px-4 py-3.5">
         <div className="flex items-center gap-3.5 w-full">
           {isBusiness ? (
             <div className="tl-icon-surface grid h-11 w-11 min-w-11 shrink-0 place-items-center overflow-hidden rounded-full">
@@ -244,7 +244,7 @@ export function PhoneNumberInput({
 
         {/* ── Country Fallback ── */}
         {showCountryFallback ? (
-          <div className="mt-2.5 tl-field rounded-[18px] px-4 py-3.5">
+          <div className="mt-2.5 tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
             <div className="text-[0.82rem] font-medium leading-tight text-[var(--text)]">
               {fallbackMessage}
             </div>
@@ -255,7 +255,7 @@ export function PhoneNumberInput({
             <button
               type="button"
               onClick={() => setIsOpen((c) => !c)}
-              className="tl-field mt-3 flex w-full items-center justify-between rounded-[14px] px-3.5 py-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+              className="tl-panel-header tl-field mt-3 flex w-full items-center justify-between rounded-[14px] px-3.5 py-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
             >
               <span className="flex min-w-0 items-center gap-3">
                 <span className="text-lg">{selectedCountry?.flag ?? "🌐"}</span>
@@ -290,7 +290,7 @@ export function PhoneNumberInput({
                         placeholder="Search countries..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="tl-field w-full rounded-[12px] py-2.5 pl-9 pr-4 text-[0.84rem] text-[var(--text)] outline-none"
+                        className="tl-panel-header tl-field w-full rounded-[12px] py-2.5 pl-9 pr-4 text-[0.84rem] text-[var(--text)] outline-none"
                       />
                     </div>
                   </div>

@@ -70,7 +70,7 @@ export function PaymentActivityCard({
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-[var(--surface-soft)] active:scale-[0.99]"
+      className="tl-panel-header tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-[var(--surface-soft)] active:scale-[0.99]"
     >
       {/* Icon */}
       <div
@@ -91,11 +91,11 @@ export function PaymentActivityCard({
         <div className="flex items-center gap-1.5 text-[0.82rem] font-semibold" style={{ color: "var(--text)" }}>
           <span className="truncate">{counterparty}</span>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
+        <div className="mt-1 flex flex-nowrap items-center gap-2">
+          <span className="text-[0.68rem] font-medium text-nowrap" style={{ color: "var(--text-faint)" }}>
             {formatPaymentShortDate(payment.created_at)}
           </span>
-          <span className="text-[0.58rem] font-medium uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
+          <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
             {payment.reference_code}
           </span>
           {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}

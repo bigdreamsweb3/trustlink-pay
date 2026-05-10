@@ -118,11 +118,11 @@ export function AppMobileShell({
               <h1 className="text-[1rem] font-semibold tracking-[-0.02em] text-[var(--text)]">{title}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={handleWalletButtonPress} className="tl-field-btn flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-[0.76rem] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label={walletAddress ? "Manage wallet" : "Connect wallet"}>
+              <button type="button" onClick={handleWalletButtonPress} className="tl-panel-header tl-field-btn flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-[0.76rem] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label={walletAddress ? "Manage wallet" : "Connect wallet"}>
                 <WalletIcon size={14} className="text-current" />
                 <span className="font-medium">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
               </button>
-              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-9 w-9 place-items-center rounded-[12px] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label="Settings">
+              <button type="button" onClick={() => openPanel("settings")} className="tl-panel-header tl-field-btn grid h-9 w-9 place-items-center rounded-[12px] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label="Settings">
                 <SettingsIcon size={15} className="text-current" />
               </button>
             </div>
@@ -141,11 +141,11 @@ export function AppMobileShell({
               {!showBackButton ? <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none hidden">TrustLink</div> : null}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
-              <button type="button" onClick={handleWalletButtonPress} className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]">
+              <button type="button" onClick={handleWalletButtonPress} className="tl-panel-header tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]">
                 <WalletIcon size={13} className="text-current" />
                 <span className="tl-coord-text !text-[0.52rem] leading-none">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
               </button>
-              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Settings">
+              <button type="button" onClick={() => openPanel("settings")} className="tl-panel-header tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Settings">
                 <SettingsIcon size={14} className="text-current" />
               </button>
             </div>

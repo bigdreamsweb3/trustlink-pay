@@ -42,7 +42,7 @@ export function WalletPickerModal({
         </div>
 
         {wallets.length === 0 ? (
-          <div className="tl-field rounded-[22px] px-4 py-4 text-sm tl-text-soft">
+          <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4 text-sm tl-text-soft">
             {emptyStateMessage ?? "No Solana wallet was detected in this browser. Install or open a Solana wallet app, then try again."}
           </div>
         ) : (
@@ -56,7 +56,7 @@ export function WalletPickerModal({
                   type="button"
                   onClick={() => onSelect(wallet.id)}
                   disabled={Boolean(connectingWalletId)}
-                  className="tl-field flex w-full items-center justify-between rounded-[22px] px-4 py-4 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="tl-panel-header tl-field flex w-full items-center justify-between rounded-[22px] px-4 py-4 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="tl-icon-surface grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-semibold text-[var(--text)]">

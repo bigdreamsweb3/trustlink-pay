@@ -80,7 +80,7 @@ export function PinEntryModal({
 
         {children ? <div className="mb-4">{children}</div> : null}
 
-        <div className="tl-field px-4 py-4">
+        <div className="tl-panel-header tl-field px-4 py-4">
           <div className="flex items-center justify-between gap-2">
             {digits.map((digit, index) => (
               <input
@@ -107,7 +107,7 @@ export function PinEntryModal({
         </div>
 
         {busy ? (
-          <div className="mt-4 tl-field px-4 py-4">
+          <div className="mt-4 tl-panel-header tl-field px-4 py-4">
             <SectionLoader label="Checking PIN..." />
           </div>
         ) : null}

@@ -336,6 +336,48 @@ select {
   backdrop-filter: blur(24px);
 }
 
+.tl-panel-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tl-panel-header {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+/* Frosted top area only */
+.tl-panel-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* only visible at top */
+  height: 25%;
+
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-elevated) 94%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 70%, transparent) 40%,
+    transparent 100%
+  );
+
+  background-image: var(--pop-bg);
+
+  backdrop-filter: blur(24px);
+
+  pointer-events: none;
+
+  /* smoother fade */
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.8) 50%,
+    transparent 100%
+  );
+}
+
 .tl-phone-frame {
   background: var(--phone-shell);
 }

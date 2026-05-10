@@ -263,11 +263,11 @@ export function WalletsExperience() {
 
         <section className="tl-panel rounded-[28px] p-4">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Sender wallet</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Sender wallet</h2>
             <p className="tl-text-muted text-sm">This is the wallet TrustLink uses as the payment source when you send into escrow.</p>
           </div>
 
-          <div className="tl-field rounded-[22px] px-4 py-4">
+          <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
             <div className="tl-text-muted text-[0.72rem] uppercase tracking-[0.18em]">Current wallet</div>
             <div className="mt-2 text-base font-semibold text-[var(--text)]">
               {senderWalletAddress ? `${walletSession?.walletName ?? "Wallet"} - ${shortenAddress(senderWalletAddress)}` : "No wallet connected"}
@@ -284,7 +284,7 @@ export function WalletsExperience() {
                 Connect wallet
               </button>
             )}
-            <div className="tl-field rounded-[20px] px-4 py-3 text-sm tl-text-muted">
+            <div className="tl-panel-header tl-field rounded-[20px] px-4 py-3 text-sm tl-text-muted">
               Solana wallets only
             </div>
           </div>
@@ -315,7 +315,7 @@ export function WalletsExperience() {
           <section className="tl-panel p-4">
             <div className="space-y-3">
               {receiverWallets.map((wallet) => (
-                <article key={wallet.id} className="tl-field px-4 py-4">
+                <article key={wallet.id} className="tl-panel-header tl-field px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-text">{wallet.wallet_name}</div>
@@ -348,7 +348,7 @@ export function WalletsExperience() {
           </section>
         ) : (
           <section className="tl-panel p-4">
-            <div className="tl-field px-4 py-6 text-center">
+            <div className="tl-panel-header tl-field px-4 py-6 text-center">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-pop-bg text-text/74">
                 <WalletIcon className="h-5 w-5" />
               </div>

@@ -46,7 +46,7 @@ export function TrustLinkGuidance({
       {steps?.length ? (
         <div className="mt-4 space-y-2">
           {steps.map((step) => (
-            <div key={step.title} className="tl-field flex items-start gap-3 rounded-[16px] px-3.5 py-3">
+            <div key={step.title} className="tl-panel-header tl-field flex items-start gap-3 rounded-[16px] px-3.5 py-3">
               <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${step.done ? "bg-[#4ae8c0]" : "bg-[#ffb86b]"}`} />
               <span className="min-w-0">
                 <span className="block text-[0.78rem] font-semibold text-[var(--text)]">{step.title}</span>

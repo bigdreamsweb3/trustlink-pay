@@ -40,11 +40,14 @@ async function main() {
   const { listPendingIntentsWithClaimRequests, updateClaimRequestStatus, updatePaymentIntentStatus } =
     await import("../app/db/tsn");
   const { markPaymentClaimed } = await import("../app/db/payments");
+  const { findPaymentById } = await import("../app/db/payments");
   const {
     estimateTsnClaimNetworkFeeLamports,
     getEscrowConfigState,
     getTsnIntentPda,
     getTsnMotherEscrowPda,
+    tsnCreateIntentOnChain,
+    tsnFetchIntentOnChain,
     tsnFetchMotherEscrowOnChain,
     tsnClaimIntentOnChain,
     tsnSubmitProofOnChain,
@@ -108,15 +111,23 @@ async function main() {
         const fallbackPolicy = getEscrowPolicyConfig();
         const claimFeeBps = escrowConfig?.claimFeeBps ?? fallbackPolicy.claimFeeBps;
         const claimFeeMaxUiAmount = escrowConfig?.claimFeeMaxUiAmount ?? fallbackPolicy.claimFeeMaxUiAmount;
+        const claimFeeMaxUsd = fallbackPolicy.claimFeeMaxUsd;
         const coveredNetworkFeeUsd =
           prices.solUsd != null ? lamportsToSol(estimatedNetworkFeeLamports) * prices.solUsd * env.TRUSTLINK_FEE_COVERAGE_TX_COUNT : null;
+        const uncappedMarginUsd =
+          coveredNetworkFeeUsd != null ? (coveredNetworkFeeUsd * claimFeeBps) / 10_000 : null;
+        const marginUsd =
+          uncappedMarginUsd != null
+            ? claimFeeMaxUsd > 0
+              ? Math.min(uncappedMarginUsd, claimFeeMaxUsd)
+              : uncappedMarginUsd
+            : null;
         const claimFeeAmountUi =
-          coveredNetworkFeeUsd != null && prices.tokenUsd != null && prices.tokenUsd > 0
+          coveredNetworkFeeUsd != null && marginUsd != null && prices.tokenUsd != null && prices.tokenUsd > 0
             ? roundUpToDecimals(
-                Math.min(
-                  (coveredNetworkFeeUsd + (coveredNetworkFeeUsd * claimFeeBps) / 10_000) / prices.tokenUsd,
-                  claimFeeMaxUiAmount > 0 ? claimFeeMaxUiAmount : Number.POSITIVE_INFINITY,
-                ),
+                claimFeeMaxUiAmount > 0
+                  ? Math.min((coveredNetworkFeeUsd + marginUsd) / prices.tokenUsd, claimFeeMaxUiAmount)
+                  : (coveredNetworkFeeUsd + marginUsd) / prices.tokenUsd,
                 tokenConfig.decimals,
               )
             : 0;
@@ -124,6 +135,29 @@ async function main() {
         const payoutAmountBaseUnits =
           grossAmountBaseUnits > claimFeeAmountBaseUnits ? grossAmountBaseUnits - claimFeeAmountBaseUnits : 0n;
         const payoutAmountUi = fromBaseUnits(payoutAmountBaseUnits, tokenConfig.decimals);
+
+        const onchainIntent = await tsnFetchIntentOnChain({ intent: intentPda });
+        if (!onchainIntent) {
+          if (!env.TSN_CREATE_INTENTS_ONCHAIN) {
+            throw new Error(
+              "TSN intent is missing on-chain. Enable TSN_CREATE_INTENTS_ONCHAIN or backfill intents before running the cranker.",
+            );
+          }
+
+          const payment = await findPaymentById(item.intent.payment_id);
+          if (!payment?.escrow_account) {
+            throw new Error("Cannot backfill TSN intent on-chain: missing payment escrow_account");
+          }
+
+          await tsnCreateIntentOnChain({
+            payer: operator,
+            intentSeed32,
+            underlyingPayment: new PublicKey(payment.escrow_account),
+            tokenMint,
+            amountBaseUnits: grossAmountBaseUnits,
+            recipientHash32: Buffer.from(item.intent.recipient_hash, "hex"),
+          });
+        }
 
         const claimTx = await tsnClaimIntentOnChain({ operator, intent: intentPda });
         await updatePaymentIntentStatus({

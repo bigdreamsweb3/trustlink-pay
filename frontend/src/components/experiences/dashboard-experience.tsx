@@ -180,130 +180,214 @@ export function DashboardExperience() {
         />
       </FloatingGuidanceOverlay>
 
-      <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr] md:items-start">
+      <div className="flex-col gap-5 md:grid md:grid-cols-[1.25fr_0.85fr] md:items-start">
 
         {/* ─── LEFT COLUMN ─── */}
         <div className="space-y-0 md:space-y-4">
 
+
           {/* BALANCE HERO CARD */}
-          <div className="tl-scanline relative overflow-hidden rounded-[28px] text-text border border-accent-border bg-accent-gradient p-5 shadow-softbox">
+          <div className="tl-scanline relative flex min-h-[210px] flex-col overflow-hidden rounded-[28px] border border-accent-border bg-accent-gradient p-5 text-text shadow-softbox">
+
+            {/* Ambient glow */}
             <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-accent/8 blur-3xl" />
+
+            {/* Top highlight */}
             <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)]" />
 
+            {/* TOP CONTENT */}
             <div className="relative z-10 flex items-start justify-between gap-2">
+
+              {/* Balance block */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <div className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-text/36">Balance</div>
-                  <button type="button" onClick={() => setBalanceVisible((c) => !c)}
-                    className="text-text/36 transition-colors hover:text-text/56 cursor-pointer active:scale-[0.9]"
+                  <div className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-text/36">
+                    Balance
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setBalanceVisible((c) => !c)}
+                    className="cursor-pointer text-text/36 transition-colors hover:text-text/56 active:scale-[0.9]"
                     aria-label={balanceVisible ? "Hide balance" : "Show balance"}
                   >
-                    {balanceVisible ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                    {balanceVisible ? (
+                      <EyeOffIcon className="h-3.5 w-3.5" />
+                    ) : (
+                      <EyeIcon className="h-3.5 w-3.5" />
+                    )}
                   </button>
                 </div>
+
                 <div className="mt-1 flex items-center gap-2.5">
                   {walletTokenLoading ? (
-                    <div className="text-[1.8rem] font-bold tracking-tight text-text">...</div>
+                    <div className="text-[1.8rem] font-bold tracking-tight text-text">
+                      ...
+                    </div>
                   ) : balanceVisible ? (
-                    <div className="text-[1.8rem] font-bold tracking-tight text-text">{formatPaymentUsd(combinedVisibleBalanceUsd)}</div>
+                    <div className="text-[1.8rem] font-bold tracking-tight text-text">
+                      {formatPaymentUsd(combinedVisibleBalanceUsd)}
+                    </div>
                   ) : (
-                    <div className="text-[1.8rem] font-bold tracking-tight text-text">****</div>
+                    <div className="text-[1.8rem] font-bold tracking-tight text-text">
+                      ****
+                    </div>
                   )}
-                  <button type="button" onClick={() => setBalanceInfoOpen(true)}
+
+                  <button
+                    type="button"
+                    onClick={() => setBalanceInfoOpen(true)}
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/4 text-text/36 transition-colors hover:text-text/56 cursor-pointer active:scale-[0.9]"
                     aria-label="Balance details"
                   >
                     <InfoIcon className="h-3.5 w-3.5" />
                   </button>
                 </div>
+
                 {balanceVisible && totalPendingUsd > 0 ? (
-                  <div className="mt-0.5 text-[0.68rem] text-text/36">+ {formatPaymentUsd(totalPendingUsd)} in escrow</div>
+                  <div className="mt-0.5 text-[0.68rem] text-text/36">
+                    + {formatPaymentUsd(totalPendingUsd)} in escrow
+                  </div>
                 ) : null}
               </div>
 
-              {/* ── WhatsApp payment identity chip ── */}
-              <button type="button" onClick={() => void handleCopyPhoneNumber()}
-                className="flex flex-col items-end gap-1.5 group cursor-pointer active:scale-[0.97] transition-transform shrink-0"
+              {/* WhatsApp identity chip */}
+              <button
+                type="button"
+                onClick={() => void handleCopyPhoneNumber()}
+                className="group flex shrink-0 flex-col items-end gap-1.5 cursor-pointer transition-transform active:scale-[0.97]"
                 aria-label={`Copy ${userPhoneNumber}`}
               >
                 <div className="flex items-center gap-1">
-                  {/* WA icon + country code — identity provider badge */}
+
+                  {/* Provider badge */}
                   <span className="flex items-center gap-1 rounded-[6px] border border-white/6 bg-white/4 px-1.5 py-0.5">
                     <WhatsAppIcon className="h-2.5 w-2.5 text-[#25D366]" />
-                    <span className="text-[0.6rem] font-semibold text-text/40">{countryCode}</span>
+                    <span className="text-[0.6rem] font-semibold text-text/40">
+                      {countryCode}
+                    </span>
                   </span>
 
-                  {/* Divider — separates country prefix from local number */}
+                  {/* Divider */}
                   <span className="mx-1 h-3 w-px bg-white/12" />
 
-                  {/* Local number — the standalone 10-digit payment ID */}
-                  <span className="text-[0.84rem] font-bold tracking-wide text-text/78 whitespace-nowrap">{localNumber}</span>
+                  {/* Local number */}
+                  <span className="whitespace-nowrap text-[0.84rem] font-bold tracking-wide text-text/78">
+                    {localNumber}
+                  </span>
 
-                  {/* Copy full number */}
+                  {/* Copy */}
                   <CopyIcon className="ml-1 h-3 w-3 text-text/22 transition-colors group-hover:text-text/44" />
                 </div>
 
-                {/* Micro-label: hint that the 10-digit alone also works */}
-                <span className="text-[0.54rem] font-medium tracking-[0.08em] text-text/24 whitespace-nowrap">
+                {/* Micro label */}
+                <span className="whitespace-nowrap text-[0.54rem] font-medium tracking-[0.08em] text-text/24">
                   10-digit works without country code
                 </span>
               </button>
             </div>
 
-            <div className="relative z-10 mt-6 flex items-end justify-between gap-3">
+            {/* BOTTOM ACTION SECTION */}
+            <div className="relative z-10 mt-auto flex items-end justify-between gap-3 pt-6">
+
+              {/* Action buttons */}
               <div className="flex items-center gap-3">
-                <Link href="/app/send" className="group flex flex-col items-center gap-1.5 cursor-pointer">
+
+                {/* Send */}
+                <Link
+                  href="/app/send"
+                  className="group flex flex-col items-center gap-1.5 cursor-pointer"
+                >
                   <div className="grid h-11 w-11 place-items-center rounded-full border border-white/6 bg-white/4 transition-all duration-200 group-hover:bg-white/8 group-active:scale-[0.93]">
                     <SendIcon size={18} className="text-text" />
                   </div>
-                  <span className="text-[0.62rem] font-medium text-text/50">Send</span>
+
+                  <span className="text-[0.62rem] font-medium text-text/50">
+                    Send
+                  </span>
                 </Link>
-                <Link href="/app/claim" className="group flex flex-col items-center gap-1.5 cursor-pointer">
+
+                {/* Claim */}
+                <Link
+                  href="/app/claim"
+                  className="group flex flex-col items-center gap-1.5 cursor-pointer"
+                >
                   <div className="grid h-11 w-11 place-items-center rounded-full border border-white/6 bg-white/4 transition-all duration-200 group-hover:bg-white/8 group-active:scale-[0.93]">
                     <ClaimIcon size={18} className="text-text" />
                   </div>
-                  <span className="text-[0.62rem] font-medium text-text/50">Claim</span>
+
+                  <span className="text-[0.62rem] font-medium text-text/50">
+                    Claim
+                  </span>
                 </Link>
               </div>
-              <div className="flex flex-col items-end gap-2 justify-end">
-                <div className="w-fit flex items-center gap-1.5 rounded-[14px] border border-white/5 bg-white/3 px-3 py-2">
+
+              {/* Pending chip */}
+              <div className="flex flex-col items-end justify-end gap-2">
+                <div className="flex w-fit items-center gap-1.5 rounded-[14px] border border-white/5 bg-white/3 px-3 py-2">
+
                   <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-                  <span className="text-[0.76rem] font-semibold text-text">Pending</span>
-                  <span className="text-[0.62rem] text-text/36">{loading ? "\u2014" : pendingPayments.length.toString().padStart(2, "0")}</span>
+
+                  <span className="text-[0.76rem] font-semibold text-text">
+                    Pending
+                  </span>
+
+                  <span className="text-[0.62rem] text-text/36">
+                    {loading
+                      ? "—"
+                      : pendingPayments.length.toString().padStart(2, "0")}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* STATS ROW — desktop only */}
-          <div className="hidden md:grid grid-cols-3 gap-3">
-            <div className="tl-field rounded-[16px] px-4 py-3.5">
+          {/* STATS ROW */}
+          <div className="my-4 flex gap-3 px-2">
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+              <ArrowUpRight className="h-3.5 w-3.5 text-primary-accent" />
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Sent</span>
+              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : sentCount}</span>
+            </div>
+
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+              <ArrowDownLeft className="h-3.5 w-3.5 text-accent" />
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Received</span>
+              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : receivedCount}</span>
+            </div>
+
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+              <Landmark className="h-3.5 w-3.5 text-(--warning)" />
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Escrow</span>
+              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
+            </div>
+            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
               <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Sent</div>
               <div className="mt-1 flex items-center gap-2">
                 <ArrowUpRight className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
                 <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : sentCount}</span>
               </div>
-            </div>
-            <div className="tl-field rounded-[16px] px-4 py-3.5">
+            </div> */}
+            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
               <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Received</div>
               <div className="mt-1 flex items-center gap-2">
                 <ArrowDownLeft className="h-3.5 w-3.5 text-[var(--accent)]" />
                 <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : receivedCount}</span>
               </div>
-            </div>
-            <div className="tl-field rounded-[16px] px-4 py-3.5">
+            </div> */}
+            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
               <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Escrow</div>
               <div className="mt-1 flex items-center gap-2">
                 <Landmark className="h-3.5 w-3.5 text-[var(--warning)]" />
                 <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* ─── ACTIVITY — desktop: starts right after stats ─── */}
-          <div className="hidden md:block">
-            <div className="flex items-center justify-between mb-3">
-              <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Activity</div>
+          <div className="tl-panel-header hidden md:block">
+            <div className="flex items-start justify-between mb-3 pt-4 px-3">
+              <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
               {!loading && paymentHistory.length > 6 ? (
                 <Link href="/app/activity" className="text-[0.68rem] font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
               ) : null}
@@ -318,7 +402,7 @@ export function DashboardExperience() {
             <div className="space-y-2">
               {loading ? (
                 <>{[0, 1, 2].map((i) => (
-                  <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+                  <div key={i} className="tl-panel-header tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
                     <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
                     <div className="space-y-2">
                       <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -328,7 +412,8 @@ export function DashboardExperience() {
                   </div>
                 ))}</>
               ) : paymentHistory.length === 0 ? (
-                <div className="tl-field rounded-[18px] px-4 py-8 text-center">
+                <div className="tl-panel-header tl-field rounded-[18px] px-4 py-8 text-center">
+                  {/* no tx ux */}
                   <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                     <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
                   </div>
@@ -341,12 +426,7 @@ export function DashboardExperience() {
                 ))
               )}
             </div>
-            {!loading && paymentHistory.length > 0 ? (
-              <Link href="/app/activity" className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
-                <span className="text-[0.84rem] font-medium text-[var(--text)]">View all activity</span>
-                <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            ) : null}
+
           </div>
         </div>
 
@@ -355,7 +435,7 @@ export function DashboardExperience() {
 
           {/* PENDING CLAIMS */}
           {loading ? (
-            <div className="tl-field flex min-h-[68px] items-center justify-between gap-3 rounded-[22px] px-4 py-3.5">
+            <div className="tl-panel-header tl-field flex min-h-[68px] items-center justify-between gap-3 rounded-[22px] px-4 py-3.5">
               <div className="space-y-2.5">
                 <div className="h-2.5 w-20 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                 <div className="h-3.5 w-44 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -363,7 +443,7 @@ export function DashboardExperience() {
               <SectionLoader label="Checking claims..." />
             </div>
           ) : pendingPayments.length > 0 ? (
-            <Link href="/app/claim" className="tl-field group block rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+            <Link href="/app/claim" className="tl-panel-header group block rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
               <div className="flex items-center justify-between">
                 <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-accent/68">Pending claims</div>
                 <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
@@ -385,8 +465,8 @@ export function DashboardExperience() {
           ) : null}
 
           {/* ── IDENTITY CARD ── */}
-          <div className="tl-field rounded-[22px] px-4 py-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="tl-panel-header rounded-[22px]">
+            <div className="flex items-start justify-between mb-3 px-4 pt-4">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Identity</div>
               <Link href="/app/settings"
                 className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
@@ -395,70 +475,72 @@ export function DashboardExperience() {
               </Link>
             </div>
 
-            {/* WhatsApp — ACTIVE (current only identity) */}
-            <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
-              style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
-            >
-              <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[0.78rem] font-semibold truncate">
-                  {userPhoneNumber}
-                </div>
-                <div className="text-[0.6rem] mt-0.5 text-text-faint" >
-                  WhatsApp · Payment identity
-                </div>
-              </div>
-              <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
-                style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" }}
+            <div className="tl-field rounded-[18px]">
+              {/* WhatsApp — ACTIVE (current only identity) */}
+              <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
+                style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
               >
-                Active
-              </span>
-            </div>
-
-            {/* Coming soon identities */}
-            <div className="mt-2 space-y-1">
-              {/* X / Twitter */}
-              <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
-                <XIcon className="h-3.5 w-3.5 shrink-0 text-text-faint" />
+                <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.74rem] font-medium text-text-faint">X / Twitter</div>
-                  <div className="text-[0.58rem] text-text-faint text-text-faint" >Verification identity</div>
+                  <div className="text-[0.78rem] font-semibold truncate">
+                    {userPhoneNumber}
+                  </div>
+                  <div className="text-[0.6rem] mt-0.5 text-text-faint" >
+                    WhatsApp · Payment identity
+                  </div>
                 </div>
-                <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                  style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
+                <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
+                  style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" }}
                 >
-                  <Lock className="h-2.5 w-2.5" />
-                  Soon
+                  Active
                 </span>
               </div>
 
-              {/* TIN */}
-              <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-35">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                  className="h-3.5 w-3.5 shrink-0 text-text-faint"
-                >
-                  <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[0.74rem] font-medium">
-                    TIN
-                    <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
+              {/* Coming soon identities */}
+              <div className="mt-2 space-y-1">
+                {/* X / Twitter */}
+                <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
+                  <XIcon className="h-3.5 w-3.5 shrink-0 text-text-faint" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.74rem] font-medium text-text-faint">X / Twitter</div>
+                    <div className="text-[0.58rem] text-text-faint text-text-faint" >Verification identity</div>
                   </div>
-                  <div className="text-[0.58rem] text-text-faint" >On-chain payment identity · TINS Protocol</div>
+                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
+                    style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
+                  >
+                    <Lock className="h-2.5 w-2.5" />
+                    Soon
+                  </span>
                 </div>
-                <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                  style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
-                >
-                  <Lock className="h-2.5 w-2.5" />
-                  Roadmap
-                </span>
+
+                {/* TIN */}
+                <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-35">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                    className="h-3.5 w-3.5 shrink-0 text-text-faint"
+                  >
+                    <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
+                  </svg>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.74rem] font-medium">
+                      TIN
+                      <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
+                    </div>
+                    <div className="text-[0.58rem] text-text-faint" >On-chain payment identity · TINS Protocol</div>
+                  </div>
+                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
+                    style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
+                  >
+                    <Lock className="h-2.5 w-2.5" />
+                    Roadmap
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* WALLET TOKENS CARD */}
-          <div className="tl-field rounded-[22px] px-4 py-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="tl-panel-header rounded-[22px]">
+            <div className="flex items-start justify-between mb-3 px-4 pt-4">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Wallet</div>
               <div className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] pl-2.5 pr-1 py-0.5">
                 <WalletIcon size={13} className="shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -473,69 +555,73 @@ export function DashboardExperience() {
               </div>
             </div>
 
-            {walletTokenLoading ? (
-              <div className="space-y-3 py-2">
-                {[0, 1].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                      <div className="h-3 w-14 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                    </div>
-                    <div className="h-3.5 w-16 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                  </div>
-                ))}
-              </div>
-            ) : !walletAddress ? (
-              <div className="flex items-center gap-3 rounded-[14px] bg-[var(--surface-soft)] px-3.5 py-3">
-                <Wallet className="h-4 w-4 text-[var(--text-faint)]" />
-                <span className="text-[0.78rem] text-[var(--muted)]">Connect a wallet to see your tokens</span>
-              </div>
-            ) : walletTokens.length === 0 ? (
-              <div className="py-2 text-[0.78rem] text-[var(--muted)]">No supported tokens found</div>
-            ) : (
-              <div className="divide-y divide-[var(--field-border)]">
-                {walletTokens.slice(0, 5).map((token) => (
-                  <div key={token.symbol} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-2.5">
-                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
-                        {token.symbol.slice(0, 3)}
+
+            <div className="tl-field rounded-t-0 rounded-[18px] px-4 py-4">
+              {walletTokenLoading ? (
+                <div className="space-y-3 py-2">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                        <div className="h-3 w-14 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                       </div>
-                      <span className="text-[0.82rem] font-medium text-[var(--text)]">{token.symbol}</span>
+                      <div className="h-3.5 w-16 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                     </div>
-                    <span className="text-[0.82rem] font-semibold text-[var(--text)]">
-                      {balanceVisible ? formatPaymentUsd(token.balanceUsd ?? 0) : "****"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : !walletAddress ? (
+                <div className="flex items-center gap-3 rounded-[14px] bg-[var(--surface-soft)] px-3.5 py-3">
+                  <Wallet className="h-4 w-4 text-[var(--text-faint)]" />
+                  <span className="text-[0.78rem] text-[var(--muted)]">Connect a wallet to see your tokens</span>
+                </div>
+              ) : walletTokens.length === 0 ? (
+                <div className="py-2 text-[0.78rem] text-[var(--muted)]">No supported tokens found</div>
+              ) : (
+                <div className="">
+                  {walletTokens.slice(0, 5).map((token) => (
+                    <div key={token.symbol} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2.5">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
+                          {token.symbol.slice(0, 3)}
+                        </div>
+                        <span className="text-[0.82rem] font-medium text-[var(--text)]">{token.symbol}</span>
+                      </div>
+                      <span className="text-[0.82rem] font-semibold text-[var(--text)]">
+                        {balanceVisible ? formatPaymentUsd(token.balanceUsd ?? 0) : "****"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* MOBILE STATS */}
-          <div className="grid grid-cols-3 gap-2 md:hidden">
-            <div className="tl-field rounded-[14px] px-3 py-3 text-center">
+          {/* <div className="grid grid-cols-3 gap-2 md:hidden">
+            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
               <ArrowUpRight className="mx-auto h-3.5 w-3.5 text-[var(--primary-accent)]" />
               <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : sentCount}</div>
               <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Sent</div>
             </div>
-            <div className="tl-field rounded-[14px] px-3 py-3 text-center">
+            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
               <ArrowDownLeft className="mx-auto h-3.5 w-3.5 text-[var(--accent)]" />
               <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : receivedCount}</div>
               <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Received</div>
             </div>
-            <div className="tl-field rounded-[14px] px-3 py-3 text-center">
+            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
               <Landmark className="mx-auto h-3.5 w-3.5 text-[var(--warning)]" />
               <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : pendingPayments.length}</div>
               <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Pending</div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* ACTIVITY — mobile only (desktop version is inside left column) */}
-      <div className="mt-6 md:hidden">
-        <div className="flex items-center justify-between mb-3">
-          <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Activity</div>
+      <div className="tl-panel-header mt-6 md:hidden">
+        <div className="flex items-start justify-between mb-3 pt-4 px-4">
+          <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
           {!loading && paymentHistory.length > 6 ? (
             <Link href="/app/activity" className="text-[0.68rem] font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
           ) : null}
@@ -552,7 +638,7 @@ export function DashboardExperience() {
         <div className="space-y-2">
           {loading ? (
             <>{[0, 1, 2].map((i) => (
-              <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+              <div key={i} className="tl-panel-header tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
                 <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
                 <div className="space-y-2">
                   <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -562,7 +648,7 @@ export function DashboardExperience() {
               </div>
             ))}</>
           ) : paymentHistory.length === 0 ? (
-            <div className="tl-field rounded-[18px] px-4 py-8 text-center">
+            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-8 text-center">
               <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
               </div>
@@ -576,12 +662,7 @@ export function DashboardExperience() {
           )}
         </div>
 
-        {!loading && paymentHistory.length > 0 ? (
-          <Link href="/app/activity" className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
-            <span className="text-[0.84rem] font-medium text-[var(--text)]">View all activity</span>
-            <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        ) : null}
+
       </div>
 
       {/* BALANCE MODAL */}
@@ -601,7 +682,7 @@ export function DashboardExperience() {
                 { label: "Wallet", value: formatPaymentUsd(supportedBalanceUsd), sub: walletAddress ? shortenAddress(walletAddress) : "Not connected" },
                 { label: "Escrow", value: formatPaymentUsd(totalPendingUsd), sub: `${pendingBalanceSummary.claimableCount} ${pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}` },
               ].map((row) => (
-                <div key={row.label} className="tl-field rounded-[18px] px-4 py-3.5">
+                <div key={row.label} className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
                     <div className="text-right">

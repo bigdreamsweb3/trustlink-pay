@@ -8,7 +8,7 @@ TrustLink Pay is building that identity layer for Solana stablecoins — startin
 
 ---
 
-## The Architecture in Plain English
+## Project Architecture
 
 TrustLink Pay's system works in two distinct layers that exist right now and where they are going.
 

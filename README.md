@@ -71,8 +71,8 @@ The Cranker pays the recipient 99.9 USDC instead of 100. The 0.1 USDC difference
 | Recipient | Share | Why |
 | --- | --- | --- |
 | Cranker operator | 40% | For uptime, execution, and on-chain transaction fees |
-| Liquidity providers | 35% | For funding the Cranker vault |
-| TrustLink treasury | 25% | Protocol development, audits, security reserves |
+| Liquidity providers | 40% | For funding the Cranker vault |
+| TrustLink treasury | 20% | Protocol development, audits, security reserves |
 
 **Claim fee** (deducted from payout at settlement):
 

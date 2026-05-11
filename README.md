@@ -240,9 +240,9 @@ Extended TrustLink to creator token payments via phone number using the Bags SDK
 | --- | --- |
 | `backend/programs/trustlink-escrow` | Anchor escrow program (v2 + v3 + TSN M4) |
 | `backend/app/blockchain/solana-tsn.ts` | TSN transaction builders |
-| `backend/scripts/tsn-setup.ts` | Mother Escrow, Cranker, vault, epoch scripts |
-| `backend/scripts/tsn-cranker.ts` | Local Cranker daemon |
-| `cranker-sdk` | Standalone Cranker SDK scaffold |
+| `tsn/scripts/setup.ts` | TSN setup commands |
+| `tsn/scripts/cranker.ts` | Local TSN Cranker daemon |
+| `tsn/cranker-sdk` | Standalone Cranker SDK scaffold |
 | `docs/devnet-testing.md` | Devnet testing guide |
 | `transfer-identity-number-system-(TINS)` | TINS on-chain identity program track |
 

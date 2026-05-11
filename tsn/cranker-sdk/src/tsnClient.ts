@@ -2,26 +2,30 @@ import type { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 import { crankerPda, intentPda, motherEscrowPda } from "./tsnPdas.js";
+import { assertVerifiedTsnProgramId, VERIFIED_TSN_PROGRAM_ID } from "../../src/program.js";
 
 // Minimal, IDL-driven wrapper. The concrete `TrustlinkEscrow` type will come from generated IDL types.
 export class TsnClient {
-  constructor(readonly program: Program, readonly programId: PublicKey = program.programId) {}
+  readonly programId: PublicKey;
+
+  constructor(readonly program: Program) {
+    this.programId = new PublicKey(assertVerifiedTsnProgramId(program.programId ?? VERIFIED_TSN_PROGRAM_ID));
+  }
 
   motherEscrowPda(): [PublicKey, number] {
     return motherEscrowPda(this.programId);
   }
 
   crankerPda(motherEscrow: PublicKey, operator: PublicKey): [PublicKey, number] {
-    return crankerPda(this.programId, motherEscrow, operator);
+    return crankerPda(motherEscrow, operator, this.programId);
   }
 
   intentPda(motherEscrow: PublicKey, intentId: Uint8Array): [PublicKey, number] {
-    return intentPda(this.programId, motherEscrow, intentId);
+    return intentPda(motherEscrow, intentId, this.programId);
   }
 
   registerCrankerIx(motherEscrow: PublicKey, operator: PublicKey) {
     const [cranker] = this.crankerPda(motherEscrow, operator);
-    // @ts-expect-error IDL types not wired yet
     return this.program.methods.tsnRegisterCranker().accounts({ operator, motherEscrow, cranker });
   }
 
@@ -53,4 +57,3 @@ export class TsnClient {
     });
   }
 }
-

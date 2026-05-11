@@ -8,7 +8,7 @@ import { issueAuthChallengeToken } from "@/app/lib/auth";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getOtpReadiness, sendPhoneVerificationOtp, verifyPhoneOtp } from "@/app/services/phone-verification";
-import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp";
 import { getTrustLinkWhatsAppOptInLink, sendWelcomeMessage } from "@/app/services/whatsapp";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 

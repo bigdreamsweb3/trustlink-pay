@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/app/lib/env";
 import { fail } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
-import { processWhatsAppWebhookPayload, verifyWhatsAppSignature } from "@/app/services/whatsapp-webhook";
+import { processWhatsAppWebhookPayload, verifyWhatsAppSignature } from "@/app/services/whatsapp";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

@@ -1,7 +1,7 @@
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { RedisSessionStorage } from "@/app/lib/redis";
-import { generateTrustLinkSessionCode } from "@/app/trustlink-whatsapp-sdk/auth";
+import { generateTrustLinkSessionCode } from "@/app/services/whatsapp";
 
 export interface SessionCode {
   code: string;

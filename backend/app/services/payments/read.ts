@@ -3,7 +3,7 @@ import type { AuthenticatedUser } from "@/app/types/auth";
 
 import { enrichPaymentInviteState } from "./invite";
 import { retryOutstandingNotifications } from "./notifications";
-import { enrichPaymentsWithTsnState, isTsnSettled } from "@/app/services/tsn/payment-state";
+import { enrichPaymentsWithTsnState, isTsnSettled } from "@/app/services/tsn";
 
 export async function listLockedPaymentsForUser(phoneNumber: string) {
   const payments = await listLockedPaymentsByPhoneNumber(phoneNumber);

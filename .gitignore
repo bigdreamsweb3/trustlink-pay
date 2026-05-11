@@ -15,6 +15,11 @@ pnpm-debug.log*
 dist/
 build/
 coverage/
+.tsn/
+tsn/.tsn/
+tsn/node_modules/
+tsn/cranker-sdk/node_modules/
+tsn/cranker-sdk/dist/
 
 # Backend
 backend/node_modules/

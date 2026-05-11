@@ -1,0 +1,23 @@
+{
+  "name": "@trustlink/tsn",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "mempool": "tsx src/server.ts",
+    "setup": "tsx scripts/setup.ts",
+    "cranker": "tsx scripts/cranker.ts",
+    "cranker:build": "npm --prefix cranker-sdk run build"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/spl-token": "^0.4.8",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

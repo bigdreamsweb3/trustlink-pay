@@ -23,10 +23,16 @@ import {
   getConnection,
   getEscrowAuthorityKeypair,
   getEscrowConfigState,
-  getProgramId,
   instructionDiscriminator,
   TOKEN_PROGRAM_ID,
 } from "@/app/blockchain/solana-core";
+import { VERIFIED_TSN_PROGRAM_ID } from "../../../tsn/src";
+
+const VERIFIED_TSN_PROGRAM_PUBLIC_KEY = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
+
+function getVerifiedTsnProgramId() {
+  return VERIFIED_TSN_PROGRAM_PUBLIC_KEY;
+}
 
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_INTENT_SEED = Buffer.from("tsn_intent");
@@ -40,48 +46,48 @@ export function sha256Bytes(input: string): Buffer {
 }
 
 export function getTsnMotherEscrowPda(): PublicKey {
-  return PublicKey.findProgramAddressSync([TSN_MOTHER_ESCROW_SEED], getProgramId())[0];
+  return PublicKey.findProgramAddressSync([TSN_MOTHER_ESCROW_SEED], getVerifiedTsnProgramId())[0];
 }
 
 export function getTsnIntentPda(params: { motherEscrow: PublicKey; intentSeed32: Buffer }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_INTENT_SEED, params.motherEscrow.toBuffer(), params.intentSeed32],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
 export function getTsnCrankerPda(params: { motherEscrow: PublicKey; operator: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_CRANKER_SEED, params.motherEscrow.toBuffer(), params.operator.toBuffer()],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
 export function getTsnCrankerVaultPda(params: { cranker: PublicKey; tokenMint: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_CRANKER_VAULT_SEED, params.cranker.toBuffer(), params.tokenMint.toBuffer()],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
 export function getTsnCrankerVaultAuthorityPda(params: { crankerVault: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_CRANKER_VAULT_AUTHORITY_SEED, params.crankerVault.toBuffer()],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
 export function getTsnCrankerVaultTokenPda(params: { crankerVault: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("tsn_cranker_vault_token"), params.crankerVault.toBuffer()],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
 export function getTsnLiquidityPositionPda(params: { crankerVault: PublicKey; funder: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_LIQUIDITY_POSITION_SEED, params.crankerVault.toBuffer(), params.funder.toBuffer()],
-    getProgramId(),
+    getVerifiedTsnProgramId(),
   )[0];
 }
 
@@ -123,7 +129,7 @@ export async function tsnCreateIntentOnChain(params: {
   const intent = getTsnIntentPda({ motherEscrow, intentSeed32: params.intentSeed32 });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: payer.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -179,7 +185,7 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
   }
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: authority.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: true },
@@ -220,7 +226,7 @@ export async function tsnMigrateMotherEscrowOnChain(params: {
   const motherEscrow = getTsnMotherEscrowPda();
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: authority.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: true },
@@ -264,7 +270,7 @@ export async function tsnRegisterCrankerOnChain(params: { operator: Keypair }) {
   }
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -293,7 +299,7 @@ export async function tsnSetCrankerFundingPolicyOnChain(params: {
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.operator.publicKey, isSigner: true, isWritable: false },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -329,7 +335,7 @@ export async function tsnInitializeCrankerVaultOnChain(params: {
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: payer.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -378,7 +384,7 @@ export async function tsnFundCrankerOnChain(params: {
   });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.funder.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -422,7 +428,7 @@ export async function tsnWithdrawCrankerFundsOnChain(params: {
   });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.funder.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -453,7 +459,7 @@ export async function tsnSettleEpochOnChain(params: { authority?: Keypair; force
   const motherEscrow = getTsnMotherEscrowPda();
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: authority.publicKey, isSigner: true, isWritable: false },
       { pubkey: motherEscrow, isSigner: false, isWritable: true },
@@ -480,7 +486,7 @@ export async function tsnClaimIntentOnChain(params: { operator: Keypair; intent:
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -529,7 +535,7 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   }).add(
     new TransactionInstruction({
-      programId: getProgramId(),
+      programId: getVerifiedTsnProgramId(),
       keys: [
         { pubkey: operator.publicKey, isSigner: true, isWritable: true },
         { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -562,7 +568,7 @@ export async function estimateTsnClaimNetworkFeeLamports(params: {
   }
   proofTx.add(
     new TransactionInstruction({
-      programId: getProgramId(),
+      programId: getVerifiedTsnProgramId(),
       keys: [
         { pubkey: operator.publicKey, isSigner: true, isWritable: true },
         { pubkey: motherEscrow, isSigner: false, isWritable: false },
@@ -625,7 +631,7 @@ export async function tsnSubmitProofOnChain(params: {
   const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner);
 
   const ix = new TransactionInstruction({
-    programId: getProgramId(),
+    programId: getVerifiedTsnProgramId(),
     keys: [
       { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },

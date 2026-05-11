@@ -27,10 +27,10 @@ solana-test-validator
 cd backend
 anchor deploy
 tsx scripts/init-db.ts
-tsx scripts/tsn-setup.ts init-mother
-tsx scripts/tsn-setup.ts register-cranker
-tsx scripts/tsn-setup.ts init-vault <TOKEN_MINT>
-tsx scripts/tsn-setup.ts fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run setup -- init-mother
+npm --prefix ../tsn run setup -- register-cranker
+npm --prefix ../tsn run setup -- init-vault <TOKEN_MINT>
+npm --prefix ../tsn run setup -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 npm run dev
 ```
 
@@ -59,7 +59,7 @@ Open `http://localhost:3001`.
 
 ```bash
 cd backend
-tsx scripts/tsn-cranker.ts
+npm --prefix ../tsn run cranker --
 ```
 
 The Cranker should:
@@ -89,7 +89,7 @@ Important observed behavior:
 
 - Old DB claim requests can exist for intents that were never created on-chain; those fail with `AccountNotInitialized`.
 - Duplicate claim requests for the same payment can happen in current DB flow; this should be deduped in the API layer.
-- Running `tsx scripts/tsn-setup.ts init-mother` can fail with `Allocate ... already in use` on devnet. This means the `MotherEscrow` PDA already exists (expected if you initialized it previously). Do not re-run init.
+- Running `npm --prefix ../tsn run setup -- init-mother` can fail with `Allocate ... already in use` on devnet. This means the `MotherEscrow` PDA already exists (expected if you initialized it previously). Do not re-run init.
 - `withdraw-cranker` is a **funder action** (withdraw your own `LiquidityPosition` principal). It is not an automated “cranker runner withdrawal”. If you pass your funder keypair and an amount, it will withdraw that amount by design.
 - Unauthorized-withdraw testing requires the unauthorized wallet to have SOL for tx fees, otherwise you will fail early with `Attempt to debit an account but found no record of a prior credit` and never hit the program’s authorization checks.
 
@@ -101,25 +101,25 @@ Initialize the vault once per token mint:
 
 ```bash
 cd backend
-tsx scripts/tsn-setup.ts init-vault <TOKEN_MINT>
+npm --prefix ../tsn run setup -- init-vault <TOKEN_MINT>
 ```
 
 Fund it from the wallet that owns the source token account:
 
 ```bash
-tsx scripts/tsn-setup.ts fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run setup -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 ```
 
 Withdraw available principal back to the same funder wallet's token account:
 
 ```bash
-tsx scripts/tsn-setup.ts withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run setup -- withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 ```
 
 If the Cranker operator wants to stop community funding and only self-fund:
 
 ```bash
-tsx scripts/tsn-setup.ts set-funding-policy false
+npm --prefix ../tsn run setup -- set-funding-policy false
 ```
 
 ## Epoch Settlement Testing (No 7-Hour Wait Required)
@@ -128,13 +128,13 @@ tsx scripts/tsn-setup.ts set-funding-policy false
 For testing, use forced settlement:
 
 ```bash
-tsx scripts/tsn-setup.ts settle-epoch --force
+npm --prefix ../tsn run setup -- settle-epoch --force
 ```
 
 For production-like behavior (time-gated), run without force:
 
 ```bash
-tsx scripts/tsn-setup.ts settle-epoch
+npm --prefix ../tsn run setup -- settle-epoch
 ```
 
 ## Useful Checks

@@ -10,7 +10,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { verifyWhatsAppNumber } = await import("../app/services/whatsapp-number-verification");
+  const { verifyWhatsAppNumber } = await import("../app/services/whatsapp");
   const result = await verifyWhatsAppNumber(phoneNumber);
 
   console.log(JSON.stringify(result, null, 2));

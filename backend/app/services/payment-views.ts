@@ -10,7 +10,7 @@ import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
 import { env } from "@/app/lib/env";
-import { enrichPaymentsWithTsnState } from "@/app/services/tsn/payment-state";
+import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
 
 function getViewerRole(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentViewerRole | null {
   if (payment.sender_user_id === authUser.id) {

@@ -1,7 +1,7 @@
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
-import { findUserByPhoneNumber } from "@/app/db/users";
 import { normalizePhoneNumber, toWhatsAppRecipient } from "@/app/utils/phone";
+import { getWhatsAppSdkPorts } from "../ports";
 
 interface WhatsAppTemplateComponentParameter {
   type: "text";
@@ -31,7 +31,7 @@ async function canSendWhatsApp(phoneNumber: string, options?: SendMessageOptions
     return true;
   }
 
-  const user = await findUserByPhoneNumber(phoneNumber);
+  const user = await getWhatsAppSdkPorts().users.findByPhoneNumber(phoneNumber);
   if (options?.category === "notification") {
     return Boolean(user?.phone_verified_at || user?.whatsapp_opted_in);
   }

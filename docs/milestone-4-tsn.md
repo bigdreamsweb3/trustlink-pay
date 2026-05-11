@@ -78,7 +78,7 @@ The chain is the lock manager. If two Crankers try to claim the same intent, onl
 
 ## Cranker Ledger
 
-`backend/scripts/tsn-cranker.ts` writes an encrypted append-only file:
+`tsn/scripts/cranker.ts` writes an encrypted append-only file:
 
 ```text
 .cranker-ledger-encrypted.jsonl
@@ -114,10 +114,10 @@ TSN_CRANKER_KEYPAIR_PATH=./cranker-keypair.json
 Fund or withdraw through the program, not by giving funds to the operator keypair:
 
 ```bash
-tsx scripts/tsn-setup.ts init-vault <TOKEN_MINT>
-tsx scripts/tsn-setup.ts set-funding-policy true
-tsx scripts/tsn-setup.ts fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
-tsx scripts/tsn-setup.ts withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run setup -- init-vault <TOKEN_MINT>
+npm --prefix ../tsn run setup -- set-funding-policy true
+npm --prefix ../tsn run setup -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run setup -- withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 ```
 
 LP reward accounting and reward withdrawal build on top of these positions.
@@ -127,18 +127,18 @@ LP reward accounting and reward withdrawal build on top of these positions.
 ```bash
 cd backend
 tsx scripts/init-db.ts
-tsx scripts/tsn-setup.ts init-mother
-tsx scripts/tsn-setup.ts register-cranker
-tsx scripts/tsn-setup.ts init-vault <TOKEN_MINT>
-tsx scripts/tsn-setup.ts fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
-tsx scripts/tsn-cranker.ts
+npm --prefix ../tsn run setup -- init-mother
+npm --prefix ../tsn run setup -- register-cranker
+npm --prefix ../tsn run setup -- init-vault <TOKEN_MINT>
+npm --prefix ../tsn run setup -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm --prefix ../tsn run cranker --
 ```
 
 Epoch settlement commands:
 
 ```bash
-tsx scripts/tsn-setup.ts settle-epoch
-tsx scripts/tsn-setup.ts settle-epoch --force
+npm --prefix ../tsn run setup -- settle-epoch
+npm --prefix ../tsn run setup -- settle-epoch --force
 ```
 
 `settle-epoch` enforces the configured epoch interval (default 7 hours).  
@@ -152,7 +152,7 @@ tsx scripts/tsn-setup.ts settle-epoch --force
 
 ## Devnet Testing Notes (From Real Runs)
 
-- `tsx scripts/tsn-setup.ts init-mother` can fail with `Allocate ... already in use` on devnet. This indicates the `MotherEscrow` PDA already exists (you initialized it earlier). Skip init and continue.
+- `npm --prefix ../tsn run setup -- init-mother` can fail with `Allocate ... already in use` on devnet. This indicates the `MotherEscrow` PDA already exists (you initialized it earlier). Skip init and continue.
 - `withdraw-cranker` is intentionally a **funder-controlled withdrawal** (withdraw your own position principal). If you pass the funder keypair and `1000000`, the program will withdraw `1.000000` USDC by design.
 - If you test “unauthorized wallet cannot withdraw”, first make sure the unauthorized wallet has enough SOL to pay transaction fees, otherwise you’ll fail before the program’s authorization checks run.
 

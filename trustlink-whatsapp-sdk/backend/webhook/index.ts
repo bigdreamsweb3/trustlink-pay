@@ -1,13 +1,5 @@
 import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 
-import {
-  findPaymentByNotificationMessageEventId,
-  findPaymentByNotificationMessageId,
-  updatePaymentNotificationMessageId,
-  updatePaymentNotificationStatus
-} from "@/app/db/payments";
-import { findUserByPhoneNumber, upsertUserProfile, markUserWhatsAppOptIn, markUserWhatsAppOptOut } from "@/app/db/users";
-import { createWhatsAppWebhookEvent } from "../db/webhook-events";
 import type { PaymentNotificationStatus } from "@/app/types/payment";
 import { issueAuthChallengeToken } from "@/app/lib/auth";
 import { env } from "@/app/lib/env";
@@ -33,6 +25,7 @@ import { extractTrustLinkSessionCodeFromText } from "../auth";
 import { sanitizeUser } from "@/app/services/auth/shared";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 import { sha256 } from "@/app/utils/hash";
+import { getWhatsAppSdkPorts } from "../ports";
 
 interface WhatsAppWebhookPayload {
   object?: string;
@@ -164,7 +157,8 @@ async function ensureSessionUser(
   phoneNumber: string,
   contactName: string | undefined,
 ) {
-  let user = await findUserByPhoneNumber(phoneNumber);
+  const ports = getWhatsAppSdkPorts();
+  let user = await ports.users.findByPhoneNumber(phoneNumber);
 
   logger.info("whatsapp.webhook.user_lookup", {
     phoneNumber,
@@ -181,7 +175,7 @@ async function ensureSessionUser(
 
     const phoneHash = createHash("sha256").update(phoneNumber).digest("hex");
 
-    user = await upsertUserProfile({
+    user = await ports.users.upsertProfile({
       phoneNumber,
       phoneHash,
       displayName: contactName || "TrustLink User",
@@ -280,7 +274,9 @@ async function processInboundMessage(
     text: inboundText || null,
   });
 
-  await createWhatsAppWebhookEvent({
+  const ports = getWhatsAppSdkPorts();
+
+  await ports.webhookEvents.create({
     eventType: "inbound_message",
     messageId: message.id ?? null,
     phoneNumber: normalizedPhoneNumber,
@@ -297,7 +293,7 @@ async function processInboundMessage(
   }
 
   if (isTrustLinkStopMessage(inboundText)) {
-    await markUserWhatsAppOptOut({
+    await ports.users.markOptOut({
       phoneNumber: normalizedPhoneNumber,
       optedOutAt: message.timestamp ? new Date(Number(message.timestamp) * 1000) : new Date(),
     });
@@ -309,7 +305,7 @@ async function processInboundMessage(
   }
 
   if (isTrustLinkOptInMessage(inboundText)) {
-    await markUserWhatsAppOptIn({
+    await ports.users.markOptIn({
       phoneNumber: normalizedPhoneNumber,
       phoneHash: sha256(normalizedPhoneNumber),
       displayName: contactName,
@@ -483,14 +479,15 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
       }
 
       for (const status of value.statuses ?? []) {
-        let relatedPayment = status.id ? await findPaymentByNotificationMessageId(status.id) : null;
+        const ports = getWhatsAppSdkPorts();
+        let relatedPayment = status.id ? await ports.payments.findByNotificationMessageId(status.id) : null;
 
         if (!relatedPayment && status.id) {
-          relatedPayment = await findPaymentByNotificationMessageEventId(status.id);
+          relatedPayment = await ports.payments.findByNotificationMessageEventId(status.id);
 
           if (relatedPayment && relatedPayment.notification_message_id !== status.id) {
             relatedPayment =
-              (await updatePaymentNotificationMessageId(relatedPayment.id, status.id)) ?? relatedPayment;
+              (await ports.payments.updateNotificationMessageId(relatedPayment.id, status.id)) ?? relatedPayment;
           }
         }
 
@@ -500,7 +497,7 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
           ? normalizePhoneNumber(status.recipient_id)
           : null;
 
-        await createWhatsAppWebhookEvent({
+        await ports.webhookEvents.create({
           eventType: "message_status",
           messageId: status.id ?? null,
           relatedPaymentId: relatedPayment?.id ?? null,
@@ -514,7 +511,7 @@ export async function processWhatsAppWebhookPayload(payload: WhatsAppWebhookPayl
         });
 
         if (relatedPayment && normalizedStatus) {
-          await updatePaymentNotificationStatus(relatedPayment.id, normalizedStatus, occurredAt);
+          await ports.payments.updateNotificationStatus(relatedPayment.id, normalizedStatus, occurredAt);
         }
 
         logger.info("whatsapp.webhook.message_status", {

@@ -16,11 +16,11 @@ import { env } from "@/app/lib/env";
 import { deriveStealthPaymentAddress, generatePaymentIdentityPublicKey } from "@/app/lib/privacy-keys";
 import { logger } from "@/app/lib/logger";
 import { getUsdPricesForSymbols } from "@/app/services/pricing";
-import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp";
 import type { PaymentRecord } from "@/app/types/payment";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
-import { createTsnIntentForPayment } from "@/app/services/tsn/intent";
+import { createTsnIntentForPayment } from "@/app/services/tsn";
 
 import { buildInviteShareData, requiresManualInvite } from "./invite";
 import { AutoclaimEngine } from "./autoclaim-engine";

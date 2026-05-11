@@ -1,7 +1,7 @@
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { findLatestWhatsAppProfileNameByPhoneNumber } from "@/app/db/whatsapp-webhook-events";
 import { logger } from "@/app/lib/logger";
-import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp";
 
 export type RecipientLookupResult =
   | {

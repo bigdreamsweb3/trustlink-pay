@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processWhatsAppWebhookPayload } from "@/app/services/whatsapp-webhook";
+import { processWhatsAppWebhookPayload } from "@/app/services/whatsapp";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

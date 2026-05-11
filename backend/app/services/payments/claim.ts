@@ -16,7 +16,7 @@ import type { AuthenticatedUser } from "@/app/types/auth";
 import { verifyUserActionPin } from "@/app/services/auth";
 import { sendPaymentClaimedMessage } from "@/app/services/whatsapp";
 import { env } from "@/app/lib/env";
-import { requestPaymentClaimViaTsn } from "@/app/services/tsn/claim-request";
+import { requestPaymentClaimViaTsn } from "@/app/services/tsn";
 
 function paymentCanStillBeClaimed(status: string) {
   return status === "locked" || status === "expired";

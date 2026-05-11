@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { createClaimRequestSchema } from "@/app/lib/validation";
-import { requestPaymentClaimViaTsn } from "@/app/services/tsn/claim-request";
+import { requestPaymentClaimViaTsn } from "@/app/services/tsn";
 
 export async function POST(request: Request) {
   try {
@@ -27,4 +27,3 @@ export async function POST(request: Request) {
     return toErrorResponse(error);
   }
 }
-

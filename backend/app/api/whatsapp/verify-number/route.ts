@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { verifyWhatsAppNumberSchema } from "@/app/lib/validation";
-import { verifyWhatsAppNumber } from "@/app/services/whatsapp-number-verification";
+import { verifyWhatsAppNumber } from "@/app/services/whatsapp";
 
 export async function POST(request: Request) {
   try {

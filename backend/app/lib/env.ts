@@ -91,6 +91,7 @@ const envSchema = z
     SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080),
     TSN_ENABLED: booleanFromEnv.default(false),
+    TSN_MEMPOOL_URL: z.string().url().default("http://localhost:8787"),
     TSN_CREATE_INTENTS_ONCHAIN: booleanFromEnv.default(false),
     TSN_SYNC_ONCHAIN: booleanFromEnv.default(true),
   })
@@ -177,6 +178,7 @@ function readRawEnv() {
     SESSION_SECRET: process.env.SESSION_SECRET,
     ACCESS_TOKEN_TTL_MINUTES: process.env.ACCESS_TOKEN_TTL_MINUTES,
     TSN_ENABLED: process.env.TSN_ENABLED,
+    TSN_MEMPOOL_URL: process.env.TSN_MEMPOOL_URL,
     TSN_CREATE_INTENTS_ONCHAIN: process.env.TSN_CREATE_INTENTS_ONCHAIN,
     TSN_SYNC_ONCHAIN: process.env.TSN_SYNC_ONCHAIN,
   };

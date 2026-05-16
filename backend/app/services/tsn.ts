@@ -1,7 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-import { getIdentityBindingState, tsnCreateIntentOnChain } from "@/app/blockchain/solana";
-import { getTsnIntentPda, getTsnMotherEscrowPda, sha256Bytes, tsnFetchIntentOnChain } from "@/app/blockchain/solana-tsn";
+import { getIdentityBindingState } from "@/app/blockchain/solana";
 import { getAllowedTokenByMint, toBaseUnits } from "@/app/blockchain/solana-core";
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
@@ -21,12 +20,12 @@ import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, TsnUiStage } from "@/app/types/payment";
-import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "@/app/types/tsn";
-import { sha256 } from "@/app/utils/hash";
+import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "../../../tsn/src";
 import {
   buildCreateIntentRequest,
   buildRequestClaimRequest,
   computeTsnUiStage,
+  sha256Bytes,
   TsnHttpClient,
   type CreateIntentRequest,
   type RequestClaimRequest,
@@ -103,26 +102,8 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
     logger.info("tsn.intent.mempool_posted", { paymentId: payment.id, intentId: record.id });
     return { enabled: true as const, record, mempoolIntent, onchain: null as null };
   }
-
-  try {
-    const intentSeed32 = sha256Bytes(payment.id);
-    const recipientHash32 = Buffer.from(intentRequest.recipientHash, "hex");
-    if (!payment.escrow_account) throw new Error("Missing escrow account for payment");
-    const onchain = await tsnCreateIntentOnChain({
-      intentSeed32,
-      underlyingPayment: new PublicKey(payment.escrow_account),
-      tokenMint: new PublicKey(tokenMint),
-      amountBaseUnits: toBaseUnits(Number(payment.amount), allowed.decimals),
-      recipientHash32,
-    });
-    return { enabled: true as const, record, mempoolIntent, onchain };
-  } catch (error) {
-    logger.warn("tsn.intent.onchain_create_failed", {
-      paymentId: payment.id,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return { enabled: true as const, record, mempoolIntent, onchain: null as null };
-  }
+  logger.info("tsn.intent.onchain_delegated_to_tsn", { paymentId: payment.id, intentId: record.id });
+  return { enabled: true as const, record, mempoolIntent, onchain: null as null };
 }
 
 export async function requestPaymentClaimViaTsn(params: {
@@ -223,36 +204,10 @@ export async function requestPaymentClaimViaTsn(params: {
   };
 }
 
-function mapIntentStatus(statusDiscriminant: number): PaymentIntentStatus {
-  if (statusDiscriminant === 1) return "claimed";
-  if (statusDiscriminant === 2) return "executed";
-  if (statusDiscriminant === 3) return "settled";
-  return "pending";
-}
-
 export async function syncPaymentIntentFromChain(params: { intentId: string }) {
   if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) return null;
-
-  const motherEscrow = getTsnMotherEscrowPda();
-  const intentSeed32 = sha256Bytes(params.intentId);
-  const intentPda = getTsnIntentPda({ motherEscrow, intentSeed32 });
-  const onchain = await tsnFetchIntentOnChain({ intent: intentPda });
-  if (!onchain) return null;
-
-  const status = mapIntentStatus(onchain.status);
-  const leaseExpiryAt = onchain.leaseExpiryTs ? new Date(Number(onchain.leaseExpiryTs) * 1000).toISOString() : null;
-  const assignedCrankerPubkey = onchain.assignedCranker?.toBase58() ?? null;
-  const proofTxSig = null;
-
-  await updatePaymentIntentStatus({
-    id: params.intentId,
-    status,
-    assignedCrankerPubkey,
-    leaseExpiryAt,
-    proofTxSig,
-  });
-
-  return { status, assignedCrankerPubkey, leaseExpiryAt, proofTxSig };
+  logger.info("tsn.intent.sync_delegated_to_tsn", { intentId: params.intentId });
+  return null;
 }
 
 function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRecord | null): TsnUiStage {

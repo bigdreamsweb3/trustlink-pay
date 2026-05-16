@@ -21,7 +21,10 @@
     ],
     // "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"],
+      "@solana/spl-token": ["./node_modules/@solana/spl-token"],
+      "@solana/web3.js": ["./node_modules/@solana/web3.js"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

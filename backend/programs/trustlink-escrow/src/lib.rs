@@ -36,6 +36,9 @@ pub mod trustlink_escrow {
         send_fee_max_ui_micros: u64,
         claim_fee_bps: u16,
         claim_fee_max_ui_micros: u64,
+        fee_coverage_tx_count: u16,
+        send_fee_max_usd_micros: u64,
+        claim_fee_max_usd_micros: u64,
         default_expiry_seconds: i64,
     ) -> Result<()> {
         instructions::initialize_config(
@@ -46,6 +49,9 @@ pub mod trustlink_escrow {
             send_fee_max_ui_micros,
             claim_fee_bps,
             claim_fee_max_ui_micros,
+            fee_coverage_tx_count,
+            send_fee_max_usd_micros,
+            claim_fee_max_usd_micros,
             default_expiry_seconds,
         )
     }
@@ -58,6 +64,9 @@ pub mod trustlink_escrow {
         new_send_fee_max_ui_micros: u64,
         new_claim_fee_bps: u16,
         new_claim_fee_max_ui_micros: u64,
+        new_fee_coverage_tx_count: u16,
+        new_send_fee_max_usd_micros: u64,
+        new_claim_fee_max_usd_micros: u64,
         new_default_expiry_seconds: i64,
     ) -> Result<()> {
         instructions::update_config(
@@ -68,6 +77,9 @@ pub mod trustlink_escrow {
             new_send_fee_max_ui_micros,
             new_claim_fee_bps,
             new_claim_fee_max_ui_micros,
+            new_fee_coverage_tx_count,
+            new_send_fee_max_usd_micros,
+            new_claim_fee_max_usd_micros,
             new_default_expiry_seconds,
         )
     }
@@ -80,6 +92,9 @@ pub mod trustlink_escrow {
         new_send_fee_max_ui_micros: u64,
         new_claim_fee_bps: u16,
         new_claim_fee_max_ui_micros: u64,
+        new_fee_coverage_tx_count: u16,
+        new_send_fee_max_usd_micros: u64,
+        new_claim_fee_max_usd_micros: u64,
         new_default_expiry_seconds: i64,
     ) -> Result<()> {
         instructions::migrate_legacy_config(
@@ -90,6 +105,9 @@ pub mod trustlink_escrow {
             new_send_fee_max_ui_micros,
             new_claim_fee_bps,
             new_claim_fee_max_ui_micros,
+            new_fee_coverage_tx_count,
+            new_send_fee_max_usd_micros,
+            new_claim_fee_max_usd_micros,
             new_default_expiry_seconds,
         )
     }

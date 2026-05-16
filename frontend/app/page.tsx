@@ -1,5 +1,5 @@
-import { HomeRedirect } from "@/src/components/home-redirect";
+import { LandingPage } from "@/src/components/landing-page";
 
 export default function HomePage() {
-  return <HomeRedirect />;
+  return <LandingPage />;
 }

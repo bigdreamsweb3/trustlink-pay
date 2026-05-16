@@ -119,6 +119,8 @@ export function PhoneNumberInput({
 
   const showSummaryCard = verificationDetails && verificationState !== "checking";
   const showLookupCard = lookupBusy || Boolean(lookupError) || Boolean(recipientPreview) || Boolean(showSummaryCard);
+  const inputValue = value.trim();
+  const isTinCandidate = /^tin[:\s-]/i.test(inputValue) || /^tin_[a-z0-9]+$/i.test(inputValue);
   const isBusiness = Boolean(verificationDetails?.isBusiness);
   const displayName = verificationDetails?.displayName?.trim() || null;
   const avatarSrc =
@@ -330,7 +332,7 @@ export function PhoneNumberInput({
 
       {/* ── Lookup Result Card ── */}
       {showLookupCard ? (
-        <div className={`relative z-10 rounded-[18px] px-4 py-3.5 ${trustLinkToneClass}`}>
+        <div className={`relative z-10 rounded-[18px] px-4 py-3.5  tl-panel-header ${trustLinkToneClass}`}>
           {lookupBusy ? (
             <SectionLoader label="Verifying recipient..." />
           ) : lookupError ? (
@@ -374,6 +376,18 @@ export function PhoneNumberInput({
                 ) : null}
               </div>
 
+              <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2.5">
+                <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">Identity routing preview</div>
+                <div className="mt-1 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
+                <div className="text-[0.7rem] text-[var(--text-faint)]">X: feature coming soon (user has not linked X profile)</div>
+                <div className="text-[0.7rem] text-[var(--text-faint)]">TIN: feature coming soon (no linked TIN yet)</div>
+              </div>
+
+              {isTinCandidate ? (
+                <div className="rounded-[12px] border border-[#7dd3fc]/20 bg-[#7dd3fc]/10 px-3 py-2 text-[0.7rem] text-[#bde8ff]">
+                  TIN lookup is coming soon. For now, TrustLink routes by verified WhatsApp identity.
+                </div>
+              ) : null}
 
               {showSummaryCard ? (
                 <div className="">

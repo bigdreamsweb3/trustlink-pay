@@ -1,3 +1,3 @@
 "use client";
 
-export { QRCodeDisplay } from "@/src/trustlink-whatsapp-sdk/ui";
+export { QRCodeDisplay } from "@/src/lib/whatsapp";

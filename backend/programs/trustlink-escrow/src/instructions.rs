@@ -19,6 +19,9 @@ pub fn initialize_config(
     send_fee_max_ui_micros: u64,
     claim_fee_bps: u16,
     claim_fee_max_ui_micros: u64,
+    fee_coverage_tx_count: u16,
+    send_fee_max_usd_micros: u64,
+    claim_fee_max_usd_micros: u64,
     default_expiry_seconds: i64,
 ) -> Result<()> {
     require!(
@@ -27,13 +30,17 @@ pub fn initialize_config(
     );
     require_fee_config(send_fee_bps, send_fee_max_ui_micros)?;
     require_fee_config(claim_fee_bps, claim_fee_max_ui_micros)?;
+    require!(fee_coverage_tx_count > 0, TrustLinkEscrowError::InvalidFeeConfig);
     let config = &mut ctx.accounts.config;
     config.claim_verifier = claim_verifier;
     config.treasury_owner = treasury_owner;
     config.send_fee_bps = send_fee_bps;
     config.claim_fee_bps = claim_fee_bps;
+    config.fee_coverage_tx_count = fee_coverage_tx_count;
     config.send_fee_max_ui_micros = send_fee_max_ui_micros;
     config.claim_fee_max_ui_micros = claim_fee_max_ui_micros;
+    config.send_fee_max_usd_micros = send_fee_max_usd_micros;
+    config.claim_fee_max_usd_micros = claim_fee_max_usd_micros;
     config.default_expiry_seconds = default_expiry_seconds;
     config.bump = ctx.bumps.config;
     Ok(())
@@ -47,6 +54,9 @@ pub fn update_config(
     new_send_fee_max_ui_micros: u64,
     new_claim_fee_bps: u16,
     new_claim_fee_max_ui_micros: u64,
+    new_fee_coverage_tx_count: u16,
+    new_send_fee_max_usd_micros: u64,
+    new_claim_fee_max_usd_micros: u64,
     new_default_expiry_seconds: i64,
 ) -> Result<()> {
     require!(
@@ -55,6 +65,10 @@ pub fn update_config(
     );
     require_fee_config(new_send_fee_bps, new_send_fee_max_ui_micros)?;
     require_fee_config(new_claim_fee_bps, new_claim_fee_max_ui_micros)?;
+    require!(
+        new_fee_coverage_tx_count > 0,
+        TrustLinkEscrowError::InvalidFeeConfig
+    );
     require_keys_eq!(
         ctx.accounts.authority.key(),
         ctx.accounts.config.claim_verifier,
@@ -66,8 +80,11 @@ pub fn update_config(
     config.treasury_owner = new_treasury_owner;
     config.send_fee_bps = new_send_fee_bps;
     config.claim_fee_bps = new_claim_fee_bps;
+    config.fee_coverage_tx_count = new_fee_coverage_tx_count;
     config.send_fee_max_ui_micros = new_send_fee_max_ui_micros;
     config.claim_fee_max_ui_micros = new_claim_fee_max_ui_micros;
+    config.send_fee_max_usd_micros = new_send_fee_max_usd_micros;
+    config.claim_fee_max_usd_micros = new_claim_fee_max_usd_micros;
     config.default_expiry_seconds = new_default_expiry_seconds;
     Ok(())
 }
@@ -80,6 +97,9 @@ pub fn migrate_legacy_config(
     new_send_fee_max_ui_micros: u64,
     new_claim_fee_bps: u16,
     new_claim_fee_max_ui_micros: u64,
+    new_fee_coverage_tx_count: u16,
+    new_send_fee_max_usd_micros: u64,
+    new_claim_fee_max_usd_micros: u64,
     new_default_expiry_seconds: i64,
 ) -> Result<()> {
     require!(
@@ -88,6 +108,10 @@ pub fn migrate_legacy_config(
     );
     require_fee_config(new_send_fee_bps, new_send_fee_max_ui_micros)?;
     require_fee_config(new_claim_fee_bps, new_claim_fee_max_ui_micros)?;
+    require!(
+        new_fee_coverage_tx_count > 0,
+        TrustLinkEscrowError::InvalidFeeConfig
+    );
 
     let config_info = ctx.accounts.config.to_account_info();
     require_keys_eq!(
@@ -145,10 +169,13 @@ pub fn migrate_legacy_config(
     data[40..72].copy_from_slice(new_treasury_owner.as_ref());
     data[72..74].copy_from_slice(&new_send_fee_bps.to_le_bytes());
     data[74..76].copy_from_slice(&new_claim_fee_bps.to_le_bytes());
-    data[76..84].copy_from_slice(&new_send_fee_max_ui_micros.to_le_bytes());
-    data[84..92].copy_from_slice(&new_claim_fee_max_ui_micros.to_le_bytes());
-    data[92..100].copy_from_slice(&new_default_expiry_seconds.to_le_bytes());
-    data[100] = ctx.bumps.config;
+    data[76..78].copy_from_slice(&new_fee_coverage_tx_count.to_le_bytes());
+    data[78..86].copy_from_slice(&new_send_fee_max_ui_micros.to_le_bytes());
+    data[86..94].copy_from_slice(&new_claim_fee_max_ui_micros.to_le_bytes());
+    data[94..102].copy_from_slice(&new_send_fee_max_usd_micros.to_le_bytes());
+    data[102..110].copy_from_slice(&new_claim_fee_max_usd_micros.to_le_bytes());
+    data[110..118].copy_from_slice(&new_default_expiry_seconds.to_le_bytes());
+    data[118] = ctx.bumps.config;
 
     Ok(())
 }

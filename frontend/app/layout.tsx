@@ -1,30 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Plus_Jakarta_Sans, Sora } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { AppProviders } from "@/app/providers";
 import "./globals.css";
-
-/* ---------------- Fonts ---------------- */
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-display-face",
-  display: "swap",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  variable: "--font-tactical-face",
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
 
 /* ---------------- SEO CONFIG ---------------- */
 
@@ -127,9 +105,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body
-        className={`${plusJakartaSans.variable} ${sora.variable} ${ibmPlexMono.variable}`}
-      >
+      <body>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

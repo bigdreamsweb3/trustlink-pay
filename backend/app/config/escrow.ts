@@ -16,6 +16,7 @@ export type EscrowPolicyConfig = {
   claimFeeBps: number;
   claimFeeMaxUiAmount: number;
   claimFeeMaxUsd: number;
+  feeCoverageTxCount: number;
   defaultExpirySeconds: number;
   autoclaimMaxUsd: number;
   recoveryWallets: RecoveryWalletConfig[];
@@ -46,6 +47,13 @@ function normalizeUiAmount(value: number, field: string) {
 function normalizeExpirySeconds(value: number) {
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error("TRUSTLINK_DEFAULT_EXPIRY_SECONDS must be greater than 0");
+  }
+  return Math.floor(value);
+}
+
+function normalizeCoverageTxCount(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error("TRUSTLINK_FEE_COVERAGE_TX_COUNT must be greater than 0");
   }
   return Math.floor(value);
 }
@@ -84,6 +92,7 @@ export function getEscrowPolicyConfig(): EscrowPolicyConfig {
       env.TRUSTLINK_CLAIM_FEE_MAX_USD ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
       "TRUSTLINK_CLAIM_FEE_MAX_USD",
     ),
+    feeCoverageTxCount: normalizeCoverageTxCount(env.TRUSTLINK_FEE_COVERAGE_TX_COUNT),
     defaultExpirySeconds: normalizeExpirySeconds(env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS),
     autoclaimMaxUsd: normalizeUiAmount(env.TRUSTLINK_AUTOCLAIM_MAX_USD, "TRUSTLINK_AUTOCLAIM_MAX_USD"),
     recoveryWallets: parseRecoveryWallets(),

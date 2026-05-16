@@ -118,8 +118,11 @@ type DecodedEscrowConfig = {
   treasuryOwner: PublicKey | null;
   sendFeeBps: number;
   claimFeeBps: number;
+  feeCoverageTxCount: number;
   sendFeeMaxUiMicros: bigint;
   claimFeeMaxUiMicros: bigint;
+  sendFeeMaxUsdMicros: bigint;
+  claimFeeMaxUsdMicros: bigint;
   defaultExpirySeconds: bigint;
   bump: number;
   layout: "current" | "legacy";
@@ -420,7 +423,7 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     throw new Error("Escrow config discriminator mismatch");
   }
 
-  const currentLayoutSize = 8 + 32 + 32 + 2 + 2 + 8 + 8 + 8 + 1;
+  const currentLayoutSize = 8 + 32 + 32 + 2 + 2 + 2 + 8 + 8 + 8 + 8 + 8 + 1;
   const legacyLayoutSize = 8 + 32 + 8 + 1;
 
   if (data.length < legacyLayoutSize) {
@@ -438,8 +441,11 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
       treasuryOwner: null,
       sendFeeBps: 0,
       claimFeeBps: 0,
+      feeCoverageTxCount: 1,
       sendFeeMaxUiMicros: 0n,
       claimFeeMaxUiMicros: 0n,
+      sendFeeMaxUsdMicros: 0n,
+      claimFeeMaxUsdMicros: 0n,
       defaultExpirySeconds: 0n,
       bump,
       layout: "legacy",
@@ -459,8 +465,11 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
       treasuryOwner: null,
       sendFeeBps: 0,
       claimFeeBps: 0,
+      feeCoverageTxCount: 1,
       sendFeeMaxUiMicros: 0n,
       claimFeeMaxUiMicros: 0n,
+      sendFeeMaxUsdMicros: 0n,
+      claimFeeMaxUsdMicros: 0n,
       defaultExpirySeconds,
       bump,
       layout: "legacy",
@@ -476,9 +485,15 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
   offset += 2;
   const claimFeeBps = data.readUInt16LE(offset);
   offset += 2;
+  const feeCoverageTxCount = data.readUInt16LE(offset);
+  offset += 2;
   const sendFeeMaxUiMicros = data.readBigUInt64LE(offset);
   offset += 8;
   const claimFeeMaxUiMicros = data.readBigUInt64LE(offset);
+  offset += 8;
+  const sendFeeMaxUsdMicros = data.readBigUInt64LE(offset);
+  offset += 8;
+  const claimFeeMaxUsdMicros = data.readBigUInt64LE(offset);
   offset += 8;
   const defaultExpirySeconds = data.readBigInt64LE(offset);
   offset += 8;
@@ -489,8 +504,11 @@ function decodeEscrowConfig(data: Buffer): DecodedEscrowConfig {
     treasuryOwner,
     sendFeeBps,
     claimFeeBps,
+    feeCoverageTxCount,
     sendFeeMaxUiMicros,
     claimFeeMaxUiMicros,
+    sendFeeMaxUsdMicros,
+    claimFeeMaxUsdMicros,
     defaultExpirySeconds,
     bump,
     layout: "current",
@@ -525,8 +543,11 @@ export async function getEscrowConfigState() {
     treasuryOwner: decoded.treasuryOwner?.toBase58() ?? null,
     sendFeeBps: decoded.sendFeeBps,
     claimFeeBps: decoded.claimFeeBps,
+    feeCoverageTxCount: decoded.feeCoverageTxCount,
     sendFeeMaxUiAmount: microsToUiAmount(decoded.sendFeeMaxUiMicros),
     claimFeeMaxUiAmount: microsToUiAmount(decoded.claimFeeMaxUiMicros),
+    sendFeeMaxUsd: microsToUiAmount(decoded.sendFeeMaxUsdMicros),
+    claimFeeMaxUsd: microsToUiAmount(decoded.claimFeeMaxUsdMicros),
     defaultExpirySeconds: decoded.defaultExpirySeconds.toString(),
     bump: decoded.bump,
     layout: decoded.layout,
@@ -556,6 +577,9 @@ export async function initializeEscrowConfig() {
     encodeU64(uiAmountToMicros(policy.sendFeeMaxUiAmount)),
     encodeU16(policy.claimFeeBps),
     encodeU64(uiAmountToMicros(policy.claimFeeMaxUiAmount)),
+    encodeU16(policy.feeCoverageTxCount),
+    encodeU64(uiAmountToMicros(policy.sendFeeMaxUsd)),
+    encodeU64(uiAmountToMicros(policy.claimFeeMaxUsd)),
     encodeI64(BigInt(policy.defaultExpirySeconds)),
   ]);
 
@@ -581,6 +605,9 @@ export async function initializeEscrowConfig() {
     treasuryOwner: policy.treasuryOwner,
     sendFeeBps: policy.sendFeeBps,
     claimFeeBps: policy.claimFeeBps,
+    feeCoverageTxCount: policy.feeCoverageTxCount,
+    sendFeeMaxUsd: policy.sendFeeMaxUsd,
+    claimFeeMaxUsd: policy.claimFeeMaxUsd,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 
@@ -614,6 +641,9 @@ export async function updateEscrowConfig() {
   const targetClaimFeeBps = policy.claimFeeBps;
   const targetSendFeeMaxUiMicros = uiAmountToMicros(policy.sendFeeMaxUiAmount);
   const targetClaimFeeMaxUiMicros = uiAmountToMicros(policy.claimFeeMaxUiAmount);
+  const targetFeeCoverageTxCount = policy.feeCoverageTxCount;
+  const targetSendFeeMaxUsdMicros = uiAmountToMicros(policy.sendFeeMaxUsd);
+  const targetClaimFeeMaxUsdMicros = uiAmountToMicros(policy.claimFeeMaxUsd);
   const targetDefaultExpirySeconds = BigInt(policy.defaultExpirySeconds);
 
   if (
@@ -621,8 +651,11 @@ export async function updateEscrowConfig() {
     current.treasuryOwner?.toBase58() === targetTreasuryOwner &&
     current.sendFeeBps === targetSendFeeBps &&
     current.claimFeeBps === targetClaimFeeBps &&
+    current.feeCoverageTxCount === targetFeeCoverageTxCount &&
     current.sendFeeMaxUiMicros === targetSendFeeMaxUiMicros &&
     current.claimFeeMaxUiMicros === targetClaimFeeMaxUiMicros &&
+    current.sendFeeMaxUsdMicros === targetSendFeeMaxUsdMicros &&
+    current.claimFeeMaxUsdMicros === targetClaimFeeMaxUsdMicros &&
     current.defaultExpirySeconds === targetDefaultExpirySeconds
   ) {
     logger.info("solana.escrow_config_already_matches_target", {
@@ -642,6 +675,9 @@ export async function updateEscrowConfig() {
     encodeU64(targetSendFeeMaxUiMicros),
     encodeU16(targetClaimFeeBps),
     encodeU64(targetClaimFeeMaxUiMicros),
+    encodeU16(targetFeeCoverageTxCount),
+    encodeU64(targetSendFeeMaxUsdMicros),
+    encodeU64(targetClaimFeeMaxUsdMicros),
     encodeI64(targetDefaultExpirySeconds),
   ]);
 
@@ -681,6 +717,9 @@ export async function updateEscrowConfig() {
     treasuryOwner: targetTreasuryOwner,
     sendFeeBps: targetSendFeeBps,
     claimFeeBps: targetClaimFeeBps,
+    feeCoverageTxCount: targetFeeCoverageTxCount,
+    sendFeeMaxUsd: policy.sendFeeMaxUsd,
+    claimFeeMaxUsd: policy.claimFeeMaxUsd,
     defaultExpirySeconds: policy.defaultExpirySeconds,
   });
 

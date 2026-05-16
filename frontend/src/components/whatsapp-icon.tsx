@@ -1,4 +1,3 @@
 "use client";
 
-export * from "@/src/trustlink-whatsapp-sdk/ui/whatsapp-icon";
-
+export { WhatsAppIcon, WhatsAppWhiteIcon } from "@/src/lib/whatsapp";

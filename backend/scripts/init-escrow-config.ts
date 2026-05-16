@@ -22,6 +22,7 @@ async function main() {
   console.log(
     `Claim fee target: ${policy.claimFeeBps} bps, max UI ${policy.claimFeeMaxUiAmount}, max margin USD ${policy.claimFeeMaxUsd}`,
   );
+  console.log(`Fee coverage tx count target: ${policy.feeCoverageTxCount}`);
   console.log(`Default expiry seconds: ${policy.defaultExpirySeconds}`);
 
   if (before) {
@@ -31,6 +32,9 @@ async function main() {
     console.log(`Current treasury owner: ${before.treasuryOwner ?? "(legacy unset)"}`);
     console.log(`Current send fee: ${before.sendFeeBps} bps, max ${before.sendFeeMaxUiAmount}`);
     console.log(`Current claim fee: ${before.claimFeeBps} bps, max ${before.claimFeeMaxUiAmount}`);
+    console.log(`Current send fee max margin USD: ${before.sendFeeMaxUsd}`);
+    console.log(`Current claim fee max margin USD: ${before.claimFeeMaxUsd}`);
+    console.log(`Current fee coverage tx count: ${before.feeCoverageTxCount}`);
     console.log(`Current default expiry seconds: ${before.defaultExpirySeconds}`);
 
     const alreadyMatches =
@@ -40,6 +44,9 @@ async function main() {
       before.claimFeeBps === policy.claimFeeBps &&
       before.sendFeeMaxUiAmount === policy.sendFeeMaxUiAmount &&
       before.claimFeeMaxUiAmount === policy.claimFeeMaxUiAmount &&
+      before.sendFeeMaxUsd === policy.sendFeeMaxUsd &&
+      before.claimFeeMaxUsd === policy.claimFeeMaxUsd &&
+      before.feeCoverageTxCount === policy.feeCoverageTxCount &&
       before.defaultExpirySeconds === policy.defaultExpirySeconds.toString();
 
     if (alreadyMatches) {
@@ -65,6 +72,9 @@ async function main() {
     console.log(`Initialized treasury owner: ${after.treasuryOwner ?? "(unset)"}`);
     console.log(`Initialized send fee: ${after.sendFeeBps} bps, max ${after.sendFeeMaxUiAmount}`);
     console.log(`Initialized claim fee: ${after.claimFeeBps} bps, max ${after.claimFeeMaxUiAmount}`);
+    console.log(`Initialized send fee max margin USD: ${after.sendFeeMaxUsd}`);
+    console.log(`Initialized claim fee max margin USD: ${after.claimFeeMaxUsd}`);
+    console.log(`Initialized fee coverage tx count: ${after.feeCoverageTxCount}`);
     console.log(`Initialized default expiry seconds: ${after.defaultExpirySeconds}`);
   }
 }

@@ -11,14 +11,17 @@ pub struct EscrowConfig {
     pub treasury_owner: Pubkey,
     pub send_fee_bps: u16,
     pub claim_fee_bps: u16,
+    pub fee_coverage_tx_count: u16,
     pub send_fee_max_ui_micros: u64,
     pub claim_fee_max_ui_micros: u64,
+    pub send_fee_max_usd_micros: u64,
+    pub claim_fee_max_usd_micros: u64,
     pub default_expiry_seconds: i64,
     pub bump: u8,
 }
 
 impl EscrowConfig {
-    pub const SPACE: usize = 8 + 32 + 32 + 2 + 2 + 8 + 8 + 8 + 1;
+    pub const SPACE: usize = 8 + 32 + 32 + 2 + 2 + 2 + 8 + 8 + 8 + 8 + 8 + 1;
 }
 
 #[account]

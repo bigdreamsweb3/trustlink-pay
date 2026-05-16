@@ -496,6 +496,14 @@ export function SendExperience() {
                           <span className={`text-[0.72rem] font-medium capitalize ${recipientPreview.status === "registered" ? "text-accent" : "text-[var(--warning)]"
                             }`}>{recipientPreview.status.replace(/_/g, " ")}</span>
                         </div>
+                        <div className="mt-2 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
+                        <div className="text-[0.68rem] text-[var(--text-faint)]">X: coming soon (not linked yet)</div>
+                        <div className="text-[0.68rem] text-[var(--text-faint)]">TIN: coming soon (routing will support linked TIN)</div>
+                        {(/^tin[:\s-]/i.test(receiverPhoneInput.trim()) || /^tin_[a-z0-9]+$/i.test(receiverPhoneInput.trim())) ? (
+                          <div className="mt-2 text-[0.66rem] text-[#bde8ff]">
+                            TIN input detected. Direct TIN resolution is not live yet.
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

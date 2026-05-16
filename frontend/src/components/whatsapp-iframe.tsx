@@ -1,4 +1,3 @@
 "use client";
 
-export * from "@/src/trustlink-whatsapp-sdk/ui/whatsapp-iframe";
-
+export { WhatsAppIframe } from "@/src/lib/whatsapp";

@@ -55,12 +55,12 @@ pub struct SubmitProof<'info> {
     )]
     pub operator_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: Fee destination for protocol revenue (validated off-chain by the TSN runner).
+    /// Treasury token account for protocol revenue.
     #[account(
         mut,
         constraint = treasury_token_account.mint == intent.token_mint
     )]
-    pub treasury_token_account: UncheckedAccount<'info>,
+    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,

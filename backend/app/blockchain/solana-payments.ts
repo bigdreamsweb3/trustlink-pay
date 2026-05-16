@@ -49,7 +49,8 @@ import {
   getTsnIntentPda,
   getTsnMotherEscrowPda,
   sha256Bytes,
-} from "@/app/blockchain/solana-tsn";
+} from "../../../tsn/src/blockchain/solana-tsn";
+import { quoteTransferFeeUiAmount } from "../../../tsn/src";
 
 const splToken = require("@solana/spl-token") as {
   getAssociatedTokenAddressSync: (mint: PublicKey, owner: PublicKey) => PublicKey;
@@ -73,15 +74,6 @@ function encodeI64(value: bigint) {
   const buffer = Buffer.alloc(8);
   buffer.writeBigInt64LE(value);
   return buffer;
-}
-
-function getSenderFeeAmountUi(amount: number, decimals: number) {
-  return calculateFeeAmountUi({
-    amount,
-    decimals,
-    basisPoints: env.TRUSTLINK_SEND_FEE_BPS,
-    maxUiAmount: env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
-  });
 }
 
 async function sleep(ms: number) {
@@ -120,41 +112,29 @@ async function getAccountInfoWithRetry(connection: Connection, account: PublicKe
 }
 
 type ActiveEscrowFeePolicy = {
-  treasuryOwner: string;
   sendFeeBps: number;
   sendFeeMaxUiAmount: number;
   sendFeeMaxUsd: number;
   claimFeeBps: number;
   claimFeeMaxUiAmount: number;
   claimFeeMaxUsd: number;
+  feeCoverageTxCount: number;
 };
 
 async function getActiveEscrowFeePolicy(): Promise<ActiveEscrowFeePolicy> {
   const config = await getEscrowConfigState();
-  if (config?.treasuryOwner) {
-    return {
-      treasuryOwner: config.treasuryOwner,
-      sendFeeBps: config.sendFeeBps ?? env.TRUSTLINK_SEND_FEE_BPS,
-      sendFeeMaxUiAmount: config.sendFeeMaxUiAmount ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
-      sendFeeMaxUsd: env.TRUSTLINK_SEND_FEE_MAX_USD ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
-      claimFeeBps: config.claimFeeBps ?? env.TRUSTLINK_CLAIM_FEE_BPS,
-      claimFeeMaxUiAmount: config.claimFeeMaxUiAmount ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
-      claimFeeMaxUsd: env.TRUSTLINK_CLAIM_FEE_MAX_USD ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
-    };
-  }
-
-  if (!env.TRUSTLINK_TREASURY_OWNER) {
-    throw new Error("TrustLink treasury owner is not configured");
+  if (!config?.treasuryOwner) {
+    throw new Error("Escrow config is not initialized on-chain. Fee policy must come from program config.");
   }
 
   return {
-    treasuryOwner: env.TRUSTLINK_TREASURY_OWNER,
-    sendFeeBps: env.TRUSTLINK_SEND_FEE_BPS,
-    sendFeeMaxUiAmount: env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
-    sendFeeMaxUsd: env.TRUSTLINK_SEND_FEE_MAX_USD ?? env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
-    claimFeeBps: env.TRUSTLINK_CLAIM_FEE_BPS,
-    claimFeeMaxUiAmount: env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
-    claimFeeMaxUsd: env.TRUSTLINK_CLAIM_FEE_MAX_USD ?? env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+    sendFeeBps: config.sendFeeBps,
+    sendFeeMaxUiAmount: config.sendFeeMaxUiAmount,
+    sendFeeMaxUsd: config.sendFeeMaxUsd,
+    claimFeeBps: config.claimFeeBps,
+    claimFeeMaxUiAmount: config.claimFeeMaxUiAmount,
+    claimFeeMaxUsd: config.claimFeeMaxUsd,
+    feeCoverageTxCount: config.feeCoverageTxCount,
   };
 }
 
@@ -169,34 +149,6 @@ function getSenderFeeAmountUiFromPolicy(
     basisPoints: policy.sendFeeBps,
     maxUiAmount: policy.sendFeeMaxUiAmount,
   });
-}
-
-function getProtocolFeeAmountUiFromNetwork(params: {
-  estimatedNetworkFeeLamports: number;
-  solUsd: number | null;
-  tokenUsd: number | null;
-  tokenDecimals: number;
-  feeBps: number;
-  maxMarginUsd: number;
-}) {
-  if (
-    params.estimatedNetworkFeeLamports <= 0 ||
-    !params.solUsd ||
-    !params.tokenUsd ||
-    params.tokenUsd <= 0
-  ) {
-    return 0;
-  }
-
-  const networkFeeSol = lamportsToSol(params.estimatedNetworkFeeLamports);
-  const networkFeeUsd = networkFeeSol * params.solUsd;
-  const coveredNetworkFeeUsd = networkFeeUsd * env.TRUSTLINK_FEE_COVERAGE_TX_COUNT;
-  const uncappedMarginUsd = (coveredNetworkFeeUsd * params.feeBps) / 10_000;
-  const marginUsd =
-    params.maxMarginUsd > 0 ? Math.min(uncappedMarginUsd, params.maxMarginUsd) : uncappedMarginUsd;
-  const tokenFee = (coveredNetworkFeeUsd + marginUsd) / params.tokenUsd;
-
-  return roundUpToDecimals(tokenFee, params.tokenDecimals);
 }
 
 async function ensureAssociatedTokenAccount(params: {
@@ -279,7 +231,11 @@ async function buildCreatePaymentTransaction(params: {
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   });
-  const treasuryOwner = new PublicKey(feePolicy.treasuryOwner);
+  const treasuryOwnerRaw = (await getEscrowConfigState())?.treasuryOwner;
+  if (!treasuryOwnerRaw) {
+    throw new Error("Escrow treasury owner missing in on-chain config");
+  }
+  const treasuryOwner = new PublicKey(treasuryOwnerRaw);
   const treasuryTokenAccount = await ensureAssociatedTokenAccount({
     connection: params.connection,
     transaction,
@@ -357,33 +313,23 @@ export async function estimateSenderTransferCost(params: {
 
   const connection = getConnection();
   const built = await buildCreatePaymentTransaction({ connection, ...params, senderFeeAmountUiOverride: 0 });
-  const [createNetworkFeeLamports, claimNetworkFeeLamports, prices] = await Promise.all([
+  const [createNetworkFeeLamports, prices] = await Promise.all([
     estimateTransactionFeeLamports(connection, built.transaction),
-    estimateSenderCoveredClaimFeeLamports({
-      connection,
-      paymentId: params.paymentId,
-      escrowAccount: built.paymentAccount.toBase58(),
-      escrowVaultAddress: built.escrowVault.publicKey.toBase58(),
-      receiverWallet: params.receiverWallet ?? params.senderWallet,
-      paymentPhoneIdentityPublicKey: params.phoneIdentityPublicKey,
-      bindingPhoneIdentityPublicKey: params.bindingPhoneIdentityPublicKey ?? params.phoneIdentityPublicKey,
-      paymentReceiverPublicKey: params.paymentReceiverPublicKey,
-      paymentMode: params.paymentMode,
-      tokenMintAddress: params.tokenMintAddress,
-    }),
     getTokenAndSolUsdPrices(built.tokenConfig.symbol),
   ]);
 
-  const networkFeeLamports = createNetworkFeeLamports + claimNetworkFeeLamports;
+  const networkFeeLamports = createNetworkFeeLamports;
   const networkFeeSol = lamportsToSol(networkFeeLamports);
   const networkFeeUsd = prices.solUsd != null ? roundToDecimals(networkFeeSol * prices.solUsd, 6) : null;
-  const senderFeeAmountUi = getProtocolFeeAmountUiFromNetwork({
+  const senderFeeAmountUi = quoteTransferFeeUiAmount({
     estimatedNetworkFeeLamports: networkFeeLamports,
     solUsd: prices.solUsd,
     tokenUsd: prices.tokenUsd,
     tokenDecimals: built.tokenConfig.decimals,
+    coverageTxCount: feePolicy.feeCoverageTxCount,
     feeBps: feePolicy.sendFeeBps,
     maxMarginUsd: feePolicy.sendFeeMaxUsd,
+    maxUiAmount: feePolicy.sendFeeMaxUiAmount,
   });
   const senderFeeAmountUsd =
     prices.tokenUsd != null ? roundToDecimals(senderFeeAmountUi * prices.tokenUsd, 6) : null;
@@ -399,64 +345,6 @@ export async function estimateSenderTransferCost(params: {
     networkFeeSol,
     networkFeeUsd,
   };
-}
-
-async function estimateSenderCoveredClaimFeeLamports(params: {
-  connection: Connection;
-  paymentId: string;
-  escrowAccount: string;
-  escrowVaultAddress: string;
-  receiverWallet: string;
-  paymentPhoneIdentityPublicKey: string;
-  bindingPhoneIdentityPublicKey: string;
-  paymentReceiverPublicKey: string;
-  paymentMode: "secure" | "invite";
-  tokenMintAddress: string;
-}) {
-  if (env.SOLANA_MOCK_MODE) {
-    return 0;
-  }
-
-  try {
-    if (env.TSN_ENABLED) {
-      const motherEscrow = getTsnMotherEscrowPda();
-      const intent = getTsnIntentPda({
-        motherEscrow,
-        intentSeed32: sha256Bytes(params.paymentId),
-      });
-      return await estimateTsnClaimNetworkFeeLamports({
-        intent,
-        tokenMint: new PublicKey(params.tokenMintAddress),
-        recipientWallet: new PublicKey(params.receiverWallet),
-      });
-    }
-
-    const builtClaim = await buildClaimTransaction({
-      paymentId: params.paymentId,
-      escrowAccount: params.escrowAccount,
-      escrowVaultAddress: params.escrowVaultAddress,
-      receiverWallet: params.receiverWallet,
-      paymentPhoneIdentityPublicKey: params.paymentPhoneIdentityPublicKey,
-      bindingPhoneIdentityPublicKey: params.bindingPhoneIdentityPublicKey,
-      paymentReceiverPublicKey: params.paymentMode === "secure" ? params.paymentReceiverPublicKey : null,
-      paymentMode: params.paymentMode,
-      tokenMintAddress: params.tokenMintAddress,
-    });
-    const [claimFeeLamports, tokenAccountRentLamports] = await Promise.all([
-      estimateTransactionFeeLamports(params.connection, builtClaim.transaction),
-      params.connection.getMinimumBalanceForRentExemption(TOKEN_ACCOUNT_SPACE, "confirmed"),
-    ]);
-    const accountRentLamports =
-      (builtClaim.receiverNeedsAta ? tokenAccountRentLamports : 0) +
-      (builtClaim.treasuryNeedsAta ? tokenAccountRentLamports : 0);
-    return claimFeeLamports + accountRentLamports;
-  } catch (error) {
-    logger.warn("solana.sender_fee.claim_coverage_estimate_failed", {
-      paymentId: params.paymentId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return 0;
-  }
 }
 
 async function buildClaimTransaction(params: {
@@ -494,7 +382,11 @@ async function buildClaimTransaction(params: {
 
   const receiverAtaInfo = await connection.getAccountInfo(receiverTokenAccount, "confirmed");
   const bindingInfo = await connection.getAccountInfo(identityBinding, "confirmed");
-  const treasuryOwner = new PublicKey(feePolicy.treasuryOwner);
+  const treasuryOwnerRaw = (await getEscrowConfigState())?.treasuryOwner;
+  if (!treasuryOwnerRaw) {
+    throw new Error("Escrow treasury owner missing in on-chain config");
+  }
+  const treasuryOwner = new PublicKey(treasuryOwnerRaw);
   const expectedTreasuryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, treasuryOwner);
   const treasuryAtaInfo = await connection.getAccountInfo(expectedTreasuryTokenAccount, "confirmed");
 
@@ -692,13 +584,15 @@ export async function estimateClaimFee(params: {
       }),
       getTokenAndSolUsdPrices(tokenConfig.symbol),
     ]);
-    const feeAmountUi = getProtocolFeeAmountUiFromNetwork({
+    const feeAmountUi = quoteTransferFeeUiAmount({
       estimatedNetworkFeeLamports,
       solUsd: prices.solUsd,
       tokenUsd: prices.tokenUsd,
       tokenDecimals: tokenConfig.decimals,
+      coverageTxCount: feePolicy.feeCoverageTxCount,
       feeBps: feePolicy.claimFeeBps,
       maxMarginUsd: feePolicy.claimFeeMaxUsd,
+      maxUiAmount: feePolicy.claimFeeMaxUiAmount,
     });
     const feeAmountBaseUnits = toBaseUnits(feeAmountUi, tokenConfig.decimals);
     const receiverAmountUi = roundToDecimals(Math.max(params.amount - feeAmountUi, 0), tokenConfig.decimals);
@@ -737,13 +631,15 @@ export async function estimateClaimFee(params: {
   const estimatedNetworkFeeUsd =
     prices.solUsd != null ? roundToDecimals(estimatedNetworkFeeSol * prices.solUsd, 6) : null;
   const feePolicy = await getActiveEscrowFeePolicy();
-  const dynamicFeeAmountUi = getProtocolFeeAmountUiFromNetwork({
+  const dynamicFeeAmountUi = quoteTransferFeeUiAmount({
     estimatedNetworkFeeLamports: totalLamports,
     solUsd: prices.solUsd,
     tokenUsd: prices.tokenUsd,
     tokenDecimals: tokenConfig.decimals,
+    coverageTxCount: feePolicy.feeCoverageTxCount,
     feeBps: feePolicy.claimFeeBps,
     maxMarginUsd: feePolicy.claimFeeMaxUsd,
+    maxUiAmount: feePolicy.claimFeeMaxUiAmount,
   });
   const dynamicFeeAmountBaseUnits = toBaseUnits(dynamicFeeAmountUi, tokenConfig.decimals);
   const receiverAmountUi = roundToDecimals(Math.max(params.amount - dynamicFeeAmountUi, 0), tokenConfig.decimals);
@@ -841,7 +737,8 @@ export async function confirmEscrowPayment(params: {
   }
 
   if (env.SOLANA_MOCK_MODE) {
-    const senderFeeAmountUi = getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+    const feePolicy = await getActiveEscrowFeePolicy();
+    const senderFeeAmountUi = getSenderFeeAmountUiFromPolicy(feePolicy, params.amount, tokenConfig.decimals);
     return {
       escrowAccount: getPaymentAccountPda(params.paymentId).toBase58(),
       escrowVaultAddress: params.escrowVaultAddress,
@@ -892,7 +789,9 @@ export async function confirmEscrowPayment(params: {
   const senderFeeAmountUi =
     decoded.senderFeeAmount != null
       ? fromBaseUnits(decoded.senderFeeAmount, tokenConfig.decimals)
-      : getSenderFeeAmountUi(params.amount, tokenConfig.decimals);
+      : (() => {
+          throw new Error("Sender fee amount is missing on-chain for this payment account");
+        })();
 
   return {
     escrowAccount: paymentAccount.toBase58(),

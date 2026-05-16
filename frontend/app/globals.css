@@ -16,7 +16,8 @@
 
 :root {
   --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  --font-display-face: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --font-display-face:
+    "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
   --font-tactical-face: "IBM Plex Mono", "Aptos Mono", "Consolas", monospace;
 
   /* ── Motion tokens ──────────────────────────────────────── */
@@ -2304,7 +2305,7 @@ select {
   }
 
   .app-shell {
-    padding: 5.9rem 0.6rem 1.4rem;
+    padding: 6.5rem 1.1rem 2rem;
   }
 
   .app-shell--dashboard {

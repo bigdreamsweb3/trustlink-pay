@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BarChart3,
   CheckCircle2,
   Code2,
   Gauge,
@@ -14,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { LandingFeeYieldCalculator } from "@/src/components/landing-fee-yield-calculator";
 import { SiteHeader } from "@/src/components/layout/site-header";
 
 const heroStats = [
@@ -54,14 +54,8 @@ const feeRows = [
   ["Claim fee distribution", "operator + pool", "Claim fees stay in the settlement economy and are shared between Cranker operators and vault funders."],
 ];
 
-const yieldStreams = [
-  { title: "DeFi deployment", value: "Base yield", body: "Idle vault capital can route to the best available Solana yield venues as the LP layer matures." },
-  { title: "Claim fee share", value: "Operator + pool", body: "Claim fees are designed to cover Cranker operating costs while the remaining share rewards vault pool funders." },
-  { title: "Sender fee share", value: "TSN + pool", body: "Sender-side protocol fees support TSN development while a pool allocation increases vault funder yield." },
-];
-
 const crankerSteps = [
-  "Deploy USDC vault capital",
+  "Deploy approved asset vault capital",
   "Watch TSN for payment intents",
   "Acquire execution leases",
   "Pay recipients from vault liquidity",
@@ -111,7 +105,7 @@ export function LandingPage() {
             <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>
-          <h1 className="mt-5 max-w-[760px] text-[clamp(2.45rem,8vw,5.9rem)] font-black leading-[0.92] tracking-normal text-[var(--text)]">
+          <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,6vw,4.0rem)] font-black leading-[0.98] tracking-[0.09em] text-[var(--text)]">
             Blockchain payments as familiar as mobile money.
           </h1>
           <p className="mt-6 max-w-[680px] text-[1rem] leading-8 text-[var(--text-soft)] md:text-[1.12rem]">
@@ -132,7 +126,7 @@ export function LandingPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tl-meta-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">Payment intent</p>
-                <h2 className="mt-2 text-2xl font-black tracking-normal text-[var(--text)]">$100.00 USDC</h2>
+                <h2 className="mt-2 text-2xl font-black tracking-normal text-[var(--text)]">$100.00 stablecoin</h2>
               </div>
               <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
                 <ShieldCheck className="h-6 w-6" />
@@ -198,15 +192,11 @@ export function LandingPage() {
 
       <section id="lp-yield" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
         <SectionLabel index="03" title="LP yield layer" />
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          {yieldStreams.map((stream) => (
-            <article key={stream.title} className="tl-panel p-5">
-              <BarChart3 className="h-5 w-5 text-[var(--accent)]" />
-              <h3 className="mt-4 text-xl font-black tracking-normal text-[var(--text)]">{stream.title}</h3>
-              <strong className="mt-2 block text-3xl font-black text-[var(--accent)]">{stream.value}</strong>
-              <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">{stream.body}</p>
-            </article>
-          ))}
+        <p className="mt-4 max-w-[660px] text-sm leading-7 text-[var(--text-soft)]">
+          TSN LP yield combines base DeFi deployment with the liquidity provider share of sender fees and claim fees. The calculator separates LP income from Cranker operator share and TSN protocol revenue so depositors can compare expected returns clearly.
+        </p>
+        <div className="mt-6">
+          <LandingFeeYieldCalculator />
         </div>
       </section>
 
@@ -219,7 +209,7 @@ export function LandingPage() {
           <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
             Cranker operators provide the liquidity that makes instant settlement possible. They fund a vault, watch payment intents, execute payouts, submit proof, and recover from Mother Escrow at epoch settlement.
           </p>
-          <Link href="/operator-dashboard" className="mt-6 inline-flex items-center gap-2 rounded-[16px] bg-[var(--accent)] px-5 py-3 text-sm font-black text-[#04110a]">
+          <Link href="/operator-dashboard" className="mt-6 inline-flex items-center gap-2 rounded-[16px] bg-[#ff7a18] px-5 py-3 text-sm font-black text-[#120703] shadow-[0_14px_30px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]">
             Register as operator <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

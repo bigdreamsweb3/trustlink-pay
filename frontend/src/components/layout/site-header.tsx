@@ -12,7 +12,7 @@ const navItems = [
   { label: "Cranker", href: "/#cranker" },
   { label: "SDK", href: "/#sdk" },
   { label: "TINS", href: "/#tins" },
-];
+] as const;
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,7 +52,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/operator-dashboard"
-            className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 text-sm font-semibold tracking-normal transition"
+            className="inline-flex items-center justify-center rounded-[14px] bg-[#ff7a18] px-3.5 py-2.5 text-sm font-semibold tracking-normal text-[#120703] shadow-[0_10px_24px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]"
           >
             Operator Dashboard
           </Link>
@@ -99,7 +99,7 @@ export function SiteHeader() {
               <Link
                 href="/operator-dashboard"
                 onClick={() => setMenuOpen(false)}
-                className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 text-sm font-semibold"
+                className="inline-flex items-center justify-center rounded-[14px] bg-[#ff7a18] px-4 py-3 text-sm font-semibold text-[#120703] shadow-[0_10px_24px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]"
               >
                 Operator Dashboard
               </Link>

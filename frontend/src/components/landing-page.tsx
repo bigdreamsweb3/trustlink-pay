@@ -41,7 +41,25 @@ const flowSteps = [
   },
   {
     title: "TSN settles the claim",
-    body: "Cranker liquidity pays the recipient, submits proof, and recovers during epoch settlement. Recipient-side account setup is deducted only when that setup is unrecoverable.",
+    body: "Cranker liquidity pays through a private claim path, submits proof, and recovers during epoch settlement. The sender and recipient do not need to expose wallets to each other.",
+    icon: Network,
+  },
+];
+
+const privacyProofs = [
+  {
+    title: "No direct wallet-to-wallet route",
+    body: "The sender locks funds into temporary escrow instead of pushing directly to the recipient wallet.",
+    icon: LockKeyhole,
+  },
+  {
+    title: "Private claim flow",
+    body: "The recipient claims through TSN routing, so their wallet does not have to be shown to the sender.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Proof still settles on-chain",
+    body: "Crankers submit Proof of Payment so settlement remains verifiable without exposing the full user relationship.",
     icon: Network,
   },
 ];
@@ -106,10 +124,10 @@ export function LandingPage() {
             Transfer Settlement Network · Solana
           </div>
           <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,6vw,4.0rem)] font-black leading-[0.98] tracking-[0.09em] text-[var(--text)]">
-            Blockchain payments as familiar as mobile money.
+            Private stablecoin payments as familiar as mobile money.
           </h1>
           <p className="mt-6 max-w-[680px] text-[1rem] leading-8 text-[var(--text-soft)] md:text-[1.12rem]">
-            Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day because they solved identity-first payments. TrustLink Pay brings that same familiar identity layer to Solana stablecoins through a dApp, using phone-number-style identities first and TINs next.
+            Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day because they solved identity-first payments. TrustLink Pay brings that same familiar identity layer to Solana stablecoins, while TSN routes settlement through temporary escrow and private claim flows instead of direct wallet-to-wallet transfers.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="#how-it-works" className="tl-button-primary inline-flex items-center gap-2 rounded-[16px] px-5 py-3 text-sm font-bold">
@@ -133,7 +151,7 @@ export function LandingPage() {
               </div>
             </div>
             <div className="mt-6 grid gap-2">
-              {["Alice enters Bob's phone identity", "Escrow locks funds on Solana", "TSN cranker pays Bob", "Proof settles at epoch"].map((item) => (
+              {["Alice enters Bob's phone identity", "Temporary escrow locks funds", "Private claim routes payout", "Proof settles at epoch"].map((item) => (
                 <div key={item} className="flex items-center gap-3 rounded-[12px] border border-[var(--field-border)] bg-[var(--field)] px-3 py-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[var(--accent)]" />
                   <span className="text-sm font-semibold text-[var(--text-soft)]">{item}</span>
@@ -153,8 +171,31 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section id="tsn-privacy" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
+        <SectionLabel index="01" title="TSN privacy" />
+        <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <h2 className="text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-tight tracking-normal text-[var(--text)]">
+              Settlement without direct wallet-to-wallet exposure.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
+              TSN separates the sender lock, recipient claim, Cranker payout, and epoch reimbursement. Payments remain provable on-chain, but the normal payment experience does not require either side to reveal the other wallet path.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {privacyProofs.map((proof) => (
+              <article key={proof.title} className="tl-panel p-5">
+                <proof.icon className="h-5 w-5 text-[var(--accent)]" />
+                <h3 className="mt-4 text-base font-black tracking-normal text-[var(--text)]">{proof.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">{proof.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="how-it-works" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
-        <SectionLabel index="01" title="How a payment works" />
+        <SectionLabel index="02" title="How a payment works" />
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {flowSteps.map((step, index) => (
             <article key={step.title} className="tl-panel p-5">
@@ -171,7 +212,7 @@ export function LandingPage() {
 
       <section id="fee-model" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
-          <SectionLabel index="02" title="Current fee model" />
+          <SectionLabel index="03" title="Current fee model" />
           <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-tight tracking-normal text-[var(--text)]">
             Show the real fee, not account rent dressed up as network cost.
           </h2>
@@ -191,7 +232,7 @@ export function LandingPage() {
       </section>
 
       <section id="lp-yield" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
-        <SectionLabel index="03" title="LP settlement APY" />
+        <SectionLabel index="04" title="LP settlement APY" />
         <p className="mt-4 max-w-[660px] text-sm leading-7 text-[var(--text-soft)]">
           TSN LP APY is calculated strictly from real settlement fees generated by network usage. No external lending, farming, or hidden yield strategy is assumed. Settlement liquidity stays dedicated to instant transfer settlement.
         </p>
@@ -202,7 +243,7 @@ export function LandingPage() {
 
       <section id="cranker" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[1fr_0.9fr]">
         <div className="tl-panel p-5 md:p-7">
-          <SectionLabel index="04" title="Run a Cranker node" />
+          <SectionLabel index="05" title="Run a Cranker node" />
           <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-tight tracking-normal text-[var(--text)]">
             Earn for every settlement you execute.
           </h2>
@@ -224,7 +265,7 @@ export function LandingPage() {
       </section>
 
       <section id="sdk" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
-        <SectionLabel index="05" title="TSN SDK" />
+        <SectionLabel index="06" title="TSN SDK" />
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {sdkSnippets.map((snippet) => (
             <article key={snippet.title} className="tl-panel overflow-hidden">
@@ -252,7 +293,7 @@ export function LandingPage() {
 
       <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
-          <SectionLabel index="06" title="TINS" />
+          <SectionLabel index="07" title="TINS" />
           <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-tight tracking-normal text-[var(--text)]">
             Transfer Identity Number System.
           </h2>

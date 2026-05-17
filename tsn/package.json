@@ -9,6 +9,10 @@
     "mempool": "tsx src/server.ts",
     "setup": "tsx scripts/setup.ts",
     "cranker": "tsx scripts/cranker.ts",
+    "protocol:build": "cd protocol && anchor build",
+    "protocol:deploy": "cd protocol && anchor deploy",
+    "protocol:test": "cd protocol && anchor test",
+    "protocol:keys": "cd protocol && anchor keys list",
     "cranker:build": "npm --prefix cranker-sdk run build"
   },
   "dependencies": {

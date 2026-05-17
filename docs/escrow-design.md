@@ -5,7 +5,7 @@
 ### `EscrowV3`
 
 File:
-[backend/programs/trustlink-escrow/src/v3_state.rs](/C:/Users/codepara/Desktop/trust-link/backend/programs/trustlink-escrow/src/v3_state.rs)
+[tsn/protocol/programs/trustlink-escrow/src/v3_state.rs](/C:/Users/codepara/Desktop/trust-link/tsn/protocol/programs/trustlink-escrow/src/v3_state.rs)
 
 Fields:
 
@@ -195,9 +195,9 @@ This reduces linkability between payments.
 ## Current Code Paths
 
 - Program entrypoints:
-  [backend/programs/trustlink-escrow/src/lib.rs](/C:/Users/codepara/Desktop/trust-link/backend/programs/trustlink-escrow/src/lib.rs)
+  [tsn/protocol/programs/trustlink-escrow/src/lib.rs](/C:/Users/codepara/Desktop/trust-link/tsn/protocol/programs/trustlink-escrow/src/lib.rs)
 - Hardened verification logic:
-  [backend/programs/trustlink-escrow/src/v3.rs](/C:/Users/codepara/Desktop/trust-link/backend/programs/trustlink-escrow/src/v3.rs)
+  [tsn/protocol/programs/trustlink-escrow/src/v3.rs](/C:/Users/codepara/Desktop/trust-link/tsn/protocol/programs/trustlink-escrow/src/v3.rs)
 - Active backend payment builders:
   [backend/app/blockchain/solana-payments.ts](/C:/Users/codepara/Desktop/trust-link/backend/app/blockchain/solana-payments.ts)
 

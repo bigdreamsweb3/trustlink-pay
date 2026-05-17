@@ -93,8 +93,8 @@ The verifier wallet must remain funded with SOL. If its balance is too low, Sola
   - schema and query layer
 - `app/blockchain`
   - Solana integration helpers
-- `programs/trustlink-escrow`
-  - Anchor escrow program workspace
+- `../tsn/protocol/programs/trustlink-escrow`
+  - Anchor escrow program workspace (moved out of backend)
 - `scripts`
   - local setup and backend test utilities
 

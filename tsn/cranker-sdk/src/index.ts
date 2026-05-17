@@ -1,3 +1,2 @@
-export * from "./tsnPdas.js";
-export * from "./tsnClient.js";
-
+// CLI-focused SDK for setup commands
+// See cli.ts for implementation

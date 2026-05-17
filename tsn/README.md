@@ -1,45 +1,79 @@
-# TrustLink Transfer Settlement Network
+# Transfer Settlement Network (TSN)
 
-TSN is the Transfer Settlement Network boundary for TrustLink Pay.
+TSN is a privacy-preserving transfer settlement layer.
 
-This package owns TSN protocol contracts, the default TSN mempool, and cranker execution surface. It must not import from `backend/app/db`, open backend database connections, or persist TrustLink Pay application records.
+It routes payments through temporary escrow and private claim flows instead of direct wallet-to-wallet transfers.
 
-## Boundary
+TSN is protocol infrastructure for TINS and any external application that needs private settlement execution.
 
-- Backend sends payment/claim inputs to TSN through explicit request contracts.
-- Backend posts public intent and claim-request work to the TSN mempool.
-- Crankers listen to the TSN mempool, not the TrustLink backend database.
-- TSN returns protocol results such as intent metadata, settlement status, proof signatures, and cranker assignment data.
-- Backend owns all persistence of returned TSN data in the backend database.
-- Crankers and external workers consume TSN work through protocol/API contracts, not backend database tables.
+## Purpose
 
-## Verified Program
+TSN provides:
 
-The TSN SDK pins the current verified TSN-compatible escrow program in package code:
+1. Intent-based settlement lifecycle
+2. Deterministic executor (Cranker) lease assignment
+3. Proof of Payment (PoP) validation
+4. Vault-based liquidity execution
+5. Epoch reimbursement and fee distribution
+6. Privacy-aware settlement boundaries
 
-```text
-BQCDZF8gFs35xiEUEZbvgkLufMjrcysw5yPdv3MVZohM
-```
+## Why TSN Exists
 
-Apps using TSN should not pass arbitrary program IDs. If TSN migrates to a new verified program, the SDK package should be upgraded so consumers receive the new pinned program registry. Runtime environment variables are not trusted as the TSN authority source.
+Direct wallet-to-wallet transfers expose routing relationships and create unnecessary privacy leakage.
 
-## Local Mempool
+TSN separates:
+
+- sender lock flow
+- recipient claim flow
+- executor payout flow
+- reimbursement flow
+
+This separation enables private settlement coordination with verifiable on-chain state transitions.
+
+## Protocol Roles
+
+- Integrator app: creates intents and submits claim requests
+- Recipient: claims through private claim flow
+- Cranker: acquires lease, executes settlement, submits proof
+- Liquidity provider: funds vault positions
+- Epoch authority: finalizes reimbursement windows
+
+## Settlement Flow
+
+1. Integrator submits payment intent.
+2. Funds lock in temporary escrow path.
+3. Claim request enters settlement queue.
+4. One Cranker acquires execution lease.
+5. Cranker executes payout path and submits proof.
+6. Intent is finalized for epoch accounting.
+7. Epoch settlement reimburses and distributes fees.
+
+## Security Model
+
+TSN enforces:
+
+- single active lease holder per claimable intent
+- vault custody through PDAs
+- proof submission tied to lease ownership
+- funder-scoped withdrawal permissions for liquidity positions
+
+Validated behavior:
+
+- non-funder withdrawals are rejected
+- funder withdrawals are limited to that funder position
+- settlement execution depends on intent and lease state
+
+## Repository Layout
+
+- `tsn/protocol`: Anchor on-chain workspace
+- `tsn/src`: protocol TypeScript modules
+- `tsn/scripts`: operator/setup scripts
+- `tsn/cranker-sdk`: Cranker SDK package
+
+## Protocol Workspace Commands
 
 ```bash
-npm install
-npm run mempool
+cd tsn/protocol
+anchor build
+anchor deploy
 ```
-
-The local mempool listens on `http://localhost:8787` by default and writes to `.tsn/mempool.json`.
-
-## Cranker
-
-```bash
-npm run cranker
-```
-
-The cranker runner is intentionally inside `/tsn`; backend must not own TSN setup or cranker execution.
-
-## Current Integration
-
-The backend currently uses this package as an in-process protocol module while the HTTP service boundary is introduced. Backend database reads/writes remain in backend repositories only.

@@ -24,8 +24,9 @@ TSN_CRANKER_KEYPAIR_PATH=./cranker-keypair.json
 
 ```bash
 solana-test-validator
-cd backend
+cd tsn/protocol
 anchor deploy
+cd ../../backend
 tsx scripts/init-db.ts
 npm --prefix ../tsn run setup -- init-mother
 npm --prefix ../tsn run setup -- register-cranker
@@ -198,7 +199,6 @@ Expected signs it’s an SPL token account:
 
 ## What M4 Does Not Finish Yet
 
-- real SPL token payout from Cranker PDA vault liquidity
 - LP reward withdrawal accounting
 - LP share accounting
 - slashing

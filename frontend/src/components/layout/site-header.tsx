@@ -7,6 +7,7 @@ import { useState } from "react";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
+  { label: "TSN Privacy", href: "/#tsn-privacy" },
   { label: "How It Works", href: "/#how-it-works" },
   { label: "LP APY", href: "/#lp-yield" },
   { label: "Cranker", href: "/#cranker" },
@@ -18,23 +19,23 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="tl-topbar fixed inset-x-0 top-0 z-40">
+    <header className="bg-bg/90 backdrop-blur-lg border-b border-field-border fixed inset-x-0 top-0 z-40">
       <div className="mx-auto flex min-h-[72px] w-full max-w-[1180px] items-center justify-between gap-3 px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/" className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
+          <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
             <TrustLinkMark compact />
-            <div className="min-w-0">
-              <div className="truncate text-lg font-semibold tracking-normal text-[var(--text)]">TrustLink Pay</div>
-              <div className="truncate text-[0.68rem] uppercase tracking-[0.16em] tl-text-muted">Transfer Settlement Network</div>
+            <div className="min-w-0 flex flex-col items-start gap-1.5">
+              <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none">TrustLink Pay</div>
+              <Link
+                href="/#tsn-protocol"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] text-[var(--accent)] sm:inline-flex"
+              >
+                TSN Protocol
+              </Link>
             </div>
-          </Link>
-          <Link
-            href="/#tsn-protocol"
-            onClick={() => setMenuOpen(false)}
-            className="hidden rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--accent)] sm:inline-flex"
-          >
-            TSN Protocol
-          </Link>
+          </div>
+
         </div>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Landing page sections">
@@ -79,11 +80,11 @@ export function SiteHeader() {
         <div className="border-t border-[var(--field-border)] bg-[var(--bg-elevated)] px-4 pb-4 pt-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] md:hidden">
           <div className="mx-auto grid w-full max-w-[1180px] gap-2">
             <Link
-              href="/#tsn-protocol"
+              href="/#tsn-privacy"
               onClick={() => setMenuOpen(false)}
               className="rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-black text-[var(--accent)]"
             >
-              TSN Protocol
+              TSN Privacy
             </Link>
             {navItems.map((item) => (
               <Link

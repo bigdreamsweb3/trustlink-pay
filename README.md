@@ -6,6 +6,23 @@ The world already knows how to pay with a phone number. Nigeria uses OPay. India
 
 TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.
 
+## TSN Privacy Guarantee
+
+TSN is a privacy-preserving transfer settlement layer.
+
+It avoids direct wallet-to-wallet settlement exposure by splitting payment into private stages:
+
+1. sender-side escrow lock
+2. private recipient claim flow
+3. Cranker-executed payout path
+4. epoch reimbursement path
+
+Result:
+
+- sender does not need recipient wallet visibility
+- recipient does not need sender wallet visibility
+- settlement remains verifiable through proof and deterministic protocol state
+
 ---
 
 ## Project Architecture
@@ -266,8 +283,9 @@ Scaffolded and devnet-oriented. Covers Cranker execution, Proof of Payment, vaul
 | --- | --- |
 | `frontend` | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI |
 | `backend` | API routes, identity services, payment orchestration, database layer, and Solana integration |
-| `backend/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
+| `tsn/protocol/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
 | `tsn` | TSN contracts, settlement economics, Cranker daemon, and setup scripts |
+| `cranker-test` | Standalone root workspace to test Cranker npm-consumer setup |
 | `trustlink-whatsapp-sdk` | WhatsApp authentication UI and handoff helpers |
 | `docs` | Architecture notes, service boundaries, wallet roles, and devnet testing guides |
 | `transfer-identity-number-system-(TINS)` | TINS on-chain identity program track |

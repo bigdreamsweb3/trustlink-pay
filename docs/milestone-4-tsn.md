@@ -39,7 +39,7 @@ Make TrustLink Pay work like this:
 
 The program code lives in:
 
-- `backend/programs/trustlink-escrow/src/tsn/`
+- `tsn/protocol/programs/trustlink-escrow/src/tsn/`
 
 ## What Is Off-Chain In M4
 
@@ -156,4 +156,4 @@ npm --prefix ../tsn run setup -- settle-epoch --force
 - `withdraw-cranker` is intentionally a **funder-controlled withdrawal** (withdraw your own position principal). If you pass the funder keypair and `1000000`, the program will withdraw `1.000000` USDC by design.
 - If you test “unauthorized wallet cannot withdraw”, first make sure the unauthorized wallet has enough SOL to pay transaction fees, otherwise you’ll fail before the program’s authorization checks run.
 
-Use Ubuntu for `anchor deploy` if the Windows Anchor toolchain cannot build SBF.
+Use Ubuntu for `anchor deploy` from `tsn/protocol` if the Windows Anchor toolchain cannot build SBF.

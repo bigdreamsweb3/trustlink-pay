@@ -2,22 +2,74 @@ import Redis from 'ioredis';
 import { logger } from '@/app/lib/logger';
 import { env } from "@/app/lib/env";
 
-// Redis client configuration
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-const redis = new Redis(redisUrl);
+const redisGlobal = globalThis as typeof globalThis & {
+  __trustlinkRedis?: Redis;
+  __trustlinkRedisUrl?: string;
+  __trustlinkRedisEventsAttached?: boolean;
+  __trustlinkRedisLastErrorAt?: number;
+  __trustlinkRedisLastCloseAt?: number;
+};
 
-// Redis connection events
-redis.on('connect', () => {
-  logger.info('redis.connected', { url: redisUrl });
-});
+function redactedRedisUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.password) parsed.password = '***';
+    if (parsed.username) parsed.username = '***';
+    return parsed.toString();
+  } catch {
+    return 'redis://***';
+  }
+}
 
-redis.on('error', (error) => {
-  logger.error('redis.error', { error: error.message, url: redisUrl });
-});
+function createRedisClient() {
+  return new Redis(redisUrl, {
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy(times) {
+      if (times > 3) return null;
+      return Math.min(times * 250, 2_000);
+    },
+    reconnectOnError(error) {
+      if (error.message.includes('max number of clients')) return false;
+      return 1;
+    },
+  });
+}
 
-redis.on('close', () => {
-  logger.warn('redis.closed', { url: redisUrl });
-});
+const existingRedis = redisGlobal.__trustlinkRedis && redisGlobal.__trustlinkRedisUrl === redisUrl;
+const redis = existingRedis ? redisGlobal.__trustlinkRedis! : createRedisClient();
+
+if (!existingRedis) {
+  redisGlobal.__trustlinkRedisEventsAttached = false;
+}
+
+redisGlobal.__trustlinkRedis = redis;
+redisGlobal.__trustlinkRedisUrl = redisUrl;
+
+if (!redisGlobal.__trustlinkRedisEventsAttached) {
+  redis.on('connect', () => {
+    logger.info('redis.connected', { url: redactedRedisUrl(redisUrl) });
+  });
+
+  redis.on('error', (error) => {
+    const now = Date.now();
+    if (now - (redisGlobal.__trustlinkRedisLastErrorAt ?? 0) < 30_000) return;
+    redisGlobal.__trustlinkRedisLastErrorAt = now;
+
+    logger.error('redis.error', { error: error.message, url: redactedRedisUrl(redisUrl) });
+  });
+
+  redis.on('close', () => {
+    const now = Date.now();
+    if (now - (redisGlobal.__trustlinkRedisLastCloseAt ?? 0) < 30_000) return;
+    redisGlobal.__trustlinkRedisLastCloseAt = now;
+
+    logger.warn('redis.closed', { url: redactedRedisUrl(redisUrl) });
+  });
+
+  redisGlobal.__trustlinkRedisEventsAttached = true;
+}
 
 // Session storage keys
 const SESSION_KEY_PREFIX = 'session:';

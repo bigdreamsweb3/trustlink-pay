@@ -16,8 +16,8 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-import { env } from "../lib/env";
-import { logger } from "../lib/logger";
+import { env } from "../lib/env.js";
+import { logger } from "../lib/logger.js";
 import {
   estimateTransactionFeeLamports,
   getConnection,
@@ -25,8 +25,8 @@ import {
   getEscrowConfigState,
   instructionDiscriminator,
   TOKEN_PROGRAM_ID,
-} from "./solana-core";
-import { VERIFIED_TSN_PROGRAM_ID } from "../program";
+} from "./solana-core.js";
+import { VERIFIED_TSN_PROGRAM_ID } from "../program.js";
 
 const VERIFIED_TSN_PROGRAM_PUBLIC_KEY = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
 

@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepare": "npm run build",
+    "prepare": "node -e \"console.log('[@trustlink/tsn-cranker-sdk] using checked-in dist output')\"",
     "dev": "node --watch dist/cli.js",
     "cranker": "node dist/cli.js"
   },

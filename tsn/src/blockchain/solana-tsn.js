@@ -2,10 +2,10 @@ import { createHash } from "crypto";
 import { utils as anchorUtils } from "@coral-xyz/anchor";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID as SPL_TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, } from "@solana/spl-token";
 import { PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram, Transaction, TransactionInstruction, sendAndConfirmTransaction, } from "@solana/web3.js";
-import { env } from "../lib/env";
-import { logger } from "../lib/logger";
-import { estimateTransactionFeeLamports, getConnection, getEscrowAuthorityKeypair, getEscrowConfigState, instructionDiscriminator, TOKEN_PROGRAM_ID, } from "./solana-core";
-import { VERIFIED_TSN_PROGRAM_ID } from "../program";
+import { env } from "../lib/env.js";
+import { logger } from "../lib/logger.js";
+import { estimateTransactionFeeLamports, getConnection, getEscrowAuthorityKeypair, getEscrowConfigState, instructionDiscriminator, TOKEN_PROGRAM_ID, } from "./solana-core.js";
+import { VERIFIED_TSN_PROGRAM_ID } from "../program.js";
 const VERIFIED_TSN_PROGRAM_PUBLIC_KEY = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
 function getVerifiedTsnProgramId() {
     return VERIFIED_TSN_PROGRAM_PUBLIC_KEY;

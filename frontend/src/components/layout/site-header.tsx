@@ -24,12 +24,12 @@ export function SiteHeader() {
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
             <TrustLinkMark compact />
-            <div className="min-w-0 flex flex-col items-start gap-1.5">
-              <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none">TrustLink Pay</div>
+            <div className="min-w-0 flex flex-row items-center gap-1.5">
+              <div className="tl-text-muted text-[0.6rem] text-center uppercase tracking-[0.22em] leading-none">TrustLink Pay</div>
               <Link
                 href="/#tsn-protocol"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] text-[var(--accent)] sm:inline-flex"
+                className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#ff7a18] sm:inline-flex"
               >
                 TSN Protocol
               </Link>
@@ -53,7 +53,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/operator-dashboard"
-            className="inline-flex items-center justify-center rounded-[14px] bg-[#ff7a18] px-3.5 py-2.5 text-sm font-semibold tracking-normal text-[#120703] shadow-[0_10px_24px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]"
+            className="inline-flex items-center justify-center rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3.5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#ff7a18] sm:inline-flex hover:bg-[#ff8b33]"
           >
             Operator Dashboard
           </Link>
@@ -79,13 +79,7 @@ export function SiteHeader() {
       {menuOpen ? (
         <div className="border-t border-[var(--field-border)] bg-[var(--bg-elevated)] px-4 pb-4 pt-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] md:hidden">
           <div className="mx-auto grid w-full max-w-[1180px] gap-2">
-            <Link
-              href="/#tsn-privacy"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-black text-[var(--accent)]"
-            >
-              TSN Privacy
-            </Link>
+
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -100,7 +94,7 @@ export function SiteHeader() {
               <Link
                 href="/operator-dashboard"
                 onClick={() => setMenuOpen(false)}
-                className="inline-flex items-center justify-center rounded-[14px] bg-[#ff7a18] px-4 py-3 text-sm font-semibold text-[#120703] shadow-[0_10px_24px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]"
+                className="inline-flex items-center justify-center rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-[#ff7a18] sm:inline-flex hover:bg-[#ff8b33]"
               >
                 Operator Dashboard
               </Link>

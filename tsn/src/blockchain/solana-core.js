@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { TOKEN_PROGRAM_ID as SPL_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { env } from "../lib/env";
-import { VERIFIED_TSN_PROGRAM_ID } from "../program";
+import { env } from "../lib/env.js";
+import { VERIFIED_TSN_PROGRAM_ID } from "../program.js";
 export const TOKEN_PROGRAM_ID = SPL_TOKEN_PROGRAM_ID;
 export function instructionDiscriminator(name) {
     return createHash("sha256").update(`global:${name}`).digest().subarray(0, 8);

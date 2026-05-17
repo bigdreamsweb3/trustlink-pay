@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* Apply dark mode selector globally */
+@supports selector(:is(.dark *)) {
+  :is(.dark) {
+    color-scheme: dark;
+  }
+}
+
+.operatorShell {
+  --tsn-accent: #ff7a18;
+  --tsn-accent-soft: rgba(255, 122, 24, 0.12);
+  --tsn-accent-border: rgba(255, 122, 24, 0.32);
+  --tsn-bg: #070706;
+  --tsn-panel: #11100d;
+  --tsn-panel-soft: #17140f;
+  --tsn-field: #15120d;
+  --tsn-border: rgba(255, 122, 24, 0.18);
+  --tsn-text: #fff7ed;
+  --tsn-muted: rgba(255, 247, 237, 0.56);
+  --tsn-faint: rgba(255, 247, 237, 0.34);
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      rgba(255, 122, 24, 0.14),
+      transparent 32%
+    ),
+    linear-gradient(180deg, #090806 0%, var(--tsn-bg) 100%);
+  color: var(--tsn-text);
+}
+
+.backLink {
+  border: 1px solid var(--tsn-border);
+  background: rgba(255, 122, 24, 0.08);
+  color: var(--tsn-muted);
+}
+
+.panel {
+  border: 1px solid var(--tsn-border);
+  background:
+    linear-gradient(180deg, rgba(255, 122, 24, 0.06), transparent 42%),
+    var(--tsn-panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+.tsn-badge {
+  border: 1px solid var(--tsn-accent-border);
+  background: var(--tsn-accent-soft);
+  color: var(--tsn-accent);
+}
+
+.title {
+  color: var(--tsn-text);
+}
+
+.copy {
+  color: var(--tsn-muted);
+}
+
+.card {
+  border: 1px solid var(--tsn-border);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 122, 24, 0.08),
+      transparent 42%
+    ),
+    var(--tsn-field);
+}
+
+.iconSurface {
+  border: 1px solid var(--tsn-accent-border);
+  background: var(--tsn-accent-soft);
+  color: var(--tsn-accent);
+}
+
+.cardTitle {
+  color: var(--tsn-text);
+}
+
+.cardBody {
+  color: var(--tsn-muted);
+}
+
+.metric {
+  border-top: 1px solid var(--tsn-border);
+  color: var(--tsn-faint);
+}
+
+.metric strong {
+  color: var(--tsn-accent);
+}

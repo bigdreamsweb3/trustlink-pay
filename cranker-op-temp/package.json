@@ -1,0 +1,23 @@
+{
+  "name": "tsn-cranker-operator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node ./scripts/guided-setup.mjs",
+    "setup:raw": "node ./scripts/tsn-setup.mjs",
+    "help": "node ./scripts/tsn-setup.mjs --help",
+    "register": "node ./scripts/tsn-setup.mjs register-cranker",
+    "policy:open": "node ./scripts/tsn-setup.mjs set-funding-policy true",
+    "policy:closed": "node ./scripts/tsn-setup.mjs set-funding-policy false",
+    "settle:force": "node ./scripts/tsn-setup.mjs settle-epoch --force",
+    "crank:reference": "tsx ../tsn/scripts/cranker.ts"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "@trustlink/tsn-cranker-sdk": "file:../tsn/cranker-sdk",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  }
+}

@@ -16,6 +16,8 @@ import {
 import { LandingFeeYieldCalculator } from "@/src/components/landing-fee-yield-calculator";
 import { SiteHeader } from "@/src/components/layout/site-header";
 
+import "../../app/tsn.css";
+
 const heroStats = [
   { label: "Sender fee model", value: "Transparent", note: "network + TSN protocol fee shown before send" },
   { label: "Settlement target", value: "<3s", note: "from intent to cranker proof" },
@@ -119,7 +121,7 @@ export function LandingPage() {
 
       <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-8 pb-10 pt-2 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative z-10">
-          <div className="tl-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]">
+          <div className={`tsn-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]`}>
             <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>

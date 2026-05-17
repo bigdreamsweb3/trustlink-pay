@@ -43,10 +43,8 @@ function parseBoolean(value: string | undefined) {
 async function handleCommand() {
   const command = process.argv[2];
 
-  // Dynamically import setup functions - late import to avoid rootDir issues
-  // Using any to bypass type checking of parent package imports at compile time
-  // These functions are resolved at runtime
-  const module: any = await import("../../src/blockchain/solana-tsn.js");
+  const moduleUrl = new URL("../../src/blockchain/solana-tsn.js", import.meta.url);
+  const module: any = await import(moduleUrl.href);
   const {
     sha256Bytes,
     tsnInitializeMotherEscrowOnChain,

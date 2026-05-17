@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/app/providers";
 import "./globals.css";
 
+
 /* ---------------- SEO CONFIG ---------------- */
 
 const baseUrl = "https://trustlink-pay.vercel.app/";
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: `${baseUrl}/og-image.png`, 
+        url: `${baseUrl}/og-image.png`,
         width: 1200,
         height: 630,
         alt: "TrustLink Pay - Send Crypto with confidence",
@@ -110,4 +111,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-  }
+}

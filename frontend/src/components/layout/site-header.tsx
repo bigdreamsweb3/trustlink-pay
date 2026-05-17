@@ -8,7 +8,7 @@ import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
   { label: "How It Works", href: "/#how-it-works" },
-  { label: "LP Yield", href: "/#lp-yield" },
+  { label: "LP APY", href: "/#lp-yield" },
   { label: "Cranker", href: "/#cranker" },
   { label: "SDK", href: "/#sdk" },
   { label: "TINS", href: "/#tins" },

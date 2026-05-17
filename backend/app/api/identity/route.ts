@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
+import { CACHE_TAGS, CACHE_TTL_SECONDS, cachedQuery, invalidateUserCache } from "@/app/lib/cache";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { identityKeyRegistrationSchema } from "@/app/lib/validation";
 import {
@@ -9,11 +10,13 @@ import {
   prepareIdentityKeyRegistrationForUser,
 } from "@/app/services/identity-binding";
 
-export async function GET(request: Request) {
-  return withAuthenticatedRoute(request, async (authUser) => {
+const getCachedIdentitySecurity = cachedQuery(
+  "identity-security-v1",
+  async (userId: string, phoneNumber: string) => {
+    const authUser = { id: userId, phoneNumber };
     const result = await getIdentitySecurityForUser(authUser);
 
-    return ok({
+    return {
       phoneIdentityPublicKey: result.phoneIdentity?.publicKey ?? null,
       privacyViewPublicKey: result.privacy?.viewPublicKey ?? null,
       privacySpendPublicKey: result.privacy?.spendPublicKey ?? null,
@@ -21,7 +24,17 @@ export async function GET(request: Request) {
       recoveryWalletPublicKey: result.user.recovery_wallet_pubkey ?? null,
       receiverAutoclaimEnabled: result.user.receiver_autoclaim_enabled ?? false,
       identity: result.binding,
-    });
+    };
+  },
+  {
+    revalidate: CACHE_TTL_SECONDS.identity,
+    tags: [CACHE_TAGS.identity],
+  },
+);
+
+export async function GET(request: Request) {
+  return withAuthenticatedRoute(request, async (authUser) => {
+    return ok(await getCachedIdentitySecurity(authUser.id, authUser.phoneNumber));
   });
 }
 
@@ -37,6 +50,7 @@ export async function POST(request: Request) {
       }
 
       const result = await confirmIdentityKeyRegistrationForUser(authUser, payload);
+      invalidateUserCache(authUser.id);
 
       return ok({
         phoneIdentityPublicKey: result.phoneIdentityPublicKey,

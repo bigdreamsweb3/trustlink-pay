@@ -34,6 +34,25 @@ backend -> backend/app/db
 
 TrustLink Pay may mirror TSN state into its own DB for product UX, but crankers must read work from TSN mempool, not from TrustLink backend tables.
 
+## Settlement Finality & Anti-Griefing
+
+TSN is an asynchronous, privacy-preserving settlement relay. Recipient wallet structure is intentionally abstracted at send time.
+
+Mandatory lifecycle rule:
+
+- Every escrow resolves to exactly one terminal state: `completed` or `reverted`.
+- Indefinite pending escrow is forbidden.
+
+Economic safety rule:
+
+- Crankers evaluate settlement economics at claim/crank time.
+- If net settleable value is non-positive, TSN marks the intent as `reverted`, records a settlement reason, and finalizes closure flow.
+
+UX and privacy rule:
+
+- Sender estimates expose only probabilistic settlement guidance (`likely_claimable`, `risky_claim_amount`, `economically_non_claimable`).
+- Guidance must not pre-query recipient ATA status in a way that weakens privacy routing assumptions.
+
 ## WhatsApp SDK Boundary
 
 The WhatsApp SDK does not own TrustLink Pay persistence. It receives persistence ports from the backend at runtime.

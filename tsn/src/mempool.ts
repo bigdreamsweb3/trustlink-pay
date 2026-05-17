@@ -17,7 +17,11 @@ export interface TsnMempool {
   postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
   listPendingWork(limit?: number): Promise<TsnWorkItem[]>;
   updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
-  updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus): Promise<TsnMempoolClaimRequest | null>;
+  updateClaimRequestStatus(
+    id: string,
+    status: TsnClaimRequestStatus,
+    patch?: Partial<TsnMempoolClaimRequest>,
+  ): Promise<TsnMempoolClaimRequest | null>;
 }
 
 type Snapshot = {
@@ -112,12 +116,11 @@ export class JsonFileTsnMempool implements TsnMempool {
     return intent;
   }
 
-  async updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus) {
+  async updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch: Partial<TsnMempoolClaimRequest> = {}) {
     const snapshot = await readSnapshot(this.path);
     const claimRequest = snapshot.claimRequests.find((candidate) => candidate.id === id);
     if (!claimRequest) return null;
-    claimRequest.status = status;
-    claimRequest.updatedAt = now();
+    Object.assign(claimRequest, patch, { status, updatedAt: now() });
     await writeSnapshot(this.path, snapshot);
     return claimRequest;
   }

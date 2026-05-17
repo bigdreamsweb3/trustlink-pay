@@ -54,7 +54,9 @@ export async function getUsdPricesForSymbols(symbols: string[]) {
         headers: {
           Accept: "application/json"
         },
-        cache: "no-store"
+        next: {
+          revalidate: 60
+        }
       }
     );
 

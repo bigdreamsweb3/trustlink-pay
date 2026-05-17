@@ -198,5 +198,7 @@ This reduces linkability between payments.
   [backend/programs/trustlink-escrow/src/lib.rs](/C:/Users/codepara/Desktop/trust-link/backend/programs/trustlink-escrow/src/lib.rs)
 - Hardened verification logic:
   [backend/programs/trustlink-escrow/src/v3.rs](/C:/Users/codepara/Desktop/trust-link/backend/programs/trustlink-escrow/src/v3.rs)
-- Backend transaction builders:
-  [backend/app/blockchain/trustlink-pay-v3.ts](/C:/Users/codepara/Desktop/trust-link/backend/app/blockchain/trustlink-pay-v3.ts)
+- Active backend payment builders:
+  [backend/app/blockchain/solana-payments.ts](/C:/Users/codepara/Desktop/trust-link/backend/app/blockchain/solana-payments.ts)
+
+The legacy direct escrow v3 HTTP builders were removed from the backend application path. Active product payments now use the payment service and TSN-aware escrow preparation flow.

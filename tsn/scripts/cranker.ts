@@ -1,4 +1,4 @@
-import { JsonFileTsnMempool, TsnHttpClient, type TsnWorkItem } from "../src";
+import { JsonFileTsnMempool, TsnHttpClient, evaluateSettlementEconomics, type TsnWorkItem } from "../src";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,6 +33,31 @@ async function main() {
       try {
         await mempool.updateClaimRequestStatus(item.claimRequest.id, "processing");
 
+        const economics = evaluateSettlementEconomics({
+          paymentAmountUi: item.intent.amount,
+          tokenUsd: Number(process.env.TSN_CRANKER_TOKEN_USD ?? 1),
+          estimatedExecutionCostLamports: Number(process.env.TSN_CRANKER_EXECUTION_LAMPORTS ?? 20_000),
+          ataCreationCostLamports: Number(process.env.TSN_CRANKER_ATA_LAMPORTS ?? 2_039_280),
+          solUsd: Number(process.env.TSN_CRANKER_SOL_USD ?? 150),
+          operatorFeeUi: Number(process.env.TSN_CRANKER_OPERATOR_FEE_UI ?? 0.02),
+          safetyMultiplier: Number(process.env.TSN_CRANKER_SAFETY_MULTIPLIER ?? 1.25),
+        });
+
+        if (economics.likelihood === "economically_non_claimable") {
+          await mempool.updateIntentStatus(item.intent.id, "reverted", {
+            source: item.intent.source,
+            settlementResolution: "reverted",
+            settlementReason: economics.reason,
+          });
+          await mempool.updateClaimRequestStatus(item.claimRequest.id, "completed", {
+            settlementReason: economics.reason,
+          });
+          console.log(
+            `[tsn-cranker] reverted intent=${item.intent.id} claim=${item.claimRequest.id} reason="${economics.reason}"`,
+          );
+          continue;
+        }
+
         // The network execution adapter belongs here. Today this runner proves the TSN
         // ownership boundary by consuming TSN mempool work instead of TrustLink DB rows.
         // The next implementation step wires this point to the TSN on-chain program.
@@ -40,8 +65,12 @@ async function main() {
 
         await mempool.updateIntentStatus(item.intent.id, "executed", {
           source: item.intent.source,
+          settlementResolution: "completed",
+          settlementReason: economics.reason,
         });
-        await mempool.updateClaimRequestStatus(item.claimRequest.id, "completed");
+        await mempool.updateClaimRequestStatus(item.claimRequest.id, "completed", {
+          settlementReason: economics.reason,
+        });
 
         console.log(
           `[tsn-cranker] executed intent=${item.intent.id} claim=${item.claimRequest.id} proof=${proofTxSig}`,

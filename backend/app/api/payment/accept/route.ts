@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { acceptPaymentSchema } from "@/app/lib/validation";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { invalidatePaymentCache, invalidateUserCache } from "@/app/lib/cache";
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
 import { acceptPayment } from "@/app/services/payments";
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
       ...payload,
       authUser
     });
+    invalidatePaymentCache(result.payment?.id ?? payload.paymentId);
+    invalidateUserCache(authUser.id);
 
     if ("tsn" in result) {
       return ok({

@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 
-export type TsnIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled";
+export type TsnIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnClaimRequestStatus = "pending" | "processing" | "completed" | "failed" | "canceled";
-export type TsnUiStage = "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled";
+export type TsnUiStage = "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
 
-export type PaymentIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired";
+export type PaymentIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired" | "reverted";
 export type ClaimRequestStatus = "pending" | "processing" | "completed" | "canceled" | "failed";
 
 export interface PaymentIntentRecord {
@@ -56,6 +56,8 @@ export type RequestClaimRequest = {
 export type TsnMempoolIntent = CreateIntentRequest & {
   id: string;
   status: TsnIntentStatus;
+  settlementResolution?: "completed" | "reverted" | null;
+  settlementReason?: string | null;
   postedAt: string;
   updatedAt: string;
 };
@@ -63,6 +65,7 @@ export type TsnMempoolIntent = CreateIntentRequest & {
 export type TsnMempoolClaimRequest = RequestClaimRequest & {
   id: string;
   status: TsnClaimRequestStatus;
+  settlementReason?: string | null;
   postedAt: string;
   updatedAt: string;
 };
@@ -112,6 +115,7 @@ export function buildRequestClaimRequest(params: RequestClaimRequest): RequestCl
 }
 
 export function computeTsnUiStage(intent: IntentState, claimRequest: ClaimRequestState): TsnUiStage {
+  if (intent.status === "reverted") return "reverted";
   if (intent.status === "settled") return "epoch_settled";
   if (intent.status === "executed") return "cranker_paid";
   if (intent.status === "claimed") return "lease_claimed";

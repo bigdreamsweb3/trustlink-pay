@@ -4,133 +4,136 @@
 
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.
 
-TrustLink Pay is building that identity layer for Solana stablecoins — starting with WhatsApp phone numbers, expanding to a permanent on-chain identity system that any developer can integrate, and settling through the Transfer Settlement Network (TSN) — a decentralised Cranker layer where independent operators earn fees for executing payments and liquidity providers earn yield on deployed capital.
+TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.
 
 ---
 
 ## Project Architecture
 
-TrustLink Pay's system works in two distinct layers that exist right now and where they are going.
+TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
 
-### Layer One — TrustLink Pay Today
+### Layer One - TrustLink Pay Today
 
-When a user registers, TrustLink verifies their WhatsApp phone number and stores a mapping in its own database: this phone number belongs to this user's on-chain identity. When a sender enters a phone number, TrustLink's backend resolves it and routes the payment to the right escrow vault on Solana.
+When a user registers, TrustLink verifies their phone number and stores a mapping in its backend: this phone identity belongs to this user. When a sender enters a recipient phone number, TrustLink resolves the identity and prepares the payment route.
 
-The identity map is in TrustLink's database. The money is not. TrustLink's backend cannot touch funds in escrow — releasing them requires on-chain proof from the rightful recipient. No wallet address is ever shown to the sender or recipient.
+WhatsApp is used for authentication, consent, and payment notifications. TrustLink Pay is still a dApp: wallet signing, escrow creation, settlement state, and protocol accounting happen through the TrustLink Pay application and Solana programs.
 
-Settlement — the part where the recipient actually receives funds — runs through the Transfer Settlement Network (TSN). Crankers watch for pending payment intents and claim requests, execute payouts from their vault liquidity, submit Proof of Payment on-chain, and recover their funds at the next settlement epoch. The direct claim path (where the recipient signed a transaction to release escrow themselves) is the legacy flow. TSN is the current flow.
+The identity map is in TrustLink's backend. The money is not. Funds move into Solana escrow, and release or reimbursement depends on program rules, TSN settlement state, and valid proof. The sender does not need to know the recipient wallet. The recipient does not need to know the sender wallet.
 
-### Layer Two — Where This Is Going: TINS
+### Layer Two - TSN: Transfer Settlement Network
 
-The Transfer Identity Number System moves identity routing fully on-chain.
+TSN is the protocol layer that handles payment intent creation, claim requests, Cranker execution, proof submission, and epoch reimbursement.
 
-Under TINS, every user owns a permanent 10-digit Transfer Identity Number as a Solana PDA. No database. No backend required. Any developer on Solana can call the TINS program directly to resolve a TIN, create a payment intent, and route funds into escrow — without depending on TrustLink's infrastructure at all.
+TrustLink Pay resolves the user-facing identity, then routes the payment through TSN. TSN owns the send and claim logic that matters for settlement:
 
-TrustLink Pay's long-term role in the TINS ecosystem is to be the application that bridges social identity to on-chain identity. TrustLink verifies that your WhatsApp number is real, then links it to your TIN. In the future, TrustLink can link your X account, your verified business identity, or any other social signal to the same TIN. The TIN becomes the identity primitive. The social layer becomes the trust signal. Other Solana applications can build on top of the same TIN without needing TrustLink at all.
+1. A sender creates a payment intent.
+2. Funds lock into escrow.
+3. A recipient claim request is recorded.
+4. A Cranker acquires the execution lease.
+5. The Cranker pays the recipient from vault liquidity.
+6. The Cranker submits Proof of Payment.
+7. Mother Escrow reimburses the Cranker at epoch settlement.
 
-This matters because the biggest risk in crypto payments is not blockchain complexity — it is trust. When a sender in Lagos wants to pay a merchant in London, they need to trust that the phone number they are typing resolves to the right person. TINS makes that resolution cryptographically verifiable and publicly auditable on Solana, not dependent on a company's uptime.
+This breaks the direct link between sender wallet and recipient wallet. The sender-side escrow transaction and recipient-side payout are separated by Cranker liquidity and proof-based reimbursement.
 
-### Layer Three — TSN: The Settlement Network
+### Layer Three - TINS: Transfer Identity Number System
 
-The Transfer Settlement Network is the execution layer that handles how payments actually get to recipients.
+TINS moves identity routing fully on-chain.
 
-In TrustLink Pay's current system, the backend orchestrates claim execution directly. In the TSN model, independent Cranker operators take over that role. Crankers are economic actors who provide liquidity, execute settlements, submit cryptographic proof on-chain, and earn fees for doing so.
+Under TINS, every user owns a permanent 10-digit Transfer Identity Number as a Solana PDA. No database. No backend required. Any Solana developer can resolve a TIN, create a TSN payment intent, and route funds without depending on TrustLink's private infrastructure.
 
-The result: payments settle even if TrustLink's servers go offline. No single company controls whether your payment arrives.
+TrustLink Pay's long-term role in the TINS ecosystem is to bridge social identity to on-chain identity. A phone number, X account, business identity, or other verified social signal can point to the same permanent TIN. The TIN becomes the identity primitive. The social layer becomes the trust signal.
 
----
-
-## Who Builds on TrustLink and TINS
-
-**Users sending money home.** Remittances across Africa, Asia, and Latin America currently cost 5–10% in fees and take days. TrustLink targets sub-0.5% fees settling in seconds. The recipient needs only a phone.
-
-**Merchants getting paid via WhatsApp.** Millions of businesses operate primarily through WhatsApp. TrustLink lets a customer pay a WhatsApp Business number and the merchant receives USDC directly — no point-of-sale terminal, no bank account required.
-
-**Developers building payment infrastructure.** Once TINS is live, any Solana developer can call the TINS program to resolve a transfer identity and route a payment. They do not need TrustLink's database. They do not need TrustLink's permission. The identity layer is a public on-chain primitive.
-
-**Entities who want to run settlement infrastructure.** The Cranker SDK will be open. DeFi treasuries, payment processors, and infrastructure operators can deploy capital into Cranker vaults, earn yield from real payment volume, and operate settlement nodes that serve the entire network.
+This matters because the biggest risk in crypto payments is not only blockchain complexity. It is trust. When a sender in Lagos wants to pay a merchant in London, they need to know the identity they entered resolves to the right person. TINS makes that routing verifiable and portable across Solana applications.
 
 ---
 
-## The Economics of Running a Cranker
+## Who Builds on TrustLink, TSN, and TINS
 
-### How fees work
+**Users sending money home.** Remittances across Africa, Asia, and Latin America are still expensive and slow. TrustLink targets fast, low-friction transfers where the recipient can be reached through a familiar identity.
 
-Every payment has two fee moments, both transparent:
+**Merchants accepting digital payments.** Small businesses can receive stablecoin payments without exposing wallet addresses to every customer. The customer pays an identity; settlement routes through TSN.
 
-**At send time:**
-The sender pays the transfer amount plus a sender fee. Example: sender pays 100 USDC to the recipient plus 0.1 USDC sender fee. The 100 USDC locks into the payment escrow PDA. The 0.1 USDC sender fee moves into the settlement fee pool.
+**Developers building payment infrastructure.** Once TINS is live, any Solana developer can resolve a transfer identity and create a TSN payment intent. They do not need TrustLink's database or permission to build on the identity layer.
 
-**At claim time:**
-The Cranker pays the recipient 99.9 USDC instead of 100. The 0.1 USDC difference is the claim fee — it stays inside the Cranker pool and is never shared with the treasury. At epoch settlement, the Mother Escrow reimburses the Cranker the full 100 USDC from escrow. The Cranker spent 99.9, recovers 100, and retains 0.1 as profit — entirely within the Cranker system.
+**Operators running settlement infrastructure.** Cranker operators provide uptime, monitor payment intents and claim requests, execute payouts, submit proof, and earn settlement rewards.
 
-### Fee distribution
+**Liquidity providers funding settlement.** LPs fund TSN vaults. Their capital makes instant settlement possible and earns a majority share of settlement fees generated by real payment volume.
 
-**Sender fee** (paid by sender at time of transfer):
+---
 
-| Recipient | Share | Why |
-| --- | --- | --- |
-| Cranker operator | 40% | For uptime, execution, and on-chain transaction fees |
-| Liquidity providers | 40% | For funding the Cranker vault |
-| TrustLink treasury | 20% | Protocol development, audits, security reserves |
+## The Economics of TSN
 
-**Claim fee** (deducted from payout at settlement):
+TSN has two fee moments: sender-side fee and claim-side fee. Both are transparent and tied to settlement.
 
-| Recipient | Share |
-| --- | --- |
-| Cranker pool (operator + LPs) | 100% |
-| TrustLink treasury | 0% |
+### At Send Time
 
-Claim fees never leave the Cranker pool. They represent pure yield generated by the liquidity deployed into the vault. The treasury has no claim on settlement execution income.
+The sender sees the transfer amount, the current Solana network fee estimate, and the TSN sender fee before confirming.
 
-### What a Cranker operator actually earns
+The verifier wallet pays recoverable protocol account setup for send transactions. Recoverable account rent is infrastructure funding and is not presented as sender network fee. If the verifier wallet does not have enough SOL to create the protocol accounts, the backend rejects payment preparation before the sender signs.
 
-On a 100 USDC payment with a 0.1 USDC sender fee and 0.1 USDC claim fee:
-- **50% of sender fee** = 0.04 USDC (operator share)
-- **Claim fee profit** = 0.1 USDC (entire claim fee stays in pool)
-- **Net per payment at scale**: small individually, significant at volume
+### At Claim Time
 
-A Cranker processing 10,000 USDC per day at these rates earns approximately 15 USDC per day — plus any LP yield distributed to the operator if they have also funded their own vault.
+The recipient-side settlement may include a claim fee. This fee is part of the TSN settlement economy because the Cranker pays the recipient from vault liquidity, submits proof, and waits for epoch reimbursement.
 
-### What a liquidity provider earns
+If settlement creates an unrecoverable recipient token account, that cost belongs on the claim side because the account stays with the recipient after settlement.
 
-LPs fund the vault that Crankers draw from to pay recipients. Each LP receives a `LiquidityPosition` PDA on-chain — a verifiable record of their deposit that only they can withdraw. No custodian. No counterparty risk from the operator.
+### Current Settlement Fee Split
 
-LPs earn:
-- 40% of all sender fees generated by payments their vault helped settle
-- Proportional to their share of vault liquidity
+The current TSN default split prioritizes LPs while keeping operators and protocol operations funded.
 
-Deep liquidity means the Cranker can settle larger payments and process more volume — increasing absolute LP earnings.
+| Recipient | Share | Purpose |
+| --- | ---: | --- |
+| Liquidity providers | 87% | Rewards vault capital that makes settlement possible |
+| TSN protocol treasury | 8% | Supports protocol development, audits, operations, and security reserves |
+| Cranker/operator | 5% | Covers uptime, intent monitoring, execution, proof submission, and operational cost |
+
+This split applies to modeled TSN settlement-fee revenue. The frontend yield calculator separates gross settlement fee revenue from LP-facing APY so depositors can see what they actually earn.
+
+### What a Cranker Operator Earns
+
+Cranker operators are execution providers. They watch TSN for claimable work, acquire leases, pay recipients from vault liquidity, submit proof, and maintain reliable uptime.
+
+Operators earn the operator share of settlement fees. The operator percentage is intentionally smaller than LP share because liquidity providers supply the capital that makes settlement possible. The operator allocation is designed to remain operational-cost-aware rather than dominate the settlement economy.
+
+### What a Liquidity Provider Earns
+
+LPs fund the vaults that Crankers use to pay recipients. Each funder has a verifiable liquidity position, and LP earnings are based on the vault's actual settled volume.
+
+LPs do not earn the whole gross TSN fee stream. They earn the LP share. This is important for transparency: if a vault generates settlement fees, the calculator separates LP income, operator income, and protocol treasury income instead of presenting gross protocol yield as LP APY.
+
+Vault capacity matters:
+
+- a vault receives only its share of total active TSN liquidity
+- a vault cannot settle more than its liquidity can support between reimbursement epochs
+- if a vault runs out of capital, it waits for epoch reimbursement before claiming more work
+- current epoch modeling uses a 7-hour reimbursement cycle
 
 ---
 
 ## Privacy in Settlement
 
-### What is public
+### What Is Public
 
-Every payment leaves a permanent on-chain record:
-- That a payment intent existed and was claimed
-- Which Cranker acquired the execution lease and submitted proof
-- That the settlement was valid and cryptographically verified
-- Epoch aggregate totals
+TSN can make the following settlement facts visible:
 
-No wallet addresses. No phone numbers. No payment amounts are exposed in the public record.
+- that a payment intent existed
+- that a claim request entered the settlement flow
+- which Cranker acquired the execution lease
+- that proof was submitted
+- that reimbursement moved through epoch settlement
 
-### What is private
+The public record does not need to expose the sender wallet to the recipient or the recipient wallet to the sender.
 
-Every Cranker maintains an encrypted audit ledger. When a payment is settled, the Cranker writes a private record containing:
-- The real recipient wallet
-- The recipient's phone number or TIN
-- The sender's identity
-- The exact payment amount
+### What Is Private
 
-This data is encrypted with AES-256-GCM using the Cranker's own private key. Nobody reads it without the Cranker's key. It never touches a shared database or public storage.
+The recipient's wallet, payment identity, and detailed settlement record are handled through controlled application state and Cranker audit records. TSN is designed so normal users experience private settlement without needing to understand wallet routing.
 
-### Why this matters for compliance
+The privacy goal is simple: the sender should not be able to track the recipient wallet, and the recipient should not learn the sender wallet just because a payment happened.
 
-If regulators or law enforcement need to investigate a specific transaction — stolen funds, fraud, sanctions violations — the on-chain record proves which Cranker processed it. The Cranker operator can produce the decrypted record under a legal order.
+### Compliance Position
 
-The model is: **the blockchain proves it happened, the Cranker knows who was involved, and disclosure requires due process**. This is more rigorous than most payment systems and more privacy-preserving than any purely on-chain system that exposes addresses by default.
+TSN is privacy-preserving, not accountability-free. A Cranker can maintain an encrypted audit trail for the settlements it executed. The blockchain proves which operator processed a payment; the operator can produce required records under the appropriate legal process.
 
 ---
 
@@ -138,12 +141,13 @@ The model is: **the blockchain proves it happened, the Cranker knows who was inv
 
 | Now | With TINS | With mature TSN |
 | --- | --- | --- |
-| Identity routing in TrustLink DB | Identity routing on-chain via TIN PDAs | Any app resolves TINs directly |
-| TrustLink backend orchestrates claims | Claim requests recorded off-chain | Claim requests on Arweave/permanent storage |
-| Single operator model | Open Cranker SDK | Competitive Cranker network |
-| TrustLink links WhatsApp to identity | TrustLink links all social identity to TINs | Any identity provider links to TINs |
+| Identity routing through TrustLink backend | Identity routing through TIN PDAs | Any app resolves TINs directly |
+| TrustLink prepares user-facing payments | TSN owns payment intent and claim routing | Multiple apps create TSN intents |
+| Local/operator-controlled Cranker runtime | Open Cranker SDK | Competitive Cranker network |
+| Phone identity first | Phone, TIN, and social identity links | Independent identity providers can build on TINS |
+| Escrow-backed settlement | Proof-based reimbursement | Liquid, multi-operator settlement marketplace |
 
-The product proves the UX. The protocol makes it permanent and open.
+The product proves the UX. TSN makes settlement private and liquid. TINS makes identity portable and open.
 
 ---
 
@@ -151,27 +155,28 @@ The product proves the UX. The protocol makes it permanent and open.
 
 ### Send Flow
 
-1. Sender logs in and enters a recipient phone number plus amount.
-2. TrustLink verifies recipient identity before any money moves.
-3. Sender confirms — wallet signs — funds lock into a unique escrow vault PDA.
-4. Sender fee moves to the settlement fee pool.
-5. Backend records a TSN payment intent linked to the escrow.
-6. Recipient receives a WhatsApp notification or the sender shares an invite link.
+1. Sender logs in and enters a recipient phone number or supported identity.
+2. TrustLink resolves the identity and prepares a TSN payment intent.
+3. Sender reviews the transfer amount, Solana network estimate, and TSN sender fee.
+4. Sender signs once in their wallet.
+5. Funds lock into a unique escrow vault PDA.
+6. TSN records the payment intent for settlement.
+7. Recipient receives a notification or invite path.
 
-### Claim Flow — TSN (current)
+### Claim Flow - TSN
 
-1. Recipient opens TrustLink and posts a claim request — no wallet signature required, no Solana fee paid at this step.
-2. A Cranker detects the pending intent and matching claim request.
-3. Cranker atomically acquires the 30-second execution lease on-chain — only one Cranker per payment, enforced at the program level.
-4. Cranker pays recipient 99.9 USDC (100 minus the 0.1 claim fee) from its vault liquidity.
-5. Cranker submits Proof of Payment on-chain.
-6. Cranker writes an AES-256-GCM encrypted record to its private audit ledger — recipient identity and amount never touch a public database.
-7. At each settlement epoch (every 7 hours), Mother Escrow reimburses the Cranker the full 100 USDC from the payment escrow.
-8. Sender fee pool distributes at epoch: 50% Cranker operator, 40% LPs, 10% treasury.
+1. Recipient opens TrustLink and starts the claim path.
+2. TSN records a claim request for the payment intent.
+3. A Cranker detects the matching intent and claim request.
+4. The Cranker acquires the execution lease.
+5. The Cranker pays the recipient from vault liquidity.
+6. The Cranker submits Proof of Payment.
+7. Mother Escrow reimburses the Cranker at the next epoch.
+8. Settlement fees are distributed according to the active TSN split.
 
-### Legacy Claim Flow — Direct Release (pre-TSN, for reference)
+### Legacy Claim Flow - Direct Release
 
-Before TSN, recipients claimed by connecting a Solana wallet, signing a release transaction, and receiving funds directly from escrow in the same on-chain operation. This flow still exists in the program but is not used in the current product. It has no settlement privacy — the on-chain transaction links the escrow PDA to the recipient's wallet address directly.
+Before TSN, recipients claimed by connecting a wallet, signing a release transaction, and receiving funds directly from escrow. This path still exists for compatibility and recovery, but it does not provide the same settlement privacy because the escrow release can directly link escrow state to a recipient wallet.
 
 ---
 
@@ -179,58 +184,79 @@ Before TSN, recipients claimed by connecting a Solana wallet, signing a release 
 
 | Guarantee | How it works |
 | --- | --- |
-| Noncustodial | TrustLink cannot touch escrow — only valid on-chain proof releases funds |
-| Per-payment isolation | Each payment has its own escrow vault PDA |
-| Address poisoning eliminated | Sender never sees a wallet address |
-| Replay prevention | Nonce-consumption PDAs; consumed nonces cannot reuse |
-| Derivation proof | Master key binds child key to escrow, nonce, expiry, destination |
-| Front-run resistance | Destination hash verified before any token transfer |
-| Cranker exclusivity | One Cranker holds one lease per intent — atomic on-chain enforcement |
-| Proof-based reimbursement | Cranker only recovers escrow funds after valid PoP on-chain |
-| LP non-custody | LiquidityPosition PDAs owned by funder; operator cannot withdraw LP funds |
-| Encrypted settlement privacy | Recipient identity never on-chain; Cranker ledger AES-256-GCM encrypted |
+| Noncustodial escrow | Funds lock into Solana escrow accounts governed by program rules |
+| Per-payment isolation | Each payment has its own payment PDA and escrow vault |
+| Address-poisoning resistance | Sender pays an identity, not a pasted wallet address |
+| Sender privacy | Recipient does not need the sender wallet |
+| Recipient privacy | Sender does not need the recipient wallet |
+| Cranker exclusivity | One Cranker holds an execution lease for a payment at a time |
+| Proof-based reimbursement | Cranker recovery depends on valid proof submission |
+| LP accounting | Liquidity positions track funded vault capital |
+| Operational funding checks | Verifier SOL balance is checked before send transaction preparation |
 
 ---
 
 ## Current Status
 
-**Live:**
-- WhatsApp OTP authentication
-- Phone-number identity routing via TrustLink backend
-- Per-payment escrow v3 (ephemeral child keys, derivation proofs, nonce PDAs, destination binding)
-- Gasless UX for senders and recipients
-- WhatsApp Business merchant verification
-- Real-time delivery receipts (Sent → Delivered → Seen)
-- TSN M4: Mother Escrow, Cranker PDA, intent state machine, lease claiming, Proof of Payment
-- Cranker vault with per-funder LiquidityPosition PDAs
-- Encrypted Cranker audit ledger
+**Live in the product path:**
+
+- WhatsApp session authentication
+- Phone-number identity routing through TrustLink backend
+- PIN-gated app access
+- Approved token selection from connected Solana wallets
+- Sender fee and network fee review
+- Per-payment Solana escrow creation
+- WhatsApp notification and manual invite flows
+- Viewer-safe transaction detail views
+- TSN payment-intent creation after escrow lock
+- Landing page with TSN fee and LP yield calculator
+- Operator dashboard shell
+- WhatsApp SDK modal UI
+
+**Protocol and settlement work:**
+
+- Escrow v3 program support
+- TSN Mother Escrow and Cranker PDA modules
+- Intent state machine and lease claiming
+- Proof of Payment path
+- Cranker vault and liquidity position scaffolding
 - Local Cranker daemon and setup scripts
+- Settlement fee split defaults: 87% LP, 8% treasury, 5% operator
+- 7-hour epoch reimbursement architecture
 
 **In active development:**
-- TINS on-chain identity registry (M3)
-- Full epoch reimbursement with sender fee distribution
-- Arweave/Irys permanent claim and settlement archival
+
+- TINS on-chain identity registry
+- mature multi-operator Cranker network
+- production epoch reimbursement and distribution automation
+- permanent settlement archival
+- expanded approved asset support beyond initial stablecoins
 
 ---
 
 ## Milestones
 
-### Milestone 1 — StableHacks 2026
-[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) · Organised by [Tenity](https://dorahacks.io/org/14594/hackathon) · **Track:** Programmable Stablecoin Payments
+### Milestone 1 - StableHacks 2026
 
-Proved the end-to-end product: WhatsApp-verified identity, per-payment escrow, gasless UX, hardened v3 architecture.
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) - Organised by [Tenity](https://dorahacks.io/org/14594/hackathon) - **Track:** Programmable Stablecoin Payments
 
-### Milestone 2 — The Bags Hackathon
-[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) · **Track:** Payments
+Proved the end-to-end product path: phone-verified identity, escrow-backed payments, gasless UX design, and hardened escrow architecture.
 
-Extended TrustLink to creator token payments via phone number using the Bags SDK. Any Bags creator token can be sent to a WhatsApp number. `$OOPS` token launched on [Bags](https://bags.fm/).
+### Milestone 2 - The Bags Hackathon
 
-### Milestone 3 — TINS Protocol
-*Active development.* Moving identity routing from TrustLink's database to a permanent on-chain registry.
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) - **Track:** Payments
+
+Extended the TrustLink payment model toward approved SPL asset transfers through identity-first routing. This supports the broader direction of sending more than one stablecoin type as the allowlist expands.
+
+### Milestone 3 - TINS Protocol
+
+Active development. Moves identity routing from TrustLink's backend to a permanent on-chain registry.
+
 [TINS Overview](transfer-identity-number-system-(TINS)/README.md)
 
-### Milestone 4 — TSN Settlement Network
-*Scaffolded and devnet-tested.* Cranker execution, Proof of Payment, vault liquidity, encrypted audit ledger, epoch settlement architecture.
+### Milestone 4 - TSN Settlement Network
+
+Scaffolded and devnet-oriented. Covers Cranker execution, Proof of Payment, vault liquidity, encrypted audit record design, and epoch reimbursement architecture.
 
 ---
 
@@ -238,12 +264,12 @@ Extended TrustLink to creator token payments via phone number using the Bags SDK
 
 | Path | Description |
 | --- | --- |
-| `backend/programs/trustlink-escrow` | Anchor escrow program (v2 + v3 + TSN M4) |
-| `backend/app/blockchain/solana-tsn.ts` | TSN transaction builders |
-| `tsn/scripts/setup.ts` | TSN setup commands |
-| `tsn/scripts/cranker.ts` | Local TSN Cranker daemon |
-| `tsn/cranker-sdk` | Standalone Cranker SDK scaffold |
-| `docs/devnet-testing.md` | Devnet testing guide |
+| `frontend` | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI |
+| `backend` | API routes, identity services, payment orchestration, database layer, and Solana integration |
+| `backend/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
+| `tsn` | TSN contracts, settlement economics, Cranker daemon, and setup scripts |
+| `trustlink-whatsapp-sdk` | WhatsApp authentication UI and handoff helpers |
+| `docs` | Architecture notes, service boundaries, wallet roles, and devnet testing guides |
 | `transfer-identity-number-system-(TINS)` | TINS on-chain identity program track |
 
 ## Quick Start
@@ -255,4 +281,4 @@ cd frontend && npm install && npm run dev
 
 ---
 
-**TrustLink Pay** — identity-first stablecoin payments on Solana, settling through a decentralised network of Cranker operators, with privacy built into every transaction and open protocol infrastructure that any developer can build on.
+**TrustLink Pay** - identity-first payments on Solana, settling through TSN with privacy, liquidity-backed execution, and open protocol infrastructure that developers can build on.

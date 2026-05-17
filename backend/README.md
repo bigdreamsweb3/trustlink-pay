@@ -1,14 +1,14 @@
 # TrustLink Pay Backend
 
-The backend is the operational core of TrustLink. It handles identity, consent, OTP issuance, payment creation, recipient lookup, WhatsApp webhooks, notification retries, and the Solana escrow workspace.
+The backend is the operational core of TrustLink Pay. It handles identity, consent, OTP issuance, payment creation, recipient lookup, WhatsApp webhooks, notification retries, Solana escrow orchestration, and TSN payment-intent creation.
 
-## What This Backend Actually Does
+## Backend Responsibilities
 
 ### Phone-First Authentication
 
-TrustLink no longer starts with email or a traditional password flow.
+TrustLink Pay uses phone-first authentication instead of email/password onboarding.
 
-Current auth sequence:
+Authentication sequence:
 
 1. user enters a WhatsApp number
 2. if the number is not opted in, TrustLink opens a prefilled `START TRUSTLINK` WhatsApp message
@@ -70,14 +70,18 @@ The frontend reads this state from TrustLink's database. It does not need to que
 
 ### Gasless Payment Handling
 
-TrustLink users do not need SOL for normal send and claim flow.
+TrustLink Pay uses a verifier wallet to pay Solana transaction fees and recoverable protocol account setup for normal payment operations.
 
 The backend:
 - estimates live Solana transaction cost
-- pays network fees through the verifier wallet
-- charges sender-side fees in the token being sent
-- charges claim-side fees in the token being claimed
-- reclaims recoverable SOL rent when escrow vaults close
+- prepares partially signed escrow transactions
+- pays verifier-side Solana fees through the verifier wallet
+- quotes sender-side TSN fees in the token being sent
+- quotes claim-side settlement fees when applicable
+- treats recoverable protocol account rent as infrastructure funding
+- rejects payment preparation when the verifier wallet does not have enough SOL to create the required protocol accounts
+
+The verifier wallet must remain funded with SOL. If its balance is too low, Solana simulation fails before the sender transaction lands. The backend now checks this before returning a prepared send transaction and returns a direct funding error instead of allowing a raw wallet simulation failure.
 
 ## Main Areas
 
@@ -115,6 +119,10 @@ If a payment is created successfully but the WhatsApp notification fails:
 ### Privacy Rules
 
 The backend shapes transaction views so that normal receivers do not get the sender's wallet address by default. Sensitive fields stay internal unless specifically required for authorized review.
+
+### Solana Error Reporting
+
+Frontend wallet sends can fail during RPC simulation. When Solana returns a `SendTransactionError`, the frontend reads the transaction logs and surfaces the relevant program failure. This is important for verifier-funding errors, account setup failures, and custom program errors.
 
 ## Local Setup
 
@@ -208,6 +216,8 @@ This backend currently supports:
 - manual invite generation for unregistered recipients
 - sender notification receipt state
 - viewer-safe transaction detail responses
-- live escrow-backed payment creation and release
-- gasless send and claim support through the verifier wallet
+- live escrow-backed payment creation
+- TSN payment-intent creation after escrow lock
+- gasless send and claim preparation through the verifier wallet
+- verifier SOL balance checks before send transaction preparation
 - expiry sweep support for unclaimed payments

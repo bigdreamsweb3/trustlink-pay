@@ -21,6 +21,7 @@ import type { PaymentRecord } from "@/app/types/payment";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
 import { createTsnIntentForPayment } from "@/app/services/tsn";
+import { evaluateSettlementEconomics } from "../../../../tsn/src/settlement-economics";
 
 import { buildInviteShareData, requiresManualInvite } from "./invite";
 import { AutoclaimEngine } from "./autoclaim-engine";
@@ -495,11 +496,29 @@ export async function estimatePaymentTransfer(params: {
     bindingPhoneIdentityPublicKey: receiverPaymentPolicy.receiverIdentityPublicKey,
   });
 
+  const settlementAssessment = evaluateSettlementEconomics({
+    paymentAmountUi: params.amount,
+    tokenUsd: estimate.senderFeeAmountUsd != null && estimate.senderFeeAmountUi > 0
+      ? estimate.senderFeeAmountUsd / estimate.senderFeeAmountUi
+      : null,
+    estimatedExecutionCostLamports: estimate.estimatedNetworkFeeLamports,
+    ataCreationCostLamports: Number(process.env.TSN_ATA_CREATION_ESTIMATE_LAMPORTS ?? 2_039_280),
+    solUsd:
+      estimate.networkFeeUsd != null && estimate.networkFeeSol > 0
+        ? estimate.networkFeeUsd / estimate.networkFeeSol
+        : null,
+    operatorFeeUi: Number(process.env.TSN_OPERATOR_FEE_UI ?? 0),
+    safetyMultiplier: Number(process.env.TSN_SETTLEMENT_SAFETY_MULTIPLIER ?? 1.25),
+  });
+
   return {
     paymentId,
     paymentMode: receiverPaymentPolicy.paymentMode,
     inviteExpiryAt: receiverPaymentPolicy.expiryAtOverride,
-    estimate,
+    estimate: {
+      ...estimate,
+      settlementAssessment,
+    },
   };
 }
 

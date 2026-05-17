@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { invalidateUserCache } from "@/app/lib/cache";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { deleteReceiverWalletForUser } from "@/app/services/auth";
 
@@ -9,6 +10,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ wall
     const authUser = requireAuthenticatedUser(request);
     const { walletId } = await context.params;
     const wallet = await deleteReceiverWalletForUser(authUser, walletId);
+    invalidateUserCache(authUser.id);
 
     return ok({ wallet });
   } catch (error) {

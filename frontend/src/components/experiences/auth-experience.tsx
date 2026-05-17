@@ -164,7 +164,7 @@ export function AuthExperience({
       try {
         const result = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
           phoneNumber: normalizedPhone,
-        });
+        }, undefined, { cache: "default", ttlMs: 5 * 60_000 });
 
         setResolvedPhoneNumber(normalizedPhone);
         setPhoneVerified(result.isBusiness);
@@ -258,7 +258,7 @@ export function AuthExperience({
         try {
           const result = await apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", {
             phoneNumber: candidate.normalizedPhone,
-          });
+          }, undefined, { cache: "default", ttlMs: 5 * 60_000 });
 
           if (result.isBusiness) {
             setResolvedPhoneNumber(candidate.normalizedPhone);

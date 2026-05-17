@@ -11,8 +11,13 @@ pub const TSN_DEFAULT_LEASE_SECONDS: i64 = 30;
 pub const TSN_DEFAULT_EPOCH_SECONDS: i64 = 7 * 60 * 60; // 7 hours
 
 // Fee split bps (out of 10_000) for internal settlement distribution.
-pub const TSN_SPLIT_BPS_CRANKER: u16 = 7_000;
-pub const TSN_SPLIT_BPS_LP: u16 = 2_000;
-pub const TSN_SPLIT_BPS_TREASURY: u16 = 1_000;
+// Default policy prioritizes LP incentives while keeping operator and treasury sustainable.
+// Current default:
+// - LP: 87%
+// - Treasury: 8%
+// - Cranker/Operator: 5%
+pub const TSN_SPLIT_BPS_CRANKER: u16 = 500;
+pub const TSN_SPLIT_BPS_LP: u16 = 8_700;
+pub const TSN_SPLIT_BPS_TREASURY: u16 = 800;
 
 pub const BPS_DENOMINATOR: u64 = 10_000;

@@ -2,24 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Calculator, Info, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Calculator, Info } from "lucide-react";
 
-const BASE_DEFI_APY = 10.2;
 const SENDER_FEE_RATE = 0.001;
 const CLAIM_FEE_RATE = 0.001;
-const SENDER_POOL_SHARE = 0.8;
-const SENDER_TSN_SHARE = 0.2;
-const CLAIM_OPERATOR_SHARE = 0.35;
-const CLAIM_POOL_SHARE = 0.65;
+const LP_SHARE = 0.87;
+const TREASURY_SHARE = 0.08;
+const OPERATOR_SHARE = 0.05;
 const NETWORK_FEE_USD = 0.003;
 const EPOCH_HOURS = 7;
-
-const SOLANA_PROTOCOLS = [
-  { name: "Kamino Finance", apy: 10.5, color: "#6aa7ff" },
-  { name: "Drift Protocol", apy: 9.2, color: "#35d39d" },
-  { name: "Jito / jitoSOL", apy: 8.1, color: "#f06ab7" },
-  { name: "Marginfi", apy: 7.8, color: "#a982ff" },
-];
 
 function money(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -54,36 +45,32 @@ export function LandingFeeYieldCalculator() {
     const settledDailyVolume = Math.min(assignedDailyVolume, vaultDailyCapacity);
     const senderFee = transferAmount * SENDER_FEE_RATE;
     const claimFee = transferAmount * CLAIM_FEE_RATE;
-    const senderPoolAmount = senderFee * SENDER_POOL_SHARE;
-    const senderTsnAmount = senderFee * SENDER_TSN_SHARE;
-    const claimOperatorAmount = claimFee * CLAIM_OPERATOR_SHARE;
-    const claimPoolAmount = claimFee * CLAIM_POOL_SHARE;
+    const totalSettlementFee = senderFee + claimFee;
+    const lpSettlementAmount = totalSettlementFee * LP_SHARE;
+    const treasurySettlementAmount = totalSettlementFee * TREASURY_SHARE;
+    const operatorSettlementAmount = totalSettlementFee * OPERATOR_SHARE;
     const recipientReceives = Math.max(transferAmount - claimFee, 0);
 
-    const annualDefiYield = vaultDeposit * (BASE_DEFI_APY / 100);
-    const annualSenderPoolYield = settledDailyVolume * SENDER_FEE_RATE * SENDER_POOL_SHARE * 365;
-    const annualClaimPoolYield = settledDailyVolume * CLAIM_FEE_RATE * CLAIM_POOL_SHARE * 365;
-    const annualTotalPoolFeeYield = annualSenderPoolYield + annualClaimPoolYield;
-    const annualOperatorYield = settledDailyVolume * CLAIM_FEE_RATE * CLAIM_OPERATOR_SHARE * 365;
-    const annualTsnRevenue = settledDailyVolume * SENDER_FEE_RATE * SENDER_TSN_SHARE * 365;
+    const annualTotalSettlementFees = settledDailyVolume * (SENDER_FEE_RATE + CLAIM_FEE_RATE) * 365;
+    const annualLpSettlementFees = annualTotalSettlementFees * LP_SHARE;
+    const annualOperatorYield = annualTotalSettlementFees * OPERATOR_SHARE;
+    const annualTsnRevenue = annualTotalSettlementFees * TREASURY_SHARE;
     const annualGrossFeeRevenue = settledDailyVolume * (SENDER_FEE_RATE + CLAIM_FEE_RATE) * 365;
-    const annualPoolIncome = annualDefiYield + annualTotalPoolFeeYield;
-    const lpExpectedApy = vaultDeposit > 0 ? (annualPoolIncome / vaultDeposit) * 100 : 0;
+    const annualPoolIncome = annualLpSettlementFees;
+    const lpExpectedApy = vaultDeposit > 0 ? (annualLpSettlementFees / vaultDeposit) * 100 : 0;
     const grossFeeApy = vaultDeposit > 0 ? (annualGrossFeeRevenue / vaultDeposit) * 100 : 0;
-    const lpFeeApy = vaultDeposit > 0 ? (annualTotalPoolFeeYield / vaultDeposit) * 100 : 0;
+    const lpFeeApy = vaultDeposit > 0 ? (annualLpSettlementFees / vaultDeposit) * 100 : 0;
 
     return {
       senderFee,
       claimFee,
-      senderPoolAmount,
-      senderTsnAmount,
-      claimOperatorAmount,
-      claimPoolAmount,
+      totalSettlementFee,
+      lpSettlementAmount,
+      treasurySettlementAmount,
+      operatorSettlementAmount,
       recipientReceives,
-      annualDefiYield,
-      annualSenderPoolYield,
-      annualClaimPoolYield,
-      annualTotalPoolFeeYield,
+      annualTotalSettlementFees,
+      annualLpSettlementFees,
       annualOperatorYield,
       annualTsnRevenue,
       annualGrossFeeRevenue,
@@ -98,8 +85,6 @@ export function LandingFeeYieldCalculator() {
       epochsPerDay,
     };
   }, [activeVaultLiquidity, dailyVolume, transferAmount, vaultDeposit]);
-
-  const tsnLpApy = model.lpExpectedApy;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
@@ -126,26 +111,11 @@ export function LandingFeeYieldCalculator() {
             <div className="grid gap-3 border-t border-[var(--field-border)] pt-4">
               <FeeLine label="Sender pays" value={money(transferAmount + model.senderFee)} note={`${money(transferAmount)} transfer + ${money(model.senderFee)} TSN sender fee`} />
               <FeeLine label="Current Solana network fee" value={`~${money(NETWORK_FEE_USD)}`} note="Shown before confirm; not counted as yield." />
-              <FeeLine label="TSN sender fee split" value={money(model.senderFee)} note={`${money(model.senderTsnAmount)} TSN protocol, ${money(model.senderPoolAmount)} vault pool`} />
-              <FeeLine label="Claim fee split" value={money(model.claimFee)} note={`${money(model.claimOperatorAmount)} operator, ${money(model.claimPoolAmount)} vault pool`} />
+              <FeeLine label="TSN sender fee" value={money(model.senderFee)} note="Settlement fee charged at payment creation." />
+              <FeeLine label="TSN claim fee" value={money(model.claimFee)} note="Settlement fee charged at claim execution." />
+              <FeeLine label="Per-transfer settlement split" value={money(model.totalSettlementFee)} note={`${money(model.lpSettlementAmount)} LP (${Math.round(LP_SHARE * 100)}%), ${money(model.treasurySettlementAmount)} treasury (${Math.round(TREASURY_SHARE * 100)}%), ${money(model.operatorSettlementAmount)} operator (${Math.round(OPERATOR_SHARE * 100)}%)`} />
               <FeeLine label="Recipient receives" value={money(model.recipientReceives)} note="Before any claim-side token account setup if needed." />
             </div>
-          </div>
-        </div>
-
-        <div className="tl-panel p-5">
-          <div className="flex items-center gap-2 text-[0.7rem] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
-            <TrendingUp className="h-4 w-4" />
-            LP APY comparison
-          </div>
-          <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">
-            This compares the yield a liquidity provider can expect to receive, not the total fee revenue produced by the protocol. Operator share and TSN protocol revenue are shown separately below and are excluded from the LP APY.
-          </p>
-          <div className="mt-5 space-y-3">
-            <ProtocolBar name="TSN LP expected" apy={tsnLpApy} color="#ff7a18" best />
-            {SOLANA_PROTOCOLS.map((protocol) => (
-              <ProtocolBar key={protocol.name} {...protocol} />
-            ))}
           </div>
         </div>
       </div>
@@ -153,9 +123,9 @@ export function LandingFeeYieldCalculator() {
       <div className="tl-panel p-5 md:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-[#ff7a18]">Yield Calculator</p>
+            <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-[#ff7a18]">Settlement APY Calculator</p>
             <h3 className="mt-3 text-2xl font-black tracking-normal text-[var(--text)]">
-              Model LP income from approved asset volume.
+              Model LP income from real settlement fee activity only.
             </h3>
           </div>
           <div className="hidden rounded-full border border-[#ff7a18]/30 bg-[#ff7a18]/10 px-3 py-1 text-xs font-black text-[#ff7a18] md:block">
@@ -240,40 +210,30 @@ export function LandingFeeYieldCalculator() {
             setOpenInfo={setOpenInfo}
           />
           <YieldLine
-            id="defi-yield"
-            label={`DeFi yield (${percent(BASE_DEFI_APY)} base)`}
-            value={`${money(model.annualDefiYield)}/yr`}
-            color="text-[#ffbf2f]"
-            info="Base DeFi yield is calculated from the vault deposit itself. For example, $260K at 10.2% produces about $26.5K per year before TSN fee yield."
-            openInfo={openInfo}
-            setOpenInfo={setOpenInfo}
-          />
-          <YieldLine
             id="pool-fees"
-            label={`Total LP fee share (${percent(model.lpFeeApy)} fee APY)`}
-            value={`${money(model.annualTotalPoolFeeYield)}/yr`}
+            label={`Total LP settlement-fee share (${percent(model.lpFeeApy)} APY)`}
+            value={`${money(model.annualLpSettlementFees)}/yr`}
             color="text-[var(--accent)]"
-            info={`This is the fee income paid to liquidity providers only. Current model: LPs receive ${Math.round(CLAIM_POOL_SHARE * 100)}% of claim fees and ${Math.round(SENDER_POOL_SHARE * 100)}% of sender fees. Operator and protocol shares are excluded from LP APY.`}
+            info={`This is fee income paid to LPs from real settlement usage only. Model split: LP ${Math.round(LP_SHARE * 100)}%, treasury ${Math.round(TREASURY_SHARE * 100)}%, operator ${Math.round(OPERATOR_SHARE * 100)}%.`}
             openInfo={openInfo}
             setOpenInfo={setOpenInfo}
           />
-          <YieldLine label={`Claim fee pool share (${Math.round(CLAIM_POOL_SHARE * 100)}%)`} value={`${money(model.annualClaimPoolYield)}/yr`} color="text-[var(--accent)]" />
-          <YieldLine label={`Sender fee pool share (${Math.round(SENDER_POOL_SHARE * 100)}%)`} value={`${money(model.annualSenderPoolYield)}/yr`} color="text-[#39bfff]" />
+          <YieldLine label={`LP share (${Math.round(LP_SHARE * 100)}%)`} value={`${money(model.annualLpSettlementFees)}/yr`} color="text-[var(--accent)]" />
           <YieldLine
             id="operator-share"
-            label={`Cranker operator share (${Math.round(CLAIM_OPERATOR_SHARE * 100)}%)`}
+            label={`Cranker/operator share (${Math.round(OPERATOR_SHARE * 100)}%)`}
             value={`${money(model.annualOperatorYield)}/yr`}
             color="text-[#b48cff]"
-            info="Cranker operators earn a claim-fee share for uptime, watching intents, paying recipients from vault liquidity, submitting proof, and keeping settlement reliable."
+            info="Operator reward is tied to settlement execution and should remain operational-cost-aware over time."
             openInfo={openInfo}
             setOpenInfo={setOpenInfo}
           />
           <YieldLine
             id="tsn-revenue"
-            label={`TSN protocol revenue (${Math.round(SENDER_TSN_SHARE * 100)}%)`}
+            label={`Protocol treasury (${Math.round(TREASURY_SHARE * 100)}%)`}
             value={`${money(model.annualTsnRevenue)}/yr`}
             color="text-[#ff7a18]"
-            info="TSN protocol revenue is intentionally smaller than LP allocation. It comes from a minority share of sender fees and supports protocol development, operations, and user experience."
+            info="Treasury take remains lower than LP share to prioritize LP retention while sustaining protocol operations."
             openInfo={openInfo}
             setOpenInfo={setOpenInfo}
           />
@@ -283,12 +243,12 @@ export function LandingFeeYieldCalculator() {
           <div>
             <span className="text-[0.7rem] font-black uppercase tracking-[0.18em] text-[var(--text-faint)]">LP expected APY</span>
             <strong className="mt-2 block text-4xl font-black text-[#ff7a18]">{percent(model.lpExpectedApy)}</strong>
-            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Base yield plus LP share of TSN fees.</p>
+            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Generated from real TSN settlement fees only.</p>
           </div>
           <div>
             <span className="text-[0.7rem] font-black uppercase tracking-[0.18em] text-[var(--text-faint)]">Annual LP income</span>
             <strong className="mt-2 block text-4xl font-black text-[#ff7a18]">{money(model.annualPoolIncome)}</strong>
-            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Operator and protocol revenue excluded.</p>
+            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">LP settlement-fee share only. No external farming assumptions.</p>
           </div>
         </div>
 
@@ -393,32 +353,6 @@ function YieldLine({
           {info}
         </p>
       ) : null}
-    </div>
-  );
-}
-
-function ProtocolBar({
-  name,
-  apy,
-  color,
-  best = false,
-}: {
-  name: string;
-  apy: number;
-  color: string;
-  best?: boolean;
-}) {
-  const width = Math.min((apy / 90) * 100, 100);
-
-  return (
-    <div className="grid grid-cols-[120px_1fr_56px] items-center gap-3 text-xs">
-      <span className={best ? "font-black text-[#ff7a18]" : "font-semibold text-[var(--text-soft)]"}>{name}</span>
-      <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-        <div className="h-full rounded-full" style={{ width: `${width}%`, background: color }} />
-      </div>
-      <span className={best ? "text-right font-black text-[#ff7a18]" : "text-right font-bold text-[var(--text-soft)]"}>
-        {percent(apy)}
-      </span>
     </div>
   );
 }

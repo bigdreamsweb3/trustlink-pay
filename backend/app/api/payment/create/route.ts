@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { createPaymentSchema } from "@/app/lib/validation";
+import { invalidatePaymentCache, invalidateRecipientCache } from "@/app/lib/cache";
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { resolveAppBaseUrlFromRequest } from "@/app/lib/app-url";
 import { logger } from "@/app/lib/logger";
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
     const appBaseUrl = resolveAppBaseUrlFromRequest(request);
 
     const result = await createPayment({ ...payload, appBaseUrl });
+    if (result.payment) {
+      invalidatePaymentCache(result.payment.id);
+      invalidateRecipientCache();
+    }
     const payment = result.payment;
     const notificationRetrying =
       payment != null &&

@@ -54,6 +54,35 @@ type BrowserWindow = Window & {
   };
 };
 
+async function enrichSolanaTransactionError(error: unknown, connection: Connection) {
+  const baseMessage = error instanceof Error ? error.message : "Solana transaction failed";
+  const details = error as {
+    getLogs?: (connection: Connection) => Promise<string[]>;
+    logs?: string[];
+    transactionLogs?: string[];
+  };
+
+  let logs = Array.isArray(details.logs) ? details.logs : Array.isArray(details.transactionLogs) ? details.transactionLogs : null;
+  if (!logs?.length && typeof details.getLogs === "function") {
+    try {
+      logs = await details.getLogs(connection);
+    } catch {
+      logs = null;
+    }
+  }
+
+  if (!logs?.length) {
+    return error instanceof Error ? error : new Error(baseMessage);
+  }
+
+  const insufficientLamports = logs.find((entry) => /insufficient lamports/i.test(entry));
+  const message = insufficientLamports
+    ? `Solana transaction failed because the TrustLink verifier wallet does not have enough SOL to fund protocol account creation. ${insufficientLamports}`
+    : baseMessage;
+
+  return new Error(`${message}\n\nSolana logs:\n${logs.join("\n")}`, { cause: error });
+}
+
 export type DetectedWallet = {
   id: string;
   name: string;
@@ -368,24 +397,28 @@ export async function sendSolanaPayment(params: {
 
   let signature: TransactionSignature;
 
-  if (wallet.provider.signAndSendTransaction) {
-    const response = await wallet.provider.signAndSendTransaction(transaction, {
-      preflightCommitment: "confirmed",
-    });
-    signature = response.signature;
-  } else if (wallet.provider.signTransaction) {
-    const signedTransaction =
-      await wallet.provider.signTransaction(transaction);
-    signature = await connection.sendRawTransaction(
-      signedTransaction.serialize(),
-      {
+  try {
+    if (wallet.provider.signAndSendTransaction) {
+      const response = await wallet.provider.signAndSendTransaction(transaction, {
         preflightCommitment: "confirmed",
-      },
-    );
-  } else {
-    throw new Error(
-      "This wallet cannot sign Solana transactions from the browser",
-    );
+      });
+      signature = response.signature;
+    } else if (wallet.provider.signTransaction) {
+      const signedTransaction =
+        await wallet.provider.signTransaction(transaction);
+      signature = await connection.sendRawTransaction(
+        signedTransaction.serialize(),
+        {
+          preflightCommitment: "confirmed",
+        },
+      );
+    } else {
+      throw new Error(
+        "This wallet cannot sign Solana transactions from the browser",
+      );
+    }
+  } catch (error) {
+    throw await enrichSolanaTransactionError(error, connection);
   }
 
   await connection.confirmTransaction(
@@ -438,18 +471,22 @@ export async function signAndSendSerializedSolanaTransaction(params: {
   await params.inspectTransaction?.(transaction);
   let signature: TransactionSignature;
 
-  if (wallet.provider.signTransaction) {
-    const signedTransaction = await wallet.provider.signTransaction(transaction);
-    signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-      preflightCommitment: "confirmed",
-    });
-  } else if (wallet.provider.signAndSendTransaction) {
-    const response = await wallet.provider.signAndSendTransaction(transaction, {
-      preflightCommitment: "confirmed",
-    });
-    signature = response.signature;
-  } else {
-    throw new Error("This wallet cannot sign Solana transactions from the browser");
+  try {
+    if (wallet.provider.signTransaction) {
+      const signedTransaction = await wallet.provider.signTransaction(transaction);
+      signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+        preflightCommitment: "confirmed",
+      });
+    } else if (wallet.provider.signAndSendTransaction) {
+      const response = await wallet.provider.signAndSendTransaction(transaction, {
+        preflightCommitment: "confirmed",
+      });
+      signature = response.signature;
+    } else {
+      throw new Error("This wallet cannot sign Solana transactions from the browser");
+    }
+  } catch (error) {
+    throw await enrichSolanaTransactionError(error, connection);
   }
 
   try {

@@ -64,6 +64,8 @@ const splToken = require("@solana/spl-token") as {
   ) => TransactionInstruction;
 };
 
+const PAYMENT_ACCOUNT_SPACE = 285;
+
 function encodeU64(value: bigint) {
   const buffer = Buffer.alloc(8);
   buffer.writeBigUInt64LE(value);
@@ -236,13 +238,20 @@ async function buildCreatePaymentTransaction(params: {
     throw new Error("Escrow treasury owner missing in on-chain config");
   }
   const treasuryOwner = new PublicKey(treasuryOwnerRaw);
-  const treasuryTokenAccount = await ensureAssociatedTokenAccount({
-    connection: params.connection,
-    transaction,
-    payer: payer.publicKey,
-    owner: treasuryOwner,
-    mint,
-  });
+  const treasuryTokenAccount = splToken.getAssociatedTokenAddressSync(mint, treasuryOwner);
+  const treasuryAtaInfo = await params.connection.getAccountInfo(treasuryTokenAccount, "confirmed");
+  if (!treasuryAtaInfo) {
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        treasuryTokenAccount,
+        treasuryOwner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+  }
 
   transaction.add(
     new TransactionInstruction({
@@ -274,8 +283,43 @@ async function buildCreatePaymentTransaction(params: {
     paymentAccount,
     escrowVault,
     treasuryTokenAccount: treasuryTokenAccount.toBase58(),
+    treasuryNeedsAta: !treasuryAtaInfo,
     transaction,
   };
+}
+
+async function assertEscrowAuthorityCanFundCreatePayment(params: {
+  connection: Connection;
+  transaction: Transaction;
+  treasuryNeedsAta: boolean;
+}) {
+  const payer = getEscrowAuthorityKeypair();
+  const [balanceLamports, transactionFeeLamports, paymentAccountRentLamports, tokenAccountRentLamports] =
+    await Promise.all([
+      params.connection.getBalance(payer.publicKey, "confirmed"),
+      estimateTransactionFeeLamports(params.connection, params.transaction),
+      params.connection.getMinimumBalanceForRentExemption(PAYMENT_ACCOUNT_SPACE, "confirmed"),
+      params.connection.getMinimumBalanceForRentExemption(TOKEN_ACCOUNT_SPACE, "confirmed"),
+    ]);
+
+  const accountRentLamports =
+    paymentAccountRentLamports +
+    tokenAccountRentLamports +
+    (params.treasuryNeedsAta ? tokenAccountRentLamports : 0);
+  const requiredLamports = accountRentLamports + transactionFeeLamports;
+
+  if (balanceLamports >= requiredLamports) {
+    return;
+  }
+
+  throw new Error(
+    [
+      "TrustLink verifier wallet needs more SOL before this payment can be created on-chain.",
+      `Available: ${lamportsToSol(balanceLamports).toFixed(6)} SOL.`,
+      `Required: ${lamportsToSol(requiredLamports).toFixed(6)} SOL.`,
+      "The verifier wallet pays recoverable protocol account setup for send transactions, so this is an operator funding issue, not a sender fee.",
+    ].join(" "),
+  );
 }
 
 export async function estimateSenderTransferCost(params: {
@@ -697,6 +741,11 @@ export async function prepareEscrowPayment(params: {
     connection,
     ...params,
     senderFeeAmountUiOverride: feeEstimate.senderFeeAmountUi,
+  });
+  await assertEscrowAuthorityCanFundCreatePayment({
+    connection,
+    transaction: built.transaction,
+    treasuryNeedsAta: built.treasuryNeedsAta,
   });
 
   logger.info("solana.prepare_escrow_payment", {

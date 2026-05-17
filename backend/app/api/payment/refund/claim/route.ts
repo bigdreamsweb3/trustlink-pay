@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { invalidatePaymentCache, invalidateUserCache } from "@/app/lib/cache";
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { claimPaymentRefundSchema } from "@/app/lib/validation";
 import { claimPaymentRefund } from "@/app/services/payments";
@@ -14,6 +15,8 @@ export async function POST(request: Request) {
       ...payload,
       authUser,
     });
+    invalidatePaymentCache(result.payment.id);
+    invalidateUserCache(authUser.id);
 
     return ok({
       paymentId: result.payment.id,

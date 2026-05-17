@@ -1,15 +1,17 @@
 export const runtime = "nodejs";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { CACHE_TAGS, CACHE_TTL_SECONDS, cachedQuery } from "@/app/lib/cache";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 import { sanitizePaymentForViewer } from "@/app/services/payment-views";
 import { listLockedPaymentsForUser } from "@/app/services/payments";
 import { enrichPaymentsWithUsd } from "@/app/services/pricing";
 
-export async function GET(request: Request) {
-  try {
-    const authUser = requireAuthenticatedUser(request);
-    const payments = await listLockedPaymentsForUser(authUser.phoneNumber);
+const getCachedPendingPayments = cachedQuery(
+  "payment-pending-v1",
+  async (userId: string, phoneNumber: string) => {
+    const authUser = { id: userId, phoneNumber };
+    const payments = await listLockedPaymentsForUser(phoneNumber);
     const enrichedPayments = await enrichPaymentsWithUsd(payments);
     const safePayments = enrichedPayments.map((payment) => sanitizePaymentForViewer(payment, authUser));
     const totalPendingUsd = Number(
@@ -39,7 +41,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return ok({
+    return {
       payments: safePayments,
       totalPendingUsd,
       summary: {
@@ -47,7 +49,18 @@ export async function GET(request: Request) {
         totalPendingUsd,
         byToken: Array.from(byTokenMap.values()),
       },
-    });
+    };
+  },
+  {
+    revalidate: CACHE_TTL_SECONDS.payments,
+    tags: [CACHE_TAGS.payments],
+  },
+);
+
+export async function GET(request: Request) {
+  try {
+    const authUser = requireAuthenticatedUser(request);
+    return ok(await getCachedPendingPayments(authUser.id, authUser.phoneNumber));
   } catch (error) {
     if (error instanceof Error && /access token/i.test(error.message)) {
       return fail(error.message, 401);

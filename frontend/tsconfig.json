@@ -2,7 +2,11 @@
   "compilerOptions": {
     // "ignoreDeprecations": "6.0",
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "es2022"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -21,12 +25,24 @@
     ],
     // "baseUrl": ".",
     "paths": {
-      "framer-motion": ["./node_modules/framer-motion"],
-      "lucide-react": ["./node_modules/lucide-react"],
-      "react": ["./node_modules/@types/react"],
-      "react-dom": ["./node_modules/@types/react-dom"],
-      "@/*": ["./*"],
-      "@/src/*": ["./src/*"]
+      "framer-motion": [
+        "./node_modules/framer-motion"
+      ],
+      "lucide-react": [
+        "./node_modules/lucide-react"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
+      ],
+      "@/*": [
+        "./*"
+      ],
+      "@/src/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -35,7 +51,10 @@
     "types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -13,11 +13,11 @@
     "crank:reference": "tsx ../tsn/scripts/cranker.ts"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.98.0",
+    "@solana/web3.js": "^1.98.4",
     "@trustlink/tsn-cranker-sdk": "file:../tsn/cranker-sdk",
-    "dotenv": "^16.4.7"
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "tsx": "^4.19.3"
+    "tsx": "^4.22.2"
   }
 }

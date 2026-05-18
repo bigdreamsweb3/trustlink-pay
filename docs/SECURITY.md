@@ -1,109 +1,162 @@
-# TrustLink Pay Security Documentation
+# TINS Security
 
-## Security Model
+Security architecture for TINS (Transfer Identity Number System).
 
-TrustLink Pay is designed with security as the foundation, not an afterthought.
+## Table of Contents
 
-## Core Properties
+1. [Core Principles](#core-principles)
+2. [Threat Model](#threat-model)
+3. [Attack Mitigations](#attack-mitigations)
+4. [Privacy Model](#privacy-model)
 
-### Noncustodial
+---
 
-- Funds always held in user-controlled escrow
-- Protocol never takes custody
-- Smart contracts enforce release rules
+## Core Principles
 
-### Per-Payment Isolation
-
-- Each payment has unique escrow
-- No shared state between payments
-- Failure contained per payment
-
-### Address Poisoning Prevention
-
-- Users send to phone numbers, not addresses
-- Backend resolves identity before locking
-- No copy-paste wallet errors
-
-### Wallet Rotation (Critical Security)
-
-#### The Problem
-
-If a user's old wallet is leaked/compromised:
-- ❌ Hacker changes TIN to hacker's wallet
-- ❌ Sender sends to TIN, funds go to hacker
-- ❌ User doesn't know until funds disappear
-
-#### Secure Rotation Protocol
-
-**Requirement**: User must prove they control BOTH wallets.
+### 1. Main Wallet Never On-Chain
 
 ```
-1. INITIATE: User signs message with OLD wallet
-   → "I want to rotate TIN-XXXX-XXXX to new wallet"
-   
-2. VERIFY: System verifies old wallet signed request
-   
-3. COOLDOWN: 24-72 hour delay before change activates
-   → User gets notification via ALL linked channels
-   
-4. CONFIRM: User must CONFIRM via SEPARATE channel
-   → Email, SMS, WhatsApp - pick any 2
-   
-5. ACTIVATE: After cooldown + confirmation
-   → TIN now resolves to new privacy_pubkey
+✓ Stored: privacy_pubkey (derived key)
+✗ NEVER: main wallet address
+✗ NEVER: private keys
 ```
 
-#### Anti-Hacker Protections
+### 2. Derived Keys Only
 
-| Attack | Protection |
-|--------|-----------|
-| Hacker has old wallet | Need NEW wallet also to confirm |
-| Hacker controls email | Need SMS/WhatsApp confirmation |
-| Hacker social engineers | Cooldown delay gives time to notice |
-| Silent change | Notification on ALL channels |
-| Fast takeover | Min 24hr cooldown, max 72hr |
-
-#### Migration Flow
+The privacy key shown on-chain is **derived** from main wallet:
 
 ```
-[Old Wallet] → [Cooldown] → [Confirmation] → [New Privacy Key]
-     │              │              │
-     ▼              ▼              ▼
- Sign request   Wait + notify   Verify + activate
+Main Wallet (OFF-CHAIN)
+       │
+       ▼ BIP-44 derivation
+privacy_pubkey (ON-CHAIN, visible)
+       │
+       ▼ Can rotate anytime
+new privacy_pubkey (ON-CHAIN)
 ```
 
-### Threat Model
+### 3. Multi-Sig Recovery
 
-| Threat | Mitigation |
-| --- | --- |
-| Wallet theft | PIN + WhatsApp authentication |
-| Replay attacks | Nonce + expiration |
-| Front-running | Cranker exclusivity (one lease) |
-| Reentrancy | Check-effect-interaction pattern |
-| Access control | RBAC + session tokens |
-| **Silent wallet rotation** | Multi-wallets + cooldown + multi-channel confirm |
+Changing your privacy key requires **2 of 3** recovery wallets.
 
-## Vulnerability Disclosure
+---
 
-Please report security vulnerabilities responsibly.
+## Threat Model
 
-**Report**: security@trustlink.pay
+| Threat | What Happens | Mitigation |
+|--------|--------------|------------|
+| Wallet stolen | Hacker changes TIN to receive funds | Need 2 recovery wallets to rotate |
+| Main wallet exposed | Main wallet visible on-chain | Never stored on-chain |
+| TIN enumeration | Hacker scans all TINs | HMAC-based non-sequential TINs |
+| Mass TIN creation | Spam attacks | Rate limiting (100/hour) |
+| Replay attack | Old transaction replayed | Nonce increments |
+| Social engineering | User tricked into sending | Display name verification |
 
-## Audits
+---
 
-Protocol contracts should be audited before mainnet. Self-audit recommended:
+## Attack Mitigations
 
-```bash
-cd tsn/protocol
-anchor build
-anchor test
+### Wallet Theft
+
+```
+WITHOUT MULTI-SIG:
+  Hacker steals wallet
+  → Hacker changes TIN → Hacker receives ALL funds
+  → User doesn't know → Funds gone
+
+WITH MULTI-SIG:
+  Hacker steals wallet
+  → Hacker initiates rotation
+  → Need 2nd recovery wallet → BLOCKED
+  → User notified → BLOCKED
 ```
 
-## Smart Contract Security
+### Display Name Verification
 
-The escrow program uses:
+Before sending, user sees:
+```
+Confirm: Send 100 USDC to Daniel Ochieng (TIN-1234-5678)?
+```
 
-- CPI guards
-- Signer validation
-- Amount limits
-- Time locks
+Not: `Send to 7xK...abc123 (unverified)`
+
+### TIN Enumeration Prevention
+
+```
+SEQUENTIAL (BAD):
+  TIN-0001-0001, TIN-0001-0002, TIN-0001-0003...
+  → Easy to predict → Easy to scan
+
+ENTROPY-BASED (GOOD):
+  TIN = hash(owner + entropy + slot) → pseudo-random
+  → Can't predict → Can't enumerate
+```
+
+### Rate Limiting
+
+```
+Per hour per owner: Max 100 TINs
+Per block: Max 10 TINs
+```
+
+---
+
+## Privacy Model
+
+### What Is Public (On-Chain)
+
+| Data | Who Sees | Why |
+|------|---------|-----|
+| TIN | Everyone | For lookup |
+| display_name | Everyone | Anti-scam verification |
+| privacy_pubkey | Everyone | For escrow routing |
+| recovery_wallets | NO ONE | Private to owner |
+
+### What Is Private (Off-Chain)
+
+| Data | Where | Who Sees |
+|------|-------|----------|
+| Main wallet | User's device | NO ONE |
+| Private key | User's device | NO ONE |
+| Recovery wallets | User's device | NO ONE |
+
+### What Can Be Viewed
+
+The public can see:
+- TIN → display name ✓
+- TIN → privacy key ✓
+
+The public CANNOT see:
+- TIN → main wallet ✗
+- TIN → recovery wallets ✗
+- TIN → private key ✗
+
+---
+
+## Security Checklist
+
+For production, ensure:
+
+- [x] Main wallet never stored on-chain
+- [x] Privacy key derived (BIP-44)
+- [x] Display name for verification
+- [x] Multi-sig recovery walls
+- [x] 24hr rotation cooldown
+- [x] Nonce for replay protection
+- [x] Rate limiting
+- [x] Anti-enumeration TINs
+- [x] Team fees (prevents abuse)
+
+---
+
+## Reporting Security Issues
+
+Found a security issue?
+
+**Email**: security@[domain]
+**GitHub**: Open issue (private)
+
+Include:
+- Description
+- Steps to reproduce
+- Potential impact

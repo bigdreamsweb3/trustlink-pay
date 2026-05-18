@@ -103,14 +103,9 @@ PAID system = PROTECTED
 ### Fee Distribution
 
 ```
-┌─────────────────────────────────────┐
-│           0.01 SOL                  │
-├─────────────┬───────────────────────┤
-│   0.007 SOL │     0.003 SOL       │
-│  (70%)      │     (30%)          │
-│  Team Fund  │   Burn/Network    │
-└─────────────┴───────────────────────┘
+All fees go to team treasury for development and maintenance.
 ```
+No burn - all fees fund the team!
 
 ### Implementing Fees (On-Chain)
 
@@ -298,7 +293,6 @@ For TINS to be production-ready:
 - [x] Registration fees
 - [x] Rotation fees  
 - [x] Team treasury
-- [ ] Burn mechanism (optional)
 
 ### Functionality
 

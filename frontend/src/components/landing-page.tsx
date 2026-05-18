@@ -139,7 +139,7 @@ export function LandingPage() {
             <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>
-          <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,5vw,4.0rem)] font-black leading-[1.2] tracking-1 text-[var(--text)]">
+          <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,5vw,4.0rem)] font-black leading-[1.4] tracking-1 text-[var(--text)]">
             Private blockchain payments as familiar as mobile money.
           </h1>
           <p className="mt-6 max-w-[680px] text-[1rem] leading-8 text-[var(--text-soft)] md:text-[1.12rem]">
@@ -202,7 +202,7 @@ export function LandingPage() {
         <SectionLabel index="01" title="TSN privacy" />
         <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
-            <h2 className="text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-[1.2] tracking-1text-[var(--text)]">
+            <h2 className="text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-[1.4] tracking-1text-[var(--text)]">
               Settlement without direct wallet-to-wallet exposure.
             </h2>
             <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
@@ -240,7 +240,7 @@ export function LandingPage() {
       <section id="fee-model" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <SectionLabel index="03" title="Current fee model" />
-          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-[1.2] tracking-1text-[var(--text)]">
+          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.2rem)] font-black leading-[1.4] tracking-1text-[var(--text)]">
             Show the real fee, not account rent dressed up as network cost.
           </h2>
           <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
@@ -271,7 +271,7 @@ export function LandingPage() {
       <section id="cranker" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[1fr_0.9fr]">
         <div className="tl-panel p-5 md:p-7">
           <SectionLabel index="05" title="Run a Cranker node" />
-          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-[1.2] tracking-1text-[var(--text)]">
+          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-[1.4] tracking-1text-[var(--text)]">
             Earn for every settlement you execute.
           </h2>
           <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
@@ -326,7 +326,7 @@ export function LandingPage() {
       <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <SectionLabel index="07" title="TINS" />
-          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-[1.2] tracking-1text-[var(--text)]">
+          <h2 className="mt-4 text-[clamp(1.8rem,4vw,3.1rem)] font-black leading-[1.4] tracking-1text-[var(--text)]">
             Transfer Identity Number System.
           </h2>
           <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">

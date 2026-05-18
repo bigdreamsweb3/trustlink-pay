@@ -23,25 +23,51 @@ pub struct IdentityRegistry {
     pub version: u8,
     pub bump: u8,
     pub status: u8,
-    pub reserved: [u8; 5],
-    pub tin: u64,
+    pub reserved: [u8; 3],
     /// CRITICAL: Derived privacy key (NOT main wallet!)
-    /// Use this for payment routing, NEVER expose main wallet
     pub privacy_pubkey: Pubkey,
-    /// For verification only - can rotate if compromised
-    /// NOT for receiving funds directly
+    /// Optional verification key (can rotate if compromised)
     pub verifying_pubkey: Option<Pubkey>,
-    /// Derived child key path index (for BIP-44 derivation)
+    /// BIP-44 derivation path index
     pub path_index: u32,
     pub last_escrow_id: u64,
     pub created_at: i64,
-    /// Display name shown before sending (anti-scam)
+    /// Display name for anti-scam
     pub display_name: String,
+    /// RECOVERY WALLETS: Up to 3 recovery options
+    /// Used to approve wallet rotation
+    pub recovery_wallets: [Option<Pubkey>; 3],
+    /// Latest rotation request (if any)
+    pub pending_rotation: Option<RotationRequest>,
+    /// Last successful rotation timestamp
+    pub last_rotation_at: i64,
+    /// Anti-replay nonce
+    pub nonce: u64,
+}
+
+/// Wallet rotation request (requires MULTI-SIG approval)
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct RotationRequest {
+    /// New privacy key
+    pub new_privacy_pubkey: Pubkey,
+    /// Who requested (must be recovery wallet)
+    pub requested_by: Pubkey,
+    /// When requested (for cooldown)
+    pub requested_at: i64,
+    /// Confirmation count (need 2 of 3 recovery wallets)
+    pub confirmations: u8,
+    /// Which recovery wallets confirmed (bitfield)
+    pub confirmed_by: u8,
+    /// Status: 0=pending, 1=confirmed, 2=cancelled
+    pub status: u8,
 }
 
 impl IdentityRegistry {
     pub fn space(name: &str) -> usize {
-        100 + name.len()
+        // version(1) + bump(1) + status(1) + reserved(3) + privacy_pubkey(32) + 
+        // verifying(1+33) + path_index(4) + last_escrow(8) + created(8) +
+        // name(len) + recovery(3*34) + rotation(~100) + last_rot(8) + nonce(8)
+        300 + name.len()
     }
 }
 

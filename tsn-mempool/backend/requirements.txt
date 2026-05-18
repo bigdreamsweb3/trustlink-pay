@@ -1,5 +1,5 @@
-fastapi==0.116.1
+fastapi>=0.116.1
 uvicorn[standard]>=0.30
-httpx==0.28.1
+httpx>=0.28.1
 redis[asyncio]>=5.0
 python-dotenv>=1.0

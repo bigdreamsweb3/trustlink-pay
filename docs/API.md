@@ -1,0 +1,171 @@
+# TrustLink Pay API Reference
+
+## Base URL
+
+```
+Development: http://localhost:3000
+Production: https://api.trustlink.pay
+```
+
+## Authentication
+
+Session-based via WhatsApp or PIN.
+
+## Endpoints
+
+### Create Payment
+
+```
+POST /api/payment/create
+```
+
+**Request:**
+```json
+{
+  "recipient": "+2348012345678",
+  "amount": 100,
+  "tokenMint": "EPjFWdd5AufqSSqeV6Z8oB2cX3Lv9iZ9pKQv2dNqV1mXg"
+}
+```
+
+**Response:**
+```json
+{
+  "paymentId": "pay_abc123",
+  "escrowAddress": "7xKX...",
+  "fee": 0.50,
+  "expiresAt": 1234567890
+}
+```
+
+### Estimate Fee
+
+```
+POST /api/payment/estimate
+```
+
+**Request:**
+```json
+{
+  "recipient": "+2348012345678",
+  "amount": 100
+}
+```
+
+**Response:**
+```json
+{
+  "networkFee": 0.005,
+  "protocolFee": 0.50,
+  "total": 100.51,
+  "recipientReceives": 99.50
+}
+```
+
+### Request Claim
+
+```
+POST /api/payment/claim/request
+```
+
+**Request:**
+```json
+{
+  "paymentId": "pay_abc123",
+  "wallet": "DGV..."
+}
+```
+
+**Response:**
+```json
+{
+  "claimRequestId": "claim_xyz789",
+  "status": "processing"
+}
+```
+
+### Verify Phone
+
+```
+POST /api/phone/verify
+```
+
+**Request:**
+```json
+{
+  "phoneNumber": "+2348012345678"
+}
+```
+
+**Response:**
+```json
+{
+  "verified": true,
+  "identity": "TIN-1234-5678"
+}
+```
+
+### Payment History
+
+```
+GET /api/payment/history?limit=20&offset=0
+```
+
+**Response:**
+```json
+{
+  "payments": [
+    {
+      "id": "pay_abc123",
+      "direction": "sent",
+      "amount": 50,
+      "status": "settled",
+      "createdAt": 1234567890
+    }
+  ],
+  "total": 100
+}
+```
+
+## Webhooks
+
+### payment.created
+
+```json
+{
+  "type": "payment.created",
+  "paymentId": "pay_abc123",
+  "amount": 100,
+  "sender": "DGV..."
+}
+```
+
+### payment.claimed
+
+```json
+{
+  "type": "payment.claimed",
+  "paymentId": "pay_abc123",
+  "cranker": "DGV...",
+  "txHash": "abc..."
+}
+```
+
+### payment.settled
+
+```json
+{
+  "type": "payment.settled",
+  "paymentId": "pay_abc123",
+  "epoch": 42
+}
+```
+
+## Error Codes
+
+| Code | Description |
+| --- | --- |
+| `INVALID_PHONE` | Phone number not registered |
+| `INSUFFICIENT_BALANCE` | Sender lacks funds |
+| `PAYMENT_EXPIRED` | Escrow expired |
+| `INVALID_WALLET` | Invalid wallet address |

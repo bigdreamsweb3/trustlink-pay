@@ -327,15 +327,33 @@ tinctl confirm --tin TIN-1234-5678
 - **24hr cooldown**: Time to notice suspicious activity
 - **Rate limiting**: 100 TINs/hour max per owner
 
+## Why TINS Is Not Free
+
+TINS charges fees to:
+
+1. **Prevent Abuse**
+   - Free = hacker attacks (mass TIN creation, spam)
+   - Paid = real users only
+
+2. **Fund Development**
+   - Server costs
+   - Security audits
+   - New features
+   - Support
+
+3. **Security Investment**
+   - Rate limiting works because there's cost
+   - Multi-sig requires 2/3 confirmations (requires real wallet SOL)
+
 ## Fees
 
-| Action | Fee |
-|--------|-----|
-| Create TIN | 0.01 SOL |
-| Rotate wallet | 0.005 SOL |
-| Add recovery | 0.002 SOL |
+| Action | Fee | Goes To |
+|--------|-----|--------|
+| Create TIN | 0.01 SOL | Team treasury |
+| Rotate wallet | 0.005 SOL | Team treasury |
+| Add recovery | 0.002 SOL | Team treasury |
 
-All fees go to team treasury for development/maintenance.
+**All fees go to team** for development and maintenance of the ecosystem.
 
 ## Documentation
 

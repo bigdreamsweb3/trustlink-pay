@@ -1,65 +1,50 @@
-# Backend Cleanup - Remove Deployment Code
+# Backend Cleanup
 
-## What's Removed
+## Current State
 
-### Deployment Scripts to Remove
+The backend is already clean. Anchor programs are in `tsn/protocol/programs/`:
+- ✅ `trustlink-escrow` - TSN payment escrow
+- ✅ **NEW**: `tins` - TINS identity program
 
-These files are deployment-specific and not needed for runtime:
+## Optional Cleanup (for production)
+
+### Test/Dev Scripts
+```
+backend/scripts/
+├── test-*.ts         # ❌ Remove in production
+├── reset-db.ts      # ❌ Remove in production
+```
+
+### Legacy Docs
+```
+backend/README.md    # ✅ Can remove (docs/ have full coverage)
+```
+
+## Keep (Runtime Essential)
 
 ```
 backend/scripts/
-├── deploy-mainnet.sh          # ❌ Remove
-├── deploy-devnet.sh           # ❌ Remove  
-├── upgrade-program.sh        # ❌ Remove
-├── verify-deployment.sh      # ❌ Remove
-└── migrate-state.sh          # ❌ Keep only if migration needed
+├── init-db.ts              # ✅ Required - database setup
+├── autoclaim-worker.ts   # ✅ Required - if using auto-claim
 ```
 
-### Anchor Artifacts
+## TINS Program
 
-Remove build artifacts - they should be rebuilt from source:
+**Location**: `tsn/protocol/programs/tins/`
 
-```
-backend/
-├── target/                   # ❌ Remove (rebuild from source)
-├── .anchor/                # ❌ Remove
-└── programs/               # If any local program code - move to tsn/protocol/
-```
-
-### Build Scripts
-
-```
-backend/scripts/build.sh      # ❌ Remove (use npm run build)
-backend/scripts/clean.sh     # ❌ Remove 
-```
-
-## What's Kept
-
-Runtime essential scripts:
-
-```
-backend/scripts/
-├── init-db.ts              # ✅ Keep - database setup
-└── migrate.ts             # ✅ Keep - if migration needed
-```
-
-## TINS Program ID Reference
-
-| Program | Devnet | Mainnet |
-| --- | --- | --- |
-| TINS | `5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR` | TBD |
-| Escrow | `Gx4M8KpDqJ2qJqJ2qJqJ2qJ2qJ2qJqJ2qJ2qJ2` | TBD |
-
-## Commands to Build Programs
-
+**Build**:
 ```bash
-# TINS
-cd transfer-identity-number-system-\(TINS\)/program
+cd tsn/protocol/programs/tins
 cargo build-bpf
-solana program deploy target/deploy/tins.so --url devnet --keypair <keypair>
-
-# TSN Escrow  
-cd tsn/protocol/programs/trustlink-escrow
-cargo build-bpf
-solana program deploy target/deploy/trustlink_escrow.so --url devnet --keypair <keypair>
 ```
+
+**Deploy**:
+```bash
+solana program deploy target/deploy/tins.so --url devnet
+```
+
+**Features**:
+- Secure TIN generation (HMAC-based, non-sequential)
+- Display name for anti-scam verification  
+- Privacy keys (derived from main wallet)
+- Rate limiting (100 TINs/hour per owner)

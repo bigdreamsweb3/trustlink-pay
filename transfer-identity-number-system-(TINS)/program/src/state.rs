@@ -25,11 +25,18 @@ pub struct IdentityRegistry {
     pub status: u8,
     pub reserved: [u8; 5],
     pub tin: u64,
-    pub authority: Pubkey,
-    pub master_privacy: Pubkey,
+    /// CRITICAL: Derived privacy key (NOT main wallet!)
+    /// Use this for payment routing, NEVER expose main wallet
+    pub privacy_pubkey: Pubkey,
+    /// For verification only - can rotate if compromised
+    /// NOT for receiving funds directly
+    pub verifying_pubkey: Option<Pubkey>,
+    /// Derived child key path index (for BIP-44 derivation)
+    pub path_index: u32,
     pub last_escrow_id: u64,
     pub created_at: i64,
-    pub name: String,
+    /// Display name shown before sending (anti-scam)
+    pub display_name: String,
 }
 
 impl IdentityRegistry {

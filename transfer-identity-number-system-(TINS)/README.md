@@ -201,5 +201,177 @@ The project's goal right now is to build a TINS program that will:
 - prepare the foundation for later PIN recovery, recovery-wallet mapping, and social recovery features
 
 ## Build Notes
+---
+
+# Developer Guide
+
+## Quick Start
+
+### Create a TIN
+
+```typescript
+import { Tins } from '@trustlink/tins-sdk';
+
+const tins = new Tins(connection, payerWallet);
+
+// 1. Generate privacy key from your main wallet
+const privacyKey = tins.derivePrivacyKey(mainWallet);
+
+// 2. Register TIN
+const tx = await tins.registerTin({
+  displayName: 'Daniel Ochieng',
+  privacyPubkey: privacyKey.publicKey,
+  recoveryWallets: [recoveryWallet1, recoveryWallet2],
+});
+
+await tins.sendTransaction(tx);
+console.log('TIN created!');
+```
+
+### Lookup a TIN
+
+```typescript
+// Get TIN info by number
+const info = await tins.resolveTin('1234567890');
+console.log(info.displayName); // "Daniel Ochieng"
+console.log(info.privacyKey);  // PublicKey for escrow
+```
+
+### Add Recovery Wallet
+
+```typescript
+await tins.addRecoveryWallet({
+  tin: '1234567890',
+  newRecoveryWallet: newWallet,
+});
+```
+
+### Wallet Rotation
+
+If your wallet is compromised:
+
+```typescript
+// 1. Initiate rotation with any recovery wallet
+await tins.initiateRotation({
+  tin: '1234567890',
+  newPrivacyPubkey: newPrivacyKey,
+});
+
+// 2. Confirm with different recovery wallet (after 24hr)
+await tins.confirmRotation({
+  tin: '1234567890',
+});
+```
+
+## Payment Flow
+
+```
+Sender
+   │
+   ▼
+1. Lookup TIN-1234-5678
+   → Gets: privacy_pubkey + display_name
+   │
+   ▼
+2. Send to escrow (NOT main wallet!)
+   → Funds locked in program escrow
+   │
+   ▼
+3. Recipient claims from escrow
+   → Main wallet receives funds
+   → Main wallet never visible!
+```
+
+## CLI Reference
+
+```bash
+# Create TIN
+tinctl create --name "John Doe" --wallet <key>
+
+# Lookup TIN
+tinctl lookup TIN-1234-5678
+
+# Update display name
+tinctl update-name --tin TIN-1234-5678 --new-name "John Smith"
+
+# Add recovery wallet
+tinctl recovery add --tin TIN-1234-5678 --wallet <recovery-key>
+
+# Initiate wallet rotation
+tinctl rotate --tin TIN-1234-5678 --new-wallet <new-key>
+
+# Confirm rotation
+tinctl confirm --tin TIN-1234-5678
+```
+
+## Security
+
+### What Is On-Chain
+
+| Data | Visible | Purpose |
+|------|---------|---------|
+| TIN | Yes | For lookup |
+| display_name | Yes | Anti-scam verification |
+| privacy_pubkey | Yes | For escrow routing |
+
+### What Is Off-Chain
+
+| Data | Never Visible |
+|------|---------------|
+| Main wallet | **NEVER** |
+| Private keys | **NEVER** |
+
+### Anti-Hacker
+
+- **Multi-sig rotation**: Need 2/3 recovery wallets to change
+- **24hr cooldown**: Time to notice suspicious activity
+- **Rate limiting**: 100 TINs/hour max per owner
+
+## Why TINS Is Not Free
+
+TINS charges fees to:
+
+1. **Prevent Abuse**
+   - Free = hacker attacks (mass TIN creation, spam)
+   - Paid = real users only
+
+2. **Fund Development**
+   - Server costs
+   - Security audits
+   - New features
+   - Support
+
+3. **Security Investment**
+   - Rate limiting works because there's cost
+   - Multi-sig requires 2/3 confirmations (requires real wallet SOL)
+
+## Fees
+
+| Action | Fee | Goes To |
+|--------|-----|--------|
+| Create TIN | 0.01 SOL | Team treasury |
+| Rotate wallet | 0.005 SOL | Team treasury |
+| Add recovery | 0.002 SOL | Team treasury |
+
+**All fees go to team** for development and maintenance of the ecosystem.
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [TINS-OPERATOR](./docs/TINS-OPERATOR.md) | Full operator guide |
+| [SECURITY](./docs/SECURITY.md) | Security model |
+
+## Building
+
+```bash
+cd transfer-identity-number-system-(TINS)/program
+cargo build-bpf
+solana program deploy target/deploy/tins.so --url devnet
+```
+
+---
+
+*Part of TrustLink Pay ecosystem - Privacy-first payments*
 
 The codebase still contains SNS-derived files and naming in some places. That is expected at this stage. TrustLink Pay is using that proven architectural foundation, then refactoring it toward the TINS model in a controlled, step-by-step way.

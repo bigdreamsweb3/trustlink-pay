@@ -89,7 +89,7 @@ export function LandingFeeYieldCalculator() {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
       <div className="grid gap-4">
-        <div className="tl-panel p-5">
+        <div className="tl-panel max-h-fit p-5">
           <div className="flex items-center gap-2 text-[0.7rem] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
             <Calculator className="h-4 w-4" />
             Fee Calculator

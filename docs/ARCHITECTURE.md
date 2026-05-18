@@ -78,6 +78,12 @@ Example: `TIN-1234-5678`
 | IdentityRegistry | `["identity", tin.to_le_bytes()]` | Per-TIN data |
 | LinkedIdentity | `["linked", hash]` | Phone/social → TIN mapping |
 
+> **Correction**: TIN stores the user's **privacy public key**, not their main wallet address.
+> - Privacy key = derived from main wallet (using BIP-44 or similar)
+> - Each transaction uses a **new derived address** from the privacy key
+> - Only the main wallet can sign/authorize transactions from derived addresses
+> - On-chain: no link between user's main wallet and their payment addresses
+
 ---
 
 ## Part 3: Privacy Analysis

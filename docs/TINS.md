@@ -71,11 +71,30 @@ struct LinkedIdentity {
 
 ## Privacy Model
 
+### What TIN Actually Stores
+
+**NOT the main wallet address!** Instead:
+- **Privacy public key** - derived from main wallet using BIP-44 path
+- Each payment uses a **derived address** from this privacy key
+- Main wallet never appears on-chain directly
+- Only the main wallet's private key can sign transactions for derived addresses
+
+```
+Main Wallet (off-chain, secret)
+    │
+    ▼ derive (BIP-44)
+Privacy Key (stored in TIN, public)
+    │
+    ▼ derive (per tx)
+Derived Address 1, Derived Address 2, ... (public, no link to main)
+```
+
 ### What Is Public (On-Chain)
 
 | Data | Visible To | Risk |
 | --- | --- | --- |
-| TIN → owner wallet | Everyone | Low - expected |
+| TIN → privacy public key | Everyone | Low - for routing |
+| Derived transaction addresses | Everyone | Low - unlinked |
 | Linked identity hash | Everyone | Medium - can verify |
 | Identity creation | Everyone | Low - expected |
 | Identity type | Everyone | Low - metadata |
@@ -93,15 +112,19 @@ struct LinkedIdentity {
 
 1. **Identity enumeration**: Anyone can iterate all TINs
    - *Mitigation*: This is a feature, not a bug - allows verification
+   - Only sees privacy key, not main wallet
 
-2. **Linking analysis**: Multiple linked identities can be traced
+2. **Linking analysis**: Same identity linked to multiple TINs
    - *Mitigation*: Use different hashes per linked identity
    - *Recommendation*: Don't link same phone to multiple TINs
 
-3. **Timing analysis**: When identity created/updated
+3. **Payment tracing**: Even with privacy key, payments can be traced
+   - *Mitigation*: Use TSN for private settlement (no on-chain link)
+
+4. **Timing analysis**: When identity created/updated
    - *Mitigation*: None - this is public by design
 
-4. **TSN payment linking**: Without TSN, payments reveal sender/recipient
+5. **TSN payment linking**: Without TSN, payments reveal sender/recipient
    - *Mitigation*: Always use TSN for private settlement
 
 ## TSN Integration

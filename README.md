@@ -1,54 +1,112 @@
-# TrustLink Pay
+# Transfer Identity Number System (TINS)
 
-> Blockchain payments as familiar as mobile money. Privacy built into settlement.
+> Payment-ready identity for Solana. Receive funds using a 10-digit number instead of a wallet address.
 
-TrustLink Pay brings identity-first payments to Solana. Users send stablecoins to a phone number instead of a wallet address. Funds settle privately through the Transfer Settlement Network (TSN), with liquidity provided by Cranker operators.
+TINS is a production-ready identity system on Solana. Users create a TIN (Transfer Identity Number) and receive payments privately - the main wallet stays completely off-chain.
 
-## The Problem
+## Why TINS
 
-The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen daily because they solved identity-first payments.
-
-TrustLink Pay brings that UX to Solana with built-in privacy and open infrastructure.
+- **10-digit identity** like bank account numbers
+- **Privacy-first** - main wallet never on-chain
+- **Verification** - see recipient name before sending
+- **Multi-sig recovery** - 2/3 wallets to change
 
 ## Quick Start
 
 ```bash
-# Backend (requires Neon database)
-cd backend && npm install && tsx scripts/init-db.ts && npm run dev
+# Build program
+cd transfer-identity-number-system-\(TINS\)/program
+cargo build-bpf
 
-# Frontend
-cd frontend && npm install && npm run dev
+# Deploy
+solana program deploy target/deploy/tins.so --url devnet
 ```
 
-## Documentation
+## Create a TIN
 
-| Guide | Description |
-| --- | --- |
-| [Protocol](./docs/PROTOCOL.md) | Technical specification and payment flows |
-| [Integration](./docs/INTEGRATION.md) | How to integrate TrustLink Pay |
-| [API Reference](./docs/API.md) | API endpoints and types |
-| [Operator Guide](./docs/OPERATOR.md) | Running a Cranker settlement node |
-| [Security](./docs/SECURITY.md) | Security model and disclosures |
-| [Developer FAQ](./docs/FAQ.md) | Common development questions |
+```typescript
+import { Tins } from '@trustlink/tins-sdk';
+
+const tins = new Tins(connection, payerWallet);
+
+// 1. Generate privacy key from main wallet
+const privacyKey = tins.derivePrivacyKey(mainWallet);
+
+// 2. Register TIN
+const tx = await tins.registerTin({
+  displayName: 'John Doe',
+  privacyPubkey: privacyKey.publicKey,
+  recoveryWallets: [recoveryWallet1, recoveryWallet2],
+});
+
+await tins.sendTransaction(tx);
+```
+
+## Payment Flow
+
+```
+Sender looks up TIN → Gets privacy_pubkey + display_name → Sends to escrow → Recipient claims
+```
+
+## Security
+
+| On-Chain | Off-Chain |
+|----------|-----------|
+| TIN | Main wallet |
+| display_name | Private keys |
+| privacy_pubkey | Recovery wallets |
+
+**Multi-sig**: Need 2/3 recovery wallets to rotate
+**24hr cooldown**: Time to detect suspicious activity
+
+## Fees
+
+| Action | Fee |
+|--------|-----|
+| Create TIN | 0.01 SOL |
+| Rotate wallet | 0.005 SOL |
+| Add recovery | 0.002 SOL |
+
+All fees go to team treasury for development/maintenance.
+
+## Architecture (Inspired by SNS)
+
+TINS uses Solana Name Service patterns:
+- Account-based registration (familiar on Solana)
+- PDA-driven registry (battle-tested)
+
+Key difference from SNS:
+- TINS uses **escrow routing** - payments go to escrow first
+- **Main wallet never visible** - only derived privacy key on-chain
 
 ## Project Structure
 
 ```
 trustlink-pay/
-├── frontend/              # Next.js dApp
-├── backend/              # API and services  
-├── tsn/                  # Transfer Settlement Network
-│   ├── protocol/         # Smart contracts
-│   ├── cranker-sdk/      # Operator SDK
-│   └── mempool/          # Mempool infrastructure
-├── trustlink-whatsapp-sdk/ # WhatsApp integration
-├── tsn-mempool/         # Mempool service
-└── docs/                # Full documentation
+├── transfer-identity-number-system-(TINS)/  # TINS - IDENTITY
+│   └── program/                              # On-chain program
+├── tsn/                                    # TSN - SETTLEMENT
+├── frontend/                                # dApp
+├── backend/                                # API
+└── docs/                                   # Documentation
 ```
 
-## Key Concepts
+## Documentation
 
-- **Phone-Number Identity**: Send to a phone number, not a wallet
-- **TSN Privacy**: Settlement separates sender and recipient wallets
-- **Cranker Operators**: Execute payments, earn from volume
-- **Liquidity Providers**: Fund vaults, earn 87% of fees
+| Doc | Description |
+|-----|-------------|
+| [TINS README](./transfer-identity-number-system-(TINS)/README.md) | Full TINS guide |
+| [TINS-OPERATOR](./docs/TINS-OPERATOR.md) | Complete operator guide |
+| [SECURITY](./docs/SECURITY.md) | Security model |
+| [ARCHITECTURE](./docs/ARCHITECTURE.md) | System design |
+
+## Integration
+
+TINS integrates with **TrustLink Pay** and **TSN**:
+- TINS provides identity lookup (TIN → privacy key)
+- TSN routes payments through escrow
+- TrustLink Pay frontend provides UX
+
+---
+
+*Part of TrustLink Pay ecosystem - Privacy-first payments*

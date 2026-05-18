@@ -30,6 +30,18 @@ pub enum Error {
     UnauthorizedClaimant,
     #[error("Account is not owned by this program")]
     InvalidAccountOwner,
+    
+    // Security errors
+    #[error("Rate limit exceeded - too many TINs requested")]
+    RateLimitExceeded,
+    #[error("Insufficient entropy for secure TIN generation")]
+    InsufficientEntropy,
+    #[error("Identity is frozen")]
+    IdentityFrozen,
+    #[error("Invalid privacy key")]
+    InvalidPrivacyKey,
+    #[error("TIN too similar to known values (enumeration risk)")]
+    TinEnumerationRisk,
 }
 
 impl From<Error> for ProgramError {

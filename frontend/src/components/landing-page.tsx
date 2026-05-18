@@ -36,16 +36,17 @@ const flowSteps = [
   },
 
   {
+    title: "Verifier PDA funds setup",
+    body: "The verifier PDA funds protocol account setup and reimburses Cranker gas in the same transaction. The Cranker earns claim credit instead of an immediate profit tip.",
+    icon: ShieldCheck,
+  },
+
+  {
     title: "Funds lock in escrow",
     body: "Alice signs once. The transfer amount locks into sender-side escrow while the payment intent is prepared for TSN settlement.",
     icon: LockKeyhole,
   },
 
-  {
-    title: "Verifier PDA funds setup",
-    body: "The verifier PDA funds protocol account setup and reimburses Cranker gas in the same transaction. The Cranker earns claim credit instead of an immediate profit tip.",
-    icon: ShieldCheck,
-  },
   {
     title: "Private claim pays Bob",
     body: "A Cranker uses claim eligibility to acquire settlement work, routes payout from vault liquidity, and keeps Alice and Bob from exposing wallets to each other.",

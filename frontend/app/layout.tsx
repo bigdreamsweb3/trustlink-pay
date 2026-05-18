@@ -4,6 +4,14 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/app/providers";
 import "./globals.css";
 import "./tsn.css"
+import { JetBrains_Mono } from 'next/font/google';
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-mono',
+});
 
 
 /* ---------------- SEO CONFIG ---------------- */
@@ -107,7 +115,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body>
+      <body className={`${jetbrainsMono.variable} font-mono antialiased`}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

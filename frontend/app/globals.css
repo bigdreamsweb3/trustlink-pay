@@ -212,6 +212,7 @@
 
 * {
   box-sizing: border-box;
+  font-family: var(--font-body);
 }
 
 html {
@@ -233,8 +234,7 @@ body {
 
 body {
   color: var(--text);
-  font-family:
-    var(--font-body), "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
 }
 
@@ -265,6 +265,7 @@ body,
 body *,
 body *::before,
 body *::after {
+  font-family: var(--font-body);
   transition-property:
     color, background-color, border-color, box-shadow, opacity;
   transition-duration: 0ms;

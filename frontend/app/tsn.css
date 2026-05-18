@@ -50,7 +50,7 @@
 .tsn-button-strong {
   background: #ff7a18;
   color: #120703;
-  box-shadow: 0 14px 30px rgba(255, 122, 24, 0.22);
+  /* box-shadow: 0 14px 30px rgba(255, 122, 24, 0.22); */
 }
 
 .tsn-button-strong:hover {

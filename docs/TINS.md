@@ -32,10 +32,26 @@ A TIN is a 10-digit identifier: `TIN-XXXX-XXXX`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `owner` | Pubkey | Wallet that owns this TIN |
+| `display_name` | String | User-chosen name (shown before sending) |
+| `privacy_pubkey` | Pubkey | Derived privacy key (NOT owner's main wallet) |
 | `sequence` | u64 | Auto-incrementing TIN number |
 | `created_at` | i64 | Unix timestamp |
 | `identity_type` | u8 | 0 = wallet-only, 1 = phone-linked, 2 = social-linked |
+
+## Name Verification (Anti-Scam Protection)
+
+Before sending funds, the sender sees:
+```
+Sending to: Daniel Ochieng
+TIN: TIN-1234-5678 ✓ Verified
+```
+
+This prevents:
+- Typing wrong TIN → money lost forever
+- Scammers claiming to be someone else
+- Accidental payments to wrong person
+
+The name is set by the user during TIN creation and stored on-chain.
 
 ## Accounts
 
@@ -48,11 +64,12 @@ A TIN is a 10-digit identifier: `TIN-XXXX-XXXX`
 ### Identity Registry (PDA per TIN)
 ```rust
 struct IdentityRecord {
-    pub owner: Pubkey,           // Owner's wallet
-    pub sequence: u64,           // TIN number
-    pub created_at: i64,          // Creation timestamp
-    pub identity_type: u8,       // How this identity was created
-    pub identity_hash: [u8; 32],  // Hash of linked identity
+    pub display_name: String,      // "Daniel Ochieng" - shown before sending
+    pub privacy_pubkey: Pubkey,    // Derived privacy key
+    pub sequence: u64,             // TIN number
+    pub created_at: i64,            // Creation timestamp
+    pub identity_type: u8,         // How this identity was created
+    pub identity_hash: [u8; 32],   // Hash of linked identity
     pub verified: bool,           // Has been verified
     pub version: u8,             // For upgrades
 }
@@ -93,6 +110,7 @@ Derived Address 1, Derived Address 2, ... (public, no link to main)
 
 | Data | Visible To | Risk |
 | --- | --- | --- |
+| Display name (e.g., "Daniel Ochieng") | Everyone | Low - anti-scam feature |
 | TIN → privacy public key | Everyone | Low - for routing |
 | Derived transaction addresses | Everyone | Low - unlinked |
 | Linked identity hash | Everyone | Medium - can verify |

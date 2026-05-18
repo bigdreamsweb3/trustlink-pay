@@ -51,11 +51,19 @@ On-Chain State:
 ┌─────────────────────────────────────────────────────┐
 │ IdentityRegistry PDA (per TIN)                     │
 ├─────────────────────────────────────────────────────┤
-│ tin: 12345678                  # TIN number       │
-│ owner: DGV...abc123           # Owner's wallet    │
-│ created_at: 1700000000       # Timestamp        │
-│ identity_type: 1             # 0=wallet,1=phone │
+│ display_name: "Daniel Ochieng"  # Shown before send│
+│ privacy_pubkey: DGV...abc123    # Derived key      │
+│ tin: 12345678                   # TIN number       │
+│ created_at: 1700000000          # Timestamp        │
+│ identity_type: 1                # 0=wallet,1=phone │
 └─────────────────────────────────────────────────────┘
+```
+
+### Anti-Scam: Name Verification
+
+Before sending, sender sees:
+```
+Confirm: Sending 100 USDC to Daniel Ochieng (TIN-1234-5678)?
 ```
 
 ### TIN Format

@@ -1,0 +1,21 @@
+[package]
+name = "tins"
+version = "0.1.0"
+edition = "2021"
+description = "TrustLink Identity Number System (TINS) - On-chain identity program"
+
+[features]
+default = ["cpi"]
+cpi = ["anchor-lang/cpi"]
+no-entrypoint = ["anchor-lang/no-entrypoint"]
+programs = ["anchor-lang/programs"]
+
+[dependencies]
+anchor-lang = "0.30.1"
+solana-program = "1.18.32"
+
+[dev-dependencies]
+solana-program-test = "1.18.32"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

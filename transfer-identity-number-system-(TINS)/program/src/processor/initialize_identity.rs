@@ -58,11 +58,16 @@ pub fn process(
         status: IDENTITY_ACTIVE,
         reserved: [0; 5],
         tin,
-        authority: *payer.key,
-        master_privacy: params.master_privacy,
+        // NEW: Store derived privacy key, NOT main wallet
+        privacy_pubkey: params.privacy_pubkey,
+        // Optional verification key (can rotate)
+        verifying_pubkey: params.verifying_pubkey,
+        // Path index for derivation
+        path_index: params.path_index,
         last_escrow_id: 0,
         created_at: Clock::get()?.unix_timestamp,
-        name: params.name,
+        // NEW: display_name for anti-scam
+        display_name: params.display_name,
     };
     store_borsh(registry, &registry_state)?;
 

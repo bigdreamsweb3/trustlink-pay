@@ -86,6 +86,40 @@ struct LinkedIdentity {
 }
 ```
 
+## Secure TIN Generation Algorithm
+
+### Why Sequential is BAD
+❌ `TIN-0001-0001`, `TIN-0001-0002`, ... → Easy to guess
+❌ Hacker scans: `TIN-1234-5678`, `TIN-1234-5679`, `TIN-1234-5680`
+❌ Social engineer: "My TIN is 12345678901, oh wait 12345678902"
+
+### Secure Algorithm
+```
+TIN = HMAC-SHA256(timestamp, randomness, owner_pubkey)[0..8] + Luhn_check
+```
+
+| Component | Source | Purpose |
+| --- | --- | --- |
+| Timestamp | Block hash / Clock | Prevents prediction |
+| Randomness | 32 bytes entropy | Unique per TIN |
+| Owner key | Signer's pubkey | Pre-registration impossible |
+| HMAC-SHA256 | All above | One-way, un-reversible |
+
+### Anti-Enumeration Protections
+1. **No sequential numbers** - Each TIN is independent
+2. **Entropy-based** - Cannot predict next TIN
+3. **Owner-tied** - Same wallet gets different TINs each time
+4. **Luhn check** - Easy to spot typos but doesn't help enumeration
+
+### Rate Limiting (On-Chain)
+```rust
+// Per-block limit in program
+const MAX_TINS_PER_BLOCK: u32 = 10;
+const MAX_TINS_PER_OWNER_PER_HOUR: u32 = 100;
+```
+
+This prevents mass TIN generation attacks.
+
 ## Privacy Model
 
 ### What TIN Actually Stores

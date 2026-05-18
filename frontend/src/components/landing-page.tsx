@@ -16,8 +16,6 @@ import {
 import { LandingFeeYieldCalculator } from "@/src/components/landing-fee-yield-calculator";
 import { SiteHeader } from "@/src/components/layout/site-header";
 
-import "../../app/tsn.css";
-
 const heroStats = [
   { label: "Sender fee model", value: "Transparent", note: "network + TSN protocol fee shown before send" },
   { label: "Settlement target", value: "<3s", note: "from intent to cranker proof" },
@@ -27,23 +25,33 @@ const heroStats = [
 
 const flowSteps = [
   {
-    title: "Alice types a phone number",
-    body: "No wallet address. No blockchain jargon. TrustLink starts with the same identity-first habit people already know from OPay, UPI, and Pix, using phone-number-style identifiers inside a Solana dApp.",
+    title: "Alice enters Bob's identity",
+    body: "Alice starts with Bob's phone identity or supported payment identity. TrustLink resolves the route without asking Alice to paste or verify Bob's wallet address.",
     icon: Phone,
   },
   {
-    title: "TrustLink resolves identity",
-    body: "The identifier can be a phone number with country code, a local 10-digit number, or eventually a permanent 10-digit TIN as the Transfer Identity Number System comes online.",
-    icon: UserRoundCheck,
-  },
-  {
-    title: "Escrow locks funds on Solana",
-    body: "The sender sees the current Solana network fee and TSN protocol fee before confirming. Verifier-paid protocol setup is not disguised as sender network fee.",
+    title: "Funds lock in escrow",
+    body: "Alice signs once. The transfer amount locks into sender-side escrow while the payment intent is prepared for TSN settlement.",
     icon: LockKeyhole,
   },
   {
-    title: "TSN settles the claim",
-    body: "Cranker liquidity pays through a private claim path, submits proof, and recovers during epoch settlement. The sender and recipient do not need to expose wallets to each other.",
+    title: "Intent enters TSN Mempool",
+    body: "The payment intent is published to TSN Mempool first. A registered Cranker picks it up and submits the on-chain intent transaction.",
+    icon: UserRoundCheck,
+  },
+  {
+    title: "Verifier PDA funds setup",
+    body: "The verifier PDA funds protocol account setup and reimburses Cranker gas in the same transaction. The Cranker earns claim credit instead of an immediate profit tip.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Private claim pays Bob",
+    body: "A Cranker uses claim eligibility to acquire settlement work, routes payout from vault liquidity, and keeps Alice and Bob from exposing wallets to each other.",
+    icon: Network,
+  },
+  {
+    title: "Proof closes the loop",
+    body: "The Cranker submits Proof of Payment and the settlement record moves through epoch accounting for verifiable finality.",
     icon: Network,
   },
 ];
@@ -75,12 +83,14 @@ const feeRows = [
 ];
 
 const crankerSteps = [
-  "Deploy approved asset vault capital",
-  "Watch TSN for payment intents",
-  "Acquire execution leases",
+  "Register as a TSN Cranker",
+  "Watch TSN Mempool for payment intents",
+  "Submit on-chain payment intents",
+  "Earn claim-credit eligibility",
+  "Acquire claim execution leases",
   "Pay recipients from vault liquidity",
   "Submit proof on-chain",
-  "Recover at epoch settlement",
+  "Settle through epoch accounting",
 ];
 
 const sdkSnippets = [
@@ -115,18 +125,20 @@ await tsn.payRecipient({ lease, recipientWallet });`,
 ];
 
 export function LandingPage() {
+  const mempoolExplorerUrl = process.env.NEXT_PUBLIC_TSN_MEMPOOL_EXPLORER_URL ?? "/tsn-mempool";
+
   return (
     <main className="app-shell tl-grid-overlay overflow-hidden bg-[var(--bg)]">
       <SiteHeader />
 
       <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-8 pb-10 pt-2 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative z-10">
-          <div className={`tsn-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]`}>
+          <div className="tl-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]">
             <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>
-          <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,6vw,4.0rem)] font-black leading-[0.98] tracking-[0.09em] text-[var(--text)]">
-            Private stablecoin payments as familiar as mobile money.
+          <h1 className="mt-5 max-w-[760px] text-[clamp(2.05rem,5vw,4.0rem)] font-black leading-tight tracking-normal  text-[var(--text)]">
+            Private blockchain payments as familiar as mobile money.
           </h1>
           <p className="mt-6 max-w-[680px] text-[1rem] leading-8 text-[var(--text-soft)] md:text-[1.12rem]">
             Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day because they solved identity-first payments. TrustLink Pay brings that same familiar identity layer to Solana stablecoins, while TSN routes settlement through temporary escrow and private claim flows instead of direct wallet-to-wallet transfers.
@@ -136,8 +148,11 @@ export function LandingPage() {
               See how it works <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/app" className="tl-button-secondary inline-flex items-center gap-2 rounded-[16px] px-5 py-3 text-sm font-bold">
-              Open app
+              Open Dapp
             </Link>
+            <a href={mempoolExplorerUrl} className="tl-button-secondary inline-flex items-center gap-2 rounded-[16px] px-5 py-3 text-sm font-bold">
+              Open TSN Mempool
+            </a>
           </div>
         </div>
 
@@ -153,7 +168,15 @@ export function LandingPage() {
               </div>
             </div>
             <div className="mt-6 grid gap-2">
-              {["Alice enters Bob's phone identity", "Temporary escrow locks funds", "Private claim routes payout", "Proof settles at epoch"].map((item) => (
+              {[
+                "Alice enters Bob's identity",
+                "Escrow locks the funds",
+                "Intent enters TSN Mempool",
+                "Registered Cranker submits on-chain",
+            "Verifier PDA funds setup and gas",
+                "Claim credit unlocks settlement work",
+                "Proof settles at epoch",
+              ].map((item) => (
                 <div key={item} className="flex items-center gap-3 rounded-[12px] border border-[var(--field-border)] bg-[var(--field)] px-3 py-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[var(--accent)]" />
                   <span className="text-sm font-semibold text-[var(--text-soft)]">{item}</span>
@@ -198,7 +221,7 @@ export function LandingPage() {
 
       <section id="how-it-works" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
         <SectionLabel index="02" title="How a payment works" />
-        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {flowSteps.map((step, index) => (
             <article key={step.title} className="tl-panel p-5">
               <div className="flex items-center justify-between">
@@ -250,11 +273,16 @@ export function LandingPage() {
             Earn for every settlement you execute.
           </h2>
           <p className="mt-4 text-sm leading-7 text-[var(--text-soft)]">
-            Cranker operators provide the liquidity that makes instant settlement possible. They fund a vault, watch payment intents, execute payouts, submit proof, and recover from Mother Escrow at epoch settlement.
+            Cranker operators secure settlement by doing useful work before they can claim profitable work. A registered Cranker watches TSN Mempool, submits payment intents on-chain, receives same-transaction gas reimbursement, and earns claim credit instead of receiving an immediate profit tip. That credit is required to acquire a claim lease and process settlement.
           </p>
-          <Link href="/operator-dashboard" className="mt-6 inline-flex items-center gap-2 rounded-[16px] bg-[#ff7a18] px-5 py-3 text-sm font-black text-[#120703] shadow-[0_14px_30px_rgba(255,122,24,0.22)] transition hover:bg-[#ff8b33]">
-            Register as operator <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/operator-dashboard" className="tsn-button-strong inline-flex items-center gap-2 rounded-[16px] px-5 py-3 text-sm font-black transition">
+              Register as operator <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a href={mempoolExplorerUrl} className="tl-button-secondary inline-flex items-center gap-2 rounded-[16px] px-5 py-3 text-sm font-bold">
+              View mempool explorer
+            </a>
+          </div>
         </div>
         <div className="grid gap-3">
           {crankerSteps.map((step, index) => (
@@ -324,8 +352,10 @@ export function LandingPage() {
           <span>Transfer Settlement Network · Solana</span>
         </div>
         <div className="flex flex-wrap gap-4">
-          <Link href="/app">Open app</Link>
-          <Link href="/operator-dashboard">Operator Dashboard</Link>
+          <Link href="/app">Open Dapp</Link>
+          <Link href="/operator-dashboard" className="tsn-link font-semibold">
+            Operator Dashboard
+          </Link>
           <Link href="/support">Support</Link>
           <Link href="/terms">Terms</Link>
         </div>
@@ -337,7 +367,7 @@ export function LandingPage() {
 function SectionLabel({ index, title }: { index: string; title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="tl-meta-label rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1 text-[0.66rem] font-black text-[var(--accent)]">
+      <span className="tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black">
         Section {index}
       </span>
       <span className="text-sm font-black uppercase tracking-[0.16em] text-[var(--text-faint)]">{title}</span>

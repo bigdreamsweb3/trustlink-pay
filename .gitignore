@@ -4,6 +4,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+.env
+
 # Logs
 *.log
 npm-debug.log*

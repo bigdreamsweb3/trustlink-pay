@@ -40,6 +40,7 @@ pub fn register_cranker(ctx: Context<RegisterCranker>) -> Result<()> {
     cranker.allow_external_funding = true;
     cranker.staked_amount = 0;
     cranker.reputation_score = 0;
+    cranker.claim_credits = 0;
     cranker.total_claims = 0;
     cranker.total_executes = 0;
     cranker.total_failures = 0;

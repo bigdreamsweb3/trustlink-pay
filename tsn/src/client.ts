@@ -36,6 +36,20 @@ export class TsnHttpClient {
     return (await response.json()) as TResponse;
   }
 
+  async patch<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse> {
+    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TSN request failed (${response.status}): ${await response.text()}`);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
   postIntent<TRequest, TResponse>(body: TRequest): Promise<TResponse> {
     return this.post("/intents", body);
   }
@@ -46,5 +60,17 @@ export class TsnHttpClient {
 
   listPendingWork<TResponse>(limit = 50): Promise<TResponse> {
     return this.get(`/work?limit=${limit}`);
+  }
+
+  updateIntentStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
+    return this.patch(`/intents/${encodeURIComponent(id)}/status`, body);
+  }
+
+  updateClaimRequestStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
+    return this.patch(`/claim-requests/${encodeURIComponent(id)}/status`, body);
+  }
+
+  postProof<TRequest, TResponse>(body: TRequest): Promise<TResponse> {
+    return this.post("/proofs", body);
   }
 }

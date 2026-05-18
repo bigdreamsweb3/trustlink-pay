@@ -1,14 +1,15 @@
 import { config } from "dotenv";
 
-config({ path: ".env.local" });
+config({ path: "../backend/.env.local" });
+config({ path: ".env.local", override: true });
 
 async function main() {
   const {
     getEscrowConfigState,
     getEscrowVerifierPublicKey,
     initializeEscrowConfig,
-  } = await import("../app/blockchain/solana");
-  const { getEscrowPolicyConfig } = await import("../app/config/escrow");
+  } = await import("../../backend/app/blockchain/solana");
+  const { getEscrowPolicyConfig } = await import("../../backend/app/config/escrow");
 
   const verifier = getEscrowVerifierPublicKey();
   const policy = getEscrowPolicyConfig();
@@ -56,7 +57,7 @@ async function main() {
 
     console.log("Escrow config exists but does not match target policy.");
     console.log("This command is read-only and will not update on-chain state.");
-    console.log("Run `npm run escrow:update-config` to apply the target policy.");
+    console.log("Run `npm run escrow:update-config` from tsn to apply the target policy.");
     return;
   }
 

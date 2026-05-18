@@ -36,6 +36,10 @@ pub fn claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {
 
     let intent = &mut ctx.accounts.intent;
     require!(intent.status == IntentStatus::Pending, TsnError::IntentNotPending);
+    require!(
+        ctx.accounts.cranker.claim_credits > 0,
+        TsnError::InsufficientCrankerClaimCredits
+    );
 
     intent.status = IntentStatus::Claimed;
     intent.assigned_cranker = ctx.accounts.cranker.key();
@@ -43,6 +47,7 @@ pub fn claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {
         .checked_add(mother_escrow.lease_seconds)
         .ok_or(TsnError::IntentNotClaimable)?;
 
+    ctx.accounts.cranker.claim_credits = ctx.accounts.cranker.claim_credits.saturating_sub(1);
     ctx.accounts.cranker.total_claims = ctx.accounts.cranker.total_claims.saturating_add(1);
     ctx.accounts.cranker.last_active_ts = now;
 

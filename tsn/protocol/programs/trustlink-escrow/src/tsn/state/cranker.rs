@@ -8,6 +8,7 @@ pub struct Cranker {
     pub allow_external_funding: bool,
     pub staked_amount: u64,
     pub reputation_score: u32,
+    pub claim_credits: u64,
     pub total_claims: u64,
     pub total_executes: u64,
     pub total_failures: u64,
@@ -23,6 +24,7 @@ impl Cranker {
         + 1
         + 8
         + 4
+        + 8
         + 8
         + 8
         + 8

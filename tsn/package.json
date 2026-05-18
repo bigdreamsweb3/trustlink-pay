@@ -13,6 +13,8 @@
     "protocol:deploy": "cd protocol && anchor deploy",
     "protocol:test": "cd protocol && anchor test",
     "protocol:keys": "cd protocol && anchor keys list",
+    "escrow:init-config": "tsx scripts/init-escrow-config.ts",
+    "escrow:update-config": "tsx scripts/update-escrow-config.ts",
     "cranker:build": "npm --prefix cranker-sdk run build"
   },
   "dependencies": {

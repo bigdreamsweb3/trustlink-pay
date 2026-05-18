@@ -1,10 +1,13 @@
 import { config } from "dotenv";
 
-config({ path: ".env.local" });
+config({ path: "../backend/.env.local" });
+config({ path: ".env.local", override: true });
 
 async function main() {
-  const { getEscrowConfigState, getEscrowVerifierPublicKey, updateEscrowConfig } = await import("../app/blockchain/solana");
-  const { getEscrowPolicyConfig } = await import("../app/config/escrow");
+  const { getEscrowConfigState, getEscrowVerifierPublicKey, updateEscrowConfig } = await import(
+    "../../backend/app/blockchain/solana"
+  );
+  const { getEscrowPolicyConfig } = await import("../../backend/app/config/escrow");
 
   const verifier = getEscrowVerifierPublicKey();
   const policy = getEscrowPolicyConfig();
@@ -12,8 +15,8 @@ async function main() {
 
   console.log(`Escrow verifier pubkey: ${verifier}`);
   console.log(`Treasury owner target: ${policy.treasuryOwner}`);
-  console.log(`Send fee target: ${policy.sendFeeBps} bps, max ${policy.sendFeeMaxUiAmount}, max margin USD ${policy.sendFeeMaxUsd}`);
-  console.log(`Claim fee target: ${policy.claimFeeBps} bps, max ${policy.claimFeeMaxUiAmount}, max margin USD ${policy.claimFeeMaxUsd}`);
+  console.log(`Send fee target: ${policy.sendFeeBps} bps, max UI ${policy.sendFeeMaxUiAmount}, max margin USD ${policy.sendFeeMaxUsd}`);
+  console.log(`Claim fee target: ${policy.claimFeeBps} bps, max UI ${policy.claimFeeMaxUiAmount}, max margin USD ${policy.claimFeeMaxUsd}`);
   console.log(`Fee coverage tx count target: ${policy.feeCoverageTxCount}`);
   console.log(`Default expiry seconds target: ${policy.defaultExpirySeconds}`);
 

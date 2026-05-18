@@ -53,6 +53,23 @@ TrustLink Pay resolves the user-facing identity, then routes the payment through
 
 This breaks the direct link between sender wallet and recipient wallet. The sender-side escrow transaction and recipient-side payout are separated by Cranker liquidity and proof-based reimbursement.
 
+### Secure Mempool Payment Intent Processing
+
+TSN uses a mempool-first payment-intent path for secure settlement execution. Payment intents are first published to TSN Mempool. A registered Cranker then submits the on-chain payment-intent transaction.
+
+How it works:
+
+- payment services publish payment intents to TSN Mempool before any on-chain intent is created
+- only a registered Cranker can submit or create a TSN payment intent on-chain
+- a global `verifier_pda` holds protocol SOL for settlement infrastructure
+- the verifier PDA funds account setup for the on-chain payment-intent path
+- the Cranker pays transaction gas as the `feePayer`
+- the verifier PDA reimburses Cranker gas in the same transaction
+- the Cranker receives claim credit instead of an immediate profit premium or execution tip
+- one earned claim credit is required to claim and process a profitable claim intent
+
+This keeps the system in a 1:1 utility balance: Crankers are kept close to gas-neutral for useful payment-intent work, but they earn claim eligibility instead of extracting an immediate on-chain premium.
+
 ### Layer Three - TINS: Transfer Identity Number System
 
 TINS moves identity routing fully on-chain.
@@ -210,6 +227,10 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 | Proof-based reimbursement | Cranker recovery depends on valid proof submission |
 | LP accounting | Liquidity positions track funded vault capital |
 | Operational funding checks | Verifier SOL balance is checked before send transaction preparation |
+| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain |
+| Verifier-funded account setup | Verifier PDA funds payment-intent account setup |
+| Gas-neutral Cranker execution | Verifier PDA reimburses Cranker gas without adding a profit premium |
+| 1:1 Cranker claim credit | Crankers earn claim eligibility instead of execution tips |
 
 ---
 
@@ -236,6 +257,7 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 - TSN Mother Escrow and Cranker PDA modules
 - Intent state machine and lease claiming
 - Proof of Payment path
+- Mempool-first payment-intent processing with registered Cranker submission and claim-credit eligibility
 - Cranker vault and liquidity position scaffolding
 - Local Cranker daemon and setup scripts
 - Settlement fee split defaults: 87% LP, 8% treasury, 5% operator

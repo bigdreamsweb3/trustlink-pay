@@ -1,10 +1,18 @@
-import { JsonFileTsnMempool, sha256Bytes } from "../src";
+import { HttpTsnMempool, JsonFileTsnMempool, sha256Bytes } from "../src";
+
+function createMempoolClient() {
+  if (process.env.TSN_MEMPOOL_URL) {
+    return new HttpTsnMempool(process.env.TSN_MEMPOOL_URL);
+  }
+
+  return new JsonFileTsnMempool();
+}
 
 async function main() {
   const command = process.argv[2];
 
   if (command === "status") {
-    const mempool = new JsonFileTsnMempool();
+    const mempool = createMempoolClient();
     const work = await mempool.listPendingWork(50);
     console.log({
       mempool: process.env.TSN_MEMPOOL_URL ?? process.env.TSN_MEMPOOL_FILE ?? ".tsn/mempool.json",

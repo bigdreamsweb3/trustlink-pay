@@ -35,6 +35,7 @@ describe("tsn_flow (milestone 4)", () => {
 
   let motherEscrowPda: anchor.web3.PublicKey;
   let crankerPda: anchor.web3.PublicKey;
+  let verifierPda: anchor.web3.PublicKey;
 
   before(async () => {
     await provider.connection.confirmTransaction(
@@ -60,6 +61,7 @@ describe("tsn_flow (milestone 4)", () => {
       [Buffer.from("tsn_mother_escrow")],
       program.programId,
     );
+    [verifierPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("verifier")], program.programId);
     [crankerPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("tsn_cranker"), motherEscrowPda.toBuffer(), crankerOperator.publicKey.toBuffer()],
       program.programId,
@@ -77,6 +79,9 @@ describe("tsn_flow (milestone 4)", () => {
         0,
         new anchor.BN(0),
         0,
+        new anchor.BN(0),
+        0,
+        new anchor.BN(0),
         new anchor.BN(0),
         new anchor.BN(3600),
       )
@@ -126,7 +131,7 @@ describe("tsn_flow (milestone 4)", () => {
     expect(motherEscrow.leaseSeconds.toNumber()).to.equal(30);
   });
 
-  it("creates payment -> creates intent -> cranker claims -> submits proof", async () => {
+  it("creates payment -> cranker submits intent -> earns and spends claim credit", async () => {
     const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 33 + index));
     const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("payment"), Buffer.from(paymentId)],
@@ -175,6 +180,17 @@ describe("tsn_flow (milestone 4)", () => {
       program.programId,
     );
 
+    await provider.sendAndConfirm(
+      new anchor.web3.Transaction().add(
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: sender.publicKey,
+          toPubkey: verifierPda,
+          lamports: anchor.web3.LAMPORTS_PER_SOL,
+        }),
+      ),
+      [],
+    );
+
     await program.methods
       .tsnCreateIntent(
         [...intentId],
@@ -184,12 +200,18 @@ describe("tsn_flow (milestone 4)", () => {
         Array.from(sha256Bytes(receiverPhoneIdentity.toBytes())),
       )
       .accounts({
-        payer: sender.publicKey,
+        crankerOperator: crankerOperator.publicKey,
         motherEscrow: motherEscrowPda,
+        cranker: crankerPda,
+        verifierPda,
         intent: intentPda,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
+      .signers([crankerOperator])
       .rpc();
+
+    let cranker = await (program.account as any).cranker.fetch(crankerPda);
+    expect(cranker.claimCredits.toNumber()).to.equal(1);
 
     await program.methods
       .tsnClaimIntent()
@@ -202,21 +224,10 @@ describe("tsn_flow (milestone 4)", () => {
       .signers([crankerOperator])
       .rpc();
 
-    const dummySig = new Uint8Array(64).fill(7);
-    await program.methods
-      .tsnSubmitProof(Array.from(dummySig), new anchor.BN(1_000_000))
-      .accounts({
-        operator: crankerOperator.publicKey,
-        motherEscrow: motherEscrowPda,
-        intent: intentPda,
-        cranker: crankerPda,
-      })
-      .signers([crankerOperator])
-      .rpc();
-
     const intent = await (program.account as any).paymentIntent.fetch(intentPda);
+    cranker = await (program.account as any).cranker.fetch(crankerPda);
     expect(intent.assignedCranker.toBase58()).to.equal(crankerPda.toBase58());
-    expect(intent.proofSubmitted).to.equal(true);
-    expect(intent.status.executed).to.not.equal(undefined);
+    expect(intent.status.claimed).to.not.equal(undefined);
+    expect(cranker.claimCredits.toNumber()).to.equal(0);
   });
 });

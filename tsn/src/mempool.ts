@@ -10,7 +10,9 @@ import type {
   TsnMempoolClaimRequest,
   TsnMempoolIntent,
   TsnWorkItem,
+  ProofOfPaymentRequest,
 } from "./contracts";
+import { TsnHttpClient } from "./client";
 
 export interface TsnMempool {
   postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
@@ -22,6 +24,7 @@ export interface TsnMempool {
     status: TsnClaimRequestStatus,
     patch?: Partial<TsnMempoolClaimRequest>,
   ): Promise<TsnMempoolClaimRequest | null>;
+  postProof?(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
 }
 
 type Snapshot = {
@@ -123,5 +126,49 @@ export class JsonFileTsnMempool implements TsnMempool {
     Object.assign(claimRequest, patch, { status, updatedAt: now() });
     await writeSnapshot(this.path, snapshot);
     return claimRequest;
+  }
+}
+
+export class HttpTsnMempool implements TsnMempool {
+  private readonly client: TsnHttpClient;
+
+  constructor(baseUrl = process.env.TSN_MEMPOOL_URL) {
+    if (!baseUrl) {
+      throw new Error("TSN_MEMPOOL_URL is required for HttpTsnMempool");
+    }
+    this.client = new TsnHttpClient({ baseUrl });
+  }
+
+  postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent> {
+    return this.client.postIntent<CreateIntentRequest, TsnMempoolIntent>(request);
+  }
+
+  postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest> {
+    return this.client.postClaimRequest<RequestClaimRequest, TsnMempoolClaimRequest>(request);
+  }
+
+  listPendingWork(limit = 50): Promise<TsnWorkItem[]> {
+    return this.client.listPendingWork<TsnWorkItem[]>(limit);
+  }
+
+  updateIntentStatus(id: string, status: TsnIntentStatus, patch: Partial<TsnMempoolIntent> = {}) {
+    return this.client.updateIntentStatus<Partial<TsnMempoolIntent> & { status: TsnIntentStatus }, TsnMempoolIntent>(id, {
+      ...patch,
+      status,
+    });
+  }
+
+  updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch: Partial<TsnMempoolClaimRequest> = {}) {
+    return this.client.updateClaimRequestStatus<
+      Partial<TsnMempoolClaimRequest> & { status: TsnClaimRequestStatus },
+      TsnMempoolClaimRequest
+    >(id, {
+      ...patch,
+      status,
+    });
+  }
+
+  postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest> {
+    return this.client.postProof<ProofOfPaymentRequest, ProofOfPaymentRequest>(request);
   }
 }

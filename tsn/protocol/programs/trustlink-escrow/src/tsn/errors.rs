@@ -36,4 +36,20 @@ pub enum TsnError {
     InvalidMotherEscrowAccount,
     #[msg("Fee split math overflowed")]
     FeeSplitOverflow,
+    #[msg("Invalid verifier PDA")]
+    InvalidVerifierPda,
+    #[msg("Verifier PDA has insufficient lamports")]
+    InsufficientVerifierLamports,
+    #[msg("Payment vault is already initialized")]
+    PaymentVaultAlreadyInitialized,
+    #[msg("Payment intent is already initialized")]
+    PaymentIntentAlreadyInitialized,
+    #[msg("Invalid unique token account")]
+    InvalidUniqueTokenAccount,
+    #[msg("Payment intent funding math overflowed")]
+    PaymentIntentFundingOverflow,
+    #[msg("Cranker does not have a payment-intent credit available")]
+    InsufficientCrankerClaimCredits,
+    #[msg("Cranker payment-intent credit counter overflowed")]
+    CrankerClaimCreditOverflow,
 }

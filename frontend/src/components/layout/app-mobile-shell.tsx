@@ -143,7 +143,7 @@ export function AppMobileShell({
             <div className="flex shrink-0 items-center gap-1.5">
               <button type="button" onClick={handleWalletButtonPress} className="tl-panel-header tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]">
                 <WalletIcon size={13} className="text-current" />
-                <span className="tl-coord-text !text-[0.52rem] leading-none">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
+                <span className="tl-coord-text text-[0.52rem]! leading-none">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
               </button>
               <button type="button" onClick={() => openPanel("settings")} className="tl-panel-header tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Settings">
                 <SettingsIcon size={14} className="text-current" />

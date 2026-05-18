@@ -75,6 +75,14 @@ export type TsnWorkItem = {
   claimRequest: TsnMempoolClaimRequest;
 };
 
+export type ProofOfPaymentRequest = {
+  intent_id: string;
+  timestamp: string;
+  cranker_pubkey: string;
+  proof_tx: string;
+  encrypted_payload?: string | null;
+};
+
 export type IntentState = {
   status: TsnIntentStatus;
 };

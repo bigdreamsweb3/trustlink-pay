@@ -1,4 +1,4 @@
-import { JsonFileTsnMempool, TsnHttpClient, evaluateSettlementEconomics, type TsnWorkItem } from "../src";
+import { HttpTsnMempool, JsonFileTsnMempool, evaluateSettlementEconomics } from "../src";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -6,15 +6,7 @@ function sleep(ms: number) {
 
 function createMempoolClient() {
   if (process.env.TSN_MEMPOOL_URL) {
-    const client = new TsnHttpClient({ baseUrl: process.env.TSN_MEMPOOL_URL });
-    return {
-      listPendingWork: async (limit: number) => {
-        const response = await client.listPendingWork<{ intents: TsnWorkItem[] }>(limit);
-        return response.intents;
-      },
-      updateClaimRequestStatus: async () => null,
-      updateIntentStatus: async () => null,
-    };
+    return new HttpTsnMempool(process.env.TSN_MEMPOOL_URL);
   }
 
   return new JsonFileTsnMempool();
@@ -62,6 +54,13 @@ async function main() {
         // ownership boundary by consuming TSN mempool work instead of TrustLink DB rows.
         // The next implementation step wires this point to the TSN on-chain program.
         const proofTxSig = `local-proof-${Date.now()}`;
+        await mempool.postProof?.({
+          intent_id: item.intent.id,
+          timestamp: new Date().toISOString(),
+          cranker_pubkey: operator,
+          proof_tx: proofTxSig,
+          encrypted_payload: null,
+        });
 
         await mempool.updateIntentStatus(item.intent.id, "executed", {
           source: item.intent.source,

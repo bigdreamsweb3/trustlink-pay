@@ -22,7 +22,7 @@ use v3::{
 
 use state::PaymentMode;
 
-declare_id!("BQCDZF8gFs35xiEUEZbvgkLufMjrcysw5yPdv3MVZohM");
+declare_id!("DHShpyVBooaoVgU1YqBYuaEgBnjeEvMw1jZ2g8ZxHEs");
 
 #[program]
 pub mod trustlink_escrow {
@@ -384,6 +384,14 @@ pub mod trustlink_escrow {
             amount,
             recipient_hash,
         )
+    }
+
+    pub fn tsn_process_payment_intent(
+        ctx: Context<ProcessPaymentIntent>,
+        payment_intent_id: u64,
+        amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::process_payment_intent(ctx, payment_intent_id, amount)
     }
 
     pub fn tsn_claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {

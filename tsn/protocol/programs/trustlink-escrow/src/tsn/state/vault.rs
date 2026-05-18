@@ -1,6 +1,15 @@
 use anchor_lang::prelude::*;
 
 #[account]
+#[derive(InitSpace)]
+pub struct VaultState {
+    pub payment_intent_id: u64,
+    pub cranker_author: Pubkey,
+    pub is_processed: bool,
+    pub amount: u64,
+}
+
+#[account]
 pub struct CrankerVault {
     pub mother_escrow: Pubkey,
     pub cranker: Pubkey,

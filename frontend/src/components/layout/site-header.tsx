@@ -19,17 +19,17 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="bg-bg/90 backdrop-blur-lg border-b border-field-border fixed inset-x-0 top-0 z-40">
-      <div className="mx-auto flex min-h-[72px] w-full max-w-[1180px] items-center justify-between gap-3 px-4 md:px-6">
+    <header className="items-center bg-bg-elevated backdrop-blur-lg fixed inset-x-0 top-0 z-40">
+      <div className="mx-auto flex min-h-16  w-full max-w-[1180px] items-center justify-between gap-3 px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
             <TrustLinkMark compact />
-            <div className="min-w-0 flex flex-row items-center gap-1.5">
+            <div className="min-w-0 flex  items-center gap-1.5">
               <div className="tl-text-muted text-[0.6rem] text-center uppercase tracking-[0.22em] leading-none">TrustLink Pay</div>
               <Link
                 href="/#tsn-protocol"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#ff7a18] sm:inline-flex"
+                className="rounded-full border tl-badge px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] sm:inline-flex"
               >
                 TSN Protocol
               </Link>
@@ -43,7 +43,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-[0.78rem] font-bold text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
+              className="rounded-full px-3 py-2 text-[0.72rem] font-bold text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
             >
               {item.label}
             </Link>
@@ -53,21 +53,21 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/operator-dashboard"
-            className="inline-flex items-center justify-center rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3.5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#ff7a18] sm:inline-flex hover:bg-[#ff8b33]"
+            className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
           >
             Operator Dashboard
           </Link>
           <Link
             href="/app"
-            className="tl-button-primary inline-flex items-center justify-center rounded-[14px] px-4 py-2.5 text-sm font-semibold tracking-normal transition"
+            className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold tracking-normal transition"
           >
-            Open App
+            Open Dapp
           </Link>
         </div>
 
         <button
           type="button"
-          className="grid h-10 w-10 place-items-center rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] text-[var(--text)] md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-[14px] text-[var(--text)] md:hidden"
           onClick={() => setMenuOpen((open) => !open)}
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={menuOpen}
@@ -85,7 +85,7 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-[14px] px-4 py-3 text-sm font-bold text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
+                className="rounded-[14px] px-4 py-3 text-[0.72rem] font-bold text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
               >
                 {item.label}
               </Link>
@@ -94,16 +94,16 @@ export function SiteHeader() {
               <Link
                 href="/operator-dashboard"
                 onClick={() => setMenuOpen(false)}
-                className="inline-flex items-center justify-center rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-[#ff7a18] sm:inline-flex hover:bg-[#ff8b33]"
+                className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold tracking-[0.14em] sm:inline-flex"
               >
                 Operator Dashboard
               </Link>
               <Link
                 href="/app"
                 onClick={() => setMenuOpen(false)}
-                className="tl-button-primary inline-flex items-center justify-center rounded-[14px] px-4 py-3 text-sm font-semibold"
+                className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold"
               >
-                Open App
+                Open Dapp
               </Link>
             </div>
           </div>

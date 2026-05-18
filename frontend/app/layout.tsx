@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AppProviders } from "@/app/providers";
 import "./globals.css";
+import "./tsn.css"
 
 
 /* ---------------- SEO CONFIG ---------------- */

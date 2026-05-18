@@ -15,7 +15,8 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-body:
+    "JetBrains Mono", "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   --font-display-face:
     "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
   --font-tactical-face: "IBM Plex Mono", "Aptos Mono", "Consolas", monospace;

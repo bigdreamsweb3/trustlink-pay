@@ -1,4 +1,40 @@
 {
+  "name": "trustlink-pay",
+  "version": "1.0.0",
+  "description": "TrustLink Pay - Identity-first blockchain payments on Solana. Send stablecoins to phone numbers, resolved through TSN privacy-preserving settlement network. Built with WhatsApp auth, Cranker liquidity, and on-chain TINS identity.",
+  "keywords": [
+    "TrustLink Pay",
+    "Solana payments",
+    "blockchain payments",
+    "mobile money",
+    "stablecoin transfer",
+    "identity-first payments",
+    "TSN Transfer Settlement Network",
+    "Cranker settlement",
+    "TINS Transfer Identity Number",
+    "WhatsApp payments",
+    "peer-to-peer payments",
+    "cross-border payments",
+    "remittance",
+    "Solana DeFi",
+    "privacy preserving"
+  ],
+  "homepage": "https://trustlink.pay",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bigdreamsweb3/trustlink-pay"
+  },
+  "bugs": {
+    "url": "https://github.com/bigdreamsweb3/trustlink-pay/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "TrustLink Team",
+    "url": "https://trustlink.pay"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "// Dev Commands": "--------------------Dev Commands-------------------",
     "dev:run:frontend": "cd frontend && npm run dev",

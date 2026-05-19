@@ -1,11 +1,17 @@
 const BACKEND_PROXY_PREFIX = "/backend";
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+const USE_DIRECT_BACKEND =
+  process.env.NEXT_PUBLIC_USE_DIRECT_BACKEND === "true";
 
 export function buildBackendUrl(path: string) {
-  // Always use middleware proxy in this Next.js app (both dev and prod)
-  // The middleware will handle routing to the correct backend
-  const finalUrl = `${BACKEND_PROXY_PREFIX}${path}`;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
-  return finalUrl;
+  // Secure default: always use local Next.js proxy path to avoid browser CORS issues.
+  // Set NEXT_PUBLIC_USE_DIRECT_BACKEND=true only when backend CORS is explicitly configured.
+  if (USE_DIRECT_BACKEND && process.env.NEXT_PUBLIC_BACKEND_URL) {
+    return `${BACKEND_URL}${cleanPath}`;
+  }
+
+  return `${BACKEND_PROXY_PREFIX}${cleanPath}`;
 }

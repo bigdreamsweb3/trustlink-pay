@@ -1,6 +1,6 @@
 # TrustLink Pay
 
-> Identity-first stablecoin payments on Solana, with private settlement and open identity infrastructure.
+> Identity-first Blockchain payments (as familiar as mobile money) on Solana, with private settlement and open identity infrastructure.
 
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.
 
@@ -34,6 +34,14 @@ TrustLink Pay is built as three connected layers: the dApp, the TSN settlement p
 - user onboarding and identity UX
 - payment initiation and confirmation flow
 - sender and recipient app experience
+
+#### TrustLink Pay Today
+
+When a user registers, TrustLink verifies their phone number and stores a mapping in its backend: this phone identity belongs to this user. When a sender enters a recipient phone number, TrustLink resolves the identity and prepares the payment route.
+
+WhatsApp is used for authentication, consent, and payment notifications. TrustLink Pay is still a dApp: wallet signing, escrow creation, settlement state, and protocol accounting happen through the TrustLink Pay application and Solana programs.
+
+The identity map is in TrustLink's backend. The money is not. Funds move into Solana escrow, and release or reimbursement depends on program rules, TSN settlement state, and valid proof. The sender does not need to know the recipient wallet. The recipient does not need to know the sender wallet.
 
 ### 2. Identity Layer (TINS)
 

@@ -6,7 +6,7 @@
 # already existing elements were commented out
 
 #/target
-
+pids
 js/dist
 js/node_modules
 program/target

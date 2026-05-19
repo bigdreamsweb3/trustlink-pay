@@ -45,6 +45,7 @@
     "protocol:build": "wsl bash -c \"cd tsn && npm run protocol:build\"",
     "protocol:deploy": "wsl bash -c \"cd tsn && npm run protocol:deploy\"",
     "protocol:test": "wsl bash -c \"cd tsn && npm run protocol:test\"",
+    "tins:set-program-id:New": "node scripts/update-program-id.mjs TN1gEhKak4eCazVBo99LysVsBNWpyiBDjSPcsM51SF9",
     "tsn:setup": "cd tsn && npm run setup --",
     "tsn:cranker": "cd tsn && npm run cranker --",
     "dev:run:all": "echo \"Run each command in a separate terminal:\" && echo \"Terminal 1: npm run dev:run:backend\" && echo \"Terminal 2: npm run dev:run:frontend\"",

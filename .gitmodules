@@ -4,3 +4,6 @@
 [submodule "tsn-mempool-frontend"]
 	path = tsn-mempool-frontend
 	url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
+[submodule "tsn-epoch-records"]
+	path = tsn-epoch-records
+	url = https://github.com/bigdreamsweb3/tsn-epoch-records.git

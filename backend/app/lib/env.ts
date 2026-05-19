@@ -36,19 +36,49 @@ const envSchema = z
     SOLANA_ESCROW_AUTHORITY_SECRET_KEY: z.string().min(1).optional(),
     SOLANA_ALLOWED_SPL_TOKENS: z.string().optional(),
     TRUSTLINK_TREASURY_OWNER: z.string().min(1).optional(),
-    TRUSTLINK_SEND_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
+    TRUSTLINK_SEND_FEE_BPS: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(10000)
+      .default(0),
     TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
-    TRUSTLINK_SEND_FEE_MAX_USD: emptyStringToUndefined.pipe(z.coerce.number().min(0)).optional(),
-    TRUSTLINK_FEE_COVERAGE_TX_COUNT: z.coerce.number().int().positive().default(4),
-    TRUSTLINK_CLAIM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(0),
+    TRUSTLINK_SEND_FEE_MAX_USD: emptyStringToUndefined
+      .pipe(z.coerce.number().min(0))
+      .optional(),
+    TRUSTLINK_FEE_COVERAGE_TX_COUNT: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(4),
+    TRUSTLINK_CLAIM_FEE_BPS: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(10000)
+      .default(0),
     TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: z.coerce.number().min(0).default(0),
-    TRUSTLINK_CLAIM_FEE_MAX_USD: emptyStringToUndefined.pipe(z.coerce.number().min(0)).optional(),
-    TRUSTLINK_DEFAULT_EXPIRY_SECONDS: z.coerce.number().int().positive().default(604800),
+    TRUSTLINK_CLAIM_FEE_MAX_USD: emptyStringToUndefined
+      .pipe(z.coerce.number().min(0))
+      .optional(),
+    TRUSTLINK_DEFAULT_EXPIRY_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(604800),
     TRUSTLINK_INVITE_PAYMENT_MAX_USD: z.coerce.number().positive().default(10),
     TRUSTLINK_AUTOCLAIM_MAX_USD: z.coerce.number().positive().default(100),
-    TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS: z.coerce.number().int().positive().default(7),
+    TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(7),
     TRUSTLINK_REFUND_WAIT_HOURS: z.coerce.number().int().positive().default(48),
-    TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS: z.coerce.number().int().positive().default(48),
+    TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(48),
     TRUSTLINK_RECOVERY_WALLETS: z.string().optional(),
     WHATSAPP_API_KEY: z.string().min(1).optional(),
     WHATSAPP_PHONE_ID: z.string().min(1).optional(),
@@ -70,7 +100,11 @@ const envSchema = z
     WHATSAPP_OTP_TEMPLATE_NAME: z.string().optional(),
     WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME: z.string().optional(),
     TRUSTLINK_BUSINESS_NUMBER: z.string().optional(),
-    AUTH_SESSION_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+    AUTH_SESSION_CODE_TTL_MINUTES: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(15),
     AUTH_CHALLENGE_TTL_MINUTES: z.coerce.number().int().positive().default(30),
     OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
     OTP_TTL_MINUTES: z.coerce.number().int().positive().default(5),
@@ -91,7 +125,7 @@ const envSchema = z
     SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080),
     TSN_ENABLED: booleanFromEnv.default(false),
-    TSN_MEMPOOL_URL: z.string().url().default("http://localhost:8787"),
+    TSN_MEMPOOL_URL: z.string().url().default("http://0.0.0.0:8000"),
     TSN_CREATE_INTENTS_ONCHAIN: booleanFromEnv.default(false),
     TSN_SYNC_ONCHAIN: booleanFromEnv.default(true),
   })
@@ -130,18 +164,25 @@ function readRawEnv() {
     SOLANA_ALLOWED_SPL_TOKENS: process.env.SOLANA_ALLOWED_SPL_TOKENS,
     TRUSTLINK_TREASURY_OWNER: process.env.TRUSTLINK_TREASURY_OWNER,
     TRUSTLINK_SEND_FEE_BPS: process.env.TRUSTLINK_SEND_FEE_BPS,
-    TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
+    TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT:
+      process.env.TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT,
     TRUSTLINK_SEND_FEE_MAX_USD: process.env.TRUSTLINK_SEND_FEE_MAX_USD,
-    TRUSTLINK_FEE_COVERAGE_TX_COUNT: process.env.TRUSTLINK_FEE_COVERAGE_TX_COUNT,
+    TRUSTLINK_FEE_COVERAGE_TX_COUNT:
+      process.env.TRUSTLINK_FEE_COVERAGE_TX_COUNT,
     TRUSTLINK_CLAIM_FEE_BPS: process.env.TRUSTLINK_CLAIM_FEE_BPS,
-    TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT: process.env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
+    TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT:
+      process.env.TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT,
     TRUSTLINK_CLAIM_FEE_MAX_USD: process.env.TRUSTLINK_CLAIM_FEE_MAX_USD,
-    TRUSTLINK_DEFAULT_EXPIRY_SECONDS: process.env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS,
-    TRUSTLINK_INVITE_PAYMENT_MAX_USD: process.env.TRUSTLINK_INVITE_PAYMENT_MAX_USD,
+    TRUSTLINK_DEFAULT_EXPIRY_SECONDS:
+      process.env.TRUSTLINK_DEFAULT_EXPIRY_SECONDS,
+    TRUSTLINK_INVITE_PAYMENT_MAX_USD:
+      process.env.TRUSTLINK_INVITE_PAYMENT_MAX_USD,
     TRUSTLINK_AUTOCLAIM_MAX_USD: process.env.TRUSTLINK_AUTOCLAIM_MAX_USD,
-    TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS: process.env.TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS,
+    TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS:
+      process.env.TRUSTLINK_INVITE_EXPIRY_BUSINESS_DAYS,
     TRUSTLINK_REFUND_WAIT_HOURS: process.env.TRUSTLINK_REFUND_WAIT_HOURS,
-    TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS: process.env.TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS,
+    TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS:
+      process.env.TRUSTLINK_REFUND_ENGAGEMENT_EXTENSION_HOURS,
     TRUSTLINK_RECOVERY_WALLETS: process.env.TRUSTLINK_RECOVERY_WALLETS,
     WHATSAPP_API_KEY: process.env.WHATSAPP_API_KEY,
     WHATSAPP_PHONE_ID:

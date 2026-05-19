@@ -15,7 +15,7 @@ async function requiresManualInvite(phone: string) {
 }
 
 // Placeholder - no invite system yet (TSN handles this)
-function buildInviteShareData(payment: any, appBaseUrl: string | null) {
+function buildInviteShareData(payment: any, appBaseUrl: string | null | undefined) {
   return null;
 }
 

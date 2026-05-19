@@ -13,3 +13,6 @@
 [submodule "transfer-identity-number-system-(TINS)"]
 	path = transfer-identity-number-system-(TINS)
 	url = https://github.com/bigdreamsweb3/transfer-identity-number-system.git
+[submodule "cranker-op-daemon"]
+	path = cranker-op-daemon
+	url = https://github.com/bigdreamsweb3/tsn-cranker-op-daemon.git

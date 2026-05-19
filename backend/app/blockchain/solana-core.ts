@@ -1036,3 +1036,19 @@ export function getEscrowDepositAddress() {
 export function createDraftPaymentId() {
   return randomUUID();
 }
+
+// Token listing - now handled by TSN
+// Returns supported tokens (placeholder until TIN integration)
+export interface WalletTokenInfo {
+  mintAddress: string;
+  symbol: string;
+  name: string;
+  balance: number;
+  decimals: number;
+  logoUrl?: string;
+}
+
+export async function listSupportedWalletTokens(walletAddress: string): Promise<WalletTokenInfo[]> {
+  // TSN integration pending - return mock data for now
+  return [];
+}

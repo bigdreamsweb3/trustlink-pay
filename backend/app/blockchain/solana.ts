@@ -22,6 +22,11 @@ export type {
   ClaimFeeEstimate,
   SenderTransferFeeEstimate,
   SupportedWalletToken,
+  WalletTokenInfo,
+} from "@/app/blockchain/solana-core";
+
+export {
+  listSupportedWalletTokens,
 } from "@/app/blockchain/solana-core";
 
 // From TSN - TSN handles all payment operations now

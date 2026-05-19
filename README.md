@@ -338,6 +338,8 @@ TINS is now **live and production-ready**:
 | --- | --- |
 | `frontend` | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI |
 | `backend` | API routes, identity services, payment orchestration, database layer, and Solana integration |
+| `tsn-mempool-backend` | Python mempool server - submodule of [tsn-mempool-backend](https://github.com/bigdreamsweb3/tsn-mempool-backend) |
+| `tsn-mempool-frontend` | Next.js mempool explorer UI - submodule of [tsn-mempool-frontend](https://github.com/bigdreamsweb3/tsn-mempool-frontend) |
 | `tsn/protocol/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
 | `tsn` | TSN contracts, settlement economics, Cranker daemon, and setup scripts |
 | `trustlink-whatsapp-sdk` | WhatsApp authentication UI and handoff helpers |

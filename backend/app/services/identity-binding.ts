@@ -97,14 +97,8 @@ export async function prepareIdentityKeyRegistrationForUser(
       recoveryWalletPublicKey: existingBinding.recoveryWallet,
       bindingSignature,
     });
-    // [DEPRECATED] await markPaymentsReceiverOnboarded({
-      receiverPhone: authUser.phoneNumber,
-      receiverWallet: existingBinding.settlementWallet,
-    });
-    // [TSN] await AutoclaimEngine.triggerReceiverOnboarded({
-      receiverPhone: authUser.phoneNumber,
-      triggerSource: "receiver.onboarded",
-    });
+    // DEPRECATED - moved to TSN
+    // autolaaim moved to TSN
 
     return {
       phoneIdentityPublicKey,

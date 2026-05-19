@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "../backend/node_modules/@types"],
+    // "baseUrl": ".",
+    "paths": {
+      "@coral-xyz/anchor": ["../backend/node_modules/@coral-xyz/anchor"],
+      "@solana/spl-token": ["../backend/node_modules/@solana/spl-token"],
+      "@solana/web3.js": ["../backend/node_modules/@solana/web3.js"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+}

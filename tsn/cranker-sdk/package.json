@@ -1,0 +1,24 @@
+{
+  "name": "@trustlink/tsn-cranker-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "node -e \"console.log('[@trustlink/tsn-cranker-sdk] using checked-in dist output')\"",
+    "dev": "node --watch dist/cli.js",
+    "cranker": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.98.4",
+    "@trustlink/tsn": "file:../",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.0",
+    "typescript": "^6.0.3"
+  }
+}

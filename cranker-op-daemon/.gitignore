@@ -1,7 +1,0 @@
-.env
-operator-state.json
-node_modules/
-.cranker-ledger-encrypted.jsonl
-keys/*.json
-!keys/.gitkeep
-logs/

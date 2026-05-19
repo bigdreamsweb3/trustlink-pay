@@ -13,6 +13,7 @@ test-bpf = []
 devnet = []
 
 [profile.release]
+overflow-checks = true
 strip = true
 opt-level = "z"
 lto = true

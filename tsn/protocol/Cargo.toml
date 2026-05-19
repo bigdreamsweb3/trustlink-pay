@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "programs/trustlink-escrow",
+  "programs/tins",
 ]
 exclude = [
   "programs/trustlink-escrow-backup-*",

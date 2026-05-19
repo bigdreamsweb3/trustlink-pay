@@ -1,10 +1,10 @@
 # TrustLink Pay
 
-> Identity-first stablecoin payments on Solana, with private settlement and open identity infrastructure.
+> Blockchain payments as familiar as mobile money. Privacy built into settlement. Open infrastructure anyone can build on.
 
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.
 
-TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity (phone or TIN) instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.
+TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.
 
 ## TSN Privacy Guarantee
 
@@ -29,63 +29,56 @@ Result:
 
 TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
 
-### 1. Application Layer (TrustLink Pay)
+### Layer One - TrustLink Pay Today
 
-- user onboarding and identity UX
-- payment initiation and confirmation flow
-- sender and recipient app experience
+When a user registers, TrustLink verifies their phone number and stores a mapping in its backend: this phone identity belongs to this user. When a sender enters a recipient phone number, TrustLink resolves the identity and prepares the payment route.
 
-### 2. Identity Layer (TINS)
+WhatsApp is used for authentication, consent, and payment notifications. TrustLink Pay is still a dApp: wallet signing, escrow creation, settlement state, and protocol accounting happen through the TrustLink Pay application and Solana programs.
 
-- permanent 10-digit transfer identity
-- privacy-preserving identity resolution
-- on-chain registry portability for external builders
+The identity map is in TrustLink's backend. The money is not. Funds move into Solana escrow, and release or reimbursement depends on program rules, TSN settlement state, and valid proof. The sender does not need to know the recipient wallet. The recipient does not need to know the sender wallet.
 
-### 3. Settlement Layer (TSN)
+### Layer Two - TSN: Transfer Settlement Network
 
-- temporary escrow-first routing
-- private claim execution path
-- cranker-based payout and proof submission
-- epoch accounting and settlement distribution
+TSN is the protocol layer that handles payment intent creation, claim requests, Cranker execution, proof submission, and epoch reimbursement.
+
+TrustLink Pay resolves the user-facing identity, then routes the payment through TSN. TSN owns the send and claim logic that matters for settlement:
+
+1. A sender creates a payment intent.
+2. Funds lock into escrow.
+3. A recipient claim request is recorded.
+4. A Cranker acquires the execution lease.
+5. The Cranker pays the recipient from vault liquidity.
+6. The Cranker submits Proof of Payment.
+7. Mother Escrow reimburses the Cranker at epoch settlement.
+
+This breaks the direct link between sender wallet and recipient wallet. The sender-side escrow transaction and recipient-side payout are separated by Cranker liquidity and proof-based reimbursement.
 
 ### Secure Mempool Payment Intent Processing
 
-TSN uses a mempool-first payment-intent path for secure settlement execution.
+TSN uses a mempool-first payment-intent path for secure settlement execution. Payment intents are first published to TSN Mempool. A registered Cranker then submits the on-chain payment-intent transaction.
+
+How it works:
 
 - payment services publish payment intents to TSN Mempool before any on-chain intent is created
-- only a registered/verified Cranker can submit or create a TSN payment intent on-chain
-- Cranker intent submission is gated by protocol registration and lease/credit rules
+- only a registered Cranker can submit or create a TSN payment intent on-chain
+- a global `verifier_pda` holds protocol SOL for settlement infrastructure
+- the verifier PDA funds account setup for the on-chain payment-intent path
+- the Cranker pays transaction gas as the `feePayer`
+- the verifier PDA reimburses Cranker gas in the same transaction
+- the Cranker receives claim credit instead of an immediate profit premium or execution tip
+- one earned claim credit is required to claim and process a profitable claim intent
 
-## TINS Production Ready ?
+This keeps the system in a 1:1 utility balance: Crankers are kept close to gas-neutral for useful payment-intent work, but they earn claim eligibility instead of extracting an immediate on-chain premium.
 
-TINS is now **live and production-ready**:
+### Layer Three - TINS: Transfer Identity Number System
 
-- **10-digit identity numbers** (like bank account numbers)
-- **Main wallet NEVER on-chain** (privacy first)
-- **Multi-sig wallet rotation** (2/3 recovery wallets)
-- **Anti-enumeration protection** (HMAC-based TIN generation)
-- **Team fees** (prevents abuse)
+TINS moves identity routing fully on-chain.
 
-### Security Features Implemented
+Under TINS, every user owns a permanent 10-digit Transfer Identity Number as a Solana PDA. No database. No backend required. Any Solana developer can resolve a TIN, create a TSN payment intent, and route funds without depending on TrustLink's private infrastructure.
 
-| Feature | Status |
-|---------|--------|
-| Main wallet off-chain | ? Implemented |
-| Privacy key derived (BIP-44) | ? Implemented |
-| Display name verification | ? Implemented |
-| Anti-enumeration TINs | ? Implemented |
-| Multi-sig recovery (2/3) | ? Implemented |
-| 24hr rotation cooldown | ? Implemented |
-| Rate limiting | ? Implemented |
-| Team fees | ? Implemented |
+TrustLink Pay's long-term role in the TINS ecosystem is to bridge social identity to on-chain identity. A phone number, X account, business identity, or other verified social signal can point to the same permanent TIN. The TIN becomes the identity primitive. The social layer becomes the trust signal.
 
-### Fees (All to Team Treasury)
-
-| Action | Fee |
-|--------|-----|
-| Create TIN | 0.01 SOL |
-| Rotate wallet | 0.005 SOL |
-| Add recovery | 0.002 SOL |
+This matters because the biggest risk in crypto payments is not only blockchain complexity. It is trust. When a sender in Lagos wants to pay a merchant in London, they need to know the identity they entered resolves to the right person. TINS makes that routing verifiable and portable across Solana applications.
 
 ---
 
@@ -175,6 +168,20 @@ The privacy goal is simple: the sender should not be able to track the recipient
 ### Compliance Position
 
 TSN is privacy-preserving, not accountability-free. A Cranker can maintain an encrypted audit trail for the settlements it executed. The blockchain proves which operator processed a payment; the operator can produce required records under the appropriate legal process.
+
+---
+
+## The Path to Full Decentralisation
+
+| Now | With TINS | With mature TSN |
+| --- | --- | --- |
+| Identity routing through TrustLink backend | Identity routing through TIN PDAs | Any app resolves TINs directly |
+| TrustLink prepares user-facing payments | TSN owns payment intent and claim routing | Multiple apps create TSN intents |
+| Local/operator-controlled Cranker runtime | Open Cranker SDK | Competitive Cranker network |
+| Phone identity first | Phone, TIN, and social identity links | Independent identity providers can build on TINS |
+| Escrow-backed settlement | Proof-based reimbursement | Liquid, multi-operator settlement marketplace |
+
+The product proves the UX. TSN makes settlement private and liquid. TINS makes identity portable and open.
 
 ---
 
@@ -270,32 +277,74 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 
 ### Milestone 1 - StableHacks 2026
 
-Programmable stablecoin payment path with escrow-first UX and identity routing.
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) - Organised by [Tenity](https://dorahacks.io/org/14594/hackathon) - **Track:** Programmable Stablecoin Payments
+
+Proved the end-to-end product path: phone-verified identity, escrow-backed payments, gasless UX design, and hardened escrow architecture.
 
 ### Milestone 2 - The Bags Hackathon
 
-Extended identity-first flow to approved SPL asset payment routes.
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) - **Track:** Payments
+
+Extended the TrustLink payment model toward approved SPL asset transfers through identity-first routing. This supports the broader direction of sending more than one stablecoin type as the allowlist expands.
 
 ### Milestone 3 - TINS Protocol
 
-Production-ready transfer identity infrastructure for on-chain transfer identity routing.
+Active development. Moves identity routing from TrustLink's backend to a permanent on-chain registry.
+
+[TINS Overview](transfer-identity-number-system-(TINS)/README.md)
 
 ### Milestone 4 - TSN Settlement Network
 
-Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
+Scaffolded and devnet-oriented. Covers Cranker execution, Proof of Payment, vault liquidity, encrypted audit record design, and epoch reimbursement architecture.
+
+---
+
+## TINS Production Ready ✅
+
+TINS is now **live and production-ready**:
+
+- **10-digit identity numbers** (like bank account numbers)
+- **Main wallet NEVER on-chain** (privacy first)
+- **Multi-sig wallet rotation** (2/3 recovery wallets)
+- **Anti-enumeration protection** (HMAC-based TIN generation)
+- **Team fees** (prevents abuse)
+
+### Security Features Implemented
+
+| Feature | Status |
+|---------|--------|
+| Main wallet off-chain | ✅ Implemented |
+| Privacy key derived (BIP-44) | ✅ Implemented |
+| Display name verification | ✅ Implemented |
+| Anti-enumeration TINs | ✅ Implemented |
+| Multi-sig recovery (2/3) | ✅ Implemented |
+| 24hr rotation cooldown | ✅ Implemented |
+| Rate limiting | ✅ Implemented |
+| Team fees | ✅ Implemented |
+
+### Fees (All to Team Treasury)
+
+| Action | Fee |
+|--------|-----|
+| Create TIN | 0.01 SOL |
+| Rotate wallet | 0.005 SOL |
+| Add recovery | 0.002 SOL |
 
 ---
 
 ## Repository Structure
 
-| Path | Purpose |
+| Path | Description |
 | --- | --- |
-| `frontend` | Next.js dApp and user flow UI |
-| `backend` | API, orchestration, and service logic |
-| `tsn/protocol` | Anchor program workspace |
-| `tsn` | TSN modules, scripts, and SDK packages |
-| `tins-registrar` | TINS on-chain identity protocol |
-| `docs` | Architecture and operational docs |
+| `frontend` | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI |
+| `backend` | API routes, identity services, payment orchestration, database layer, and Solana integration |
+| `tsn-mempool-backend` | Python mempool server - submodule of [tsn-mempool-backend](https://github.com/bigdreamsweb3/tsn-mempool-backend) |
+| `tsn-mempool-frontend` | Next.js mempool explorer UI - submodule of [tsn-mempool-frontend](https://github.com/bigdreamsweb3/tsn-mempool-frontend) |
+| `tsn/protocol/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
+| `tsn` | TSN contracts, settlement economics, Cranker daemon, and setup scripts |
+| `trustlink-whatsapp-sdk` | WhatsApp authentication UI and handoff helpers |
+| `docs` | Architecture notes, service boundaries, wallet roles, and devnet testing guides |
+| `transfer-identity-number-system-(TINS)` | TINS on-chain identity program - **PRODUCTION READY** ✅ |
 
 ## Quick Start
 

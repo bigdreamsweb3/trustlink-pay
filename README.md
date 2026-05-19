@@ -2,23 +2,6 @@
 
 > Blockchain payments as familiar as mobile money. Privacy built into settlement. Open infrastructure anyone can build on.
 
-## Quick Links
-
-| I want to... | Go to... |
-|---|---|
-| **Understand the project** | [#about](#trustlink-pay) |
-| **Learn the tech** | [Architecture](#project-architecture) |
-| **Run locally** | [Quick Start](#quick-start) |
-| **Deploy to prod** | [Deployment](#deployment) |
-| **Build on TrustLink** | [For Developers](#for-developers) |
-| **Integrate TINS** | [TINS Integration](#tins-integration) |
-| **Become a Cranker** | [Cranker Operations](#cranker-operations) |
-| **Read the code** | [Repository Structure](#repository-structure) |
-| **Contribute** | [Contributing](#contributing) |
-| **See economics** | [Economics](#the-economics-of-tsn) |
-
----
-
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.
 
 TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.

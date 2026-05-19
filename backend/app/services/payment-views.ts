@@ -5,7 +5,7 @@ import {
   retryPaymentNotificationIfNeeded,
 } from "@/app/services/payments";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import type { PaymentRecord, PaymentViewerRole } from "@/app/types/payment";
+import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
 
 // Placeholder - TSN handles invites now

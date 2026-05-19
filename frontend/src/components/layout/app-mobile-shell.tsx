@@ -129,7 +129,7 @@ export function AppMobileShell({
           </header>
 
           {/* Mobile top bar */}
-          <header className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 h-12 transition-all duration-200 ${headerScrolled ? "bg-bg/90 backdrop-blur-lg border-b border-[var(--field-border)]" : "bg-transparent"}`}>
+          <header className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 min-h-16 transition-all duration-200 ${headerScrolled ? "bg-bg/90 backdrop-blur-lg border-b border-[var(--field-border)]" : "bg-transparent"}`}>
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {showBackButton ? (
                 <button type="button" onClick={handleBack} className="tl-text-soft inline-flex items-center gap-1 text-[0.74rem] font-medium transition hover:text-[var(--text)] cursor-pointer active:scale-[0.95]" aria-label="Go back">

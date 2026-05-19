@@ -19,7 +19,7 @@
     "Solana DeFi",
     "privacy preserving"
   ],
-  "homepage": "https://trustlink.pay",
+  "homepage": "https://trustlink-pay.vercel.app/",
   "repository": {
     "type": "git",
     "url": "https://github.com/bigdreamsweb3/trustlink-pay"
@@ -29,8 +29,8 @@
   },
   "license": "MIT",
   "author": {
-    "name": "TrustLink Team",
-    "url": "https://trustlink.pay"
+    "name": "Agbaka Matthew Daniel aka Big Dreams Web3",
+    "url": "https://twitter.com/BigDreamsWeb3"
   },
   "engines": {
     "node": ">=18.0.0"

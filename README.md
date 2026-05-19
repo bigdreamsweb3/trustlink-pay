@@ -88,7 +88,7 @@ This matters because the biggest risk in crypto payments is not only blockchain 
 
 **Merchants accepting digital payments.** Small businesses can receive stablecoin payments without exposing wallet addresses to every customer. The customer pays an identity; settlement routes through TSN.
 
-**Developers building payment infrastructure.** Once TINS is live, any Solana developer can resolve a transfer identity and create a TSN payment intent. They do not need TrustLink's database or permission to build on the identity layer.
+**Developers building payment infrastructure.** With TINS, any Solana developer can resolve a transfer identity and create a TSN payment intent. They do not need TrustLink's database or permission to build on the identity layer.
 
 **Operators running settlement infrastructure.** Cranker operators provide uptime, monitor payment intents and claim requests, execute payouts, submit proof, and earn settlement rewards.
 

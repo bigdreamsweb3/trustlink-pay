@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { WhatsAppWhiteIcon } from "@/src/components/whatsapp-icon";
 import type { Route } from "next";
 
@@ -193,6 +194,14 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     setConnectionStatus("disconnected"); setShowWhatsAppModal(false);
   }
 
+  function handleBackToTrustLink() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/" as Route);
+  }
+
   /* ═══════════════════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════════════════ */
@@ -200,6 +209,16 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     <main className="tl-grid-overlay relative flex min-h-[100dvh] flex-col items-center justify-between overflow-hidden"
       style={{ background: "var(--bg)" }}
     >
+      <div className="w-full max-w-[440px] px-5 pt-5">
+        <button
+          type="button"
+          onClick={handleBackToTrustLink}
+          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-2 text-sm font-bold text-[var(--text-soft)] transition hover:text-[var(--text)] cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to TrustLink Pay
+        </button>
+      </div>
       <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 w-full max-w-[440px]">
 
         {/* ─── IDLE ─── */}

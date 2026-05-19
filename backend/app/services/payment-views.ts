@@ -4,6 +4,7 @@ import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-
 import {
   retryPaymentNotificationIfNeeded,
 } from "@/app/services/payments";
+import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
 import { env } from "@/app/lib/env";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";

@@ -1,18 +1,6 @@
-[submodule "tsn-mempool"]
-	path = tsn-mempool
-	url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
 [submodule "tsn-mempool-backend"]
 	path = tsn-mempool-backend
 	url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
 [submodule "tsn-mempool-frontend"]
 	path = tsn-mempool-frontend
 	url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
-[submodule "tsn"]
-	path = tsn
-	url = https://github.com/bigdreamsweb3/tsn.git
-[submodule "transfer-identity-number-system-(TINS)"]
-	path = transfer-identity-number-system-(TINS)
-	url = https://github.com/bigdreamsweb3/transfer-identity-number-system.git
-[submodule "cranker-op-daemon"]
-	path = cranker-op-daemon
-	url = https://github.com/bigdreamsweb3/tsn-cranker-op-daemon.git

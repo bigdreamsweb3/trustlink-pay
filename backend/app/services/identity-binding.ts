@@ -12,7 +12,6 @@ import {
 } from "@/app/blockchain/solana";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import { hashBindingSignaturePayload } from "@/app/lib/privacy-keys";
-// import { AutoclaimEngine } from "@/app/services/payments/autoclaim-engine";
 
 export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
   const user = await findUserById(authUser.id);
@@ -98,11 +97,11 @@ export async function prepareIdentityKeyRegistrationForUser(
       recoveryWalletPublicKey: existingBinding.recoveryWallet,
       bindingSignature,
     });
-    // await markPaymentsReceiverOnboarded({
+    // [DEPRECATED] await markPaymentsReceiverOnboarded({
       receiverPhone: authUser.phoneNumber,
       receiverWallet: existingBinding.settlementWallet,
     });
-    // await AutoclaimEngine.triggerReceiverOnboarded({
+    // [TSN] await AutoclaimEngine.triggerReceiverOnboarded({
       receiverPhone: authUser.phoneNumber,
       triggerSource: "receiver.onboarded",
     });
@@ -201,11 +200,11 @@ export async function confirmIdentityKeyRegistrationForUser(
     bindingSignature,
   });
 
-  // await markPaymentsReceiverOnboarded({
+  // [DEPRECATED] await markPaymentsReceiverOnboarded({
     receiverPhone: authUser.phoneNumber,
     receiverWallet: settlementWalletPublicKey,
   });
-  // await AutoclaimEngine.triggerReceiverOnboarded({
+  // [TSN] await AutoclaimEngine.triggerReceiverOnboarded({
     receiverPhone: authUser.phoneNumber,
     triggerSource: "receiver.onboarded",
   });

@@ -68,24 +68,24 @@ TINS is now **live and production-ready**:
 
 ### Security Features Implemented
 
-| Feature | Status |
-|---------|--------|
-| Main wallet off-chain | ? Implemented |
+| Feature                      | Status        |
+| ---------------------------- | ------------- |
+| Main wallet off-chain        | ? Implemented |
 | Privacy key derived (BIP-44) | ? Implemented |
-| Display name verification | ? Implemented |
-| Anti-enumeration TINs | ? Implemented |
-| Multi-sig recovery (2/3) | ? Implemented |
-| 24hr rotation cooldown | ? Implemented |
-| Rate limiting | ? Implemented |
-| Team fees | ? Implemented |
+| Display name verification    | ? Implemented |
+| Anti-enumeration TINs        | ? Implemented |
+| Multi-sig recovery (2/3)     | ? Implemented |
+| 24hr rotation cooldown       | ? Implemented |
+| Rate limiting                | ? Implemented |
+| Team fees                    | ? Implemented |
 
 ### Fees (All to Team Treasury)
 
-| Action | Fee |
-|--------|-----|
-| Create TIN | 0.01 SOL |
+| Action        | Fee       |
+| ------------- | --------- |
+| Create TIN    | 0.01 SOL  |
 | Rotate wallet | 0.005 SOL |
-| Add recovery | 0.002 SOL |
+| Add recovery  | 0.002 SOL |
 
 ---
 
@@ -123,11 +123,11 @@ If settlement creates an unrecoverable recipient token account, that cost belong
 
 The current TSN default split prioritizes LPs while keeping operators and protocol operations funded.
 
-| Recipient | Share | Purpose |
-| --- | ---: | --- |
-| Liquidity providers | 87% | Rewards vault capital that makes settlement possible |
-| TSN protocol treasury | 8% | Supports protocol development, audits, operations, and security reserves |
-| Cranker/operator | 5% | Covers uptime, intent monitoring, execution, proof submission, and operational cost |
+| Recipient             | Share | Purpose                                                                             |
+| --------------------- | ----: | ----------------------------------------------------------------------------------- |
+| Liquidity providers   |   87% | Rewards vault capital that makes settlement possible                                |
+| TSN protocol treasury |    8% | Supports protocol development, audits, operations, and security reserves            |
+| Cranker/operator      |    5% | Covers uptime, intent monitoring, execution, proof submission, and operational cost |
 
 This split applies to modeled TSN settlement-fee revenue. The frontend yield calculator separates gross settlement fee revenue from LP-facing APY so depositors can see what they actually earn.
 
@@ -209,21 +209,21 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 
 ## Security Model
 
-| Guarantee | How it works |
-| --- | --- |
-| Noncustodial escrow | Funds lock into Solana escrow accounts governed by program rules |
-| Per-payment isolation | Each payment has its own payment PDA and escrow vault |
-| Address-poisoning resistance | Sender pays an identity, not a pasted wallet address |
-| Sender privacy | Recipient does not need the sender wallet |
-| Recipient privacy | Sender does not need the recipient wallet |
-| Cranker exclusivity | One Cranker holds an execution lease for a payment at a time |
-| Proof-based reimbursement | Cranker recovery depends on valid proof submission |
-| LP accounting | Liquidity positions track funded vault capital |
-| Operational funding checks | Verifier SOL balance is checked before send transaction preparation |
-| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain |
-| Verifier-funded account setup | Verifier PDA funds payment-intent account setup |
-| Gas-neutral Cranker execution | Verifier PDA reimburses Cranker gas without adding a profit premium |
-| 1:1 Cranker claim credit | Crankers earn claim eligibility instead of execution tips |
+| Guarantee                            | How it works                                                        |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| Noncustodial escrow                  | Funds lock into Solana escrow accounts governed by program rules    |
+| Per-payment isolation                | Each payment has its own payment PDA and escrow vault               |
+| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                |
+| Sender privacy                       | Recipient does not need the sender wallet                           |
+| Recipient privacy                    | Sender does not need the recipient wallet                           |
+| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time        |
+| Proof-based reimbursement            | Cranker recovery depends on valid proof submission                  |
+| LP accounting                        | Liquidity positions track funded vault capital                      |
+| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation |
+| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain    |
+| Verifier-funded account setup        | Verifier PDA funds payment-intent account setup                     |
+| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium |
+| 1:1 Cranker claim credit             | Crankers earn claim eligibility instead of execution tips           |
 
 ---
 
@@ -270,32 +270,36 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 
 ### Milestone 1 - StableHacks 2026
 
-Programmable stablecoin payment path with escrow-first UX and identity routing.
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) - Organised by [Tenity](https://dorahacks.io/org/14594/hackathon) - **Track:** Programmable Stablecoin Payments
+
+Proved the end-to-end product path: phone-verified identity, escrow-backed payments, gasless UX design, and hardened escrow architecture.
 
 ### Milestone 2 - The Bags Hackathon
 
-Extended identity-first flow to approved SPL asset payment routes.
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) - **Track:** Payments
+
+Extended the TrustLink payment model toward approved SPL asset transfers through identity-first routing. This supports the broader direction of sending more than one stablecoin type as the allowlist expands.
 
 ### Milestone 3 - TINS Protocol
 
-Production-ready transfer identity infrastructure for on-chain transfer identity routing.
+Active development. Moves identity routing from TrustLink's backend to a permanent on-chain registry.
+
+[TINS Overview](tins-registrar/README.md)
 
 ### Milestone 4 - TSN Settlement Network
 
-Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
-
----
+## Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
 
 ## Repository Structure
 
-| Path | Purpose |
-| --- | --- |
-| `frontend` | Next.js dApp and user flow UI |
-| `backend` | API, orchestration, and service logic |
-| `tsn/protocol` | Anchor program workspace |
-| `tsn` | TSN modules, scripts, and SDK packages |
-| `tins-registrar` | TINS on-chain identity protocol |
-| `docs` | Architecture and operational docs |
+| Path             | Purpose                                |
+| ---------------- | -------------------------------------- |
+| `frontend`       | Next.js dApp and user flow UI          |
+| `backend`        | API, orchestration, and service logic  |
+| `tsn/protocol`   | Anchor program workspace               |
+| `tsn`            | TSN modules, scripts, and SDK packages |
+| `tins-registrar` | TINS on-chain identity protocol        |
+| `docs`           | Architecture and operational docs      |
 
 ## Quick Start
 

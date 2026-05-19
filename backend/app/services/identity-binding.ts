@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
 import { findUserById, updateUserPublicKeyMaterial } from "@/app/db/users";
-import { markPaymentsReceiverOnboarded } from "@/app/db/payments";
+// import { markPaymentsReceiverOnboarded } from "@/app/db/payments";
 import {
   confirmIdentityBindingState,
   getIdentityBindingState,
@@ -12,7 +12,7 @@ import {
 } from "@/app/blockchain/solana";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import { hashBindingSignaturePayload } from "@/app/lib/privacy-keys";
-import { AutoclaimEngine } from "@/app/services/payments/autoclaim-engine";
+// import { AutoclaimEngine } from "@/app/services/payments/autoclaim-engine";
 
 export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
   const user = await findUserById(authUser.id);
@@ -98,11 +98,11 @@ export async function prepareIdentityKeyRegistrationForUser(
       recoveryWalletPublicKey: existingBinding.recoveryWallet,
       bindingSignature,
     });
-    await markPaymentsReceiverOnboarded({
+    // await markPaymentsReceiverOnboarded({
       receiverPhone: authUser.phoneNumber,
       receiverWallet: existingBinding.settlementWallet,
     });
-    await AutoclaimEngine.triggerReceiverOnboarded({
+    // await AutoclaimEngine.triggerReceiverOnboarded({
       receiverPhone: authUser.phoneNumber,
       triggerSource: "receiver.onboarded",
     });
@@ -201,11 +201,11 @@ export async function confirmIdentityKeyRegistrationForUser(
     bindingSignature,
   });
 
-  await markPaymentsReceiverOnboarded({
+  // await markPaymentsReceiverOnboarded({
     receiverPhone: authUser.phoneNumber,
     receiverWallet: settlementWalletPublicKey,
   });
-  await AutoclaimEngine.triggerReceiverOnboarded({
+  // await AutoclaimEngine.triggerReceiverOnboarded({
     receiverPhone: authUser.phoneNumber,
     triggerSource: "receiver.onboarded",
   });

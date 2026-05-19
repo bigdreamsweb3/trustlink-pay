@@ -19,25 +19,12 @@ export {
 } from "@/app/blockchain/solana-core";
 
 export type {
-  BlockchainExecutionMode,
   ClaimFeeEstimate,
   SenderTransferFeeEstimate,
   SupportedWalletToken,
 } from "@/app/blockchain/solana-core";
 
-// From solana-payments
-export {
-  confirmEscrowPayment,
-  estimateClaimFee,
-  estimateSenderTransferCost,
-  listSupportedWalletTokens,
-  markPaymentExpiredOnChain,
-  prepareExpiredRefundClaim,
-  prepareEscrowClaim,
-  prepareEscrowPayment,
-} from "@/app/blockchain/solana-payments";
-
-// From TSN
+// From TSN - TSN handles all payment operations now
 export {
   getTsnCrankerPda,
   getTsnCrankerVaultAuthorityPda,

@@ -2,15 +2,21 @@ import { findPaymentById } from "@/app/db/payments";
 import { findUserById } from "@/app/db/users";
 import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-events";
 import {
-  buildInviteShareData,
-  requiresManualInvite,
   retryPaymentNotificationIfNeeded,
 } from "@/app/services/payments";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
-import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
-import { env } from "@/app/lib/env";
+import type { PaymentRecord, PaymentViewerRole } from "@/app/types/payment";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
+
+// Placeholder - TSN handles invites now
+async function requiresManualInvite(phone: string) {
+  return false;
+}
+
+// Placeholder - no invite system yet (TSN handles this)
+function buildInviteShareData(payment: any, appBaseUrl: string | null) {
+  return null;
+}
 
 function getViewerRole(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentViewerRole | null {
   if (payment.sender_user_id === authUser.id) {

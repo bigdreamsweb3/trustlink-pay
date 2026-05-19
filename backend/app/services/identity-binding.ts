@@ -194,14 +194,7 @@ export async function confirmIdentityKeyRegistrationForUser(
     bindingSignature,
   });
 
-  // [DEPRECATED] await markPaymentsReceiverOnboarded({
-    receiverPhone: authUser.phoneNumber,
-    receiverWallet: settlementWalletPublicKey,
-  });
-  // [TSN] await AutoclaimEngine.triggerReceiverOnboarded({
-    receiverPhone: authUser.phoneNumber,
-    triggerSource: "receiver.onboarded",
-  });
+  // DEPRECATED - moved to TSN
 
   return {
     phoneIdentityPublicKey: updated.phone_identity_pubkey,

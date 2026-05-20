@@ -209,7 +209,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     <main className="tl-grid-overlay relative flex min-h-[100dvh] flex-col items-center justify-between overflow-hidden"
       style={{ background: "var(--bg)" }}
     >
-      <div className="w-full max-w-[440px] px-5 pt-5">
+      <div className="w-full px-5 pt-5">
         <button
           type="button"
           onClick={handleBackToTrustLink}

@@ -1,16 +1,17 @@
-import { resolve } from 'path';
+import { resolve } from "path";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typedRoutes: true,
-  transpilePackages: ['trustlink-whatsapp-sdk'],
+  transpilePackages: ["trustlink-whatsapp-sdk"],
   outputFileTracingRoot: resolve(),
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
     return {
       beforeFiles: [
         {
-          source: '/backend/:path*',
+          source: "/backend/:path*",
           destination: `${backendUrl}/api/:path*`,
         },
       ],

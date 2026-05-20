@@ -55,7 +55,7 @@ export function SiteHeader() {
             href="/operator-dashboard"
             className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
           >
-            Operator Dashboard
+            Operator
           </Link>
           <Link
             href="/app"
@@ -96,7 +96,7 @@ export function SiteHeader() {
                 onClick={() => setMenuOpen(false)}
                 className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold tracking-[0.14em] sm:inline-flex"
               >
-                Operator Dashboard
+                Operator
               </Link>
               <Link
                 href="/app"

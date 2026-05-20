@@ -138,19 +138,18 @@ export function LandingPage() {
     <main className="app-shell tl-grid-overlay overflow-hidden bg-[var(--bg)] text-[14px] md:text-[15px]">
       <SiteHeader />
 
-      <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">
+      <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-8 pb-10 pt-2 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative z-10">
-          <div className="tl-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.18em]">
-            <Network className="h-3.5 w-3.5 text-accent" />
+          <div className="tl-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]">
+            <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>
-          <h1 className="mt-5 max-w-[760px] text-[clamp(1.92rem,4.2vw,3rem)] font-display font-black leading-[1.1] tracking-[-0.025em] text-white">
-            Private blockchain <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-deep">payments as familiar as mobile money.</span>
+          <h1 className="mt-5 max-w-[760px] text-[clamp(1.92rem,4.2vw,2.65rem)] font-black leading-[1.14] tracking-[-0.02em] text-[var(--text)]">
+            Private blockchain payments as familiar as mobile money.
           </h1>
-          <p className="mt-5 pr-3 max-w-[680px] text-[0.92rem] leading-7 text-slate-400 md:text-[0.96rem]">
+          <p className="mt-5 pr-3 max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
             Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day because they solved identity-first payments. TrustLink Pay brings that same familiar identity layer to Solana stablecoins, while TSN routes settlement through temporary escrow and private claim flows instead of direct wallet-to-wallet transfers.
           </p>
-
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="#how-it-works" className="tl-button-primary inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-bold">
               See how it works <ArrowRight className="h-4 w-4" />
@@ -162,34 +161,10 @@ export function LandingPage() {
               Open TSN Mempool
             </a>
           </div>
-          {/* <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#how-it-works"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="tl-button-primary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold"
-            >
-              See how it works <ArrowRight className="h-4 w-4 text-black" />
-            </a>
-            <button
-              onClick={() => handleViewChange("dapp")}
-              className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold focus:outline-none cursor-pointer"
-            >
-              Open Dapp
-            </button>
-            <button
-              onClick={() => handleViewChange("mempool")}
-              className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold focus:outline-none cursor-pointer text-accent border-cyan-500/10"
-            >
-              Open TSN Mempool
-            </button>
-          </div> */}
         </div>
 
-        <div className="relative z-10 grid gap-3 w-full">
-          <div className="tl-panel p-4 md:p-5 bg-[var(--field)] border border-[var(--field-border)]">
+        <div className="relative z-10 grid gap-3">
+          <div className="tl-panel p-4 md:p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="tl-meta-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">Payment intent</p>
@@ -212,7 +187,6 @@ export function LandingPage() {
           </div>
         </div>
       </section>
-
 
       <section id="tsn-privacy" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
         <SectionLabel index="01" title="TSN privacy" />

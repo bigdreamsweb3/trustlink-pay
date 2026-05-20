@@ -309,7 +309,7 @@ export function SendExperience() {
                   { label: "Reference", value: sendSuccess.referenceCode },
                   { label: "Status", value: sendSuccess.status, capitalize: true },
                 ].map((row) => (
-                  <div key={row.label} className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
                     <span className={`text-[0.82rem] font-medium text-[var(--text)] ${row.capitalize ? "capitalize" : ""}`}>{row.value}</span>
                   </div>
@@ -319,32 +319,32 @@ export function SendExperience() {
               {/* Right: Delivery details */}
               <div className="space-y-2">
                 {!sendSuccess.manualInviteRequired ? (
-                  <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">WhatsApp receipt</span>
                     <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
                   </div>
                 ) : (
-                  <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Sender invite</span>
                     <span className="text-[0.82rem] font-medium text-[var(--text)]">Share manually</span>
                   </div>
                 )}
 
                 {sendSuccess.notificationRetrying ? (
-                  <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Delivery retries</span>
                     <span className="text-[0.82rem] font-medium text-[var(--text)]">{sendSuccess.notificationAttemptCount}</span>
                   </div>
                 ) : null}
 
                 {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
-                  <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Receipt updated</span>
                     <span className="text-[0.82rem] font-medium text-[var(--text)]">{formatReceiptTime(receiptTimestamp)}</span>
                   </div>
                 ) : null}
 
-                <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">{sendSuccess.blockchainMode === "mock" ? "Mock ref" : "Deposit tx"}</span>
                   <span className="text-[0.82rem] font-medium text-[var(--text)]">{shortenAddress(sendSuccess.blockchainSignature)}</span>
                 </div>
@@ -358,7 +358,7 @@ export function SendExperience() {
             </div>
 
             {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
-              <div className="tl-panel-header tl-field rounded-[22px] px-5 py-4">
+              <div className="tl-panel tl-field rounded-[22px] px-5 py-4">
                 <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Shareable invite</div>
                 <pre className="mt-3 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-[var(--text-soft)]">{sendSuccess.inviteShare.inviteMessage}</pre>
                 <button
@@ -425,7 +425,7 @@ export function SendExperience() {
 
 
                 {/* Amount + Token row */}
-                <div className="flex items-stretch rounded-[22px] tl-panel-header tl-field overflow-hidden transition-all focus-within:border-[var(--accent-deep)]/30">
+                <div className="flex items-stretch rounded-[22px] tl-panel tl-field overflow-hidden transition-all focus-within:border-[var(--accent-deep)]/30">
                   <div className="flex flex-1 flex-col px-4 py-3.5">
                     <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Amount</span>
                     <input
@@ -470,7 +470,7 @@ export function SendExperience() {
 
                 {/* Recipient preview card */}
                 {phoneVerificationDetails ? (
-                  <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
+                  <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
                     <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)] mb-3">Recipient</div>
                     <div className="flex items-center gap-3">
                       {phoneVerificationDetails.profilePic ? (
@@ -520,13 +520,13 @@ export function SendExperience() {
                     ) : null}
                   </div>
                 ) : previewBusy ? (
-                  <div className="tl-panel-header tl-field rounded-[22px] px-4 py-6">
+                  <div className="tl-panel tl-field rounded-[22px] px-4 py-6">
                     <SectionLoader label="Verifying recipient..." />
                   </div>
                 ) : null}
 
                 {/* How it works */}
-                <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
+                <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
                   <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)] mb-3">How it works</div>
                   <div className="space-y-2.5">
                     {[
@@ -546,7 +546,7 @@ export function SendExperience() {
 
                 {/* Selected token info */}
                 {selectedToken ? (
-                  <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
+                  <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
                     <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)] mb-2">Sending with</div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
@@ -579,13 +579,13 @@ export function SendExperience() {
             </div>
             <div className="space-y-2.5">
               {tokenBusy ? (
-                <div className="tl-panel-header tl-field rounded-[18px] px-4 py-5"><SectionLoader size="md" label="Loading tokens..." /></div>
+                <div className="tl-panel tl-field rounded-[18px] px-4 py-5"><SectionLoader size="md" label="Loading tokens..." /></div>
               ) : sendableTokens.map((token) => {
                 const active = token.mintAddress === form.token;
                 return (
                   <button key={token.mintAddress} type="button"
                     onClick={() => { setForm((c) => ({ ...c, token: token.mintAddress })); setSendCostEstimate(null); setTokenPickerOpen(false); }}
-                    className={`tl-panel-header tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
+                    className={`tl-panel tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
                   >
                     <span className="flex items-center gap-3">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.9rem]">{token.logo}</span>
@@ -616,7 +616,7 @@ export function SendExperience() {
             </div>
 
             <div className="space-y-2.5">
-              <div className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
+              <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
                 <div className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-soft)]">Sending to</div>
                 <div className="mt-1.5 text-[0.92rem] font-semibold text-[var(--text)]">
                   {recipientPreview.recipient.displayName}
@@ -627,33 +627,32 @@ export function SendExperience() {
                 ) : null}
               </div>
 
-              <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
+              <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
                 <span className="text-[0.84rem] font-medium text-[var(--text)]">{form.amount} {selectedToken.symbol}</span>
                 <span className="text-[0.78rem] text-[var(--text-soft)]">{form.receiverPhone}</span>
               </div>
 
               {sendCostEstimate ? (
                 <>
-                  <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Sender fee</span>
                     <span className="text-[0.82rem] font-medium text-[var(--text)]">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="tl-panel-header tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Network: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
-                    <div className="tl-panel-header tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Total: {sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
+                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Network: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
+                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Total: {sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
                   </div>
                   {sendCostEstimate.senderFeeAmountUsd != null ? (
                     <div className="text-[0.72rem] text-[var(--text-soft)]">\u2248 ${sendCostEstimate.senderFeeAmountUsd.toFixed(4)} fee at current price.</div>
                   ) : null}
                   {sendCostEstimate.settlementAssessment ? (
                     <div
-                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${
-                        sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
-                          ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
-                          : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
-                            ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
-                            : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
-                      }`}
+                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
+                        ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
+                        : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
+                          ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
+                          : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
+                        }`}
                     >
                       {sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
                         ? "✅ Likely claimable"

@@ -43,6 +43,7 @@ impl PrintProgramError for Error {
             Error::EscrowAlreadyClaimed => msg!("Error: escrow already claimed"),
             Error::UnauthorizedClaimant => msg!("Error: unauthorized claimant"),
             Error::InvalidAccountOwner => msg!("Error: invalid account owner"),
+            Error::SignatureVerificationFailed => msg!("Error: signature verification failed"),
         }
     }
 }

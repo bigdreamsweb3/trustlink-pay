@@ -53,13 +53,13 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/operator-dashboard"
-            className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
+            className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
           >
             Operator
           </Link>
           <Link
             href="/app"
-            className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold tracking-normal transition"
+            className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-normal transition"
           >
             Open Dapp
           </Link>
@@ -94,14 +94,14 @@ export function SiteHeader() {
               <Link
                 href="/operator-dashboard"
                 onClick={() => setMenuOpen(false)}
-                className="tsn-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold tracking-[0.14em] sm:inline-flex"
+                className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
               >
                 Operator
               </Link>
               <Link
                 href="/app"
                 onClick={() => setMenuOpen(false)}
-                className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold"
+                className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold uppercase"
               >
                 Open Dapp
               </Link>

@@ -16,7 +16,7 @@
     "test:whatsapp-number": "tsx scripts/test-whatsapp-number.ts",
     "test:recipient-lookup": "tsx scripts/test-recipient-lookup.ts",
     "test:payment-flow": "tsx scripts/test-payment-flow.ts",
-    "test:tins:phase1": "tsx scripts/test-tins-phase1.ts",
+    "test:tins:unb": "tsx scripts/test-tins-unbreakable.ts",
     "tsn:setup": "npm --prefix ../tsn run setup --",
     "tsn:cranker": "npm --prefix ../tsn run cranker --",
     "ngrok:https": "npx ngrok http 3000"

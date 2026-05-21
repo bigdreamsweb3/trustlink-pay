@@ -1,6 +1,6 @@
 use crate::instruction_auto::{
     ClaimEscrowParams, CreateEscrowParams, InitializeIdentityParams, InitializeProgramParams,
-    ProgramInstruction,
+    CreateTinParams, ResolveTinParams, ProgramInstruction,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -13,6 +13,8 @@ pub mod claim_escrow;
 pub mod create_escrow;
 pub mod init_program;
 pub mod initialize_identity;
+pub mod create_tin;
+pub mod resolve_tin;
 
 pub struct Processor;
 
@@ -54,6 +56,18 @@ impl Processor {
                 let params = ClaimEscrowParams::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 claim_escrow::process(program_id, accounts, params)
+            }
+            ProgramInstruction::CreateTin => {
+                msg!("Instruction: CreateTin");
+                let params = CreateTinParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_tin::process(program_id, accounts, params)
+            }
+            ProgramInstruction::ResolveTin => {
+                msg!("Instruction: ResolveTin");
+                let params = ResolveTinParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                resolve_tin::process(program_id, accounts, params)
             }
         }
     }

@@ -228,56 +228,62 @@ export function TxProcessAnimator() {
         })}
       </div>
 
-      {/* Dynamic Summary/Handoff Banner */}
-      <AnimatePresence mode="wait">
-        {isCompleted ? (
-          <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -2, scale: 0.98 }}
-            className="rounded-[10px] border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-emerald-900/10 p-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.08)] select-none shrink-0"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-emerald-500/20 border border-emerald-500/30 shrink-0">
-                <Zap className="h-3 w-3 text-accent fill-accent/30" />
+      {/* Dynamic Summary/Handoff Banner with stable height to prevent layout shifts */}
+      <div className="h-12 relative w-full shrink-0 mt-1">
+        <AnimatePresence>
+          {isCompleted ? (
+            <motion.div
+              key="completed"
+              initial={{ opacity: 0, y: 6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-[10px] border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-emerald-900/10 p-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.08)] select-none"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-emerald-500/20 border border-emerald-500/30 shrink-0">
+                  <Zap className="h-3 w-3 text-accent fill-accent/30" />
+                </div>
+                <div>
+                  <span className="block text-[0.58rem] font-mono text-accent uppercase font-black tracking-widest leading-none">
+                    Settlement Verified
+                  </span>
+                  <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none">
+                    Epoch records verified perfectly on Solana
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="block text-[0.58rem] font-mono text-accent uppercase font-black tracking-widest leading-none">
-                  Settlement Verified
+              <div className="text-right shrink-0">
+                <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
+                  Total Time
                 </span>
-                <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none">
-                  Epoch records verified perfectly on Solana
+                <strong className="block text-[0.85rem] font-display font-black text-accent mt-0.5 whitespace-nowrap">
+                  {elapsed.toFixed(2)}s
+                </strong>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="active"
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-[10px] border border-white/5 bg-[#111114]/10 p-2 flex items-center justify-between text-slate-400 select-none"
+            >
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-3 w-3 text-primary-accent animate-spin shrink-0" />
+                <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400">
+                  Active Protocol Pipeline: <span className="text-primary-accent font-bold">{steps[currentStepIndex].statusText}</span>
                 </span>
               </div>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
-                Total Time
+              <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest animate-pulse shrink-0">
+                Active
               </span>
-              <strong className="block text-[0.85rem] font-display font-black text-accent mt-0.5 whitespace-nowrap">
-                {elapsed.toFixed(2)}s
-              </strong>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 2 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="rounded-[10px] border border-white/5 bg-[#111114]/10 p-2 flex items-center justify-between text-slate-400 select-none shrink-0"
-          >
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 text-primary-accent animate-spin shrink-0" />
-              <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400">
-                Active Protocol Pipeline: <span className="text-primary-accent font-bold">{steps[currentStepIndex].statusText}</span>
-              </span>
-            </div>
-            <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest animate-pulse shrink-0">
-              Active
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -402,9 +402,9 @@ export function SendExperience() {
                     </button>
                   ) : null}
                   <PhoneNumberInput
-                    label="Receiver WhatsApp number"
+                    label="Recipient Identity (WA Phone / 10-Digit TIN)"
                     value={receiverPhoneInput}
-                    placeholder="Enter phone number"
+                    placeholder="Enter WA Phone or 10-Digit TIN"
                     verificationState={phoneVerificationState}
                     verificationLabel={phoneVerificationLabel}
                     verificationDetails={phoneVerificationDetails}

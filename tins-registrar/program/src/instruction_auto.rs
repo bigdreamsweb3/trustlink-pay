@@ -12,6 +12,8 @@ pub enum ProgramInstruction {
     InitializeIdentity = 1,
     CreateEscrow = 2,
     ClaimEscrow = 3,
+    CreateTin = 4,
+    ResolveTin = 5,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -32,6 +34,18 @@ pub struct CreateEscrowParams {
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct ClaimEscrowParams {}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct CreateTinParams {
+    pub display_name: String,
+    pub encrypted_phone: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct ResolveTinParams {
+    pub wallet_pubkey: Pubkey,
+    pub challenge_nonce: [u8; 32],
+}
 
 fn encode<T: BorshSerialize>(tag: ProgramInstruction, params: &T) -> Vec<u8> {
     let mut data = vec![tag as u8];
@@ -115,5 +129,40 @@ pub fn claim_escrow(
             AccountMeta::new_readonly(system_program::id(), false),
         ],
         data: encode(ProgramInstruction::ClaimEscrow, &ClaimEscrowParams {}),
+    }
+}
+
+pub fn create_tin(
+    program_id: Pubkey,
+    payer: Pubkey,
+    global_state: Pubkey,
+    identity: Pubkey,
+    params: CreateTinParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(payer, true),
+            AccountMeta::new(global_state, false),
+            AccountMeta::new(identity, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+        ],
+        data: encode(ProgramInstruction::CreateTin, &params),
+    }
+}
+
+pub fn resolve_tin(
+    program_id: Pubkey,
+    identity: Pubkey,
+    instructions_sysvar: Pubkey,
+    params: ResolveTinParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new_readonly(identity, false),
+            AccountMeta::new_readonly(instructions_sysvar, false),
+        ],
+        data: encode(ProgramInstruction::ResolveTin, &params),
     }
 }

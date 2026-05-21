@@ -47,6 +47,21 @@
   font-weight: 600;
 }
 
+.tsn-button-transparent {
+  color: #ff7a18;
+  background-image:
+    radial-gradient(circle at top, rgba(219, 154, 93, 0), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(255, 122, 24, 0.04) 0%,
+      rgba(255, 120, 24, 0) 100%
+    );
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  line-height: calc(1.25 / 0.875);
+  font-weight: 600;
+}
+
 .tsn-button-strong {
   background: #ff7a18;
   color: #120703;

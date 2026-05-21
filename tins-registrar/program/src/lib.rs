@@ -18,6 +18,13 @@ pub mod seeds {
     pub const REGISTRY: &[u8] = b"registry";
     pub const ESCROW: &[u8] = b"escrow";
     pub const VAULT: &[u8] = b"vault";
+    pub const IDENTITY: &[u8] = b"identity";
+}
+
+pub const PROGRAM_SALT: &[u8] = b"TINS_SALT_2026";
+
+pub fn identity_pda(program_id: &Pubkey, identity_seed: &[u8; 32]) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[seeds::IDENTITY, identity_seed], program_id)
 }
 
 pub fn registry_pda(program_id: &Pubkey, tin: u64) -> (Pubkey, u8) {

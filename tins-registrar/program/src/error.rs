@@ -30,6 +30,8 @@ pub enum Error {
     UnauthorizedClaimant,
     #[error("Account is not owned by this program")]
     InvalidAccountOwner,
+    #[error("Signature verification failed")]
+    SignatureVerificationFailed,
 }
 
 impl From<Error> for ProgramError {

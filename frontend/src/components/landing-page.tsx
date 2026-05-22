@@ -140,25 +140,25 @@ export function LandingPage() {
 
       <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">
         <div className="relative z-10">
-          <div className="tl-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.18em]">
-            <Network className="h-3.5 w-3.5 text-accent" />
+          <div className="tl-badge">
+            <Network className="h-3.5 w-3.5" />
             Transfer Settlement Network · Solana
           </div>
-          <h1 className="mt-5 max-w-[760px] text-[clamp(1.92rem,4.2vw,3rem)] font-display font-black leading-[1.1] tracking-[-0.025em] text-white">
+          <h1 className="tl-display mt-5 max-w-[760px]">
             Private blockchain <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-deep">payments as familiar as mobile money.</span>
           </h1>
-          <p className="mt-5 pr-3 max-w-[680px] text-[0.92rem] leading-7 text-slate-400 md:text-[0.96rem]">
+          <p className="tl-body-lg mt-5 pr-3 max-w-[680px]">
             Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day because they solved identity-first payments. TrustLink Pay brings that same familiar identity layer to Solana stablecoins, while TSN routes settlement through temporary escrow and private claim flows instead of direct wallet-to-wallet transfers.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="#how-it-works" className="tl-button-primary inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-bold">
+            <Link href="#how-it-works" className="tl-button-primary tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5">
               See how it works <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/app" className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-bold">
+            <Link href="/app" className="tl-button-secondary tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5">
               Open Dapp
             </Link>
-            <a href={mempoolExplorerUrl} className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-bold">
+            <a href={mempoolExplorerUrl} className="tl-button-secondary tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5">
               Open TSN Mempool
             </a>
           </div>
@@ -243,11 +243,11 @@ export function LandingPage() {
           {flowSteps.map((step, index) => (
             <article key={step.title} className="tl-panel p-5">
               <div className="flex items-center justify-between">
-                <span className="tl-meta-label text-xs text-[var(--text-faint)]">{String(index + 1).padStart(2, "0")}</span>
-                <step.icon className="h-5 w-5 text-[var(--accent)]" />
+                <span className="tl-meta-label text-xs">{String(index + 1).padStart(2, "0")}</span>
+                <step.icon className="h-5 w-5 text-accent" />
               </div>
-              <h3 className="mt-5 text-[1.06rem] font-black tracking-normal text-[var(--text)]">{step.title}</h3>
-              <p className="mt-3 text-[0.86rem] leading-7 text-[var(--text-soft)]">{step.body}</p>
+              <h3 className="tl-h3 mt-5">{step.title}</h3>
+              <p className="tl-body-sm mt-3">{step.body}</p>
             </article>
           ))}
         </div>
@@ -256,19 +256,19 @@ export function LandingPage() {
       <section id="fee-model" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <SectionLabel index="03" title="Current fee model" />
-          <h2 className="mt-4 text-[clamp(1.58rem,3.4vw,2rem)] font-black leading-[1.16] tracking-[-0.015em] text-[var(--text)]">
+          <h2 className="tl-h2 mt-4">
             Show the real fee, not account rent dressed up as network cost.
           </h2>
-          <p className="mt-4 pr-3 max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
+          <p className="tl-body mt-4 pr-3 max-w-[680px]">
             Sender quotes should stay honest: current Solana transaction fee plus TSN settlement fees from active on-chain policy. LP rewards come only from real settlement usage, not idle-capital farming. Claim and sender fees remain inside the settlement economy and are distributed to LPs, operators, and treasury based on protocol policy. Verifier-paid setup for escrow, vault, and recoverable protocol accounts stays an operating cost; unrecoverable recipient account setup belongs on the claim side.
           </p>
         </div>
-        <div className="tl-panel overflow-hidden p-2">
+        <div className="tl-panel p-2">
           {feeRows.map(([label, value, note]) => (
             <div key={label} className="grid gap-2 border-b border-[var(--field-border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_0.55fr_1.25fr]">
-              <span className="text-[0.84rem] font-bold text-[var(--text)]">{label}</span>
-              <strong className="text-[0.84rem] text-[var(--accent)]">{value}</strong>
-              <p className="text-xs leading-5 text-[var(--muted)]">{note}</p>
+              <span className="tl-label">{label}</span>
+              <strong className="tl-label text-accent">{value}</strong>
+              <p className="tl-meta-sm">{note}</p>
             </div>
           ))}
         </div>
@@ -276,7 +276,7 @@ export function LandingPage() {
 
       <section id="lp-yield" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
         <SectionLabel index="04" title="LP settlement APY" />
-        <p className="mt-4 pr-3 max-w-[660px] max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
+        <p className="tl-body mt-4 pr-3 max-w-[680px]">
           TSN LP APY is calculated strictly from real settlement fees generated by network usage. No external lending, farming, or hidden yield strategy is assumed. Settlement liquidity stays dedicated to instant transfer settlement.
         </p>
         <div className="mt-6">
@@ -285,19 +285,19 @@ export function LandingPage() {
       </section>
 
       <section id="cranker" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[1fr_0.9fr]">
-        <div className="">
+        <div>
           <SectionLabel index="05" title="Run a Cranker node" />
-          <h2 className="mt-4 text-[clamp(1.58rem,3.4vw,1.96rem)] font-black leading-[1.16] tracking-[-0.015em] text-[var(--text)]">
+          <h2 className="tl-h2 mt-4">
             Earn for every settlement you execute.
           </h2>
-          <p className="mt-4 pr-3 max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
+          <p className="tl-body mt-4 pr-3 max-w-[680px]">
             Cranker operators secure settlement by doing useful work before they can claim profitable work. A registered Cranker watches TSN Mempool, submits payment intents on-chain, receives same-transaction gas reimbursement, and earns claim credit instead of receiving an immediate profit tip. That credit is required to acquire a claim lease and process settlement.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/operator-dashboard" className="tsn-button-strong inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-black transition">
+            <Link href="/operator-dashboard" className="tsn-button-strong tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5">
               Register as operator <ArrowRight className="h-4 w-4" />
             </Link>
-            <a href={mempoolExplorerUrl} className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-[0.82rem] font-bold">
+            <a href={mempoolExplorerUrl} className="tl-button-secondary tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5">
               View mempool explorer
             </a>
           </div>
@@ -305,8 +305,8 @@ export function LandingPage() {
         <div className="grid gap-3">
           {crankerSteps.map((step, index) => (
             <div key={step} className="tl-field flex items-center gap-3 rounded-[14px] p-4">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-xs font-black text-[var(--accent)]">{index + 1}</span>
-              <span className="text-[0.84rem] font-bold text-[var(--text-soft)]">{step}</span>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] tl-label text-accent">{index + 1}</span>
+              <span className="tl-body-sm font-semibold">{step}</span>
             </div>
           ))}
         </div>
@@ -316,12 +316,12 @@ export function LandingPage() {
         <SectionLabel index="06" title="TSN SDK" />
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {sdkSnippets.map((snippet) => (
-            <article key={snippet.title} className="tl-panel overflow-hidden">
+            <article key={snippet.title} className="tl-panel">
               <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-3">
-                <Code2 className="h-4 w-4 text-[var(--accent)]" />
-                <h3 className="text-sm font-black text-[var(--text)]">{snippet.title}</h3>
+                <Code2 className="h-4 w-4 text-accent" />
+                <h3 className="tl-label text-accent">{snippet.title}</h3>
               </div>
-              <pre className="overflow-x-auto p-4 text-[0.7rem] leading-6 text-[var(--text-soft)]"><code>{snippet.code}</code></pre>
+              <pre className="tl-code overflow-x-auto p-4"><code>{snippet.code}</code></pre>
             </article>
           ))}
         </div>
@@ -331,9 +331,9 @@ export function LandingPage() {
             ["Other apps call TSN directly", "Once TINS is live, Solana apps can route payments without TrustLink dependency."],
             ["Same program foundation", "TSN connects into the escrow settlement layer while frontend apps stay modular."],
           ].map(([title, body]) => (
-            <div key={title} className="tl-field rounded-[14px] p-4">
-              <h3 className="text-sm font-black text-[var(--text)]">{title}</h3>
-              <p className="mt-2 text-xs leading-6 text-[var(--muted)]">{body}</p>
+            <div key={String(title)} className="tl-field rounded-[14px] p-4">
+              <h3 className="tl-h3">{String(title)}</h3>
+              <p className="tl-meta-sm mt-2">{String(body)}</p>
             </div>
           ))}
         </div>
@@ -342,10 +342,10 @@ export function LandingPage() {
       <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <SectionLabel index="07" title="TINS" />
-          <h2 className="mt-4 text-[clamp(1.58rem,3.4vw,1.96rem)] font-black leading-[1.16] tracking-[-0.015em] text-[var(--text)]">
+          <h2 className="tl-h2 mt-4">
             Transfer Identity Number System.
           </h2>
-          <p className="mt-4 pr-3 max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
+          <p className="tl-body mt-4 pr-3 max-w-[680px]">
             Every user will own a permanent 10-digit Transfer Identity Number as a Solana PDA. Phone numbers, social identities, and business identities can resolve to the same payment identity without exposing raw private data on-chain.
           </p>
         </div>
@@ -356,9 +356,9 @@ export function LandingPage() {
             [Gauge, "Open infrastructure", "Developers resolve a TIN, create an intent, and route funds through TSN."],
           ].map(([Icon, title, body]) => (
             <article key={String(title)} className="tl-panel p-5">
-              <Icon className="h-5 w-5 text-[var(--accent)]" />
-              <h3 className="mt-4 text-lg font-black tracking-normal text-[var(--text)]">{String(title)}</h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">{String(body)}</p>
+              <Icon className="h-5 w-5 text-accent" />
+              <h3 className="tl-h3 mt-4">{String(title)}</h3>
+              <p className="tl-body-sm mt-3">{String(body)}</p>
             </article>
           ))}
         </div>

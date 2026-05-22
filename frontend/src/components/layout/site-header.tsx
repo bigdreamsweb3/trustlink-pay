@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
@@ -15,12 +15,17 @@ const navItems = [
   { label: "TINS", href: "/#tins" },
 ] as const;
 
+
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+
+  useEffect(() => { function h() { setHeaderScrolled(window.scrollY > 8); } h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []);
+
 
   return (
-    <header className="items-center bg-bg-elevated backdrop-blur-lg fixed inset-x-0 top-0 z-40">
-      <div className="mx-auto flex min-h-16  w-full max-w-[1180px] items-center justify-between gap-3 px-4 md:px-6">
+    <header className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-bg/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}>
+      <div className="mx-auto flex max-h-fit md:min-h-16  w-full max-w-[1180px] items-center justify-between gap-3 py-2.5 px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
             <TrustLinkMark compact />

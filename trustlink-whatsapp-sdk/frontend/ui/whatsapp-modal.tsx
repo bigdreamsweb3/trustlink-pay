@@ -14,43 +14,8 @@ function WhatsAppIcon({ className = "" }: { className?: string }) {
   );
 }
 
-function ManualRow({
-  label,
-  value,
-  onCopy,
-  copied = false,
-}: {
-  label: string;
-  value: string;
-  onCopy: () => void;
-  copied?: boolean;
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-3">
-      <div className="min-w-0">
-        <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--text-faint)" }}>
-          {label}
-        </div>
-        <div className="break-words text-[0.82rem] font-bold leading-snug md:text-[0.9rem]" style={{ color: "var(--text)" }}>
-          {value}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onCopy}
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] transition active:scale-[0.94]"
-        style={{
-          background: copied ? "var(--accent-soft)" : "var(--surface-soft)",
-          border: copied ? "1px solid var(--accent-border)" : "1px solid var(--field-border)",
-          color: copied ? "var(--accent)" : "var(--text-soft)",
-        }}
-        aria-label={`Copy ${label.toLowerCase()}`}
-      >
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      </button>
-    </div>
-  );
-}
+
+
 
 interface WhatsAppModalProps {
   sessionCode: string;
@@ -254,20 +219,62 @@ export function WhatsAppModal({
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-[300px_1fr] md:items-start">
-              {!isMobile && qrEnabled ? (
-                <div className="hidden flex-col items-center md:flex">
-                  <div
-                    className="rounded-[18px] p-4"
-                    style={{ background: "white", border: "1px solid var(--field-border)" }}
-                  >
-                    <QRCodeDisplay value={qrValue} size={Math.min(qrSize, 242)} logoUrl={qr?.logoUrl} />
+            <div className="grid gap-6 md:grid-cols-2 md:items-start">
+              <div className="space-y-4">
+                {!isMobile && qrEnabled ? (
+                  <div className="hidden flex-col items-center md:flex">
+                    <div
+                      className="rounded-[18px] p-4"
+                      style={{ background: "white", border: "1px solid var(--field-border)" }}
+                    >
+                      <QRCodeDisplay value={qrValue} size={Math.min(qrSize, 242)} logoUrl={qr?.logoUrl} />
+                    </div>
+                    <p className="mt-3 text-center text-[0.72rem] font-semibold" style={{ color: "var(--text-faint)" }}>
+                      Scan to open WhatsApp
+                    </p>
                   </div>
-                  <p className="mt-3 text-center text-[0.72rem] font-semibold" style={{ color: "var(--text-faint)" }}>
-                    Scan to open WhatsApp
-                  </p>
+                ) : null}
+
+
+                {/* Secure Parameter Fields */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-2">
+                      Verification Channel
+                    </div>
+                    <div className="flex items-center justify-between bg-[var(--panel-lighter)] border border-[var(--field-border)] rounded-xl px-4 py-3.5">
+                      <span className="font-mono text-xs md:text-sm font-semibold text-white select-all">
+                        {formattedPhoneNumber}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyText("phone", formattedPhoneNumber)}
+                        className="px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--panel)] border border-[var(--field-border)] text-[var(--text-soft)] hover:text-white transition-colors active:scale-95 cursor-pointer"
+                      >
+                        {copiedField === "phone" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-2">
+                      Cryptographic Session ID Seed
+                    </div>
+                    <div className="flex items-center justify-between bg-[var(--panel-lighter)] border border-[var(--field-border)] rounded-xl px-4 py-3.5">
+                      <span className="font-mono text-xs font-semibold text-white truncate max-w-[220px] select-all">
+                        {authMessage}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyText("message", authMessage)}
+                        className="px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--panel)] border border-[var(--field-border)] text-[var(--text-soft)] hover:text-white transition-colors active:scale-95 shrink-0 cursor-pointer"
+                      >
+                        {copiedField === "message" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : null}
+              </div>
 
               <div className="space-y-4">
                 <div
@@ -331,77 +338,70 @@ export function WhatsAppModal({
                   </motion.div>
                 </div>
 
-                <div
-                  className="rounded-[18px] p-3.5 md:p-4"
-                  style={{ background: "var(--field)", border: "1px solid var(--field-border)" }}
-                >
-                  <ManualRow label="Send to" value={formattedPhoneNumber} copied={copiedField === "phone"} onCopy={() => copyText("phone", formattedPhoneNumber)} />
-                  <div className="my-3 h-px" style={{ background: "var(--field-border)" }} />
-                  <ManualRow label="Message" value={authMessage} copied={copiedField === "message"} onCopy={() => copyText("message", authMessage)} />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {handoffStatus === "waiting" ? (
-                <div className="flex items-center justify-center gap-2.5 rounded-[18px] py-3.5" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: "var(--accent)" }} />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ background: "var(--accent)" }} />
-                  </span>
-                  <span className="text-[0.82rem] font-semibold" style={{ color: "var(--accent)" }}>
-                    Listening for verification...
-                  </span>
-                </div>
-              ) : (
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleOpenWhatsApp}
-                  disabled={handoffStatus === "opening"}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] py-3.5 text-[0.88rem] font-semibold transition-all disabled:opacity-70"
-                  style={{
-                    background: "linear-gradient(135deg, #25D366, #20BA5C)",
-                    color: "#ffffff",
-                    boxShadow: "0 4px 16px rgba(37,211,102,0.20)",
-                  }}
-                >
-                  {handoffStatus === "opening" ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Opening WhatsApp...</span>
-                    </>
-                  ) : handoffStatus === "fallback" ? (
-                    <>
-                      <WhatsAppIcon className="h-[18px] w-[18px]" />
-                      <span>Try Again</span>
-                      <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                    </>
+                <div className="mt-5 space-y-3">
+                  {handoffStatus === "waiting" ? (
+                    <div className="flex items-center justify-center gap-2.5 rounded-[18px] py-3.5" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}>
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ background: "var(--accent)" }} />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ background: "var(--accent)" }} />
+                      </span>
+                      <span className="text-[0.82rem] font-semibold" style={{ color: "var(--accent)" }}>
+                        Listening for verification...
+                      </span>
+                    </div>
                   ) : (
-                    <>
-                      <WhatsAppIcon className="h-[18px] w-[18px]" />
-                      <span>Open WhatsApp</span>
-                      <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                    </>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleOpenWhatsApp}
+                      disabled={handoffStatus === "opening"}
+                      className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] py-3.5 text-[0.88rem] font-semibold transition-all disabled:opacity-70"
+                      style={{
+                        background: "linear-gradient(135deg, #25D366, #20BA5C)",
+                        color: "#ffffff",
+                        boxShadow: "0 4px 16px rgba(37,211,102,0.20)",
+                      }}
+                    >
+                      {handoffStatus === "opening" ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Opening WhatsApp...</span>
+                        </>
+                      ) : handoffStatus === "fallback" ? (
+                        <>
+                          <WhatsAppIcon className="h-[18px] w-[18px]" />
+                          <span>Try Again</span>
+                          <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                        </>
+                      ) : (
+                        <>
+                          <WhatsAppIcon className="h-[18px] w-[18px]" />
+                          <span>Open WhatsApp</span>
+                          <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                        </>
+                      )}
+                    </motion.button>
                   )}
-                </motion.button>
-              )}
 
-              {statusLabel ? (
-                <p className="text-center text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
-                  {statusLabel}
-                </p>
-              ) : null}
+                  {statusLabel ? (
+                    <p className="text-center text-[0.68rem]" style={{ color: "var(--text-faint)" }}>
+                      {statusLabel}
+                    </p>
+                  ) : null}
 
-              <div className="flex items-center justify-center gap-1.5">
-                <Shield className="h-3 w-3" style={{ color: "var(--text-faint)" }} />
-                <span className="text-[0.58rem] font-medium uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-                  End-to-end encrypted session
-                </span>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Shield className="h-3 w-3" style={{ color: "var(--text-faint)" }} />
+                    <span className="text-[0.58rem] font-medium uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
+                      End-to-end encrypted session
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
+
+
           </div>
         </motion.div>
-      </div>
-    </AnimatePresence>
+      </div >
+    </AnimatePresence >
   );
 }

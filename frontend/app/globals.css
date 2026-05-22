@@ -728,7 +728,7 @@ select {
 }
 
 .tl-button-secondary {
-  color: var(--text);
+  color: var(--accent);
   background-image:
     radial-gradient(circle at top, rgba(93, 219, 167, 0.06), transparent 58%),
     linear-gradient(

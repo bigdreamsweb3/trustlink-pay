@@ -10,8 +10,8 @@ TrustLink Pay brings that identity-first experience to Solana payments. Users se
 
 ## Supported by
 
-- **Superteam Agentic Engineering Grant** (200 USDG) — Fueling AI-assisted development of TrustLink Pay.
-
+- **Superteam Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
+  
 ---
 
 ## TSN Privacy Guarantee

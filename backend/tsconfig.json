@@ -19,16 +19,17 @@
         "name": "next"
       }
     ],
-    // "baseUrl": ".",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@trustlink/tsn-sdk": ["../tsn/src"],
+      "@trustlink/tsn-cranker-sdk": ["../tsn/cranker-sdk"],
+      "@trustlink/tins-sdk": ["../tins-sdk/src"],
       "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"],
       "@solana/spl-token": ["./node_modules/@solana/spl-token"],
-      "@solana/web3.js": ["./node_modules/@solana/web3.js"],
-      "@trustlink/tsn-sdk": ["../tsn-sdk/dist"],
-      "@trustlink/tsn-sdk/*": ["../tsn-sdk/dist/*"]
+      "@solana/web3.js": ["./node_modules/@solana/web3.js"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "frontend", "tests", "../tsn-sdk/src", "../tins-sdk", "scripts/test-tins-phase1.ts", "scripts/test-tins-unbreakable.ts"]
+  "exclude": ["node_modules", "frontend", "tests", "scripts/test-tins-*", "../tins-sdk", "../tsn-sdk", "../tsn-cranker-sdk"]
 }

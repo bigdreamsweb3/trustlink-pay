@@ -1052,3 +1052,53 @@ export async function listSupportedWalletTokens(walletAddress: string): Promise<
   // TSN integration pending - return mock data for now
   return [];
 }
+
+// Placeholder for estimateClaimFee - TSN handles this
+export type EstimateClaimFeeParams = {
+  paymentId: string;
+  escrowAccount: string;
+  escrowVaultAddress: string;
+  receiverWallet: string;
+  paymentPhoneIdentityPublicKey: string;
+  bindingPhoneIdentityPublicKey: string;
+  paymentReceiverPublicKey: string;
+  paymentMode: "secure" | "invite";
+  tokenMintAddress: string;
+  amount: number;
+};
+
+export type EstimateSenderCostParams = {
+  paymentId: string;
+  senderWallet: string;
+  phoneIdentityPublicKey: string;
+  paymentReceiverPublicKey: string;
+  paymentMode: "secure" | "invite";
+  amount: number;
+  tokenMintAddress: string;
+  expiryUnixSeconds: number;
+};
+
+export type ClaimFeeEstimateResult = {
+  networkFeeLamports: number;
+  crankerFeeLamports: number;
+  totalLamports: number;
+};
+
+export async function estimateClaimFee(_params: EstimateClaimFeeParams): Promise<ClaimFeeEstimateResult> {
+  // Placeholder - TSN handles fee estimation
+  return {
+    networkFeeLamports: 5000,
+    crankerFeeLamports: 1000,
+    totalLamports: 6000,
+  };
+}
+
+// Re-export estimateClaimFee as estimateSenderTransferCost for compatibility
+export async function estimateSenderTransferCost(_params: EstimateSenderCostParams): Promise<ClaimFeeEstimateResult> {
+  // Placeholder - TSN handles fee estimation
+  return {
+    networkFeeLamports: 5000,
+    crankerFeeLamports: 1000,
+    totalLamports: 6000,
+  };
+}

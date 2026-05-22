@@ -304,7 +304,7 @@ Active development. Moves identity routing from TrustLink's backend to a permane
 
 ### Milestone 4 - TSN Settlement Network
 
-## Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
+Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
 
 ## Repository Structure
 

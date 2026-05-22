@@ -10,7 +10,7 @@ TrustLink Pay brings that identity-first experience to Solana payments. Users se
 
 ## Supported by
 
-- **Superteam Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
+- **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
   
 ---
 

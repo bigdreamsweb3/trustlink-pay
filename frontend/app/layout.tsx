@@ -5,6 +5,7 @@ import { AppProviders } from "@/app/providers";
 import "./globals.css";
 import "./tsn.css"
 import { JetBrains_Mono } from 'next/font/google';
+import { GlobalGridBackground } from "@/src/components/layout/global-grid-bg";
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -116,6 +117,7 @@ export default function RootLayout({
       </head>
 
       <body className={`${jetbrainsMono.variable} font-mono antialiased`}>
+        <GlobalGridBackground />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

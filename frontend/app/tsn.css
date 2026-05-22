@@ -22,11 +22,64 @@
       transparent 30%
     ),
     linear-gradient(180deg, #f7faf8 0%, #f0f4f2 100%);
+
+  --tsn-accent-soft: rgba(74, 190, 208, 0.12);
+
+  --tsn-accent-border: rgba(74, 190, 208, 0.3);
+
+  --tsn-orange-soft: rgba(255, 122, 24, 0.08);
+
+  --tsn-bg: #060809;
+
+  --tsn-panel: #0c1113;
+
+  --tsn-panel-soft: #11181b;
+
+  --tsn-field: #101618;
+
+  --tsn-border: rgba(74, 190, 208, 0.16);
+
+  --tsn-text: #f3fbfd;
+
+  --tsn-muted: rgba(243, 251, 253, 0.62);
+
+  --tsn-faint: rgba(243, 251, 253, 0.36);
+
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      rgba(74, 190, 208, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 88% 100%,
+      rgba(255, 122, 24, 0.05),
+      transparent 28%
+    ),
+    linear-gradient(180deg, #080b0c 0%, var(--tsn-bg) 100%);
+
+  color: var(--tsn-text);
 }
 
 /* Badge */
 
 .tsn-badge {
+  font-family:
+    var(--font-tactical-face), "IBM Plex Mono", "Aptos Mono", "Consolas",
+    monospace;
+  font-size: 0.64rem;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
   border: 1px solid rgba(74, 190, 208, 0.3);
 
   background: linear-gradient(
@@ -199,4 +252,237 @@
   box-shadow:
     0 18px 36px rgba(74, 190, 208, 0.24),
     0 6px 16px rgba(255, 122, 24, 0.1);
+}
+/* Back Link */
+
+.tsn-backLink {
+  border: 1px solid var(--tsn-border);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.08) 0%,
+    rgba(255, 122, 24, 0.03) 100%
+  );
+
+  color: var(--tsn-muted);
+
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.tsn-backLink:hover {
+  border-color: rgba(74, 190, 208, 0.28);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.12) 0%,
+    rgba(255, 122, 24, 0.05) 100%
+  );
+
+  color: var(--tsn-text);
+}
+
+/* Main Panel */
+
+.tsn-panel {
+  border: 1px solid var(--tsn-border);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgba(74, 190, 208, 0.06), transparent 42%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 122, 24, 0.03),
+      transparent 32%
+    ),
+    var(--tsn-panel);
+
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(74, 190, 208, 0.04);
+}
+
+/* Badge */
+
+/* .badge {
+  border: 1px solid var(--tsn-accent-border);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.14) 0%,
+    rgba(255, 122, 24, 0.05) 100%
+  );
+
+  color: var(--tsn-accent);
+} */
+
+/* Typography */
+
+.tsn-title {
+  color: var(--tsn-text);
+}
+
+.tsn-copy {
+  color: var(--tsn-muted);
+}
+
+/* Card */
+
+.tsn-card {
+  border: 1px solid var(--tsn-border);
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(74, 190, 208, 0.08),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 122, 24, 0.03),
+      transparent 34%
+    ),
+    var(--tsn-field);
+
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.tsn-card:hover {
+  border-color: rgba(74, 190, 208, 0.24);
+
+  box-shadow: 0 12px 30px rgba(74, 190, 208, 0.08);
+
+  transform: translateY(-1px);
+}
+
+/* Icon Surface */
+
+.tsn-iconSurface {
+  border: 1px solid var(--tsn-accent-border);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.14) 0%,
+    rgba(255, 122, 24, 0.05) 100%
+  );
+
+  color: var(--tsn-accent);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 14px rgba(74, 190, 208, 0.08);
+}
+
+/* Card Text */
+
+.tsn-cardTitle {
+  color: var(--tsn-text);
+}
+
+.tsn-cardBody {
+  color: var(--tsn-muted);
+}
+
+/* Metric */
+
+.tsn-metric {
+  border-top: 1px solid var(--tsn-border);
+
+  color: var(--tsn-faint);
+}
+
+.tsn-metric strong {
+  color: var(--tsn-accent);
+}
+
+/* =========================
+   TEXT SYSTEM (TSN TYPOGRAPHY)
+   ========================= */
+
+/* Main body text */
+.tsn-text {
+  color: var(--tsn-text);
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
+/* Muted paragraph text */
+.tsn-text-muted {
+  color: var(--tsn-muted);
+  font-family: var(--font-mono);
+}
+
+/* Faint metadata text (timestamps, labels, system info) */
+.tsn-text-faint {
+  color: var(--tsn-faint);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+/* Primary headings */
+.tsn-h1 {
+  color: var(--tsn-text);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Section headings */
+.tsn-h2 {
+  color: var(--tsn-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Sub headings */
+.tsn-h3 {
+  color: var(--tsn-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Label / micro headers (your "Payment intent" style) */
+.tsn-label {
+  color: var(--tsn-faint);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+}
+
+/* Accent text (highlighted system values) */
+.tsn-text-accent {
+  color: var(--tsn-accent);
+  font-weight: 600;
+}
+
+/* Secondary accent (rare use) */
+.tsn-text-secondary {
+  color: var(--tsn-accent-secondary);
+}
+
+/* Code / system readouts */
+.tsn-code {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+  font-size: 0.85rem;
+  color: var(--tsn-text);
+  background: rgba(74, 190, 208, 0.06);
+  border: 1px solid var(--tsn-border);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+
+/* Terminal-style highlight */
+.tsn-terminal {
+  font-family: var(--font-mono);
+  color: var(--tsn-accent);
+  text-shadow: 0 0 10px rgba(74, 190, 208, 0.2);
 }

@@ -120,17 +120,20 @@ export function LandingFeeYieldCalculator() {
         </div>
       </div>
 
-      <div className="tl-panel p-5 md:p-6">
+      <div className="tsn-panel p-5 md:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-[#ff7a18]">Settlement APY Calculator</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-[var(--tsn-text)]">Settlement APY Calculator </p>
+              <span className="tsn-badge text-nowrap">
+                Volume-based
+              </span>
+            </div>
             <h3 className="mt-3 text-2xl font-black tracking-normal text-[var(--text)]">
               Model LP income from real settlement fee activity only.
             </h3>
           </div>
-          <div className="hidden rounded-full border border-[#ff7a18]/30 bg-[#ff7a18]/10 px-3 py-1 text-xs font-black text-[#ff7a18] md:block">
-            Volume-based
-          </div>
+
         </div>
 
         <div className="mt-6 space-y-6">
@@ -239,7 +242,7 @@ export function LandingFeeYieldCalculator() {
           />
         </div>
 
-        <div className="mt-6 grid gap-4 rounded-[18px] border border-[#ff7a18]/30 bg-[#ff7a18]/[0.06] p-4 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 tsn-card p-4 md:grid-cols-2">
           <div>
             <span className="text-[0.7rem] font-black uppercase tracking-[0.18em] text-[var(--text-faint)]">LP expected APY</span>
             <strong className="mt-2 block text-4xl font-black text-[#ff7a18]">{percent(model.lpExpectedApy)}</strong>
@@ -252,7 +255,7 @@ export function LandingFeeYieldCalculator() {
           </div>
         </div>
 
-        <Link href="/operator-dashboard" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#ff7a18] px-5 py-3 text-sm font-black text-[#120703]">
+        <Link href="/operator-dashboard" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[16px] tsn-button-secondary px-5 py-3 text-sm font-black text-[#120703]">
           Deposit as LP <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>

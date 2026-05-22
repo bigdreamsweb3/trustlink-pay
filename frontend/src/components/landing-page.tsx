@@ -135,7 +135,7 @@ export function LandingPage() {
   const mempoolExplorerUrl = process.env.NEXT_PUBLIC_TSN_MEMPOOL_EXPLORER_URL ?? "/tsn-mempool";
 
   return (
-    <main className="app-shell tl-grid-overlay overflow-hidden bg-[var(--bg)] text-[14px] md:text-[15px]">
+    <main className="app-shell overflow-hidden text-[14px] md:text-[15px]">
       <SiteHeader />
 
       <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">

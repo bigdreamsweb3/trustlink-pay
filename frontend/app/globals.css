@@ -57,8 +57,7 @@
   );
   --warning: #c98d0a;
   --danger: #d45050;
-  --shadow:
-    0 1px 3px rgba(15, 26, 20, 0.04), 0 4px 16px rgba(15, 26, 20, 0.03);
+  --shadow: 0 1px 3px rgba(15, 26, 20, 0.04), 0 4px 16px rgba(15, 26, 20, 0.03);
   --overlay: rgba(15, 26, 20, 0.12);
   --phone-shell: #f3f7f5;
   --phone-screen: linear-gradient(180deg, #ffffff 0%, #f6f9f7 100%);
@@ -240,9 +239,21 @@
 }
 
 /* ── BODY TEXT ─── */
-.tl-body-lg { font-size: 1rem; line-height: 1.6; color: var(--text-soft); }
-.tl-body { font-size: 0.9375rem; line-height: 1.55; color: var(--text-soft); }
-.tl-body-sm { font-size: 0.875rem; line-height: 1.5; color: var(--text-soft); }
+.tl-body-lg {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+.tl-body {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+.tl-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
 
 /* ── UI LABELS ─── */
 .tl-label {
@@ -262,12 +273,25 @@
 }
 
 /* ── META/DESCRIPTION ─── */
-.tl-meta { font-size: 0.8125rem; color: var(--text-soft); }
-.tl-meta-sm { font-size: 0.75rem; color: var(--muted); }
+.tl-meta {
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+}
+.tl-meta-sm {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
 
 /* ── BUTTON TEXT ─── */
-.tl-btn { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.02em; }
-.tl-btn-sm { font-size: 0.75rem; font-weight: 600; }
+.tl-btn {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.tl-btn-sm {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
 
 /* ── BADGE ─── */
 .tl-badge {
@@ -297,7 +321,8 @@
   border-bottom: 1px solid var(--field-border);
 }
 
-.tl-panel-header h2, .tl-panel-header h3 {
+.tl-panel-header h2,
+.tl-panel-header h3 {
   font-family: var(--font-display-face);
   font-weight: 700;
   color: var(--text);
@@ -312,13 +337,27 @@
 }
 
 /* ── SEMANTIC UTILITIES ─── */
-.tl-text-primary { color: var(--text); }
-.tl-text-secondary { color: var(--text-soft); }
-.tl-text-muted { color: var(--muted); }
-.tl-text-faint { color: var(--text-faint); }
-.tl-text-accent { color: var(--accent); }
-.tl-text-warning { color: var(--warning); }
-.tl-text-danger { color: var(--danger); }
+.tl-text-primary {
+  color: var(--text);
+}
+.tl-text-secondary {
+  color: var(--text-soft);
+}
+.tl-text-muted {
+  color: var(--muted);
+}
+.tl-text-faint {
+  color: var(--text-faint);
+}
+.tl-text-accent {
+  color: var(--accent);
+}
+.tl-text-warning {
+  color: var(--warning);
+}
+.tl-text-danger {
+  color: var(--danger);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SMOOTHNESS LAYER

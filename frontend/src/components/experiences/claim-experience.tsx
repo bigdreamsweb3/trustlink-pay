@@ -56,37 +56,37 @@ function BackupWalletFlow({ open, step, connectedWallet, mainWallet, backupWalle
               <div className="flex items-start gap-3.5">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[16px] bg-[#58f2b1]/14 text-[#7dffd9]"><ShieldCheck className="h-5 w-5" /></div>
                 <div>
-                  <div className="text-[0.84rem] font-semibold text-text">Stay in control</div>
+                  <div className="tl-body-sm font-semibold text-text">Stay in control</div>
                   <p className="mt-1 text-[0.78rem] leading-relaxed text-text/60">Your main wallet keeps receiving payments. Backup is emergencies only.</p>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onContinue} className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
-              <button type="button" onClick={onSkip} className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Skip</button>
+              <button type="button" onClick={onContinue} className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
+              <button type="button" onClick={onSkip} className="tl-button-secondary rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Skip</button>
             </div>
           </motion.div>
         ) : null}
         {step === "connect" ? (
           <motion.div key="connect" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-4">
             <div className="tl-field rounded-[18px] px-4 py-3.5">
-              <div className="flex items-center justify-between"><span className="text-[0.78rem] text-[var(--text-soft)]">Main wallet</span><span className="text-[0.82rem] font-medium text-[var(--text)]">{mainWallet ? shortenAddress(mainWallet) : "Not set"}</span></div>
+              <div className="flex items-center justify-between"><span className="text-[0.78rem] text-[var(--text-soft)]">Main wallet</span><span className="tl-body-sm font-medium text-[var(--text)]">{mainWallet ? shortenAddress(mainWallet) : "Not set"}</span></div>
             </div>
             <div className="tl-field rounded-[18px] px-4 py-3.5">
-              <div className="flex items-center justify-between"><span className="text-[0.78rem] text-[var(--text-soft)]">Backup</span><span className="text-[0.82rem] font-medium text-[var(--text)]">{connectedWallet ? shortenAddress(connectedWallet) : "Not connected"}</span></div>
+              <div className="flex items-center justify-between"><span className="text-[0.78rem] text-[var(--text-soft)]">Backup</span><span className="tl-body-sm font-medium text-[var(--text)]">{connectedWallet ? shortenAddress(connectedWallet) : "Not connected"}</span></div>
             </div>
             <div className="space-y-2.5">
-              <button type="button" onClick={onConnectWallet} className="tl-field w-full rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium text-[var(--text)] text-center transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.98]">Connect wallet</button>
-              {canBeBackup ? <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-[0.84rem] font-medium text-[#7dffd9] cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button> : null}
+              <button type="button" onClick={onConnectWallet} className="tl-field w-full rounded-[18px] px-4 py-3.5 tl-body-sm font-medium text-[var(--text)] text-center transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.98]">Connect wallet</button>
+              {canBeBackup ? <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 tl-body-sm font-medium text-[#7dffd9] cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button> : null}
               <div className="tl-field rounded-[18px] px-4 py-3.5">
                 <label className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Wallet address</label>
-                <input value={backupWalletInput} onChange={(e) => onWalletInputChange(e.target.value)} placeholder="Paste backup address" className="mt-1.5 block w-full bg-transparent text-[0.84rem] font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]" />
+                <input value={backupWalletInput} onChange={(e) => onWalletInputChange(e.target.value)} placeholder="Paste backup address" className="mt-1.5 block w-full bg-transparent tl-body-sm font-medium text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]" />
               </div>
             </div>
             <div className="text-[0.72rem] leading-relaxed text-[var(--text-soft)]">{isMain ? "Main wallet connected. Paste backup address or switch wallets." : needsApproval ? "Reconnect main wallet to approve." : "Main wallet will approve this backup."}</div>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onSave} disabled={busy} className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Saving..." : needsApproval ? "Reconnect main" : "Add backup"}</button>
-              <button type="button" onClick={onClose} disabled={busy} className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
+              <button type="button" onClick={onSave} disabled={busy} className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Saving..." : needsApproval ? "Reconnect main" : "Add backup"}</button>
+              <button type="button" onClick={onClose} disabled={busy} className="tl-button-secondary rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
             </div>
           </motion.div>
         ) : null}
@@ -94,9 +94,9 @@ function BackupWalletFlow({ open, step, connectedWallet, mainWallet, backupWalle
           <motion.div key="success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[22px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-[#7dffd9]"><CheckCircle2 className="h-7 w-7" /></div>
-              <p className="mt-4 text-[0.82rem] leading-relaxed text-text/62">Your backup wallet can help recover your account if needed.</p>
+              <p className="mt-4 tl-body-sm leading-relaxed text-text/62">Your backup wallet can help recover your account if needed.</p>
             </div>
-            <button type="button" onClick={onClose} className="w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
+            <button type="button" onClick={onClose} className="w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -159,8 +159,8 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
       blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
       <section className="space-y-5">
-        {status && !claimSuccess ? <div className="tl-badge rounded-[18px] px-4 py-3 text-[0.82rem]">{status}</div> : null}
-        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[0.82rem] text-[#ffb1b1]">{error}</div> : null}
+        {status && !claimSuccess ? <div className="tl-badge rounded-[18px] px-4 py-3 tl-body-sm">{status}</div> : null}
+        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 tl-body-sm text-[#ffb1b1]">{error}</div> : null}
 
         {loading ? (
           <div className="tl-field rounded-[22px] px-5 py-8"><SectionLoader size="md" label="Loading payment..." /></div>
@@ -185,19 +185,19 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               ].map((row) => (
                 <div key={row.label} className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
-                  <span className={`text-[0.82rem] font-medium ${"accent" in row && row.accent ? "text-[#7dffd9]" : "text-[var(--text)]"}`}>{row.value}</span>
+                  <span className={`tl-body-sm font-medium ${"accent" in row && row.accent ? "text-[#7dffd9]" : "text-[var(--text)]"}`}>{row.value}</span>
                 </div>
               ))}
             </div>
             {!identitySecurity?.recoveryWallet && !dismissRecoveryPrompt ? (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.34, delay: 0.08, ease: "easeOut" }} className="space-y-2.5">
-                <button type="button" onClick={openBackupFlow} className="w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Add Backup Wallet</button>
-                <button type="button" onClick={() => setDismissRecoveryPrompt(true)} className="tl-button-secondary w-full rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Not now</button>
+                <button type="button" onClick={openBackupFlow} className="w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Add Backup Wallet</button>
+                <button type="button" onClick={() => setDismissRecoveryPrompt(true)} className="tl-button-secondary w-full rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Not now</button>
               </motion.div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
-                <Link href="/app/settings" className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Security</Link>
+                <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
+                <Link href="/app/settings" className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Security</Link>
               </div>
             )}
           </div>
@@ -217,24 +217,24 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="space-y-2">
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">Sent amount</span>
-                  <span className="text-[0.82rem] font-medium text-[var(--text)]">{formatTokenAmount(grossAmount)} {payment.payment.token_symbol}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{formatTokenAmount(grossAmount)} {payment.payment.token_symbol}</span>
                 </div>
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="flex items-center gap-1.5 text-[0.78rem] text-[var(--text-soft)]">
                     Fee
                     <button type="button" onClick={() => setFeeInfoOpen((c) => !c)} className="grid h-4 w-4 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.58rem] font-semibold text-[var(--text-soft)] cursor-pointer">i</button>
                   </span>
-                  <span className="text-[0.82rem] font-medium text-[var(--text)]">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{formatTokenAmount(feeAmount)} {payment.payment.token_symbol}</span>
                 </div>
                 {claimFeeEstimate?.estimatedNetworkFeeSol != null ? (
                   <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Network cost</span>
-                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{claimFeeEstimate.estimatedNetworkFeeSol.toFixed(6)} SOL</span>
+                    <span className="tl-body-sm font-medium text-[var(--text)]">{claimFeeEstimate.estimatedNetworkFeeSol.toFixed(6)} SOL</span>
                   </div>
                 ) : null}
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3 border-t border-[var(--surface-soft)]">
                   <span className="text-[0.78rem] font-medium text-[var(--text)]">To wallet</span>
-                  <span className="text-[0.84rem] font-semibold text-[#7dffd9]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</span>
+                  <span className="tl-body-sm font-semibold text-[#7dffd9]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</span>
                 </div>
               </div>
               <AnimatePresence>
@@ -252,34 +252,34 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <div className="space-y-2">
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">{boundMainWallet ? "Required" : "Connected"}</span>
-                  <span className="text-[0.82rem] font-medium text-[var(--text)]">{boundMainWallet ? shortenAddress(boundMainWallet) : activeWalletAddress ? shortenAddress(activeWalletAddress) : "None"}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{boundMainWallet ? shortenAddress(boundMainWallet) : activeWalletAddress ? shortenAddress(activeWalletAddress) : "None"}</span>
                 </div>
                 <button type="button" onClick={requestWalletConnection} className="tl-field group w-full flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
-                  <span className="text-[0.84rem] font-medium text-[var(--text)]">{activeWalletAddress ? "Switch wallet" : "Connect wallet"}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{activeWalletAddress ? "Switch wallet" : "Connect wallet"}</span>
                   <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
                 </button>
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">Reference</span>
-                  <span className="text-[0.82rem] font-medium text-[var(--text)]">{payment.sender.referenceCode}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{payment.sender.referenceCode}</span>
                 </div>
                 <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">Status</span>
-                  <span className="text-[0.82rem] font-medium uppercase text-[var(--text)]">{payment.payment.status}</span>
+                  <span className="tl-body-sm font-medium uppercase text-[var(--text)]">{payment.payment.status}</span>
                 </div>
               </div>
-              {claimFeeBusy ? <div className="mt-2 text-[0.68rem] text-[var(--text-soft)]">Refreshing estimate...</div> : null}
+              {claimFeeBusy ? <div className="mt-2 tl-meta-sm text-[var(--text-soft)]">Refreshing estimate...</div> : null}
             </div>
 
             {/* CTA */}
             <button type="button" onClick={isConnectedToRequiredWallet ? handleOpenPinConfirmation : requestWalletConnection} disabled={claimBusy}
-              className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
+              className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
             >
               <span>{claimBusy ? "Checking PIN..." : isConnectedToRequiredWallet ? "Continue" : boundMainWallet ? "Connect main wallet" : "Connect wallet"}</span>
               {!claimBusy ? <ArrowRight className="h-4 w-4" /> : null}
             </button>
           </div>
         ) : (
-          <div className="tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">Payment details unavailable.</div>
+          <div className="tl-field rounded-[18px] px-4 py-5 text-center tl-body-sm tl-text-muted">Payment details unavailable.</div>
         )}
       </section>
 

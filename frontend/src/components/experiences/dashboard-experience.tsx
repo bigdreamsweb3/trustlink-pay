@@ -167,13 +167,13 @@ export function DashboardExperience() {
           ]}
           action={
             <button type="button" onClick={() => void handleBindMainWallet()} disabled={identityBusy}
-              className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 text-[0.82rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+              className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
               {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
             </button>
           }
           secondaryAction={
-            <Link href="/app/settings" className="tl-button-secondary rounded-[18px] px-4 py-3 text-center text-[0.82rem] font-medium">
+            <Link href="/app/settings" className="tl-button-secondary rounded-[18px] px-4 py-3 text-center tl-body-sm font-medium">
               Security settings
             </Link>
           }
@@ -245,7 +245,7 @@ export function DashboardExperience() {
                 </div>
 
                 {balanceVisible && totalPendingUsd > 0 ? (
-                  <div className="mt-0.5 text-[0.68rem] text-text/36">
+                  <div className="mt-0.5 tl-meta-sm text-text/36">
                     + {formatPaymentUsd(totalPendingUsd)} in escrow
                   </div>
                 ) : null}
@@ -272,7 +272,7 @@ export function DashboardExperience() {
                   <span className="mx-1 h-3 w-px bg-white/12" />
 
                   {/* Local number */}
-                  <span className="whitespace-nowrap text-[0.84rem] font-bold tracking-wide text-text/78">
+                  <span className="whitespace-nowrap tl-body-sm font-bold tracking-wide text-text/78">
                     {localNumber}
                   </span>
 
@@ -389,7 +389,7 @@ export function DashboardExperience() {
             <div className="flex items-start justify-between mb-3 pt-4 px-3">
               <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
               {!loading && paymentHistory.length > 6 ? (
-                <Link href="/app/activity" className="text-[0.68rem] font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
+                <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
               ) : null}
             </div>
             {!loading && paymentHistory.length > 0 ? (
@@ -417,7 +417,7 @@ export function DashboardExperience() {
                   <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                     <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
                   </div>
-                  <div className="text-[0.82rem] font-medium text-[var(--text-soft)]">No transfer activity yet</div>
+                  <div className="tl-body-sm font-medium text-[var(--text-soft)]">No transfer activity yet</div>
                   <div className="mt-1 text-[0.72rem] text-[var(--muted)]">Your transactions will appear here</div>
                 </div>
               ) : (
@@ -584,9 +584,9 @@ export function DashboardExperience() {
                         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
                           {token.symbol.slice(0, 3)}
                         </div>
-                        <span className="text-[0.82rem] font-medium text-[var(--text)]">{token.symbol}</span>
+                        <span className="tl-body-sm font-medium text-[var(--text)]">{token.symbol}</span>
                       </div>
-                      <span className="text-[0.82rem] font-semibold text-[var(--text)]">
+                      <span className="tl-body-sm font-semibold text-primary">
                         {balanceVisible ? formatPaymentUsd(token.balanceUsd ?? 0) : "****"}
                       </span>
                     </div>
@@ -623,7 +623,7 @@ export function DashboardExperience() {
         <div className="flex items-start justify-between mb-3 pt-4 px-4">
           <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
           {!loading && paymentHistory.length > 6 ? (
-            <Link href="/app/activity" className="text-[0.68rem] font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
+            <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
           ) : null}
         </div>
 
@@ -652,7 +652,7 @@ export function DashboardExperience() {
               <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
               </div>
-              <div className="text-[0.82rem] font-medium text-[var(--text-soft)]">No transfer activity yet</div>
+              <div className="tl-body-sm font-medium text-[var(--text-soft)]">No transfer activity yet</div>
               <div className="mt-1 text-[0.72rem] text-[var(--muted)]">Your transactions will appear here</div>
             </div>
           ) : (
@@ -671,10 +671,10 @@ export function DashboardExperience() {
           <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5 flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Balance details</h2>
-                <p className="tl-text-muted mt-1 text-[0.82rem] leading-relaxed">Spendable balance plus funds waiting in escrow.</p>
+                <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Balance details</h2>
+                <p className="tl-text-muted mt-1 tl-body-sm leading-relaxed">Spendable balance plus funds waiting in escrow.</p>
               </div>
-              <button type="button" onClick={() => setBalanceInfoOpen(false)} className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 text-xs font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]">Close</button>
+              <button type="button" onClick={() => setBalanceInfoOpen(false)} className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 tl-meta-sm font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]">Close</button>
             </div>
             <div className="space-y-2.5">
               {[
@@ -686,8 +686,8 @@ export function DashboardExperience() {
                   <div className="flex items-center justify-between">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
                     <div className="text-right">
-                      <span className="block text-[0.84rem] font-semibold text-[var(--text)]">{balanceVisible ? row.value : "****"}</span>
-                      {row.sub ? <span className="block text-[0.68rem] text-[var(--text-soft)]">{row.sub}</span> : null}
+                      <span className="block tl-body-sm font-semibold text-primary">{balanceVisible ? row.value : "****"}</span>
+                      {row.sub ? <span className="block tl-meta-sm text-[var(--text-soft)]">{row.sub}</span> : null}
                     </div>
                   </div>
                 </div>

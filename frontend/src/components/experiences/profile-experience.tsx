@@ -47,45 +47,45 @@ export function ProfileExperience() {
       <section className="space-y-5">
 
         {/* Notices */}
-        {notice ? <div className="tl-badge rounded-[18px] px-4 py-3 text-[0.82rem]">{notice}</div> : null}
-        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[0.82rem] text-[#ffb1b1]">{error}</div> : null}
+        {notice ? <div className="tl-badge tl-btn rounded-[18px] px-4 py-3">{notice}</div> : null}
+        {error ? <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 tl-body-sm text-danger">{error}</div> : null}
 
         {/* Profile avatar + handle preview */}
         <div className="flex items-center gap-4">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.82rem] font-bold text-accent-deep dark:text-accent">
+          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] tl-h3 text-accent-deep dark:text-accent">
             {initialsFor(form.displayName || user.displayName)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[0.95rem] font-semibold text-[var(--text)]">{form.displayName || user.displayName}</div>
-            <div className="tl-text-soft mt-0.5 text-[0.76rem]">@{form.handle || user.handle}</div>
+            <div className="truncate tl-h3 text-primary">{form.displayName || user.displayName}</div>
+            <div className="tl-meta-sm mt-0.5">@{form.handle || user.handle}</div>
           </div>
         </div>
 
         {/* Identity form */}
         <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Identity</div>
+          <div className="tl-label mb-3">Identity</div>
 
           <form className="space-y-3" onSubmit={handleProfileSave}>
-            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
+            <div className="tl-field rounded-[18px] px-4 py-3.5">
               <label className="block">
-                <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Display name</span>
+                <span className="tl-label-sm block">Display name</span>
                 <input
                   value={form.displayName}
                   onChange={(e) => setForm((c) => ({ ...c, displayName: e.target.value }))}
                   placeholder="Daniel Trust"
-                  className="mt-1.5 block w-full bg-transparent text-[0.92rem] font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-primary outline-none placeholder:text-faint"
                 />
               </label>
             </div>
 
-            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
+            <div className="tl-field rounded-[18px] px-4 py-3.5">
               <label className="block">
-                <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Handle</span>
+                <span className="tl-label-sm block">Handle</span>
                 <input
                   value={form.handle}
                   onChange={(e) => setForm((c) => ({ ...c, handle: e.target.value.toLowerCase() }))}
                   placeholder="daniel_trust"
-                  className="mt-1.5 block w-full bg-transparent text-[0.92rem] font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-primary outline-none placeholder:text-faint"
                 />
               </label>
             </div>
@@ -93,7 +93,7 @@ export function ProfileExperience() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-1 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
+              className="mt-1 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
             >
               {busy ? "Saving..." : "Save profile"}
             </button>
@@ -102,18 +102,18 @@ export function ProfileExperience() {
 
         {/* Quick links */}
         <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Quick links</div>
+          <div className="tl-label mb-3">Quick links</div>
           <div className="space-y-2.5">
             {[
               { href: "/app/activity", label: "Transaction history", desc: "Transfers, claims & receipts" },
               { href: "/app/settings", label: "Settings", desc: "Security, PIN & more" },
             ].map((item) => (
-              <a key={item.label} href={item.href} className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+              <a key={item.label} href={item.href} className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
                 <div>
-                  <span className="block text-[0.84rem] font-medium text-[var(--text)]">{item.label}</span>
-                  <span className="block mt-0.5 text-[0.68rem] text-[var(--text-soft)]">{item.desc}</span>
+                  <span className="block tl-body-sm font-medium">{item.label}</span>
+                  <span className="block tl-meta-sm mt-0.5">{item.desc}</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="h-4 w-4 text-faint transition-transform group-hover:translate-x-0.5" />
               </a>
             ))}
           </div>

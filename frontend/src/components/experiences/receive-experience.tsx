@@ -113,22 +113,22 @@ export function ReceiveExperience() {
 
         <section className="tl-panel rounded-[28px]">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">TrustLink receive details</h2>
-            <p className="text-sm text-text/48">Share these details so someone can open TrustLink and send straight to your number.</p>
+            <h2 className="tl-h3">TrustLink receive details</h2>
+            <p className="tl-body-sm mt-1">Share these details so someone can open TrustLink and send straight to your number.</p>
           </div>
 
-          <div className="space-y-3 tl-panel-header tl-field px-4 py-4">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-text/46">Display name</span>
-              <span className="font-medium text-text">{user.displayName}</span>
+          <div className="space-y-3 tl-field px-4 py-4">
+            <div className="flex items-center justify-between">
+              <span className="tl-meta-sm">Display name</span>
+              <span className="tl-body-sm font-medium">{user.displayName}</span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-text/46">Handle</span>
-              <span className="font-medium text-text">@{user.handle}</span>
+            <div className="flex items-center justify-between">
+              <span className="tl-meta-sm">Handle</span>
+              <span className="tl-body-sm font-medium">@{user.handle}</span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-text/46">TrustLink number</span>
-              <span className="font-medium text-text">{user.phoneNumber}</span>
+            <div className="flex items-center justify-between">
+              <span className="tl-meta-sm">TrustLink number</span>
+              <span className="tl-body-sm font-medium">{user.phoneNumber}</span>
             </div>
           </div>
 
@@ -137,14 +137,14 @@ export function ReceiveExperience() {
               type="button"
               onClick={() => void handleShareDetails()}
               disabled={shareBusy}
-              className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-50"
+              className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 tl-body font-semibold text-[#04110a] disabled:opacity-50"
             >
               {shareBusy ? "Sharing..." : "Share details"}
             </button>
             <button
               type="button"
               onClick={() => void handleCopyLink()}
-              className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-medium text-text/78"
+              className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 tl-body font-medium text-secondary"
             >
               Copy send link
             </button>
@@ -154,29 +154,29 @@ export function ReceiveExperience() {
         <section className="tl-panel rounded-[28px]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-text">Next actions</h2>
-              <p className="text-sm text-text/48">Share your receive identity or jump straight to claim incoming funds.</p>
+              <h2 className="tl-h3">Next actions</h2>
+              <p className="tl-body-sm mt-1">Share your receive identity or jump straight to claim incoming funds.</p>
             </div>
           </div>
 
           <div className="mt-4 grid gap-3">
-            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href={`/app/send?phone=${encodeURIComponent(user.phoneNumber)}`} className="inline-flex items-center justify-between tl-field px-4 py-3 tl-body font-medium text-secondary">
               <span>Open send with my number filled in</span>
-              <span className="text-text/40">Open</span>
+              <span className="tl-meta-sm text-faint">Open</span>
             </Link>
-            <Link href="/app/claim" className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href="/app/claim" className="inline-flex items-center justify-between tl-field px-4 py-3 tl-body font-medium text-secondary">
               <span className="inline-flex items-center gap-2">
                 <ClaimIcon className="h-4 w-4" />
                 Claim incoming funds
               </span>
-              <span className="text-text/40">Open</span>
+              <span className="tl-meta-sm text-faint">Open</span>
             </Link>
-            <Link href="/app/activity" className="inline-flex items-center justify-between tl-panel-header tl-field px-4 py-3 text-sm font-medium text-text/78">
+            <Link href="/app/activity" className="inline-flex items-center justify-between tl-field px-4 py-3 tl-body font-medium text-secondary">
               <span className="inline-flex items-center gap-2">
                 <ActivityIcon className="h-4 w-4" />
                 View transaction history
               </span>
-              <span className="text-text/40">Open</span>
+              <span className="tl-meta-sm text-faint">Open</span>
             </Link>
           </div>
         </section>

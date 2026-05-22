@@ -293,8 +293,8 @@ export function WalletsExperience() {
         <section className="tl-panel rounded-[28px] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Receiver wallets</h2>
-              <p className="tl-text-muted text-sm">Manage the payout wallets used during claim flow.</p>
+              <h2 className="tl-h3">Receiver wallets</h2>
+              <p className="tl-body-sm">Manage the payout wallets used during claim flow.</p>
             </div>
             <button
               type="button"
@@ -315,20 +315,20 @@ export function WalletsExperience() {
           <section className="tl-panel p-4">
             <div className="space-y-3">
               {receiverWallets.map((wallet) => (
-                <article key={wallet.id} className="tl-panel-header tl-field px-4 py-4">
+                <article key={wallet.id} className="tl-field px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-text">{wallet.wallet_name}</div>
-                      <div className="mt-1 text-[0.72rem] uppercase tracking-[0.18em] text-text/34">Receiver payout wallet</div>
+                      <div className="tl-body-sm font-semibold">{wallet.wallet_name}</div>
+                      <div className="tl-label-sm mt-1">Receiver payout wallet</div>
                     </div>
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-pop-bg text-text/78">
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-pop-bg">
                       <WalletIcon className="h-4 w-4" />
                     </span>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-white/6 bg-white/[0.03] px-3 py-3">
-                    <span className="text-sm text-text/66">{shortenAddress(wallet.wallet_address)}</span>
-                    <span className="text-[0.72rem] text-text/34">{formatShortDate(wallet.created_at)}</span>
+                    <span className="tl-body-sm text-secondary">{shortenAddress(wallet.wallet_address)}</span>
+                    <span className="tl-meta-sm text-faint">{formatShortDate(wallet.created_at)}</span>
                   </div>
 
                   <div className="mt-3 flex justify-end">
@@ -336,7 +336,7 @@ export function WalletsExperience() {
                       type="button"
                       onClick={() => void handleDeleteWallet(wallet.id)}
                       disabled={deletingWalletId === wallet.id}
-                      className="inline-flex items-center gap-2 rounded-[18px] border border-[#ff7f7f]/16 bg-[#ff7f7f]/8 px-3 py-2 text-xs font-medium text-[#ffb2b2] disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-[18px] border border-[#ff7f7f]/16 bg-[#ff7f7f]/8 px-3 py-2 tl-body-sm text-danger disabled:opacity-50"
                     >
                       <TrashIcon className="h-3.5 w-3.5" />
                       {deletingWalletId === wallet.id ? "Deleting..." : "Delete"}
@@ -348,12 +348,12 @@ export function WalletsExperience() {
           </section>
         ) : (
           <section className="tl-panel p-4">
-            <div className="tl-panel-header tl-field px-4 py-6 text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-pop-bg text-text/74">
+            <div className="tl-field px-4 py-6 text-center">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-pop-bg">
                 <WalletIcon className="h-5 w-5" />
               </div>
-              <div className="mt-4 text-sm font-semibold text-text">No receiver wallet saved yet</div>
-              <p className="mt-2 text-sm leading-6 text-text/46">Add a payout wallet here so future claims are easier to review and release.</p>
+              <div className="mt-4 tl-body font-semibold">No receiver wallet saved yet</div>
+              <p className="mt-2 tl-body-sm">Add a payout wallet here so future claims are easier to review and release.</p>
             </div>
           </section>
         )}

@@ -4,13 +4,49 @@
 
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.
 
-TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins, and over time approved SPL assets, to a human identity (phone or TIN) instead of a wallet address. TrustLink starts with phone-number identity, expands toward a permanent on-chain Transfer Identity Number System (TINS), and settles through the Transfer Settlement Network (TSN), a Cranker-powered liquidity network where operators execute payments and liquidity providers earn from real settlement volume.
+TrustLink Pay brings that identity-first experience to Solana payments. Users send approved stablecoins to a human identity (phone or TIN) instead of a wallet address. Settlement happens through the Transfer Settlement Network (TSN), where operators ("Crankers") execute payments and liquidity providers earn from real settlement volume.
 
 ---
 
 ## Supported by
 
 - **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
+  
+---
+
+## Crankers & Liquidity Providers
+
+TrustLink Pay uses a specialized Transfer Settlement Network (TSN) to enable fast, private, phone-number-based payments on Solana. Two key roles power this network:
+
+| Role | Responsibility | Earns |
+|------|---------------|-------|
+| **Crankers** | Execute payments, monitor intents, submit proof, maintain uptime | 5% of settlement fees |
+| **Liquidity Providers (LPs)** | Fund token-specific vaults that crankers draw from | 87% of settlement fees |
+
+This creates real yield for participants — from actual payment volume, not token emissions.
+
+### Launch Strategy
+
+At launch, **TrustLink Pay will be the first and primary cranker operator**. Running a cranker will not be open to the public initially. This controlled start ensures high reliability, speed, and security while the network proves itself.
+
+**For stablecoin issuers and firms:**
+- Fund TSN vaults with your stablecoins
+- Earn attractive LP yields (87% fee share) from real payment volume
+- Your stablecoin becomes the preferred fast-settlement option for users
+
+**For liquidity providers:**
+- Deposit stablecoins into vaults
+- Earn passive, real-yield returns backed by payment fees
+- No token emissions — yield comes from actual settlement revenue
+
+**For future cranker operators:**
+- Run your own verified cranker node once the network opens
+- Capture both operator fees (5%) and LP yields
+- Support specific tokens with full control
+
+This creates a growth flywheel: **More liquidity → faster settlements → more users → higher volume → better yields → more participants.**
+
+**Interested in vault funding or cranker partnerships?** → [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)
   
 ---
 
@@ -315,7 +351,7 @@ Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursem
 | `tsn/protocol`   | Anchor program workspace               |
 | `tsn`            | TSN modules, scripts, and SDK packages |
 | `tins-registrar` | TINS on-chain identity protocol        |
-| `docs`           | Architecture and operational docs      |
+| `docs`           | **Architecture and operational docs** — [Start here](docs/README.md) |
 
 ## Quick Start
 
@@ -323,6 +359,40 @@ Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursem
 cd backend && npm install && tsx scripts/init-db.ts && npm run dev
 cd frontend && npm install && npm run dev
 ```
+
+---
+
+## Documentation
+
+### For Investors & Partners
+
+| Document | Description |
+|----------|-------------|
+| [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md) | **Start here** — Investment opportunity, yield projections, partnership benefits |
+| [docs/LIQUIDITY.md](docs/LIQUIDITY.md) | How to fund TSN vaults and earn LP rewards |
+| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | Understanding the epoch reimbursement cycle |
+
+### For Cranker Operators
+
+| Document | Description |
+|----------|-------------|
+| [docs/CRANKER.md](docs/CRANKER.md) | Complete guide to running a cranker node |
+| [docs/OPERATOR.md](docs/OPERATOR.md) | Technical setup and monitoring |
+| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | How epoch reimbursements work |
+
+### For Developers
+
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
+| [docs/TINS.md](docs/TINS.md) | Transfer Identity Number System |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md) | Core protocol specifications |
+| [docs/DEVELOPER.md](docs/DEVELOPER.md) | Security considerations and integration |
+| [docs/API.md](docs/API.md) | API reference |
+
+### All Documentation
+
+See [docs/README.md](docs/README.md) for complete navigation.
 
 ---
 

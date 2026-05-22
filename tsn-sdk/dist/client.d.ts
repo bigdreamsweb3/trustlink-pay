@@ -1,0 +1,19 @@
+export type TsnHttpClientOptions = {
+    baseUrl: string;
+    fetchImpl?: typeof fetch;
+};
+export declare class TsnHttpClient {
+    private readonly baseUrl;
+    private readonly fetchImpl;
+    constructor(options: TsnHttpClientOptions);
+    post<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse>;
+    get<TResponse>(path: string): Promise<TResponse>;
+    patch<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse>;
+    postIntent<TRequest, TResponse>(body: TRequest): Promise<TResponse>;
+    postClaimRequest<TRequest, TResponse>(body: TRequest): Promise<TResponse>;
+    listPendingWork<TResponse>(limit?: number): Promise<TResponse>;
+    updateIntentStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse>;
+    updateClaimRequestStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse>;
+    postProof<TRequest, TResponse>(body: TRequest): Promise<TResponse>;
+}
+//# sourceMappingURL=client.d.ts.map

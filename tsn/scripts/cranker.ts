@@ -1,4 +1,4 @@
-import { HttpTsnMempool, JsonFileTsnMempool, evaluateSettlementEconomics } from "../src";
+import { HttpTsnMempool, JsonFileTsnMempool, evaluateSettlementEconomics } from "../tsn-sdk/src";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

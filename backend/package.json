@@ -26,6 +26,7 @@
     "@neondatabase/serverless": "^1.1.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
+    "@trustlink/tsn-sdk": "file:../tsn-sdk",
     "dotenv": "^17.0.0",
     "framer-motion": "^11.0.0",
     "ioredis": "^5.4.0",

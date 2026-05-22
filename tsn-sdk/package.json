@@ -1,0 +1,60 @@
+{
+  "name": "@trustlink/tsn-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./blockchain/*": {
+      "import": "./dist/blockchain/*.js",
+      "types": "./dist/blockchain/*.d.ts"
+    },
+    "./contracts": {
+      "import": "./dist/contracts.js",
+      "types": "./dist/contracts.d.ts"
+    },
+    "./client": {
+      "import": "./dist/client.js",
+      "types": "./dist/client.d.ts"
+    },
+    "./mempool": {
+      "import": "./dist/mempool.js",
+      "types": "./dist/mempool.d.ts"
+    },
+    "./quote": {
+      "import": "./dist/quote.js",
+      "types": "./dist/quote.d.ts"
+    },
+    "./settlement-economics": {
+      "import": "./dist/settlement-economics.js",
+      "types": "./dist/settlement-economics.d.ts"
+    },
+    "./program": {
+      "import": "./dist/program.js",
+      "types": "./dist/program.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.0",
+    "typescript": "^6.0.3"
+  }
+}

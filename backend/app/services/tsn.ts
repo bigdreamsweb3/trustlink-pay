@@ -20,7 +20,7 @@ import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, TsnUiStage } from "@/app/types/payment";
-import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "../../../tsn/src";
+import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 import {
   buildCreateIntentRequest,
   buildRequestClaimRequest,
@@ -29,7 +29,7 @@ import {
   TsnHttpClient,
   type CreateIntentRequest,
   type RequestClaimRequest,
-} from "../../../tsn/src";
+} from "@trustlink/tsn-sdk";
 
 function paymentCanStillBeClaimed(status: string) {
   return status === "locked" || status === "expired";
@@ -214,9 +214,9 @@ function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRec
   return computeTsnUiStage(intent, claimRequest);
 }
 
-export async function enrichPaymentsWithTsnState<T extends PaymentRecord>(payments: T[]): Promise<Array<T & { tsn?: PaymentTsnState }>> {
+export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Promise<Array<PaymentRecord & { tsn?: PaymentTsnState }>> {
   if (!env.TSN_ENABLED || payments.length === 0) {
-    return payments as Array<T & { tsn?: PaymentTsnState }>;
+    return payments as Array<PaymentRecord & { tsn?: PaymentTsnState }>;
   }
 
   const paymentIds = payments.map((payment) => payment.id);
@@ -238,7 +238,7 @@ export async function enrichPaymentsWithTsnState<T extends PaymentRecord>(paymen
 
   return payments.map((payment) => {
     const intent = intentByPaymentId.get(payment.id);
-    if (!intent) return payment as T & { tsn?: PaymentTsnState };
+    if (!intent) return payment;
 
     const claimRequest = claimByPaymentId.get(payment.id) ?? null;
     const tsn: PaymentTsnState = {
@@ -251,7 +251,7 @@ export async function enrichPaymentsWithTsnState<T extends PaymentRecord>(paymen
       proofTxSig: intent.proof_tx_sig,
     };
 
-    return { ...(payment as any), tsn };
+    return { ...payment, tsn };
   });
 }
 

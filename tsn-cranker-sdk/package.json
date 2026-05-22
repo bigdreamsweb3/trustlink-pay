@@ -1,0 +1,41 @@
+{
+  "name": "@trustlink/tsn-cranker-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tsn-client": {
+      "import": "./dist/tsnClient.js",
+      "types": "./dist/tsnClient.d.ts"
+    },
+    "./tsn-pdas": {
+      "import": "./dist/tsnPdas.js",
+      "types": "./dist/tsnPdas.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "types": "./dist/cli.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --watch dist/cli.js",
+    "cranker": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.98.4",
+    "@trustlink/tsn-sdk": "file:../tsn-sdk",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.0",
+    "typescript": "^6.0.3"
+  }
+}

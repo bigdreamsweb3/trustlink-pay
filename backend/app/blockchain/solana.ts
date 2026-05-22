@@ -53,4 +53,4 @@ export {
   tsnSettleEpochOnChain,
   tsnSubmitProofOnChain,
   tsnWithdrawCrankerFundsOnChain,
-} from "../../../tsn/src/blockchain/solana-tsn";
+} from "@trustlink/tsn-sdk/blockchain/solana-tsn";

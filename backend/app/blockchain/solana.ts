@@ -27,6 +27,8 @@ export type {
 
 export {
   listSupportedWalletTokens,
+  estimateClaimFee,
+  estimateSenderTransferCost,
 } from "@/app/blockchain/solana-core";
 
 // From TSN - TSN handles all payment operations now
@@ -53,4 +55,4 @@ export {
   tsnSettleEpochOnChain,
   tsnSubmitProofOnChain,
   tsnWithdrawCrankerFundsOnChain,
-} from "@trustlink/tsn-sdk/blockchain/solana-tsn";
+} from "@trustlink/tsn-sdk";

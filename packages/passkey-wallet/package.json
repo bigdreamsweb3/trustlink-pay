@@ -1,0 +1,33 @@
+{
+  "name": "@trustlink/passkey-wallet",
+  "version": "0.1.0",
+  "description": "Passkey-based Solana wallet with biometric authentication",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "solana",
+    "passkey",
+    "wallet",
+    "webauthn",
+    "fido2"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "react": "^18.3.1",
+    "typescript": "^5.0.0"
+  }
+}

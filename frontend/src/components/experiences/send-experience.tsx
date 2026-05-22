@@ -260,16 +260,16 @@ export function SendExperience() {
 
         {/* Notices */}
         {notice && !sendSuccess ? (
-          <div className="tl-badge rounded-[18px] px-4 py-3 text-[0.82rem]">{notice}</div>
+          <div className="tl-badge rounded-[18px] px-4 py-3 tl-body-sm">{notice}</div>
         ) : null}
         {error ? (
-          <div className="rounded-[18px] border border-[var(--danger)]/14 bg-danger-soft px-4 py-3 text-[0.82rem] text-[var(--danger)]">
+          <div className="rounded-[18px] border border-[var(--danger)]/14 bg-danger-soft px-4 py-3 tl-body-sm text-[var(--danger)]">
             {sendGuidance?.message ?? error}
           </div>
         ) : null}
         {sendGuidance ? (
           <div className="rounded-[20px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-4">
-            <div className="text-[0.8rem] font-semibold text-[var(--text)]">{sendGuidance.title}</div>
+            <div className="text-[0.8rem] font-semibold text-primary">{sendGuidance.title}</div>
             <div className="mt-1.5 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">{sendGuidance.message}</div>
             {sendGuidance.ctaHref && sendGuidance.ctaLabel ? (
               <Link
@@ -291,7 +291,7 @@ export function SendExperience() {
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-[var(--text)]">
                 {sendSuccess.amount} {sendSuccess.token}
               </h2>
-              <p className="mt-2 text-[0.82rem] leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">
+              <p className="mt-2 tl-body-sm leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">
                 {sendSuccess.manualInviteRequired
                   ? `Funds secured in escrow for ${sendSuccess.recipientName}. Share the invite manually.`
                   : sendSuccess.notificationRetrying
@@ -311,7 +311,7 @@ export function SendExperience() {
                 ].map((row) => (
                   <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
-                    <span className={`text-[0.82rem] font-medium text-[var(--text)] ${row.capitalize ? "capitalize" : ""}`}>{row.value}</span>
+                    <span className={`tl-body-sm font-medium text-[var(--text)] ${row.capitalize ? "capitalize" : ""}`}>{row.value}</span>
                   </div>
                 ))}
               </div>
@@ -326,27 +326,27 @@ export function SendExperience() {
                 ) : (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Sender invite</span>
-                    <span className="text-[0.82rem] font-medium text-[var(--text)]">Share manually</span>
+                    <span className="tl-body-sm font-medium text-[var(--text)]">Share manually</span>
                   </div>
                 )}
 
                 {sendSuccess.notificationRetrying ? (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Delivery retries</span>
-                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{sendSuccess.notificationAttemptCount}</span>
+                    <span className="tl-body-sm font-medium text-[var(--text)]">{sendSuccess.notificationAttemptCount}</span>
                   </div>
                 ) : null}
 
                 {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Receipt updated</span>
-                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{formatReceiptTime(receiptTimestamp)}</span>
+                    <span className="tl-body-sm font-medium text-[var(--text)]">{formatReceiptTime(receiptTimestamp)}</span>
                   </div>
                 ) : null}
 
                 <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                   <span className="text-[0.78rem] text-[var(--text-soft)]">{sendSuccess.blockchainMode === "mock" ? "Mock ref" : "Deposit tx"}</span>
-                  <span className="text-[0.82rem] font-medium text-[var(--text)]">{shortenAddress(sendSuccess.blockchainSignature)}</span>
+                  <span className="tl-body-sm font-medium text-[var(--text)]">{shortenAddress(sendSuccess.blockchainSignature)}</span>
                 </div>
               </div>
             </div>
@@ -360,12 +360,12 @@ export function SendExperience() {
             {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
               <div className="tl-panel tl-field rounded-[22px] px-5 py-4">
                 <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Shareable invite</div>
-                <pre className="mt-3 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-[var(--text-soft)]">{sendSuccess.inviteShare.inviteMessage}</pre>
+                <pre className="mt-3 whitespace-pre-wrap tl-body-sm leading-relaxed text-[var(--text-soft)]">{sendSuccess.inviteShare.inviteMessage}</pre>
                 <button
                   type="button"
                   onClick={async () => { setShareBusy(true); try { const outcome = await shareInviteMessage(sendSuccess.inviteShare!.inviteMessage); showToast(outcome === "shared" ? "Share dialog opened." : "Invite copied."); } catch (e) { setError(e instanceof Error ? e.message : "Could not share invite"); } finally { setShareBusy(false); } }}
                   disabled={shareBusy}
-                  className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
+                  className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
                 >
                   {shareBusy ? "Preparing..." : "Share Invite"}
                 </button>
@@ -373,8 +373,8 @@ export function SendExperience() {
             ) : null}
 
             <div className="grid grid-cols-2 gap-3 md:max-w-[400px]">
-              <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
-              <button type="button" onClick={() => { setSendSuccess(null); setNotice(null); }} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Send another</button>
+              <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
+              <button type="button" onClick={() => { setSendSuccess(null); setNotice(null); }} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Send another</button>
             </div>
           </div>
         ) : (
@@ -394,7 +394,7 @@ export function SendExperience() {
                     <button
                       type="button"
                       onClick={() => { setCountrySearchOpen(true); setCountrySearchQuery(""); }}
-                      className="absolute right-16 top-[34px] z-10 flex items-center gap-1 rounded-[8px] px-2 py-1 text-[0.68rem] font-medium transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
+                      className="absolute right-16 top-[34px] z-10 flex items-center gap-1 rounded-[8px] px-2 py-1 tl-meta-sm font-medium transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
                     >
                       <span className="text-[0.78rem] leading-none">{displayCountry.flag}</span>
                       <span className="text-[var(--text-soft)]">{displayCountry.dialCode}</span>
@@ -445,11 +445,11 @@ export function SendExperience() {
                   >
                     {selectedToken ? (
                       <div className="flex flex-col overflow-hidden text-left">
-                        <span className="text-[0.84rem] font-bold text-[var(--text)]">{selectedToken.symbol}</span>
+                        <span className="tl-body-sm font-bold text-[var(--text)]">{selectedToken.symbol}</span>
                         <span className="truncate text-[0.62rem] text-[var(--accent-deep)] dark:text-[var(--accent)]">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
                       </div>
                     ) : (
-                      <span className="text-[0.82rem] text-[var(--text-soft)]">Token</span>
+                      <span className="tl-body-sm text-[var(--text-soft)]">Token</span>
                     )}
                     <ChevronRight className="h-3.5 w-3.5 text-[var(--text-faint)]" />
                   </button>
@@ -459,7 +459,7 @@ export function SendExperience() {
                 <button
                   type="submit"
                   disabled={busy || estimateBusy || !canContinueWithRecipient}
-                  className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
+                  className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
                 >
                   {estimateBusy ? "Calculating fee..." : "Review payment"}
                 </button>
@@ -481,7 +481,7 @@ export function SendExperience() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-[0.88rem] font-semibold text-[var(--text)] truncate">
+                        <div className="text-[0.88rem] font-semibold text-primary truncate">
                           {phoneVerificationDetails.displayName || "Unknown"}
                         </div>
                         {phoneVerificationDetails.resolvedPhoneNumber ? (
@@ -496,7 +496,7 @@ export function SendExperience() {
                       </div>
                     </div>
                     {phoneVerificationDetails.detectedCountry ? (
-                      <div className="mt-2.5 flex items-center gap-1.5 text-[0.68rem] text-[var(--text-faint)]">
+                      <div className="mt-2.5 flex items-center gap-1.5 tl-meta-sm text-[var(--text-faint)]">
                         <Globe className="h-3 w-3" />
                         {phoneVerificationDetails.detectedCountry.name} ({phoneVerificationDetails.detectedCountry.dialCode})
                       </div>
@@ -509,8 +509,8 @@ export function SendExperience() {
                             }`}>{recipientPreview.status.replace(/_/g, " ")}</span>
                         </div>
                         <div className="mt-2 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
-                        <div className="text-[0.68rem] text-[var(--text-faint)]">X: coming soon (not linked yet)</div>
-                        <div className="text-[0.68rem] text-[var(--text-faint)]">TIN: coming soon (routing will support linked TIN)</div>
+                        <div className="tl-meta-sm text-[var(--text-faint)]">X: coming soon (not linked yet)</div>
+                        <div className="tl-meta-sm text-[var(--text-faint)]">TIN: coming soon (routing will support linked TIN)</div>
                         {(/^tin[:\s-]/i.test(receiverPhoneInput.trim()) || /^tin_[a-z0-9]+$/i.test(receiverPhoneInput.trim())) ? (
                           <div className="mt-2 text-[0.66rem] text-[#bde8ff]">
                             TIN input detected. Direct TIN resolution is not live yet.
@@ -552,12 +552,12 @@ export function SendExperience() {
                       <div className="flex items-center gap-2.5">
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.8rem]">{selectedToken.logo}</span>
                         <div>
-                          <div className="text-[0.84rem] font-semibold text-[var(--text)]">{selectedToken.symbol}</div>
+                          <div className="tl-body-sm font-semibold text-primary">{selectedToken.symbol}</div>
                           <div className="text-[0.66rem] text-[var(--text-faint)]">{selectedToken.name}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[0.84rem] font-semibold text-[var(--text)]">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</div>
+                        <div className="tl-body-sm font-semibold text-primary">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</div>
                         <div className="text-[0.62rem] text-[var(--text-faint)]">Available</div>
                       </div>
                     </div>
@@ -574,8 +574,8 @@ export function SendExperience() {
         <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
           <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Choose token</h2>
-              <p className="mt-1 text-[0.82rem] text-[var(--text-soft)]">Supported tokens from your wallet.</p>
+              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Choose token</h2>
+              <p className="mt-1 tl-body-sm text-[var(--text-soft)]">Supported tokens from your wallet.</p>
             </div>
             <div className="space-y-2.5">
               {tokenBusy ? (
@@ -590,13 +590,13 @@ export function SendExperience() {
                     <span className="flex items-center gap-3">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.9rem]">{token.logo}</span>
                       <span>
-                        <span className="block text-[0.84rem] font-semibold leading-tight text-[var(--text)]">{token.symbol}</span>
-                        <span className="tl-text-soft block mt-0.5 text-[0.68rem] leading-tight">{token.name}</span>
+                        <span className="block tl-body-sm font-semibold leading-tight text-[var(--text)]">{token.symbol}</span>
+                        <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">{token.name}</span>
                       </span>
                     </span>
                     <span className="text-right">
-                      <span className="block text-[0.84rem] font-semibold leading-tight text-[var(--text)]">{formatTokenBalance(token.balance, token.symbol)}</span>
-                      <span className="tl-text-soft block mt-0.5 text-[0.68rem] leading-tight">Available</span>
+                      <span className="block tl-body-sm font-semibold leading-tight text-[var(--text)]">{formatTokenBalance(token.balance, token.symbol)}</span>
+                      <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">Available</span>
                     </span>
                   </button>
                 );
@@ -611,14 +611,14 @@ export function SendExperience() {
         <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setConfirmOpen(false)}>
           <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5">
-              <h2 className="text-lg font-semibold tracking-[-0.04em] text-[var(--text)]">Confirm transfer</h2>
-              <p className="mt-1 text-[0.82rem] text-[var(--text-soft)]">Verify details before funds move into escrow.</p>
+              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Confirm transfer</h2>
+              <p className="mt-1 tl-body-sm text-[var(--text-soft)]">Verify details before funds move into escrow.</p>
             </div>
 
             <div className="space-y-2.5">
               <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
-                <div className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-soft)]">Sending to</div>
-                <div className="mt-1.5 text-[0.92rem] font-semibold text-[var(--text)]">
+                <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">Sending to</div>
+                <div className="mt-1.5 text-[0.92rem] font-semibold text-primary">
                   {recipientPreview.recipient.displayName}
                   {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle ? ` (@${recipientPreview.recipient.handle})` : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required" ? " (Not on TrustLink)" : ""}
                 </div>
@@ -628,7 +628,7 @@ export function SendExperience() {
               </div>
 
               <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-                <span className="text-[0.84rem] font-medium text-[var(--text)]">{form.amount} {selectedToken.symbol}</span>
+                <span className="tl-body-sm font-medium text-[var(--text)]">{form.amount} {selectedToken.symbol}</span>
                 <span className="text-[0.78rem] text-[var(--text-soft)]">{form.receiverPhone}</span>
               </div>
 
@@ -636,7 +636,7 @@ export function SendExperience() {
                 <>
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Sender fee</span>
-                    <span className="text-[0.82rem] font-medium text-[var(--text)]">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
+                    <span className="tl-body-sm font-medium text-[var(--text)]">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Network: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
@@ -659,7 +659,7 @@ export function SendExperience() {
                         : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
                           ? "⚠️ Risky claim amount"
                           : "❌ Economically non-claimable"}
-                      <div className="mt-1 text-[0.68rem] opacity-90">
+                      <div className="mt-1 tl-meta-sm opacity-90">
                         {sendCostEstimate.settlementAssessment.reason} Minimum suggested send: {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(4)} {selectedToken.symbol}.
                       </div>
                     </div>
@@ -669,8 +669,8 @@ export function SendExperience() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-[0.84rem] font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
-              <button type="button" onClick={() => void handleConfirmSend()} disabled={busy} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Sending..." : "Confirm send"}</button>
+              <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
+              <button type="button" onClick={() => void handleConfirmSend()} disabled={busy} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Sending..." : "Confirm send"}</button>
             </div>
           </div>
         </div>
@@ -702,7 +702,7 @@ export function SendExperience() {
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
                   placeholder="Search by name or code..."
                   autoFocus
-                  className="w-full rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] py-2.5 pl-10 pr-4 text-[0.82rem] text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent-border)]"
+                  className="w-full rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] py-2.5 pl-10 pr-4 tl-body-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent-border)]"
                 />
               </div>
             </div>
@@ -725,14 +725,14 @@ export function SendExperience() {
                     >
                       <span className="text-[1.1rem] leading-none">{c.flag}</span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[0.82rem] font-medium text-[var(--text)] truncate">{c.name}</span>
+                        <span className="block tl-body-sm font-medium text-[var(--text)] truncate">{c.name}</span>
                       </span>
                       <span className="shrink-0 text-[0.76rem] font-medium text-[var(--text-faint)]">{c.dialCode}</span>
                     </button>
                   );
                 })}
                 {filteredCountries.length === 0 ? (
-                  <div className="py-8 text-center text-[0.82rem] text-[var(--muted)]">No countries match \u201c{countrySearchQuery}\u201d</div>
+                  <div className="py-8 text-center tl-body-sm text-[var(--muted)]">No countries match \u201c{countrySearchQuery}\u201d</div>
                 ) : null}
               </div>
             </div>

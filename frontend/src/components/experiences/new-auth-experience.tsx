@@ -213,7 +213,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
         <button
           type="button"
           onClick={handleBackToTrustLink}
-          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-2 text-sm font-bold text-[var(--text-soft)] transition hover:text-[var(--text)] cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-2 tl-body-sm font-bold text-[var(--text-soft)] transition hover:text-[var(--text)] cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to TrustLink Pay
@@ -228,7 +228,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
               <Image src="/trustlink-logo.png" alt="TrustLink Logo" width={80} height={80} className="h-full w-full object-contain" />
             </div>
             <h1 className="text-[1.45rem] font-bold tracking-[-0.04em] text-center" style={{ color: "var(--text)" }}>Sign in to TrustLink Pay</h1>
-            <p className="mt-2 text-[0.84rem] text-center" style={{ color: "var(--muted)" }}>Secure crypto payments, simplified.</p>
+            <p className="mt-2 tl-body-sm text-center" style={{ color: "var(--muted)" }}>Secure crypto payments, simplified.</p>
             {error && (
               <div className="mt-5 w-full rounded-[14px] px-4 py-3 text-[0.8rem]"
                 style={{ background: "var(--danger-soft)", border: "1px solid var(--accent-border)", color: "var(--danger)" }}
@@ -259,7 +259,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
             <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-transparent"
               style={{ borderTopColor: "var(--accent)", borderRightColor: "var(--accent-border)" }}
             />
-            <p className="text-[0.84rem] font-medium" style={{ color: "var(--text-soft)" }}>Generating secure session…</p>
+            <p className="tl-body-sm font-medium" style={{ color: "var(--text-soft)" }}>Generating secure session…</p>
           </div>
         )}
 
@@ -350,13 +350,13 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
                   style={{ background: connectionStatus === "connected" ? "var(--accent)" : connectionStatus === "connecting" ? "var(--warning)" : "var(--danger)" }}
                 />
               </span>
-              <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
+              <span className="tl-meta-sm font-medium" style={{ color: "var(--text-faint)" }}>
                 {connectionStatus === "connected" ? "Listening for verification…" : connectionStatus === "connecting" ? "Connecting…" : "Reconnecting…"}
               </span>
               {timeRemaining && timeRemaining !== "Expired" && (
                 <>
                   <span style={{ color: "var(--text-faint)", fontSize: "0.62rem" }}>·</span>
-                  <span className="text-[0.68rem] font-medium" style={{ color: "var(--text-faint)" }}>
+                  <span className="tl-meta-sm font-medium" style={{ color: "var(--text-faint)" }}>
                     {timeRemaining}
                   </span>
                 </>

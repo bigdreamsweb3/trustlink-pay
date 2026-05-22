@@ -242,7 +242,7 @@ export function TransactionDetailExperience({
 
         {/* ERROR */}
         {error ? (
-          <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[0.82rem] text-[#ffb1b1]">
+          <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 tl-body-sm text-[#ffb1b1]">
             {error}
           </div>
         ) : null}
@@ -280,7 +280,7 @@ export function TransactionDetailExperience({
 
                 <div className="mt-3 flex justify-center">
                   <span
-                    className={`rounded-full px-3 py-1 text-[0.68rem] font-semibold capitalize ${statusTone(
+                    className={`rounded-full px-3 py-1 tl-meta-sm font-semibold capitalize ${statusTone(
                       detail.payment.status
                     )}`}
                   >
@@ -314,13 +314,13 @@ export function TransactionDetailExperience({
                     <div className="flex items-center justify-between gap-4">
 
                       <div>
-                        <div className="text-[0.68rem] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-[var(--text-soft)]">
                           {detail.viewerRole === "sender"
                             ? "Receiver"
                             : "Sender"}
                         </div>
 
-                        <div className="mt-1 text-[0.9rem] font-semibold text-[var(--text)]">
+                        <div className="mt-1 text-[0.9rem] font-semibold text-primary">
                           {detail.viewerRole === "sender"
                             ? detail.receiver.phone
                             : detail.sender.displayName}
@@ -335,7 +335,7 @@ export function TransactionDetailExperience({
                     <div className="flex items-center justify-between gap-4">
 
                       <div>
-                        <div className="text-[0.68rem] uppercase tracking-[0.14em] text-[var(--text-soft)]">
+                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-[var(--text-soft)]">
                           {detail.receiver.manualInviteRequired
                             ? "Invite"
                             : "WhatsApp"}
@@ -349,7 +349,7 @@ export function TransactionDetailExperience({
                       </div>
 
                       {detail.receiver.manualInviteRequired ? (
-                        <span className="rounded-full bg-[#f3c96b]/12 px-3 py-1 text-[0.68rem] font-semibold text-[#f3c96b]">
+                        <span className="rounded-full bg-[#f3c96b]/12 px-3 py-1 tl-meta-sm font-semibold text-[#f3c96b]">
                           Invite needed
                         </span>
                       ) : (
@@ -369,7 +369,7 @@ export function TransactionDetailExperience({
                   detail.receiver.inviteShare ? (
                   <div className="tl-panel-header tl-field rounded-[24px] px-5 py-5">
 
-                    <div className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-soft)]">
+                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
                       Share invite
                     </div>
 
@@ -410,7 +410,7 @@ export function TransactionDetailExperience({
                         }
                       }}
                       disabled={shareBusy}
-                      className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-[0.84rem] font-semibold text-[#04110a] transition-transform active:scale-[0.97] disabled:opacity-50"
+                      className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97] disabled:opacity-50"
                     >
                       {shareBusy
                         ? "Preparing..."
@@ -585,11 +585,11 @@ export function TransactionDetailExperience({
                         <div className="min-w-0 flex-1">
 
                           <div className="flex items-start justify-between gap-3">
-                            <span className="text-[0.84rem] font-semibold text-[var(--text)]">
+                            <span className="tl-body-sm font-semibold text-primary">
                               {entry.label}
                             </span>
 
-                            <span className="shrink-0 text-[0.68rem] text-[var(--text-soft)]">
+                            <span className="shrink-0 tl-meta-sm text-[var(--text-soft)]">
                               {formatDateTime(
                                 entry.occurredAt
                               )}
@@ -628,7 +628,7 @@ export function TransactionDetailExperience({
 
                   <Link
                     href="/app/activity"
-                    className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center text-[0.84rem] font-medium transition-transform active:scale-[0.97]"
+                    className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center tl-body-sm font-medium transition-transform active:scale-[0.97]"
                   >
                     Back
                   </Link>
@@ -636,14 +636,14 @@ export function TransactionDetailExperience({
                   {detail.receiver.claimReady ? (
                     <Link
                       href={`/claim/${detail.payment.id}`}
-                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center text-[0.84rem] font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
+                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
                     >
                       Claim payment
                     </Link>
                   ) : (
                     <Link
                       href="/app"
-                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center text-[0.84rem] font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
+                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
                     >
                       Done
                     </Link>
@@ -653,7 +653,7 @@ export function TransactionDetailExperience({
             </div>
           </>
         ) : (
-          <div className="tl-panel-header tl-field rounded-[20px] px-4 py-5 text-center text-[0.82rem] text-[var(--text-soft)]">
+          <div className="tl-panel-header tl-field rounded-[20px] px-4 py-5 text-center tl-body-sm text-[var(--text-soft)]">
             Transaction details unavailable.
           </div>
         )}

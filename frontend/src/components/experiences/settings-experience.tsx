@@ -36,7 +36,7 @@ function PinDigitBoxes({ pin }: { pin: string }) {
         return (
           <div
             key={index}
-            className={`grid h-12 place-items-center rounded-[16px] border text-lg font-semibold transition-all duration-200 ${isFilled
+            className={`grid h-12 place-items-center rounded-[16px] border tl-h3 font-semibold transition-all duration-200 ${isFilled
               ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
               : isActive
                 ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)] scale-[1.02]"
@@ -99,14 +99,14 @@ function BackupWalletModal({
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-text">Upgrade your protection</div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-text/62">Your backup wallet is only used if something goes wrong. It does not affect daily payments.</p>
+                  <div className="tl-body-sm font-semibold text-text">Upgrade your protection</div>
+                  <p className="mt-1.5 tl-body-sm leading-relaxed text-text/62">Your backup wallet is only used if something goes wrong. It does not affect daily payments.</p>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onContinue} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
-              <button type="button" onClick={onSkip} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Skip</button>
+              <button type="button" onClick={onContinue} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
+              <button type="button" onClick={onSkip} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Skip</button>
             </div>
           </motion.div>
         ) : null}
@@ -114,35 +114,35 @@ function BackupWalletModal({
         {step === "connect" ? (
           <motion.div key="backup-connect" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-4">
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Main wallet</div>
-              <div className="mt-2 text-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available yet"}</div>
-              <p className="mt-2 text-[0.82rem] leading-relaxed text-text/58">This wallet stays in charge of your account and approves any backup changes.</p>
+              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Main wallet</div>
+              <div className="mt-2 tl-body-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available yet"}</div>
+              <p className="mt-2 tl-body-sm leading-relaxed text-text/58">This wallet stays in charge of your account and approves any backup changes.</p>
             </div>
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Detected wallet</div>
-                  <div className="mt-2 text-sm font-semibold text-text">{connectedWallet ? shortenAddress(connectedWallet) : "No wallet connected"}</div>
+                  <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Detected wallet</div>
+                  <div className="mt-2 tl-body-sm font-semibold text-text">{connectedWallet ? shortenAddress(connectedWallet) : "No wallet connected"}</div>
                 </div>
                 <div className="grid h-10 w-10 place-items-center rounded-[16px] bg-[#58f2b1]/12 text-accent-deep"><Wallet2 className="h-4.5 w-4.5" /></div>
               </div>
               <div className="mt-4 space-y-3">
-                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
+                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
                 {connectedWalletCanBeBackup ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
+                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 tl-body-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
                 ) : null}
                 <div className="rounded-[20px] border border-white/6 bg-black/20 px-4 py-4">
-                  <label className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Wallet address</label>
-                  <input value={walletInput} onChange={(event) => onWalletInputChange(event.target.value)} placeholder="Paste backup wallet address" className="mt-3 w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm text-text outline-none transition placeholder:text-text/26 focus:border-[#58f2b1]/28" />
+                  <label className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Wallet address</label>
+                  <input value={walletInput} onChange={(event) => onWalletInputChange(event.target.value)} placeholder="Paste backup wallet address" className="mt-3 w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm text-text outline-none transition placeholder:text-text/26 focus:border-[#58f2b1]/28" />
                 </div>
               </div>
-              <div className="mt-4 rounded-[20px] border border-white/6 bg-black/20 px-4 py-4 text-[0.82rem] leading-relaxed text-text/58">
+              <div className="mt-4 rounded-[20px] border border-white/6 bg-black/20 px-4 py-4 tl-body-sm leading-relaxed text-text/58">
                 {needsMainWalletApproval ? "Reconnect your main wallet before saving this change." : "Paste your backup wallet address or connect it, then save with your main wallet."}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onSave} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Saving..." : needsMainWalletApproval ? "Reconnect main wallet" : "Add backup wallet"}</button>
-              <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
+              <button type="button" onClick={onSave} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Saving..." : needsMainWalletApproval ? "Reconnect main wallet" : "Add backup wallet"}</button>
+              <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
             </div>
           </motion.div>
         ) : null}
@@ -151,9 +151,9 @@ function BackupWalletModal({
           <motion.div key="backup-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
-              <p className="mt-4 text-sm leading-relaxed text-text/62">Your backup wallet is ready if you ever need to protect or recover this account.</p>
+              <p className="mt-4 tl-body-sm leading-relaxed text-text/62">Your backup wallet is ready if you ever need to protect or recover this account.</p>
             </div>
-            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
+            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -167,12 +167,12 @@ function FreezeAccountModal({ open, busy, onClose, onConfirm }: { open: boolean;
       <div className="rounded-[24px] border border-[#ffb86b]/18 bg-[#ffb86b]/10 px-5 py-5">
         <div className="flex items-start gap-3.5">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#ffb86b]/14 text-[#ffcf8c]"><LockKeyhole className="h-5 w-5" /></div>
-          <p className="text-sm leading-relaxed text-text/64">While your account is frozen, payments stay protected and normal activity is paused until you unlock or recover.</p>
+          <p className="tl-body-sm leading-relaxed text-text/64">While your account is frozen, payments stay protected and normal activity is paused until you unlock or recover.</p>
         </div>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3">
-        <button type="button" onClick={onConfirm} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#ffb86b,#ffe1b0)] px-4 py-3.5 text-sm font-semibold text-[#1e1303] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Locking..." : "Freeze Now"}</button>
-        <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
+        <button type="button" onClick={onConfirm} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#ffb86b,#ffe1b0)] px-4 py-3.5 tl-body-sm font-semibold text-[#1e1303] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Locking..." : "Freeze Now"}</button>
+        <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
       </div>
     </GuidedFlowModal>
   );
@@ -199,12 +199,12 @@ function RecoveryFlowModal({
               <div className="flex items-start gap-3.5">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#ffb86b]/14 text-[#ffcf8c]"><AlertTriangle className="h-5 w-5" /></div>
                 <div>
-                  <div className="text-sm font-semibold text-text">Your funds stay protected</div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-text/64">As soon as recovery starts, your account is locked so no one can move funds during the safety window.</p>
+                  <div className="tl-body-sm font-semibold text-text">Your funds stay protected</div>
+                  <p className="mt-1.5 tl-body-sm leading-relaxed text-text/64">As soon as recovery starts, your account is locked so no one can move funds during the safety window.</p>
                 </div>
               </div>
             </div>
-            <button type="button" onClick={onStart} disabled={busy} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Starting..." : "Continue with Backup Wallet"}</button>
+            <button type="button" onClick={onStart} disabled={busy} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Starting..." : "Continue with Backup Wallet"}</button>
           </motion.div>
         ) : null}
 
@@ -213,30 +213,30 @@ function RecoveryFlowModal({
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-6 text-center">
               <motion.div animate={{ scale: [1, 1.04, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#58f2b1]/10 text-accent-deep"><ShieldCheck className="h-7 w-7" /></motion.div>
               <div className="mt-4 text-[2rem] font-semibold tracking-[-0.06em] text-text">{formatCountdown(countdownSeconds)}</div>
-              <p className="mt-2 text-sm leading-relaxed text-text/60">Your funds are locked and protected. No one can move them during this countdown.</p>
+              <p className="mt-2 tl-body-sm leading-relaxed text-text/60">Your funds are locked and protected. No one can move them during this countdown.</p>
             </div>
-            <button type="button" onClick={onContinue} disabled={countdownSeconds > 0} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">{countdownSeconds > 0 ? "Waiting for cooldown" : "Set new wallet"}</button>
+            <button type="button" onClick={onContinue} disabled={countdownSeconds > 0} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">{countdownSeconds > 0 ? "Waiting for cooldown" : "Set new wallet"}</button>
           </motion.div>
         ) : null}
 
         {step === "set-wallet" ? (
           <motion.div key="recovery-set-wallet" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-4">
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">Current main wallet</div>
-              <div className="mt-2 text-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available"}</div>
+              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Current main wallet</div>
+              <div className="mt-2 tl-body-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available"}</div>
             </div>
             <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="text-[0.68rem] uppercase tracking-[0.2em] text-text/40">New wallet</div>
-              <div className="mt-2 text-sm font-semibold text-text">{stagedWallet ? shortenAddress(stagedWallet) : connectedWallet ? shortenAddress(connectedWallet) : "Connect a wallet"}</div>
-              <p className="mt-2 text-[0.82rem] leading-relaxed text-text/58">Connect the wallet you want to use next.</p>
+              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">New wallet</div>
+              <div className="mt-2 tl-body-sm font-semibold text-text">{stagedWallet ? shortenAddress(stagedWallet) : connectedWallet ? shortenAddress(connectedWallet) : "Connect a wallet"}</div>
+              <p className="mt-2 tl-body-sm leading-relaxed text-text/58">Connect the wallet you want to use next.</p>
               <div className="mt-4 grid gap-3">
-                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
+                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
                 {connectedWallet && connectedWallet !== mainWallet ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 text-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
+                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 tl-body-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
                 ) : null}
               </div>
             </div>
-            <button type="button" onClick={onContinue} disabled={!stagedWallet} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
+            <button type="button" onClick={onContinue} disabled={!stagedWallet} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
           </motion.div>
         ) : null}
 
@@ -244,9 +244,9 @@ function RecoveryFlowModal({
           <motion.div key="recovery-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
             <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
-              <p className="mt-4 text-sm leading-relaxed text-text/62">Your next wallet is ready for the final secure handoff.</p>
+              <p className="mt-4 tl-body-sm leading-relaxed text-text/62">Your next wallet is ready for the final secure handoff.</p>
             </div>
-            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
+            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -345,7 +345,7 @@ export function SettingsExperience() {
               type="button"
               onClick={() => void handleCompleteSecureSetup()}
               disabled={identityBusy}
-              className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 text-[0.82rem] font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+              className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
               {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
             </button>
@@ -356,8 +356,8 @@ export function SettingsExperience() {
       <section className="space-y-5">
 
         {/* ── Notices ── */}
-        {notice ? <div className="tl-badge rounded-[18px] px-4 py-3 text-[0.82rem]">{notice}</div> : null}
-        {error ? <div className="tl-button-danger rounded-[18px] px-4 py-3 text-[0.82rem]">{error}</div> : null}
+        {notice ? <div className="tl-badge rounded-[18px] px-4 py-3 tl-body-sm">{notice}</div> : null}
+        {error ? <div className="tl-button-danger rounded-[18px] px-4 py-3 tl-body-sm">{error}</div> : null}
 
         {/* ═══════════ SECURITY ═══════════ */}
         <div>
@@ -367,7 +367,7 @@ export function SettingsExperience() {
           <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <span className="flex items-center gap-2.5">
               <Wallet2 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              <span className="text-[0.84rem] font-medium text-[var(--text)]">Main wallet</span>
+              <span className="tl-body-sm font-medium text-[var(--text)]">Main wallet</span>
             </span>
             <span className="text-[0.74rem] font-medium text-[var(--text-soft)]">
               {identity?.mainWallet ? shortenAddress(identity.mainWallet) : user.walletAddress ? shortenAddress(user.walletAddress) : "Not set"}
@@ -382,12 +382,12 @@ export function SettingsExperience() {
           >
             <span className="flex items-center gap-2.5">
               <ShieldCheck className={`h-4 w-4 ${identity?.recoveryWallet ? "text-[#4ae8c0]" : "text-[#ffb86b]"}`} />
-              <span className="text-[0.84rem] font-medium text-[var(--text)]">Backup wallet</span>
+              <span className="tl-body-sm font-medium text-[var(--text)]">Backup wallet</span>
             </span>
             {identity?.recoveryWallet ? (
               <span className="flex items-center gap-1.5 rounded-[12px] bg-[#58f2b1]/10 px-2.5 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#4ae8c0]" />
-                <span className="text-[0.68rem] font-medium text-accent-deep">Verified</span>
+                <span className="tl-meta-sm font-medium text-accent-deep">Verified</span>
               </span>
             ) : (
               <span className="flex items-center gap-1 text-[0.74rem] font-medium text-[#ffb86b]">
@@ -407,12 +407,12 @@ export function SettingsExperience() {
             >
               <span className="flex items-center gap-2.5">
                 <LockKeyhole className={`h-4 w-4 ${identity.isFrozen ? "text-[#ffb86b]" : "text-[var(--accent-deep)] dark:text-[var(--accent)]"}`} />
-                <span className="text-[0.84rem] font-medium text-[var(--text)]">{identity.isFrozen ? "Unlock account" : "Lock account"}</span>
+                <span className="tl-body-sm font-medium text-[var(--text)]">{identity.isFrozen ? "Unlock account" : "Lock account"}</span>
               </span>
               {identity.isFrozen ? (
                 <span className="flex items-center gap-1.5 rounded-[12px] bg-[#ffb86b]/10 px-2.5 py-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#ffb86b]" />
-                  <span className="text-[0.68rem] font-medium text-[#ffcf8c]">Frozen</span>
+                  <span className="tl-meta-sm font-medium text-[#ffcf8c]">Frozen</span>
                 </span>
               ) : (
                 <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
@@ -430,7 +430,7 @@ export function SettingsExperience() {
             >
               <span className="flex items-center gap-2.5">
                 <AlertTriangle className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-                <span className="text-[0.84rem] font-medium text-[var(--text)]">Start recovery</span>
+                <span className="tl-body-sm font-medium text-[var(--text)]">Start recovery</span>
               </span>
               <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
             </button>
@@ -449,7 +449,7 @@ export function SettingsExperience() {
 
           {/* Theme */}
           <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-            <span className="text-[0.84rem] font-medium text-[var(--text)]">Theme</span>
+            <span className="tl-body-sm font-medium text-[var(--text)]">Theme</span>
             <div className="flex items-center gap-1 rounded-[12px] bg-[var(--surface-soft)] p-1">
               <button
                 type="button"
@@ -479,8 +479,8 @@ export function SettingsExperience() {
           {/* Autoclaim */}
           <div className="tl-panel-header tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <div className="min-w-0 flex-1 mr-3">
-              <span className="text-[0.84rem] font-medium text-[var(--text)]">Autoclaim</span>
-              <div className="tl-text-soft mt-0.5 text-[0.68rem] leading-tight">Up to ${autoclaim?.maxAmountUsd ?? 100}</div>
+              <span className="tl-body-sm font-medium text-[var(--text)]">Autoclaim</span>
+              <div className="tl-text-soft mt-0.5 tl-meta-sm leading-tight">Up to ${autoclaim?.maxAmountUsd ?? 100}</div>
             </div>
             <button
               type="button"
@@ -504,7 +504,7 @@ export function SettingsExperience() {
           >
             <span className="flex items-center gap-2.5">
               <LockKeyhole className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              <span className="text-[0.84rem] font-medium text-[var(--text)]">{otpBusy ? "Sending OTP..." : "Change PIN"}</span>
+              <span className="tl-body-sm font-medium text-[var(--text)]">{otpBusy ? "Sending OTP..." : "Change PIN"}</span>
             </span>
             <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
           </button>
@@ -516,7 +516,7 @@ export function SettingsExperience() {
           <button
             type="button"
             onClick={logout}
-            className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#ff7f7f]/18 bg-[#ff7f7f]/8 px-4 py-3.5 text-[0.84rem] font-semibold text-[#ffb1b1] transition-colors hover:bg-[#ff7f7f]/14 cursor-pointer active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#ff7f7f]/18 bg-[#ff7f7f]/8 px-4 py-3.5 tl-body-sm font-semibold text-[#ffb1b1] transition-colors hover:bg-[#ff7f7f]/14 cursor-pointer active:scale-[0.98]"
           >
             Log out
           </button>
@@ -536,7 +536,7 @@ export function SettingsExperience() {
               <PinDigitBoxes pin={newPin} />
             </div>
           </label>
-          <button type="submit" disabled={pinBusy || otp.length !== 6 || newPin.length !== 6} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-sm font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{pinBusy ? "Updating PIN..." : "Save new PIN"}</button>
+          <button type="submit" disabled={pinBusy || otp.length !== 6 || newPin.length !== 6} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{pinBusy ? "Updating PIN..." : "Save new PIN"}</button>
         </form>
       </OtpModal>
     </AppMobileShell>

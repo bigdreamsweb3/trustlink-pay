@@ -80,9 +80,9 @@ export function ActivityExperience() {
                 key={value}
                 type="button"
                 onClick={() => { setFilter(value); setVisibleCount(10); }}
-                className={`rounded-[12px] px-3 py-1.5 text-[0.74rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.96] ${active
-                  ? "bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]"
-                  : "bg-[var(--surface-soft)] text-[var(--text-soft)]"
+                className={`rounded-[12px] px-3 py-1.5 tl-body-sm font-semibold transition-all duration-200 cursor-pointer active:scale-[0.96] ${active
+                  ? "bg-[var(--accent-soft)] text-accent-deep dark:text-accent"
+                  : "bg-[var(--surface-soft)] text-secondary"
                   }`}
               >
                 {label}

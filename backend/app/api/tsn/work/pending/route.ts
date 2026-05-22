@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { ok, toErrorResponse } from "@/app/lib/http";
 import { env } from "@/app/lib/env";
-import { TsnHttpClient } from "../../../../../../tsn/src";
+import { TsnHttpClient } from "@trustlink/tsn-sdk";
 
 export async function GET() {
   try {

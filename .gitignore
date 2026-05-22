@@ -1,49 +1,7 @@
-# OS and editor noise
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# Keep SDK source and dist, exclude node_modules
+tsn-sdk/node_modules/
+tsn-cranker-sdk/node_modules/
 
-.env
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Build and cache outputs
-dist/
-build/
-coverage/
-.tsn/
-tsn/.tsn/
-tsn/node_modules/
-tsn/cranker-sdk/node_modules/
-tsn/cranker-sdk/dist/
-
-# Backend
-backend/node_modules/
-backend/.next/
-backend/target/
-backend/.backups/
-backend/*.tsbuildinfo
-backend/.env
-backend/.env.*
-!backend/.env.example
-
-# Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/dist/
-frontend/build/
-frontend/coverage/
-frontend/*.tsbuildinfo
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
-
-# Local dependency caches
-.avm/
-.solana-install/
+# Keep dist
+!tsn-sdk/dist/
+!tsn-cranker-sdk/dist/

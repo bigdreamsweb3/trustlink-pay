@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "protocol/target/idl/tsn.json",
   "scripts": {
-    "mempool": "tsx src/server.ts",
+    "mempool": "tsx ../tsn-sdk/src/server.ts",
     "setup": "tsx scripts/setup.ts",
     "cranker": "tsx scripts/cranker.ts",
     "protocol:build": "cd protocol && anchor build",
@@ -14,13 +13,13 @@
     "protocol:test": "cd protocol && anchor test",
     "protocol:keys": "cd protocol && anchor keys list",
     "escrow:init-config": "tsx scripts/init-escrow-config.ts",
-    "escrow:update-config": "tsx scripts/update-escrow-config.ts",
-    "cranker:build": "npm --prefix cranker-sdk run build"
+    "escrow:update-config": "tsx scripts/update-escrow-config.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/spl-token": "^0.4.14",
-    "@solana/web3.js": "^1.98.4"
+    "@solana/web3.js": "^1.98.4",
+    "@trustlink/tsn-sdk": "file:../tsn-sdk"
   },
   "devDependencies": {
     "tsx": "^4.22.2",

@@ -5,16 +5,18 @@
     "moduleResolution": "Bundler",
     "types": ["node"],
     "typeRoots": ["./node_modules/@types", "../backend/node_modules/@types"],
-    // "baseUrl": ".",
     "paths": {
       "@coral-xyz/anchor": ["../backend/node_modules/@coral-xyz/anchor"],
       "@solana/spl-token": ["../backend/node_modules/@solana/spl-token"],
-      "@solana/web3.js": ["../backend/node_modules/@solana/web3.js"]
+      "@solana/web3.js": ["../backend/node_modules/@solana/web3.js"],
+      "@trustlink/tsn-sdk": ["../tsn-sdk/dist"],
+      "@trustlink/tsn-sdk/*": ["../tsn-sdk/dist/*"]
     },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": ["scripts/**/*.ts"]
 }

@@ -10,7 +10,7 @@ const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authorit
 const TSN_CRANKER_VAULT_TOKEN_SEED = Buffer.from("tsn_cranker_vault_token");
 const TSN_LIQUIDITY_POSITION_SEED = Buffer.from("tsn_liquidity_position");
 
-const cliPath = resolve(process.cwd(), "../tsn/cranker-sdk/dist/cli.js");
+const cliPath = resolve(process.cwd(), "../tsn-cranker-sdk/dist/cli.js");
 const statePath = resolve(process.cwd(), "operator-state.json");
 
 function resolvePath(path) {

@@ -1,4 +1,4 @@
-import { HttpTsnMempool, JsonFileTsnMempool, sha256Bytes } from "../src";
+import { HttpTsnMempool, JsonFileTsnMempool, sha256Bytes } from "../tsn-sdk/src";
 
 function createMempoolClient() {
   if (process.env.TSN_MEMPOOL_URL) {

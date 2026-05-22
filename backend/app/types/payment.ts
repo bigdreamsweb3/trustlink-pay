@@ -1,4 +1,4 @@
-import type { ClaimRequestStatus, PaymentIntentStatus } from "../../../tsn/src";
+import type { ClaimRequestStatus, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
 export type PaymentStatus = "created" | "locked" | "expired" | "claimed" | "refund_requested" | "refunded";
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";

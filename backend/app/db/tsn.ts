@@ -1,5 +1,5 @@
 import { sql } from "@/app/db/client";
-import type { ClaimRequestRecord, ClaimRequestStatus, PaymentIntentRecord, PaymentIntentStatus } from "../../../tsn/src";
+import type { ClaimRequestRecord, ClaimRequestStatus, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
 export async function findPaymentIntentByPaymentId(paymentId: string): Promise<PaymentIntentRecord | null> {
   const rows = (await sql`

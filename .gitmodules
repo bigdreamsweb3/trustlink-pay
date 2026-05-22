@@ -1,9 +1,12 @@
 [submodule "tsn-mempool-backend"]
-	path = tsn-mempool-backend
-	url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
+path = tsn-mempool-backend
+url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
+branch = main
 [submodule "tsn-mempool-frontend"]
-	path = tsn-mempool-frontend
-	url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
+path = tsn-mempool-frontend
+url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
+branch = main
 [submodule "tsn-epoch-records"]
-	path = tsn-epoch-records
-	url = https://github.com/bigdreamsweb3/tsn-epoch-records.git
+path = tsn-epoch-records
+url = https://github.com/bigdreamsweb3/tsn-epoch-records.git
+branch = main

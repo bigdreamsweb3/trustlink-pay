@@ -35,59 +35,59 @@
   color-scheme: light;
 
   /* ── LIGHT MODE ─ Clean, minimal, professional ──────────── */
-  --bg: #f7faf8;
+  --bg: #f8faf9;
   --bg-elevated: #ffffff;
   --panel: #ffffff;
-  --panel-soft: #f0f5f2;
+  --panel-soft: #f2f5f3;
   --surface: #203236;
-  --surface-border: rgba(30, 138, 108, 0.06);
-  --text: #111f18;
+  --surface-border: rgba(30, 138, 108, 0.08);
+  --text: #0f1a14;
   --primary: #ffffff;
-  --muted: rgba(17, 31, 24, 0.5);
+  --muted: rgba(15, 26, 20, 0.55);
   --accent: #2ea886;
   --accent-deep: #1e7a60;
   --primary-accent: #5ab8aa;
-  --accent-icon: #b0ddd200;
+  --accent-icon: #2ea886;
   --accent-gradient: linear-gradient(
     145deg,
-    rgba(46, 168, 134, 0.14) 0%,
-    rgba(90, 184, 170, 0.06) 35%,
-    #f0f5f2 65%,
-    #f7faf8 100%
+    rgba(46, 168, 134, 0.12) 0%,
+    rgba(90, 184, 170, 0.05) 35%,
+    #f2f5f3 65%,
+    #f8faf9 100%
   );
-  --warning: #d9970f;
-  --danger: #d95050;
+  --warning: #c98d0a;
+  --danger: #d45050;
   --shadow:
-    0 1px 2px rgba(17, 31, 24, 0.03), 0 4px 14px rgba(17, 31, 24, 0.025);
-  --overlay: rgba(17, 31, 24, 0.18);
+    0 1px 3px rgba(15, 26, 20, 0.04), 0 4px 16px rgba(15, 26, 20, 0.03);
+  --overlay: rgba(15, 26, 20, 0.12);
   --phone-shell: #f3f7f5;
-  --phone-screen: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
-  --dock: rgba(255, 255, 255, 0.9);
-  --dock-border: rgba(30, 122, 96, 0.05);
-  --card-strong: rgba(255, 255, 255, 0.96);
-  --field: rgba(245, 249, 247, 0.88);
+  --phone-screen: linear-gradient(180deg, #ffffff 0%, #f6f9f7 100%);
+  --dock: rgba(255, 255, 255, 0.95);
+  --dock-border: rgba(30, 122, 96, 0.06);
+  --card-strong: rgba(255, 255, 255, 0.98);
+  --field: rgba(248, 250, 249, 0.92);
   --field-strong:
-    radial-gradient(circle at top, rgba(46, 168, 134, 0.04), transparent 50%),
-    linear-gradient(135deg, #ffffff, #f7faf8);
-  --field-border: rgba(30, 122, 96, 0.07);
-  --surface-soft: rgba(240, 245, 242, 0.6);
-  --text-soft: rgba(17, 31, 24, 0.64);
-  --text-faint: rgba(17, 31, 24, 0.4);
-  --text-popper: rgb(17, 31, 24);
-  --icon-soft: rgba(46, 168, 134, 0.05);
-  --accent-soft: rgba(46, 168, 134, 0.06);
-  --accent-border: rgba(46, 168, 134, 0.1);
-  --danger-soft: rgba(217, 80, 80, 0.07);
+    radial-gradient(circle at top, rgba(46, 168, 134, 0.03), transparent 50%),
+    linear-gradient(135deg, #ffffff, #f8faf9);
+  --field-border: rgba(30, 122, 96, 0.08);
+  --surface-soft: rgba(242, 245, 243, 0.7);
+  --text-soft: rgba(15, 26, 20, 0.75);
+  --text-faint: rgba(15, 26, 20, 0.45);
+  --text-popper: rgb(15, 26, 20);
+  --icon-soft: rgba(46, 168, 134, 0.06);
+  --accent-soft: rgba(46, 168, 134, 0.08);
+  --accent-border: rgba(46, 168, 134, 0.12);
+  --danger-soft: rgba(212, 80, 80, 0.08);
 
   --pop-bg: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.48) 0%,
-    rgba(255, 255, 255, 0.28) 100%
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.35) 100%
   );
 
   --gradient-bg:
-    radial-gradient(circle at top, rgba(46, 168, 134, 0.04), transparent 28%),
-    linear-gradient(180deg, #f7faf8 0%, #f0f4f2 100%);
+    radial-gradient(circle at top, rgba(46, 168, 134, 0.05), transparent 28%),
+    linear-gradient(180deg, #f8faf9 0%, #f4f7f5 100%);
 }
 
 .dark {
@@ -165,13 +165,17 @@
   --color-surface: var(--surface);
   --color-surface-border: var(--surface-border);
   --color-text: var(--text);
-  --color-primary: var(--text-primary);
+  --color-text-strong: var(--text);
   --color-accent: var(--accent);
   --color-accent-deep: var(--accent-deep);
   --color-accent-icon: var(--accent-icon);
   --color-primary-accent: var(--primary-accent);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
 
   --color-muted: var(--muted);
+  --color-text-soft: var(--text-soft);
+  --color-text-faint: var(--text-faint);
   --color-overlay: var(--overlay);
   --color-phone-shell: var(--phone-shell);
   --color-phone-screen: var(--phone-screen);
@@ -179,32 +183,142 @@
   --color-dock-border: var(--dock-border);
   --color-card-strong: var(--card-strong);
   --color-field: var(--field);
-
   --color-field-border: var(--field-border);
   --color-surface-soft: var(--surface-soft);
-  --color-text-soft: var(--text-soft);
-  --color-text-faint: var(--text-faint);
-  --color-text-popper: var(--text-popper);
   --color-icon-soft: var(--icon-soft);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
   --color-danger-soft: var(--danger-soft);
+  --color-text-popper: var(--text-popper);
 
   --background-image-field-strong: var(--field-strong);
-
-  --background-image-gradient-bg:
-    radial-gradient(circle at 16% 12%, var(--accent-soft), transparent 22%),
-    radial-gradient(
-      circle at 84% 10%,
-      rgba(255, 255, 255, 0.04),
-      transparent 20%
-    ),
-    var(--phone-screen);
+  --background-image-gradient-bg: var(--gradient-bg);
   --background-image-pop-bg: var(--pop-bg);
   --background-image-accent-gradient: var(--accent-gradient);
-
   --shadow-softbox: var(--shadow);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED TYPOGRAPHY SYSTEM v3
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── DISPLAY (Hero/Page titles) ─── */
+.tl-display {
+  font-family: var(--font-display-face);
+  font-size: clamp(1.75rem, 4.5vw, 3rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+/* ── HEADINGS ─── */
+.tl-h1 {
+  font-family: var(--font-display-face);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.tl-h2 {
+  font-family: var(--font-display-face);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.tl-h3 {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* ── BODY TEXT ─── */
+.tl-body-lg { font-size: 1rem; line-height: 1.6; color: var(--text-soft); }
+.tl-body { font-size: 0.9375rem; line-height: 1.55; color: var(--text-soft); }
+.tl-body-sm { font-size: 0.875rem; line-height: 1.5; color: var(--text-soft); }
+
+/* ── UI LABELS ─── */
+.tl-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tl-label-sm {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ── META/DESCRIPTION ─── */
+.tl-meta { font-size: 0.8125rem; color: var(--text-soft); }
+.tl-meta-sm { font-size: 0.75rem; color: var(--muted); }
+
+/* ── BUTTON TEXT ─── */
+.tl-btn { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.02em; }
+.tl-btn-sm { font-size: 0.75rem; font-weight: 600; }
+
+/* ── BADGE ─── */
+.tl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.tl-meta-label {
+  background: var(--surface-soft);
+  color: var(--text-faint);
+  border-color: transparent;
+}
+
+/* ── PANEL HEADERS ─── */
+.tl-panel-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--field-border);
+}
+
+.tl-panel-header h2, .tl-panel-header h3 {
+  font-family: var(--font-display-face);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── CODE/MONO ─── */
+.tl-code {
+  font-family: var(--font-tactical-face);
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  color: var(--text-soft);
+}
+
+/* ── SEMANTIC UTILITIES ─── */
+.tl-text-primary { color: var(--text); }
+.tl-text-secondary { color: var(--text-soft); }
+.tl-text-muted { color: var(--muted); }
+.tl-text-faint { color: var(--text-faint); }
+.tl-text-accent { color: var(--accent); }
+.tl-text-warning { color: var(--warning); }
+.tl-text-danger { color: var(--danger); }
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SMOOTHNESS LAYER

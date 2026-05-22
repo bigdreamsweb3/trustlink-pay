@@ -1,288 +1,629 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
   Loader2,
   Timer,
   Zap,
-  ChevronRight,
-  ChevronDown,
+  ArrowUpRight,
+  Compass,
 } from "lucide-react";
 
 interface Step {
   id: number;
   label: string;
-  duration: number; // in milliseconds
+  duration: number;
   statusText: string;
 }
 
-const steps: Step[] = [
+const BASE_STEPS = [
   {
     id: 1,
     label: "Alice enters Bob's identity",
-    duration: 500,
     statusText: "Resolving bob.phone index...",
   },
   {
     id: 2,
-    label: "Intent enters TSN Mempool",
-    duration: 450,
+    label: "Intent enters Mempool",
     statusText: "Mempool state registered.",
   },
   {
     id: 3,
     label: "Cranker submits on-chain",
-    duration: 550,
     statusText: "Submitting proof payload...",
   },
   {
     id: 4,
     label: "Escrow locks the funds",
-    duration: 450,
     statusText: "Escrow contract secured...",
   },
   {
     id: 5,
     label: "Private claim routes payload",
-    duration: 500,
     statusText: "Mapping payout address...",
   },
   {
     id: 6,
     label: "Proof settles at epoch",
-    duration: 550,
     statusText: "On-chain state finalized.",
   },
 ];
 
+// Always sum up to ~1.8s - 2.5s (average < 3s)
+const generateRandomizedSteps = (): Step[] => {
+  return BASE_STEPS.map((step) => ({
+    ...step,
+    duration: Math.floor(Math.random() * 110 + 280), // 280ms - 390ms per step
+  }));
+};
+
+interface HeaderProps {
+  elapsed: number;
+  loopCount: number;
+}
+
+const Header = memo(function Header({
+  elapsed,
+  loopCount,
+}: HeaderProps) {
+  return (
+    <div className="flex items-center justify-between px-0.5 select-none min-h-[20px]">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Timer className="h-3 w-3 text-primary-accent shrink-0" />
+
+        <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-slate-400 font-bold">
+          Settlement Clock:
+        </span>
+
+        <span className="text-primary-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
+          {elapsed.toFixed(2)}s
+        </span>
+      </div>
+
+      <span className="text-[0.58rem] font-mono text-slate-500 font-bold shrink-0">
+        CYCLE #{loopCount + 1}
+      </span>
+    </div>
+  );
+});
+
+interface ConnectorPathData {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  angle: number;
+  pathD: string;
+}
+
+interface ProcessGridProps {
+  currentStepIndex: number;
+  isCompleted: boolean;
+  stepProgress: number;
+  steps: Step[];
+}
+
+const ProcessGrid = memo(function ProcessGrid({
+  currentStepIndex,
+  isCompleted,
+  stepProgress,
+  steps,
+}: ProcessGridProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [coords, setCoords] = useState<ConnectorPathData[]>([]);
+
+  const mapConnections = useCallback(() => {
+    if (!containerRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const newCoords: ConnectorPathData[] = [];
+
+    for (let i = 0; i < steps.length - 1; i++) {
+      const cardA = cardRefs.current[i];
+      const cardB = cardRefs.current[i + 1];
+
+      if (cardA && cardB) {
+        const rectA = cardA.getBoundingClientRect();
+        const rectB = cardB.getBoundingClientRect();
+
+        const fromX = rectA.right - containerRect.left;
+        const fromY = rectA.top + rectA.height / 2 - containerRect.top;
+        const toX = rectB.left - containerRect.left;
+        const toY = rectB.top + rectB.height / 2 - containerRect.top;
+
+        // Roughly horizontal if rows match
+        const isHorizontal = Math.abs(rectA.top - rectB.top) < 30;
+
+        let pathD = "";
+        let adjustFromX = fromX;
+        let adjustFromY = fromY;
+        let adjustToX = toX;
+        let adjustToY = toY;
+
+        if (isHorizontal) {
+          pathD = `M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${fromY}, ${toX} ${toY}`;
+        } else {
+          // Wrapped connector trajectory
+          const outX = rectA.left + rectA.width / 2 - containerRect.left;
+          const outY = rectA.bottom - containerRect.top;
+          const inX = rectB.left + rectB.width / 2 - containerRect.left;
+          const inY = rectB.top - containerRect.top;
+
+          adjustFromX = outX;
+          adjustFromY = outY;
+          adjustToX = inX;
+          adjustToY = inY;
+
+          pathD = `M ${outX} ${outY} C ${outX} ${outY + 28}, ${inX} ${inY - 28}, ${inX} ${inY}`;
+        }
+
+        const angle = Math.atan2(adjustToY - adjustFromY, adjustToX - adjustFromX) * (180 / Math.PI);
+
+        newCoords.push({
+          fromX: adjustFromX,
+          fromY: adjustFromY,
+          toX: adjustToX,
+          toY: adjustToY,
+          angle,
+          pathD,
+        });
+      }
+    }
+    setCoords(newCoords);
+  }, [steps]);
+
+  // Recalculate on window size updates and stage changes
+  useEffect(() => {
+    mapConnections();
+    window.addEventListener("resize", mapConnections);
+    const interval = setInterval(mapConnections, 400);
+
+    return () => {
+      window.removeEventListener("resize", mapConnections);
+      clearInterval(interval);
+    };
+  }, [steps, currentStepIndex, mapConnections]);
+
+  return (
+    <div className="select-none relative">
+      <div ref={containerRef} className="relative w-full overflow-visible">
+
+        {/* SVG Connecting Overlay Vectors */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-20">
+          <defs>
+            <filter id="neon-glow" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {coords.map((c, index) => {
+            const isActive = !isCompleted && index === currentStepIndex;
+            const isPassed = isCompleted || index < currentStepIndex;
+
+            let strokeColor = "#2D3139";
+            let strokeWidth = "1.5";
+            let strokeDasharray = "5 4";
+
+            if (isActive) {
+              strokeColor = "#22D3EE";
+              strokeWidth = "2.5";
+              strokeDasharray = "none";
+            } else if (isPassed) {
+              strokeColor = "#10B981";
+              strokeWidth = "1.75";
+              strokeDasharray = "3 2";
+            }
+
+            return (
+              <g key={`track-${index}`}>
+                {/* Underlying channel line */}
+                <path
+                  d={c.pathD}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray={strokeDasharray}
+                  className="transition-all duration-300"
+                  style={{
+                    filter: isActive ? "drop-shadow(0 0 4px rgba(34,211,238,0.4))" : "none",
+                  }}
+                />
+
+                {/* Highly glowing dynamic vector particle streams */}
+                {isActive && (
+                  <motion.path
+                    d={c.pathD}
+                    fill="none"
+                    stroke="rgba(34,211,238,0.85)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    initial={{ strokeDasharray: "6 6", strokeDashoffset: 0 }}
+                    animate={{ strokeDashoffset: -24 }}
+                    transition={{ ease: "linear", duration: 0.6, repeat: Infinity }}
+                    style={{ filter: "url(#neon-glow)" }}
+                  />
+                )}
+
+                {/* Interactive high-speed electron burst packets */}
+                {isActive && stepProgress > 10 && (
+                  <circle r="3.2" fill="#22D3EE" filter="url(#neon-glow)">
+                    <animateMotion dur="0.8s" repeatCount="indefinite" path={c.pathD} />
+                  </circle>
+                )}
+                {isActive && stepProgress > 40 && (
+                  <circle r="1.8" fill="#FFF" filter="url(#neon-glow)">
+                    <animateMotion dur="0.4s" repeatCount="indefinite" path={c.pathD} />
+                  </circle>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Anchored Rotary Compass Point Indicators */}
+        {coords.map((c, index) => {
+          const isSourceActive = !isCompleted && index === currentStepIndex;
+          const isSourceCompleted = isCompleted || index < currentStepIndex;
+
+          let compassRotation = c.angle;
+          let indicatorBorderColorClass = "border-slate-800 text-slate-600 bg-slate-950";
+
+          if (isSourceActive) {
+            indicatorBorderColorClass = "border-[#22D3EE]/50 text-[#22D3EE] bg-[#0c1626] shadow-[0_0_8px_rgba(34,211,238,0.2)]";
+          } else if (isSourceCompleted) {
+            indicatorBorderColorClass = "border-[#10B981]/30 text-[#10B981] bg-[#10B981]/5";
+          }
+
+          return (
+            <div
+              key={`compass-${index}`}
+              style={{
+                position: "absolute",
+                left: c.fromX,
+                top: c.fromY,
+                transform: "translate(-50%, -50%)",
+              }}
+              className="z-30 pointer-events-none transition-all duration-300"
+            >
+              <div className={`relative flex items-center justify-center rounded-full h-6 w-6 border text-center transition-all duration-300 ${indicatorBorderColorClass}`}>
+                {isSourceActive && (
+                  <div className="absolute inset-0 rounded-full bg-cyan-500/10 animate-ping opacity-60 pointer-events-none" />
+                )}
+
+                <motion.div
+                  style={{ rotate: isSourceActive ? 0 : compassRotation }}
+                  className="flex items-center justify-center w-full h-full"
+                >
+                  {isSourceActive ? (
+                    <Loader2 className="h-3.5 w-3.5 text-[#22D3EE] animate-spin" />
+                  ) : (
+                    <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.2]" />
+                  )}
+                </motion.div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Layout Grid of Node Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-7 gap-x-10 px-0.5 relative w-full z-10 leading-none">
+          {steps.map((step, idx) => {
+            const nodeCompleted = isCompleted || idx < currentStepIndex;
+            const nodeActive = !isCompleted && idx === currentStepIndex;
+            const nodePending = !isCompleted && idx > currentStepIndex;
+
+            let cardBgClass = "bg-[#151619]/60 border-[#2D3139] opacity-35";
+            let titleColorClass = "text-slate-400";
+            let numMarkerBg = "text-slate-500 bg-slate-800/40 border-slate-700/30";
+
+            if (nodeActive) {
+              cardBgClass = "bg-[#151619]/90 border-[#22D3EE] shadow-[0_0_12px_rgba(34,211,238,0.12)] opacity-100";
+              titleColorClass = "text-[#22D3EE] font-bold font-sans";
+              numMarkerBg = "text-slate-950 bg-[#22D3EE] font-black";
+            } else if (nodeCompleted) {
+              cardBgClass = "bg-[#151619]/90 border-[#10B981] opacity-100";
+              titleColorClass = "text-[#10B981] font-semibold font-sans";
+              numMarkerBg = "text-[#10B981] bg-[#10B981]/15 border-[#10B981]/25";
+            }
+
+            return (
+              <div
+                key={step.id}
+                ref={(el) => {
+                  cardRefs.current[idx] = el;
+                }}
+                className="relative rounded-xl pointer-events-auto transition-all duration-300"
+              >
+                {nodeActive && (
+                  <div className="absolute -inset-[1.5px] bg-gradient-to-r from-[#22D3EE]/25 to-transparent rounded-xl blur-[1.5px]" />
+                )}
+
+                <div
+                  className={`relative flex flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}
+                >
+                  {/* Active state line trace visual */}
+                  {nodeActive && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 bg-gradient-to-r from-[#22D3EE]/30 to-transparent h-[1.5px]"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${stepProgress}%` }}
+                      transition={{ duration: 0.08 }}
+                    />
+                  )}
+
+                  {/* Header Badge & Marker */}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[0.6rem] font-mono rounded px-1.5 py-[1px] flex items-center justify-center border ${numMarkerBg}`}>
+                      0{step.id}
+                    </span>
+
+                    <div className="flex h-4 w-4 items-center justify-center rounded-full shrink-0">
+                      {nodeCompleted && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 350, damping: 14 }}
+                          className="flex h-3.5 w-3.5 bg-[#10B981]/15 border border-[#10B981]/30 rounded-full items-center justify-center text-[#10B981]"
+                        >
+                          <Check className="h-1.8 w-1.8 stroke-[3.5]" />
+                        </motion.div>
+                      )}
+
+                      {nodeActive && (
+                        <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin" />
+                      )}
+
+                      {nodePending && (
+                        <div className="h-1 w-1 rounded-full bg-slate-700" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Headline Label */}
+                  <span
+                    className={` ${nodeCompleted
+                      ? "text-[0.82rem]"
+                      : "text-[0.62rem] truncate"} leading-tight select-text tracking-wide mt-1 ${titleColorClass} `}
+                  >
+                    {step.label}
+                  </span>
+
+                  {/* Helper status helper indicators */}
+                  <span className="text-[0.55rem] font-mono text-slate-500 leading-none truncate select-text">
+                    {nodeActive
+                      ? `${stepProgress.toFixed(0)}% • ${step.statusText}`
+                      : nodeCompleted
+                        ? null
+                        : "Awaiting step"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+interface StatusBannerProps {
+  isCompleted: boolean;
+  currentStepIndex: number;
+  elapsed: number;
+  steps: Step[];
+}
+
+const StatusBanner = memo(function StatusBanner({
+  isCompleted,
+  currentStepIndex,
+  elapsed,
+  steps,
+}: StatusBannerProps) {
+  const activeStep = steps[currentStepIndex] || steps[steps.length - 1];
+
+  return (
+    <div className="relative w-full shrink-0 min-h-[56px] overflow-hidden">
+      <AnimatePresence mode="wait">
+        {isCompleted ? (
+          <motion.div
+            key="completed"
+            initial={{ opacity: 0, y: 3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-0 border-t border-[#10B981]/25 bg-gradient-to-r from-[#10B981]/10 to-[#10B981]/5 px-3 py-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.06)] select-none transform-gpu"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-[#10B981]/15 border border-[#10B981]/25 shrink-0">
+                <Zap className="h-3 w-3 text-[#10B981] fill-[#10B981]/20" />
+              </div>
+
+              <div className="min-w-0">
+                <span className="block text-[0.58rem] font-mono text-[#10B981] uppercase font-black tracking-widest leading-none">
+                  Settlement Verified
+                </span>
+
+                <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none truncate select-text">
+                  Epoch records verified perfectly on Solana
+                </span>
+              </div>
+            </div>
+
+            <div className="text-right shrink-0 ml-3">
+              <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
+                Total Time
+              </span>
+
+              <strong className="block text-[0.85rem] font-display font-black text-[#10B981] mt-0.5 whitespace-nowrap tabular-nums min-w-[52px]">
+                {elapsed.toFixed(2)}s
+              </strong>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="active"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 border-t border-white/5 bg-[#111114]/10 px-3 py-2 flex items-center justify-between text-slate-400 select-none transform-gpu"
+          >
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden text-ellipsis">
+              <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin shrink-0" />
+
+              <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400 truncate select-text">
+                Active Protocol Pipeline:{" "}
+                <span className="text-[#22D3EE] font-bold">
+                  {activeStep?.statusText}
+                </span>
+              </span>
+            </div>
+
+            <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest shrink-0 ml-3 font-bold">
+              Active
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
 export function TxProcessAnimator() {
+  const [steps, setSteps] = useState<Step[]>(generateRandomizedSteps());
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [stepProgress, setStepProgress] = useState(0);
   const [loopCount, setLoopCount] = useState(0);
   const [elapsed, setElapsed] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
-  // Smooth millisecond live timer
+  // Stable overall elapsed runtime timer
   useEffect(() => {
     if (isCompleted) return;
 
     const start = Date.now();
+
     const interval = setInterval(() => {
       setElapsed((Date.now() - start) / 1000);
-    }, 16); // 60fps refresh rate
+    }, 50);
 
     return () => clearInterval(interval);
   }, [loopCount, isCompleted]);
 
-  // Manage sequence state changes
+  // High-resolution unified timeline coordinator & step manager
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
     if (isCompleted) {
-      // Show completion state, then restart cycle after 3.5 seconds
-      timer = setTimeout(() => {
+      // Completed loop pause before automatic re-trigger
+      const timer = setTimeout(() => {
         setIsCompleted(false);
+        setSteps(generateRandomizedSteps());
         setCurrentStepIndex(0);
+        setStepProgress(0);
         setElapsed(0);
         setLoopCount((prev) => prev + 1);
-      }, 3500);
+      }, 2000);
+
       return () => clearTimeout(timer);
     }
 
     const activeStep = steps[currentStepIndex];
-    timer = setTimeout(() => {
-      if (currentStepIndex < steps.length - 1) {
-        setCurrentStepIndex((prev) => prev + 1);
-      } else {
-        setIsCompleted(true);
-      }
-    }, activeStep.duration);
+    if (!activeStep) return;
 
-    return () => clearTimeout(timer);
-  }, [currentStepIndex, isCompleted, loopCount]);
+    const startTime = Date.now();
+
+    const tracker = setInterval(() => {
+      const msElapsed = Date.now() - startTime;
+      const progress = Math.min((msElapsed / activeStep.duration) * 100, 100);
+      setStepProgress(progress);
+
+      if (msElapsed >= activeStep.duration) {
+        clearInterval(tracker);
+        if (currentStepIndex < steps.length - 1) {
+          setCurrentStepIndex((prev) => prev + 1);
+          setStepProgress(0);
+        } else {
+          setStepProgress(100);
+          setIsCompleted(true);
+        }
+      }
+    }, 16); // High-fidelity ~60Hz update cycle
+
+    return () => clearInterval(tracker);
+  }, [currentStepIndex, isCompleted, steps]);
 
   return (
-    <div className="mt-3 flex flex-col gap-2.5">
-      {/* Animated Top Header Status Bar */}
-      <div className="flex items-center justify-between px-0.5 select-none">
-        <div className="flex items-center gap-1.5">
-          <Timer className="h-3 w-3 text-primary-accent shrink-0" />
-          <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-slate-400 font-bold">
-            Settlement Clock: <span className="text-primary-accent font-mono font-black">{elapsed.toFixed(2)}s</span>
-          </span>
+    <div className="relative flex gap-0 flex-col w-full overflow-hidden contain-layout">
+
+      <div className="p-2.5 md:p-3 relative gap-1.5">
+        {/* Grid overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[1.04]"
+          style={{
+            backgroundImage: `
+          linear-gradient(var(--accent-border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--accent-border) 1px, transparent 1px)
+        `,
+            backgroundSize: "12px 12px",
+          }}
+        />
+
+        <div className="mb-2.5">
+          <Header
+            elapsed={elapsed}
+            loopCount={loopCount}
+          />
         </div>
-        <span className="text-[0.58rem] font-mono text-slate-500 font-bold">
-          CYCLE #{loopCount + 1}
-        </span>
+
+        <ProcessGrid
+          currentStepIndex={currentStepIndex}
+          isCompleted={isCompleted}
+          stepProgress={stepProgress}
+          steps={steps}
+        />
       </div>
 
-      {/* Grid containing steps to fit perfectly and save massive height space */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3.5 gap-x-3.5 relative">
-        {steps.map((step, index) => {
-          // If sequence is completely finished, mark all steps as complete
-          const isStepCompleted = isCompleted || index < currentStepIndex;
-          const isStepActive = !isCompleted && index === currentStepIndex;
-          const isStepPending = !isCompleted && index > currentStepIndex;
-
-          let itemBg = "bg-[#111114]/30 border-white/5";
-          let textColor = "text-slate-500 font-medium";
-          let numColor = "text-slate-600 bg-white/5";
-
-          if (isStepActive) {
-            itemBg = "bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]";
-            textColor = "text-white font-bold";
-            numColor = "text-black bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)]";
-          } else if (isStepCompleted) {
-            itemBg = "bg-emerald-500/5 border-emerald-500/10";
-            textColor = "text-slate-300 font-semibold";
-            numColor = "text-accent bg-emerald-500/10";
-          }
-
-          // Decide connector rendering for responsive layouts:
-          // Desktop (3 cols): Row 1 is 0,1,2. Row 2 is 3,4,5.
-          // - Right Arrow on desktop: 0->1, 1->2, 3->4, 4->5
-          // - Down Arrow on desktop: 2->3
-          const showDesktopRightArrow = index === 0 || index === 1 || index === 3 || index === 4;
-          const showDesktopDownArrow = index === 2;
-
-          // Mobile (2 cols): Row 1 is 0,1. Row 2 is 2,3. Row 3 is 4,5.
-          // - Right Arrow on mobile: 0->1, 2->3, 4->5
-          // - Down Arrow on mobile: 1->2 (at index 1), 3->4 (at index 3)
-          const showMobileRightArrow = index === 0 || index === 2 || index === 4;
-          const showMobileDownArrow = index === 1 || index === 3;
-
-          return (
-            <div key={step.id} className="relative select-none">
-              <motion.div
-                initial={false}
-                animate={{
-                  scale: isStepActive ? 1.02 : 1.0,
-                }}
-                className={`relative flex flex-col justify-between rounded-xl border p-2.5 transition-all duration-300 ${itemBg} min-h-[66px] h-full`}
-              >
-                {/* Header Row: ID Circle / Status Indicator */}
-                <div className="flex items-center justify-between">
-                  <span className={`text-[0.58rem] font-mono font-black h-4.5 w-4.5 rounded-md flex items-center justify-center transition-colors duration-300 ${numColor}`}>
-                    0{step.id}
-                  </span>
-
-                  <div className="flex items-center justify-center">
-                    {isStepCompleted && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/10"
-                      >
-                        <Check className="h-2.5 w-2.5 text-accent stroke-[3px]" />
-                      </motion.div>
-                    )}
-
-                    {isStepActive && (
-                      <Loader2 className="h-3 w-3 text-primary-accent animate-spin" />
-                    )}
-
-                    {isStepPending && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-slate-700" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Step Text */}
-                <span className={`text-[0.7rem] leading-tight mt-1 px-0.5 line-clamp-2 transition-colors duration-300 ${textColor}`}>
-                  {step.label}
-                </span>
-              </motion.div>
-
-              {/* Connection Indicators (Desktop & Tablet: 3-column / Mobile: 2-column) */}
-
-              {/* Desktop Connectors */}
-              {showDesktopRightArrow && (
-                <div className="hidden sm:flex absolute top-1/2 -right-2.5 -translate-y-1/2 z-20">
-                  <ChevronRight className={`h-4 w-4 transition-colors duration-300 ${isStepCompleted ? "text-emerald-500/60 animate-pulse" : isStepActive ? "text-primary-accent animate-pulse" : "text-slate-800"
-                    }`} />
-                </div>
-              )}
-              {showDesktopDownArrow && (
-                <div className="hidden sm:flex absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-20">
-                  <ChevronDown className={`h-4 w-4 transition-colors duration-300 ${isStepCompleted ? "text-emerald-500/60 animate-pulse" : isStepActive ? "text-primary-accent animate-pulse" : "text-slate-800"
-                    }`} />
-                </div>
-              )}
-
-              {/* Mobile Connectors */}
-              {showMobileRightArrow && (
-                <div className="flex sm:hidden absolute top-1/2 -right-2.5 -translate-y-1/2 z-20">
-                  <ChevronRight className={`h-3.5 w-3.5 transition-colors duration-300 ${isStepCompleted ? "text-emerald-500/60 animate-pulse" : isStepActive ? "text-primary-accent animate-pulse" : "text-slate-800"
-                    }`} />
-                </div>
-              )}
-              {showMobileDownArrow && (
-                <div className="flex sm:hidden absolute -bottom-3 left-1/2 -translate-x-1/2 z-20">
-                  <ChevronDown className={`h-3.5 w-3.5 transition-colors duration-300 ${isStepCompleted ? "text-emerald-500/60 animate-pulse" : isStepActive ? "text-primary-accent animate-pulse" : "text-slate-800"
-                    }`} />
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="">
+        <StatusBanner
+          isCompleted={isCompleted}
+          currentStepIndex={currentStepIndex}
+          elapsed={elapsed}
+          steps={steps}
+        />
       </div>
+    </div >
+  );
+}
 
-      {/* Dynamic Summary/Handoff Banner with stable height to prevent layout shifts */}
-      <div className="h-12 relative w-full shrink-0 mt-1">
-        <AnimatePresence>
-          {isCompleted ? (
-            <motion.div
-              key="completed"
-              initial={{ opacity: 0, y: 6, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-[10px] border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-emerald-900/10 p-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.08)] select-none"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-emerald-500/20 border border-emerald-500/30 shrink-0">
-                  <Zap className="h-3 w-3 text-accent fill-accent/30" />
-                </div>
-                <div>
-                  <span className="block text-[0.58rem] font-mono text-accent uppercase font-black tracking-widest leading-none">
-                    Settlement Verified
-                  </span>
-                  <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none">
-                    Epoch records verified perfectly on Solana
-                  </span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
-                  Total Time
-                </span>
-                <strong className="block text-[0.85rem] font-display font-black text-accent mt-0.5 whitespace-nowrap">
-                  {elapsed.toFixed(2)}s
-                </strong>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="active"
-              initial={{ opacity: 0, y: -6, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-[10px] border border-white/5 bg-[#111114]/10 p-2 flex items-center justify-between text-slate-400 select-none"
-            >
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-3 w-3 text-primary-accent animate-spin shrink-0" />
-                <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400">
-                  Active Protocol Pipeline: <span className="text-primary-accent font-bold">{steps[currentStepIndex].statusText}</span>
-                </span>
-              </div>
-              <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest animate-pulse shrink-0">
-                Active
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+// Centering wrapper on an immaculate charcoal black board context
+export default function App() {
+  return (
+    <div className="relative min-h-screen bg-[#0C0D0E] text-[#E0E2E5] flex flex-col items-center justify-center font-sans p-4 relative overflow-hidden">
+      {/* Background decoration elements */}
+      <div className="absolute inset-0 bg-radial-[circle_at_center_top,rgba(34,211,238,0.015)_0%,transparent_60%] pointer-events-none z-0" />
+      <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none z-0" />
+
+      {/* Grid overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.54]"
+        style={{
+          backgroundImage: `
+          linear-gradient(var(--accent-border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--accent-border) 1px, transparent 1px)
+        `,
+          backgroundSize: "12px 12px",
+        }}
+      />
+
+      {/* Main Single Presentation Board Card */}
+      <div className="w-full max-w-4xl bg-[#111215]/95 border border-[#2D3139] rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/60 relative z-10 overflow-hidden">
+        <TxProcessAnimator />
       </div>
     </div>
   );

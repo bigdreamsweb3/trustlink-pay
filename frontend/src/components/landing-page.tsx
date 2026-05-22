@@ -162,45 +162,34 @@ export function LandingPage() {
               Open TSN Mempool
             </a>
           </div>
-          {/* <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#how-it-works"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="tl-button-primary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold"
-            >
-              See how it works <ArrowRight className="h-4 w-4 text-black" />
-            </a>
-            <button
-              onClick={() => handleViewChange("dapp")}
-              className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold focus:outline-none cursor-pointer"
-            >
-              Open Dapp
-            </button>
-            <button
-              onClick={() => handleViewChange("mempool")}
-              className="tl-button-secondary inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-[0.82rem] font-bold focus:outline-none cursor-pointer text-accent border-cyan-500/10"
-            >
-              Open TSN Mempool
-            </button>
-          </div> */}
+
         </div>
 
         <div className="relative z-10 grid gap-3 w-full">
-          <div className="tl-panel p-4 md:p-5 bg-[var(--field)] border border-[var(--field-border)]">
-            <div className="flex items-center justify-between gap-4">
+
+          <div className="relative overflow-hidden tl-panel pt-4 md:pt-5 bg-[var(--field)] border border-[var(--field-border)]">
+
+            <div className="relative z-10 flex items-center justify-between gap-4 px-4 md:px-5 mb-2">
               <div>
-                <p className="tl-meta-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">Payment intent</p>
-                <h2 className="mt-2 text-2xl font-black tracking-normal text-[var(--text)]">$100.00 stablecoin</h2>
+                <p className="tl-meta-label w-fit text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">
+                  Payment intent
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black tracking-normal text-[var(--text)]">
+                  $100.00 Transfer
+                </h2>
               </div>
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
                 <ShieldCheck className="h-6 w-6" />
               </div>
             </div>
-            <TxProcessAnimator />
+
+            <div className="relative z-10">
+              <TxProcessAnimator />
+            </div>
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             {heroStats.map((stat) => (
               <div key={stat.label} className="tl-field rounded-[14px] p-4">

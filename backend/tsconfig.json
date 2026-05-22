@@ -31,5 +31,13 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "frontend", "tests", "scripts/test-tins-*", "../tins-sdk", "../tsn-sdk", "../tsn-cranker-sdk"]
+  "exclude": [
+    "node_modules",
+    "frontend",
+    "tests",
+    "scripts/test-tins-*",
+    "../tins-sdk",
+    "../tsn-sdk",
+    "../tsn-cranker-sdk"
+  ]
 }

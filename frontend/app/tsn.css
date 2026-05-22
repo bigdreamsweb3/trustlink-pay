@@ -1,73 +1,202 @@
 :root {
-  --tsn-accent-soft: rgba(255, 122, 24, 0.06);
-  --tsn-accent-border: rgba(255, 122, 24, 0.1);
+  /* Primary palette */
+  --tsn-accent-primary: #4abed0;
+  --tsn-accent-secondary: #ff7a18;
+
+  /* Main usable accent = cyan dominant */
+  --tsn-accent: #4abed0;
+  --tsn-accent-hover: #63cad9;
+
+  /* Supporting surfaces */
+  --tsn-accent-soft: rgba(74, 190, 208, 0.07);
+  --tsn-accent-border: rgba(74, 190, 208, 0.16);
+
+  /* Warm secondary glow */
+  --tsn-orange-soft: rgba(255, 122, 24, 0.08);
 
   --gradient-bg:
-    radial-gradient(circle at top, rgba(255, 122, 24, 0.04), transparent 28%),
+    radial-gradient(circle at top, rgba(74, 190, 208, 0.06), transparent 28%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 122, 24, 0.03),
+      transparent 30%
+    ),
     linear-gradient(180deg, #f7faf8 0%, #f0f4f2 100%);
 }
 
+/* Badge */
+
 .tsn-badge {
-  border: 1px solid rgba(255, 122, 24, 0.32);
-  background: rgba(255, 122, 24, 0.12);
-  color: #ff7a18;
+  border: 1px solid rgba(74, 190, 208, 0.3);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.14) 0%,
+    rgba(255, 122, 24, 0.05) 100%
+  );
+
+  color: var(--tsn-accent);
 }
 
+/* Links */
+
 .tsn-link {
-  color: #ff7a18;
+  color: var(--tsn-accent);
+
+  transition:
+    color 180ms ease,
+    text-shadow 180ms ease;
 }
 
 .tsn-link:hover {
-  color: #ff8b33;
+  color: var(--tsn-accent-hover);
+
+  text-shadow: 0 0 10px rgba(74, 190, 208, 0.2);
 }
 
+/* Base Button */
+
 .tsn-button {
-  border: 1px solid rgba(255, 122, 24, 0.32);
-  background: rgba(255, 122, 24, 0.12);
-  color: #ff7a18;
+  border: 1px solid rgba(74, 190, 208, 0.3);
+
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.12) 0%,
+    rgba(255, 122, 24, 0.05) 100%
+  );
+
+  color: var(--tsn-accent);
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .tsn-button:hover {
-  background: rgba(255, 122, 24, 0.18);
-  color: #ff8b33;
+  background: linear-gradient(
+    135deg,
+    rgba(74, 190, 208, 0.18) 0%,
+    rgba(255, 122, 24, 0.08) 100%
+  );
+
+  border-color: rgba(74, 190, 208, 0.42);
+
+  color: var(--tsn-accent-hover);
+
+  box-shadow: 0 10px 24px rgba(74, 190, 208, 0.1);
 }
+
+/* Secondary */
 
 .tsn-button-secondary {
-  color: #ff7a18;
+  color: var(--tsn-accent);
+
   background-image:
-    radial-gradient(circle at top, rgba(219, 154, 93, 0.06), transparent 58%),
+    radial-gradient(circle at top, rgba(74, 190, 208, 0.07), transparent 58%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 122, 24, 0.035),
+      transparent 42%
+    ),
     linear-gradient(
       180deg,
-      rgba(255, 122, 24, 0.04) 0%,
+      rgba(74, 190, 208, 0.045) 0%,
       rgba(255, 122, 24, 0.02) 100%
     );
+
   border: 1px solid var(--tsn-accent-border);
+
   font-size: 0.875rem;
   line-height: calc(1.25 / 0.875);
   font-weight: 600;
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
-.tsn-button-transparent {
-  color: #ff7a18;
+.tsn-button-secondary:hover {
+  color: var(--tsn-accent-hover);
+
+  border-color: rgba(74, 190, 208, 0.28);
+
   background-image:
-    radial-gradient(circle at top, rgba(219, 154, 93, 0), transparent 58%),
+    radial-gradient(circle at top, rgba(74, 190, 208, 0.1), transparent 58%),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 122, 24, 0.045),
+      transparent 42%
+    ),
     linear-gradient(
       180deg,
-      rgba(255, 122, 24, 0.04) 0%,
-      rgba(255, 120, 24, 0) 100%
+      rgba(74, 190, 208, 0.06) 0%,
+      rgba(255, 122, 24, 0.025) 100%
     );
+}
+
+/* Transparent */
+
+.tsn-button-transparent {
+  color: var(--tsn-accent);
+
+  background-image:
+    radial-gradient(circle at top, rgba(74, 190, 208, 0), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(74, 190, 208, 0.04) 0%,
+      rgba(255, 122, 24, 0.015) 100%
+    );
+
   border: 1px solid transparent;
+
   font-size: 0.875rem;
   line-height: calc(1.25 / 0.875);
   font-weight: 600;
+
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
 }
 
+.tsn-button-transparent:hover {
+  color: var(--tsn-accent-hover);
+
+  border-color: rgba(74, 190, 208, 0.16);
+
+  background-image:
+    radial-gradient(circle at top, rgba(74, 190, 208, 0.03), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(74, 190, 208, 0.06) 0%,
+      rgba(255, 122, 24, 0.02) 100%
+    );
+}
+
+/* Strong CTA */
+
 .tsn-button-strong {
-  background: #ff7a18;
-  color: #120703;
-  /* box-shadow: 0 14px 30px rgba(255, 122, 24, 0.22); */
+  background: linear-gradient(135deg, #4abed0 0%, #4abed0 72%, #ff7a18 100%);
+
+  color: #071316;
+
+  box-shadow:
+    0 14px 30px rgba(74, 190, 208, 0.2),
+    0 4px 12px rgba(255, 122, 24, 0.08);
+
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .tsn-button-strong:hover {
-  background: #ff8b33;
+  background: linear-gradient(135deg, #63cad9 0%, #63cad9 72%, #ff8b33 100%);
+
+  box-shadow:
+    0 18px 36px rgba(74, 190, 208, 0.24),
+    0 6px 16px rgba(255, 122, 24, 0.1);
 }

@@ -1,5 +1,19 @@
 # TrustLink Pay
 
+## Funding & Support
+
+**Superteam Agentic Engineering Grant** — Approved for **200 USDG** to accelerate AI-powered development.
+
+Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community for the support. Special thanks to @NzubeEzudo, @Harri_Obi, and @odg 🙏
+
+This grant is powering the next phase of building **identity-first private payments** on Solana.
+
+## Supported by
+
+- **Superteam Agentic Engineering Grant** (200 USDG) — Fueling AI-assisted development of TrustLink Pay.
+
+---
+
 > Identity-first Blockchain payments (as familiar as mobile money) on Solana, with private settlement and open identity infrastructure.
 
 The world already knows how to pay with a phone number. Nigeria uses OPay. India uses UPI. Brazil uses Pix. Billions of transactions happen every day through these systems because they solved the one thing crypto has not: **identity-first payments**.

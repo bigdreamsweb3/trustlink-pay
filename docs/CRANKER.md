@@ -202,6 +202,66 @@ Access the dashboard at `http://localhost:3002/dashboard` to view:
 - Pending intents (awaiting lease)
 - Reimbursed amounts (epoch settlements)
 - Error rates and latency
+- AI protection alerts
+- Cranker jail status
+
+---
+
+## AI-Powered Protection for Crankers
+
+TSN Mempool includes AI protection that monitors all cranker operations:
+
+### AI Monitoring of Cranker Operations
+
+| Operation | AI Protection | Notes |
+|-----------|---------------|-------|
+| Lease acquisition | Fraud detection | Detects front-running patterns |
+| Payout execution | Proof verification | Validates amounts and signatures |
+| Proof submission | Settlement protection | Prevents double-spend attempts |
+| Epoch reimbursement | Anomaly detection | Guards against manipulation |
+
+### Cranker Jail System
+
+The AI-powered cranker jail system monitors crankers for malicious behavior:
+
+```
+Trust Score: 1.0 (100%)
+       │
+       ▼ Violation detected
+Trust Score: 0.9
+       │
+       ▼ Violation detected
+Trust Score: 0.8
+       │
+       ▼ (trust < 0.3) OR (violations >= 3)
+       ▼
+    JAILED (1 hour minimum)
+       │
+       ▼ After jail period
+    RELEASED (trust reset to 0.5)
+       │
+       ▼ Additional violations
+    BANNED (permanent)
+```
+
+### Jail Reasons & Trust Impact
+
+| Reason | Severity | Trust Impact |
+|--------|----------|--------------|
+| Fraudulent proofs | Critical | -20% per violation |
+| Payout manipulation | High | -15% per violation |
+| Proof withholding | High | -15% per violation |
+| Front-running | Medium | -12% per violation |
+| Failed obligations | Low | -10% per violation |
+| Sybil attack | Critical | -20% per violation |
+
+### Avoiding Jail
+
+- Submit valid proofs for every payout
+- Never manipulate payout amounts
+- Respond within epoch timeframes
+- Don't engage in front-running
+- Maintain consistent operation patterns
 
 ---
 

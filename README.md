@@ -69,6 +69,55 @@ Result:
 
 ---
 
+## AI-Powered Security Protection
+
+TSN Mempool includes **AI-powered fraud detection and protection** to secure all transfers on the protocol. This is a key investor confidence feature that prevents fraud, manipulation, and malicious activity.
+
+### Core AI Protection Features
+
+| Protection Layer | What It Does |
+|------------------|--------------|
+| **Fraud Detection** | Detects duplicate intents, replay attacks, sybil attempts, payout manipulation, and coordinated claims |
+| **Anomaly Detection** | Identifies velocity spikes, amount outliers, timing patterns, and state transition violations |
+| **Behavioral Analysis** | Tracks wallet patterns to detect splitting, rushing, batching, and circular transaction patterns |
+| **Risk Scoring** | Real-time risk assessment for every mempool operation using multiple signal analysis |
+| **Proof Verification** | Validates proof of payment submissions to prevent fraudulent claims |
+| **Quote Validation** | Prevents quote manipulation, fee spoofing, and stale quote attacks |
+| **Settlement Protection** | Guards epoch settlement from double-spend attempts, reimbursement manipulation, and epoch griefing |
+| **Cranker Jail** | Reputation-based enforcement to detect and punish malicious cranker behavior |
+
+### How AI Protection Works
+
+```
+Intent Created → Pre-Transaction Screening → Fraud Detection → Risk Scoring → Mempool Admission
+                                                                    ↓
+                              Behavioral Analysis ← Anomaly Detection
+                                                                    ↓
+                                                       Guardian Decision: Allow/Flag/Block
+```
+
+### Protection Capabilities
+
+- **Pre-transaction screening** before any intent enters the mempool
+- **Real-time velocity monitoring** to detect unusual transaction patterns
+- **Amount outlier detection** using statistical z-score analysis
+- **Timing pattern analysis** to identify bot-like behavior
+- **State machine validation** to ensure only valid state transitions
+- **Proof replay detection** to prevent double-spend attempts
+- **Quote manipulation prevention** to stop fee spoofing attacks
+- **Cranker reputation tracking** with automatic jail for malicious operators
+
+### Investment Benefits
+
+- **Fraud Prevention**: Protects investors from payment fraud and manipulation
+- **Protocol Integrity**: Ensures TSN operates with verifiable security guarantees
+- **Risk Mitigation**: Real-time monitoring reduces operational losses
+- **Trust Building**: AI protection demonstrates technical sophistication to stakeholders
+
+📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full AI protection documentation
+
+---
+
 ## Project Architecture
 
 TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
@@ -265,17 +314,19 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 | ------------------------------------ | ------------------------------------------------------------------- |
 | Noncustodial escrow                  | Funds lock into Solana escrow accounts governed by program rules    |
 | Per-payment isolation                | Each payment has its own payment PDA and escrow vault               |
-| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                |
+| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                 |
 | Sender privacy                       | Recipient does not need the sender wallet                           |
-| Recipient privacy                    | Sender does not need the recipient wallet                           |
-| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time        |
-| Proof-based reimbursement            | Cranker recovery depends on valid proof submission                  |
+| Recipient privacy                   | Sender does not need the recipient wallet                           |
+| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time         |
+| Proof-based reimbursement           | Cranker recovery depends on valid proof submission                  |
 | LP accounting                        | Liquidity positions track funded vault capital                      |
-| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation |
-| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain    |
+| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation  |
+| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain     |
 | Verifier-funded account setup        | Verifier PDA funds payment-intent account setup                     |
-| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium |
+| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium  |
 | 1:1 Cranker claim credit             | Crankers earn claim eligibility instead of execution tips           |
+| AI Fraud Detection                  | ML-powered anomaly and fraud detection in mempool operations       |
+| Cranker Jail System                 | Automated punishment for malicious cranker behavior via reputation  |
 
 ---
 
@@ -307,6 +358,7 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 - Local Cranker daemon and setup scripts
 - Settlement fee split defaults: 87% LP, 8% treasury, 5% operator
 - 7-hour epoch reimbursement architecture
+- **AI-powered fraud detection and protection in mempool**
 
 **In active development:**
 

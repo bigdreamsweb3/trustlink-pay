@@ -69,68 +69,17 @@ Result:
 
 ---
 
-## Advanced Fraud Protection
+## Fraud Protection
 
-TSN Mempool includes **AI-assisted fraud detection** to secure all transfers on the protocol. This is a key investor confidence feature that prevents fraud, manipulation, and malicious activity — while respecting user privacy.
+TSN Mempool includes fraud detection to secure transfers and protect against malicious activity.
 
-The Mempool Guardian is designed to protect Liquidity Providers and users from fraud without invading personal payment privacy. It operates similarly to fraud detection systems used by traditional banks and mobile money platforms.
+**Key Features:**
+- Fraud detection & replay attack prevention
+- Anomaly detection & risk scoring
+- Cranker jail system for malicious operators
+- Settlement protection & proof verification
 
-### Core Protection Features
-
-| Protection Layer | What It Does |
-|------------------|--------------|
-| **Fraud Detection** | Detects duplicate intents, replay attacks, sybil attempts, payout manipulation, and coordinated claims |
-| **Anomaly Detection** | Identifies velocity spikes, amount outliers, timing patterns, and state transition violations |
-| **Behavioral Analysis** | Tracks wallet patterns to detect splitting, rushing, batching, and circular transaction patterns |
-| **Risk Scoring** | Real-time risk assessment for every mempool operation using multiple signal analysis |
-| **Proof Verification** | Validates proof of payment submissions to prevent fraudulent claims |
-| **Quote Validation** | Prevents quote manipulation, fee spoofing, and stale quote attacks |
-| **Settlement Protection** | Guards epoch settlement from double-spend attempts, reimbursement manipulation, and epoch griefing |
-| **Cranker Jail** | Reputation-based enforcement to detect and punish malicious cranker behavior |
-
-### Privacy-First Design
-
-Unlike invasive surveillance systems, the Mempool Guardian focuses on **protocol-level patterns** rather than personal data:
-
-| What It Analyzes | What It Doesn't |
-|-----------------|-----------------|
-| Hashed wallet identifiers | Real wallet addresses or names |
-| Statistical patterns (velocity, deviation) | Payment content or messages |
-| Protocol signals and state validity | User identity information |
-
-**Users can be confident that normal payment activity is not monitored or stored beyond what's necessary for settlement.**
-
-📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full fraud protection documentation including privacy details
-
-### How Fraud Protection Works
-
-```
-Intent Created → Pre-Transaction Screening → Fraud Detection → Risk Scoring → Mempool Admission
-                                                                    ↓
-                              Behavioral Analysis ← Anomaly Detection
-                                                                    ↓
-                                                       Guardian Decision: Allow/Flag/Block
-```
-
-### Protection Capabilities
-
-- **Pre-transaction screening** before any intent enters the mempool
-- **Real-time velocity monitoring** to detect unusual transaction patterns
-- **Amount outlier detection** using statistical z-score analysis
-- **Timing pattern analysis** to identify bot-like behavior
-- **State machine validation** to ensure only valid state transitions
-- **Proof replay detection** to prevent double-spend attempts
-- **Quote manipulation prevention** to stop fee spoofing attacks
-- **Cranker reputation tracking** with automatic jail for malicious operators
-
-### Investment Benefits
-
-- **Fraud Prevention**: Protects investors from payment fraud and manipulation
-- **Protocol Integrity**: Ensures TSN operates with verifiable security guarantees
-- **Risk Mitigation**: Real-time monitoring reduces operational losses
-- **Trust Building**: Fraud protection demonstrates technical sophistication to stakeholders
-
-📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full AI protection documentation
+📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full fraud protection documentation
 
 ---
 
@@ -466,7 +415,7 @@ See [docs/README.md](docs/README.md) for complete navigation.
 
 ## Funding & Support
 
-**Superteam Agentic Engineering Grant** — Approved for **200 USDG** to accelerate AI-powered development.
+**Superteam Agentic Engineering Grant** — Approved for **200 USDG** to accelerate fraud protection system development.
 
 Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community for the support. Special thanks to [@NzubeEzudo](https://twitter.com/NzubeEzudo), and [@Harri_Obi](https://twitter.com/Harri_Obi) 🙏
 

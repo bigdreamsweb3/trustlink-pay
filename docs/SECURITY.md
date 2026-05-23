@@ -1,13 +1,14 @@
-# TINS Security
+# TrustLink Security
 
-Security architecture for TINS (Transfer Identity Number System).
+Security architecture for TrustLink Pay, TINS, and TSN Mempool AI Protection.
 
 ## Table of Contents
 
 1. [Core Principles](#core-principles)
 2. [Threat Model](#threat-model)
 3. [Attack Mitigations](#attack-mitigations)
-4. [Privacy Model](#privacy-model)
+4. [AI Protection Security](#ai-protection-security)
+5. [Privacy Model](#privacy-model)
 
 ---
 
@@ -98,6 +99,103 @@ ENTROPY-BASED (GOOD):
 Per hour per owner: Max 100 TINs
 Per block: Max 10 TINs
 ```
+
+---
+
+## AI Protection Security
+
+TSN Mempool includes AI-powered fraud detection and protection as a core security feature.
+
+### Protection Components
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| **Fraud Detector** | Detect fraudulent patterns | Duplicate detection, replay prevention, velocity analysis |
+| **Anomaly Detector** | Statistical anomaly detection | Z-score analysis, timing patterns, state validation |
+| **Behavioral Analyzer** | User behavior tracking | Pattern recognition, splitting/rushing/batching detection |
+| **Risk Scorer** | Real-time risk assessment | Multi-factor scoring, threshold alerts |
+| **Proof Verifier** | Payment proof validation | Amount matching, signature verification, timestamp checks |
+| **Quote Validator** | Fee quote protection | Stale quote detection, inflation monitoring |
+| **Settlement Protector** | Epoch settlement guard | Double-spend prevention, griefing detection |
+| **Cranker Jail** | Cranker enforcement | Reputation tracking, automatic jail for violations |
+
+### AI Protection Threats & Mitigations
+
+| Threat | AI Detection | Mitigation |
+|--------|--------------|------------|
+| Duplicate intent submission | Fraud detector | Block payment ID reuse |
+| Replay attacks | Proof verifier | Transaction signature validation |
+| Sybil attacks | Behavioral analyzer | Velocity and pattern monitoring |
+| Payout manipulation | Proof verifier | Amount tolerance validation (0.1%) |
+| Quote spoofing | Quote validator | Historical fee comparison |
+| Epoch griefing | Settlement protector | Last-minute submission detection |
+| Cranker misconduct | Cranker jail | Trust score tracking, automatic jail |
+| Velocity spikes | Anomaly detector | Z-score analysis, rate limiting |
+
+### Guardian Decision Flow
+
+```
+Intent Submission
+       │
+       ▼
+┌──────────────────┐
+│ Fraud Detection │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Risk Scoring    │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Anomaly Detection│
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Behavioral      │
+│    Analysis      │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Guardian Decision│
+│ Allow/Flag/Block │
+└──────────────────┘
+```
+
+### Cranker Jail System
+
+The Cranker Jail system provides automated enforcement for malicious cranker behavior:
+
+```
+Trust Score: 1.0 (100%)
+       │
+       ▼ Violation detected
+Trust Score: 0.9
+       │
+       ▼ Violation detected
+Trust Score: 0.8
+       │
+       ▼ (trust < 0.3) OR (violations >= 3)
+       ▼
+    JAILED
+    1 hour minimum
+       │
+       ▼ After jail period
+    RELEASED (trust reset to 0.5)
+       │
+       ▼ Additional violations
+    BANNED (permanent)
+```
+
+### Investor Security Benefits
+
+- **Automated Protection**: Every transaction screened without manual intervention
+- **Real-time Defense**: Threats detected and blocked in milliseconds
+- **Reputation System**: Crankers incentivized to behave correctly
+- **Protocol Integrity**: AI ensures TSN operates with verifiable security
 
 ---
 

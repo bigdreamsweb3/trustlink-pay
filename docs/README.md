@@ -38,6 +38,14 @@ Welcome to the TrustLink Pay documentation. This section provides comprehensive 
 | [PROTOCOL.md](./PROTOCOL.md) | Core protocol specifications and state machines |
 | [DEVELOPER.md](./DEVELOPER.md) | Security considerations, known issues, and integration guide |
 | [API.md](./API.md) | API reference documentation |
+| [AI-PROTECTION.md](./AI-PROTECTION.md) | AI-powered fraud detection and mempool protection |
+
+### For Security-Conscious Users
+
+| Document | Description |
+|----------|-------------|
+| [AI-PROTECTION.md](./AI-PROTECTION.md) | **Important** - AI fraud detection, anomaly detection, and cranker jail system |
+| [SECURITY.md](./SECURITY.md) | Complete security architecture including AI protection components |
 
 ---
 

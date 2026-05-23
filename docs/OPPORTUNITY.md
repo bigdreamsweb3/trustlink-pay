@@ -219,7 +219,7 @@ Early operators get preferred status, better vault access, and partnership oppor
 |-------------|---------|
 | StableHacks 2026 | Won track for programmable stablecoin payments |
 | The Bags Hackathon | Extended payment model for SPL assets |
-| Superteam Grant | 200 USDG for AI-powered development |
+| Superteam Grant | 200 USDG for fraud protection system development |
 | Production-ready | TINS on-chain identity, TSN settlement architecture |
 | Community | Growing Discord, Twitter engagement |
 

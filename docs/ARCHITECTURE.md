@@ -96,6 +96,10 @@ Example: `TIN-1234-5678`
 
 ## Part 3: Privacy Analysis
 
+### Privacy-First Design
+
+For comprehensive privacy details including how the Mempool Guardian handles fraud detection without invading personal payment privacy, see [AI-PROTECTION.md](./AI-PROTECTION.md#privacy--data-handling).
+
 ### What Everyone Can See (On-Chain)
 
 | Data | Who Sees | Privacy Risk |

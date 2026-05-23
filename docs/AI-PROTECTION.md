@@ -1,16 +1,18 @@
-# AI-Powered Protection for TSN Mempool
+# Mempool Guardian: Advanced Fraud Protection for TSN
 
-> **Security Feature Summary**: TSN Mempool includes AI-powered fraud detection and protection that secures all transfers on the protocol. This document covers the complete AI protection architecture, detection mechanisms, and integration patterns.
+> **Security Feature Summary**: TSN Mempool includes AI-assisted fraud detection and protection that secures all transfers on the protocol. This document covers the complete fraud protection architecture, detection mechanisms, and integration patterns.
 
 ---
 
 ## Overview
 
-The TSN Mempool AI Protection System is a multi-layered defense mechanism that analyzes every payment intent, claim request, and cranker operation in real-time. It combines statistical anomaly detection, behavioral analysis, and reputation scoring to prevent fraud and manipulation.
+The Mempool Guardian is designed to protect Liquidity Providers and users from fraud without invading personal payment privacy. It operates similarly to fraud detection systems used by traditional banks and mobile money platforms.
+
+The system combines statistical anomaly detection, behavioral pattern analysis, and reputation scoring to prevent fraud and manipulation. It focuses on protecting the network from attacks (replays, sybils, etc.), not profiling normal users.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          TSN Mempool AI Protection                           │
+│                    Mempool Guardian: Advanced Fraud Protection              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐             │
@@ -38,6 +40,71 @@ The TSN Mempool AI Protection System is a multi-layered defense mechanism that a
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Privacy & Data Handling
+
+**Your privacy matters.** The Mempool Guardian is designed to protect the network from malicious actors while respecting normal user activity.
+
+### What the Guardian Analyzes
+
+The AI system focuses on **transaction patterns and protocol-level signals**, not personal information:
+
+| Data Type | What It Means | Privacy Impact |
+|-----------|--------------|----------------|
+| **Hashed wallet identifiers** | One-way hashed addresses used for pattern tracking | Cannot reverse to identify real wallet |
+| **Transaction metadata** | Amount ranges, timing patterns, frequency metrics | Aggregated, not individual payment details |
+| **Pattern indicators** | Statistical markers (velocity, deviation scores) | No personal or payment content |
+| **Protocol signals** | Intent structure, state transitions, proof validity | Technical only, no user data |
+
+### What the Guardian Does NOT See
+
+The system is deliberately limited to protect your privacy:
+
+| What It Doesn't Analyze | Why |
+|------------------------|-----|
+| **Payment content/messages** | Not stored or accessible to the system |
+| **Sender/recipient identities** | Only hashed identifiers for pattern detection |
+| **Personal financial history** | Only aggregated statistics for anomaly detection |
+| **Individual transaction amounts** | Only relative patterns (e.g., "unusually large") |
+| **User identity information** | Names, phone numbers, etc. are never processed |
+
+### Data Handling Principles
+
+1. **Ephemeral Processing**: Normal transaction patterns are processed in memory and not persisted beyond what's needed for settlement verification.
+
+2. **Statistical Analysis**: The system detects anomalies through statistical methods (z-scores, velocity thresholds) rather than deep content inspection.
+
+3. **No Profiling**: The Guardian targets attack patterns — replay attacks, sybil coordination, manipulation attempts — not normal user behavior.
+
+4. **No Data Selling**: User payment data is never sold, shared with third parties, or used for purposes beyond fraud prevention.
+
+5. **Focus on Attacks**: The system is designed to identify:
+   - Duplicate or replayed transactions
+   - Coordinated attack patterns (sybils)
+   - Proof manipulation attempts
+   - Settlement griefing
+
+**Users can be confident that normal payment activity is not monitored or stored beyond what's necessary for settlement.**
+
+### What the AI Sees vs. What It Doesn't See
+
+| Category | What the Guardian Sees | What the Guardian Doesn't See |
+|----------|----------------------|------------------------------|
+| **Wallet Data** | Hashed identifiers for pattern tracking | Actual wallet addresses or balances |
+| **Transaction Amounts** | Relative patterns (e.g., "large for user") | Exact payment amounts or history |
+| **Timing** | Velocity and frequency patterns | Specific transaction timestamps |
+| **User Identity** | Statistical patterns per hashed ID | Real names, phone numbers, or accounts |
+| **Payment Content** | Protocol validity and structure | Payment notes, messages, or purpose |
+| **Behavior** | Anomaly scores (0-100) and thresholds | Detailed transaction records |
+
+### Future Transparency
+
+We are committed to auditability of our AI systems. Future plans include:
+- Publication of detection logic (rules and thresholds)
+- Independent security audits of the Guardian components
+- Open documentation of what triggers flags vs. blocks
 
 ---
 

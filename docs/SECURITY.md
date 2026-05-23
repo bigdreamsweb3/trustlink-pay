@@ -1,13 +1,13 @@
 # TrustLink Security
 
-Security architecture for TrustLink Pay, TINS, and TSN Mempool AI Protection.
+Security architecture for TrustLink Pay, TINS, and TSN Mempool Guardian fraud protection.
 
 ## Table of Contents
 
 1. [Core Principles](#core-principles)
 2. [Threat Model](#threat-model)
 3. [Attack Mitigations](#attack-mitigations)
-4. [AI Protection Security](#ai-protection-security)
+4. [Fraud Protection Security](#fraud-protection-security)
 5. [Privacy Model](#privacy-model)
 
 ---
@@ -102,9 +102,24 @@ Per block: Max 10 TINs
 
 ---
 
-## AI Protection Security
+## Fraud Protection Security
 
-TSN Mempool includes AI-powered fraud detection and protection as a core security feature.
+TSN Mempool includes fraud detection and protection as a core security feature. The Mempool Guardian is designed to protect the network from malicious actors without invading personal payment privacy.
+
+### Privacy-First Design
+
+The Guardian focuses on **protocol-level patterns** rather than personal data:
+
+| What It Analyzes | What It Doesn't |
+|-----------------|-----------------|
+| Hashed wallet identifiers for pattern tracking | Real wallet addresses or identities |
+| Statistical patterns (velocity, deviation scores) | Payment content or messages |
+| Protocol signals (intent validity, state transitions) | User identity information |
+| Amount patterns (relative size for user) | Exact payment amounts |
+
+**Users can be confident that normal payment activity is not monitored or stored beyond what's necessary for settlement.**
+
+📖 For full details, see [AI-PROTECTION.md](./AI-PROTECTION.md#privacy--data-handling)
 
 ### Protection Components
 
@@ -195,7 +210,8 @@ Trust Score: 0.8
 - **Automated Protection**: Every transaction screened without manual intervention
 - **Real-time Defense**: Threats detected and blocked in milliseconds
 - **Reputation System**: Crankers incentivized to behave correctly
-- **Protocol Integrity**: AI ensures TSN operates with verifiable security
+- **Protocol Integrity**: Fraud protection ensures TSN operates with verifiable security
+- **Privacy Respect**: Normal user activity is not monitored — only attack patterns detected
 
 ---
 

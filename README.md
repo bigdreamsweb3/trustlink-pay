@@ -69,11 +69,13 @@ Result:
 
 ---
 
-## AI-Powered Security Protection
+## Advanced Fraud Protection
 
-TSN Mempool includes **AI-powered fraud detection and protection** to secure all transfers on the protocol. This is a key investor confidence feature that prevents fraud, manipulation, and malicious activity.
+TSN Mempool includes **AI-assisted fraud detection** to secure all transfers on the protocol. This is a key investor confidence feature that prevents fraud, manipulation, and malicious activity — while respecting user privacy.
 
-### Core AI Protection Features
+The Mempool Guardian is designed to protect Liquidity Providers and users from fraud without invading personal payment privacy. It operates similarly to fraud detection systems used by traditional banks and mobile money platforms.
+
+### Core Protection Features
 
 | Protection Layer | What It Does |
 |------------------|--------------|
@@ -86,7 +88,21 @@ TSN Mempool includes **AI-powered fraud detection and protection** to secure all
 | **Settlement Protection** | Guards epoch settlement from double-spend attempts, reimbursement manipulation, and epoch griefing |
 | **Cranker Jail** | Reputation-based enforcement to detect and punish malicious cranker behavior |
 
-### How AI Protection Works
+### Privacy-First Design
+
+Unlike invasive surveillance systems, the Mempool Guardian focuses on **protocol-level patterns** rather than personal data:
+
+| What It Analyzes | What It Doesn't |
+|-----------------|-----------------|
+| Hashed wallet identifiers | Real wallet addresses or names |
+| Statistical patterns (velocity, deviation) | Payment content or messages |
+| Protocol signals and state validity | User identity information |
+
+**Users can be confident that normal payment activity is not monitored or stored beyond what's necessary for settlement.**
+
+📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full fraud protection documentation including privacy details
+
+### How Fraud Protection Works
 
 ```
 Intent Created → Pre-Transaction Screening → Fraud Detection → Risk Scoring → Mempool Admission
@@ -112,7 +128,7 @@ Intent Created → Pre-Transaction Screening → Fraud Detection → Risk Scorin
 - **Fraud Prevention**: Protects investors from payment fraud and manipulation
 - **Protocol Integrity**: Ensures TSN operates with verifiable security guarantees
 - **Risk Mitigation**: Real-time monitoring reduces operational losses
-- **Trust Building**: AI protection demonstrates technical sophistication to stakeholders
+- **Trust Building**: Fraud protection demonstrates technical sophistication to stakeholders
 
 📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full AI protection documentation
 
@@ -325,7 +341,7 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 | Verifier-funded account setup        | Verifier PDA funds payment-intent account setup                     |
 | Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium  |
 | 1:1 Cranker claim credit             | Crankers earn claim eligibility instead of execution tips           |
-| AI Fraud Detection                  | ML-powered anomaly and fraud detection in mempool operations       |
+| Advanced Fraud Detection             | Privacy-respecting anomaly detection in mempool operations          |
 | Cranker Jail System                 | Automated punishment for malicious cranker behavior via reputation  |
 
 ---
@@ -358,7 +374,7 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 - Local Cranker daemon and setup scripts
 - Settlement fee split defaults: 87% LP, 8% treasury, 5% operator
 - 7-hour epoch reimbursement architecture
-- **AI-powered fraud detection and protection in mempool**
+- **Advanced fraud detection and protection in mempool**
 
 **In active development:**
 

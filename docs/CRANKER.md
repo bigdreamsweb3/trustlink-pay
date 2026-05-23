@@ -207,14 +207,14 @@ Access the dashboard at `http://localhost:3002/dashboard` to view:
 
 ---
 
-## AI-Powered Protection for Crankers
+## Fraud Protection for Crankers
 
-TSN Mempool includes AI protection that monitors all cranker operations:
+TSN Mempool includes fraud protection that monitors all cranker operations. The system is designed to detect malicious behavior without monitoring normal operator activity.
 
-### AI Monitoring of Cranker Operations
+### Monitoring of Cranker Operations
 
-| Operation | AI Protection | Notes |
-|-----------|---------------|-------|
+| Operation | Fraud Protection | Notes |
+|-----------|------------------|-------|
 | Lease acquisition | Fraud detection | Detects front-running patterns |
 | Payout execution | Proof verification | Validates amounts and signatures |
 | Proof submission | Settlement protection | Prevents double-spend attempts |
@@ -222,7 +222,7 @@ TSN Mempool includes AI protection that monitors all cranker operations:
 
 ### Cranker Jail System
 
-The AI-powered cranker jail system monitors crankers for malicious behavior:
+The fraud protection cranker jail system monitors crankers for malicious behavior:
 
 ```
 Trust Score: 1.0 (100%)

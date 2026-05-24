@@ -33,6 +33,7 @@ After successful setup commands, the daemon stores:
 - mother escrow PDA
 - cranker PDA
 - vault PDAs by token mint
+- vault token metadata (`tokenSymbol`, `tokenName`)
 - liquidity position PDAs by funder
 - last command + history
 
@@ -63,8 +64,20 @@ Create `.env` from `.env.example` and set at least:
 - `RPC_URL`
 - `PROGRAM_ID`
 - `KEYPAIR_PATH=./keys/cranker-keypair.json`
+- `SOLANA_ALLOWED_SPL_TOKENS=[{"mintAddress":"4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU","symbol":"USDC","name":"USD Coin","decimals":6}]` (read by TSN SDK token registry)
+
+Token input behavior:
+
+- `npm run setup` supports token symbol or mint input (`USDC` or full mint)
+- `npm run setup:raw -- init-vault <TOKEN_SYMBOL_OR_MINT>` also supports symbol or mint
 
 ## Step-by-Step Setup (What, Why, Result)
+
+For non-crypto operators:
+
+- You can type token symbols like `USDC` (not long mint addresses).
+- If you leave `Funder token account` empty, setup auto-finds the correct token account (ATA).
+- You enter normal token amounts like `20`, and setup converts it to base units for the chain.
 
 ### 1. Create/fund operator keypair
 
@@ -136,7 +149,7 @@ Expected result:
 Command:
 
 ```bash
-npm run setup:raw -- init-vault <TOKEN_MINT>
+npm run setup:raw -- init-vault <TOKEN_SYMBOL_OR_MINT>
 ```
 
 Why:
@@ -157,7 +170,7 @@ Expected result:
 Command:
 
 ```bash
-npm run setup:raw -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
+npm run setup:raw -- fund-cranker <TOKEN_SYMBOL_OR_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 ```
 
 Why:
@@ -167,11 +180,23 @@ Why:
 What happens:
 
 - liquidity position PDA for the funder is created/updated.
+- setup auto-derives your token account if you leave it blank
+- setup converts human amount (for example `20 USDC`) into base units (`20000000`)
 
 Expected result:
 
 - successful funding tx
 - `operator-state.json` adds/updates `liquidityPositions`
+
+Example guided flow:
+
+1. Run `npm run setup`
+2. Choose `4` (Fund cranker vault)
+3. Token: type `USDC`
+4. Funder keypair: press Enter for default
+5. Funder token account: press Enter for auto
+6. Amount: type `20`
+7. Setup prints conversion and submits transaction
 
 ### 6. Run Cranker runtime loop
 

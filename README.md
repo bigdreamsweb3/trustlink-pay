@@ -10,7 +10,7 @@ TrustLink Pay brings that identity-first experience to Solana payments. Users se
 
 ## Supported by
 
-- **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
+- **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) � [acknowledgment](#funding--support)
   
 ---
 
@@ -23,7 +23,7 @@ TrustLink Pay uses a specialized Transfer Settlement Network (TSN) to enable fas
 | **Crankers** | Execute payments, monitor intents, submit proof, maintain uptime | 5% of settlement fees |
 | **Liquidity Providers (LPs)** | Fund token-specific vaults that crankers draw from | 87% of settlement fees |
 
-This creates real yield for participants — from actual payment volume, not token emissions.
+This creates real yield for participants � from actual payment volume, not token emissions.
 
 ### Launch Strategy
 
@@ -37,16 +37,16 @@ At launch, **TrustLink Pay will be the first and primary cranker operator**. Run
 **For liquidity providers:**
 - Deposit stablecoins into vaults
 - Earn passive, real-yield returns backed by payment fees
-- No token emissions — yield comes from actual settlement revenue
+- No token emissions � yield comes from actual settlement revenue
 
 **For future cranker operators:**
 - Run your own verified cranker node once the network opens
 - Capture both operator fees (5%) and LP yields
 - Support specific tokens with full control
 
-This creates a growth flywheel: **More liquidity → faster settlements → more users → higher volume → better yields → more participants.**
+This creates a growth flywheel: **More liquidity ? faster settlements ? more users ? higher volume ? better yields ? more participants.**
 
-**Interested in vault funding or cranker partnerships?** → [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)
+**Interested in vault funding or cranker partnerships?** ? [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)
   
 ---
 
@@ -79,7 +79,7 @@ TSN Mempool will include fraud detection to secure transfers and protect against
 - Cranker jail system for malicious operators
 - Settlement protection & proof verification
 
-📖 **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full fraud protection documentation
+?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** � Full fraud protection documentation
 
 ---
 
@@ -279,19 +279,19 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 | ------------------------------------ | ------------------------------------------------------------------- |
 | Noncustodial escrow                  | Funds lock into Solana escrow accounts governed by program rules    |
 | Per-payment isolation                | Each payment has its own payment PDA and escrow vault               |
-| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                 |
+| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                |
 | Sender privacy                       | Recipient does not need the sender wallet                           |
-| Recipient privacy                   | Sender does not need the recipient wallet                           |
-| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time         |
-| Proof-based reimbursement           | Cranker recovery depends on valid proof submission                  |
+| Recipient privacy                    | Sender does not need the recipient wallet                           |
+| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time        |
+| Proof-based reimbursement            | Cranker recovery depends on valid proof submission                  |
 | LP accounting                        | Liquidity positions track funded vault capital                      |
-| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation  |
-| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain     |
+| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation |
+| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain    |
 | Verifier-funded account setup        | Verifier PDA funds payment-intent account setup                     |
-| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium  |
+| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium |
 | 1:1 Cranker claim credit             | Crankers earn claim eligibility instead of execution tips           |
 | Advanced Fraud Detection             | Privacy-respecting anomaly detection in mempool operations          |
-| Cranker Jail System                 | Automated punishment for malicious cranker behavior via reputation  |
+| Cranker Jail System                  | Automated punishment for malicious cranker behavior via reputation  |
 
 ---
 
@@ -368,7 +368,7 @@ Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursem
 | `tsn/protocol`   | Anchor program workspace               |
 | `tsn`            | TSN modules, scripts, and SDK packages |
 | `tins-registrar` | TINS on-chain identity protocol        |
-| `docs`           | **Architecture and operational docs** — [Start here](docs/README.md) |
+| `docs`           | **Architecture and operational docs** � [Start here](docs/README.md) |
 
 ## Quick Start
 
@@ -385,7 +385,7 @@ cd frontend && npm install && npm run dev
 
 | Document | Description |
 |----------|-------------|
-| [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md) | **Start here** — Investment opportunity, yield projections, partnership benefits |
+| [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md) | **Start here** � Investment opportunity, yield projections, partnership benefits |
 | [docs/LIQUIDITY.md](docs/LIQUIDITY.md) | How to fund TSN vaults and earn LP rewards |
 | [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | Understanding the epoch reimbursement cycle |
 
@@ -415,9 +415,9 @@ See [docs/README.md](docs/README.md) for complete navigation.
 
 ## Funding & Support
 
-**Superteam Agentic Engineering Grant** — Approved for **200 USDG** to accelerate fraud protection system development.
+**Superteam Agentic Engineering Grant** � Approved for **200 USDG** to accelerate fraud protection system development.
 
-Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community for the support. Special thanks to [@NzubeEzudo](https://twitter.com/NzubeEzudo), and [@Harri_Obi](https://twitter.com/Harri_Obi) 🙏
+Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community for the support. Special thanks to [@NzubeEzudo](https://twitter.com/NzubeEzudo), and [@Harri_Obi](https://twitter.com/Harri_Obi) ??
 
 This grant is powering the next phase of building **identity-first private payments** on Solana.
 

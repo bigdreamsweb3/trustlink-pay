@@ -265,16 +265,15 @@ export async function tsnInitializeCrankerVaultOnChain(params) {
         programId: getVerifiedTsnProgramId(),
         keys: [
             { pubkey: payer.publicKey, isSigner: true, isWritable: true },
-            { pubkey: params.operator, isSigner: false, isWritable: false },
             { pubkey: motherEscrow, isSigner: false, isWritable: false },
             { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: params.tokenMint, isSigner: false, isWritable: false },
             { pubkey: crankerVault, isSigner: false, isWritable: true },
             { pubkey: vaultAuthority, isSigner: false, isWritable: false },
             { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
-            { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-            { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
         ],
         data: instructionDiscriminator("tsn_initialize_cranker_vault"),
     });
@@ -288,18 +287,23 @@ export async function tsnFundCrankerOnChain(params) {
     const motherEscrow = getTsnMotherEscrowPda();
     const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
     const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
-    const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
     const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
+    const liquidityPosition = getTsnLiquidityPositionPda({
+        crankerVault,
+        funder: params.funder.publicKey,
+    });
     const ix = new TransactionInstruction({
         programId: getVerifiedTsnProgramId(),
         keys: [
             { pubkey: params.funder.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: false },
+            { pubkey: crankerVault, isSigner: false, isWritable: true },
             { pubkey: params.funderTokenAccount, isSigner: false, isWritable: true },
             { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
-            { pubkey: vaultAuthority, isSigner: false, isWritable: false },
-            { pubkey: params.funder.publicKey, isSigner: false, isWritable: false },
-            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: liquidityPosition, isSigner: false, isWritable: true },
             { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         data: Buffer.concat([instructionDiscriminator("tsn_fund_cranker"), encodeU64(params.amountBaseUnits)]),
     });
@@ -315,15 +319,21 @@ export async function tsnWithdrawCrankerFundsOnChain(params) {
     const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
     const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
     const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
+    const liquidityPosition = getTsnLiquidityPositionPda({
+        crankerVault,
+        funder: params.funder.publicKey,
+    });
     const ix = new TransactionInstruction({
         programId: getVerifiedTsnProgramId(),
         keys: [
             { pubkey: params.funder.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: false },
+            { pubkey: crankerVault, isSigner: false, isWritable: true },
+            { pubkey: vaultAuthority, isSigner: false, isWritable: false },
             { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
             { pubkey: params.funderTokenAccount, isSigner: false, isWritable: true },
-            { pubkey: vaultAuthority, isSigner: false, isWritable: false },
-            { pubkey: params.funder.publicKey, isSigner: false, isWritable: false },
-            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: liquidityPosition, isSigner: false, isWritable: true },
             { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
         ],
         data: Buffer.concat([instructionDiscriminator("tsn_withdraw_cranker_funds"), encodeU64(params.amountBaseUnits)]),

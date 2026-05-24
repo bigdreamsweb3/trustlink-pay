@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+import { tsnResolveSplTokenInput } from "@trustlink/tsn-cranker-sdk";
 
 import "dotenv";
 
@@ -124,7 +125,7 @@ function deriveVaults(programId, cranker, tokenMint, funderPubkey, PublicKey) {
   return { crankerVault, vaultAuthority, vaultTokenAccount, liquidityPosition };
 }
 
-async function updateOperatorState(args) {
+async function updateOperatorState(args, tokenContext = null) {
   const command = args[0];
   const env = loadEnv();
   if (!env.PROGRAM_ID || !env.KEYPAIR_PATH) return;
@@ -196,13 +197,21 @@ async function updateOperatorState(args) {
     );
     state.vaults[tokenMint.toBase58()] = {
       tokenMint: tokenMint.toBase58(),
+      tokenSymbol: tokenContext?.symbol ?? null,
+      tokenName: tokenContext?.name ?? null,
       crankerVault: crankerVault.toBase58(),
       vaultAuthority: vaultAuthority.toBase58(),
       vaultTokenAccount: vaultTokenAccount.toBase58(),
       initializedAt: now,
       allowExternalFunding: state.allowExternalFunding ?? null,
     };
-    pushHistory(state, { at: now, command, tokenMint: tokenMint.toBase58() });
+    pushHistory(state, {
+      at: now,
+      command,
+      tokenMint: tokenMint.toBase58(),
+      tokenSymbol: tokenContext?.symbol ?? null,
+      tokenName: tokenContext?.name ?? null,
+    });
   }
 
   if (
@@ -225,6 +234,8 @@ async function updateOperatorState(args) {
     state.vaults[vaultKey] = {
       ...(state.vaults[vaultKey] ?? {}),
       tokenMint: tokenMint.toBase58(),
+      tokenSymbol: tokenContext?.symbol ?? state.vaults[vaultKey]?.tokenSymbol ?? null,
+      tokenName: tokenContext?.name ?? state.vaults[vaultKey]?.tokenName ?? null,
       crankerVault: crankerVault.toBase58(),
       vaultAuthority: vaultAuthority.toBase58(),
       vaultTokenAccount: vaultTokenAccount.toBase58(),
@@ -232,6 +243,8 @@ async function updateOperatorState(args) {
     const positionKey = `${vaultKey}:${funderPubkey.toBase58()}`;
     const position = state.liquidityPositions[positionKey] ?? {
       tokenMint: tokenMint.toBase58(),
+      tokenSymbol: tokenContext?.symbol ?? null,
+      tokenName: tokenContext?.name ?? null,
       funderPubkey: funderPubkey.toBase58(),
       funderTokenAccount: args[3],
       liquidityPosition: liquidityPosition.toBase58(),
@@ -253,6 +266,8 @@ async function updateOperatorState(args) {
       at: now,
       command,
       tokenMint: tokenMint.toBase58(),
+      tokenSymbol: tokenContext?.symbol ?? null,
+      tokenName: tokenContext?.name ?? null,
       funderPubkey: funderPubkey.toBase58(),
       amountBaseUnits: amount.toString(),
       liquidityPosition: liquidityPosition.toBase58(),
@@ -271,8 +286,17 @@ async function updateOperatorState(args) {
   console.log(`[operator-state] updated ${statePath}`);
 }
 
-const args = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
 const loadedEnv = loadEnv();
+const tokenCommandSet = new Set(["init-vault", "fund-cranker", "withdraw-cranker"]);
+const tokenContext =
+  rawArgs.length > 1 && tokenCommandSet.has(rawArgs[0])
+    ? tsnResolveSplTokenInput(rawArgs[1], loadedEnv)
+    : null;
+const args = [...rawArgs];
+if (tokenContext) {
+  args[1] = tokenContext.mintAddress;
+}
 const child = spawn(process.execPath, [cliPath, ...args], {
   stdio: "inherit",
   env: {
@@ -285,7 +309,7 @@ child.on("exit", (code) => {
   void (async () => {
     if (code === 0) {
       try {
-        await updateOperatorState(args);
+        await updateOperatorState(args, tokenContext);
       } catch (error) {
         console.warn("[operator-state] failed to update local state", error);
       }

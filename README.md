@@ -71,7 +71,7 @@ Result:
 
 ## Fraud Protection
 
-TSN Mempool includes fraud detection to secure transfers and protect against malicious activity.
+TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
 
 **Key Features:**
 - Fraud detection & replay attack prevention

@@ -282,10 +282,14 @@ const child = spawn(process.execPath, [cliPath, ...args], {
 });
 
 child.on("exit", (code) => {
-  if (code === 0) {
-    updateOperatorState(args).catch((error) => {
-      console.warn("[operator-state] failed to update local state", error);
-    });
-  }
-  process.exit(code ?? 0);
+  void (async () => {
+    if (code === 0) {
+      try {
+        await updateOperatorState(args);
+      } catch (error) {
+        console.warn("[operator-state] failed to update local state", error);
+      }
+    }
+    process.exit(code ?? 0);
+  })();
 });

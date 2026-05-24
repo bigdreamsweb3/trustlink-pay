@@ -138,7 +138,7 @@ export function LandingPage() {
     <main className="app-shell overflow-hidden text-[14px] md:text-[15px]">
       <SiteHeader />
 
-      <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">
+      <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 px-2 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">
         <div className="relative z-10">
           <div className="tl-meta-label text-nowrap whitespace-nowrap">
             Transfer Settlement Network · Solana
@@ -187,7 +187,7 @@ export function LandingPage() {
       {/* PRIVACY */}
       <section
         id="tsn-privacy"
-        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="01" title="TSN privacy" />
 
@@ -304,7 +304,7 @@ export function LandingPage() {
       {/* FEE MODEL */}
       <section
         id="fee-model"
-        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-0 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
+        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
       >
         <div className="min-w-0">
           <SectionLabel index="02" title="Current fee model" />
@@ -340,7 +340,7 @@ export function LandingPage() {
       {/* LP */}
       <section
         id="lp-yield"
-        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="03" title="LP settlement APY" />
 
@@ -357,7 +357,7 @@ export function LandingPage() {
       {/* SDK */}
       <section
         id="sdk"
-        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="04" title="TSN SDK" />
 
@@ -414,7 +414,7 @@ export function LandingPage() {
       {/* TINS */}
       <section
         id="tins"
-        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-0 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
+        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
       >
         <div className="min-w-0">
           <SectionLabel index="05" title="TINS" />

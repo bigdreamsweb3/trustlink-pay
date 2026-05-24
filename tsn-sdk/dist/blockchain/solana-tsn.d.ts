@@ -104,7 +104,7 @@ export declare function tsnRegisterCrankerOnChain(params: {
     signature: string | null;
 } | {
     mode: "devnet";
-    signature: string;
+    signature: string | null;
 }>;
 export declare function tsnSetCrankerFundingPolicyOnChain(params: {
     operator: Keypair;

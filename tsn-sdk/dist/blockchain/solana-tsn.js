@@ -212,6 +212,11 @@ export async function tsnRegisterCrankerOnChain(params) {
     const operator = params.operator ?? getEscrowAuthorityKeypair(params.secretKey);
     const motherEscrow = getTsnMotherEscrowPda();
     const cranker = getTsnCrankerPda({ motherEscrow, operator: operator.publicKey });
+    const existingCranker = await connection.getAccountInfo(cranker, "confirmed");
+    if (existingCranker) {
+        logger.info("tsn.cranker.already_registered", { cranker: cranker.toBase58() });
+        return { mode: "devnet", signature: null };
+    }
     const ix = new TransactionInstruction({
         programId: getVerifiedTsnProgramId(),
         keys: [

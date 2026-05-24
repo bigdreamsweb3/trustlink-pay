@@ -29,8 +29,8 @@ const SKIP_DIRS = new Set([
 
 // Defaults from your recent TINS/Anchor history
 const oldIds = new Set([
-  "TN1gEhKak4eCazVBo99LysVsBNWpyiBDjSPcsM51SF9",
-  "TN1gEhKak4eCazVBo99LysVsBNWpyiBDjSPcsM51SF9",
+  "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+  "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
   ...EXTRA_OLD_IDS,
 ]);
 oldIds.delete(NEW_ID);

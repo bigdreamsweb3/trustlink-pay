@@ -10,15 +10,16 @@
     "policy:open": "node ./scripts/tsn-setup.mjs set-funding-policy true",
     "policy:closed": "node ./scripts/tsn-setup.mjs set-funding-policy false",
     "settle:force": "node ./scripts/tsn-setup.mjs settle-epoch --force",
-    "crank:reference": "npm --prefix ../tsn run cranker"
+    "crank:start": "tsx ./scripts/cranker.ts",
+    "crank:reference": "tsx ./scripts/cranker.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",
     "@trustlink/tsn-cranker-sdk": "file:../tsn-cranker-sdk",
-    "@trustlink/tsn-sdk": "file:../tsn-sdk",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
+    "@types/node": "^25.9.1",
     "tsx": "^4.22.2"
   }
 }

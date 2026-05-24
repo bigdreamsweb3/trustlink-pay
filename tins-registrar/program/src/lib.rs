@@ -11,7 +11,7 @@ pub mod utils;
 pub use error::Error;
 
 // Temporary development program ID placeholder until the TINS deployment key is assigned.
-declare_id!("TN1gEhKak4eCazVBo99LysVsBNWpyiBDjSPcsM51SF9");
+declare_id!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 
 pub mod seeds {
     pub const GLOBAL_STATE: &[u8] = b"global-state";

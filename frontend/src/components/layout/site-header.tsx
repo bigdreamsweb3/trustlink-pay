@@ -7,10 +7,11 @@ import { useEffect, useState } from "react";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
-  { label: "TSN Privacy", href: "/#tsn-privacy" },
   { label: "How It Works", href: "/#how-it-works" },
+  { label: "Privacy", href: "/#tsn-privacy" },
+
   { label: "LP APY", href: "/#lp-yield" },
-  { label: "Cranker", href: "/#cranker" },
+  // { label: "Cranker", href: "/#cranker" },
   { label: "SDK", href: "/#sdk" },
   { label: "TINS", href: "/#tins" },
 ] as const;
@@ -30,11 +31,11 @@ export function SiteHeader() {
           <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
             <TrustLinkMark compact />
             <div className="min-w-0 flex  items-center gap-1.5">
-              <div className="tl-text-muted text-[0.6rem] text-center uppercase tracking-[0.22em] leading-none">TrustLink Pay</div>
+              <div className="rounded-full text-accent-deep px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] sm:inline-flex">TrustLink Pay</div>
               <Link
                 href="/#tsn-protocol"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full border tl-badge px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] sm:inline-flex"
+                className="tl-text-muted text-[0.6rem] text-center tracking-[0.22em] leading-none"
               >
                 TSN Protocol
               </Link>
@@ -48,7 +49,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-[0.72rem] font-bold text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"
+              className="rounded-full px-3 py-2 text-[0.72rem] text-[var(--text-soft)] font-sans font-semibold transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)] "
             >
               {item.label}
             </Link>
@@ -64,7 +65,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/app"
-            className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-normal transition"
+            className="tl-button-transparent inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-normal transition"
           >
             Open Dapp
           </Link>
@@ -106,7 +107,7 @@ export function SiteHeader() {
               <Link
                 href="/app"
                 onClick={() => setMenuOpen(false)}
-                className="tl-button-secondary inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold uppercase"
+                className="tl-button-transparent inline-flex items-center justify-center rounded-[14px] px-4 py-3 font-semibold uppercase"
               >
                 Open Dapp
               </Link>

@@ -109,7 +109,7 @@
   --accent-gradient: radial-gradient(
     ellipse at 18% 24%,
     rgba(93, 219, 167, 0.14) 0%,
-    rgba(74, 190, 208, 0.05) 36%,
+    rgba(46, 168, 134, 0.05) 36%,
     #111918 70%,
     #0f1816 100%
   );
@@ -294,31 +294,59 @@
 }
 
 /* ── BADGE ─── */
+/* ── BADGE SELECTION STATES ─── */
+
+/* Add smooth transitions to the base badge so it animates cleanly when toggled */
 .tl-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
+  transition:
+    background var(--dur-normal) var(--ease-smooth),
+    color var(--dur-normal) var(--ease-smooth),
+    border-color var(--dur-normal) var(--ease-smooth),
+    transform var(--dur-fast) var(--ease-spring);
+}
+
+/* Optional: small pop effect when clicking an active or inactive badge */
+.tl-badge:active {
+  transform: scale(0.96);
+}
+
+/* Inactive state */
+.tl-badge.is-inactive {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--surface-border);
+  cursor: pointer;
+}
+
+/* Hover/Focus for inactive badges */
+.tl-badge.is-inactive:hover,
+.tl-badge.is-inactive:focus-visible {
+  background: var(--surface-soft);
+  color: var(--text-soft);
+  border-color: var(--field-border);
+}
+
+/* Dark mode specific adjustments (if needed for better contrast) */
+.dark .tl-badge.is-inactive {
+  background: rgba(255, 255, 255, 0.01);
+  color: var(--text-faint);
+}
+
+.dark .tl-badge.is-inactive:hover {
+  background: var(--surface-soft);
+  color: var(--text-soft);
 }
 
 .tl-meta-label {
-  background: var(--surface-soft);
+  background: transparent;
   color: var(--text-faint);
   border-color: transparent;
 }
 
 /* ── PANEL HEADERS ─── */
 .tl-panel-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--field-border);
+  padding: 1.25rem 0.75rem;
+  border-bottom: 0rem;
 }
 
 .tl-panel-header h2,
@@ -504,7 +532,10 @@ select {
 .tl-panel-header {
   position: relative;
   overflow: hidden;
-  border-radius: 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  border-bottom-left-radius: 0rem;
+  border-bottom-right-radius: 0rem;
 }
 
 /* Frosted top area only */
@@ -750,6 +781,45 @@ select {
 
 .dark .tl-button-danger {
   color: #f5a0a0;
+}
+
+/* Transparent */
+
+.tl-button-transparent {
+  color: var(--accent);
+
+  background-image:
+    radial-gradient(circle at top, rgba(46, 168, 134, 0), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(46, 168, 134, 0.04) 0%,
+      rgba(255, 122, 24, 0.015) 100%
+    );
+
+  border: 1px solid transparent;
+
+  font-size: 0.875rem;
+  line-height: calc(1.25 / 0.875);
+  font-weight: 600;
+
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.tl-button-transparent:hover {
+  color: var(--accent-hover);
+
+  border-color: var(--accent-border);
+
+  background-image:
+    radial-gradient(circle at top, rgba(46, 168, 134, 0.03), transparent 58%),
+    linear-gradient(
+      180deg,
+      rgba(46, 168, 134, 0.06) 0%,
+      rgba(255, 122, 24, 0.02) 100%
+    );
 }
 
 .tl-icon-surface {
@@ -1288,7 +1358,7 @@ select {
   background: linear-gradient(
     135deg,
     var(--accent-soft),
-    rgba(74, 190, 208, 0.04)
+    rgba(46, 168, 134, 0.04)
   );
 }
 
@@ -2065,7 +2135,7 @@ select {
 }
 
 .activity-badge.is-send {
-  background: rgba(74, 190, 208, 0.08);
+  background: rgba(46, 168, 134, 0.08);
   color: var(--primary-accent);
 }
 
@@ -2274,7 +2344,7 @@ select {
   border-radius: 24px;
   border: 1px solid var(--surface-border);
   background:
-    linear-gradient(135deg, var(--accent-soft), rgba(74, 190, 208, 0.02)),
+    linear-gradient(135deg, var(--accent-soft), rgba(46, 168, 134, 0.02)),
     var(--surface);
   box-shadow: var(--shadow);
 }

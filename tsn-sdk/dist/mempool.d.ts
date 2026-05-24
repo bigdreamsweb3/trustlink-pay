@@ -5,7 +5,7 @@ export interface TsnMempool {
     listPendingWork(limit?: number): Promise<TsnWorkItem[]>;
     updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
     updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch?: Partial<TsnMempoolClaimRequest>): Promise<TsnMempoolClaimRequest | null>;
-    postProof?(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+    postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
 }
 export declare class JsonFileTsnMempool implements TsnMempool {
     private readonly path;
@@ -15,6 +15,7 @@ export declare class JsonFileTsnMempool implements TsnMempool {
     listPendingWork(limit?: number): Promise<TsnWorkItem[]>;
     updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
     updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch?: Partial<TsnMempoolClaimRequest>): Promise<TsnMempoolClaimRequest | null>;
+    postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
 }
 export declare class HttpTsnMempool implements TsnMempool {
     private readonly client;

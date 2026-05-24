@@ -1,4 +1,10 @@
-import { HttpTsnMempool, JsonFileTsnMempool, evaluateSettlementEconomics } from "../tsn-sdk/src";
+import {
+  HttpTsnMempool,
+  JsonFileTsnMempool,
+  evaluateSettlementEconomics,
+} from "@trustlink/tsn-cranker-sdk";
+
+import "dotenv";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -14,7 +20,8 @@ function createMempoolClient() {
 
 async function main() {
   const mempool = createMempoolClient();
-  const operator = process.env.TSN_CRANKER_OPERATOR_PUBKEY ?? "local-dev-cranker";
+  const operator =
+    process.env.TSN_CRANKER_OPERATOR_PUBKEY ?? "local-dev-cranker";
 
   console.log(`[tsn-cranker] operator=${operator}`);
   console.log("[tsn-cranker] source=tsn-mempool");
@@ -23,16 +30,27 @@ async function main() {
     const work = await mempool.listPendingWork(20);
     for (const item of work) {
       try {
-        await mempool.updateClaimRequestStatus(item.claimRequest.id, "processing");
+        await mempool.updateClaimRequestStatus(
+          item.claimRequest.id,
+          "processing",
+        );
 
         const economics = evaluateSettlementEconomics({
           paymentAmountUi: item.intent.amount,
           tokenUsd: Number(process.env.TSN_CRANKER_TOKEN_USD ?? 1),
-          estimatedExecutionCostLamports: Number(process.env.TSN_CRANKER_EXECUTION_LAMPORTS ?? 20_000),
-          ataCreationCostLamports: Number(process.env.TSN_CRANKER_ATA_LAMPORTS ?? 2_039_280),
+          estimatedExecutionCostLamports: Number(
+            process.env.TSN_CRANKER_EXECUTION_LAMPORTS ?? 20_000,
+          ),
+          ataCreationCostLamports: Number(
+            process.env.TSN_CRANKER_ATA_LAMPORTS ?? 2_039_280,
+          ),
           solUsd: Number(process.env.TSN_CRANKER_SOL_USD ?? 150),
-          operatorFeeUi: Number(process.env.TSN_CRANKER_OPERATOR_FEE_UI ?? 0.02),
-          safetyMultiplier: Number(process.env.TSN_CRANKER_SAFETY_MULTIPLIER ?? 1.25),
+          operatorFeeUi: Number(
+            process.env.TSN_CRANKER_OPERATOR_FEE_UI ?? 0.02,
+          ),
+          safetyMultiplier: Number(
+            process.env.TSN_CRANKER_SAFETY_MULTIPLIER ?? 1.25,
+          ),
         });
 
         if (economics.likelihood === "economically_non_claimable") {
@@ -41,9 +59,13 @@ async function main() {
             settlementResolution: "reverted",
             settlementReason: economics.reason,
           });
-          await mempool.updateClaimRequestStatus(item.claimRequest.id, "completed", {
-            settlementReason: economics.reason,
-          });
+          await mempool.updateClaimRequestStatus(
+            item.claimRequest.id,
+            "completed",
+            {
+              settlementReason: economics.reason,
+            },
+          );
           console.log(
             `[tsn-cranker] reverted intent=${item.intent.id} claim=${item.claimRequest.id} reason="${economics.reason}"`,
           );
@@ -54,7 +76,7 @@ async function main() {
         // ownership boundary by consuming TSN mempool work instead of TrustLink DB rows.
         // The next implementation step wires this point to the TSN on-chain program.
         const proofTxSig = `local-proof-${Date.now()}`;
-        await mempool.postProof?.({
+        await mempool.postProof({
           intent_id: item.intent.id,
           timestamp: new Date().toISOString(),
           cranker_pubkey: operator,
@@ -67,15 +89,21 @@ async function main() {
           settlementResolution: "completed",
           settlementReason: economics.reason,
         });
-        await mempool.updateClaimRequestStatus(item.claimRequest.id, "completed", {
-          settlementReason: economics.reason,
-        });
+        await mempool.updateClaimRequestStatus(
+          item.claimRequest.id,
+          "completed",
+          {
+            settlementReason: economics.reason,
+          },
+        );
 
         console.log(
           `[tsn-cranker] executed intent=${item.intent.id} claim=${item.claimRequest.id} proof=${proofTxSig}`,
         );
       } catch (error) {
-        await mempool.updateClaimRequestStatus(item.claimRequest.id, "failed").catch(() => undefined);
+        await mempool
+          .updateClaimRequestStatus(item.claimRequest.id, "failed")
+          .catch(() => undefined);
         console.error(`[tsn-cranker] failed intent=${item.intent.id}`, error);
       }
     }

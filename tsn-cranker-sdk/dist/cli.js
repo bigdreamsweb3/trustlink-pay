@@ -1,9 +1,11 @@
-import "dotenv/config";
-import { readFileSync } from "node:fs";
+import { config as loadDotenv } from "dotenv";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { sha256Bytes, tsnInitializeMotherEscrowOnChain, tsnRegisterCrankerOnChain, tsnSetCrankerFundingPolicyOnChain, tsnInitializeCrankerVaultOnChain, tsnFundCrankerOnChain, tsnWithdrawCrankerFundsOnChain, tsnSettleEpochOnChain, } from "../../tsn-sdk/dist/blockchain/solana-tsn.js";
+loadDotenv();
+loadDotenv({ path: ".env.local", override: true });
 function requireEnv(name) {
     const value = process.env[name];
     if (!value)
@@ -16,16 +18,18 @@ function resolvePath(path) {
     return resolve(process.cwd(), path);
 }
 function loadKeypair(path) {
-    const raw = JSON.parse(readFileSync(resolvePath(path), "utf8"));
+    const resolved = resolvePath(path);
+    if (!existsSync(resolved)) {
+        throw new Error(`Keypair not found at ${resolved}. Set KEYPAIR_PATH to the JSON keypair that should sign this command.`);
+    }
+    const raw = JSON.parse(readFileSync(resolved, "utf8"));
     return Keypair.fromSecretKey(Uint8Array.from(raw));
 }
 function operatorKeypair() {
     return loadKeypair(process.env.KEYPAIR_PATH ?? "./cranker-keypair.json");
 }
 function authorityKeypair() {
-    return loadKeypair(process.env.TSN_AUTHORITY_KEYPAIR_PATH ??
-        process.env.KEYPAIR_PATH ??
-        "./cranker-keypair.json");
+    return loadKeypair(process.env.KEYPAIR_PATH ?? "./cranker-keypair.json");
 }
 function parseBoolean(value) {
     if (value === "true")
@@ -147,8 +151,7 @@ async function main() {
 Environment Variables:
   RPC_URL                        Solana RPC endpoint
   PROGRAM_ID                     TSN program ID
-  KEYPAIR_PATH                   Path to operator keypair (default: ./cranker-keypair.json)
-  TSN_AUTHORITY_KEYPAIR_PATH     Path to authority keypair (for init-mother)`);
+  KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);
         return;
     }
     await handleCommand();

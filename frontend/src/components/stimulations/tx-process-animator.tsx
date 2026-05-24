@@ -8,7 +8,6 @@ import {
   Timer,
   Zap,
   ArrowUpRight,
-  Compass,
 } from "lucide-react";
 
 interface Step {
@@ -19,43 +18,18 @@ interface Step {
 }
 
 const BASE_STEPS = [
-  {
-    id: 1,
-    label: "Alice enters Bob's identity",
-    statusText: "Resolving bob.phone index...",
-  },
-  {
-    id: 2,
-    label: "Intent enters Mempool",
-    statusText: "Mempool state registered.",
-  },
-  {
-    id: 3,
-    label: "Cranker submits on-chain",
-    statusText: "Submitting proof payload...",
-  },
-  {
-    id: 4,
-    label: "Escrow locks the funds",
-    statusText: "Escrow contract secured...",
-  },
-  {
-    id: 5,
-    label: "Private claim routes payload",
-    statusText: "Mapping payout address...",
-  },
-  {
-    id: 6,
-    label: "Proof settles at epoch",
-    statusText: "On-chain state finalized.",
-  },
+  { id: 1, label: "Alice enters Bob's identity", statusText: "Resolving bob.phone index..." },
+  { id: 2, label: "Intent enters Mempool", statusText: "Mempool state registered." },
+  { id: 3, label: "Cranker submits on-chain", statusText: "Submitting proof payload..." },
+  { id: 4, label: "Escrow locks the funds", statusText: "Escrow contract secured..." },
+  { id: 5, label: "Private claim pays Bob", statusText: "Mapping payout address..." },
+  { id: 6, label: "Proof settles at epoch", statusText: "On-chain state finalized." },
 ];
 
-// Always sum up to ~1.8s - 2.5s (average < 3s)
 const generateRandomizedSteps = (): Step[] => {
   return BASE_STEPS.map((step) => ({
     ...step,
-    duration: Math.floor(Math.random() * 110 + 280), // 280ms - 390ms per step
+    duration: Math.floor(Math.random() * 110 + 280),
   }));
 };
 
@@ -64,24 +38,18 @@ interface HeaderProps {
   loopCount: number;
 }
 
-const Header = memo(function Header({
-  elapsed,
-  loopCount,
-}: HeaderProps) {
+const Header = memo(function Header({ elapsed, loopCount }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-0.5 select-none min-h-[20px]">
       <div className="flex items-center gap-1.5 min-w-0">
         <Timer className="h-3 w-3 text-primary-accent shrink-0" />
-
         <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-slate-400 font-bold">
           Settlement Clock:
         </span>
-
         <span className="text-primary-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
           {elapsed.toFixed(2)}s
         </span>
       </div>
-
       <span className="text-[0.58rem] font-mono text-slate-500 font-bold shrink-0">
         CYCLE #{loopCount + 1}
       </span>
@@ -133,7 +101,6 @@ const ProcessGrid = memo(function ProcessGrid({
         const toX = rectB.left - containerRect.left;
         const toY = rectB.top + rectB.height / 2 - containerRect.top;
 
-        // Roughly horizontal if rows match
         const isHorizontal = Math.abs(rectA.top - rectB.top) < 30;
 
         let pathD = "";
@@ -145,7 +112,6 @@ const ProcessGrid = memo(function ProcessGrid({
         if (isHorizontal) {
           pathD = `M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${fromY}, ${toX} ${toY}`;
         } else {
-          // Wrapped connector trajectory
           const outX = rectA.left + rectA.width / 2 - containerRect.left;
           const outY = rectA.bottom - containerRect.top;
           const inX = rectB.left + rectB.width / 2 - containerRect.left;
@@ -161,20 +127,12 @@ const ProcessGrid = memo(function ProcessGrid({
 
         const angle = Math.atan2(adjustToY - adjustFromY, adjustToX - adjustFromX) * (180 / Math.PI);
 
-        newCoords.push({
-          fromX: adjustFromX,
-          fromY: adjustFromY,
-          toX: adjustToX,
-          toY: adjustToY,
-          angle,
-          pathD,
-        });
+        newCoords.push({ fromX: adjustFromX, fromY: adjustFromY, toX: adjustToX, toY: adjustToY, angle, pathD });
       }
     }
     setCoords(newCoords);
   }, [steps]);
 
-  // Recalculate on window size updates and stage changes
   useEffect(() => {
     mapConnections();
     window.addEventListener("resize", mapConnections);
@@ -189,8 +147,6 @@ const ProcessGrid = memo(function ProcessGrid({
   return (
     <div className="select-none relative">
       <div ref={containerRef} className="relative w-full overflow-visible">
-
-        {/* SVG Connecting Overlay Vectors */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-20">
           <defs>
             <filter id="neon-glow" x="-25%" y="-25%" width="150%" height="150%">
@@ -222,7 +178,6 @@ const ProcessGrid = memo(function ProcessGrid({
 
             return (
               <g key={`track-${index}`}>
-                {/* Underlying channel line */}
                 <path
                   d={c.pathD}
                   fill="none"
@@ -236,7 +191,6 @@ const ProcessGrid = memo(function ProcessGrid({
                   }}
                 />
 
-                {/* Highly glowing dynamic vector particle streams */}
                 {isActive && (
                   <motion.path
                     d={c.pathD}
@@ -251,7 +205,6 @@ const ProcessGrid = memo(function ProcessGrid({
                   />
                 )}
 
-                {/* Interactive high-speed electron burst packets */}
                 {isActive && stepProgress > 10 && (
                   <circle r="3.2" fill="#22D3EE" filter="url(#neon-glow)">
                     <animateMotion dur="0.8s" repeatCount="indefinite" path={c.pathD} />
@@ -267,7 +220,6 @@ const ProcessGrid = memo(function ProcessGrid({
           })}
         </svg>
 
-        {/* Anchored Rotary Compass Point Indicators */}
         {coords.map((c, index) => {
           const isSourceActive = !isCompleted && index === currentStepIndex;
           const isSourceCompleted = isCompleted || index < currentStepIndex;
@@ -312,7 +264,6 @@ const ProcessGrid = memo(function ProcessGrid({
           );
         })}
 
-        {/* Layout Grid of Node Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-7 gap-x-10 px-0.5 relative w-full z-10 leading-none">
           {steps.map((step, idx) => {
             const nodeCompleted = isCompleted || idx < currentStepIndex;
@@ -345,10 +296,7 @@ const ProcessGrid = memo(function ProcessGrid({
                   <div className="absolute -inset-[1.5px] bg-gradient-to-r from-[#22D3EE]/25 to-transparent rounded-xl blur-[1.5px]" />
                 )}
 
-                <div
-                  className={`relative flex flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}
-                >
-                  {/* Active state line trace visual */}
+                <div className={`relative flex flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}>
                   {nodeActive && (
                     <motion.div
                       className="absolute bottom-0 left-0 bg-gradient-to-r from-[#22D3EE]/30 to-transparent h-[1.5px]"
@@ -358,7 +306,6 @@ const ProcessGrid = memo(function ProcessGrid({
                     />
                   )}
 
-                  {/* Header Badge & Marker */}
                   <div className="flex items-center justify-between">
                     <span className={`text-[0.6rem] font-mono rounded px-1.5 py-[1px] flex items-center justify-center border ${numMarkerBg}`}>
                       0{step.id}
@@ -376,32 +323,17 @@ const ProcessGrid = memo(function ProcessGrid({
                         </motion.div>
                       )}
 
-                      {nodeActive && (
-                        <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin" />
-                      )}
-
-                      {nodePending && (
-                        <div className="h-1 w-1 rounded-full bg-slate-700" />
-                      )}
+                      {nodeActive && <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin" />}
+                      {nodePending && <div className="h-1 w-1 rounded-full bg-slate-700" />}
                     </div>
                   </div>
 
-                  {/* Headline Label */}
-                  <span
-                    className={` ${nodeCompleted
-                      ? "text-[0.82rem]"
-                      : "text-[0.62rem] truncate"} leading-tight select-text tracking-wide mt-1 ${titleColorClass} `}
-                  >
+                  <span className={` ${nodeCompleted ? "text-[0.82rem]" : "text-[0.62rem] truncate"} leading-tight select-text tracking-wide mt-1 ${titleColorClass} `}>
                     {step.label}
                   </span>
 
-                  {/* Helper status helper indicators */}
                   <span className="text-[0.55rem] font-mono text-slate-500 leading-none truncate select-text">
-                    {nodeActive
-                      ? `${stepProgress.toFixed(0)}% • ${step.statusText}`
-                      : nodeCompleted
-                        ? null
-                        : "Awaiting step"}
+                    {nodeActive ? `${stepProgress.toFixed(0)}% • ${step.statusText}` : nodeCompleted ? null : "Awaiting step"}
                   </span>
                 </div>
               </div>
@@ -429,7 +361,7 @@ const StatusBanner = memo(function StatusBanner({
   const activeStep = steps[currentStepIndex] || steps[steps.length - 1];
 
   return (
-    <div className="relative w-full shrink-0 min-h-[56px] overflow-hidden">
+    <div className="relative w-full shrink-0 min-h-[56px] overflow-hidden bg-bg">
       <AnimatePresence mode="wait">
         {isCompleted ? (
           <motion.div
@@ -438,18 +370,16 @@ const StatusBanner = memo(function StatusBanner({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="absolute inset-0 border-t border-[#10B981]/25 bg-gradient-to-r from-[#10B981]/10 to-[#10B981]/5 px-3 py-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.06)] select-none transform-gpu"
+            className="absolute inset-0  border-t border-[#10B981]/25 bg-gradient-to-r from-[#10B981]/10 to-[#10B981]/5 px-3 py-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.06)] select-none transform-gpu"
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-[#10B981]/15 border border-[#10B981]/25 shrink-0">
                 <Zap className="h-3 w-3 text-[#10B981] fill-[#10B981]/20" />
               </div>
-
               <div className="min-w-0">
                 <span className="block text-[0.58rem] font-mono text-[#10B981] uppercase font-black tracking-widest leading-none">
                   Settlement Verified
                 </span>
-
                 <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none truncate select-text">
                   Epoch records verified perfectly on Solana
                 </span>
@@ -460,7 +390,6 @@ const StatusBanner = memo(function StatusBanner({
               <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
                 Total Time
               </span>
-
               <strong className="block text-[0.85rem] font-display font-black text-[#10B981] mt-0.5 whitespace-nowrap tabular-nums min-w-[52px]">
                 {elapsed.toFixed(2)}s
               </strong>
@@ -477,15 +406,11 @@ const StatusBanner = memo(function StatusBanner({
           >
             <div className="flex items-center gap-2 min-w-0 overflow-hidden text-ellipsis">
               <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin shrink-0" />
-
               <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400 truncate select-text">
                 Active Protocol Pipeline:{" "}
-                <span className="text-[#22D3EE] font-bold">
-                  {activeStep?.statusText}
-                </span>
+                <span className="text-[#22D3EE] font-bold">{activeStep?.statusText}</span>
               </span>
             </div>
-
             <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest shrink-0 ml-3 font-bold">
               Active
             </span>
@@ -497,6 +422,7 @@ const StatusBanner = memo(function StatusBanner({
 });
 
 export function TxProcessAnimator() {
+  const [activeTab, setActiveTab] = useState<"intent" | "video">("intent");
   const [steps, setSteps] = useState<Step[]>(generateRandomizedSteps());
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
@@ -504,23 +430,21 @@ export function TxProcessAnimator() {
   const [elapsed, setElapsed] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
-  // Stable overall elapsed runtime timer
   useEffect(() => {
-    if (isCompleted) return;
+    if (isCompleted || activeTab !== "intent") return;
 
     const start = Date.now();
-
     const interval = setInterval(() => {
       setElapsed((Date.now() - start) / 1000);
     }, 50);
 
     return () => clearInterval(interval);
-  }, [loopCount, isCompleted]);
+  }, [loopCount, isCompleted, activeTab]);
 
-  // High-resolution unified timeline coordinator & step manager
   useEffect(() => {
+    if (activeTab !== "intent") return;
+
     if (isCompleted) {
-      // Completed loop pause before automatic re-trigger
       const timer = setTimeout(() => {
         setIsCompleted(false);
         setSteps(generateRandomizedSteps());
@@ -537,7 +461,6 @@ export function TxProcessAnimator() {
     if (!activeStep) return;
 
     const startTime = Date.now();
-
     const tracker = setInterval(() => {
       const msElapsed = Date.now() - startTime;
       const progress = Math.min((msElapsed / activeStep.duration) * 100, 100);
@@ -553,15 +476,38 @@ export function TxProcessAnimator() {
           setIsCompleted(true);
         }
       }
-    }, 16); // High-fidelity ~60Hz update cycle
+    }, 16);
 
     return () => clearInterval(tracker);
-  }, [currentStepIndex, isCompleted, steps]);
+  }, [currentStepIndex, isCompleted, steps, activeTab]);
 
   return (
-    <div className="relative flex gap-0 flex-col w-full overflow-hidden contain-layout">
+    <div className="relative w-full flex flex-col">
+      {/* Tab Controls Bar */}
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="w-full flex items-center justify-between tl-panel-header">
+          <p className="tl-meta-label w-fit text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">
+            How a payment works?
+          </p>
 
-      <div className="p-2.5 md:p-3 relative gap-1.5">
+
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setActiveTab("intent")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
+              ? "tl-badge:active"
+              : "tl-badge.is-inactive"
+              }`}>Payment intent</button>
+
+            <button onClick={() => setActiveTab("video")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
+              ? "tl-badge:active"
+              : "tl-badge.is-inactive"
+              }`}>Explainer Video</button>
+          </div>
+        </div>
+      </div>
+
+
+      {/* Main Container View Box */}
+      <div className="relative flex gap-0 flex-col w-full overflow-hidden contain-layout rounded-xl border border-[#2D3139]/80 bg-[#111215]/40 backdrop-blur-md">
         {/* Grid overlay */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[1.04]"
@@ -574,54 +520,85 @@ export function TxProcessAnimator() {
           }}
         />
 
-        <div className="mb-2.5">
-          <Header
-            elapsed={elapsed}
-            loopCount={loopCount}
-          />
-        </div>
+        <AnimatePresence mode="wait">
+          {activeTab === "intent" ? (
+            <motion.div
+              key="intent-view"
+              initial={{ opacity: 0, scale: 0.99, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.99, y: -4 }}
+              transition={{ ease: "easeInOut", duration: 0.35 }}
+              className="p-2.5 md:p-3 relative gap-1.5 flex flex-col justify-between min-h-55"
+            >
+              <div className="p-2.5 md:p-3 relative gap-1.5">
+                <div className="mb-2.5 relative z-10">
+                  <Header elapsed={elapsed} loopCount={loopCount} />
+                </div>
 
-        <ProcessGrid
-          currentStepIndex={currentStepIndex}
-          isCompleted={isCompleted}
-          stepProgress={stepProgress}
-          steps={steps}
-        />
-      </div>
+                <div className="relative z-10 flex-1 flex flex-col justify-center">
+                  <ProcessGrid
+                    currentStepIndex={currentStepIndex}
+                    isCompleted={isCompleted}
+                    stepProgress={stepProgress}
+                    steps={steps}
+                  />
+                </div>
 
-      <div className="">
-        <StatusBanner
-          isCompleted={isCompleted}
-          currentStepIndex={currentStepIndex}
-          elapsed={elapsed}
-          steps={steps}
-        />
+              </div>
+
+              <div className="mt-4 relative z-10 -mx-3 -mb-3">
+                <StatusBanner
+                  isCompleted={isCompleted}
+                  currentStepIndex={currentStepIndex}
+                  elapsed={elapsed}
+                  steps={steps}
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="video-view"
+              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -8 }}
+              transition={{ ease: "easeInOut", duration: 0.4 }}
+              className="p-3 max-w-[calc(360px, vw)] aspect-video flex items-center justify-center bg-black/40 min-h-55"
+            >
+              <div className="w-full h-full rounded-lg overflow-hidden border border-[#2D3139]/60 shadow-[0_12px_40px_rgba(0,0,0,0.7)] relative bg-black">
+                <video
+                  src="https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-32124-large.mp4" // Swap this string with your absolute video source path
+                  autoPlay
+                  controls
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div >
+    </div>
   );
 }
 
-// Centering wrapper on an immaculate charcoal black board context
 export default function App() {
   return (
-    <div className="relative min-h-screen bg-[#0C0D0E] text-[#E0E2E5] flex flex-col items-center justify-center font-sans p-4 relative overflow-hidden">
-      {/* Background decoration elements */}
+    <div className="relative min-h-screen bg-[#0C0D0E] text-[#E0E2E5] flex flex-col items-center justify-center font-sans p-4 overflow-hidden">
       <div className="absolute inset-0 bg-radial-[circle_at_center_top,rgba(34,211,238,0.015)_0%,transparent_60%] pointer-events-none z-0" />
       <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none z-0" />
 
-      {/* Grid overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.54]"
         style={{
           backgroundImage: `
-          linear-gradient(var(--accent-border) 1px, transparent 1px),
-          linear-gradient(90deg, var(--accent-border) 1px, transparent 1px)
-        `,
+            linear-gradient(rgba(45,49,57,0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45,49,57,0.3) 1px, transparent 1px)
+          `,
           backgroundSize: "12px 12px",
         }}
       />
 
-      {/* Main Single Presentation Board Card */}
+      {/* Core Presentation Window Frame */}
       <div className="w-full max-w-4xl bg-[#111215]/95 border border-[#2D3139] rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/60 relative z-10 overflow-hidden">
         <TxProcessAnimator />
       </div>

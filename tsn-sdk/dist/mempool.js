@@ -11,7 +11,7 @@ async function readSnapshot(path) {
     }
     catch (error) {
         if (error.code === "ENOENT") {
-            return { intents: [], claimRequests: [] };
+            return { intents: [], claimRequests: [], proofs: [] };
         }
         throw error;
     }
@@ -87,6 +87,14 @@ export class JsonFileTsnMempool {
         Object.assign(claimRequest, patch, { status, updatedAt: now() });
         await writeSnapshot(this.path, snapshot);
         return claimRequest;
+    }
+    async postProof(request) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.proofs)
+            snapshot.proofs = [];
+        snapshot.proofs.push(request);
+        await writeSnapshot(this.path, snapshot);
+        return request;
     }
 }
 export class HttpTsnMempool {

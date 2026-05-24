@@ -24,12 +24,13 @@ export interface TsnMempool {
     status: TsnClaimRequestStatus,
     patch?: Partial<TsnMempoolClaimRequest>,
   ): Promise<TsnMempoolClaimRequest | null>;
-  postProof?(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+  postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
 }
 
 type Snapshot = {
   intents: TsnMempoolIntent[];
   claimRequests: TsnMempoolClaimRequest[];
+  proofs?: ProofOfPaymentRequest[];
 };
 
 function now() {
@@ -41,7 +42,7 @@ async function readSnapshot(path: string): Promise<Snapshot> {
     return JSON.parse(await readFile(path, "utf8")) as Snapshot;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { intents: [], claimRequests: [] };
+      return { intents: [], claimRequests: [], proofs: [] };
     }
     throw error;
   }
@@ -126,6 +127,14 @@ export class JsonFileTsnMempool implements TsnMempool {
     Object.assign(claimRequest, patch, { status, updatedAt: now() });
     await writeSnapshot(this.path, snapshot);
     return claimRequest;
+  }
+
+  async postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest> {
+    const snapshot = await readSnapshot(this.path);
+    if (!snapshot.proofs) snapshot.proofs = [];
+    snapshot.proofs.push(request);
+    await writeSnapshot(this.path, snapshot);
+    return request;
   }
 }
 

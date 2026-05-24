@@ -152,7 +152,7 @@ export async function tsnCreateIntentOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.payer && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
@@ -201,7 +201,7 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
@@ -254,7 +254,7 @@ export async function tsnMigrateMotherEscrowOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
@@ -298,7 +298,7 @@ export async function tsnSettleEpochOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
@@ -326,7 +326,7 @@ export async function tsnRegisterCrankerOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.operator && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
@@ -384,7 +384,7 @@ export async function tsnInitializeCrankerVaultOnChain(params: {
   rpcUrl?: string;
   secretKey?: string | null;
 }) {
-  if (params.secretKey === null || params.secretKey === undefined) {
+  if (!params.payer && (params.secretKey === null || params.secretKey === undefined)) {
     return { mode: "mock" as const, signature: null as string | null };
   }
 

@@ -124,7 +124,7 @@ export function LandingFeeYieldCalculator() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-[var(--tsn-text)]">Settlement APY Calculator </p>
+              <p className="text-[0.7rem] font-black  uppercase tracking-[0.2em]">Settlement APY Calculator </p>
               <span className="tsn-badge text-nowrap">
                 Volume-based
               </span>

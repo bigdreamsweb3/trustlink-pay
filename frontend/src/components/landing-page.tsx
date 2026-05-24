@@ -140,8 +140,7 @@ export function LandingPage() {
 
       <section id="tsn-protocol" className="mx-auto grid min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 items-center gap-10 pb-12 pt-2 lg:grid-cols-[0.98fr_1.02fr]">
         <div className="relative z-10">
-          <div className="tl-badge">
-            <Network className="h-3.5 w-3.5" />
+          <div className="tl-meta-label text-nowrap whitespace-nowrap">
             Transfer Settlement Network · Solana
           </div>
           <h1 className="tl-display mt-5 max-w-[760px]">
@@ -165,35 +164,17 @@ export function LandingPage() {
 
         </div>
 
-        <div className="relative z-10 grid gap-3 w-full">
+        <div id="how-it-works" className="relative z-10 grid gap-3 w-full scroll-mt-28">
 
-          <div className="relative overflow-hidden tl-panel pt-4 md:pt-5 bg-[var(--field)] border border-[var(--field-border)]">
 
-            <div className="relative z-10 flex items-center justify-between gap-4 px-4 md:px-5 mb-2">
-              <div>
-                <p className="tl-meta-label w-fit text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">
-                  Payment intent
-                </p>
 
-                <h2 className="mt-2 text-2xl font-black tracking-normal text-[var(--text)]">
-                  $100.00 Transfer
-                </h2>
-              </div>
+          <TxProcessAnimator />
 
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-            </div>
-
-            <div className="relative z-10">
-              <TxProcessAnimator />
-            </div>
-          </div>
 
           <div className="grid grid-cols-2 gap-3">
             {heroStats.map((stat) => (
               <div key={stat.label} className="tl-field rounded-[14px] p-4">
-                <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)]">{stat.label}</p>
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-text-faint">{stat.label}</p>
                 <strong className="mt-2 block text-xl font-black text-[var(--text)]">{stat.value}</strong>
                 <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">{stat.note}</span>
               </div>
@@ -203,30 +184,49 @@ export function LandingPage() {
       </section>
 
 
-      <section id="tsn-privacy" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
+      {/* PRIVACY */}
+      <section
+        id="tsn-privacy"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+      >
         <SectionLabel index="01" title="TSN privacy" />
-        <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-          <div>
-            <h2 className="text-[clamp(1.58rem,3.4vw,2rem)] font-black leading-[1.16] tracking-[-0.015em] text-[var(--text)]">
+
+        <div className="mt-6 grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+          <div className="min-w-0">
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.35rem)] font-black leading-[1.08] tracking-[-0.03em] text-[var(--text)]">
               Settlement without direct wallet-to-wallet exposure.
             </h2>
-            <p className="mt-4 pr-3 max-w-[680px] text-[0.98rem] leading-7 text-[var(--text-soft)] md:text-[1.02rem]">
-              TSN separates the sender lock, recipient claim, Cranker payout, and epoch reimbursement. Payments remain provable on-chain, but the normal payment experience does not require either side to reveal the other wallet path.
+
+            <p className="mt-5 max-w-[680px] text-[1rem] leading-8 text-[var(--text-soft)]">
+              TSN separates sender lock, recipient claim, Cranker payout, and
+              epoch reimbursement. Payments remain verifiable on-chain while
+              reducing direct exposure between counterparties during normal
+              payment flows.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {privacyProofs.map((proof) => (
-              <article key={proof.title} className="tl-panel p-5">
+              <article
+                key={proof.title}
+                className="tl-panel rounded-[18px] p-5"
+              >
                 <proof.icon className="h-5 w-5 text-[var(--accent)]" />
-                <h3 className="mt-4 text-[1rem] font-black tracking-normal text-[var(--text)]">{proof.title}</h3>
-                <p className="mt-3 text-[0.86rem] leading-7 text-[var(--text-soft)]">{proof.body}</p>
+
+                <h3 className="mt-4 text-[1rem] font-black text-[var(--text)]">
+                  {proof.title}
+                </h3>
+
+                <p className="mt-3 text-[0.92rem] leading-7 text-[var(--text-soft)]">
+                  {proof.body}
+                </p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
+      {/* <section id="how-it-works" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
         <SectionLabel index="02" title="How a payment works" />
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {flowSteps.map((step, index) => (
@@ -240,11 +240,11 @@ export function LandingPage() {
             </article>
           ))}
         </div>
-      </section>
+      </section> */}
 
-      <section id="fee-model" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
+      {/* <section id="fee-model" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
-          <SectionLabel index="03" title="Current fee model" />
+          <SectionLabel index="02" title="Current fee model" />
           <h2 className="tl-h2 mt-4">
             Show the real fee, not account rent dressed up as network cost.
           </h2>
@@ -271,9 +271,9 @@ export function LandingPage() {
         <div className="mt-6">
           <LandingFeeYieldCalculator />
         </div>
-      </section>
+      </section> */}
 
-      <section id="cranker" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[1fr_0.9fr]">
+      {/* <section id="cranker" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[1fr_0.9fr]">
         <div>
           <SectionLabel index="05" title="Run a Cranker node" />
           <h2 className="tl-h2 mt-4">
@@ -299,55 +299,168 @@ export function LandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
 
-      <section id="sdk" className="mx-auto w-full max-w-[1180px] scroll-mt-28 py-12">
-        <SectionLabel index="06" title="TSN SDK" />
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          {sdkSnippets.map((snippet) => (
-            <article key={snippet.title} className="tl-panel">
-              <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-3">
-                <Code2 className="h-4 w-4 text-accent" />
-                <h3 className="tl-label text-accent">{snippet.title}</h3>
-              </div>
-              <pre className="tl-code overflow-x-auto p-4"><code>{snippet.code}</code></pre>
-            </article>
-          ))}
+      {/* FEE MODEL */}
+      <section
+        id="fee-model"
+        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-0 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
+      >
+        <div className="min-w-0">
+          <SectionLabel index="02" title="Current fee model" />
+
+          <h2 className="tl-h2 mt-5 text-balance">
+            Show the real fee, not account rent dressed up as network cost.
+          </h2>
+
+          <p className="tl-body mt-5 max-w-[680px]">
+            Sender quotes should stay honest: current Solana transaction fee
+            plus TSN settlement fees from active on-chain policy.
+          </p>
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          {[
-            ["TrustLink calls TSN", "TrustLink resolves phone identities, then TSN owns send and claim logic."],
-            ["Other apps call TSN directly", "Once TINS is live, Solana apps can route payments without TrustLink dependency."],
-            ["Same program foundation", "TSN connects into the escrow settlement layer while frontend apps stay modular."],
-          ].map(([title, body]) => (
-            <div key={String(title)} className="tl-field rounded-[14px] p-4">
-              <h3 className="tl-h3">{String(title)}</h3>
-              <p className="tl-meta-sm mt-2">{String(body)}</p>
+
+        <div className="tl-panel overflow-hidden rounded-[18px] p-2">
+          {feeRows.map(([label, value, note]) => (
+            <div
+              key={label}
+              className="grid gap-2 border-b border-[var(--field-border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_0.55fr_1.25fr]"
+            >
+              <span className="tl-label">{label}</span>
+
+              <strong className="tl-label text-accent">
+                {value}
+              </strong>
+
+              <p className="tl-meta-sm">{note}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-5 py-12 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <SectionLabel index="07" title="TINS" />
-          <h2 className="tl-h2 mt-4">
+      {/* LP */}
+      <section
+        id="lp-yield"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+      >
+        <SectionLabel index="03" title="LP settlement APY" />
+
+        <p className="tl-body mt-5 max-w-[680px]">
+          TSN LP APY is calculated strictly from real settlement fees generated
+          by network usage.
+        </p>
+
+        <div className="mt-6">
+          <LandingFeeYieldCalculator />
+        </div>
+      </section>
+
+      {/* SDK */}
+      <section
+        id="sdk"
+        className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+      >
+        <SectionLabel index="04" title="TSN SDK" />
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {sdkSnippets.map((snippet) => (
+            <article
+              key={snippet.title}
+              className="tl-panel overflow-hidden rounded-[18px]"
+            >
+              <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-3">
+                <Code2 className="h-4 w-4 text-accent" />
+
+                <h3 className="tl-label text-accent">
+                  {snippet.title}
+                </h3>
+              </div>
+
+              <pre className="tl-code overflow-x-auto p-4 text-sm leading-7">
+                <code>{snippet.code}</code>
+              </pre>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {[
+            [
+              "TrustLink calls TSN",
+              "TrustLink resolves phone identities, then TSN owns send and claim logic.",
+            ],
+            [
+              "Other apps call TSN directly",
+              "Once TINS is live, Solana apps can route payments without TrustLink dependency.",
+            ],
+            [
+              "Same program foundation",
+              "TSN connects into the escrow settlement layer while frontend apps stay modular.",
+            ],
+          ].map(([title, body]) => (
+            <div
+              key={String(title)}
+              className="tl-field rounded-[16px] p-4"
+            >
+              <h3 className="tl-h3">{String(title)}</h3>
+
+              <p className="tl-meta-sm mt-2">
+                {String(body)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* TINS */}
+      <section
+        id="tins"
+        className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-0 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0"
+      >
+        <div className="min-w-0">
+          <SectionLabel index="05" title="TINS" />
+
+          <h2 className="tl-h2 mt-5">
             Transfer Identity Number System.
           </h2>
-          <p className="tl-body mt-4 pr-3 max-w-[680px]">
-            Every user will own a permanent 10-digit Transfer Identity Number as a Solana PDA. Phone numbers, social identities, and business identities can resolve to the same payment identity without exposing raw private data on-chain.
+
+          <p className="tl-body mt-5 max-w-[680px]">
+            Every user will own a permanent 10-digit Transfer Identity Number
+            as a Solana PDA.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[
-            [Landmark, "On-chain and permanent", "Your TIN lives as a Solana PDA, not as a private TrustLink database row."],
-            [Wallet, "Links payment identity", "Phone numbers, TINs, social handles, and business registrations can resolve to the same payment route."],
-            [Gauge, "Open infrastructure", "Developers resolve a TIN, create an intent, and route funds through TSN."],
+            [
+              Landmark,
+              "On-chain and permanent",
+              "Your TIN lives as a Solana PDA, not as a private TrustLink database row.",
+            ],
+            [
+              Wallet,
+              "Links payment identity",
+              "Phone numbers, TINs, social handles, and business registrations can resolve to the same payment route.",
+            ],
+            [
+              Gauge,
+              "Open infrastructure",
+              "Developers resolve a TIN, create an intent, and route funds through TSN.",
+            ],
           ].map(([Icon, title, body]) => (
-            <article key={String(title)} className="tl-panel p-5">
+            <article
+              key={String(title)}
+              className="tl-panel rounded-[18px] p-5"
+            >
+              {/* @ts-ignore */}
               <Icon className="h-5 w-5 text-accent" />
-              <h3 className="tl-h3 mt-4">{String(title)}</h3>
-              <p className="tl-body-sm mt-3">{String(body)}</p>
+
+              <h3 className="tl-h3 mt-4">
+                {String(title)}
+              </h3>
+
+              <p className="tl-body-sm mt-3">
+                {String(body)}
+              </p>
             </article>
           ))}
         </div>

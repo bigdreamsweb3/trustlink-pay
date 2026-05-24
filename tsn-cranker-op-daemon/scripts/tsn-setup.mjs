@@ -3,10 +3,14 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 
+import "dotenv";
+
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_CRANKER_SEED = Buffer.from("tsn_cranker");
 const TSN_CRANKER_VAULT_SEED = Buffer.from("tsn_cranker_vault");
-const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authority");
+const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from(
+  "tsn_cranker_vault_authority",
+);
 const TSN_CRANKER_VAULT_TOKEN_SEED = Buffer.from("tsn_cranker_vault_token");
 const TSN_LIQUIDITY_POSITION_SEED = Buffer.from("tsn_liquidity_position");
 
@@ -18,8 +22,8 @@ function resolvePath(path) {
   return resolve(process.cwd(), path);
 }
 
-function loadEnv() {
-  const envPath = resolve(process.cwd(), ".env");
+function readEnvFile(fileName) {
+  const envPath = resolve(process.cwd(), fileName);
   const env = {};
   if (!existsSync(envPath)) return env;
   const raw = readFileSync(envPath, "utf8");
@@ -35,6 +39,13 @@ function loadEnv() {
   return env;
 }
 
+function loadEnv() {
+  return {
+    ...readEnvFile(".env"),
+    ...readEnvFile(".env.local"),
+  };
+}
+
 function loadKeypair(path, Keypair) {
   const raw = JSON.parse(readFileSync(resolvePath(path), "utf8"));
   return Keypair.fromSecretKey(Uint8Array.from(raw));
@@ -48,9 +59,15 @@ function readState() {
       history: [],
       vaults: {},
       liquidityPositions: {},
+      contexts: {},
     };
   }
-  return JSON.parse(readFileSync(statePath, "utf8"));
+  const state = JSON.parse(readFileSync(statePath, "utf8"));
+  if (!state.contexts) state.contexts = {};
+  if (!state.vaults) state.vaults = {};
+  if (!state.liquidityPositions) state.liquidityPositions = {};
+  if (!Array.isArray(state.history)) state.history = [];
+  return state;
 }
 
 function writeState(state) {
@@ -67,9 +84,15 @@ function pushHistory(state, entry) {
 
 function deriveContext(env, PublicKey, Keypair) {
   const programId = new PublicKey(env.PROGRAM_ID);
-  const operatorKeypair = loadKeypair(env.KEYPAIR_PATH ?? "./keys/cranker-keypair.json", Keypair);
+  const operatorKeypair = loadKeypair(
+    env.KEYPAIR_PATH ?? "./keys/cranker-keypair.json",
+    Keypair,
+  );
   const operatorPubkey = operatorKeypair.publicKey;
-  const [motherEscrow] = PublicKey.findProgramAddressSync([TSN_MOTHER_ESCROW_SEED], programId);
+  const [motherEscrow] = PublicKey.findProgramAddressSync(
+    [TSN_MOTHER_ESCROW_SEED],
+    programId,
+  );
   const [cranker] = PublicKey.findProgramAddressSync(
     [TSN_CRANKER_SEED, motherEscrow.toBuffer(), operatorPubkey.toBuffer()],
     programId,
@@ -91,7 +114,11 @@ function deriveVaults(programId, cranker, tokenMint, funderPubkey, PublicKey) {
     programId,
   );
   const [liquidityPosition] = PublicKey.findProgramAddressSync(
-    [TSN_LIQUIDITY_POSITION_SEED, crankerVault.toBuffer(), funderPubkey.toBuffer()],
+    [
+      TSN_LIQUIDITY_POSITION_SEED,
+      crankerVault.toBuffer(),
+      funderPubkey.toBuffer(),
+    ],
     programId,
   );
   return { crankerVault, vaultAuthority, vaultTokenAccount, liquidityPosition };
@@ -106,14 +133,21 @@ async function updateOperatorState(args) {
   try {
     solana = await import("@solana/web3.js");
   } catch {
-    console.warn("[operator-state] skipped local state update because @solana/web3.js is not installed yet");
+    console.warn(
+      "[operator-state] skipped local state update because @solana/web3.js is not installed yet",
+    );
     return;
   }
   const { PublicKey, Keypair } = solana;
 
   const state = readState();
-  const { programId, operatorPubkey, motherEscrow, cranker } = deriveContext(env, PublicKey, Keypair);
+  const { programId, operatorPubkey, motherEscrow, cranker } = deriveContext(
+    env,
+    PublicKey,
+    Keypair,
+  );
   const now = new Date().toISOString();
+  const contextKey = `${programId.toBase58()}@${env.RPC_URL ?? "unknown-rpc"}`;
 
   state.updatedAt = now;
   state.rpcUrl = env.RPC_URL ?? null;
@@ -122,6 +156,20 @@ async function updateOperatorState(args) {
   state.operatorPubkey = operatorPubkey.toBase58();
   state.motherEscrow = motherEscrow.toBase58();
   state.cranker = cranker.toBase58();
+  state.lastCommand = command ?? null;
+  state.lastCommandArgs = args;
+  state.activeContext = contextKey;
+
+  state.contexts[contextKey] = {
+    ...(state.contexts[contextKey] ?? {}),
+    updatedAt: now,
+    rpcUrl: env.RPC_URL ?? null,
+    programId: programId.toBase58(),
+    keypairPath: env.KEYPAIR_PATH,
+    operatorPubkey: operatorPubkey.toBase58(),
+    motherEscrow: motherEscrow.toBase58(),
+    cranker: cranker.toBase58(),
+  };
 
   if (command === "register-cranker") {
     state.registeredAt = state.registeredAt ?? now;
@@ -130,7 +178,11 @@ async function updateOperatorState(args) {
 
   if (command === "set-funding-policy") {
     state.allowExternalFunding = args[1] === "true";
-    pushHistory(state, { at: now, command, allowExternalFunding: state.allowExternalFunding });
+    pushHistory(state, {
+      at: now,
+      command,
+      allowExternalFunding: state.allowExternalFunding,
+    });
   }
 
   if (command === "init-vault" && args[1]) {
@@ -153,17 +205,22 @@ async function updateOperatorState(args) {
     pushHistory(state, { at: now, command, tokenMint: tokenMint.toBase58() });
   }
 
-  if ((command === "fund-cranker" || command === "withdraw-cranker") && args[1] && args[2] && args[3] && args[4]) {
+  if (
+    (command === "fund-cranker" || command === "withdraw-cranker") &&
+    args[1] &&
+    args[2] &&
+    args[3] &&
+    args[4]
+  ) {
     const tokenMint = new PublicKey(args[1]);
     const funderKeypair = loadKeypair(args[2], Keypair);
     const funderPubkey = funderKeypair.publicKey;
-    const { crankerVault, vaultAuthority, vaultTokenAccount, liquidityPosition } = deriveVaults(
-      programId,
-      cranker,
-      tokenMint,
-      funderPubkey,
-      PublicKey,
-    );
+    const {
+      crankerVault,
+      vaultAuthority,
+      vaultTokenAccount,
+      liquidityPosition,
+    } = deriveVaults(programId, cranker, tokenMint, funderPubkey, PublicKey);
     const vaultKey = tokenMint.toBase58();
     state.vaults[vaultKey] = {
       ...(state.vaults[vaultKey] ?? {}),
@@ -182,7 +239,8 @@ async function updateOperatorState(args) {
     };
     const current = BigInt(position.netBaseUnits ?? "0");
     const amount = BigInt(args[4]);
-    const next = command === "fund-cranker" ? current + amount : current - amount;
+    const next =
+      command === "fund-cranker" ? current + amount : current - amount;
     state.liquidityPositions[positionKey] = {
       ...position,
       funderTokenAccount: args[3],
@@ -214,8 +272,13 @@ async function updateOperatorState(args) {
 }
 
 const args = process.argv.slice(2);
+const loadedEnv = loadEnv();
 const child = spawn(process.execPath, [cliPath, ...args], {
   stdio: "inherit",
+  env: {
+    ...process.env,
+    ...loadedEnv,
+  },
 });
 
 child.on("exit", (code) => {

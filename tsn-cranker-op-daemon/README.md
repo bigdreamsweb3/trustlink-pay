@@ -1,345 +1,263 @@
-# TSN Cranker Operator Workspace
+# TSN Cranker Operator Daemon
 
-This folder is the standalone operator side of the Transfer Settlement Network. It is meant to feel like a real third-party Cranker workspace: separate from the TrustLink backend, connected to the TSN npm package, and responsible for operator setup, vault management, and settlement actions.
+This folder is the operator workspace for running a TSN Cranker against your deployed TSN program.
 
-## Current Scope
+It covers:
 
-Today this workspace covers two things clearly:
+- operator registration on-chain
+- vault initialization/funding/withdrawal
+- local operator state tracking (`operator-state.json`)
+- running the reference Cranker loop
 
-- **operator setup and vault management on-chain**
-- **a reference Cranker runner flow for local or TSN mempool testing**
-
-That means you can already create an operator, register a Cranker, initialize vaults, fund them, withdraw only your own position, and run the current reference Cranker loop. The long-term fully packaged standalone runner will keep moving into the TSN SDK, but this workspace is already the right external-operator shape.
-
-## Folder Shape
+## Folder Layout
 
 ```text
-crankerOP-temp/
-├─ keys/                 operator keypairs kept local
-├─ ledger/               encrypted local operator ledger output
-├─ operator-state.json   local record of operator PDAs and funding state
-├─ scripts/              local wrappers around the TSN SDK CLI
-├─ .env.example          operator environment template
-├─ package.json          operator commands
-└─ README.md             setup and testing guide
+tsn-cranker-op-daemon/
+|- keys/                     local keypairs
+|- ledger/                   local operator ledger output
+|- operator-state.json       auto-updated local state for PDAs and history
+|- scripts/guided-setup.mjs  interactive setup wizard
+|- scripts/tsn-setup.mjs     raw CLI wrapper + state updater
+|- scripts/cranker.ts        reference Cranker runtime loop
+|- .env.example              env template
+|- package.json              runnable commands
+|- README.md
 ```
 
-## What This Workspace Does
+## Why `operator-state.json` Matters
 
-- registers a Cranker operator on-chain
-- initializes a Cranker PDA vault per token mint
-- funds the vault from a real funder wallet
-- withdraws only from that funder's own position
-- force-settles epochs in dev/test mode
-- runs the current reference Cranker loop against TSN work feeds
+After successful setup commands, the daemon stores:
 
-This workspace does not hold pooled liquidity in the operator wallet. Liquidity lives in the Cranker PDA vault, and withdrawals are tied to the wallet that funded the liquidity position.
-
-## Local Operator State File
-
-Every successful setup action updates:
-
-```text
-operator-state.json
-```
-
-This gives the operator a local record of useful values such as:
-
+- active program/rpc context
 - operator pubkey
 - mother escrow PDA
 - cranker PDA
-- vault PDAs per token mint
-- vault token account
-- liquidity position PDAs per funder
-- recent setup history
+- vault PDAs by token mint
+- liquidity position PDAs by funder
+- last command + history
 
-This file is meant to make operator setup understandable without forcing people to manually recompute addresses every time.
+This prevents operators from getting lost when program IDs or RPC targets change.
 
 ## Prerequisites
 
-Before starting your first Cranker, make sure you have:
-
 - Node.js installed
 - Solana CLI installed
-- access to a funded operator wallet for SOL fees
-- a deployed TSN program ID
-- a token mint you want the Cranker to service
-- a token account that holds the liquidity you want to fund into the Cranker PDA vault
+- TSN program deployed (you have `PROGRAM_ID`)
+- SOL in operator wallet for transaction fees
+- token mint + token account for funding
 
-For devnet, the common test USDC mint used in this repo is:
+Common devnet USDC mint:
+`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 
-```text
-4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
-```
-
-## Quick Start
+## Install
 
 ```bash
-cd crankerOP-temp
+cd C:\Users\codepara\Desktop\trust-link\tsn-cranker-op-daemon
 npm install
-cp .env.example .env
-mkdir -p keys ledger
-solana-keygen new --no-bip39-passphrase --force -o keys/cranker-keypair.json
 ```
 
-Update `.env` if needed. By default it expects:
+## Configure `.env`
+
+Create `.env` from `.env.example` and set at least:
 
 - `RPC_URL`
 - `PROGRAM_ID`
 - `KEYPAIR_PATH=./keys/cranker-keypair.json`
 
-Normal Cranker operators only need:
+## Step-by-Step Setup (What, Why, Result)
 
-- `RPC_URL`
-- `PROGRAM_ID`
-- `KEYPAIR_PATH`
+### 1. Create/fund operator keypair
 
-`TSN_AUTHORITY_KEYPAIR_PATH` is **admin-only**. It is not required for normal operator setup, vault funding, withdrawals, or running the Cranker.
-
-Fund the operator keypair with SOL so it can pay transaction fees:
+Command examples:
 
 ```bash
+solana-keygen new --no-bip39-passphrase --force -o keys/cranker-keypair.json
 solana airdrop 1 $(solana-keygen pubkey keys/cranker-keypair.json) --url devnet
 ```
 
-If the devnet faucet rate-limits you, transfer SOL to the operator wallet from another funded wallet.
+Why:
 
-## First Cranker Setup
+- Cranker transactions need SOL for network fees.
 
-This is the cleanest first-time path.
+What happens:
 
-### 1. Confirm protocol is already deployed
+- keypair file created locally
+- wallet funded on devnet
 
-From the main repo, the TSN program should already be built and deployed from:
+Expected result:
 
-```bash
-tsn/protocol
-```
+- key exists at `KEYPAIR_PATH`
+- wallet has enough SOL
 
-You should have the deployed `PROGRAM_ID` in `.env`.
+### 2. Register your Cranker operator
 
-If you are only running a Cranker, stop there. You do **not** need protocol authority credentials.
-
-### 2. Run guided setup
-
-```bash
-npm run setup
-```
-
-Recommended first-time order inside the wizard:
-
-1. Register cranker
-2. Set funding policy
-3. Initialize vault
-4. Fund cranker vault
-
-### 3. What you need during funding
-
-When the wizard asks for funding details, you need:
-
-- the token mint
-- the funder keypair path
-- the funder's token account address
-- the funding amount in base units
-
-Example:
-
-- 20 USDC on a 6-decimal mint = `20000000`
-- 1 USDC = `1000000`
-
-### 4. Verify setup succeeded
-
-After setup, you should have:
-
-- an operator keypair in `keys/`
-- a registered Cranker on-chain
-- a Cranker PDA vault for the mint
-- a funded liquidity position tied to the funder wallet
-
-## Running Your First Cranker
-
-Today, the current runnable loop in this workspace is the **reference Cranker runner**:
-
-```bash
-npm run crank:reference
-```
-
-This starts the TSN reference runner from `tsn/scripts/cranker.ts`. It is the current external-operator way to consume TSN work feeds from the repo while the fully packaged standalone runner continues moving into the SDK.
-
-### What the reference runner does
-
-- watches the TSN work source
-- evaluates whether settlement is economically claimable
-- marks work as executed or reverted in the current reference flow
-
-### What it does not yet replace
-
-The full next-stage standalone SDK runner that performs the entire live on-chain claim/proof flow from this operator folder is still being hardened. For now:
-
-- **operator setup and vault security are live and tested**
-- **the reference runner is the clean runnable operator loop**
-- **the repo’s tested live payout path has already been proven in the integrated flow**
-
-## Guided Setup
-
-Run the guided setup flow:
-
-```bash
-npm run setup
-```
-
-The wizard walks you through:
-
-- registering the cranker
-- choosing funding policy
-- initializing a vault
-- funding a vault
-- withdrawing from your own funded position
-- force-settling an epoch in dev/test
-- getting to the point where you can launch the reference runner
-
-If `.env` is missing, the wizard creates it from `.env.example`.
-
-## Operator vs Admin
-
-### Normal Cranker operator
-
-Needs:
-
-- `KEYPAIR_PATH`
-- SOL for transaction fees
-- a token account to fund liquidity
-- the deployed TSN `PROGRAM_ID`
-
-Can do:
-
-- register cranker
-- set funding policy
-- initialize vault
-- fund vault
-- withdraw their own funded position
-- run the reference Cranker loop
-
-Does **not** need:
-
-- `TSN_AUTHORITY_KEYPAIR_PATH`
-
-### Protocol admin / deployer
-
-Needs:
-
-- `TSN_AUTHORITY_KEYPAIR_PATH`
-
-Uses it for:
-
-- `init-mother`
-- protocol-level settlement/admin actions
-- future governance or protocol management operations
-
-## Raw Operator Commands
-
-Show available commands:
-
-```bash
-npm run help
-```
-
-Register the operator as a Cranker:
+Command:
 
 ```bash
 npm run register
 ```
 
-Open or close community funding on the Cranker:
+Why:
+
+- Registration creates/activates your operator PDA identity in TSN.
+
+What happens:
+
+- on-chain Cranker record is created for operator wallet.
+
+Expected result:
+
+- success logs from CLI
+- `operator-state.json` updated with `cranker`, `operatorPubkey`, `motherEscrow`
+
+### 3. Set funding policy
+
+Commands:
 
 ```bash
 npm run policy:open
 npm run policy:closed
 ```
 
-Initialize the vault for a mint:
+Why:
+
+- Controls whether external funders can provide vault liquidity.
+
+What happens:
+
+- policy flag updated on Cranker state.
+
+Expected result:
+
+- success log + updated local state history
+
+### 4. Initialize vault for token mint
+
+Command:
 
 ```bash
-npm run setup:raw -- init-vault 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
+npm run setup:raw -- init-vault <TOKEN_MINT>
 ```
 
-Fund the vault from a real token account:
+Why:
+
+- Cranker needs a vault PDA for each mint it services.
+
+What happens:
+
+- vault PDA, authority PDA, token account PDA are initialized/derived and tracked.
+
+Expected result:
+
+- successful transaction
+- `operator-state.json` includes this mint under `vaults`
+
+### 5. Fund Cranker vault
+
+Command:
 
 ```bash
-npm run setup:raw -- fund-cranker 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU ./keys/cranker-keypair.json YOUR_FUNDER_TOKEN_ACCOUNT 20000000
+npm run setup:raw -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
 ```
 
-Withdraw from the same funded position:
+Why:
+
+- Vault needs liquidity to execute payouts/settlements.
+
+What happens:
+
+- liquidity position PDA for the funder is created/updated.
+
+Expected result:
+
+- successful funding tx
+- `operator-state.json` adds/updates `liquidityPositions`
+
+### 6. Run Cranker runtime loop
+
+Command:
 
 ```bash
-npm run setup:raw -- withdraw-cranker 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU ./keys/cranker-keypair.json YOUR_FUNDER_TOKEN_ACCOUNT 1000000
+npm run crank:start
 ```
 
-Force-settle a test epoch:
-
-```bash
-npm run settle:force
-```
-
-Do not type placeholders with angle brackets in Bash. Replace values like `YOUR_FUNDER_TOKEN_ACCOUNT` with the real address.
-
-Run the current reference Cranker loop directly:
+or
 
 ```bash
 npm run crank:reference
 ```
 
-## Tested Security Behavior
+Why:
 
-This workspace already matches the tested TSN behavior:
+- This is the worker loop that consumes work and posts settlement proofs/status updates.
 
-- recipient payout comes from the Cranker PDA vault, not the operator wallet
-- the original funder can withdraw its own liquidity position
-- a different wallet cannot withdraw that position
-- epoch settlement can be forced in dev/test without waiting 7 hours
+What happens:
 
-## Verification Checklist
+- polls mempool work
+- updates claim statuses
+- posts proof records
+- marks intents executed/reverted based on economics
 
-Your first Cranker setup is healthy if all of these are true:
+Expected result:
 
-- operator wallet has SOL for fees
-- `.env` points to the correct `PROGRAM_ID`
-- Cranker registration succeeds
-- vault initialization succeeds for your mint
-- funding succeeds and creates a liquidity position
-- same funder can withdraw its own amount
-- a different wallet cannot withdraw that position
-- the reference runner starts without config errors
+- periodic `[tsn-cranker] ...` logs
+- no TypeScript loader errors
+
+## New Program Migration Checklist
+
+When you deploy a new TSN contract (`PROGRAM_ID` changes):
+
+1. Update `.env` with new `PROGRAM_ID` and correct `RPC_URL`
+2. Confirm the protocol admin has initialized mother escrow for the new program
+3. Run `register`
+4. Re-run `init-vault` per mint
+5. Re-fund vault(s)
+6. Start Cranker loop
+
+Do not assume old PDAs are valid on a new program ID.
 
 ## Troubleshooting
 
-### `airdrop request failed`
+### Error: `Unknown file extension ".ts"` when running Cranker
 
-Devnet faucet is rate-limiting you. Fund the operator wallet from another wallet instead.
+Cause:
 
-### `Attempt to debit an account but found no record of a prior credit`
+- Running TypeScript with `node` directly in ESM mode.
 
-The wallet signing the transaction usually has no SOL for fees.
+Fix:
 
-### `AccountNotInitialized` on withdraw
+- Use `tsx` scripts (`npm run crank:start` now uses `tsx`).
 
-The wallet trying to withdraw does not own a valid liquidity position for that vault.
+### Error: permission or missing funds on Solana tx
 
-### Bash breaks on `<PLACEHOLDER>`
+Cause:
 
-Do not paste angle brackets into commands. Replace placeholders with the real values.
+- operator/funder wallet has insufficient SOL or token balance.
 
-### `ERR_MODULE_NOT_FOUND` for old setup paths
+Fix:
 
-Use the commands in this folder. Do not run old backend-local script paths from this workspace.
+- fund wallets and verify token accounts before retrying.
 
-## Recommended Test Flow
+### Error: cannot withdraw funded position
 
-1. Deploy the TSN program from `tsn/protocol`
-2. Initialize mother escrow once
-3. Register operator
-4. Initialize vault
-5. Fund vault
-6. Create a payment and claim request from the app
-7. Run the Cranker loop from the app/backend side or future SDK runner
-8. Verify recipient payout, vault balance change, and ledger output
+Cause:
+
+- withdraw signer is not the original funder of that liquidity position.
+
+Fix:
+
+- use the same funder keypair used for `fund-cranker`.
+
+## Commands Reference
+
+- `npm run setup` -> interactive setup wizard
+- `npm run help` -> raw CLI help
+- `npm run register` -> register Cranker
+- `npm run policy:open` -> allow external funding
+- `npm run policy:closed` -> disallow external funding
+- `npm run setup:raw -- init-vault <TOKEN_MINT>` -> init vault
+- `npm run setup:raw -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>` -> fund vault
+- `npm run setup:raw -- withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>` -> withdraw
+- `npm run settle:force` -> force settle epoch (dev/test)
+- `npm run crank:start` -> start Cranker loop
+- `npm run crank:reference` -> alias to Cranker loop

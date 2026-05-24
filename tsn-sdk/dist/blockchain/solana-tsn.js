@@ -82,7 +82,7 @@ export async function estimateTsnClaimNetworkFeeLamports(params) {
     return 5000; // Rough estimate for claim transaction fee
 }
 export async function tsnCreateIntentOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.payer && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -115,7 +115,7 @@ export async function tsnCreateIntentOnChain(params) {
     return { mode: "devnet", signature };
 }
 export async function tsnInitializeMotherEscrowOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -152,7 +152,7 @@ export async function tsnInitializeMotherEscrowOnChain(params) {
     return { mode: "devnet", signature };
 }
 export async function tsnMigrateMotherEscrowOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -185,7 +185,7 @@ export async function tsnMigrateMotherEscrowOnChain(params) {
     return { mode: "devnet", signature };
 }
 export async function tsnSettleEpochOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.authority && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -205,7 +205,7 @@ export async function tsnSettleEpochOnChain(params) {
     return { mode: "devnet", signature };
 }
 export async function tsnRegisterCrankerOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.operator && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -246,7 +246,7 @@ export async function tsnSetCrankerFundingPolicyOnChain(params) {
     return { mode: "devnet", signature };
 }
 export async function tsnInitializeCrankerVaultOnChain(params) {
-    if (params.secretKey === null || params.secretKey === undefined) {
+    if (!params.payer && (params.secretKey === null || params.secretKey === undefined)) {
         return { mode: "mock", signature: null };
     }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");

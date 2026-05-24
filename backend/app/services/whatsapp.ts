@@ -11,7 +11,7 @@ import {
   markUserWhatsAppOptOut,
   upsertUserProfile,
 } from "@/app/db/users";
-import { configureWhatsAppSdkPorts } from "../../../trustlink-whatsapp-sdk/backend";
+import { configureWhatsAppSdkPorts } from "../../../packages/trustlink-whatsapp-sdk/backend";
 
 let configured = false;
 
@@ -41,4 +41,4 @@ export function configureTrustLinkWhatsAppSdk() {
 
 configureTrustLinkWhatsAppSdk();
 
-export * from "../../../trustlink-whatsapp-sdk/backend";
+export * from "../../../packages/trustlink-whatsapp-sdk/backend";

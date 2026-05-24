@@ -10,36 +10,39 @@ TrustLink Pay brings that identity-first experience to Solana payments. Users se
 
 ## Supported by
 
-- **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) — [acknowledgment](#funding--support)
-  
+- **[Superteam](https://superteam.fun) Agentic Engineering Grant** (200 USDG) ï¿½ [acknowledgment](#funding--support)
+
 ---
 
 ## Crankers & Liquidity Providers
 
 TrustLink Pay uses a specialized Transfer Settlement Network (TSN) to enable fast, private, phone-number-based payments on Solana. Two key roles power this network:
 
-| Role | Responsibility | Earns |
-|------|---------------|-------|
-| **Crankers** | Execute payments, monitor intents, submit proof, maintain uptime | 5% of settlement fees |
-| **Liquidity Providers (LPs)** | Fund token-specific vaults that crankers draw from | 87% of settlement fees |
+| Role                          | Responsibility                                                   | Earns                  |
+| ----------------------------- | ---------------------------------------------------------------- | ---------------------- |
+| **Crankers**                  | Execute payments, monitor intents, submit proof, maintain uptime | 5% of settlement fees  |
+| **Liquidity Providers (LPs)** | Fund token-specific vaults that crankers draw from               | 87% of settlement fees |
 
-This creates real yield for participants — from actual payment volume, not token emissions.
+This creates real yield for participants ï¿½ from actual payment volume, not token emissions.
 
 ### Launch Strategy
 
 At launch, **TrustLink Pay will be the first and primary cranker operator**. Running a cranker will not be open to the public initially. This controlled start ensures high reliability, speed, and security while the network proves itself.
 
 **For stablecoin issuers and firms:**
+
 - Fund TSN vaults with your stablecoins
 - Earn attractive LP yields (87% fee share) from real payment volume
 - Your stablecoin becomes the preferred fast-settlement option for users
 
 **For liquidity providers:**
+
 - Deposit stablecoins into vaults
 - Earn passive, real-yield returns backed by payment fees
-- No token emissions — yield comes from actual settlement revenue
+- No token emissions ï¿½ yield comes from actual settlement revenue
 
 **For future cranker operators:**
+
 - Run your own verified cranker node once the network opens
 - Capture both operator fees (5%) and LP yields
 - Support specific tokens with full control
@@ -47,7 +50,7 @@ At launch, **TrustLink Pay will be the first and primary cranker operator**. Run
 This creates a growth flywheel: **More liquidity ? faster settlements ? more users ? higher volume ? better yields ? more participants.**
 
 **Interested in vault funding or cranker partnerships?** ? [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)
-  
+
 ---
 
 ## TSN Privacy Guarantee
@@ -74,12 +77,13 @@ Result:
 TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
 
 **Key Features:**
+
 - Fraud detection & replay attack prevention
 - Anomaly detection & risk scoring
 - Cranker jail system for malicious operators
 - Settlement protection & proof verification
 
-?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** — Full fraud protection documentation
+?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** ï¿½ Full fraud protection documentation
 
 ---
 
@@ -246,26 +250,24 @@ TSN is privacy-preserving, not accountability-free. A Cranker can maintain an en
 
 ## How It Works
 
-### Send Flow
+### Send Flow - TSN
 
 1. Sender logs in and enters a recipient phone number or supported identity.
 2. TrustLink resolves the identity and prepares a TSN payment intent.
 3. Sender reviews the transfer amount, Solana network estimate, and TSN sender fee.
 4. Sender signs once in their wallet.
 5. Funds lock into a unique escrow vault PDA.
-6. TSN records the payment intent for settlement.
-7. Recipient receives a notification or invite path.
+6. TrustLink posts the intent to TSN Mempool.
+7. A registered Cranker picks the intent, submits the required on-chain TSN transaction(s), and executes payout from vault liquidity.
+8. Cranker submits Proof of Payment.
+9. Mother Escrow reimburses the Cranker at the next epoch, and settlement fees are distributed according to the active TSN split.
 
-### Claim Flow - TSN
+### Auto-Claim Behavior
 
-1. Recipient opens TrustLink and starts the claim path.
-2. TSN records a claim request for the payment intent.
-3. A Cranker detects the matching intent and claim request.
-4. The Cranker acquires the execution lease.
-5. The Cranker pays the recipient from vault liquidity.
-6. The Cranker submits Proof of Payment.
-7. Mother Escrow reimburses the Cranker at the next epoch.
-8. Settlement fees are distributed according to the active TSN split.
+1. Claims are automatic for users who are already onboarded and have a bound wallet.
+2. Recipients do not need to manually start claim in the normal path.
+3. Only new/unbound recipients remain held in escrow until onboarding is completed and wallet binding is done.
+4. Once onboarding and wallet binding are complete, payout can continue through the TSN cranker path.
 
 ### Legacy Claim Flow - Direct Release
 
@@ -323,7 +325,7 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 - Local Cranker daemon and setup scripts
 - Settlement fee split defaults: 87% LP, 8% treasury, 5% operator
 - 7-hour epoch reimbursement architecture
-- **Advanced fraud detection and protection in mempool**
+- **Advanced AI fraud detection and protection in mempool**
 
 **In active development:**
 
@@ -361,14 +363,14 @@ Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursem
 
 ## Repository Structure
 
-| Path             | Purpose                                |
-| ---------------- | -------------------------------------- |
-| `frontend`       | Next.js dApp and user flow UI          |
-| `backend`        | API, orchestration, and service logic  |
-| `tsn/protocol`   | Anchor program workspace               |
-| `tsn`            | TSN modules, scripts, and SDK packages |
-| `tins-registrar` | TINS on-chain identity protocol        |
-| `docs`           | **Architecture and operational docs** — [Start here](docs/README.md) |
+| Path             | Purpose                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| `frontend`       | Next.js dApp and user flow UI                                        |
+| `backend`        | API, orchestration, and service logic                                |
+| `tsn/protocol`   | Anchor program workspace                                             |
+| `tsn`            | TSN modules, scripts, and SDK packages                               |
+| `tins-registrar` | TINS on-chain identity protocol                                      |
+| `docs`           | **Architecture and operational docs** ï¿½ [Start here](docs/README.md) |
 
 ## Quick Start
 
@@ -383,29 +385,29 @@ cd frontend && npm install && npm run dev
 
 ### For Investors & Partners
 
-| Document | Description |
-|----------|-------------|
-| [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md) | **Start here** — Investment opportunity, yield projections, partnership benefits |
-| [docs/LIQUIDITY.md](docs/LIQUIDITY.md) | How to fund TSN vaults and earn LP rewards |
-| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | Understanding the epoch reimbursement cycle |
+| Document                                             | Description                                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)           | **Start here** ï¿½ Investment opportunity, yield projections, partnership benefits |
+| [docs/LIQUIDITY.md](docs/LIQUIDITY.md)               | How to fund TSN vaults and earn LP rewards                                       |
+| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | Understanding the epoch reimbursement cycle                                      |
 
 ### For Cranker Operators
 
-| Document | Description |
-|----------|-------------|
-| [docs/CRANKER.md](docs/CRANKER.md) | Complete guide to running a cranker node |
-| [docs/OPERATOR.md](docs/OPERATOR.md) | Technical setup and monitoring |
-| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | How epoch reimbursements work |
+| Document                                             | Description                              |
+| ---------------------------------------------------- | ---------------------------------------- |
+| [docs/CRANKER.md](docs/CRANKER.md)                   | Complete guide to running a cranker node |
+| [docs/OPERATOR.md](docs/OPERATOR.md)                 | Technical setup and monitoring           |
+| [docs/EPOCH-SETTLEMENT.md](docs/EPOCH-SETTLEMENT.md) | How epoch reimbursements work            |
 
 ### For Developers
 
-| Document | Description |
-|----------|-------------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
-| [docs/TINS.md](docs/TINS.md) | Transfer Identity Number System |
-| [docs/PROTOCOL.md](docs/PROTOCOL.md) | Core protocol specifications |
-| [docs/DEVELOPER.md](docs/DEVELOPER.md) | Security considerations and integration |
-| [docs/API.md](docs/API.md) | API reference |
+| Document                                     | Description                             |
+| -------------------------------------------- | --------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview            |
+| [docs/TINS.md](docs/TINS.md)                 | Transfer Identity Number System         |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md)         | Core protocol specifications            |
+| [docs/DEVELOPER.md](docs/DEVELOPER.md)       | Security considerations and integration |
+| [docs/API.md](docs/API.md)                   | API reference                           |
 
 ### All Documentation
 
@@ -415,7 +417,7 @@ See [docs/README.md](docs/README.md) for complete navigation.
 
 ## Funding & Support
 
-**Superteam Agentic Engineering Grant** — Approved for **200 USDG** to accelerate fraud protection system development.
+**Superteam Agentic Engineering Grant** ï¿½ Approved for **200 USDG** to accelerate fraud protection system development.
 
 Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community for the support. Special thanks to [@NzubeEzudo](https://twitter.com/NzubeEzudo), and [@Harri_Obi](https://twitter.com/Harri_Obi) ??
 

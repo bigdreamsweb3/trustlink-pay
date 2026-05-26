@@ -29,6 +29,10 @@ type SolanaProvider = {
   }) => Promise<{ publicKey: WalletPublicKey }>;
   disconnect?: () => Promise<void>;
   signTransaction?: (transaction: Transaction) => Promise<Transaction>;
+  signMessage?: (
+    message: Uint8Array,
+    display?: "utf8" | "hex",
+  ) => Promise<Uint8Array | { signature: Uint8Array | number[] }>;
   signAndSendTransaction?: (
     transaction: Transaction,
     options?: {
@@ -363,6 +367,32 @@ export async function disconnectSolanaWallet() {
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(CONNECTED_WALLET_KEY);
   }
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+export async function signSolanaMessage(params: {
+  walletId: string;
+  address: string;
+  message: string;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) {
+    throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot sign authorization messages from the browser");
+  }
+
+  const signed = await wallet.provider.signMessage(new TextEncoder().encode(params.message), "utf8");
+  const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
+  return bytesToBase64(signature);
 }
 
 export async function sendSolanaPayment(params: {

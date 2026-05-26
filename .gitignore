@@ -5,6 +5,14 @@ Thumbs.db
 .idea/
 
 .env
+.fb_creds/
+**/.fb_creds/
+*.service-account.json
+*firebase-adminsdk*.json
+operator-state.json
+operator-state*.json
+**/operator-state.json
+**/operator-state*.json
 
 # Logs
 *.log

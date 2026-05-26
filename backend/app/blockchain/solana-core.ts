@@ -9,6 +9,7 @@ import {
   TransactionSignature,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
+import { tsnGetAllowedSplTokens } from "@trustlink/tsn-sdk";
 import { createHash, randomUUID } from "node:crypto";
 
 import { getEscrowPolicyConfig } from "@/app/config/escrow";
@@ -241,27 +242,21 @@ export function parseAllowedTokens() {
     return allowedTokenCache;
   }
 
-  const rawValue = env.SOLANA_ALLOWED_SPL_TOKENS;
-  if (!rawValue) {
-    allowedTokenCache = [];
-    return allowedTokenCache;
-  }
+  const registryTokens = tsnGetAllowedSplTokens({
+    SOLANA_ALLOWED_SPL_TOKENS: env.SOLANA_ALLOWED_SPL_TOKENS,
+  });
 
-  const parsed = JSON.parse(rawValue) as Array<{
-    mintAddress: string;
-    symbol: string;
-    name?: string;
-    logo?: string;
-    decimals?: number;
-  }>;
+  allowedTokenCache = registryTokens.map((token) => {
+    const symbol = token.symbol.trim().toUpperCase();
 
-  allowedTokenCache = parsed.map((token) => ({
-    mintAddress: new PublicKey(token.mintAddress).toBase58(),
-    symbol: token.symbol.trim().toUpperCase(),
-    name: token.name?.trim() || token.symbol.trim().toUpperCase(),
-    logo: token.logo?.trim() || "o",
-    decimals: Number.isFinite(token.decimals) ? Number(token.decimals) : 6,
-  }));
+    return {
+      mintAddress: new PublicKey(token.mintAddress).toBase58(),
+      symbol,
+      name: token.name?.trim() || symbol,
+      logo: symbol.slice(0, 1) || "o",
+      decimals: Number.isFinite(token.decimals) ? Number(token.decimals) : 6,
+    };
+  });
 
   return allowedTokenCache;
 }
@@ -1045,12 +1040,91 @@ export interface WalletTokenInfo {
   name: string;
   balance: number;
   decimals: number;
+  logo: string;
+  supported: boolean;
   logoUrl?: string;
 }
 
 export async function listSupportedWalletTokens(walletAddress: string): Promise<WalletTokenInfo[]> {
-  // TSN integration pending - return mock data for now
-  return [];
+  const owner = new PublicKey(walletAddress);
+  const connection = getConnection();
+
+  return Promise.all(
+    parseAllowedTokens().map(async (token) => {
+      const mint = new PublicKey(token.mintAddress);
+      let balance = 0;
+
+      try {
+        const accounts = await connection.getParsedTokenAccountsByOwner(owner, { mint }, "confirmed");
+        balance = accounts.value.reduce((sum, account) => {
+          const parsed = account.account.data.parsed as {
+            info?: {
+              tokenAmount?: {
+                uiAmount?: number | null;
+                uiAmountString?: string;
+              };
+            };
+          };
+          const amount = parsed.info?.tokenAmount;
+          const uiAmount =
+            amount?.uiAmount ??
+            (amount?.uiAmountString != null ? Number(amount.uiAmountString) : 0);
+
+          return sum + (Number.isFinite(uiAmount) ? uiAmount : 0);
+        }, 0);
+      } catch (error) {
+        logger.warn("wallet.tokens.balance_lookup_failed", {
+          walletAddress,
+          mintAddress: token.mintAddress,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      return {
+        mintAddress: token.mintAddress,
+        symbol: token.symbol,
+        name: token.name,
+        balance,
+        decimals: token.decimals,
+        logo: token.logo,
+        supported: true,
+      };
+    }),
+  );
+}
+
+export async function getWalletSupportedTokenBalance(params: {
+  walletAddress: string;
+  tokenMintAddress: string;
+}) {
+  const owner = new PublicKey(params.walletAddress);
+  const mint = new PublicKey(params.tokenMintAddress);
+  const token = getAllowedTokenByMint(mint.toBase58());
+  if (!token) throw new Error("Token mint is not allowlisted for TSN payments");
+
+  const connection = getConnection();
+  const accounts = await connection.getParsedTokenAccountsByOwner(owner, { mint }, "confirmed");
+  const balance = accounts.value.reduce((sum, account) => {
+    const parsed = account.account.data.parsed as {
+      info?: {
+        tokenAmount?: {
+          uiAmount?: number | null;
+          uiAmountString?: string;
+        };
+      };
+    };
+    const amount = parsed.info?.tokenAmount;
+    const uiAmount = amount?.uiAmount ?? (amount?.uiAmountString != null ? Number(amount.uiAmountString) : 0);
+
+    return sum + (Number.isFinite(uiAmount) ? uiAmount : 0);
+  }, 0);
+
+  return {
+    balance,
+    decimals: token.decimals,
+    symbol: token.symbol,
+    mintAddress: token.mintAddress,
+  };
 }
 
 // Placeholder for estimateClaimFee - TSN handles this

@@ -35,6 +35,7 @@ export type CreateIntentRequest = {
     recipientHash: string;
     tokenMintAddress: string;
     amount: number;
+    recipientAmount?: number;
     source?: string;
 };
 export type RequestClaimRequest = {

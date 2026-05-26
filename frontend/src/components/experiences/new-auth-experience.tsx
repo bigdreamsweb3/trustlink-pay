@@ -202,24 +202,25 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     router.push("/" as Route);
   }
 
+  // style={{ background: "var(--bg)" }}
+
   /* ═══════════════════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════════════════ */
   return (
-    <main className="tl-grid-overlay relative flex min-h-[100dvh] flex-col items-center justify-between overflow-hidden"
-      style={{ background: "var(--bg)" }}
+    <main className="tl-grid-overlay relative flex min-h-dvh flex-col items-center justify-between overflow-hidden"
     >
       <div className="w-full px-5 pt-5">
         <button
           type="button"
           onClick={handleBackToTrustLink}
-          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-2 tl-body-sm font-bold text-[var(--text-soft)] transition hover:text-[var(--text)] cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-[14px] border border-field-border bg-field px-4 py-2 tl-body-sm font-bold text-text-soft transition hover:text-(--text) cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to TrustLink Pay
         </button>
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 w-full max-w-[440px]">
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 w-full max-w-110">
 
         {/* ─── IDLE ─── */}
         {flowState === "idle" && (

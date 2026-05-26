@@ -187,7 +187,7 @@ export function DashboardExperience() {
 
 
           {/* BALANCE HERO CARD */}
-          <div className="tl-scanline relative flex min-h-[210px] flex-col overflow-hidden rounded-[28px] border border-accent-border bg-accent-gradient p-5 text-text shadow-softbox">
+          <div className="tl-scanline relative flex min-h-[210px] flex-col overflow-hidden rounded-[28px] border border-accent-border bg-accent-gradient bg-bg p-5 text-text shadow-softbox">
 
             {/* Ambient glow */}
             <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-accent/8 blur-3xl" />
@@ -386,7 +386,7 @@ export function DashboardExperience() {
 
           {/* ─── ACTIVITY — desktop: starts right after stats ─── */}
           <div className="tl-panel-header hidden md:block">
-            <div className="flex items-start justify-between mb-3 pt-4 px-3">
+            <div className="flex items-start justify-between mb-3">
               <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
               {!loading && paymentHistory.length > 6 ? (
                 <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
@@ -431,7 +431,7 @@ export function DashboardExperience() {
         </div>
 
         {/* ─── RIGHT COLUMN ─── */}
-        <div className="space-y-4 mt-1.5">
+        <div className="space-y-4">
 
           {/* PENDING CLAIMS */}
           {loading ? (
@@ -466,7 +466,7 @@ export function DashboardExperience() {
 
           {/* ── IDENTITY CARD ── */}
           <div className="tl-panel-header rounded-[22px]">
-            <div className="flex items-start justify-between mb-3 px-4 pt-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Identity</div>
               <Link href="/app/settings"
                 className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
@@ -478,7 +478,6 @@ export function DashboardExperience() {
             <div className="tl-field rounded-[18px]">
               {/* WhatsApp — ACTIVE (current only identity) */}
               <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
-                style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)" }}
               >
                 <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -540,7 +539,7 @@ export function DashboardExperience() {
 
           {/* WALLET TOKENS CARD */}
           <div className="tl-panel-header rounded-[22px]">
-            <div className="flex items-start justify-between mb-3 px-4 pt-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Wallet</div>
               <div className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] pl-2.5 pr-1 py-0.5">
                 <WalletIcon size={13} className="shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -620,7 +619,7 @@ export function DashboardExperience() {
 
       {/* ACTIVITY — mobile only (desktop version is inside left column) */}
       <div className="tl-panel-header mt-6 md:hidden">
-        <div className="flex items-start justify-between mb-3 pt-4 px-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
           {!loading && paymentHistory.length > 6 ? (
             <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>

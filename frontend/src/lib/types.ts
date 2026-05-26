@@ -44,11 +44,6 @@ export interface IdentitySecurityState {
   bump: number;
 }
 
-export interface AutoclaimSettings {
-  enabled: boolean;
-  maxAmountUsd: number;
-}
-
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
 export type PaymentMode = "secure" | "invite";
@@ -126,7 +121,6 @@ export interface TsnClaimRequestResult {
   intentId: string;
   claimRequestId: string;
   destinationWallet: string;
-  autoclaim: boolean;
   status: "pending" | "processing" | "completed" | "canceled" | "failed";
 }
 

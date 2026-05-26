@@ -72,21 +72,6 @@ Result:
 
 ---
 
-## Fraud Protection
-
-TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
-
-**Key Features:**
-
-- Fraud detection & replay attack prevention
-- Anomaly detection & risk scoring
-- Cranker jail system for malicious operators
-- Settlement protection & proof verification
-
-?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** � Full fraud protection documentation
-
----
-
 ## Project Architecture
 
 TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
@@ -125,6 +110,23 @@ TSN uses a mempool-first payment-intent path for secure settlement execution.
 - payment services publish payment intents to TSN Mempool before any on-chain intent is created
 - only a registered/verified Cranker can submit or create a TSN payment intent on-chain
 - Cranker intent submission is gated by protocol registration and lease/credit rules
+
+---
+
+## Fraud Protection
+
+TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
+
+**Key Features:**
+
+- Fraud detection & replay attack prevention
+- Anomaly detection & risk scoring
+- Cranker jail system for malicious operators
+- Settlement protection & proof verification
+
+?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** � Full fraud protection documentation
+
+---
 
 ## TINS Production Ready ?
 

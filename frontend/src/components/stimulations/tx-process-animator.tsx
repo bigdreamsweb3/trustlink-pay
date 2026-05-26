@@ -145,9 +145,9 @@ const ProcessGrid = memo(function ProcessGrid({
   }, [steps, currentStepIndex, mapConnections]);
 
   return (
-    <div className="select-none relative">
-      <div ref={containerRef} className="relative w-full overflow-visible">
-        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-20">
+    <div className="select-none relative w-full min-w-0 overflow-hidden">
+      <div ref={containerRef} className="relative w-full min-w-0 overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-20">
           <defs>
             <filter id="neon-glow" x="-25%" y="-25%" width="150%" height="150%">
               <feGaussianBlur stdDeviation="2.5" result="blur" />
@@ -264,7 +264,7 @@ const ProcessGrid = memo(function ProcessGrid({
           );
         })}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-7 gap-x-10 px-0.5 relative w-full z-10 leading-none">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 gap-y-5 gap-x-3 sm:gap-y-7 sm:gap-x-6 px-0.5 relative w-full min-w-0 z-10 leading-none">
           {steps.map((step, idx) => {
             const nodeCompleted = isCompleted || idx < currentStepIndex;
             const nodeActive = !isCompleted && idx === currentStepIndex;
@@ -290,13 +290,13 @@ const ProcessGrid = memo(function ProcessGrid({
                 ref={(el) => {
                   cardRefs.current[idx] = el;
                 }}
-                className="relative rounded-xl pointer-events-auto transition-all duration-300"
+                className="relative min-w-0 rounded-xl pointer-events-auto transition-all duration-300"
               >
                 {nodeActive && (
                   <div className="absolute -inset-[1.5px] bg-gradient-to-r from-[#22D3EE]/25 to-transparent rounded-xl blur-[1.5px]" />
                 )}
 
-                <div className={`relative flex flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}>
+                <div className={`relative flex min-w-0 flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}>
                   {nodeActive && (
                     <motion.div
                       className="absolute bottom-0 left-0 bg-gradient-to-r from-[#22D3EE]/30 to-transparent h-[1.5px]"
@@ -482,24 +482,24 @@ export function TxProcessAnimator() {
   }, [currentStepIndex, isCompleted, steps, activeTab]);
 
   return (
-    <div className="relative w-full flex flex-col">
+    <div className="relative w-full min-w-0 max-w-full flex flex-col overflow-hidden">
       {/* Tab Controls Bar */}
-      <div className="relative z-10 flex items-center justify-between gap-4">
-        <div className="w-full flex items-center justify-between tl-panel-header">
-          <p className="tl-meta-label w-fit text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-faint)]">
+      <div className="relative z-10 flex min-w-0 items-center justify-between gap-4">
+        <div className="w-full min-w-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between tl-panel-header">
+          <p className="tl-meta-label max-w-full text-[0.65rem] uppercase leading-5 tracking-[0.2em] text-[var(--text-faint)]">
             How a payment works?
           </p>
 
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex max-w-full flex-wrap items-center gap-1.5">
             <button onClick={() => setActiveTab("intent")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
-              ? "tl-badge:active"
-              : "tl-badge.is-inactive"
+              ? "is-active"
+              : "is-inactive"
               }`}>Payment intent</button>
 
-            <button onClick={() => setActiveTab("video")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
-              ? "tl-badge:active"
-              : "tl-badge.is-inactive"
+            <button onClick={() => setActiveTab("video")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "video"
+              ? "is-active"
+              : "is-inactive"
               }`}>Explainer Video</button>
           </div>
         </div>
@@ -507,7 +507,7 @@ export function TxProcessAnimator() {
 
 
       {/* Main Container View Box */}
-      <div className="relative flex gap-0 flex-col w-full overflow-hidden contain-layout rounded-xl border border-[#2D3139]/80 bg-[#111215]/40 backdrop-blur-md">
+      <div className="relative flex gap-0 flex-col w-full min-w-0 max-w-full overflow-hidden contain-layout rounded-xl border border-[#2D3139]/80 bg-[#111215]/40 backdrop-blur-md">
         {/* Grid overlay */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[1.04]"
@@ -528,14 +528,14 @@ export function TxProcessAnimator() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.99, y: -4 }}
               transition={{ ease: "easeInOut", duration: 0.35 }}
-              className="p-2.5 md:p-3 relative gap-1.5 flex flex-col justify-between min-h-55"
+              className="p-2.5 md:p-3 relative gap-1.5 flex min-w-0 flex-col justify-between min-h-55"
             >
-              <div className="p-2.5 md:p-3 relative gap-1.5">
+              <div className="p-2.5 md:p-3 relative min-w-0 gap-1.5">
                 <div className="mb-2.5 relative z-10">
                   <Header elapsed={elapsed} loopCount={loopCount} />
                 </div>
 
-                <div className="relative z-10 flex-1 flex flex-col justify-center">
+                <div className="relative z-10 flex-1 min-w-0 flex flex-col justify-center">
                   <ProcessGrid
                     currentStepIndex={currentStepIndex}
                     isCompleted={isCompleted}
@@ -546,7 +546,7 @@ export function TxProcessAnimator() {
 
               </div>
 
-              <div className="mt-4 relative z-10 -mx-3 -mb-3">
+              <div className="mt-4 relative z-10 -mx-2.5 md:-mx-3 -mb-3">
                 <StatusBanner
                   isCompleted={isCompleted}
                   currentStepIndex={currentStepIndex}
@@ -562,9 +562,9 @@ export function TxProcessAnimator() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -8 }}
               transition={{ ease: "easeInOut", duration: 0.4 }}
-              className="p-3 max-w-[calc(360px, vw)] aspect-video flex items-center justify-center bg-black/40 min-h-55"
+              className="relative w-full min-w-0 max-w-full p-3 aspect-video flex items-center justify-center bg-black/40 min-h-55"
             >
-              <div className="w-full h-full rounded-lg overflow-hidden border border-[#2D3139]/60 shadow-[0_12px_40px_rgba(0,0,0,0.7)] relative bg-black">
+              <div className="relative h-full w-full min-w-0 max-w-full rounded-lg overflow-hidden border border-[#2D3139]/60 shadow-[0_12px_40px_rgba(0,0,0,0.7)] bg-black">
                 <video
                   src="https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-32124-large.mp4" // Swap this string with your absolute video source path
                   autoPlay

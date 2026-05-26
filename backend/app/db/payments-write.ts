@@ -47,7 +47,7 @@ export async function createPaymentRecord(params: {
       ${params.receiverWallet ?? null}, ${params.receiverOnboarded ?? false}, ${params.receiverAutoclaimAllowed ?? false}, ${params.receiverIdentityPublicKey},
       ${params.paymentReceiverPublicKey ?? null}, ${params.ephemeralPublicKey ?? null}, ${params.tokenSymbol}, ${params.tokenMintAddress}, ${params.amount},
       ${params.senderFeeAmount ?? null}, ${params.claimFeeAmount ?? null}, ${params.escrowAccount},
-      ${params.escrowVaultAddress}, ${params.depositSignature ?? null}, ${params.expiryAt ?? null}, 'locked', 'queued'
+      ${params.escrowVaultAddress}, ${params.depositSignature ?? null}, ${params.expiryAt ?? null}, 'created', 'queued'
     )
     RETURNING
       id, sender_user_id, sender_wallet, sender_phone_identity_pubkey, sender_display_name_snapshot, sender_handle_snapshot, reference_code,

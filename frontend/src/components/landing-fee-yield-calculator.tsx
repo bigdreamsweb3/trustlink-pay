@@ -34,12 +34,14 @@ export function LandingFeeYieldCalculator() {
   const [transferAmount, setTransferAmount] = useState(100);
   const [vaultDeposit, setVaultDeposit] = useState(50_000);
   const [dailyVolume, setDailyVolume] = useState(100_000);
-  const [activeVaultLiquidity, setActiveVaultLiquidity] = useState(1_000_000);
+  const [activeVaultLiquidityUnits, setActiveVaultLiquidityUnits] = useState(1_000_000);
+  const [activeLiquidityTokenPriceUsd, setActiveLiquidityTokenPriceUsd] = useState(1);
   const [openInfo, setOpenInfo] = useState<string | null>(null);
 
   const model = useMemo(() => {
     const epochsPerDay = 24 / EPOCH_HOURS;
-    const vaultShare = activeVaultLiquidity > 0 ? Math.min(vaultDeposit / activeVaultLiquidity, 1) : 1;
+    const activeVaultLiquidityUsd = activeVaultLiquidityUnits * activeLiquidityTokenPriceUsd;
+    const vaultShare = activeVaultLiquidityUsd > 0 ? Math.min(vaultDeposit / activeVaultLiquidityUsd, 1) : 1;
     const assignedDailyVolume = dailyVolume * vaultShare;
     const vaultDailyCapacity = vaultDeposit * epochsPerDay;
     const settledDailyVolume = Math.min(assignedDailyVolume, vaultDailyCapacity);
@@ -83,8 +85,9 @@ export function LandingFeeYieldCalculator() {
       settledDailyVolume,
       vaultShare,
       epochsPerDay,
+      activeVaultLiquidityUsd,
     };
-  }, [activeVaultLiquidity, dailyVolume, transferAmount, vaultDeposit]);
+  }, [activeLiquidityTokenPriceUsd, activeVaultLiquidityUnits, dailyVolume, transferAmount, vaultDeposit]);
 
   return (
     <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
@@ -156,13 +159,22 @@ export function LandingFeeYieldCalculator() {
             onChange={setDailyVolume}
           />
           <Control
-            label="Active TSN vault liquidity"
-            value={activeVaultLiquidity}
+            label="Active TSN liquidity tokens"
+            value={activeVaultLiquidityUnits}
             min={10_000}
             max={10_000_000}
             step={10_000}
-            display={compactMoney(activeVaultLiquidity)}
-            onChange={setActiveVaultLiquidity}
+            display={compactMoney(model.activeVaultLiquidityUsd)}
+            onChange={setActiveVaultLiquidityUnits}
+          />
+          <Control
+            label="Liquidity token USD price"
+            value={activeLiquidityTokenPriceUsd}
+            min={0.9}
+            max={1.1}
+            step={0.001}
+            display={money(activeLiquidityTokenPriceUsd)}
+            onChange={setActiveLiquidityTokenPriceUsd}
           />
         </div>
 
@@ -172,7 +184,7 @@ export function LandingFeeYieldCalculator() {
             label="Your vault share of liquidity"
             value={percent(model.vaultShare * 100)}
             color="text-[var(--text)]"
-            info="This is your vault deposit divided by total active TSN vault liquidity. A $26K vault inside $1M active liquidity owns about 2.6% of settlement capacity, so it should only be assigned about 2.6% of network volume."
+            info={`This is your vault deposit divided by total active TSN vault liquidity after converting token liquidity to USD. Current active liquidity is ${compactMoney(model.activeVaultLiquidityUsd)}, so stable tokens that trade above or below $1 do not distort vault share.`}
             openInfo={openInfo}
             setOpenInfo={setOpenInfo}
           />

@@ -102,35 +102,37 @@ const crankerSteps = [
 
 const sdkSnippets = [
   {
-    title: "Create Payment Intent",
-    code: `await tsn.createPaymentIntent({
-  recipientTIN: "4872193041",
-  amount: 100_000_000,
-  senderWallet: keypair.publicKey,
-  escrowProgramId: TSN_PROGRAM_ID,
-});`,
-  },
-  {
-    title: "Claim and Pay",
-    code: `const lease = await tsn.claimPaymentIntent({
-  intentId: "pmt_8341",
-  crankerVault: vaultPDA,
-  crankerKeypair: operatorKeypair,
+    title: "Resolve Recipient",
+    code: `const recipient = await tsn.resolveRecipient({
+  identifier: "4872193041",
+  type: "tin",
 });
 
-await tsn.payRecipient({ lease, recipientWallet });`,
+if (!recipient.canReceive) {
+  throw new Error("Recipient is not ready for TSN payments");
+}`,
   },
   {
-    title: "Submit Proof",
-    code: `await tsn.submitProofOfPayment({
-  lease,
-  txSignature: paymentTx.signature,
-  crankerKeypair: operatorKeypair,
+    title: "Quote Payment",
+    code: `const quote = await tsn.quotePayment({
+  recipientTIN: recipient.tin,
+  amount: 100_000_000,
+  mint: USDC_MINT,
+});
+
+console.log(quote.senderFee, quote.networkFee);`,
+  },
+  {
+    title: "Create Payment Intent",
+    code: `const intent = await tsn.createPaymentIntent({
+  quoteId: quote.id,
+  senderWallet: wallet.publicKey,
   escrowProgramId: TSN_PROGRAM_ID,
-});`,
+});
+
+await wallet.signAndSendTransaction(intent.transaction);`,
   },
 ];
-
 export function LandingPage() {
   const mempoolExplorerUrl = process.env.NEXT_PUBLIC_TSN_MEMPOOL_EXPLORER_URL ?? "/tsn-mempool";
 
@@ -385,12 +387,12 @@ export function LandingPage() {
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {[
             [
-              "TrustLink calls TSN",
-              "TrustLink resolves phone identities, then TSN owns send and claim logic.",
+              "Apps create intents",
+              "TrustLink and other wallets only need to resolve identity, quote fees, and create payment intents.",
             ],
             [
-              "Other apps call TSN directly",
-              "Once TINS is live, Solana apps can route payments without TrustLink dependency.",
+              "Users see fees first",
+              "Developers can show sender fees, network fees, and recipient readiness before asking for a signature.",
             ],
             [
               "Same program foundation",
@@ -494,3 +496,4 @@ function SectionLabel({ index, title }: { index: string; title: string }) {
     </div>
   );
 }
+

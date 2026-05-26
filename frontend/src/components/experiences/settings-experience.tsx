@@ -12,11 +12,11 @@ import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
-import { apiGet, apiPatch, apiPost } from "@/src/lib/api";
+import { apiGet, apiPost } from "@/src/lib/api";
 import { getOrCreatePrivacyKeyBundle } from "@/src/lib/privacy-keys";
 import { setStoredUser } from "@/src/lib/storage";
 import { useTheme } from "@/src/lib/theme";
-import type { AutoclaimSettings, IdentitySecurityState, UserProfile } from "@/src/lib/types";
+import type { IdentitySecurityState, UserProfile } from "@/src/lib/types";
 import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
@@ -272,8 +272,6 @@ export function SettingsExperience() {
   const [identity, setIdentity] = useState<IdentitySecurityState | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
-  const [autoclaim, setAutoclaim] = useState<AutoclaimSettings | null>(null);
-  const [autoclaimBusy, setAutoclaimBusy] = useState(false);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [backupFlowStep, setBackupFlowStep] = useState<BackupFlowStep>("intro");
   const [backupWalletInput, setBackupWalletInput] = useState("");
@@ -288,7 +286,7 @@ export function SettingsExperience() {
   /* ── All useEffects and handlers unchanged ── */
   useEffect(() => { if (!changePinOpen) { setOtp(""); setNewPin(""); setOtpCooldown(0); return; } const timer = window.setTimeout(() => pinInputRef.current?.focus(), 60); return () => window.clearTimeout(timer); }, [changePinOpen]);
   useEffect(() => { if (otpCooldown === 0) return; const timer = window.setInterval(() => { setOtpCooldown((c) => Math.max(0, c - 1)); }, 1000); return () => window.clearInterval(timer); }, [otpCooldown]);
-  useEffect(() => { if (!accessToken) return; void loadIdentitySecurity(accessToken); void loadAutoclaimSettings(accessToken); }, [accessToken]);
+  useEffect(() => { if (!accessToken) return; void loadIdentitySecurity(accessToken); }, [accessToken]);
   useEffect(() => { if (!recoveryModalOpen && !identity?.recoveryCooldown) return; const timer = window.setInterval(() => setNowMs(Date.now()), 1000); return () => window.clearInterval(timer); }, [identity?.recoveryCooldown, recoveryModalOpen]);
 
   const cooldownSeconds = useMemo(() => { if (!identity?.recoveryCooldown) return 0; return Math.max(0, Math.ceil((Number(identity.recoveryCooldown) * 1000 - nowMs) / 1000)); }, [identity?.recoveryCooldown, nowMs]);
@@ -300,10 +298,8 @@ export function SettingsExperience() {
   async function openChangePinFlow() { if (!accessToken) return; setOtpBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ otpSent: true; expiresAt: string | null }>("/api/auth/pin/change/start", {}, accessToken); setChangePinOpen(true); if (result.expiresAt) { const seconds = Math.max(0, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000)); setOtpCooldown(Math.min(seconds, 60)); } else { setOtpCooldown(60); } setNotice("WhatsApp OTP sent. Verify to change your PIN."); showToast("WhatsApp OTP sent for PIN change."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start PIN change"; setError(msg); showToast(msg); } finally { setOtpBusy(false); } }
   async function resendChangePinOtp() { await openChangePinFlow(); }
   async function handlePinChangeSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!accessToken) return; if (otp.length !== 6) { setError("Enter the 6-digit WhatsApp OTP."); return; } if (newPin.length !== 6) { setError("Enter the new 6-digit PIN."); return; } setPinBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ pinChanged: true; user: UserProfile }>("/api/auth/pin/change/verify", { otp, newPin }, accessToken); setUser(result.user); setStoredUser(result.user); setChangePinOpen(false); setOtp(""); setNewPin(""); setNotice("PIN updated."); showToast("PIN changed successfully."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not change PIN"; setError(msg); showToast(msg); } finally { setPinBusy(false); } }
-  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null; receiverAutoclaimEnabled: boolean }>("/api/identity", token); setIdentity(result.identity); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
+  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null }>("/api/identity", token); setIdentity(result.identity); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
   async function handleCompleteSecureSetup() { if (!accessToken) return; if (!walletAddress || !session) { requestWalletConnection(); setError("Connect the wallet you want as your main TrustLink Pay wallet."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { const bundle = getOrCreatePrivacyKeyBundle(); const payload = { phoneIdentityPublicKey: bundle.phoneIdentityPublicKey, privacyViewPublicKey: bundle.privacyViewPublicKey, privacySpendPublicKey: bundle.privacySpendPublicKey, settlementWalletPublicKey: walletAddress, recoveryWalletPublicKey: identity?.recoveryWallet ?? null }; const prepared = await apiPost<{ requiresBlockchainSignature: boolean; binding: { mode: "prepare-bind" | "already-bound"; serializedTransaction?: string; rpcUrl?: string } }>("/api/identity", payload, accessToken); if (prepared.requiresBlockchainSignature) { if (!prepared.binding.serializedTransaction || !prepared.binding.rpcUrl) throw new Error("TrustLink could not prepare the wallet binding transaction"); showToast("Approve the main wallet binding in your wallet."); const blockchainSignature = await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.binding.rpcUrl, serializedTransaction: prepared.binding.serializedTransaction }); await apiPost("/api/identity", { ...payload, blockchainSignature }, accessToken); } await loadIdentitySecurity(accessToken); const msg = "Main wallet bound on-chain. Your TrustLink Pay identity is ready."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not bind main wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
-  async function loadAutoclaimSettings(token: string) { try { const result = await apiGet<AutoclaimSettings>("/api/settings/autoclaim", token); setAutoclaim(result); } catch (e) { setError(e instanceof Error ? e.message : "Could not load autoclaim settings"); } }
-  async function handleAutoclaimToggle(nextEnabled: boolean) { if (!accessToken) return; setAutoclaimBusy(true); setError(null); setNotice(null); try { const result = await apiPatch<AutoclaimSettings>("/api/settings/autoclaim", { enabled: nextEnabled }, accessToken); setAutoclaim(result); const msg = nextEnabled ? `Autoclaim enabled for payments up to $${result.maxAmountUsd}.` : "Autoclaim turned off."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update autoclaim"; setError(msg); showToast(msg); } finally { setAutoclaimBusy(false); } }
   async function handleAddBackupWallet() { if (!accessToken || !identity) { setError("Receive a payment first so your main wallet can be secured."); return; } const trimmed = backupWalletInput.trim(); if (!looksLikeWalletAddress(trimmed)) { setError("Enter a valid backup wallet address."); return; } if (trimmed === identity.mainWallet) { setError("Backup wallet must differ from main wallet."); return; } if (!walletAddress || walletAddress !== identity.mainWallet || !session) { requestWalletConnection(); setError("Reconnect your main wallet to approve."); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/add-recovery-wallet", { walletAddress: trimmed, allowUpdate: Boolean(identity.recoveryWallet) }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setBackupFlowStep("success"); const msg = identity.recoveryWallet ? "Backup wallet updated." : "Backup wallet added."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not add backup wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function handleFreeze(frozen: boolean) { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/freeze", { authorityWallet: walletAddress, frozen }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); const msg = frozen ? "Account locked." : "Account unlocked."; setNotice(msg); showToast(msg); setFreezeModalOpen(false); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update account lock"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function handleStartRecovery() { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/request-recovery", { authorityWallet: walletAddress }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setRecoveryFlowStep("cooldown"); setNotice("Recovery started."); showToast("Recovery started."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start recovery"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
@@ -474,25 +470,6 @@ export function SettingsExperience() {
                 Dark
               </button>
             </div>
-          </div>
-
-          {/* Autoclaim */}
-          <div className="tl-panel-header tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
-            <div className="min-w-0 flex-1 mr-3">
-              <span className="tl-body-sm font-medium text-[var(--text)]">Autoclaim</span>
-              <div className="tl-text-soft mt-0.5 tl-meta-sm leading-tight">Up to ${autoclaim?.maxAmountUsd ?? 100}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleAutoclaimToggle(!(autoclaim?.enabled ?? false))}
-              disabled={autoclaimBusy || !autoclaim}
-              className={`rounded-[12px] px-3 py-1.5 text-[0.74rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.96] disabled:opacity-50 ${autoclaim?.enabled
-                ? "bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]"
-                : "bg-[var(--surface-soft)] text-[var(--text-soft)]"
-                }`}
-            >
-              {autoclaimBusy ? "..." : autoclaim?.enabled ? "On" : "Off"}
-            </button>
           </div>
 
           {/* Change PIN */}

@@ -37,17 +37,24 @@ import {
   disconnectSolanaWallet,
   getConnectedWalletSession,
   listAvailableSolanaWallets,
+  signSolanaMessage,
   type ConnectedWalletSession,
   type DetectedWallet
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { ChevronDown, ChevronRight, Globe, Search, X } from "lucide-react";
+import { createSenderPaymentAuthorizationMessage } from "@trustlink/tsn-sdk/payment-authorization";
+import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
 
 function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(balance);
+}
+
+function formatUsd(value: number | null | undefined, digits = 4) {
+  if (value == null || !Number.isFinite(value)) return null;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: digits }).format(value);
 }
 
 function formatReceiptTime(value: string | null) {
@@ -68,6 +75,47 @@ type SendCostEstimate = {
     reason: string;
   };
 };
+
+function toFiniteNumber(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeSendCostEstimate(payload: unknown, amountUi: number): SendCostEstimate | null {
+  const source = (payload && typeof payload === "object" && "estimate" in payload
+    ? (payload as { estimate?: unknown }).estimate
+    : payload) as Partial<SendCostEstimate> | null;
+  if (!source || typeof source !== "object") return null;
+
+  const senderFeeAmountUi = toFiniteNumber(source.senderFeeAmountUi);
+  const networkFeeSol = toFiniteNumber(source.networkFeeSol);
+  const totalTokenRequiredUi = toFiniteNumber(source.totalTokenRequiredUi);
+  if (senderFeeAmountUi == null || networkFeeSol == null) return null;
+
+  return {
+    tokenSymbol: String(source.tokenSymbol || "Token"),
+    senderFeeAmountUi,
+    senderFeeAmountUsd: toFiniteNumber(source.senderFeeAmountUsd),
+    totalTokenRequiredUi: totalTokenRequiredUi != null && totalTokenRequiredUi > 0
+      ? totalTokenRequiredUi
+      : Number((amountUi + senderFeeAmountUi).toFixed(6)),
+    networkFeeSol,
+    networkFeeUsd: toFiniteNumber(source.networkFeeUsd),
+    settlementAssessment: source.settlementAssessment,
+  };
+}
+
+function hasCompleteCostEstimate(estimate: SendCostEstimate | null) {
+  return Boolean(
+    estimate &&
+    Number.isFinite(estimate.senderFeeAmountUi) &&
+    estimate.senderFeeAmountUi >= 0 &&
+    Number.isFinite(estimate.totalTokenRequiredUi) &&
+    estimate.totalTokenRequiredUi > 0 &&
+    Number.isFinite(estimate.networkFeeSol) &&
+    estimate.networkFeeSol >= 0,
+  );
+}
 
 type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
 
@@ -155,6 +203,7 @@ export function SendExperience() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [sendCostEstimate, setSendCostEstimate] = useState<SendCostEstimate | null>(null);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<{
     paymentId: string; status: PaymentRecord["status"]; notificationStatus: PaymentNotificationStatus;
     notificationSentAt: string | null; notificationDeliveredAt: string | null; notificationReadAt: string | null;
@@ -189,6 +238,8 @@ export function SendExperience() {
   const shouldPollSendSuccessReceipt = sendSuccess ? !sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus) : false;
   const hasAmount = Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const canContinueWithRecipient = Boolean(walletAddress) && Boolean(selectedToken) && hasAmount && Boolean(recipientPreview?.verified);
+  const costEstimateReady = hasCompleteCostEstimate(sendCostEstimate);
+  const confirmSendDisabled = busy || estimateBusy || !costEstimateReady;
   const sendGuidance = useMemo(() => getSendGuidance(error), [error]);
 
   useEffect(() => { setWalletSession(getConnectedWalletSession()); setAvailableWallets(listAvailableSolanaWallets()); }, []);
@@ -237,22 +288,61 @@ export function SendExperience() {
   /* v2 FIX: catch block always reveals country fallback and unlocks */
   useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
-  useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment.id) return c; return { ...c, status: r.payment.status, notificationStatus: r.payment.notification_status, notificationSentAt: r.payment.notification_sent_at, notificationDeliveredAt: r.payment.notification_delivered_at, notificationReadAt: r.payment.notification_read_at, notificationFailedAt: r.payment.notification_failed_at, notificationRetrying: r.payment.notification_status === "queued" || r.payment.notification_status === "failed", notificationAttemptCount: r.payment.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+  useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
   async function handleConnectWallet() { setError(null); const w = listAvailableSolanaWallets(); setAvailableWallets(w); if (w.length === 0) { setError("Install a Solana wallet to connect."); showToast("No Solana wallet detected."); return; } setWalletPickerOpen(true); }
   async function handleWalletSelect(walletId: string) { setConnectingWalletId(walletId); setError(null); try { const s = await connectSolanaWallet(walletId); setWalletSession(s); setWalletPickerOpen(false); setNotice(`${s.walletName} connected.`); showToast(`${s.walletName} connected.`); } catch (e) { setError(e instanceof Error ? e.message : "Could not connect wallet"); } finally { setConnectingWalletId(null); } }
   async function handleDisconnectWallet() { await disconnectSolanaWallet(); setWalletSession(null); setNotice("Wallet disconnected."); showToast("Wallet disconnected."); }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!user || !walletAddress) { setError("Connect a sender wallet first."); return; } if (!recipientPreview?.verified) { setError("Verify the recipient before sending."); showToast("Verify the recipient first."); return; } if (!selectedToken) { setError("Choose a token before sending."); showToast("Choose a token first."); return; } setEstimateBusy(true); setError(null); try { const r = await apiPost<{ estimate: SendCostEstimate }>("/api/payment/estimate", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount: Number(form.amount), tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress }); setSendCostEstimate(r.estimate); setConfirmOpen(true); } catch (e) { const rawMessage = e instanceof Error ? e.message : "Could not estimate transfer cost"; const guidance = getSendGuidance(rawMessage); const msg = guidance?.message ?? rawMessage; setError(rawMessage); showToast(guidance?.title ?? msg); } finally { setEstimateBusy(false); } }
+  async function loadSendCostEstimate() {
+    if (!user || !walletAddress || !selectedToken) return;
+    setEstimateBusy(true);
+    setEstimateError(null);
+    setError(null);
+    setSendCostEstimate(null);
+    try {
+      const amount = Number(form.amount);
+      const r = await apiPost<unknown>("/api/payment/estimate", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount, tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress }, undefined, { cache: "no-store" });
+      const estimate = normalizeSendCostEstimate(r, amount);
+      if (!hasCompleteCostEstimate(estimate)) {
+        throw new Error("Payment quote is incomplete. Retry before confirming.");
+      }
+      setSendCostEstimate(estimate);
+    } catch (e) {
+      const rawMessage = e instanceof Error ? e.message : "Could not estimate transfer cost";
+      const guidance = getSendGuidance(rawMessage);
+      const msg = guidance?.message ?? rawMessage;
+      setSendCostEstimate(null);
+      setEstimateError(msg);
+      setError(rawMessage);
+      showToast(guidance?.title ?? msg);
+    } finally {
+      setEstimateBusy(false);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user || !walletAddress) { setError("Connect a sender wallet first."); return; }
+    if (!recipientPreview?.verified) { setError("Verify the recipient before sending."); showToast("Verify the recipient first."); return; }
+    if (!selectedToken) { setError("Choose a token before sending."); showToast("Choose a token first."); return; }
+    setConfirmOpen(true);
+    await loadSendCostEstimate();
+  }
 
   async function handleConfirmSend() {
     if (busy) return;
-    if (!user || !walletAddress || !selectedToken) {
+    if (!user || !walletAddress || !walletSession || !selectedToken) {
       setError("Connect wallet and choose token first.");
       return;
     }
     if (!recipientPreview?.verified) {
       setError("Verify the recipient first.");
+      return;
+    }
+    if (!costEstimateReady) {
+      setError("Wait for the payment quote, sender fee, and Solana network fee before confirming.");
+      setEstimateError("Quote is not ready. Retry fee calculation before confirming.");
       return;
     }
 
@@ -262,6 +352,25 @@ export function SendExperience() {
     setNotice(null);
 
     try {
+      const senderFeeAmount = sendCostEstimate?.senderFeeAmountUi ?? 0;
+      const totalTokenRequiredUi = sendCostEstimate?.totalTokenRequiredUi ?? Number(form.amount) + senderFeeAmount;
+      const senderAuthorizationIssuedAt = new Date().toISOString();
+      const senderAuthorizationMessage = createSenderPaymentAuthorizationMessage({
+        senderWallet: walletAddress,
+        senderIdentity: `trustlink-handle:${user.handle}`,
+        receiverIdentity: `trustlink-handle:${recipientPreview.recipient.handle}`,
+        tokenMintAddress: selectedToken.mintAddress,
+        amount: Number(form.amount),
+        senderFeeAmount,
+        totalTokenRequiredUi,
+        issuedAt: senderAuthorizationIssuedAt,
+      });
+      const senderAuthorizationSignature = await signSolanaMessage({
+        walletId: walletSession.walletId,
+        address: walletAddress,
+        message: senderAuthorizationMessage,
+      });
+
       const result = await apiPost<{
         paymentId: string;
         status: PaymentRecord["status"];
@@ -288,6 +397,10 @@ export function SendExperience() {
         amount: Number(form.amount),
         tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
+        senderFeeAmount,
+        totalTokenRequiredUi,
+        senderAuthorizationIssuedAt,
+        senderAuthorizationSignature,
         skipWhatsAppCheck: receiverCheckSkipped,
       });
 
@@ -494,7 +607,7 @@ export function SendExperience() {
                     showCountryFallback={!manualCountryLocked && (showCountryFallback || (receiverPhoneInput.trim() !== "" && (phoneVerificationState === "warning" || phoneVerificationState === "invalid")))}
                     selectedCountry={manualCountry}
                     suggestedCountries={suggestedCountries}
-                    onChange={(value) => { setReceiverPhoneInput(value); setCountrySearchOpen(false); setManualCountry(null); setManualCountryLocked(false); setConfirmOpen(false); setSendCostEstimate(null); setLookupError(null); setRecipientPreview(null); setPhoneVerificationDetails(null); setReceiverCheckSkipped(false); setForm((c) => ({ ...c, receiverPhone: "" })); }}
+                    onChange={(value) => { setReceiverPhoneInput(value); setCountrySearchOpen(false); setManualCountry(null); setManualCountryLocked(false); setConfirmOpen(false); setSendCostEstimate(null); setEstimateError(null); setLookupError(null); setRecipientPreview(null); setPhoneVerificationDetails(null); setReceiverCheckSkipped(false); setForm((c) => ({ ...c, receiverPhone: "" })); }}
                     onCountrySelect={(country) => { setManualCountry(country); setManualCountryLocked(true); setReceiverCountry(country); setReceiverCheckSkipped(false); setLookupError(null); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel(`Retrying with ${country.name}...`); }}
                     onSkipVerification={() => { setReceiverCheckSkipped(true); setReceiverWhatsAppVerified(true); setLookupError(null); setPhoneVerificationState("valid"); setPhoneVerificationLabel(manualCountry ? `Continuing with ${manualCountry.name}...` : null); }}
                     skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
@@ -511,7 +624,7 @@ export function SendExperience() {
                       type="number"
                       step="any"
                       value={form.amount}
-                      onChange={(e) => { setForm((c) => ({ ...c, amount: e.target.value })); setSendCostEstimate(null); }}
+                      onChange={(e) => { setForm((c) => ({ ...c, amount: e.target.value })); setSendCostEstimate(null); setEstimateError(null); }}
                       placeholder="0.00"
                       className="mt-1 w-full bg-transparent text-[1rem] font-bold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
                     />
@@ -663,7 +776,7 @@ export function SendExperience() {
                 const active = token.mintAddress === form.token;
                 return (
                   <button key={token.mintAddress} type="button"
-                    onClick={() => { setForm((c) => ({ ...c, token: token.mintAddress })); setSendCostEstimate(null); setTokenPickerOpen(false); }}
+                    onClick={() => { setForm((c) => ({ ...c, token: token.mintAddress })); setSendCostEstimate(null); setEstimateError(null); setTokenPickerOpen(false); }}
                     className={`tl-panel tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
                   >
                     <span className="flex items-center gap-3">
@@ -711,19 +824,54 @@ export function SendExperience() {
                 <span className="text-[0.78rem] text-[var(--text-soft)]">{form.receiverPhone}</span>
               </div>
 
-              {sendCostEstimate ? (
+              {estimateBusy ? (
+                <div className="tl-panel tl-field rounded-[18px] px-4 py-5">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
+                    <div>
+                      <div className="tl-body-sm font-semibold text-[var(--text)]">Calculating payment quote</div>
+                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--text-soft)]">Fetching TSN sender fee and current Solana network fee.</div>
+                    </div>
+                  </div>
+                </div>
+              ) : estimateError ? (
+                <div className="rounded-[18px] border border-[var(--danger)]/20 bg-danger-soft px-4 py-3.5">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--danger)]" />
+                    <div>
+                      <div className="tl-body-sm font-semibold text-[var(--danger)]">Quote unavailable</div>
+                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--danger)]/80">{estimateError}</div>
+                      <button
+                        type="button"
+                        onClick={() => void loadSendCostEstimate()}
+                        className="mt-3 inline-flex items-center gap-2 rounded-[14px] border border-[var(--danger)]/20 bg-[var(--field)] px-3 py-2 text-[0.72rem] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--surface-soft)]"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Retry quote
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : sendCostEstimate ? (
                 <>
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">Sender fee</span>
-                    <span className="tl-body-sm font-medium text-[var(--text)]">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
+                    <span className="text-right">
+                      <span className="block tl-body-sm font-medium text-[var(--text)]">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
+                      {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? <span className="block text-[0.68rem] text-[var(--text-faint)]">{formatUsd(sendCostEstimate.senderFeeAmountUsd)}</span> : null}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Network: {sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5 text-[0.7rem] text-[var(--text-soft)]">Total: {sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
+                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
+                      <div className="text-[0.68rem] text-[var(--text-soft)]">Solana network fee</div>
+                      <div className="mt-1 tl-body-sm font-semibold text-[var(--text)]">{sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
+                      {formatUsd(sendCostEstimate.networkFeeUsd) ? <div className="mt-0.5 text-[0.66rem] text-[var(--text-faint)]">{formatUsd(sendCostEstimate.networkFeeUsd)}</div> : null}
+                    </div>
+                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
+                      <div className="text-[0.68rem] text-[var(--text-soft)]">Total required</div>
+                      <div className="mt-1 tl-body-sm font-semibold text-[var(--text)]">{sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
+                    </div>
                   </div>
-                  {sendCostEstimate.senderFeeAmountUsd != null ? (
-                    <div className="text-[0.72rem] text-[var(--text-soft)]">\u2248 ${sendCostEstimate.senderFeeAmountUsd.toFixed(4)} fee at current price.</div>
-                  ) : null}
                   {sendCostEstimate.settlementAssessment ? (
                     <div
                       className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
@@ -749,7 +897,7 @@ export function SendExperience() {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
-              <button type="button" onClick={() => void handleConfirmSend()} disabled={busy} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Sending..." : "Confirm send"}</button>
+              <button type="button" onClick={() => void handleConfirmSend()} disabled={confirmSendDisabled} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Sending..." : estimateBusy ? "Calculating..." : "Confirm send"}</button>
             </div>
           </div>
         </div>

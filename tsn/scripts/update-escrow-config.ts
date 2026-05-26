@@ -1,7 +1,34 @@
-import { config } from "dotenv";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-config({ path: "../backend/.env.local" });
-config({ path: ".env.local", override: true });
+function loadEnvFile(path: string, override = false) {
+  const resolved = resolve(path);
+  if (!existsSync(resolved)) return;
+
+  for (const line of readFileSync(resolved, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const index = trimmed.indexOf("=");
+    if (index === -1) continue;
+
+    const key = trimmed.slice(0, index).trim();
+    let value = trimmed.slice(index + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (override || process.env[key] == null) {
+      process.env[key] = value.replace(/\\n/g, "\n");
+    }
+  }
+}
+
+loadEnvFile("../backend/.env.local");
+loadEnvFile(".env.local", true);
 
 async function main() {
   const { getEscrowConfigState, getEscrowVerifierPublicKey, updateEscrowConfig } = await import(

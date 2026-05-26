@@ -12,6 +12,7 @@
   "dependencies": {
     "@solana/web3.js": "^1.98.4",
     "@tailwindcss/postcss": "^4.3.0",
+    "@trustlink/tsn-sdk": "file:../tsn-sdk",
     "framer-motion": "^12.39.0",
     "lucide-react": "^0.473.0",
     "next": "14.2.26",

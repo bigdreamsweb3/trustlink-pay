@@ -38,6 +38,7 @@ Welcome to the TrustLink Pay documentation. This section provides comprehensive 
 | [PROTOCOL.md](./PROTOCOL.md) | Core protocol specifications and state machines |
 | [DEVELOPER.md](./DEVELOPER.md) | Security considerations, known issues, and integration guide |
 | [API.md](./API.md) | API reference documentation |
+| [SUPPORTED-TOKENS.md](./SUPPORTED-TOKENS.md) | Supported-token source of truth, wallet token loading, and on-chain registry plan |
 | [AI-PROTECTION.md](./AI-PROTECTION.md) | AI-powered fraud detection and mempool protection |
 
 ### For Security-Conscious Users

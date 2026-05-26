@@ -310,6 +310,25 @@
   transform: scale(0.96);
 }
 
+/* Selected state for tab-like badges */
+.tl-badge.is-active {
+  background:
+    radial-gradient(circle at top, rgba(90, 184, 170, 0.18), transparent 58%),
+    linear-gradient(135deg, var(--accent-soft), rgba(90, 184, 170, 0.05));
+  color: var(--accent-deep);
+  border-color: var(--accent-border);
+  box-shadow: 0 8px 22px rgba(46, 168, 134, 0.08);
+  cursor: default;
+}
+
+.dark .tl-badge.is-active {
+  color: var(--accent);
+  background:
+    radial-gradient(circle at top, rgba(93, 219, 167, 0.14), transparent 58%),
+    linear-gradient(135deg, rgba(93, 219, 167, 0.08), rgba(74, 190, 208, 0.035));
+  border-color: rgba(93, 219, 167, 0.22);
+}
+
 /* Inactive state */
 .tl-badge.is-inactive {
   background: transparent;

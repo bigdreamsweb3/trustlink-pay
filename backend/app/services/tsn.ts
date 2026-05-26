@@ -19,14 +19,15 @@ import { logger } from "@/app/lib/logger";
 import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import type { PaymentRecord, PaymentTsnState, TsnUiStage } from "@/app/types/payment";
+import type { PaymentRecord, PaymentTsnState, TsnUiStage, UserRecord } from "@/app/types/payment";
 import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 import {
   buildCreateIntentRequest,
   buildRequestClaimRequest,
   computeTsnUiStage,
+  createTsnPaymentMempoolJobs,
+  HttpTsnMempool,
   sha256Bytes,
-  TsnHttpClient,
   type CreateIntentRequest,
   type RequestClaimRequest,
 } from "@trustlink/tsn-sdk";
@@ -40,12 +41,23 @@ function resolveClaimMode(payment: { payment_mode?: string | null }) {
 }
 
 function getTsnMempoolClient() {
-  return new TsnHttpClient({ baseUrl: env.TSN_MEMPOOL_URL });
+  return new HttpTsnMempool(env.TSN_MEMPOOL_URL);
+}
+
+function resolveUnderlyingPaymentPublicKey(payment: PaymentRecord) {
+  const candidate = payment.escrow_vault_address ?? payment.sender_wallet;
+  if (!candidate) throw new Error("Missing sender or escrow public key for TSN intent");
+
+  try {
+    return new PublicKey(candidate).toBase58();
+  } catch {
+    throw new Error("TSN intent requires a real Solana public key for underlying payment");
+  }
 }
 
 async function postIntentToTsnMempool(request: CreateIntentRequest) {
   try {
-    return await getTsnMempoolClient().postIntent<CreateIntentRequest, unknown>(request);
+    return await getTsnMempoolClient().postIntent(request);
   } catch (error) {
     logger.error("tsn.mempool.intent_post_failed", {
       paymentId: request.paymentId,
@@ -57,7 +69,7 @@ async function postIntentToTsnMempool(request: CreateIntentRequest) {
 
 async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
   try {
-    return await getTsnMempoolClient().postClaimRequest<RequestClaimRequest, unknown>(request);
+    return await getTsnMempoolClient().postClaimRequest(request);
   } catch (error) {
     logger.error("tsn.mempool.claim_post_failed", {
       paymentId: request.paymentId,
@@ -78,15 +90,21 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
 
   const allowed = getAllowedTokenByMint(tokenMint);
   if (!allowed) throw new Error("Token mint not allowlisted for TSN intent");
+  const recipientAmount = Number(payment.amount);
+  const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
+  const totalIntentAmount = recipientAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
 
-  const intentRequest = buildCreateIntentRequest({
-    paymentId: payment.id,
-    underlyingPayment: payment.escrow_account,
-    recipientHash: payment.receiver_phone_hash,
-    tokenMintAddress: tokenMint,
-    amount: Number(payment.amount),
-    source: "trustlink-pay",
-  });
+  const intentRequest = {
+    ...buildCreateIntentRequest({
+      paymentId: payment.id,
+      underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
+      recipientHash: payment.receiver_phone_hash,
+      tokenMintAddress: tokenMint,
+      amount: totalIntentAmount,
+      source: "trustlink-pay",
+    }),
+    recipientAmount,
+  } as CreateIntentRequest & { recipientAmount: number };
 
   const mempoolIntent = await postIntentToTsnMempool(intentRequest);
   const record = await upsertPaymentIntent({
@@ -104,6 +122,120 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
   }
   logger.info("tsn.intent.onchain_delegated_to_tsn", { paymentId: payment.id, intentId: record.id });
   return { enabled: true as const, record, mempoolIntent, onchain: null as null };
+}
+
+export async function requestOnboardedRecipientSettlementViaTsn(params: {
+  payment: PaymentRecord;
+  receiver: Pick<UserRecord, "id" | "phone_number" | "phone_identity_pubkey" | "wallet_address">;
+}) {
+  if (!env.TSN_ENABLED) {
+    return { enabled: false as const };
+  }
+
+  const payment = params.payment;
+  const receiver = params.receiver;
+  const binding = receiver.phone_identity_pubkey ? await getIdentityBindingState(receiver.phone_identity_pubkey) : null;
+  const settlementWalletAddress = binding?.settlementWallet ?? receiver.wallet_address ?? undefined;
+  if (!settlementWalletAddress) {
+    throw new Error("Recipient must connect a settlement wallet before receiving TSN payments.");
+  }
+
+  let intent = await findPaymentIntentByPaymentId(payment.id);
+
+  const existingClaim = await findLatestActiveClaimRequestByPaymentId(payment.id);
+  if (existingClaim && existingClaim.status !== "failed" && existingClaim.status !== "canceled") {
+    if (!intent) throw new Error("TSN intent not available for onboarded recipient settlement");
+    logger.info("tsn.settlement_request.already_exists", {
+      paymentId: payment.id,
+      intentId: intent.id,
+      claimRequestId: existingClaim.id,
+      receiverUserId: receiver.id,
+    });
+    return {
+      enabled: true as const,
+      paymentId: payment.id,
+      intentId: intent.id,
+      claimRequestId: existingClaim.id,
+      destinationWallet: existingClaim.destination_wallet ?? settlementWalletAddress,
+      status: existingClaim.status,
+    };
+  }
+
+  if (!intent) {
+    const tokenMint = payment.token_mint_address;
+    if (!tokenMint) throw new Error("Missing token mint for TSN settlement");
+    const allowed = getAllowedTokenByMint(tokenMint);
+    if (!allowed) throw new Error("Token mint not allowlisted for TSN settlement");
+    const recipientAmount = Number(payment.amount);
+    const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
+    const totalIntentAmount = recipientAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
+    const jobs = await createTsnPaymentMempoolJobs({
+      mempool: getTsnMempoolClient(),
+      paymentId: payment.id,
+      underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
+      recipientHash: payment.receiver_phone_hash,
+      tokenMintAddress: tokenMint,
+      amount: totalIntentAmount,
+      recipientAmount,
+      destinationWallet: settlementWalletAddress,
+      source: "trustlink-pay",
+    });
+    intent = await upsertPaymentIntent({
+      id: jobs.intentRequest.paymentId,
+      paymentId: jobs.intentRequest.paymentId,
+      intentSeedHash: jobs.intentRequest.intentSeedHash,
+      recipientHash: jobs.intentRequest.recipientHash,
+      tokenMintAddress: jobs.intentRequest.tokenMintAddress,
+      amount: jobs.intentRequest.amount,
+    });
+    const claimRequest = await createClaimRequest(jobs.claimRequestPayload);
+
+    logger.info("tsn.settlement_request.posted", {
+      paymentId: payment.id,
+      intentId: intent.id,
+      claimRequestId: claimRequest.id,
+      receiverUserId: receiver.id,
+    });
+
+    return {
+      enabled: true as const,
+      paymentId: payment.id,
+      intentId: intent.id,
+      claimRequestId: claimRequest.id,
+      mempoolClaimRequest: jobs.claimRequest,
+      destinationWallet: settlementWalletAddress,
+      status: claimRequest.status,
+    };
+  }
+
+  const claimRequestPayload = buildRequestClaimRequest({
+    paymentId: payment.id,
+    intentId: intent.id,
+    recipientHash: payment.receiver_phone_hash,
+    destinationWallet: settlementWalletAddress,
+    // Legacy schema field only: onboarded recipients do not manually claim.
+    autoclaim: false,
+    source: "trustlink-pay",
+  });
+  const mempoolClaimRequest = await postClaimRequestToTsnMempool(claimRequestPayload);
+  const claimRequest = await createClaimRequest(claimRequestPayload);
+
+  logger.info("tsn.settlement_request.posted", {
+    paymentId: payment.id,
+    intentId: intent.id,
+    claimRequestId: claimRequest.id,
+    receiverUserId: receiver.id,
+  });
+
+  return {
+    enabled: true as const,
+    paymentId: payment.id,
+    intentId: intent.id,
+    claimRequestId: claimRequest.id,
+    mempoolClaimRequest,
+    destinationWallet: settlementWalletAddress,
+    status: claimRequest.status,
+  };
 }
 
 export async function requestPaymentClaimViaTsn(params: {

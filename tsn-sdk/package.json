@@ -30,6 +30,18 @@
       "import": "./dist/quote.js",
       "types": "./dist/quote.d.ts"
     },
+    "./payment-authorization": {
+      "import": "./dist/payment-authorization.js",
+      "types": "./dist/payment-authorization.d.ts"
+    },
+    "./payment-authorization-server": {
+      "import": "./dist/payment-authorization-server.js",
+      "types": "./dist/payment-authorization-server.d.ts"
+    },
+    "./payment-jobs": {
+      "import": "./dist/payment-jobs.js",
+      "types": "./dist/payment-jobs.d.ts"
+    },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"

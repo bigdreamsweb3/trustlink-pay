@@ -7,9 +7,17 @@ import { env } from "@/app/lib/env";
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
-import { createTsnIntentForPayment } from "@/app/services/tsn";
+import { getWalletSupportedTokenBalance } from "@/app/blockchain/solana-core";
+import { requestOnboardedRecipientSettlementViaTsn } from "@/app/services/tsn";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
+import { verifyAuthorizedTsnPaymentRequest } from "@trustlink/tsn-sdk";
+
+const SENDER_AUTHORIZATION_MAX_AGE_MS = 5 * 60 * 1000;
+
+function tsnIdentityForUser(user: { trustlink_handle: string }) {
+  return `trustlink-handle:${user.trustlink_handle}`;
+}
 
 /**
  * NEW FLOW: Backend handles identity mapping, TSN handles payments
@@ -61,11 +69,45 @@ export async function POST(request: Request) {
       return toErrorResponse(new Error("Missing required payment fields"));
     }
 
+    const paymentAmount = Number(amount);
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      return toErrorResponse(new Error("Invalid payment amount"));
+    }
+    const senderFeeAmount = Number(body.senderFeeAmount ?? 0);
+    const quotedTotalRequired = Number(body.totalTokenRequiredUi ?? paymentAmount + senderFeeAmount);
+    const totalTokenRequiredUi =
+      Number.isFinite(quotedTotalRequired) && quotedTotalRequired >= paymentAmount
+        ? quotedTotalRequired
+        : paymentAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
     const sender = await findUserByPhoneNumber(senderPhoneNumber);
     if (!sender) return toErrorResponse(new Error("Sender must register identity first"));
 
     const receiver = await findUserByPhoneNumber(phoneNumber);
     if (!receiver) return toErrorResponse(new Error("Recipient must register identity first"));
+
+    const senderAuthorizationIssuedAt = String(body.senderAuthorizationIssuedAt ?? "");
+    const senderAuthorizationSignature = String(body.senderAuthorizationSignature ?? "");
+    if (!senderAuthorizationIssuedAt || !senderAuthorizationSignature) {
+      return toErrorResponse(new Error("Sender wallet authorization signature is required"));
+    }
+    const authorizationIssuedAtMs = Date.parse(senderAuthorizationIssuedAt);
+    if (!Number.isFinite(authorizationIssuedAtMs) || Math.abs(Date.now() - authorizationIssuedAtMs) > SENDER_AUTHORIZATION_MAX_AGE_MS) {
+      return toErrorResponse(new Error("Sender wallet authorization expired. Please review and sign again."));
+    }
+    await verifyAuthorizedTsnPaymentRequest({
+      senderWallet,
+      senderIdentity: tsnIdentityForUser(sender),
+      receiverIdentity: tsnIdentityForUser(receiver),
+      tokenMintAddress,
+      amount: paymentAmount,
+      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0,
+      totalTokenRequiredUi,
+      issuedAt: senderAuthorizationIssuedAt,
+      signatureBase64: senderAuthorizationSignature,
+      maxAgeMs: SENDER_AUTHORIZATION_MAX_AGE_MS,
+      getSenderTokenBalance: async ({ senderWallet: walletAddress, tokenMintAddress }) =>
+        getWalletSupportedTokenBalance({ walletAddress, tokenMintAddress }),
+    });
 
     const payment = await createPaymentRecord({
       senderUserId: sender.id,
@@ -79,15 +121,21 @@ export async function POST(request: Request) {
       receiverIdentityPublicKey: receiver.phone_identity_pubkey ?? "tsn-recipient",
       tokenSymbol: "USDC",
       tokenMintAddress,
-      amount: Number(amount),
+      amount: paymentAmount,
+      senderFeeAmount: Math.max(0, totalTokenRequiredUi - paymentAmount),
       escrowAccount: `tsn:${randomUUID()}`,
       escrowVaultAddress: senderWallet,
       senderAutoclaimEnabled: sender.receiver_autoclaim_enabled ?? false,
     });
 
-    await createTsnIntentForPayment(payment);
+    const tsnSettlement = await requestOnboardedRecipientSettlementViaTsn({ payment, receiver });
 
-    logger.info("payment.create.tsn_intent_created", { paymentId: payment.id, receiverPhone: receiver.phone_number });
+    logger.info("payment.create.tsn_work_created", {
+      paymentId: payment.id,
+      receiverPhone: receiver.phone_number,
+      intentId: "intentId" in tsnSettlement ? tsnSettlement.intentId : null,
+      claimRequestId: "claimRequestId" in tsnSettlement ? tsnSettlement.claimRequestId : null,
+    });
 
     return ok({
       paymentId: payment.id,
@@ -107,6 +155,7 @@ export async function POST(request: Request) {
       notificationAttemptCount: payment.notification_attempt_count ?? 0,
       manualInviteRequired: false,
       inviteShare: null,
+      tsnClaimRequestId: "claimRequestId" in tsnSettlement ? tsnSettlement.claimRequestId : null,
     });
   } catch (error) {
     logger.error("api.payment.create.failed", {

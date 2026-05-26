@@ -214,19 +214,21 @@ npm run crank:reference
 
 Why:
 
-- This is the worker loop that consumes work and posts settlement proofs/status updates.
+- This is the worker loop that consumes TSN mempool work and executes it through the TSN on-chain program.
 
 What happens:
 
 - polls mempool work
-- updates claim statuses
-- posts proof records
-- marks intents executed/reverted based on economics
+- creates the TSN payment intent on-chain if it is not there yet
+- claims the intent with the cranker operator keypair
+- submits proof through the TSN program, which moves tokens from the cranker vault to the recipient token account
+- marks mempool work executed only after the confirmed on-chain proof transaction returns
 
 Expected result:
 
 - periodic `[tsn-cranker] ...` logs
 - no TypeScript loader errors
+- every completed work item has a real Solana transaction signature
 
 ## New Program Migration Checklist
 

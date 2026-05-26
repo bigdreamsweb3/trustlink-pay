@@ -22,7 +22,6 @@
     // "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@trustlink/tsn-sdk": ["../tsn/src"],
       "@trustlink/tsn-cranker-sdk": ["../tsn/cranker-sdk"],
       "@trustlink/tins-sdk": ["../tins-sdk/src"],
       "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"],

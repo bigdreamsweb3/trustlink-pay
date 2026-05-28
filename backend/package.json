@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "prebuild": "npm --prefix ../tsn-sdk install && npm --prefix ../tsn-sdk run build",
+    "preinstall": "npm --prefix ../tsn-sdk install && npm --prefix ../tsn-sdk run build",
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",

@@ -17,9 +17,16 @@ const getCachedIdentitySecurity = cachedQuery(
     const result = await getIdentitySecurityForUser(authUser);
 
     return {
+      tin: result.user.tin ?? null,
+      tinsIdentityPublicKey: result.user.tins_identity_pubkey ?? null,
+      tinsRegistryPublicKey: result.user.tins_registry_pubkey ?? null,
+      tinsWalletPublicKey: result.user.tins_wallet_pubkey ?? null,
+      tinsProgramId: result.user.tins_program_id ?? null,
+      tinsCreatedAt: result.user.tins_created_at ?? null,
       phoneIdentityPublicKey: result.phoneIdentity?.publicKey ?? null,
       privacyViewPublicKey: result.privacy?.viewPublicKey ?? null,
       privacySpendPublicKey: result.privacy?.spendPublicKey ?? null,
+      bindingSignature: result.user.binding_signature ?? null,
       settlementWalletPublicKey: result.user.settlement_wallet_pubkey ?? null,
       recoveryWalletPublicKey: result.user.recovery_wallet_pubkey ?? null,
       receiverAutoclaimEnabled: result.user.receiver_autoclaim_enabled ?? false,

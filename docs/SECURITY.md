@@ -1,276 +1,91 @@
-# TrustLink Security
+# TrustLink Pay Security
 
-Security architecture for TrustLink Pay, TINS, and TSN Mempool Guardian fraud protection.
-
-## Table of Contents
-
-1. [Core Principles](#core-principles)
-2. [Threat Model](#threat-model)
-3. [Attack Mitigations](#attack-mitigations)
-4. [Fraud Protection Security](#fraud-protection-security)
-5. [Privacy Model](#privacy-model)
-
----
+This document describes the current security model for TrustLink Pay, TINS, and TSN.
 
 ## Core Principles
 
-### 1. Main Wallet Never On-Chain
+- The backend verifies phone ownership through WhatsApp authentication.
+- TINS verifies wallet ownership of a Transfer Identity Number.
+- TSN verifies settlement state through Solana accounts and cranker execution.
+- The backend does not custody user funds.
+- The frontend must make payment and identity state visible to users.
 
-```
-✓ Stored: privacy_pubkey (derived key)
-✗ NEVER: main wallet address
-✗ NEVER: private keys
-```
+## TINS Identity Security
 
-### 2. Derived Keys Only
+The active TINS flow creates a wallet-owned identity PDA.
 
-The privacy key shown on-chain is **derived** from main wallet:
+Backend acceptance requires:
 
-```
-Main Wallet (OFF-CHAIN)
-       │
-       ▼ BIP-44 derivation
-privacy_pubkey (ON-CHAIN, visible)
-       │
-       ▼ Can rotate anytime
-new privacy_pubkey (ON-CHAIN)
-```
+1. Authenticated TrustLink session.
+2. Valid TINS program id: `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT`.
+3. TINS identity PDA derived from the submitted wallet.
+4. Existing on-chain TINS account owned by the TINS program.
+5. Decoded on-chain TIN matching the submitted TIN.
+6. Fresh wallet signature over the phone-to-TIN binding message.
 
-### 3. Multi-Sig Recovery
+The phone number is encrypted before it is submitted to TINS. The TrustLink backend stores the phone number -> TIN mapping because WhatsApp phone ownership is an application-layer fact.
 
-Changing your privacy key requires **2 of 3** recovery wallets.
+## Public And Private Data
 
----
+| Data | Location | Visibility |
+| --- | --- | --- |
+| Phone number | TrustLink backend | Private application data |
+| TIN | TINS account and TrustLink backend | Public identifier |
+| Display name | TINS account | Public |
+| TINS identity PDA | TINS account | Public |
+| Encrypted phone payload | TINS account | Public ciphertext |
+| Wallet binding signature | TrustLink backend | Private application record |
+| Payment state | TrustLink backend and TSN | User-facing state |
 
-## Threat Model
+The current TINS identity PDA is derived from the wallet public key. It does not store the wallet as a `TinAccount` field, but an observer who already knows a wallet can derive and check its TINS PDA. Do not describe this as full wallet unlinkability.
 
-| Threat | What Happens | Mitigation |
-|--------|--------------|------------|
-| Wallet stolen | Hacker changes TIN to receive funds | Need 2 recovery wallets to rotate |
-| Main wallet exposed | Main wallet visible on-chain | Never stored on-chain |
-| TIN enumeration | Hacker scans all TINs | HMAC-based non-sequential TINs |
-| Mass TIN creation | Spam attacks | Rate limiting (100/hour) |
-| Replay attack | Old transaction replayed | Nonce increments |
-| Social engineering | User tricked into sending | Display name verification |
+## Payment Security
 
----
+Payment creation follows this chain:
 
-## Attack Mitigations
-
-### Wallet Theft
-
-```
-WITHOUT MULTI-SIG:
-  Hacker steals wallet
-  → Hacker changes TIN → Hacker receives ALL funds
-  → User doesn't know → Funds gone
-
-WITH MULTI-SIG:
-  Hacker steals wallet
-  → Hacker initiates rotation
-  → Need 2nd recovery wallet → BLOCKED
-  → User notified → BLOCKED
+```text
+authenticated sender
+recipient phone resolves to TIN
+recipient TINS mapping verified
+sender signs payment
+backend records payment
+TSN intent enters mempool
+cranker submits eligible work
+backend and frontend track state
 ```
 
-### Display Name Verification
+The UI must not present a newly created payment as final settlement. Before cranker/on-chain submission, it should show a processing state with the current step.
 
-Before sending, user sees:
-```
-Confirm: Send 100 USDC to Daniel Ochieng (TIN-1234-5678)?
-```
+## Cranker Security
 
-Not: `Send to 7xK...abc123 (unverified)`
+Crankers should only process eligible intents. A claim request should not appear just because the backend created a payment record. Claim work becomes valid after the proper TSN intent state exists.
 
-### TIN Enumeration Prevention
+Operator requirements:
 
-```
-SEQUENTIAL (BAD):
-  TIN-0001-0001, TIN-0001-0002, TIN-0001-0003...
-  → Easy to predict → Easy to scan
+- registered cranker identity
+- configured TSN program id
+- configured TINS program id
+- funded vaults for supported token mints
+- Solana devnet RPC access
 
-ENTROPY-BASED (GOOD):
-  TIN = hash(owner + entropy + slot) → pseudo-random
-  → Can't predict → Can't enumerate
-```
+## Threats And Mitigations
 
-### Rate Limiting
+| Threat | Mitigation |
+| --- | --- |
+| Phone account takeover | WhatsApp auth, session checks, wallet binding signature |
+| Fake TIN submitted to backend | Backend Solana RPC verification and PDA derivation check |
+| TIN mapped to wrong wallet | Wallet-signed binding message includes phone, TIN, wallet, identity PDA, program id, and timestamp |
+| Stale binding replay | Five-minute binding signature age limit |
+| Wrong TINS program id | Backend validates configured/default TINS program id |
+| Incorrect payment finality UX | Dashboard and payment details show processing stages |
+| Cranker bypass | TSN state and cranker registration gates settlement work |
 
-```
-Per hour per owner: Max 100 TINs
-Per block: Max 10 TINs
-```
+## Verification Checklist
 
----
+- [ ] Backend `.env.local` has the correct `TINS_PROGRAM_ID`.
+- [ ] Frontend `.env.local` has the correct `NEXT_PUBLIC_TINS_PROGRAM_ID`.
+- [ ] TSN cranker environment has both TSN and TINS program ids.
+- [ ] `/api/identity/tin` rejects invalid PDA, invalid owner, invalid TIN, stale signature, and invalid signature.
+- [ ] Dashboard displays the TIN instead of treating WhatsApp as the settlement identity.
+- [ ] Payment history shows processing state until TSN/cranker state advances.
 
-## Fraud Protection Security
-
-TSN Mempool includes fraud detection and protection as a core security feature. The Mempool Guardian is designed to protect the network from malicious actors without invading personal payment privacy.
-
-### Privacy-First Design
-
-The Guardian focuses on **protocol-level patterns** rather than personal data:
-
-| What It Analyzes | What It Doesn't |
-|-----------------|-----------------|
-| Hashed wallet identifiers for pattern tracking | Real wallet addresses or identities |
-| Statistical patterns (velocity, deviation scores) | Payment content or messages |
-| Protocol signals (intent validity, state transitions) | User identity information |
-| Amount patterns (relative size for user) | Exact payment amounts |
-
-**Users can be confident that normal payment activity is not monitored or stored beyond what's necessary for settlement.**
-
-📖 For full details, see [AI-PROTECTION.md](./AI-PROTECTION.md#privacy--data-handling)
-
-### Protection Components
-
-| Component | Purpose | Key Features |
-|-----------|---------|--------------|
-| **Fraud Detector** | Detect fraudulent patterns | Duplicate detection, replay prevention, velocity analysis |
-| **Anomaly Detector** | Statistical anomaly detection | Z-score analysis, timing patterns, state validation |
-| **Behavioral Analyzer** | User behavior tracking | Pattern recognition, splitting/rushing/batching detection |
-| **Risk Scorer** | Real-time risk assessment | Multi-factor scoring, threshold alerts |
-| **Proof Verifier** | Payment proof validation | Amount matching, signature verification, timestamp checks |
-| **Quote Validator** | Fee quote protection | Stale quote detection, inflation monitoring |
-| **Settlement Protector** | Epoch settlement guard | Double-spend prevention, griefing detection |
-| **Cranker Jail** | Cranker enforcement | Reputation tracking, automatic jail for violations |
-
-### AI Protection Threats & Mitigations
-
-| Threat | AI Detection | Mitigation |
-|--------|--------------|------------|
-| Duplicate intent submission | Fraud detector | Block payment ID reuse |
-| Replay attacks | Proof verifier | Transaction signature validation |
-| Sybil attacks | Behavioral analyzer | Velocity and pattern monitoring |
-| Payout manipulation | Proof verifier | Amount tolerance validation (0.1%) |
-| Quote spoofing | Quote validator | Historical fee comparison |
-| Epoch griefing | Settlement protector | Last-minute submission detection |
-| Cranker misconduct | Cranker jail | Trust score tracking, automatic jail |
-| Velocity spikes | Anomaly detector | Z-score analysis, rate limiting |
-
-### Guardian Decision Flow
-
-```
-Intent Submission
-       │
-       ▼
-┌──────────────────┐
-│ Fraud Detection │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Risk Scoring    │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ Anomaly Detection│
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│  Behavioral      │
-│    Analysis      │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ Guardian Decision│
-│ Allow/Flag/Block │
-└──────────────────┘
-```
-
-### Cranker Jail System
-
-The Cranker Jail system provides automated enforcement for malicious cranker behavior:
-
-```
-Trust Score: 1.0 (100%)
-       │
-       ▼ Violation detected
-Trust Score: 0.9
-       │
-       ▼ Violation detected
-Trust Score: 0.8
-       │
-       ▼ (trust < 0.3) OR (violations >= 3)
-       ▼
-    JAILED
-    1 hour minimum
-       │
-       ▼ After jail period
-    RELEASED (trust reset to 0.5)
-       │
-       ▼ Additional violations
-    BANNED (permanent)
-```
-
-### Investor Security Benefits
-
-- **Automated Protection**: Every transaction screened without manual intervention
-- **Real-time Defense**: Threats detected and blocked in milliseconds
-- **Reputation System**: Crankers incentivized to behave correctly
-- **Protocol Integrity**: Fraud protection ensures TSN operates with verifiable security
-- **Privacy Respect**: Normal user activity is not monitored — only attack patterns detected
-
----
-
-## Privacy Model
-
-### What Is Public (On-Chain)
-
-| Data | Who Sees | Why |
-|------|---------|-----|
-| TIN | Everyone | For lookup |
-| display_name | Everyone | Anti-scam verification |
-| privacy_pubkey | Everyone | For escrow routing |
-| recovery_wallets | NO ONE | Private to owner |
-
-### What Is Private (Off-Chain)
-
-| Data | Where | Who Sees |
-|------|-------|----------|
-| Main wallet | User's device | NO ONE |
-| Private key | User's device | NO ONE |
-| Recovery wallets | User's device | NO ONE |
-
-### What Can Be Viewed
-
-The public can see:
-- TIN → display name ✓
-- TIN → privacy key ✓
-
-The public CANNOT see:
-- TIN → main wallet ✗
-- TIN → recovery wallets ✗
-- TIN → private key ✗
-
----
-
-## Security Checklist
-
-For production, ensure:
-
-- [x] Main wallet never stored on-chain
-- [x] Privacy key derived (BIP-44)
-- [x] Display name for verification
-- [x] Multi-sig recovery walls
-- [x] 24hr rotation cooldown
-- [x] Nonce for replay protection
-- [x] Rate limiting
-- [x] Anti-enumeration TINs
-- [x] Team fees (prevents abuse)
-
----
-
-## Reporting Security Issues
-
-Found a security issue?
-
-**Email**: security@[domain]
-**GitHub**: Open issue (private)
-
-Include:
-- Description
-- Steps to reproduce
-- Potential impact

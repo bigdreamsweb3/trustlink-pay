@@ -24,12 +24,6 @@ export async function POST(request: NextRequest) {
     // Check if there's already a pending session code for this session
     const existingCode = await getSessionCodeBySessionId(sessionId);
     if (existingCode) {
-      logger.info("auth.session.existing_code", {
-        sessionId,
-        code: existingCode.code,
-        expiresAt: existingCode.expiresAt.toISOString(),
-      });
-
       const response = NextResponse.json({
         success: true,
         sessionCode: existingCode.code,
@@ -39,17 +33,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new session code
-    logger.info("auth.session.creating", { sessionId });
     const sessionCode = await createSessionCode(sessionId, {
       device: typeof device === "string" ? device : undefined,
       location: typeof location === "string" ? location : undefined,
       requestedAt: typeof requestedAt === "string" ? requestedAt : undefined,
-    });
-
-    logger.info("auth.session.created", {
-      sessionId,
-      code: sessionCode.code,
-      expiresAt: sessionCode.expiresAt.toISOString(),
     });
 
     const response = NextResponse.json({

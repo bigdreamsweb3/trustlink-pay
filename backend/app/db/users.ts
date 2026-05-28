@@ -78,6 +78,12 @@ async function insertUserProfile(params: {
       id,
       phone_number,
       phone_hash,
+      tin,
+      tins_identity_pubkey,
+      tins_registry_pubkey,
+      tins_wallet_pubkey,
+      tins_program_id,
+      tins_created_at,
       phone_identity_pubkey,
       privacy_view_pubkey,
       privacy_spend_pubkey,
@@ -111,6 +117,12 @@ export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRe
       id,
       phone_number,
       phone_hash,
+      tin,
+      tins_identity_pubkey,
+      tins_registry_pubkey,
+      tins_wallet_pubkey,
+      tins_program_id,
+      tins_created_at,
       phone_identity_pubkey,
       privacy_view_pubkey,
       privacy_spend_pubkey,
@@ -146,6 +158,12 @@ export async function findUserById(id: string): Promise<UserRecord | null> {
       id,
       phone_number,
       phone_hash,
+      tin,
+      tins_identity_pubkey,
+      tins_registry_pubkey,
+      tins_wallet_pubkey,
+      tins_program_id,
+      tins_created_at,
       phone_identity_pubkey,
       privacy_view_pubkey,
       privacy_spend_pubkey,
@@ -694,6 +712,56 @@ export async function updateUserPublicKeyMaterial(params: {
     settlement_wallet_pubkey: string | null;
     recovery_wallet_pubkey: string | null;
     binding_signature: string | null;
+  }>;
+
+  return rows[0];
+}
+
+export async function updateUserTinMapping(params: {
+  userId: string;
+  tin: string;
+  tinsIdentityPublicKey?: string | null;
+  tinsRegistryPublicKey?: string | null;
+  tinsWalletPublicKey?: string | null;
+  tinsProgramId?: string | null;
+  bindingSignature?: string | null;
+}): Promise<{
+  id: string;
+  tin: string | null;
+  tins_identity_pubkey: string | null;
+  tins_registry_pubkey: string | null;
+  tins_wallet_pubkey: string | null;
+  tins_program_id: string | null;
+  tins_created_at: string | null;
+}> {
+  const rows = (await sql`
+    UPDATE users
+    SET
+      tin = ${params.tin},
+      tins_identity_pubkey = ${params.tinsIdentityPublicKey ?? null},
+      tins_registry_pubkey = ${params.tinsRegistryPublicKey ?? null},
+      tins_wallet_pubkey = ${params.tinsWalletPublicKey ?? null},
+      tins_program_id = ${params.tinsProgramId ?? null},
+      binding_signature = ${params.bindingSignature ?? null},
+      tins_created_at = COALESCE(tins_created_at, NOW()),
+      identity_verified_at = COALESCE(identity_verified_at, NOW())
+    WHERE id = ${params.userId}
+    RETURNING
+      id,
+      tin,
+      tins_identity_pubkey,
+      tins_registry_pubkey,
+      tins_wallet_pubkey,
+      tins_program_id,
+      tins_created_at
+  `) as Array<{
+    id: string;
+    tin: string | null;
+    tins_identity_pubkey: string | null;
+    tins_registry_pubkey: string | null;
+    tins_wallet_pubkey: string | null;
+    tins_program_id: string | null;
+    tins_created_at: string | null;
   }>;
 
   return rows[0];

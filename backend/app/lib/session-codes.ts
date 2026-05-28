@@ -52,12 +52,6 @@ export async function createSessionCode(
   try {
     await RedisSessionStorage.setSession(code, sessionCode);
     
-    logger.info("session_code.created", {
-      code,
-      sessionId,
-      expiresAt: expiresAt.toISOString(),
-    });
-    
     return sessionCode;
   } catch (error) {
     logger.error("session_code.create.error", {
@@ -76,13 +70,7 @@ export async function findSessionCode(code: string): Promise<SessionCode | null>
   try {
     const sessionCode = await RedisSessionStorage.getSession(code);
     
-    logger.info("session_code.find_debug", {
-      lookingFor: code,
-      found: !!sessionCode,
-    });
-    
     if (!sessionCode) {
-      logger.warn("session_code.not_found", { code });
       return null;
     }
     
@@ -95,22 +83,9 @@ export async function findSessionCode(code: string): Promise<SessionCode | null>
       declinedAt: sessionCode.declinedAt ? new Date(sessionCode.declinedAt) : undefined,
     };
     
-    logger.info("session_code.found", { 
-      code, 
-      sessionId: sessionCodeWithDates.sessionId,
-      status: sessionCodeWithDates.status,
-      expiresAt: sessionCodeWithDates.expiresAt.toISOString()
-    });
-    
     // Check if expired
     const now = new Date();
     if (sessionCodeWithDates.expiresAt < now) {
-      logger.warn("session_code.expired", { 
-        code, 
-        expiresAt: sessionCodeWithDates.expiresAt.toISOString(),
-        now: now.toISOString(),
-        expired: sessionCodeWithDates.expiresAt < now
-      });
       sessionCodeWithDates.status = "expired";
       await RedisSessionStorage.deleteSession(code);
       return null;
@@ -146,11 +121,6 @@ export async function verifySessionCode(code: string, phoneNumber: string): Prom
   
   // If already verified, don't update again
   if (sessionCode.status === "verified") {
-    logger.info("session_code.already_verified", {
-      code,
-      sessionId: sessionCode.sessionId,
-      verifiedAt: sessionCode.verifiedAt?.toISOString(),
-    });
     return sessionCode;
   }
   
@@ -164,13 +134,6 @@ export async function verifySessionCode(code: string, phoneNumber: string): Prom
   
   // Update in Redis
   await RedisSessionStorage.updateSession(code, updatedSessionCode);
-  
-  logger.info("session_code.verified", {
-    code,
-    sessionId: updatedSessionCode.sessionId,
-    phoneNumber,
-    verifiedAt: updatedSessionCode.verifiedAt.toISOString(),
-  });
   
   return updatedSessionCode;
 }
@@ -204,13 +167,6 @@ export async function manualVerifySessionCode(code: string, phoneNumber?: string
   
   // Update in Redis
   await RedisSessionStorage.updateSession(code, updatedSessionCode);
-  
-  logger.info("session_code.manual_verified", {
-    code,
-    sessionId: updatedSessionCode.sessionId,
-    phoneNumber: updatedSessionCode.phoneNumber,
-    verifiedAt: updatedSessionCode.verifiedAt.toISOString(),
-  });
   
   return updatedSessionCode;
 }

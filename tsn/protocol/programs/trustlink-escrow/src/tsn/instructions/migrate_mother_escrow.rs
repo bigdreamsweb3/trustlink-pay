@@ -26,6 +26,7 @@ pub struct MigrateMotherEscrow<'info> {
 
 pub fn migrate_mother_escrow(
     ctx: Context<MigrateMotherEscrow>,
+    tins_program_id: Pubkey,
     protocol_seed: [u8; 32],
     epoch_seconds: i64,
     lease_seconds: i64,
@@ -77,9 +78,11 @@ pub fn migrate_mother_escrow(
     let mut data = ctx.accounts.mother_escrow.try_borrow_mut_data()?;
     let mut offset = 0;
 
-        data[offset..offset + 8].copy_from_slice(&MotherEscrow::DISCRIMINATOR);
+    data[offset..offset + 8].copy_from_slice(&MotherEscrow::DISCRIMINATOR);
     offset += 8;
     data[offset..offset + 32].copy_from_slice(ctx.accounts.authority.key().as_ref());
+    offset += 32;
+    data[offset..offset + 32].copy_from_slice(tins_program_id.as_ref());
     offset += 32;
     data[offset..offset + 32].copy_from_slice(&protocol_seed);
     offset += 32;

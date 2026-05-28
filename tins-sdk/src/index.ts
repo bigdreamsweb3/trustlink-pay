@@ -10,7 +10,7 @@ import {
 import * as crypto from "crypto";
 
 export const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
-  "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
+  "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
 );
 
 export const PROGRAM_SALT = "TINS_SALT_2026";

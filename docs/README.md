@@ -33,6 +33,7 @@ Welcome to the TrustLink Pay documentation. This section provides comprehensive 
 
 | Document | Description |
 |----------|-------------|
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Production runbook for configuring, building, initializing, and testing TINS + TSN |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture overview (TINS + TSN + dApp) |
 | [TINS.md](./TINS.md) | Transfer Identity Number System - on-chain identity protocol |
 | [PROTOCOL.md](./PROTOCOL.md) | Core protocol specifications and state machines |

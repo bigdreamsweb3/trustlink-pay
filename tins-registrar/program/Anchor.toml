@@ -10,7 +10,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-name-reg = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
+tins_program = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
 
 [registry]
 url = "https://api.apr.dev"

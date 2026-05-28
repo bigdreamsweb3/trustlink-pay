@@ -1,30 +1,22 @@
 export const runtime = "nodejs";
 
-import { toErrorResponse, ok } from "@/app/lib/http";
-import { logger } from "@/app/lib/logger";
-import { env } from "@/app/lib/env";
+import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
+import { ok } from "@/app/lib/http";
+import { listPaymentHistoryForUser } from "@/app/services/payments/read";
 
-/**
- * List payment history from TSN
- */
 export async function GET(request: Request) {
-  try {
-    if (!env.TSN_ENABLED) {
-      return ok({ payments: [], hasMore: false });
-    }
-    
-    // TODO: Query TSN for payment history
-    logger.info("payment.history.deferred_to_tsn");
-    
+  return withAuthenticatedRoute(request, async (authUser) => {
+    const { searchParams } = new URL(request.url);
+    const limitRaw = Number(searchParams.get("limit") ?? 50);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(100, Math.floor(limitRaw)))
+      : 50;
+    const payments = await listPaymentHistoryForUser(authUser, limit + 1);
+    const hasMore = payments.length > limit;
+
     return ok({
-      payments: [],
-      hasMore: false,
-      message: "Query TSN for history",
+      payments: hasMore ? payments.slice(0, limit) : payments,
+      hasMore,
     });
-  } catch (error) {
-    logger.error("api.payment.history.failed", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return toErrorResponse(error);
-  }
+  });
 }

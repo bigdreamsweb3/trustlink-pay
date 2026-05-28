@@ -463,6 +463,63 @@ export async function sendSolanaPayment(params: {
   return signature;
 }
 
+export async function signAndSendSolanaTransaction(params: {
+  walletId: string;
+  address: string;
+  rpcUrl: string;
+  transaction: Transaction;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) {
+    throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  const authorizedAddress = await ensureWalletAuthorization(wallet, params.address);
+  if (authorizedAddress !== params.address) {
+    throw new Error(
+      `Connected wallet account changed. Expected ${params.address}, but wallet authorized ${authorizedAddress}.`,
+    );
+  }
+
+  const connection = new Connection(params.rpcUrl, "confirmed");
+  const payer = new PublicKey(params.address);
+  const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+  const transaction = params.transaction;
+  transaction.feePayer = transaction.feePayer ?? payer;
+  transaction.recentBlockhash = transaction.recentBlockhash ?? latestBlockhash.blockhash;
+
+  let signature: TransactionSignature;
+
+  try {
+    if (wallet.provider.signTransaction) {
+      const signedTransaction = await wallet.provider.signTransaction(transaction);
+      signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+        preflightCommitment: "confirmed",
+      });
+    } else if (wallet.provider.signAndSendTransaction) {
+      const response = await wallet.provider.signAndSendTransaction(transaction, {
+        preflightCommitment: "confirmed",
+      });
+      signature = response.signature;
+    } else {
+      throw new Error("This wallet cannot sign Solana transactions from the browser");
+    }
+  } catch (error) {
+    throw await enrichSolanaTransactionError(error, connection);
+  }
+
+  await connection.confirmTransaction(
+    {
+      signature,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    },
+    "confirmed",
+  );
+
+  return signature;
+}
+
 export async function signAndSendSerializedSolanaTransaction(params: {
   walletId: string;
   rpcUrl: string;

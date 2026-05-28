@@ -20,7 +20,13 @@ function splitSqlStatements(sqlText: string) {
     const next = sqlText[i + 1];
 
     // Line comment
-    if (!inSingleQuote && !inDoubleQuote && !dollarTag && ch === "-" && next === "-") {
+    if (
+      !inSingleQuote &&
+      !inDoubleQuote &&
+      !dollarTag &&
+      ch === "-" &&
+      next === "-"
+    ) {
       current += ch;
       i++;
       current += next;
@@ -32,7 +38,13 @@ function splitSqlStatements(sqlText: string) {
     }
 
     // Block comment
-    if (!inSingleQuote && !inDoubleQuote && !dollarTag && ch === "/" && next === "*") {
+    if (
+      !inSingleQuote &&
+      !inDoubleQuote &&
+      !dollarTag &&
+      ch === "/" &&
+      next === "*"
+    ) {
       current += ch;
       i++;
       current += next;
@@ -89,6 +101,30 @@ function splitSqlStatements(sqlText: string) {
   return statements;
 }
 
+// async function main() {
+//   const databaseUrl = process.env.DATABASE_URL;
+
+//   if (!databaseUrl) {
+//     throw new Error("DATABASE_URL is required");
+//   }
+
+//   const schemaPath = resolve(process.cwd(), "app/db/schema.sql");
+//   const schemaSql = readFileSync(schemaPath, "utf8");
+//   const statements = splitSqlStatements(schemaSql);
+//   const pool = new Pool({ connectionString: databaseUrl });
+//   const client = await pool.connect();
+
+//   try {
+//     for (const statement of statements) {
+//       await client.query(statement);
+//     }
+//     console.log("Database schema initialized successfully.");
+//   } finally {
+//     client.release();
+//     await pool.end();
+//   }
+// }
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -99,13 +135,24 @@ async function main() {
   const schemaPath = resolve(process.cwd(), "app/db/schema.sql");
   const schemaSql = readFileSync(schemaPath, "utf8");
   const statements = splitSqlStatements(schemaSql);
+
   const pool = new Pool({ connectionString: databaseUrl });
   const client = await pool.connect();
 
   try {
+    console.log("Resetting database schema...");
+
+    await client.query(`
+      DROP SCHEMA public CASCADE;
+      CREATE SCHEMA public;
+    `);
+
+    console.log("Applying schema.sql...");
+
     for (const statement of statements) {
       await client.query(statement);
     }
+
     console.log("Database schema initialized successfully.");
   } finally {
     client.release();

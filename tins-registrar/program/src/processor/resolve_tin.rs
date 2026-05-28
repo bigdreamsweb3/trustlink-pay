@@ -5,7 +5,9 @@ use solana_program::{
     program::set_return_data,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::instructions::{load_instruction_at_checked, ID as INSTRUCTIONS_ID},
+    sysvar::instructions::{
+        load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID,
+    },
 };
 
 use crate::{
@@ -30,9 +32,7 @@ pub fn process(
     }
 
     // 2. Perform signature-gated ownership verification via instructions sysvar
-    let current_index = solana_program::sysvar::instructions::load_current_index_in_program(
-        &instructions_sysvar.data.borrow(),
-    ) as usize;
+    let current_index = load_current_index_checked(instructions_sysvar)? as usize;
 
     let mut verified = false;
     for i in 0..current_index {

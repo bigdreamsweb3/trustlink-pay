@@ -8,6 +8,12 @@ export function sanitizeUser(user: PersistedUser) {
   return {
     id: user.id,
     phoneNumber: user.phone_number,
+    tin: user.tin,
+    tinsIdentityPublicKey: user.tins_identity_pubkey,
+    tinsRegistryPublicKey: user.tins_registry_pubkey,
+    tinsWalletPublicKey: user.tins_wallet_pubkey,
+    tinsProgramId: user.tins_program_id,
+    tinsCreatedAt: user.tins_created_at,
     displayName: user.display_name,
     handle: user.trustlink_handle,
     walletAddress: user.wallet_address,

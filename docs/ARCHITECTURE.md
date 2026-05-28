@@ -1,321 +1,109 @@
-# TrustLink Pay Identity System - Current vs TINS
+# TrustLink Pay Architecture
 
-This document explains the current backend identity system and how TINS replaces it with an on-chain solution.
+TrustLink Pay has three active layers:
 
----
+1. TrustLink Pay app and backend
+2. TINS identity registry
+3. TSN settlement network
 
-## Part 1: Current Backend Identity System
+## TrustLink Pay App
 
-### How TrustLink Pay Identity Works Today
+The app owns the user experience:
 
-```
-User Registration Flow:
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  User        │────▶│  WhatsApp  │────▶│  Backend   │
-│  enters     │     │  OTP       │     │  Database  │
-│  phone     │     │  verify    │     │  Phone →  │
-│  number    │     │           │     │  Wallet   │
-└──────────────┘     └──────────────┘     └──────────────┘
-                                         
-Current Database Table (simplified):
-┌────────────────────┬──────────────────┬──────────────────┐
-│ phone_number      │ wallet_address  │ created_at      │
-├────────────────────┼──────────────────┼──────────────────┤
-│ +2348012345678    │ DGV...abc123    │ 1700000000     │
-│ +2348012345679    │ DGV...def456   │ 1700000100     │
-└────────────────────┴──────────────────┴──────────────────┘
+- WhatsApp authentication
+- wallet connection
+- TIN creation or loading
+- payment creation
+- transaction history and status display
+
+The backend owns private application mapping:
+
+```text
+WhatsApp phone number -> user account -> TIN -> settlement wallet
 ```
 
-### Problems with Current System
+The backend does not custody funds. It verifies identity, records payment state, and publishes settlement work to TSN.
 
-1. **Single point of failure**: If backend goes down, identity resolution stops
-2. **Censorship risk**: TrustLink can block/resolve identities
-3. **Privacy leakage**: Backend sees all payment relationships
-4. **No portability**: Can't use identity outside TrustLink
+## TINS Identity Layer
 
----
+TINS is the on-chain Transfer Identity Number registry.
 
-## Part 2: TINS On-Chain Identity
+Current devnet program id:
 
-### What TINS Changes
-
-```
-User Registration Flow (with TINS):
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  User      │────▶│  On-chain │────▶│  TIN      │
-│  creates  │     │  Program │     │  PDA      │
-│  wallet   │     │  TX      │     │  TIN-XXXX-XXXX │
-└──────────────┘     └──────────────┘     └──────────────┘
-
-On-Chain State:
-┌─────────────────────────────────────────────────────┐
-│ IdentityRegistry PDA (per TIN)                     │
-├─────────────────────────────────────────────────────┤
-│ display_name: "Daniel Ochieng"  # Shown before send│
-│ privacy_pubkey: DGV...abc123    # Derived key      │
-│ tin: 12345678                   # TIN number       │
-│ created_at: 1700000000          # Timestamp        │
-│ identity_type: 1                # 0=wallet,1=phone │
-└─────────────────────────────────────────────────────┘
+```text
+TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
 ```
 
-### Anti-Scam: Name Verification
+The active TINS account is `TinAccount`:
 
-Before sending, sender sees:
-```
-Confirm: Sending 100 USDC to Daniel Ochieng (TIN-1234-5678)?
-```
-
-### TIN Format
-
-A TIN is 10 digits: `TIN-XXXX-XXXX`
-
-| Component | Value |
+| Field | Purpose |
 | --- | --- |
-| Prefix | `TIN-` |
-| First 4 | Random-ish (sequence) |
-| Last 4 | Check digit |
+| `tin` | Numeric Transfer Identity Number |
+| `display_name` | Public display name |
+| `identity_pubkey` | TINS identity PDA |
+| `encrypted_phone` | Client-encrypted phone payload |
+| `created_at` | Creation timestamp |
 
-Example: `TIN-1234-5678`
+The TINS identity PDA is derived from the wallet and the TINS program id. This means TINS proves wallet ownership of a TIN. TrustLink Pay still keeps the private WhatsApp phone number -> TIN mapping in the backend.
 
-### TINS Accounts
+## TSN Settlement Layer
 
-| Account | PDA Derivation | Purpose |
-| --- | --- | --- |
-| GlobalState | `["global"]` | Protocol config, fee recipient |
-| IdentityRegistry | `["identity", tin.to_le_bytes()]` | Per-TIN data |
-| LinkedIdentity | `["linked", hash]` | Phone/social → TIN mapping |
+Current devnet program id:
 
-> **Correction**: TIN stores the user's **privacy public key**, not their main wallet address.
-> - Privacy key = derived from main wallet (using BIP-44 or similar)
-> - Each transaction uses a **new derived address** from the privacy key
-> - Only the main wallet can sign/authorize transactions from derived addresses
-> - On-chain: no link between user's main wallet and their payment addresses
+```text
+TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+```
 
----
+TSN handles settlement state:
 
-## Part 3: Privacy Analysis
+- payment intents
+- cranker registration and leases
+- vault funding
+- sender and claim fees
+- epoch settlement
 
-### Privacy-First Design
+The TSN Mother Escrow stores the configured TINS program id so cranker and settlement flows use the same identity registry.
 
-For comprehensive privacy details including how the Mempool Guardian handles fraud detection without invading personal payment privacy, see [AI-PROTECTION.md](./AI-PROTECTION.md#privacy--data-handling).
+## Payment Flow
 
-### What Everyone Can See (On-Chain)
+```text
+Sender enters phone number
+Backend resolves phone -> recipient TIN
+Backend verifies recipient TINS mapping
+Frontend signs payment
+Backend records payment and TSN intent
+Mempool exposes intent to crankers
+Cranker submits eligible work on-chain
+TSN updates payment settlement state
+Frontend polls backend and shows processing steps
+```
 
-| Data | Who Sees | Privacy Risk |
-| --- | --- | --- |
-| TIN → owner wallet | Everyone | Low - expected for routing |
-| Identity created | Everyone | Low - required for UX |
-| TIN number | Everyone | Low - identifier only |
-| Linked identity hash | Everyone | Medium - can verify link exists |
+## Identity Flow
 
-### What Is Private
+```text
+User logs in with WhatsApp
+User connects settlement wallet
+Frontend creates or loads TIN through TINS
+Wallet signs TrustLink phone-to-TIN binding message
+Backend verifies the TINS account on Solana RPC
+Backend stores phone -> TIN -> wallet mapping
+Dashboard displays TIN in the identity and balance surfaces
+```
 
-| Data | Who Sees |
+## Data Boundaries
+
+| Data | Owner |
 | --- | --- |
-| Actual phone number | Only owner (not stored on-chain) |
-| Social handles | Only owner |
-| Payment history | Not linked (via TSN) |
-| Payment amounts | Not linked (via TSN) |
+| WhatsApp phone number | TrustLink backend |
+| Phone -> TIN mapping | TrustLink backend |
+| TIN account | TINS program |
+| Payment intent and settlement state | TSN / TrustLink backend |
+| Funds | User wallets, escrow, or TSN vaults |
 
-### Privacy Leakage Risks
+## Operator Docs
 
-| Risk | Description | Mitigation |
-| --- | --- | --- |
-| **Enumeration** | Anyone can query all TINs | Expected - allows verification |
-| **Linking** | Same phone linked to multiple TINs | Don't link same phone to multiple TINs |
-| **Timing** | When identity created/updated | None - design choice |
-| **TSN linking** | Without TSN, payments reveal wallets | Always use TSN |
+- [TINS.md](./TINS.md)
+- [DEPLOYMENT.md](./DEPLOYMENT.md)
+- [CRANKER.md](./CRANKER.md)
+- [LIQUIDITY.md](./LIQUIDITY.md)
 
----
-
-## Part 4: TSN Integration
-
-### How TSN Uses TINS
-
-TSN resolves recipient TIN → wallet for payment:
-
-```
-TSN Payment Flow:
-1. Sender enters: "TIN-1234-5678"
-2. TSN calls TINS: resolve_tin(12345678)
-3. TINS returns: owner_wallet = DGV...abc123
-4. TSN creates: PaymentIntent with recipient = DGV...abc123
-5. TSN settles: Cranker pays recipient from vault
-```
-
-### TSN → TINS CPI Code
-
-```rust
-// In TSN program - resolve TIN to get owner wallet
-pub fn resolve_tin(tins_program: Pubkey, tin: u64) -> Result<Pubkey> {
-    let (registry_pda, _) = Pubkey::find_program_address(
-        &[b"identity", &tin.to_le_bytes()],
-        &tins_program,
-    );
-    let account = Account::load(&registry_pda)?;
-    let identity = IdentityRegistry::deserialize(&account.data)?;
-    Ok(identity.owner)
-}
-```
-
-### TSN Payments Without TIN Visibility
-
-The key privacy feature: TSN separates sender ↔ recipient wallets
-
-```
-Without TSN:
-  Sender Wallet → [on-chain] → Recipient Wallet
-  (everyone sees: sender sent X to recipient)
-
-With TSN:
-  Sender Wallet → [escrow] → Cranker → [vault] → Recipient Wallet  
-  (on-chain: sender → escrow, escrow → vault → recipient)
-  (no direct link visible)
-```
-
----
-
-## Part 5: Link Identities to TIN
-
-### Option 1: Wallet-Only TIN
-
-Create TIN for bare wallet:
-
-```rust
-// Create TIN that just represents a wallet
-invoke(
-    &create_tin_ix,
-    &[global_state, user_token_account, user],
-)?;
-// Result: TIN-XXXX-XXXX owned by user's wallet
-```
-
-### Option 2: Phone-Linked TIN
-
-Link phone number to TIN:
-
-```rust
-// Hash the phone ( don't store actual number )
-let phone_hash = sha256("+2348012345678");
-
-// Link to TIN
-invoke(
-    &link_identity_ix,
-    &[identity_registry, linked_identity, owner, system_program],
-)?;
-// On-chain: hash stored, not phone number
-// Verification: owner proves knowledge of phone
-```
-
-### Identity Verification Flow
-
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Owner     │────▶│  TINS     │────▶│  Verified │
-│  proves   │     │  checks   │     │  flag set │
-│  +phone   │     │  proof   │     │  = true   │
-└──────────────┘     └──────────────┘     └──────────────┘
-
-Verification can be:
-- WhatsApp OTP (off-chain, via TrustLink)
-- Signature proving phone ownership
-- Other social verification
-```
-
----
-
-## Part 6: Cranker Privacy Improvements
-
-### Problem: Crankers See Too Much
-
-Current Cranker can see:
-- Sender wallet
-- Recipient wallet  
-- Payment amount
-- Payment metadata
-
-This violates privacy - operators shouldn't see user data.
-
-### Solution 1: Split Execution
-
-```
-Before (visible):
-  Cranker receives: {sender: DGV...A, recipient: DGV...B, amount: 100}
-
-After (private):
-  Cranker receives: encrypted blob
-  Cranker executes: vault.transfer(to: recipient_wallet)
-  Cranker submits: proof (encrypted)
-```
-
-### Solution 2: Encrypted Memos
-
-```rust
-// Payment metadata encrypted with shared secret
-let shared_secret = derive_shared_key(sender, recipient);
-let encrypted_memo = encrypt({
-    sender: sender_wallet,
-    recipient: recipient_wallet, 
-    amount: amount,
-}, shared_secret);
-
-// Only sender/recipient can decrypt
-// Cranker sees only: encrypted blob
-```
-
-### Solution 3: Encrypted Audit Trail
-
-```rust
-// Cranker stores encrypted proof locally
-struct EncryptedProof {
-    payment_id: [u8; 32],
-    ciphertext: Vec<u8>,  // Encrypted with protocol key
-    nonce: [u8; 24],
-}
-
-// Cranker can submit proof
-// Protocol can verify
-// No one (including Cranker) can read details
-```
-
-### Solution 4: Cranker Key Separation
-
-```rust
-// Cranker has two keys:
-struct CrankerKeys {
-    execute_key: Pubkey,    // For signing executions
-    encrypt_key: Pubkey,   // For encrypting data
-}
-
-// Verify: use encrypt_key
-// Use: only execute_key for on-chain
-// Read: never, audit stored encrypted
-```
-
----
-
-## Summary
-
-| Feature | Current Backend | TINS + TSN |
-| --- | --- | --- |
-| Identity storage | Database | On-chain PDA |
-| Resolution | API call | Program CPI |
-| Privacy | Backend sees all | Separated via TSN |
-| Portability | TrustLink-only | Any app |
-| Censorship | Possible | Program rules only |
-
----
-
-## Next Steps
-
-1. **Review this design** - understand the architecture
-2. **Decide on implementation** - confirm approach
-3. **Implement TINS** - if approved
-4. **Integrate with TSN** - resolve TINs on-chain
-5. **Improve Cranker privacy** - encryption layer
-
-Questions to answer before implementing:
-- Acceptable privacy trade-offs?
-- Encryption approach preference?
-- Gradual migration or full cutover?

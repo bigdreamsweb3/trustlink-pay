@@ -31,7 +31,6 @@ const envSchema = z
   .object({
     DATABASE_URL: z.string().startsWith("postgresql://").optional(),
     SOLANA_RPC_URL: z.string().url().optional(),
-    SOLANA_PROGRAM_ID: z.string().min(1).optional(),
     SOLANA_CLAIM_VERIFIER_SECRET_KEY: z.string().min(1).optional(),
     SOLANA_ESCROW_AUTHORITY_SECRET_KEY: z.string().min(1).optional(),
     SOLANA_ALLOWED_SPL_TOKENS: z.string().optional(),
@@ -128,6 +127,9 @@ const envSchema = z
     TSN_MEMPOOL_URL: z.string().url().default("http://0.0.0.0:8000"),
     TSN_CREATE_INTENTS_ONCHAIN: booleanFromEnv.default(false),
     TSN_SYNC_ONCHAIN: booleanFromEnv.default(true),
+    TINS_PROGRAM_ID: z.string().default("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"),
+    LOG_SUCCESS_REQUESTS: booleanFromEnv.default(true),
+    LOG_SESSION_CODES: booleanFromEnv.default(false),
   })
   .superRefine((value, context) => {
     if (!value.WHATSAPP_MOCK_MODE && !value.WHATSAPP_PHONE_ID) {
@@ -154,7 +156,6 @@ function readRawEnv() {
   return {
     DATABASE_URL: process.env.DATABASE_URL,
     SOLANA_RPC_URL: process.env.SOLANA_RPC_URL,
-    SOLANA_PROGRAM_ID: process.env.SOLANA_PROGRAM_ID,
     SOLANA_CLAIM_VERIFIER_SECRET_KEY:
       process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY ??
       process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY,
@@ -222,6 +223,9 @@ function readRawEnv() {
     TSN_MEMPOOL_URL: process.env.TSN_MEMPOOL_URL,
     TSN_CREATE_INTENTS_ONCHAIN: process.env.TSN_CREATE_INTENTS_ONCHAIN,
     TSN_SYNC_ONCHAIN: process.env.TSN_SYNC_ONCHAIN,
+    TINS_PROGRAM_ID: process.env.TINS_PROGRAM_ID,
+    LOG_SUCCESS_REQUESTS: process.env.LOG_SUCCESS_REQUESTS,
+    LOG_SESSION_CODES: process.env.LOG_SESSION_CODES,
   };
 }
 
@@ -256,7 +260,6 @@ export const env = new Proxy({} as Env, {
       const criticalVars = [
         "DATABASE_URL",
         "SOLANA_RPC_URL",
-        "SOLANA_PROGRAM_ID",
         "SOLANA_CLAIM_VERIFIER_SECRET_KEY",
         "SOLANA_ESCROW_AUTHORITY_SECRET_KEY",
         "WHATSAPP_API_KEY",

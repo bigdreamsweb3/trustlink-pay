@@ -1,6 +1,5 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 
-import { getIdentityBindingState } from "@/app/blockchain/solana";
 import { getAllowedTokenByMint, toBaseUnits } from "@/app/blockchain/solana-core";
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
@@ -25,8 +24,8 @@ import {
   buildCreateIntentRequest,
   buildRequestClaimRequest,
   computeTsnUiStage,
-  createTsnPaymentMempoolJobs,
   HttpTsnMempool,
+  prepareTsnPaymentMempoolJobRequests,
   sha256Bytes,
   type CreateIntentRequest,
   type RequestClaimRequest,
@@ -126,7 +125,7 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
 
 export async function requestOnboardedRecipientSettlementViaTsn(params: {
   payment: PaymentRecord;
-  receiver: Pick<UserRecord, "id" | "phone_number" | "phone_identity_pubkey" | "wallet_address">;
+  receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "tins_wallet_pubkey" | "wallet_address">;
 }) {
   if (!env.TSN_ENABLED) {
     return { enabled: false as const };
@@ -134,10 +133,12 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
 
   const payment = params.payment;
   const receiver = params.receiver;
-  const binding = receiver.phone_identity_pubkey ? await getIdentityBindingState(receiver.phone_identity_pubkey) : null;
-  const settlementWalletAddress = binding?.settlementWallet ?? receiver.wallet_address ?? undefined;
+  if (!receiver.tin) {
+    throw new Error("Recipient must create a TIN before receiving TSN payments.");
+  }
+  const settlementWalletAddress = receiver.tins_wallet_pubkey ?? receiver.wallet_address ?? undefined;
   if (!settlementWalletAddress) {
-    throw new Error("Recipient must connect a settlement wallet before receiving TSN payments.");
+    throw new Error("Recipient TIN does not have a settlement wallet.");
   }
 
   let intent = await findPaymentIntentByPaymentId(payment.id);
@@ -169,8 +170,7 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
     const recipientAmount = Number(payment.amount);
     const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
     const totalIntentAmount = recipientAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
-    const jobs = await createTsnPaymentMempoolJobs({
-      mempool: getTsnMempoolClient(),
+    const jobs = prepareTsnPaymentMempoolJobRequests({
       paymentId: payment.id,
       underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
       recipientHash: payment.receiver_phone_hash,
@@ -189,6 +189,12 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
       amount: jobs.intentRequest.amount,
     });
     const claimRequest = await createClaimRequest(jobs.claimRequestPayload);
+    const mempool = getTsnMempoolClient();
+    const mempoolIntent = await mempool.postIntent(jobs.intentRequest);
+    const mempoolClaimRequest = await mempool.postClaimRequest({
+      ...jobs.claimRequestPayload,
+      intentId: mempoolIntent.id,
+    });
 
     logger.info("tsn.settlement_request.posted", {
       paymentId: payment.id,
@@ -202,7 +208,8 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
       paymentId: payment.id,
       intentId: intent.id,
       claimRequestId: claimRequest.id,
-      mempoolClaimRequest: jobs.claimRequest,
+      mempoolIntent,
+      mempoolClaimRequest,
       destinationWallet: settlementWalletAddress,
       status: claimRequest.status,
     };
@@ -263,24 +270,26 @@ export async function requestPaymentClaimViaTsn(params: {
   if (!existingUser || existingUser.id !== params.authUser.id) {
     throw new Error("Receiver must register a TrustLink identity before requesting claim");
   }
-  if (!existingUser.phone_identity_pubkey || !existingUser.privacy_spend_pubkey) {
-    throw new Error("Receiver must register secure privacy keys before requesting claim");
+  if (!existingUser.tin) {
+    throw new Error("Receiver must create a TIN before requesting TSN settlement");
   }
 
   const requestedSettlementWalletAddress =
     params.receiverWalletId != null
       ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
-      : params.walletAddress ?? existingUser.wallet_address ?? undefined;
+      : params.walletAddress ?? existingUser.tins_wallet_pubkey ?? existingUser.wallet_address ?? undefined;
 
   const paymentPhoneIdentityPublicKey = payment.phone_identity_pubkey ?? existingUser.phone_identity_pubkey;
-  const binding = await getIdentityBindingState(existingUser.phone_identity_pubkey);
-  const settlementWalletAddress = binding?.settlementWallet ?? requestedSettlementWalletAddress;
+  const settlementWalletAddress = requestedSettlementWalletAddress;
   if (!settlementWalletAddress) throw new Error("Receiver wallet not found");
-  if (binding && requestedSettlementWalletAddress && binding.settlementWallet !== requestedSettlementWalletAddress) {
-    throw new Error(`This TrustLink identity is already bound to ${binding.settlementWallet}`);
-  }
 
-  if (resolveClaimMode(payment) === "secure") {
+  if (resolveClaimMode(payment) === "secure" && payment.payment_receiver_pubkey) {
+    if (!existingUser.privacy_spend_pubkey) {
+      throw new Error("Receiver must register secure privacy spend keys before requesting this legacy secure claim");
+    }
+    if (!paymentPhoneIdentityPublicKey || !payment.ephemeral_pubkey) {
+      throw new Error("Legacy secure claim is missing privacy routing data");
+    }
     if (params.derivedPaymentReceiverPublicKey !== payment.payment_receiver_pubkey) {
       throw new Error("Derived receiver key mismatch detected");
     }
@@ -368,23 +377,72 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
     for (const intent of refreshedIntents) intentByPaymentId.set(intent.payment_id, intent);
   }
 
+  const intentList = Array.from(intentByPaymentId.values());
+  const signatureStatusMap = await fetchDevnetSignatureStatuses(
+    intentList.flatMap((intent) => [intent.claim_tx_sig, intent.proof_tx_sig]).filter(
+      (signature): signature is string => Boolean(signature),
+    ),
+  );
+
   return payments.map((payment) => {
     const intent = intentByPaymentId.get(payment.id);
     if (!intent) return payment;
 
     const claimRequest = claimByPaymentId.get(payment.id) ?? null;
+    const computedStage = computeStage(intent, claimRequest);
+    const claimConfirmed = isSignatureConfirmed(signatureStatusMap, intent.claim_tx_sig);
+    const proofConfirmed = isSignatureConfirmed(signatureStatusMap, intent.proof_tx_sig);
+    const finalStageRequested = computedStage === "cranker_paid" || computedStage === "epoch_settled";
+    const finalStageVerified = !finalStageRequested || (claimConfirmed && proofConfirmed);
+    const stage: TsnUiStage = finalStageVerified ? computedStage : "lease_claimed";
     const tsn: PaymentTsnState = {
-      stage: computeStage(intent, claimRequest),
+      stage,
       intentStatus: intent.status,
       claimRequestStatus: claimRequest?.status ?? null,
       destinationWallet: claimRequest?.destination_wallet ?? null,
       assignedCrankerPubkey: intent.assigned_cranker_pubkey,
       claimTxSig: intent.claim_tx_sig ?? null,
       proofTxSig: intent.proof_tx_sig,
+      settlementReason:
+        !finalStageVerified && finalStageRequested
+          ? "Awaiting Devnet confirmation for TSN claim/proof signatures."
+          : null,
     };
 
     return { ...payment, tsn };
   });
+}
+
+const devnetConnection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+async function fetchDevnetSignatureStatuses(signatures: string[]) {
+  if (signatures.length === 0) return new Map<string, boolean>();
+  const map = new Map<string, boolean>();
+  const chunkSize = 128;
+
+  for (let index = 0; index < signatures.length; index += chunkSize) {
+    const chunk = signatures.slice(index, index + chunkSize);
+    try {
+      const statuses = await devnetConnection.getSignatureStatuses(chunk, {
+        searchTransactionHistory: true,
+      });
+      for (let statusIndex = 0; statusIndex < chunk.length; statusIndex += 1) {
+        const signature = chunk[statusIndex];
+        const status = statuses.value[statusIndex];
+        const confirmed = Boolean(status?.confirmationStatus && status.confirmationStatus !== "processed");
+        map.set(signature, confirmed);
+      }
+    } catch {
+      for (const signature of chunk) map.set(signature, false);
+    }
+  }
+
+  return map;
+}
+
+function isSignatureConfirmed(statusMap: Map<string, boolean>, signature?: string | null) {
+  if (!signature) return false;
+  return statusMap.get(signature) === true;
 }
 
 export function isTsnSettled(payment: { tsn?: PaymentTsnState }) {

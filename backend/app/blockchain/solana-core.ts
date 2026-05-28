@@ -10,6 +10,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { tsnGetAllowedSplTokens } from "@trustlink/tsn-sdk";
+import { getVerifiedTsnProgramId } from "@trustlink/tsn-sdk/program";
 import { createHash, randomUUID } from "node:crypto";
 
 import { getEscrowPolicyConfig } from "@/app/config/escrow";
@@ -234,7 +235,7 @@ export function getConnection() {
 }
 
 export function getProgramId() {
-  return new PublicKey(env.SOLANA_PROGRAM_ID!);
+  return new PublicKey(getVerifiedTsnProgramId());
 }
 
 export function parseAllowedTokens() {

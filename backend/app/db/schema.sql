@@ -4,6 +4,12 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_number VARCHAR(32) NOT NULL UNIQUE,
   phone_hash VARCHAR(64) NOT NULL,
+  tin VARCHAR(32),
+  tins_identity_pubkey VARCHAR(64),
+  tins_registry_pubkey VARCHAR(64),
+  tins_wallet_pubkey VARCHAR(64),
+  tins_program_id VARCHAR(64),
+  tins_created_at TIMESTAMPTZ,
   phone_identity_pubkey VARCHAR(64),
   privacy_view_pubkey VARCHAR(128),
   privacy_spend_pubkey VARCHAR(64),
@@ -141,6 +147,8 @@ CREATE TABLE IF NOT EXISTS payment_intents (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_intents_payment_id ON payment_intents (payment_id);
 CREATE INDEX IF NOT EXISTS idx_payment_intents_status ON payment_intents (status);
 CREATE INDEX IF NOT EXISTS idx_payment_intents_recipient_hash ON payment_intents (recipient_hash);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_tin ON users (tin) WHERE tin IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_tins_wallet_pubkey ON users (tins_wallet_pubkey) WHERE tins_wallet_pubkey IS NOT NULL;
 
 ALTER TABLE payment_intents
   ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128);
@@ -194,6 +202,18 @@ ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS notification_last_attempt_at TIMESTAMPTZ;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS display_name VARCHAR(80) NOT NULL DEFAULT 'TrustLink User';
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tin VARCHAR(32);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tins_identity_pubkey VARCHAR(64);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tins_registry_pubkey VARCHAR(64);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tins_wallet_pubkey VARCHAR(64);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tins_program_id VARCHAR(64);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS tins_created_at TIMESTAMPTZ;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS phone_identity_pubkey VARCHAR(64);
 ALTER TABLE users

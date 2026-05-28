@@ -304,6 +304,7 @@ pub mod trustlink_escrow {
     // --- TSN (Milestone 4) settlement layer ---
     pub fn tsn_initialize_mother_escrow(
         ctx: Context<InitializeMotherEscrow>,
+        tins_program_id: Pubkey,
         protocol_seed: [u8; 32],
         epoch_seconds: i64,
         lease_seconds: i64,
@@ -313,6 +314,7 @@ pub mod trustlink_escrow {
     ) -> Result<()> {
         tsn::instructions::initialize_mother_escrow(
             ctx,
+            tins_program_id,
             protocol_seed,
             epoch_seconds,
             lease_seconds,
@@ -328,6 +330,7 @@ pub mod trustlink_escrow {
 
     pub fn tsn_migrate_mother_escrow(
         ctx: Context<MigrateMotherEscrow>,
+        tins_program_id: Pubkey,
         protocol_seed: [u8; 32],
         epoch_seconds: i64,
         lease_seconds: i64,
@@ -337,6 +340,7 @@ pub mod trustlink_escrow {
     ) -> Result<()> {
         tsn::instructions::migrate_mother_escrow(
             ctx,
+            tins_program_id,
             protocol_seed,
             epoch_seconds,
             lease_seconds,

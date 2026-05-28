@@ -14,6 +14,67 @@ TrustLink Pay brings that identity-first experience to Solana payments. Users se
 
 ---
 
+## Project Architecture
+
+TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
+
+### 1. Application Layer (TLPay)
+
+- user onboarding and identity UX
+- payment initiation and confirmation flow
+- sender and recipient app experience
+
+### 2. Identity Layer (TINS)
+
+- permanent 10-digit transfer identity
+- privacy-preserving identity resolution
+- on-chain registry portability for external builders
+
+### 3. Settlement Layer (TSN)
+
+- temporary escrow-first routing
+- private claim execution path
+- cranker-based payout and proof submission
+- epoch accounting and settlement distribution
+
+---
+
+## TINS Current Status
+
+TINS is the Transfer Identity Number layer for TrustLink Pay.
+
+- Users create or load a numeric TIN from the connected wallet.
+- The TINS identity account is a PDA derived from the wallet and the TINS program id.
+- The phone number is encrypted client-side before the TINS transaction.
+- TrustLink Pay stores the private WhatsApp phone number -> TIN mapping in the backend database.
+- The backend verifies the on-chain TINS account and a wallet-signed binding before saving the mapping.
+
+Current devnet IDs:
+
+| Program | Program id                                    |
+| ------- | --------------------------------------------- |
+| TINS    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TSN     | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+
+See [docs/TINS.md](docs/TINS.md) and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the current production runbook.
+
+## TSN Privacy Guarantee
+
+TSN is a privacy-preserving transfer settlement layer.
+
+It avoids direct wallet-to-wallet settlement exposure by splitting payment into private stages:
+
+1. sender-side escrow lock
+2. private recipient claim flow
+3. Cranker-executed payout path
+4. epoch reimbursement path
+
+Result:
+
+- sender does not need recipient wallet visibility
+- recipient does not need sender wallet visibility
+- settlement remains verifiable through proof and deterministic protocol state
+
 ## Crankers & Liquidity Providers
 
 TrustLink Pay uses a specialized Transfer Settlement Network (TSN) to enable fast, private, phone-number-based payments on Solana. Two key roles power this network:
@@ -24,6 +85,29 @@ TrustLink Pay uses a specialized Transfer Settlement Network (TSN) to enable fas
 | **Liquidity Providers (LPs)** | Fund token-specific vaults that crankers draw from               | 87% of settlement fees |
 
 This creates real yield for participants � from actual payment volume, not token emissions.
+
+### Secure Mempool Payment Intent Processing
+
+TSN uses a mempool-first payment-intent path for secure settlement execution.
+
+- payment services publish payment intents to TSN Mempool before any on-chain intent is created
+- only a registered/verified Cranker can submit or create a TSN payment intent on-chain
+- Cranker intent submission is gated by protocol registration and lease/credit rules
+
+## Fraud Protection
+
+TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
+
+**Key Features:**
+
+- Fraud detection & replay attack prevention
+- Anomaly detection & risk scoring
+- Cranker jail system for malicious operators
+- Settlement protection & proof verification
+
+?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** � Full fraud protection documentation
+
+---
 
 ### Launch Strategy
 
@@ -50,114 +134,6 @@ At launch, **TrustLink Pay will be the first and primary cranker operator**. Run
 This creates a growth flywheel: **More liquidity ? faster settlements ? more users ? higher volume ? better yields ? more participants.**
 
 **Interested in vault funding or cranker partnerships?** ? [docs/OPPORTUNITY.md](docs/OPPORTUNITY.md)
-
----
-
-## TSN Privacy Guarantee
-
-TSN is a privacy-preserving transfer settlement layer.
-
-It avoids direct wallet-to-wallet settlement exposure by splitting payment into private stages:
-
-1. sender-side escrow lock
-2. private recipient claim flow
-3. Cranker-executed payout path
-4. epoch reimbursement path
-
-Result:
-
-- sender does not need recipient wallet visibility
-- recipient does not need sender wallet visibility
-- settlement remains verifiable through proof and deterministic protocol state
-
----
-
-## Project Architecture
-
-TrustLink Pay is built as three connected layers: the dApp, the TSN settlement protocol, and the TINS identity protocol.
-
-### 1. Application Layer (TrustLink Pay)
-
-- user onboarding and identity UX
-- payment initiation and confirmation flow
-- sender and recipient app experience
-
-#### TrustLink Pay Today
-
-When a user registers, TrustLink verifies their phone number and stores a mapping in its backend: this phone identity belongs to this user. When a sender enters a recipient phone number, TrustLink resolves the identity and prepares the payment route.
-
-WhatsApp is used for authentication, consent, and payment notifications. TrustLink Pay is still a dApp: wallet signing, escrow creation, settlement state, and protocol accounting happen through the TrustLink Pay application and Solana programs.
-
-The identity map is in TrustLink's backend. The money is not. Funds move into Solana escrow, and release or reimbursement depends on program rules, TSN settlement state, and valid proof. The sender does not need to know the recipient wallet. The recipient does not need to know the sender wallet.
-
-### 2. Identity Layer (TINS)
-
-- permanent 10-digit transfer identity
-- privacy-preserving identity resolution
-- on-chain registry portability for external builders
-
-### 3. Settlement Layer (TSN)
-
-- temporary escrow-first routing
-- private claim execution path
-- cranker-based payout and proof submission
-- epoch accounting and settlement distribution
-
-### Secure Mempool Payment Intent Processing
-
-TSN uses a mempool-first payment-intent path for secure settlement execution.
-
-- payment services publish payment intents to TSN Mempool before any on-chain intent is created
-- only a registered/verified Cranker can submit or create a TSN payment intent on-chain
-- Cranker intent submission is gated by protocol registration and lease/credit rules
-
----
-
-## Fraud Protection
-
-TSN Mempool will include fraud detection to secure transfers and protect against malicious activity.
-
-**Key Features:**
-
-- Fraud detection & replay attack prevention
-- Anomaly detection & risk scoring
-- Cranker jail system for malicious operators
-- Settlement protection & proof verification
-
-?? **[docs/AI-PROTECTION.md](docs/AI-PROTECTION.md)** � Full fraud protection documentation
-
----
-
-## TINS Production Ready ?
-
-TINS is now **live and production-ready**:
-
-- **10-digit identity numbers** (like bank account numbers)
-- **Main wallet NEVER on-chain** (privacy first)
-- **Multi-sig wallet rotation** (2/3 recovery wallets)
-- **Anti-enumeration protection** (HMAC-based TIN generation)
-- **Team fees** (prevents abuse)
-
-### Security Features Implemented
-
-| Feature                      | Status        |
-| ---------------------------- | ------------- |
-| Main wallet off-chain        | ? Implemented |
-| Privacy key derived (BIP-44) | ? Implemented |
-| Display name verification    | ? Implemented |
-| Anti-enumeration TINs        | ? Implemented |
-| Multi-sig recovery (2/3)     | ? Implemented |
-| 24hr rotation cooldown       | ? Implemented |
-| Rate limiting                | ? Implemented |
-| Team fees                    | ? Implemented |
-
-### Fees (All to Team Treasury)
-
-| Action        | Fee       |
-| ------------- | --------- |
-| Create TIN    | 0.01 SOL  |
-| Rotate wallet | 0.005 SOL |
-| Add recovery  | 0.002 SOL |
 
 ---
 

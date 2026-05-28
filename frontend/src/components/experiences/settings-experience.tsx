@@ -13,10 +13,10 @@ import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { getOrCreatePrivacyKeyBundle } from "@/src/lib/privacy-keys";
 import { setStoredUser } from "@/src/lib/storage";
+import { createOrLoadTinForWallet } from "@/src/lib/tins";
 import { useTheme } from "@/src/lib/theme";
-import type { IdentitySecurityState, UserProfile } from "@/src/lib/types";
+import type { IdentitySecurityResponse, IdentitySecurityState, TinIdentityState, UserProfile } from "@/src/lib/types";
 import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
@@ -66,6 +66,18 @@ function formatCountdown(totalSeconds: number) {
   }
 
   return `${minutes}m ${seconds}s`;
+}
+
+function extractTinInfo(result: IdentitySecurityResponse | null): TinIdentityState | null {
+  if (!result?.tin) return null;
+  return {
+    tin: result.tin,
+    tinsIdentityPublicKey: result.tinsIdentityPublicKey ?? null,
+    tinsRegistryPublicKey: result.tinsRegistryPublicKey ?? null,
+    tinsWalletPublicKey: result.tinsWalletPublicKey ?? null,
+    tinsProgramId: result.tinsProgramId ?? null,
+    tinsCreatedAt: result.tinsCreatedAt ?? null,
+  };
 }
 
 /* ── Modals (unchanged logic, polished spacing/interactions) ── */
@@ -270,6 +282,7 @@ export function SettingsExperience() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentity] = useState<IdentitySecurityState | null>(null);
+  const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
@@ -291,15 +304,16 @@ export function SettingsExperience() {
 
   const cooldownSeconds = useMemo(() => { if (!identity?.recoveryCooldown) return 0; return Math.max(0, Math.ceil((Number(identity.recoveryCooldown) * 1000 - nowMs) / 1000)); }, [identity?.recoveryCooldown, nowMs]);
   const cooldownDate = identity != null && Number(identity.recoveryCooldown) > 0 ? new Date(Number(identity.recoveryCooldown) * 1000) : null;
-  const showMainWalletGuidance = !identityLoading && !identity?.mainWallet && !mainWalletGuidanceDismissed;
+  const activeTin = tinInfo?.tin ?? user?.tin ?? null;
+  const showMainWalletGuidance = !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
 
   if (!hydrated || !user) return null;
 
   async function openChangePinFlow() { if (!accessToken) return; setOtpBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ otpSent: true; expiresAt: string | null }>("/api/auth/pin/change/start", {}, accessToken); setChangePinOpen(true); if (result.expiresAt) { const seconds = Math.max(0, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000)); setOtpCooldown(Math.min(seconds, 60)); } else { setOtpCooldown(60); } setNotice("WhatsApp OTP sent. Verify to change your PIN."); showToast("WhatsApp OTP sent for PIN change."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start PIN change"; setError(msg); showToast(msg); } finally { setOtpBusy(false); } }
   async function resendChangePinOtp() { await openChangePinFlow(); }
   async function handlePinChangeSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!accessToken) return; if (otp.length !== 6) { setError("Enter the 6-digit WhatsApp OTP."); return; } if (newPin.length !== 6) { setError("Enter the new 6-digit PIN."); return; } setPinBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ pinChanged: true; user: UserProfile }>("/api/auth/pin/change/verify", { otp, newPin }, accessToken); setUser(result.user); setStoredUser(result.user); setChangePinOpen(false); setOtp(""); setNewPin(""); setNotice("PIN updated."); showToast("PIN changed successfully."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not change PIN"; setError(msg); showToast(msg); } finally { setPinBusy(false); } }
-  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null; phoneIdentityPublicKey: string | null; privacyViewPublicKey: string | null; privacySpendPublicKey: string | null; settlementWalletPublicKey: string | null; recoveryWalletPublicKey: string | null }>("/api/identity", token); setIdentity(result.identity); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
-  async function handleCompleteSecureSetup() { if (!accessToken) return; if (!walletAddress || !session) { requestWalletConnection(); setError("Connect the wallet you want as your main TrustLink Pay wallet."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { const bundle = getOrCreatePrivacyKeyBundle(); const payload = { phoneIdentityPublicKey: bundle.phoneIdentityPublicKey, privacyViewPublicKey: bundle.privacyViewPublicKey, privacySpendPublicKey: bundle.privacySpendPublicKey, settlementWalletPublicKey: walletAddress, recoveryWalletPublicKey: identity?.recoveryWallet ?? null }; const prepared = await apiPost<{ requiresBlockchainSignature: boolean; binding: { mode: "prepare-bind" | "already-bound"; serializedTransaction?: string; rpcUrl?: string } }>("/api/identity", payload, accessToken); if (prepared.requiresBlockchainSignature) { if (!prepared.binding.serializedTransaction || !prepared.binding.rpcUrl) throw new Error("TrustLink could not prepare the wallet binding transaction"); showToast("Approve the main wallet binding in your wallet."); const blockchainSignature = await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.binding.rpcUrl, serializedTransaction: prepared.binding.serializedTransaction }); await apiPost("/api/identity", { ...payload, blockchainSignature }, accessToken); } await loadIdentitySecurity(accessToken); const msg = "Main wallet bound on-chain. Your TrustLink Pay identity is ready."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not bind main wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
+  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<IdentitySecurityResponse>("/api/identity", token); setIdentity(result.identity); setTinInfo(extractTinInfo(result)); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
+  async function handleCompleteSecureSetup() { if (!accessToken || !user) return; if (!walletAddress || !session) { requestWalletConnection(); setError("Connect the wallet you want to register with TINS."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { showToast("Checking your TINS identity."); const tin = await createOrLoadTinForWallet({ walletId: session.walletId, walletAddress, phoneNumber: user.phoneNumber, displayName: user.displayName }); const stored = await apiPost<TinIdentityState>("/api/identity/tin", tin, accessToken); setTinInfo(stored); const nextUser = { ...user, tin: stored.tin, tinsIdentityPublicKey: stored.tinsIdentityPublicKey, tinsRegistryPublicKey: stored.tinsRegistryPublicKey, tinsWalletPublicKey: stored.tinsWalletPublicKey, tinsProgramId: stored.tinsProgramId }; setUser(nextUser); setStoredUser(nextUser); await loadIdentitySecurity(accessToken); const msg = tin.created ? `TIN ${tin.tin} created and linked to your WhatsApp number.` : `TIN ${tin.tin} is already linked to this wallet.`; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not create TINS identity"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function handleAddBackupWallet() { if (!accessToken || !identity) { setError("Receive a payment first so your main wallet can be secured."); return; } const trimmed = backupWalletInput.trim(); if (!looksLikeWalletAddress(trimmed)) { setError("Enter a valid backup wallet address."); return; } if (trimmed === identity.mainWallet) { setError("Backup wallet must differ from main wallet."); return; } if (!walletAddress || walletAddress !== identity.mainWallet || !session) { requestWalletConnection(); setError("Reconnect your main wallet to approve."); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/add-recovery-wallet", { walletAddress: trimmed, allowUpdate: Boolean(identity.recoveryWallet) }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setBackupFlowStep("success"); const msg = identity.recoveryWallet ? "Backup wallet updated." : "Backup wallet added."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not add backup wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function handleFreeze(frozen: boolean) { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/freeze", { authorityWallet: walletAddress, frozen }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); const msg = frozen ? "Account locked." : "Account unlocked."; setNotice(msg); showToast(msg); setFreezeModalOpen(false); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update account lock"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
   async function handleStartRecovery() { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/request-recovery", { authorityWallet: walletAddress }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setRecoveryFlowStep("cooldown"); setNotice("Recovery started."); showToast("Recovery started."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start recovery"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
@@ -319,21 +333,21 @@ export function SettingsExperience() {
       >
         <TrustLinkGuidance
           tone="warning"
-          title="Bind your main wallet"
-          description="Any wallet you bind here becomes your main TrustLink Pay wallet. Choose the wallet you want to receive with and approve payments from."
+          title="Create your TIN"
+          description="Your TIN links this WhatsApp account to the wallet that can receive TrustLink Pay settlement."
           steps={[
             {
               title: "Connect the right wallet",
-              description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want as your main wallet.",
+              description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want to register with TINS.",
               done: Boolean(walletAddress),
             },
             {
-              title: "Approve one Solana transaction",
-              description: "The transaction binds this wallet to your phone identity immediately, so this page only shows complete wallet status.",
+              title: "Approve TINS registration",
+              description: "The transaction creates your on-chain Transfer Identity Number for this wallet.",
             },
             {
               title: "Keep control of your funds",
-              description: "This does not give TrustLink custody of your wallet or permission to move funds.",
+              description: "TrustLink stores your phone-to-TIN mapping, not custody over your wallet.",
             },
           ]}
           action={
@@ -343,7 +357,7 @@ export function SettingsExperience() {
               disabled={identityBusy}
               className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
-              {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
+              {identityBusy ? "Creating..." : walletAddress ? "Create TIN" : "Connect wallet"}
             </button>
           }
         />
@@ -366,7 +380,22 @@ export function SettingsExperience() {
               <span className="tl-body-sm font-medium text-[var(--text)]">Main wallet</span>
             </span>
             <span className="text-[0.74rem] font-medium text-[var(--text-soft)]">
-              {identity?.mainWallet ? shortenAddress(identity.mainWallet) : user.walletAddress ? shortenAddress(user.walletAddress) : "Not set"}
+              {identity?.mainWallet ? shortenAddress(identity.mainWallet) : tinInfo?.tinsWalletPublicKey ? shortenAddress(tinInfo.tinsWalletPublicKey) : user.walletAddress ? shortenAddress(user.walletAddress) : "Not set"}
+            </span>
+          </div>
+
+          <div className="tl-panel-header tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
+            <span className="flex items-center gap-2.5">
+              <ShieldCheck className={`h-4 w-4 ${activeTin ? "text-[#4ae8c0]" : "text-[#ffb86b]"}`} />
+              <span className="tl-body-sm font-medium text-[var(--text)]">TIN</span>
+            </span>
+            <span className="text-right text-[0.74rem] font-medium text-[var(--text-soft)]">
+              {activeTin ?? "Not created"}
+              {tinInfo?.tinsIdentityPublicKey ? (
+                <span className="block text-[0.58rem] text-[var(--text-faint)]">
+                  {shortenAddress(tinInfo.tinsIdentityPublicKey)}
+                </span>
+              ) : null}
             </span>
           </div>
 

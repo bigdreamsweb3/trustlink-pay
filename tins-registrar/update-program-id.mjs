@@ -6,7 +6,9 @@ const NEW_ID = process.argv[2];
 const EXTRA_OLD_IDS = process.argv.slice(3);
 
 if (!NEW_ID) {
-  console.error("Usage: node scripts/update-program-id.mjs <NEW_PROGRAM_ID> [OLD_ID_1 OLD_ID_2 ...]");
+  console.error(
+    "Usage: node ./update-program-id.mjs <NEW_PROGRAM_ID> [OLD_ID_1 OLD_ID_2 ...]",
+  );
   process.exit(1);
 }
 
@@ -27,12 +29,9 @@ const SKIP_DIRS = new Set([
   ".turbo",
 ]);
 
-// Defaults from your recent TINS/Anchor history
-const oldIds = new Set([
-  "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
-  "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
-  ...EXTRA_OLD_IDS,
-]);
+// Keep this conservative: never replace the TSN program id while updating TINS.
+// Pass previous TINS ids explicitly as extra arguments when rotating the TINS id.
+const oldIds = new Set([...EXTRA_OLD_IDS]);
 oldIds.delete(NEW_ID);
 
 const textFileExts = new Set([
@@ -88,7 +87,8 @@ for (const file of walk(repoRoot)) {
     const before = next;
     next = next.split(oldId).join(NEW_ID);
     if (next !== before) {
-      replacements += (before.length - next.length) / (oldId.length - NEW_ID.length || 1);
+      replacements +=
+        (before.length - next.length) / (oldId.length - NEW_ID.length || 1);
     }
   }
 

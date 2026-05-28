@@ -45,6 +45,7 @@ export declare function tsnCreateIntentOnChain(params: {
 }>;
 export declare function tsnInitializeMotherEscrowOnChain(params: {
     authority?: Keypair;
+    tinsProgramId: PublicKey;
     protocolSeed32: Buffer;
     epochSeconds: bigint;
     leaseSeconds: bigint;
@@ -68,6 +69,7 @@ export declare function tsnInitializeMotherEscrowOnChain(params: {
 }>;
 export declare function tsnMigrateMotherEscrowOnChain(params: {
     authority?: Keypair;
+    tinsProgramId: PublicKey;
     protocolSeed32: Buffer;
     epochSeconds: bigint;
     leaseSeconds: bigint;
@@ -220,6 +222,7 @@ export declare function tsnFetchMotherEscrowOnChain(rpcUrl?: string): Promise<{
 } | {
     valid: true;
     authority: string;
+    tinsProgramId: string;
     protocolSeed: Buffer<ArrayBuffer>;
     epochSeconds: bigint;
     leaseSeconds: bigint;

@@ -5,6 +5,10 @@ interface LogMeta {
 }
 
 function writeLog(level: LogLevel, event: string, meta?: LogMeta) {
+  if (level === "info" && event !== "api.request") {
+    return;
+  }
+
   const payload = {
     timestamp: new Date().toISOString(),
     level,

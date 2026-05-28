@@ -7,17 +7,10 @@ import { env } from "@/app/lib/env";
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
-import { getWalletSupportedTokenBalance } from "@/app/blockchain/solana-core";
-import { requestOnboardedRecipientSettlementViaTsn } from "@/app/services/tsn";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
-import { verifyAuthorizedTsnPaymentRequest } from "@trustlink/tsn-sdk";
 
 const SENDER_AUTHORIZATION_MAX_AGE_MS = 5 * 60 * 1000;
-
-function tsnIdentityForUser(user: { trustlink_handle: string }) {
-  return `trustlink-handle:${user.trustlink_handle}`;
-}
 
 /**
  * NEW FLOW: Backend handles identity mapping, TSN handles payments
@@ -81,9 +74,13 @@ export async function POST(request: Request) {
         : paymentAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
     const sender = await findUserByPhoneNumber(senderPhoneNumber);
     if (!sender) return toErrorResponse(new Error("Sender must register identity first"));
+    if (!sender.tin) return toErrorResponse(new Error("Sender must create a TIN before sending payments"));
 
     const receiver = await findUserByPhoneNumber(phoneNumber);
     if (!receiver) return toErrorResponse(new Error("Recipient must register identity first"));
+    if (!receiver.tin) return toErrorResponse(new Error("Recipient must create a TIN before receiving TSN payments"));
+    const destinationWallet = receiver.tins_wallet_pubkey ?? receiver.wallet_address;
+    if (!destinationWallet) return toErrorResponse(new Error("Recipient TIN does not have a settlement wallet"));
 
     const senderAuthorizationIssuedAt = String(body.senderAuthorizationIssuedAt ?? "");
     const senderAuthorizationSignature = String(body.senderAuthorizationSignature ?? "");
@@ -94,31 +91,17 @@ export async function POST(request: Request) {
     if (!Number.isFinite(authorizationIssuedAtMs) || Math.abs(Date.now() - authorizationIssuedAtMs) > SENDER_AUTHORIZATION_MAX_AGE_MS) {
       return toErrorResponse(new Error("Sender wallet authorization expired. Please review and sign again."));
     }
-    await verifyAuthorizedTsnPaymentRequest({
-      senderWallet,
-      senderIdentity: tsnIdentityForUser(sender),
-      receiverIdentity: tsnIdentityForUser(receiver),
-      tokenMintAddress,
-      amount: paymentAmount,
-      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0,
-      totalTokenRequiredUi,
-      issuedAt: senderAuthorizationIssuedAt,
-      signatureBase64: senderAuthorizationSignature,
-      maxAgeMs: SENDER_AUTHORIZATION_MAX_AGE_MS,
-      getSenderTokenBalance: async ({ senderWallet: walletAddress, tokenMintAddress }) =>
-        getWalletSupportedTokenBalance({ walletAddress, tokenMintAddress }),
-    });
-
     const payment = await createPaymentRecord({
       senderUserId: sender.id,
       senderWallet,
-      senderPhoneIdentityPublicKey: sender.phone_identity_pubkey ?? null,
+      // TSN flow no longer depends on TrustLink identity-binding state.
+      senderPhoneIdentityPublicKey: null,
       senderDisplayNameSnapshot: sender.display_name,
       senderHandleSnapshot: sender.trustlink_handle,
       referenceCode: generatePaymentReference(),
       receiverPhone: receiver.phone_number,
-      receiverPhoneHash: receiver.phone_hash ?? sha256(receiver.phone_number),
-      receiverIdentityPublicKey: receiver.phone_identity_pubkey ?? "tsn-recipient",
+      receiverPhoneHash: sha256(`tin:${receiver.tin}`),
+      receiverIdentityPublicKey: receiver.tins_identity_pubkey ?? destinationWallet,
       tokenSymbol: "USDC",
       tokenMintAddress,
       amount: paymentAmount,
@@ -128,13 +111,9 @@ export async function POST(request: Request) {
       senderAutoclaimEnabled: sender.receiver_autoclaim_enabled ?? false,
     });
 
-    const tsnSettlement = await requestOnboardedRecipientSettlementViaTsn({ payment, receiver });
-
-    logger.info("payment.create.tsn_work_created", {
+    logger.info("payment.create.tsn_pending_frontend_enqueue", {
       paymentId: payment.id,
       receiverPhone: receiver.phone_number,
-      intentId: "intentId" in tsnSettlement ? tsnSettlement.intentId : null,
-      claimRequestId: "claimRequestId" in tsnSettlement ? tsnSettlement.claimRequestId : null,
     });
 
     return ok({
@@ -155,7 +134,12 @@ export async function POST(request: Request) {
       notificationAttemptCount: payment.notification_attempt_count ?? 0,
       manualInviteRequired: false,
       inviteShare: null,
-      tsnClaimRequestId: "claimRequestId" in tsnSettlement ? tsnSettlement.claimRequestId : null,
+      tsnClaimRequestId: null,
+      tsn: {
+        recipientHash: payment.receiver_phone_hash,
+        recipientTin: receiver.tin,
+        destinationWallet,
+      },
     });
   } catch (error) {
     logger.error("api.payment.create.failed", {

@@ -49,6 +49,10 @@ function authorityKeypair() {
   return loadKeypair(process.env.KEYPAIR_PATH ?? "./cranker-keypair.json");
 }
 
+function tinsProgramId() {
+  return new PublicKey(process.env.TINS_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
+}
+
 function parseBoolean(value: string | undefined) {
   if (value === "true") return true;
   if (value === "false") return false;
@@ -63,6 +67,7 @@ async function handleCommand() {
   if (command === "init-mother") {
     const result = await tsnInitializeMotherEscrowOnChain({
       authority: authorityKeypair(),
+      tinsProgramId: tinsProgramId(),
       protocolSeed32: sha256Bytes("tsn-dev-seed"),
       epochSeconds: BigInt(7 * 60 * 60),
       leaseSeconds: BigInt(30),
@@ -193,6 +198,7 @@ async function main() {
 Environment Variables:
   RPC_URL                        Solana RPC endpoint
   PROGRAM_ID                     TSN program ID
+  TINS_PROGRAM_ID                TINS registry program ID (defaults to local dev TINS id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);
     return;
   }

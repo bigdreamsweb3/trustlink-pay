@@ -16,16 +16,15 @@ import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
-import { getOrCreatePrivacyKeyBundle } from "@/src/lib/privacy-keys";
-import type { IdentitySecurityState, PaymentRecord, PendingBalanceSummary, WalletTokenOption } from "@/src/lib/types";
+import { createOrLoadTinForWallet } from "@/src/lib/tins";
+import type { IdentitySecurityResponse, IdentitySecurityState, PaymentRecord, PendingBalanceSummary, TinIdentityState, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useWallet } from "@/src/lib/wallet-provider";
 import { ChevronRight, Landmark, ArrowUpRight, ArrowDownLeft, Wallet, Lock } from "lucide-react";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
-/* ── WhatsApp icon ── */
+/* â”€â”€ WhatsApp icon â”€â”€ */
 function WhatsAppIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -34,7 +33,7 @@ function WhatsAppIcon({ className = "" }: { className?: string }) {
   );
 }
 
-/* ── X (Twitter) icon ── */
+/* â”€â”€ X (Twitter) icon â”€â”€ */
 function XIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -74,6 +73,18 @@ function splitPhoneDisplay(phone: string): { countryCode: string; localNumber: s
   return { countryCode, localNumber, localDigits, fullNumber: `${countryCode}${localDigits}` };
 }
 
+function extractTinInfo(result: IdentitySecurityResponse | null): TinIdentityState | null {
+  if (!result?.tin) return null;
+  return {
+    tin: result.tin,
+    tinsIdentityPublicKey: result.tinsIdentityPublicKey ?? null,
+    tinsRegistryPublicKey: result.tinsRegistryPublicKey ?? null,
+    tinsWalletPublicKey: result.tinsWalletPublicKey ?? null,
+    tinsProgramId: result.tinsProgramId ?? null,
+    tinsCreatedAt: result.tinsCreatedAt ?? null,
+  };
+}
+
 export function DashboardExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
   const { session, walletAddress, requestWalletConnection } = useWallet();
@@ -90,6 +101,7 @@ export function DashboardExperience() {
   const [error, setError] = useState<string | null>(null);
   const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
   const [identitySecurity, setIdentitySecurity] = useState<IdentitySecurityState | null>(null);
+  const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] = useState(false);
@@ -103,30 +115,28 @@ export function DashboardExperience() {
   const hasPendingSenderReceipt = useMemo(() => paymentHistory.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [paymentHistory, user?.id]);
   const sentCount = useMemo(() => paymentHistory.filter((p) => p.sender_user_id === user?.id).length, [paymentHistory, user?.id]);
   const receivedCount = useMemo(() => paymentHistory.filter((p) => p.receiver_phone === user?.phoneNumber).length, [paymentHistory, user?.phoneNumber]);
-  const showMainWalletGuidance = !identityLoading && !identitySecurity?.mainWallet && !mainWalletGuidanceDismissed;
+  const activeTin = tinInfo?.tin ?? user?.tin ?? null;
+  const activeTinIdentity = tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
+  const showMainWalletGuidance = !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
 
   useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadDashboard(accessToken, { background: true }); }, DASHBOARD_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);
 
   async function loadDashboard(token: string, options?: { background?: boolean }) { if (!options?.background) setLoading(true); try { const [pr, hr] = await Promise.all([apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token), apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)]); setPendingPayments(pr.payments); setTotalPendingUsd(pr.totalPendingUsd); setPendingBalanceSummary(pr.summary); setPaymentHistory(hr.payments); setError(null); } catch (e) { if (!options?.background) setError(e instanceof Error ? e.message : "Could not load dashboard"); } finally { if (!options?.background) setLoading(false); } }
 
-  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", token); setIdentitySecurity(result.identity); } catch (e) { setError(e instanceof Error ? e.message : "Could not load wallet binding"); } finally { setIdentityLoading(false); } }
+  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<IdentitySecurityResponse>("/api/identity", token); setIdentitySecurity(result.identity); setTinInfo(extractTinInfo(result)); } catch (e) { setError(e instanceof Error ? e.message : "Could not load TINS identity"); } finally { setIdentityLoading(false); } }
 
   async function handleBindMainWallet() {
-    if (!accessToken) return;
-    if (!walletAddress || !session) { requestWalletConnection(); showToast("Connect the wallet you want to use as your TrustLink Pay main wallet."); return; }
+    if (!accessToken || !user) return;
+    if (!walletAddress || !session) { requestWalletConnection(); showToast("Connect the wallet you want to register with TINS."); return; }
     setIdentityBusy(true); setError(null);
     try {
-      const bundle = getOrCreatePrivacyKeyBundle();
-      const payload = { phoneIdentityPublicKey: bundle.phoneIdentityPublicKey, privacyViewPublicKey: bundle.privacyViewPublicKey, privacySpendPublicKey: bundle.privacySpendPublicKey, settlementWalletPublicKey: walletAddress, recoveryWalletPublicKey: null };
-      const prepared = await apiPost<{ requiresBlockchainSignature: boolean; binding: { mode: "prepare-bind" | "already-bound"; serializedTransaction?: string; rpcUrl?: string; identityBinding?: string } }>("/api/identity", payload, accessToken);
-      if (!prepared.requiresBlockchainSignature) { await loadIdentitySecurity(accessToken); showToast("This wallet is already bound on-chain."); return; }
-      if (!prepared.binding.serializedTransaction || !prepared.binding.rpcUrl) throw new Error("TrustLink could not prepare the wallet binding transaction");
-      showToast("Your wallet will ask you to approve this main wallet binding.");
-      const blockchainSignature = await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.binding.rpcUrl, serializedTransaction: prepared.binding.serializedTransaction });
-      const confirmed = await apiPost<{ identityBindingAddress: string; settlementWalletPublicKey: string | null }>("/api/identity", { ...payload, blockchainSignature }, accessToken);
+      showToast("Checking your TINS identity.");
+      const tin = await createOrLoadTinForWallet({ walletId: session.walletId, walletAddress, phoneNumber: user.phoneNumber, displayName: user.displayName });
+      const stored = await apiPost<TinIdentityState>("/api/identity/tin", tin, accessToken);
+      setTinInfo(stored);
       await loadIdentitySecurity(accessToken);
-      showToast(`Main wallet bound: ${shortenAddress(confirmed.settlementWalletPublicKey ?? walletAddress)}`);
-    } catch (e) { const message = e instanceof Error ? e.message : "Could not bind main wallet"; setError(message); showToast(message); } finally { setIdentityBusy(false); }
+      showToast(tin.created ? `TIN ${tin.tin} created.` : `TIN ${tin.tin} is already linked to this wallet.`);
+    } catch (e) { const message = e instanceof Error ? e.message : "Could not create TINS identity"; setError(message); showToast(message); } finally { setIdentityBusy(false); }
   }
 
   if (!hydrated || !user) return null;
@@ -144,6 +154,14 @@ export function DashboardExperience() {
     showToast(`${label} copied.`);
   }
 
+  async function handleCopyTinNumber() {
+    if (!activeTin) {
+      router.push("/app/settings");
+      return;
+    }
+    await copyNumber(activeTin, "TIN");
+  }
+
   async function handleCopyPhoneNumber() { await copyNumber(fullNumber, "WhatsApp number"); }
   async function handleCopyLocalNumber() { await copyNumber(localDigits, "10-digit TrustLink ID"); }
 
@@ -158,18 +176,18 @@ export function DashboardExperience() {
       >
         <TrustLinkGuidance
           tone="warning"
-          title="Bind your main wallet"
-          description="Any wallet you bind here becomes your main TrustLink Pay wallet. Choose the wallet you want to receive with and approve payments from."
+          title="Create your TIN"
+          description="Your TIN links this WhatsApp account to the wallet that can receive TrustLink Pay settlement."
           steps={[
-            { title: "Connect the right wallet", description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want as your main wallet.", done: Boolean(walletAddress) },
-            { title: "Approve one Solana transaction", description: "The transaction binds this wallet to your phone identity. TrustLink pays the network fee." },
-            { title: "Keep control of your funds", description: "This does not give TrustLink custody of your wallet or permission to move funds." },
+            { title: "Connect the right wallet", description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want to register with TINS.", done: Boolean(walletAddress) },
+            { title: "Approve TINS registration", description: "The transaction creates your on-chain Transfer Identity Number for this wallet." },
+            { title: "Keep control of your funds", description: "TrustLink stores your phone-to-TIN mapping, not custody over your wallet." },
           ]}
           action={
             <button type="button" onClick={() => void handleBindMainWallet()} disabled={identityBusy}
               className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
-              {identityBusy ? "Binding..." : walletAddress ? "Bind this wallet" : "Connect main wallet"}
+              {identityBusy ? "Creating..." : walletAddress ? "Create TIN" : "Connect wallet"}
             </button>
           }
           secondaryAction={
@@ -182,7 +200,7 @@ export function DashboardExperience() {
 
       <div className="flex-col gap-5 md:grid md:grid-cols-[1.25fr_0.85fr] md:items-start">
 
-        {/* ─── LEFT COLUMN ─── */}
+        {/* â”€â”€â”€ LEFT COLUMN â”€â”€â”€ */}
         <div className="space-y-0 md:space-y-4">
 
 
@@ -251,20 +269,19 @@ export function DashboardExperience() {
                 ) : null}
               </div>
 
-              {/* WhatsApp identity chip */}
+              {/* TIN identity chip */}
               <button
                 type="button"
-                onClick={() => void handleCopyPhoneNumber()}
+                onClick={() => void handleCopyTinNumber()}
                 className="group flex shrink-0 flex-col items-end gap-1.5 cursor-pointer transition-transform active:scale-[0.97]"
-                aria-label={`Copy ${userPhoneNumber}`}
+                aria-label={activeTin ? `Copy TIN ${activeTin}` : "Create TIN"}
               >
                 <div className="flex items-center gap-1">
 
                   {/* Provider badge */}
                   <span className="flex items-center gap-1 rounded-[6px] border border-white/6 bg-white/4 px-1.5 py-0.5">
-                    <WhatsAppIcon className="h-2.5 w-2.5 text-[#25D366]" />
                     <span className="text-[0.6rem] font-semibold text-text/40">
-                      {countryCode}
+                      TIN
                     </span>
                   </span>
 
@@ -273,7 +290,7 @@ export function DashboardExperience() {
 
                   {/* Local number */}
                   <span className="whitespace-nowrap tl-body-sm font-bold tracking-wide text-text/78">
-                    {localNumber}
+                    {activeTin ?? "Create TIN"}
                   </span>
 
                   {/* Copy */}
@@ -282,7 +299,7 @@ export function DashboardExperience() {
 
                 {/* Micro label */}
                 <span className="whitespace-nowrap text-[0.54rem] font-medium tracking-[0.08em] text-text/24">
-                  10-digit works without country code
+                  {activeTin ? "Transfer Identity Number" : "Register payment identity"}
                 </span>
               </button>
             </div>
@@ -334,7 +351,7 @@ export function DashboardExperience() {
 
                   <span className="text-[0.62rem] text-text/36">
                     {loading
-                      ? "—"
+                      ? "â€”"
                       : pendingPayments.length.toString().padStart(2, "0")}
                   </span>
                 </div>
@@ -344,19 +361,19 @@ export function DashboardExperience() {
 
           {/* STATS ROW */}
           <div className="my-4 flex gap-3 px-2">
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <ArrowUpRight className="h-3.5 w-3.5 text-primary-accent" />
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Sent</span>
               <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : sentCount}</span>
             </div>
 
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <ArrowDownLeft className="h-3.5 w-3.5 text-accent" />
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Received</span>
               <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : receivedCount}</span>
             </div>
 
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] tl-panel-header px-3 py-2">
+            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <Landmark className="h-3.5 w-3.5 text-(--warning)" />
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Escrow</span>
               <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
@@ -384,7 +401,7 @@ export function DashboardExperience() {
             </div> */}
           </div>
 
-          {/* ─── ACTIVITY — desktop: starts right after stats ─── */}
+          {/* â”€â”€â”€ ACTIVITY â€” desktop: starts right after stats â”€â”€â”€ */}
           <div className="tl-panel-header hidden md:block">
             <div className="flex items-start justify-between mb-3">
               <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
@@ -430,7 +447,7 @@ export function DashboardExperience() {
           </div>
         </div>
 
-        {/* ─── RIGHT COLUMN ─── */}
+        {/* â”€â”€â”€ RIGHT COLUMN â”€â”€â”€ */}
         <div className="space-y-4">
 
           {/* PENDING CLAIMS */}
@@ -464,7 +481,7 @@ export function DashboardExperience() {
             </Link>
           ) : null}
 
-          {/* ── IDENTITY CARD ── */}
+          {/* â”€â”€ IDENTITY CARD â”€â”€ */}
           <div className="tl-panel-header rounded-[22px]">
             <div className="flex items-start justify-between mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Identity</div>
@@ -476,7 +493,7 @@ export function DashboardExperience() {
             </div>
 
             <div className="tl-field rounded-[18px]">
-              {/* WhatsApp — ACTIVE (current only identity) */}
+              {/* WhatsApp â€” ACTIVE (current only identity) */}
               <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
               >
                 <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
@@ -485,7 +502,7 @@ export function DashboardExperience() {
                     {userPhoneNumber}
                   </div>
                   <div className="text-[0.6rem] mt-0.5 text-text-faint" >
-                    WhatsApp · Payment identity
+                    WhatsApp - TrustLink login
                   </div>
                 </div>
                 <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
@@ -495,7 +512,7 @@ export function DashboardExperience() {
                 </span>
               </div>
 
-              {/* Coming soon identities */}
+              {/* Registered identities */}
               <div className="mt-2 space-y-1">
                 {/* X / Twitter */}
                 <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
@@ -513,26 +530,44 @@ export function DashboardExperience() {
                 </div>
 
                 {/* TIN */}
-                <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-35">
+                <button
+                  type="button"
+                  onClick={() => activeTin ? void handleCopyTinNumber() : void handleBindMainWallet()}
+                  disabled={identityBusy}
+                  className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                    className="h-3.5 w-3.5 shrink-0 text-text-faint"
+                    className={`h-3.5 w-3.5 shrink-0 ${activeTin ? "text-[var(--accent)]" : "text-[#ffb86b]"}`}
                   >
                     <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
                   </svg>
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.74rem] font-medium">
-                      TIN
+                      {activeTin ?? (identityBusy ? "Creating TIN..." : "Create TIN")}
                       <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
                     </div>
-                    <div className="text-[0.58rem] text-text-faint" >On-chain payment identity · TINS Protocol</div>
+                    <div className="text-[0.58rem] text-text-faint" >
+                      {activeTinIdentity ? `${shortenAddress(activeTinIdentity)} - TINS Protocol` : "Create on-chain payment identity - TINS Protocol"}
+                    </div>
+                  </div>
+                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
+                    style={activeTin ? { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } : { border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
+                  >
+                    {activeTin ? "Active" : identityBusy ? "Working" : "Create"}
+                  </span>
+                </button>
+                <Link href="/app/settings" className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+                  <Wallet className="h-3.5 w-3.5 shrink-0 text-text-faint" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.74rem] font-medium">Wallet login</div>
+                    <div className="text-[0.58rem] text-text-faint" >Future login path - link WhatsApp after wallet auth</div>
                   </div>
                   <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
                     style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
                   >
-                    <Lock className="h-2.5 w-2.5" />
-                    Roadmap
+                    Soon
                   </span>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -617,7 +652,7 @@ export function DashboardExperience() {
         </div>
       </div>
 
-      {/* ACTIVITY — mobile only (desktop version is inside left column) */}
+      {/* ACTIVITY â€” mobile only (desktop version is inside left column) */}
       <div className="tl-panel-header mt-6 md:hidden">
         <div className="flex items-start justify-between mb-3">
           <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>

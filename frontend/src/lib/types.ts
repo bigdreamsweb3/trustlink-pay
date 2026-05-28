@@ -1,6 +1,12 @@
 export interface UserProfile {
   id: string;
   phoneNumber: string;
+  tin?: string | null;
+  tinsIdentityPublicKey?: string | null;
+  tinsRegistryPublicKey?: string | null;
+  tinsWalletPublicKey?: string | null;
+  tinsProgramId?: string | null;
+  tinsCreatedAt?: string | null;
   displayName: string;
   handle: string;
   walletAddress: string | null;
@@ -43,6 +49,26 @@ export interface IdentitySecurityState {
   updatedAt: string;
   bump: number;
 }
+
+export interface TinIdentityState {
+  tin: string | null;
+  tinsIdentityPublicKey: string | null;
+  tinsRegistryPublicKey: string | null;
+  tinsWalletPublicKey: string | null;
+  tinsProgramId: string | null;
+  tinsCreatedAt?: string | null;
+}
+
+export type IdentitySecurityResponse = TinIdentityState & {
+  identity: IdentitySecurityState | null;
+  phoneIdentityPublicKey?: string | null;
+  privacyViewPublicKey?: string | null;
+  privacySpendPublicKey?: string | null;
+  bindingSignature?: string | null;
+  settlementWalletPublicKey?: string | null;
+  recoveryWalletPublicKey?: string | null;
+  receiverAutoclaimEnabled?: boolean;
+};
 
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";

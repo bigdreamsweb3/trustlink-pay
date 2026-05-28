@@ -27,6 +27,7 @@ pub struct InitializeMotherEscrow<'info> {
 
 pub fn initialize_mother_escrow(
     ctx: Context<InitializeMotherEscrow>,
+    tins_program_id: Pubkey,
     protocol_seed: [u8; 32],
     epoch_seconds: i64,
     lease_seconds: i64,
@@ -47,6 +48,7 @@ pub fn initialize_mother_escrow(
 
     let mother_escrow = &mut ctx.accounts.mother_escrow;
     mother_escrow.authority = ctx.accounts.authority.key();
+    mother_escrow.tins_program_id = tins_program_id;
     mother_escrow.protocol_seed = protocol_seed;
     mother_escrow.epoch_seconds = epoch_seconds;
     mother_escrow.lease_seconds = lease_seconds;

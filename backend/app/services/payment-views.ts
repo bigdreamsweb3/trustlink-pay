@@ -4,21 +4,15 @@ import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-
 import {
   retryPaymentNotificationIfNeeded,
 } from "@/app/services/payments";
+import {
+  buildInviteShareData,
+  requiresManualInvite,
+} from "@/app/services/payments/invite";
 import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
 import { env } from "@/app/lib/env";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
-
-// Placeholder - TSN handles invites now
-async function requiresManualInvite(phone: string) {
-  return false;
-}
-
-// Placeholder - no invite system yet (TSN handles this)
-function buildInviteShareData(payment: any, appBaseUrl: string | null | undefined) {
-  return null;
-}
 
 function getViewerRole(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentViewerRole | null {
   if (payment.sender_user_id === authUser.id) {
@@ -114,8 +108,8 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
   if (env.TSN_ENABLED && tsnState) {
     timeline.splice(4, 0, {
       id: "tsn_claim_requested",
-      label: "Claim requested",
-      description: "A claim request is queued for a Cranker to process (no receiver transaction needed).",
+      label: "Awaiting Cranker",
+      description: "TrustLink TSN has queued this payment for a Cranker to pick up and submit on-chain.",
       occurredAt: null,
       complete: isTsnPaid || tsnState.stage !== "intent_pending",
     });
@@ -123,7 +117,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     timeline.splice(5, 0, {
       id: "tsn_cranker_paid",
       label: "Cranker payout",
-      description: "A Cranker paid the recipient from PDA vault liquidity and submitted proof.",
+      description: "A Cranker paid the recipient from TSN vault liquidity and posted proof on Solana Devnet.",
       occurredAt: null,
       complete: isTsnPaid,
     });

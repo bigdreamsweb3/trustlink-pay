@@ -41,16 +41,21 @@ function tsnTone(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
 function tsnLabel(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
   switch (stage) {
     case "intent_pending":
-      return "Escrow locked";
+      return "Queued for Cranker";
     case "claim_requested":
-      return "Claim queued";
+      return "Awaiting Cranker pickup";
     case "lease_claimed":
-      return "Cranker processing";
+      return "Cranker verifying payout";
     case "cranker_paid":
-      return "Paid";
+      return "Cranker paid";
     case "epoch_settled":
-      return "Settled";
+      return "TSN settled";
   }
+}
+
+function paymentStatusLabel(status: PaymentRecord["status"]) {
+  if (status === "created") return "Processing";
+  return status.replace(/_/g, " ");
 }
 
 export function PaymentActivityCard({
@@ -63,7 +68,7 @@ export function PaymentActivityCard({
     ? `To ${payment.receiver_phone}`
     : `From ${payment.sender_display_name_snapshot}`;
 
-  const statusLabel = !isSend && payment.tsn ? tsnLabel(payment.tsn.stage) : payment.status.replace(/_/g, " ");
+  const statusLabel = !isSend && payment.tsn ? tsnLabel(payment.tsn.stage) : paymentStatusLabel(payment.status);
   const statusClass = !isSend && payment.tsn ? tsnTone(payment.tsn.stage) : statusTone(payment.status);
 
   return (

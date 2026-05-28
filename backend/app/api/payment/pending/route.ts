@@ -1,30 +1,41 @@
 export const runtime = "nodejs";
 
-import { toErrorResponse, ok } from "@/app/lib/http";
-import { logger } from "@/app/lib/logger";
-import { env } from "@/app/lib/env";
+import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
+import { ok } from "@/app/lib/http";
+import { listLockedPaymentsForUser } from "@/app/services/payments/read";
 
-/**
- * List pending payments from TSN
- */
 export async function GET(request: Request) {
-  try {
-    if (!env.TSN_ENABLED) {
-      return ok({ payments: [], totalPendingUsd: 0 });
+  return withAuthenticatedRoute(request, async (authUser) => {
+    const payments = await listLockedPaymentsForUser(authUser.phoneNumber);
+    const totalPendingUsd = Number(
+      payments
+        .reduce((sum, payment) => sum + Number(payment.amount_usd ?? 0), 0)
+        .toFixed(2),
+    );
+
+    const byTokenMap = new Map<string, { amount: number; amountUsd: number }>();
+    for (const payment of payments) {
+      const key = payment.token_symbol;
+      const current = byTokenMap.get(key) ?? { amount: 0, amountUsd: 0 };
+      current.amount += Number(payment.amount ?? 0);
+      current.amountUsd += Number(payment.amount_usd ?? 0);
+      byTokenMap.set(key, current);
     }
-    
-    // TODO: Query TSN for pending payments
-    logger.info("payment.pending.deferred_to_tsn");
-    
+
+    const summary = {
+      claimableCount: payments.length,
+      totalPendingUsd,
+      byToken: Array.from(byTokenMap.entries()).map(([tokenSymbol, value]) => ({
+        tokenSymbol,
+        amount: Number(value.amount.toFixed(6)),
+        amountUsd: Number(value.amountUsd.toFixed(2)),
+      })),
+    };
+
     return ok({
-      payments: [],
-      totalPendingUsd: 0,
-      message: "Query TSN for pending payments",
+      payments,
+      totalPendingUsd,
+      summary,
     });
-  } catch (error) {
-    logger.error("api.payment.pending.failed", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return toErrorResponse(error);
-  }
+  });
 }

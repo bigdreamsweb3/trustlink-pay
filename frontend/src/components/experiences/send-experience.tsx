@@ -42,19 +42,27 @@ import {
   type DetectedWallet
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+import { enqueueTsnPaymentFromFrontend, estimateTsnSendCostFromChain } from "@/src/lib/tsn";
 import { createSenderPaymentAuthorizationMessage } from "@trustlink/tsn-sdk/payment-authorization";
+import {
+  formatUsd,
+  hasCompleteCostEstimate,
+  normalizeSendCostEstimate,
+  type SendCostEstimate,
+} from "@/src/components/experiences/send/shared/send-cost";
+import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
 import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
 
+function paymentStatusLabel(status: PaymentRecord["status"]) {
+  if (status === "created") return "processing";
+  return status.replace(/_/g, " ");
+}
+
 function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(balance);
-}
-
-function formatUsd(value: number | null | undefined, digits = 4) {
-  if (value == null || !Number.isFinite(value)) return null;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: digits }).format(value);
 }
 
 function formatReceiptTime(value: string | null) {
@@ -62,87 +70,8 @@ function formatReceiptTime(value: string | null) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
-type SendCostEstimate = {
-  tokenSymbol: string;
-  senderFeeAmountUi: number;
-  senderFeeAmountUsd: number | null;
-  totalTokenRequiredUi: number;
-  networkFeeSol: number;
-  networkFeeUsd: number | null;
-  settlementAssessment?: {
-    likelihood: "likely_claimable" | "risky_claim_amount" | "economically_non_claimable";
-    minimumTransferUi: number;
-    reason: string;
-  };
-};
-
-function toFiniteNumber(value: unknown) {
-  const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeSendCostEstimate(payload: unknown, amountUi: number): SendCostEstimate | null {
-  const source = (payload && typeof payload === "object" && "estimate" in payload
-    ? (payload as { estimate?: unknown }).estimate
-    : payload) as Partial<SendCostEstimate> | null;
-  if (!source || typeof source !== "object") return null;
-
-  const senderFeeAmountUi = toFiniteNumber(source.senderFeeAmountUi);
-  const networkFeeSol = toFiniteNumber(source.networkFeeSol);
-  const totalTokenRequiredUi = toFiniteNumber(source.totalTokenRequiredUi);
-  if (senderFeeAmountUi == null || networkFeeSol == null) return null;
-
-  return {
-    tokenSymbol: String(source.tokenSymbol || "Token"),
-    senderFeeAmountUi,
-    senderFeeAmountUsd: toFiniteNumber(source.senderFeeAmountUsd),
-    totalTokenRequiredUi: totalTokenRequiredUi != null && totalTokenRequiredUi > 0
-      ? totalTokenRequiredUi
-      : Number((amountUi + senderFeeAmountUi).toFixed(6)),
-    networkFeeSol,
-    networkFeeUsd: toFiniteNumber(source.networkFeeUsd),
-    settlementAssessment: source.settlementAssessment,
-  };
-}
-
-function hasCompleteCostEstimate(estimate: SendCostEstimate | null) {
-  return Boolean(
-    estimate &&
-    Number.isFinite(estimate.senderFeeAmountUi) &&
-    estimate.senderFeeAmountUi >= 0 &&
-    Number.isFinite(estimate.totalTokenRequiredUi) &&
-    estimate.totalTokenRequiredUi > 0 &&
-    Number.isFinite(estimate.networkFeeSol) &&
-    estimate.networkFeeSol >= 0,
-  );
-}
-
 type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
 
-type SendGuidance = {
-  title: string;
-  message: string;
-  ctaLabel?: string;
-  ctaHref?: "/app/settings";
-};
-
-function getSendGuidance(errorMessage: string | null): SendGuidance | null {
-  if (!errorMessage) {
-    return null;
-  }
-
-  if (/secure wallet setup before sending invite escrow payments/i.test(errorMessage)) {
-    return {
-      title: "Finish secure wallet setup first",
-      message:
-        "Before you can send invite escrow payments, complete secure setup in Settings so your TrustLink privacy identity and secure routing keys are ready.",
-      ctaLabel: "Open Settings",
-      ctaHref: "/app/settings",
-    };
-  }
-
-  return null;
-}
 
 function resetRecipientResolution(params: {
   setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
@@ -271,7 +200,7 @@ export function SendExperience() {
     setRecipientPreview(resolved.recipient);
   }
 
-  /* v2 FIX: Always reveal country fallback when WhatsApp didn't verify */
+  /* Always reveal country fallback when WhatsApp didn't verify */
   function applyRecipientResolutionPreview(resolved: ResolvedRecipientLookup, options?: { revealCountryFallback?: boolean }) {
     setForm((c) => ({ ...c, receiverPhone: resolved.normalizedPhone }));
     setReceiverCountry(resolved.country);
@@ -285,7 +214,7 @@ export function SendExperience() {
 
   useEffect(() => { if (!walletAddress) { setSupportedTokens([]); setForm((c) => ({ ...c, token: "" })); return; } const ctrl = new AbortController(); async function load() { setTokenBusy(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (ctrl.signal.aborted) return; setSupportedTokens(r.tokens); setForm((c) => ({ ...c, token: r.tokens.find((t) => t.supported && t.mintAddress === c.token)?.mintAddress ?? r.tokens.find((t) => t.supported)?.mintAddress ?? "" })); } catch (e) { if (!ctrl.signal.aborted) { setSupportedTokens([]); setError(e instanceof Error ? e.message : "Could not load tokens"); } } finally { if (!ctrl.signal.aborted) setTokenBusy(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
 
-  /* v2 FIX: catch block always reveals country fallback and unlocks */
+  /* catch block always reveals country fallback and unlocks */
   useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
   useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
@@ -302,8 +231,14 @@ export function SendExperience() {
     setSendCostEstimate(null);
     try {
       const amount = Number(form.amount);
-      const r = await apiPost<unknown>("/api/payment/estimate", { phoneNumber: form.receiverPhone, senderPhoneNumber: user.phoneNumber, amount, tokenMintAddress: selectedToken.mintAddress, senderWallet: walletAddress }, undefined, { cache: "no-store" });
-      const estimate = normalizeSendCostEstimate(r, amount);
+      const localEstimate = await estimateTsnSendCostFromChain({
+        senderWallet: walletAddress,
+        tokenMintAddress: selectedToken.mintAddress,
+        amountUi: amount,
+        tokenSymbol: selectedToken.symbol,
+        tokenUsd: selectedToken.unitPriceUsd ?? null,
+      });
+      const estimate = normalizeSendCostEstimate(localEstimate, amount);
       if (!hasCompleteCostEstimate(estimate)) {
         throw new Error("Payment quote is incomplete. Retry before confirming.");
       }
@@ -357,8 +292,8 @@ export function SendExperience() {
       const senderAuthorizationIssuedAt = new Date().toISOString();
       const senderAuthorizationMessage = createSenderPaymentAuthorizationMessage({
         senderWallet: walletAddress,
-        senderIdentity: `trustlink-handle:${user.handle}`,
-        receiverIdentity: `trustlink-handle:${recipientPreview.recipient.handle}`,
+        senderIdentity: `phone:${user.phoneNumber}`,
+        receiverIdentity: `phone:${form.receiverPhone}|name:${recipientName}`,
         tokenMintAddress: selectedToken.mintAddress,
         amount: Number(form.amount),
         senderFeeAmount,
@@ -391,6 +326,10 @@ export function SendExperience() {
         notificationAttemptCount: number;
         manualInviteRequired: boolean;
         inviteShare: { onboardingLink: string; inviteMessage: string } | null;
+        tsn?: {
+          recipientHash: string;
+          destinationWallet: string | null;
+        };
       }>("/api/payment/create", {
         phoneNumber: form.receiverPhone,
         senderPhoneNumber: user.phoneNumber,
@@ -402,6 +341,23 @@ export function SendExperience() {
         senderAuthorizationIssuedAt,
         senderAuthorizationSignature,
         skipWhatsAppCheck: receiverCheckSkipped,
+      });
+
+      const destinationWallet = result.tsn?.destinationWallet;
+      const recipientHash = result.tsn?.recipientHash;
+      if (!destinationWallet || !recipientHash) {
+        throw new Error("Recipient settlement wallet is not ready for TSN enqueue");
+      }
+
+      const enqueueAmount = Number(form.amount) + senderFeeAmount;
+      const enqueueResult = await enqueueTsnPaymentFromFrontend({
+        paymentId: result.paymentId,
+        recipientHash,
+        destinationWallet,
+        tokenMintAddress: selectedToken.mintAddress,
+        senderWallet: walletAddress,
+        amount: enqueueAmount,
+        recipientAmount: Number(form.amount),
       });
 
       if (receiverCountry) rememberCountryUsage(receiverCountry.iso2);
@@ -427,7 +383,7 @@ export function SendExperience() {
           ? `Payment secured. Share invite manually. Ref ${result.referenceCode}.`
           : result.notificationRetrying
             ? `Payment secured. WhatsApp retrying. Ref ${result.referenceCode}.`
-            : `Intent queued in TSN mempool. Awaiting Cranker pickup. Ref ${result.referenceCode}.`,
+            : `Intent queued in TSN mempool. Awaiting Cranker pickup. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not create payment intent";
@@ -497,7 +453,7 @@ export function SendExperience() {
                   { label: "Recipient", value: sendSuccess.recipientName },
                   { label: "WhatsApp", value: sendSuccess.receiverPhone },
                   { label: "Reference", value: sendSuccess.referenceCode },
-                  { label: "Status", value: sendSuccess.status, capitalize: true },
+                  { label: "Status", value: paymentStatusLabel(sendSuccess.status), capitalize: true },
                 ].map((row) => (
                   <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>

@@ -46,6 +46,10 @@
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"
     },
+    "./tins": {
+      "import": "./dist/tins.js",
+      "types": "./dist/tins.d.ts"
+    },
     "./program": {
       "import": "./dist/program.js",
       "types": "./dist/program.d.ts"
@@ -61,9 +65,11 @@
     "test": "echo \"Error: no test specified\" && exit 0"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/spl-token": "^0.4.14",
-    "@solana/web3.js": "^1.98.4"
+    "@solana/web3.js": "^1.98.4",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "@types/node": "^25.9.0",

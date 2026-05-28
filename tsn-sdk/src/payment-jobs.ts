@@ -83,6 +83,34 @@ export async function createTsnPaymentMempoolJobs(params: {
   destinationWallet: string;
   source?: string;
 }) {
+  const requests = prepareTsnPaymentMempoolJobRequests(params);
+  const intent = await params.mempool.postIntent(requests.intentRequest);
+  const claimRequest = await params.mempool.postClaimRequest({
+    ...requests.claimRequestPayload,
+    intentId: intent.id,
+  });
+
+  return {
+    ...requests,
+    claimRequestPayload: {
+      ...requests.claimRequestPayload,
+      intentId: intent.id,
+    },
+    intent,
+    claimRequest,
+  };
+}
+
+export function prepareTsnPaymentMempoolJobRequests(params: {
+  paymentId: string;
+  underlyingPayment?: string | null;
+  recipientHash: string;
+  tokenMintAddress: string;
+  amount: number;
+  recipientAmount?: number;
+  destinationWallet: string;
+  source?: string;
+}) {
   const intentRequest = {
     ...buildCreateIntentRequest({
       paymentId: params.paymentId,
@@ -95,21 +123,17 @@ export async function createTsnPaymentMempoolJobs(params: {
     ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),
   } as CreateIntentRequest;
 
-  const intent = await params.mempool.postIntent(intentRequest);
   const claimRequestPayload = buildRequestClaimRequest({
     paymentId: params.paymentId,
-    intentId: intent.id,
+    intentId: intentRequest.paymentId,
     recipientHash: params.recipientHash,
     destinationWallet: params.destinationWallet,
     autoclaim: false,
     source: params.source,
   });
-  const claimRequest = await params.mempool.postClaimRequest(claimRequestPayload);
 
   return {
     intentRequest,
     claimRequestPayload: claimRequestPayload as RequestClaimRequest,
-    intent,
-    claimRequest,
   };
 }

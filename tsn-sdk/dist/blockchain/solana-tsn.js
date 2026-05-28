@@ -123,6 +123,9 @@ export async function tsnInitializeMotherEscrowOnChain(params) {
     const motherEscrow = getTsnMotherEscrowPda();
     const existing = await tsnFetchMotherEscrowOnChain(params.rpcUrl);
     if (existing?.valid) {
+        if (existing.tinsProgramId !== params.tinsProgramId.toBase58()) {
+            throw new Error(`TSN mother escrow is initialized with TINS program ${existing.tinsProgramId}, not ${params.tinsProgramId.toBase58()}.`);
+        }
         logger.info("tsn.mother_escrow.already_initialized", { motherEscrow: existing.address });
         return { mode: "devnet", signature: null, motherEscrow: existing.address };
     }
@@ -138,6 +141,7 @@ export async function tsnInitializeMotherEscrowOnChain(params) {
         ],
         data: Buffer.concat([
             instructionDiscriminator("tsn_initialize_mother_escrow"),
+            params.tinsProgramId.toBytes(),
             params.protocolSeed32,
             encodeI64(params.epochSeconds),
             encodeI64(params.leaseSeconds),
@@ -171,6 +175,7 @@ export async function tsnMigrateMotherEscrowOnChain(params) {
         ],
         data: Buffer.concat([
             instructionDiscriminator("tsn_migrate_mother_escrow"),
+            params.tinsProgramId.toBytes(),
             params.protocolSeed32,
             encodeI64(params.epochSeconds),
             encodeI64(params.leaseSeconds),
@@ -511,7 +516,7 @@ export async function tsnFetchMotherEscrowOnChain(rpcUrl) {
         dataLength: data.length,
         discriminatorHex: data.subarray(0, Math.min(8, data.length)).toString("hex"),
     };
-    if (data.length < 8 + 32 + 32 + 8 + 8 + 2 + 2 + 2 + 8 + 8 + 1) {
+    if (data.length < 8 + 32 + 32 + 32 + 8 + 8 + 2 + 2 + 2 + 8 + 8 + 1) {
         return { ...base, valid: false, reason: "account-too-small" };
     }
     const expectedDiscriminator = createHash("sha256")
@@ -529,6 +534,8 @@ export async function tsnFetchMotherEscrowOnChain(rpcUrl) {
     }
     let offset = 8;
     const authority = new PublicKey(data.subarray(offset, offset + 32));
+    offset += 32;
+    const tinsProgramId = new PublicKey(data.subarray(offset, offset + 32));
     offset += 32;
     const protocolSeed = data.subarray(offset, offset + 32);
     offset += 32;
@@ -551,6 +558,7 @@ export async function tsnFetchMotherEscrowOnChain(rpcUrl) {
         ...base,
         valid: true,
         authority: authority.toBase58(),
+        tinsProgramId: tinsProgramId.toBase58(),
         protocolSeed,
         epochSeconds,
         leaseSeconds,

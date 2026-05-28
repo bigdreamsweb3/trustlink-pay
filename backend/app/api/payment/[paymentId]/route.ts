@@ -1,34 +1,40 @@
 export const runtime = "nodejs";
 
-import { toErrorResponse, ok } from "@/app/lib/http";
-import { logger } from "@/app/lib/logger";
+import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
+import { fail, ok } from "@/app/lib/http";
+import { getPaymentDetailForViewer } from "@/app/services/payment-views";
 import { env } from "@/app/lib/env";
 
 /**
- * Get payment details from TSN
+ * Return full payment detail for the authenticated viewer.
+ * Includes `payment` so lightweight pollers can read status directly.
  */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ paymentId: string }> }
 ) {
-  try {
+  return withAuthenticatedRoute(request, async (authUser) => {
     const { paymentId } = await params;
-    
-    if (!env.TSN_ENABLED) {
-      return ok({ payment: null, error: "TSN not enabled" });
+
+    if (!paymentId) {
+      return fail("Missing payment id", 400);
     }
-    
-    // TODO: Query TSN for payment status
-    logger.info("payment.get.deferred_to_tsn", { paymentId });
-    
-    return ok({
-      payment: null,
-      message: "Query TSN for payment status",
-    });
-  } catch (error) {
-    logger.error("api.payment.get.failed", {
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return toErrorResponse(error);
-  }
+
+    try {
+      const detail = await getPaymentDetailForViewer(
+        authUser,
+        paymentId,
+        env.APP_BASE_URL,
+      );
+      return ok(detail);
+    } catch (error) {
+      if (error instanceof Error && /not found/i.test(error.message)) {
+        return fail("Payment not found", 404);
+      }
+      if (error instanceof Error && /not allowed/i.test(error.message)) {
+        return fail("You are not allowed to view this payment", 403);
+      }
+      throw error;
+    }
+  });
 }

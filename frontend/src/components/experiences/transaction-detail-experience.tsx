@@ -72,6 +72,11 @@ function statusTone(
   }
 }
 
+function paymentStatusLabel(status: PaymentDetailResponse["payment"]["status"]) {
+  if (status === "created") return "Processing";
+  return status.replace(/_/g, " ");
+}
+
 export function TransactionDetailExperience({
   paymentId,
 }: {
@@ -284,7 +289,7 @@ export function TransactionDetailExperience({
                       detail.payment.status
                     )}`}
                   >
-                    {detail.payment.status}
+                    {paymentStatusLabel(detail.payment.status)}
                   </span>
                 </div>
 

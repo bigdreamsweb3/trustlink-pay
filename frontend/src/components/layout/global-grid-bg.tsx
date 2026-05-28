@@ -5,7 +5,7 @@ export function GlobalGridBackground() {
 
             {/* Grid layer */}
             <div
-                className="absolute inset-0 opacity-[0.14]"
+                className="absolute inset-0 opacity-[0.18]"
                 style={{
                     backgroundImage: `
             linear-gradient(to right, rgba(74,190,208,0.18) 1px, transparent 1px),
@@ -21,7 +21,7 @@ export function GlobalGridBackground() {
 
             {/* Secondary micro-grid (denser near top-left) */}
             <div
-                className="absolute inset-0 opacity-[0.07]"
+                className="absolute inset-0 opacity-[0.11]"
                 style={{
                     backgroundImage: `
             linear-gradient(to right, rgba(255,122,24,0.12) 1px, transparent 1px),

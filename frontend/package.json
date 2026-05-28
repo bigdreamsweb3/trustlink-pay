@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "prebuild": "npm --prefix ../tsn-sdk install && npm --prefix ../tsn-sdk run build && node -e \"const fs=require('fs'); const src='../tsn-sdk'; const dest='node_modules/@trustlink/tsn-sdk'; let isSame=false; try { if (fs.realpathSync(src) === fs.realpathSync(dest)) isSame=true; } catch(e){} if (!isSame) { fs.mkdirSync(dest + '/dist', {recursive:true}); fs.cpSync(src + '/dist', dest + '/dist', {recursive:true}); fs.copyFileSync(src + '/package.json', dest + '/package.json'); }\"",
+    "prebuild": "npm --prefix ../tsn-sdk install && npm --prefix ../tsn-sdk run build && node -e \"const fs=require('fs'); fs.rmSync('node_modules/@trustlink/tsn-sdk', {recursive:true, force:true}); fs.mkdirSync('node_modules/@trustlink/tsn-sdk/dist', {recursive:true}); fs.cpSync('../tsn-sdk/dist', 'node_modules/@trustlink/tsn-sdk/dist', {recursive:true}); fs.copyFileSync('../tsn-sdk/package.json', 'node_modules/@trustlink/tsn-sdk/package.json');\"",
     "build": "next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",

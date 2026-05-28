@@ -25,6 +25,18 @@ try {
   console.log(`Installing tsn-sdk dependencies in ${sdkPath}...`);
   execSync('npm install', { cwd: sdkPath, stdio: 'inherit' });
   
+  // Clean TypeScript incremental build cache to ensure all files are rebuilt
+  const tsBuildInfo = path.join(sdkPath, 'tsconfig.tsbuildinfo');
+  const oldDist = path.join(sdkPath, 'dist');
+  if (fs.existsSync(tsBuildInfo)) {
+    console.log('Cleaning TypeScript incremental build cache...');
+    fs.unlinkSync(tsBuildInfo);
+  }
+  if (fs.existsSync(oldDist)) {
+    console.log('Cleaning old dist folder...');
+    fs.rmSync(oldDist, { recursive: true, force: true });
+  }
+  
   console.log('Building tsn-sdk...');
   execSync('npm run build', { cwd: sdkPath, stdio: 'inherit' });
 

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
+    "prebuild": "npm --prefix ../tsn-sdk install && npm --prefix ../tsn-sdk run build",
     "build": "next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",

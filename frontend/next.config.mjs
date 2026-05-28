@@ -3,7 +3,7 @@ import { resolve } from "path";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typedRoutes: true,
-  transpilePackages: ["trustlink-whatsapp-sdk"],
+  transpilePackages: ["@trustlink/tsn-sdk", "trustlink-whatsapp-sdk"],
   outputFileTracingRoot: resolve(),
   async rewrites() {
     const backendUrl =

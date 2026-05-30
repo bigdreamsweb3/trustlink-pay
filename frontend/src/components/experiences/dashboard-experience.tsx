@@ -493,29 +493,59 @@ export function DashboardExperience() {
             </div>
 
             <div className="tl-field rounded-[18px]">
-              {/* WhatsApp â€” ACTIVE (current only identity) */}
-              <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
+
+              {/* TIN */}
+              <button
+                type="button"
+                onClick={() => activeTin ? void handleCopyTinNumber() : void handleBindMainWallet()}
+                disabled={identityBusy}
+                className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
               >
-                <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={`h-3.5 w-3.5 shrink-0 ${activeTin ? "text-[var(--accent)]" : "text-[#ffb86b]"}`}
+                >
+                  <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.78rem] font-semibold truncate">
-                    {userPhoneNumber}
+                  <div className="text-[0.74rem] font-medium">
+                    {activeTin ?? (identityBusy ? "Creating TIN..." : "Create TIN")}
+                    <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
                   </div>
-                  <div className="text-[0.6rem] mt-0.5 text-text-faint" >
-                    WhatsApp - TrustLink login
+                  <div className="text-[0.58rem] text-text-faint" >
+                    {activeTinIdentity ? `${shortenAddress(activeTinIdentity)} - TINS Protocol` : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>
-                <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
-                  style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" }}
+                <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
+                  style={activeTin ? { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } : { border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
                 >
-                  Active
+                  {activeTin ? "Active" : identityBusy ? "Working" : "Create"}
                 </span>
-              </div>
+              </button>
+
 
               {/* Registered identities */}
               <div className="mt-2 space-y-1">
+                {/* WhatsApp identity */}
+                <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
+                >
+                  <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[0.78rem] font-semibold truncate">
+                      {userPhoneNumber}
+                    </div>
+                    <div className="text-[0.6rem] mt-0.5 text-text-faint" >
+                      WhatsApp - TrustLink login
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
+                    style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" }}
+                  >
+                    Active
+                  </span>
+                </div>
+
                 {/* X / Twitter */}
-                <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
+                {/* <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
                   <XIcon className="h-3.5 w-3.5 shrink-0 text-text-faint" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.74rem] font-medium text-text-faint">X / Twitter</div>
@@ -527,36 +557,9 @@ export function DashboardExperience() {
                     <Lock className="h-2.5 w-2.5" />
                     Soon
                   </span>
-                </div>
+                </div> */}
 
-                {/* TIN */}
-                <button
-                  type="button"
-                  onClick={() => activeTin ? void handleCopyTinNumber() : void handleBindMainWallet()}
-                  disabled={identityBusy}
-                  className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                    className={`h-3.5 w-3.5 shrink-0 ${activeTin ? "text-[var(--accent)]" : "text-[#ffb86b]"}`}
-                  >
-                    <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[0.74rem] font-medium">
-                      {activeTin ?? (identityBusy ? "Creating TIN..." : "Create TIN")}
-                      <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
-                    </div>
-                    <div className="text-[0.58rem] text-text-faint" >
-                      {activeTinIdentity ? `${shortenAddress(activeTinIdentity)} - TINS Protocol` : "Create on-chain payment identity - TINS Protocol"}
-                    </div>
-                  </div>
-                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                    style={activeTin ? { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } : { border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
-                  >
-                    {activeTin ? "Active" : identityBusy ? "Working" : "Create"}
-                  </span>
-                </button>
-                <Link href="/app/settings" className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
+                {/* <Link href="/app/settings" className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
                   <Wallet className="h-3.5 w-3.5 shrink-0 text-text-faint" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.74rem] font-medium">Wallet login</div>
@@ -567,7 +570,7 @@ export function DashboardExperience() {
                   >
                     Soon
                   </span>
-                </Link>
+                </Link> */}
               </div>
             </div>
           </div>

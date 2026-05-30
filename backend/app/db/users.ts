@@ -151,6 +151,47 @@ export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRe
   return rows[0] ?? null;
 }
 
+export async function findUserByTin(tin: string): Promise<UserRecord | null> {
+  await ensureUserAutoclaimColumn();
+  const rows = (await sql`
+    SELECT
+      id,
+      phone_number,
+      phone_hash,
+      tin,
+      tins_identity_pubkey,
+      tins_registry_pubkey,
+      tins_wallet_pubkey,
+      tins_program_id,
+      tins_created_at,
+      phone_identity_pubkey,
+      privacy_view_pubkey,
+      privacy_spend_pubkey,
+      settlement_wallet_pubkey,
+      recovery_wallet_pubkey,
+      binding_signature,
+      display_name,
+      trustlink_handle,
+      pin_hash,
+      wallet_address,
+      receiver_autoclaim_enabled,
+      whatsapp_opted_in,
+      opt_in_timestamp,
+      opt_out_timestamp,
+      phone_verified_at,
+      identity_verified_at,
+      referred_by_user_id,
+      referral_source_payment_id,
+      referred_at,
+      created_at
+    FROM users
+    WHERE tin = ${tin}
+    LIMIT 1
+  `) as UserRecord[];
+
+  return rows[0] ?? null;
+}
+
 export async function findUserById(id: string): Promise<UserRecord | null> {
   await ensureUserAutoclaimColumn();
   const rows = (await sql`

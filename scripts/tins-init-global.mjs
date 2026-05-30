@@ -16,6 +16,7 @@ const {
 
 const DEFAULT_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 const DEFAULT_RPC_URL = "https://api.devnet.solana.com";
+const DEFAULT_STARTING_SEQUENCE = "100000000";
 
 function usage() {
   console.log(`
@@ -25,11 +26,11 @@ Usage:
 Defaults:
   programId          ${DEFAULT_PROGRAM_ID}
   payerKeypairPath   ~/.config/solana/id.json
-  startingSequence   1000000000
+  startingSequence   ${DEFAULT_STARTING_SEQUENCE}
 
 Examples:
   npm run tins:init-global
-  npm run tins:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json 1000000000
+  npm run tins:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json ${DEFAULT_STARTING_SEQUENCE}
 
 Environment:
   SOLANA_RPC_URL or RPC_URL can override the devnet RPC endpoint.
@@ -72,7 +73,7 @@ async function main() {
 
   const programId = new PublicKey(maybeProgramId || process.env.TINS_PROGRAM_ID || DEFAULT_PROGRAM_ID);
   const payerPath = maybeKeypairPath || process.env.TINS_AUTHORITY_KEYPAIR_PATH || "~/.config/solana/id.json";
-  const startingSequence = BigInt(maybeStartingSequence || process.env.TINS_STARTING_SEQUENCE || "1000000000");
+  const startingSequence = BigInt(maybeStartingSequence || process.env.TINS_STARTING_SEQUENCE || DEFAULT_STARTING_SEQUENCE);
   const rpcUrl = process.env.SOLANA_RPC_URL || process.env.RPC_URL || DEFAULT_RPC_URL;
   const { keypair: payer, keypairPath } = readKeypair(payerPath);
   const connection = new Connection(rpcUrl, "confirmed");

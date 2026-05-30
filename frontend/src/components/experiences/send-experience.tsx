@@ -72,6 +72,27 @@ function formatReceiptTime(value: string | null) {
 
 type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
 
+function normalizeTinInput(value: string) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  const hasTinPrefix = /^tin[:\s_-]*/i.test(trimmed);
+  if (!/^\d{10}$/.test(digits)) return null;
+  if (!hasTinPrefix && trimmed.startsWith("+")) return null;
+
+  const checkDigit = Number(digits[9]);
+  let sum = 0;
+  let double = true;
+  for (const char of digits.slice(0, 9).split("").reverse()) {
+    let digit = Number(char);
+    if (double) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    double = !double;
+  }
+  return ((10 - (sum % 10)) % 10) === checkDigit ? digits : null;
+}
 
 function resetRecipientResolution(params: {
   setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
@@ -184,6 +205,29 @@ export function SendExperience() {
     return resolved;
   }
 
+  async function lookupResolvedTin(tin: string) {
+    const key = `tin:${tin}`;
+    const cached = resolutionCache.current.get(key);
+    if (cached) return cached;
+    const recipient = await apiPost<RecipientLookupResult>("/api/recipient/lookup", { tin }, undefined, { cache: "default", ttlMs: 60_000 });
+    const normalizedPhone = recipient?.recipient.phoneNumber ?? "";
+    const verification: WhatsAppNumberVerificationResult = {
+      phoneNumber: normalizedPhone,
+      exists: Boolean(recipient?.verified),
+      accountType: "personal_or_none",
+      isBusiness: false,
+      isInvalid: !recipient?.verified,
+      displayName: recipient?.recipient.displayName ?? `TIN ${tin}`,
+      profilePic: null,
+      hasProfilePic: false,
+      url: normalizedPhone ? `https://wa.me/${normalizedPhone.replace(/\D/g, "")}` : "",
+      source: "mock",
+    };
+    const resolved = { verification, recipient, normalizedPhone, country: null } satisfies ResolvedRecipientLookup;
+    resolutionCache.current.set(key, resolved);
+    return resolved;
+  }
+
   function applyRecipientVerificationState(resolved: ResolvedRecipientLookup) {
     const trustLinkVerified = resolved.recipient?.status === "registered";
     const whatsappVerified = resolved.verification.exists || receiverCheckSkipped;
@@ -215,7 +259,7 @@ export function SendExperience() {
   useEffect(() => { if (!walletAddress) { setSupportedTokens([]); setForm((c) => ({ ...c, token: "" })); return; } const ctrl = new AbortController(); async function load() { setTokenBusy(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (ctrl.signal.aborted) return; setSupportedTokens(r.tokens); setForm((c) => ({ ...c, token: r.tokens.find((t) => t.supported && t.mintAddress === c.token)?.mintAddress ?? r.tokens.find((t) => t.supported)?.mintAddress ?? "" })); } catch (e) { if (!ctrl.signal.aborted) { setSupportedTokens([]); setError(e instanceof Error ? e.message : "Could not load tokens"); } } finally { if (!ctrl.signal.aborted) setTokenBusy(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
 
   /* catch block always reveals country fallback and unlocks */
-  useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
+  useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin(tin); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified && resolved.normalizedPhone) { applyResolvedRecipient(resolved); return; } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(false); setPhoneVerificationState("invalid"); setPhoneVerificationLabel(null); setLookupError("No TrustLink account is linked to this TIN yet."); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
   useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
@@ -293,7 +337,9 @@ export function SendExperience() {
       const senderAuthorizationMessage = createSenderPaymentAuthorizationMessage({
         senderWallet: walletAddress,
         senderIdentity: `phone:${user.phoneNumber}`,
-        receiverIdentity: `phone:${form.receiverPhone}|name:${recipientName}`,
+        receiverIdentity: recipientPreview.recipient.tin
+          ? `tin:${recipientPreview.recipient.tin}|phone:${form.receiverPhone}|name:${recipientName}`
+          : `phone:${form.receiverPhone}|name:${recipientName}`,
         tokenMintAddress: selectedToken.mintAddress,
         amount: Number(form.amount),
         senderFeeAmount,
@@ -332,6 +378,7 @@ export function SendExperience() {
         };
       }>("/api/payment/create", {
         phoneNumber: form.receiverPhone,
+        recipientTin: recipientPreview.recipient.tin ?? null,
         senderPhoneNumber: user.phoneNumber,
         amount: Number(form.amount),
         tokenMintAddress: selectedToken.mintAddress,
@@ -658,10 +705,10 @@ export function SendExperience() {
                         </div>
                         <div className="mt-2 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
                         <div className="tl-meta-sm text-[var(--text-faint)]">X: coming soon (not linked yet)</div>
-                        <div className="tl-meta-sm text-[var(--text-faint)]">TIN: coming soon (routing will support linked TIN)</div>
-                        {(/^tin[:\s-]/i.test(receiverPhoneInput.trim()) || /^tin_[a-z0-9]+$/i.test(receiverPhoneInput.trim())) ? (
+                        <div className="tl-meta-sm text-[var(--text-faint)]">TIN: {recipientPreview.recipient.tin ?? "not linked yet"}</div>
+                        {normalizeTinInput(receiverPhoneInput.trim()) ? (
                           <div className="mt-2 text-[0.66rem] text-[#bde8ff]">
-                            TIN input detected. Direct TIN resolution is not live yet.
+                            TIN resolved. Payment will route to the linked TrustLink recipient.
                           </div>
                         ) : null}
                       </div>

@@ -262,6 +262,7 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "invalid";
+        tin?: string | null;
         whatsappProfileName: null;
       };
       warning: string;
@@ -273,7 +274,8 @@ export type RecipientLookupResult =
         displayName: string;
         handle: string;
         phoneNumber: string;
-        source: "trustlink";
+        source: "trustlink" | "tins";
+        tin?: string | null;
         whatsappProfileName: string | null;
       };
     }
@@ -285,6 +287,7 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "whatsapp";
+        tin?: string | null;
         whatsappProfileName: string;
       };
       warning: string;
@@ -297,6 +300,7 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "manual_invite";
+        tin?: string | null;
         whatsappProfileName: null;
       };
       warning: string;

@@ -53,6 +53,11 @@ function buildCountryList(suggestedCountries: CountryOption[]) {
   });
 }
 
+function looksLikeTinInput(value: string) {
+  const trimmed = value.trim();
+  return /^tin[:\s_-]*/i.test(trimmed) || (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"));
+}
+
 export function PhoneNumberInput({
   label,
   value,
@@ -78,7 +83,7 @@ export function PhoneNumberInput({
   const [avatarBroken, setAvatarBroken] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const formattedValue = useMemo(() => formatPhoneInput(value), [value]);
+  const formattedValue = useMemo(() => looksLikeTinInput(value) ? value : formatPhoneInput(value), [value]);
   const filteredCountries = useMemo(() => {
     const ordered = buildCountryList(suggestedCountries);
     return ordered.filter((c) =>
@@ -120,7 +125,7 @@ export function PhoneNumberInput({
   const showSummaryCard = verificationDetails && verificationState !== "checking";
   const showLookupCard = lookupBusy || Boolean(lookupError) || Boolean(recipientPreview) || Boolean(showSummaryCard);
   const inputValue = value.trim();
-  const isTinCandidate = /^tin[:\s-]/i.test(inputValue) || /^tin_[a-z0-9]+$/i.test(inputValue);
+  const isTinCandidate = looksLikeTinInput(inputValue);
   const isBusiness = Boolean(verificationDetails?.isBusiness);
   const displayName = verificationDetails?.displayName?.trim() || null;
   const avatarSrc =
@@ -378,14 +383,13 @@ export function PhoneNumberInput({
 
               <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2.5">
                 <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">Identity routing preview</div>
+                <div className="text-[0.7rem] text-[var(--text-faint)]">TIN: {recipientPreview.recipient.tin ?? "not linked yet"}</div>
                 <div className="mt-1 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
-                <div className="text-[0.7rem] text-[var(--text-faint)]">X: feature coming soon (user has not linked X profile)</div>
-                <div className="text-[0.7rem] text-[var(--text-faint)]">TIN: feature coming soon (no linked TIN yet)</div>
               </div>
 
               {isTinCandidate ? (
                 <div className="rounded-[12px] border border-[#7dd3fc]/20 bg-[#7dd3fc]/10 px-3 py-2 text-[0.7rem] text-[#bde8ff]">
-                  TIN lookup is coming soon. For now, TrustLink routes by verified WhatsApp identity.
+                  {recipientPreview.recipient.tin ? "TIN resolved. TrustLink will route this payment to the linked recipient." : "TIN detected. No linked TrustLink identity was found yet."}
                 </div>
               ) : null}
 

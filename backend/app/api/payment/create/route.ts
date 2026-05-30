@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { toErrorResponse, ok } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
 import { env } from "@/app/lib/env";
-import { findUserByPhoneNumber } from "@/app/db/users";
+import { findUserByPhoneNumber, findUserByTin } from "@/app/db/users";
 import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
 import { sha256 } from "@/app/utils/hash";
@@ -23,7 +23,7 @@ const SENDER_AUTHORIZATION_MAX_AGE_MS = 5 * 60 * 1000;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { paymentId, phoneNumber, senderPhoneNumber, amount, tokenMintAddress, senderWallet } = body;
+    const { paymentId, phoneNumber, senderPhoneNumber, amount, tokenMintAddress, senderWallet, recipientTin } = body;
 
     if (!env.TSN_ENABLED) {
       return toErrorResponse(new Error("TSN service not available"));
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!phoneNumber || !senderPhoneNumber || !amount || !tokenMintAddress || !senderWallet) {
+    if ((!phoneNumber && !recipientTin) || !senderPhoneNumber || !amount || !tokenMintAddress || !senderWallet) {
       return toErrorResponse(new Error("Missing required payment fields"));
     }
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     if (!sender) return toErrorResponse(new Error("Sender must register identity first"));
     if (!sender.tin) return toErrorResponse(new Error("Sender must create a TIN before sending payments"));
 
-    const receiver = await findUserByPhoneNumber(phoneNumber);
+    const receiver = recipientTin ? await findUserByTin(String(recipientTin)) : await findUserByPhoneNumber(phoneNumber);
     if (!receiver) return toErrorResponse(new Error("Recipient must register identity first"));
     if (!receiver.tin) return toErrorResponse(new Error("Recipient must create a TIN before receiving TSN payments"));
     const destinationWallet = receiver.tins_wallet_pubkey ?? receiver.wallet_address;

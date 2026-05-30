@@ -20,6 +20,13 @@ type TsnIntentRequest = {
   source: string;
 };
 
+const DEFAULT_TSN_FEE_CONFIG = {
+  sendFeeBps: 500,
+  feeCoverageTxCount: 4,
+  sendFeeMaxUiAmount: 1,
+  sendFeeMaxUsd: 1,
+};
+
 async function sha256Hex(input: string) {
   const encoded = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
@@ -131,12 +138,28 @@ async function fetchEscrowConfigFromChain(
   }
 
   const data = new Uint8Array(account.data);
+  const minimumMotherEscrowLength =
+    8 + 32 + 32 + 32 + 8 + 8 + 2 + 2 + 2 + 8 + 8 + 1;
   const discriminator = await accountDiscriminator("MotherEscrow");
   const actual = data.slice(0, 8);
   for (let index = 0; index < 8; index += 1) {
     if (actual[index] !== discriminator[index]) {
       throw new Error("TSN mother escrow discriminator mismatch");
     }
+  }
+  if (data.byteLength < minimumMotherEscrowLength) {
+    await postTerminalLog(
+      "tsn.frontend.quote_config_fallback",
+      {
+        reason: "mother_escrow_account_too_small",
+        programId: programId.toBase58(),
+        motherEscrow: motherEscrowPda.toBase58(),
+        dataLength: data.byteLength,
+        expectedMinimumLength: minimumMotherEscrowLength,
+      },
+      "warn",
+    );
+    return DEFAULT_TSN_FEE_CONFIG;
   }
 
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -154,9 +177,9 @@ async function fetchEscrowConfigFromChain(
     // TSN fee policy from current architecture:
     // sender fee is modeled as cranker split on covered network cost
     sendFeeBps: Math.max(0, feeSplitCrankerBps),
-    feeCoverageTxCount: 4,
-    sendFeeMaxUiAmount: 1,
-    sendFeeMaxUsd: 1,
+    feeCoverageTxCount: DEFAULT_TSN_FEE_CONFIG.feeCoverageTxCount,
+    sendFeeMaxUiAmount: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUiAmount,
+    sendFeeMaxUsd: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUsd,
   };
 }
 

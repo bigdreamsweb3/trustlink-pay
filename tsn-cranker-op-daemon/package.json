@@ -10,8 +10,7 @@
     "policy:open": "node ./scripts/tsn-setup.mjs set-funding-policy true",
     "policy:closed": "node ./scripts/tsn-setup.mjs set-funding-policy false",
     "settle:force": "node ./scripts/tsn-setup.mjs settle-epoch --force",
-    "crank:start": "tsx ./scripts/cranker.ts",
-    "crank:reference": "tsx ./scripts/cranker.ts"
+    "crank:start": "tsx ./scripts/cranker.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.14",

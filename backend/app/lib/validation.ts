@@ -168,8 +168,11 @@ export const updateProfileSchema = z.object({
 });
 
 export const recipientLookupSchema = z.object({
-  phoneNumber: phoneNumberSchema,
+  phoneNumber: phoneNumberSchema.optional(),
+  tin: z.string().trim().regex(/^\d{10}$/, "tin must be a 10-digit Transfer Identity Number").optional(),
   skipWhatsAppCheck: z.boolean().optional(),
+}).refine((value) => Boolean(value.phoneNumber || value.tin), {
+  message: "phoneNumber or tin is required",
 });
 
 export const verifyWhatsAppNumberSchema = z.object({

@@ -1,4 +1,4 @@
-import { findUserByPhoneNumber } from "@/app/db/users";
+import { findUserByPhoneNumber, findUserByTin } from "@/app/db/users";
 import { findLatestWhatsAppProfileNameByPhoneNumber } from "@/app/db/whatsapp-webhook-events";
 import { logger } from "@/app/lib/logger";
 import { verifyWhatsAppNumber } from "@/app/services/whatsapp";
@@ -12,6 +12,7 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "invalid";
+        tin?: string | null;
         whatsappProfileName: null;
       };
       warning: string;
@@ -23,7 +24,8 @@ export type RecipientLookupResult =
         displayName: string;
         handle: string;
         phoneNumber: string;
-        source: "trustlink";
+        source: "trustlink" | "tins";
+        tin?: string | null;
         whatsappProfileName: string | null;
       };
     }
@@ -35,6 +37,7 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "whatsapp";
+        tin?: string | null;
         whatsappProfileName: string;
       };
       warning: string;
@@ -47,10 +50,43 @@ export type RecipientLookupResult =
         handle: null;
         phoneNumber: string;
         source: "manual_invite";
+        tin?: string | null;
         whatsappProfileName: null;
       };
       warning: string;
     };
+
+export async function lookupRecipientIdentityByTin(tin: string): Promise<RecipientLookupResult> {
+  const trustLinkUser = await findUserByTin(tin);
+  if (!trustLinkUser?.phone_verified_at) {
+    return {
+      status: "invalid_whatsapp_number",
+      verified: false,
+      recipient: {
+        displayName: tin,
+        handle: null,
+        phoneNumber: "",
+        source: "invalid",
+        tin,
+        whatsappProfileName: null,
+      },
+      warning: "No TrustLink account is linked to this TIN yet.",
+    };
+  }
+
+  return {
+    status: "registered",
+    verified: true,
+    recipient: {
+      displayName: trustLinkUser.display_name?.trim() || `TIN ${tin}`,
+      handle: trustLinkUser.trustlink_handle,
+      phoneNumber: trustLinkUser.phone_number,
+      source: "tins",
+      tin: trustLinkUser.tin,
+      whatsappProfileName: null,
+    },
+  };
+}
 
 export async function lookupRecipientIdentity(
   phoneNumber: string,
@@ -84,6 +120,7 @@ export async function lookupRecipientIdentity(
         handle: trustLinkUser.trustlink_handle,
         phoneNumber: trustLinkUser.phone_number,
         source: "trustlink",
+        tin: trustLinkUser.tin,
         whatsappProfileName: whatsappDisplayName,
       },
     };
@@ -134,6 +171,7 @@ export async function lookupRecipientIdentity(
         handle: null,
         phoneNumber: trustLinkUser.phone_number,
         source: "whatsapp",
+        tin: trustLinkUser.tin,
         whatsappProfileName: whatsappDisplayName ?? trustLinkUser.display_name,
       },
       warning: trustLinkUser.whatsapp_opted_in

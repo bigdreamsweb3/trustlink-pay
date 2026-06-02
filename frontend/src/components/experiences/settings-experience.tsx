@@ -20,6 +20,7 @@ import type { IdentitySecurityResponse, IdentitySecurityState, TinIdentityState,
 import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
+import Link from "next/link";
 
 type BackupFlowStep = "intro" | "connect" | "success";
 type RecoveryFlowStep = "start" | "cooldown" | "set-wallet" | "success";
@@ -368,6 +369,26 @@ export function SettingsExperience() {
         {/* ── Notices ── */}
         {notice ? <div className="tl-badge rounded-[18px] px-4 py-3 tl-body-sm">{notice}</div> : null}
         {error ? <div className="tl-button-danger rounded-[18px] px-4 py-3 tl-body-sm">{error}</div> : null}
+
+
+        {/* ═══════════ Stats Card ═══════════ */}
+        <div>
+          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Account</div>
+          <div className="tl-panel-header tl-field mt-5 rounded-[22px] px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--text-soft)]">Trust Score</div>
+              <Link
+                href="/app/profile"
+                className="flex items-center gap-1.5 text-[0.76rem] font-semibold text-[var(--accent-deep)] dark:text-[var(--accent)] transition-colors hover:opacity-80 cursor-pointer"
+              >
+                Profile
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="mt-3 text-[1.5rem] font-bold tracking-tight text-[var(--text)]">0.00</div>
+            <div className="mt-2 h-1 w-10 rounded-full bg-[var(--accent-deep)] dark:bg-[var(--accent)]" />
+          </div>
+        </div>
 
         {/* ═══════════ SECURITY ═══════════ */}
         <div>

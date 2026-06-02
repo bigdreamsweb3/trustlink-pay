@@ -110,8 +110,8 @@ export function LandingPage() {
             The world already understands how to pay people through identity.
           </h2>
           <p className="tl-body mt-5 max-w-[680px]">
-            Nigeria uses OPay.<br/>
-            India uses UPI.<br/>
+            Nigeria uses OPay.<br />
+            India uses UPI.<br />
             Brazil uses Pix.
           </p>
         </div>
@@ -132,7 +132,7 @@ export function LandingPage() {
       <section id="escrow-settlement" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
         <div className="min-w-0">
           <SectionLabel index="02" title="Why Escrow-Based Settlement?" />
-          <h2 className="text-[clamp(1.75rem,3.5vw,2.35rem)] font-black leading-[1.08] tracking-[-0.03em] text-[var(--text)] mt-5">
+          <h2 className="tl-h2 mt-5">
             Traditional wallet transfers expose both parties directly during payment coordination.
           </h2>
           <p className="tl-body mt-5 max-w-[680px]">
@@ -161,14 +161,14 @@ export function LandingPage() {
         <SectionLabel index="03" title="Transfer Settlement Network" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
-             <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-black leading-[1.1] text-[var(--text)]">
+            <h2 className="tl-h2">
               TSN is the settlement infrastructure layer powering TrustLink.
             </h2>
             <p className="mt-4 text-[1rem] leading-8 text-[var(--text-soft)]">
               TSN coordinates payment intents, escrow settlement, payout execution, operator coordination, and settlement verification.
-              <br/><br/>
+              <br /><br />
               The goal is simple: Make blockchain payments feel closer to familiar mobile-money systems while preserving programmable on-chain settlement.
-              <br/><br/>
+              <br /><br />
               <em>At launch, TrustLink operates the settlement infrastructure directly while the network matures.</em>
             </p>
           </div>
@@ -223,7 +223,7 @@ export function LandingPage() {
         <SectionLabel index="05" title="For Developers" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2 items-center">
           <div>
-            <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-black leading-[1.1] text-[var(--text)]">
+            <h2 className="tl-h2">
               Programmable payment infrastructure.
             </h2>
             <p className="mt-4 text-[1rem] leading-8 text-[var(--text-soft)]">
@@ -246,25 +246,25 @@ export function LandingPage() {
       {/* SECTION 7: CURRENT STATUS */}
       <section id="status" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0 mb-12">
         <div className="tl-panel rounded-[24px] p-8 md:p-12 text-center bg-gradient-to-b from-[var(--bg)] to-[var(--bg-soft)] border border-[var(--field-border)]">
-          <h2 className="text-[2rem] font-black text-[var(--text)] mb-6">Current Status</h2>
+          <h2 className="tl-h2 mb-6">Current Status</h2>
           <div className="flex flex-wrap justify-center gap-3 max-w-[800px] mx-auto">
-             {[
-               "Wallet onboarding",
-               "Phone-number routing",
-               "Escrow-backed payments",
-               "Stablecoin support",
-               "Transaction review flows",
-               "Settlement-intent creation",
-               "WhatsApp-based onboarding"
-             ].map((feature) => (
-               <span key={feature} className="inline-flex items-center gap-2 bg-[var(--field-bg)] border border-[var(--field-border)] rounded-full px-4 py-2 text-sm font-semibold text-[var(--text-soft)]">
-                 <CheckCircle2 className="h-4 w-4 text-accent" />
-                 {feature}
-               </span>
-             ))}
+            {[
+              "Wallet onboarding",
+              "Phone-number routing",
+              "Escrow-backed payments",
+              "Stablecoin support",
+              "Transaction review flows",
+              "Settlement-intent creation",
+              "WhatsApp-based onboarding"
+            ].map((feature) => (
+              <span key={feature} className="inline-flex items-center gap-2 bg-[var(--field-bg)] border border-[var(--field-border)] rounded-full px-4 py-2 text-sm font-semibold text-[var(--text-soft)]">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                {feature}
+              </span>
+            ))}
           </div>
           <p className="mt-8 text-[0.95rem] text-[var(--text-faint)] max-w-[600px] mx-auto">
-            Additional settlement infrastructure continues evolving through TSN and TINS development.<br/><br/>
+            Additional settlement infrastructure continues evolving through TSN and TINS development.<br /><br />
             <strong>TrustLink Pay: Identity-first stablecoin settlement infrastructure on Solana.</strong>
           </p>
         </div>

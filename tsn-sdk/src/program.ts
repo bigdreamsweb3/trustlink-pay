@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 export const VERIFIED_TSN_PROGRAM_ID =
   "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";
 export const VERIFIED_TSN_CLUSTER = "devnet";

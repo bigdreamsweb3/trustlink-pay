@@ -5,7 +5,7 @@ export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read"
 export type PaymentViewerRole = "sender" | "receiver";
 export type PaymentMode = "secure" | "invite";
 
-export type TsnUiStage = "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
+export type TsnUiStage = "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
 
 export interface PaymentTsnState {
   stage: TsnUiStage;

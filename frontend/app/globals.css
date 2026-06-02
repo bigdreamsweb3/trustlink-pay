@@ -47,7 +47,7 @@
   --accent: #2ea886;
   --accent-deep: #1e7a60;
   --primary-accent: #5ab8aa;
-  --accent-icon: #2ea886;
+  --accent-icon: #2ea88500;
   --accent-gradient: linear-gradient(
     145deg,
     rgba(46, 168, 134, 0.12) 0%,
@@ -364,8 +364,47 @@
 
 /* ── PANEL HEADERS ─── */
 .tl-panel-header {
-  padding: 1.25rem 0.75rem;
+  padding: 1.25rem 0.35rem;
   border-bottom: 0rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.tl-panel-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Frosted top area only */
+.tl-panel-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* only visible at top */
+  height: 25%;
+
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-elevated) 94%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 70%, transparent) 40%,
+    transparent 100%
+  );
+
+  background-image: var(--pop-bg);
+
+  backdrop-filter: blur(24px);
+
+  pointer-events: none;
+
+  /* smoother fade */
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.8) 50%,
+    transparent 100%
+  );
 }
 
 .tl-panel-header h2,
@@ -543,51 +582,6 @@ select {
   backdrop-filter: blur(24px);
 }
 
-.tl-panel-header > * {
-  position: relative;
-  z-index: 1;
-}
-
-.tl-panel-header {
-  position: relative;
-  overflow: hidden;
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
-  border-bottom-left-radius: 0rem;
-  border-bottom-right-radius: 0rem;
-}
-
-/* Frosted top area only */
-.tl-panel-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  /* only visible at top */
-  height: 25%;
-
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg-elevated) 94%, transparent) 0%,
-    color-mix(in srgb, var(--bg-elevated) 70%, transparent) 40%,
-    transparent 100%
-  );
-
-  background-image: var(--pop-bg);
-
-  backdrop-filter: blur(24px);
-
-  pointer-events: none;
-
-  /* smoother fade */
-  mask-image: linear-gradient(
-    to bottom,
-    black 0%,
-    rgba(0, 0, 0, 0.8) 50%,
-    transparent 100%
-  );
-}
-
 .tl-phone-frame {
   background: var(--phone-shell);
 }
@@ -738,7 +732,7 @@ select {
 }
 
 .tl-field {
-  background: var(--field);
+  background: var(--surface-soft);
   border: 1px solid var(--field-border);
   border-radius: 0.75rem;
 }

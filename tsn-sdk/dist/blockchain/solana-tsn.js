@@ -11,6 +11,8 @@ function getVerifiedTsnProgramId() {
 }
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_INTENT_SEED = Buffer.from("tsn_intent");
+const TSN_VERIFIER_SEED = Buffer.from("verifier");
+const TSN_TREASURY_SEED = Buffer.from("tsn_treasury");
 const TSN_CRANKER_SEED = Buffer.from("tsn_cranker");
 const TSN_CRANKER_VAULT_SEED = Buffer.from("tsn_cranker_vault");
 const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authority");
@@ -23,6 +25,12 @@ export function getTsnMotherEscrowPda() {
 }
 export function getTsnIntentPda(params) {
     return PublicKey.findProgramAddressSync([TSN_INTENT_SEED, params.motherEscrow.toBuffer(), params.intentSeed32], getVerifiedTsnProgramId())[0];
+}
+export function getTsnVerifierPda() {
+    return PublicKey.findProgramAddressSync([TSN_VERIFIER_SEED], getVerifiedTsnProgramId())[0];
+}
+export function getTsnTreasuryPda() {
+    return PublicKey.findProgramAddressSync([TSN_TREASURY_SEED], getVerifiedTsnProgramId())[0];
 }
 export function getTsnCrankerPda(params) {
     return PublicKey.findProgramAddressSync([TSN_CRANKER_SEED, params.motherEscrow.toBuffer(), params.operator.toBuffer()], getVerifiedTsnProgramId())[0];
@@ -88,12 +96,16 @@ export async function tsnCreateIntentOnChain(params) {
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
     const payer = params.payer ?? getEscrowAuthorityKeypair(params.secretKey);
     const motherEscrow = getTsnMotherEscrowPda();
+    const cranker = getTsnCrankerPda({ motherEscrow, operator: payer.publicKey });
+    const verifierPda = getTsnVerifierPda();
     const intent = getTsnIntentPda({ motherEscrow, intentSeed32: params.intentSeed32 });
     const ix = new TransactionInstruction({
         programId: getVerifiedTsnProgramId(),
         keys: [
             { pubkey: payer.publicKey, isSigner: true, isWritable: true },
             { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: verifierPda, isSigner: false, isWritable: true },
             { pubkey: intent, isSigner: false, isWritable: true },
             { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
@@ -106,10 +118,30 @@ export async function tsnCreateIntentOnChain(params) {
             params.recipientHash32, // [u8;32]
         ]),
     });
-    const tx = new Transaction().add(ix);
+    const tx = new Transaction({ feePayer: payer.publicKey }).add(ix);
     const signature = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: "confirmed" });
     logger.info("tsn.intent.onchain_created", {
         intent: intent.toBase58(),
+        feePayer: payer.publicKey.toBase58(),
+        verifierPda: verifierPda.toBase58(),
+        signature,
+    });
+    return { mode: "devnet", signature };
+}
+export async function tsnSubmitSenderSignedSettlementTransaction(params) {
+    const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+    const tx = Transaction.from(Buffer.from(params.signedTransactionBase64, "base64"));
+    if (!tx.feePayer?.equals(params.operator.publicKey)) {
+        throw new Error(`Sender-signed settlement fee payer mismatch. Expected cranker ${params.operator.publicKey.toBase58()}, got ${tx.feePayer?.toBase58() ?? "missing"}.`);
+    }
+    tx.partialSign(params.operator);
+    const signature = await connection.sendRawTransaction(tx.serialize({
+        requireAllSignatures: true,
+        verifySignatures: true,
+    }), { preflightCommitment: "confirmed" });
+    await connection.confirmTransaction(signature, "confirmed");
+    logger.info("tsn.intent.sender_signed_settlement_submitted", {
+        feePayer: params.operator.publicKey.toBase58(),
         signature,
     });
     return { mode: "devnet", signature };
@@ -362,9 +394,13 @@ export async function tsnClaimIntentOnChain(params) {
         ],
         data: instructionDiscriminator("tsn_claim_intent"),
     });
-    const tx = new Transaction().add(ix);
+    const tx = new Transaction({ feePayer: params.operator.publicKey }).add(ix);
     const signature = await sendAndConfirmTransaction(connection, tx, [params.operator], { commitment: "confirmed" });
-    logger.info("tsn.intent.claimed", { intent: params.intent.toBase58(), signature });
+    logger.info("tsn.intent.claimed", {
+        intent: params.intent.toBase58(),
+        feePayer: params.operator.publicKey.toBase58(),
+        signature,
+    });
     return { mode: "devnet", signature };
 }
 export async function tsnReassignIntentOnChain(params) {
@@ -397,12 +433,9 @@ export async function tsnSubmitProofOnChain(params) {
     const recipientTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.recipientWallet);
     const operatorTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.operator.publicKey);
     const escrowConfig = await getEscrowConfigState();
-    const treasuryOwnerRaw = params.treasuryOwner ?? escrowConfig?.treasuryOwner ?? null;
-    if (!treasuryOwnerRaw) {
-        throw new Error("Treasury owner is not configured (required for TSN fee routing).");
-    }
+    const treasuryOwnerRaw = params.treasuryOwner ?? escrowConfig?.treasuryOwner ?? getTsnTreasuryPda().toBase58();
     const treasuryOwner = new PublicKey(treasuryOwnerRaw);
-    const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner);
+    const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner, true);
     const ix = new TransactionInstruction({
         programId: getVerifiedTsnProgramId(),
         keys: [
@@ -424,7 +457,7 @@ export async function tsnSubmitProofOnChain(params) {
             encodeU64(params.payoutAmountBaseUnits),
         ]),
     });
-    const tx = new Transaction();
+    const tx = new Transaction({ feePayer: params.operator.publicKey });
     const recipientTokenAccountInfo = await connection.getAccountInfo(recipientTokenAccount, "confirmed");
     const operatorTokenAccountInfo = await connection.getAccountInfo(operatorTokenAccount, "confirmed");
     const treasuryTokenAccountInfo = await connection.getAccountInfo(treasuryTokenAccount, "confirmed");
@@ -439,7 +472,12 @@ export async function tsnSubmitProofOnChain(params) {
     }
     tx.add(ix);
     const signature = await sendAndConfirmTransaction(connection, tx, [params.operator], { commitment: "confirmed" });
-    logger.info("tsn.proof.submitted", { intent: params.intent.toBase58(), cranker: cranker.toBase58(), signature });
+    logger.info("tsn.proof.submitted", {
+        intent: params.intent.toBase58(),
+        cranker: cranker.toBase58(),
+        feePayer: params.operator.publicKey.toBase58(),
+        signature,
+    });
     return { mode: "devnet", signature };
 }
 export async function tsnFetchIntentOnChain(params) {

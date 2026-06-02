@@ -56,7 +56,7 @@ export function ProfileExperience() {
             {initialsFor(form.displayName || user.displayName)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate tl-h3 text-primary">{form.displayName || user.displayName}</div>
+            <div className="truncate tl-h3 text-[var(--text)]">{form.displayName || user.displayName}</div>
             <div className="tl-meta-sm mt-0.5">@{form.handle || user.handle}</div>
           </div>
         </div>
@@ -73,7 +73,7 @@ export function ProfileExperience() {
                   value={form.displayName}
                   onChange={(e) => setForm((c) => ({ ...c, displayName: e.target.value }))}
                   placeholder="Daniel Trust"
-                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-primary outline-none placeholder:text-faint"
+                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-[var(--text)] outline-none placeholder:text-faint"
                 />
               </label>
             </div>
@@ -85,7 +85,7 @@ export function ProfileExperience() {
                   value={form.handle}
                   onChange={(e) => setForm((c) => ({ ...c, handle: e.target.value.toLowerCase() }))}
                   placeholder="daniel_trust"
-                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-primary outline-none placeholder:text-faint"
+                  className="mt-1.5 block w-full bg-transparent tl-body font-semibold text-[var(--text)] outline-none placeholder:text-faint"
                 />
               </label>
             </div>

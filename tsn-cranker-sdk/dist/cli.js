@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { sha256Bytes, tsnInitializeMotherEscrowOnChain, tsnRegisterCrankerOnChain, tsnSetCrankerFundingPolicyOnChain, tsnInitializeCrankerVaultOnChain, tsnFundCrankerOnChain, tsnWithdrawCrankerFundsOnChain, tsnSettleEpochOnChain, } from "../../tsn-sdk/dist/blockchain/solana-tsn.js";
+import { sha256Bytes, tsnInitializeMotherEscrowOnChain, tsnMigrateMotherEscrowOnChain, tsnRegisterCrankerOnChain, tsnSetCrankerFundingPolicyOnChain, tsnInitializeCrankerVaultOnChain, tsnFundCrankerOnChain, tsnWithdrawCrankerFundsOnChain, tsnSettleEpochOnChain, } from "../../tsn-sdk/dist/blockchain/solana-tsn.js";
 loadDotenv();
 loadDotenv({ path: ".env.local", override: true });
 function requireEnv(name) {
@@ -47,6 +47,22 @@ async function handleCommand() {
     const secretKey = process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY ?? process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY;
     if (command === "init-mother") {
         const result = await tsnInitializeMotherEscrowOnChain({
+            authority: authorityKeypair(),
+            tinsProgramId: tinsProgramId(),
+            protocolSeed32: sha256Bytes("tsn-dev-seed"),
+            epochSeconds: BigInt(7 * 60 * 60),
+            leaseSeconds: BigInt(30),
+            feeSplitCrankerBps: null,
+            feeSplitLpBps: null,
+            feeSplitTreasuryBps: null,
+            rpcUrl,
+            secretKey,
+        });
+        console.log(result);
+        return;
+    }
+    if (command === "migrate-mother") {
+        const result = await tsnMigrateMotherEscrowOnChain({
             authority: authorityKeypair(),
             tinsProgramId: tinsProgramId(),
             protocolSeed32: sha256Bytes("tsn-dev-seed"),
@@ -124,6 +140,7 @@ async function handleCommand() {
     console.error(`Unknown command: ${command ?? "(missing)"}`);
     console.error(`Usage:
   npm start -- init-mother
+  npm start -- migrate-mother
   npm start -- register-cranker
   npm start -- set-funding-policy true|false
   npm start -- init-vault <TOKEN_MINT>
@@ -145,6 +162,7 @@ async function main() {
         console.log(`TSN Cranker SDK Setup Commands:
     
   init-mother                    Initialize mother escrow on chain
+  migrate-mother                 Rewrite an invalid/old mother escrow layout
   register-cranker               Register operator as cranker
   set-funding-policy <bool>      Set cranker funding policy (true|false)
   init-vault <TOKEN_MINT>        Initialize cranker vault
@@ -155,7 +173,7 @@ async function main() {
 Environment Variables:
   RPC_URL                        Solana RPC endpoint
   PROGRAM_ID                     TSN program ID
-  TINS_PROGRAM_ID                TINS registry program ID (defaults to devnet TINS id)
+  TINS_PROGRAM_ID                TINS registry program ID (defaults to local dev TINS id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);
         return;
     }

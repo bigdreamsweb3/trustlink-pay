@@ -72,9 +72,134 @@ function statusTone(
   }
 }
 
+type TsnStage = NonNullable<PaymentDetailResponse["payment"]["tsn"]>["stage"];
+type TsnState = NonNullable<PaymentDetailResponse["payment"]["tsn"]>;
+
+function isSenderEscrowed(detail: PaymentDetailResponse | null | undefined) {
+  const tsn = detail?.payment.tsn;
+  return (
+    detail?.viewerRole === "sender" &&
+    (tsn?.intentStatus === "onchain" || tsn?.intentStatus === "claimed")
+  );
+}
+
+function effectiveTsnStage(detail: PaymentDetailResponse): TsnStage {
+  return isSenderEscrowed(detail) ? "escrowed" : detail.payment.tsn!.stage;
+}
+
+function tsnTone(stage: TsnStage) {
+  switch (stage) {
+    case "intent_pending":
+    case "claim_requested":
+      return "bg-[#f3c96b]/12 text-[#f3c96b]";
+    case "escrowed":
+    case "lease_claimed":
+      return "bg-[#58f2b1]/12 text-accent-deep";
+    case "cranker_paid":
+    case "epoch_settled":
+      return "bg-[#4ae8d0]/12 text-[#4ae8d0]";
+    case "reverted":
+      return "bg-[#ff7f7f]/12 text-[#ffadad]";
+  }
+}
+
+function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]) {
+  if (viewerRole === "sender" && (tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed")) {
+    return "Escrowed";
+  }
+
+  switch (tsn.stage) {
+    case "intent_pending":
+      return "Awaiting Cranker";
+    case "claim_requested":
+      return "Claim queued";
+    case "escrowed":
+      return "Escrowed";
+    case "lease_claimed":
+      return "Claiming";
+    case "cranker_paid":
+      return "Recipient paid";
+    case "epoch_settled":
+      return "Settled";
+    case "reverted":
+      if (tsn.intentStatus === "canceled") return "Canceled";
+      if (tsn.intentStatus === "failed") return "Failed";
+      if (tsn.claimRequestStatus === "failed") return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
+      return "Not processed";
+  }
+}
+
 function paymentStatusLabel(status: PaymentDetailResponse["payment"]["status"]) {
   if (status === "created") return "Processing";
   return status.replace(/_/g, " ");
+}
+
+function formatDuration(from: string | null | undefined, to: string | null | undefined) {
+  if (!from) return null;
+  const started = Date.parse(from);
+  const finished = to ? Date.parse(to) : Date.now();
+  if (!Number.isFinite(started) || !Number.isFinite(finished) || finished < started) return null;
+  const totalSeconds = Math.max(0, Math.floor((finished - started) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${totalSeconds}s`;
+}
+
+function buildTsnProgress(detail: PaymentDetailResponse) {
+  const tsn = detail.payment.tsn;
+  if (!tsn) return null;
+
+  const stage = effectiveTsnStage(detail);
+  const currentIndex = {
+    intent_pending: 0,
+    claim_requested: 0,
+    escrowed: 1,
+    lease_claimed: 2,
+    cranker_paid: 3,
+    epoch_settled: 3,
+    reverted: -1,
+  }[stage];
+  const failed = stage === "reverted";
+  const settled = stage === "cranker_paid" || stage === "epoch_settled";
+  const lastCompletedTimelineEntry = [...detail.timeline]
+    .reverse()
+    .find((entry) => entry.complete && entry.occurredAt);
+  const finishedAt = settled ? detail.payment.accepted_at ?? lastCompletedTimelineEntry?.occurredAt ?? null : null;
+  const elapsed = formatDuration(detail.payment.created_at, finishedAt);
+
+  return {
+    failed,
+    settled,
+    elapsed,
+    steps: [
+      {
+        id: "authorized",
+        label: "Authorized",
+        description: "Sender co-signed the sponsored TSN payment.",
+      },
+      {
+        id: "escrowed",
+        label: "Escrowed",
+        description: "Cranker verified the intent and locked funds into TSN escrow.",
+      },
+      {
+        id: "claiming",
+        label: "Claiming",
+        description: "A Cranker lease is protecting the payout from duplicate execution.",
+      },
+      {
+        id: "settled",
+        label: "Settled",
+        description: "Recipient payout and TSN proof are complete.",
+      },
+    ].map((step, index) => ({
+      ...step,
+      complete: settled ? true : !failed && index < currentIndex,
+      active: !failed && !settled && index === currentIndex,
+    })),
+  };
 }
 
 export function TransactionDetailExperience({
@@ -105,6 +230,11 @@ export function TransactionDetailExperience({
     shouldPollPaymentNotification(
       detail?.payment.notification_status
     );
+  const shouldPollTsn =
+    detail?.payment.tsn != null &&
+    !["cranker_paid", "epoch_settled"].includes(detail.payment.tsn.stage) &&
+    (detail.payment.tsn.stage !== "reverted" || isSenderEscrowed(detail));
+  const shouldPollDetail = shouldPollReceipt || shouldPollTsn;
 
   useEffect(() => {
     if (!accessToken || !user) return;
@@ -150,7 +280,7 @@ export function TransactionDetailExperience({
     if (
       !accessToken ||
       !user ||
-      !shouldPollReceipt
+      !shouldPollDetail
     ) {
       return;
     }
@@ -188,7 +318,7 @@ export function TransactionDetailExperience({
   }, [
     accessToken,
     paymentId,
-    shouldPollReceipt,
+    shouldPollDetail,
     user,
   ]);
 
@@ -221,6 +351,18 @@ export function TransactionDetailExperience({
         detail.payment.token_symbol
       )
     : null;
+
+  const tsnProgress = useMemo(() => (detail ? buildTsnProgress(detail) : null), [detail]);
+  const heroStatusLabel = detail?.payment.tsn
+    ? tsnLabel(detail.payment.tsn, detail.viewerRole)
+    : detail
+      ? paymentStatusLabel(detail.payment.status)
+      : "";
+  const heroStatusTone = detail?.payment.tsn
+    ? tsnTone(effectiveTsnStage(detail))
+    : detail
+      ? statusTone(detail.payment.status)
+      : "";
 
   if (!hydrated || !user) return null;
 
@@ -285,11 +427,9 @@ export function TransactionDetailExperience({
 
                 <div className="mt-3 flex justify-center">
                   <span
-                    className={`rounded-full px-3 py-1 tl-meta-sm font-semibold capitalize ${statusTone(
-                      detail.payment.status
-                    )}`}
+                    className={`rounded-full px-3 py-1 tl-meta-sm font-semibold capitalize ${heroStatusTone}`}
                   >
-                    {paymentStatusLabel(detail.payment.status)}
+                    {heroStatusLabel}
                   </span>
                 </div>
 
@@ -305,6 +445,73 @@ export function TransactionDetailExperience({
                 </p>
               </div>
             </div>
+
+            {tsnProgress ? (
+              <div className="tl-panel-header tl-field overflow-hidden rounded-[24px] px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
+                      TSN settlement path
+                    </div>
+                    <div className="mt-1 text-[0.8rem] text-[var(--text-soft)]">
+                      {tsnProgress.settled
+                        ? `Completed in ${tsnProgress.elapsed ?? "a few moments"}`
+                        : tsnProgress.failed
+                          ? detail.payment.tsn?.settlementReason ?? "Settlement needs operator attention."
+                          : `Running for ${tsnProgress.elapsed ?? "a few seconds"}`}
+                    </div>
+                  </div>
+
+                  <span className={`shrink-0 rounded-full px-3 py-1 tl-meta-sm font-semibold ${detail.payment.tsn ? tsnTone(effectiveTsnStage(detail)) : ""}`}>
+                    {detail.payment.tsn ? tsnLabel(detail.payment.tsn, detail.viewerRole) : "TSN"}
+                  </span>
+                </div>
+
+                <div className="mt-5 grid grid-cols-4 gap-0">
+                  {tsnProgress.steps.map((step, index) => (
+                    <div key={step.id} className="relative min-w-0">
+                      {index > 0 ? (
+                        <div
+                          className={`absolute left-[-50%] right-[50%] top-[13px] h-px ${
+                            step.complete || step.active
+                              ? "bg-[var(--accent)]"
+                              : "bg-white/10"
+                          }`}
+                        />
+                      ) : null}
+
+                      <div className="relative z-10 flex flex-col items-center text-center">
+                        <span
+                          className={`grid h-6 w-6 place-items-center rounded-full border text-[0.62rem] font-bold ${
+                            tsnProgress.failed && step.active
+                              ? "border-[#ff7f7f]/40 bg-[#ff7f7f]/12 text-[#ffadad]"
+                              : step.complete
+                                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                                : step.active
+                                  ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
+                                  : "border-white/10 bg-white/[0.03] text-[var(--text-soft)]"
+                          }`}
+                        >
+                          {index + 1}
+                        </span>
+
+                        <span className="mt-2 truncate text-[0.68rem] font-semibold text-[var(--text)]">
+                          {step.label}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.02] px-3 py-3 text-[0.74rem] leading-relaxed text-[var(--text-soft)]">
+                  {tsnProgress.failed
+                    ? detail.payment.tsn?.settlementReason ?? "TSN marked this payment for operator review."
+                    : tsnProgress.steps.find((step) => step.active)?.description ??
+                    [...tsnProgress.steps].reverse().find((step) => step.complete)?.description ??
+                    "TSN is waiting for the next settlement update."}
+                </div>
+              </div>
+            ) : null}
 
             {/* MAIN GRID */}
             <div className="grid gap-5 md:grid-cols-[1.25fr_0.9fr] md:items-start">
@@ -325,7 +532,7 @@ export function TransactionDetailExperience({
                             : "Sender"}
                         </div>
 
-                        <div className="mt-1 text-[0.9rem] font-semibold text-primary">
+                        <div className="mt-1 text-[0.9rem] font-semibold text-[var(--text)]">
                           {detail.viewerRole === "sender"
                             ? detail.receiver.phone
                             : detail.sender.displayName}
@@ -590,7 +797,7 @@ export function TransactionDetailExperience({
                         <div className="min-w-0 flex-1">
 
                           <div className="flex items-start justify-between gap-3">
-                            <span className="tl-body-sm font-semibold text-primary">
+                            <span className="tl-body-sm font-semibold text-[var(--text)]">
                               {entry.label}
                             </span>
 

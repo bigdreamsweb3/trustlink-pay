@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
@@ -19,6 +19,23 @@ function formatShortDate(value: string) {
 
 function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
+
+function claimStatusLabel(payment: PaymentRecord) {
+  if (payment.tsn?.claimRequestStatus === "failed" || payment.tsn?.claimRequestStatus === "canceled") return "Claim retry";
+  if (payment.tsn?.claimRequestStatus === "pending" || payment.tsn?.claimRequestStatus === "processing") return "Claiming";
+  if (payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed") return "Escrowed";
+  return "Claimable";
+}
+
+function claimStatusTone(payment: PaymentRecord) {
+  if (payment.tsn?.claimRequestStatus === "failed" || payment.tsn?.claimRequestStatus === "canceled") {
+    return "border-[#f3c96b]/20 bg-[#f3c96b]/10 text-[#f3c96b]";
+  }
+  if (payment.tsn?.claimRequestStatus === "pending" || payment.tsn?.claimRequestStatus === "processing") {
+    return "border-[#4ae8d0]/16 bg-[#4ae8d0]/10 text-[#4ae8d0]";
+  }
+  return "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]";
 }
 
 export function ClaimListExperience() {
@@ -73,7 +90,7 @@ export function ClaimListExperience() {
                   className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="tl-body-sm font-semibold text-primary">
+                    <div className="tl-body-sm font-semibold text-[var(--text)]">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
                     <div className="mt-0.5 truncate text-[0.74rem] text-[var(--text-soft)]">
@@ -81,7 +98,12 @@ export function ClaimListExperience() {
                     </div>
                     <div className="mt-0.5 text-[0.64rem] text-[var(--text-faint)]">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                  <div className="ml-3 flex shrink-0 items-center gap-2">
+                    <span className={`rounded-full border px-2 py-0.5 text-[0.62rem] font-medium ${claimStatusTone(payment)}`}>
+                      {claimStatusLabel(payment)}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </Link>
               ))}
 
@@ -116,7 +138,7 @@ export function ClaimListExperience() {
                   className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="tl-body-sm font-semibold text-primary">
+                    <div className="tl-body-sm font-semibold text-[var(--text)]">
                       {formatTokenAmount(payment.amount)} {payment.token_symbol}
                     </div>
                     <div className="mt-0.5 truncate text-[0.74rem] text-[var(--text-soft)]">
@@ -124,7 +146,12 @@ export function ClaimListExperience() {
                     </div>
                     <div className="mt-0.5 text-[0.64rem] text-[var(--text-faint)]">{formatShortDate(payment.created_at)}</div>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                  <div className="ml-3 flex shrink-0 items-center gap-2">
+                    <span className={`rounded-full border px-2 py-0.5 text-[0.62rem] font-medium ${claimStatusTone(payment)}`}>
+                      {claimStatusLabel(payment)}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </Link>
               ))}
             </div>

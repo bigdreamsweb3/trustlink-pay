@@ -413,6 +413,13 @@ pub mod trustlink_escrow {
     pub fn tsn_settle_epoch(ctx: Context<SettleEpoch>, force: bool) -> Result<()> {
         tsn::instructions::settle_epoch(ctx, force)
     }
+
+    pub fn tsn_withdraw_verifier_lamports(
+        ctx: Context<WithdrawVerifierLamports>,
+        amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::withdraw_verifier_lamports(ctx, amount)
+    }
 }
 #[cfg(test)]
 mod unit_tests {

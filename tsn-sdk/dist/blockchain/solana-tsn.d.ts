@@ -5,6 +5,8 @@ export declare function getTsnIntentPda(params: {
     motherEscrow: PublicKey;
     intentSeed32: Buffer;
 }): PublicKey;
+export declare function getTsnVerifierPda(): PublicKey;
+export declare function getTsnTreasuryPda(): PublicKey;
 export declare function getTsnCrankerPda(params: {
     motherEscrow: PublicKey;
     operator: PublicKey;
@@ -40,6 +42,14 @@ export declare function tsnCreateIntentOnChain(params: {
     mode: "mock";
     signature: string | null;
 } | {
+    mode: "devnet";
+    signature: string;
+}>;
+export declare function tsnSubmitSenderSignedSettlementTransaction(params: {
+    operator: Keypair;
+    signedTransactionBase64: string;
+    rpcUrl?: string;
+}): Promise<{
     mode: "devnet";
     signature: string;
 }>;

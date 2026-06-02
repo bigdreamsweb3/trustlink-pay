@@ -24,6 +24,8 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
   senderFeeAmount: number;
   totalTokenRequiredUi: number;
   issuedAt: string;
+  nonce?: string;
+  expiresAt?: string;
   signatureBase64: string;
   maxAgeMs?: number;
   getSenderTokenBalance?: (params: {
@@ -45,7 +47,9 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
     amount: params.amount,
     senderFeeAmount: params.senderFeeAmount,
     totalTokenRequiredUi: params.totalTokenRequiredUi,
+    nonce: params.nonce,
     issuedAt: params.issuedAt,
+    expiresAt: params.expiresAt,
   });
 
   const valid = await verifySenderPaymentAuthorization({

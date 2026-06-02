@@ -122,13 +122,14 @@ export interface PaymentRecord {
   notification_last_attempt_at?: string | null;
   status: "created" | "locked" | "claimed" | "refund_requested" | "refunded";
   tsn?: {
-    stage: "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled";
-    intentStatus: "pending" | "claimed" | "executed" | "settled" | "expired";
+    stage: "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
+    intentStatus: "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
     claimRequestStatus: "pending" | "processing" | "completed" | "canceled" | "failed" | null;
     destinationWallet: string | null;
     assignedCrankerPubkey: string | null;
     claimTxSig: string | null;
     proofTxSig: string | null;
+    settlementReason?: string | null;
   };
   unit_price_usd?: number | null;
   amount_usd?: number | null;
@@ -236,6 +237,7 @@ export interface WalletTokenOption {
   logo: string;
   mintAddress: string;
   supported: boolean;
+  decimals?: number;
   unitPriceUsd?: number | null;
   balanceUsd?: number | null;
 }

@@ -8,12 +8,14 @@ import { ActivityIcon, BackIcon, ClaimIcon, HomeIcon, SendIcon, SettingsIcon, Wa
 import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
 import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
 import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
+import { IdentitySheetModal } from "@/src/components/modals/identity-sheet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import { shortenAddress } from "@/src/lib/address";
 import { useAppPanel } from "@/src/lib/app-panel-provider";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
+import { SlidersHorizontal } from "lucide-react";
 import ExpandableMetaRow from "../ui/ExpandableMetaRow";
 
 type AppTab = "home" | "send" | "receive" | "claim" | "activity" | "wallets" | "profile" | "settings";
@@ -58,7 +60,8 @@ export function AppMobileShell({
   const walletPanelOpen = activePanel === "wallet";
   const settingsPanelOpen = activePanel === "settings";
   const profilePanelOpen = activePanel === "profile";
-  const desktopPanelOpen = walletPanelOpen || settingsPanelOpen || profilePanelOpen;
+  const identityPanelOpen = activePanel === "identity";
+  const desktopPanelOpen = walletPanelOpen || settingsPanelOpen || profilePanelOpen || identityPanelOpen;
   const [headerScrolled, setHeaderScrolled] = useState(false);
 
   useEffect(() => { function h() { setHeaderScrolled(window.scrollY > 8); } h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []);
@@ -122,8 +125,8 @@ export function AppMobileShell({
                 <WalletIcon size={14} className="text-current" />
                 <span className="font-medium">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
               </button>
-              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-9 place-items-center rounded-[12px] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label="Settings">
-                <SettingsIcon size={15} className="text-current" />
+              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-9 place-items-center rounded-[12px] px-3 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]" aria-label="Preferences">
+                <SlidersHorizontal size={15} className="text-current" />
               </button>
             </div>
           </header>
@@ -140,13 +143,19 @@ export function AppMobileShell({
               <TrustLinkMark />
               {!showBackButton ? <div className="tl-text-muted text-[0.6rem] uppercase tracking-[0.22em] leading-none hidden">TrustLink</div> : null}
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button type="button" onClick={handleWalletButtonPress} className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]">
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={() => openPanel("identity")} className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Identity">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-current">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+              <button type="button" onClick={handleWalletButtonPress} className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Wallet">
                 <WalletIcon size={13} className="text-current" />
                 <span className="tl-coord-text text-[0.52rem]! leading-none">{walletAddress ? shortenAddress(walletAddress) : "Connect"}</span>
               </button>
-              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Settings">
-                <SettingsIcon size={14} className="text-current" />
+              <button type="button" onClick={() => openPanel("settings")} className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]" aria-label="Preferences">
+                <SlidersHorizontal size={14} className="text-current" />
               </button>
             </div>
           </header>
@@ -182,6 +191,7 @@ export function AppMobileShell({
                 <WalletSheetModal open={walletPanelOpen} session={session} environment={environment} desktopInline onClose={closePanel} onDisconnect={() => { void disconnectWallet(); }} />
                 <SettingsSheetModal open={settingsPanelOpen} user={user} desktopInline onClose={closePanel} />
                 <ProfileSheetModal open={profilePanelOpen} user={user} desktopInline onClose={closePanel} />
+                <IdentitySheetModal open={identityPanelOpen} desktopInline onClose={closePanel} />
               </div>
             ) : null}
           </div>
@@ -208,6 +218,7 @@ export function AppMobileShell({
       <WalletSheetModal open={walletPanelOpen} session={session} environment={environment} onClose={closePanel} onDisconnect={() => { void disconnectWallet(); }} />
       <SettingsSheetModal open={settingsPanelOpen} user={user} onClose={closePanel} />
       <ProfileSheetModal open={profilePanelOpen} user={user} onClose={closePanel} />
+      <IdentitySheetModal open={identityPanelOpen} onClose={closePanel} />
     </main>
   );
 }

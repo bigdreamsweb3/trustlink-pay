@@ -30,6 +30,10 @@
       "import": "./dist/quote.js",
       "types": "./dist/quote.d.ts"
     },
+    "./send-estimate": {
+      "import": "./dist/send-estimate.js",
+      "types": "./dist/send-estimate.d.ts"
+    },
     "./payment-authorization": {
       "import": "./dist/payment-authorization.js",
       "types": "./dist/payment-authorization.d.ts"
@@ -41,6 +45,10 @@
     "./payment-jobs": {
       "import": "./dist/payment-jobs.js",
       "types": "./dist/payment-jobs.d.ts"
+    },
+    "./sponsored-settlement": {
+      "import": "./dist/sponsored-settlement.js",
+      "types": "./dist/sponsored-settlement.d.ts"
     },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",

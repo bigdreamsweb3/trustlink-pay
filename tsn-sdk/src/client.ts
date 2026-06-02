@@ -9,7 +9,8 @@ export class TsnHttpClient {
 
   constructor(options: TsnHttpClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, "");
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    this.fetchImpl = fetchImpl.bind(globalThis) as typeof fetch;
   }
 
   async post<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse> {
@@ -60,6 +61,10 @@ export class TsnHttpClient {
 
   listPendingWork<TResponse>(limit = 50): Promise<TResponse> {
     return this.get(`/work?limit=${limit}`);
+  }
+
+  listPendingIntentWork<TResponse>(limit = 50): Promise<TResponse> {
+    return this.get(`/intent-work?limit=${limit}`);
   }
 
   updateIntentStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {

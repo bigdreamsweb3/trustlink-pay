@@ -3,7 +3,7 @@
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
 import { ReceiveIcon, SendIcon } from "@/src/components/app-icons";
 import { formatTokenAmount } from "@/src/lib/formatters";
-import { formatPaymentShortDate, formatPaymentUsd } from "@/src/lib/payment-display";
+import { formatPaymentShortDate } from "@/src/lib/payment-display";
 import type { PaymentRecord } from "@/src/lib/types";
 
 type PaymentActivityCardProps = {
@@ -25,31 +25,56 @@ function statusTone(status: PaymentRecord["status"]) {
   }
 }
 
-function tsnTone(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
-  switch (stage) {
+type TsnState = NonNullable<PaymentRecord["tsn"]>;
+type ActivityViewerRole = "sender" | "receiver";
+
+function isEscrowedForSender(tsn: TsnState) {
+  return tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed";
+}
+
+function tsnTone(tsn: TsnState, viewerRole: ActivityViewerRole) {
+  if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
+    return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
+  }
+
+  switch (tsn.stage) {
     case "intent_pending":
       return "bg-[rgba(232,168,64,0.06)] text-[var(--warning)] border border-[rgba(232,168,64,0.10)]";
     case "claim_requested":
+    case "escrowed":
     case "lease_claimed":
       return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
     case "cranker_paid":
     case "epoch_settled":
       return "bg-[rgba(74,190,208,0.06)] text-[var(--primary-accent)] border border-[rgba(74,190,208,0.10)]";
+    case "reverted":
+      return "bg-[var(--danger-soft)] text-[var(--danger)] border border-[rgba(240,128,128,0.10)]";
   }
 }
 
-function tsnLabel(stage: NonNullable<PaymentRecord["tsn"]>["stage"]) {
-  switch (stage) {
+function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
+  if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
+    return "Escrowed";
+  }
+
+  switch (tsn.stage) {
     case "intent_pending":
-      return "Queued for Cranker";
+      return "Awaiting Cranker";
     case "claim_requested":
-      return "Awaiting Cranker pickup";
+      return "Claim queued";
+    case "escrowed":
+      return "Escrowed";
     case "lease_claimed":
-      return "Cranker verifying payout";
+      return "Claiming";
     case "cranker_paid":
-      return "Cranker paid";
+      return "Recipient paid";
     case "epoch_settled":
-      return "TSN settled";
+      return "Settled";
+    case "reverted":
+      if (tsn.intentStatus === "canceled") return "Canceled";
+      if (tsn.intentStatus === "failed") return "Failed";
+      if (tsn.claimRequestStatus === "failed") return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
+      return "Not processed";
   }
 }
 
@@ -64,18 +89,19 @@ export function PaymentActivityCard({
   onClick,
 }: PaymentActivityCardProps) {
   const isSend = payment.sender_user_id === currentUserId;
+  const viewerRole: ActivityViewerRole = isSend ? "sender" : "receiver";
   const counterparty = isSend
     ? `To ${payment.receiver_phone}`
     : `From ${payment.sender_display_name_snapshot}`;
 
-  const statusLabel = !isSend && payment.tsn ? tsnLabel(payment.tsn.stage) : paymentStatusLabel(payment.status);
-  const statusClass = !isSend && payment.tsn ? tsnTone(payment.tsn.stage) : statusTone(payment.status);
+  const statusLabel = payment.tsn ? tsnLabel(payment.tsn, viewerRole) : paymentStatusLabel(payment.status);
+  const statusClass = payment.tsn ? tsnTone(payment.tsn, viewerRole) : statusTone(payment.status);
 
   return (
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="tl-panel-header tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-[var(--surface-soft)] active:scale-[0.99]"
+      className="tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-surface-soft active:scale-[0.99]  justify-between"
     >
       {/* Icon */}
       <div

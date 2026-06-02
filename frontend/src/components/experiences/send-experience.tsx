@@ -38,12 +38,16 @@ import {
   getConnectedWalletSession,
   listAvailableSolanaWallets,
   signSolanaMessage,
+  signSolanaTransaction,
   type ConnectedWalletSession,
   type DetectedWallet
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { enqueueTsnPaymentFromFrontend, estimateTsnSendCostFromChain } from "@/src/lib/tsn";
-import { createSenderPaymentAuthorizationMessage } from "@trustlink/tsn-sdk/payment-authorization";
+import {
+  createPaymentAuthorization,
+} from "@trustlink/tsn-sdk/payment-authorization";
+import { buildTsnSponsoredSettlementTransaction } from "@trustlink/tsn-sdk/sponsored-settlement";
 import {
   formatUsd,
   hasCompleteCostEstimate,
@@ -333,8 +337,7 @@ export function SendExperience() {
     try {
       const senderFeeAmount = sendCostEstimate?.senderFeeAmountUi ?? 0;
       const totalTokenRequiredUi = sendCostEstimate?.totalTokenRequiredUi ?? Number(form.amount) + senderFeeAmount;
-      const senderAuthorizationIssuedAt = new Date().toISOString();
-      const senderAuthorizationMessage = createSenderPaymentAuthorizationMessage({
+      const senderAuthorization = createPaymentAuthorization({
         senderWallet: walletAddress,
         senderIdentity: `phone:${user.phoneNumber}`,
         receiverIdentity: recipientPreview.recipient.tin
@@ -344,12 +347,11 @@ export function SendExperience() {
         amount: Number(form.amount),
         senderFeeAmount,
         totalTokenRequiredUi,
-        issuedAt: senderAuthorizationIssuedAt,
       });
       const senderAuthorizationSignature = await signSolanaMessage({
         walletId: walletSession.walletId,
         address: walletAddress,
-        message: senderAuthorizationMessage,
+        message: senderAuthorization.message,
       });
 
       const result = await apiPost<{
@@ -385,7 +387,10 @@ export function SendExperience() {
         senderWallet: walletAddress,
         senderFeeAmount,
         totalTokenRequiredUi,
-        senderAuthorizationIssuedAt,
+        senderAuthorizationMessage: senderAuthorization.message,
+        senderAuthorizationNonce: senderAuthorization.nonce,
+        senderAuthorizationExpiresAt: senderAuthorization.expiresAt,
+        senderAuthorizationIssuedAt: senderAuthorization.issuedAt,
         senderAuthorizationSignature,
         skipWhatsAppCheck: receiverCheckSkipped,
       });
@@ -397,12 +402,50 @@ export function SendExperience() {
       }
 
       const enqueueAmount = Number(form.amount) + senderFeeAmount;
+      const crankerFeePayer =
+        process.env.NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER ??
+        process.env.NEXT_PUBLIC_TSN_SPONSOR_FEE_PAYER;
+      if (!crankerFeePayer) {
+        throw new Error(
+          "NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER is required so the SDK can build the sender co-signed sponsored settlement.",
+        );
+      }
+
+      const sponsoredSettlement = await buildTsnSponsoredSettlementTransaction({
+        paymentId: result.paymentId,
+        crankerFeePayer,
+        senderWallet: walletAddress,
+        tokenMintAddress: selectedToken.mintAddress,
+        amountUi: enqueueAmount,
+        tokenDecimals: selectedToken.decimals ?? 6,
+        recipientHash,
+        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
+      });
+      const senderSignedSettlementTransaction = await signSolanaTransaction({
+        walletId: walletSession.walletId,
+        address: walletAddress,
+        transactionBase64: sponsoredSettlement.transactionBase64,
+      });
+
       const enqueueResult = await enqueueTsnPaymentFromFrontend({
         paymentId: result.paymentId,
         recipientHash,
         destinationWallet,
         tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
+        senderAuthorizationMessage: senderAuthorization.message,
+        senderAuthorizationSignature,
+        senderAuthorizationNonce: senderAuthorization.nonce,
+        senderAuthorizationIssuedAt: senderAuthorization.issuedAt,
+        senderAuthorizationExpiresAt: senderAuthorization.expiresAt,
+        senderSignedSettlementTransaction,
+        senderSignedSettlementFeePayer: sponsoredSettlement.crankerFeePayer,
+        senderSettlementMode: "sponsored_sender_cosigned",
+        senderTokenAccount: sponsoredSettlement.senderTokenAccount,
+        settlementVault: sponsoredSettlement.paymentVault,
+        settlementTokenAccount: sponsoredSettlement.paymentVaultTokenAccount,
+        settlementPaymentIntentId: sponsoredSettlement.paymentIntentId,
+        autoclaim: true,
         amount: enqueueAmount,
         recipientAmount: Number(form.amount),
       });
@@ -430,7 +473,7 @@ export function SendExperience() {
           ? `Payment secured. Share invite manually. Ref ${result.referenceCode}.`
           : result.notificationRetrying
             ? `Payment secured. WhatsApp retrying. Ref ${result.referenceCode}.`
-            : `Intent queued in TSN mempool. Awaiting Cranker pickup. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
+            : `Sponsored settlement queued. Awaiting Cranker Verification. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not create payment intent";
@@ -446,7 +489,7 @@ export function SendExperience() {
   const receiptTimestamp = sendSuccess?.notificationReadAt ?? sendSuccess?.notificationDeliveredAt ?? sendSuccess?.notificationSentAt ?? sendSuccess?.notificationFailedAt ?? null;
 
   return (
-    <AppMobileShell currentTab="send" title="Send" subtitle="Confirm the person, choose a supported token, then move funds into escrow." user={user} showBackButton backHref="/app"
+    <AppMobileShell currentTab="send" title="Send" subtitle="Confirm the person, choose a supported token, then co-sign a cranker-sponsored TSN settlement." user={user} showBackButton backHref="/app"
       blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
     >
       <section className="space-y-5">
@@ -462,7 +505,7 @@ export function SendExperience() {
         ) : null}
         {sendGuidance ? (
           <div className="rounded-[20px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-4">
-            <div className="text-[0.8rem] font-semibold text-primary">{sendGuidance.title}</div>
+            <div className="text-[0.8rem] font-semibold text-[var(--text)]">{sendGuidance.title}</div>
             <div className="mt-1.5 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">{sendGuidance.message}</div>
             {sendGuidance.ctaHref && sendGuidance.ctaLabel ? (
               <Link
@@ -480,15 +523,15 @@ export function SendExperience() {
           <div className="space-y-5">
             <div className="text-center py-2">
               <SuccessIcon className="mx-auto h-14 w-14" />
-              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Intent queued</div>
+              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Awaiting Cranker Verification</div>
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-[var(--text)]">
                 {sendSuccess.amount} {sendSuccess.token}
               </h2>
               <p className="mt-2 tl-body-sm leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">
                 {sendSuccess.manualInviteRequired
-                  ? `Funds secured in escrow for ${sendSuccess.recipientName}. Share the invite manually.`
+                  ? `Authorization queued for ${sendSuccess.recipientName}. Share the invite manually.`
                   : sendSuccess.notificationRetrying
-                    ? `Funds secured for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
+                    ? `Authorization queued for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
                     : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`}
               </p>
             </div>
@@ -548,7 +591,7 @@ export function SendExperience() {
               {sendSuccess.blockchainMode === "mock"
                 ? "Mock mode \u2014 reference is not an on-chain signature."
                 : sendSuccess.blockchainMode === "tsn"
-                  ? "Intent is in mempool. Final success should only be shown after Cranker submits on-chain."
+                  ? "Authorization is in the TSN mempool. Your wallet did not broadcast a Solana transaction; a Cranker verifies and submits settlement."
                   : "Receipts refresh while delivery is unresolved."}
             </div>
 
@@ -676,7 +719,7 @@ export function SendExperience() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-[0.88rem] font-semibold text-primary truncate">
+                        <div className="text-[0.88rem] font-semibold text-[var(--text)] truncate">
                           {phoneVerificationDetails.displayName || "Unknown"}
                         </div>
                         {phoneVerificationDetails.resolvedPhoneNumber ? (
@@ -725,9 +768,9 @@ export function SendExperience() {
                   <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)] mb-3">How it works</div>
                   <div className="space-y-2.5">
                     {[
-                      { step: "1", text: "Verify recipient via WhatsApp" },
-                      { step: "2", text: "Funds move into secure escrow" },
-                      { step: "3", text: "Cranker settles after claim request" },
+                      { step: "1", text: "Verify recipient identity" },
+                      { step: "2", text: "Sign TSN authorization" },
+                      { step: "3", text: "Cranker verifies and settles" },
                     ].map((item) => (
                       <div key={item.step} className="flex items-center gap-2.5">
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.58rem] font-bold bg-[var(--accent-soft)] text-accent border border-accent-border">
@@ -747,12 +790,12 @@ export function SendExperience() {
                       <div className="flex items-center gap-2.5">
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.8rem]">{selectedToken.logo}</span>
                         <div>
-                          <div className="tl-body-sm font-semibold text-primary">{selectedToken.symbol}</div>
+                          <div className="tl-body-sm font-semibold text-[var(--text)]">{selectedToken.symbol}</div>
                           <div className="text-[0.66rem] text-[var(--text-faint)]">{selectedToken.name}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="tl-body-sm font-semibold text-primary">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</div>
+                        <div className="tl-body-sm font-semibold text-[var(--text)]">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</div>
                         <div className="text-[0.62rem] text-[var(--text-faint)]">Available</div>
                       </div>
                     </div>
@@ -806,14 +849,14 @@ export function SendExperience() {
         <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setConfirmOpen(false)}>
           <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Confirm transfer</h2>
-              <p className="mt-1 tl-body-sm text-[var(--text-soft)]">Verify details before funds move into escrow.</p>
+              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Authorize transfer</h2>
+              <p className="mt-1 tl-body-sm text-[var(--text-soft)]">You will sign a TSN authorization message. Your wallet will not broadcast a Solana transaction.</p>
             </div>
 
             <div className="space-y-2.5">
               <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
                 <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">Sending to</div>
-                <div className="mt-1.5 text-[0.92rem] font-semibold text-primary">
+                <div className="mt-1.5 text-[0.92rem] font-semibold text-[var(--text)]">
                   {recipientPreview.recipient.displayName}
                   {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle ? ` (@${recipientPreview.recipient.handle})` : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required" ? " (Not on TrustLink)" : ""}
                 </div>
@@ -900,7 +943,7 @@ export function SendExperience() {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5 tl-body-sm font-medium cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
-              <button type="button" onClick={() => void handleConfirmSend()} disabled={confirmSendDisabled} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Sending..." : estimateBusy ? "Calculating..." : "Confirm send"}</button>
+              <button type="button" onClick={() => void handleConfirmSend()} disabled={confirmSendDisabled} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Queuing..." : estimateBusy ? "Calculating..." : "Co-sign sponsored send"}</button>
             </div>
           </div>
         </div>

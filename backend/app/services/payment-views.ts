@@ -58,6 +58,12 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     payment.status === "claimed" ||
       (tsnState && (tsnState.stage === "cranker_paid" || tsnState.stage === "epoch_settled")),
   );
+  const isTsnEscrowed = Boolean(
+    tsnState && ["escrowed", "lease_claimed", "cranker_paid", "epoch_settled"].includes(tsnState.stage),
+  );
+  const isTsnClaiming = Boolean(
+    tsnState && ["lease_claimed", "cranker_paid", "epoch_settled"].includes(tsnState.stage),
+  );
 
   const timeline = [
     {
@@ -109,14 +115,30 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     timeline.splice(4, 0, {
       id: "tsn_claim_requested",
       label: "Awaiting Cranker",
-      description: "TrustLink TSN has queued this payment for a Cranker to pick up and submit on-chain.",
+      description: "TrustLink TSN has queued this payment for Cranker verification and sponsored settlement.",
       occurredAt: null,
       complete: isTsnPaid || tsnState.stage !== "intent_pending",
     });
 
     timeline.splice(5, 0, {
+      id: "tsn_escrowed",
+      label: "Escrowed",
+      description: "A Cranker verified the payment intent and locked the sender-authorized funds into TSN escrow.",
+      occurredAt: null,
+      complete: isTsnEscrowed,
+    });
+
+    timeline.splice(6, 0, {
+      id: "tsn_claiming",
+      label: "Claiming",
+      description: "A Cranker lease is active so only one operator can complete this recipient payout path.",
+      occurredAt: null,
+      complete: isTsnClaiming,
+    });
+
+    timeline.splice(7, 0, {
       id: "tsn_cranker_paid",
-      label: "Cranker payout",
+      label: "Recipient paid",
       description: "A Cranker paid the recipient from TSN vault liquidity and posted proof on Solana Devnet.",
       occurredAt: null,
       complete: isTsnPaid,

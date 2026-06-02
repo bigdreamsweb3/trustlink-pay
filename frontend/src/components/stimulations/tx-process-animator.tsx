@@ -42,11 +42,11 @@ const Header = memo(function Header({ elapsed, loopCount }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-0.5 select-none min-h-[20px]">
       <div className="flex items-center gap-1.5 min-w-0">
-        <Timer className="h-3 w-3 text-primary-accent shrink-0" />
+        <Timer className="h-3 w-3 text-[var(--text)]-accent shrink-0" />
         <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-slate-400 font-bold">
           Settlement Clock:
         </span>
-        <span className="text-primary-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
+        <span className="text-[var(--text)]-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
           {elapsed.toFixed(2)}s
         </span>
       </div>
@@ -485,22 +485,24 @@ export function TxProcessAnimator() {
     <div className="relative w-full min-w-0 max-w-full flex flex-col overflow-hidden">
       {/* Tab Controls Bar */}
       <div className="relative z-10 flex min-w-0 items-center justify-between gap-4">
-        <div className="w-full min-w-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between tl-panel-header">
-          <p className="tl-meta-label max-w-full text-[0.65rem] uppercase leading-5 tracking-[0.2em] text-[var(--text-faint)]">
-            How a payment works?
-          </p>
+        <div className="tl-panel-header w-full min-w-0">
+          <div className="mx-3 w-full min-w-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="tl-meta-label max-w-full text-[0.65rem] uppercase leading-5 tracking-[0.2em] text-[var(--text-faint)]">
+              How a payment works?
+            </p>
 
 
-          <div className="flex max-w-full flex-wrap items-center gap-1.5">
-            <button onClick={() => setActiveTab("intent")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
-              ? "is-active"
-              : "is-inactive"
-              }`}>Payment intent</button>
+            <div className="flex max-w-full flex-wrap items-center gap-1.5">
+              <button onClick={() => setActiveTab("intent")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "intent"
+                ? "is-active"
+                : "is-inactive"
+                }`}>Payment intent</button>
 
-            <button onClick={() => setActiveTab("video")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "video"
-              ? "is-active"
-              : "is-inactive"
-              }`}>Explainer Video</button>
+              <button onClick={() => setActiveTab("video")} className={`tl-badge tl-meta-label rounded-full px-3 py-1 text-[0.66rem] font-black text-nowrap whitespace-nowrap ${activeTab === "video"
+                ? "is-active"
+                : "is-inactive"
+                }`}>Explainer Video</button>
+            </div>
           </div>
         </div>
       </div>

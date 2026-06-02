@@ -59,6 +59,24 @@ export class JsonFileTsnMempool {
         await writeSnapshot(this.path, snapshot);
         return claimRequest;
     }
+    async listIntents(params = {}) {
+        const snapshot = await readSnapshot(this.path);
+        const items = params.status
+            ? snapshot.intents.filter((intent) => intent.status === params.status)
+            : snapshot.intents;
+        return [...items].sort((left, right) => left.postedAt.localeCompare(right.postedAt));
+    }
+    async listClaimRequests(params = {}) {
+        const snapshot = await readSnapshot(this.path);
+        const items = snapshot.claimRequests.filter((claimRequest) => {
+            if (params.intentId && claimRequest.intentId !== params.intentId)
+                return false;
+            if (params.status && claimRequest.status !== params.status)
+                return false;
+            return true;
+        });
+        return [...items].sort((left, right) => left.postedAt.localeCompare(right.postedAt));
+    }
     async listPendingWork(limit = 50) {
         const snapshot = await readSnapshot(this.path);
         const pendingClaims = snapshot.claimRequests
@@ -66,9 +84,17 @@ export class JsonFileTsnMempool {
             .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
             .slice(0, limit);
         return pendingClaims.flatMap((claimRequest) => {
-            const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && candidate.status === "pending");
+            const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && ["onchain", "claimed"].includes(candidate.status));
             return intent ? [{ intent, claimRequest }] : [];
         });
+    }
+    async listPendingIntentWork(limit = 50) {
+        const snapshot = await readSnapshot(this.path);
+        return snapshot.intents
+            .filter((intent) => intent.status === "pending")
+            .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
+            .slice(0, limit)
+            .map((intent) => ({ intent }));
     }
     async updateIntentStatus(id, status, patch = {}) {
         const snapshot = await readSnapshot(this.path);
@@ -111,8 +137,27 @@ export class HttpTsnMempool {
     postClaimRequest(request) {
         return this.client.postClaimRequest(request);
     }
+    listIntents(params = {}) {
+        const search = new URLSearchParams();
+        if (params.status)
+            search.set("status", params.status);
+        const query = search.toString();
+        return this.client.get(`/intents${query ? `?${query}` : ""}`);
+    }
+    listClaimRequests(params = {}) {
+        const search = new URLSearchParams();
+        if (params.intentId)
+            search.set("intent_id", params.intentId);
+        if (params.status)
+            search.set("status", params.status);
+        const query = search.toString();
+        return this.client.get(`/claim-requests${query ? `?${query}` : ""}`);
+    }
     listPendingWork(limit = 50) {
         return this.client.listPendingWork(limit);
+    }
+    listPendingIntentWork(limit = 50) {
+        return this.client.listPendingIntentWork(limit);
     }
     updateIntentStatus(id, status, patch = {}) {
         return this.client.updateIntentStatus(id, {

@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
+import { sha256 } from "@noble/hashes/sha2";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 
-export type TsnIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
+export type TsnIntentStatus = "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnClaimRequestStatus = "pending" | "processing" | "completed" | "failed" | "canceled";
-export type TsnUiStage = "intent_pending" | "claim_requested" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
+export type TsnUiStage = "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
 
-export type PaymentIntentStatus = "pending" | "claimed" | "executed" | "settled" | "expired" | "reverted";
+export type PaymentIntentStatus = "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type ClaimRequestStatus = "pending" | "processing" | "completed" | "canceled" | "failed";
 
 export interface PaymentIntentRecord {
@@ -37,6 +38,19 @@ export interface ClaimRequestRecord {
 export type CreateIntentRequest = {
   paymentId: string;
   underlyingPayment?: string | null;
+  senderWallet?: string | null;
+  senderAuthorizationMessage?: string | null;
+  senderAuthorizationSignature?: string | null;
+  senderAuthorizationNonce?: string | null;
+  senderAuthorizationIssuedAt?: string | null;
+  senderAuthorizationExpiresAt?: string | null;
+  senderSignedSettlementTransaction?: string | null;
+  senderSignedSettlementFeePayer?: string | null;
+  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderTokenAccount?: string | null;
+  settlementVault?: string | null;
+  settlementTokenAccount?: string | null;
+  settlementPaymentIntentId?: string | null;
   intentSeedHash: string;
   recipientHash: string;
   tokenMintAddress: string;
@@ -57,6 +71,9 @@ export type RequestClaimRequest = {
 export type TsnMempoolIntent = CreateIntentRequest & {
   id: string;
   status: TsnIntentStatus;
+  assignedCrankerPubkey?: string | null;
+  claimTxSig?: string | null;
+  proofTxSig?: string | null;
   settlementResolution?: "completed" | "reverted" | null;
   settlementReason?: string | null;
   postedAt: string;
@@ -76,6 +93,10 @@ export type TsnWorkItem = {
   claimRequest: TsnMempoolClaimRequest;
 };
 
+export type TsnIntentWorkItem = {
+  intent: TsnMempoolIntent;
+};
+
 export type ProofOfPaymentRequest = {
   intent_id: string;
   timestamp: string;
@@ -93,12 +114,25 @@ export type ClaimRequestState = {
 } | null;
 
 export function sha256Hex(input: string): string {
-  return createHash("sha256").update(input).digest("hex");
+  return bytesToHex(sha256(utf8ToBytes(input)));
 }
 
 export function buildCreateIntentRequest(params: {
   paymentId: string;
   underlyingPayment?: string | null;
+  senderWallet?: string | null;
+  senderAuthorizationMessage?: string | null;
+  senderAuthorizationSignature?: string | null;
+  senderAuthorizationNonce?: string | null;
+  senderAuthorizationIssuedAt?: string | null;
+  senderAuthorizationExpiresAt?: string | null;
+  senderSignedSettlementTransaction?: string | null;
+  senderSignedSettlementFeePayer?: string | null;
+  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderTokenAccount?: string | null;
+  settlementVault?: string | null;
+  settlementTokenAccount?: string | null;
+  settlementPaymentIntentId?: string | null;
   recipientHash: string;
   tokenMintAddress: string;
   amount: number;
@@ -107,6 +141,19 @@ export function buildCreateIntentRequest(params: {
   return {
     paymentId: params.paymentId,
     underlyingPayment: params.underlyingPayment ?? null,
+    senderWallet: params.senderWallet ?? null,
+    senderAuthorizationMessage: params.senderAuthorizationMessage ?? null,
+    senderAuthorizationSignature: params.senderAuthorizationSignature ?? null,
+    senderAuthorizationNonce: params.senderAuthorizationNonce ?? null,
+    senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt ?? null,
+    senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt ?? null,
+    senderSignedSettlementTransaction: params.senderSignedSettlementTransaction ?? null,
+    senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer ?? null,
+    senderSettlementMode: params.senderSettlementMode ?? null,
+    senderTokenAccount: params.senderTokenAccount ?? null,
+    settlementVault: params.settlementVault ?? null,
+    settlementTokenAccount: params.settlementTokenAccount ?? null,
+    settlementPaymentIntentId: params.settlementPaymentIntentId ?? null,
     intentSeedHash: sha256Hex(params.paymentId),
     recipientHash: params.recipientHash,
     tokenMintAddress: params.tokenMintAddress,
@@ -120,10 +167,13 @@ export function buildRequestClaimRequest(params: RequestClaimRequest): RequestCl
 }
 
 export function computeTsnUiStage(intent: IntentState, claimRequest: ClaimRequestState): TsnUiStage {
-  if (intent.status === "reverted") return "reverted";
+  if (intent.status === "reverted" || intent.status === "failed" || intent.status === "canceled" || intent.status === "expired") return "reverted";
+  if (claimRequest && (claimRequest.status === "failed" || claimRequest.status === "canceled")) return "reverted";
   if (intent.status === "settled") return "epoch_settled";
   if (intent.status === "executed") return "cranker_paid";
   if (intent.status === "claimed") return "lease_claimed";
+  if (intent.status === "onchain") return "escrowed";
+  if (intent.status === "pending") return "intent_pending";
 
   if (claimRequest && (claimRequest.status === "pending" || claimRequest.status === "processing")) {
     return "claim_requested";

@@ -69,7 +69,7 @@ export function SettingsSheetModal({
         </div> */}
 
         {/* Stats Card */}
-        <div className="tl-panel-header tl-field mt-5 rounded-[22px] px-5 py-4">
+        {/* <div className="tl-panel-header tl-field mt-5 rounded-[22px] px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--text-soft)]">Trust Score</div>
             <Link
@@ -82,7 +82,7 @@ export function SettingsSheetModal({
           </div>
           <div className="mt-3 text-[1.5rem] font-bold tracking-tight text-[var(--text)]">0.00</div>
           <div className="mt-2 h-1 w-10 rounded-full bg-[var(--accent-deep)] dark:bg-[var(--accent)]" />
-        </div>
+        </div> */}
 
         {/* Settings Rows */}
         <div className="mt-5 space-y-2.5">

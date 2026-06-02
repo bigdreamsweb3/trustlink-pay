@@ -395,6 +395,33 @@ export async function signSolanaMessage(params: {
   return bytesToBase64(signature);
 }
 
+export async function signSolanaTransaction(params: {
+  walletId: string;
+  address: string;
+  transactionBase64: string;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) {
+    throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signTransaction) {
+    throw new Error("This wallet cannot co-sign sponsored Solana transactions from the browser");
+  }
+
+  const raw = Uint8Array.from(atob(params.transactionBase64), (value) => value.charCodeAt(0));
+  const transaction = Transaction.from(raw);
+  const signedTransaction = await wallet.provider.signTransaction(transaction);
+
+  return bytesToBase64(
+    signedTransaction.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+    }),
+  );
+}
+
 export async function sendSolanaPayment(params: {
   walletId: string;
   fromAddress: string;

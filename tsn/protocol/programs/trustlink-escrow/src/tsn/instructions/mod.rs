@@ -11,6 +11,7 @@ pub mod set_cranker_funding_policy;
 pub mod settle_epoch;
 pub mod submit_proof;
 pub mod withdraw_cranker_funds;
+pub mod withdraw_verifier_lamports;
 
 pub use claim_intent::*;
 pub use create_intent::*;
@@ -25,3 +26,4 @@ pub use set_cranker_funding_policy::*;
 pub use settle_epoch::*;
 pub use submit_proof::*;
 pub use withdraw_cranker_funds::*;
+pub use withdraw_verifier_lamports::*;

@@ -90,6 +90,34 @@ export async function listLockedPaymentsByPhoneNumber(phoneNumber: string): Prom
   `) as PaymentRecord[];
 }
 
+export async function listClaimablePaymentsByPhoneNumber(phoneNumber: string): Promise<PaymentRecord[]> {
+  await ensurePaymentTraceColumns();
+
+  return (await sql`
+    SELECT
+      p.id, p.sender_user_id, p.sender_wallet, p.sender_phone_identity_pubkey, p.sender_display_name_snapshot, p.sender_handle_snapshot, p.reference_code,
+      p.receiver_phone, p.receiver_phone_hash, p.payment_mode, p.sender_autoclaim_enabled, p.receiver_autoclaim_allowed, p.receiver_wallet, p.receiver_onboarded,
+      p.phone_identity_pubkey, p.payment_receiver_pubkey, p.ephemeral_pubkey,
+      p.refund_receiver_pubkey, p.refund_ephemeral_pubkey, p.token_symbol, p.token_mint_address, p.amount, p.sender_fee_amount, p.claim_fee_amount,
+      p.escrow_account, p.escrow_vault_address, p.deposit_signature, p.release_signature, p.refund_release_signature,
+      p.released_to_wallet, p.refund_released_to_wallet, p.refund_requested_at, p.refund_available_at, p.refund_claimed_at, p.expiry_at,
+      p.notification_message_id, p.notification_status, p.notification_sent_at, p.notification_delivered_at, p.notification_read_at,
+      p.notification_failed_at, p.notification_attempt_count, p.notification_last_attempt_at, p.status, p.created_at
+    FROM payments p
+    WHERE p.receiver_phone = ${phoneNumber}
+      AND (
+        p.status IN ('created', 'locked', 'expired')
+        OR EXISTS (
+          SELECT 1
+          FROM payment_intents pi
+          WHERE pi.payment_id = p.id
+            AND pi.status IN ('onchain', 'claimed')
+        )
+      )
+    ORDER BY p.created_at DESC
+  `) as PaymentRecord[];
+}
+
 export async function listPaymentHistory(params: {
   userId: string;
   phoneNumber: string;

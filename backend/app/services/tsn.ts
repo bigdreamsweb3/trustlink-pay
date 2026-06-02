@@ -9,6 +9,7 @@ import {
   findPaymentIntentByPaymentId,
   listLatestClaimRequestsByPaymentIds,
   listPaymentIntentsByPaymentIds,
+  updateClaimRequestStatus,
   updatePaymentIntentStatus,
   upsertPaymentIntent,
 } from "@/app/db/tsn";
@@ -19,7 +20,14 @@ import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, TsnUiStage, UserRecord } from "@/app/types/payment";
-import type { ClaimRequestRecord, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
+import type {
+  ClaimRequestRecord,
+  ClaimRequestStatus,
+  PaymentIntentRecord,
+  PaymentIntentStatus,
+  TsnMempoolClaimRequest,
+  TsnMempoolIntent,
+} from "@trustlink/tsn-sdk";
 import {
   buildCreateIntentRequest,
   buildRequestClaimRequest,
@@ -33,6 +41,10 @@ import {
 
 function paymentCanStillBeClaimed(status: string) {
   return status === "locked" || status === "expired";
+}
+
+function intentIsEscrowed(intent: PaymentIntentRecord | null) {
+  return intent?.status === "onchain" || intent?.status === "claimed";
 }
 
 function resolveClaimMode(payment: { payment_mode?: string | null }) {
@@ -259,7 +271,10 @@ export async function requestPaymentClaimViaTsn(params: {
 
   const payment = await findPaymentById(params.paymentId);
   if (!payment) throw new Error("Payment not found");
-  if (!paymentCanStillBeClaimed(payment.status)) throw new Error(`Payment is already ${payment.status}`);
+  const existingIntent = await findPaymentIntentByPaymentId(payment.id);
+  if (!paymentCanStillBeClaimed(payment.status) && !intentIsEscrowed(existingIntent)) {
+    throw new Error(`Payment is already ${payment.status}`);
+  }
   if (payment.receiver_phone !== params.authUser.phoneNumber) {
     throw new Error("Signed-in account does not match payment receiver");
   }
@@ -306,7 +321,6 @@ export async function requestPaymentClaimViaTsn(params: {
     if (!proofValid) throw new Error("Privacy ownership proof is invalid");
   }
 
-  const existingIntent = await findPaymentIntentByPaymentId(payment.id);
   const created = existingIntent ? null : await createTsnIntentForPayment(payment);
   const intent = existingIntent ?? ("record" in (created ?? {}) ? (created as any).record : null);
   if (!intent) throw new Error("TSN intent not available for payment");
@@ -347,12 +361,221 @@ export async function requestPaymentClaimViaTsn(params: {
 
 export async function syncPaymentIntentFromChain(params: { intentId: string }) {
   if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) return null;
-  logger.info("tsn.intent.sync_delegated_to_tsn", { intentId: params.intentId });
-  return null;
+  const localIntent = await findPaymentIntentByPaymentId(params.intentId);
+  if (!localIntent) return null;
+
+  const mempool = getTsnMempoolClient();
+  const [mempoolIntents, mempoolClaimRequests] = await Promise.all([
+    mempool.listIntents(),
+    mempool.listClaimRequests(),
+  ]);
+
+  const synced = await syncLocalIntentFromMempoolSnapshot({
+    localIntent,
+    mempoolIntents,
+    mempoolClaimRequests,
+  });
+  return synced.intent;
 }
 
 function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRecord | null): TsnUiStage {
   return computeTsnUiStage(intent, claimRequest);
+}
+
+type SyncedMempoolState = {
+  intent: PaymentIntentRecord;
+  claimRequest: ClaimRequestRecord | null;
+};
+
+async function syncLocalIntentFromMempoolSnapshot(params: {
+  localIntent: PaymentIntentRecord;
+  mempoolIntents: TsnMempoolIntent[];
+  mempoolClaimRequests: TsnMempoolClaimRequest[];
+}): Promise<SyncedMempoolState> {
+  const mempoolIntent = params.mempoolIntents.find(
+    (intent) => intent.id === params.localIntent.id || intent.paymentId === params.localIntent.payment_id,
+  );
+  if (!mempoolIntent) {
+    if (params.localIntent.status === "pending") {
+      const fallbackIntent: PaymentIntentRecord = {
+        ...params.localIntent,
+        status: "canceled",
+      };
+      try {
+        const updatedIntent =
+          (await updatePaymentIntentStatus({
+            id: params.localIntent.id,
+            status: "canceled",
+          })) ?? fallbackIntent;
+        return { intent: updatedIntent, claimRequest: null as ClaimRequestRecord | null };
+      } catch (error) {
+        logger.warn("tsn.intent.missing_mempool_cancel_failed", {
+          intentId: params.localIntent.id,
+          paymentId: params.localIntent.payment_id,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        return { intent: fallbackIntent, claimRequest: null as ClaimRequestRecord | null };
+      }
+    }
+
+    return { intent: params.localIntent, claimRequest: null as ClaimRequestRecord | null };
+  }
+
+  const intentStatus = normalizePaymentIntentStatus(mempoolIntent.status);
+  const fallbackIntent: PaymentIntentRecord = {
+    ...params.localIntent,
+    status: intentStatus ?? params.localIntent.status,
+    assigned_cranker_pubkey: mempoolIntent.assignedCrankerPubkey ?? params.localIntent.assigned_cranker_pubkey,
+    claim_tx_sig: mempoolIntent.claimTxSig ?? params.localIntent.claim_tx_sig,
+    proof_tx_sig: mempoolIntent.proofTxSig ?? params.localIntent.proof_tx_sig,
+  };
+  let updatedIntent = fallbackIntent;
+  if (intentStatus != null) {
+    try {
+      updatedIntent =
+        (await updatePaymentIntentStatus({
+          id: params.localIntent.id,
+          status: intentStatus,
+          assignedCrankerPubkey: mempoolIntent.assignedCrankerPubkey ?? null,
+          claimTxSig: mempoolIntent.claimTxSig ?? null,
+          proofTxSig: mempoolIntent.proofTxSig ?? null,
+        })) ?? fallbackIntent;
+    } catch (error) {
+      logger.warn("tsn.intent.local_status_update_failed", {
+        intentId: params.localIntent.id,
+        mempoolStatus: mempoolIntent.status,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  const matchingClaims = params.mempoolClaimRequests
+    .filter((claimRequest) => claimRequest.intentId === mempoolIntent.id || claimRequest.paymentId === mempoolIntent.paymentId)
+    .sort((left, right) => {
+      const rightTime = Date.parse(right.updatedAt || right.postedAt);
+      const leftTime = Date.parse(left.updatedAt || left.postedAt);
+      return rightTime - leftTime;
+    });
+  const mempoolClaimRequest = matchingClaims[0] ?? null;
+  if (!mempoolClaimRequest) {
+    return { intent: updatedIntent, claimRequest: null as ClaimRequestRecord | null };
+  }
+
+  const latestLocalClaims = await listLatestClaimRequestsByPaymentIds([mempoolIntent.paymentId]);
+  let localClaimRequest = latestLocalClaims[0] ?? null;
+  const claimStatus = normalizeClaimRequestStatus(mempoolClaimRequest.status);
+  const fallbackClaimRequest: ClaimRequestRecord = {
+    id: localClaimRequest?.id ?? mempoolClaimRequest.id,
+    payment_id: mempoolClaimRequest.paymentId,
+    intent_id: params.localIntent.id,
+    recipient_hash: mempoolClaimRequest.recipientHash,
+    destination_wallet: mempoolClaimRequest.destinationWallet,
+    autoclaim: mempoolClaimRequest.autoclaim,
+    status: claimStatus ?? localClaimRequest?.status ?? "pending",
+    requested_at: localClaimRequest?.requested_at ?? mempoolClaimRequest.postedAt,
+    updated_at: localClaimRequest?.updated_at ?? mempoolClaimRequest.updatedAt,
+  };
+  if (!localClaimRequest) {
+    try {
+      localClaimRequest = await createClaimRequest({
+        paymentId: mempoolClaimRequest.paymentId,
+        intentId: params.localIntent.id,
+        recipientHash: mempoolClaimRequest.recipientHash,
+        destinationWallet: mempoolClaimRequest.destinationWallet,
+        autoclaim: mempoolClaimRequest.autoclaim,
+      });
+    } catch (error) {
+      logger.warn("tsn.claim.local_create_failed", {
+        paymentId: mempoolClaimRequest.paymentId,
+        claimRequestId: mempoolClaimRequest.id,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      localClaimRequest = fallbackClaimRequest;
+    }
+  }
+
+  let updatedClaimRequest = {
+    ...fallbackClaimRequest,
+    ...localClaimRequest,
+    status: claimStatus ?? localClaimRequest.status,
+    updated_at: mempoolClaimRequest.updatedAt,
+  };
+  if (claimStatus != null) {
+    try {
+      updatedClaimRequest =
+        (await updateClaimRequestStatus({
+          id: localClaimRequest.id,
+          status: claimStatus,
+        })) ?? updatedClaimRequest;
+    } catch (error) {
+      logger.warn("tsn.claim.local_status_update_failed", {
+        claimRequestId: localClaimRequest.id,
+        mempoolStatus: mempoolClaimRequest.status,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  return {
+    intent: updatedIntent,
+    claimRequest: updatedClaimRequest,
+  };
+}
+
+async function syncPaymentIntentsFromMempool(intents: PaymentIntentRecord[]) {
+  if (intents.length === 0) return [] as SyncedMempoolState[];
+  try {
+    const mempool = getTsnMempoolClient();
+    const [mempoolIntents, mempoolClaimRequests] = await Promise.all([
+      mempool.listIntents(),
+      mempool.listClaimRequests(),
+    ]);
+    const results = await Promise.allSettled(
+      intents.map((localIntent) =>
+        syncLocalIntentFromMempoolSnapshot({
+          localIntent,
+          mempoolIntents,
+          mempoolClaimRequests,
+        }),
+      ),
+    );
+    return results.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+  } catch (error) {
+    logger.warn("tsn.intent.sync_mempool_failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return [] as SyncedMempoolState[];
+  }
+}
+
+function normalizePaymentIntentStatus(status: string): PaymentIntentStatus | null {
+  if (
+    status === "pending" ||
+    status === "onchain" ||
+    status === "claimed" ||
+    status === "executed" ||
+    status === "settled" ||
+    status === "expired" ||
+    status === "failed" ||
+    status === "canceled" ||
+    status === "reverted"
+  ) {
+    return status;
+  }
+  return null;
+}
+
+function normalizeClaimRequestStatus(status: string): ClaimRequestStatus | null {
+  if (
+    status === "pending" ||
+    status === "processing" ||
+    status === "completed" ||
+    status === "canceled" ||
+    status === "failed"
+  ) {
+    return status;
+  }
+  return null;
 }
 
 export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Promise<Array<PaymentRecord & { tsn?: PaymentTsnState }>> {
@@ -370,11 +593,22 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
   const claimByPaymentId = new Map<string, ClaimRequestRecord>(claimRequests.map((claimRequest) => [claimRequest.payment_id, claimRequest]));
 
   if (env.TSN_SYNC_ONCHAIN) {
-    const maybeStale = intents.filter((intent) => intent.status === "pending" || intent.status === "claimed");
-    await Promise.allSettled(maybeStale.slice(0, 10).map((intent) => syncPaymentIntentFromChain({ intentId: intent.id })));
-    const refreshedIntents = await listPaymentIntentsByPaymentIds(paymentIds);
+    const maybeStale = intents.filter((intent) => ["pending", "onchain", "claimed", "executed"].includes(intent.status));
+    const syncedStates = await syncPaymentIntentsFromMempool(maybeStale.slice(0, 10));
+    const [refreshedIntents, refreshedClaimRequests] = await Promise.all([
+      listPaymentIntentsByPaymentIds(paymentIds),
+      listLatestClaimRequestsByPaymentIds(paymentIds),
+    ]);
     intentByPaymentId.clear();
     for (const intent of refreshedIntents) intentByPaymentId.set(intent.payment_id, intent);
+    claimByPaymentId.clear();
+    for (const claimRequest of refreshedClaimRequests) claimByPaymentId.set(claimRequest.payment_id, claimRequest);
+    for (const syncedState of syncedStates) {
+      intentByPaymentId.set(syncedState.intent.payment_id, syncedState.intent);
+      if (syncedState.claimRequest) {
+        claimByPaymentId.set(syncedState.claimRequest.payment_id, syncedState.claimRequest);
+      }
+    }
   }
 
   const intentList = Array.from(intentByPaymentId.values());
@@ -406,6 +640,8 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
       settlementReason:
         !finalStageVerified && finalStageRequested
           ? "Awaiting Devnet confirmation for TSN claim/proof signatures."
+          : stage === "reverted" && intent.status === "canceled"
+            ? "TSN intent is no longer active in the mempool and was not escrowed."
           : null,
     };
 

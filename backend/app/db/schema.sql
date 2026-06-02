@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS payment_intents (
   recipient_hash VARCHAR(64) NOT NULL,
   token_mint_address VARCHAR(64),
   amount NUMERIC(20, 9) NOT NULL,
-  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'claimed', 'executed', 'settled', 'expired')),
+  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted')),
   assigned_cranker_pubkey VARCHAR(64),
   lease_expiry_at TIMESTAMPTZ,
   claim_tx_sig VARCHAR(128),
@@ -167,6 +167,16 @@ CREATE TABLE IF NOT EXISTS claim_requests (
 
 CREATE INDEX IF NOT EXISTS idx_claim_requests_intent_status ON claim_requests (intent_id, status);
 CREATE INDEX IF NOT EXISTS idx_claim_requests_payment_id ON claim_requests (payment_id);
+
+DO $$
+BEGIN
+  ALTER TABLE payment_intents
+    DROP CONSTRAINT IF EXISTS payment_intents_status_check;
+
+  ALTER TABLE payment_intents
+    ADD CONSTRAINT payment_intents_status_check
+    CHECK (status IN ('pending', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted'));
+END $$;
 
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64);

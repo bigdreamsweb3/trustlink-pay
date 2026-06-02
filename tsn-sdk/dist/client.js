@@ -3,7 +3,8 @@ export class TsnHttpClient {
     fetchImpl;
     constructor(options) {
         this.baseUrl = options.baseUrl.replace(/\/$/, "");
-        this.fetchImpl = options.fetchImpl ?? fetch;
+        const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+        this.fetchImpl = fetchImpl.bind(globalThis);
     }
     async post(path, body) {
         const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
@@ -42,6 +43,9 @@ export class TsnHttpClient {
     }
     listPendingWork(limit = 50) {
         return this.get(`/work?limit=${limit}`);
+    }
+    listPendingIntentWork(limit = 50) {
+        return this.get(`/intent-work?limit=${limit}`);
     }
     updateIntentStatus(id, body) {
         return this.patch(`/intents/${encodeURIComponent(id)}/status`, body);

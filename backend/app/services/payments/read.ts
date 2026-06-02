@@ -1,18 +1,31 @@
-import { listLockedPaymentsByPhoneNumber, listPaymentHistory } from "@/app/db/payments";
+import { listClaimablePaymentsByPhoneNumber, listPaymentHistory } from "@/app/db/payments";
 import type { AuthenticatedUser } from "@/app/types/auth";
 
 import { enrichPaymentInviteState } from "./invite";
 import { retryOutstandingNotifications } from "./notifications";
 import { enrichPaymentsWithTsnState, isTsnSettled } from "@/app/services/tsn";
 
+function isTsnEscrowClaimable(payment: { tsn?: { intentStatus: string } }) {
+  return payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed";
+}
+
+function isLegacyClaimable(payment: { status: string }) {
+  return payment.status === "locked" || payment.status === "expired";
+}
+
 export async function listLockedPaymentsForUser(phoneNumber: string) {
-  const payments = await listLockedPaymentsByPhoneNumber(phoneNumber);
+  const payments = await listClaimablePaymentsByPhoneNumber(phoneNumber);
   const refreshedPayments = await retryOutstandingNotifications(payments);
   const enriched = await Promise.all(refreshedPayments.map(enrichPaymentInviteState));
   const withTsn = await enrichPaymentsWithTsnState(enriched);
 
-  // TSN receiver semantics: once a Cranker pays out, the receiver should no longer see the escrow as claimable.
-  return withTsn.filter((payment) => !isTsnSettled(payment));
+  // Receiver semantics: every escrowed TSN payment stays visible as a claim until payout/proof is settled.
+  // Claim failures remain retryable for the recipient, but sender activity should still read as escrowed.
+  return withTsn.filter((payment) => {
+    if (isTsnSettled(payment)) return false;
+    if (isTsnEscrowClaimable(payment)) return true;
+    return isLegacyClaimable(payment);
+  });
 }
 
 export async function listPaymentHistoryForUser(authUser: AuthenticatedUser, limit?: number) {

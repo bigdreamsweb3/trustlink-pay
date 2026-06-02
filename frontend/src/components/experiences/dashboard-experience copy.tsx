@@ -403,7 +403,7 @@ export function DashboardExperience() {
 
           {/* â”€â”€â”€ ACTIVITY â€” desktop: starts right after stats â”€â”€â”€ */}
           <div className="tl-panel-header hidden md:block">
-            <div className="flex items-start justify-between mx-[0.75rem] mb-3">
+            <div className="flex items-start justify-between mb-3">
               <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
               {!loading && paymentHistory.length > 6 ? (
                 <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
@@ -482,8 +482,8 @@ export function DashboardExperience() {
           ) : null}
 
           {/* â”€â”€ IDENTITY CARD â”€â”€ */}
-          <div className="tl-panel-header rounded-[22px] hidden md:block">
-            <div className="flex items-start justify-between mx-[0.75rem] mb-3">
+          <div className="tl-panel-header rounded-[22px]">
+            <div className="flex items-start justify-between mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Identity</div>
               <Link href="/app/settings"
                 className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
@@ -576,8 +576,8 @@ export function DashboardExperience() {
           </div>
 
           {/* WALLET TOKENS CARD */}
-          <div className="tl-panel-header rounded-[22px] hidden md:block">
-            <div className="flex items-start justify-between mx-[0.75rem] mb-3">
+          <div className="tl-panel-header rounded-[22px]">
+            <div className="flex items-start justify-between mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Wallet</div>
               <div className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] pl-2.5 pr-1 py-0.5">
                 <WalletIcon size={13} className="shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -657,7 +657,7 @@ export function DashboardExperience() {
 
       {/* ACTIVITY â€” mobile only (desktop version is inside left column) */}
       <div className="tl-panel-header mt-6 md:hidden">
-        <div className="flex items-start justify-between mx-[0.75rem] mb-3">
+        <div className="flex items-start justify-between mb-3">
           <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
           {!loading && paymentHistory.length > 6 ? (
             <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>

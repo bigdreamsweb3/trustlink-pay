@@ -1,39 +1,6 @@
 import { apiPost } from "@/src/lib/api";
-import { quoteTransferFeeUiAmount } from "@trustlink/tsn-sdk/quote";
-import { getVerifiedTsnProgramId } from "@trustlink/tsn-sdk/program";
-import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  clusterApiUrl,
-} from "@solana/web3.js";
-
-type TsnIntentRequest = {
-  paymentId: string;
-  underlyingPayment: string;
-  intentSeedHash: string;
-  recipientHash: string;
-  tokenMintAddress: string;
-  amount: number;
-  recipientAmount: number;
-  source: string;
-};
-
-const DEFAULT_TSN_FEE_CONFIG = {
-  sendFeeBps: 500,
-  feeCoverageTxCount: 4,
-  sendFeeMaxUiAmount: 1,
-  sendFeeMaxUsd: 1,
-};
-
-async function sha256Hex(input: string) {
-  const encoded = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest))
-    .map((value) => value.toString(16).padStart(2, "0"))
-    .join("");
-}
+import { submitPaymentAuthorizationToMempool } from "@trustlink/tsn-sdk/payment-authorization";
+import { estimateTsnSendCostFromChain as estimateTsnSendCostFromSdk } from "@trustlink/tsn-sdk/send-estimate";
 
 function getTsnMempoolUrl() {
   const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL;
@@ -41,30 +8,17 @@ function getTsnMempoolUrl() {
   return url.replace(/\/$/, "");
 }
 
-async function postJson<TResponse>(
-  path: string,
-  body: unknown,
-): Promise<TResponse> {
-  const response = await fetch(`${getTsnMempoolUrl()}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`TSN mempool request failed (${response.status})`);
-  }
-
-  return (await response.json()) as TResponse;
-}
-
 async function postTerminalLog(
   event: string,
   meta: Record<string, unknown>,
-  level: "warn" | "error" = "warn",
+  level: "info" | "warn" | "error" = "info",
 ) {
   try {
-    await apiPost("/api/tsn/log", { event, meta, level });
+    await fetch("/api/tsn/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event, meta, level }),
+    });
   } catch {
     // ignore logging failures
   }
@@ -76,23 +30,46 @@ export async function enqueueTsnPaymentFromFrontend(params: {
   destinationWallet: string;
   tokenMintAddress: string;
   senderWallet: string;
+  senderAuthorizationMessage: string;
+  senderAuthorizationSignature: string;
+  senderAuthorizationNonce: string;
+  senderAuthorizationIssuedAt: string;
+  senderAuthorizationExpiresAt: string;
+  senderSignedSettlementTransaction?: string | null;
+  senderSignedSettlementFeePayer?: string | null;
+  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderTokenAccount?: string | null;
+  settlementVault?: string | null;
+  settlementTokenAccount?: string | null;
+  settlementPaymentIntentId?: string | null;
+  autoclaim?: boolean;
   amount: number;
   recipientAmount: number;
 }) {
-  const intentSeedHash = await sha256Hex(params.paymentId);
-
-  const intentRequest: TsnIntentRequest = {
+  const { intent, intentRequest, claimRequest } = await submitPaymentAuthorizationToMempool({
+    mempoolUrl: getTsnMempoolUrl(),
     paymentId: params.paymentId,
-    underlyingPayment: params.senderWallet,
-    intentSeedHash,
+    senderWallet: params.senderWallet,
+    senderAuthorizationMessage: params.senderAuthorizationMessage,
+    senderAuthorizationSignature: params.senderAuthorizationSignature,
+    senderAuthorizationNonce: params.senderAuthorizationNonce,
+    senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
+    senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
+    senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
+    senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
+    senderSettlementMode: params.senderSettlementMode,
+    senderTokenAccount: params.senderTokenAccount,
+    settlementVault: params.settlementVault,
+    settlementTokenAccount: params.settlementTokenAccount,
+    settlementPaymentIntentId: params.settlementPaymentIntentId,
+    destinationWallet: params.destinationWallet,
+    autoclaim: params.autoclaim ?? true,
     recipientHash: params.recipientHash,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     recipientAmount: params.recipientAmount,
     source: "trustlink-pay-frontend",
-  };
-
-  const intent = await postJson<{ id: string }>("/intents", intentRequest);
+  });
 
   const registered = await apiPost<{
     intentId: string;
@@ -101,111 +78,18 @@ export async function enqueueTsnPaymentFromFrontend(params: {
   }>("/api/tsn/register", {
     paymentId: params.paymentId,
     intentId: intent.id,
-    intentSeedHash,
+    intentSeedHash: intentRequest.intentSeedHash,
     recipientHash: params.recipientHash,
     destinationWallet: params.destinationWallet,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
-    autoclaim: true,
+    autoclaim: params.autoclaim ?? true,
   });
 
   return {
     ...registered,
-    claimRequestId: registered.claimRequestId ?? null,
+    claimRequestId: claimRequest?.id ?? registered.claimRequestId ?? null,
   };
-}
-
-function accountDiscriminator(name: string) {
-  const payload = new TextEncoder().encode(`account:${name}`);
-  return crypto.subtle
-    .digest("SHA-256", payload)
-    .then((digest) => new Uint8Array(digest).slice(0, 8));
-}
-
-async function fetchEscrowConfigFromChain(
-  connection: Connection,
-  programId: PublicKey,
-) {
-  const [motherEscrowPda] = PublicKey.findProgramAddressSync(
-    [new TextEncoder().encode("tsn_mother_escrow")],
-    programId,
-  );
-  const account = await connection.getAccountInfo(motherEscrowPda, "confirmed");
-  if (!account?.data) {
-    throw new Error(
-      "TSN mother escrow not found on-chain. Run init-mother for this TSN program.",
-    );
-  }
-
-  const data = new Uint8Array(account.data);
-  const minimumMotherEscrowLength =
-    8 + 32 + 32 + 32 + 8 + 8 + 2 + 2 + 2 + 8 + 8 + 1;
-  const discriminator = await accountDiscriminator("MotherEscrow");
-  const actual = data.slice(0, 8);
-  for (let index = 0; index < 8; index += 1) {
-    if (actual[index] !== discriminator[index]) {
-      throw new Error("TSN mother escrow discriminator mismatch");
-    }
-  }
-  if (data.byteLength < minimumMotherEscrowLength) {
-    await postTerminalLog(
-      "tsn.frontend.quote_config_fallback",
-      {
-        reason: "mother_escrow_account_too_small",
-        programId: programId.toBase58(),
-        motherEscrow: motherEscrowPda.toBase58(),
-        dataLength: data.byteLength,
-        expectedMinimumLength: minimumMotherEscrowLength,
-      },
-      "warn",
-    );
-    return DEFAULT_TSN_FEE_CONFIG;
-  }
-
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  // MotherEscrow layout:
-  // 8 discr + 32 authority + 32 tins_program_id + 32 protocol_seed + 8 epoch_seconds + 8 lease_seconds
-  // + 2 fee_split_cranker_bps + 2 fee_split_lp_bps + 2 fee_split_treasury_bps + ...
-  let offset = 8 + 32 + 32 + 32 + 8 + 8;
-  const feeSplitCrankerBps = view.getUint16(offset, true);
-  offset += 2;
-  const _feeSplitLpBps = view.getUint16(offset, true);
-  offset += 2;
-  const _feeSplitTreasuryBps = view.getUint16(offset, true);
-
-  return {
-    // TSN fee policy from current architecture:
-    // sender fee is modeled as cranker split on covered network cost
-    sendFeeBps: Math.max(0, feeSplitCrankerBps),
-    feeCoverageTxCount: DEFAULT_TSN_FEE_CONFIG.feeCoverageTxCount,
-    sendFeeMaxUiAmount: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUiAmount,
-    sendFeeMaxUsd: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUsd,
-  };
-}
-
-async function estimateNetworkFeeLamports(
-  connection: Connection,
-  senderWallet: string,
-) {
-  const sender = new PublicKey(senderWallet);
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash("confirmed");
-  const transaction = new Transaction({
-    feePayer: sender,
-    blockhash,
-    lastValidBlockHeight,
-  }).add(
-    SystemProgram.transfer({
-      fromPubkey: sender,
-      toPubkey: sender,
-      lamports: 0,
-    }),
-  );
-  const fee = await connection.getFeeForMessage(
-    transaction.compileMessage(),
-    "confirmed",
-  );
-  return fee.value ?? 0;
 }
 
 function parseUsdPrice(value: string | undefined) {
@@ -289,59 +173,20 @@ export async function estimateTsnSendCostFromChain(params: {
   solUsd?: number | null;
   rpcUrl?: string;
 }) {
-  const connection = new Connection(
-    params.rpcUrl ?? clusterApiUrl("devnet"),
-    "confirmed",
-  );
-  const programId = new PublicKey(getVerifiedTsnProgramId());
-  const [config, estimatedNetworkFeeLamports, market] = await Promise.all([
-    fetchEscrowConfigFromChain(connection, programId),
-    estimateNetworkFeeLamports(connection, params.senderWallet),
-    Promise.resolve(getConfiguredUsdPrices()),
-  ]);
+  const market = getConfiguredUsdPrices();
 
   const solUsd = params.solUsd ?? market.solUsd;
   const tokenUsd =
     params.tokenUsd ?? tokenUsdBySymbol(params.tokenSymbol, market);
-  const tokenDecimals = params.tokenDecimals ?? 6;
-  if (!solUsd || !tokenUsd) {
-    throw new Error("Sender fee not fetched: missing price feed");
-  }
-
-  const senderFeeAmountUi = quoteTransferFeeUiAmount({
-    estimatedNetworkFeeLamports,
-    solUsd,
-    tokenUsd: tokenUsd && Number.isFinite(tokenUsd) ? tokenUsd : null,
-    tokenDecimals,
-    coverageTxCount: config.feeCoverageTxCount,
-    feeBps: config.sendFeeBps,
-    maxMarginUsd: config.sendFeeMaxUsd,
-    maxUiAmount: config.sendFeeMaxUiAmount,
-  });
-
-  const networkFeeSol = estimatedNetworkFeeLamports / 1_000_000_000;
-  const networkFeeUsd = networkFeeSol * solUsd;
-  const senderFeeAmountUsd = tokenUsd ? senderFeeAmountUi * tokenUsd : null;
-
-  const estimate = {
+  const estimate = await estimateTsnSendCostFromSdk({
+    senderWallet: params.senderWallet,
+    amountUi: params.amountUi,
+    tokenDecimals: params.tokenDecimals ?? 6,
     tokenSymbol: params.tokenSymbol,
-    senderFeeAmountUi,
-    senderFeeAmountUsd,
-    totalTokenRequiredUi: Number(
-      (params.amountUi + senderFeeAmountUi).toFixed(6),
-    ),
-    networkFeeSol,
-    networkFeeUsd,
-    debug: {
-      programId: programId.toBase58(),
-      sendFeeBps: config.sendFeeBps,
-      feeCoverageTxCount: config.feeCoverageTxCount,
-      estimatedNetworkFeeLamports,
-      solUsd,
-      tokenUsd,
-      priceSource: market.source,
-    },
-  };
-  await postTerminalLog("tsn.frontend.estimate", estimate.debug, "warn");
+    solUsd,
+    tokenUsd,
+    rpcUrl: params.rpcUrl,
+  });
+  await postTerminalLog("tsn.frontend.estimate", estimate.debug);
   return estimate;
 }

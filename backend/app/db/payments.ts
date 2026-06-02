@@ -5,6 +5,7 @@ export {
   findPaymentById,
   findPaymentByNotificationMessageEventId,
   findPaymentByNotificationMessageId,
+  listClaimablePaymentsByPhoneNumber,
   listPaymentHistory,
   listLockedPaymentsByPhoneNumber,
 } from "@/app/db/payments-read";

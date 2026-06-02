@@ -9,6 +9,7 @@ import type {
   TsnIntentStatus,
   TsnMempoolClaimRequest,
   TsnMempoolIntent,
+  TsnIntentWorkItem,
   TsnWorkItem,
   ProofOfPaymentRequest,
 } from "./contracts.js";
@@ -17,6 +18,9 @@ import { TsnHttpClient } from "./client.js";
 export interface TsnMempool {
   postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
   postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
+  listIntents(params?: { status?: TsnIntentStatus }): Promise<TsnMempoolIntent[]>;
+  listClaimRequests(params?: { intentId?: string; status?: TsnClaimRequestStatus }): Promise<TsnMempoolClaimRequest[]>;
+  listPendingIntentWork(limit?: number): Promise<TsnIntentWorkItem[]>;
   listPendingWork(limit?: number): Promise<TsnWorkItem[]>;
   updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
   updateClaimRequestStatus(
@@ -98,6 +102,24 @@ export class JsonFileTsnMempool implements TsnMempool {
     return claimRequest;
   }
 
+  async listIntents(params: { status?: TsnIntentStatus } = {}): Promise<TsnMempoolIntent[]> {
+    const snapshot = await readSnapshot(this.path);
+    const items = params.status
+      ? snapshot.intents.filter((intent) => intent.status === params.status)
+      : snapshot.intents;
+    return [...items].sort((left, right) => left.postedAt.localeCompare(right.postedAt));
+  }
+
+  async listClaimRequests(params: { intentId?: string; status?: TsnClaimRequestStatus } = {}): Promise<TsnMempoolClaimRequest[]> {
+    const snapshot = await readSnapshot(this.path);
+    const items = snapshot.claimRequests.filter((claimRequest) => {
+      if (params.intentId && claimRequest.intentId !== params.intentId) return false;
+      if (params.status && claimRequest.status !== params.status) return false;
+      return true;
+    });
+    return [...items].sort((left, right) => left.postedAt.localeCompare(right.postedAt));
+  }
+
   async listPendingWork(limit = 50): Promise<TsnWorkItem[]> {
     const snapshot = await readSnapshot(this.path);
     const pendingClaims = snapshot.claimRequests
@@ -106,9 +128,18 @@ export class JsonFileTsnMempool implements TsnMempool {
       .slice(0, limit);
 
     return pendingClaims.flatMap((claimRequest) => {
-      const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && candidate.status === "pending");
+      const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && ["onchain", "claimed"].includes(candidate.status));
       return intent ? [{ intent, claimRequest }] : [];
     });
+  }
+
+  async listPendingIntentWork(limit = 50): Promise<TsnIntentWorkItem[]> {
+    const snapshot = await readSnapshot(this.path);
+    return snapshot.intents
+      .filter((intent) => intent.status === "pending")
+      .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
+      .slice(0, limit)
+      .map((intent) => ({ intent }));
   }
 
   async updateIntentStatus(id: string, status: TsnIntentStatus, patch: Partial<TsnMempoolIntent> = {}) {
@@ -156,8 +187,27 @@ export class HttpTsnMempool implements TsnMempool {
     return this.client.postClaimRequest<RequestClaimRequest, TsnMempoolClaimRequest>(request);
   }
 
+  listIntents(params: { status?: TsnIntentStatus } = {}): Promise<TsnMempoolIntent[]> {
+    const search = new URLSearchParams();
+    if (params.status) search.set("status", params.status);
+    const query = search.toString();
+    return this.client.get<TsnMempoolIntent[]>(`/intents${query ? `?${query}` : ""}`);
+  }
+
+  listClaimRequests(params: { intentId?: string; status?: TsnClaimRequestStatus } = {}): Promise<TsnMempoolClaimRequest[]> {
+    const search = new URLSearchParams();
+    if (params.intentId) search.set("intent_id", params.intentId);
+    if (params.status) search.set("status", params.status);
+    const query = search.toString();
+    return this.client.get<TsnMempoolClaimRequest[]>(`/claim-requests${query ? `?${query}` : ""}`);
+  }
+
   listPendingWork(limit = 50): Promise<TsnWorkItem[]> {
     return this.client.listPendingWork<TsnWorkItem[]>(limit);
+  }
+
+  listPendingIntentWork(limit = 50): Promise<TsnIntentWorkItem[]> {
+    return this.client.listPendingIntentWork<TsnIntentWorkItem[]>(limit);
   }
 
   updateIntentStatus(id: string, status: TsnIntentStatus, patch: Partial<TsnMempoolIntent> = {}) {

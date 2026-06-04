@@ -244,10 +244,13 @@ export async function getPaymentDetailForViewer(
   const releaseExplorerUrl = safePayment.release_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.release_signature })
     : null;
-  const tsnClaimExplorerUrl = safePayment.tsn?.claimTxSig
+  const tsnEscrowExplorerUrl = safePayment.tsn?.escrowTxSig
+    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.escrowTxSig })
+    : null;
+  const tsnClaimExplorerUrl = viewerRole === "receiver" && safePayment.tsn?.claimTxSig
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.claimTxSig })
     : null;
-  const tsnProofExplorerUrl = safePayment.tsn?.proofTxSig
+  const tsnProofExplorerUrl = viewerRole === "receiver" && safePayment.tsn?.proofTxSig
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.proofTxSig })
     : null;
   return {
@@ -277,9 +280,11 @@ export async function getPaymentDetailForViewer(
       depositExplorerUrl,
       releaseSignature: payment.release_signature,
       releaseExplorerUrl,
-      tsnClaimSignature: safePayment.tsn?.claimTxSig ?? null,
+      tsnEscrowSignature: safePayment.tsn?.escrowTxSig ?? null,
+      tsnEscrowExplorerUrl,
+      tsnClaimSignature: viewerRole === "receiver" ? safePayment.tsn?.claimTxSig ?? null : null,
       tsnClaimExplorerUrl,
-      tsnProofSignature: safePayment.tsn?.proofTxSig ?? null,
+      tsnProofSignature: viewerRole === "receiver" ? safePayment.tsn?.proofTxSig ?? null : null,
       tsnProofExplorerUrl,
       claimed: payment.status === "claimed",
     },

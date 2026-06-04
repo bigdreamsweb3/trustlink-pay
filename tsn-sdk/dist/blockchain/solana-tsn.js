@@ -480,6 +480,48 @@ export async function tsnSubmitProofOnChain(params) {
     });
     return { mode: "devnet", signature };
 }
+export async function tsnExecuteVaultPayoutOnChain(params) {
+    const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+    const motherEscrow = getTsnMotherEscrowPda();
+    const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+    const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
+    const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
+    const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
+    const recipientTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.recipientWallet);
+    const ix = new TransactionInstruction({
+        programId: getVerifiedTsnProgramId(),
+        keys: [
+            { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: crankerVault, isSigner: false, isWritable: true },
+            { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+            { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        ],
+        data: Buffer.concat([
+            instructionDiscriminator("tsn_execute_vault_payout"),
+            encodeU64(params.payoutAmountBaseUnits),
+            encodeU64(params.claimFeeAmountBaseUnits ?? 0n),
+        ]),
+    });
+    const tx = new Transaction({ feePayer: params.operator.publicKey });
+    const recipientTokenAccountInfo = await connection.getAccountInfo(recipientTokenAccount, "confirmed");
+    if (!recipientTokenAccountInfo) {
+        tx.add(createAssociatedTokenAccountInstruction(params.operator.publicKey, recipientTokenAccount, params.recipientWallet, params.tokenMint, SPL_TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID));
+    }
+    tx.add(ix);
+    const signature = await sendAndConfirmTransaction(connection, tx, [params.operator], { commitment: "confirmed" });
+    logger.info("tsn.vault_payout.executed", {
+        cranker: cranker.toBase58(),
+        vault: crankerVault.toBase58(),
+        recipient: params.recipientWallet.toBase58(),
+        feePayer: params.operator.publicKey.toBase58(),
+        signature,
+    });
+    return { mode: "devnet", signature };
+}
 export async function tsnFetchIntentOnChain(params) {
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
     const info = await connection.getAccountInfo(params.intent, "confirmed");

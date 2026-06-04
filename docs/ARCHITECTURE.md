@@ -1,109 +1,132 @@
 # TrustLink Pay Architecture
 
-TrustLink Pay has three active layers:
+TrustLink Pay has four active layers:
 
-1. TrustLink Pay app and backend
-2. TINS identity registry
-3. TSN settlement network
+1. TINS identity
+2. TSN settlement
+3. Cranker execution
+4. TrustLink Pay application
 
-## TrustLink Pay App
+The system is TIN-first. A user receives through a 10-digit Transfer Identity Number, while TSN handles private settlement behind the payment surface.
 
-The app owns the user experience:
+---
 
-- WhatsApp authentication
-- wallet connection
-- TIN creation or loading
-- payment creation
-- transaction history and status display
+## Layer 1: TINS Identity
 
-The backend owns private application mapping:
+TINS is the Transfer Identity Number System.
 
-```text
-WhatsApp phone number -> user account -> TIN -> settlement wallet
-```
-
-The backend does not custody funds. It verifies identity, records payment state, and publishes settlement work to TSN.
-
-## TINS Identity Layer
-
-TINS is the on-chain Transfer Identity Number registry.
-
-Current devnet program id:
+It gives users a permanent numeric identity that can be shared instead of a wallet address.
 
 ```text
-TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
+10-digit TIN -> TINS identity PDA -> settlement route
 ```
 
-The active TINS account is `TinAccount`:
+The TIN is the public payment identity. The wallet address is not the payment identity.
 
-| Field | Purpose |
-| --- | --- |
-| `tin` | Numeric Transfer Identity Number |
-| `display_name` | Public display name |
-| `identity_pubkey` | TINS identity PDA |
-| `encrypted_phone` | Client-encrypted phone payload |
-| `created_at` | Creation timestamp |
+Phone numbers, WhatsApp accounts, X accounts, business profiles, and other social signals can later point to the same TIN. Those links are application-layer trust signals. They are not required for the core protocol story.
 
-The TINS identity PDA is derived from the wallet and the TINS program id. This means TINS proves wallet ownership of a TIN. TrustLink Pay still keeps the private WhatsApp phone number -> TIN mapping in the backend.
+---
 
-## TSN Settlement Layer
+## Layer 2: TSN Settlement
 
-Current devnet program id:
+TSN is the Transfer Settlement Network.
+
+It separates sender-side funding from recipient-side payout so a payment does not look like a normal direct wallet-to-wallet transfer.
+
+TSN settlement uses:
+
+- sender authorization,
+- cranker-sponsored escrow,
+- verifier PDA infrastructure funding,
+- vault/token-account isolation,
+- cranker vault liquidity,
+- claim credit,
+- off-chain proof records.
+
+The sender signs approval. The cranker validates the work and broadcasts the settlement transaction.
+
+---
+
+## Layer 3: Cranker Execution
+
+Crankers are verified settlement operators.
+
+They:
+
+- monitor TSN mempool work,
+- validate sender-signed settlement payloads,
+- reject tampered work,
+- sponsor escrow transactions,
+- earn claim credit,
+- execute claim work from vault liquidity,
+- publish proof records.
+
+Crankers are part of the privacy design. They break the clean relationship between sender-side escrow funding and recipient-side payout.
+
+---
+
+## Layer 4: TrustLink Pay App
+
+The TrustLink Pay app is the first product built on TINS and TSN.
+
+It provides:
+
+- TIN creation and display,
+- payment creation,
+- wallet signing,
+- transaction history,
+- claim surfaces,
+- status tracking,
+- notifications.
+
+WhatsApp can support session authentication and notifications, but the core payment identity is the TIN.
+
+---
+
+## Payment Path
 
 ```text
-TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+Sender enters recipient TIN
+TrustLink resolves TIN settlement route
+Sender signs TSN authorization
+Authorization enters TSN mempool
+Cranker validates work
+Cranker sponsors escrow
+Funds move into TSN vault path
+Claim work becomes available
+Cranker executes payout from vault liquidity
+Proof is recorded through tx hashes and mempool state
 ```
 
-TSN handles settlement state:
-
-- payment intents
-- cranker registration and leases
-- vault funding
-- sender and claim fees
-- epoch settlement
-
-The TSN Mother Escrow stores the configured TINS program id so cranker and settlement flows use the same identity registry.
-
-## Payment Flow
-
-```text
-Sender enters phone number
-Backend resolves phone -> recipient TIN
-Backend verifies recipient TINS mapping
-Frontend signs payment
-Backend records payment and TSN intent
-Mempool exposes intent to crankers
-Cranker submits eligible work on-chain
-TSN updates payment settlement state
-Frontend polls backend and shows processing steps
-```
-
-## Identity Flow
-
-```text
-User logs in with WhatsApp
-User connects settlement wallet
-Frontend creates or loads TIN through TINS
-Wallet signs TrustLink phone-to-TIN binding message
-Backend verifies the TINS account on Solana RPC
-Backend stores phone -> TIN -> wallet mapping
-Dashboard displays TIN in the identity and balance surfaces
-```
+---
 
 ## Data Boundaries
 
-| Data | Owner |
-| --- | --- |
-| WhatsApp phone number | TrustLink backend |
-| Phone -> TIN mapping | TrustLink backend |
-| TIN account | TINS program |
-| Payment intent and settlement state | TSN / TrustLink backend |
-| Funds | User wallets, escrow, or TSN vaults |
+| Data | Layer | Visibility |
+| --- | --- | --- |
+| TIN | TINS | Public payment identity |
+| Display name | TINS / app | Public user confirmation |
+| Wallet address | Wallet / route | Not the public payment identity |
+| Sender authorization | TSN mempool / app record | Settlement work record |
+| Escrow transaction hash | TSN / app record | Sender-visible settlement hash |
+| Payout/proof transaction hash | TSN / app record | Recipient/operator settlement proof |
+| Phone or WhatsApp link | TrustLink app | Optional private application mapping |
 
-## Operator Docs
+---
+
+## Current Devnet Programs
+
+| Program | Program ID |
+| --- | --- |
+| TINS | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+
+---
+
+## Related Docs
 
 - [TINS.md](./TINS.md)
-- [DEPLOYMENT.md](./DEPLOYMENT.md)
+- [PROTOCOL.md](./PROTOCOL.md)
+- [SECURITY.md](./SECURITY.md)
 - [CRANKER.md](./CRANKER.md)
 - [LIQUIDITY.md](./LIQUIDITY.md)
-

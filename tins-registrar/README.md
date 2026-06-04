@@ -1,6 +1,10 @@
 # TINS Registrar Program
 
-TINS Registrar is the Solana program that creates wallet-owned Transfer Identity Numbers for TrustLink Pay.
+TINS Registrar is the Solana program that creates wallet-owned Transfer Identity Numbers for TrustLink Pay and future integrations.
+
+A TIN is a 10-digit payment identity that can be shared instead of a wallet address.
+
+---
 
 ## Devnet Program ID
 
@@ -14,7 +18,9 @@ The TSN settlement program is separate:
 TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 ```
 
-## What This Program Stores
+---
+
+## What The Program Stores
 
 The active `CreateTin` path stores:
 
@@ -23,7 +29,7 @@ The active `CreateTin` path stores:
 | `tin` | Numeric Transfer Identity Number |
 | `display_name` | Public display name |
 | `identity_pubkey` | TINS identity PDA |
-| `encrypted_phone` | Client-encrypted phone payload |
+| `encrypted_phone` | Optional encrypted application payload |
 | `created_at` | On-chain creation timestamp |
 
 The identity PDA is derived from:
@@ -31,6 +37,20 @@ The identity PDA is derived from:
 ```text
 ["identity", sha256(wallet_pubkey || "TINS_SALT_2026")]
 ```
+
+---
+
+## Protocol Role
+
+TINS is the receive identity layer.
+
+```text
+10-digit TIN -> identity PDA -> settlement route
+```
+
+TrustLink Pay uses TINS as the main payment identity. Phone, WhatsApp, X, business, and other identity links can be added at the application layer later.
+
+---
 
 ## Build
 
@@ -44,6 +64,8 @@ Or from the repository root:
 ```powershell
 npm run tins:build
 ```
+
+---
 
 ## Deployment
 
@@ -61,15 +83,12 @@ Command shape:
 solana program deploy target/deploy/tins_program.so --url devnet --program-id <REAL_TINS_PROGRAM_KEYPAIR_JSON>
 ```
 
-## TrustLink Pay Integration
+---
 
-TrustLink Pay maps WhatsApp phone number to TIN in its backend database. The backend accepts a TIN mapping only after it verifies:
+## Integration
 
-1. The authenticated phone number owns the TrustLink account.
-2. The submitted identity PDA matches the wallet and TINS program id.
-3. The TINS account exists on Solana devnet and is owned by the TINS program.
-4. The decoded on-chain TIN matches the submitted TIN.
-5. The wallet signs the phone-to-TIN binding message.
+TrustLink Pay and external apps should treat TINs as the primary receive identity.
 
-See `docs/TINS.md` and `docs/DEPLOYMENT.md` for the full production runbook.
+Application-layer services may attach phone or social identity metadata, but those links should resolve to TINs instead of replacing TINs.
 
+See `docs/TINS.md` and `docs/INTEGRATION.md`.

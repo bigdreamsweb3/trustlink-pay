@@ -29,7 +29,7 @@ type TsnState = NonNullable<PaymentRecord["tsn"]>;
 type ActivityViewerRole = "sender" | "receiver";
 
 function isEscrowedForSender(tsn: TsnState) {
-  return tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed";
+  return tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed";
 }
 
 function tsnTone(tsn: TsnState, viewerRole: ActivityViewerRole) {

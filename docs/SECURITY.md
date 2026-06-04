@@ -1,91 +1,101 @@
 # TrustLink Pay Security
 
-This document describes the current security model for TrustLink Pay, TINS, and TSN.
+This document describes the security and privacy model for TrustLink Pay, TINS, and TSN.
+
+---
 
 ## Core Principles
 
-- The backend verifies phone ownership through WhatsApp authentication.
-- TINS verifies wallet ownership of a Transfer Identity Number.
-- TSN verifies settlement state through Solana accounts and cranker execution.
+- TINS provides the user-facing 10-digit receive identity.
+- TSN separates sender-side escrow from recipient-side payout.
+- Crankers verify and sponsor settlement work.
 - The backend does not custody user funds.
-- The frontend must make payment and identity state visible to users.
+- The app must show accurate state: pending, escrowed, claiming, executed, failed, or canceled.
+- Phone and WhatsApp links are optional application-layer signals, not the protocol identity.
 
-## TINS Identity Security
+---
 
-The active TINS flow creates a wallet-owned identity PDA.
+## TINS Security
 
-Backend acceptance requires:
+TINS identity checks should verify:
 
-1. Authenticated TrustLink session.
-2. Valid TINS program id: `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT`.
-3. TINS identity PDA derived from the submitted wallet.
-4. Existing on-chain TINS account owned by the TINS program.
-5. Decoded on-chain TIN matching the submitted TIN.
-6. Fresh wallet signature over the phone-to-TIN binding message.
+1. configured TINS program id,
+2. valid TINS PDA derivation,
+3. on-chain account ownership,
+4. decoded TIN value,
+5. wallet/user binding where required by the application.
 
-The phone number is encrypted before it is submitted to TINS. The TrustLink backend stores the phone number -> TIN mapping because WhatsApp phone ownership is an application-layer fact.
+The public receive identity is the TIN. Applications may attach social or phone proofs later, but those proofs should resolve to the TIN rather than replace it.
+
+---
+
+## TSN Settlement Security
+
+TSN settlement security depends on:
+
+- sender authorization with nonce and expiry,
+- cranker validation of signed payloads,
+- cranker-sponsored transaction fee payment,
+- verifier PDA funding for infrastructure costs,
+- vault/token-account isolation,
+- claim credit gating,
+- proof recorded through transaction hashes and mempool state.
+
+Crankers should reject work if:
+
+- authorization is expired,
+- signature verification fails,
+- amount or mint is tampered,
+- fee payer is wrong,
+- settlement transaction structure is invalid,
+- vault route does not match expected state.
+
+---
 
 ## Public And Private Data
 
-| Data | Location | Visibility |
+| Data | Visibility | Notes |
 | --- | --- | --- |
-| Phone number | TrustLink backend | Private application data |
-| TIN | TINS account and TrustLink backend | Public identifier |
-| Display name | TINS account | Public |
-| TINS identity PDA | TINS account | Public |
-| Encrypted phone payload | TINS account | Public ciphertext |
-| Wallet binding signature | TrustLink backend | Private application record |
-| Payment state | TrustLink backend and TSN | User-facing state |
+| TIN | Public | User-facing receive identity |
+| Display name | Public/app-facing | Helps sender confirm identity |
+| Sender escrow transaction | Public if hash/program context is known | Sender-facing settlement hash |
+| Recipient payout transaction | Public if hash/vault context is known | Recipient/operator proof path |
+| Direct sender-to-recipient wallet path | Not exposed as normal transfer | Split by TSN settlement |
+| Phone/WhatsApp link | Private application state | Optional notification/linking layer |
 
-The current TINS identity PDA is derived from the wallet public key. It does not store the wallet as a `TinAccount` field, but an observer who already knows a wallet can derive and check its TINS PDA. Do not describe this as full wallet unlinkability.
+TrustLink should not claim absolute invisibility. The correct claim is reduced wallet graph exposure through settlement separation.
 
-## Payment Security
-
-Payment creation follows this chain:
-
-```text
-authenticated sender
-recipient phone resolves to TIN
-recipient TINS mapping verified
-sender signs payment
-backend records payment
-TSN intent enters mempool
-cranker submits eligible work
-backend and frontend track state
-```
-
-The UI must not present a newly created payment as final settlement. Before cranker/on-chain submission, it should show a processing state with the current step.
-
-## Cranker Security
-
-Crankers should only process eligible intents. A claim request should not appear just because the backend created a payment record. Claim work becomes valid after the proper TSN intent state exists.
-
-Operator requirements:
-
-- registered cranker identity
-- configured TSN program id
-- configured TINS program id
-- funded vaults for supported token mints
-- Solana devnet RPC access
+---
 
 ## Threats And Mitigations
 
 | Threat | Mitigation |
 | --- | --- |
-| Phone account takeover | WhatsApp auth, session checks, wallet binding signature |
-| Fake TIN submitted to backend | Backend Solana RPC verification and PDA derivation check |
-| TIN mapped to wrong wallet | Wallet-signed binding message includes phone, TIN, wallet, identity PDA, program id, and timestamp |
-| Stale binding replay | Five-minute binding signature age limit |
-| Wrong TINS program id | Backend validates configured/default TINS program id |
-| Incorrect payment finality UX | Dashboard and payment details show processing stages |
-| Cranker bypass | TSN state and cranker registration gates settlement work |
+| Address poisoning | Users pay TINs, not pasted addresses |
+| Sender/recipient graph leakage | TSN separates escrow and payout paths |
+| Tampered mempool work | Cranker validates transaction structure and signatures |
+| Replay attacks | Nonce and expiry checks |
+| Competing claim work | Claim credit and cranker coordination |
+| Wrong identity route | TINS/account verification before settlement |
+| Misleading UX | Sender and recipient status views are separated |
+
+---
+
+## UX Security Rules
+
+- Sender should see escrow hash when funds are escrowed.
+- Sender should not see recipient claim failure as sender payment failure.
+- Recipient should see escrowed claimable payments until executed or canceled.
+- Canceled work should be clearly labeled.
+- Failed claim attempts should support retry where funds remain escrowed.
+
+---
 
 ## Verification Checklist
 
-- [ ] Backend `.env.local` has the correct `TINS_PROGRAM_ID`.
-- [ ] Frontend `.env.local` has the correct `NEXT_PUBLIC_TINS_PROGRAM_ID`.
-- [ ] TSN cranker environment has both TSN and TINS program ids.
-- [ ] `/api/identity/tin` rejects invalid PDA, invalid owner, invalid TIN, stale signature, and invalid signature.
-- [ ] Dashboard displays the TIN instead of treating WhatsApp as the settlement identity.
-- [ ] Payment history shows processing state until TSN/cranker state advances.
-
+- [ ] TIN is shown as the primary payment identity.
+- [ ] Phone/WhatsApp is described only as optional notification/linking.
+- [ ] Cranker rejects invalid sponsored settlement payloads.
+- [ ] Escrowed sender payments do not appear as failed because claim execution failed.
+- [ ] Recipient claim surfaces include escrowed unexecuted payments.
+- [ ] Transaction details distinguish escrow hash from claim/proof hash.

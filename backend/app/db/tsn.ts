@@ -1,11 +1,19 @@
 import { sql } from "@/app/db/client";
 import type { ClaimRequestRecord, ClaimRequestStatus, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
+async function ensurePaymentIntentTraceColumns() {
+  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128)`;
+  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128)`;
+  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS proof_tx_sig VARCHAR(128)`;
+}
+
 export async function findPaymentIntentByPaymentId(paymentId: string): Promise<PaymentIntentRecord | null> {
+  await ensurePaymentIntentTraceColumns();
+
   const rows = (await sql`
     SELECT
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
     FROM payment_intents
     WHERE payment_id = ${paymentId}
     LIMIT 1
@@ -16,11 +24,12 @@ export async function findPaymentIntentByPaymentId(paymentId: string): Promise<P
 
 export async function listPaymentIntentsByPaymentIds(paymentIds: string[]): Promise<PaymentIntentRecord[]> {
   if (paymentIds.length === 0) return [];
+  await ensurePaymentIntentTraceColumns();
 
   return (await sql`
     SELECT
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
     FROM payment_intents
     WHERE payment_id = ANY(${paymentIds}::uuid[])
   `) as PaymentIntentRecord[];
@@ -34,6 +43,8 @@ export async function upsertPaymentIntent(params: {
   tokenMintAddress?: string | null;
   amount: number;
 }): Promise<PaymentIntentRecord> {
+  await ensurePaymentIntentTraceColumns();
+
   const rows = (await sql`
     INSERT INTO payment_intents (
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount, status
@@ -50,7 +61,7 @@ export async function upsertPaymentIntent(params: {
           amount = EXCLUDED.amount
     RETURNING
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
   `) as PaymentIntentRecord[];
 
   return rows[0];
@@ -61,21 +72,25 @@ export async function updatePaymentIntentStatus(params: {
   status: PaymentIntentStatus;
   assignedCrankerPubkey?: string | null;
   leaseExpiryAt?: string | null;
+  escrowTxSig?: string | null;
   claimTxSig?: string | null;
   proofTxSig?: string | null;
 }): Promise<PaymentIntentRecord | null> {
+  await ensurePaymentIntentTraceColumns();
+
   const rows = (await sql`
     UPDATE payment_intents
     SET
       status = ${params.status},
       assigned_cranker_pubkey = COALESCE(${params.assignedCrankerPubkey ?? null}, assigned_cranker_pubkey),
       lease_expiry_at = COALESCE(${params.leaseExpiryAt ?? null}, lease_expiry_at),
+      escrow_tx_sig = COALESCE(${params.escrowTxSig ?? null}, escrow_tx_sig),
       claim_tx_sig = COALESCE(${params.claimTxSig ?? null}, claim_tx_sig),
       proof_tx_sig = COALESCE(${params.proofTxSig ?? null}, proof_tx_sig)
     WHERE id = ${params.id}
     RETURNING
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
   `) as PaymentIntentRecord[];
 
   return rows[0] ?? null;

@@ -1,456 +1,308 @@
 # TrustLink Pay
 
-> Identity-based stablecoin payments on Solana — designed to feel as familiar as mobile money, with escrow-backed settlement and programmable payment infrastructure.
+> Private stablecoin payments to 10-digit Transfer Identity Numbers. TINS gives users a portable payment identity. TSN settles value through cranker-routed vault flows without exposing a direct sender-to-recipient wallet path.
 
 ---
 
-# Overview
+## Overview
 
-The world already understands identity-first payments.
+TrustLink Pay is an identity-first payment system on Solana.
 
-Nigeria has OPay and bank transfers. India has UPI. Brazil has Pix. Users send money to people, not wallet addresses.
+Instead of asking users to paste wallet addresses, TrustLink Pay lets a sender pay a **10-digit Transfer Identity Number (TIN)**. The TIN is the public payment identity. The wallet address stays behind the protocol boundary.
 
-Crypto still largely depends on:
+The system is built around two protocol layers:
 
-* copied wallet addresses,
-* irreversible transfers,
-* confusing onboarding,
-* and poor payment trust models.
+- **TINS - Transfer Identity Number System**: the on-chain identity registry for 10-digit wallet-owned payment numbers.
+- **TSN - Transfer Settlement Network**: the settlement network that routes payment authorization, escrow, cranker verification, vault payout, and proof.
 
-TrustLink Pay brings identity-first payments to Solana.
-
-Users send approved stablecoins to:
-
-* a phone number,
-* or a Transfer Identity Number (TIN),
-
-instead of manually handling wallet addresses.
-
-Under the hood, TrustLink combines:
-
-* identity routing,
-* escrow-backed settlement,
-* and programmable payment infrastructure
-
-to create safer and more accessible blockchain payments.
+The result is a payment flow that feels familiar like account-number payments, but settles through Solana infrastructure with stronger wallet privacy.
 
 ---
 
-# Core Principles
+## What Makes TrustLink Pay Different
 
-TrustLink is built around four principles:
+Most crypto payment products still expose wallet addresses as the main identity.
 
-| Principle                | Description                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| Identity-first UX        | Users pay people, not addresses                            |
-| Escrow-backed settlement | Transfers can move through programmable escrow flows       |
-| Reduced wallet exposure  | Users do not need to exchange wallet addresses directly    |
-| Open infrastructure      | Developers can build on the identity and settlement layers |
+TrustLink Pay changes the surface:
 
----
+| Traditional Crypto Payment                           | TrustLink Pay                                          |
+| ---------------------------------------------------- | ------------------------------------------------------ |
+| Share a wallet address                               | Share a 10-digit TIN                                   |
+| Sender pays directly to recipient wallet             | Sender funds a private TSN escrow path                 |
+| Recipient wallet is easy to inspect from sender flow | Recipient payout is separated through vault settlement |
+| Apps rebuild payment logic themselves                | Apps integrate TINS and TSN through SDKs               |
+| Identity is address-first                            | Identity is TIN-first                                  |
 
-# The Problem
-
-Blockchain payments remain difficult for normal users.
-
-Current crypto payment systems still rely heavily on:
-
-* raw wallet addresses,
-* permanent irreversible transfers,
-* manual verification,
-* and high-friction onboarding.
-
-This creates major problems:
-
-* address poisoning,
-* payment mistakes,
-* poor merchant UX,
-* weak trust coordination,
-* and limited mainstream usability.
-
-Most users already understand:
-
-* phone-number payments,
-* mobile money,
-* and identity-based transfers.
-
-TrustLink adapts that experience for stablecoin payments on Solana.
+TrustLink Pay is not trying to hide that Solana transactions exist. It is designed so the normal payment journey does not expose a clean sender-wallet-to-recipient-wallet graph. To follow settlement, an observer needs specific transaction context, vault context, or program-level knowledge.
 
 ---
 
-# What TrustLink Pay Does
+## Core Architecture
 
-TrustLink allows users to:
+TrustLink Pay is made of three connected surfaces.
 
-* send approved stablecoins using a phone number or TIN,
-* route payments through escrow-backed settlement,
-* reduce direct wallet exposure,
-* and onboard recipients through familiar identity flows.
+### 1. TINS Identity
 
-The goal is not to replace wallets.
+TINS gives users a permanent 10-digit Transfer Identity Number.
 
-The goal is to simplify trusted blockchain payments for:
+A TIN can be used by:
 
-* remittances,
-* merchants,
-* freelancers,
-* and internet-native commerce.
+- TrustLink Pay users receiving stablecoins,
+- wallets that want privacy-preserving receive identities,
+- merchants that do not want to expose treasury wallets,
+- apps that want account-number-style payment UX on Solana.
+
+Phone numbers and other social identities can be linked later as discovery signals, but the protocol identity is the TIN.
+
+### 2. TSN Settlement
+
+TSN is the private settlement layer.
+
+The sender signs a sponsored settlement authorization. A verified cranker checks the mempool work, sponsors the escrow transaction, and moves funds into a TSN vault path. Recipient payout is executed through cranker vault settlement instead of direct wallet-to-wallet transfer.
+
+TSN separates:
+
+1. sender authorization,
+2. cranker verification,
+3. escrow funding,
+4. recipient payout,
+5. off-chain proof and protocol accounting.
+
+### 3. TrustLink Pay App
+
+The TrustLink Pay app is the first product surface built on TINS and TSN.
+
+It provides:
+
+- TIN creation and profile display,
+- approved stablecoin send flow,
+- sender authorization signing,
+- transaction status tracking,
+- recipient notifications,
+- payment history and claim surfaces.
+
+WhatsApp remains useful for notifications, consent, onboarding, and optional social linking. It is not the core payment identity in the protocol narrative.
 
 ---
 
-# Architecture
+## Payment Flow
 
-TrustLink is structured into three primary layers.
+### Send
 
-## 1. Application Layer (TrustLink App)
+1. Sender enters a recipient TIN.
+2. TrustLink Pay resolves the TIN to the recipient settlement route.
+3. Sender reviews amount, sender fee, and settlement details.
+4. Sender signs the TSN authorization and co-signed sponsored settlement transaction.
+5. The authorization enters the TSN mempool.
+6. A verified cranker validates the work and sponsors escrow.
+7. Funds move into the TSN escrow/vault path.
 
-The application layer handles:
+### Settlement
 
-* onboarding,
-* authentication,
-* payment creation,
-* transaction history,
-* and user experience.
+1. TSN records the payment as escrowed.
+2. Recipient-side claim work becomes available.
+3. A cranker with claim credit executes payout from vault liquidity.
+4. Proof is recorded through transaction hashes and mempool state.
+5. User-facing state moves from pending to escrowed to executed.
 
-This layer abstracts blockchain complexity from normal users.
+### Privacy Outcome
 
-### Responsibilities
-
-* phone-number onboarding
-* wallet connection
-* payment flow UI
-* recipient notifications
-* transaction visibility
-* escrow lifecycle UX
+- The sender does not need to know the recipient wallet.
+- The recipient does not need to know the sender wallet.
+- The public chain does not present a simple direct wallet-to-wallet transfer path.
+- The protocol can still verify settlement through transaction signatures, vault state, cranker records, and deterministic program rules.
 
 ---
 
-## 2. Identity Layer (TINS)
+## TINS: 10-Digit Payment Identity
 
-TINS (Transfer Identity Number System) is the identity layer powering TrustLink.
+TINS is the identity layer of the ecosystem.
 
-TINS allows wallets to bind to a portable numeric identity.
+Each user owns a 10-digit Transfer Identity Number, similar in feel to an account number, but built for Solana applications.
 
-Instead of sharing wallet addresses directly, users can receive payments through:
+TINS is designed for:
 
-* phone numbers,
-* or permanent TIN identities.
+- payment identity,
+- wallet abstraction,
+- safer receiving,
+- multi-wallet routing,
+- future social identity linking,
+- developer-accessible resolution.
 
-### Goals
+The long-term vision is that any wallet or app can let a user receive by TIN instead of exposing a raw wallet address.
 
-* portable payment identity
-* reduced address exposure
-* developer-accessible identity resolution
-* long-term interoperability
+---
 
-### Current Status
+## TSN: Private Settlement Network
 
-Current TINS functionality includes:
+TSN is the settlement infrastructure behind TrustLink Pay.
 
-* wallet-bound TIN generation
-* PDA-based identity accounts
-* encrypted client-side identity submission
-* backend-assisted identity verification
+It exists because identity alone is not enough. If a sender resolves a TIN and transfers directly to the recipient wallet, the privacy benefit collapses. TSN adds the settlement layer that separates the sender-side funding path from the recipient-side payout path.
 
-### Current Devnet Programs
+TSN uses:
 
-| Program | Program ID                                    |
+- signed payment authorizations,
+- cranker verification,
+- sponsored escrow transactions,
+- verifier PDA infrastructure funding,
+- cranker vault liquidity,
+- off-chain proof records,
+- epoch-aware accounting.
+
+---
+
+## Crankers
+
+Crankers are verified settlement operators.
+
+They:
+
+- monitor TSN mempool work,
+- validate sender authorization and transaction structure,
+- reject tampered or invalid payment work,
+- sponsor escrow submission,
+- earn claim credit for useful intent work,
+- execute eligible claim work,
+- submit proof through transaction records and mempool state.
+
+A cranker cannot simply jump to claim work. Claim credit is earned by performing valid payment-intent escrow work first. This keeps the network balanced around useful settlement execution.
+
+---
+
+## Fees And Liquidity
+
+TSN separates sender fees, claim fees, operator work, and vault liquidity.
+
+The current settlement-fee model prioritizes liquidity providers while keeping operator and treasury incentives alive:
+
+| Recipient             | Share | Purpose                                                |
+| --------------------- | ----: | ------------------------------------------------------ |
+| Liquidity providers   |   87% | Rewards vault capital that makes fast payout possible  |
+| TSN protocol treasury |    8% | Supports audits, development, operations, and reserves |
+| Cranker/operator      |    5% | Covers uptime, verification, execution, and proof work |
+
+Sender-side fees can route to treasury infrastructure. Claim-side fee value can remain inside the cranker vault accounting path so liquidity and settlement capacity stay useful.
+
+---
+
+## Security Model
+
+| Guarantee               | How it works                                                      |
+| ----------------------- | ----------------------------------------------------------------- |
+| TIN-first identity      | Users pay a 10-digit identity, not a raw address                  |
+| Sender authorization    | Sender signs approval before settlement work enters TSN           |
+| Sponsored settlement    | Cranker/operator pays network execution cost                      |
+| Vault isolation         | Funds move into protocol-controlled vault/token accounts          |
+| Cranker verification    | Invalid or tampered work is rejected before chain submission      |
+| Reduced wallet exposure | Sender and recipient paths are separated by TSN                   |
+| Claim credit discipline | Crankers earn claim eligibility by submitting valid escrow work   |
+| Off-chain proof trail   | Settlement proof is tracked through tx hashes and mempool records |
+
+---
+
+## Current Status
+
+TrustLink Pay has working TINS identity, TSN mempool, cranker-sponsored escrow, private vault payout, claim execution, and transaction-state tracking on devnet.
+
+Current program IDs:
+
+| Program | Devnet ID                                     |
 | ------- | --------------------------------------------- |
 | TINS    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 | TSN     | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ---
 
-## 3. Settlement Layer (TSN)
+## Future Direction
 
-TSN (Transfer Settlement Network) is the settlement infrastructure layer.
+TrustLink Pay starts with TIN-first payments and TSN settlement.
 
-TSN coordinates:
+Future protocol surfaces may include:
 
-* escrow-backed transfers,
-* payout execution,
-* settlement verification,
-* and operator coordination.
+- phone, WhatsApp, X, business, and social identity links to TINs,
+- wallet-native TIN receive flows,
+- payment PDAs that can receive funds and auto-route through TSN,
+- third-party wallet integrations,
+- broader SPL asset support,
+- mature multi-operator cranker markets.
 
-The settlement architecture is designed to reduce direct sender-recipient wallet exposure while preserving verifiable protocol state.
-
-### TSN Responsibilities
-
-* escrow lifecycle management
-* payment-intent coordination
-* payout execution
-* settlement verification
-* operator reimbursement
-* liquidity coordination
+The priority is proving the privacy-preserving TIN-to-TSN settlement system first. Social identity linking comes after the protocol rail is strong.
 
 ---
 
-# Payment Flow
+## Repository Structure
 
-## Standard Send Flow
-
-1. Sender enters a phone number or TIN.
-2. TrustLink resolves the payment identity.
-3. Sender reviews amount and fees.
-4. Sender signs the transaction.
-5. Funds enter escrow-backed settlement.
-6. Settlement execution is coordinated through TSN.
-7. Recipient receives payout through the linked wallet.
-
-For onboarded recipients, settlement can complete automatically without requiring manual claim actions.
-
----
-
-# Escrow & Settlement Model
-
-TrustLink uses escrow-backed settlement instead of direct wallet-to-wallet transfers.
-
-This model enables:
-
-* safer payment coordination,
-* programmable settlement logic,
-* recovery flows for incomplete onboarding,
-* and reduced wallet exposure between parties.
-
-The escrow architecture is noncustodial at the protocol level and governed by Solana program rules.
+| Path                    | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `frontend`              | TrustLink Pay dApp and transaction UX                    |
+| `backend`               | API, user state, notification, and payment orchestration |
+| `tins-registrar`        | TINS on-chain identity program                           |
+| `tins-sdk`              | TINS SDK package surface                                 |
+| `tsn/protocol`          | Anchor settlement programs                               |
+| `tsn-sdk`               | TSN protocol SDK                                         |
+| `tsn-cranker-op-daemon` | Reference cranker operator daemon                        |
+| `tsn-mempool-backend`   | TSN mempool service                                      |
+| `tsn-mempool-frontend`  | TSN mempool explorer                                     |
+| `docs`                  | Protocol and operator documentation                      |
 
 ---
 
-# Operator Infrastructure
+## Documentation
 
-TSN uses specialized operators to coordinate settlement execution.
-
-These operators:
-
-* monitor settlement intents,
-* execute payout flows,
-* submit settlement proof,
-* and maintain network reliability.
-
-At launch, TrustLink will initially operate the settlement infrastructure directly to ensure:
-
-* reliability,
-* security,
-* and operational consistency.
-
-Future operator participation may expand gradually over time.
+| Document               | Description                |
+| ---------------------- | -------------------------- |
+| `docs/ARCHITECTURE.md` | System architecture        |
+| `docs/TINS.md`         | TINS identity protocol     |
+| `docs/PROTOCOL.md`     | TSN settlement protocol    |
+| `docs/SECURITY.md`     | Security and privacy model |
+| `docs/INTEGRATION.md`  | SDK integration guide      |
+| `docs/CRANKER.md`      | Cranker operator guide     |
 
 ---
 
-# Liquidity Infrastructure
-
-Settlement liquidity allows payouts to complete efficiently during active settlement periods.
-
-Liquidity providers may supply approved stablecoins to settlement vaults used during payout coordination.
-
-The protocol is designed around real settlement activity rather than token-emission incentives.
-
----
-
-# Security Model
-
-TrustLink focuses heavily on payment safety and operational integrity.
-
-## Security Goals
-
-| Goal                     | Description                                                 |
-| ------------------------ | ----------------------------------------------------------- |
-| Escrow isolation         | Each payment maintains isolated settlement state            |
-| Reduced address exposure | Users do not need to exchange wallet addresses directly     |
-| Replay resistance        | Settlement execution includes replay protections            |
-| Operator accountability  | Settlement operators maintain verifiable execution records  |
-| Proof-based settlement   | Settlement completion depends on verifiable execution state |
-
----
-
-# Privacy Model
-
-TrustLink is designed to reduce unnecessary wallet exposure during payments.
-
-## Important Clarification
-
-TrustLink is not an anonymous payment system.
-
-Blockchain settlement activity may still remain publicly observable depending on the underlying network and transaction structure.
-
-The primary privacy goal is:
-
-* reducing direct sender-recipient wallet exposure,
-* and abstracting wallet coordination behind identity-based payment flows.
-
----
-
-# Fraud Protection
-
-TrustLink includes infrastructure protections intended to reduce malicious settlement activity.
-
-Current protection mechanisms include:
-
-* replay prevention,
-* settlement verification,
-* operator monitoring,
-* behavioral heuristics,
-* and anomaly detection systems.
-
-Additional protections will continue evolving as network activity scales.
-
----
-
-# Who TrustLink Is For
-
-## Users
-
-People sending:
-
-* remittances,
-* freelance payments,
-* merchant payments,
-* or internet-native stablecoin transfers.
-
-## Merchants
-
-Businesses accepting stablecoin payments without exposing wallet addresses publicly.
-
-## Developers
-
-Developers building:
-
-* payment applications,
-* merchant tools,
-* identity-based settlement flows,
-* and escrow-enabled commerce infrastructure.
-
-## Infrastructure Operators
-
-Future settlement operators and infrastructure participants supporting protocol execution and reliability.
-
----
-
-# Current Status
-
-## Live Functionality
-
-* wallet onboarding
-* phone-number routing
-* WhatsApp-based identity flows
-* escrow-backed payment creation
-* stablecoin transfer support
-* transaction review flows
-* payment notifications
-* TSN payment-intent scaffolding
-
-## Active Development
-
-* TINS registry expansion
-* operator infrastructure
-* settlement automation
-* liquidity coordination
-* expanded asset support
-* protocol archival systems
-
----
-
-# Roadmap
-
-## Phase 1 — Identity-Based Payments
-
-* phone-number payments
-* escrow-backed transfers
-* stablecoin settlement
-* onboarding simplification
-
-## Phase 2 — Settlement Infrastructure
-
-* operator coordination
-* automated settlement flows
-* liquidity infrastructure
-* settlement optimization
-
-## Phase 3 — Open Infrastructure
-
-* developer integrations
-* public settlement tooling
-* broader identity portability
-* external ecosystem adoption
-
----
-
-# Repository Structure
-
-| Path             | Purpose                                    |
-| ---------------- | ------------------------------------------ |
-| `frontend`       | Next.js frontend application               |
-| `backend`        | API and orchestration services             |
-| `tsn/protocol`   | Anchor settlement programs                 |
-| `tsn`            | TSN tooling and infrastructure             |
-| `tins-registrar` | TINS identity protocol                     |
-| `docs`           | Architecture and operational documentation |
-
----
-
-# Quick Start
+## Quick Start
 
 ```bash
-cd backend && npm install && tsx scripts/init-db.ts && npm run dev
-
+cd backend && npm install && npm run dev
 cd frontend && npm install && npm run dev
 ```
 
----
-
-# Documentation
-
-| Document               | Description                 |
-| ---------------------- | --------------------------- |
-| `docs/ARCHITECTURE.md` | System architecture         |
-| `docs/TINS.md`         | Identity layer              |
-| `docs/PROTOCOL.md`     | Settlement protocol         |
-| `docs/API.md`          | API reference               |
-| `docs/DEVELOPER.md`    | Developer integration guide |
+For full TSN stack testing, use the root scripts in `package.json`.
 
 ---
 
-# Milestones
+## Milestones
 
-## StableHacks 2026
+### StableHacks 2026
 
-[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) — Track: Programmable Stablecoin Payments
+[StableHacks 2026](https://dorahacks.io/hackathon/stablehacks/detail) - Track: Programmable Stablecoin Payments
 
-Proved the end-to-end product path: phone-verified identity, escrow-backed payments, gasless UX design, and hardened escrow architecture.
+Proved the first end-to-end identity payment path: verified recipient identity, escrow-backed payments, gasless UX design, and hardened escrow architecture.
 
-## The Bags Hackathon
+### The Bags Hackathon
 
-[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) — Track: Payments
+[The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon/detail) - Track: Payments
 
 Extended the TrustLink payment model toward approved SPL asset transfers through identity-first routing.
 
-## TINS Protocol
+### TINS Protocol
 
-Active development. Moves identity routing from TrustLink's backend to a permanent on-chain registry.
+Working devnet identity registry for 10-digit Transfer Identity Numbers. TINS is the core payment identity layer for TrustLink Pay and future wallet integrations.
 
 [TINS Overview](tins-registrar/README.md)
 
-## TSN Settlement Network
+### TSN Settlement Network
 
-Cranker execution, Proof of Payment, mempool-first intents, and epoch reimbursement architecture.
+Working cranker-sponsored escrow, private vault payout, proof records, mempool-first settlement work, and epoch-aware accounting architecture.
 
 ---
 
-# Funding & Support
+## Funding & Support
 
-TrustLink Pay received support through the Superteam Agentic Engineering Grant program — approved for **200 USDG** to accelerate fraud protection system development.
+TrustLink Pay received support through the Superteam Agentic Engineering Grant program - approved for **200 USDG** to accelerate fraud protection system development.
 
 Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@SuperteamNG](https://twitter.com/SuperteamNG) community. Special thanks to [@NzubeEzudo](https://twitter.com/NzubeEzudo) and [@Harri_Obi](https://twitter.com/Harri_Obi).
 
 ---
 
-# Vision
-
-TrustLink aims to make blockchain payments feel closer to the systems users already trust:
-
-* identity-first,
-* simple,
-* programmable,
-* and globally accessible.
-
-The long-term goal is to provide infrastructure for safer internet-native stablecoin commerce.
+**TrustLink Pay** - private Solana payments to 10-digit identities, settled through TSN.

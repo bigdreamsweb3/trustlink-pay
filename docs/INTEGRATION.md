@@ -1,104 +1,128 @@
 # TrustLink Pay Integration Guide
 
-## Prerequisites
+TrustLink Pay integrations should be TIN-first.
 
-- Node.js 20+
-- npm
-- Solana wallet (for on-chain operations)
+The user-facing recipient is a 10-digit Transfer Identity Number. TSN handles private settlement behind the scenes.
 
-## Installation
+---
+
+## Install
 
 ```bash
-npm install @trustlink/tsn
+npm install @trustlink/tsn-sdk
 ```
 
-## Basic Integration
+Package names may change as the SDKs are published. In this repository, the active package surfaces are `tsn-sdk` and `tins-sdk`.
 
-### 1. Initialize Payment
+---
 
-```typescript
-import { createPaymentIntent } from '@trustlink/tsn';
+## Basic Flow
 
-const payment = await createPaymentIntent({
-  recipient: '+2348012345678',  // Phone number
-  amount: 50,                  // USDC
-  token: 'EPjFWdd5AufqSSqeV6Z8oB2cX3Lv9iZ9pKQv2dNqV1mXg', // USDC
+```ts
+import {
+  buildCreateTinInstruction,
+  getTinsRegistryPda,
+} from "@trustlink/tsn-sdk/tins";
+
+import {
+  buildTsnSponsoredSettlementTransaction,
+} from "@trustlink/tsn-sdk/sponsored-settlement";
+
+import {
+  submitPaymentAuthorizationToMempool,
+} from "@trustlink/tsn-sdk/payment-authorization";
+```
+
+### 1. Resolve Recipient TIN
+
+```ts
+const recipientTin = "1000000008";
+const registryPda = getTinsRegistryPda({ tin: recipientTin });
+```
+
+The application resolves the TIN to a settlement route using TINS/app state.
+
+### 2. Build Sponsored Settlement
+
+```ts
+const settlement = await buildTsnSponsoredSettlementTransaction({
+  paymentId,
+  crankerFeePayer,
+  senderWallet,
+  tokenMintAddress,
+  amountUi: "5",
+  senderFeeAmountUi: "0.003",
+  tokenDecimals: 6,
+  recipientHash,
 });
 ```
 
-### 2. Handle Webhook
+The frontend requests the sender wallet to sign the payload. The sender does not broadcast the settlement transaction.
 
-```typescript
-import { processWebhook } from '@trustlink/tsn';
+### 3. Submit Authorization
 
-app.post('/webhook', async (req) => {
-  const event = await processWebhook(req.body);
-  
-  switch (event.type) {
-    case 'payment.created':
-      // Notify recipient
-      break;
-    case 'payment.claimed':
-      // Update UI
-      break;
-  }
+```ts
+await submitPaymentAuthorizationToMempool({
+  mempoolUrl,
+  paymentId,
+  recipientHash,
+  tokenMintAddress,
+  senderWallet,
+  senderAuthorizationMessage,
+  senderAuthorizationSignature,
+  senderAuthorizationNonce,
+  senderAuthorizationIssuedAt,
+  senderAuthorizationExpiresAt,
+  senderSignedSettlementTransaction: signedTransactionBase64,
+  senderSignedSettlementFeePayer: settlement.crankerFeePayer,
+  senderSettlementMode: "sponsored_sender_cosigned",
+  senderTokenAccount: settlement.senderTokenAccount,
+  settlementVault: settlement.paymentVault,
+  settlementTokenAccount: settlement.paymentVaultTokenAccount,
+  settlementPaymentIntentId: settlement.paymentIntentId,
+  amount: 5,
+  recipientAmount: 5,
+  autoclaim: true,
 });
 ```
 
-## API Endpoints
+### 4. Track Status
 
-| Endpoint | Method | Description |
-| --- | ---: | --- |
-| `/api/payment/create` | POST | Create payment intent |
-| `/api/payment/estimate` | POST | Get fee estimate |
-| `/api/payment/claim/request` | POST | Submit claim request |
-| `/api/payment/history` | GET | Payment history |
-| `/api/identity/verify` | POST | Verify phone number |
+| Status | User Meaning |
+| --- | --- |
+| `pending` | Awaiting cranker verification |
+| `escrowed` | Funds are in TSN escrow/vault path |
+| `claimed` | Claim work is being processed |
+| `executed` | Recipient payout completed |
+| `failed` | Retry may be needed, especially for recipient claim |
+| `canceled` | Payment work was rejected or expired |
 
-## Types
+Sender UX should treat escrowed funds as escrowed, not failed, even if recipient-side claim execution needs retry.
 
-```typescript
-interface CreatePaymentRequest {
-  recipient: string;
-  amount: number;
-  tokenMint: string;
-}
+---
 
-interface PaymentIntent {
-  id: string;
-  sender: string;
-  recipient: string;
-  amount: number;
-  status: 'pending' | 'claimed' | 'settled' | 'expired';
-  createdAt: number;
-}
+## API Role
 
-interface ClaimRequest {
-  paymentId: string;
-  receiverWallet: string;
-}
-```
+Backend APIs should store product state and user history.
 
-## Error Handling
+The frontend/SDK should handle TSN-specific signing and settlement preparation. The backend can receive:
 
-```typescript
-try {
-  await createPaymentIntent(request);
-} catch (error) {
-  if (error.code === 'INSUFFICIENT_BALANCE') {
-    // Handle insufficient funds
-  } else if (error.code === 'INVALID_RECIPIENT') {
-    // Handle invalid phone number
-  }
-}
-```
+- payment id,
+- TIN/recipient identity metadata,
+- mempool intent id,
+- escrow transaction hash,
+- proof transaction hash,
+- final status.
 
-## Testing
+---
 
-```bash
-# Run test suite
-npm test
+## Optional Social Links
 
-# Test specific flow
-npm run test:payment
-```
+Applications may add:
+
+- WhatsApp notifications,
+- phone recovery,
+- social profile verification,
+- business identity labels.
+
+These should point to a TIN. They should not replace the TIN as the protocol identity.

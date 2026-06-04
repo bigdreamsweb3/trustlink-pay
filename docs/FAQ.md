@@ -1,67 +1,75 @@
-# Developer FAQ
+# TrustLink Pay FAQ
 
 ## General
 
 ### What is TrustLink Pay?
 
-A payment protocol letting users send stablecoins to phone numbers. Settlement is private through TSN.
+TrustLink Pay is a private stablecoin payment system on Solana. Users send to 10-digit Transfer Identity Numbers, and TSN settles value through cranker-routed vault flows.
+
+### What is a TIN?
+
+A TIN is a 10-digit Transfer Identity Number. It is the user-facing receive identity for TrustLink Pay and future wallet integrations.
+
+### Is TrustLink Pay phone-number based?
+
+No. The protocol narrative is TIN-first.
+
+Phone numbers and WhatsApp can support notifications, authentication, optional linking, and future discovery. The primary payment identity is the TIN.
 
 ### Which tokens are supported?
 
-USDC initially. SPL token support expanding.
+Approved stablecoins first, with broader SPL asset support planned through allowlisted settlement routes.
 
-### Is this live on mainnet?
+---
 
-Protocol is devnet-tested. Launch timing TBA.
-
-## Integration
-
-### How do I integrate?
-
-See [Integration Guide](./INTEGRATION.md). Basic flow:
-
-1. Create payment intent
-2. Get user approval
-3. Handle webhooks
-
-### Do I need approval to integrate?
-
-No. TINS and TSN are open protocols. Build freely.
-
-### Can I use my own UI?
-
-Yes. The SDK provides core functions. Frontend is yours.
-
-## Settlement
+## Privacy
 
 ### How does TSN provide privacy?
 
-Settlement splits sender and recipient wallets:
+TSN separates the sender-side escrow path from the recipient-side payout path.
 
-- Sender → escrow (visible on chain)
-- Cranker → vault → recipient
-- No direct wallet link
+```text
+sender authorization -> cranker-sponsored escrow -> vault payout -> proof
+```
 
-### What's the fee split?
+The payment is still on Solana, but the normal user wallet view does not expose a clean direct sender-to-recipient transfer.
 
-87% LPs, 8% protocol, 5% Cranker
+### Is TrustLink anonymous?
 
-### How do I become a Cranker?
+No. TrustLink is privacy-preserving, not accountability-free. Settlement can still be verified through transaction hashes, vault state, cranker records, and mempool proof records.
 
-See [Operator Guide](./OPERATOR.md)
+---
 
-## Technical
+## Integration
 
-### Why Solana?
+### Can another wallet use TINS?
 
-- Low fees (<$0.001 typical)
-- High throughput
-- Phone-friendly UX
+Yes. A wallet can use TINS as a privacy-friendly receive identity layer. A user can share a TIN instead of a raw wallet address.
 
-### Can I run my own indexer?
+### Can another app use TSN?
 
-Yes. TSN mempool is public. Build freely.
+Yes. Apps should integrate through the SDK and avoid manually building TSN transactions.
 
-### Is there rate limiting?
+### Do I need permission to build on TINS or TSN?
 
-API has standard rate limits. Contact for higher.
+No. The goal is open protocol infrastructure.
+
+---
+
+## Settlement
+
+### What does escrowed mean?
+
+Escrowed means the cranker has verified the work and funds have moved into the TSN escrow/vault path.
+
+### What if claim fails?
+
+For the sender, the payment remains escrowed. For the recipient, the claim may be retryable depending on current state.
+
+### What is a cranker?
+
+A cranker is a verified settlement operator that validates work, sponsors escrow, executes payout, and records proof.
+
+### What is claim credit?
+
+Claim credit is earned when a cranker performs useful escrow work. It gates access to claim execution so the network prioritizes payment-intent processing before payout work.

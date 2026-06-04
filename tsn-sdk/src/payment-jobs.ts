@@ -83,6 +83,7 @@ export async function createTsnPaymentMempoolJobs(params: {
   recipientHash: string;
   tokenMintAddress: string;
   amount: number;
+  senderFeeAmount?: number | null;
   recipientAmount?: number;
   destinationWallet: string;
   source?: string;
@@ -111,6 +112,7 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
   recipientHash: string;
   tokenMintAddress: string;
   amount: number;
+  senderFeeAmount?: number | null;
   recipientAmount?: number;
   destinationWallet: string;
   source?: string;
@@ -122,6 +124,7 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
       recipientHash: params.recipientHash,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
+      senderFeeAmount: params.senderFeeAmount,
       source: params.source,
     }),
     ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),

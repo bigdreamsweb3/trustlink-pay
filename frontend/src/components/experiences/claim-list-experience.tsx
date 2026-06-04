@@ -24,7 +24,7 @@ function formatUsd(value: number) {
 function claimStatusLabel(payment: PaymentRecord) {
   if (payment.tsn?.claimRequestStatus === "failed" || payment.tsn?.claimRequestStatus === "canceled") return "Claim retry";
   if (payment.tsn?.claimRequestStatus === "pending" || payment.tsn?.claimRequestStatus === "processing") return "Claiming";
-  if (payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed") return "Escrowed";
+  if (payment.tsn?.intentStatus === "escrowed" || payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed") return "Escrowed";
   return "Claimable";
 }
 

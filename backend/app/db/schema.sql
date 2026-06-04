@@ -136,9 +136,10 @@ CREATE TABLE IF NOT EXISTS payment_intents (
   recipient_hash VARCHAR(64) NOT NULL,
   token_mint_address VARCHAR(64),
   amount NUMERIC(20, 9) NOT NULL,
-  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted')),
+    status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'escrowed', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted')),
   assigned_cranker_pubkey VARCHAR(64),
   lease_expiry_at TIMESTAMPTZ,
+  escrow_tx_sig VARCHAR(128),
   claim_tx_sig VARCHAR(128),
   proof_tx_sig VARCHAR(128),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -149,6 +150,9 @@ CREATE INDEX IF NOT EXISTS idx_payment_intents_status ON payment_intents (status
 CREATE INDEX IF NOT EXISTS idx_payment_intents_recipient_hash ON payment_intents (recipient_hash);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_tin ON users (tin) WHERE tin IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_tins_wallet_pubkey ON users (tins_wallet_pubkey) WHERE tins_wallet_pubkey IS NOT NULL;
+
+ALTER TABLE payment_intents
+  ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128);
 
 ALTER TABLE payment_intents
   ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128);
@@ -175,7 +179,7 @@ BEGIN
 
   ALTER TABLE payment_intents
     ADD CONSTRAINT payment_intents_status_check
-    CHECK (status IN ('pending', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted'));
+    CHECK (status IN ('pending', 'escrowed', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted'));
 END $$;
 
 ALTER TABLE payments

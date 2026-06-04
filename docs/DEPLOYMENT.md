@@ -133,14 +133,14 @@ npm run dev:tsn:stack:with-cranker
 
 ## Test Flow
 
-1. Log in to TrustLink Pay with WhatsApp.
+1. Log in to TrustLink Pay.
 2. Connect the wallet that should own settlement.
 3. Create or load the TIN from the dashboard identity section or settings.
 4. Confirm `/api/identity` returns `tin`, `tinsIdentityPublicKey`, `tinsRegistryPublicKey`, `tinsWalletPublicKey`, and `tinsProgramId`.
-5. Send a payment to a recipient whose WhatsApp account is mapped to a TIN.
-6. Confirm the backend creates the payment and TSN intent.
+5. Send a payment to a recipient TIN.
+6. Confirm the backend records the payment and TSN intent metadata.
 7. Confirm the mempool shows intent state before cranker settlement.
-8. Start the cranker and verify the payment advances from processing to submitted/settled state.
+8. Start the cranker and verify the payment advances from pending to escrowed to executed/settled state.
 
 ## Verification Commands
 
@@ -150,4 +150,3 @@ npm --prefix backend run typecheck
 npm --prefix tsn-sdk run build
 npm --prefix tsn-cranker-sdk run build
 ```
-

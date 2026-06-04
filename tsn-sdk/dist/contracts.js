@@ -13,6 +13,7 @@ export function buildCreateIntentRequest(params) {
         senderAuthorizationNonce: params.senderAuthorizationNonce ?? null,
         senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt ?? null,
         senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt ?? null,
+        senderFeeAmount: params.senderFeeAmount ?? null,
         senderSignedSettlementTransaction: params.senderSignedSettlementTransaction ?? null,
         senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer ?? null,
         senderSettlementMode: params.senderSettlementMode ?? null,
@@ -41,7 +42,7 @@ export function computeTsnUiStage(intent, claimRequest) {
         return "cranker_paid";
     if (intent.status === "claimed")
         return "lease_claimed";
-    if (intent.status === "onchain")
+    if (intent.status === "escrowed" || intent.status === "onchain")
         return "escrowed";
     if (intent.status === "pending")
         return "intent_pending";

@@ -1,5 +1,6 @@
 pub mod claim_intent;
 pub mod create_intent;
+pub mod execute_vault_payout;
 pub mod fund_cranker;
 pub mod initialize_cranker_vault;
 pub mod initialize_mother_escrow;
@@ -15,6 +16,7 @@ pub mod withdraw_verifier_lamports;
 
 pub use claim_intent::*;
 pub use create_intent::*;
+pub use execute_vault_payout::*;
 pub use fund_cranker::*;
 pub use initialize_cranker_vault::*;
 pub use initialize_mother_escrow::*;

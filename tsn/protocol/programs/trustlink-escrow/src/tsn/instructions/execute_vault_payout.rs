@@ -4,20 +4,16 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use crate::tsn::{
     constants::TSN_CRANKER_VAULT_AUTHORITY_SEED,
     errors::TsnError,
-    events::TsnProofSubmitted,
-    state::{Cranker, CrankerVault, IntentStatus, MotherEscrow, PaymentIntent},
+    state::{Cranker, CrankerVault, MotherEscrow},
     utils::compute_cranker_dna,
 };
 
 #[derive(Accounts)]
-pub struct SubmitProof<'info> {
+pub struct ExecuteVaultPayout<'info> {
     #[account(mut)]
     pub operator: Signer<'info>,
 
     pub mother_escrow: Box<Account<'info, MotherEscrow>>,
-
-    #[account(mut, has_one = mother_escrow)]
-    pub intent: Box<Account<'info, PaymentIntent>>,
 
     #[account(
         mut,
@@ -30,7 +26,6 @@ pub struct SubmitProof<'info> {
         mut,
         has_one = mother_escrow,
         constraint = cranker_vault.cranker == cranker.key(),
-        constraint = cranker_vault.token_mint == intent.token_mint,
         constraint = cranker_vault.vault_token_account == vault_token_account.key()
     )]
     pub cranker_vault: Box<Account<'info, CrankerVault>>,
@@ -44,55 +39,35 @@ pub struct SubmitProof<'info> {
 
     #[account(
         mut,
-        constraint = vault_token_account.mint == intent.token_mint
+        constraint = vault_token_account.mint == cranker_vault.token_mint,
+        constraint = vault_token_account.owner == vault_authority.key() @ TsnError::InvalidCrankerVaultAuthority
     )]
     pub vault_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
-        constraint = operator_token_account.owner == operator.key(),
-        constraint = operator_token_account.mint == intent.token_mint
-    )]
-    pub operator_token_account: Box<Account<'info, TokenAccount>>,
-
-    /// Treasury token account for protocol revenue.
-    #[account(
-        mut,
-        constraint = treasury_token_account.mint == intent.token_mint
-    )]
-    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        mut,
-        constraint = recipient_token_account.mint == intent.token_mint
+        constraint = recipient_token_account.mint == cranker_vault.token_mint
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
 }
 
-pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_amount: u64) -> Result<()> {
-    let now = Clock::get()?.unix_timestamp;
+pub fn execute_vault_payout(
+    ctx: Context<ExecuteVaultPayout>,
+    payout_amount: u64,
+    claim_fee_amount: u64,
+) -> Result<()> {
+    require!(payout_amount > 0, TsnError::InvalidPayoutAmount);
+    require!(
+        ctx.accounts.cranker_vault.total_liquidity >= payout_amount,
+        TsnError::InsufficientCrankerVaultLiquidity
+    );
+
     let mother_escrow = &ctx.accounts.mother_escrow;
     let operator = ctx.accounts.operator.key();
-
     let expected_dna = compute_cranker_dna(&mother_escrow.key(), &operator, &mother_escrow.protocol_seed);
     require!(ctx.accounts.cranker.dna_hash == expected_dna, TsnError::CrankerDnaMismatch);
-
-    let intent = &mut ctx.accounts.intent;
-    require!(intent.status == IntentStatus::Claimed, TsnError::IntentNotClaimable);
-    require!(now <= intent.lease_expiry_ts, TsnError::LeaseExpired);
-    require!(
-        intent.assigned_cranker == ctx.accounts.cranker.key(),
-        TsnError::NotAssignedCranker
-    );
-    require!(!intent.proof_submitted, TsnError::ProofAlreadySubmitted);
-    require!(payout_amount <= intent.amount, TsnError::InvalidPayoutAmount);
-
-    let fee_amount = intent.amount.saturating_sub(payout_amount);
-    let operator_fee_amount = 0;
-    let lp_fee_amount = fee_amount;
-    let treasury_fee_amount = 0;
 
     let cranker_vault_key = ctx.accounts.cranker_vault.key();
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -120,24 +95,10 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
         .accounts
         .cranker_vault
         .total_rewards_accrued
-        .saturating_add(lp_fee_amount);
-
-    intent.payout_tx_sig = payout_tx_sig;
-    intent.proof_submitted = true;
-    intent.status = IntentStatus::Executed;
-    intent.executed_at_ts = now;
+        .saturating_add(claim_fee_amount);
 
     ctx.accounts.cranker.total_executes = ctx.accounts.cranker.total_executes.saturating_add(1);
-    ctx.accounts.cranker.last_active_ts = now;
+    ctx.accounts.cranker.last_active_ts = Clock::get()?.unix_timestamp;
 
-    emit!(TsnProofSubmitted {
-        intent: intent.key(),
-        cranker: ctx.accounts.cranker.key(),
-        payout_amount,
-        fee_amount,
-        operator_fee_amount,
-        lp_fee_amount,
-        treasury_fee_amount,
-    });
     Ok(())
 }

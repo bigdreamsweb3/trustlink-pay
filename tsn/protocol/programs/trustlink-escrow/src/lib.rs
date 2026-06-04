@@ -410,6 +410,14 @@ pub mod trustlink_escrow {
         tsn::instructions::submit_proof(ctx, payout_tx_sig, payout_amount)
     }
 
+    pub fn tsn_execute_vault_payout(
+        ctx: Context<ExecuteVaultPayout>,
+        payout_amount: u64,
+        claim_fee_amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::execute_vault_payout(ctx, payout_amount, claim_fee_amount)
+    }
+
     pub fn tsn_settle_epoch(ctx: Context<SettleEpoch>, force: bool) -> Result<()> {
         tsn::instructions::settle_epoch(ctx, force)
     }

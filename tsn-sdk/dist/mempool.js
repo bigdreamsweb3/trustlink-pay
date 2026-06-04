@@ -84,7 +84,7 @@ export class JsonFileTsnMempool {
             .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
             .slice(0, limit);
         return pendingClaims.flatMap((claimRequest) => {
-            const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && ["onchain", "claimed"].includes(candidate.status));
+            const intent = snapshot.intents.find((candidate) => candidate.id === claimRequest.intentId && ["escrowed", "onchain", "claimed"].includes(candidate.status));
             return intent ? [{ intent, claimRequest }] : [];
         });
     }
@@ -119,6 +119,14 @@ export class JsonFileTsnMempool {
         if (!snapshot.proofs)
             snapshot.proofs = [];
         snapshot.proofs.push(request);
+        const intent = snapshot.intents.find((candidate) => candidate.id === request.intent_id);
+        if (intent && ["escrowed", "onchain", "claimed"].includes(intent.status)) {
+            Object.assign(intent, {
+                status: "executed",
+                proofTxSig: request.proof_tx,
+                updatedAt: now(),
+            });
+        }
         await writeSnapshot(this.path, snapshot);
         return request;
     }

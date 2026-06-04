@@ -116,11 +116,11 @@ If settlement creates an unrecoverable recipient token account, that cost belong
 
 The current TSN default split prioritizes LPs while keeping operators and protocol operations funded.
 
-| Recipient | Share | Purpose |
-| --- | ---: | --- |
-| Liquidity providers | 87% | Rewards vault capital that makes settlement possible |
-| TSN protocol treasury | 8% | Supports protocol development, audits, operations, and security reserves |
-| Cranker/operator | 5% | Covers uptime, intent monitoring, execution, proof submission, and operational cost |
+| Recipient             | Share | Purpose                                                                             |
+| --------------------- | ----: | ----------------------------------------------------------------------------------- |
+| Liquidity providers   |   87% | Rewards vault capital that makes settlement possible                                |
+| TSN protocol treasury |    8% | Supports protocol development, audits, operations, and security reserves            |
+| Cranker/operator      |    5% | Covers uptime, intent monitoring, execution, proof submission, and operational cost |
 
 This split applies to modeled TSN settlement-fee revenue. The frontend yield calculator separates gross settlement fee revenue from LP-facing APY so depositors can see what they actually earn.
 
@@ -173,13 +173,13 @@ TSN is privacy-preserving, not accountability-free. A Cranker can maintain an en
 
 ## The Path to Full Decentralisation
 
-| Now | With TINS | With mature TSN |
-| --- | --- | --- |
-| Identity routing through TrustLink backend | Identity routing through TIN PDAs | Any app resolves TINs directly |
-| TrustLink prepares user-facing payments | TSN owns payment intent and claim routing | Multiple apps create TSN intents |
-| Local/operator-controlled Cranker runtime | Open Cranker SDK | Competitive Cranker network |
-| Phone identity first | Phone, TIN, and social identity links | Independent identity providers can build on TINS |
-| Escrow-backed settlement | Proof-based reimbursement | Liquid, multi-operator settlement marketplace |
+| Now                                        | With TINS                                 | With mature TSN                                  |
+| ------------------------------------------ | ----------------------------------------- | ------------------------------------------------ |
+| Identity routing through TrustLink backend | Identity routing through TIN PDAs         | Any app resolves TINs directly                   |
+| TrustLink prepares user-facing payments    | TSN owns payment intent and claim routing | Multiple apps create TSN intents                 |
+| Local/operator-controlled Cranker runtime  | Open Cranker SDK                          | Competitive Cranker network                      |
+| Phone identity first                       | Phone, TIN, and social identity links     | Independent identity providers can build on TINS |
+| Escrow-backed settlement                   | Proof-based reimbursement                 | Liquid, multi-operator settlement marketplace    |
 
 The product proves the UX. TSN makes settlement private and liquid. TINS makes identity portable and open.
 
@@ -216,21 +216,21 @@ Before TSN, recipients claimed by connecting a wallet, signing a release transac
 
 ## Security Model
 
-| Guarantee | How it works |
-| --- | --- |
-| Noncustodial escrow | Funds lock into Solana escrow accounts governed by program rules |
-| Per-payment isolation | Each payment has its own payment PDA and escrow vault |
-| Address-poisoning resistance | Sender pays an identity, not a pasted wallet address |
-| Sender privacy | Recipient does not need the sender wallet |
-| Recipient privacy | Sender does not need the recipient wallet |
-| Cranker exclusivity | One Cranker holds an execution lease for a payment at a time |
-| Proof-based reimbursement | Cranker recovery depends on valid proof submission |
-| LP accounting | Liquidity positions track funded vault capital |
-| Operational funding checks | Verifier SOL balance is checked before send transaction preparation |
-| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain |
-| Verifier-funded account setup | Verifier PDA funds payment-intent account setup |
-| Gas-neutral Cranker execution | Verifier PDA reimburses Cranker gas without adding a profit premium |
-| 1:1 Cranker claim credit | Crankers earn claim eligibility instead of execution tips |
+| Guarantee                            | How it works                                                        |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| Noncustodial escrow                  | Funds lock into Solana escrow accounts governed by program rules    |
+| Per-payment isolation                | Each payment has its own payment PDA and escrow vault               |
+| Address-poisoning resistance         | Sender pays an identity, not a pasted wallet address                |
+| Sender privacy                       | Recipient does not need the sender wallet                           |
+| Recipient privacy                    | Sender does not need the recipient wallet                           |
+| Cranker exclusivity                  | One Cranker holds an execution lease for a payment at a time        |
+| Proof-based reimbursement            | Cranker recovery depends on valid proof submission                  |
+| LP accounting                        | Liquidity positions track funded vault capital                      |
+| Operational funding checks           | Verifier SOL balance is checked before send transaction preparation |
+| Registered Cranker intent submission | Only registered Crankers can create TSN payment intents on-chain    |
+| Verifier-funded account setup        | Verifier PDA funds payment-intent account setup                     |
+| Gas-neutral Cranker execution        | Verifier PDA reimburses Cranker gas without adding a profit premium |
+| 1:1 Cranker claim credit             | Crankers earn claim eligibility instead of execution tips           |
 
 ---
 
@@ -291,7 +291,7 @@ Extended the TrustLink payment model toward approved SPL asset transfers through
 
 Active development. Moves identity routing from TrustLink's backend to a permanent on-chain registry.
 
-[TINS Overview](transfer-identity-number-system-(TINS)/README.md)
+[TINS Overview](<transfer-identity-number-system-(TINS)/README.md>)
 
 ### Milestone 4 - TSN Settlement Network
 
@@ -311,40 +311,40 @@ TINS is now **live and production-ready**:
 
 ### Security Features Implemented
 
-| Feature | Status |
-|---------|--------|
-| Main wallet off-chain | ✅ Implemented |
+| Feature                      | Status         |
+| ---------------------------- | -------------- |
+| Main wallet off-chain        | ✅ Implemented |
 | Privacy key derived (BIP-44) | ✅ Implemented |
-| Display name verification | ✅ Implemented |
-| Anti-enumeration TINs | ✅ Implemented |
-| Multi-sig recovery (2/3) | ✅ Implemented |
-| 24hr rotation cooldown | ✅ Implemented |
-| Rate limiting | ✅ Implemented |
-| Team fees | ✅ Implemented |
+| Display name verification    | ✅ Implemented |
+| Anti-enumeration TINs        | ✅ Implemented |
+| Multi-sig recovery (2/3)     | ✅ Implemented |
+| 24hr rotation cooldown       | ✅ Implemented |
+| Rate limiting                | ✅ Implemented |
+| Team fees                    | ✅ Implemented |
 
 ### Fees (All to Team Treasury)
 
-| Action | Fee |
-|--------|-----|
-| Create TIN | 0.01 SOL |
+| Action        | Fee       |
+| ------------- | --------- |
+| Create TIN    | 0.01 SOL  |
 | Rotate wallet | 0.005 SOL |
-| Add recovery | 0.002 SOL |
+| Add recovery  | 0.002 SOL |
 
 ---
 
 ## Repository Structure
 
-| Path | Description |
-| --- | --- |
-| `frontend` | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI |
-| `backend` | API routes, identity services, payment orchestration, database layer, and Solana integration |
-| `tsn-mempool-backend` | Python mempool server - submodule of [tsn-mempool-backend](https://github.com/bigdreamsweb3/tsn-mempool-backend) |
-| `tsn-mempool-frontend` | Next.js mempool explorer UI - submodule of [tsn-mempool-frontend](https://github.com/bigdreamsweb3/tsn-mempool-frontend) |
-| `tsn/protocol/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules |
-| `tsn` | TSN contracts, settlement economics, Cranker daemon, and setup scripts |
-| `trustlink-whatsapp-sdk` | WhatsApp authentication UI and handoff helpers |
-| `docs` | Architecture notes, service boundaries, wallet roles, and devnet testing guides |
-| `transfer-identity-number-system-(TINS)` | TINS on-chain identity program - **PRODUCTION READY** ✅ |
+| Path                                     | Description                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `frontend`                               | Next.js dApp, landing page, send flow, claim flow, dashboard, and TrustLink UI                                           |
+| `backend`                                | API routes, identity services, payment orchestration, database layer, and Solana integration                             |
+| `tsn-mempool-backend`                    | Python mempool server - submodule of [tsn-mempool-backend](https://github.com/bigdreamsweb3/tsn-mempool-backend)         |
+| `tsn-mempool-frontend`                   | Next.js mempool explorer UI - submodule of [tsn-mempool-frontend](https://github.com/bigdreamsweb3/tsn-mempool-frontend) |
+| `tsn/protocol/programs/trustlink-escrow` | Anchor escrow program with escrow and TSN modules                                                                        |
+| `tsn`                                    | TSN contracts, settlement economics, Cranker daemon, and setup scripts                                                   |
+| `trustlink-whatsapp-sdk`                 | WhatsApp authentication UI and handoff helpers                                                                           |
+| `docs`                                   | Architecture notes, service boundaries, wallet roles, and devnet testing guides                                          |
+| `transfer-identity-number-system-(TINS)` | TINS on-chain identity program - **PRODUCTION READY** ✅                                                                 |
 
 ## Quick Start
 

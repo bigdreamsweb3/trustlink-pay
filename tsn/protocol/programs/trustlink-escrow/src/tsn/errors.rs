@@ -52,4 +52,6 @@ pub enum TsnError {
     InsufficientCrankerClaimCredits,
     #[msg("Cranker payment-intent credit counter overflowed")]
     CrankerClaimCreditOverflow,
+    #[msg("Cranker vault has insufficient liquidity")]
+    InsufficientCrankerVaultLiquidity,
 }

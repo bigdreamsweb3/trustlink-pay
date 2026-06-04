@@ -401,7 +401,6 @@ export function SendExperience() {
         throw new Error("Recipient settlement wallet is not ready for TSN enqueue");
       }
 
-      const enqueueAmount = Number(form.amount) + senderFeeAmount;
       const crankerFeePayer =
         process.env.NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER ??
         process.env.NEXT_PUBLIC_TSN_SPONSOR_FEE_PAYER;
@@ -416,7 +415,8 @@ export function SendExperience() {
         crankerFeePayer,
         senderWallet: walletAddress,
         tokenMintAddress: selectedToken.mintAddress,
-        amountUi: enqueueAmount,
+        amountUi: Number(form.amount),
+        senderFeeAmountUi: senderFeeAmount,
         tokenDecimals: selectedToken.decimals ?? 6,
         recipientHash,
         rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
@@ -438,6 +438,7 @@ export function SendExperience() {
         senderAuthorizationNonce: senderAuthorization.nonce,
         senderAuthorizationIssuedAt: senderAuthorization.issuedAt,
         senderAuthorizationExpiresAt: senderAuthorization.expiresAt,
+        senderFeeAmount,
         senderSignedSettlementTransaction,
         senderSignedSettlementFeePayer: sponsoredSettlement.crankerFeePayer,
         senderSettlementMode: "sponsored_sender_cosigned",
@@ -446,7 +447,7 @@ export function SendExperience() {
         settlementTokenAccount: sponsoredSettlement.paymentVaultTokenAccount,
         settlementPaymentIntentId: sponsoredSettlement.paymentIntentId,
         autoclaim: true,
-        amount: enqueueAmount,
+        amount: Number(form.amount),
         recipientAmount: Number(form.amount),
       });
 

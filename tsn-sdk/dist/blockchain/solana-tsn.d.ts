@@ -190,6 +190,17 @@ export declare function tsnSubmitProofOnChain(params: {
     mode: "devnet";
     signature: string;
 }>;
+export declare function tsnExecuteVaultPayoutOnChain(params: {
+    operator: Keypair;
+    tokenMint: PublicKey;
+    recipientWallet: PublicKey;
+    payoutAmountBaseUnits: bigint;
+    claimFeeAmountBaseUnits?: bigint;
+    rpcUrl?: string;
+}): Promise<{
+    mode: "devnet";
+    signature: string;
+}>;
 export declare function tsnFetchIntentOnChain(params: {
     intent: PublicKey;
     rpcUrl?: string;

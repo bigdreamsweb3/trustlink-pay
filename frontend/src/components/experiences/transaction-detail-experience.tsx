@@ -79,7 +79,7 @@ function isSenderEscrowed(detail: PaymentDetailResponse | null | undefined) {
   const tsn = detail?.payment.tsn;
   return (
     detail?.viewerRole === "sender" &&
-    (tsn?.intentStatus === "onchain" || tsn?.intentStatus === "claimed")
+    (tsn?.intentStatus === "escrowed" || tsn?.intentStatus === "onchain" || tsn?.intentStatus === "claimed")
   );
 }
 
@@ -104,7 +104,7 @@ function tsnTone(stage: TsnStage) {
 }
 
 function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]) {
-  if (viewerRole === "sender" && (tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed")) {
+  if (viewerRole === "sender" && (tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed")) {
     return "Escrowed";
   }
 
@@ -693,6 +693,11 @@ export function TransactionDetailExperience({
                         label: "Deposit tx",
                         sig: detail.trace.depositSignature,
                         url: detail.trace.depositExplorerUrl,
+                      },
+                      {
+                        label: "TSN escrow tx",
+                        sig: detail.viewerRole === "sender" ? detail.trace.tsnEscrowSignature : null,
+                        url: detail.viewerRole === "sender" ? detail.trace.tsnEscrowExplorerUrl : null,
                       },
                       {
                         label: "Claim tx",

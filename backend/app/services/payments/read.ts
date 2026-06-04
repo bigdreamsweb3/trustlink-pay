@@ -6,7 +6,7 @@ import { retryOutstandingNotifications } from "./notifications";
 import { enrichPaymentsWithTsnState, isTsnSettled } from "@/app/services/tsn";
 
 function isTsnEscrowClaimable(payment: { tsn?: { intentStatus: string } }) {
-  return payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed";
+  return payment.tsn?.intentStatus === "escrowed" || payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed";
 }
 
 function isLegacyClaimable(payment: { status: string }) {

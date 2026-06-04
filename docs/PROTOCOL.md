@@ -1,112 +1,145 @@
 # TrustLink Pay Protocol Specification
 
-## Overview
+TrustLink Pay is a TIN-first private stablecoin settlement protocol on Solana.
 
-TrustLink Pay is a privacy-preserving payment protocol on Solana. Users send stablecoins to phone numbers. The protocol handles settlement through the Transfer Settlement Network (TSN).
+Users send to 10-digit Transfer Identity Numbers. TSN handles settlement without exposing a simple direct sender-wallet-to-recipient-wallet path.
 
-## Core Concepts
+---
 
-### Payment Intent
+## Protocol Layers
 
-A payment intent represents a sender's intention to transfer funds. It contains:
+| Layer | Role |
+| --- | --- |
+| TINS | 10-digit payment identity |
+| TSN Mempool | Pending authorization and claim work |
+| TSN Program | Escrow, vault, cranker, and accounting rules |
+| Cranker Network | Verification, sponsorship, payout execution |
+| TrustLink App | First user-facing product and status surface |
 
-- `id`: Unique payment identifier
-- `sender`: Sender's wallet address
-- `recipient`: Resolved phone number or TIN
-- `amount`: Transfer amount in USDC/supported token
-- `fee`: Sender-side fee
-- `status`: pending → claimed → settled
+---
 
-### TIN (Transfer Identity Number)
+## Payment Identity
 
-A permanent 10-digit identifier owned by a user as a Solana PDA. Format: `TIN-XXXX-XXXX`
+The recipient is identified by a TIN.
 
-```typescript
-interface TransferIdentityNumber {
-  tin: string;           // e.g., "TIN-1234-5678"
-  owner: PublicKey;       // Owner's wallet
-  phoneNumber?: string;   // Optional linked phone
-  createdAt: number;     // Unix timestamp
-}
+```text
+TIN -> settlement route -> TSN vault path
 ```
 
-### Escrow
+Phone numbers, WhatsApp, and social identities are optional links to a TIN. They are not the protocol identity.
 
-Smart contract holding funds pending settlement. Each payment has its own escrow:
+---
 
-- Sender funds escrow
-- Cranker executes payout from vault
-- Proof triggers reimbursement
+## Sender Authorization
 
-## Send Flow
+The sender signs approval for a specific payment.
 
+Authorization covers:
+
+- sender wallet,
+- recipient identity hash,
+- token mint,
+- amount,
+- fee terms,
+- nonce,
+- expiry.
+
+The sender does not broadcast the final settlement transaction directly. A cranker validates and sponsors the escrow transaction.
+
+---
+
+## Settlement Flow
+
+```text
+1. Sender enters recipient TIN.
+2. TINS/app state resolves the settlement route.
+3. Sender signs TSN authorization.
+4. Authorization enters TSN mempool.
+5. Verified cranker validates the payload.
+6. Cranker sponsors escrow transaction.
+7. Funds lock into TSN vault/token account path.
+8. Intent status becomes escrowed.
+9. Claim work becomes available.
+10. Cranker executes payout from vault liquidity.
+11. Proof is recorded through transaction hashes and mempool state.
+12. Payment status becomes executed/settled.
 ```
-1. Sender enters recipient phone/TIN
-2. Backend resolves identity
-3. Sender approves transfer + fees
-4. Funds lock into escrow
-5. Payment intent published to mempool
-6. Recipient notified
-```
 
-## Claim Flow
-
-```
-1. Recipient initiates claim
-2. Connects wallet
-3. Cranker detects intent
-4. Cranker acquires lease
-5. Cranker pays from vault
-6. Cranker submits proof
-7. Epoch reimbursement
-```
+---
 
 ## Privacy Model
 
-| Data | Visible |
-| --- | --- |
-| Payment intent exists | Public |
-| Claim request | Cranker only |
-| Payout transaction | Public (no wallet link) |
-| Sender wallet | Escrow only |
-| Recipient wallet | Private |
+TSN does not make Solana private in the absolute sense. It changes the payment graph.
 
-## Fee Distribution
+| Normal Transfer | TSN Settlement |
+| --- | --- |
+| Sender wallet transfers directly to recipient wallet | Sender funds escrow/vault path |
+| Recipient address appears in sender-side payment | Recipient payout is separated |
+| Wallet graph is easy to follow from either wallet | Full path requires tx/vault/program context |
+| App identity is wallet address | App identity is TIN |
+
+The goal is reduced wallet exposure, not accountability-free anonymity.
+
+---
+
+## Cranker Role
+
+Crankers:
+
+- verify sender authorization,
+- verify transaction structure,
+- reject tampered mempool work,
+- sponsor escrow,
+- earn claim credit,
+- execute payout,
+- publish proof records.
+
+Claim credit exists so cranker incentives stay balanced: useful escrow work creates eligibility for claim work.
+
+---
+
+## Status Model
+
+| Status | Meaning |
+| --- | --- |
+| `pending` | Authorization is waiting for cranker verification |
+| `escrowed` | Funds moved into TSN escrow/vault path |
+| `claimed` | Claim work is in progress |
+| `executed` | Recipient payout/proof completed |
+| `settled` | Epoch/accounting settlement completed |
+| `canceled` | Work was rejected or expired before useful settlement |
+| `failed` | A claim attempt failed, but escrowed funds may still be claimable |
+
+For sender UX, an escrowed payment should not be shown as failed because a recipient-side claim attempt failed. The sender-facing truth is that funds are escrowed for the recipient.
+
+---
+
+## Fee Model
+
+| Fee Type | Purpose |
+| --- | --- |
+| Sender fee | Protocol/treasury infrastructure |
+| Claim fee | Settlement and vault economics |
+| Network fee | Paid by cranker/operator in sponsored flow |
+| Reimbursement | Protocol accounting for useful operator work |
+
+Current settlement-fee split:
 
 | Recipient | Share |
 | --- | ---: |
 | Liquidity Providers | 87% |
-| Protocol Treasury | 8% |
+| TSN Protocol Treasury | 8% |
 | Cranker/Operator | 5% |
 
-## Smart Contracts
-
-See `tsn/protocol/programs/` for Anchor programs:
-
-- `trustlink-escrow`: Escrow vault
-- `tsn Mother Escrow`: Settlement coordinator
-- `tsn Cranker`: Operator execution
-
-## State Machines
-
-### Payment States
-
-```
-created → funded → claimed → reimbursed
-         ↓
-      expired → refunded
-```
-
-### Cranker Lease States
-
-```
-idle → acquire_lease → execute → submit_proof → reimbursed
-```
+---
 
 ## Security Properties
 
-- Noncustodial: Funds in escrow, not protocol
-- Per-payment isolation
-- No address poisoning (identity-based)
-- Cranker exclusivity (one lease at a time)
-- Proof-based reimbursement
+- TIN-first receive identity
+- Sender authorization with nonce and expiry
+- Cranker-only verification path
+- Sponsored settlement
+- Vault isolation
+- Claim credit gating
+- Off-chain proof record with transaction hashes
+- User-facing status separation between sender and recipient views

@@ -35,6 +35,7 @@ export async function enqueueTsnPaymentFromFrontend(params: {
   senderAuthorizationNonce: string;
   senderAuthorizationIssuedAt: string;
   senderAuthorizationExpiresAt: string;
+  senderFeeAmount?: number | null;
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
@@ -55,6 +56,7 @@ export async function enqueueTsnPaymentFromFrontend(params: {
     senderAuthorizationNonce: params.senderAuthorizationNonce,
     senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
     senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
+    senderFeeAmount: params.senderFeeAmount,
     senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
     senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
     senderSettlementMode: params.senderSettlementMode,

@@ -1,7 +1,7 @@
-export type TsnIntentStatus = "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
+export type TsnIntentStatus = "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnClaimRequestStatus = "pending" | "processing" | "completed" | "failed" | "canceled";
 export type TsnUiStage = "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
-export type PaymentIntentStatus = "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
+export type PaymentIntentStatus = "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type ClaimRequestStatus = "pending" | "processing" | "completed" | "canceled" | "failed";
 export interface PaymentIntentRecord {
     id: string;
@@ -13,6 +13,7 @@ export interface PaymentIntentRecord {
     status: PaymentIntentStatus;
     assigned_cranker_pubkey: string | null;
     lease_expiry_at: string | null;
+    escrow_tx_sig: string | null;
     claim_tx_sig: string | null;
     proof_tx_sig: string | null;
     created_at: string;
@@ -37,6 +38,7 @@ export type CreateIntentRequest = {
     senderAuthorizationNonce?: string | null;
     senderAuthorizationIssuedAt?: string | null;
     senderAuthorizationExpiresAt?: string | null;
+    senderFeeAmount?: number | null;
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
@@ -63,6 +65,7 @@ export type TsnMempoolIntent = CreateIntentRequest & {
     id: string;
     status: TsnIntentStatus;
     assignedCrankerPubkey?: string | null;
+    escrowTxSig?: string | null;
     claimTxSig?: string | null;
     proofTxSig?: string | null;
     settlementResolution?: "completed" | "reverted" | null;
@@ -107,6 +110,7 @@ export declare function buildCreateIntentRequest(params: {
     senderAuthorizationNonce?: string | null;
     senderAuthorizationIssuedAt?: string | null;
     senderAuthorizationExpiresAt?: string | null;
+    senderFeeAmount?: number | null;
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: "sponsored_sender_cosigned" | string | null;

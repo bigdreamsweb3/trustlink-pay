@@ -9,7 +9,7 @@ Production: https://api.trustlink.pay
 
 ## Authentication
 
-Session-based via WhatsApp or PIN.
+Session-based via wallet, PIN, or application-supported social authentication. WhatsApp can support notifications and optional account linking.
 
 ## Endpoints
 
@@ -22,7 +22,7 @@ POST /api/payment/create
 **Request:**
 ```json
 {
-  "recipient": "+2348012345678",
+  "recipientTin": "1000000008",
   "amount": 100,
   "tokenMint": "EPjFWdd5AufqSSqeV6Z8oB2cX3Lv9iZ9pKQv2dNqV1mXg"
 }
@@ -47,7 +47,7 @@ POST /api/payment/estimate
 **Request:**
 ```json
 {
-  "recipient": "+2348012345678",
+  "recipientTin": "1000000008",
   "amount": 100
 }
 ```
@@ -84,7 +84,7 @@ POST /api/payment/claim/request
 }
 ```
 
-### Verify Phone
+### Link Optional Phone Identity
 
 ```
 POST /api/phone/verify
@@ -101,7 +101,7 @@ POST /api/phone/verify
 ```json
 {
   "verified": true,
-  "identity": "TIN-1234-5678"
+  "tin": "1000000008"
 }
 ```
 
@@ -165,7 +165,8 @@ GET /api/payment/history?limit=20&offset=0
 
 | Code | Description |
 | --- | --- |
-| `INVALID_PHONE` | Phone number not registered |
+| `INVALID_TIN` | TIN not found or not routable |
+| `INVALID_PHONE` | Optional phone link is invalid or unverified |
 | `INSUFFICIENT_BALANCE` | Sender lacks funds |
 | `PAYMENT_EXPIRED` | Escrow expired |
 | `INVALID_WALLET` | Invalid wallet address |

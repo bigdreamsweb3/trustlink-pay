@@ -44,7 +44,7 @@ function paymentCanStillBeClaimed(status: string) {
 }
 
 function intentIsEscrowed(intent: PaymentIntentRecord | null) {
-  return intent?.status === "onchain" || intent?.status === "claimed";
+  return intent?.status === "escrowed" || intent?.status === "onchain" || intent?.status === "claimed";
 }
 
 function resolveClaimMode(payment: { payment_mode?: string | null }) {
@@ -103,7 +103,6 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
   if (!allowed) throw new Error("Token mint not allowlisted for TSN intent");
   const recipientAmount = Number(payment.amount);
   const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
-  const totalIntentAmount = recipientAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
 
   const intentRequest = {
     ...buildCreateIntentRequest({
@@ -111,7 +110,8 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
       underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
       recipientHash: payment.receiver_phone_hash,
       tokenMintAddress: tokenMint,
-      amount: totalIntentAmount,
+      amount: recipientAmount,
+      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : null,
       source: "trustlink-pay",
     }),
     recipientAmount,
@@ -181,13 +181,13 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
     if (!allowed) throw new Error("Token mint not allowlisted for TSN settlement");
     const recipientAmount = Number(payment.amount);
     const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
-    const totalIntentAmount = recipientAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
     const jobs = prepareTsnPaymentMempoolJobRequests({
       paymentId: payment.id,
       underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
       recipientHash: payment.receiver_phone_hash,
       tokenMintAddress: tokenMint,
-      amount: totalIntentAmount,
+      amount: recipientAmount,
+      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : null,
       recipientAmount,
       destinationWallet: settlementWalletAddress,
       source: "trustlink-pay",
@@ -426,6 +426,7 @@ async function syncLocalIntentFromMempoolSnapshot(params: {
     ...params.localIntent,
     status: intentStatus ?? params.localIntent.status,
     assigned_cranker_pubkey: mempoolIntent.assignedCrankerPubkey ?? params.localIntent.assigned_cranker_pubkey,
+    escrow_tx_sig: mempoolIntent.escrowTxSig ?? params.localIntent.escrow_tx_sig,
     claim_tx_sig: mempoolIntent.claimTxSig ?? params.localIntent.claim_tx_sig,
     proof_tx_sig: mempoolIntent.proofTxSig ?? params.localIntent.proof_tx_sig,
   };
@@ -437,6 +438,7 @@ async function syncLocalIntentFromMempoolSnapshot(params: {
           id: params.localIntent.id,
           status: intentStatus,
           assignedCrankerPubkey: mempoolIntent.assignedCrankerPubkey ?? null,
+          escrowTxSig: mempoolIntent.escrowTxSig ?? null,
           claimTxSig: mempoolIntent.claimTxSig ?? null,
           proofTxSig: mempoolIntent.proofTxSig ?? null,
         })) ?? fallbackIntent;
@@ -551,6 +553,7 @@ async function syncPaymentIntentsFromMempool(intents: PaymentIntentRecord[]) {
 function normalizePaymentIntentStatus(status: string): PaymentIntentStatus | null {
   if (
     status === "pending" ||
+    status === "escrowed" ||
     status === "onchain" ||
     status === "claimed" ||
     status === "executed" ||
@@ -593,7 +596,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
   const claimByPaymentId = new Map<string, ClaimRequestRecord>(claimRequests.map((claimRequest) => [claimRequest.payment_id, claimRequest]));
 
   if (env.TSN_SYNC_ONCHAIN) {
-    const maybeStale = intents.filter((intent) => ["pending", "onchain", "claimed", "executed"].includes(intent.status));
+    const maybeStale = intents.filter((intent) => ["pending", "escrowed", "onchain", "claimed", "executed"].includes(intent.status));
     const syncedStates = await syncPaymentIntentsFromMempool(maybeStale.slice(0, 10));
     const [refreshedIntents, refreshedClaimRequests] = await Promise.all([
       listPaymentIntentsByPaymentIds(paymentIds),
@@ -613,7 +616,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
 
   const intentList = Array.from(intentByPaymentId.values());
   const signatureStatusMap = await fetchDevnetSignatureStatuses(
-    intentList.flatMap((intent) => [intent.claim_tx_sig, intent.proof_tx_sig]).filter(
+    intentList.flatMap((intent) => [intent.escrow_tx_sig, intent.claim_tx_sig, intent.proof_tx_sig]).filter(
       (signature): signature is string => Boolean(signature),
     ),
   );
@@ -626,8 +629,9 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
     const computedStage = computeStage(intent, claimRequest);
     const claimConfirmed = isSignatureConfirmed(signatureStatusMap, intent.claim_tx_sig);
     const proofConfirmed = isSignatureConfirmed(signatureStatusMap, intent.proof_tx_sig);
+    const proofPathConfirmed = intent.claim_tx_sig ? claimConfirmed && proofConfirmed : proofConfirmed;
     const finalStageRequested = computedStage === "cranker_paid" || computedStage === "epoch_settled";
-    const finalStageVerified = !finalStageRequested || (claimConfirmed && proofConfirmed);
+    const finalStageVerified = !finalStageRequested || proofPathConfirmed;
     const stage: TsnUiStage = finalStageVerified ? computedStage : "lease_claimed";
     const tsn: PaymentTsnState = {
       stage,
@@ -635,6 +639,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
       claimRequestStatus: claimRequest?.status ?? null,
       destinationWallet: claimRequest?.destination_wallet ?? null,
       assignedCrankerPubkey: intent.assigned_cranker_pubkey,
+      escrowTxSig: intent.escrow_tx_sig ?? null,
       claimTxSig: intent.claim_tx_sig ?? null,
       proofTxSig: intent.proof_tx_sig,
       settlementReason:

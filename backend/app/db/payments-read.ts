@@ -111,7 +111,7 @@ export async function listClaimablePaymentsByPhoneNumber(phoneNumber: string): P
           SELECT 1
           FROM payment_intents pi
           WHERE pi.payment_id = p.id
-            AND pi.status IN ('onchain', 'claimed')
+      AND pi.status IN ('escrowed', 'onchain', 'claimed')
         )
       )
     ORDER BY p.created_at DESC

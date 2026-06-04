@@ -7,20 +7,16 @@ import {
 } from "../../tsn-sdk/src/settlement-economics.ts";
 import {
   getTsnCrankerPda,
-  getTsnIntentPda,
   getTsnMotherEscrowPda,
   getTsnTreasuryPda,
   getTsnVerifierPda,
-  tsnClaimIntentOnChain,
-  tsnCreateIntentOnChain,
+  tsnExecuteVaultPayoutOnChain,
   tsnFetchMotherEscrowOnChain,
-  tsnFetchIntentOnChain,
-  tsnSubmitProofOnChain,
   tsnSubmitSenderSignedSettlementTransaction,
 } from "../../tsn-sdk/src/blockchain/solana-tsn.ts";
 import { verifySenderPaymentAuthorization } from "../../tsn-sdk/src/payment-authorization-server.ts";
 import { VERIFIED_TSN_PROGRAM_ID } from "../../tsn-sdk/src/program.ts";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -170,13 +166,16 @@ function validateSignedSettlementTransaction(params: {
   const senderWallet = new PublicKey(intent.senderWallet ?? "");
   const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
   const expectedAmount = toBaseUnits(params.item.intent.amount, params.tokenDecimals);
+  const expectedSenderFeeAmount = toBaseUnits(
+    Number((params.item.intent as TsnIntentWorkItem["intent"] & { senderFeeAmount?: number | null }).senderFeeAmount ?? 0),
+    params.tokenDecimals,
+  );
   const expectedProgramId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
-  const expectedIntentSeed32 = hex32(params.item.intent.intentSeedHash, "intentSeedHash");
-  const expectedRecipientHash32 = hex32(params.item.intent.recipientHash, "recipientHash");
   const expectedPaymentIntentId = BigInt(intent.settlementPaymentIntentId ?? "0");
   const expectedSenderTokenAccount = intent.senderTokenAccount ? new PublicKey(intent.senderTokenAccount) : null;
   const expectedSettlementVault = intent.settlementVault ? new PublicKey(intent.settlementVault) : null;
   const expectedSettlementTokenAccount = intent.settlementTokenAccount ? new PublicKey(intent.settlementTokenAccount) : null;
+  const expectedTreasuryTokenAccount = getAssociatedTokenAddressSync(tokenMint, getTsnTreasuryPda(), true);
   const senderSignature = transaction.signatures.find((entry) => entry.publicKey.equals(senderWallet));
   if (!senderSignature?.signature) {
     return "settlement transaction is not signed by the sender wallet";
@@ -196,25 +195,27 @@ function validateSignedSettlementTransaction(params: {
   const coreInstructions = transaction.instructions.filter(
     (instruction) => !instruction.programId.equals(ComputeBudgetProgram.programId),
   );
-  if (coreInstructions.length !== 3) {
+  const expectedCoreInstructionCount = expectedSenderFeeAmount > 0n ? 3 : 2;
+  if (coreInstructions.length !== expectedCoreInstructionCount) {
     const programList = transaction.instructions
       .map((instruction) => instruction.programId.toBase58())
       .join(",");
-    return `settlement transaction must contain 3 core TSN/SPL instructions after compute-budget instructions, got ${coreInstructions.length}; programs=${programList}`;
+    return `settlement transaction must contain ${expectedCoreInstructionCount} core escrow instructions after compute-budget instructions, got ${coreInstructions.length}; programs=${programList}`;
   }
 
-  const [processIntentIx, transferIx, createIntentIx] = coreInstructions;
+  const processIntentIx = coreInstructions[0];
+  const transferIx = coreInstructions[1];
+  const senderFeeTransferIx = expectedSenderFeeAmount > 0n ? coreInstructions[2] : null;
   if (!processIntentIx.programId.equals(expectedProgramId)) return "first settlement instruction is not TSN tsn_process_payment_intent";
   if (!transferIx.programId.equals(TOKEN_PROGRAM_ID)) return "second settlement instruction is not SPL Token transfer_checked";
-  if (!createIntentIx.programId.equals(expectedProgramId)) return "third settlement instruction is not TSN tsn_create_intent";
+  if (senderFeeTransferIx && !senderFeeTransferIx.programId.equals(TOKEN_PROGRAM_ID)) {
+    return "third settlement instruction is not SPL Token sender-fee transfer_checked";
+  }
   if (processIntentIx.data.length !== 24) return "process_payment_intent instruction data length mismatch";
   if (transferIx.data.length !== 10) return "SPL Token transfer_checked data length mismatch";
-  if (createIntentIx.data.length !== 144) return "tsn_create_intent instruction data length mismatch";
+  if (senderFeeTransferIx && senderFeeTransferIx.data.length !== 10) return "sender-fee SPL Token transfer_checked data length mismatch";
   if (!bufferEquals(processIntentIx.data.subarray(0, 8), instructionDiscriminator("tsn_process_payment_intent"))) {
     return "invalid tsn_process_payment_intent discriminator";
-  }
-  if (!bufferEquals(createIntentIx.data.subarray(0, 8), instructionDiscriminator("tsn_create_intent"))) {
-    return "invalid tsn_create_intent discriminator";
   }
   if (!processIntentIx.keys[0]?.pubkey.equals(params.operator)) return "process_payment_intent cranker signer mismatch";
   if (expectedSettlementVault && !processIntentIx.keys[2]?.pubkey.equals(expectedSettlementVault)) {
@@ -245,21 +246,20 @@ function validateSignedSettlementTransaction(params: {
   }
   if (!transferIx.keys[3]?.pubkey.equals(senderWallet)) return "SPL Token owner signer mismatch";
 
-  if (!createIntentIx.keys[0]?.pubkey.equals(params.operator)) return "tsn_create_intent cranker signer mismatch";
-  if (!bufferEquals(createIntentIx.data.subarray(8, 40), expectedIntentSeed32)) {
-    return "tsn_create_intent seed mismatch";
-  }
-  if (!new PublicKey(createIntentIx.data.subarray(40, 72)).equals(senderWallet)) {
-    return "tsn_create_intent underlying payment mismatch";
-  }
-  if (!new PublicKey(createIntentIx.data.subarray(72, 104)).equals(tokenMint)) {
-    return "tsn_create_intent token mint mismatch";
-  }
-  if (!bufferEquals(createIntentIx.data.subarray(104, 112), encodeU64(expectedAmount))) {
-    return "tsn_create_intent amount mismatch";
-  }
-  if (!bufferEquals(createIntentIx.data.subarray(112, 144), expectedRecipientHash32)) {
-    return "tsn_create_intent recipient hash mismatch";
+  if (senderFeeTransferIx) {
+    if (senderFeeTransferIx.data[0] !== 12) return "sender-fee SPL Token instruction is not transfer_checked";
+    const senderFeeTransferAmount = senderFeeTransferIx.data.readBigUInt64LE(1);
+    const senderFeeTransferDecimals = senderFeeTransferIx.data[9];
+    if (senderFeeTransferAmount !== expectedSenderFeeAmount) return "sender-fee SPL Token transfer amount mismatch";
+    if (senderFeeTransferDecimals !== params.tokenDecimals) return "sender-fee SPL Token transfer decimals mismatch";
+    if (expectedSenderTokenAccount && !senderFeeTransferIx.keys[0]?.pubkey.equals(expectedSenderTokenAccount)) {
+      return "sender-fee SPL Token source account mismatch";
+    }
+    if (!senderFeeTransferIx.keys[1]?.pubkey.equals(tokenMint)) return "sender-fee SPL Token mint mismatch";
+    if (!senderFeeTransferIx.keys[2]?.pubkey.equals(expectedTreasuryTokenAccount)) {
+      return "sender-fee SPL Token destination must be TSN treasury token account";
+    }
+    if (!senderFeeTransferIx.keys[3]?.pubkey.equals(senderWallet)) return "sender-fee SPL Token owner signer mismatch";
   }
 
   return null;
@@ -339,8 +339,19 @@ async function validateIntentWork(params: {
     return "sender authorization token mint mismatch";
   }
   const authorizedTotal = Number(authorization.totalTokenRequiredUi);
-  if (!Number.isFinite(authorizedTotal) || Math.abs(authorizedTotal - Number(item.intent.amount)) > 0.000001) {
+  const authorizedAmount = Number(authorization.amount);
+  const authorizedSenderFeeAmount = Number(authorization.senderFeeAmount ?? 0);
+  if (!Number.isFinite(authorizedAmount) || Math.abs(authorizedAmount - Number(item.intent.amount)) > 0.000001) {
     return "sender authorization amount mismatch";
+  }
+  if (
+    !Number.isFinite(authorizedSenderFeeAmount) ||
+    Math.abs(authorizedSenderFeeAmount - Number((item.intent as TsnIntentWorkItem["intent"] & { senderFeeAmount?: number | null }).senderFeeAmount ?? 0)) > 0.000001
+  ) {
+    return "sender authorization fee mismatch";
+  }
+  if (!Number.isFinite(authorizedTotal) || Math.abs(authorizedTotal - (authorizedAmount + authorizedSenderFeeAmount)) > 0.000001) {
+    return "sender authorization total mismatch";
   }
   if (authorization.nonce !== intent.senderAuthorizationNonce) {
     return "sender authorization nonce mismatch";
@@ -380,60 +391,30 @@ async function submitIntentOnChainWork(params: {
   const sponsoredSettlement = params.item.intent as TsnIntentWorkItem["intent"] & {
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
+    settlementVault?: string | null;
   };
-  const intentSeed32 = hex32(params.item.intent.intentSeedHash, "intentSeedHash");
-  const recipientHash32 = hex32(params.item.intent.recipientHash, "recipientHash");
-  const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
-  const underlyingPayment = new PublicKey(params.item.intent.underlyingPayment ?? "");
-  const motherEscrow = getTsnMotherEscrowPda();
-  const intent = getTsnIntentPda({ motherEscrow, intentSeed32 });
-  const intentAmountBaseUnits = toBaseUnits(params.item.intent.amount, params.tokenDecimals);
-
-  let onchainIntent = await tsnFetchIntentOnChain({ intent, rpcUrl: params.rpcUrl });
-  if (!onchainIntent) {
-    const created = sponsoredSettlement.senderSignedSettlementTransaction
-      ? await tsnSubmitSenderSignedSettlementTransaction({
-          operator: params.operator,
-          signedTransactionBase64: sponsoredSettlement.senderSignedSettlementTransaction,
-          rpcUrl: params.rpcUrl,
-        })
-      : await tsnCreateIntentOnChain({
-          payer: params.operator,
-          intentSeed32,
-          underlyingPayment,
-          tokenMint,
-          amountBaseUnits: intentAmountBaseUnits,
-          recipientHash32,
-          rpcUrl: params.rpcUrl,
-        });
-    onchainIntent = await tsnFetchIntentOnChain({ intent, rpcUrl: params.rpcUrl });
-    if (!onchainIntent) throw new Error(`Intent ${intent.toBase58()} was not created on chain`);
-    await params.mempool.updateIntentStatus(params.item.intent.id, "onchain", {
-      source: params.item.intent.source,
-      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-      claimTxSig: created.signature,
-      settlementReason: sponsoredSettlement.senderSignedSettlementTransaction
-        ? "Cranker broadcast the sender co-signed sponsored settlement, locked funds, submitted the intent on chain, and earned one claim credit."
-        : "Cranker submitted the payment intent on chain and earned one claim credit.",
-    } as Partial<TsnIntentWorkItem["intent"]>);
-
-    return {
-      intent: intent.toBase58(),
-      signature: created.signature,
-      created: true,
-    };
+  if (!sponsoredSettlement.senderSignedSettlementTransaction) {
+    throw new Error("Sponsored settlement transaction is required; public PaymentIntent PDA creation is disabled.");
   }
 
-  await params.mempool.updateIntentStatus(params.item.intent.id, "onchain", {
+  const created = await tsnSubmitSenderSignedSettlementTransaction({
+    operator: params.operator,
+    signedTransactionBase64: sponsoredSettlement.senderSignedSettlementTransaction,
+    rpcUrl: params.rpcUrl,
+  });
+
+  await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
     source: params.item.intent.source,
     assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-    settlementReason: "Payment intent was already escrowed on chain; marked claimable.",
+    escrowTxSig: created.signature,
+    settlementReason:
+      "Cranker verified the sender authorization, sponsored the sender co-signed escrow transaction, and locked funds into the private TSN vault.",
   } as Partial<TsnIntentWorkItem["intent"]>);
 
   return {
-    intent: intent.toBase58(),
-    signature: onchainIntent.payoutTxSigBase58 ?? "already-escrowed",
-    created: false,
+    intent: sponsoredSettlement.settlementVault ?? params.item.intent.id,
+    signature: created.signature,
+    created: true,
   };
 }
 
@@ -444,59 +425,25 @@ async function executeClaimWork(params: {
   rpcUrl: string;
   tokenDecimals: number;
 }) {
-  const intentSeed32 = hex32(params.item.intent.intentSeedHash, "intentSeedHash");
   const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
   const recipientWallet = new PublicKey(params.item.claimRequest.destinationWallet);
-  const motherEscrow = getTsnMotherEscrowPda();
-  const intent = getTsnIntentPda({ motherEscrow, intentSeed32 });
   const payoutAmountBaseUnits = toBaseUnits(getRecipientAmountUi(params.item), params.tokenDecimals);
-
-  const onchainIntent = await tsnFetchIntentOnChain({ intent, rpcUrl: params.rpcUrl });
-  if (!onchainIntent) throw new Error(`Intent ${intent.toBase58()} was not created on chain`);
-  if (onchainIntent.status === 2) {
-    return {
-      intent: intent.toBase58(),
-      proofSignature: onchainIntent.payoutTxSigBase58 ?? "already-executed-onchain",
-    };
-  }
-  if (onchainIntent.status !== 0 && onchainIntent.status !== 1) {
-    throw new Error(`Intent ${intent.toBase58()} is not executable; on-chain status=${onchainIntent.status}`);
-  }
-
-  if (onchainIntent.status === 0) {
-    const claimed = await tsnClaimIntentOnChain({
-      operator: params.operator,
-      intent,
-      rpcUrl: params.rpcUrl,
-    });
-    await params.mempool.updateIntentStatus(params.item.intent.id, "claimed", {
-      source: params.item.intent.source,
-      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-      claimTxSig: claimed.signature,
-      settlementReason: "Cranker claimed the TSN intent on chain.",
-    } as Partial<TsnWorkItem["intent"]>);
-  }
-
-  const proofSeed = Buffer.concat([
-    intent.toBuffer(),
-    params.operator.publicKey.toBuffer(),
-    Buffer.from(Date.now().toString()),
-  ]);
-  const payoutTxSig64 = createHash("sha512").update(proofSeed).digest();
-  const proof = await tsnSubmitProofOnChain({
+  const claimFeeAmountBaseUnits = toBaseUnits(
+    Math.max(0, Number(params.item.intent.amount) - getRecipientAmountUi(params.item)),
+    params.tokenDecimals,
+  );
+  const payout = await tsnExecuteVaultPayoutOnChain({
     operator: params.operator,
-    intent,
     tokenMint,
     recipientWallet,
-    payoutTxSig64,
     payoutAmountBaseUnits,
+    claimFeeAmountBaseUnits,
     rpcUrl: params.rpcUrl,
-    treasuryOwner: process.env.TSN_TREASURY_OWNER ?? null,
   });
 
   return {
-    intent: intent.toBase58(),
-    proofSignature: proof.signature,
+    intent: (params.item.intent as TsnWorkItem["intent"] & { settlementVault?: string | null }).settlementVault ?? params.item.intent.id,
+    proofSignature: payout.signature,
   };
 }
 
@@ -724,6 +671,7 @@ async function main() {
 
         await mempool.updateIntentStatus(item.intent.id, "executed", {
           source: item.intent.source,
+          proofTxSig,
           settlementResolution: "completed",
           settlementReason: economics.reason,
         });

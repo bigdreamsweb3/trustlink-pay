@@ -123,10 +123,11 @@ export interface PaymentRecord {
   status: "created" | "locked" | "claimed" | "refund_requested" | "refunded";
   tsn?: {
     stage: "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
-    intentStatus: "pending" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
+    intentStatus: "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
     claimRequestStatus: "pending" | "processing" | "completed" | "canceled" | "failed" | null;
     destinationWallet: string | null;
     assignedCrankerPubkey: string | null;
+    escrowTxSig: string | null;
     claimTxSig: string | null;
     proofTxSig: string | null;
     settlementReason?: string | null;
@@ -199,6 +200,8 @@ export interface PaymentDetailResponse {
     depositExplorerUrl: string | null;
     releaseSignature: string | null;
     releaseExplorerUrl: string | null;
+    tsnEscrowSignature?: string | null;
+    tsnEscrowExplorerUrl?: string | null;
     tsnClaimSignature?: string | null;
     tsnClaimExplorerUrl?: string | null;
     tsnProofSignature?: string | null;

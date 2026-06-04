@@ -13,6 +13,7 @@ export interface PaymentTsnState {
   claimRequestStatus: ClaimRequestStatus | null;
   destinationWallet: string | null;
   assignedCrankerPubkey: string | null;
+  escrowTxSig: string | null;
   claimTxSig: string | null;
   proofTxSig: string | null;
   settlementReason?: string | null;

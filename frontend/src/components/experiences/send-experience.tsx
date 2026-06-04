@@ -975,7 +975,7 @@ export function SendExperience() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-[var(--text)]">Select Country</h2>
-                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">Choose the recipient\u2019s country code</p>
+                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">Choose the recipient country code</p>
                 </div>
                 <button type="button" onClick={() => setCountrySearchOpen(false)}
                   className="grid h-8 w-8 place-items-center rounded-full bg-[var(--surface-soft)] text-[var(--text-faint)] transition-colors hover:text-[var(--text)] cursor-pointer active:scale-[0.93]"
@@ -1021,7 +1021,7 @@ export function SendExperience() {
                   );
                 })}
                 {filteredCountries.length === 0 ? (
-                  <div className="py-8 text-center tl-body-sm text-[var(--muted)]">No countries match \u201c{countrySearchQuery}\u201d</div>
+                  <div className="py-8 text-center tl-body-sm text-[var(--muted)]">No countries match {countrySearchQuery}</div>
                 ) : null}
               </div>
             </div>

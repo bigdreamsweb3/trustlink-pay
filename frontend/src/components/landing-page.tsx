@@ -18,7 +18,7 @@ import { TxProcessAnimator } from "./stimulations/tx-process-animator";
 
 const heroStats = [
   { label: "Sender fee model", value: "Transparent", note: "network + TSN protocol fee shown before send" },
-  { label: "Settlement target", value: "<3s", note: "from intent to cranker proof" },
+  { label: "Settlement target", value: "<0.9s", note: "from intent to cranker proof" },
   { label: "Identity layer", value: "TINS", note: "10-digit Transfer Identity Number" },
   { label: "Network", value: "Solana", note: "stablecoin payments over TSN" },
 ];

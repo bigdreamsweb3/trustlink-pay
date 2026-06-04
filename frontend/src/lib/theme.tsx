@@ -50,7 +50,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initialTheme = getPreferredTheme();
-    setThemeState(initialTheme);
+    if (initialTheme !== theme) {
+      setThemeState(initialTheme);
+    }
     applyTheme(initialTheme);
     setHydrated(true);
   }, []);

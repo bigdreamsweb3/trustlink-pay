@@ -29,7 +29,7 @@ const BASE_STEPS = [
 const generateRandomizedSteps = (): Step[] => {
   return BASE_STEPS.map((step) => ({
     ...step,
-    duration: Math.floor(Math.random() * 110 + 280),
+    duration: Math.floor(Math.random() * 110 + 79),
   }));
 };
 
@@ -302,7 +302,7 @@ const ProcessGrid = memo(function ProcessGrid({
                       className="absolute bottom-0 left-0 bg-gradient-to-r from-[#22D3EE]/30 to-transparent h-[1.5px]"
                       initial={{ width: "0%" }}
                       animate={{ width: `${stepProgress}%` }}
-                      transition={{ duration: 0.08 }}
+                      transition={{ duration: 0.02 }}
                     />
                   )}
 

@@ -116,7 +116,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={`${jetbrainsMono.variable} font-mono antialiased`}>
+      <body className={`${jetbrainsMono.variable} font-mono antialiased`} suppressHydrationWarning>
         <GlobalGridBackground />
         <AppProviders>{children}</AppProviders>
       </body>

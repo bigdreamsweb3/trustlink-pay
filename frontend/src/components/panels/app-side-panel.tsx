@@ -47,8 +47,8 @@ export function AppSidePanel({
             transition={{ type: "spring", stiffness: 320, damping: 34 }}
             className={
               desktopInline
-                ? "fixed right-0 top-0 z-50 flex h-screen w-[340px] flex-col border-l shadow-2xl"
-                : "absolute right-0 top-0 flex h-full w-full max-w-[430px] flex-col border-l"
+                ? "fixed right-0 top-0 z-50 flex h-screen w-107.5 flex-col border-l shadow-2xl"
+                : "absolute right-0 top-0 flex h-full w-full max-w-107.5 flex-col border-l"
             }
             style={{
               background: "color-mix(in srgb, var(--bg-elevated) 94%, transparent)",

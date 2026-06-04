@@ -69,7 +69,7 @@ export function SettingsSheetModal({
         </div> */}
 
         {/* Stats Card */}
-        {/* <div className="tl-panel-header tl-field mt-5 rounded-[22px] px-5 py-4">
+        {/* <div className="tl-field mt-5 rounded-[22px] px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--text-soft)]">Trust Score</div>
             <Link
@@ -88,7 +88,7 @@ export function SettingsSheetModal({
         <div className="mt-5 space-y-2.5">
 
           {/* Theme */}
-          <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
+          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <span className="text-[0.84rem] font-medium text-[var(--text)]">Theme</span>
             <div className="flex items-center gap-1 rounded-[12px] bg-[var(--surface-soft)] p-1">
               <button
@@ -117,7 +117,7 @@ export function SettingsSheetModal({
           </div>
 
           {/* Currency */}
-          <div className="tl-panel-header tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
+          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
             <span className="text-[0.84rem] font-medium text-[var(--text)]">Currency</span>
             <div className="flex items-center gap-1.5 rounded-[12px] bg-[var(--surface-soft)] px-3 py-1.5">
               <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -128,7 +128,7 @@ export function SettingsSheetModal({
           {/* Transaction history */}
           <Link
             href="/app/activity"
-            className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+            className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5">
               <Clock3 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
@@ -140,7 +140,7 @@ export function SettingsSheetModal({
           {/* Security */}
           <Link
             href="/app/settings"
-            className="tl-panel-header tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+            className="tl-field group flex items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5">
               <Shield className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />

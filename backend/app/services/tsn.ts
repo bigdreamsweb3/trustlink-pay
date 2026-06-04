@@ -382,6 +382,24 @@ function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRec
   return computeTsnUiStage(intent, claimRequest);
 }
 
+function paymentLooksLikeFrontendTsnAuthorization(payment: PaymentRecord) {
+  return payment.escrow_account?.startsWith("tsn:") || payment.escrow_vault_address === payment.sender_wallet;
+}
+
+function buildUnpublishedTsnState(): PaymentTsnState {
+  return {
+    stage: "reverted",
+    intentStatus: "failed",
+    claimRequestStatus: null,
+    destinationWallet: null,
+    assignedCrankerPubkey: null,
+    escrowTxSig: null,
+    claimTxSig: null,
+    proofTxSig: null,
+    settlementReason: "TSN authorization was signed, but the payment intent was not published to the TSN mempool. No escrow transaction was created.",
+  };
+}
+
 type SyncedMempoolState = {
   intent: PaymentIntentRecord;
   claimRequest: ClaimRequestRecord | null;
@@ -623,7 +641,13 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
 
   return payments.map((payment) => {
     const intent = intentByPaymentId.get(payment.id);
-    if (!intent) return payment;
+    if (!intent) {
+      if (payment.status === "created" && paymentLooksLikeFrontendTsnAuthorization(payment)) {
+        return { ...payment, tsn: buildUnpublishedTsnState() };
+      }
+
+      return payment;
+    }
 
     const claimRequest = claimByPaymentId.get(payment.id) ?? null;
     const computedStage = computeStage(intent, claimRequest);
@@ -646,7 +670,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
         !finalStageVerified && finalStageRequested
           ? "Awaiting Devnet confirmation for TSN claim/proof signatures."
           : stage === "reverted" && intent.status === "canceled"
-            ? "TSN intent is no longer active in the mempool and was not escrowed."
+            ? "TSN intent is no longer active in the mempool. No escrow transaction was created."
           : null,
     };
 

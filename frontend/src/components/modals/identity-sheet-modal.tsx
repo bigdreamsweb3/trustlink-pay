@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { IdentityTree } from "@/src/components/identity-tree";
 import { AppSidePanel } from "@/src/components/panels/app-side-panel";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
@@ -10,6 +11,7 @@ import { createOrLoadTinForWallet } from "@/src/lib/tins";
 import type { IdentitySecurityResponse, IdentitySecurityState, TinIdentityState } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
+import { ChevronRight, Settings } from "lucide-react";
 
 /* ── WhatsApp icon ── */
 function WhatsAppIcon({ className = "" }: { className?: string }) {
@@ -98,6 +100,7 @@ export function IdentitySheetModal({
 
   const activeTin = tinInfo?.tin ?? user?.tin ?? null;
   const activeTinIdentity = tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
+  const displayName = user?.displayName ?? "TrustLink User";
 
   async function handleCopyTinNumber() {
     if (!activeTin || !navigator.clipboard?.writeText) return;
@@ -119,15 +122,48 @@ export function IdentitySheetModal({
             Loading identity...
           </div>
         ) : (
+
           <div className="mt-2">
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Registered Identities</div>
+            <div className="flex items-start justify-between">
+              <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">User Identy</div>
               <Link href="/app/settings" onClick={onClose} className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors">
-                Settings
+                <Settings className="h-3.5 w-3.5" />
               </Link>
             </div>
 
+            {/* ═══════════ Stats Card ═══════════ */}
+            <div className="space-y-3 mb-3">
+              <div className="tl-panel-header tl-field rounded-[22px]">
+                <div className="px-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-text-soft">Trust Score</div>
+                    <Link
+                      href="/app/profile"
+                      className="flex items-center gap-1.5 text-[0.76rem] font-semibold text-[var(--accent-deep)] dark:text-[var(--accent)] transition-colors hover:opacity-80 cursor-pointer"
+                    >
+                      Profile
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                  <div className="mt-3 text-[1.5rem] font-bold tracking-tight text-(--text)">0.00</div>
+                  <div className="mt-2 h-1 w-10 rounded-full bg-accent-deep dark:bg-accent" />
+                </div>
+              </div>
+            </div>
+
+
+            <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Registered Identities</div>
+
             <div className="space-y-3">
+              <IdentityTree
+                displayName={displayName}
+                nameSourceLabel={activeTin ? "Transfer identity name" : "TrustLink display name"}
+                handle={user?.handle}
+                tin={activeTin}
+                tinsIdentityPublicKey={activeTinIdentity}
+                phoneNumber={user?.phoneNumber}
+              />
+
               {/* TIN Card */}
               <button
                 type="button"
@@ -142,11 +178,13 @@ export function IdentitySheetModal({
                 </svg>
                 <div className="min-w-0 flex-1">
                   <div className="text-[0.82rem] font-semibold">
-                    {activeTin ?? (identityBusy ? "Creating TIN..." : "Create TIN")}
+                    {activeTin ? displayName : identityBusy ? "Creating TIN..." : "Create TIN"}
                     <span className="ml-1.5 text-[0.58rem] font-normal opacity-60">Transfer Identity Number</span>
                   </div>
                   <div className="text-[0.66rem] text-[var(--text-faint)] mt-0.5">
-                    {activeTinIdentity ? `${shortenAddress(activeTinIdentity)} - TINS Protocol` : "Create on-chain payment identity - TINS Protocol"}
+                    {activeTin
+                      ? `TIN ${activeTin}${activeTinIdentity ? ` - ${shortenAddress(activeTinIdentity)}` : ""}`
+                      : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>
                 <span className="shrink-0 flex items-center gap-1 text-[0.62rem] font-medium rounded-full px-2 py-0.5"

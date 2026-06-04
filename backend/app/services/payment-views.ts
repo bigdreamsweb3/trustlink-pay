@@ -1,5 +1,5 @@
 import { findPaymentById } from "@/app/db/payments";
-import { findUserById } from "@/app/db/users";
+import { findUserById, findUserByPhoneNumber } from "@/app/db/users";
 import { listWhatsAppWebhookEventsByPaymentId } from "@/app/db/whatsapp-webhook-events";
 import {
   retryPaymentNotificationIfNeeded,
@@ -224,10 +224,19 @@ export async function getPaymentDetailForViewer(
     throw new Error("You are not allowed to view this payment");
   }
 
-  const [senderUser, webhookEvents] = await Promise.all([
+  const [senderUser, receiverUser, webhookEvents] = await Promise.all([
     payment.sender_user_id ? findUserById(payment.sender_user_id) : Promise.resolve(null),
+    findUserByPhoneNumber(payment.receiver_phone),
     listWhatsAppWebhookEventsByPaymentId(paymentId)
   ]);
+  const receiverDisplayName =
+    receiverUser?.display_name ??
+    payment.receiver_display_name ??
+    "";
+  const receiverHandle = receiverUser?.trustlink_handle ?? payment.receiver_handle ?? null;
+  const receiverTin = receiverUser?.tin ?? payment.receiver_tin ?? null;
+  const receiverTinsIdentityPublicKey =
+    receiverUser?.tins_identity_pubkey ?? payment.receiver_tins_identity_pubkey ?? null;
 
   const safePayment = sanitizePaymentForViewer(
     {
@@ -235,6 +244,10 @@ export async function getPaymentDetailForViewer(
       manual_invite_required: manualInviteRequired,
       invite_share: inviteShare,
       receiver_onboarded: recipientOnboarded,
+      receiver_display_name: receiverDisplayName,
+      receiver_handle: receiverHandle,
+      receiver_tin: receiverTin,
+      receiver_tins_identity_pubkey: receiverTinsIdentityPublicKey,
     },
     authUser,
   );
@@ -267,6 +280,10 @@ export async function getPaymentDetailForViewer(
     },
     receiver: {
       phone: viewerRole === "sender" ? payment.receiver_phone : authUser.phoneNumber,
+      displayName: receiverDisplayName,
+      handle: receiverHandle,
+      tin: receiverTin,
+      tinsIdentityPublicKey: receiverTinsIdentityPublicKey,
       releasedWallet: viewerRole === "receiver" ? payment.released_to_wallet : safePayment.released_to_wallet,
       claimReady: (payment.status === "locked" || payment.status === "expired") && viewerRole === "receiver",
       onboarded: recipientOnboarded,

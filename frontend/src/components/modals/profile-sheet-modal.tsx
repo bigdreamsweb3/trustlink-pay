@@ -46,7 +46,7 @@ export function ProfileSheetModal({
           </div>
         </div>
 
-        <div className="mt-4 rounded-[20px] border tl-panel-header tl-field px-4 py-3.5">
+        <div className="mt-4 rounded-[20px] border tl-field px-4 py-3.5">
           <div className="tl-text-muted text-[0.66rem] uppercase tracking-[0.18em]">Phone</div>
           <div className="mt-1.5 text-[0.86rem] font-medium text-[var(--text)]">{user.phoneNumber}</div>
         </div>
@@ -57,7 +57,7 @@ export function ProfileSheetModal({
         <div className="mt-3 space-y-2">
           <Link
             href="/app/profile"
-            className="tl-panel-header tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
+            className="tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
           >
             <span className="flex items-center gap-3">
               <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">
@@ -73,7 +73,7 @@ export function ProfileSheetModal({
 
           <Link
             href="/app/activity"
-            className="tl-panel-header tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
+            className="tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
           >
             <span className="flex items-center gap-3">
               <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">
@@ -89,7 +89,7 @@ export function ProfileSheetModal({
 
           <Link
             href="/app/settings"
-            className="tl-panel-header tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
+            className="tl-field button flex items-center justify-between rounded-[18px] px-4 py-3 transition hover:bg-[var(--surface-soft)]"
           >
             <span className="flex items-center gap-3">
               <span className="tl-icon-surface grid h-10 w-10 place-items-center rounded-[14px]">

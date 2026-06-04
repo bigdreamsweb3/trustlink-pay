@@ -5,6 +5,26 @@ async function ensurePaymentIntentTraceColumns() {
   await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128)`;
   await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128)`;
   await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS proof_tx_sig VARCHAR(128)`;
+  await sql`
+    ALTER TABLE payment_intents
+    DROP CONSTRAINT IF EXISTS payment_intents_status_check
+  `;
+  await sql`
+    ALTER TABLE payment_intents
+    ADD CONSTRAINT payment_intents_status_check
+    CHECK (status IN (
+      'pending',
+      'escrowed',
+      'onchain',
+      'claimed',
+      'executed',
+      'settled',
+      'expired',
+      'failed',
+      'canceled',
+      'reverted'
+    ))
+  `;
 }
 
 export async function findPaymentIntentByPaymentId(paymentId: string): Promise<PaymentIntentRecord | null> {

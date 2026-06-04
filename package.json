@@ -45,7 +45,7 @@
     "dev:mempool:backend": "cd tsn-mempool-backend && set MEMPOOL_STORE=file&& set PYTHONUNBUFFERED=1&& python -u server.py",
     "dev:mempool:frontend": "cd tsn-mempool-frontend && node ../frontend/node_modules/next/dist/bin/next dev -p 3002",
     "dev:tsn:stack": "npx concurrently -n backend,frontend,mempool-ui -c cyan,green,yellow \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mempool:frontend\"",
-    "dev:tsn:stack:compact": "npx concurrently --prefix \"[{name}]\" --timestamp-format \"HH:mm:ss\" --kill-others-on-fail -n backend,frontend,mempool-api,mempool-ui -c cyan,green,magenta,yellow \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mempool:backend\" \"npm run dev:mempool:frontend\"",
+    "dev:tsn:stack:with-mempool": "npx concurrently --prefix \"[{name}]\" --timestamp-format \"HH:mm:ss\" --kill-others-on-fail -n backend,frontend,mempool-api,mempool-ui -c cyan,green,magenta,yellow \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mempool:backend\" \"npm run dev:mempool:frontend\"",
     "dev:tsn:stack:with-cranker": "npx concurrently -n backend,frontend,mempool-api,mempool-ui,cranker -c cyan,green,magenta,yellow,blue \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mempool:backend\" \"npm run dev:mempool:frontend\" \"npm run tsn:cranker:start\"",
     "dev:all:hint": "echo \"Run in separate terminals:\" && echo \"1) npm run dev:backend\" && echo \"2) npm run dev:frontend\" && echo \"3) npm run dev:mempool:backend\" && echo \"4) npm run dev:mempool:frontend\"",
     "flow:check": "node scripts/flow-check.mjs",

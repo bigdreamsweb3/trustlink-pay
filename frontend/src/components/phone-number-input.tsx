@@ -108,7 +108,7 @@ export function PhoneNumberInput({
         ? "border-[#f3c96b]/35 bg-[var(--field)]"
         : verificationState === "invalid"
           ? "border-[#ff7f7f]/35 bg-[var(--field)]"
-          : "tl-panel-header tl-field hover:border-[var(--accent-border)]";
+          : "tl-field hover:border-[var(--accent-border)]";
 
   const indicatorClass =
     verificationState === "valid"
@@ -148,7 +148,7 @@ export function PhoneNumberInput({
     if (!showSummaryCard || !verificationDetails) return null;
 
     return (
-      <div className="tl-panel-header tl-field relative z-10 rounded-[18px] px-4 py-3.5">
+      <div className="tl-field relative z-10 rounded-[18px] px-4 py-3.5">
         <div className="flex items-center gap-3.5 w-full">
           {isBusiness ? (
             <div className="tl-icon-surface grid h-11 w-11 min-w-11 shrink-0 place-items-center overflow-hidden rounded-full">
@@ -225,16 +225,19 @@ export function PhoneNumberInput({
       ) : null}
 
       <div className="relative group mt-1.5">
-        <div className={`flex h-14 items-stretch rounded-[18px] border transition-all duration-200 ${toneClass}`}>
-          <div className="flex-1">
+        <div className={`flex h-fit items-stretch rounded-[18px] border transition-all duration-200 ${toneClass}`}>
+
+          <div className="flex flex-1 flex-col px-4 py-3.5">
+            <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Recipient Identity</span>
             <input
               type="tel"
               value={formattedValue}
               onChange={(event) => onChange(event.target.value)}
               placeholder={placeholder}
               inputMode="tel"
-              className="h-full w-full bg-transparent px-4 text-[1rem] font-bold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+              className="mt-1.5 block  w-full bg-transparent text-[1rem] font-bold text-(--text) outline-none placeholder:text-text-faint"
             />
+
           </div>
 
           {verificationState !== "idle" ? (
@@ -250,8 +253,8 @@ export function PhoneNumberInput({
         </div>
 
         {/* ── Country Fallback ── */}
-        {showCountryFallback ? (
-          <div className="mt-2.5 tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
+        {showCountryFallback && !isTinCandidate ? (
+          <div className="mt-2.5 tl-field rounded-[18px] px-4 py-3.5">
             <div className="text-[0.82rem] font-medium leading-tight text-[var(--text)]">
               {fallbackMessage}
             </div>
@@ -262,7 +265,7 @@ export function PhoneNumberInput({
             <button
               type="button"
               onClick={() => setIsOpen((c) => !c)}
-              className="tl-panel-header tl-field mt-3 flex w-full items-center justify-between rounded-[14px] px-3.5 py-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
+              className="tl-field mt-3 flex w-full items-center justify-between rounded-[14px] px-3.5 py-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
             >
               <span className="flex min-w-0 items-center gap-3">
                 <span className="text-lg">{selectedCountry?.flag ?? "🌐"}</span>
@@ -297,7 +300,7 @@ export function PhoneNumberInput({
                         placeholder="Search countries..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="tl-panel-header tl-field w-full rounded-[12px] py-2.5 pl-9 pr-4 text-[0.84rem] text-[var(--text)] outline-none"
+                        className="tl-field w-full rounded-[12px] py-2.5 pl-9 pr-4 text-[0.84rem] text-[var(--text)] outline-none"
                       />
                     </div>
                   </div>
@@ -337,7 +340,7 @@ export function PhoneNumberInput({
 
       {/* ── Lookup Result Card ── */}
       {showLookupCard ? (
-        <div className={`relative z-10 rounded-[18px] px-4 py-3.5  tl-panel-header ${trustLinkToneClass}`}>
+        <div className={`relative z-10 rounded-[18px] px-4 py-3.5  ${trustLinkToneClass}`}>
           {lookupBusy ? (
             <SectionLoader label="Verifying recipient..." />
           ) : lookupError ? (
@@ -349,7 +352,9 @@ export function PhoneNumberInput({
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-3">
                   <div className="truncate text-[0.84rem] font-semibold text-[var(--text)]">
-                    @{recipientPreview.recipient.handle}
+                    {recipientPreview.recipient.handle
+                      ? `@${recipientPreview.recipient.handle}`
+                      : recipientPreview.recipient.displayName}
                   </div>
                   <span
                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.64rem] font-semibold ${recipientPreview.status === "registered"
@@ -383,8 +388,17 @@ export function PhoneNumberInput({
 
               <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2.5">
                 <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">Identity routing preview</div>
-                <div className="text-[0.7rem] text-[var(--text-faint)]">TIN: {recipientPreview.recipient.tin ?? "not linked yet"}</div>
-                <div className="mt-1 text-[0.72rem] text-[var(--text)]">WhatsApp: linked</div>
+                <div className="text-[0.7rem] text-[var(--text-faint)]">
+                  TIN: {recipientPreview.recipient.tin ?? "not linked yet"}
+                </div>
+                <div className="mt-1 flex items-center gap-1.5 text-[0.72rem] text-[var(--text)]">
+                  <span className="grid h-4 w-4 place-items-center rounded-full bg-[#25D366]/16">
+                    <WhatsAppIcon className="h-2.5 w-2.5" />
+                  </span>
+                  <span>
+                    WhatsApp: {verificationDetails?.resolvedPhoneNumber ?? recipientPreview.recipient.phoneNumber}
+                  </span>
+                </div>
               </div>
 
               {isTinCandidate ? (

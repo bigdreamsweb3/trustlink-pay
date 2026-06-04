@@ -84,6 +84,10 @@ export interface PaymentRecord {
   reference_code: string;
   receiver_phone: string;
   receiver_phone_hash: string;
+  receiver_display_name?: string | null;
+  receiver_handle?: string | null;
+  receiver_tin?: string | null;
+  receiver_tins_identity_pubkey?: string | null;
   payment_mode?: PaymentMode;
   recipient_onboarded_at_creation?: boolean;
   phone_identity_pubkey?: string | null;
@@ -184,6 +188,10 @@ export interface PaymentDetailResponse {
   };
   receiver: {
     phone: string;
+    displayName: string;
+    handle: string | null;
+    tin: string | null;
+    tinsIdentityPublicKey: string | null;
     releasedWallet: string | null;
     claimReady: boolean;
     onboarded: boolean;

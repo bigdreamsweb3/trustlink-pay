@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { IdentityTree } from "@/src/components/identity-tree";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
@@ -83,6 +84,14 @@ function isSenderEscrowed(detail: PaymentDetailResponse | null | undefined) {
   );
 }
 
+function isUnpublishedTsn(tsn: TsnState) {
+  return (
+    tsn.stage === "reverted" &&
+    !tsn.escrowTxSig &&
+    (tsn.intentStatus === "failed" || tsn.intentStatus === "canceled")
+  );
+}
+
 function effectiveTsnStage(detail: PaymentDetailResponse): TsnStage {
   return isSenderEscrowed(detail) ? "escrowed" : detail.payment.tsn!.stage;
 }
@@ -107,6 +116,7 @@ function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]
   if (viewerRole === "sender" && (tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed")) {
     return "Escrowed";
   }
+  if (isUnpublishedTsn(tsn)) return "Not published";
 
   switch (tsn.stage) {
     case "intent_pending":
@@ -132,6 +142,32 @@ function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]
 function paymentStatusLabel(status: PaymentDetailResponse["payment"]["status"]) {
   if (status === "created") return "Processing";
   return status.replace(/_/g, " ");
+}
+
+function receiverIdentityLabel(receiver: PaymentDetailResponse["receiver"]) {
+  const displayName = receiver.displayName?.trim();
+
+  if (displayName) {
+    return displayName;
+  }
+
+  if (receiver.tin) {
+    return `TIN ${receiver.tin}`;
+  }
+
+  return "Recipient";
+}
+
+function receiverIdentityNameSource(receiver: PaymentDetailResponse["receiver"]) {
+  if (receiver.tin && receiver.displayName?.trim()) {
+    return "Transfer identity name";
+  }
+
+  if (receiver.displayName?.trim()) {
+    return "TrustLink display name";
+  }
+
+  return "Identity name unavailable";
 }
 
 function formatDuration(from: string | null | undefined, to: string | null | undefined) {
@@ -224,6 +260,7 @@ export function TransactionDetailExperience({
   const [error, setError] = useState<string | null>(null);
 
   const [shareBusy, setShareBusy] = useState(false);
+  const [receiverIdentityOpen, setReceiverIdentityOpen] = useState(false);
 
   const shouldPollReceipt =
     detail?.viewerRole === "sender" &&
@@ -363,6 +400,8 @@ export function TransactionDetailExperience({
     : detail
       ? statusTone(detail.payment.status)
       : "";
+  const receiverLabel = detail ? receiverIdentityLabel(detail.receiver) : "Recipient";
+  const receiverTinNameMissing = Boolean(detail?.receiver.tin && !detail.receiver.displayName?.trim());
 
   if (!hydrated || !user) return null;
 
@@ -389,14 +428,14 @@ export function TransactionDetailExperience({
 
         {/* ERROR */}
         {error ? (
-          <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 tl-body-sm text-[#ffb1b1]">
+          <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[#ffb1b1]">
             {error}
           </div>
         ) : null}
 
         {/* LOADING */}
         {loading ? (
-          <div className="tl-panel-header tl-field rounded-[24px] px-5 py-10">
+          <div className="tl-field rounded-[24px] px-5 py-10">
             <SectionLoader
               size="md"
               label="Loading transaction..."
@@ -436,8 +475,8 @@ export function TransactionDetailExperience({
                 <p className="mx-auto mt-4 max-w-[320px] text-[0.8rem] leading-relaxed text-[var(--text-soft)]">
                   {detail.viewerRole === "sender"
                     ? detail.receiver.manualInviteRequired
-                      ? `In escrow for ${detail.receiver.phone}. Recipient has not joined TrustLink yet.`
-                      : `Securely being delivered to ${detail.receiver.phone}.`
+                      ? `In escrow for ${receiverLabel}. Recipient has not joined TrustLink yet.`
+                      : `Securely being delivered to ${receiverLabel}.`
                     : `Payment from ${detail.sender.displayName}${detail.sender.handle
                       ? ` (@${detail.sender.handle})`
                       : ""
@@ -447,7 +486,7 @@ export function TransactionDetailExperience({
             </div>
 
             {tsnProgress ? (
-              <div className="tl-panel-header tl-field overflow-hidden rounded-[24px] px-4 py-4">
+              <div className="tl-field overflow-hidden rounded-[24px] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
@@ -472,25 +511,23 @@ export function TransactionDetailExperience({
                     <div key={step.id} className="relative min-w-0">
                       {index > 0 ? (
                         <div
-                          className={`absolute left-[-50%] right-[50%] top-[13px] h-px ${
-                            step.complete || step.active
-                              ? "bg-[var(--accent)]"
-                              : "bg-white/10"
-                          }`}
+                          className={`absolute left-[-50%] right-[50%] top-[13px] h-px ${step.complete || step.active
+                            ? "bg-[var(--accent)]"
+                            : "bg-white/10"
+                            }`}
                         />
                       ) : null}
 
                       <div className="relative z-10 flex flex-col items-center text-center">
                         <span
-                          className={`grid h-6 w-6 place-items-center rounded-full border text-[0.62rem] font-bold ${
-                            tsnProgress.failed && step.active
-                              ? "border-[#ff7f7f]/40 bg-[#ff7f7f]/12 text-[#ffadad]"
-                              : step.complete
-                                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                                : step.active
-                                  ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
-                                  : "border-white/10 bg-white/[0.03] text-[var(--text-soft)]"
-                          }`}
+                          className={`grid h-6 w-6 place-items-center rounded-full border text-[0.62rem] font-bold ${tsnProgress.failed && step.active
+                            ? "border-[#ff7f7f]/40 bg-[#ff7f7f]/12 text-[#ffadad]"
+                            : step.complete
+                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                              : step.active
+                                ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
+                                : "border-white/10 bg-white/[0.03] text-[var(--text-soft)]"
+                            }`}
                         >
                           {index + 1}
                         </span>
@@ -522,28 +559,65 @@ export function TransactionDetailExperience({
                 {/* PARTICIPANTS */}
                 <div className="space-y-3">
 
-                  <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
-                    <div className="flex items-center justify-between gap-4">
-
-                      <div>
+                  <div className="tl-field rounded-[22px] px-4 py-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (detail.viewerRole === "sender") {
+                          setReceiverIdentityOpen((open) => !open);
+                        }
+                      }}
+                      className={`flex w-full items-center justify-between gap-4 text-left ${detail.viewerRole === "sender" ? "cursor-pointer" : "cursor-default"
+                        }`}
+                    >
+                      <div className="min-w-0">
                         <div className="tl-meta-sm uppercase tracking-[0.14em] text-[var(--text-soft)]">
                           {detail.viewerRole === "sender"
                             ? "Receiver"
                             : "Sender"}
                         </div>
 
-                        <div className="mt-1 text-[0.9rem] font-semibold text-[var(--text)]">
+                        <div className="mt-1 truncate text-[0.9rem] font-semibold text-[var(--text)]">
                           {detail.viewerRole === "sender"
-                            ? detail.receiver.phone
+                            ? receiverLabel
                             : detail.sender.displayName}
                         </div>
+
+                        {detail.viewerRole === "sender" && detail.receiver.tin ? (
+                          <div className="mt-0.5 truncate text-[0.66rem] text-[var(--text-faint)]">
+                            TIN {detail.receiver.tin}
+                          </div>
+                        ) : detail.viewerRole === "sender" && detail.receiver.handle ? (
+                          <div className="mt-0.5 truncate text-[0.66rem] text-[var(--text-faint)]">
+                            @{detail.receiver.handle}
+                          </div>
+                        ) : null}
                       </div>
 
-                      <ChevronRight className="h-4 w-4 text-[var(--text-soft)]" />
-                    </div>
+                      <ChevronRight
+                        className={`h-4 w-4 text-[var(--text-soft)] transition-transform ${receiverIdentityOpen && detail.viewerRole === "sender" ? "rotate-90" : ""
+                          }`}
+                      />
+                    </button>
+
+                    {detail.viewerRole === "sender" && receiverIdentityOpen ? (
+                      <div className="mt-4">
+                        <IdentityTree
+                          compact
+                          displayName={receiverLabel}
+                          nameSourceLabel={receiverIdentityNameSource(detail.receiver)}
+                          missingTinName={receiverTinNameMissing}
+                          handle={detail.receiver.handle}
+                          tin={detail.receiver.tin}
+                          phoneNumber={detail.receiver.phone}
+                          walletLabel={detail.receiver.releasedWallet ? shortenValue(detail.receiver.releasedWallet) : null}
+                          hideMissingNodes
+                        />
+                      </div>
+                    ) : null}
                   </div>
 
-                  <div className="tl-panel-header tl-field rounded-[22px] px-4 py-4">
+                  <div className="tl-field rounded-[22px] px-4 py-4">
                     <div className="flex items-center justify-between gap-4">
 
                       <div>
@@ -579,7 +653,7 @@ export function TransactionDetailExperience({
                 {detail.viewerRole === "sender" &&
                   detail.receiver.manualInviteRequired &&
                   detail.receiver.inviteShare ? (
-                  <div className="tl-panel-header tl-field rounded-[24px] px-5 py-5">
+                  <div className="tl-field rounded-[24px] px-5 py-5">
 
                     <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
                       Share invite
@@ -622,7 +696,7 @@ export function TransactionDetailExperience({
                         }
                       }}
                       disabled={shareBusy}
-                      className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97] disabled:opacity-50"
+                      className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 font-semibold text-[#04110a] transition-transform active:scale-[0.97] disabled:opacity-50"
                     >
                       {shareBusy
                         ? "Preparing..."
@@ -676,7 +750,7 @@ export function TransactionDetailExperience({
                     ].map((row) => (
                       <div
                         key={row.label}
-                        className="tl-panel-header tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
+                        className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
                       >
                         <span className="text-[0.76rem] text-[var(--text-soft)]">
                           {row.label}
@@ -726,7 +800,7 @@ export function TransactionDetailExperience({
                       .map((row) => (
                         <div
                           key={row.label}
-                          className="tl-panel-header tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
+                          className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
                         >
                           <span className="text-[0.76rem] text-[var(--text-soft)]">
                             {row.label}
@@ -758,7 +832,7 @@ export function TransactionDetailExperience({
                       ))}
 
                     {detail.receiver.releasedWallet ? (
-                      <div className="tl-panel-header tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
+                      <div className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
                         <span className="text-[0.76rem] text-[var(--text-soft)]">
                           Released to
                         </span>
@@ -780,47 +854,7 @@ export function TransactionDetailExperience({
               {/* RIGHT */}
               <div className="space-y-5">
 
-                {/* TIMELINE */}
-                <div>
-                  <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-[var(--text-soft)]">
-                    Timeline
-                  </div>
 
-                  <div className="space-y-2">
-                    {detail.timeline.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="tl-panel-header tl-field flex items-start gap-3 rounded-[20px] px-4 py-4"
-                      >
-                        <span
-                          className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${entry.complete
-                            ? "bg-[#4ae8c0]"
-                            : "bg-[var(--surface-soft)]"
-                            }`}
-                        />
-
-                        <div className="min-w-0 flex-1">
-
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="tl-body-sm font-semibold text-[var(--text)]">
-                              {entry.label}
-                            </span>
-
-                            <span className="shrink-0 tl-meta-sm text-[var(--text-soft)]">
-                              {formatDateTime(
-                                entry.occurredAt
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="mt-1 text-[0.74rem] leading-relaxed text-[var(--text-soft)]">
-                            {entry.description}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* PRIVACY */}
                 <div>
@@ -828,7 +862,7 @@ export function TransactionDetailExperience({
                     Privacy
                   </div>
 
-                  <div className="tl-panel-header tl-field rounded-[20px] px-4 py-4 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">
+                  <div className="tl-field rounded-[20px] px-4 py-4 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">
                     <p>
                       {detail.privacy.senderPhonePolicy}
                     </p>
@@ -845,7 +879,7 @@ export function TransactionDetailExperience({
 
                   <Link
                     href="/app/activity"
-                    className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center tl-body-sm font-medium transition-transform active:scale-[0.97]"
+                    className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center font-medium transition-transform active:scale-[0.97]"
                   >
                     Back
                   </Link>
@@ -853,14 +887,14 @@ export function TransactionDetailExperience({
                   {detail.receiver.claimReady ? (
                     <Link
                       href={`/claim/${detail.payment.id}`}
-                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
+                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
                     >
                       Claim payment
                     </Link>
                   ) : (
                     <Link
                       href="/app"
-                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center tl-body-sm font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
+                      className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 text-center font-semibold text-[#04110a] transition-transform active:scale-[0.97]"
                     >
                       Done
                     </Link>
@@ -870,7 +904,7 @@ export function TransactionDetailExperience({
             </div>
           </>
         ) : (
-          <div className="tl-panel-header tl-field rounded-[20px] px-4 py-5 text-center tl-body-sm text-[var(--text-soft)]">
+          <div className="tl-field rounded-[20px] px-4 py-5 text-center text-[var(--text-soft)]">
             Transaction details unavailable.
           </div>
         )}

@@ -61,6 +61,10 @@ export interface PaymentRecord {
   reference_code: string;
   receiver_phone: string;
   receiver_phone_hash: string;
+  receiver_display_name?: string | null;
+  receiver_handle?: string | null;
+  receiver_tin?: string | null;
+  receiver_tins_identity_pubkey?: string | null;
   payment_mode?: PaymentMode;
   sender_autoclaim_enabled?: boolean;
   receiver_autoclaim_allowed?: boolean;

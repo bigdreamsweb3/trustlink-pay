@@ -8,19 +8,20 @@ import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { FloatingGuidanceOverlay } from "@/src/components/floating-guidance-overlay";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, CopyIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
+import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { shortenAddress } from "@/src/lib/address";
+import { useAppPanel } from "@/src/lib/app-panel-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { shouldPollPaymentNotification } from "@/src/lib/formatters";
+import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
 import { createOrLoadTinForWallet } from "@/src/lib/tins";
 import type { IdentitySecurityResponse, IdentitySecurityState, PaymentRecord, PendingBalanceSummary, TinIdentityState, WalletTokenOption } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
-import { ChevronRight, Landmark, ArrowUpRight, ArrowDownLeft, Wallet, Lock } from "lucide-react";
+import { Check, ChevronRight, Copy, Landmark, ArrowUpRight, ArrowDownLeft, Wallet, Lock } from "lucide-react";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
@@ -89,6 +90,7 @@ export function DashboardExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
   const { session, walletAddress, requestWalletConnection } = useWallet();
   const { showToast } = useToast();
+  const { openPanel } = useAppPanel();
   const router = useRouter();
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
@@ -105,6 +107,7 @@ export function DashboardExperience() {
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] = useState(false);
+  const [tinCopied, setTinCopied] = useState(false);
 
   useEffect(() => { if (!walletAddress) { setWalletTokens([]); return; } const ctrl = new AbortController(); async function load() { setWalletTokenLoading(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (!ctrl.signal.aborted) setWalletTokens(r.tokens.filter((t) => t.supported)); } catch { if (!ctrl.signal.aborted) setWalletTokens([]); } finally { if (!ctrl.signal.aborted) setWalletTokenLoading(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
   useEffect(() => { if (!accessToken || !user) return; void loadDashboard(accessToken); }, [accessToken, user]);
@@ -112,6 +115,7 @@ export function DashboardExperience() {
 
   const supportedBalanceUsd = useMemo(() => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0), [walletTokens]);
   const combinedVisibleBalanceUsd = useMemo(() => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)), [supportedBalanceUsd, totalPendingUsd]);
+  const pendingClaimsUsd = pendingBalanceSummary.totalPendingUsd || totalPendingUsd;
   const hasPendingSenderReceipt = useMemo(() => paymentHistory.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [paymentHistory, user?.id]);
   const sentCount = useMemo(() => paymentHistory.filter((p) => p.sender_user_id === user?.id).length, [paymentHistory, user?.id]);
   const receivedCount = useMemo(() => paymentHistory.filter((p) => p.receiver_phone === user?.phoneNumber).length, [paymentHistory, user?.phoneNumber]);
@@ -159,7 +163,25 @@ export function DashboardExperience() {
       router.push("/app/settings");
       return;
     }
-    await copyNumber(activeTin, "TIN");
+
+    if (!navigator.clipboard?.writeText) {
+      setError("Copy not available.");
+      showToast("Copy not available.");
+      return;
+    }
+
+    await navigator.clipboard.writeText(activeTin);
+    setTinCopied(true);
+    window.setTimeout(() => setTinCopied(false), 1400);
+  }
+
+  function handleOpenIdentityPanel() {
+    if (activeTin) {
+      openPanel("identity");
+      return;
+    }
+
+    void handleBindMainWallet();
   }
 
   async function handleCopyPhoneNumber() { await copyNumber(fullNumber, "WhatsApp number"); }
@@ -293,8 +315,11 @@ export function DashboardExperience() {
                     {activeTin ?? "Create TIN"}
                   </span>
 
-                  {/* Copy */}
-                  <CopyIcon className="ml-1 h-3 w-3 text-text/22 transition-colors group-hover:text-text/44" />
+                  {tinCopied ? (
+                    <Check className="ml-1 h-3 w-3 text-[var(--accent)]" />
+                  ) : (
+                    <Copy className="ml-1 h-3 w-3 text-text/22 transition-colors group-hover:text-text/44" />
+                  )}
                 </div>
 
                 {/* Micro label */}
@@ -419,7 +444,7 @@ export function DashboardExperience() {
             <div className="space-y-2">
               {loading ? (
                 <>{[0, 1, 2].map((i) => (
-                  <div key={i} className="tl-panel-header tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+                  <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
                     <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
                     <div className="space-y-2">
                       <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -429,7 +454,7 @@ export function DashboardExperience() {
                   </div>
                 ))}</>
               ) : paymentHistory.length === 0 ? (
-                <div className="tl-panel-header tl-field rounded-[18px] px-4 py-8 text-center">
+                <div className="tl-field rounded-[18px] px-4 py-8 text-center">
                   {/* no tx ux */}
                   <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                     <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
@@ -466,14 +491,16 @@ export function DashboardExperience() {
                 <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
               </div>
               <div className="mt-2 flex items-baseline gap-3">
-                <span className="text-[1.3rem] font-bold text-[var(--text)]">{formatPaymentUsd(totalPendingUsd)}</span>
+                <span className="text-[1.3rem] font-bold text-[var(--text)]">
+                  {balanceVisible ? formatPaymentUsd(pendingClaimsUsd) : "****"}
+                </span>
                 <span className="text-[0.76rem] text-[var(--text-faint)]">{pendingPayments.length} unclaimed</span>
               </div>
               {pendingBalanceSummary.byToken.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {pendingBalanceSummary.byToken.map((t) => (
                     <span key={t.tokenSymbol ?? "unknown"} className="rounded-[8px] border border-accent-border bg-accent-soft px-2 py-0.5 text-[0.64rem] font-medium text-accent">
-                      {t.tokenSymbol ?? "Token"}: {balanceVisible ? formatPaymentUsd(t.amountUsd ?? 0) : "****"}
+                      {t.tokenSymbol ?? "Token"}: {balanceVisible ? `${formatTokenAmount(t.amount)}${t.amountUsd != null ? ` · ${formatPaymentUsd(t.amountUsd)}` : ""}` : "****"}
                     </span>
                   ))}
                 </div>
@@ -497,7 +524,7 @@ export function DashboardExperience() {
               {/* TIN */}
               <button
                 type="button"
-                onClick={() => activeTin ? void handleCopyTinNumber() : void handleBindMainWallet()}
+                onClick={handleOpenIdentityPanel}
                 disabled={identityBusy}
                 className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
               >
@@ -508,11 +535,13 @@ export function DashboardExperience() {
                 </svg>
                 <div className="min-w-0 flex-1">
                   <div className="text-[0.74rem] font-medium">
-                    {activeTin ?? (identityBusy ? "Creating TIN..." : "Create TIN")}
+                    {activeTin ? user.displayName : identityBusy ? "Creating TIN..." : "Create TIN"}
                     <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
                   </div>
                   <div className="text-[0.58rem] text-text-faint" >
-                    {activeTinIdentity ? `${shortenAddress(activeTinIdentity)} - TINS Protocol` : "Create on-chain payment identity - TINS Protocol"}
+                    {activeTin
+                      ? `TIN ${activeTin}${activeTinIdentity ? ` - ${shortenAddress(activeTinIdentity)}` : ""}`
+                      : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>
                 <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
@@ -675,7 +704,7 @@ export function DashboardExperience() {
         <div className="space-y-2">
           {loading ? (
             <>{[0, 1, 2].map((i) => (
-              <div key={i} className="tl-panel-header tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
+              <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
                 <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
                 <div className="space-y-2">
                   <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
@@ -685,7 +714,7 @@ export function DashboardExperience() {
               </div>
             ))}</>
           ) : paymentHistory.length === 0 ? (
-            <div className="tl-panel-header tl-field rounded-[18px] px-4 py-8 text-center">
+            <div className="tl-field rounded-[18px] px-4 py-8 text-center">
               <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
               </div>

@@ -32,6 +32,14 @@ function isEscrowedForSender(tsn: TsnState) {
   return tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed";
 }
 
+function isUnpublishedTsn(tsn: TsnState) {
+  return (
+    tsn.stage === "reverted" &&
+    !tsn.escrowTxSig &&
+    (tsn.intentStatus === "failed" || tsn.intentStatus === "canceled")
+  );
+}
+
 function tsnTone(tsn: TsnState, viewerRole: ActivityViewerRole) {
   if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
     return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
@@ -56,6 +64,7 @@ function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
   if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
     return "Escrowed";
   }
+  if (isUnpublishedTsn(tsn)) return "Not published";
 
   switch (tsn.stage) {
     case "intent_pending":
@@ -83,6 +92,24 @@ function paymentStatusLabel(status: PaymentRecord["status"]) {
   return status.replace(/_/g, " ");
 }
 
+function receiverIdentityLabel(payment: PaymentRecord) {
+  const displayName = payment.receiver_display_name?.trim();
+
+  if (displayName) {
+    return displayName;
+  }
+
+  if (payment.receiver_tin) {
+    return `TIN ${payment.receiver_tin}`;
+  }
+
+  return "Recipient";
+}
+
+function shortTin(tin: string) {
+  return tin.length <= 7 ? tin : `${tin.slice(0, 3)}...${tin.slice(-3)}`;
+}
+
 export function PaymentActivityCard({
   payment,
   currentUserId,
@@ -91,8 +118,9 @@ export function PaymentActivityCard({
   const isSend = payment.sender_user_id === currentUserId;
   const viewerRole: ActivityViewerRole = isSend ? "sender" : "receiver";
   const counterparty = isSend
-    ? `To ${payment.receiver_phone}`
+    ? `To ${receiverIdentityLabel(payment)}`
     : `From ${payment.sender_display_name_snapshot}`;
+  const identityHint = isSend && payment.receiver_tin ? `TIN ${shortTin(payment.receiver_tin)}` : null;
 
   const statusLabel = payment.tsn ? tsnLabel(payment.tsn, viewerRole) : paymentStatusLabel(payment.status);
   const statusClass = payment.tsn ? tsnTone(payment.tsn, viewerRole) : statusTone(payment.status);
@@ -121,11 +149,17 @@ export function PaymentActivityCard({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 text-[0.82rem] font-semibold" style={{ color: "var(--text)" }}>
           <span className="truncate">{counterparty}</span>
+          {identityHint ? (
+            <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
+              {identityHint}
+            </span>
+          ) : null}
         </div>
         <div className="mt-1 flex flex-nowrap items-center gap-2">
           <span className="text-[0.68rem] font-medium text-nowrap" style={{ color: "var(--text-faint)" }}>
             {formatPaymentShortDate(payment.created_at)}
           </span>
+
           <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
             {payment.reference_code}
           </span>

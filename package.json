@@ -84,7 +84,7 @@
     "tsn:cranker:start": "npm --prefix tsn-cranker-op-daemon run crank:start",
     "tsn:cranker:help": "npm --prefix tsn-cranker-op-daemon run help",
     "// 35-| -----------": "==================================================",
-    "// 35 TSN PDAs": "==================================================",
+    "// 35 TSN": "==================================================",
     "// 35-0 -----------": "==================================================",
     "tsn:verifier:info": "node scripts/tsn-verifier-pda.mjs info",
     "tsn:verifier:fund": "node scripts/tsn-verifier-pda.mjs fund",
@@ -101,6 +101,11 @@
     "// 40-0 -----------": "==================================================",
     "tins:program:id": "echo TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     "tins:init-global": "node scripts/tins-init-global.mjs",
+    "tins:create": "node scripts/tins-create.mjs",
+    "tins:lookup": "node scripts/tins-lookup.mjs 1000000008",
+    "tins:identity:demo": "npm run tsn:sdk:build && node scripts/tins-identity-encryption-demo.mjs",
+    "tins:identity:test": "npm run tins:identity:demo",
+    "tins:sdk:build": "npm --prefix tins-sdk run build",
     "tins:build": "cd tins-registrar/program && cargo build-sbf",
     "tins:deploy": "cd tins-registrar/program && solana program deploy target/deploy/tins_program.so --url devnet",
     "// 90-| -----------": "==================================================",
@@ -110,5 +115,10 @@
     "git:commit:push:all": "git add -A && git commit -m \"Update submodules\" && git push --recurse-submodules=on-demand origin main --force",
     "git:quick:push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
     "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3"
   }
 }

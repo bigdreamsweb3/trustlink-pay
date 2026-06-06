@@ -93,8 +93,8 @@
   color-scheme: dark;
 
   /* ── DARK MODE ─ Airbills-depth, muted mint, near-black ─── */
-  --bg: #070a09;
-  --bg-elevated: #0d1311;
+  --bg: #0d1311;
+  --bg-elevated: #070a09;
   --panel: #111918;
   --panel-soft: #172220;
   --surface: #203236;
@@ -417,6 +417,31 @@
   font-size: 0.8125rem;
   letter-spacing: -0.01em;
   color: var(--text-soft);
+}
+
+.code-keyword {
+  color: #c678dd;
+}
+.code-string {
+  color: #98c379;
+}
+.code-number {
+  color: #d19a66;
+}
+.code-function {
+  color: #61afef;
+}
+.code-variable {
+  color: #e5c07b;
+}
+.code-property {
+  color: #e06c75;
+}
+.code-operator {
+  color: #56b6c2;
+}
+.code-punctuation {
+  color: #abb2bf;
 }
 
 /* ── SEMANTIC UTILITIES ─── */

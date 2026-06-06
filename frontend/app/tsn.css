@@ -47,7 +47,7 @@
 
   min-height: 100vh;
 
-  background:
+  /* background:
     radial-gradient(
       circle at 12% 0%,
       rgba(74, 190, 208, 0.16),
@@ -58,7 +58,7 @@
       rgba(255, 122, 24, 0.05),
       transparent 28%
     ),
-    linear-gradient(180deg, #080b0c 0%, var(--tsn-bg) 100%);
+    linear-gradient(180deg, #080b0c 0%, var(--tsn-bg) 100%); */
 
   color: var(--tsn-text);
 }

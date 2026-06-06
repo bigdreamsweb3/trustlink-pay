@@ -1,6 +1,8 @@
 use crate::instruction_auto::{
     ClaimEscrowParams, CreateEscrowParams, InitializeIdentityParams, InitializeProgramParams,
-    CreateTinParams, ResolveTinParams, ProgramInstruction,
+    CreateTinParams, InitializePlatformRegistryParams, LinkSensitiveFieldParams,
+    LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams, ProgramInstruction,
+    RemoveVerificationPlatformParams, ResolveTinParams, UpsertVerificationPlatformParams,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -14,7 +16,9 @@ pub mod create_escrow;
 pub mod init_program;
 pub mod initialize_identity;
 pub mod create_tin;
+pub mod identity_links;
 pub mod resolve_tin;
+pub mod platform_registry;
 
 pub struct Processor;
 
@@ -68,6 +72,42 @@ impl Processor {
                 let params = ResolveTinParams::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 resolve_tin::process(program_id, accounts, params)
+            }
+            ProgramInstruction::InitializePlatformRegistry => {
+                msg!("Instruction: InitializePlatformRegistry");
+                let params = InitializePlatformRegistryParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                platform_registry::initialize(program_id, accounts, params)
+            }
+            ProgramInstruction::UpsertVerificationPlatform => {
+                msg!("Instruction: UpsertVerificationPlatform");
+                let params = UpsertVerificationPlatformParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                platform_registry::upsert_platform(program_id, accounts, params)
+            }
+            ProgramInstruction::RemoveVerificationPlatform => {
+                msg!("Instruction: RemoveVerificationPlatform");
+                let params = RemoveVerificationPlatformParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                platform_registry::remove_platform(program_id, accounts, params)
+            }
+            ProgramInstruction::LinkSocialIdentity => {
+                msg!("Instruction: LinkSocialIdentity");
+                let params = LinkSocialIdentityParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                identity_links::link_social_identity(program_id, accounts, params)
+            }
+            ProgramInstruction::LinkSensitiveField => {
+                msg!("Instruction: LinkSensitiveField");
+                let params = LinkSensitiveFieldParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                identity_links::link_sensitive_field(program_id, accounts, params)
+            }
+            ProgramInstruction::LinkVerifiedSocialIdentity => {
+                msg!("Instruction: LinkVerifiedSocialIdentity");
+                let params = LinkVerifiedSocialIdentityParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                identity_links::link_verified_social_identity(program_id, accounts, params)
             }
         }
     }

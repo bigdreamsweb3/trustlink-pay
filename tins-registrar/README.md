@@ -22,21 +22,81 @@ TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 
 ## What The Program Stores
 
-The active `CreateTin` path stores:
+TINS has two compatible account paths:
 
-| Field | Purpose |
+| Account | Purpose |
 | --- | --- |
-| `tin` | Numeric Transfer Identity Number |
-| `display_name` | Public display name |
-| `identity_pubkey` | TINS identity PDA |
-| `encrypted_phone` | Optional encrypted application payload |
-| `created_at` | On-chain creation timestamp |
+| `IdentityRegistry` | The TIN-derived registry PDA used by protocol integrations |
+| `TinAccount` | Legacy wallet-derived account kept for compatibility |
 
-The identity PDA is derived from:
+The active protocol-grade path is `IdentityRegistry`, derived from the 10-digit TIN:
+
+```text
+["registry", tin_le_u64]
+```
+
+The legacy identity PDA is derived from:
 
 ```text
 ["identity", sha256(wallet_pubkey || "TINS_SALT_2026")]
 ```
+
+---
+
+## Encrypted Identity Graph
+
+Each `IdentityRegistry` stores a public TIN name plus encrypted identity links.
+
+| Field | Encryption model | Who can decrypt |
+| --- | --- | --- |
+| `social_identities` | AES-GCM key derived from the 10-digit TIN | Anyone with the TIN |
+| `sensitive_fields` | AES-GCM key derived from TIN + explicit user signature | Only a user-authorized resolver |
+
+Social identities are flexible records:
+
+```text
+identity_type = "whatsapp" | "x" | "email" | future platform string
+label         = user-facing route label
+metadata      = structured JSON string for UI and verification context
+nonce         = AES-GCM nonce
+ciphertext    = encrypted identity payload
+verified_by   = optional registered verification platform public key
+```
+
+Sensitive fields use the same encrypted container but require a fresh user authorization signature. The first supported example is:
+
+```text
+field_type = "kyc_document_hash"
+```
+
+This lets the registry prove that sensitive data exists without making the data public to everyone who knows the TIN.
+
+---
+
+## Verification Platform Registry
+
+The program now includes a global `PlatformRegistry` PDA:
+
+```text
+["platform-registry"]
+```
+
+The registry authority can:
+
+- initialize the platform registry
+- add verification platform public keys
+- rotate platform keys by recording `rotated_from`
+- deactivate old platform keys
+
+When a user links a verified social identity:
+
+1. the platform verifies the identity off-chain
+2. the platform signs a proof message
+3. the transaction includes an Ed25519 verification instruction
+4. the TINS program checks that the signer exists and is active in `PlatformRegistry`
+5. the encrypted identity is appended to the owner’s `IdentityRegistry`
+
+Only the TIN owner can link identities. Platform signatures prove verification; they do not replace owner authorization.
 
 ---
 
@@ -48,7 +108,7 @@ TINS is the receive identity layer.
 10-digit TIN -> identity PDA -> settlement route
 ```
 
-TrustLink Pay uses TINS as the main payment identity. Phone, WhatsApp, X, business, and other identity links can be added at the application layer later.
+TrustLink Pay uses TINS as the main payment identity. Phone, WhatsApp, X, email, business, and future routes attach to a TIN as encrypted identity links.
 
 ---
 

@@ -63,6 +63,8 @@ pub fn process(
         last_escrow_id: 0,
         created_at: Clock::get()?.unix_timestamp,
         name: params.name,
+        social_identities: Vec::new(),
+        sensitive_fields: Vec::new(),
     };
     store_borsh(registry, &registry_state)?;
 

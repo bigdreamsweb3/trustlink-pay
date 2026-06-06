@@ -5,6 +5,92 @@ pub const CURRENT_VERSION: u8 = 1;
 pub const IDENTITY_ACTIVE: u8 = 1;
 pub const ESCROW_PENDING: u8 = 0;
 pub const ESCROW_CLAIMED: u8 = 1;
+pub const PLATFORM_ACTIVE: u8 = 1;
+pub const PLATFORM_INACTIVE: u8 = 0;
+
+/// A social identity encrypted off-chain with a key derived from the 10-digit TIN.
+/// Anyone who knows the TIN can decrypt this ciphertext through the SDK.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct EncryptedSocialIdentity {
+    pub identity_type: String,
+    pub label: String,
+    pub nonce: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub metadata: String,
+    pub verified_by: Option<Pubkey>,
+    pub proof_hash: [u8; 32],
+    pub linked_at: i64,
+}
+
+impl EncryptedSocialIdentity {
+    pub fn space(&self) -> usize {
+        4 + self.identity_type.len()
+            + 4 + self.label.len()
+            + 4 + self.nonce.len()
+            + 4 + self.ciphertext.len()
+            + 4 + self.metadata.len()
+            + 1 + self.verified_by.map(|_| 32).unwrap_or(0)
+            + 32
+            + 8
+    }
+}
+
+/// A sensitive field encrypted off-chain with TIN + explicit user signature material.
+/// Decryption requires a fresh user authorization signature in the SDK.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct EncryptedSensitiveField {
+    pub field_type: String,
+    pub nonce: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub metadata: String,
+    pub proof_hash: [u8; 32],
+    pub linked_at: i64,
+}
+
+impl EncryptedSensitiveField {
+    pub fn space(&self) -> usize {
+        4 + self.field_type.len()
+            + 4 + self.nonce.len()
+            + 4 + self.ciphertext.len()
+            + 4 + self.metadata.len()
+            + 32
+            + 8
+    }
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct VerificationPlatform {
+    pub platform_id: String,
+    pub public_key: Pubkey,
+    pub status: u8,
+    pub added_at: i64,
+    pub rotated_from: Option<Pubkey>,
+}
+
+impl VerificationPlatform {
+    pub fn space(&self) -> usize {
+        4 + self.platform_id.len() + 32 + 1 + 8 + 1 + self.rotated_from.map(|_| 32).unwrap_or(0)
+    }
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct PlatformRegistry {
+    pub version: u8,
+    pub bump: u8,
+    pub authority: Pubkey,
+    pub platforms: Vec<VerificationPlatform>,
+    pub reserved: [u8; 6],
+}
+
+impl PlatformRegistry {
+    pub fn base_space() -> usize {
+        1 + 1 + 32 + 4 + 6
+    }
+
+    pub fn space(&self) -> usize {
+        Self::base_space() + self.platforms.iter().map(|platform| platform.space()).sum::<usize>()
+    }
+}
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
 pub struct GlobalState {
@@ -30,11 +116,22 @@ pub struct IdentityRegistry {
     pub last_escrow_id: u64,
     pub created_at: i64,
     pub name: String,
+    pub social_identities: Vec<EncryptedSocialIdentity>,
+    pub sensitive_fields: Vec<EncryptedSensitiveField>,
 }
 
 impl IdentityRegistry {
     pub fn space(name: &str) -> usize {
-        100 + name.len()
+        100 + name.len() + 4 + 4
+    }
+
+    pub fn dynamic_space(&self) -> usize {
+        100
+            + self.name.len()
+            + 4
+            + self.social_identities.iter().map(|identity| identity.space()).sum::<usize>()
+            + 4
+            + self.sensitive_fields.iter().map(|field| field.space()).sum::<usize>()
     }
 }
 

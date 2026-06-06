@@ -18,6 +18,7 @@ pub mod seeds {
     pub const ESCROW: &[u8] = b"escrow";
     pub const VAULT: &[u8] = b"vault";
     pub const IDENTITY: &[u8] = b"identity";
+    pub const PLATFORM_REGISTRY: &[u8] = b"platform-registry";
 }
 
 pub const PROGRAM_SALT: &[u8] = b"TINS_SALT_2026";
@@ -46,4 +47,8 @@ pub fn vault_pda(program_id: &Pubkey, tin: u64, escrow_id: u64) -> (Pubkey, u8) 
 
 pub fn global_state_pda(program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[seeds::GLOBAL_STATE], program_id)
+}
+
+pub fn platform_registry_pda(program_id: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[seeds::PLATFORM_REGISTRY], program_id)
 }

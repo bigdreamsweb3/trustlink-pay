@@ -1,13 +1,22 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
+    program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
+    rent::Rent,
+    system_instruction,
+    sysvar::Sysvar,
 };
 
 use crate::{error::Error, state::GlobalState};
 
 pub const MAX_IDENTITY_NAME_LEN: usize = 32;
+pub const MAX_IDENTITY_TYPE_LEN: usize = 32;
+pub const MAX_IDENTITY_LABEL_LEN: usize = 64;
+pub const MAX_IDENTITY_METADATA_LEN: usize = 512;
+pub const MAX_IDENTITY_CIPHERTEXT_LEN: usize = 1024;
+pub const MAX_IDENTITY_NONCE_LEN: usize = 32;
 pub const MAX_TIN_SEQUENCE: u64 = 999_999_999;
 
 pub fn load_borsh<T: BorshDeserialize>(account: &AccountInfo) -> Result<T, ProgramError> {
@@ -40,6 +49,60 @@ pub fn validate_name(name: &str) -> Result<(), ProgramError> {
     if name.len() > MAX_IDENTITY_NAME_LEN {
         return Err(Error::NameTooLong.into());
     }
+    Ok(())
+}
+
+pub fn validate_identity_type(value: &str) -> Result<(), ProgramError> {
+    if value.trim().is_empty() || value.len() > MAX_IDENTITY_TYPE_LEN {
+        return Err(Error::InvalidInstruction.into());
+    }
+    Ok(())
+}
+
+pub fn validate_identity_label(value: &str) -> Result<(), ProgramError> {
+    if value.len() > MAX_IDENTITY_LABEL_LEN {
+        return Err(Error::InvalidInstruction.into());
+    }
+    Ok(())
+}
+
+pub fn validate_metadata(value: &str) -> Result<(), ProgramError> {
+    if value.len() > MAX_IDENTITY_METADATA_LEN {
+        return Err(Error::InvalidInstruction.into());
+    }
+    Ok(())
+}
+
+pub fn validate_encrypted_blob(nonce: &[u8], ciphertext: &[u8]) -> Result<(), ProgramError> {
+    if nonce.is_empty()
+        || nonce.len() > MAX_IDENTITY_NONCE_LEN
+        || ciphertext.is_empty()
+        || ciphertext.len() > MAX_IDENTITY_CIPHERTEXT_LEN
+    {
+        return Err(Error::InvalidInstruction.into());
+    }
+    Ok(())
+}
+
+pub fn top_up_and_realloc<'a>(
+    payer: &AccountInfo<'a>,
+    target: &AccountInfo<'a>,
+    system_program: &AccountInfo<'a>,
+    new_space: usize,
+) -> Result<(), ProgramError> {
+    let rent = Rent::get()?;
+    let required_lamports = rent.minimum_balance(new_space);
+    let current_lamports = **target.lamports.borrow();
+    if required_lamports > current_lamports {
+        let top_up = required_lamports
+            .checked_sub(current_lamports)
+            .ok_or(Error::Overflow)?;
+        invoke(
+            &system_instruction::transfer(payer.key, target.key, top_up),
+            &[payer.clone(), target.clone(), system_program.clone()],
+        )?;
+    }
+    target.realloc(new_space, false)?;
     Ok(())
 }
 

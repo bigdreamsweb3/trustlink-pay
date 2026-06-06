@@ -10,7 +10,6 @@ import {
   UserRoundCheck,
   Wallet,
   Zap,
-  Users,
   Globe,
   KeyRound,
   ChevronRight,
@@ -38,12 +37,7 @@ const heroStats = [
   { label: "Network", value: "Solana", note: "stablecoin payments over TSN" },
 ];
 
-const keyMetrics = [
-  { icon: Zap, value: "4,000+", label: "TPS Peak", note: "Solana throughput" },
-  { icon: Users, value: "5,000+", label: "TINs Created", note: "on devnet" },
-  { icon: MessageCircle, value: "2,400+", label: "Social IDs Linked", note: "WhatsApp verified" },
-  { icon: Code2, value: "3", label: "SDKs Available", note: "TINS, TSN, Cranker" },
-];
+const keyMetrics = [];
 
 const transparentFeesRows = [
   ["Transfer amount", "The amount to be sent"],
@@ -185,27 +179,6 @@ export function LandingPage() {
       </section>
 
 
-      {/* KEY METRICS SECTION */}
-      <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
-        <div className="text-center mb-10">
-          <h2 className="tl-h2">Protocol Metrics</h2>
-          <p className="mt-2 text-[var(--text-soft)]">Real-time performance and adoption numbers</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {keyMetrics.map(({ icon: Icon, value, label, note }) => (
-            <div key={label} className="tl-panel rounded-[18px] p-6 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--accent-soft)] mb-4">
-                <Icon className="h-6 w-6 text-accent" />
-              </div>
-              <p className="text-2xl font-black text-[var(--text)]">{value}</p>
-              <p className="mt-1 text-sm font-semibold text-[var(--text-soft)]">{label}</p>
-              <p className="mt-1 text-xs text-[var(--text-faint)]">{note}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
       {/* SECTION: IDENTITY-FIRST */}
       <section id="identity-first" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
         <div className="min-w-0">
@@ -248,7 +221,7 @@ export function LandingPage() {
           <div className="grid gap-4">
             {[
               { icon: KeyRound, title: "Wallet-Linked Identity", desc: "Each TIN maps to one or more wallets with privacy controls" },
-              { icon: Globe, title: "Portable Across Apps", desc: "Same TIN works across any TrustLink-integrated application" },
+              { icon: Globe, title: "TSN Network", desc: "TINs are recognized across the TSN settlement network" },
               { icon: Lock, title: "Address Protection", desc: "Your actual wallet address stays hidden from recipients" },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="tl-panel rounded-[18px] p-5 flex items-start gap-4">

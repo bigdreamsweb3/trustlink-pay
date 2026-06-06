@@ -12,7 +12,6 @@ import {
   Zap,
   Globe,
   KeyRound,
-  ChevronRight,
   MessageCircle,
   Twitter,
   Send,
@@ -25,6 +24,8 @@ import {
   Lock,
   Eye,
   Fingerprint,
+  Activity,
+  Users,
 } from "lucide-react";
 
 import { SiteHeader } from "@/src/components/layout/site-header";
@@ -37,7 +38,13 @@ const heroStats = [
   { label: "Network", value: "Solana", note: "stablecoin payments over TSN" },
 ];
 
-const keyMetrics = [];
+// Key metrics data
+const keyMetrics = [
+  { icon: Activity, value: "4,000+", label: "TPS Peak", note: "Solana throughput" },
+  { icon: Users, value: "5,000+", label: "TINs Created", note: "on devnet" },
+  { icon: MessageCircle, value: "2,400+", label: "Social IDs Linked", note: "WhatsApp verified" },
+  { icon: Layers, value: "3", label: "SDKs Available", note: "TINS, TSN, Cranker" },
+];
 
 const transparentFeesRows = [
   ["Transfer amount", "The amount to be sent"],
@@ -211,6 +218,27 @@ export function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+
+      {/* KEY METRICS SECTION */}
+      <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
+        <div className="text-center mb-5">
+          <h2 className="tl-h2">Protocol Metrics</h2>
+          <p className="mt-1 text-sm text-[var(--text-soft)]">Real-time performance and adoption numbers</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {keyMetrics.map(({ icon: Icon, value, label, note }) => (
+            <div key={label} className="tl-panel rounded-[18px] px-4 py-4 text-center">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--accent-soft)] mb-3">
+                <Icon className="h-5 w-5 text-accent" />
+              </div>
+              <p className="text-xl font-black text-[var(--text)]">{value}</p>
+              <p className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text-soft)]">{label}</p>
+              <p className="mt-0.5 text-[0.62rem] text-[var(--text-faint)]">{note}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -593,9 +621,9 @@ export function LandingPage() {
       {/* SECTION: CTA */}
       <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 pb-14 sm:px-6 lg:px-0">
         <div className="tl-panel rounded-[18px] p-4 md:p-6 text-center bg-gradient-to-b from-[var(--bg)] to-[var(--bg-soft)] border border-[var(--field-border)]">
-          <h2 className="tl-h2 mb-4">Ready to Experience Identity-First Payments?</h2>
-          <p className="text-[var(--text-soft)] max-w-[600px] mx-auto mb-8">
-            Join thousands of users on devnet and discover how TrustLink Pay makes stablecoin payments feel familiar while keeping your wallet address private.
+          <h2 className="tl-h2 mb-3">Ready to Experience Identity-First Payments?</h2>
+          <p className="text-[var(--text-soft)] max-w-[500px] mx-auto mb-5">
+            Experience stablecoin payments that feel familiar while keeping your wallet address private. TrustLink Pay brings gasless, identity-first payments to Solana.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/app" className="tl-button-primary tl-btn inline-flex items-center gap-2 rounded-[14px] px-6 py-3">

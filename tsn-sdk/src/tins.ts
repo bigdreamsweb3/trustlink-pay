@@ -497,7 +497,7 @@ function randomNonce(length = 12) {
 }
 
 async function importAesKey(keyMaterial: Uint8Array) {
-  return getWebCrypto().subtle.importKey("raw", keyMaterial, "AES-GCM", false, ["encrypt", "decrypt"]);
+  return getWebCrypto().subtle.importKey("raw", keyMaterial as any, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
 
 export function deriveTinSocialKey(tin: bigint | number | string) {
@@ -537,7 +537,7 @@ export async function encryptTinSocialIdentity(params: {
   const nonce = params.nonce ?? randomNonce();
   const key = await importAesKey(deriveTinSocialKey(params.tin));
   const ciphertext = new Uint8Array(
-    await getWebCrypto().subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, TEXT_ENCODER.encode(params.value)),
+    await getWebCrypto().subtle.encrypt({ name: "AES-GCM", iv: nonce as any }, key, TEXT_ENCODER.encode(params.value) as any),
   );
   return { nonce, ciphertext };
 }
@@ -549,9 +549,9 @@ export async function decryptTinSocialIdentity(params: {
 }) {
   const key = await importAesKey(deriveTinSocialKey(params.tin));
   const plaintext = await getWebCrypto().subtle.decrypt(
-    { name: "AES-GCM", iv: params.nonce },
+    { name: "AES-GCM", iv: params.nonce as any },
     key,
-    params.ciphertext,
+    params.ciphertext as any,
   );
   return TEXT_DECODER.decode(plaintext);
 }
@@ -566,7 +566,7 @@ export async function encryptTinSensitiveField(params: {
   const nonce = params.nonce ?? randomNonce();
   const key = await importAesKey(deriveTinSensitiveKey(params));
   const ciphertext = new Uint8Array(
-    await getWebCrypto().subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, TEXT_ENCODER.encode(params.value)),
+    await getWebCrypto().subtle.encrypt({ name: "AES-GCM", iv: nonce as any }, key, TEXT_ENCODER.encode(params.value) as any),
   );
   const signatureBytes =
     typeof params.userSignature === "string"
@@ -584,9 +584,9 @@ export async function decryptTinSensitiveField(params: {
 }) {
   const key = await importAesKey(deriveTinSensitiveKey(params));
   const plaintext = await getWebCrypto().subtle.decrypt(
-    { name: "AES-GCM", iv: params.nonce },
+    { name: "AES-GCM", iv: params.nonce as any },
     key,
-    params.ciphertext,
+    params.ciphertext as any,
   );
   return TEXT_DECODER.decode(plaintext);
 }

@@ -46,24 +46,60 @@ const transparentFeesRows = [
   ["Recipient readiness", "Status of the recipient identity"],
 ];
 
-const devSnippet = {
-  title: "Programmable Payment Infrastructure",
-  code: `const recipient = await tsn.resolveRecipient({
-  identifier: "4872193041",
-  type: "tin",
-});
-
-const quote = await tsn.quotePayment({
-  recipientTIN: recipient.tin,
-  amount: 100_000_000,
-  mint: USDC_MINT,
-});
-
-const intent = await tsn.createPaymentIntent({
-  quoteId: quote.id,
-  senderWallet: wallet.publicKey,
-});`
-};
+const codeLines = [
+  { token: "keyword", text: "const" },
+  { token: "variable", text: "recipient" },
+  { token: "operator", text: " = " },
+  { token: "function", text: "await tsn.resolveRecipient" },
+  { token: "punctuation", text: "({" },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "identifier" },
+  { token: "operator", text: ": " },
+  { token: "string", text: '"4872193041"' },
+  { token: "punctuation", text: "," },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "type" },
+  { token: "operator", text: ": " },
+  { token: "string", text: '"tin"' },
+  { token: "punctuation", text: "\n  });" },
+  { token: "break", text: "\n\n" },
+  { token: "keyword", text: "const" },
+  { token: "variable", text: "quote" },
+  { token: "operator", text: " = " },
+  { token: "function", text: "await tsn.quotePayment" },
+  { token: "punctuation", text: "({" },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "recipientTIN" },
+  { token: "punctuation", text: ": " },
+  { token: "variable", text: "recipient.tin" },
+  { token: "punctuation", text: "," },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "amount" },
+  { token: "operator", text: ": " },
+  { token: "number", text: "100_000_000" },
+  { token: "punctuation", text: "," },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "mint" },
+  { token: "operator", text: ": " },
+  { token: "variable", text: "USDC_MINT" },
+  { token: "punctuation", text: "\n  });" },
+  { token: "break", text: "\n\n" },
+  { token: "keyword", text: "const" },
+  { token: "variable", text: "intent" },
+  { token: "operator", text: " = " },
+  { token: "function", text: "await tsn.createPaymentIntent" },
+  { token: "punctuation", text: "({" },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "quoteId" },
+  { token: "operator", text: ": " },
+  { token: "variable", text: "quote.id" },
+  { token: "punctuation", text: "," },
+  { token: "break", text: "\n    " },
+  { token: "property", text: "senderWallet" },
+  { token: "operator", text: ": " },
+  { token: "variable", text: "wallet.publicKey" },
+  { token: "punctuation", text: "\n  });" },
+];
 
 const sdkFeatures = [
   { icon: KeyRound, title: "Identity Resolution", desc: "Resolve TINs to wallet addresses with privacy" },
@@ -180,7 +216,7 @@ export function LandingPage() {
 
 
       {/* SECTION: IDENTITY-FIRST */}
-      <section id="identity-first" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
+      <section id="identity-first" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
         <div className="min-w-0">
           <SectionLabel index="01" title="Identity-First Payments" />
           <h2 className="tl-h2 mt-5 text-balance">
@@ -203,7 +239,7 @@ export function LandingPage() {
 
 
       {/* TIN SYSTEM EXPLAINER */}
-      <section id="tin-system" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section id="tin-system" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="02" title="TIN Identity System" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
@@ -224,7 +260,7 @@ export function LandingPage() {
               { icon: Globe, title: "TSN Network", desc: "TINs are recognized across the TSN settlement network" },
               { icon: Lock, title: "Address Protection", desc: "Your actual wallet address stays hidden from recipients" },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="tl-panel rounded-[18px] p-5 flex items-start gap-4">
+              <div key={title} className="tl-panel rounded-[14px] p-3 flex items-start gap-4">
                 <div className="p-2 rounded-[10px] bg-[var(--accent-soft)]">
                   <Icon className="h-5 w-5 text-accent" />
                 </div>
@@ -240,8 +276,8 @@ export function LandingPage() {
 
 
       {/* SOCIAL IDENTITY SECTION */}
-      <section id="social-identity" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-0">
-        <div className="tl-panel rounded-[24px] p-8">
+      <section id="social-identity" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-8 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-0">
+        <div className="tl-panel rounded-[18px] p-4">
           <SectionLabel index="03" title="Social Confidence Layer" />
           <h2 className="tl-h2 mt-5">
             Verify recipients through linked social identities.
@@ -273,7 +309,7 @@ export function LandingPage() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
-          <div className="tl-panel rounded-[18px] p-6 flex-1">
+          <div className="tl-panel rounded-[14px] p-4 flex-1">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-[#25D366]/10 flex items-center justify-center">
                 <MessageCircle className="h-5 w-5 text-[#25D366]" />
@@ -298,7 +334,7 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="tl-panel rounded-[18px] p-6 bg-[var(--surface-soft)] border-dashed">
+          <div className="tl-panel rounded-[14px] p-4 bg-[var(--surface-soft)] border-dashed">
             <p className="text-sm font-semibold text-[var(--text-soft)] mb-2">Coming Soon</p>
             <p className="text-xs text-[var(--text-faint)]">X Business accounts, Telegram, and additional social platforms will expand verification options.</p>
           </div>
@@ -307,7 +343,7 @@ export function LandingPage() {
 
 
       {/* SECTION: WHY ESCROW */}
-      <section id="escrow-settlement" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
+      <section id="escrow-settlement" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
         <div className="min-w-0">
           <SectionLabel index="04" title="Escrow & Settlement" />
           <h2 className="tl-h2 mt-5">
@@ -324,7 +360,7 @@ export function LandingPage() {
             [UserRoundCheck, "Support onboarding flows"],
             [Code2, "Programmable settlement infrastructure"],
           ].map(([Icon, title], idx) => (
-            <article key={idx} className="tl-panel rounded-[18px] p-5 flex items-center gap-4">
+            <article key={idx} className="tl-panel rounded-[14px] p-3 flex items-center gap-4">
               {/* @ts-ignore */}
               <Icon className="h-6 w-6 text-accent shrink-0" />
               <h3 className="text-[0.95rem] font-bold text-[var(--text)]">{String(title)}</h3>
@@ -334,44 +370,15 @@ export function LandingPage() {
       </section>
 
 
-      {/* PAYMENT FLOW VISUAL */}
-      <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
-        <div className="tl-panel rounded-[24px] p-8 md:p-12">
-          <h2 className="tl-h2 text-center mb-8">How Gasless Payments Work</h2>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-0">
-            {[
-              { label: "Sender", sublabel: "Creates payment intent", icon: Wallet },
-              { label: "Escrow", sublabel: "Funds held securely", icon: LockKeyhole },
-              { label: "TSN", sublabel: "Settlement coordination", icon: Layers },
-              { label: "Recipient", sublabel: "Claims payment", icon: UserRoundCheck },
-            ].map(({ label, sublabel, icon: Icon }, idx) => (
-              <div key={label} className="flex items-center">
-                <div className="flex flex-col items-center p-4">
-                  <div className="w-16 h-16 rounded-full bg-[var(--accent-soft)] flex items-center justify-center mb-3">
-                    <Icon className="h-8 w-8 text-accent" />
-                  </div>
-                  <p className="font-bold text-[var(--text)]">{label}</p>
-                  <p className="text-xs text-[var(--text-faint)]">{sublabel}</p>
-                </div>
-                {idx < 3 && (
-                  <ChevronRight className="h-6 w-6 text-[var(--text-faint)] mx-2 hidden md:block" />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-[var(--text-soft)] mt-8 max-w-[600px] mx-auto">
-            Gas fees are included in the token amount being sent. Crankers verify settlement and process claims — all without requiring SOL in the sender&apos;s wallet.
-          </p>
-        </div>
-      </section>
+
 
 
       {/* SECURITY SECTION */}
-      <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="05" title="Security & Trust" />
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {securityFeatures.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="tl-panel rounded-[18px] p-6 text-center">
+            <div key={title} className="tl-panel rounded-[14px] p-4 text-center">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[var(--accent-soft)] mb-4">
                 <Icon className="h-7 w-7 text-accent" />
               </div>
@@ -384,7 +391,7 @@ export function LandingPage() {
 
 
       {/* SECTION: FEES TRANSPARENCY */}
-      <section id="fees" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section id="fees" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="06" title="Fees & Transparency" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2 items-center">
           <div>
@@ -402,7 +409,7 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="tl-panel rounded-[18px] p-6">
+          <div className="tl-panel rounded-[14px] p-4">
             <h3 className="text-lg font-bold text-[var(--text)] mb-4">Fee Distribution</h3>
             <div className="space-y-4">
               {feeDistribution.map(({ role, share, desc }) => (
@@ -423,7 +430,7 @@ export function LandingPage() {
 
 
       {/* SECTION: TSN & FEES */}
-      <section id="tsn" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section id="tsn" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="07" title="Transfer Settlement Network" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
@@ -438,7 +445,7 @@ export function LandingPage() {
               <em>At launch, TrustLink operates the settlement infrastructure directly while the network matures.</em>
             </p>
           </div>
-          <div className="tl-panel rounded-[18px] p-6">
+          <div className="tl-panel rounded-[14px] p-4">
             <h3 className="text-[1.2rem] font-black text-[var(--text)] mb-4">Transparent Fees</h3>
             <p className="text-[0.92rem] leading-7 text-[var(--text-soft)] mb-6">
               TrustLink separates network fees, settlement fees, and infrastructure costs instead of combining everything into a single unclear transaction cost.
@@ -457,7 +464,7 @@ export function LandingPage() {
 
 
       {/* SECTION: TINS */}
-      <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
+      <section id="tins" className="mx-auto grid w-full max-w-[1180px] scroll-mt-28 gap-8 px-2 py-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-0">
         <div className="min-w-0">
           <SectionLabel index="08" title="TINS" />
           <h2 className="tl-h2 mt-5">
@@ -473,7 +480,7 @@ export function LandingPage() {
             [Network, "Connects multiple identifiers", "A TIN can eventually connect phone numbers, social handles, and merchant profiles to the same settlement identity."],
             [Gauge, "Developer-accessible", "Provides developer-accessible identity infrastructure for the entire ecosystem."],
           ].map(([Icon, title, body]) => (
-            <article key={String(title)} className="tl-panel rounded-[18px] p-5">
+            <article key={String(title)} className="tl-panel rounded-[14px] p-3">
               {/* @ts-ignore */}
               <Icon className="h-5 w-5 text-accent" />
               <h3 className="tl-h3 mt-4">{String(title)}</h3>
@@ -485,7 +492,7 @@ export function LandingPage() {
 
 
       {/* SECTION: DEVELOPERS */}
-      <section id="developers" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section id="developers" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="09" title="For Developers" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2 items-center">
           <div>
@@ -519,13 +526,19 @@ export function LandingPage() {
               </Link>
             </div>
           </div>
-          <article className="tl-panel overflow-hidden rounded-[18px]">
-            <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-3">
+          <article className="tl-panel overflow-hidden rounded-[14px]">
+            <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-2">
               <Code2 className="h-4 w-4 text-accent" />
-              <h3 className="tl-label text-accent">{devSnippet.title}</h3>
+              <h3 className="tl-label text-accent">Programmable Payment Infrastructure</h3>
             </div>
-            <pre className="tl-code overflow-x-auto p-4 text-sm leading-7">
-              <code>{devSnippet.code}</code>
+            <pre className="tl-code overflow-x-auto p-4 text-sm leading-6">
+              <code>
+                {codeLines.map((line, i) => (
+                  <span key={i} className={line.token === "break" ? "" : `code-${line.token}`}>
+                    {line.text}
+                  </span>
+                ))}
+              </code>
             </pre>
           </article>
         </div>
@@ -533,10 +546,10 @@ export function LandingPage() {
 
 
       {/* SECTION: CURRENT STATUS & ROADMAP */}
-      <section id="status" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-14 sm:px-6 lg:px-0">
+      <section id="status" className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 py-8 sm:px-6 lg:px-0">
         <SectionLabel index="10" title="Status & Roadmap" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
-          <div className="tl-panel rounded-[24px] p-8">
+          <div className="tl-panel rounded-[18px] p-4">
             <h2 className="tl-h2 mb-6">Current Status</h2>
             <div className="flex flex-wrap gap-3">
               {[
@@ -558,7 +571,7 @@ export function LandingPage() {
           <div className="space-y-4">
             <h2 className="tl-h2">Roadmap</h2>
             {roadmapItems.map(({ status, title, desc }) => (
-              <div key={title} className="tl-panel rounded-[18px] p-5 flex items-start gap-4">
+              <div key={title} className="tl-panel rounded-[14px] p-3 flex items-start gap-4">
                 <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                   status === "live" ? "bg-accent/20" : status === "soon" ? "bg-warning/20" : "bg-[var(--surface-soft)]"
                 }`}>
@@ -579,7 +592,7 @@ export function LandingPage() {
 
       {/* SECTION: CTA */}
       <section className="mx-auto w-full max-w-[1180px] scroll-mt-28 px-2 pb-14 sm:px-6 lg:px-0">
-        <div className="tl-panel rounded-[24px] p-8 md:p-12 text-center bg-gradient-to-b from-[var(--bg)] to-[var(--bg-soft)] border border-[var(--field-border)]">
+        <div className="tl-panel rounded-[18px] p-4 md:p-6 text-center bg-gradient-to-b from-[var(--bg)] to-[var(--bg-soft)] border border-[var(--field-border)]">
           <h2 className="tl-h2 mb-4">Ready to Experience Identity-First Payments?</h2>
           <p className="text-[var(--text-soft)] max-w-[600px] mx-auto mb-8">
             Join thousands of users on devnet and discover how TrustLink Pay makes stablecoin payments feel familiar while keeping your wallet address private.

@@ -285,12 +285,15 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-start">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 md:items-stretch">
           {heroStats.map((stat) => {
             const IconComponent = stat.icon;
 
             return (
-              <div key={stat.label} className="tl-field rounded-[10px] p-3">
+              <div
+                key={stat.label}
+                className="tl-field rounded-[10px] p-3 flex h-full flex-col"
+              >
                 <div className="flex items-center gap-2">
                   <IconComponent className="h-4 w-4 shrink-0 text-accent" />
 
@@ -299,7 +302,7 @@ export function LandingPage() {
                   </p>
                 </div>
 
-                <strong className="mt-2 block text-sm font-black text-[var(--text)]">
+                <strong className="mt-2 text-sm font-black text-[var(--text)]">
                   {stat.value}
                 </strong>
 

@@ -224,10 +224,16 @@
 .tl-h2 {
   font-family: var(--font-display-face);
   font-size: clamp(1.25rem, 2.5vw, 1.75rem);
-  font-weight: 700;
-  line-height: 1.2;
+  font-weight: 900;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   color: var(--text);
+}
+
+/* Light mode enhancement */
+:root .tl-h2 {
+  font-weight: 900;
+  letter-spacing: -0.008em;
 }
 
 .tl-h3 {
@@ -241,15 +247,36 @@
 /* ── BODY TEXT ─── */
 .tl-body-lg {
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.65;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 .tl-body {
-  font-size: 0.9375rem;
-  line-height: 1.55;
+  font-size: 0.9625rem;
+  line-height: 1.65;
+  font-weight: 500;
+  letter-spacing: 0.006em;
 }
 .tl-body-sm {
-  font-size: 0.875rem;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* Light mode enhancement for better readability */
+:root .tl-body-lg {
+  font-size: 1.025rem;
+  font-weight: 550;
+}
+
+:root .tl-body {
+  font-size: 0.985rem;
+  font-weight: 550;
+}
+
+:root .tl-body-sm {
+  font-size: 0.915rem;
+  font-weight: 550;
 }
 
 /* ── UI LABELS ─── */
@@ -355,7 +382,7 @@
 
 .tl-meta-label {
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-soft);
   border-color: transparent;
 }
 
@@ -452,7 +479,7 @@
   color: var(--text-soft);
 }
 .tl-text-muted {
-  color: var(--muted);
+  color: var(--text-soft);
 }
 .tl-text-faint {
   color: var(--text-faint);
@@ -741,7 +768,7 @@ select {
    ═══════════════════════════════════════════════════════════════ */
 
 .tl-text-muted {
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .tl-text-soft {
@@ -952,7 +979,7 @@ select {
   line-height: 1;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .tl-coord-text {

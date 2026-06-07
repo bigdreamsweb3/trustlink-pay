@@ -123,9 +123,9 @@ export function IdentitySheetModal({
           </div>
         ) : (
 
-          <div className="mt-2">
-            <div className="flex items-start justify-between">
-              <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">User Identy</div>
+          <div className="">
+            <div className="flex items-start justify-between mb-3">
+              <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]"></div>
               <Link href="/app/settings" onClick={onClose} className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors">
                 <Settings className="h-3.5 w-3.5" />
               </Link>

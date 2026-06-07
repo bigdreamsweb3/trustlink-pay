@@ -42,15 +42,15 @@ const Header = memo(function Header({ elapsed, loopCount }: HeaderProps) {
   return (
     <div className="flex items-center justify-between px-0.5 select-none min-h-[20px]">
       <div className="flex items-center gap-1.5 min-w-0">
-        <Timer className="h-3 w-3 text-[var(--text)]-accent shrink-0" />
-        <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-slate-400 font-bold">
+        <Timer className="h-3 w-3 text-accent shrink-0" />
+        <span className="text-[0.6rem] font-mono uppercase tracking-[0.12em] text-text-faint font-bold">
           Settlement Clock:
         </span>
-        <span className="text-[var(--text)]-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
+        <span className="text-accent font-mono font-black inline-block min-w-[54px] text-right tabular-nums text-[0.68rem]">
           {elapsed.toFixed(2)}s
         </span>
       </div>
-      <span className="text-[0.58rem] font-mono text-slate-500 font-bold shrink-0">
+      <span className="text-[0.58rem] font-mono text-text-faint font-bold shrink-0">
         CYCLE #{loopCount + 1}
       </span>
     </div>
@@ -162,16 +162,16 @@ const ProcessGrid = memo(function ProcessGrid({
             const isActive = !isCompleted && index === currentStepIndex;
             const isPassed = isCompleted || index < currentStepIndex;
 
-            let strokeColor = "#2D3139";
+            let strokeColor = "var(--accent-border)";
             let strokeWidth = "1.5";
             let strokeDasharray = "5 4";
 
             if (isActive) {
-              strokeColor = "#22D3EE";
+              strokeColor = "var(--accent)";
               strokeWidth = "2.5";
               strokeDasharray = "none";
             } else if (isPassed) {
-              strokeColor = "#10B981";
+              strokeColor = "var(--accent-deep)";
               strokeWidth = "1.75";
               strokeDasharray = "3 2";
             }
@@ -187,7 +187,7 @@ const ProcessGrid = memo(function ProcessGrid({
                   strokeDasharray={strokeDasharray}
                   className="transition-all duration-300"
                   style={{
-                    filter: isActive ? "drop-shadow(0 0 4px rgba(34,211,238,0.4))" : "none",
+                    filter: isActive ? "drop-shadow(0 0 4px var(--accent))" : "none",
                   }}
                 />
 
@@ -195,7 +195,7 @@ const ProcessGrid = memo(function ProcessGrid({
                   <motion.path
                     d={c.pathD}
                     fill="none"
-                    stroke="rgba(34,211,238,0.85)"
+                    stroke="var(--accent)"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     initial={{ strokeDasharray: "6 6", strokeDashoffset: 0 }}
@@ -225,12 +225,12 @@ const ProcessGrid = memo(function ProcessGrid({
           const isSourceCompleted = isCompleted || index < currentStepIndex;
 
           let compassRotation = c.angle;
-          let indicatorBorderColorClass = "border-slate-800 text-slate-600 bg-slate-950";
+          let indicatorBorderColorClass = "border-accent-border text-text-faint bg-panel-soft";
 
           if (isSourceActive) {
-            indicatorBorderColorClass = "border-[#22D3EE]/50 text-[#22D3EE] bg-[#0c1626] shadow-[0_0_8px_rgba(34,211,238,0.2)]";
+            indicatorBorderColorClass = "border-accent/50 text-accent bg-accent-soft shadow-[0_0_8px_var(--accent-soft)]";
           } else if (isSourceCompleted) {
-            indicatorBorderColorClass = "border-[#10B981]/30 text-[#10B981] bg-[#10B981]/5";
+            indicatorBorderColorClass = "border-accent-deep/30 text-accent-deep bg-accent-soft";
           }
 
           return (
@@ -246,7 +246,7 @@ const ProcessGrid = memo(function ProcessGrid({
             >
               <div className={`relative flex items-center justify-center rounded-full h-6 w-6 border text-center transition-all duration-300 ${indicatorBorderColorClass}`}>
                 {isSourceActive && (
-                  <div className="absolute inset-0 rounded-full bg-cyan-500/10 animate-ping opacity-60 pointer-events-none" />
+                  <div className="absolute inset-0 rounded-full bg-accent/10 animate-ping opacity-60 pointer-events-none" />
                 )}
 
                 <motion.div
@@ -254,7 +254,7 @@ const ProcessGrid = memo(function ProcessGrid({
                   className="flex items-center justify-center w-full h-full"
                 >
                   {isSourceActive ? (
-                    <Loader2 className="h-3.5 w-3.5 text-[#22D3EE] animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" />
                   ) : (
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.2]" />
                   )}
@@ -264,24 +264,24 @@ const ProcessGrid = memo(function ProcessGrid({
           );
         })}
 
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 gap-y-5 gap-x-3 sm:gap-y-7 sm:gap-x-6 px-0.5 relative w-full min-w-0 z-10 leading-none">
+        <div className="grid grid-cols-1 min-[320px]:grid-cols-2 sm:grid-cols-3 gap-y-5 gap-x-3 sm:gap-y-7 sm:gap-x-6 px-0.5 relative w-full min-w-0 z-10 leading-none">
           {steps.map((step, idx) => {
             const nodeCompleted = isCompleted || idx < currentStepIndex;
             const nodeActive = !isCompleted && idx === currentStepIndex;
             const nodePending = !isCompleted && idx > currentStepIndex;
 
-            let cardBgClass = "bg-[#151619]/60 border-[#2D3139] opacity-35";
-            let titleColorClass = "text-slate-400";
-            let numMarkerBg = "text-slate-500 bg-slate-800/40 border-slate-700/30";
+            let cardBgClass = "bg-panel-soft border-accent-border/30 opacity-35";
+            let titleColorClass = "text-text-faint";
+            let numMarkerBg = "text-text-faint bg-accent-soft/40 border-accent-border/30";
 
             if (nodeActive) {
-              cardBgClass = "bg-[#151619]/90 border-[#22D3EE] shadow-[0_0_12px_rgba(34,211,238,0.12)] opacity-100";
-              titleColorClass = "text-[#22D3EE] font-bold font-sans";
-              numMarkerBg = "text-slate-950 bg-[#22D3EE] font-black";
+              cardBgClass = "bg-panel border-accent shadow-[0_0_12px_rgba(46,168,134,0.12)] opacity-100";
+              titleColorClass = "text-accent font-bold font-sans";
+              numMarkerBg = "text-panel bg-accent font-black";
             } else if (nodeCompleted) {
-              cardBgClass = "bg-[#151619]/90 border-[#10B981] opacity-100";
-              titleColorClass = "text-[#10B981] font-semibold font-sans";
-              numMarkerBg = "text-[#10B981] bg-[#10B981]/15 border-[#10B981]/25";
+              cardBgClass = "bg-panel border-accent opacity-100";
+              titleColorClass = "text-accent font-semibold font-sans";
+              numMarkerBg = "text-accent bg-accent-soft border-accent-border";
             }
 
             return (
@@ -293,13 +293,13 @@ const ProcessGrid = memo(function ProcessGrid({
                 className="relative min-w-0 rounded-xl pointer-events-auto transition-all duration-300"
               >
                 {nodeActive && (
-                  <div className="absolute -inset-[1.5px] bg-gradient-to-r from-[#22D3EE]/25 to-transparent rounded-xl blur-[1.5px]" />
+                  <div className="absolute -inset-[1.5px] bg-gradient-to-r from-accent/25 to-transparent rounded-xl blur-[1.5px]" />
                 )}
 
                 <div className={`relative flex min-w-0 flex-col justify-between rounded-xl border p-3 h-[78px] transition-all duration-300 backdrop-blur-sm ${cardBgClass}`}>
                   {nodeActive && (
                     <motion.div
-                      className="absolute bottom-0 left-0 bg-gradient-to-r from-[#22D3EE]/30 to-transparent h-[1.5px]"
+                      className="absolute bottom-0 left-0 bg-gradient-to-r from-accent/30 to-transparent h-[1.5px]"
                       initial={{ width: "0%" }}
                       animate={{ width: `${stepProgress}%` }}
                       transition={{ duration: 0.02 }}
@@ -317,14 +317,14 @@ const ProcessGrid = memo(function ProcessGrid({
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 350, damping: 14 }}
-                          className="flex h-3.5 w-3.5 bg-[#10B981]/15 border border-[#10B981]/30 rounded-full items-center justify-center text-[#10B981]"
+                          className="flex h-3.5 w-3.5 bg-accent-soft border border-accent/30 rounded-full items-center justify-center text-accent"
                         >
                           <Check className="h-1.8 w-1.8 stroke-[3.5]" />
                         </motion.div>
                       )}
 
-                      {nodeActive && <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin" />}
-                      {nodePending && <div className="h-1 w-1 rounded-full bg-slate-700" />}
+                      {nodeActive && <Loader2 className="h-3 w-3 text-accent animate-spin" />}
+                      {nodePending && <div className="h-1 w-1 rounded-full bg-accent-border" />}
                     </div>
                   </div>
 
@@ -332,7 +332,7 @@ const ProcessGrid = memo(function ProcessGrid({
                     {step.label}
                   </span>
 
-                  <span className="text-[0.55rem] font-mono text-slate-500 leading-none truncate select-text">
+                  <span className="text-[0.55rem] font-mono text-text-faint leading-none truncate select-text">
                     {nodeActive ? `${stepProgress.toFixed(0)}% • ${step.statusText}` : nodeCompleted ? null : "Awaiting step"}
                   </span>
                 </div>
@@ -370,27 +370,27 @@ const StatusBanner = memo(function StatusBanner({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="absolute inset-0  border-t border-[#10B981]/25 bg-gradient-to-r from-[#10B981]/10 to-[#10B981]/5 px-3 py-2 flex items-center justify-between text-[#e2e8f0] shadow-[0_4px_20px_rgba(16,185,129,0.06)] select-none transform-gpu"
+            className="absolute inset-0 border-t border-accent/25 bg-accent-soft px-3 py-2 flex items-center justify-between text-text shadow-softbox select-none transform-gpu"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-[#10B981]/15 border border-[#10B981]/25 shrink-0">
-                <Zap className="h-3 w-3 text-[#10B981] fill-[#10B981]/20" />
+              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-accent-soft border border-accent/25 shrink-0">
+                <Zap className="h-3 w-3 text-accent fill-accent/20" />
               </div>
               <div className="min-w-0">
-                <span className="block text-[0.58rem] font-mono text-[#10B981] uppercase font-black tracking-widest leading-none">
+                <span className="block text-[0.58rem] font-mono text-accent uppercase font-black tracking-widest leading-none">
                   Settlement Verified
                 </span>
-                <span className="block text-[0.66rem] font-semibold text-slate-300 mt-1 leading-none truncate select-text">
+                <span className="block text-[0.66rem] font-semibold text-text-soft mt-1 leading-none truncate select-text">
                   Epoch records verified perfectly on Solana
                 </span>
               </div>
             </div>
 
             <div className="text-right shrink-0 ml-3">
-              <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-slate-500 leading-none">
+              <span className="block text-[0.5rem] font-mono uppercase tracking-wider text-text-faint leading-none">
                 Total Time
               </span>
-              <strong className="block text-[0.85rem] font-display font-black text-[#10B981] mt-0.5 whitespace-nowrap tabular-nums min-w-[52px]">
+              <strong className="block text-[0.85rem] font-display font-black text-accent mt-0.5 whitespace-nowrap tabular-nums min-w-[52px]">
                 {elapsed.toFixed(2)}s
               </strong>
             </div>
@@ -402,16 +402,16 @@ const StatusBanner = memo(function StatusBanner({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute inset-0 border-t border-white/5 bg-[#111114]/10 px-3 py-2 flex items-center justify-between text-slate-400 select-none transform-gpu"
+            className="absolute inset-0 border-t border-accent-border bg-panel-soft/50 px-3 py-2 flex items-center justify-between text-text-faint select-none transform-gpu"
           >
             <div className="flex items-center gap-2 min-w-0 overflow-hidden text-ellipsis">
-              <Loader2 className="h-3 w-3 text-[#22D3EE] animate-spin shrink-0" />
-              <span className="text-[0.62rem] font-mono leading-none tracking-wide text-slate-400 truncate select-text">
+              <Loader2 className="h-3 w-3 text-accent animate-spin shrink-0" />
+              <span className="text-[0.62rem] font-mono leading-none tracking-wide text-text-faint truncate select-text">
                 Active Protocol Pipeline:{" "}
-                <span className="text-[#22D3EE] font-bold">{activeStep?.statusText}</span>
+                <span className="text-accent font-bold">{activeStep?.statusText}</span>
               </span>
             </div>
-            <span className="text-[0.55rem] font-mono text-slate-500 uppercase tracking-widest shrink-0 ml-3 font-bold">
+            <span className="text-[0.55rem] font-mono text-text-faint uppercase tracking-widest shrink-0 ml-3 font-bold">
               Active
             </span>
           </motion.div>
@@ -487,7 +487,7 @@ export function TxProcessAnimator() {
       <div className="relative z-10 flex min-w-0 items-center justify-between gap-4">
         <div className="tl-panel-header w-full min-w-0">
           <div className="mx-3 w-full min-w-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="tl-meta-label max-w-full text-[0.65rem] uppercase leading-5 tracking-[0.2em] text-[var(--text-faint)]">
+            <p className="tl-meta-label max-w-full text-[0.65rem] uppercase leading-5 tracking-[0.2em] text-text-faint">
               How a payment works?
             </p>
 
@@ -509,7 +509,7 @@ export function TxProcessAnimator() {
 
 
       {/* Main Container View Box */}
-      <div className="relative flex gap-0 flex-col w-full min-w-0 max-w-full overflow-hidden contain-layout rounded-xl border border-[#2D3139]/80 bg-[#111215]/40 backdrop-blur-md">
+      <div className="relative flex gap-0 flex-col w-full min-w-0 max-w-full overflow-hidden contain-layout rounded-b-xl border border-accent-border/50 bg-panel-soft backdrop-blur-md">
         {/* Grid overlay */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[1.04]"
@@ -530,7 +530,7 @@ export function TxProcessAnimator() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.99, y: -4 }}
               transition={{ ease: "easeInOut", duration: 0.35 }}
-              className="p-2.5 md:p-3 relative gap-1.5 flex min-w-0 flex-col justify-between min-h-55"
+              className="relative gap-1.5 flex min-w-0 flex-col justify-between min-h-55"
             >
               <div className="p-2.5 md:p-3 relative min-w-0 gap-1.5">
                 <div className="mb-2.5 relative z-10">
@@ -548,7 +548,7 @@ export function TxProcessAnimator() {
 
               </div>
 
-              <div className="mt-4 relative z-10 -mx-2.5 md:-mx-3 -mb-3">
+              <div className="p-2.5 md:p-3 mt-4 relative z-10 -mx-2.5 md:-mx-3 -mb-3">
                 <StatusBanner
                   isCompleted={isCompleted}
                   currentStepIndex={currentStepIndex}
@@ -585,7 +585,7 @@ export function TxProcessAnimator() {
 
 export default function App() {
   return (
-    <div className="relative min-h-screen bg-[#0C0D0E] text-[#E0E2E5] flex flex-col items-center justify-center font-sans p-4 overflow-hidden">
+    <div className="relative min-h-screen bg-bg text-text flex flex-col items-center justify-center font-sans p-4 overflow-hidden">
       <div className="absolute inset-0 bg-radial-[circle_at_center_top,rgba(34,211,238,0.015)_0%,transparent_60%] pointer-events-none z-0" />
       <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none z-0" />
 
@@ -601,7 +601,7 @@ export default function App() {
       />
 
       {/* Core Presentation Window Frame */}
-      <div className="w-full max-w-4xl bg-[#111215]/95 border border-[#2D3139] rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/60 relative z-10 overflow-hidden">
+      <div className="w-full max-w-4xl bg-panel border border-accent-border rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/60 relative z-10 overflow-hidden">
         <TxProcessAnimator />
       </div>
     </div>

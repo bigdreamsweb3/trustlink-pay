@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
@@ -18,6 +18,33 @@ const navItems = [
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Check localStorage or system preference
+    const saved = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDarkTheme = saved ? saved === "dark" : prefersDark;
+    setIsDark(isDarkTheme);
+    if (isDarkTheme) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    localStorage.setItem("theme", newIsDark ? "dark" : "light");
+    if (newIsDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
   useEffect(() => { function h() { setHeaderScrolled(window.scrollY > 8); } h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []);
 
@@ -25,9 +52,34 @@ export function SiteHeader() {
   return (
     <>
       <header className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-bg/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}>
-        <div className="mx-auto flex max-h-fit md:min-h-16  w-full max-w-[1180px] items-center justify-between gap-3 py-2.5 px-4 md:px-6">
+        <div className="mx-auto flex max-h-fit md:min-h-16  w-full max-w-[1280px] items-center justify-between gap-3 py-2.5 px-4 md:px-2.5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
+
+            <div
+              className="flex items-center gap-2 whitespace-nowrap"
+              onClick={() => setMenuOpen(false)}
+            >
+              <Link
+                href="/"
+                className="flex items-center gap-1 whitespace-nowrap"
+              >
+                <TrustLinkMark compact />
+
+                <span className="text-[0.65rem] font-black uppercase tracking-widest text-accent-deep">
+                  TrustLink Pay
+                </span>
+              </Link>
+
+              <Link
+                href="/#tsn-protocol"
+                className="tl-text-muted text-[0.6rem] tracking-[0.22em] leading-none whitespace-nowrap"
+              >
+                TSN
+                <span className="hidden md:inline"> Protocol</span>
+              </Link>
+            </div>
+
+            {/* <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
               <TrustLinkMark compact />
               <div className="min-w-0 flex  items-center gap-1.5">
                 <div className="rounded-full text-accent-deep px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] sm:inline-flex">TrustLink Pay</div>
@@ -39,23 +91,31 @@ export function SiteHeader() {
                   TSN Protocol
                 </Link>
               </div>
-            </div>
+            </div> */}
 
           </div>
 
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Landing page sections">
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Landing page sections">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-3 py-2 text-[0.72rem] text-[var(--text-soft)] font-sans font-semibold transition hover:bg-[var(--surface-soft)] hover:text-[var(--text)] "
+                className="rounded-full px-3 py-2 text-[0.95rem] font-bold text-text-soft tracking-[0.05em] font-sans transition hover:bg-surface-soft hover:text-text"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 lg:flex">
+            <button
+              onClick={toggleTheme}
+              className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] transition"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Light Mode" : "Dark Mode"}
+            >
+              {mounted && (isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />)}
+            </button>
             <Link
               href="/operator-dashboard"
               className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] sm:inline-flex"
@@ -72,7 +132,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-[14px] text-[var(--text)] md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-[14px] text-text md:hidden"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={menuOpen}
@@ -83,7 +143,7 @@ export function SiteHeader() {
       </header>
 
       {menuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-elevated)] md:hidden"
           style={{ animation: "menuSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
         >
@@ -93,7 +153,7 @@ export function SiteHeader() {
               to { transform: translateX(0); opacity: 1; }
             }
           `}</style>
-          
+
           <div className="flex items-center justify-between px-4 md:px-6 py-2.5 min-h-[64px] border-b border-[var(--field-border)]">
             <div className="flex items-center gap-2">
               <TrustLinkMark compact />
@@ -101,7 +161,7 @@ export function SiteHeader() {
                 Navigation
               </span>
             </div>
-            <button 
+            <button
               className="grid h-10 w-10 place-items-center rounded-[14px] text-[var(--text)] transition hover:bg-[var(--surface-soft)]"
               onClick={() => setMenuOpen(false)}
             >
@@ -125,6 +185,13 @@ export function SiteHeader() {
             </nav>
 
             <div className="mt-12 flex flex-col gap-3">
+              <button
+                onClick={toggleTheme}
+                className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-4 py-4 font-semibold uppercase tracking-[0.14em] gap-2"
+              >
+                {mounted && (isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />)}
+                {isDark ? "Light Mode" : "Dark Mode"}
+              </button>
               <Link
                 href="/operator-dashboard"
                 onClick={() => setMenuOpen(false)}

@@ -459,7 +459,7 @@ export function TransactionDetailExperience({
                     : "Incoming payment"}
                 </div>
 
-                <h2 className="mt-2 text-[2rem] font-bold tracking-tight text-[var(--text)]">
+                <h2 className="mt-2 text-[2rem] font-bold tracking-tight text-text">
                   {formatTokenAmount(detail.payment.amount)}{" "}
                   {detail.payment.token_symbol}
                 </h2>
@@ -472,7 +472,7 @@ export function TransactionDetailExperience({
                   </span>
                 </div>
 
-                <p className="mx-auto mt-4 max-w-[320px] text-[0.8rem] leading-relaxed text-[var(--text-soft)]">
+                <p className="mx-auto mt-4 max-w-[320px] text-[0.8rem] leading-relaxed text-text-soft">
                   {detail.viewerRole === "sender"
                     ? detail.receiver.manualInviteRequired
                       ? `In escrow for ${receiverLabel}. Recipient has not joined TrustLink yet.`
@@ -489,10 +489,10 @@ export function TransactionDetailExperience({
               <div className="tl-field overflow-hidden rounded-[24px] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
+                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">
                       TSN settlement path
                     </div>
-                    <div className="mt-1 text-[0.8rem] text-[var(--text-soft)]">
+                    <div className="mt-1 text-[0.8rem] text-text-soft">
                       {tsnProgress.settled
                         ? `Completed in ${tsnProgress.elapsed ?? "a few moments"}`
                         : tsnProgress.failed
@@ -526,13 +526,13 @@ export function TransactionDetailExperience({
                               ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
                               : step.active
                                 ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
-                                : "border-white/10 bg-white/[0.03] text-[var(--text-soft)]"
+                                : "border-white/10 bg-white/[0.03] text-text-soft"
                             }`}
                         >
                           {index + 1}
                         </span>
 
-                        <span className="mt-2 truncate text-[0.68rem] font-semibold text-[var(--text)]">
+                        <span className="mt-2 truncate text-[0.68rem] font-semibold text-text">
                           {step.label}
                         </span>
                       </div>
@@ -540,7 +540,7 @@ export function TransactionDetailExperience({
                   ))}
                 </div>
 
-                <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.02] px-3 py-3 text-[0.74rem] leading-relaxed text-[var(--text-soft)]">
+                <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.02] px-3 py-3 text-[0.74rem] leading-relaxed text-text-soft">
                   {tsnProgress.failed
                     ? detail.payment.tsn?.settlementReason ?? "TSN marked this payment for operator review."
                     : tsnProgress.steps.find((step) => step.active)?.description ??
@@ -571,31 +571,31 @@ export function TransactionDetailExperience({
                         }`}
                     >
                       <div className="min-w-0">
-                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-[var(--text-soft)]">
+                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-text-soft">
                           {detail.viewerRole === "sender"
                             ? "Receiver"
                             : "Sender"}
                         </div>
 
-                        <div className="mt-1 truncate text-[0.9rem] font-semibold text-[var(--text)]">
+                        <div className="mt-1 truncate text-[0.9rem] font-semibold text-text">
                           {detail.viewerRole === "sender"
                             ? receiverLabel
                             : detail.sender.displayName}
                         </div>
 
                         {detail.viewerRole === "sender" && detail.receiver.tin ? (
-                          <div className="mt-0.5 truncate text-[0.66rem] text-[var(--text-faint)]">
+                          <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             TIN {detail.receiver.tin}
                           </div>
                         ) : detail.viewerRole === "sender" && detail.receiver.handle ? (
-                          <div className="mt-0.5 truncate text-[0.66rem] text-[var(--text-faint)]">
+                          <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             @{detail.receiver.handle}
                           </div>
                         ) : null}
                       </div>
 
                       <ChevronRight
-                        className={`h-4 w-4 text-[var(--text-soft)] transition-transform ${receiverIdentityOpen && detail.viewerRole === "sender" ? "rotate-90" : ""
+                        className={`h-4 w-4 text-text-soft transition-transform ${receiverIdentityOpen && detail.viewerRole === "sender" ? "rotate-90" : ""
                           }`}
                       />
                     </button>
@@ -621,13 +621,13 @@ export function TransactionDetailExperience({
                     <div className="flex items-center justify-between gap-4">
 
                       <div>
-                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-[var(--text-soft)]">
+                        <div className="tl-meta-sm uppercase tracking-[0.14em] text-text-soft">
                           {detail.receiver.manualInviteRequired
                             ? "Invite"
                             : "WhatsApp"}
                         </div>
 
-                        <div className="mt-1 text-[0.8rem] text-[var(--text)]">
+                        <div className="mt-1 text-[0.8rem] text-text">
                           {detail.receiver.manualInviteRequired
                             ? "Manual follow-up required"
                             : formatDateTime(receiptUpdatedAt)}
@@ -655,11 +655,11 @@ export function TransactionDetailExperience({
                   detail.receiver.inviteShare ? (
                   <div className="tl-field rounded-[24px] px-5 py-5">
 
-                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-[var(--text-soft)]">
+                    <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">
                       Share invite
                     </div>
 
-                    <pre className="mt-4 whitespace-pre-wrap rounded-[18px] border border-white/5 bg-white/[0.02] p-4 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">
+                    <pre className="mt-4 whitespace-pre-wrap rounded-[18px] border border-white/5 bg-white/[0.02] p-4 text-[0.78rem] leading-relaxed text-text-soft">
                       {
                         detail.receiver.inviteShare
                           .inviteMessage
@@ -707,7 +707,7 @@ export function TransactionDetailExperience({
 
                 {/* TRACE */}
                 <div>
-                  <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-[var(--text-soft)]">
+                  <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-text-soft">
                     Trace
                   </div>
 
@@ -752,11 +752,11 @@ export function TransactionDetailExperience({
                         key={row.label}
                         className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
                       >
-                        <span className="text-[0.76rem] text-[var(--text-soft)]">
+                        <span className="text-[0.76rem] text-text-soft">
                           {row.label}
                         </span>
 
-                        <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-[var(--text)]">
+                        <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-text">
                           {row.value}
                         </span>
                       </div>
@@ -802,7 +802,7 @@ export function TransactionDetailExperience({
                           key={row.label}
                           className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5"
                         >
-                          <span className="text-[0.76rem] text-[var(--text-soft)]">
+                          <span className="text-[0.76rem] text-text-soft">
                             {row.label}
                           </span>
 
@@ -820,7 +820,7 @@ export function TransactionDetailExperience({
                               )}
                             </a>
                           ) : (
-                            <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-[var(--text)]">
+                            <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-text">
                               {shortenValue(
                                 row.sig,
                                 8,
@@ -833,11 +833,11 @@ export function TransactionDetailExperience({
 
                     {detail.receiver.releasedWallet ? (
                       <div className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
-                        <span className="text-[0.76rem] text-[var(--text-soft)]">
+                        <span className="text-[0.76rem] text-text-soft">
                           Released to
                         </span>
 
-                        <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-[var(--text)]">
+                        <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-text">
                           {shortenValue(
                             detail.receiver
                               .releasedWallet,
@@ -858,11 +858,11 @@ export function TransactionDetailExperience({
 
                 {/* PRIVACY */}
                 <div>
-                  <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-[var(--text-soft)]">
+                  <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-text-soft">
                     Privacy
                   </div>
 
-                  <div className="tl-field rounded-[20px] px-4 py-4 text-[0.78rem] leading-relaxed text-[var(--text-soft)]">
+                  <div className="tl-field rounded-[20px] px-4 py-4 text-[0.78rem] leading-relaxed text-text-soft">
                     <p>
                       {detail.privacy.senderPhonePolicy}
                     </p>
@@ -904,7 +904,7 @@ export function TransactionDetailExperience({
             </div>
           </>
         ) : (
-          <div className="tl-field rounded-[20px] px-4 py-5 text-center text-[var(--text-soft)]">
+          <div className="tl-field rounded-[20px] px-4 py-5 text-center text-text-soft">
             Transaction details unavailable.
           </div>
         )}

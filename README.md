@@ -28,7 +28,8 @@ The system is built around two protocol layers:
 
 **Gasless Experience:** Users only need the stablecoin or token being sent; all transaction fees are paid via the protocol’s cranker mechanism, keeping wallets simple and friction-free.
 
-TrustLink Pay combines **identity-first payment design** with **social identity confidence signals** and a **private settlement network** on Solana.
+> [!TIP]
+> TrustLink Pay combines **identity-first payment design** with **social identity confidence signals** and a **private settlement network** on Solana.
 
 ## What Makes TrustLink Pay Different
 
@@ -120,7 +121,8 @@ At its core, Solana provides the security, speed, and decentralized execution la
 - **TSN** — a privacy-preserving settlement layer.
 - **Crankers** — a decentralized execution and verification layer.
 
-Together, these components enable users to pay by phone number or 10-digit TIN without exposing wallet addresses or direct wallet-to-wallet payment paths.
+> [!TIP]
+> Together, these components enable users to pay by phone number or 10-digit TIN without exposing wallet addresses or direct wallet-to-wallet payment paths.
 
 ## TINS — Transfer Identity Number System
 
@@ -137,7 +139,8 @@ TINS enables:
 - Future social identity integration
 - Developer-accessible identity resolution
 
-The long-term vision is simple: users should be able to receive payments through a TIN instead of sharing raw wallet addresses.
+> [!TIP]
+> The long-term vision is simple: users should be able to receive payments through a TIN instead of sharing raw wallet addresses.
 
 ## TSN — Transfer Settlement Network
 
@@ -296,4 +299,5 @@ Grateful to [@SuperteamEarn](https://twitter.com/SuperteamEarn) and the [@Supert
 
 ---
 
-**TrustLink Pay** — Privacy-preserving Solana payments with confidence-first TIN identities, powered by TSN settlement on [Solana](https://solana.com/).
+> [!TIP]
+> **TrustLink Pay** — Privacy-preserving Solana payments with confidence-first TIN identities, powered by TSN settlement on [Solana](https://solana.com/).

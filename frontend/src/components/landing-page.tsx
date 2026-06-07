@@ -31,30 +31,57 @@ import {
 import { SiteHeader } from "@/src/components/layout/site-header";
 import { TxProcessAnimator } from "./stimulations/tx-process-animator";
 
+// const heroStats = [
+//   {
+//     icon: Fingerprint,
+//     label: "Identity layer",
+//     value: "TINS",
+//     note: "10-digit Transfer Identity Number, protects wallet addresses",
+//   },
+//   {
+//     icon: UserRoundCheck,
+//     label: "Confidence layer",
+//     value: "Verify",
+//     note: "Social Identities linked for verification",
+//   },
+//   {
+//     icon: Zap,
+//     label: "Sender fee model",
+//     value: "Gasless",
+//     note: "network + TSN protocol fee shown before send",
+//   },
+//   {
+//     icon: Clock,
+//     label: "Settlement target",
+//     value: "TSN <0.9s",
+//     note: "from intent to cranker proof",
+//   },
+// ];
+
 const heroStats = [
   {
     icon: Fingerprint,
-    label: "Identity layer",
+    label: "Identity Layer",
     value: "TINS",
-    note: "10-digit Transfer Identity Number, protects wallet addresses",
+    note: "10-digit payment identity for Solana transfers",
   },
   {
     icon: UserRoundCheck,
-    label: "Confidence layer",
-    value: "Verify",
-    note: "Social Identities linked for verification",
+    label: "Trust Layer",
+    value: "Verified",
+    note: "Linked social identities build payment confidence",
   },
   {
     icon: Zap,
-    label: "Sender fee model",
+    label: "Fee Model",
     value: "Gasless",
-    note: "network + TSN protocol fee shown before send",
+    note: "Network and TSN fees shown before sending",
   },
   {
     icon: Clock,
-    label: "Settlement target",
+    label: "Settlement",
     value: "TSN <0.9s",
-    note: "from intent to cranker proof",
+    note: "Intent routing to settlement proof completion",
   },
 ];
 
@@ -285,7 +312,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 md:items-stretch">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 md:items-start">
           {heroStats.map((stat) => {
             const IconComponent = stat.icon;
 

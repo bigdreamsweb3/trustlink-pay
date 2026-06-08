@@ -31,33 +31,6 @@ import {
 import { SiteHeader } from "@/src/components/layout/site-header";
 import { TxProcessAnimator } from "./stimulations/tx-process-animator";
 
-// const heroStats = [
-//   {
-//     icon: Fingerprint,
-//     label: "Identity layer",
-//     value: "TINS",
-//     note: "10-digit Transfer Identity Number, protects wallet addresses",
-//   },
-//   {
-//     icon: UserRoundCheck,
-//     label: "Confidence layer",
-//     value: "Verify",
-//     note: "Social Identities linked for verification",
-//   },
-//   {
-//     icon: Zap,
-//     label: "Sender fee model",
-//     value: "Gasless",
-//     note: "network + TSN protocol fee shown before send",
-//   },
-//   {
-//     icon: Clock,
-//     label: "Settlement target",
-//     value: "TSN <0.9s",
-//     note: "from intent to cranker proof",
-//   },
-// ];
-
 const heroStats = [
   {
     icon: Fingerprint,
@@ -66,10 +39,10 @@ const heroStats = [
     note: "10-digit payment identity for Solana transfers",
   },
   {
-    icon: UserRoundCheck,
-    label: "Trust Layer",
-    value: "Verified",
-    note: "Linked social identities build payment confidence",
+    icon: ShieldCheck,
+    label: "Verification",
+    value: "SAS",
+    note: "Attestation-based identity and trust verification",
   },
   {
     icon: Zap,
@@ -80,8 +53,8 @@ const heroStats = [
   {
     icon: Clock,
     label: "Settlement",
-    value: "TSN <0.9s",
-    note: "Intent routing to settlement proof completion",
+    value: "TSN",
+    note: "Private escrow-backed payment settlement",
   },
 ];
 
@@ -150,23 +123,23 @@ const codeLines = [
 const sdkFeatures = [
   {
     icon: KeyRound,
-    title: "Identity Resolution",
-    desc: "Resolve TINs to wallet addresses with privacy",
+    title: "TIN Resolution",
+    desc: "Resolve payment identities across the TrustLink network",
   },
   {
-    icon: Fingerprint,
-    title: "Social Confidence",
-    desc: "Decrypt and verify linked social identities",
+    icon: ShieldCheck,
+    title: "SAS Verification",
+    desc: "Verify identity and trust credentials using attestations",
   },
   {
     icon: Zap,
-    title: "Gasless Settlement",
-    desc: "Handle fee delegation automatically",
+    title: "TSN Settlement",
+    desc: "Create payment intents and settlement workflows",
   },
   {
     icon: Lock,
-    title: "Escrow Management",
-    desc: "Create and claim escrow-backed payments",
+    title: "Escrow Infrastructure",
+    desc: "Manage escrow-backed and programmable payment flows",
   },
 ];
 
@@ -174,37 +147,47 @@ const roadmapItems = [
   {
     status: "live",
     title: "TIN Identity Registry",
-    desc: "Devnet identity creation and resolution",
+    desc: "10-digit payment identities with wallet abstraction",
   },
   {
     status: "live",
-    title: "WhatsApp Social Linking",
-    desc: "Phone-based social identity verification",
+    title: "WhatsApp Verification",
+    desc: "Encrypted phone-number verification and routing",
   },
   {
     status: "live",
-    title: "Gasless Payment Flow",
-    desc: "No SOL required in sender wallet",
+    title: "Gasless Settlement",
+    desc: "Cranker-sponsored transaction execution",
   },
   {
     status: "soon",
-    title: "X Business Integration",
-    desc: "Business account verification for merchants",
+    title: "SAS Identity Verification",
+    desc: "Government, merchant and proof-of-personhood attestations",
   },
   {
     status: "soon",
+    title: "Verified Name Resolution",
+    desc: "Display SAS-verified identities before payment approval",
+  },
+  {
+    status: "soon",
+    title: "Trust Score Engine",
+    desc: "Confidence scoring from SAS attestations and verification signals",
+  },
+  {
+    status: "planned",
     title: "Multi-Cranker Network",
-    desc: "Decentralized operator infrastructure",
+    desc: "Decentralized settlement operators",
   },
   {
     status: "planned",
-    title: "SPL Token Expansion",
-    desc: "Support for all SPL tokens beyond USDC",
+    title: "Merchant Payment APIs",
+    desc: "Enterprise integrations and payment tooling",
   },
   {
     status: "planned",
-    title: "Analytics Dashboard",
-    desc: "Advanced payment analytics and reporting",
+    title: "SPL Asset Expansion",
+    desc: "Support for broader Solana token ecosystems",
   },
 ];
 
@@ -212,6 +195,29 @@ const socialIdentities = [
   { icon: MessageCircle, name: "WhatsApp", status: "active", color: "#25D366" },
   { icon: Twitter, name: "X Business", status: "coming", color: "#1DA1F2" },
   // { icon: Send, name: "Telegram", status: "coming", color: "#0088cc" },
+];
+
+const sasFeatures = [
+  {
+    icon: ShieldCheck,
+    title: "Government Verified",
+    desc: "Identity verified through trusted SAS issuers.",
+  },
+  {
+    icon: Wallet,
+    title: "Merchant Verified",
+    desc: "Trusted business and merchant credentials.",
+  },
+  {
+    icon: Users,
+    title: "Proof Of Personhood",
+    desc: "Human verification without exposing personal data.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Reusable Trust Credentials",
+    desc: "Verify once and reuse credentials across applications.",
+  },
 ];
 
 const feeDistribution = [
@@ -282,13 +288,15 @@ export function LandingPage() {
       {/* HERO SECTION */}
       <section
         id="tsn-protocol"
-        className="mx-auto grid grid-cols-1 min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 px-0 pb-12 pt-2 "
+        className="mx-auto grid grid-cols-1 min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 px-0 pb-12 pt-2"
       >
-        <div className="grid lg:grid-cols-[0.98fr_1.02fr] items-center gap-10 ">
-          <div className="relative z-10">
+        <div className="grid lg:grid-cols-[0.98fr_1.02fr] items-center gap-10">
+          {/* LEFT CONTENT */}
+          <div className="relative z-10 order-1">
             <div className="tl-meta-label text-nowrap whitespace-nowrap">
               Transfer Settlement Network · Solana
             </div>
+
             <h1 className="tl-display mt-5 max-w-[760px]">
               <span className="text-transparent bg-clip-text bg-linear-to-r from-accent to-accent-deep">
                 Private, Identity-first, and Confidential
@@ -297,29 +305,62 @@ export function LandingPage() {
                 Crypto Payments on Solana
               </span>
             </h1>
+
             <p className="tl-body-lg mt-5 pr-3 max-w-[680px] text-[var(--text-soft)]">
               Pay anyone on Solana using a phone number or 10-digit TIN instead
-              of a wallet address, with private settlement and trusted identity
-              verification.
+              of a wallet address, with private settlement and SAS-powered
+              identity verification.
             </p>
+
+            {/* MOBILE HERO CARDS */}
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-stretch lg:hidden">
+              {heroStats.map((stat) => {
+                const IconComponent = stat.icon;
+
+                return (
+                  <div
+                    key={stat.label}
+                    className="tl-field rounded-[10px] p-3 min-h-[110px] flex flex-col"
+                  >
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="h-4 w-4 shrink-0 text-accent" />
+
+                      <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-text-faint">
+                        {stat.label}
+                      </p>
+                    </div>
+
+                    <strong className="mt-2 block text-sm font-black text-[var(--text)]">
+                      {stat.value}
+                    </strong>
+
+                    <p className="mt-1 text-xs leading-4 text-[var(--muted)]">
+                      {stat.note}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
+          {/* TX SIMULATOR */}
           <div
             id="how-it-works-hero"
-            className="relative z-10 grid gap-3 w-full scroll-mt-28"
+            className="relative z-10 order-2 grid gap-3 w-full scroll-mt-28"
           >
             <TxProcessAnimator />
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 md:items-start">
+        {/* DESKTOP HERO CARDS */}
+        <div className="mt-6 hidden lg:grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-stretch max-h-[100px]">
           {heroStats.map((stat) => {
             const IconComponent = stat.icon;
 
             return (
               <div
                 key={stat.label}
-                className="tl-field rounded-[10px] p-3 flex h-full flex-col"
+                className="tl-field rounded-[10px] p-3 h-full min-h-[60px] flex flex-col"
               >
                 <div className="flex items-center gap-2">
                   <IconComponent className="h-4 w-4 shrink-0 text-accent" />
@@ -329,7 +370,7 @@ export function LandingPage() {
                   </p>
                 </div>
 
-                <strong className="mt-2 text-sm font-black text-[var(--text)]">
+                <strong className="mt-2 block text-sm font-black text-[var(--text)]">
                   {stat.value}
                 </strong>
 
@@ -432,54 +473,123 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* SOCIAL IDENTITY SECTION */}
+      {/* TRUST & VERIFICATION SECTION */}
       <section
-        id="social-identity"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28  px-0 py-14 sm:px-6 lg:px-0"
+        id="sas-verification"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
       >
-        <div className="mt-6 grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-10">
+          {/* SAS SECTION */}
           <div>
-            <SectionLabel index="03" title="Social Confidence Layer" />
-            <h2 className="tl-h2 mt-5">
-              Verify recipients through linked social identities.
-            </h2>
-            <p className="tl-body-lg mt-4 text-text-soft">
-              Before sending, verify your recipient through their linked
-              WhatsApp number. This creates a social confidence layer that
-              reduces scams and builds trust in peer-to-peer payments.
-            </p>
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="mt-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-text-faint mb-3">
-                Supported Platforms
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {socialIdentities.map(({ icon: Icon, name, status, color }) => (
+            <SectionLabel index="03" title="SAS Verification" />
+
+            <div className="mt-6 grid gap-8 lg:grid-cols-2">
+              <div>
+                <h2 className="tl-h2 mt-5">
+                  Verified identities without exposing personal data.
+                </h2>
+
+                <p className="tl-body-lg mt-4 text-text-soft">
+                  TrustLink integrates with Solana Attestation Service (SAS) to
+                  verify identity, merchant status, and trust signals while
+                  keeping sensitive information private.
+                </p>
+
+                <p className="tl-body-lg mt-4 text-text-soft">
+                  Users can receive payments without SAS verification, but
+                  verified identities provide stronger confidence for senders
+                  and merchants.
+                </p>
+
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-2">
+                  <ShieldCheck className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-medium">
+                    SAS Integration Currently In Testing
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {sasFeatures.map(({ icon: Icon, title, desc }) => (
                   <div
-                    key={name}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
-                      status === "active"
-                        ? "bg-[var(--accent-soft)] border-[var(--accent-border)]"
-                        : "bg-[var(--surface-soft)] border-[var(--field-border)] opacity-60"
-                    }`}
+                    key={title}
+                    className="tl-panel rounded-[22px] px-4 py-4"
                   >
-                    <Icon className="h-4 w-4" style={{ color }} />
-                    <span
-                      className={`text-sm font-medium ${status === "active" ? "text-text" : "text-text-faint"}`}
-                    >
-                      {name}
-                    </span>
-                    {status === "active" && (
-                      <CheckCircle2 className="h-3 w-3 text-accent" />
-                    )}
-                    {status === "coming" && (
-                      <span className="text-[10px] text-[var(--text-faint)]">
-                        Soon
-                      </span>
-                    )}
+                    <div className="inline-flex rounded-[12px] bg-[var(--accent-soft)] p-2">
+                      <Icon className="h-5 w-5 text-accent" />
+                    </div>
+
+                    <h3 className="mt-3 font-semibold text-text">{title}</h3>
+
+                    <p className="mt-2 text-sm text-text-soft">{desc}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* WHATSAPP CONFIDENCE LAYER */}
+          <div className="border-t border-accent-border pt-10">
+            <SectionLabel index="04" title="WhatsApp Confidence Layer" />
+
+            <div className="mt-6 grid gap-8 lg:grid-cols-2">
+              <div>
+                <h2 className="tl-h2 mt-5">
+                  Additional confidence through verified communication.
+                </h2>
+
+                <p className="tl-body-lg mt-4 text-text-soft">
+                  TrustLink supports optional WhatsApp verification to
+                  strengthen recipient confidence and improve payment trust.
+                </p>
+
+                <p className="tl-body-lg mt-4 text-text-soft">
+                  Phone numbers remain encrypted and can only be accessed
+                  through owner-authorized verification flows.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-text-faint mb-3">
+                  Supported Verification Sources
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  {socialIdentities.map(
+                    ({ icon: Icon, name, status, color }) => (
+                      <div
+                        key={name}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
+                          status === "active"
+                            ? "bg-[var(--accent-soft)] border-[var(--accent-border)]"
+                            : "bg-[var(--surface-soft)] border-[var(--field-border)] opacity-60"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" style={{ color }} />
+
+                        <span
+                          className={`text-sm font-medium ${
+                            status === "active"
+                              ? "text-text"
+                              : "text-text-faint"
+                          }`}
+                        >
+                          {name}
+                        </span>
+
+                        {status === "active" && (
+                          <CheckCircle2 className="h-3 w-3 text-accent" />
+                        )}
+
+                        {status === "coming" && (
+                          <span className="text-[10px] text-text-faint">
+                            Soon
+                          </span>
+                        )}
+                      </div>
+                    ),
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -697,10 +807,15 @@ export function LandingPage() {
           <div>
             <h2 className="tl-h2 mt-5">Programmable payment infrastructure.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TrustLink is designed as programmable payment infrastructure.
-              Developers can resolve identities, quote settlement costs, create
-              payment intents, and integrate escrow-backed payment flows
-              directly into their own applications.
+              TrustLink provides developer APIs and SDKs for identity
+              resolution, verification, and payment settlement on Solana.
+            </p>
+
+            <p className="tl-body-lg mt-4 text-text-soft">
+              Applications can resolve TINs, verify trust credentials through
+              Solana Attestation Service (SAS), create payment intents, and
+              integrate TSN settlement flows without rebuilding payment
+              infrastructure from scratch.
             </p>
             <div className="mt-6 px-4 py-4 grid gap-3 sm:grid-cols-2">
               {sdkFeatures.map(({ icon: Icon, title, desc }) => (
@@ -770,13 +885,13 @@ export function LandingPage() {
             <h2 className="tl-h2 mb-6">Current Status</h2>
             <div className="flex flex-wrap gap-3">
               {[
-                "Wallet onboarding",
-                "Phone-number routing",
+                "TIN identity registry",
+                "WhatsApp verification linking",
+                "Phone-number payments",
                 "Escrow-backed payments",
-                "Stablecoin support",
-                "Transaction review flows",
+                "Gasless settlement flow",
                 "Settlement-intent creation",
-                "WhatsApp-based onboarding",
+                "TSN privacy routing",
               ].map((feature) => (
                 <span
                   key={feature}

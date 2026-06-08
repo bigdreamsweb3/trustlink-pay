@@ -7,13 +7,13 @@ import { useEffect, useState } from "react";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
-  { label: "Identity-First", href: "/#identity-first" },
-  { label: "Escrow", href: "/#escrow-settlement" },
-  { label: "TSN", href: "/#tsn" },
-  { label: "TINS", href: "/#tins" },
+  { label: "Identity", href: "/#identity-first" },
+  { label: "TIN", href: "/#tin-system" },
+  { label: "Verification", href: "/#sas-verification" },
+  { label: "Settlement", href: "/#escrow-settlement" },
   { label: "Developers", href: "/#developers" },
+  { label: "Roadmap", href: "/#status" },
 ] as const;
-
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -25,7 +25,9 @@ export function SiteHeader() {
     setMounted(true);
     // Check localStorage or system preference
     const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
     const isDarkTheme = saved ? saved === "dark" : prefersDark;
     setIsDark(isDarkTheme);
     if (isDarkTheme) {
@@ -46,15 +48,22 @@ export function SiteHeader() {
     }
   };
 
-  useEffect(() => { function h() { setHeaderScrolled(window.scrollY > 8); } h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []);
-
+  useEffect(() => {
+    function h() {
+      setHeaderScrolled(window.scrollY > 8);
+    }
+    h();
+    window.addEventListener("scroll", h, { passive: true });
+    return () => window.removeEventListener("scroll", h);
+  }, []);
 
   return (
     <>
-      <header className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-bg/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}>
+      <header
+        className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-bg/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}
+      >
         <div className="mx-auto flex max-h-fit md:min-h-16  w-full max-w-[1280px] items-center justify-between gap-3 py-2.5 px-4 md:px-2.5">
           <div className="flex min-w-0 items-center gap-3">
-
             <div
               className="flex items-center gap-2 whitespace-nowrap"
               onClick={() => setMenuOpen(false)}
@@ -92,10 +101,12 @@ export function SiteHeader() {
                 </Link>
               </div>
             </div> */}
-
           </div>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Landing page sections">
+          <nav
+            className="hidden items-center gap-1 md:flex"
+            aria-label="Landing page sections"
+          >
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -111,10 +122,17 @@ export function SiteHeader() {
             <button
               onClick={toggleTheme}
               className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-3.5 py-2.5 font-semibold uppercase tracking-[0.14em] transition"
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
               title={isDark ? "Light Mode" : "Dark Mode"}
             >
-              {mounted && (isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />)}
+              {mounted &&
+                (isDark ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                ))}
             </button>
             <Link
               href="/operator-dashboard"
@@ -134,10 +152,16 @@ export function SiteHeader() {
             type="button"
             className="grid h-10 w-10 place-items-center rounded-[14px] text-text md:hidden"
             onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={
+              menuOpen ? "Close navigation menu" : "Open navigation menu"
+            }
             aria-expanded={menuOpen}
           >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
       </header>
@@ -145,7 +169,10 @@ export function SiteHeader() {
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-elevated)] md:hidden"
-          style={{ animation: "menuSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards" }}
+          style={{
+            animation:
+              "menuSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
         >
           <style>{`
             @keyframes menuSlideIn {
@@ -179,7 +206,9 @@ export function SiteHeader() {
                   className="text-[1.75rem] font-black tracking-[-0.03em] text-[var(--text-soft)] transition hover:text-[var(--text)] flex items-center justify-between group"
                 >
                   {item.label}
-                  <span className="text-[var(--field-border)] transition group-hover:text-[var(--accent)] group-hover:translate-x-1">→</span>
+                  <span className="text-[var(--field-border)] transition group-hover:text-[var(--accent)] group-hover:translate-x-1">
+                    →
+                  </span>
                 </Link>
               ))}
             </nav>
@@ -189,7 +218,12 @@ export function SiteHeader() {
                 onClick={toggleTheme}
                 className="tsn-button-transparent inline-flex items-center justify-center rounded-[14px] px-4 py-4 font-semibold uppercase tracking-[0.14em] gap-2"
               >
-                {mounted && (isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />)}
+                {mounted &&
+                  (isDark ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  ))}
                 {isDark ? "Light Mode" : "Dark Mode"}
               </button>
               <Link

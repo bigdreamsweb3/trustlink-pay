@@ -548,7 +548,7 @@ export function TxProcessAnimator() {
 
               </div>
 
-              <div className="p-2.5 md:p-3 mt-4 relative z-10 -mx-2.5 md:-mx-3 -mb-3">
+              <div className=" relative z-10">
                 <StatusBanner
                   isCompleted={isCompleted}
                   currentStepIndex={currentStepIndex}

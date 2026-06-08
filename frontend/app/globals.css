@@ -222,7 +222,7 @@
 }
 
 .tl-h2 {
-  font-family: var(--font-display-face);
+  /* font-family: var(--font-display-face); */
   font-size: clamp(1.25rem, 2.5vw, 1.75rem);
   font-weight: 900;
   line-height: 1.25;

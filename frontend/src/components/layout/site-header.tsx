@@ -7,12 +7,10 @@ import { useEffect, useState } from "react";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
-  { label: "Identity", href: "/#identity-first" },
-  { label: "TIN", href: "/#tin-system" },
-  { label: "Verification", href: "/#sas-verification" },
-  { label: "Settlement", href: "/#escrow-settlement" },
+  { label: "Identity", href: "/#identity" },
+  { label: "Verification", href: "/#verification" },
+  { label: "Settlement", href: "/#settlement" },
   { label: "Developers", href: "/#developers" },
-  { label: "Roadmap", href: "/#status" },
 ] as const;
 
 export function SiteHeader() {

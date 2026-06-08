@@ -288,38 +288,9 @@ export function LandingPage() {
         id="tsn-protocol"
         className="mx-auto grid grid-cols-1 min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 px-0 pb-12 pt-2"
       >
-        {/* MOBILE: Stats above simulator, followed by text */}
-        <div className="lg:hidden order-1">
-          {/* Mobile: Stats Cards */}
-          <div className="grid grid-cols-2 gap-2 items-stretch">
-            {heroStats.map((stat) => {
-              const IconComponent = stat.icon;
-              return (
-                <div
-                  key={stat.label}
-                  className="tl-field rounded-[10px] p-3 min-h-[110px] flex flex-col"
-                >
-                  <div className="flex items-center gap-2">
-                    <IconComponent className="h-4 w-4 shrink-0 text-accent" />
-                    <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-text-faint">
-                      {stat.label}
-                    </p>
-                  </div>
-                  <strong className="mt-2 block text-sm font-black text-[var(--text)]">
-                    {stat.value}
-                  </strong>
-                  <p className="mt-1 text-xs leading-4 text-[var(--muted)]">
-                    {stat.note}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="grid lg:grid-cols-[0.98fr_1.02fr] items-center gap-10">
-          {/* LEFT CONTENT - Desktop */}
-          <div className="relative z-10 order-1 hidden lg:block">
+          {/* LEFT CONTENT */}
+          <div className="relative z-10 order-1">
             <div className="tl-meta-label text-nowrap whitespace-nowrap">
               Transfer Settlement Network · Solana
             </div>
@@ -338,43 +309,52 @@ export function LandingPage() {
               of a wallet address, with private settlement and SAS-powered
               identity verification.
             </p>
+
+            {/* HERO CARDS */}
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-stretch lg:hidden">
+              {heroStats.map((stat) => {
+                const IconComponent = stat.icon;
+
+                return (
+                  <div
+                    key={stat.label}
+                    className="tl-field rounded-[10px] p-3 min-h-[110px] flex flex-col"
+                  >
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="h-4 w-4 shrink-0 text-accent" />
+
+                      <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-text-faint">
+                        {stat.label}
+                      </p>
+                    </div>
+
+                    <strong className="mt-2 block text-sm font-black text-[var(--text)]">
+                      {stat.value}
+                    </strong>
+
+                    <p className="mt-1 text-xs leading-4 text-[var(--muted)]">
+                      {stat.note}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* TX SIMULATOR */}
           <div
             id="how-it-works-hero"
-            className="relative z-10 order-2 lg:order-3 grid gap-3 w-full scroll-mt-28"
+            className="relative z-10 order-2 grid gap-3 w-full scroll-mt-28"
           >
             <TxProcessAnimator />
           </div>
         </div>
 
-        {/* Mobile: Text content after simulator */}
-        <div className="lg:hidden order-3 mt-6 px-0">
-          <div className="tl-meta-label text-nowrap whitespace-nowrap mb-3">
-            Transfer Settlement Network · Solana
-          </div>
-
-          <h1 className="tl-display max-w-[760px]">
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-accent to-accent-deep">
-              Private, Identity-first, and Confidential
-            </span>{" "}
-            <span className="text-[clamp(1.2rem,3.5vw,2.2rem)] font-black tracking-[-0.015em]">
-              Crypto Payments on Solana
-            </span>
-          </h1>
-
-          <p className="tl-body-lg mt-5 pr-3 max-w-[680px] text-[var(--text-soft)]">
-            Pay anyone on Solana using a phone number or 10-digit TIN instead
-            of a wallet address, with private settlement and SAS-powered
-            identity verification.
-          </p>
-        </div>
-
-        {/* DESKTOP: Stats below content */}
+        {/* DESKTOP HERO CARDS */}
         <div className="mt-6 hidden lg:grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-stretch max-h-[100px]">
           {heroStats.map((stat) => {
             const IconComponent = stat.icon;
+
             return (
               <div
                 key={stat.label}
@@ -382,13 +362,16 @@ export function LandingPage() {
               >
                 <div className="flex items-center gap-2">
                   <IconComponent className="h-4 w-4 shrink-0 text-accent" />
+
                   <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-text-faint">
                     {stat.label}
                   </p>
                 </div>
+
                 <strong className="mt-2 block text-sm font-black text-[var(--text)]">
                   {stat.value}
                 </strong>
+
                 <p className="mt-1 text-xs leading-4 text-[var(--muted)]">
                   {stat.note}
                 </p>

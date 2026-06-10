@@ -5,7 +5,10 @@ type TrustLinkMarkProps = {
   compact?: boolean;
 };
 
-export function TrustLinkMark({ className = "", compact = false }: TrustLinkMarkProps) {
+export function TrustLinkMark({
+  className = "",
+  compact = false,
+}: TrustLinkMarkProps) {
   const size = compact ? 36 : 44;
 
   return (
@@ -15,7 +18,7 @@ export function TrustLinkMark({ className = "", compact = false }: TrustLinkMark
       aria-label="TrustLink"
     >
       <Image
-        src="/trustlink-logo.png"
+        src="/trustlink-logo.svg"
         alt="TrustLink Logo"
         width={size}
         height={size}

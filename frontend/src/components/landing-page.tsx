@@ -286,7 +286,7 @@ export function LandingPage() {
       {/* HERO SECTION */}
       <section
         id="tsn-protocol"
-        className="mx-auto grid grid-cols-1 min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-28 px-0 pb-12 pt-2"
+        className="mx-auto grid grid-cols-1 min-h-[calc(100dvh-7rem)] w-full max-w-[1180px] scroll-mt-14 px-0 pb-12 pt-2"
       >
         <div className="grid lg:grid-cols-[0.98fr_1.02fr] items-center gap-10">
           {/* LEFT CONTENT */}
@@ -344,7 +344,7 @@ export function LandingPage() {
           {/* TX SIMULATOR */}
           <div
             id="how-it-works-hero"
-            className="relative z-10 order-2 grid gap-3 w-full scroll-mt-28"
+            className="relative z-10 order-2 grid gap-3 w-full scroll-mt-14 min-h-[400px]"
           >
             <TxProcessAnimator />
           </div>
@@ -386,20 +386,19 @@ export function LandingPage() {
       {/* ============================================================ */}
       <section
         id="identity"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="01" title="Identity" />
-        
+
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           {/* Left: Main identity content */}
           <div>
-            <h2 className="tl-h2 mt-5">
-              Pay people, not wallet addresses.
-            </h2>
+            <h2 className="tl-h2 mt-5">Pay people, not wallet addresses.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              The world already understands how to pay people through identity. 
-              Nigeria uses OPay. India uses UPI. Brazil uses Pix. TrustLink brings 
-              that identity-first experience to stablecoin payments on Solana.
+              The world already understands how to pay people through identity.
+              Nigeria uses OPay. India uses UPI. Brazil uses Pix. TrustLink
+              brings that identity-first experience to stablecoin payments on
+              Solana.
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
               Instead of copying complex wallet addresses, users pay a{" "}
@@ -419,7 +418,7 @@ export function LandingPage() {
               </p>
             </div>
             <p className="tl-body mt-4 text-text-soft">
-              A 10-digit identifier that protects your wallet address while 
+              A 10-digit identifier that protects your wallet address while
               enabling seamless payments across the TSN network.
             </p>
           </div>
@@ -446,10 +445,7 @@ export function LandingPage() {
                 desc: "Your actual wallet address stays hidden from recipients. They see only your TIN or verified display name.",
               },
             ].map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="tl-panel rounded-[22px] px-4 py-4"
-              >
+              <div key={title} className="tl-panel rounded-[22px] px-4 py-4">
                 <div className="p-2 rounded-[10px] bg-[var(--accent-soft)] inline-block">
                   <Icon className="h-5 w-5 text-accent" />
                 </div>
@@ -465,17 +461,19 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Identity Resolution</h3>
             <p className="tl-body text-text-soft">
-              TINS maintains a secure mapping between human-readable identifiers 
-              (phone numbers, TINs) and settlement identities. When you initiate 
-              a payment, TINS resolves the recipient's identifier to their verified 
-              settlement wallet without exposing raw addresses.
+              TINS maintains a secure mapping between human-readable identifiers
+              (phone numbers, TINs) and settlement identities. When you initiate
+              a payment, TINS resolves the recipient's identifier to their
+              verified settlement wallet without exposing raw addresses.
             </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
-                <span className="text-text-soft">Phone number → TIN resolution</span>
+                <span className="text-text-soft">
+                  Phone number → TIN resolution
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
@@ -487,7 +485,9 @@ export function LandingPage() {
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
-                <span className="text-text-soft">Privacy-preserving resolution</span>
+                <span className="text-text-soft">
+                  Privacy-preserving resolution
+                </span>
               </div>
             </div>
           </div>
@@ -495,10 +495,10 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Identity Lifecycle</h3>
             <p className="tl-body text-text-soft">
-              Each identity on TINS can connect multiple identifiers — phone numbers, 
-              social handles, and verification credentials — to a single settlement 
-              identity. This creates a portable payment identity that works across 
-              applications.
+              Each identity on TINS can connect multiple identifiers — phone
+              numbers, social handles, and verification credentials — to a
+              single settlement identity. This creates a portable payment
+              identity that works across applications.
             </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -517,7 +517,9 @@ export function LandingPage() {
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
-                <span className="text-text-soft">Cross-application portability</span>
+                <span className="text-text-soft">
+                  Cross-application portability
+                </span>
               </div>
             </div>
           </div>
@@ -529,38 +531,44 @@ export function LandingPage() {
       {/* ============================================================ */}
       <section
         id="verification"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="02" title="Verification" />
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
-            <h2 className="tl-h2 mt-5">
-              Trust without sacrificing privacy.
-            </h2>
+            <h2 className="tl-h2 mt-5">Trust without sacrificing privacy.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TINS provides identity. SAS (Solana Attestation Service) provides 
-              verifiable credentials. Together, they enable trust without 
+              TINS provides identity. SAS (Solana Attestation Service) provides
+              verifiable credentials. Together, they enable trust without
               exposing personal data.
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
-              Verification is optional. Users can receive payments without 
-              verification. But when verification is present, it increases 
+              Verification is optional. Users can receive payments without
+              verification. But when verification is present, it increases
               confidence for both parties.
             </p>
           </div>
 
           {/* Verification Stats */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="tl-field rounded-[14px] p-4 text-center">
+            <div className="tl-field rounded-[14px] p-4 max-h-fit">
               <p className="text-3xl font-black text-accent">SAS</p>
-              <p className="text-sm text-text-faint mt-2">Solana Attestation Service</p>
-              <p className="text-xs text-text-soft mt-1">Verifiable credentials</p>
+              <p className="text-sm text-text-faint mt-2">
+                Solana Attestation Service
+              </p>
+              <p className="text-xs text-text-soft mt-1">
+                Verifiable credentials
+              </p>
             </div>
-            <div className="tl-field rounded-[14px] p-4 text-center">
+            <div className="tl-field rounded-[14px] p-4 h-fit">
               <p className="text-3xl font-black text-accent">Zero</p>
-              <p className="text-sm text-text-faint mt-2">Personal Data Exposed</p>
-              <p className="text-xs text-text-soft mt-1">Proof without revelation</p>
+              <p className="text-sm text-text-faint mt-2">
+                Personal Data Exposed
+              </p>
+              <p className="text-xs text-text-soft mt-1">
+                Proof without revelation
+              </p>
             </div>
           </div>
         </div>
@@ -591,9 +599,10 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Social Verification</h3>
             <p className="tl-body text-text-soft">
-              Connect verified social accounts to your TIN for increased trust. 
-              Currently supporting WhatsApp verification with encrypted phone-number 
-              linking. X Business verification under integration testing.
+              Connect verified social accounts to your TIN for increased trust.
+              Currently supporting WhatsApp verification with encrypted
+              phone-number linking. X Business verification under integration
+              testing.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               {socialIdentities.map(({ icon: Icon, name, status, color }) => (
@@ -603,11 +612,13 @@ export function LandingPage() {
                 >
                   <Icon className="h-4 w-4" style={{ color }} />
                   <span className="text-sm font-medium text-text">{name}</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                    status === "active" 
-                      ? "bg-accent/20 text-accent" 
-                      : "bg-warning/20 text-warning"
-                  }`}>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full ${
+                      status === "active"
+                        ? "bg-accent/20 text-accent"
+                        : "bg-warning/20 text-warning"
+                    }`}
+                  >
                     {status === "active" ? "Active" : "Soon"}
                   </span>
                 </div>
@@ -618,22 +629,29 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Reusable Credentials</h3>
             <p className="tl-body text-text-soft">
-              Verify once through SAS and reuse your credentials across applications 
-              built on TSN. Your attestations persist with your identity, reducing 
-              redundant verification while maintaining privacy.
+              Verify once through SAS and reuse your credentials across
+              applications built on TSN. Your attestations persist with your
+              identity, reducing redundant verification while maintaining
+              privacy.
             </p>
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
-                <span className="text-text-soft">Single verification, multiple uses</span>
+                <span className="text-text-soft">
+                  Single verification, multiple uses
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
-                <span className="text-text-soft">Credentials persist with identity</span>
+                <span className="text-text-soft">
+                  Credentials persist with identity
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
-                <span className="text-text-soft">Privacy-preserving verification</span>
+                <span className="text-text-soft">
+                  Privacy-preserving verification
+                </span>
               </div>
             </div>
           </div>
@@ -645,23 +663,22 @@ export function LandingPage() {
       {/* ============================================================ */}
       <section
         id="settlement"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="03" title="Settlement" />
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
-            <h2 className="tl-h2 mt-5">
-              Why TSN exists.
-            </h2>
+            <h2 className="tl-h2 mt-5">Why TSN exists.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              Direct wallet-to-wallet transfers are insufficient for everyday payments. 
-              They expose addresses, lack payment intent clarity, and offer no 
-              recourse for disputes.
+              Direct wallet-to-wallet transfers are insufficient for everyday
+              payments. They expose addresses, lack payment intent clarity, and
+              offer no recourse for disputes.
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TSN (Transfer Settlement Network) coordinates settlement through 
-              escrow-backed flows, crankers, and verifiable off-chain proof trails.
+              TSN (Transfer Settlement Network) coordinates settlement through
+              escrow-backed flows, crankers, and verifiable off-chain proof
+              trails.
             </p>
           </div>
 
@@ -676,8 +693,12 @@ export function LandingPage() {
                   <span className="text-xs font-bold text-accent">1</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-text">Payment Intent</p>
-                  <p className="text-xs text-text-faint">Sender creates intent with fee transparency</p>
+                  <p className="text-sm font-semibold text-text">
+                    Payment Intent
+                  </p>
+                  <p className="text-xs text-text-faint">
+                    Sender creates intent with fee transparency
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -686,7 +707,9 @@ export function LandingPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-text">Escrow Hold</p>
-                  <p className="text-xs text-text-faint">Funds secured in protocol-controlled vault</p>
+                  <p className="text-xs text-text-faint">
+                    Funds secured in protocol-controlled vault
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -694,8 +717,12 @@ export function LandingPage() {
                   <span className="text-xs font-bold text-accent">3</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-text">Cranker Execution</p>
-                  <p className="text-xs text-text-faint">Operator executes payout transaction</p>
+                  <p className="text-sm font-semibold text-text">
+                    Cranker Execution
+                  </p>
+                  <p className="text-xs text-text-faint">
+                    Operator executes payout transaction
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -703,8 +730,12 @@ export function LandingPage() {
                   <span className="text-xs font-bold text-accent">4</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-text">Settlement Proof</p>
-                  <p className="text-xs text-text-faint">Verifiable off-chain evidence recorded</p>
+                  <p className="text-sm font-semibold text-text">
+                    Settlement Proof
+                  </p>
+                  <p className="text-xs text-text-faint">
+                    Verifiable off-chain evidence recorded
+                  </p>
                 </div>
               </div>
             </div>
@@ -716,10 +747,7 @@ export function LandingPage() {
           <h3 className="tl-h3 mb-6">Security & Privacy</h3>
           <div className="grid gap-4 lg:grid-cols-3">
             {securityFeatures.map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="tl-panel rounded-[22px] px-4 py-4"
-              >
+              <div key={title} className="tl-panel rounded-[22px] px-4 py-4">
                 <div className="p-2 rounded-[10px] bg-[var(--accent-soft)] inline-block">
                   <Icon className="h-5 w-5 text-accent" />
                 </div>
@@ -735,8 +763,8 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Gasless Payments</h3>
             <p className="tl-body text-text-soft">
-              Senders don't need SOL for transaction fees. Crankers — network 
-              operators — sponsor transaction execution in exchange for a fee 
+              Senders don't need SOL for transaction fees. Crankers — network
+              operators — sponsor transaction execution in exchange for a fee
               included in the transfer amount.
             </p>
             <div className="mt-4 p-3 rounded-[10px] bg-[var(--accent-soft)]">
@@ -774,8 +802,9 @@ export function LandingPage() {
         <div className="mt-6 tl-field rounded-[14px] p-4">
           <h3 className="tl-h3 mb-4">Transparent Fee Breakdown</h3>
           <p className="tl-body text-text-soft mb-4">
-            TSN separates network fees, settlement fees, and infrastructure costs 
-            instead of combining everything into a single unclear transaction cost.
+            TSN separates network fees, settlement fees, and infrastructure
+            costs instead of combining everything into a single unclear
+            transaction cost.
           </p>
           <div className="grid gap-2 border-t border-[var(--field-border)] pt-4">
             {transparentFeesRows.map(([label, note]) => (
@@ -796,16 +825,17 @@ export function LandingPage() {
       {/* ============================================================ */}
       <section
         id="developers"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="04" title="For Developers" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
             <h2 className="tl-h2 mt-5">TSN SDK — Production-ready APIs.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TSN SDK provides developer APIs for identity resolution, verification, 
-              and payment settlement on Solana. Build applications that consume 
-              TINS and TSN without rebuilding payment infrastructure from scratch.
+              TSN SDK provides developer APIs for identity resolution,
+              verification, and payment settlement on Solana. Build applications
+              that consume TINS and TSN without rebuilding payment
+              infrastructure from scratch.
             </p>
 
             <div className="mt-6 px-4 py-4 grid gap-3 sm:grid-cols-2">
@@ -843,9 +873,7 @@ export function LandingPage() {
           <article className="tl-field overflow-hidden rounded-[14px]">
             <div className="flex items-center gap-2 border-b border-[var(--field-border)] px-4 py-2">
               <Code2 className="h-4 w-4 text-accent" />
-              <h3 className="tl-label text-accent">
-                TSN SDK Integration
-              </h3>
+              <h3 className="tl-label text-accent">TSN SDK Integration</h3>
             </div>
             <pre className="tl-code overflow-x-auto p-4 text-sm leading-6">
               <code>
@@ -870,11 +898,10 @@ export function LandingPage() {
       {/* ============================================================ */}
       <section
         id="roadmap"
-        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
         <SectionLabel index="05" title="Roadmap" />
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
-          
           {/* Current Capabilities */}
           <div className="px-4 py-4">
             <h2 className="tl-h2 mb-6">Current Capabilities</h2>
@@ -889,7 +916,9 @@ export function LandingPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-[var(--text)]">{title}</p>
-                    <p className="mt-1 text-sm text-[var(--text-faint)]">{desc}</p>
+                    <p className="mt-1 text-sm text-[var(--text-faint)]">
+                      {desc}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -910,7 +939,9 @@ export function LandingPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-[var(--text)]">{title}</p>
-                    <p className="mt-1 text-sm text-[var(--text-faint)]">{desc}</p>
+                    <p className="mt-1 text-sm text-[var(--text-faint)]">
+                      {desc}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -920,14 +951,15 @@ export function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-28 px-0 py-14 sm:px-6 lg:px-0">
+      <section className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0">
         <div className="rounded-[18px] p-4 md:p-6 text-center">
           <h2 className="tl-h2 mb-3">
             Ready to Experience Identity-First Payments?
           </h2>
           <p className="text-[var(--text-soft)] max-w-[500px] mx-auto mb-5">
-            TrustLink Pay brings gasless, identity-first payments to Solana. 
-            Pay using phone numbers or TINs while keeping your wallet address private.
+            TrustLink Pay brings gasless, identity-first payments to Solana. Pay
+            using phone numbers or TINs while keeping your wallet address
+            private.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

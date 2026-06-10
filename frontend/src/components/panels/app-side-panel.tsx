@@ -37,7 +37,10 @@ export function AppSidePanel({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="absolute inset-0"
-            style={{ background: "var(--overlay)", backdropFilter: "blur(16px)" }}
+            style={{
+              background: "var(--overlay)",
+              backdropFilter: "blur(16px)",
+            }}
           />
 
           <motion.aside
@@ -51,8 +54,8 @@ export function AppSidePanel({
                 : "absolute right-0 top-0 flex h-full w-full max-w-107.5 flex-col border-l"
             }
             style={{
-              background: "color-mix(in srgb, var(--bg-elevated) 94%, transparent)",
-              backgroundImage: "var(--pop-bg)",
+              background:
+                "color-mix(in srgb, var(--bg-elevated) 94%, transparent)",
               borderColor: "var(--field-border)",
               backdropFilter: "blur(24px)",
               // borderTopLeftRadius: desktopInline ? 0 : 28,
@@ -63,13 +66,15 @@ export function AppSidePanel({
             <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
               <div className="min-w-0 flex-1">
                 {kicker ? (
-                  <div className="text-[0.58rem] font-medium uppercase tracking-[0.2em] mb-1"
+                  <div
+                    className="text-[0.58rem] font-medium uppercase tracking-[0.2em] mb-1"
                     style={{ color: "var(--text-faint)" }}
                   >
                     {kicker}
                   </div>
                 ) : null}
-                <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em]"
+                <h2
+                  className="text-[1.05rem] font-semibold tracking-[-0.03em]"
                   style={{ color: "var(--text)" }}
                 >
                   {title}
@@ -91,7 +96,10 @@ export function AppSidePanel({
             </div>
 
             {/* ── Divider ── */}
-            <div className="mx-5 h-px" style={{ background: "var(--field-border)" }} />
+            <div
+              className="mx-5 h-px"
+              style={{ background: "var(--field-border)" }}
+            />
 
             {/* ── Content ── */}
             <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6 tl-scrollbar-mobile-hidden">

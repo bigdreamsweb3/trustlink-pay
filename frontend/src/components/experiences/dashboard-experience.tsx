@@ -8,20 +8,46 @@ import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { FloatingGuidanceOverlay } from "@/src/components/floating-guidance-overlay";
 import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { ClaimIcon, EyeIcon, EyeOffIcon, InfoIcon, SendIcon, WalletIcon } from "@/src/components/app-icons";
+import {
+  ClaimIcon,
+  EyeIcon,
+  EyeOffIcon,
+  InfoIcon,
+  SendIcon,
+  WalletIcon,
+} from "@/src/components/app-icons";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { shortenAddress } from "@/src/lib/address";
 import { useAppPanel } from "@/src/lib/app-panel-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { formatTokenAmount, shouldPollPaymentNotification } from "@/src/lib/formatters";
+import {
+  formatTokenAmount,
+  shouldPollPaymentNotification,
+} from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
 import { createOrLoadTinForWallet } from "@/src/lib/tins";
-import type { IdentitySecurityResponse, IdentitySecurityState, PaymentRecord, PendingBalanceSummary, TinIdentityState, WalletTokenOption } from "@/src/lib/types";
+import type {
+  IdentitySecurityResponse,
+  IdentitySecurityState,
+  PaymentRecord,
+  PendingBalanceSummary,
+  TinIdentityState,
+  WalletTokenOption,
+} from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
-import { Check, ChevronRight, Copy, Landmark, ArrowUpRight, ArrowDownLeft, Wallet, Lock } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Copy,
+  Landmark,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Wallet,
+  Lock,
+} from "lucide-react";
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
 
@@ -43,14 +69,25 @@ function XIcon({ className = "" }: { className?: string }) {
   );
 }
 
-function splitPhoneDisplay(phone: string): { countryCode: string; localNumber: string; localDigits: string; fullNumber: string } {
+function splitPhoneDisplay(phone: string): {
+  countryCode: string;
+  localNumber: string;
+  localDigits: string;
+  fullNumber: string;
+} {
   const cleaned = phone.replace(/[^\d+]/g, "");
   const rawDigits = cleaned.replace(/\D/g, "");
   if (!cleaned.startsWith("+")) {
-    const localDigits = rawDigits.length === 11 && rawDigits.startsWith("0") ? rawDigits.slice(1) : rawDigits;
+    const localDigits =
+      rawDigits.length === 11 && rawDigits.startsWith("0")
+        ? rawDigits.slice(1)
+        : rawDigits;
     return {
       countryCode: "",
-      localNumber: localDigits.length === 10 ? `${localDigits.slice(0, 3)} ${localDigits.slice(3, 6)} ${localDigits.slice(6)}` : phone,
+      localNumber:
+        localDigits.length === 10
+          ? `${localDigits.slice(0, 3)} ${localDigits.slice(3, 6)} ${localDigits.slice(6)}`
+          : phone,
       localDigits,
       fullNumber: rawDigits || phone,
     };
@@ -58,23 +95,76 @@ function splitPhoneDisplay(phone: string): { countryCode: string; localNumber: s
   const digits = cleaned.slice(1);
   let ccLen = 1;
   const oneDigitCodes = ["1", "7"];
-  const twoDigitCodes = ["20", "27", "30", "31", "32", "33", "34", "36", "39", "40", "41", "43", "44", "45", "46", "47", "48", "49", "51", "52", "53", "54", "55", "56", "57", "58", "60", "61", "62", "63", "64", "65", "66", "81", "82", "84", "86", "90", "91", "92", "93", "94", "95", "98"];
+  const twoDigitCodes = [
+    "20",
+    "27",
+    "30",
+    "31",
+    "32",
+    "33",
+    "34",
+    "36",
+    "39",
+    "40",
+    "41",
+    "43",
+    "44",
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "51",
+    "52",
+    "53",
+    "54",
+    "55",
+    "56",
+    "57",
+    "58",
+    "60",
+    "61",
+    "62",
+    "63",
+    "64",
+    "65",
+    "66",
+    "81",
+    "82",
+    "84",
+    "86",
+    "90",
+    "91",
+    "92",
+    "93",
+    "94",
+    "95",
+    "98",
+  ];
   if (oneDigitCodes.includes(digits.slice(0, 1))) ccLen = 1;
   else if (twoDigitCodes.includes(digits.slice(0, 2))) ccLen = 2;
   else ccLen = 3;
   const countryCode = "+" + digits.slice(0, ccLen);
   const localDigits = digits.slice(ccLen);
-  const localNumber = localDigits.length === 10
-    ? `${localDigits.slice(0, 3)} ${localDigits.slice(3, 6)} ${localDigits.slice(6)}`
-    : localDigits.length === 9
+  const localNumber =
+    localDigits.length === 10
       ? `${localDigits.slice(0, 3)} ${localDigits.slice(3, 6)} ${localDigits.slice(6)}`
-      : localDigits.length === 8
-        ? `${localDigits.slice(0, 4)} ${localDigits.slice(4)}`
-        : localDigits.replace(/(\d{3})(?=\d)/g, "$1 ");
-  return { countryCode, localNumber, localDigits, fullNumber: `${countryCode}${localDigits}` };
+      : localDigits.length === 9
+        ? `${localDigits.slice(0, 3)} ${localDigits.slice(3, 6)} ${localDigits.slice(6)}`
+        : localDigits.length === 8
+          ? `${localDigits.slice(0, 4)} ${localDigits.slice(4)}`
+          : localDigits.replace(/(\d{3})(?=\d)/g, "$1 ");
+  return {
+    countryCode,
+    localNumber,
+    localDigits,
+    fullNumber: `${countryCode}${localDigits}`,
+  };
 }
 
-function extractTinInfo(result: IdentitySecurityResponse | null): TinIdentityState | null {
+function extractTinInfo(
+  result: IdentitySecurityResponse | null,
+): TinIdentityState | null {
   if (!result?.tin) return null;
   return {
     tin: result.tin,
@@ -87,7 +177,14 @@ function extractTinInfo(result: IdentitySecurityResponse | null): TinIdentitySta
 }
 
 export function DashboardExperience() {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app");
+  const {
+    hydrated,
+    accessToken,
+    user,
+    pendingAuth,
+    completePendingAuth,
+    logout,
+  } = useAuthenticatedSession("/app");
   const { session, walletAddress, requestWalletConnection } = useWallet();
   const { showToast } = useToast();
   const { openPanel } = useAppPanel();
@@ -97,56 +194,198 @@ export function DashboardExperience() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
-  const [pendingBalanceSummary, setPendingBalanceSummary] = useState<PendingBalanceSummary>({ claimableCount: 0, totalPendingUsd: 0, byToken: [] });
+  const [pendingBalanceSummary, setPendingBalanceSummary] =
+    useState<PendingBalanceSummary>({
+      claimableCount: 0,
+      totalPendingUsd: 0,
+      byToken: [],
+    });
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
-  const [identitySecurity, setIdentitySecurity] = useState<IdentitySecurityState | null>(null);
+  const [identitySecurity, setIdentitySecurity] =
+    useState<IdentitySecurityState | null>(null);
   const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
-  const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] = useState(false);
+  const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] =
+    useState(false);
   const [tinCopied, setTinCopied] = useState(false);
 
-  useEffect(() => { if (!walletAddress) { setWalletTokens([]); return; } const ctrl = new AbortController(); async function load() { setWalletTokenLoading(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (!ctrl.signal.aborted) setWalletTokens(r.tokens.filter((t) => t.supported)); } catch { if (!ctrl.signal.aborted) setWalletTokens([]); } finally { if (!ctrl.signal.aborted) setWalletTokenLoading(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
-  useEffect(() => { if (!accessToken || !user) return; void loadDashboard(accessToken); }, [accessToken, user]);
-  useEffect(() => { if (!accessToken || !user) return; void loadIdentitySecurity(accessToken); }, [accessToken, user]);
+  useEffect(() => {
+    if (!walletAddress) {
+      setWalletTokens([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    async function load() {
+      setWalletTokenLoading(true);
+      try {
+        const r = await apiPost<{ tokens: WalletTokenOption[] }>(
+          "/api/wallet/tokens",
+          { walletAddress },
+          undefined,
+          { cache: "default", ttlMs: 20_000 },
+        );
+        if (!ctrl.signal.aborted)
+          setWalletTokens(r.tokens.filter((t) => t.supported));
+      } catch {
+        if (!ctrl.signal.aborted) setWalletTokens([]);
+      } finally {
+        if (!ctrl.signal.aborted) setWalletTokenLoading(false);
+      }
+    }
+    void load();
+    return () => ctrl.abort();
+  }, [walletAddress]);
+  useEffect(() => {
+    if (!accessToken || !user) return;
+    void loadDashboard(accessToken);
+  }, [accessToken, user]);
+  useEffect(() => {
+    if (!accessToken || !user) return;
+    void loadIdentitySecurity(accessToken);
+  }, [accessToken, user]);
 
-  const supportedBalanceUsd = useMemo(() => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0), [walletTokens]);
-  const combinedVisibleBalanceUsd = useMemo(() => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)), [supportedBalanceUsd, totalPendingUsd]);
-  const pendingClaimsUsd = pendingBalanceSummary.totalPendingUsd || totalPendingUsd;
-  const hasPendingSenderReceipt = useMemo(() => paymentHistory.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [paymentHistory, user?.id]);
-  const sentCount = useMemo(() => paymentHistory.filter((p) => p.sender_user_id === user?.id).length, [paymentHistory, user?.id]);
-  const receivedCount = useMemo(() => paymentHistory.filter((p) => p.receiver_phone === user?.phoneNumber).length, [paymentHistory, user?.phoneNumber]);
+  const supportedBalanceUsd = useMemo(
+    () => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0),
+    [walletTokens],
+  );
+  const combinedVisibleBalanceUsd = useMemo(
+    () => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)),
+    [supportedBalanceUsd, totalPendingUsd],
+  );
+  const pendingClaimsUsd =
+    pendingBalanceSummary.totalPendingUsd || totalPendingUsd;
+  const hasPendingSenderReceipt = useMemo(
+    () =>
+      paymentHistory.some(
+        (p) =>
+          p.sender_user_id === user?.id &&
+          shouldPollPaymentNotification(p.notification_status),
+      ),
+    [paymentHistory, user?.id],
+  );
+  const sentCount = useMemo(
+    () => paymentHistory.filter((p) => p.sender_user_id === user?.id).length,
+    [paymentHistory, user?.id],
+  );
+  const receivedCount = useMemo(
+    () =>
+      paymentHistory.filter((p) => p.receiver_phone === user?.phoneNumber)
+        .length,
+    [paymentHistory, user?.phoneNumber],
+  );
   const activeTin = tinInfo?.tin ?? user?.tin ?? null;
-  const activeTinIdentity = tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
-  const showMainWalletGuidance = !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
+  const activeTinIdentity =
+    tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
+  const showMainWalletGuidance =
+    !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
 
-  useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadDashboard(accessToken, { background: true }); }, DASHBOARD_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);
+  useEffect(() => {
+    if (!accessToken || !user || !hasPendingSenderReceipt) return;
+    const interval = window.setInterval(() => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      )
+        return;
+      void loadDashboard(accessToken, { background: true });
+    }, DASHBOARD_REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [accessToken, hasPendingSenderReceipt, user]);
 
-  async function loadDashboard(token: string, options?: { background?: boolean }) { if (!options?.background) setLoading(true); try { const [pr, hr] = await Promise.all([apiGet<{ payments: PaymentRecord[]; totalPendingUsd: number; summary: PendingBalanceSummary }>("/api/payment/pending", token), apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=30", token)]); setPendingPayments(pr.payments); setTotalPendingUsd(pr.totalPendingUsd); setPendingBalanceSummary(pr.summary); setPaymentHistory(hr.payments); setError(null); } catch (e) { if (!options?.background) setError(e instanceof Error ? e.message : "Could not load dashboard"); } finally { if (!options?.background) setLoading(false); } }
+  async function loadDashboard(
+    token: string,
+    options?: { background?: boolean },
+  ) {
+    if (!options?.background) setLoading(true);
+    try {
+      const [pr, hr] = await Promise.all([
+        apiGet<{
+          payments: PaymentRecord[];
+          totalPendingUsd: number;
+          summary: PendingBalanceSummary;
+        }>("/api/payment/pending", token),
+        apiGet<{ payments: PaymentRecord[] }>(
+          "/api/payment/history?limit=30",
+          token,
+        ),
+      ]);
+      setPendingPayments(pr.payments);
+      setTotalPendingUsd(pr.totalPendingUsd);
+      setPendingBalanceSummary(pr.summary);
+      setPaymentHistory(hr.payments);
+      setError(null);
+    } catch (e) {
+      if (!options?.background)
+        setError(e instanceof Error ? e.message : "Could not load dashboard");
+    } finally {
+      if (!options?.background) setLoading(false);
+    }
+  }
 
-  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<IdentitySecurityResponse>("/api/identity", token); setIdentitySecurity(result.identity); setTinInfo(extractTinInfo(result)); } catch (e) { setError(e instanceof Error ? e.message : "Could not load TINS identity"); } finally { setIdentityLoading(false); } }
+  async function loadIdentitySecurity(token: string) {
+    setIdentityLoading(true);
+    try {
+      const result = await apiGet<IdentitySecurityResponse>(
+        "/api/identity",
+        token,
+      );
+      setIdentitySecurity(result.identity);
+      setTinInfo(extractTinInfo(result));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load TINS identity");
+    } finally {
+      setIdentityLoading(false);
+    }
+  }
 
   async function handleBindMainWallet() {
     if (!accessToken || !user) return;
-    if (!walletAddress || !session) { requestWalletConnection(); showToast("Connect the wallet you want to register with TINS."); return; }
-    setIdentityBusy(true); setError(null);
+    if (!walletAddress || !session) {
+      requestWalletConnection();
+      showToast("Connect the wallet you want to register with TINS.");
+      return;
+    }
+    setIdentityBusy(true);
+    setError(null);
     try {
       showToast("Checking your TINS identity.");
-      const tin = await createOrLoadTinForWallet({ walletId: session.walletId, walletAddress, phoneNumber: user.phoneNumber, displayName: user.displayName });
-      const stored = await apiPost<TinIdentityState>("/api/identity/tin", tin, accessToken);
+      const tin = await createOrLoadTinForWallet({
+        walletId: session.walletId,
+        walletAddress,
+        phoneNumber: user.phoneNumber,
+        displayName: user.displayName,
+      });
+      const stored = await apiPost<TinIdentityState>(
+        "/api/identity/tin",
+        tin,
+        accessToken,
+      );
       setTinInfo(stored);
       await loadIdentitySecurity(accessToken);
-      showToast(tin.created ? `TIN ${tin.tin} created.` : `TIN ${tin.tin} is already linked to this wallet.`);
-    } catch (e) { const message = e instanceof Error ? e.message : "Could not create TINS identity"; setError(message); showToast(message); } finally { setIdentityBusy(false); }
+      showToast(
+        tin.created
+          ? `TIN ${tin.tin} created.`
+          : `TIN ${tin.tin} is already linked to this wallet.`,
+      );
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Could not create TINS identity";
+      setError(message);
+      showToast(message);
+    } finally {
+      setIdentityBusy(false);
+    }
   }
 
   if (!hydrated || !user) return null;
 
   const userPhoneNumber = user.phoneNumber;
-  const { countryCode, localNumber, localDigits, fullNumber } = splitPhoneDisplay(userPhoneNumber);
+  const { countryCode, localNumber, localDigits, fullNumber } =
+    splitPhoneDisplay(userPhoneNumber);
 
   async function copyNumber(value: string, label: string) {
     if (!navigator.clipboard?.writeText) {
@@ -184,12 +423,29 @@ export function DashboardExperience() {
     void handleBindMainWallet();
   }
 
-  async function handleCopyPhoneNumber() { await copyNumber(fullNumber, "WhatsApp number"); }
-  async function handleCopyLocalNumber() { await copyNumber(localDigits, "10-digit TrustLink ID"); }
+  async function handleCopyPhoneNumber() {
+    await copyNumber(fullNumber, "WhatsApp number");
+  }
+  async function handleCopyLocalNumber() {
+    await copyNumber(localDigits, "10-digit TrustLink ID");
+  }
 
   return (
-    <AppMobileShell currentTab="home" title="Home" subtitle="Move crypto with the calm, speed, and clarity of a modern payments app." user={user}
-      blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
+    <AppMobileShell
+      currentTab="home"
+      title="Home"
+      subtitle="Move crypto with the calm, speed, and clarity of a modern payments app."
+      user={user}
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal
+            pendingAuth={pendingAuth}
+            user={user}
+            onAuthenticated={completePendingAuth}
+            onSignOut={logout}
+          />
+        ) : null
+      }
     >
       <FloatingGuidanceOverlay
         open={showMainWalletGuidance}
@@ -201,19 +457,43 @@ export function DashboardExperience() {
           title="Create your TIN"
           description="Your TIN links this WhatsApp account to the wallet that can receive TrustLink Pay settlement."
           steps={[
-            { title: "Connect the right wallet", description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want to register with TINS.", done: Boolean(walletAddress) },
-            { title: "Approve TINS registration", description: "The transaction creates your on-chain Transfer Identity Number for this wallet." },
-            { title: "Keep control of your funds", description: "TrustLink stores your phone-to-TIN mapping, not custody over your wallet." },
+            {
+              title: "Connect the right wallet",
+              description: walletAddress
+                ? `${shortenAddress(walletAddress)} is connected.`
+                : "Connect the wallet you want to register with TINS.",
+              done: Boolean(walletAddress),
+            },
+            {
+              title: "Approve TINS registration",
+              description:
+                "The transaction creates your on-chain Transfer Identity Number for this wallet.",
+            },
+            {
+              title: "Keep control of your funds",
+              description:
+                "TrustLink stores your phone-to-TIN mapping, not custody over your wallet.",
+            },
           ]}
           action={
-            <button type="button" onClick={() => void handleBindMainWallet()} disabled={identityBusy}
+            <button
+              type="button"
+              onClick={() => void handleBindMainWallet()}
+              disabled={identityBusy}
               className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
-              {identityBusy ? "Creating..." : walletAddress ? "Create TIN" : "Connect wallet"}
+              {identityBusy
+                ? "Creating..."
+                : walletAddress
+                  ? "Create TIN"
+                  : "Connect wallet"}
             </button>
           }
           secondaryAction={
-            <Link href="/app/settings" className="tl-button-secondary rounded-[18px] px-4 py-3 text-center tl-body-sm font-medium">
+            <Link
+              href="/app/settings"
+              className="tl-button-secondary rounded-[18px] px-4 py-3 text-center tl-body-sm font-medium"
+            >
               Security settings
             </Link>
           }
@@ -221,14 +501,10 @@ export function DashboardExperience() {
       </FloatingGuidanceOverlay>
 
       <div className="flex-col gap-5 md:grid md:grid-cols-[1.25fr_0.85fr] md:items-start">
-
         {/* â”€â”€â”€ LEFT COLUMN â”€â”€â”€ */}
         <div className="space-y-0 md:space-y-4">
-
-
           {/* BALANCE HERO CARD */}
           <div className="tl-scanline relative flex min-h-[210px] flex-col overflow-hidden rounded-[28px] border border-accent-border bg-accent-gradient bg-bg p-5 text-text shadow-softbox">
-
             {/* Ambient glow */}
             <div className="absolute right-[-18%] top-[-26%] h-44 w-44 rounded-full bg-accent/8 blur-3xl" />
 
@@ -237,7 +513,6 @@ export function DashboardExperience() {
 
             {/* TOP CONTENT */}
             <div className="relative z-10 flex items-start justify-between gap-2">
-
               {/* Balance block */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -249,7 +524,9 @@ export function DashboardExperience() {
                     type="button"
                     onClick={() => setBalanceVisible((c) => !c)}
                     className="cursor-pointer text-text/36 transition-colors hover:text-text/56 active:scale-[0.9]"
-                    aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                    aria-label={
+                      balanceVisible ? "Hide balance" : "Show balance"
+                    }
                   >
                     {balanceVisible ? (
                       <EyeOffIcon className="h-3.5 w-3.5" />
@@ -299,7 +576,6 @@ export function DashboardExperience() {
                 aria-label={activeTin ? `Copy TIN ${activeTin}` : "Create TIN"}
               >
                 <div className="flex items-center gap-1">
-
                   {/* Provider badge */}
                   <span className="flex items-center gap-1 rounded-[6px] border border-white/6 bg-white/4 px-1.5 py-0.5">
                     <span className="text-[0.6rem] font-semibold text-text/40">
@@ -324,17 +600,17 @@ export function DashboardExperience() {
 
                 {/* Micro label */}
                 <span className="whitespace-nowrap text-[0.54rem] font-medium tracking-[0.08em] text-text/24">
-                  {activeTin ? "Transfer Identity Number" : "Register payment identity"}
+                  {activeTin
+                    ? "Transfer Identity Number"
+                    : "Register payment identity"}
                 </span>
               </button>
             </div>
 
             {/* BOTTOM ACTION SECTION */}
             <div className="relative z-10 mt-auto flex items-end justify-between gap-3 pt-6">
-
               {/* Action buttons */}
               <div className="flex items-center gap-3">
-
                 {/* Send */}
                 <Link
                   href="/app/send"
@@ -367,7 +643,6 @@ export function DashboardExperience() {
               {/* Pending chip */}
               <div className="flex flex-col items-end justify-end gap-2">
                 <div className="flex w-fit items-center gap-1.5 rounded-[14px] border border-white/5 bg-white/3 px-3 py-2">
-
                   <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
 
                   <span className="text-[0.76rem] font-semibold text-text">
@@ -388,20 +663,36 @@ export function DashboardExperience() {
           <div className="my-4 flex gap-3 px-2">
             <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text)]-accent" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Sent</span>
-              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : sentCount}</span>
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
+                Sent
+              </span>
+              <span className="text-[0.62rem] font-bold text-text">
+                {loading ? "\u2014" : sentCount}
+              </span>
             </div>
 
             <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <ArrowDownLeft className="h-3.5 w-3.5 text-accent" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Received</span>
-              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : receivedCount}</span>
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
+                Received
+              </span>
+              <span className="text-[0.62rem] font-bold text-text">
+                {loading ? "\u2014" : receivedCount}
+              </span>
             </div>
 
             <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
               <Landmark className="h-3.5 w-3.5 text-(--warning)" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">Escrow</span>
-              <span className="text-[0.62rem] font-bold text-text">{loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
+                Escrow
+              </span>
+              <span className="text-[0.62rem] font-bold text-text">
+                {loading
+                  ? "\u2014"
+                  : balanceVisible
+                    ? formatPaymentUsd(totalPendingUsd)
+                    : "****"}
+              </span>
             </div>
             {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
               <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Sent</div>
@@ -429,9 +720,16 @@ export function DashboardExperience() {
           {/* â”€â”€â”€ ACTIVITY â€” desktop: starts right after stats â”€â”€â”€ */}
           <div className="tl-panel-header hidden md:block">
             <div className="flex items-start justify-between mx-[0.75rem] mb-3">
-              <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
+              <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">
+                Activity
+              </div>
               {!loading && paymentHistory.length > 6 ? (
-                <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
+                <Link
+                  href="/app/activity"
+                  className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors"
+                >
+                  View all
+                </Link>
               ) : null}
             </div>
             {!loading && paymentHistory.length > 0 ? (
@@ -443,38 +741,52 @@ export function DashboardExperience() {
             ) : null}
             <div className="space-y-2">
               {loading ? (
-                <>{[0, 1, 2].map((i) => (
-                  <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
-                    <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
-                    <div className="space-y-2">
-                      <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                      <div className="h-2.5 w-36 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                <>
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3"
+                    >
+                      <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
+                      <div className="space-y-2">
+                        <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                        <div className="h-2.5 w-36 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                      </div>
+                      <div className="h-5 w-12 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                     </div>
-                    <div className="h-5 w-12 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                  </div>
-                ))}</>
+                  ))}
+                </>
               ) : paymentHistory.length === 0 ? (
                 <div className="tl-field rounded-[18px] px-4 py-8 text-center">
                   {/* no tx ux */}
                   <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                     <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
                   </div>
-                  <div className="tl-body-sm font-medium text-[var(--text-soft)]">No transfer activity yet</div>
-                  <div className="mt-1 text-[0.72rem] text-[var(--muted)]">Your transactions will appear here</div>
+                  <div className="tl-body-sm font-medium text-[var(--text-soft)]">
+                    No transfer activity yet
+                  </div>
+                  <div className="mt-1 text-[0.72rem] text-[var(--muted)]">
+                    Your transactions will appear here
+                  </div>
                 </div>
               ) : (
-                paymentHistory.slice(0, 6).map((payment) => (
-                  <PaymentActivityCard key={payment.id} payment={payment} currentUserId={user.id} onClick={(id) => router.push(`/app/activity/${id}`)} />
-                ))
+                paymentHistory
+                  .slice(0, 6)
+                  .map((payment) => (
+                    <PaymentActivityCard
+                      key={payment.id}
+                      payment={payment}
+                      currentUserId={user.id}
+                      onClick={(id) => router.push(`/app/activity/${id}`)}
+                    />
+                  ))
               )}
             </div>
-
           </div>
         </div>
 
-        {/* â”€â”€â”€ RIGHT COLUMN â”€â”€â”€ */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-4">
-
           {/* PENDING CLAIMS */}
           {loading ? (
             <div className="tl-panel-header tl-field flex min-h-[68px] items-center justify-between gap-3 rounded-[22px] px-4 py-3.5">
@@ -485,34 +797,54 @@ export function DashboardExperience() {
               <SectionLoader label="Checking claims..." />
             </div>
           ) : pendingPayments.length > 0 ? (
-            <Link href="/app/claim" className="tl-panel-header group block rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
-              <div className="flex items-center justify-between">
-                <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-accent/68">Pending claims</div>
-                <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-3">
-                <span className="text-[1.3rem] font-bold text-[var(--text)]">
-                  {balanceVisible ? formatPaymentUsd(pendingClaimsUsd) : "****"}
-                </span>
-                <span className="text-[0.76rem] text-[var(--text-faint)]">{pendingPayments.length} unclaimed</span>
-              </div>
-              {pendingBalanceSummary.byToken.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {pendingBalanceSummary.byToken.map((t) => (
-                    <span key={t.tokenSymbol ?? "unknown"} className="rounded-[8px] border border-accent-border bg-accent-soft px-2 py-0.5 text-[0.64rem] font-medium text-accent">
-                      {t.tokenSymbol ?? "Token"}: {balanceVisible ? `${formatTokenAmount(t.amount)}${t.amountUsd != null ? ` · ${formatPaymentUsd(t.amountUsd)}` : ""}` : "****"}
-                    </span>
-                  ))}
+            <div className="tl-panel-header rounded-[22px] mb-0 md:mb-4">
+              <Link
+                href="/app/claim"
+                className="group block rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] bg-[var(--surface)]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-accent/68">
+                    Pending claims
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
                 </div>
-              ) : null}
-            </Link>
+                <div className="mt-2 flex items-baseline gap-3">
+                  <span className="text-[1.3rem] font-bold text-[var(--text)]">
+                    {balanceVisible
+                      ? formatPaymentUsd(pendingClaimsUsd)
+                      : "****"}
+                  </span>
+                  <span className="text-[0.76rem] text-[var(--text-faint)]">
+                    {pendingPayments.length} unclaimed
+                  </span>
+                </div>
+                {pendingBalanceSummary.byToken.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {pendingBalanceSummary.byToken.map((t) => (
+                      <span
+                        key={t.tokenSymbol ?? "unknown"}
+                        className="rounded-[8px] border border-accent-border bg-accent-soft px-2 py-0.5 text-[0.64rem] font-medium text-accent"
+                      >
+                        {t.tokenSymbol ?? "Token"}:{" "}
+                        {balanceVisible
+                          ? `${formatTokenAmount(t.amount)}${t.amountUsd != null ? ` · ${formatPaymentUsd(t.amountUsd)}` : ""}`
+                          : "****"}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </Link>
+            </div>
           ) : null}
 
           {/* â”€â”€ IDENTITY CARD â”€â”€ */}
           <div className="tl-panel-header rounded-[22px] hidden md:block">
             <div className="flex items-start justify-between mx-[0.75rem] mb-3">
-              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Identity</div>
-              <Link href="/app/settings"
+              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">
+                Identity
+              </div>
+              <Link
+                href="/app/settings"
                 className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
               >
                 Manage
@@ -520,7 +852,6 @@ export function DashboardExperience() {
             </div>
 
             <div className="tl-field rounded-[18px]">
-
               {/* TIN */}
               <button
                 type="button"
@@ -528,46 +859,75 @@ export function DashboardExperience() {
                 disabled={identityBusy}
                 className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   className={`h-3.5 w-3.5 shrink-0 ${activeTin ? "text-[var(--accent)]" : "text-[#ffb86b]"}`}
                 >
-                  <circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 14.14 14.14" /><path d="M12 2a10 10 0 0 1 10 10" />
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m4.93 4.93 14.14 14.14" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
                 </svg>
                 <div className="min-w-0 flex-1">
                   <div className="text-[0.74rem] font-medium">
-                    {activeTin ? user.displayName : identityBusy ? "Creating TIN..." : "Create TIN"}
-                    <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">Transfer Identity Number</span>
+                    {activeTin
+                      ? user.displayName
+                      : identityBusy
+                        ? "Creating TIN..."
+                        : "Create TIN"}
+                    <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">
+                      Transfer Identity Number
+                    </span>
                   </div>
-                  <div className="text-[0.58rem] text-text-faint" >
+                  <div className="text-[0.58rem] text-text-faint">
                     {activeTin
                       ? `TIN ${activeTin}${activeTinIdentity ? ` - ${shortenAddress(activeTinIdentity)}` : ""}`
                       : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>
-                <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                  style={activeTin ? { background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" } : { border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
+                <span
+                  className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
+                  style={
+                    activeTin
+                      ? {
+                          background: "var(--accent-soft)",
+                          border: "1px solid var(--accent-border)",
+                          color: "var(--accent)",
+                        }
+                      : {
+                          border: "1px solid var(--field-border)",
+                          color: "var(--text-faint)",
+                        }
+                  }
                 >
                   {activeTin ? "Active" : identityBusy ? "Working" : "Create"}
                 </span>
               </button>
 
-
               {/* Registered identities */}
               <div className="mt-2 space-y-1">
                 {/* WhatsApp identity */}
-                <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5"
-                >
+                <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5">
                   <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.78rem] font-semibold truncate">
                       {userPhoneNumber}
                     </div>
-                    <div className="text-[0.6rem] mt-0.5 text-text-faint" >
+                    <div className="text-[0.6rem] mt-0.5 text-text-faint">
                       WhatsApp - TrustLink login
                     </div>
                   </div>
-                  <span className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
-                    style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-border)", color: "var(--accent)" }}
+                  <span
+                    className="shrink-0 text-[0.58rem] font-semibold rounded-full px-2 py-0.5"
+                    style={{
+                      background: "var(--accent-soft)",
+                      border: "1px solid var(--accent-border)",
+                      color: "var(--accent)",
+                    }}
                   >
                     Active
                   </span>
@@ -607,11 +967,20 @@ export function DashboardExperience() {
           {/* WALLET TOKENS CARD */}
           <div className="tl-panel-header rounded-[22px] hidden md:block">
             <div className="flex items-start justify-between mx-[0.75rem] mb-3">
-              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">Wallet</div>
+              <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">
+                Wallet
+              </div>
               <div className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] pl-2.5 pr-1 py-0.5">
-                <WalletIcon size={13} className="shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+                <WalletIcon
+                  size={13}
+                  className="shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]"
+                />
                 <span className="text-[0.72rem] font-bold text-[var(--accent-deep)] dark:text-[var(--accent)] whitespace-nowrap">
-                  {walletAddress ? (balanceVisible ? formatPaymentUsd(supportedBalanceUsd) : "****") : "Connect"}
+                  {walletAddress
+                    ? balanceVisible
+                      ? formatPaymentUsd(supportedBalanceUsd)
+                      : "****"
+                    : "Connect"}
                 </span>
                 {walletAddress ? (
                   <span className="rounded-full border border-[var(--field-border)] bg-[var(--surface)] px-2 py-0.5 text-[0.58rem] font-medium text-[var(--text-soft)]">
@@ -620,7 +989,6 @@ export function DashboardExperience() {
                 ) : null}
               </div>
             </div>
-
 
             <div className="tl-field rounded-t-0 rounded-[18px] px-4 py-4">
               {walletTokenLoading ? (
@@ -638,29 +1006,39 @@ export function DashboardExperience() {
               ) : !walletAddress ? (
                 <div className="flex items-center gap-3 rounded-[14px] bg-[var(--surface-soft)] px-3.5 py-3">
                   <Wallet className="h-4 w-4 text-[var(--text-faint)]" />
-                  <span className="text-[0.78rem] text-[var(--muted)]">Connect a wallet to see your tokens</span>
+                  <span className="text-[0.78rem] text-[var(--muted)]">
+                    Connect a wallet to see your tokens
+                  </span>
                 </div>
               ) : walletTokens.length === 0 ? (
-                <div className="py-2 text-[0.78rem] text-[var(--muted)]">No supported tokens found</div>
+                <div className="py-2 text-[0.78rem] text-[var(--muted)]">
+                  No supported tokens found
+                </div>
               ) : (
                 <div className="">
                   {walletTokens.slice(0, 5).map((token) => (
-                    <div key={token.symbol} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                    <div
+                      key={token.symbol}
+                      className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+                    >
                       <div className="flex items-center gap-2.5">
                         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
                           {token.symbol.slice(0, 3)}
                         </div>
-                        <span className="tl-body-sm font-medium text-[var(--text)]">{token.symbol}</span>
+                        <span className="tl-body-sm font-medium text-[var(--text)]">
+                          {token.symbol}
+                        </span>
                       </div>
                       <span className="tl-body-sm font-semibold text-[var(--text)]">
-                        {balanceVisible ? formatPaymentUsd(token.balanceUsd ?? 0) : "****"}
+                        {balanceVisible
+                          ? formatPaymentUsd(token.balanceUsd ?? 0)
+                          : "****"}
                       </span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-
           </div>
 
           {/* MOBILE STATS */}
@@ -687,9 +1065,16 @@ export function DashboardExperience() {
       {/* ACTIVITY â€” mobile only (desktop version is inside left column) */}
       <div className="tl-panel-header mt-6 md:hidden">
         <div className="flex items-start justify-between mx-[0.75rem] mb-3">
-          <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">Activity</div>
+          <div className="tl-text-muted text-[0.62rem] font-semibold  uppercase tracking-[0.2em]">
+            Activity
+          </div>
           {!loading && paymentHistory.length > 6 ? (
-            <Link href="/app/activity" className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors">View all</Link>
+            <Link
+              href="/app/activity"
+              className="tl-meta-sm font-medium text-accent hover:text-accent-deep transition-colors"
+            >
+              View all
+            </Link>
           ) : null}
         </div>
 
@@ -703,57 +1088,112 @@ export function DashboardExperience() {
 
         <div className="space-y-2">
           {loading ? (
-            <>{[0, 1, 2].map((i) => (
-              <div key={i} className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3">
-                <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
-                <div className="space-y-2">
-                  <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-                  <div className="h-2.5 w-36 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+            <>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="tl-field grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3"
+                >
+                  <div className="h-10 w-10 animate-pulse rounded-[14px] bg-[var(--surface-soft)]" />
+                  <div className="space-y-2">
+                    <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                    <div className="h-2.5 w-36 animate-pulse rounded-full bg-[var(--surface-soft)]" />
+                  </div>
+                  <div className="h-5 w-12 animate-pulse rounded-full bg-[var(--surface-soft)]" />
                 </div>
-                <div className="h-5 w-12 animate-pulse rounded-full bg-[var(--surface-soft)]" />
-              </div>
-            ))}</>
+              ))}
+            </>
           ) : paymentHistory.length === 0 ? (
             <div className="tl-field rounded-[18px] px-4 py-8 text-center">
               <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-soft)]">
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-faint)]" />
               </div>
-              <div className="tl-body-sm font-medium text-[var(--text-soft)]">No transfer activity yet</div>
-              <div className="mt-1 text-[0.72rem] text-[var(--muted)]">Your transactions will appear here</div>
+              <div className="tl-body-sm font-medium text-[var(--text-soft)]">
+                No transfer activity yet
+              </div>
+              <div className="mt-1 text-[0.72rem] text-[var(--muted)]">
+                Your transactions will appear here
+              </div>
             </div>
           ) : (
-            paymentHistory.slice(0, 6).map((payment) => (
-              <PaymentActivityCard key={payment.id} payment={payment} currentUserId={user.id} onClick={(id) => router.push(`/app/activity/${id}`)} />
-            ))
+            paymentHistory
+              .slice(0, 6)
+              .map((payment) => (
+                <PaymentActivityCard
+                  key={payment.id}
+                  payment={payment}
+                  currentUserId={user.id}
+                  onClick={(id) => router.push(`/app/activity/${id}`)}
+                />
+              ))
           )}
         </div>
-
-
       </div>
 
       {/* BALANCE MODAL */}
       {balanceInfoOpen ? (
-        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setBalanceInfoOpen(false)}>
-          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center"
+          onClick={() => setBalanceInfoOpen(false)}
+        >
+          <div
+            className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">Balance details</h2>
-                <p className="tl-text-muted mt-1 tl-body-sm leading-relaxed">Spendable balance plus funds waiting in escrow.</p>
+                <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-[var(--text)]">
+                  Balance details
+                </h2>
+                <p className="tl-text-muted mt-1 tl-body-sm leading-relaxed">
+                  Spendable balance plus funds waiting in escrow.
+                </p>
               </div>
-              <button type="button" onClick={() => setBalanceInfoOpen(false)} className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 tl-meta-sm font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]">Close</button>
+              <button
+                type="button"
+                onClick={() => setBalanceInfoOpen(false)}
+                className="tl-button-secondary shrink-0 rounded-full px-3.5 py-2 tl-meta-sm font-medium cursor-pointer transition-colors hover:opacity-90 active:scale-[0.97]"
+              >
+                Close
+              </button>
             </div>
             <div className="space-y-2.5">
               {[
-                { label: "Total", value: formatPaymentUsd(combinedVisibleBalanceUsd), sub: null },
-                { label: "Wallet", value: formatPaymentUsd(supportedBalanceUsd), sub: walletAddress ? shortenAddress(walletAddress) : "Not connected" },
-                { label: "Escrow", value: formatPaymentUsd(totalPendingUsd), sub: `${pendingBalanceSummary.claimableCount} ${pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}` },
+                {
+                  label: "Total",
+                  value: formatPaymentUsd(combinedVisibleBalanceUsd),
+                  sub: null,
+                },
+                {
+                  label: "Wallet",
+                  value: formatPaymentUsd(supportedBalanceUsd),
+                  sub: walletAddress
+                    ? shortenAddress(walletAddress)
+                    : "Not connected",
+                },
+                {
+                  label: "Escrow",
+                  value: formatPaymentUsd(totalPendingUsd),
+                  sub: `${pendingBalanceSummary.claimableCount} ${pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}`,
+                },
               ].map((row) => (
-                <div key={row.label} className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5">
+                <div
+                  key={row.label}
+                  className="tl-panel-header tl-field rounded-[18px] px-4 py-3.5"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-[0.78rem] text-[var(--text-soft)]">{row.label}</span>
+                    <span className="text-[0.78rem] text-[var(--text-soft)]">
+                      {row.label}
+                    </span>
                     <div className="text-right">
-                      <span className="block tl-body-sm font-semibold text-[var(--text)]">{balanceVisible ? row.value : "****"}</span>
-                      {row.sub ? <span className="block tl-meta-sm text-[var(--text-soft)]">{row.sub}</span> : null}
+                      <span className="block tl-body-sm font-semibold text-[var(--text)]">
+                        {balanceVisible ? row.value : "****"}
+                      </span>
+                      {row.sub ? (
+                        <span className="block tl-meta-sm text-[var(--text-soft)]">
+                          {row.sub}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

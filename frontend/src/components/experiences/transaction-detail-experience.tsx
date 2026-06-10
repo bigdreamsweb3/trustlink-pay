@@ -31,11 +31,7 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function shortenValue(
-  value: string | null | undefined,
-  start = 6,
-  end = 6
-) {
+function shortenValue(value: string | null | undefined, start = 6, end = 6) {
   if (!value) return "Not available";
   if (value.length <= start + end + 3) return value;
 
@@ -44,7 +40,7 @@ function shortenValue(
 
 function formatFeeAmount(
   value: string | null | undefined,
-  tokenSymbol: string
+  tokenSymbol: string,
 ) {
   if (value == null) return null;
 
@@ -56,10 +52,7 @@ function formatFeeAmount(
 }
 
 function statusTone(
-  status:
-    | PaymentDetailResponse["payment"]["status"]
-    | "accepted"
-    | "pending"
+  status: PaymentDetailResponse["payment"]["status"] | "accepted" | "pending",
 ) {
   switch (status) {
     case "accepted":
@@ -80,7 +73,9 @@ function isSenderEscrowed(detail: PaymentDetailResponse | null | undefined) {
   const tsn = detail?.payment.tsn;
   return (
     detail?.viewerRole === "sender" &&
-    (tsn?.intentStatus === "escrowed" || tsn?.intentStatus === "onchain" || tsn?.intentStatus === "claimed")
+    (tsn?.intentStatus === "escrowed" ||
+      tsn?.intentStatus === "onchain" ||
+      tsn?.intentStatus === "claimed")
   );
 }
 
@@ -112,8 +107,16 @@ function tsnTone(stage: TsnStage) {
   }
 }
 
-function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]) {
-  if (viewerRole === "sender" && (tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed")) {
+function tsnLabel(
+  tsn: TsnState,
+  viewerRole: PaymentDetailResponse["viewerRole"],
+) {
+  if (
+    viewerRole === "sender" &&
+    (tsn.intentStatus === "escrowed" ||
+      tsn.intentStatus === "onchain" ||
+      tsn.intentStatus === "claimed")
+  ) {
     return "Escrowed";
   }
   if (isUnpublishedTsn(tsn)) return "Not published";
@@ -134,12 +137,15 @@ function tsnLabel(tsn: TsnState, viewerRole: PaymentDetailResponse["viewerRole"]
     case "reverted":
       if (tsn.intentStatus === "canceled") return "Canceled";
       if (tsn.intentStatus === "failed") return "Failed";
-      if (tsn.claimRequestStatus === "failed") return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
+      if (tsn.claimRequestStatus === "failed")
+        return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
       return "Not processed";
   }
 }
 
-function paymentStatusLabel(status: PaymentDetailResponse["payment"]["status"]) {
+function paymentStatusLabel(
+  status: PaymentDetailResponse["payment"]["status"],
+) {
   if (status === "created") return "Processing";
   return status.replace(/_/g, " ");
 }
@@ -158,7 +164,9 @@ function receiverIdentityLabel(receiver: PaymentDetailResponse["receiver"]) {
   return "Recipient";
 }
 
-function receiverIdentityNameSource(receiver: PaymentDetailResponse["receiver"]) {
+function receiverIdentityNameSource(
+  receiver: PaymentDetailResponse["receiver"],
+) {
   if (receiver.tin && receiver.displayName?.trim()) {
     return "Transfer identity name";
   }
@@ -170,11 +178,19 @@ function receiverIdentityNameSource(receiver: PaymentDetailResponse["receiver"])
   return "Identity name unavailable";
 }
 
-function formatDuration(from: string | null | undefined, to: string | null | undefined) {
+function formatDuration(
+  from: string | null | undefined,
+  to: string | null | undefined,
+) {
   if (!from) return null;
   const started = Date.parse(from);
   const finished = to ? Date.parse(to) : Date.now();
-  if (!Number.isFinite(started) || !Number.isFinite(finished) || finished < started) return null;
+  if (
+    !Number.isFinite(started) ||
+    !Number.isFinite(finished) ||
+    finished < started
+  )
+    return null;
   const totalSeconds = Math.max(0, Math.floor((finished - started) / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -202,7 +218,11 @@ function buildTsnProgress(detail: PaymentDetailResponse) {
   const lastCompletedTimelineEntry = [...detail.timeline]
     .reverse()
     .find((entry) => entry.complete && entry.occurredAt);
-  const finishedAt = settled ? detail.payment.accepted_at ?? lastCompletedTimelineEntry?.occurredAt ?? null : null;
+  const finishedAt = settled
+    ? (detail.payment.accepted_at ??
+      lastCompletedTimelineEntry?.occurredAt ??
+      null)
+    : null;
   const elapsed = formatDuration(detail.payment.created_at, finishedAt);
 
   return {
@@ -218,12 +238,14 @@ function buildTsnProgress(detail: PaymentDetailResponse) {
       {
         id: "escrowed",
         label: "Escrowed",
-        description: "Cranker verified the intent and locked funds into TSN escrow.",
+        description:
+          "Cranker verified the intent and locked funds into TSN escrow.",
       },
       {
         id: "claiming",
         label: "Claiming",
-        description: "A Cranker lease is protecting the payout from duplicate execution.",
+        description:
+          "A Cranker lease is protecting the payout from duplicate execution.",
       },
       {
         id: "settled",
@@ -252,8 +274,7 @@ export function TransactionDetailExperience({
     logout,
   } = useAuthenticatedSession(`/app/activity/${paymentId}`);
 
-  const [detail, setDetail] =
-    useState<PaymentDetailResponse | null>(null);
+  const [detail, setDetail] = useState<PaymentDetailResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -264,9 +285,7 @@ export function TransactionDetailExperience({
 
   const shouldPollReceipt =
     detail?.viewerRole === "sender" &&
-    shouldPollPaymentNotification(
-      detail?.payment.notification_status
-    );
+    shouldPollPaymentNotification(detail?.payment.notification_status);
   const shouldPollTsn =
     detail?.payment.tsn != null &&
     !["cranker_paid", "epoch_settled"].includes(detail.payment.tsn.stage) &&
@@ -284,7 +303,7 @@ export function TransactionDetailExperience({
       try {
         const r = await apiGet<PaymentDetailResponse>(
           `/api/payment/${paymentId}`,
-          accessToken ?? undefined
+          accessToken ?? undefined,
         );
 
         if (!cancelled) {
@@ -293,11 +312,7 @@ export function TransactionDetailExperience({
         }
       } catch (e) {
         if (!cancelled) {
-          setError(
-            e instanceof Error
-              ? e.message
-              : "Could not load details"
-          );
+          setError(e instanceof Error ? e.message : "Could not load details");
         }
       } finally {
         if (!cancelled) {
@@ -314,11 +329,7 @@ export function TransactionDetailExperience({
   }, [accessToken, paymentId, user]);
 
   useEffect(() => {
-    if (
-      !accessToken ||
-      !user ||
-      !shouldPollDetail
-    ) {
+    if (!accessToken || !user || !shouldPollDetail) {
       return;
     }
 
@@ -328,13 +339,13 @@ export function TransactionDetailExperience({
       try {
         const r = await apiGet<PaymentDetailResponse>(
           `/api/payment/${paymentId}`,
-          accessToken ?? undefined
+          accessToken ?? undefined,
         );
 
         if (!cancelled) {
           setDetail(r);
         }
-      } catch { }
+      } catch {}
     }
 
     const interval = window.setInterval(() => {
@@ -352,12 +363,7 @@ export function TransactionDetailExperience({
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [
-    accessToken,
-    paymentId,
-    shouldPollDetail,
-    user,
-  ]);
+  }, [accessToken, paymentId, shouldPollDetail, user]);
 
   const receiptUpdatedAt = useMemo(() => {
     if (!detail) return null;
@@ -380,16 +386,19 @@ export function TransactionDetailExperience({
   const viewerFeeAmount = detail
     ? detail.viewerRole === "sender"
       ? formatFeeAmount(
-        detail.payment.sender_fee_amount,
-        detail.payment.token_symbol
-      )
+          detail.payment.sender_fee_amount,
+          detail.payment.token_symbol,
+        )
       : formatFeeAmount(
-        detail.payment.claim_fee_amount,
-        detail.payment.token_symbol
-      )
+          detail.payment.claim_fee_amount,
+          detail.payment.token_symbol,
+        )
     : null;
 
-  const tsnProgress = useMemo(() => (detail ? buildTsnProgress(detail) : null), [detail]);
+  const tsnProgress = useMemo(
+    () => (detail ? buildTsnProgress(detail) : null),
+    [detail],
+  );
   const heroStatusLabel = detail?.payment.tsn
     ? tsnLabel(detail.payment.tsn, detail.viewerRole)
     : detail
@@ -400,8 +409,12 @@ export function TransactionDetailExperience({
     : detail
       ? statusTone(detail.payment.status)
       : "";
-  const receiverLabel = detail ? receiverIdentityLabel(detail.receiver) : "Recipient";
-  const receiverTinNameMissing = Boolean(detail?.receiver.tin && !detail.receiver.displayName?.trim());
+  const receiverLabel = detail
+    ? receiverIdentityLabel(detail.receiver)
+    : "Recipient";
+  const receiverTinNameMissing = Boolean(
+    detail?.receiver.tin && !detail.receiver.displayName?.trim(),
+  );
 
   if (!hydrated || !user) return null;
 
@@ -425,7 +438,6 @@ export function TransactionDetailExperience({
       }
     >
       <section className="space-y-5 pb-8">
-
         {/* ERROR */}
         {error ? (
           <div className="rounded-[18px] border border-[#ff7f7f]/14 bg-[#ff7f7f]/8 px-4 py-3 text-[#ffb1b1]">
@@ -436,16 +448,12 @@ export function TransactionDetailExperience({
         {/* LOADING */}
         {loading ? (
           <div className="tl-field rounded-[24px] px-5 py-10">
-            <SectionLoader
-              size="md"
-              label="Loading transaction..."
-            />
+            <SectionLoader size="md" label="Loading transaction..." />
           </div>
         ) : detail ? (
           <>
             {/* HERO */}
-            <div className="relative overflow-hidden rounded-[30px] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-5 py-6 backdrop-blur-xl">
-
+            <div className="relative overflow-hidden rounded-[14px] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-5 py-6 backdrop-blur-xl">
               {/* Ambient glow */}
               <div className="absolute right-[-18%] top-[-28%] h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
 
@@ -477,10 +485,11 @@ export function TransactionDetailExperience({
                     ? detail.receiver.manualInviteRequired
                       ? `In escrow for ${receiverLabel}. Recipient has not joined TrustLink yet.`
                       : `Securely being delivered to ${receiverLabel}.`
-                    : `Payment from ${detail.sender.displayName}${detail.sender.handle
-                      ? ` (@${detail.sender.handle})`
-                      : ""
-                    }.`}
+                    : `Payment from ${detail.sender.displayName}${
+                        detail.sender.handle
+                          ? ` (@${detail.sender.handle})`
+                          : ""
+                      }.`}
                 </p>
               </div>
             </div>
@@ -496,13 +505,18 @@ export function TransactionDetailExperience({
                       {tsnProgress.settled
                         ? `Completed in ${tsnProgress.elapsed ?? "a few moments"}`
                         : tsnProgress.failed
-                          ? detail.payment.tsn?.settlementReason ?? "Settlement needs operator attention."
+                          ? (detail.payment.tsn?.settlementReason ??
+                            "Settlement needs operator attention.")
                           : `Running for ${tsnProgress.elapsed ?? "a few seconds"}`}
                     </div>
                   </div>
 
-                  <span className={`shrink-0 rounded-full px-3 py-1 tl-meta-sm font-semibold ${detail.payment.tsn ? tsnTone(effectiveTsnStage(detail)) : ""}`}>
-                    {detail.payment.tsn ? tsnLabel(detail.payment.tsn, detail.viewerRole) : "TSN"}
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 tl-meta-sm font-semibold ${detail.payment.tsn ? tsnTone(effectiveTsnStage(detail)) : ""}`}
+                  >
+                    {detail.payment.tsn
+                      ? tsnLabel(detail.payment.tsn, detail.viewerRole)
+                      : "TSN"}
                   </span>
                 </div>
 
@@ -511,23 +525,25 @@ export function TransactionDetailExperience({
                     <div key={step.id} className="relative min-w-0">
                       {index > 0 ? (
                         <div
-                          className={`absolute left-[-50%] right-[50%] top-[13px] h-px ${step.complete || step.active
-                            ? "bg-[var(--accent)]"
-                            : "bg-white/10"
-                            }`}
+                          className={`absolute left-[-50%] right-[50%] top-[13px] h-px ${
+                            step.complete || step.active
+                              ? "bg-[var(--accent)]"
+                              : "bg-white/10"
+                          }`}
                         />
                       ) : null}
 
                       <div className="relative z-10 flex flex-col items-center text-center">
                         <span
-                          className={`grid h-6 w-6 place-items-center rounded-full border text-[0.62rem] font-bold ${tsnProgress.failed && step.active
-                            ? "border-[#ff7f7f]/40 bg-[#ff7f7f]/12 text-[#ffadad]"
-                            : step.complete
-                              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                              : step.active
-                                ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
-                                : "border-white/10 bg-white/[0.03] text-text-soft"
-                            }`}
+                          className={`grid h-6 w-6 place-items-center rounded-full border text-[0.62rem] font-bold ${
+                            tsnProgress.failed && step.active
+                              ? "border-[#ff7f7f]/40 bg-[#ff7f7f]/12 text-[#ffadad]"
+                              : step.complete
+                                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                                : step.active
+                                  ? "animate-pulse border-[#f3c96b]/40 bg-[#f3c96b]/12 text-[#f3c96b]"
+                                  : "border-white/10 bg-white/[0.03] text-text-soft"
+                          }`}
                         >
                           {index + 1}
                         </span>
@@ -542,23 +558,24 @@ export function TransactionDetailExperience({
 
                 <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.02] px-3 py-3 text-[0.74rem] leading-relaxed text-text-soft">
                   {tsnProgress.failed
-                    ? detail.payment.tsn?.settlementReason ?? "TSN marked this payment for operator review."
-                    : tsnProgress.steps.find((step) => step.active)?.description ??
-                    [...tsnProgress.steps].reverse().find((step) => step.complete)?.description ??
-                    "TSN is waiting for the next settlement update."}
+                    ? (detail.payment.tsn?.settlementReason ??
+                      "TSN marked this payment for operator review.")
+                    : (tsnProgress.steps.find((step) => step.active)
+                        ?.description ??
+                      [...tsnProgress.steps]
+                        .reverse()
+                        .find((step) => step.complete)?.description ??
+                      "TSN is waiting for the next settlement update.")}
                 </div>
               </div>
             ) : null}
 
             {/* MAIN GRID */}
             <div className="grid gap-5 md:grid-cols-[1.25fr_0.9fr] md:items-start">
-
               {/* LEFT */}
               <div className="space-y-5">
-
                 {/* PARTICIPANTS */}
                 <div className="space-y-3">
-
                   <div className="tl-field rounded-[22px] px-4 py-4">
                     <button
                       type="button"
@@ -567,8 +584,11 @@ export function TransactionDetailExperience({
                           setReceiverIdentityOpen((open) => !open);
                         }
                       }}
-                      className={`flex w-full items-center justify-between gap-4 text-left ${detail.viewerRole === "sender" ? "cursor-pointer" : "cursor-default"
-                        }`}
+                      className={`flex w-full items-center justify-between gap-4 text-left ${
+                        detail.viewerRole === "sender"
+                          ? "cursor-pointer"
+                          : "cursor-default"
+                      }`}
                     >
                       <div className="min-w-0">
                         <div className="tl-meta-sm uppercase tracking-[0.14em] text-text-soft">
@@ -583,11 +603,13 @@ export function TransactionDetailExperience({
                             : detail.sender.displayName}
                         </div>
 
-                        {detail.viewerRole === "sender" && detail.receiver.tin ? (
+                        {detail.viewerRole === "sender" &&
+                        detail.receiver.tin ? (
                           <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             TIN {detail.receiver.tin}
                           </div>
-                        ) : detail.viewerRole === "sender" && detail.receiver.handle ? (
+                        ) : detail.viewerRole === "sender" &&
+                          detail.receiver.handle ? (
                           <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             @{detail.receiver.handle}
                           </div>
@@ -595,8 +617,11 @@ export function TransactionDetailExperience({
                       </div>
 
                       <ChevronRight
-                        className={`h-4 w-4 text-text-soft transition-transform ${receiverIdentityOpen && detail.viewerRole === "sender" ? "rotate-90" : ""
-                          }`}
+                        className={`h-4 w-4 text-text-soft transition-transform ${
+                          receiverIdentityOpen && detail.viewerRole === "sender"
+                            ? "rotate-90"
+                            : ""
+                        }`}
                       />
                     </button>
 
@@ -605,12 +630,18 @@ export function TransactionDetailExperience({
                         <IdentityTree
                           compact
                           displayName={receiverLabel}
-                          nameSourceLabel={receiverIdentityNameSource(detail.receiver)}
+                          nameSourceLabel={receiverIdentityNameSource(
+                            detail.receiver,
+                          )}
                           missingTinName={receiverTinNameMissing}
                           handle={detail.receiver.handle}
                           tin={detail.receiver.tin}
                           phoneNumber={detail.receiver.phone}
-                          walletLabel={detail.receiver.releasedWallet ? shortenValue(detail.receiver.releasedWallet) : null}
+                          walletLabel={
+                            detail.receiver.releasedWallet
+                              ? shortenValue(detail.receiver.releasedWallet)
+                              : null
+                          }
                           hideMissingNodes
                         />
                       </div>
@@ -619,7 +650,6 @@ export function TransactionDetailExperience({
 
                   <div className="tl-field rounded-[22px] px-4 py-4">
                     <div className="flex items-center justify-between gap-4">
-
                       <div>
                         <div className="tl-meta-sm uppercase tracking-[0.14em] text-text-soft">
                           {detail.receiver.manualInviteRequired
@@ -640,9 +670,7 @@ export function TransactionDetailExperience({
                         </span>
                       ) : (
                         <PaymentNotificationReceipt
-                          status={
-                            detail.payment.notification_status
-                          }
+                          status={detail.payment.notification_status}
                         />
                       )}
                     </div>
@@ -651,19 +679,15 @@ export function TransactionDetailExperience({
 
                 {/* SHARE INVITE */}
                 {detail.viewerRole === "sender" &&
-                  detail.receiver.manualInviteRequired &&
-                  detail.receiver.inviteShare ? (
+                detail.receiver.manualInviteRequired &&
+                detail.receiver.inviteShare ? (
                   <div className="tl-field rounded-[24px] px-5 py-5">
-
                     <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">
                       Share invite
                     </div>
 
                     <pre className="mt-4 whitespace-pre-wrap rounded-[18px] border border-white/5 bg-white/[0.02] p-4 text-[0.78rem] leading-relaxed text-text-soft">
-                      {
-                        detail.receiver.inviteShare
-                          .inviteMessage
-                      }
+                      {detail.receiver.inviteShare.inviteMessage}
                     </pre>
 
                     <button
@@ -673,23 +697,16 @@ export function TransactionDetailExperience({
                         setError(null);
 
                         try {
-                          const outcome =
-                            await shareInviteMessage(
-                              detail.receiver
-                                .inviteShare!
-                                .inviteMessage
-                            );
+                          const outcome = await shareInviteMessage(
+                            detail.receiver.inviteShare!.inviteMessage,
+                          );
 
                           if (outcome === "copied") {
-                            setError(
-                              "Invite copied to clipboard."
-                            );
+                            setError("Invite copied to clipboard.");
                           }
                         } catch (e) {
                           setError(
-                            e instanceof Error
-                              ? e.message
-                              : "Could not share"
+                            e instanceof Error ? e.message : "Could not share",
                           );
                         } finally {
                           setShareBusy(false);
@@ -698,9 +715,7 @@ export function TransactionDetailExperience({
                       disabled={shareBusy}
                       className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 font-semibold text-[#04110a] transition-transform active:scale-[0.97] disabled:opacity-50"
                     >
-                      {shareBusy
-                        ? "Preparing..."
-                        : "Share Invite"}
+                      {shareBusy ? "Preparing..." : "Share Invite"}
                     </button>
                   </div>
                 ) : null}
@@ -712,7 +727,6 @@ export function TransactionDetailExperience({
                   </div>
 
                   <div className="space-y-2">
-
                     {[
                       {
                         label: "Reference",
@@ -720,32 +734,23 @@ export function TransactionDetailExperience({
                       },
                       {
                         label: "Payment ID",
-                        value: shortenValue(
-                          detail.trace.paymentId,
-                          8,
-                          8
-                        ),
+                        value: shortenValue(detail.trace.paymentId, 8, 8),
                       },
                       {
                         label: "Created",
-                        value: formatDateTime(
-                          detail.payment.created_at
-                        ),
+                        value: formatDateTime(detail.payment.created_at),
                       },
                       {
                         label: "Escrow",
-                        value: shortenValue(
-                          detail.trace.escrowAccount
-                        ),
+                        value: shortenValue(detail.trace.escrowAccount),
                       },
-                      ...(viewerFeeLabel &&
-                        viewerFeeAmount
+                      ...(viewerFeeLabel && viewerFeeAmount
                         ? [
-                          {
-                            label: viewerFeeLabel,
-                            value: viewerFeeAmount,
-                          },
-                        ]
+                            {
+                              label: viewerFeeLabel,
+                              value: viewerFeeAmount,
+                            },
+                          ]
                         : []),
                     ].map((row) => (
                       <div
@@ -770,8 +775,14 @@ export function TransactionDetailExperience({
                       },
                       {
                         label: "TSN escrow tx",
-                        sig: detail.viewerRole === "sender" ? detail.trace.tsnEscrowSignature : null,
-                        url: detail.viewerRole === "sender" ? detail.trace.tsnEscrowExplorerUrl : null,
+                        sig:
+                          detail.viewerRole === "sender"
+                            ? detail.trace.tsnEscrowSignature
+                            : null,
+                        url:
+                          detail.viewerRole === "sender"
+                            ? detail.trace.tsnEscrowExplorerUrl
+                            : null,
                       },
                       {
                         label: "Claim tx",
@@ -781,14 +792,12 @@ export function TransactionDetailExperience({
                       {
                         label: "TSN lease claim",
                         sig: detail.trace.tsnClaimSignature,
-                        url: detail.trace
-                          .tsnClaimExplorerUrl,
+                        url: detail.trace.tsnClaimExplorerUrl,
                       },
                       {
                         label: "TSN proof",
                         sig: detail.trace.tsnProofSignature,
-                        url: detail.trace
-                          .tsnProofExplorerUrl,
+                        url: detail.trace.tsnProofExplorerUrl,
                       },
                       {
                         label: "Expiry tx",
@@ -813,19 +822,11 @@ export function TransactionDetailExperience({
                               rel="noreferrer"
                               className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-[var(--accent-deep)] underline underline-offset-4 dark:text-[var(--accent)]"
                             >
-                              {shortenValue(
-                                row.sig,
-                                8,
-                                8
-                              )}
+                              {shortenValue(row.sig, 8, 8)}
                             </a>
                           ) : (
                             <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-text">
-                              {shortenValue(
-                                row.sig,
-                                8,
-                                8
-                              )}
+                              {shortenValue(row.sig, 8, 8)}
                             </span>
                           )}
                         </div>
@@ -838,12 +839,7 @@ export function TransactionDetailExperience({
                         </span>
 
                         <span className="max-w-[58%] truncate text-right text-[0.8rem] font-medium text-text">
-                          {shortenValue(
-                            detail.receiver
-                              .releasedWallet,
-                            8,
-                            8
-                          )}
+                          {shortenValue(detail.receiver.releasedWallet, 8, 8)}
                         </span>
                       </div>
                     ) : null}
@@ -853,9 +849,6 @@ export function TransactionDetailExperience({
 
               {/* RIGHT */}
               <div className="space-y-5">
-
-
-
                 {/* PRIVACY */}
                 <div>
                   <div className="mb-3 text-[0.64rem] uppercase tracking-[0.2em] text-text-soft">
@@ -863,20 +856,16 @@ export function TransactionDetailExperience({
                   </div>
 
                   <div className="tl-field rounded-[20px] px-4 py-4 text-[0.78rem] leading-relaxed text-text-soft">
-                    <p>
-                      {detail.privacy.senderPhonePolicy}
-                    </p>
+                    <p>{detail.privacy.senderPhonePolicy}</p>
 
                     <p className="mt-3">
-                      Deeper disclosure requires
-                      TrustLink compliance review.
+                      Deeper disclosure requires TrustLink compliance review.
                     </p>
                   </div>
                 </div>
 
                 {/* ACTIONS */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
-
                   <Link
                     href="/app/activity"
                     className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center font-medium transition-transform active:scale-[0.97]"

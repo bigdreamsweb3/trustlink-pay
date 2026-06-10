@@ -58,7 +58,7 @@ export function SiteHeader() {
   return (
     <>
       <header
-        className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-bg/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}
+        className={`items-center fixed inset-x-0 top-0 z-40 ${headerScrolled || menuOpen ? "bg-dock/90 backdrop-blur-lg border-b border-field-border/50" : "bg-transparent"}`}
       >
         <div className="mx-auto flex max-h-fit md:min-h-16  w-full max-w-[1280px] items-center justify-between gap-3 py-2.5 px-4 md:px-2.5">
           <div className="flex min-w-0 items-center gap-3">

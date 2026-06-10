@@ -39,7 +39,12 @@
   --bg-elevated: #ffffff;
   --panel: #ffffff;
   --panel-soft: #f2f5f3;
-  --surface: #203236;
+  --surface: background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--accent) 50%, white 8%),
+      transparent
+    );
   --surface-border: rgba(30, 138, 108, 0.08);
   --text: #0f1a14;
   --primary: #ffffff;
@@ -78,11 +83,13 @@
   --accent-border: rgba(46, 168, 134, 0.12);
   --danger-soft: rgba(212, 80, 80, 0.08);
 
-  --pop-bg: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0.35) 100%
-  );
+  --pop-bg:
+    radial-gradient(circle at top, rgba(93, 219, 167, 0.03), transparent 50%),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 10) 0%,
+      rgba(255, 255, 255, 0.75) 100%
+    );
 
   --gradient-bg:
     radial-gradient(circle at top, rgba(46, 168, 134, 0.05), transparent 28%),
@@ -93,11 +100,16 @@
   color-scheme: dark;
 
   /* ── DARK MODE ─ Airbills-depth, muted mint, near-black ─── */
-  --bg: #0d1311;
+  --bg: #070a09f0;
   --bg-elevated: #070a09;
   --panel: #111918;
   --panel-soft: #172220;
-  --surface: #203236;
+  --surface: background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--accent) 50%, white 8%),
+      transparent
+    );
   --surface-border: rgba(93, 219, 167, 0.05);
   --text: #ecf4ef;
   --primary: #ffffff;
@@ -124,9 +136,9 @@
     #0a100e 52%,
     #080c0a 100%
   );
-  --dock: rgba(9, 15, 13, 0.94);
+  --dock: #070a09f0;
   --dock-border: rgba(255, 255, 255, 0.04);
-  --card-strong: rgba(13, 19, 17, 0.93);
+  --card-strong: #070a09ed;
   --field: #0f1816;
   --field-strong:
     radial-gradient(circle at top, rgba(93, 219, 167, 0.04), transparent 50%),
@@ -411,14 +423,14 @@
 
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--bg-elevated) 94%, transparent) 0%,
-    color-mix(in srgb, var(--bg-elevated) 70%, transparent) 40%,
+    color-mix(in srgb, var(--bg-elevated) 94%, transparent) 94%,
+    color-mix(in srgb, var(--bg-elevated) 70%, transparent) 70%,
     transparent 100%
   );
 
   background-image: var(--pop-bg);
 
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(44px);
 
   pointer-events: none;
 

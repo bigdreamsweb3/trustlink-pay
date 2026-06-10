@@ -31,6 +31,7 @@ Phone numbers, WhatsApp, and social identities are optional application-layer li
 | [CRANKER.md](./CRANKER.md) | Cranker operator guide |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and LP model |
 | [EPOCH-SETTLEMENT.md](./EPOCH-SETTLEMENT.md) | Epoch reimbursement and accounting |
+| [OTDT-SMART-RECOVERY.md](./OTDT-SMART-RECOVERY.md) | OTDT, claim leases, commitment registry, and smart recovery runtime |
 
 ---
 

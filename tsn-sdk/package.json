@@ -65,6 +65,10 @@
     "./server": {
       "import": "./dist/server.js",
       "types": "./dist/server.d.ts"
+    },
+    "./settlement-token": {
+      "import": "./dist/settlement-token.js",
+      "types": "./dist/settlement-token.d.ts"
     }
   },
   "scripts": {

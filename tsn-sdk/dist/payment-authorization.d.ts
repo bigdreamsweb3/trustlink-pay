@@ -1,0 +1,85 @@
+import { type CreateIntentRequest, type TsnMempoolClaimRequest, type TsnMempoolIntent } from "./contracts.js";
+export declare function createSenderPaymentAuthorizationMessage(params: {
+    senderWallet: string;
+    senderIdentity: string;
+    receiverIdentity: string;
+    tokenMintAddress: string;
+    amount: number;
+    senderFeeAmount: number;
+    totalTokenRequiredUi: number;
+    nonce?: string;
+    issuedAt: string;
+    expiresAt?: string;
+}): string;
+export declare function createPaymentAuthorizationNonce(): string;
+export declare function createPaymentAuthorizationExpiry(ttlMs?: number): string;
+export declare function createPaymentAuthorization(params: {
+    senderWallet: string;
+    senderIdentity: string;
+    receiverIdentity: string;
+    tokenMintAddress: string;
+    amount: number;
+    senderFeeAmount: number;
+    totalTokenRequiredUi: number;
+    nonce?: string;
+    issuedAt?: string;
+    expiresAt?: string;
+}): {
+    message: string;
+    nonce: string;
+    issuedAt: string;
+    expiresAt: string;
+};
+export declare function buildPaymentAuthorizationIntentRequest(params: {
+    paymentId: string;
+    recipientHash: string;
+    tokenMintAddress: string;
+    senderWallet: string;
+    senderAuthorizationMessage: string;
+    senderAuthorizationSignature: string;
+    senderAuthorizationNonce: string;
+    senderAuthorizationIssuedAt: string;
+    senderAuthorizationExpiresAt: string;
+    senderFeeAmount?: number | null;
+    senderSignedSettlementTransaction?: string | null;
+    senderSignedSettlementFeePayer?: string | null;
+    senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+    senderTokenAccount?: string | null;
+    settlementVault?: string | null;
+    settlementTokenAccount?: string | null;
+    settlementPaymentIntentId?: string | null;
+    amount: number;
+    recipientAmount?: number;
+    source?: string;
+}): CreateIntentRequest;
+export declare function submitPaymentAuthorizationToMempool(params: {
+    mempoolUrl: string;
+    fetchImpl?: typeof fetch;
+    paymentId: string;
+    recipientHash: string;
+    tokenMintAddress: string;
+    senderWallet: string;
+    senderAuthorizationMessage: string;
+    senderAuthorizationSignature: string;
+    senderAuthorizationNonce: string;
+    senderAuthorizationIssuedAt: string;
+    senderAuthorizationExpiresAt: string;
+    senderFeeAmount?: number | null;
+    senderSignedSettlementTransaction?: string | null;
+    senderSignedSettlementFeePayer?: string | null;
+    senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+    senderTokenAccount?: string | null;
+    settlementVault?: string | null;
+    settlementTokenAccount?: string | null;
+    settlementPaymentIntentId?: string | null;
+    amount: number;
+    recipientAmount?: number;
+    destinationWallet?: string | null;
+    autoclaim?: boolean;
+    source?: string;
+}): Promise<{
+    intentRequest: CreateIntentRequest;
+    intent: TsnMempoolIntent;
+    claimRequest: TsnMempoolClaimRequest | null;
+}>;
+//# sourceMappingURL=payment-authorization.d.ts.map

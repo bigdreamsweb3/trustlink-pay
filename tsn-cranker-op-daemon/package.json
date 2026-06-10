@@ -12,7 +12,9 @@
     "policy:open": "node ./scripts/tsn-setup.mjs set-funding-policy true",
     "policy:closed": "node ./scripts/tsn-setup.mjs set-funding-policy false",
     "settle:force": "node ./scripts/tsn-setup.mjs settle-epoch --force",
-    "crank:start": "tsx ./scripts/cranker.ts"
+    "crank:start": "tsx ./scripts/cranker.ts",
+    "crank:python": "python ./scripts/cranker_daemon.py",
+    "crank:python:once": "TSN_CRANKER_ONCE=true python ./scripts/cranker_daemon.py"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.14",

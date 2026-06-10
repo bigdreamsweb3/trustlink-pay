@@ -1,18 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
-import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SectionLoader } from "@/src/components/section-loader";
-import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
-import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
@@ -24,9 +21,7 @@ import {
   type CountryOption,
 } from "@/src/lib/phone-countries";
 import { loadPreferredCountryIso2, rememberCountryUsage } from "@/src/lib/phone-preferences";
-import { shareInviteMessage } from "@/src/lib/share";
 import type {
-  PaymentNotificationStatus,
   PaymentRecord,
   RecipientLookupResult,
   WalletTokenOption,
@@ -55,81 +50,15 @@ import {
   type SendCostEstimate,
 } from "@/src/components/experiences/send/shared/send-cost";
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
-import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw } from "lucide-react";
+import { CountrySearchModal } from "@/src/components/experiences/send/components/CountrySearchModal";
+import { SendSuccessPanel } from "@/src/components/experiences/send/components/SendSuccessPanel";
+import { formatTokenBalance } from "@/src/components/experiences/send/utils/formatting";
+import { looksLikeTinCandidate, normalizeTinInput } from "@/src/components/experiences/send/utils/tin-input";
+import { resetRecipientResolution } from "@/src/components/experiences/send/utils/reset-recipient-resolution";
+import type { PhoneVerificationDetails, RecipientVerificationState, ResolvedRecipientLookup, SendSuccessState } from "@/src/components/experiences/send/types";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
-
-function paymentStatusLabel(status: PaymentRecord["status"]) {
-  if (status === "created") return "processing";
-  return status.replace(/_/g, " ");
-}
-
-function formatTokenBalance(balance: number, symbol: string) {
-  const digits = symbol === "SOL" ? 4 : 2;
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(balance);
-}
-
-function formatReceiptTime(value: string | null) {
-  if (!value) return null;
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
-
-type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
-
-function normalizeTinInput(value: string) {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  const hasTinPrefix = /^tin[:\s_-]*/i.test(trimmed);
-  if (!/^\d{10}$/.test(digits)) return null;
-  if (!hasTinPrefix && trimmed.startsWith("+")) return null;
-
-  const checkDigit = Number(digits[9]);
-  let sum = 0;
-  let double = true;
-  for (const char of digits.slice(0, 9).split("").reverse()) {
-    let digit = Number(char);
-    if (double) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    double = !double;
-  }
-  return ((10 - (sum % 10)) % 10) === checkDigit ? digits : null;
-}
-
-function looksLikeTinCandidate(value: string) {
-  const trimmed = value.trim();
-  return /^tin[:\s_-]*/i.test(trimmed) || (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"));
-}
-
-function resetRecipientResolution(params: {
-  setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
-  setPhoneVerificationLabel: (value: string | null) => void;
-  setPhoneVerificationDetails: (value: { displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null) => void;
-  setReceiverWhatsAppVerified: (value: boolean) => void;
-  setReceiverCheckSkipped: (value: boolean) => void;
-  setRecipientPreview: (value: RecipientLookupResult | null) => void;
-  setLookupError: (value: string | null) => void;
-  setPreviewBusy: (value: boolean) => void;
-  setShowCountryFallback: (value: boolean) => void;
-  setSuggestedCountries: (value: CountryOption[]) => void;
-  setReceiverCountry: (value: CountryOption | null) => void;
-  setForm: Dispatch<SetStateAction<{ receiverPhone: string; amount: string; token: string }>>;
-}) {
-  params.setPhoneVerificationState("idle");
-  params.setPhoneVerificationLabel(null);
-  params.setPhoneVerificationDetails(null);
-  params.setReceiverWhatsAppVerified(false);
-  params.setReceiverCheckSkipped(false);
-  params.setRecipientPreview(null);
-  params.setLookupError(null);
-  params.setPreviewBusy(false);
-  params.setShowCountryFallback(false);
-  params.setSuggestedCountries([]);
-  params.setReceiverCountry(null);
-  params.setForm((current) => ({ ...current, receiverPhone: "" }));
-}
 
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
@@ -149,9 +78,9 @@ export function SendExperience() {
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [recipientPreview, setRecipientPreview] = useState<RecipientLookupResult | null>(null);
-  const [phoneVerificationState, setPhoneVerificationState] = useState<"idle" | "checking" | "valid" | "warning" | "invalid">("idle");
+  const [phoneVerificationState, setPhoneVerificationState] = useState<RecipientVerificationState>("idle");
   const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<string | null>(null);
-  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{ displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null>(null);
+  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<PhoneVerificationDetails | null>(null);
   const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] = useState(false);
   const [receiverCheckSkipped, setReceiverCheckSkipped] = useState(false);
   const [supportedTokens, setSupportedTokens] = useState<WalletTokenOption[]>([]);
@@ -163,16 +92,7 @@ export function SendExperience() {
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [sendCostEstimate, setSendCostEstimate] = useState<SendCostEstimate | null>(null);
   const [estimateError, setEstimateError] = useState<string | null>(null);
-  const [sendSuccess, setSendSuccess] = useState<{
-    paymentId: string; status: PaymentRecord["status"]; notificationStatus: PaymentNotificationStatus;
-    notificationSentAt: string | null; notificationDeliveredAt: string | null; notificationReadAt: string | null;
-    notificationFailedAt: string | null; referenceCode: string; senderDisplayName: string; senderHandle: string;
-    escrowAccount: string | null; blockchainSignature: string; blockchainMode: "tsn" | "mock" | "devnet";
-    depositAddress: string | null; notificationRetrying: boolean; notificationAttemptCount: number;
-    manualInviteRequired: boolean;
-    inviteShare: { onboardingLink: string; inviteMessage: string } | null;
-    receiverPhone: string; recipientName: string; amount: string; token: string;
-  } | null>(null);
+  const [sendSuccess, setSendSuccess] = useState<SendSuccessState | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
@@ -527,101 +447,15 @@ export function SendExperience() {
 
         {/* ═══════════ SEND SUCCESS ═══════════ */}
         {sendSuccess ? (
-          <div className="space-y-5">
-            <div className="text-center py-2">
-              <SuccessIcon className="mx-auto h-14 w-14" />
-              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Awaiting Cranker Verification</div>
-              <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-text">
-                {sendSuccess.amount} {sendSuccess.token}
-              </h2>
-              <p className="mt-2  leading-relaxed text-text-soft max-w-[300px] mx-auto">
-                {sendSuccess.manualInviteRequired
-                  ? `Authorization queued for ${sendSuccess.recipientName}. Share the invite manually.`
-                  : sendSuccess.notificationRetrying
-                    ? `Authorization queued for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
-                    : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`}
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {/* Left: Transfer details */}
-              <div className="space-y-2">
-                {[
-                  { label: "Recipient", value: sendSuccess.recipientName },
-                  { label: "WhatsApp", value: sendSuccess.receiverPhone },
-                  { label: "Reference", value: sendSuccess.referenceCode },
-                  { label: "Status", value: paymentStatusLabel(sendSuccess.status), capitalize: true },
-                ].map((row) => (
-                  <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">{row.label}</span>
-                    <span className={` font-medium text-text ${row.capitalize ? "capitalize" : ""}`}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Right: Delivery details */}
-              <div className="space-y-2">
-                {!sendSuccess.manualInviteRequired ? (
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">WhatsApp receipt</span>
-                    <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
-                  </div>
-                ) : (
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Sender invite</span>
-                    <span className=" font-medium text-text">Share manually</span>
-                  </div>
-                )}
-
-                {sendSuccess.notificationRetrying ? (
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Delivery retries</span>
-                    <span className=" font-medium text-text">{sendSuccess.notificationAttemptCount}</span>
-                  </div>
-                ) : null}
-
-                {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Receipt updated</span>
-                    <span className=" font-medium text-text">{formatReceiptTime(receiptTimestamp)}</span>
-                  </div>
-                ) : null}
-
-                <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                  <span className="text-[0.78rem] text-text-soft">{sendSuccess.blockchainMode === "mock" ? "Mock ref" : sendSuccess.blockchainMode === "tsn" ? "Intent id" : "Deposit tx"}</span>
-                  <span className=" font-medium text-text">{shortenAddress(sendSuccess.blockchainSignature)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-[0.72rem] text-[var(--text-soft)] leading-relaxed">
-              {sendSuccess.blockchainMode === "mock"
-                ? "Mock mode \u2014 reference is not an on-chain signature."
-                : sendSuccess.blockchainMode === "tsn"
-                  ? "Authorization is in the TSN mempool. Your wallet did not broadcast a Solana transaction; a Cranker verifies and submits settlement."
-                  : "Receipts refresh while delivery is unresolved."}
-            </div>
-
-            {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
-              <div className="tl-panel tl-field rounded-[22px] px-5 py-4">
-                <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Shareable invite</div>
-                <pre className="mt-3 whitespace-pre-wrap  leading-relaxed text-text-soft">{sendSuccess.inviteShare.inviteMessage}</pre>
-                <button
-                  type="button"
-                  onClick={async () => { setShareBusy(true); try { const outcome = await shareInviteMessage(sendSuccess.inviteShare!.inviteMessage); showToast(outcome === "shared" ? "Share dialog opened." : "Invite copied."); } catch (e) { setError(e instanceof Error ? e.message : "Could not share invite"); } finally { setShareBusy(false); } }}
-                  disabled={shareBusy}
-                  className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
-                >
-                  {shareBusy ? "Preparing..." : "Share Invite"}
-                </button>
-              </div>
-            ) : null}
-
-            <div className="grid grid-cols-2 gap-3 md:max-w-[400px]">
-              <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center  font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
-              <button type="button" onClick={() => { setSendSuccess(null); setNotice(null); }} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Send another</button>
-            </div>
-          </div>
+          <SendSuccessPanel
+            sendSuccess={sendSuccess}
+            receiptTimestamp={receiptTimestamp}
+            shareBusy={shareBusy}
+            onShareBusyChange={setShareBusy}
+            onError={setError}
+            onToast={showToast}
+            onSendAnother={() => { setSendSuccess(null); setNotice(null); }}
+          />
         ) : (
 
           /* ═══════════ SEND FORM ═══════════ */
@@ -966,68 +800,25 @@ export function SendExperience() {
       ) : null}
 
 
-      {/* ═══════════ COUNTRY SEARCH MODAL ═══════════ */}
-      {countrySearchOpen ? (
-        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setCountrySearchOpen(false)}>
-          <div className="tl-modal flex w-full max-h-[85vh] flex-col rounded-t-[28px] md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            {/* Header + search */}
-            <div className="shrink-0 px-6 pt-6 pb-3">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-[var(--text)]">Select Country</h2>
-                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">Choose the recipient country code</p>
-                </div>
-                <button type="button" onClick={() => setCountrySearchOpen(false)}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-[var(--surface-soft)] text-[var(--text-faint)] transition-colors hover:text-[var(--text)] cursor-pointer active:scale-[0.93]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" />
-                <input
-                  type="search"
-                  value={countrySearchQuery}
-                  onChange={(e) => setCountrySearchQuery(e.target.value)}
-                  placeholder="Search by name or code..."
-                  autoFocus
-                  className="w-full rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] py-2.5 pl-10 pr-4  text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent-border)]"
-                />
-              </div>
-            </div>
-
-            {/* Country list */}
-            <div className="flex-1 overflow-y-auto px-4 pb-6 tl-scrollbar-mobile-hidden">
-              <div className="space-y-0.5">
-                {filteredCountries.map((c) => {
-                  const isActive = c.iso2 === displayCountry?.iso2;
-                  return (
-                    <button key={c.iso2} type="button"
-                      onClick={() => {
-                        setManualCountry(c); setManualCountryLocked(true); setReceiverCountry(c);
-                        setReceiverCheckSkipped(false); setLookupError(null); setShowCountryFallback(false);
-                        setPhoneVerificationState("checking"); setPhoneVerificationLabel(`Retrying with ${c.name}...`);
-                        setCountrySearchOpen(false);
-                      }}
-                      className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors cursor-pointer active:scale-[0.99] ${isActive ? "bg-[var(--accent-soft)] border border-[var(--accent-border)]" : "hover:bg-[var(--surface-soft)]"
-                        }`}
-                    >
-                      <span className="text-[1.1rem] leading-none">{c.flag}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block  font-medium text-text truncate">{c.name}</span>
-                      </span>
-                      <span className="shrink-0 text-[0.76rem] font-medium text-text-faint">{c.dialCode}</span>
-                    </button>
-                  );
-                })}
-                {filteredCountries.length === 0 ? (
-                  <div className="py-8 text-center  tl-text-muted">No countries match {countrySearchQuery}</div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <CountrySearchModal
+        open={countrySearchOpen}
+        query={countrySearchQuery}
+        countries={filteredCountries}
+        activeCountry={displayCountry}
+        onQueryChange={setCountrySearchQuery}
+        onClose={() => setCountrySearchOpen(false)}
+        onSelectCountry={(country) => {
+          setManualCountry(country);
+          setManualCountryLocked(true);
+          setReceiverCountry(country);
+          setReceiverCheckSkipped(false);
+          setLookupError(null);
+          setShowCountryFallback(false);
+          setPhoneVerificationState("checking");
+          setPhoneVerificationLabel(`Retrying with ${country.name}...`);
+          setCountrySearchOpen(false);
+        }}
+      />
 
       <WalletPickerModal open={walletPickerOpen} wallets={availableWallets} connectingWalletId={connectingWalletId} onClose={() => { if (!connectingWalletId) setWalletPickerOpen(false); }} onSelect={(id) => void handleWalletSelect(id)} />
     </AppMobileShell>

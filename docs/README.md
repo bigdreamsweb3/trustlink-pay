@@ -31,6 +31,8 @@ Phone numbers, WhatsApp, and social identities are optional application-layer li
 | [CRANKER.md](./CRANKER.md) | Cranker operator guide |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and LP model |
 | [EPOCH-SETTLEMENT.md](./EPOCH-SETTLEMENT.md) | Epoch reimbursement and accounting |
+| [OTDT-SMART-RECOVERY.md](./OTDT-SMART-RECOVERY.md) | OTDT, claim leases, commitment registry, and smart recovery runtime |
+| [FRONTEND-MODULAR-ARCHITECTURE.md](./FRONTEND-MODULAR-ARCHITECTURE.md) | Frontend component map, modularization rules, and privacy-preserving UI structure |
 
 ---
 
@@ -102,3 +104,4 @@ To understand the full settlement path, an observer needs specific transaction h
 WhatsApp remains useful for authentication, notifications, consent, and optional social linking. It should be documented as an application feature, not as the core settlement identity.
 
 The protocol identity is the TIN.
+- [Vercel Deployment Notes](./VERCEL-DEPLOYMENT.md) — monorepo build boundaries for the frontend, backend, TSN SDK, and Cranker daemon.

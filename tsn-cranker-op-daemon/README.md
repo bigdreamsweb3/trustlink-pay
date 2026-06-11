@@ -1,6 +1,6 @@
 # TSN Cranker Operator Daemon
 
-This folder is the operator workspace for running a TSN Cranker against your deployed TSN program.
+This folder is the operator workspace for running a TSN Cranker against your deployed TSN program. It operates after TINS identity resolution and optional SAS verification; it does not replace either layer.
 
 It covers:
 
@@ -70,6 +70,41 @@ Token input behavior:
 
 - `npm run setup` supports token symbol or mint input (`USDC` or full mint)
 - `npm run setup:raw -- init-vault <TOKEN_SYMBOL_OR_MINT>` also supports symbol or mint
+
+
+## Autonomous Python Cranker Runtime
+
+The TSN OTDT and smart-recovery update (`dfa0735`) adds an autonomous Python scheduler at:
+
+```text
+scripts/cranker_daemon.py
+```
+
+The daemon monitors the TSN mempool file and automatically processes:
+
+- intent verification and claim-point accounting,
+- claim lease acquisition and OTDT hash issuance,
+- in-memory settlement-token decryption for authorized Cranker DNA,
+- settlement proof recording and recoverable registry updates,
+- recovery queue creation and priority recovery completion,
+- liquidity metric updates.
+
+Run once for validation:
+
+```bash
+TSN_SETTLEMENT_TOKEN_MASTER_KEY=<32-byte-base64-or-64-char-hex-secret> \
+TSN_CRANKER_ONCE=true \
+python scripts/cranker_daemon.py
+```
+
+Run continuously from this package:
+
+```bash
+TSN_SETTLEMENT_TOKEN_MASTER_KEY=<32-byte-base64-or-64-char-hex-secret> \
+npm run crank:python
+```
+
+The commitment registry is the public recovery/verification source of truth. It must not store sender wallets, recipient main wallets, phone numbers, token balances, SAS PII, or decrypted settlement tokens. See [`../docs/OTDT-SMART-RECOVERY.md`](../docs/OTDT-SMART-RECOVERY.md) and [`../docs/CRANKER.md`](../docs/CRANKER.md).
 
 ## Step-by-Step Setup (What, Why, Result)
 

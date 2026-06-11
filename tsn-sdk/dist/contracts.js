@@ -26,6 +26,9 @@ export function buildCreateIntentRequest(params) {
         tokenMintAddress: params.tokenMintAddress,
         amount: params.amount,
         source: params.source,
+        epoch: params.epoch,
+        encryptedSettlementToken: params.encryptedSettlementToken,
+        settlementTokenCommitmentHash: params.settlementTokenCommitmentHash,
     };
 }
 export function buildRequestClaimRequest(params) {

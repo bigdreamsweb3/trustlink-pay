@@ -3,6 +3,8 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 
 export type TsnIntentStatus = "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnClaimRequestStatus = "pending" | "processing" | "completed" | "failed" | "canceled";
+export type TsnLeaseStatus = "active" | "completed" | "expired" | "canceled";
+export type TsnRecoveryJobStatus = "open" | "leased" | "completed" | "failed" | "canceled";
 export type TsnUiStage = "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
 
 export type PaymentIntentStatus = "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
@@ -59,6 +61,71 @@ export type CreateIntentRequest = {
   amount: number;
   recipientAmount?: number;
   source?: string;
+  epoch?: number;
+  encryptedSettlementToken?: string;
+  settlementTokenCommitmentHash?: string;
+  commitmentRegistryEntry?: CommitmentRegistryEntry;
+};
+
+export type CommitmentRegistryEntry = {
+  transferId: string;
+  encryptedSettlementToken: string;
+  commitmentHash: string;
+  timestamp: string;
+  epoch: number;
+  recoverable: boolean;
+  intentVerifierPubkey?: string | null;
+  settlementCommitmentHash?: string | null;
+  settlementProofTx?: string | null;
+  otdtHash?: string | null;
+  recoveryProofTx?: string | null;
+  updatedAt?: string;
+};
+
+export type ClaimPointLedgerEntry = {
+  crankerPubkey: string;
+  earned: number;
+  available: number;
+  leased: number;
+  lastIntentWorkAt?: string | null;
+};
+
+export type ClaimLeaseRecord = {
+  id: string;
+  transferId: string;
+  crankerPubkey: string;
+  status: TsnLeaseStatus;
+  pointsSpent: number;
+  otdtHash?: string | null;
+  issuedAt: string;
+  expiresAt: string;
+  completedAt?: string | null;
+};
+
+export type RecoveryQueueEntry = {
+  id: string;
+  transferId: string;
+  epoch: number;
+  recoverableAmount: number;
+  vaultSource: string;
+  recoveryReward: number;
+  priorityScore: number;
+  status: TsnRecoveryJobStatus;
+  leasedByCrankerPubkey?: string | null;
+  leaseExpiresAt?: string | null;
+  proofTx?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LiquidityMetrics = {
+  activeLiquidity: number;
+  pendingIntentAmount: number;
+  vaultBalance: number;
+  settlementVelocity: number;
+  liquidityConsumptionRate: number;
+  lowLiquidityThreshold: number;
+  updatedAt: string;
 };
 
 export type RequestClaimRequest = {
@@ -79,6 +146,7 @@ export type TsnMempoolIntent = CreateIntentRequest & {
   proofTxSig?: string | null;
   settlementResolution?: "completed" | "reverted" | null;
   settlementReason?: string | null;
+  claimLeaseId?: string | null;
   postedAt: string;
   updatedAt: string;
 };
@@ -87,6 +155,7 @@ export type TsnMempoolClaimRequest = RequestClaimRequest & {
   id: string;
   status: TsnClaimRequestStatus;
   settlementReason?: string | null;
+  claimLeaseId?: string | null;
   postedAt: string;
   updatedAt: string;
 };
@@ -106,6 +175,8 @@ export type ProofOfPaymentRequest = {
   cranker_pubkey: string;
   proof_tx: string;
   encrypted_payload?: string | null;
+  settlement_commitment_hash?: string | null;
+  otdt_hash?: string | null;
 };
 
 export type IntentState = {
@@ -141,6 +212,9 @@ export function buildCreateIntentRequest(params: {
   tokenMintAddress: string;
   amount: number;
   source?: string;
+  epoch?: number;
+  encryptedSettlementToken?: string;
+  settlementTokenCommitmentHash?: string;
 }): CreateIntentRequest {
   return {
     paymentId: params.paymentId,
@@ -164,6 +238,9 @@ export function buildCreateIntentRequest(params: {
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     source: params.source,
+    epoch: params.epoch,
+    encryptedSettlementToken: params.encryptedSettlementToken,
+    settlementTokenCommitmentHash: params.settlementTokenCommitmentHash,
   };
 }
 

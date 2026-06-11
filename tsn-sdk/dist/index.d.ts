@@ -13,4 +13,5 @@ export * from "./sponsored-settlement.js";
 export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
+export * from "./settlement-token.js";
 //# sourceMappingURL=index.d.ts.map

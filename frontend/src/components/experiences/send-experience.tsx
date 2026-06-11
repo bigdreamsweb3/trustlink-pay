@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
@@ -18,7 +18,6 @@ import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
 import {
   detectCountryFromLocale,
-  formatPhoneInput,
   getCountryByIso2,
   COUNTRY_OPTIONS,
   type CountryOption,
@@ -30,7 +29,6 @@ import type {
   PaymentRecord,
   RecipientLookupResult,
   WalletTokenOption,
-  WhatsAppNumberVerificationResult,
 } from "@/src/lib/types";
 import {
   connectSolanaWallet,
@@ -49,87 +47,27 @@ import {
 } from "@trustlink/tsn-sdk/payment-authorization";
 import { buildTsnSponsoredSettlementTransaction } from "@trustlink/tsn-sdk/sponsored-settlement";
 import {
-  formatUsd,
   hasCompleteCostEstimate,
   normalizeSendCostEstimate,
   type SendCostEstimate,
 } from "@/src/components/experiences/send/shared/send-cost";
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
-import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { ConfirmSendModal } from "@/src/components/experiences/send/components/confirm-send-modal";
+import { CountrySearchModal } from "@/src/components/experiences/send/components/country-search-modal";
+import { TokenPickerModal } from "@/src/components/experiences/send/components/token-picker-modal";
+import { formatReceiptTime, formatTokenBalance, paymentStatusLabel } from "@/src/components/experiences/send/lib/send-formatters";
+import { looksLikeTinCandidate, normalizeTinInput } from "@/src/components/experiences/send/lib/tin";
+import {
+  resetRecipientResolution,
+  type PhoneVerificationDetails,
+  type PhoneVerificationState,
+  type ResolvedRecipientLookup,
+  type SendFormState,
+} from "@/src/components/experiences/send/lib/recipient-resolution";
+import { buildPhoneVerificationDetails, lookupResolvedRecipient, lookupResolvedTin } from "@/src/components/experiences/send/lib/recipient-lookup-service";
+import { ChevronDown, ChevronRight, Globe } from "lucide-react";
 
 const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
-
-function paymentStatusLabel(status: PaymentRecord["status"]) {
-  if (status === "created") return "processing";
-  return status.replace(/_/g, " ");
-}
-
-function formatTokenBalance(balance: number, symbol: string) {
-  const digits = symbol === "SOL" ? 4 : 2;
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(balance);
-}
-
-function formatReceiptTime(value: string | null) {
-  if (!value) return null;
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
-
-type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
-
-function normalizeTinInput(value: string) {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  const hasTinPrefix = /^tin[:\s_-]*/i.test(trimmed);
-  if (!/^\d{10}$/.test(digits)) return null;
-  if (!hasTinPrefix && trimmed.startsWith("+")) return null;
-
-  const checkDigit = Number(digits[9]);
-  let sum = 0;
-  let double = true;
-  for (const char of digits.slice(0, 9).split("").reverse()) {
-    let digit = Number(char);
-    if (double) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    double = !double;
-  }
-  return ((10 - (sum % 10)) % 10) === checkDigit ? digits : null;
-}
-
-function looksLikeTinCandidate(value: string) {
-  const trimmed = value.trim();
-  return /^tin[:\s_-]*/i.test(trimmed) || (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"));
-}
-
-function resetRecipientResolution(params: {
-  setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
-  setPhoneVerificationLabel: (value: string | null) => void;
-  setPhoneVerificationDetails: (value: { displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null) => void;
-  setReceiverWhatsAppVerified: (value: boolean) => void;
-  setReceiverCheckSkipped: (value: boolean) => void;
-  setRecipientPreview: (value: RecipientLookupResult | null) => void;
-  setLookupError: (value: string | null) => void;
-  setPreviewBusy: (value: boolean) => void;
-  setShowCountryFallback: (value: boolean) => void;
-  setSuggestedCountries: (value: CountryOption[]) => void;
-  setReceiverCountry: (value: CountryOption | null) => void;
-  setForm: Dispatch<SetStateAction<{ receiverPhone: string; amount: string; token: string }>>;
-}) {
-  params.setPhoneVerificationState("idle");
-  params.setPhoneVerificationLabel(null);
-  params.setPhoneVerificationDetails(null);
-  params.setReceiverWhatsAppVerified(false);
-  params.setReceiverCheckSkipped(false);
-  params.setRecipientPreview(null);
-  params.setLookupError(null);
-  params.setPreviewBusy(false);
-  params.setShowCountryFallback(false);
-  params.setSuggestedCountries([]);
-  params.setReceiverCountry(null);
-  params.setForm((current) => ({ ...current, receiverPhone: "" }));
-}
 
 export function SendExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
@@ -149,9 +87,9 @@ export function SendExperience() {
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [recipientPreview, setRecipientPreview] = useState<RecipientLookupResult | null>(null);
-  const [phoneVerificationState, setPhoneVerificationState] = useState<"idle" | "checking" | "valid" | "warning" | "invalid">("idle");
+  const [phoneVerificationState, setPhoneVerificationState] = useState<PhoneVerificationState>("idle");
   const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<string | null>(null);
-  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{ displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null>(null);
+  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<PhoneVerificationDetails | null>(null);
   const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] = useState(false);
   const [receiverCheckSkipped, setReceiverCheckSkipped] = useState(false);
   const [supportedTokens, setSupportedTokens] = useState<WalletTokenOption[]>([]);
@@ -179,7 +117,7 @@ export function SendExperience() {
   const hasVerifiedOnce = phoneVerificationState !== "idle" && phoneVerificationState !== "checking";
   const resolutionCache = useRef(new Map<string, ResolvedRecipientLookup>());
   const latestLookupRequestId = useRef(0);
-  const [form, setForm] = useState({ receiverPhone: "", amount: "", token: "" });
+  const [form, setForm] = useState<SendFormState>({ receiverPhone: "", amount: "", token: "" });
 
   const localeCountry = useMemo(() => detectCountryFromLocale(), []);
   const preferredCountry = useMemo(() => { const iso2 = loadPreferredCountryIso2(); return getCountryByIso2(iso2) ?? localeCountry; }, [localeCountry]);
@@ -205,39 +143,6 @@ export function SendExperience() {
   useEffect(() => { setWalletSession(getConnectedWalletSession()); setAvailableWallets(listAvailableSolanaWallets()); }, []);
   useEffect(() => { const p = searchParams.get("phone")?.trim(); if (p) setReceiverPhoneInput(p); }, [searchParams]);
 
-  async function lookupResolvedRecipient(normalizedPhone: string, country: CountryOption | null, options?: { allowUnverified?: boolean }) {
-    const key = `${normalizedPhone}:${options?.allowUnverified ? "manual" : "auto"}`;
-    const cached = resolutionCache.current.get(key);
-    if (cached) return cached;
-    const [verification, recipient] = await Promise.all([apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", { phoneNumber: normalizedPhone }, undefined, { cache: "default", ttlMs: 5 * 60_000 }), apiPost<RecipientLookupResult>("/api/recipient/lookup", { phoneNumber: normalizedPhone, skipWhatsAppCheck: options?.allowUnverified }, undefined, { cache: "default", ttlMs: 60_000 })]);
-    const resolved = { verification, recipient, normalizedPhone, country } satisfies ResolvedRecipientLookup;
-    resolutionCache.current.set(key, resolved);
-    return resolved;
-  }
-
-  async function lookupResolvedTin(tin: string) {
-    const key = `tin:${tin}`;
-    const cached = resolutionCache.current.get(key);
-    if (cached) return cached;
-    const recipient = await apiPost<RecipientLookupResult>("/api/recipient/lookup", { tin }, undefined, { cache: "default", ttlMs: 60_000 });
-    const normalizedPhone = recipient?.recipient.phoneNumber ?? "";
-    const verification: WhatsAppNumberVerificationResult = {
-      phoneNumber: normalizedPhone,
-      exists: Boolean(recipient?.verified),
-      accountType: "personal_or_none",
-      isBusiness: false,
-      isInvalid: !recipient?.verified,
-      displayName: recipient?.recipient.displayName ?? `TIN ${tin}`,
-      profilePic: null,
-      hasProfilePic: false,
-      url: normalizedPhone ? `https://wa.me/${normalizedPhone.replace(/\D/g, "")}` : "",
-      source: "mock",
-    };
-    const resolved = { verification, recipient, normalizedPhone, country: null } satisfies ResolvedRecipientLookup;
-    resolutionCache.current.set(key, resolved);
-    return resolved;
-  }
-
   function applyRecipientVerificationState(resolved: ResolvedRecipientLookup) {
     const trustLinkVerified = resolved.recipient?.status === "registered";
     const whatsappVerified = resolved.verification.exists || receiverCheckSkipped;
@@ -250,7 +155,7 @@ export function SendExperience() {
     setForm((c) => ({ ...c, receiverPhone: resolved.normalizedPhone }));
     setReceiverCountry(resolved.country); setShowCountryFallback(false); setSuggestedCountries([]); setLookupError(null);
     applyRecipientVerificationState(resolved);
-    setPhoneVerificationDetails({ displayName: resolved.verification.displayName, profilePic: resolved.verification.profilePic, exists: resolved.verification.exists, isBusiness: resolved.verification.isBusiness, url: resolved.verification.url, resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone), detectedCountry: resolved.country });
+    setPhoneVerificationDetails(buildPhoneVerificationDetails(resolved));
     setRecipientPreview(resolved.recipient);
   }
 
@@ -262,14 +167,14 @@ export function SendExperience() {
     setShowCountryFallback(shouldReveal);
     setSuggestedCountries(resolved.country ? [resolved.country, ...suggestedCountries].filter((c, i, a) => a.findIndex((x) => x.iso2 === c.iso2) === i) : suggestedCountries);
     setLookupError(null); applyRecipientVerificationState(resolved);
-    setPhoneVerificationDetails({ displayName: resolved.verification.displayName, profilePic: resolved.verification.profilePic, exists: resolved.verification.exists, isBusiness: resolved.verification.isBusiness, url: resolved.verification.url, resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone), detectedCountry: resolved.country });
+    setPhoneVerificationDetails(buildPhoneVerificationDetails(resolved));
     setRecipientPreview(resolved.recipient);
   }
 
   useEffect(() => { if (!walletAddress) { setSupportedTokens([]); setForm((c) => ({ ...c, token: "" })); return; } const ctrl = new AbortController(); async function load() { setTokenBusy(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (ctrl.signal.aborted) return; setSupportedTokens(r.tokens); setForm((c) => ({ ...c, token: r.tokens.find((t) => t.supported && t.mintAddress === c.token)?.mintAddress ?? r.tokens.find((t) => t.supported)?.mintAddress ?? "" })); } catch (e) { if (!ctrl.signal.aborted) { setSupportedTokens([]); setError(e instanceof Error ? e.message : "Could not load tokens"); } } finally { if (!ctrl.signal.aborted) setTokenBusy(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
 
   /* catch block always reveals country fallback and unlocks */
-  useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin(tin); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified && resolved.normalizedPhone) { applyResolvedRecipient(resolved); return; } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(false); setPhoneVerificationState("invalid"); setPhoneVerificationLabel(null); setLookupError("No TrustLink account is linked to this TIN yet."); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
+  useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin({ cache: resolutionCache.current, tin }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified && resolved.normalizedPhone) { applyResolvedRecipient(resolved); return; } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(false); setPhoneVerificationState("invalid"); setPhoneVerificationLabel(null); setLookupError("No TrustLink account is linked to this TIN yet."); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient({ cache: resolutionCache.current, normalizedPhone: candidate.normalizedPhone, country: candidate.country, allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(true); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
   useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
@@ -823,211 +728,54 @@ export function SendExperience() {
         )}
       </section>
 
-      {/* ═══════════ TOKEN PICKER MODAL ═══════════ */}
-      {tokenPickerOpen ? (
-        <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
-          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">Choose token</h2>
-              <p className="mt-1  text-text-soft">Supported tokens from your wallet.</p>
-            </div>
-            <div className="space-y-2.5">
-              {tokenBusy ? (
-                <div className="tl-panel tl-field rounded-[18px] px-4 py-5"><SectionLoader size="md" label="Loading tokens..." /></div>
-              ) : sendableTokens.map((token) => {
-                const active = token.mintAddress === form.token;
-                return (
-                  <button key={token.mintAddress} type="button"
-                    onClick={() => { setForm((c) => ({ ...c, token: token.mintAddress })); setSendCostEstimate(null); setEstimateError(null); setTokenPickerOpen(false); }}
-                    className={`tl-panel tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.9rem]">{token.logo}</span>
-                      <span>
-                        <span className="block  font-semibold leading-tight text-text">{token.symbol}</span>
-                        <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">{token.name}</span>
-                      </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block  font-semibold leading-tight text-text">{formatTokenBalance(token.balance, token.symbol)}</span>
-                      <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">Available</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <TokenPickerModal
+        open={tokenPickerOpen}
+        tokenBusy={tokenBusy}
+        tokens={sendableTokens}
+        selectedMintAddress={form.token}
+        onClose={() => setTokenPickerOpen(false)}
+        onSelectToken={(token) => {
+          setForm((current) => ({ ...current, token: token.mintAddress }));
+          setSendCostEstimate(null);
+          setEstimateError(null);
+          setTokenPickerOpen(false);
+        }}
+      />
 
-      {/* ═══════════ CONFIRM MODAL ═══════════ */}
-      {confirmOpen && recipientPreview?.verified && selectedToken ? (
-        <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setConfirmOpen(false)}>
-          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">Authorize transfer</h2>
-              <p className="mt-1  text-text-soft">You will sign a TSN authorization message. Your wallet will not broadcast a Solana transaction.</p>
-            </div>
+      <ConfirmSendModal
+        open={confirmOpen}
+        recipientPreview={recipientPreview}
+        selectedToken={selectedToken}
+        form={form}
+        estimateBusy={estimateBusy}
+        estimateError={estimateError}
+        sendCostEstimate={sendCostEstimate}
+        confirmSendDisabled={confirmSendDisabled}
+        busy={busy}
+        onClose={() => setConfirmOpen(false)}
+        onRetryEstimate={() => void loadSendCostEstimate()}
+        onConfirmSend={() => void handleConfirmSend()}
+      />
 
-            <div className="space-y-2.5">
-              <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
-                <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">Sending to</div>
-                <div className="mt-1.5 text-[0.92rem] font-semibold text-text">
-                  {recipientPreview.recipient.displayName}
-                  {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle ? ` (@${recipientPreview.recipient.handle})` : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required" ? " (Not on TrustLink)" : ""}
-                </div>
-                {recipientPreview.recipient.whatsappProfileName && recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
-                  <div className="mt-1 text-[0.76rem] text-text-soft">WhatsApp: {recipientPreview.recipient.whatsappProfileName}</div>
-                ) : null}
-              </div>
-
-              <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-                <span className=" font-medium text-text">{form.amount} {selectedToken.symbol}</span>
-                <span className="text-[0.78rem] text-text-soft">{form.receiverPhone}</span>
-              </div>
-
-              {estimateBusy ? (
-                <div className="tl-panel tl-field rounded-[18px] px-4 py-5">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-                    <div>
-                      <div className=" font-semibold text-text">Calculating payment quote</div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-text-soft">Fetching TSN sender fee and current Solana network fee.</div>
-                    </div>
-                  </div>
-                </div>
-              ) : estimateError ? (
-                <div className="rounded-[18px] border border-[var(--danger)]/20 bg-danger-soft px-4 py-3.5">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--danger)]" />
-                    <div>
-                      <div className=" font-semibold text-[var(--danger)]">Quote unavailable</div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--danger)]/80">{estimateError}</div>
-                      <button
-                        type="button"
-                        onClick={() => void loadSendCostEstimate()}
-                        className="mt-3 inline-flex items-center gap-2 rounded-[14px] border border-[var(--danger)]/20 bg-[var(--field)] px-3 py-2 text-[0.72rem] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--surface-soft)]"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        Retry quote
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : sendCostEstimate ? (
-                <>
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Sender fee</span>
-                    <span className="text-right">
-                      <span className="block  font-medium text-text">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
-                      {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? <span className="block text-[0.68rem] text-text-faint">{formatUsd(sendCostEstimate.senderFeeAmountUsd)}</span> : null}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">Solana network fee</div>
-                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
-                      {formatUsd(sendCostEstimate.networkFeeUsd) ? <div className="mt-0.5 text-[0.66rem] text-text-faint">{formatUsd(sendCostEstimate.networkFeeUsd)}</div> : null}
-                    </div>
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">Total required</div>
-                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
-                    </div>
-                  </div>
-                  {sendCostEstimate.settlementAssessment ? (
-                    <div
-                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
-                        ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
-                        : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
-                          ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
-                          : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
-                        }`}
-                    >
-                      {sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
-                        ? "✅ Likely claimable"
-                        : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
-                          ? "⚠️ Risky claim amount"
-                          : "❌ Economically non-claimable"}
-                      <div className="mt-1 tl-meta-sm opacity-90">
-                        {sendCostEstimate.settlementAssessment.reason} Minimum suggested send: {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(4)} {selectedToken.symbol}.
-                      </div>
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5  font-medium cursor-pointer active:scale-[0.97] transition-transform tl-body-sm">Cancel</button>
-              <button type="button" onClick={() => void handleConfirmSend()} disabled={confirmSendDisabled} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform tl-body-sm text-nowrap">{busy ? "Queuing..." : estimateBusy ? "Calculating..." : "Co-sign sponsored send"}</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-
-      {/* ═══════════ COUNTRY SEARCH MODAL ═══════════ */}
-      {countrySearchOpen ? (
-        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setCountrySearchOpen(false)}>
-          <div className="tl-modal flex w-full max-h-[85vh] flex-col rounded-t-[28px] md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            {/* Header + search */}
-            <div className="shrink-0 px-6 pt-6 pb-3">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-[var(--text)]">Select Country</h2>
-                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">Choose the recipient country code</p>
-                </div>
-                <button type="button" onClick={() => setCountrySearchOpen(false)}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-[var(--surface-soft)] text-[var(--text-faint)] transition-colors hover:text-[var(--text)] cursor-pointer active:scale-[0.93]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-faint)]" />
-                <input
-                  type="search"
-                  value={countrySearchQuery}
-                  onChange={(e) => setCountrySearchQuery(e.target.value)}
-                  placeholder="Search by name or code..."
-                  autoFocus
-                  className="w-full rounded-[14px] border border-[var(--field-border)] bg-[var(--field)] py-2.5 pl-10 pr-4  text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent-border)]"
-                />
-              </div>
-            </div>
-
-            {/* Country list */}
-            <div className="flex-1 overflow-y-auto px-4 pb-6 tl-scrollbar-mobile-hidden">
-              <div className="space-y-0.5">
-                {filteredCountries.map((c) => {
-                  const isActive = c.iso2 === displayCountry?.iso2;
-                  return (
-                    <button key={c.iso2} type="button"
-                      onClick={() => {
-                        setManualCountry(c); setManualCountryLocked(true); setReceiverCountry(c);
-                        setReceiverCheckSkipped(false); setLookupError(null); setShowCountryFallback(false);
-                        setPhoneVerificationState("checking"); setPhoneVerificationLabel(`Retrying with ${c.name}...`);
-                        setCountrySearchOpen(false);
-                      }}
-                      className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors cursor-pointer active:scale-[0.99] ${isActive ? "bg-[var(--accent-soft)] border border-[var(--accent-border)]" : "hover:bg-[var(--surface-soft)]"
-                        }`}
-                    >
-                      <span className="text-[1.1rem] leading-none">{c.flag}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block  font-medium text-text truncate">{c.name}</span>
-                      </span>
-                      <span className="shrink-0 text-[0.76rem] font-medium text-text-faint">{c.dialCode}</span>
-                    </button>
-                  );
-                })}
-                {filteredCountries.length === 0 ? (
-                  <div className="py-8 text-center  tl-text-muted">No countries match {countrySearchQuery}</div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <CountrySearchModal
+        open={countrySearchOpen}
+        query={countrySearchQuery}
+        countries={filteredCountries}
+        activeCountry={displayCountry}
+        onClose={() => setCountrySearchOpen(false)}
+        onQueryChange={setCountrySearchQuery}
+        onSelectCountry={(country) => {
+          setManualCountry(country);
+          setManualCountryLocked(true);
+          setReceiverCountry(country);
+          setReceiverCheckSkipped(false);
+          setLookupError(null);
+          setShowCountryFallback(false);
+          setPhoneVerificationState("checking");
+          setPhoneVerificationLabel(`Retrying with ${country.name}...`);
+          setCountrySearchOpen(false);
+        }}
+      />
 
       <WalletPickerModal open={walletPickerOpen} wallets={availableWallets} connectingWalletId={connectingWalletId} onClose={() => { if (!connectingWalletId) setWalletPickerOpen(false); }} onSelect={(id) => void handleWalletSelect(id)} />
     </AppMobileShell>

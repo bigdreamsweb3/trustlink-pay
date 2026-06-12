@@ -45,6 +45,7 @@ export declare function tsnCreateIntentOnChain(params: {
     mode: "devnet";
     signature: string;
 }>;
+export declare function getTsnPaymentVaultPda(paymentIntentId: bigint): PublicKey;
 export declare function tsnSubmitSenderSignedSettlementTransaction(params: {
     operator: Keypair;
     signedTransactionBase64: string;
@@ -190,16 +191,49 @@ export declare function tsnSubmitProofOnChain(params: {
     mode: "devnet";
     signature: string;
 }>;
-export declare function tsnExecuteVaultPayoutOnChain(params: {
+export declare function tsnClaimVaultSettlementOnChain(params: {
     operator: Keypair;
-    tokenMint: PublicKey;
-    recipientWallet: PublicKey;
-    payoutAmountBaseUnits: bigint;
-    claimFeeAmountBaseUnits?: bigint;
+    paymentIntentId: bigint;
+    otdtHash32: Uint8Array;
     rpcUrl?: string;
 }): Promise<{
     mode: "devnet";
     signature: string;
+    paymentVault: string;
+}>;
+export declare function tsnExecuteVaultPayoutOnChain(params: {
+    operator: Keypair;
+    paymentIntentId: bigint;
+    tokenMint: PublicKey;
+    recipientWallet: PublicKey;
+    payoutAmountBaseUnits: bigint;
+    claimFeeAmountBaseUnits?: bigint;
+    otdt: Uint8Array;
+    decryptionSecret: Uint8Array;
+    rpcUrl?: string;
+}): Promise<{
+    mode: "devnet";
+    signature: string;
+}>;
+export declare function tsnClaimVaultRecoveryOnChain(params: {
+    operator: Keypair;
+    paymentIntentId: bigint;
+    rpcUrl?: string;
+}): Promise<{
+    mode: "devnet";
+    signature: string;
+    paymentVault: string;
+}>;
+export declare function tsnRecoverPaymentVaultOnChain(params: {
+    operator: Keypair;
+    paymentIntentId: bigint;
+    tokenMint: PublicKey;
+    settlementCrankerOperator: PublicKey;
+    rpcUrl?: string;
+}): Promise<{
+    mode: "devnet";
+    signature: string;
+    paymentVault: string;
 }>;
 export declare function tsnFetchIntentOnChain(params: {
     intent: PublicKey;

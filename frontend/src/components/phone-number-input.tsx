@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Search } from "lucide-react";
+import {
+  AtSign,
+  BadgeCheck,
+  ChevronDown,
+  CircleAlert,
+  Search,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 
 import { SectionLoader } from "@/src/components/section-loader";
 
@@ -129,14 +137,14 @@ export function PhoneNumberInput({
   const isBusiness = Boolean(verificationDetails?.isBusiness);
   const displayName = verificationDetails?.displayName?.trim() || null;
   const avatarSrc =
-    isBusiness && verificationDetails?.profilePic
+    verificationDetails?.profilePic
       ? `${buildBackendUrl("/api/whatsapp/avatar")}?url=${encodeURIComponent(verificationDetails.profilePic)}`
       : null;
 
   useEffect(() => { setAvatarBroken(false); }, [avatarSrc]);
 
   const trustLinkToneClass =
-    recipientPreview?.status === "registered"
+    recipientPreview?.status === "registered" || recipientPreview?.status === "tins_resolved"
       ? "border-[#58f2b1]/18 bg-accent-deep/17"
       : recipientPreview?.status === "whatsapp_only" || recipientPreview?.status === "manual_invite_required"
         ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
@@ -212,6 +220,206 @@ export function PhoneNumberInput({
             ) : null}
           </div>
         ) : null}
+      </div>
+    );
+  }
+
+  function renderRecipientIdentityCard() {
+    if (!recipientPreview) return null;
+    const recipient = recipientPreview.recipient;
+    const identityName = recipient.identityName?.trim() || null;
+    const legalName = recipient.legalName?.trim() || null;
+    const socialIdentities = recipient.socialIdentities ?? [];
+    const whatsappName =
+      verificationDetails?.displayName?.trim() ||
+      recipient.whatsappProfileName?.trim() ||
+      null;
+    const recipientName =
+      legalName ||
+      identityName ||
+      whatsappName ||
+      recipient.displayName ||
+      "Recipient identity";
+    const hasTin = Boolean(recipient.tin);
+    const isTinResolved = recipientPreview.status === "tins_resolved";
+    const isInvalid = recipientPreview.status === "invalid_whatsapp_number";
+    const statusLabel = isTinResolved
+      ? "TIN confirmed"
+      : recipientPreview.status === "registered"
+        ? "On TrustLink"
+        : isBusiness
+          ? "Business WhatsApp"
+          : isInvalid
+            ? "Could not verify"
+            : "WhatsApp route";
+
+    return (
+      <div className="overflow-hidden rounded-[22px] border border-[var(--accent-border)] bg-[linear-gradient(145deg,var(--surface),var(--accent-soft))] shadow-softbox">
+        <div className="border-b border-[var(--accent-border)] px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]">
+                {avatarSrc && !avatarBroken ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarSrc}
+                    alt={whatsappName || "WhatsApp profile"}
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarBroken(true)}
+                  />
+                ) : isTinResolved ? (
+                  <ShieldCheck className="h-5 w-5" />
+                ) : (
+                  <WhatsAppIcon className="h-5 w-5" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--accent-deep)] dark:text-[var(--accent)]">
+                  {isInvalid ? <CircleAlert className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />}
+                  {statusLabel}
+                </div>
+                <div className="mt-1 truncate text-[1rem] font-bold text-[var(--text)]">
+                  {recipientName}
+                </div>
+                {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber ? (
+                  <div className="mt-0.5 truncate text-[0.68rem] text-[var(--text-faint)]">
+                    {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <span className={`rounded-full border px-2.5 py-1 text-[0.62rem] font-semibold ${
+              isInvalid
+                ? "border-[#ff7f7f]/25 bg-[#ff7f7f]/10 text-[#ffadad]"
+                : "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]"
+            }`}>
+              {isInvalid ? "Review" : "Active"}
+            </span>
+          </div>
+
+          {hasTin ? (
+            <div className="mt-4 rounded-[15px] border border-[var(--field-border)] bg-[var(--field)] px-3.5 py-3">
+              <div className="text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[var(--text-faint)]">
+                Transfer Identity Number
+              </div>
+              <div className="mt-1 font-mono text-[1.05rem] font-bold tracking-[0.16em] text-[var(--text)]">
+                {recipient.tin}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="space-y-3 px-4 py-4">
+          {hasTin ? (
+            <>
+              <div className="flex items-start gap-3">
+                <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-faint)]" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">Public TIN name</div>
+                  <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
+                    {identityName || "No public identity name found"}
+                  </div>
+                  <div className="text-[0.64rem] text-[var(--text-faint)]">Source: TINS on-chain registry</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                {legalName ? (
+                  <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+                ) : (
+                  <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#f3c96b]" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">Legal identity</div>
+                  <div className={`mt-0.5 text-[0.78rem] font-semibold ${legalName ? "text-[var(--text)]" : "text-[#f3c96b]"}`}>
+                    {legalName || "No legal name is available for this TIN"}
+                  </div>
+                  <div className="text-[0.64rem] text-[var(--text-faint)]">
+                    {legalName ? "Verified identity data supplied by the TIN registry." : "Confirm the TIN with the recipient before sending."}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[#25D366]/16">
+              <WhatsAppIcon className="h-2.5 w-2.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">WhatsApp identity</div>
+              <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
+                {whatsappName || (isBusiness ? "Business account" : "Personal or unverified account")}
+              </div>
+              <div className="text-[0.64rem] text-[var(--text-faint)]">
+                {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber || "No linked WhatsApp number"}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <AtSign className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-faint)]" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">TrustLink profile</div>
+              <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
+                {recipient.handle ? `@${recipient.handle}` : "Not indexed in TrustLink Pay"}
+              </div>
+              <div className="text-[0.64rem] text-[var(--text-faint)]">
+                TrustLink enrichment is optional and does not determine whether this identity route is valid.
+              </div>
+            </div>
+          </div>
+
+          {socialIdentities.length > 0 ? (
+            <div className="border-t border-[var(--field-border)] pt-3">
+              <div className="mb-2 text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                Public identity routes
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {socialIdentities.map((identity) => (
+                  <span
+                    key={`${identity.type}:${identity.value}`}
+                    className="rounded-full border border-[var(--field-border)] bg-[var(--field)] px-2.5 py-1.5 text-[0.68rem] text-[var(--text-soft)]"
+                  >
+                    {identity.label || identity.type}: <strong className="font-semibold text-[var(--text)]">{identity.value}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {"warning" in recipientPreview && recipientPreview.warning ? (
+            <div className={`rounded-[12px] border px-3 py-2 text-[0.7rem] leading-relaxed ${
+              isInvalid
+                ? "border-[#ff7f7f]/20 bg-[#ff7f7f]/8 text-[#ffadad]"
+                : "border-[#f3c96b]/20 bg-[#f3c96b]/8 text-[#f3c96b]"
+            }`}>
+              {recipientPreview.warning}
+            </div>
+          ) : null}
+
+          {!isBusiness && verificationDetails && showVerificationActions ? (
+            <div className="flex items-center justify-end gap-3 border-t border-[var(--field-border)] pt-3">
+              <a
+                href={verificationDetails.url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-[12px] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] transition-colors hover:opacity-80 dark:text-[#86ffda]"
+              >
+                Verify on WhatsApp
+              </a>
+              {onSkipVerification && skipVerificationLabel ? (
+                <button
+                  type="button"
+                  onClick={onSkipVerification}
+                  className="text-[0.72rem] font-medium text-[var(--text-soft)] transition-colors hover:text-[var(--text)]"
+                >
+                  {skipVerificationLabel}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -340,85 +548,16 @@ export function PhoneNumberInput({
 
       {/* ── Lookup Result Card ── */}
       {showLookupCard ? (
-        <div className={`relative z-10 rounded-[18px] px-4 py-3.5  ${trustLinkToneClass}`}>
+        recipientPreview && !lookupBusy && !lookupError
+          ? renderRecipientIdentityCard()
+          : <div className={`relative z-10 rounded-[18px] px-4 py-3.5  ${trustLinkToneClass}`}>
           {lookupBusy ? (
             <SectionLoader label="Verifying recipient..." />
           ) : lookupError ? (
             <div className="text-[0.82rem] text-[#ffadad]">{lookupError}</div>
           ) : null}
-
-          {!lookupBusy && !lookupError && recipientPreview ? (
-            <div className="space-y-3">
-              <div className="min-w-0">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="truncate text-[0.84rem] font-semibold text-[var(--text)]">
-                    {recipientPreview.recipient.handle
-                      ? `@${recipientPreview.recipient.handle}`
-                      : recipientPreview.recipient.displayName}
-                  </div>
-                  <span
-                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.64rem] font-semibold ${recipientPreview.status === "registered"
-                      ? "bg-[#58f2b1]/12 text-accent-deep"
-                      : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required"
-                        ? "bg-[#f3c96b]/14 text-[#f3c96b]"
-                        : "bg-[#ff7f7f]/14 text-[#ffadad]"
-                      }`}
-                  >
-                    {recipientPreview.status === "registered"
-                      ? "On TrustLink"
-                      : recipientPreview.status === "invalid_whatsapp_number"
-                        ? "Could not verify"
-                        : "Not on TrustLink"}
-                  </span>
-                </div>
-
-                {/* <div className="mt-1 flex items-center justify-between gap-3">
-                  <div className="truncate text-[0.68rem] text-[var(--text-faint)]">{recipientPreview.recipient.phoneNumber}</div>
-                  {recipientPreview.recipient.handle ? (
-                    <div className="text-[0.7rem] text-[var(--text-faint)]">@{recipientPreview.recipient.handle}</div>
-                  ) : null}
-                </div> */}
-
-                {"warning" in recipientPreview ? (
-                  <div className={`mt-1.5 text-[0.72rem] leading-relaxed ${recipientPreview.status === "invalid_whatsapp_number" ? "text-[#ffadad]" : "text-[#f3c96b]"}`}>
-                    {recipientPreview.warning}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2.5">
-                <div className="text-[0.68rem] font-medium text-[var(--text-soft)]">Identity routing preview</div>
-                <div className="text-[0.7rem] text-[var(--text-faint)]">
-                  TIN: {recipientPreview.recipient.tin ?? "not linked yet"}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5 text-[0.72rem] text-[var(--text)]">
-                  <span className="grid h-4 w-4 place-items-center rounded-full bg-[#25D366]/16">
-                    <WhatsAppIcon className="h-2.5 w-2.5" />
-                  </span>
-                  <span>
-                    WhatsApp: {verificationDetails?.resolvedPhoneNumber ?? recipientPreview.recipient.phoneNumber}
-                  </span>
-                </div>
-              </div>
-
-              {isTinCandidate ? (
-                <div className="rounded-[12px] border border-[#7dd3fc]/20 bg-[#7dd3fc]/10 px-3 py-2 text-[0.7rem] text-[#bde8ff]">
-                  {recipientPreview.recipient.tin ? "TIN resolved. TrustLink will route this payment to the linked recipient." : "TIN detected. No linked TrustLink identity was found yet."}
-                </div>
-              ) : null}
-
-              {showSummaryCard ? (
-                <div className="">
-                  {renderWhatsAppCard()}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-
-
           {!lookupBusy && !lookupError && !recipientPreview && showSummaryCard ? renderWhatsAppCard() : null}
-        </div>
+          </div>
       ) : null}
 
     </div>

@@ -163,10 +163,16 @@ This prevents a simple sender-wallet-to-recipient-wallet payment graph from appe
 TSN also powers:
 
 - Gasless payments
+- Encrypted settlement routing
+- Commitment-only public settlement records
+- One-Time Decryption Token replay protection
+- Claim-credit-gated settlement leases
 - Settlement proofs
 - Vault liquidity
 - Cranker settlement markets
-- Smart Epoch-based reimbursement
+- Smart recovery and epoch-based reimbursement
+
+Protocol details: [TSN Commitment Settlement](docs/TSN-COMMITMENT-SETTLEMENT.md)
 
 ---
 

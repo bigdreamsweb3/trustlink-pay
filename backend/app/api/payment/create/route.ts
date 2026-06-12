@@ -1,5 +1,7 @@
 export const runtime = "nodejs";
 import { randomUUID } from "node:crypto";
+import { Connection } from "@solana/web3.js";
+import { resolveTIN } from "@trustlink/tsn-sdk/tins";
 
 import { toErrorResponse, ok } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
@@ -76,11 +78,67 @@ export async function POST(request: Request) {
     if (!sender) return toErrorResponse(new Error("Sender must register identity first"));
     if (!sender.tin) return toErrorResponse(new Error("Sender must create a TIN before sending payments"));
 
-    const receiver = recipientTin ? await findUserByTin(String(recipientTin)) : await findUserByPhoneNumber(phoneNumber);
-    if (!receiver) return toErrorResponse(new Error("Recipient must register identity first"));
-    if (!receiver.tin) return toErrorResponse(new Error("Recipient must create a TIN before receiving TSN payments"));
-    const destinationWallet = receiver.tins_wallet_pubkey ?? receiver.wallet_address;
-    if (!destinationWallet) return toErrorResponse(new Error("Recipient TIN does not have a settlement wallet"));
+    let receiverTin: string;
+    let receiverPhone: string;
+    let receiverIdentityPublicKey: string;
+    let destinationWallet: string;
+    let receiverAutoclaimEnabled = false;
+
+    if (recipientTin) {
+      receiverTin = String(recipientTin);
+      const indexedReceiver = await findUserByTin(receiverTin);
+      const resolvedTin = await resolveTIN({
+        tin: receiverTin,
+        connection: new Connection(
+          env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
+          "confirmed",
+        ),
+        programId: env.TINS_PROGRAM_ID,
+      });
+      if (resolvedTin.status !== 1) {
+        return toErrorResponse(new Error("Recipient TIN is not active"));
+      }
+      if (!resolvedTin.settlementAuthorityVerified) {
+        return toErrorResponse(
+          new Error(
+            "Recipient TIN is valid, but its settlement authority could not be verified from its creation transaction",
+          ),
+        );
+      }
+      const whatsappIdentity = resolvedTin.socialIdentities.find(
+        (identity) => identity.type.toLowerCase() === "whatsapp",
+      );
+      destinationWallet = resolvedTin.authority.toBase58();
+      receiverIdentityPublicKey = resolvedTin.registry.toBase58();
+      receiverPhone =
+        indexedReceiver?.phone_number ||
+        whatsappIdentity?.value ||
+        `tin:${receiverTin}`;
+      receiverAutoclaimEnabled =
+        indexedReceiver?.receiver_autoclaim_enabled ?? true;
+    } else {
+      const receiver = await findUserByPhoneNumber(phoneNumber);
+      if (!receiver) {
+        return toErrorResponse(new Error("Recipient must register identity first"));
+      }
+      if (!receiver.tin) {
+        return toErrorResponse(
+          new Error("Recipient must create a TIN before receiving TSN payments"),
+        );
+      }
+      receiverTin = receiver.tin;
+      destinationWallet = receiver.tins_wallet_pubkey ?? receiver.wallet_address ?? "";
+      if (!destinationWallet) {
+        return toErrorResponse(
+          new Error("Recipient TIN does not have a settlement wallet"),
+        );
+      }
+      receiverPhone = receiver.phone_number;
+      receiverIdentityPublicKey =
+        receiver.tins_identity_pubkey ?? destinationWallet;
+      receiverAutoclaimEnabled =
+        receiver.receiver_autoclaim_enabled ?? false;
+    }
 
     const senderAuthorizationIssuedAt = String(body.senderAuthorizationIssuedAt ?? "");
     const senderAuthorizationSignature = String(body.senderAuthorizationSignature ?? "");
@@ -99,21 +157,21 @@ export async function POST(request: Request) {
       senderDisplayNameSnapshot: sender.display_name,
       senderHandleSnapshot: sender.trustlink_handle,
       referenceCode: generatePaymentReference(),
-      receiverPhone: receiver.phone_number,
-      receiverPhoneHash: sha256(`tin:${receiver.tin}`),
-      receiverIdentityPublicKey: receiver.tins_identity_pubkey ?? destinationWallet,
+      receiverPhone,
+      receiverPhoneHash: sha256(`tin:${receiverTin}`),
+      receiverIdentityPublicKey,
       tokenSymbol: "USDC",
       tokenMintAddress,
       amount: paymentAmount,
       senderFeeAmount: Math.max(0, totalTokenRequiredUi - paymentAmount),
       escrowAccount: `tsn:${randomUUID()}`,
       escrowVaultAddress: senderWallet,
-      senderAutoclaimEnabled: sender.receiver_autoclaim_enabled ?? false,
+      senderAutoclaimEnabled: receiverAutoclaimEnabled,
     });
 
     logger.info("payment.create.tsn_pending_frontend_enqueue", {
       paymentId: payment.id,
-      receiverPhone: receiver.phone_number,
+      receiverPhone,
     });
 
     return ok({
@@ -137,7 +195,7 @@ export async function POST(request: Request) {
       tsnClaimRequestId: null,
       tsn: {
         recipientHash: payment.receiver_phone_hash,
-        recipientTin: receiver.tin,
+        recipientTin: receiverTin,
         destinationWallet,
       },
     });

@@ -78,4 +78,18 @@ export class TsnHttpClient {
   postProof<TRequest, TResponse>(body: TRequest): Promise<TResponse> {
     return this.post("/proofs", body);
   }
+
+  listRecoveryWork<TResponse>(operatorPubkey: string, limit = 20): Promise<TResponse> {
+    return this.get(
+      `/recovery-work?operator_pubkey=${encodeURIComponent(operatorPubkey)}&limit=${limit}`,
+    );
+  }
+
+  claimRecoveryLease<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
+    return this.post(`/recoveries/${encodeURIComponent(id)}/lease`, body);
+  }
+
+  updateRecoveryStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
+    return this.patch(`/recoveries/${encodeURIComponent(id)}/status`, body);
+  }
 }

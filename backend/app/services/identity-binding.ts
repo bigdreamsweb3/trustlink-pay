@@ -12,6 +12,26 @@ import {
 } from "@/app/blockchain/solana";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import { hashBindingSignaturePayload } from "@/app/lib/privacy-keys";
+import { logger } from "@/app/lib/logger";
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("Identity binding RPC timed out")),
+      timeoutMs,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
   const user = await findUserById(authUser.id);
@@ -28,7 +48,18 @@ export async function getIdentitySecurityForUser(authUser: AuthenticatedUser) {
     };
   }
 
-  const binding = await getIdentityBindingState(user.phone_identity_pubkey);
+  let binding = null;
+  try {
+    binding = await withTimeout(
+      getIdentityBindingState(user.phone_identity_pubkey),
+      4_000,
+    );
+  } catch (error) {
+    logger.warn("identity.binding.read_unavailable", {
+      userId: user.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
   const normalizedBinding = binding
     ? {
         ...binding,

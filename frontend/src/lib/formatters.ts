@@ -1,4 +1,4 @@
-import type { PaymentNotificationStatus } from "@/src/lib/types";
+import type { PaymentNotificationStatus, PaymentRecord } from "@/src/lib/types";
 
 export function formatTokenAmount(value: string | number, maximumFractionDigits = 9) {
   const numericValue = typeof value === "number" ? value : Number(value);
@@ -35,4 +35,14 @@ export function isPaymentNotificationFinal(status: PaymentNotificationStatus | n
 
 export function shouldPollPaymentNotification(status: PaymentNotificationStatus | null | undefined) {
   return status === "queued" || status === "sent" || status === "delivered";
+}
+
+export function shouldPollTsnPayment(payment: Pick<PaymentRecord, "tsn">) {
+  const status = payment.tsn?.intentStatus;
+  return (
+    status === "pending" ||
+    status === "escrowed" ||
+    status === "onchain" ||
+    status === "claimed"
+  );
 }

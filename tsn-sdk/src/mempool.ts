@@ -10,6 +10,8 @@ import type {
   TsnMempoolClaimRequest,
   TsnMempoolIntent,
   TsnIntentWorkItem,
+  TsnRecoveryStatus,
+  TsnRecoveryWorkItem,
   TsnWorkItem,
   ProofOfPaymentRequest,
 } from "./contracts.js";
@@ -29,12 +31,21 @@ export interface TsnMempool {
     patch?: Partial<TsnMempoolClaimRequest>,
   ): Promise<TsnMempoolClaimRequest | null>;
   postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+  listPendingRecoveryWork(operatorPubkey: string, limit?: number): Promise<TsnRecoveryWorkItem[]>;
+  claimRecoveryLease(id: string, operatorPubkey: string): Promise<TsnRecoveryWorkItem>;
+  updateRecoveryStatus(
+    id: string,
+    operatorPubkey: string,
+    status: TsnRecoveryStatus,
+    patch?: Partial<TsnRecoveryWorkItem>,
+  ): Promise<TsnRecoveryWorkItem | null>;
 }
 
 type Snapshot = {
   intents: TsnMempoolIntent[];
   claimRequests: TsnMempoolClaimRequest[];
   proofs?: ProofOfPaymentRequest[];
+  recoveries?: TsnRecoveryWorkItem[];
 };
 
 function now() {
@@ -46,7 +57,7 @@ async function readSnapshot(path: string): Promise<Snapshot> {
     return JSON.parse(await readFile(path, "utf8")) as Snapshot;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { intents: [], claimRequests: [], proofs: [] };
+      return { intents: [], claimRequests: [], proofs: [], recoveries: [] };
     }
     throw error;
   }
@@ -163,6 +174,7 @@ export class JsonFileTsnMempool implements TsnMempool {
   async postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest> {
     const snapshot = await readSnapshot(this.path);
     if (!snapshot.proofs) snapshot.proofs = [];
+    if (!snapshot.recoveries) snapshot.recoveries = [];
     snapshot.proofs.push(request);
     const intent = snapshot.intents.find((candidate) => candidate.id === request.intent_id);
     if (intent && ["escrowed", "onchain", "claimed"].includes(intent.status)) {
@@ -171,9 +183,96 @@ export class JsonFileTsnMempool implements TsnMempool {
         proofTxSig: request.proof_tx,
         updatedAt: now(),
       });
+      if (
+        intent.transferId &&
+        intent.settlementPaymentIntentId &&
+        intent.settlementVault &&
+        intent.settlementTokenAccount &&
+        !snapshot.recoveries.some((item) => item.id === intent.id)
+      ) {
+        const timestamp = now();
+        snapshot.recoveries.push({
+          id: intent.id,
+          paymentId: intent.paymentId,
+          transferId: intent.transferId,
+          paymentIntentId: intent.settlementPaymentIntentId,
+          settlementVault: intent.settlementVault,
+          settlementTokenAccount: intent.settlementTokenAccount,
+          tokenMintAddress: intent.tokenMintAddress,
+          settlementCrankerPubkey: request.cranker_pubkey,
+          amount: Number(intent.amount),
+          epoch: Number(intent.settlementEpoch ?? 0),
+          rewardLamports: 10_000,
+          priorityScore: Number(intent.amount) * 10,
+          status: "pending",
+          assignedCrankerPubkey: null,
+          leaseExpiresAt: null,
+          recoveryTxSig: null,
+          settlementReason: "Settlement paid; escrow liquidity is ready for recovery.",
+          postedAt: timestamp,
+          updatedAt: timestamp,
+        });
+      }
     }
     await writeSnapshot(this.path, snapshot);
     return request;
+  }
+
+  async listPendingRecoveryWork(operatorPubkey: string, limit = 20) {
+    const snapshot = await readSnapshot(this.path);
+    const now = Date.now();
+    return (snapshot.recoveries ?? [])
+      .filter((item) => {
+        if (item.status === "pending" || item.status === "failed") return true;
+        if (item.status !== "leased") return false;
+        if (item.assignedCrankerPubkey === operatorPubkey) return true;
+        return item.leaseExpiresAt ? Date.parse(item.leaseExpiresAt) <= now : false;
+      })
+      .sort((left, right) => right.priorityScore - left.priorityScore)
+      .slice(0, limit);
+  }
+
+  async claimRecoveryLease(id: string, operatorPubkey: string) {
+    const snapshot = await readSnapshot(this.path);
+    const item = (snapshot.recoveries ?? []).find((candidate) => candidate.id === id);
+    if (!item) throw new Error(`Recovery ${id} not found`);
+    const now = Date.now();
+    const heldByAnother =
+      item.status === "leased" &&
+      item.assignedCrankerPubkey !== operatorPubkey &&
+      (!item.leaseExpiresAt || Date.parse(item.leaseExpiresAt) > now);
+    if (heldByAnother) throw new Error(`Recovery ${id} is leased by another Cranker`);
+    Object.assign(item, {
+      status: "leased" as const,
+      assignedCrankerPubkey: operatorPubkey,
+      leaseExpiresAt: new Date(now + 5 * 60_000).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+    });
+    await writeSnapshot(this.path, snapshot);
+    return item;
+  }
+
+  async updateRecoveryStatus(
+    id: string,
+    operatorPubkey: string,
+    status: TsnRecoveryStatus,
+    patch: Partial<TsnRecoveryWorkItem> = {},
+  ) {
+    const snapshot = await readSnapshot(this.path);
+    const item = (snapshot.recoveries ?? []).find((candidate) => candidate.id === id);
+    if (!item) return null;
+    if (item.assignedCrankerPubkey && item.assignedCrankerPubkey !== operatorPubkey) {
+      throw new Error(`Recovery ${id} is leased by another Cranker`);
+    }
+    Object.assign(item, patch, {
+      status,
+      updatedAt: now(),
+      ...(status === "pending"
+        ? { assignedCrankerPubkey: null, leaseExpiresAt: null }
+        : {}),
+    });
+    await writeSnapshot(this.path, snapshot);
+    return item;
   }
 }
 
@@ -237,5 +336,35 @@ export class HttpTsnMempool implements TsnMempool {
 
   postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest> {
     return this.client.postProof<ProofOfPaymentRequest, ProofOfPaymentRequest>(request);
+  }
+
+  listPendingRecoveryWork(operatorPubkey: string, limit = 20) {
+    return this.client.listRecoveryWork<TsnRecoveryWorkItem[]>(operatorPubkey, limit);
+  }
+
+  claimRecoveryLease(id: string, operatorPubkey: string) {
+    return this.client.claimRecoveryLease<
+      { operatorPubkey: string },
+      TsnRecoveryWorkItem
+    >(id, { operatorPubkey });
+  }
+
+  updateRecoveryStatus(
+    id: string,
+    operatorPubkey: string,
+    status: TsnRecoveryStatus,
+    patch: Partial<TsnRecoveryWorkItem> = {},
+  ) {
+    return this.client.updateRecoveryStatus<
+      Partial<TsnRecoveryWorkItem> & {
+        operatorPubkey: string;
+        status: TsnRecoveryStatus;
+      },
+      TsnRecoveryWorkItem
+    >(id, {
+      ...patch,
+      operatorPubkey,
+      status,
+    });
   }
 }

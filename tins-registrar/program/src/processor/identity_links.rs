@@ -16,7 +16,7 @@ use crate::{
     instruction_auto::{LinkSensitiveFieldParams, LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams},
     state::{EncryptedSensitiveField, EncryptedSocialIdentity, IdentityRegistry, PlatformRegistry, PLATFORM_ACTIVE},
     utils::{
-        assert_program_owned, load_borsh, store_borsh, top_up_and_realloc, validate_encrypted_blob,
+        assert_program_owned, load_borsh, load_identity_registry, store_borsh, top_up_and_realloc, validate_encrypted_blob,
         validate_identity_label, validate_identity_type, validate_metadata,
     },
 };
@@ -63,7 +63,7 @@ pub fn link_social_identity(
         &params.metadata,
     )?;
 
-    let mut registry: IdentityRegistry = load_borsh(registry_account)?;
+    let mut registry = load_identity_registry(registry_account)?;
     assert_registry_owner(&registry, owner)?;
 
     registry.social_identities.push(EncryptedSocialIdentity {
@@ -96,7 +96,7 @@ pub fn link_sensitive_field(
     validate_encrypted_blob(&params.nonce, &params.ciphertext)?;
     validate_metadata(&params.metadata)?;
 
-    let mut registry: IdentityRegistry = load_borsh(registry_account)?;
+    let mut registry = load_identity_registry(registry_account)?;
     assert_registry_owner(&registry, owner)?;
 
     registry.sensitive_fields.push(EncryptedSensitiveField {
@@ -137,7 +137,7 @@ pub fn link_verified_social_identity(
         &params.metadata,
     )?;
 
-    let mut registry: IdentityRegistry = load_borsh(registry_account)?;
+    let mut registry = load_identity_registry(registry_account)?;
     assert_registry_owner(&registry, owner)?;
 
     let platform_registry: PlatformRegistry = load_borsh(platform_registry_account)?;

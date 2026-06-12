@@ -56,4 +56,13 @@ export class TsnHttpClient {
     postProof(body) {
         return this.post("/proofs", body);
     }
+    listRecoveryWork(operatorPubkey, limit = 20) {
+        return this.get(`/recovery-work?operator_pubkey=${encodeURIComponent(operatorPubkey)}&limit=${limit}`);
+    }
+    claimRecoveryLease(id, body) {
+        return this.post(`/recoveries/${encodeURIComponent(id)}/lease`, body);
+    }
+    updateRecoveryStatus(id, body) {
+        return this.patch(`/recoveries/${encodeURIComponent(id)}/status`, body);
+    }
 }

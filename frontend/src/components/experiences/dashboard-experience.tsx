@@ -25,9 +25,14 @@ import { apiGet, apiPost } from "@/src/lib/api";
 import {
   formatTokenAmount,
   shouldPollPaymentNotification,
+  shouldPollTsnPayment,
 } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
-import { createOrLoadTinForWallet } from "@/src/lib/tins";
+import {
+  createOrLoadTinForWallet,
+  resolveTinFromChain,
+  type BrowserResolvedTin,
+} from "@/src/lib/tins";
 import type {
   IdentitySecurityResponse,
   IdentitySecurityState,
@@ -49,7 +54,7 @@ import {
   Lock,
 } from "lucide-react";
 
-const DASHBOARD_REFRESH_INTERVAL_MS = 20_000;
+const DASHBOARD_REFRESH_INTERVAL_MS = 30_000;
 
 /* â”€â”€ WhatsApp icon â”€â”€ */
 function WhatsAppIcon({ className = "" }: { className?: string }) {
@@ -207,6 +212,7 @@ export function DashboardExperience() {
   const [identitySecurity, setIdentitySecurity] =
     useState<IdentitySecurityState | null>(null);
   const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
+  const [resolvedTin, setResolvedTin] = useState<BrowserResolvedTin | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
   const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] =
@@ -258,12 +264,13 @@ export function DashboardExperience() {
   );
   const pendingClaimsUsd =
     pendingBalanceSummary.totalPendingUsd || totalPendingUsd;
-  const hasPendingSenderReceipt = useMemo(
+  const hasPendingStatus = useMemo(
     () =>
       paymentHistory.some(
         (p) =>
-          p.sender_user_id === user?.id &&
-          shouldPollPaymentNotification(p.notification_status),
+          shouldPollTsnPayment(p) ||
+          (p.sender_user_id === user?.id &&
+            shouldPollPaymentNotification(p.notification_status)),
       ),
     [paymentHistory, user?.id],
   );
@@ -284,7 +291,25 @@ export function DashboardExperience() {
     !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
 
   useEffect(() => {
-    if (!accessToken || !user || !hasPendingSenderReceipt) return;
+    if (!activeTin) {
+      setResolvedTin(null);
+      return;
+    }
+    let cancelled = false;
+    void resolveTinFromChain(activeTin)
+      .then((identity) => {
+        if (!cancelled) setResolvedTin(identity);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedTin(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTin]);
+
+  useEffect(() => {
+    if (!accessToken || !user || !hasPendingStatus) return;
     const interval = window.setInterval(() => {
       if (
         typeof document !== "undefined" &&
@@ -294,7 +319,7 @@ export function DashboardExperience() {
       void loadDashboard(accessToken, { background: true });
     }, DASHBOARD_REFRESH_INTERVAL_MS);
     return () => window.clearInterval(interval);
-  }, [accessToken, hasPendingSenderReceipt, user]);
+  }, [accessToken, hasPendingStatus, user]);
 
   async function loadDashboard(
     token: string,
@@ -875,7 +900,7 @@ export function DashboardExperience() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[0.74rem] font-medium">
                     {activeTin
-                      ? user.displayName
+                      ? resolvedTin?.legalName || "No verified legal name"
                       : identityBusy
                         ? "Creating TIN..."
                         : "Create TIN"}
@@ -885,7 +910,7 @@ export function DashboardExperience() {
                   </div>
                   <div className="text-[0.58rem] text-text-faint">
                     {activeTin
-                      ? `TIN ${activeTin}${activeTinIdentity ? ` - ${shortenAddress(activeTinIdentity)}` : ""}`
+                      ? `TIN ${activeTin}${resolvedTin?.name ? ` · Registry name: ${resolvedTin.name}` : ""}${activeTinIdentity ? ` · ${shortenAddress(activeTinIdentity)}` : ""}`
                       : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>

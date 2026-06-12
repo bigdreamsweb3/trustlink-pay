@@ -13,6 +13,7 @@ import { apiGet } from "@/src/lib/api";
 import {
   formatTokenAmount,
   shouldPollPaymentNotification,
+  shouldPollTsnPayment,
 } from "@/src/lib/formatters";
 import { shareInviteMessage } from "@/src/lib/share";
 import type { PaymentDetailResponse } from "@/src/lib/types";
@@ -286,10 +287,7 @@ export function TransactionDetailExperience({
   const shouldPollReceipt =
     detail?.viewerRole === "sender" &&
     shouldPollPaymentNotification(detail?.payment.notification_status);
-  const shouldPollTsn =
-    detail?.payment.tsn != null &&
-    !["cranker_paid", "epoch_settled"].includes(detail.payment.tsn.stage) &&
-    (detail.payment.tsn.stage !== "reverted" || isSenderEscrowed(detail));
+  const shouldPollTsn = detail ? shouldPollTsnPayment(detail.payment) : false;
   const shouldPollDetail = shouldPollReceipt || shouldPollTsn;
 
   useEffect(() => {

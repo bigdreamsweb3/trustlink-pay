@@ -12,6 +12,7 @@ pub const TSN_PAYMENT_VAULT_SEED: &[u8] = b"vault";
 pub const TSN_DEFAULT_LEASE_SECONDS: i64 = 30;
 pub const TSN_DEFAULT_EPOCH_SECONDS: i64 = 7 * 60 * 60; // 7 hours
 pub const TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS: u64 = 10_000;
+pub const TSN_RECOVERY_GAS_REIMBURSEMENT_LAMPORTS: u64 = 10_000;
 
 // Fee split bps (out of 10_000) for internal settlement distribution.
 // Default policy prioritizes LP incentives while keeping operator and treasury sustainable.

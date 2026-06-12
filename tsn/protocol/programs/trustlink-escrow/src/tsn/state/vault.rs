@@ -1,12 +1,33 @@
 use anchor_lang::prelude::*;
 
+#[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Copy, PartialEq, Eq)]
+pub enum VaultSettlementStatus {
+    Created,
+    Escrowed,
+    Leased,
+    Paid,
+    Recovering,
+    Recovered,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct VaultState {
     pub payment_intent_id: u64,
-    pub cranker_author: Pubkey,
-    pub is_processed: bool,
-    pub amount: u64,
+    pub transfer_id: [u8; 32],
+    pub commitment_hash: [u8; 32],
+    pub otdt_hash: [u8; 32],
+    pub lease_cranker: Pubkey,
+    pub settlement_cranker: Pubkey,
+    pub lease_expiry_ts: i64,
+    pub created_at_ts: i64,
+    pub paid_at_ts: i64,
+    pub recovered_at_ts: i64,
+    pub epoch_id: u64,
+    pub status: VaultSettlementStatus,
+    pub otdt_used: bool,
+    pub recoverable: bool,
+    pub bump: u8,
 }
 
 #[account]

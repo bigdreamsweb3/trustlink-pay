@@ -46,6 +46,18 @@ export type CreateIntentRequest = {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    transferId?: string | null;
+    commitmentHash?: string | null;
+    settlementEpoch?: number | null;
+    encryptedSettlementToken?: {
+        algorithm: "x25519-xsalsa20-poly1305";
+        ciphertextBase64: string;
+        nonceBase64: string;
+        ephemeralPublicKeyBase64: string;
+        commitmentHash: string;
+        transferId: string;
+        epoch: number;
+    } | null;
     intentSeedHash: string;
     recipientHash: string;
     tokenMintAddress: string;
@@ -57,7 +69,7 @@ export type RequestClaimRequest = {
     paymentId: string;
     intentId: string;
     recipientHash: string;
-    destinationWallet: string;
+    destinationWallet?: string | null;
     autoclaim: boolean;
     source?: string;
 };
@@ -93,6 +105,31 @@ export type ProofOfPaymentRequest = {
     cranker_pubkey: string;
     proof_tx: string;
     encrypted_payload?: string | null;
+    transfer_id?: string | null;
+    commitment_hash?: string | null;
+    otdt_hash?: string | null;
+};
+export type TsnRecoveryStatus = "pending" | "leased" | "completed" | "failed" | "canceled";
+export type TsnRecoveryWorkItem = {
+    id: string;
+    paymentId: string;
+    transferId: string;
+    paymentIntentId: string;
+    settlementVault: string;
+    settlementTokenAccount: string;
+    tokenMintAddress: string;
+    settlementCrankerPubkey: string;
+    amount: number;
+    epoch: number;
+    rewardLamports: number;
+    priorityScore: number;
+    status: TsnRecoveryStatus;
+    assignedCrankerPubkey?: string | null;
+    leaseExpiresAt?: string | null;
+    recoveryTxSig?: string | null;
+    settlementReason?: string | null;
+    postedAt: string;
+    updatedAt: string;
 };
 export type IntentState = {
     status: TsnIntentStatus;
@@ -118,6 +155,10 @@ export declare function buildCreateIntentRequest(params: {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    transferId?: string | null;
+    commitmentHash?: string | null;
+    settlementEpoch?: number | null;
+    encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
     recipientHash: string;
     tokenMintAddress: string;
     amount: number;

@@ -38,6 +38,61 @@ await client.postIntent(request);
 - `program` - Program constants and ID verification
 - `blockchain/solana-core` - Core Solana utilities
 - `blockchain/solana-tsn` - TSN-specific blockchain operations
+- `sponsored-settlement` - SDK-owned sender escrow transaction construction
+- `settlement-token` - encrypted routing, public commitments, and OTDT generation
+
+## Private Commitment Settlement
+
+Applications must not build TSN instructions or derive TSN PDAs themselves. The SDK is the protocol boundary.
+
+```ts
+import {
+  buildSettlementTokenPayload,
+  encryptSettlementToken,
+} from "@trustlink/tsn-sdk/settlement-token";
+import {
+  buildTsnSponsoredSettlementTransaction,
+  uiAmountToBaseUnits,
+} from "@trustlink/tsn-sdk/sponsored-settlement";
+
+const payload = buildSettlementTokenPayload({
+  paymentId,
+  recipientWallet,
+  tokenMintAddress,
+  recipientAmountBaseUnits: uiAmountToBaseUnits("5", 6),
+  epoch,
+  expiresAt,
+});
+const encryptedSettlementToken = encryptSettlementToken({
+  payload,
+  crankerEncryptionPublicKey,
+});
+
+const settlement = await buildTsnSponsoredSettlementTransaction({
+  paymentId,
+  crankerFeePayer,
+  senderWallet,
+  tokenMintAddress,
+  amountUi: "5",
+  tokenDecimals: 6,
+  recipientHash,
+  transferId: encryptedSettlementToken.transferId,
+  commitmentHash: encryptedSettlementToken.commitmentHash,
+});
+```
+
+The frontend asks the wallet to co-sign `settlement.transactionBase64`, then sends the signed transaction and `encryptedSettlementToken` to the mempool. It does not broadcast the transaction.
+
+The public payment vault stores only commitment and lifecycle data. The recipient route is decrypted by a registered Cranker only after it obtains an on-chain lease and commits an OTDT hash.
+
+The SDK exposes Cranker-only operations from `blockchain/solana-tsn`:
+
+- `tsnClaimVaultSettlementOnChain`
+- `tsnExecuteVaultPayoutOnChain`
+- `tsnClaimVaultRecoveryOnChain`
+- `tsnRecoverPaymentVaultOnChain`
+
+See `docs/TSN-COMMITMENT-SETTLEMENT.md` in the TrustLink Pay repository for the complete security model.
 
 ## TIN Resolution And Encrypted Identities
 

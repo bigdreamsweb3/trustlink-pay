@@ -10,6 +10,7 @@ export interface UserProfile {
   displayName: string;
   handle: string;
   walletAddress: string | null;
+  pinConfigured?: boolean;
   whatsappOptedIn?: boolean;
   optInTimestamp?: string | null;
   optOutTimestamp?: string | null;
@@ -266,11 +267,29 @@ export interface WhatsAppNumberVerificationResult {
   source: "trustlink_scraper" | "mock";
 }
 
+export type RecipientSocialIdentity = {
+  type: string;
+  label: string;
+  value: string;
+  verifiedBy: string | null;
+};
+
+type RecipientIdentityDetails = {
+  tin?: string | null;
+  identityName?: string | null;
+  legalName?: string | null;
+  legalNameStatus?: "verified" | "not_available";
+  settlementWallet?: string | null;
+  registryAddress?: string | null;
+  trustLinkLinked?: boolean;
+  socialIdentities?: RecipientSocialIdentity[];
+};
+
 export type RecipientLookupResult =
   | {
       status: "invalid_whatsapp_number";
       verified: false;
-      recipient: {
+      recipient: RecipientIdentityDetails & {
         displayName: string;
         handle: null;
         phoneNumber: string;
@@ -283,7 +302,7 @@ export type RecipientLookupResult =
   | {
       status: "registered";
       verified: true;
-      recipient: {
+      recipient: RecipientIdentityDetails & {
         displayName: string;
         handle: string;
         phoneNumber: string;
@@ -293,9 +312,29 @@ export type RecipientLookupResult =
       };
     }
   | {
+      status: "tins_resolved";
+      verified: true;
+      recipient: RecipientIdentityDetails & {
+        displayName: string;
+        handle: string | null;
+        phoneNumber: string;
+        source: "tins";
+        tin: string;
+        whatsappProfileName: string | null;
+        identityName: string | null;
+        legalName: string | null;
+        legalNameStatus: "verified" | "not_available";
+        settlementWallet: string;
+        registryAddress: string;
+        trustLinkLinked: boolean;
+        socialIdentities: RecipientSocialIdentity[];
+      };
+      warning?: string;
+    }
+  | {
       status: "whatsapp_only";
       verified: true;
-      recipient: {
+      recipient: RecipientIdentityDetails & {
         displayName: string;
         handle: null;
         phoneNumber: string;
@@ -308,7 +347,7 @@ export type RecipientLookupResult =
   | {
       status: "manual_invite_required";
       verified: true;
-      recipient: {
+      recipient: RecipientIdentityDetails & {
         displayName: string;
         handle: null;
         phoneNumber: string;

@@ -394,8 +394,36 @@ pub mod trustlink_escrow {
         ctx: Context<ProcessPaymentIntent>,
         payment_intent_id: u64,
         amount: u64,
+        transfer_id: [u8; 32],
+        commitment_hash: [u8; 32],
     ) -> Result<()> {
-        tsn::instructions::process_payment_intent(ctx, payment_intent_id, amount)
+        tsn::instructions::process_payment_intent(
+            ctx,
+            payment_intent_id,
+            amount,
+            transfer_id,
+            commitment_hash,
+        )
+    }
+
+    pub fn tsn_claim_vault_settlement(
+        ctx: Context<ClaimVaultSettlement>,
+        payment_intent_id: u64,
+        otdt_hash: [u8; 32],
+    ) -> Result<()> {
+        tsn::instructions::claim_vault_settlement(ctx, payment_intent_id, otdt_hash)
+    }
+
+    pub fn tsn_finalize_payment_intent(
+        ctx: Context<FinalizePaymentIntent>,
+        payment_intent_id: u64,
+        authorized_amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::finalize_payment_intent(
+            ctx,
+            payment_intent_id,
+            authorized_amount,
+        )
     }
 
     pub fn tsn_claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {
@@ -412,10 +440,34 @@ pub mod trustlink_escrow {
 
     pub fn tsn_execute_vault_payout(
         ctx: Context<ExecuteVaultPayout>,
+        payment_intent_id: u64,
         payout_amount: u64,
         claim_fee_amount: u64,
+        otdt: [u8; 32],
+        decryption_secret: [u8; 32],
     ) -> Result<()> {
-        tsn::instructions::execute_vault_payout(ctx, payout_amount, claim_fee_amount)
+        tsn::instructions::execute_vault_payout(
+            ctx,
+            payment_intent_id,
+            payout_amount,
+            claim_fee_amount,
+            otdt,
+            decryption_secret,
+        )
+    }
+
+    pub fn tsn_claim_vault_recovery(
+        ctx: Context<ClaimVaultRecovery>,
+        payment_intent_id: u64,
+    ) -> Result<()> {
+        tsn::instructions::claim_vault_recovery(ctx, payment_intent_id)
+    }
+
+    pub fn tsn_recover_payment_vault(
+        ctx: Context<RecoverPaymentVault>,
+        payment_intent_id: u64,
+    ) -> Result<()> {
+        tsn::instructions::recover_payment_vault(ctx, payment_intent_id)
     }
 
     pub fn tsn_settle_epoch(ctx: Context<SettleEpoch>, force: bool) -> Result<()> {

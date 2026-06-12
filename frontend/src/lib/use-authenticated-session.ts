@@ -56,7 +56,7 @@ export function useAuthenticatedSession(redirectPath: string) {
   }, [redirectPath, router]);
 
   useEffect(() => {
-    if (!hydrated || !accessToken || !user || pendingAuth) {
+    if (!hydrated || !accessToken || !user || pendingAuth || user.pinConfigured === false) {
       return;
     }
 
@@ -76,7 +76,11 @@ export function useAuthenticatedSession(redirectPath: string) {
         const result = await apiPost<{
           challengeToken: string;
           user: UserProfile;
-        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined);
+        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined, {
+          cache: "default",
+          cacheKey: `pin-challenge:${accessToken}`,
+          ttlMs: 5_000,
+        });
         const nextPendingAuth = {
           challengeToken: result.challengeToken,
           pinMode: "verify" as const,
@@ -96,7 +100,7 @@ export function useAuthenticatedSession(redirectPath: string) {
   }, [accessToken, hydrated, pendingAuth, redirectPath, user]);
 
   useEffect(() => {
-    if (!hydrated || !accessToken || !user || pendingAuth) {
+    if (!hydrated || !accessToken || !user || pendingAuth || user.pinConfigured === false) {
       return;
     }
 
@@ -120,7 +124,11 @@ export function useAuthenticatedSession(redirectPath: string) {
         const result = await apiPost<{
           challengeToken: string;
           user: UserProfile;
-        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined);
+        }>("/api/auth/pin/challenge", {}, accessToken ?? undefined, {
+          cache: "default",
+          cacheKey: `pin-challenge:${accessToken}`,
+          ttlMs: 5_000,
+        });
         const nextPendingAuth = {
           challengeToken: result.challengeToken,
           pinMode: "verify" as const,

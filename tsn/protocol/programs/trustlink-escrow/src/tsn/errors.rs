@@ -54,4 +54,22 @@ pub enum TsnError {
     CrankerClaimCreditOverflow,
     #[msg("Cranker vault has insufficient liquidity")]
     InsufficientCrankerVaultLiquidity,
+    #[msg("Settlement commitment does not match the encrypted token secret")]
+    InvalidSettlementCommitment,
+    #[msg("One-time decryption token does not match the active lease")]
+    InvalidOneTimeDecryptionToken,
+    #[msg("One-time decryption token has already been consumed")]
+    OneTimeDecryptionTokenAlreadyUsed,
+    #[msg("Settlement vault is not in the required state")]
+    InvalidVaultSettlementState,
+    #[msg("Settlement vault is not recoverable")]
+    VaultNotRecoverable,
+    #[msg("Recovery must return principal to the Cranker vault that funded settlement")]
+    InvalidRecoveryDestination,
+    #[msg("Recovery lease is still active")]
+    RecoveryLeaseStillActive,
+    #[msg("Recovery vault token account is invalid")]
+    InvalidRecoveryVaultTokenAccount,
+    #[msg("Payment vault has not received the authorized token amount")]
+    InvalidPaymentVaultFunding,
 }

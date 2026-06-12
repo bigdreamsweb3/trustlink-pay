@@ -30,7 +30,10 @@ describe("trustlink_escrow", () => {
 
   before(async () => {
     await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(verifier.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL),
+      await provider.connection.requestAirdrop(
+        verifier.publicKey,
+        2 * anchor.web3.LAMPORTS_PER_SOL,
+      ),
       "confirmed",
     );
     await provider.connection.confirmTransaction(
@@ -41,14 +44,37 @@ describe("trustlink_escrow", () => {
       "confirmed",
     );
 
-    mint = await createMint(provider.connection, sender.payer, sender.publicKey, null, 6);
+    mint = await createMint(
+      provider.connection,
+      sender.payer,
+      sender.publicKey,
+      null,
+      6,
+    );
     senderTokenAccount = (
-      await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, sender.publicKey)
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        sender.payer,
+        mint,
+        sender.publicKey,
+      )
     ).address;
     treasuryTokenAccount = (
-      await getOrCreateAssociatedTokenAccount(provider.connection, sender.payer, mint, treasuryOwner.publicKey)
+      await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        sender.payer,
+        mint,
+        treasuryOwner.publicKey,
+      )
     ).address;
-    await mintTo(provider.connection, sender.payer, mint, senderTokenAccount, sender.publicKey, 5_000_000_000);
+    await mintTo(
+      provider.connection,
+      sender.payer,
+      mint,
+      senderTokenAccount,
+      sender.publicKey,
+      5_000_000_000,
+    );
 
     [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
@@ -75,13 +101,19 @@ describe("trustlink_escrow", () => {
       .rpc();
 
     const config = await program.account.escrowConfig.fetch(configPda);
-    expect(config.claimVerifier.toBase58()).to.equal(verifier.publicKey.toBase58());
-    expect(config.treasuryOwner.toBase58()).to.equal(treasuryOwner.publicKey.toBase58());
+    expect(config.claimVerifier.toBase58()).to.equal(
+      verifier.publicKey.toBase58(),
+    );
+    expect(config.treasuryOwner.toBase58()).to.equal(
+      treasuryOwner.publicKey.toBase58(),
+    );
     expect(config.defaultExpirySeconds.toNumber()).to.equal(3600);
   });
 
   it("creates a secure payment with locked escrow state", async () => {
-    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => index + 1));
+    const paymentId = Uint8Array.from(
+      Array.from({ length: 32 }, (_, index) => index + 1),
+    );
     const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("payment"), Buffer.from(paymentId)],
       program.programId,
@@ -123,7 +155,9 @@ describe("trustlink_escrow", () => {
     const payment = await program.account.paymentAccount.fetch(paymentPda);
     const vault = await getAccount(provider.connection, escrowVault.publicKey);
 
-    expect(payment.senderPhoneIdentityPubkey.toBase58()).to.equal(anchor.web3.PublicKey.default.toBase58());
+    expect(payment.senderPhoneIdentityPubkey.toBase58()).to.equal(
+      anchor.web3.PublicKey.default.toBase58(),
+    );
     expect(payment.paymentMode.secure).to.not.equal(undefined);
     expect(payment.amount.toNumber()).to.equal(1_500_000);
     expect(payment.status.locked).to.not.equal(undefined);
@@ -148,7 +182,9 @@ describe("trustlink_escrow", () => {
       .signers([verifier])
       .rpc();
 
-    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 50 + index));
+    const paymentId = Uint8Array.from(
+      Array.from({ length: 32 }, (_, index) => 50 + index),
+    );
     const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("payment"), Buffer.from(paymentId)],
       program.programId,
@@ -159,7 +195,10 @@ describe("trustlink_escrow", () => {
     );
     const escrowVault = anchor.web3.Keypair.generate();
     const expiryTs = new anchor.BN(Math.floor(Date.now() / 1000) + 3600);
-    const treasuryBefore = await getAccount(provider.connection, treasuryTokenAccount);
+    const treasuryBefore = await getAccount(
+      provider.connection,
+      treasuryTokenAccount,
+    );
 
     await program.methods
       .createPayment(
@@ -189,14 +228,19 @@ describe("trustlink_escrow", () => {
       .rpc();
 
     const payment = await program.account.paymentAccount.fetch(paymentPda);
-    const treasuryAfter = await getAccount(provider.connection, treasuryTokenAccount);
+    const treasuryAfter = await getAccount(
+      provider.connection,
+      treasuryTokenAccount,
+    );
 
     expect(payment.senderFeeAmount.toNumber()).to.equal(180);
     expect(Number(treasuryAfter.amount - treasuryBefore.amount)).to.equal(180);
   });
 
   it("marks expired invite payments as expired without sweeping funds", async () => {
-    const paymentId = Uint8Array.from(Array.from({ length: 32 }, (_, index) => 100 + index));
+    const paymentId = Uint8Array.from(
+      Array.from({ length: 32 }, (_, index) => 100 + index),
+    );
     const [paymentPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("payment"), Buffer.from(paymentId)],
       program.programId,
@@ -255,3 +299,6 @@ describe("trustlink_escrow", () => {
     expect(Number(vault.amount)).to.equal(500_000);
   });
 });
+function before(arg0: () => Promise<void>) {
+  throw new Error("Function not implemented.");
+}

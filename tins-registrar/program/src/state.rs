@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
-pub const CURRENT_VERSION: u8 = 1;
+pub const CURRENT_VERSION: u8 = 2;
 pub const IDENTITY_ACTIVE: u8 = 1;
 pub const ESCROW_PENDING: u8 = 0;
 pub const ESCROW_CLAIMED: u8 = 1;
@@ -118,6 +118,39 @@ pub struct IdentityRegistry {
     pub name: String,
     pub social_identities: Vec<EncryptedSocialIdentity>,
     pub sensitive_fields: Vec<EncryptedSensitiveField>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct LegacyIdentityRegistry {
+    pub version: u8,
+    pub bump: u8,
+    pub status: u8,
+    pub reserved: [u8; 5],
+    pub tin: u64,
+    pub authority: Pubkey,
+    pub master_privacy: Pubkey,
+    pub last_escrow_id: u64,
+    pub created_at: i64,
+    pub name: String,
+}
+
+impl From<LegacyIdentityRegistry> for IdentityRegistry {
+    fn from(legacy: LegacyIdentityRegistry) -> Self {
+        Self {
+            version: CURRENT_VERSION,
+            bump: legacy.bump,
+            status: legacy.status,
+            reserved: legacy.reserved,
+            tin: legacy.tin,
+            authority: legacy.authority,
+            master_privacy: legacy.master_privacy,
+            last_escrow_id: legacy.last_escrow_id,
+            created_at: legacy.created_at,
+            name: legacy.name,
+            social_identities: Vec::new(),
+            sensitive_fields: Vec::new(),
+        }
+    }
 }
 
 impl IdentityRegistry {

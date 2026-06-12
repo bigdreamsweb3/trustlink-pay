@@ -16,7 +16,16 @@ function isLegacyClaimable(payment: { status: string }) {
 }
 
 async function enrichReceiverIdentity(payments: PaymentRecord[]) {
-  const receiverPhones = [...new Set(payments.map((payment) => payment.receiver_phone).filter(Boolean))];
+  const receiverPhones = [
+    ...new Set(
+      payments
+        .map((payment) => payment.receiver_phone)
+        .filter(
+          (phoneNumber): phoneNumber is string =>
+            Boolean(phoneNumber) && !phoneNumber.startsWith("tin:"),
+        ),
+    ),
+  ];
 
   if (receiverPhones.length === 0) {
     return payments;

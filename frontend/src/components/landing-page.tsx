@@ -257,9 +257,12 @@ const securityFeatures = [
 const footerLinks = [
   { label: "App", href: "/app" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Docs", href: "/docs" },
+  {
+    label: "Docs",
+    href: "https://github.com/bigdreamsweb3/trustlink-pay#readme",
+  },
   { label: "TSN Explorer", href: "/tsn-mempool" },
-];
+] as const;
 
 const communityLinks = [
   {
@@ -855,7 +858,7 @@ export function LandingPage() {
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/docs"
+                href="https://github.com/bigdreamsweb3/trustlink-pay#readme"
                 className="tl-button-primary tl-btn inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-sm"
               >
                 <BookOpen className="h-4 w-4" />
@@ -969,7 +972,7 @@ export function LandingPage() {
               Open Dapp <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/docs"
+              href="https://github.com/bigdreamsweb3/trustlink-pay#readme"
               className="tl-button-secondary tl-btn inline-flex items-center gap-2 rounded-[14px] px-6 py-3"
             >
               Read the Docs
@@ -990,13 +993,13 @@ export function LandingPage() {
           </div>
           <div className="flex flex-wrap gap-6">
             {footerLinks.map(({ label, href }) => (
-              <Link
+              <a
                 key={label}
                 href={href}
                 className="text-sm text-[var(--text-soft)] hover:text-[var(--text)] transition-colors"
               >
                 {label}
-              </Link>
+              </a>
             ))}
           </div>
         </div>

@@ -7,8 +7,17 @@ import { AppSidePanel } from "@/src/components/panels/app-side-panel";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { createOrLoadTinForWallet } from "@/src/lib/tins";
-import type { IdentitySecurityResponse, IdentitySecurityState, TinIdentityState } from "@/src/lib/types";
+import {
+  createOrLoadTinForWallet,
+  resolveTinFromChain,
+  type BrowserResolvedTin,
+} from "@/src/lib/tins";
+import type {
+  IdentitySecurityResponse,
+  IdentitySecurityState,
+  TinIdentityState,
+  WhatsAppNumberVerificationResult,
+} from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
 import { ChevronRight, Settings } from "lucide-react";
@@ -51,6 +60,9 @@ export function IdentitySheetModal({
   const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [identityBusy, setIdentityBusy] = useState(false);
+  const [resolvedTin, setResolvedTin] = useState<BrowserResolvedTin | null>(null);
+  const [whatsappProfile, setWhatsappProfile] =
+    useState<WhatsAppNumberVerificationResult | null>(null);
 
   useEffect(() => {
     if (!open || !accessToken) return;
@@ -101,6 +113,47 @@ export function IdentitySheetModal({
   const activeTin = tinInfo?.tin ?? user?.tin ?? null;
   const activeTinIdentity = tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
   const displayName = user?.displayName ?? "TrustLink User";
+
+  useEffect(() => {
+    if (!open || !activeTin) {
+      setResolvedTin(null);
+      return;
+    }
+    let cancelled = false;
+    void resolveTinFromChain(activeTin)
+      .then((identity) => {
+        if (!cancelled) setResolvedTin(identity);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedTin(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTin, open]);
+
+  useEffect(() => {
+    if (!open || !user?.phoneNumber) {
+      setWhatsappProfile(null);
+      return;
+    }
+    let cancelled = false;
+    void apiPost<WhatsAppNumberVerificationResult>(
+      "/api/whatsapp/verify-number",
+      { phoneNumber: user.phoneNumber },
+      undefined,
+      { cache: "default", ttlMs: 5 * 60_000 },
+    )
+      .then((profile) => {
+        if (!cancelled) setWhatsappProfile(profile);
+      })
+      .catch(() => {
+        if (!cancelled) setWhatsappProfile(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.phoneNumber]);
 
   async function handleCopyTinNumber() {
     if (!activeTin || !navigator.clipboard?.writeText) return;
@@ -157,11 +210,22 @@ export function IdentitySheetModal({
             <div className="space-y-3">
               <IdentityTree
                 displayName={displayName}
-                nameSourceLabel={activeTin ? "Transfer identity name" : "TrustLink display name"}
+                nameSourceLabel="TrustLink display name"
+                tinName={resolvedTin?.legalName}
+                tinNameVerified={Boolean(resolvedTin?.legalName)}
+                missingTinName={Boolean(activeTin && resolvedTin && !resolvedTin.legalName)}
                 handle={user?.handle}
+                trustLinkDisplayName={displayName}
                 tin={activeTin}
                 tinsIdentityPublicKey={activeTinIdentity}
                 phoneNumber={user?.phoneNumber}
+                whatsappDisplayName={whatsappProfile?.displayName}
+                whatsappProfilePic={
+                  whatsappProfile?.hasProfilePic
+                    ? whatsappProfile.profilePic
+                    : null
+                }
+                whatsappBusiness={whatsappProfile?.isBusiness ?? false}
               />
 
               {/* TIN Card */}
@@ -178,12 +242,16 @@ export function IdentitySheetModal({
                 </svg>
                 <div className="min-w-0 flex-1">
                   <div className="text-[0.82rem] font-semibold">
-                    {activeTin ? displayName : identityBusy ? "Creating TIN..." : "Create TIN"}
+                    {activeTin
+                      ? resolvedTin?.legalName || "No verified legal name"
+                      : identityBusy
+                        ? "Creating TIN..."
+                        : "Create TIN"}
                     <span className="ml-1.5 text-[0.58rem] font-normal opacity-60">Transfer Identity Number</span>
                   </div>
                   <div className="text-[0.66rem] text-[var(--text-faint)] mt-0.5">
                     {activeTin
-                      ? `TIN ${activeTin}${activeTinIdentity ? ` - ${shortenAddress(activeTinIdentity)}` : ""}`
+                      ? `TIN ${activeTin}${resolvedTin?.name ? ` · Registry name: ${resolvedTin.name}` : ""}${activeTinIdentity ? ` · ${shortenAddress(activeTinIdentity)}` : ""}`
                       : "Create on-chain payment identity - TINS Protocol"}
                   </div>
                 </div>
@@ -197,13 +265,22 @@ export function IdentitySheetModal({
               {/* WhatsApp Card */}
               {user?.phoneNumber && (
                 <div className="flex items-center gap-3 rounded-[16px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-3.5">
-                  <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
+                  {whatsappProfile?.hasProfilePic && whatsappProfile.profilePic ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/backend/api/whatsapp/avatar?url=${encodeURIComponent(whatsappProfile.profilePic)}`}
+                      alt={whatsappProfile.displayName || "WhatsApp profile"}
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.82rem] font-semibold truncate text-[var(--text)]">
-                      {user.phoneNumber}
+                      {whatsappProfile?.displayName || user.phoneNumber}
                     </div>
                     <div className="text-[0.66rem] mt-0.5 text-[var(--text-faint)]">
-                      WhatsApp - TrustLink login
+                      {user.phoneNumber} · {whatsappProfile?.isBusiness ? "Business WhatsApp" : "WhatsApp identity"}
                     </div>
                   </div>
                   <span className="shrink-0 text-[0.62rem] font-medium rounded-full px-2 py-0.5"

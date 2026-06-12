@@ -84,3 +84,54 @@ pub struct TsnCrankerFundsWithdrawn {
     pub funder: Pubkey,
     pub amount: u64,
 }
+
+#[event]
+pub struct TsnCommitmentRegistered {
+    pub vault: Pubkey,
+    pub transfer_id: [u8; 32],
+    pub commitment_hash: [u8; 32],
+    pub epoch_id: u64,
+    pub created_at_ts: i64,
+}
+
+#[event]
+pub struct TsnPaymentIntentValidated {
+    pub vault: Pubkey,
+    pub cranker: Pubkey,
+    pub amount: u64,
+    pub claim_credits: u64,
+}
+
+#[event]
+pub struct TsnSettlementLeaseClaimed {
+    pub vault: Pubkey,
+    pub cranker: Pubkey,
+    pub otdt_hash: [u8; 32],
+    pub lease_expiry_ts: i64,
+}
+
+#[event]
+pub struct TsnSettlementCommitted {
+    pub vault: Pubkey,
+    pub transfer_id: [u8; 32],
+    pub settlement_cranker: Pubkey,
+    pub commitment_hash: [u8; 32],
+    pub paid_at_ts: i64,
+    pub recoverable: bool,
+}
+
+#[event]
+pub struct TsnRecoveryLeaseClaimed {
+    pub vault: Pubkey,
+    pub recovery_cranker: Pubkey,
+    pub lease_expiry_ts: i64,
+}
+
+#[event]
+pub struct TsnVaultRecovered {
+    pub vault: Pubkey,
+    pub settlement_cranker: Pubkey,
+    pub recovery_cranker: Pubkey,
+    pub recovered_amount: u64,
+    pub recovered_at_ts: i64,
+}

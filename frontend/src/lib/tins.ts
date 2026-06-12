@@ -9,6 +9,8 @@ import {
   getTinsIdentityPda,
   getTinsIdentitySeed,
   getTinsRegistryPda,
+  resolveTIN,
+  type TinResolvedIdentity,
 } from "@trustlink/tsn-sdk/tins";
 
 import { signAndSendSolanaTransaction, signSolanaMessage } from "@/src/lib/wallet";
@@ -60,6 +62,66 @@ function getFrontendTinsProgramId() {
 
 function getFrontendSolanaRpcUrl() {
   return process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? DEFAULT_SOLANA_RPC_URL;
+}
+
+export type BrowserResolvedTin = {
+  tin: string;
+  name: string | null;
+  authority: string;
+  registry: string;
+  accountKind: "registry" | "legacy";
+  settlementAuthorityVerified: boolean;
+  active: boolean;
+  createdAt: string;
+  socialIdentities: TinResolvedIdentity["socialIdentities"];
+  whatsapp: string | null;
+  legalName: string | null;
+};
+
+function metadataRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function resolveLegalName(identity: TinResolvedIdentity) {
+  for (const social of identity.socialIdentities) {
+    const type = social.type.toLowerCase().replace(/[-\s]/g, "_");
+    const metadata = metadataRecord(social.metadata);
+    if (type === "legal_name" || type === "sas_legal_name") {
+      return social.value.trim() || null;
+    }
+    const legalName = metadata?.legalName;
+    if (typeof legalName === "string" && legalName.trim()) {
+      return legalName.trim();
+    }
+  }
+  return null;
+}
+
+export async function resolveTinFromChain(tin: string): Promise<BrowserResolvedTin> {
+  const identity = await resolveTIN({
+    tin,
+    connection: new Connection(getFrontendSolanaRpcUrl(), "confirmed"),
+    programId: getFrontendTinsProgramId(),
+  });
+  const whatsapp =
+    identity.socialIdentities.find((item) => item.type.toLowerCase() === "whatsapp")
+      ?.value.trim() || null;
+
+  return {
+    tin: identity.tin,
+    name: identity.name.trim() || null,
+    authority: identity.authority.toBase58(),
+    registry: identity.registry.toBase58(),
+    accountKind: identity.accountKind,
+    settlementAuthorityVerified: identity.settlementAuthorityVerified,
+    active: identity.status === 1,
+    createdAt: identity.createdAt,
+    socialIdentities: identity.socialIdentities,
+    whatsapp,
+    legalName: resolveLegalName(identity),
+  };
 }
 
 function buildTinBindingMessage(params: {

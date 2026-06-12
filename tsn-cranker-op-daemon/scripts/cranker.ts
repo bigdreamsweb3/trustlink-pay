@@ -10,10 +10,18 @@ import {
   getTsnMotherEscrowPda,
   getTsnTreasuryPda,
   getTsnVerifierPda,
+  tsnClaimVaultRecoveryOnChain,
+  tsnClaimVaultSettlementOnChain,
   tsnExecuteVaultPayoutOnChain,
   tsnFetchMotherEscrowOnChain,
+  tsnRecoverPaymentVaultOnChain,
   tsnSubmitSenderSignedSettlementTransaction,
 } from "../../tsn-sdk/src/blockchain/solana-tsn.ts";
+import {
+  createOneTimeDecryptionToken,
+  decodeSettlementSecret,
+  decryptSettlementToken,
+} from "../../tsn-sdk/src/settlement-token.ts";
 import { verifySenderPaymentAuthorization } from "../../tsn-sdk/src/payment-authorization-server.ts";
 import { VERIFIED_TSN_PROGRAM_ID } from "../../tsn-sdk/src/program.ts";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
@@ -25,6 +33,7 @@ import "dotenv/config";
 
 type TsnWorkItem = Awaited<ReturnType<ReturnType<typeof createMempoolClient>["listPendingWork"]>>[number];
 type TsnIntentWorkItem = Awaited<ReturnType<ReturnType<typeof createMempoolClient>["listPendingIntentWork"]>>[number];
+type TsnRecoveryWorkItem = Awaited<ReturnType<ReturnType<typeof createMempoolClient>["listPendingRecoveryWork"]>>[number];
 
 type MempoolOverview = {
   signature: string;
@@ -53,11 +62,18 @@ async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
     return (await response.json()) as T;
   };
 
-  const [intents, claims, intentWork, claimWork] = await Promise.all([
+  const operator = process.env.TSN_CRANKER_OPERATOR_PUBKEY ?? "";
+  const [intents, claims, recoveries, intentWork, claimWork, recoveryWork] = await Promise.all([
     fetchJson<Array<{ status: string }>>("/intents"),
     fetchJson<Array<{ status: string }>>("/claim-requests"),
+    fetchJson<Array<{ status: string }>>("/recoveries"),
     fetchJson<TsnIntentWorkItem[]>("/intent-work?limit=100"),
     fetchJson<TsnWorkItem[]>("/work?limit=100"),
+    operator
+      ? fetchJson<TsnRecoveryWorkItem[]>(
+          `/recovery-work?operator_pubkey=${encodeURIComponent(operator)}&limit=100`,
+        )
+      : Promise.resolve([]),
   ]);
   const countByStatus = (items: Array<{ status: string }>) =>
     items.reduce<Record<string, number>>((counts, item) => {
@@ -67,16 +83,19 @@ async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
     }, {});
   const intentStatuses = countByStatus(intents);
   const claimStatuses = countByStatus(claims);
+  const recoveryStatuses = countByStatus(recoveries);
   const signature = JSON.stringify({
     intents: intentStatuses,
     claims: claimStatuses,
+    recoveries: recoveryStatuses,
     intentWork: intentWork.length,
     claimWork: claimWork.length,
+    recoveryWork: recoveryWork.length,
   });
 
   return {
     signature,
-    line: `intents=${intents.length} ${JSON.stringify(intentStatuses)} claims=${claims.length} ${JSON.stringify(claimStatuses)} intentWork=${intentWork.length} claimWork=${claimWork.length}`,
+    line: `intents=${intents.length} ${JSON.stringify(intentStatuses)} claims=${claims.length} ${JSON.stringify(claimStatuses)} recoveries=${recoveries.length} ${JSON.stringify(recoveryStatuses)} intentWork=${intentWork.length} claimWork=${claimWork.length} recoveryWork=${recoveryWork.length}`,
   };
 }
 
@@ -94,6 +113,16 @@ function loadOperatorKeypair() {
 
   const parsed = JSON.parse(readFileSync(keypairPath, "utf8")) as number[];
   return Keypair.fromSecretKey(Uint8Array.from(parsed));
+}
+
+function loadCrankerEncryptionSecretKey() {
+  const value = process.env.TSN_CRANKER_ENCRYPTION_SECRET_KEY?.trim();
+  if (!value) {
+    throw new Error(
+      "Set TSN_CRANKER_ENCRYPTION_SECRET_KEY to the Cranker's 32-byte X25519 secret key (base64 or hex).",
+    );
+  }
+  return value;
 }
 
 function hex32(value: string, label: string) {
@@ -155,6 +184,8 @@ function validateSignedSettlementTransaction(params: {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    transferId?: string | null;
+    commitmentHash?: string | null;
   };
   if (!intent.senderSignedSettlementTransaction) return "missing sender co-signed settlement transaction";
 
@@ -175,6 +206,8 @@ function validateSignedSettlementTransaction(params: {
   const expectedSenderTokenAccount = intent.senderTokenAccount ? new PublicKey(intent.senderTokenAccount) : null;
   const expectedSettlementVault = intent.settlementVault ? new PublicKey(intent.settlementVault) : null;
   const expectedSettlementTokenAccount = intent.settlementTokenAccount ? new PublicKey(intent.settlementTokenAccount) : null;
+  const expectedTransferId = intent.transferId ? hex32(intent.transferId, "transferId") : null;
+  const expectedCommitmentHash = intent.commitmentHash ? hex32(intent.commitmentHash, "commitmentHash") : null;
   const expectedTreasuryTokenAccount = getAssociatedTokenAddressSync(tokenMint, getTsnTreasuryPda(), true);
   const senderSignature = transaction.signatures.find((entry) => entry.publicKey.equals(senderWallet));
   if (!senderSignature?.signature) {
@@ -195,7 +228,7 @@ function validateSignedSettlementTransaction(params: {
   const coreInstructions = transaction.instructions.filter(
     (instruction) => !instruction.programId.equals(ComputeBudgetProgram.programId),
   );
-  const expectedCoreInstructionCount = expectedSenderFeeAmount > 0n ? 3 : 2;
+  const expectedCoreInstructionCount = expectedSenderFeeAmount > 0n ? 4 : 3;
   if (coreInstructions.length !== expectedCoreInstructionCount) {
     const programList = transaction.instructions
       .map((instruction) => instruction.programId.toBase58())
@@ -205,31 +238,63 @@ function validateSignedSettlementTransaction(params: {
 
   const processIntentIx = coreInstructions[0];
   const transferIx = coreInstructions[1];
-  const senderFeeTransferIx = expectedSenderFeeAmount > 0n ? coreInstructions[2] : null;
+  const finalizeIntentIx = coreInstructions[2];
+  const senderFeeTransferIx = expectedSenderFeeAmount > 0n ? coreInstructions[3] : null;
   if (!processIntentIx.programId.equals(expectedProgramId)) return "first settlement instruction is not TSN tsn_process_payment_intent";
   if (!transferIx.programId.equals(TOKEN_PROGRAM_ID)) return "second settlement instruction is not SPL Token transfer_checked";
-  if (senderFeeTransferIx && !senderFeeTransferIx.programId.equals(TOKEN_PROGRAM_ID)) {
-    return "third settlement instruction is not SPL Token sender-fee transfer_checked";
+  if (!finalizeIntentIx.programId.equals(expectedProgramId)) {
+    return "third settlement instruction is not TSN tsn_finalize_payment_intent";
   }
-  if (processIntentIx.data.length !== 24) return "process_payment_intent instruction data length mismatch";
+  if (senderFeeTransferIx && !senderFeeTransferIx.programId.equals(TOKEN_PROGRAM_ID)) {
+    return "fourth settlement instruction is not SPL Token sender-fee transfer_checked";
+  }
+  if (processIntentIx.data.length !== 88) return "process_payment_intent instruction data length mismatch";
   if (transferIx.data.length !== 10) return "SPL Token transfer_checked data length mismatch";
+  if (finalizeIntentIx.data.length !== 24) return "finalize_payment_intent instruction data length mismatch";
   if (senderFeeTransferIx && senderFeeTransferIx.data.length !== 10) return "sender-fee SPL Token transfer_checked data length mismatch";
   if (!bufferEquals(processIntentIx.data.subarray(0, 8), instructionDiscriminator("tsn_process_payment_intent"))) {
     return "invalid tsn_process_payment_intent discriminator";
   }
   if (!processIntentIx.keys[0]?.pubkey.equals(params.operator)) return "process_payment_intent cranker signer mismatch";
-  if (expectedSettlementVault && !processIntentIx.keys[2]?.pubkey.equals(expectedSettlementVault)) {
+  if (expectedSettlementVault && !processIntentIx.keys[4]?.pubkey.equals(expectedSettlementVault)) {
     return "process_payment_intent vault PDA mismatch";
   }
-  if (expectedSettlementTokenAccount && !processIntentIx.keys[3]?.pubkey.equals(expectedSettlementTokenAccount)) {
+  if (expectedSettlementTokenAccount && !processIntentIx.keys[5]?.pubkey.equals(expectedSettlementTokenAccount)) {
     return "process_payment_intent vault token account mismatch";
   }
-  if (!processIntentIx.keys[4]?.pubkey.equals(tokenMint)) return "process_payment_intent mint mismatch";
+  if (!processIntentIx.keys[6]?.pubkey.equals(tokenMint)) return "process_payment_intent mint mismatch";
   if (!bufferEquals(processIntentIx.data.subarray(8, 16), encodeU64(expectedPaymentIntentId))) {
     return "process_payment_intent payment id mismatch";
   }
   if (!bufferEquals(processIntentIx.data.subarray(16, 24), encodeU64(expectedAmount))) {
     return "process_payment_intent amount mismatch";
+  }
+  if (!expectedTransferId || !bufferEquals(processIntentIx.data.subarray(24, 56), expectedTransferId)) {
+    return "process_payment_intent transfer id mismatch";
+  }
+  if (!expectedCommitmentHash || !bufferEquals(processIntentIx.data.subarray(56, 88), expectedCommitmentHash)) {
+    return "process_payment_intent commitment mismatch";
+  }
+  if (!bufferEquals(finalizeIntentIx.data.subarray(0, 8), instructionDiscriminator("tsn_finalize_payment_intent"))) {
+    return "invalid tsn_finalize_payment_intent discriminator";
+  }
+  if (!finalizeIntentIx.keys[0]?.pubkey.equals(params.operator)) {
+    return "finalize_payment_intent cranker signer mismatch";
+  }
+  if (expectedSettlementVault && !finalizeIntentIx.keys[3]?.pubkey.equals(expectedSettlementVault)) {
+    return "finalize_payment_intent vault PDA mismatch";
+  }
+  if (
+    expectedSettlementTokenAccount &&
+    !finalizeIntentIx.keys[4]?.pubkey.equals(expectedSettlementTokenAccount)
+  ) {
+    return "finalize_payment_intent vault token account mismatch";
+  }
+  if (!bufferEquals(finalizeIntentIx.data.subarray(8, 16), encodeU64(expectedPaymentIntentId))) {
+    return "finalize_payment_intent payment id mismatch";
+  }
+  if (!bufferEquals(finalizeIntentIx.data.subarray(16, 24), encodeU64(expectedAmount))) {
+    return "finalize_payment_intent amount mismatch";
   }
 
   if (transferIx.data[0] !== 12) return "SPL Token instruction is not transfer_checked";
@@ -285,6 +350,18 @@ async function validateIntentWork(params: {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    transferId?: string | null;
+    commitmentHash?: string | null;
+    settlementEpoch?: number | null;
+    encryptedSettlementToken?: {
+      algorithm: "x25519-xsalsa20-poly1305";
+      ciphertextBase64: string;
+      nonceBase64: string;
+      ephemeralPublicKeyBase64: string;
+      commitmentHash: string;
+      transferId: string;
+      epoch: number;
+    } | null;
   };
   const expectedIntentSeedHash = createHash("sha256").update(item.intent.paymentId).digest("hex");
   if (item.intent.intentSeedHash !== expectedIntentSeedHash) {
@@ -309,6 +386,21 @@ async function validateIntentWork(params: {
   }
   if (!intent.senderSignedSettlementTransaction) {
     return "missing sender co-signed settlement transaction";
+  }
+  if (!intent.encryptedSettlementToken || !intent.transferId || !intent.commitmentHash) {
+    return "missing encrypted settlement token or public commitment";
+  }
+  if (
+    intent.encryptedSettlementToken.transferId !== intent.transferId ||
+    intent.encryptedSettlementToken.commitmentHash !== intent.commitmentHash
+  ) {
+    return "encrypted settlement token metadata does not match public commitment";
+  }
+  if (
+    intent.settlementEpoch == null ||
+    intent.encryptedSettlementToken.epoch !== intent.settlementEpoch
+  ) {
+    return "encrypted settlement token epoch mismatch";
   }
   if (!intent.senderSignedSettlementFeePayer) {
     return "missing sponsored settlement fee payer";
@@ -422,29 +514,96 @@ async function executeClaimWork(params: {
   item: TsnWorkItem;
   mempool: ReturnType<typeof createMempoolClient>;
   operator: Keypair;
+  crankerEncryptionSecretKey: string;
   rpcUrl: string;
   tokenDecimals: number;
 }) {
-  const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
-  const recipientWallet = new PublicKey(params.item.claimRequest.destinationWallet);
-  const payoutAmountBaseUnits = toBaseUnits(getRecipientAmountUi(params.item), params.tokenDecimals);
-  const claimFeeAmountBaseUnits = toBaseUnits(
-    Math.max(0, Number(params.item.intent.amount) - getRecipientAmountUi(params.item)),
-    params.tokenDecimals,
-  );
+  const intent = params.item.intent as TsnWorkItem["intent"] & {
+    encryptedSettlementToken?: Parameters<typeof decryptSettlementToken>[0]["encrypted"] | null;
+    settlementPaymentIntentId?: string | null;
+    transferId?: string | null;
+    commitmentHash?: string | null;
+    settlementEpoch?: number | null;
+  };
+  if (!intent.encryptedSettlementToken || !intent.settlementPaymentIntentId) {
+    throw new Error("Intent is missing encrypted settlement token or payment vault id");
+  }
+  const paymentIntentId = BigInt(intent.settlementPaymentIntentId);
+  const otdt = createOneTimeDecryptionToken();
+  await tsnClaimVaultSettlementOnChain({
+    operator: params.operator,
+    paymentIntentId,
+    otdtHash32: hex32(otdt.hash, "otdtHash"),
+    rpcUrl: params.rpcUrl,
+  });
+
+  const settlementToken = decryptSettlementToken({
+    encrypted: intent.encryptedSettlementToken,
+    crankerEncryptionSecretKey: params.crankerEncryptionSecretKey,
+  });
+  if (settlementToken.paymentId !== intent.paymentId) {
+    throw new Error("Decrypted settlement token payment id mismatch");
+  }
+  if (settlementToken.transferId !== intent.transferId) {
+    throw new Error("Decrypted settlement token transfer id mismatch");
+  }
+  if (settlementToken.epoch !== intent.settlementEpoch) {
+    throw new Error("Decrypted settlement token epoch mismatch");
+  }
+  if (Date.parse(settlementToken.expiresAt) <= Date.now()) {
+    throw new Error("Encrypted settlement token has expired");
+  }
+  if (settlementToken.tokenMintAddress !== intent.tokenMintAddress) {
+    throw new Error("Decrypted settlement token mint mismatch");
+  }
+
+  const tokenMint = new PublicKey(settlementToken.tokenMintAddress);
+  const recipientWallet = new PublicKey(settlementToken.recipientWallet);
+  const payoutAmountBaseUnits = BigInt(settlementToken.recipientAmountBaseUnits);
+  const claimFeeAmountBaseUnits = BigInt(settlementToken.claimFeeAmountBaseUnits);
   const payout = await tsnExecuteVaultPayoutOnChain({
     operator: params.operator,
+    paymentIntentId,
     tokenMint,
     recipientWallet,
     payoutAmountBaseUnits,
     claimFeeAmountBaseUnits,
+    otdt: otdt.token,
+    decryptionSecret: decodeSettlementSecret(settlementToken.decryptionSecret),
     rpcUrl: params.rpcUrl,
   });
 
   return {
     intent: (params.item.intent as TsnWorkItem["intent"] & { settlementVault?: string | null }).settlementVault ?? params.item.intent.id,
     proofSignature: payout.signature,
+    otdtHash: otdt.hash,
+    commitmentHash: intent.commitmentHash ?? intent.encryptedSettlementToken.commitmentHash,
+    transferId: intent.transferId ?? intent.encryptedSettlementToken.transferId,
   };
+}
+
+async function executeRecoveryWork(params: {
+  item: TsnRecoveryWorkItem;
+  operator: Keypair;
+  rpcUrl: string;
+}) {
+  const paymentIntentId = BigInt(params.item.paymentIntentId);
+  const tokenMint = new PublicKey(params.item.tokenMintAddress);
+  const settlementCrankerOperator = new PublicKey(
+    params.item.settlementCrankerPubkey,
+  );
+  await tsnClaimVaultRecoveryOnChain({
+    operator: params.operator,
+    paymentIntentId,
+    rpcUrl: params.rpcUrl,
+  });
+  return tsnRecoverPaymentVaultOnChain({
+    operator: params.operator,
+    paymentIntentId,
+    tokenMint,
+    settlementCrankerOperator,
+    rpcUrl: params.rpcUrl,
+  });
 }
 
 async function postHeartbeat(operator: string) {
@@ -506,7 +665,9 @@ async function logVerifierReservoir(rpcUrl: string) {
 async function main() {
   const mempool = createMempoolClient();
   const operatorKeypair = loadOperatorKeypair();
+  const crankerEncryptionSecretKey = loadCrankerEncryptionSecretKey();
   const operator = operatorKeypair.publicKey.toBase58();
+  process.env.TSN_CRANKER_OPERATOR_PUBKEY = operator;
   if (process.env.TSN_CRANKER_OPERATOR_PUBKEY && process.env.TSN_CRANKER_OPERATOR_PUBKEY !== operator) {
     console.warn(
       `[tsn-cranker] ignoring TSN_CRANKER_OPERATOR_PUBKEY=${process.env.TSN_CRANKER_OPERATOR_PUBKEY}; using signer keypair ${operator}`,
@@ -514,7 +675,6 @@ async function main() {
   }
   const rpcUrl = process.env.RPC_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
   const tokenDecimals = Number(process.env.TSN_CRANKER_TOKEN_DECIMALS ?? 6);
-  let claimCredit = Number(process.env.TSN_CRANKER_INITIAL_CLAIM_CREDIT ?? 0);
 
   console.log(`[tsn-cranker] operator=${operator}`);
   console.log("[tsn-cranker] source=tsn-mempool");
@@ -591,9 +751,8 @@ async function main() {
           rpcUrl,
           tokenDecimals,
         });
-        claimCredit += 1;
         console.log(
-          `[tsn-cranker] submitted-intent intent=${item.intent.id} escrowed=${submitted.intent} tx=${submitted.signature} claimCredit=${claimCredit}`,
+          `[tsn-cranker] submitted-intent intent=${item.intent.id} escrowed=${submitted.intent} tx=${submitted.signature} claimCredit=onchain+1`,
         );
       } catch (error) {
         console.error(`[tsn-cranker] failed-intent-submission intent=${item.intent.id}`, error);
@@ -603,13 +762,6 @@ async function main() {
     const work = await mempool.listPendingWork(20);
     for (const item of work) {
       try {
-        if (claimCredit <= 0) {
-          console.log(
-            `[tsn-cranker] claim-work-waiting claimCredit=0 pendingClaim=${item.claimRequest.id} intent=${item.intent.id}; submit a payment intent first`,
-          );
-          break;
-        }
-
         await mempool.updateClaimRequestStatus(
           item.claimRequest.id,
           "processing",
@@ -656,6 +808,7 @@ async function main() {
           item,
           mempool,
           operator: operatorKeypair,
+          crankerEncryptionSecretKey,
           rpcUrl,
           tokenDecimals,
         });
@@ -667,6 +820,9 @@ async function main() {
           cranker_pubkey: operator,
           proof_tx: proofTxSig,
           encrypted_payload: null,
+          transfer_id: execution.transferId,
+          commitment_hash: execution.commitmentHash,
+          otdt_hash: execution.otdtHash,
         });
 
         await mempool.updateIntentStatus(item.intent.id, "executed", {
@@ -682,16 +838,42 @@ async function main() {
             settlementReason: economics.reason,
           },
         );
-        claimCredit -= 1;
-
         console.log(
-          `[tsn-cranker] executed-claim intent=${item.intent.id} escrowed=${execution.intent} claim=${item.claimRequest.id} proof=${proofTxSig} claimCredit=${claimCredit}`,
+          `[tsn-cranker] executed-claim intent=${item.intent.id} escrowed=${execution.intent} claim=${item.claimRequest.id} proof=${proofTxSig} otdt=${execution.otdtHash} claimCredit=onchain-1`,
         );
       } catch (error) {
         await mempool
           .updateClaimRequestStatus(item.claimRequest.id, "failed")
           .catch(() => undefined);
         console.error(`[tsn-cranker] failed intent=${item.intent.id}`, error);
+      }
+    }
+
+    const recoveryWork = await mempool.listPendingRecoveryWork(operator, 20);
+    for (const item of recoveryWork) {
+      try {
+        const leased = await mempool.claimRecoveryLease(item.id, operator);
+        const recovery = await executeRecoveryWork({
+          item: leased,
+          operator: operatorKeypair,
+          rpcUrl,
+        });
+        await mempool.updateRecoveryStatus(item.id, operator, "completed", {
+          recoveryTxSig: recovery.signature,
+          settlementReason:
+            "Escrow liquidity returned to the settlement Cranker vault.",
+        });
+        console.log(
+          `[tsn-cranker] recovered intent=${item.paymentId} transfer=${item.transferId} tx=${recovery.signature} rewardLamports=${item.rewardLamports}`,
+        );
+      } catch (error) {
+        await mempool
+          .updateRecoveryStatus(item.id, operator, "pending", {
+            settlementReason:
+              error instanceof Error ? error.message : "Recovery failed",
+          })
+          .catch(() => undefined);
+        console.error(`[tsn-cranker] recovery-failed intent=${item.paymentId}`, error);
       }
     }
 

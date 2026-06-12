@@ -1,4 +1,4 @@
-import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
 import { getAllowedTokenByMint, toBaseUnits } from "@/app/blockchain/solana-core";
 import { findPaymentById } from "@/app/db/payments";
@@ -7,6 +7,7 @@ import {
   createClaimRequest,
   findLatestActiveClaimRequestByPaymentId,
   findPaymentIntentByPaymentId,
+  listActivePaymentIntents,
   listLatestClaimRequestsByPaymentIds,
   listPaymentIntentsByPaymentIds,
   updateClaimRequestStatus,
@@ -53,6 +54,88 @@ function resolveClaimMode(payment: { payment_mode?: string | null }) {
 
 function getTsnMempoolClient() {
   return new HttpTsnMempool(env.TSN_MEMPOOL_URL);
+}
+
+type TsnMempoolSnapshot = {
+  intents: TsnMempoolIntent[];
+  claimRequests: TsnMempoolClaimRequest[];
+};
+
+function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("TSN mempool status request timed out")),
+      env.TSN_MEMPOOL_TIMEOUT_MS,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+let cachedMempoolSnapshot: TsnMempoolSnapshot | undefined;
+let mempoolSnapshotExpiresAt = 0;
+let mempoolSnapshotRetryAt = 0;
+let mempoolSnapshotPromise: Promise<TsnMempoolSnapshot> | undefined;
+
+async function getTsnMempoolSnapshot(force = false): Promise<TsnMempoolSnapshot> {
+  const now = Date.now();
+  if (!force && cachedMempoolSnapshot && mempoolSnapshotExpiresAt > now) {
+    return cachedMempoolSnapshot;
+  }
+  if (!force && mempoolSnapshotPromise) {
+    return mempoolSnapshotPromise;
+  }
+  if (!force && mempoolSnapshotRetryAt > now) {
+    if (cachedMempoolSnapshot) return cachedMempoolSnapshot;
+    throw new Error("TSN mempool status sync is temporarily unavailable");
+  }
+
+  const mempool = getTsnMempoolClient();
+  const promise = withMempoolTimeout(
+    Promise.all([
+      mempool.listIntents(),
+      mempool.listClaimRequests(),
+    ]),
+  )
+    .then(([intents, claimRequests]) => {
+      const value = { intents, claimRequests };
+      cachedMempoolSnapshot = value;
+      mempoolSnapshotExpiresAt =
+        Date.now() + env.TSN_STATUS_SYNC_INTERVAL_MS;
+      mempoolSnapshotRetryAt = 0;
+      return value;
+    })
+    .catch((error) => {
+      mempoolSnapshotRetryAt =
+        Date.now() + Math.max(env.TSN_STATUS_SYNC_INTERVAL_MS, 30_000);
+      if (cachedMempoolSnapshot) return cachedMempoolSnapshot;
+      throw error;
+    })
+    .finally(() => {
+      mempoolSnapshotPromise = undefined;
+    });
+
+  mempoolSnapshotPromise = promise;
+  return promise;
+}
+
+function isTerminalIntentStatus(status: PaymentIntentStatus) {
+  return (
+    status === "executed" ||
+    status === "settled" ||
+    status === "expired" ||
+    status === "failed" ||
+    status === "canceled" ||
+    status === "reverted"
+  );
 }
 
 function resolveUnderlyingPaymentPublicKey(payment: PaymentRecord) {
@@ -363,17 +446,14 @@ export async function syncPaymentIntentFromChain(params: { intentId: string }) {
   if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) return null;
   const localIntent = await findPaymentIntentByPaymentId(params.intentId);
   if (!localIntent) return null;
+  if (isTerminalIntentStatus(localIntent.status)) return localIntent;
 
-  const mempool = getTsnMempoolClient();
-  const [mempoolIntents, mempoolClaimRequests] = await Promise.all([
-    mempool.listIntents(),
-    mempool.listClaimRequests(),
-  ]);
+  const snapshot = await getTsnMempoolSnapshot();
 
   const synced = await syncLocalIntentFromMempoolSnapshot({
     localIntent,
-    mempoolIntents,
-    mempoolClaimRequests,
+    mempoolIntents: snapshot.intents,
+    mempoolClaimRequests: snapshot.claimRequests,
   });
   return synced.intent;
 }
@@ -489,7 +569,7 @@ async function syncLocalIntentFromMempoolSnapshot(params: {
     payment_id: mempoolClaimRequest.paymentId,
     intent_id: params.localIntent.id,
     recipient_hash: mempoolClaimRequest.recipientHash,
-    destination_wallet: mempoolClaimRequest.destinationWallet,
+    destination_wallet: mempoolClaimRequest.destinationWallet ?? null,
     autoclaim: mempoolClaimRequest.autoclaim,
     status: claimStatus ?? localClaimRequest?.status ?? "pending",
     requested_at: localClaimRequest?.requested_at ?? mempoolClaimRequest.postedAt,
@@ -545,11 +625,8 @@ async function syncLocalIntentFromMempoolSnapshot(params: {
 async function syncPaymentIntentsFromMempool(intents: PaymentIntentRecord[]) {
   if (intents.length === 0) return [] as SyncedMempoolState[];
   try {
-    const mempool = getTsnMempoolClient();
-    const [mempoolIntents, mempoolClaimRequests] = await Promise.all([
-      mempool.listIntents(),
-      mempool.listClaimRequests(),
-    ]);
+    const { intents: mempoolIntents, claimRequests: mempoolClaimRequests } =
+      await getTsnMempoolSnapshot();
     const results = await Promise.allSettled(
       intents.map((localIntent) =>
         syncLocalIntentFromMempoolSnapshot({
@@ -566,6 +643,23 @@ async function syncPaymentIntentsFromMempool(intents: PaymentIntentRecord[]) {
     });
     return [] as SyncedMempoolState[];
   }
+}
+
+export async function syncActiveTsnPaymentIntents(limit = 100) {
+  if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) {
+    return { scanned: 0, synchronized: 0 };
+  }
+
+  const activeIntents = await listActivePaymentIntents(limit);
+  if (activeIntents.length === 0) {
+    return { scanned: 0, synchronized: 0 };
+  }
+
+  const synchronized = await syncPaymentIntentsFromMempool(activeIntents);
+  return {
+    scanned: activeIntents.length,
+    synchronized: synchronized.length,
+  };
 }
 
 function normalizePaymentIntentStatus(status: string): PaymentIntentStatus | null {
@@ -614,7 +708,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
   const claimByPaymentId = new Map<string, ClaimRequestRecord>(claimRequests.map((claimRequest) => [claimRequest.payment_id, claimRequest]));
 
   if (env.TSN_SYNC_ONCHAIN) {
-    const maybeStale = intents.filter((intent) => ["pending", "escrowed", "onchain", "claimed", "executed"].includes(intent.status));
+    const maybeStale = intents.filter((intent) => !isTerminalIntentStatus(intent.status));
     const syncedStates = await syncPaymentIntentsFromMempool(maybeStale.slice(0, 10));
     const [refreshedIntents, refreshedClaimRequests] = await Promise.all([
       listPaymentIntentsByPaymentIds(paymentIds),
@@ -632,13 +726,6 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
     }
   }
 
-  const intentList = Array.from(intentByPaymentId.values());
-  const signatureStatusMap = await fetchDevnetSignatureStatuses(
-    intentList.flatMap((intent) => [intent.escrow_tx_sig, intent.claim_tx_sig, intent.proof_tx_sig]).filter(
-      (signature): signature is string => Boolean(signature),
-    ),
-  );
-
   return payments.map((payment) => {
     const intent = intentByPaymentId.get(payment.id);
     if (!intent) {
@@ -650,13 +737,7 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
     }
 
     const claimRequest = claimByPaymentId.get(payment.id) ?? null;
-    const computedStage = computeStage(intent, claimRequest);
-    const claimConfirmed = isSignatureConfirmed(signatureStatusMap, intent.claim_tx_sig);
-    const proofConfirmed = isSignatureConfirmed(signatureStatusMap, intent.proof_tx_sig);
-    const proofPathConfirmed = intent.claim_tx_sig ? claimConfirmed && proofConfirmed : proofConfirmed;
-    const finalStageRequested = computedStage === "cranker_paid" || computedStage === "epoch_settled";
-    const finalStageVerified = !finalStageRequested || proofPathConfirmed;
-    const stage: TsnUiStage = finalStageVerified ? computedStage : "lease_claimed";
+    const stage = computeStage(intent, claimRequest);
     const tsn: PaymentTsnState = {
       stage,
       intentStatus: intent.status,
@@ -667,47 +748,13 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
       claimTxSig: intent.claim_tx_sig ?? null,
       proofTxSig: intent.proof_tx_sig,
       settlementReason:
-        !finalStageVerified && finalStageRequested
-          ? "Awaiting Devnet confirmation for TSN claim/proof signatures."
-          : stage === "reverted" && intent.status === "canceled"
-            ? "TSN intent is no longer active in the mempool. No escrow transaction was created."
+        stage === "reverted" && intent.status === "canceled"
+          ? "TSN intent is no longer active in the mempool. No escrow transaction was created."
           : null,
     };
 
     return { ...payment, tsn };
   });
-}
-
-const devnetConnection = new Connection(clusterApiUrl("devnet"), "confirmed");
-
-async function fetchDevnetSignatureStatuses(signatures: string[]) {
-  if (signatures.length === 0) return new Map<string, boolean>();
-  const map = new Map<string, boolean>();
-  const chunkSize = 128;
-
-  for (let index = 0; index < signatures.length; index += chunkSize) {
-    const chunk = signatures.slice(index, index + chunkSize);
-    try {
-      const statuses = await devnetConnection.getSignatureStatuses(chunk, {
-        searchTransactionHistory: true,
-      });
-      for (let statusIndex = 0; statusIndex < chunk.length; statusIndex += 1) {
-        const signature = chunk[statusIndex];
-        const status = statuses.value[statusIndex];
-        const confirmed = Boolean(status?.confirmationStatus && status.confirmationStatus !== "processed");
-        map.set(signature, confirmed);
-      }
-    } catch {
-      for (const signature of chunk) map.set(signature, false);
-    }
-  }
-
-  return map;
-}
-
-function isSignatureConfirmed(statusMap: Map<string, boolean>, signature?: string | null) {
-  if (!signature) return false;
-  return statusMap.get(signature) === true;
 }
 
 export function isTsnSettled(payment: { tsn?: PaymentTsnState }) {

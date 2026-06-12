@@ -9,7 +9,10 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::{error::Error, state::GlobalState};
+use crate::{
+    error::Error,
+    state::{GlobalState, IdentityRegistry, LegacyIdentityRegistry},
+};
 
 pub const MAX_IDENTITY_NAME_LEN: usize = 32;
 pub const MAX_IDENTITY_TYPE_LEN: usize = 32;
@@ -21,6 +24,16 @@ pub const MAX_TIN_SEQUENCE: u64 = 999_999_999;
 
 pub fn load_borsh<T: BorshDeserialize>(account: &AccountInfo) -> Result<T, ProgramError> {
     T::try_from_slice(&account.data.borrow()).map_err(|_| ProgramError::InvalidAccountData)
+}
+
+pub fn load_identity_registry(account: &AccountInfo) -> Result<IdentityRegistry, ProgramError> {
+    let data = account.data.borrow();
+    if let Ok(registry) = IdentityRegistry::try_from_slice(&data) {
+        return Ok(registry);
+    }
+    LegacyIdentityRegistry::try_from_slice(&data)
+        .map(IdentityRegistry::from)
+        .map_err(|_| ProgramError::InvalidAccountData)
 }
 
 pub fn store_borsh<T: BorshSerialize>(account: &AccountInfo, value: &T) -> Result<(), ProgramError> {

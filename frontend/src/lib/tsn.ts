@@ -43,6 +43,18 @@ export async function enqueueTsnPaymentFromFrontend(params: {
   settlementVault?: string | null;
   settlementTokenAccount?: string | null;
   settlementPaymentIntentId?: string | null;
+  transferId?: string | null;
+  commitmentHash?: string | null;
+  settlementEpoch?: number | null;
+  encryptedSettlementToken?: {
+    algorithm: "x25519-xsalsa20-poly1305";
+    ciphertextBase64: string;
+    nonceBase64: string;
+    ephemeralPublicKeyBase64: string;
+    commitmentHash: string;
+    transferId: string;
+    epoch: number;
+  } | null;
   autoclaim?: boolean;
   amount: number;
   recipientAmount: number;
@@ -64,6 +76,10 @@ export async function enqueueTsnPaymentFromFrontend(params: {
     settlementVault: params.settlementVault,
     settlementTokenAccount: params.settlementTokenAccount,
     settlementPaymentIntentId: params.settlementPaymentIntentId,
+    transferId: params.transferId,
+    commitmentHash: params.commitmentHash,
+    settlementEpoch: params.settlementEpoch,
+    encryptedSettlementToken: params.encryptedSettlementToken,
     destinationWallet: params.destinationWallet,
     autoclaim: params.autoclaim ?? true,
     recipientHash: params.recipientHash,
@@ -174,6 +190,7 @@ export async function estimateTsnSendCostFromChain(params: {
   tokenUsd?: number | null;
   solUsd?: number | null;
   rpcUrl?: string;
+  timeoutMs?: number;
 }) {
   const market = getConfiguredUsdPrices();
 

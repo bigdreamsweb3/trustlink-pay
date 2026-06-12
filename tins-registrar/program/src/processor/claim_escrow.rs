@@ -11,8 +11,8 @@ use crate::{
     cpi::transfer_signed,
     error::Error,
     instruction_auto::ClaimEscrowParams,
-    state::{EscrowState, IdentityRegistry, ESCROW_CLAIMED, ESCROW_PENDING},
-    utils::{assert_program_owned, load_borsh, store_borsh},
+    state::{EscrowState, ESCROW_CLAIMED, ESCROW_PENDING},
+    utils::{assert_program_owned, load_borsh, load_identity_registry, store_borsh},
 };
 
 pub fn process(
@@ -34,7 +34,7 @@ pub fn process(
     assert_program_owned(registry, program_id)?;
     assert_program_owned(escrow, program_id)?;
 
-    let registry_state: IdentityRegistry = load_borsh(registry)?;
+    let registry_state = load_identity_registry(registry)?;
     let mut escrow_state: EscrowState = load_borsh(escrow)?;
 
     if escrow_state.status != ESCROW_PENDING {

@@ -17,6 +17,7 @@ const TSN_CRANKER_SEED = Buffer.from("tsn_cranker");
 const TSN_CRANKER_VAULT_SEED = Buffer.from("tsn_cranker_vault");
 const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authority");
 const TSN_LIQUIDITY_POSITION_SEED = Buffer.from("tsn_liquidity_position");
+const TSN_PAYMENT_VAULT_SEED = Buffer.from("vault");
 export function sha256Bytes(input) {
     return createHash("sha256").update(input).digest();
 }
@@ -127,6 +128,9 @@ export async function tsnCreateIntentOnChain(params) {
         signature,
     });
     return { mode: "devnet", signature };
+}
+export function getTsnPaymentVaultPda(paymentIntentId) {
+    return PublicKey.findProgramAddressSync([TSN_PAYMENT_VAULT_SEED, encodeU64(paymentIntentId)], getVerifiedTsnProgramId())[0];
 }
 export async function tsnSubmitSenderSignedSettlementTransaction(params) {
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
@@ -480,10 +484,44 @@ export async function tsnSubmitProofOnChain(params) {
     });
     return { mode: "devnet", signature };
 }
-export async function tsnExecuteVaultPayoutOnChain(params) {
+export async function tsnClaimVaultSettlementOnChain(params) {
+    if (params.otdtHash32.length !== 32) {
+        throw new Error("otdtHash32 must contain exactly 32 bytes");
+    }
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
     const motherEscrow = getTsnMotherEscrowPda();
     const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+    const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
+    const ix = new TransactionInstruction({
+        programId: getVerifiedTsnProgramId(),
+        keys: [
+            { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: paymentVault, isSigner: false, isWritable: true },
+        ],
+        data: Buffer.concat([
+            instructionDiscriminator("tsn_claim_vault_settlement"),
+            encodeU64(params.paymentIntentId),
+            Buffer.from(params.otdtHash32),
+        ]),
+    });
+    const signature = await sendAndConfirmTransaction(connection, new Transaction({ feePayer: params.operator.publicKey }).add(ix), [params.operator], { commitment: "confirmed" });
+    logger.info("tsn.vault.settlement_lease_claimed", {
+        paymentVault: paymentVault.toBase58(),
+        cranker: cranker.toBase58(),
+        signature,
+    });
+    return { mode: "devnet", signature, paymentVault: paymentVault.toBase58() };
+}
+export async function tsnExecuteVaultPayoutOnChain(params) {
+    if (params.otdt.length !== 32 || params.decryptionSecret.length !== 32) {
+        throw new Error("OTDT and decryptionSecret must each contain exactly 32 bytes");
+    }
+    const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+    const motherEscrow = getTsnMotherEscrowPda();
+    const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+    const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
     const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
     const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
     const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
@@ -494,6 +532,7 @@ export async function tsnExecuteVaultPayoutOnChain(params) {
             { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
             { pubkey: motherEscrow, isSigner: false, isWritable: false },
             { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: paymentVault, isSigner: false, isWritable: true },
             { pubkey: crankerVault, isSigner: false, isWritable: true },
             { pubkey: vaultAuthority, isSigner: false, isWritable: false },
             { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
@@ -502,8 +541,11 @@ export async function tsnExecuteVaultPayoutOnChain(params) {
         ],
         data: Buffer.concat([
             instructionDiscriminator("tsn_execute_vault_payout"),
+            encodeU64(params.paymentIntentId),
             encodeU64(params.payoutAmountBaseUnits),
             encodeU64(params.claimFeeAmountBaseUnits ?? 0n),
+            Buffer.from(params.otdt),
+            Buffer.from(params.decryptionSecret),
         ]),
     });
     const tx = new Transaction({ feePayer: params.operator.publicKey });
@@ -516,11 +558,87 @@ export async function tsnExecuteVaultPayoutOnChain(params) {
     logger.info("tsn.vault_payout.executed", {
         cranker: cranker.toBase58(),
         vault: crankerVault.toBase58(),
+        paymentVault: paymentVault.toBase58(),
         recipient: params.recipientWallet.toBase58(),
         feePayer: params.operator.publicKey.toBase58(),
         signature,
     });
     return { mode: "devnet", signature };
+}
+export async function tsnClaimVaultRecoveryOnChain(params) {
+    const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+    const motherEscrow = getTsnMotherEscrowPda();
+    const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+    const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
+    const ix = new TransactionInstruction({
+        programId: getVerifiedTsnProgramId(),
+        keys: [
+            { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: cranker, isSigner: false, isWritable: true },
+            { pubkey: paymentVault, isSigner: false, isWritable: true },
+        ],
+        data: Buffer.concat([
+            instructionDiscriminator("tsn_claim_vault_recovery"),
+            encodeU64(params.paymentIntentId),
+        ]),
+    });
+    const signature = await sendAndConfirmTransaction(connection, new Transaction({ feePayer: params.operator.publicKey }).add(ix), [params.operator], { commitment: "confirmed" });
+    logger.info("tsn.vault.recovery_lease_claimed", {
+        paymentVault: paymentVault.toBase58(),
+        cranker: cranker.toBase58(),
+        signature,
+    });
+    return { mode: "devnet", signature, paymentVault: paymentVault.toBase58() };
+}
+export async function tsnRecoverPaymentVaultOnChain(params) {
+    const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+    const motherEscrow = getTsnMotherEscrowPda();
+    const recoveryCranker = getTsnCrankerPda({
+        motherEscrow,
+        operator: params.operator.publicKey,
+    });
+    const settlementCranker = getTsnCrankerPda({
+        motherEscrow,
+        operator: params.settlementCrankerOperator,
+    });
+    const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
+    const paymentVaultTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, paymentVault, true);
+    const settlementCrankerVault = getTsnCrankerVaultPda({
+        cranker: settlementCranker,
+        tokenMint: params.tokenMint,
+    });
+    const settlementVaultTokenAccount = getTsnCrankerVaultTokenPda({
+        crankerVault: settlementCrankerVault,
+    });
+    const verifierPda = getTsnVerifierPda();
+    const ix = new TransactionInstruction({
+        programId: getVerifiedTsnProgramId(),
+        keys: [
+            { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+            { pubkey: motherEscrow, isSigner: false, isWritable: false },
+            { pubkey: recoveryCranker, isSigner: false, isWritable: true },
+            { pubkey: paymentVault, isSigner: false, isWritable: true },
+            { pubkey: paymentVaultTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: settlementCrankerVault, isSigner: false, isWritable: true },
+            { pubkey: settlementVaultTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: verifierPda, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: Buffer.concat([
+            instructionDiscriminator("tsn_recover_payment_vault"),
+            encodeU64(params.paymentIntentId),
+        ]),
+    });
+    const signature = await sendAndConfirmTransaction(connection, new Transaction({ feePayer: params.operator.publicKey }).add(ix), [params.operator], { commitment: "confirmed" });
+    logger.info("tsn.vault.recovered", {
+        paymentVault: paymentVault.toBase58(),
+        recoveryCranker: recoveryCranker.toBase58(),
+        settlementCranker: settlementCranker.toBase58(),
+        signature,
+    });
+    return { mode: "devnet", signature, paymentVault: paymentVault.toBase58() };
 }
 export async function tsnFetchIntentOnChain(params) {
     const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");

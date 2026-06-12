@@ -1,4 +1,4 @@
-import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnWorkItem, ProofOfPaymentRequest } from "./contracts.js";
+import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnRecoveryStatus, TsnRecoveryWorkItem, TsnWorkItem, ProofOfPaymentRequest } from "./contracts.js";
 export interface TsnMempool {
     postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
     postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
@@ -14,6 +14,9 @@ export interface TsnMempool {
     updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
     updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch?: Partial<TsnMempoolClaimRequest>): Promise<TsnMempoolClaimRequest | null>;
     postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+    listPendingRecoveryWork(operatorPubkey: string, limit?: number): Promise<TsnRecoveryWorkItem[]>;
+    claimRecoveryLease(id: string, operatorPubkey: string): Promise<TsnRecoveryWorkItem>;
+    updateRecoveryStatus(id: string, operatorPubkey: string, status: TsnRecoveryStatus, patch?: Partial<TsnRecoveryWorkItem>): Promise<TsnRecoveryWorkItem | null>;
 }
 export declare class JsonFileTsnMempool implements TsnMempool {
     private readonly path;
@@ -32,6 +35,9 @@ export declare class JsonFileTsnMempool implements TsnMempool {
     updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent | null>;
     updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch?: Partial<TsnMempoolClaimRequest>): Promise<TsnMempoolClaimRequest | null>;
     postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+    listPendingRecoveryWork(operatorPubkey: string, limit?: number): Promise<TsnRecoveryWorkItem[]>;
+    claimRecoveryLease(id: string, operatorPubkey: string): Promise<TsnRecoveryWorkItem>;
+    updateRecoveryStatus(id: string, operatorPubkey: string, status: TsnRecoveryStatus, patch?: Partial<TsnRecoveryWorkItem>): Promise<TsnRecoveryWorkItem | null>;
 }
 export declare class HttpTsnMempool implements TsnMempool {
     private readonly client;
@@ -50,5 +56,8 @@ export declare class HttpTsnMempool implements TsnMempool {
     updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent>;
     updateClaimRequestStatus(id: string, status: TsnClaimRequestStatus, patch?: Partial<TsnMempoolClaimRequest>): Promise<TsnMempoolClaimRequest>;
     postProof(request: ProofOfPaymentRequest): Promise<ProofOfPaymentRequest>;
+    listPendingRecoveryWork(operatorPubkey: string, limit?: number): Promise<TsnRecoveryWorkItem[]>;
+    claimRecoveryLease(id: string, operatorPubkey: string): Promise<TsnRecoveryWorkItem>;
+    updateRecoveryStatus(id: string, operatorPubkey: string, status: TsnRecoveryStatus, patch?: Partial<TsnRecoveryWorkItem>): Promise<TsnRecoveryWorkItem>;
 }
 //# sourceMappingURL=mempool.d.ts.map

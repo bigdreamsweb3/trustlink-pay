@@ -97,7 +97,7 @@ export function AppSidePanel({
 
             {/* ── Divider ── */}
             <div
-              className="mx-5 h-px"
+              className="ml-56 h-px"
               style={{ background: "var(--field-border)" }}
             />
 

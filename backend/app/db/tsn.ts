@@ -1,30 +1,41 @@
 import { sql } from "@/app/db/client";
 import type { ClaimRequestRecord, ClaimRequestStatus, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
+let paymentIntentSchemaReady: Promise<void> | null = null;
+
 async function ensurePaymentIntentTraceColumns() {
-  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128)`;
-  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128)`;
-  await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS proof_tx_sig VARCHAR(128)`;
-  await sql`
-    ALTER TABLE payment_intents
-    DROP CONSTRAINT IF EXISTS payment_intents_status_check
-  `;
-  await sql`
-    ALTER TABLE payment_intents
-    ADD CONSTRAINT payment_intents_status_check
-    CHECK (status IN (
-      'pending',
-      'escrowed',
-      'onchain',
-      'claimed',
-      'executed',
-      'settled',
-      'expired',
-      'failed',
-      'canceled',
-      'reverted'
-    ))
-  `;
+  if (!paymentIntentSchemaReady) {
+    paymentIntentSchemaReady = (async () => {
+      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128)`;
+      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128)`;
+      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS proof_tx_sig VARCHAR(128)`;
+      await sql`
+        ALTER TABLE payment_intents
+        DROP CONSTRAINT IF EXISTS payment_intents_status_check
+      `;
+      await sql`
+        ALTER TABLE payment_intents
+        ADD CONSTRAINT payment_intents_status_check
+        CHECK (status IN (
+          'pending',
+          'escrowed',
+          'onchain',
+          'claimed',
+          'executed',
+          'settled',
+          'expired',
+          'failed',
+          'canceled',
+          'reverted'
+        ))
+      `;
+    })().catch((error) => {
+      paymentIntentSchemaReady = null;
+      throw error;
+    });
+  }
+
+  await paymentIntentSchemaReady;
 }
 
 export async function findPaymentIntentByPaymentId(paymentId: string): Promise<PaymentIntentRecord | null> {
@@ -52,6 +63,21 @@ export async function listPaymentIntentsByPaymentIds(paymentIds: string[]): Prom
       status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
     FROM payment_intents
     WHERE payment_id = ANY(${paymentIds}::uuid[])
+  `) as PaymentIntentRecord[];
+}
+
+export async function listActivePaymentIntents(limit = 100): Promise<PaymentIntentRecord[]> {
+  await ensurePaymentIntentTraceColumns();
+  const safeLimit = Math.max(1, Math.min(500, Math.floor(limit)));
+
+  return (await sql`
+    SELECT
+      id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
+      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+    FROM payment_intents
+    WHERE status IN ('pending', 'escrowed', 'onchain', 'claimed')
+    ORDER BY created_at ASC
+    LIMIT ${safeLimit}
   `) as PaymentIntentRecord[];
 }
 

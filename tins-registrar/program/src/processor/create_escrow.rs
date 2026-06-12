@@ -12,8 +12,11 @@ use crate::{
     cpi::create_pda_account,
     error::Error,
     instruction_auto::CreateEscrowParams,
-    state::{EscrowState, IdentityRegistry, CURRENT_VERSION, ESCROW_PENDING},
-    utils::{assert_pda, assert_program_owned, load_borsh, store_borsh},
+    state::{EscrowState, CURRENT_VERSION, ESCROW_PENDING},
+    utils::{
+        assert_pda, assert_program_owned, load_identity_registry, store_borsh,
+        top_up_and_realloc,
+    },
 };
 
 pub fn process(
@@ -36,7 +39,7 @@ pub fn process(
     }
     assert_program_owned(registry, program_id)?;
 
-    let mut registry_state: IdentityRegistry = load_borsh(registry)?;
+    let mut registry_state = load_identity_registry(registry)?;
     let escrow_id = registry_state
         .last_escrow_id
         .checked_add(1)
@@ -100,5 +103,11 @@ pub fn process(
     store_borsh(escrow, &escrow_state)?;
 
     registry_state.last_escrow_id = escrow_id;
+    top_up_and_realloc(
+        payer,
+        registry,
+        system_program_account,
+        registry_state.dynamic_space(),
+    )?;
     store_borsh(registry, &registry_state)
 }

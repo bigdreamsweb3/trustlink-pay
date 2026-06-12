@@ -59,6 +59,11 @@ export type TinResolvedIdentity = {
   tin: string;
   name: string;
   authority: PublicKey;
+  registry: PublicKey;
+  accountKind: "registry" | "legacy";
+  settlementAuthorityVerified: boolean;
+  status: number;
+  createdAt: string;
   socialIdentities: Array<{
     type: TinSocialIdentityType;
     label: string;
@@ -78,6 +83,33 @@ export type TinResolvedIdentity = {
 
 function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
   return programId instanceof PublicKey ? programId : new PublicKey(programId ?? DEFAULT_TINS_PROGRAM_ID);
+}
+
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+function encodeBase58(value: Uint8Array) {
+  if (value.length === 0) return "";
+  const digits = [0];
+  for (const byte of value) {
+    let carry = byte;
+    for (let index = 0; index < digits.length; index += 1) {
+      const next = digits[index] * 256 + carry;
+      digits[index] = next % 58;
+      carry = Math.floor(next / 58);
+    }
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
+    }
+  }
+  let leadingZeroes = 0;
+  while (leadingZeroes < value.length && value[leadingZeroes] === 0) {
+    leadingZeroes += 1;
+  }
+  return (
+    "1".repeat(leadingZeroes) +
+    digits.reverse().map((digit) => BASE58_ALPHABET[digit]).join("")
+  );
 }
 
 export function getTinsIdentitySeed(walletPubkey: PublicKey): Buffer {
@@ -386,6 +418,66 @@ export function decodeTinAccount(data: Uint8Array) {
   };
 }
 
+async function findLegacyTinAccount(params: {
+  tin: bigint | number | string;
+  connection: Connection;
+  programId: PublicKey;
+}) {
+  const tinBuffer = Buffer.alloc(8);
+  tinBuffer.writeBigUInt64LE(BigInt(params.tin));
+  const accounts = await params.connection.getProgramAccounts(params.programId, {
+    filters: [
+      {
+        memcmp: {
+          offset: 0,
+          bytes: encodeBase58(tinBuffer),
+        },
+      },
+    ],
+  });
+
+  for (const account of accounts) {
+    try {
+      const decoded = decodeTinAccount(account.account.data);
+      if (decoded.tin.toString() === String(params.tin)) {
+        return { address: account.pubkey, decoded };
+      }
+    } catch {
+      // Other TINS account layouts can share the same leading bytes.
+    }
+  }
+  return null;
+}
+
+async function findLegacyTinCreationAuthority(
+  connection: Connection,
+  identityAccount: PublicKey,
+) {
+  let before: string | undefined;
+  let oldestSignature: string | null = null;
+  for (let page = 0; page < 5; page += 1) {
+    const signatures = await connection.getSignaturesForAddress(
+      identityAccount,
+      { before, limit: 1_000 },
+      "confirmed",
+    );
+    if (signatures.length === 0) break;
+    oldestSignature = signatures[signatures.length - 1].signature;
+    if (signatures.length < 1_000) break;
+    before = oldestSignature;
+  }
+  if (!oldestSignature) return null;
+
+  const transaction = await connection.getParsedTransaction(oldestSignature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+  const signer = transaction?.transaction.message.accountKeys.find(
+    (account) => account.signer && !account.pubkey.equals(identityAccount),
+  );
+  return signer?.pubkey ?? null;
+}
+
 function readString(buffer: Buffer, offsetRef: { offset: number }) {
   const length = buffer.readUInt32LE(offsetRef.offset);
   offsetRef.offset += 4;
@@ -430,6 +522,24 @@ export function decodeTinsIdentityRegistry(data: Uint8Array): TinIdentityRegistr
   const createdAt = buffer.readBigInt64LE(offsetRef.offset);
   offsetRef.offset += 8;
   const name = readString(buffer, offsetRef);
+  if (offsetRef.offset === buffer.length) {
+    return {
+      version,
+      bump,
+      status,
+      tin,
+      authority,
+      masterPrivacy,
+      lastEscrowId,
+      createdAt,
+      name,
+      socialIdentities: [],
+      sensitiveFields: [],
+    };
+  }
+  if (offsetRef.offset + 4 > buffer.length) {
+    throw new Error("TINS identity registry data is truncated");
+  }
   const socialCount = buffer.readUInt32LE(offsetRef.offset);
   offsetRef.offset += 4;
   const socialIdentities: TinEncryptedSocialIdentity[] = [];
@@ -597,9 +707,38 @@ export async function resolveTIN(params: {
   programId?: PublicKey | string | null;
   sensitiveAuthorizations?: Record<string, Uint8Array | string>;
 }): Promise<TinResolvedIdentity> {
-  const registryPda = getTinsRegistryPda({ tin: params.tin, programId: params.programId });
+  const programId = getTinsProgramPublicKey(params.programId);
+  const registryPda = getTinsRegistryPda({ tin: params.tin, programId });
   const account = await params.connection.getAccountInfo(registryPda);
-  if (!account) throw new Error(`TIN ${String(params.tin)} registry account was not found`);
+  if (!account) {
+    const legacy = await findLegacyTinAccount({
+      tin: params.tin,
+      connection: params.connection,
+      programId,
+    });
+    if (!legacy) {
+      throw new Error(
+        `TIN ${String(params.tin)} was not found in TINS program ${programId.toBase58()}`,
+      );
+    }
+    const creationAuthority = await findLegacyTinCreationAuthority(
+      params.connection,
+      legacy.address,
+    );
+    return {
+      tin: legacy.decoded.tin.toString(),
+      name: legacy.decoded.displayName,
+      authority: creationAuthority ?? legacy.decoded.identityPubkey,
+      registry: legacy.address,
+      accountKind: "legacy",
+      settlementAuthorityVerified: Boolean(creationAuthority),
+      status: 1,
+      createdAt: legacy.decoded.createdAt.toString(),
+      socialIdentities: [],
+      sensitiveFields: [],
+      encryptedSensitiveFields: [],
+    };
+  }
   const registry = decodeTinsIdentityRegistry(account.data);
   const socialIdentities = await Promise.all(
     registry.socialIdentities.map(async (identity) => ({
@@ -637,6 +776,11 @@ export async function resolveTIN(params: {
     tin: String(params.tin),
     name: registry.name,
     authority: registry.authority,
+    registry: registryPda,
+    accountKind: "registry",
+    settlementAuthorityVerified: true,
+    status: registry.status,
+    createdAt: registry.createdAt.toString(),
     socialIdentities,
     sensitiveFields,
     encryptedSensitiveFields: registry.sensitiveFields,

@@ -14,22 +14,15 @@ export function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const payload = {
-      name,
-      type,
-      status: 200,
-      countInWindow: sample.count,
-      duplicatesInWindow: sample.duplicateCount,
-      windowMs: 10_000,
-    };
     if (sample.level === "warn") {
-      logger.warn("api.request.burst", payload);
-      return NextResponse.next();
+      logger.warn("api.request.burst", {
+        name,
+        type,
+        countInWindow: sample.count,
+        duplicatesInWindow: sample.duplicateCount,
+        windowMs: 10_000,
+      });
     }
-
-    logger.info("api.request", {
-      ...payload,
-    });
   }
 
   return NextResponse.next();

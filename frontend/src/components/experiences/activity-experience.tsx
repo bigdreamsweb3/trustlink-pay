@@ -8,12 +8,15 @@ import { PaymentActivityCard } from "@/src/components/payment-activity-card";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { apiGet } from "@/src/lib/api";
-import { shouldPollPaymentNotification } from "@/src/lib/formatters";
+import {
+  shouldPollPaymentNotification,
+  shouldPollTsnPayment,
+} from "@/src/lib/formatters";
 import type { PaymentRecord } from "@/src/lib/types";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 
 type ActivityFilter = "all" | "transfers" | "claims" | "releases";
-const ACTIVITY_REFRESH_INTERVAL_MS = 20_000;
+const ACTIVITY_REFRESH_INTERVAL_MS = 30_000;
 
 export function ActivityExperience() {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/activity");
@@ -50,9 +53,18 @@ export function ActivityExperience() {
 
   const visiblePayments = filteredPayments.slice(0, visibleCount);
   const canLoadMore = filteredPayments.length > visiblePayments.length;
-  const hasPendingSenderReceipt = useMemo(() => payments.some((p) => p.sender_user_id === user?.id && shouldPollPaymentNotification(p.notification_status)), [payments, user?.id]);
+  const hasPendingStatus = useMemo(
+    () =>
+      payments.some(
+        (payment) =>
+          shouldPollTsnPayment(payment) ||
+          (payment.sender_user_id === user?.id &&
+            shouldPollPaymentNotification(payment.notification_status)),
+      ),
+    [payments, user?.id],
+  );
 
-  useEffect(() => { if (!accessToken || !user || !hasPendingSenderReceipt) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadActivity(accessToken, { background: true }); }, ACTIVITY_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingSenderReceipt, user]);
+  useEffect(() => { if (!accessToken || !user || !hasPendingStatus) return; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void loadActivity(accessToken, { background: true }); }, ACTIVITY_REFRESH_INTERVAL_MS); return () => window.clearInterval(interval); }, [accessToken, hasPendingStatus, user]);
 
   async function loadActivity(token: string, options?: { background?: boolean }) { if (!options?.background) setLoading(true); try { const r = await apiGet<{ payments: PaymentRecord[] }>("/api/payment/history?limit=50", token); setPayments(r.payments); setError(null); } catch (e) { if (!options?.background) setError(e instanceof Error ? e.message : "Could not load activity"); } finally { if (!options?.background) setLoading(false); } }
 

@@ -6,22 +6,40 @@ use anchor_lang::{
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_spl::{
     associated_token::{self, get_associated_token_address, AssociatedToken, Create},
-    token::{spl_token::state::Account as SplTokenAccount, Mint, Token, TokenAccount},
+    token::{spl_token::state::Account as SplTokenAccount, Mint, Token},
 };
 
 use crate::tsn::{
     constants::{
-        TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS, TSN_PAYMENT_VAULT_SEED, TSN_VERIFIER_SEED,
+        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
+        TSN_PAYMENT_VAULT_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
-    state::VaultState,
+    events::TsnCommitmentRegistered,
+    state::{Cranker, MotherEscrow, VaultSettlementStatus, VaultState},
+    utils::compute_cranker_dna,
 };
 
 #[derive(Accounts)]
 #[instruction(payment_intent_id: u64)]
 pub struct ProcessPaymentIntent<'info> {
     #[account(mut)]
-    pub cranker: Signer<'info>,
+    pub cranker_operator: Signer<'info>,
+
+    pub mother_escrow: Account<'info, MotherEscrow>,
+
+    #[account(
+        mut,
+        seeds = [
+            TSN_CRANKER_SEED,
+            mother_escrow.key().as_ref(),
+            cranker_operator.key().as_ref()
+        ],
+        bump = cranker.bump,
+        has_one = mother_escrow,
+        constraint = cranker.operator == cranker_operator.key()
+    )]
+    pub cranker: Account<'info, Cranker>,
 
     /// CHECK: Autonomous protocol SOL reservoir PDA. Must remain system-owned so it can fund account setup.
     #[account(
@@ -52,7 +70,9 @@ pub struct ProcessPaymentIntent<'info> {
 pub fn process_payment_intent(
     ctx: Context<ProcessPaymentIntent>,
     payment_intent_id: u64,
-    amount: u64,
+    _amount: u64,
+    transfer_id: [u8; 32],
+    commitment_hash: [u8; 32],
 ) -> Result<()> {
     require!(
         ctx.accounts.unique_vault_account.data_is_empty(),
@@ -62,6 +82,16 @@ pub fn process_payment_intent(
         *ctx.accounts.verifier_pda.owner,
         system_program::ID,
         TsnError::InvalidVerifierPda
+    );
+    let mother_escrow = &ctx.accounts.mother_escrow;
+    let expected_dna = compute_cranker_dna(
+        &mother_escrow.key(),
+        &ctx.accounts.cranker_operator.key(),
+        &mother_escrow.protocol_seed,
+    );
+    require!(
+        ctx.accounts.cranker.dna_hash == expected_dna,
+        TsnError::CrankerDnaMismatch
     );
 
     let expected_ata = get_associated_token_address(
@@ -114,9 +144,20 @@ pub fn process_payment_intent(
         data[..8].copy_from_slice(&VaultState::discriminator());
         let state = VaultState {
             payment_intent_id,
-            cranker_author: ctx.accounts.cranker.key(),
-            is_processed: true,
-            amount,
+            transfer_id,
+            commitment_hash,
+            otdt_hash: [0; 32],
+            lease_cranker: Pubkey::default(),
+            settlement_cranker: Pubkey::default(),
+            lease_expiry_ts: 0,
+            created_at_ts: Clock::get()?.unix_timestamp,
+            paid_at_ts: 0,
+            recovered_at_ts: 0,
+            epoch_id: mother_escrow.epoch_id,
+            status: VaultSettlementStatus::Created,
+            otdt_used: false,
+            recoverable: false,
+            bump: vault_bump,
         };
         let mut cursor = &mut data[8..];
         AnchorSerialize::serialize(&state, &mut cursor)?;
@@ -140,12 +181,20 @@ pub fn process_payment_intent(
             ctx.accounts.system_program.to_account_info(),
             Transfer {
                 from: ctx.accounts.verifier_pda.to_account_info(),
-                to: ctx.accounts.cranker.to_account_info(),
+                to: ctx.accounts.cranker_operator.to_account_info(),
             },
             &[verifier_signer],
         ),
         TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
     )?;
+
+    emit!(TsnCommitmentRegistered {
+        vault: ctx.accounts.unique_vault_account.key(),
+        transfer_id,
+        commitment_hash,
+        epoch_id: mother_escrow.epoch_id,
+        created_at_ts: Clock::get()?.unix_timestamp,
+    });
 
     Ok(())
 }

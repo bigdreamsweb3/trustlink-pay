@@ -17,6 +17,7 @@ export function sanitizeUser(user: PersistedUser) {
     displayName: user.display_name,
     handle: user.trustlink_handle,
     walletAddress: user.wallet_address,
+    pinConfigured: Boolean(user.pin_hash),
     whatsappOptedIn: user.whatsapp_opted_in,
     optInTimestamp: user.opt_in_timestamp,
     optOutTimestamp: user.opt_out_timestamp,

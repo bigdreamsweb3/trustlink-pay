@@ -23,6 +23,10 @@
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.6",
     "tsx": "^4.22.2",
     "typescript": "^6.0.3"
   }

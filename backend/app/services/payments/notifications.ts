@@ -37,6 +37,9 @@ export async function resolveManualInviteState(payment: PaymentRecord, appBaseUr
 }
 
 function canRetryPaymentNotification(payment: PaymentRecord) {
+  if (payment.receiver_phone.startsWith("tin:")) {
+    return false;
+  }
   if (payment.status !== "locked") {
     return false;
   }

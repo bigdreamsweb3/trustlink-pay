@@ -24,6 +24,9 @@ export function buildInviteShareData(
 }
 
 export async function requiresManualInvite(phoneNumber: string) {
+  if (phoneNumber.startsWith("tin:")) {
+    return false;
+  }
   const receiver = await findUserByPhoneNumber(phoneNumber);
   return !receiver?.phone_verified_at;
 }

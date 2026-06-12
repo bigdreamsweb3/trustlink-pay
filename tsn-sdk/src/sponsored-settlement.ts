@@ -19,6 +19,8 @@ import { Buffer } from "buffer";
 import { VERIFIED_TSN_PROGRAM_ID } from "./program.js";
 
 const TSN_VERIFIER_SEED = utf8ToBytes("verifier");
+const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
+const TSN_CRANKER_SEED = utf8ToBytes("tsn_cranker");
 const TSN_TREASURY_SEED = utf8ToBytes("tsn_treasury");
 const TSN_PAYMENT_VAULT_SEED = utf8ToBytes("vault");
 
@@ -123,6 +125,11 @@ export function getSponsoredSettlementPdas(params: {
 
   const paymentIntentId = paymentIdToU64(params.paymentId);
   const verifierPda = PublicKey.findProgramAddressSync([TSN_VERIFIER_SEED], programId)[0];
+  const motherEscrow = PublicKey.findProgramAddressSync([TSN_MOTHER_ESCROW_SEED], programId)[0];
+  const cranker = PublicKey.findProgramAddressSync(
+    [TSN_CRANKER_SEED, motherEscrow.toBuffer(), crankerOperator.toBuffer()],
+    programId,
+  )[0];
   const treasuryPda = PublicKey.findProgramAddressSync([TSN_TREASURY_SEED], programId)[0];
   const treasuryTokenAccount = getAssociatedTokenAddressSync(mint, treasuryPda, true);
   const paymentVault = PublicKey.findProgramAddressSync(
@@ -139,11 +146,40 @@ export function getSponsoredSettlementPdas(params: {
     intentSeedHash: bytesToHex(intentSeed32),
     paymentIntentId,
     verifierPda,
+    motherEscrow,
+    cranker,
     treasuryPda,
     treasuryTokenAccount,
     paymentVault,
     paymentVaultTokenAccount,
   };
+}
+
+export async function fetchTsnSettlementEpoch(rpcUrl?: string) {
+  const connection = new Connection(rpcUrl ?? clusterApiUrl("devnet"), "confirmed");
+  const programId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
+  const motherEscrow = PublicKey.findProgramAddressSync(
+    [TSN_MOTHER_ESCROW_SEED],
+    programId,
+  )[0];
+  const account = await connection.getAccountInfo(motherEscrow, "confirmed");
+  if (!account) throw new Error("TSN Mother Escrow is not initialized");
+  const data = Buffer.from(account.data);
+  const epochOffset = 8 + 32 + 32 + 32 + 8 + 8 + 2 + 2 + 2;
+  if (data.length < epochOffset + 8) {
+    throw new Error("TSN Mother Escrow account is too small");
+  }
+  const expectedDiscriminator = sha256(
+    utf8ToBytes("account:MotherEscrow"),
+  ).subarray(0, 8);
+  if (!Buffer.from(expectedDiscriminator).equals(data.subarray(0, 8))) {
+    throw new Error("TSN Mother Escrow discriminator is invalid");
+  }
+  const epoch = data.readBigUInt64LE(epochOffset);
+  if (epoch > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error("TSN epoch exceeds JavaScript safe integer range");
+  }
+  return Number(epoch);
 }
 
 export async function buildTsnSponsoredSettlementTransaction(params: {
@@ -155,6 +191,8 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   senderFeeAmountUi?: number | string;
   tokenDecimals: number;
   recipientHash: string;
+  transferId: string;
+  commitmentHash: string;
   rpcUrl?: string;
   intentSeedHash?: string;
 }) {
@@ -162,6 +200,11 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   const senderWallet = new PublicKey(params.senderWallet);
   if (hexToBytes(params.recipientHash, "recipientHash").length !== 32) {
     throw new Error("recipientHash must be a 32-byte hex string");
+  }
+  const transferId = hexToBytes(params.transferId, "transferId");
+  const commitmentHash = hexToBytes(params.commitmentHash, "commitmentHash");
+  if (transferId.length !== 32 || commitmentHash.length !== 32) {
+    throw new Error("transferId and commitmentHash must be 32-byte hex strings");
   }
 
   const pdas = getSponsoredSettlementPdas({
@@ -179,6 +222,8 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     programId: pdas.programId,
     keys: [
       { pubkey: pdas.crankerOperator, isSigner: true, isWritable: true },
+      { pubkey: pdas.motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: pdas.cranker, isSigner: false, isWritable: true },
       { pubkey: pdas.verifierPda, isSigner: false, isWritable: true },
       { pubkey: pdas.paymentVault, isSigner: false, isWritable: true },
       { pubkey: pdas.paymentVaultTokenAccount, isSigner: false, isWritable: true },
@@ -191,6 +236,8 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
       tsnInstructionDiscriminator("tsn_process_payment_intent"),
       encodeU64(pdas.paymentIntentId),
       encodeU64(amountBaseUnits),
+      transferId,
+      commitmentHash,
     ])),
   });
 
@@ -202,6 +249,22 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     amountBaseUnits,
     params.tokenDecimals,
   );
+
+  const finalizePaymentIntentIx = new TransactionInstruction({
+    programId: pdas.programId,
+    keys: [
+      { pubkey: pdas.crankerOperator, isSigner: true, isWritable: false },
+      { pubkey: pdas.motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: pdas.cranker, isSigner: false, isWritable: true },
+      { pubkey: pdas.paymentVault, isSigner: false, isWritable: true },
+      { pubkey: pdas.paymentVaultTokenAccount, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.from(concatBytes([
+      tsnInstructionDiscriminator("tsn_finalize_payment_intent"),
+      encodeU64(pdas.paymentIntentId),
+      encodeU64(amountBaseUnits),
+    ])),
+  });
 
   const transferSenderFeeIx =
     senderFeeAmountBaseUnits > 0n
@@ -222,6 +285,7 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   }).add(
     processPaymentIntentIx,
     lockFundsIx,
+    finalizePaymentIntentIx,
     ...(transferSenderFeeIx ? [transferSenderFeeIx] : []),
   );
 
@@ -239,6 +303,10 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     senderTokenAccount: senderTokenAccount.toBase58(),
     crankerFeePayer: pdas.crankerOperator.toBase58(),
     verifierPda: pdas.verifierPda.toBase58(),
+    motherEscrow: pdas.motherEscrow.toBase58(),
+    cranker: pdas.cranker.toBase58(),
+    transferId: params.transferId,
+    commitmentHash: params.commitmentHash,
     treasuryPda: pdas.treasuryPda.toBase58(),
     treasuryTokenAccount: pdas.treasuryTokenAccount.toBase58(),
     amountBaseUnits: amountBaseUnits.toString(),

@@ -27,7 +27,6 @@ pub fn initialize(
     let authority = next_account_info(accounts_iter)?;
     let platform_registry = next_account_info(accounts_iter)?;
     let system_program = next_account_info(accounts_iter)?;
-    let system_program = next_account_info(accounts_iter)?;
 
     if !authority.is_signer {
         return Err(ProgramError::MissingRequiredSignature);
@@ -68,6 +67,7 @@ pub fn upsert_platform(
     let accounts_iter = &mut accounts.iter();
     let authority = next_account_info(accounts_iter)?;
     let platform_registry = next_account_info(accounts_iter)?;
+    let system_program = next_account_info(accounts_iter)?;
 
     if !authority.is_signer {
         return Err(ProgramError::MissingRequiredSignature);

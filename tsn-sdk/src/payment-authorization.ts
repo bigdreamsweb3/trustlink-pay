@@ -99,6 +99,10 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   settlementVault?: string | null;
   settlementTokenAccount?: string | null;
   settlementPaymentIntentId?: string | null;
+  transferId?: string | null;
+  commitmentHash?: string | null;
+  settlementEpoch?: number | null;
+  encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
   amount: number;
   recipientAmount?: number;
   source?: string;
@@ -121,6 +125,10 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       settlementVault: params.settlementVault,
       settlementTokenAccount: params.settlementTokenAccount,
       settlementPaymentIntentId: params.settlementPaymentIntentId,
+      transferId: params.transferId,
+      commitmentHash: params.commitmentHash,
+      settlementEpoch: params.settlementEpoch,
+      encryptedSettlementToken: params.encryptedSettlementToken,
       recipientHash: params.recipientHash,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
@@ -150,6 +158,10 @@ export async function submitPaymentAuthorizationToMempool(params: {
   settlementVault?: string | null;
   settlementTokenAccount?: string | null;
   settlementPaymentIntentId?: string | null;
+  transferId?: string | null;
+  commitmentHash?: string | null;
+  settlementEpoch?: number | null;
+  encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
   amount: number;
   recipientAmount?: number;
   destinationWallet?: string | null;
@@ -168,7 +180,7 @@ export async function submitPaymentAuthorizationToMempool(params: {
           paymentId: params.paymentId,
           intentId: intent.id,
           recipientHash: params.recipientHash,
-          destinationWallet: params.destinationWallet,
+          destinationWallet: null,
           autoclaim: params.autoclaim ?? true,
           source: params.source,
         })

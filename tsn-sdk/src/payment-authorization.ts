@@ -95,6 +95,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  privacyVersion?: number | null;
+  commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
   settlementVault?: string | null;
   settlementTokenAccount?: string | null;
@@ -121,6 +123,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
       senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
       senderSettlementMode: params.senderSettlementMode,
+      privacyVersion: params.privacyVersion,
+      commitmentRecord: params.commitmentRecord,
       senderTokenAccount: params.senderTokenAccount,
       settlementVault: params.settlementVault,
       settlementTokenAccount: params.settlementTokenAccount,
@@ -154,6 +158,8 @@ export async function submitPaymentAuthorizationToMempool(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  privacyVersion?: number | null;
+  commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
   settlementVault?: string | null;
   settlementTokenAccount?: string | null;

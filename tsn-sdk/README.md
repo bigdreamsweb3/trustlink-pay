@@ -39,7 +39,8 @@ await client.postIntent(request);
 - `blockchain/solana-core` - Core Solana utilities
 - `blockchain/solana-tsn` - TSN-specific blockchain operations
 - `sponsored-settlement` - SDK-owned sender escrow transaction construction
-- `settlement-token` - encrypted routing, public commitments, and OTDT generation
+- `settlement-token` - encrypted off-chain routing and settlement commitments
+- `private-settlement` - permit messages, domain-separated nullifiers, and private payout/recovery transactions
 
 ## Private Commitment Settlement
 
@@ -81,16 +82,35 @@ const settlement = await buildTsnSponsoredSettlementTransaction({
 });
 ```
 
-The frontend asks the wallet to co-sign `settlement.transactionBase64`, then sends the signed transaction and `encryptedSettlementToken` to the mempool. It does not broadcast the transaction.
+The frontend asks the wallet to co-sign `settlement.transactionBase64`, then
+sends the signed transaction and `encryptedSettlementToken` to the mempool. It
+does not broadcast the transaction.
 
-The public payment vault stores only commitment and lifecycle data. The recipient route is decrypted by a registered Cranker only after it obtains an on-chain lease and commits an OTDT hash.
+For privacy version 2, this transaction creates a random one-time SPL token
+account controlled by the shared TSN escrow authority and registers only a
+commitment record. It does not create a public lifecycle `VaultState` PDA.
 
-The SDK exposes Cranker-only operations from `blockchain/solana-tsn`:
+After the mempool grants a lease, trusted infrastructure signs short-lived,
+action-specific permits. Applications and React components must not construct
+these instructions.
 
-- `tsnClaimVaultSettlementOnChain`
-- `tsnExecuteVaultPayoutOnChain`
-- `tsnClaimVaultRecoveryOnChain`
-- `tsnRecoverPaymentVaultOnChain`
+```ts
+import {
+  createPrivatePayoutPermitMessage,
+  createPrivateSettlementNullifier,
+  signPrivateSettlementPermit,
+  tsnExecutePrivatePayoutOnChain,
+  tsnRecoverPrivateEscrowOnChain,
+} from "@trustlink/tsn-sdk/private-settlement";
+```
+
+Payout and recovery use separate domain-separated nullifiers. The payout
+transaction does not receive the sender escrow account or commitment record.
+Recovery receives the one-time escrow token account but does not receive the
+recipient route or payout nullifier.
+
+Legacy operations in `blockchain/solana-tsn` remain exported only for recovery
+of version 1 payments.
 
 See `docs/TSN-COMMITMENT-SETTLEMENT.md` in the TrustLink Pay repository for the complete security model.
 

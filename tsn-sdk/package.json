@@ -54,6 +54,10 @@
       "import": "./dist/settlement-token.js",
       "types": "./dist/settlement-token.d.ts"
     },
+    "./private-settlement": {
+      "import": "./dist/private-settlement.js",
+      "types": "./dist/private-settlement.d.ts"
+    },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"

@@ -406,6 +406,56 @@ pub mod trustlink_escrow {
         )
     }
 
+    pub fn tsn_configure_private_settlement(
+        ctx: Context<ConfigurePrivateSettlement>,
+        permit_signer: Pubkey,
+        enabled: bool,
+    ) -> Result<()> {
+        tsn::instructions::configure_private_settlement(ctx, permit_signer, enabled)
+    }
+
+    pub fn tsn_register_private_commitment(
+        ctx: Context<RegisterPrivateCommitment>,
+        commitment_hash: [u8; 32],
+        amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::register_private_commitment(ctx, commitment_hash, amount)
+    }
+
+    pub fn tsn_execute_private_payout(
+        ctx: Context<ExecutePrivatePayout>,
+        payout_nullifier: [u8; 32],
+        payout_amount: u64,
+        claim_fee_amount: u64,
+        expires_at_ts: i64,
+        permit_signature: [u8; 64],
+    ) -> Result<()> {
+        tsn::instructions::execute_private_payout(
+            ctx,
+            payout_nullifier,
+            payout_amount,
+            claim_fee_amount,
+            expires_at_ts,
+            permit_signature,
+        )
+    }
+
+    pub fn tsn_recover_private_escrow(
+        ctx: Context<RecoverPrivateEscrow>,
+        recovery_nullifier: [u8; 32],
+        recovery_amount: u64,
+        expires_at_ts: i64,
+        permit_signature: [u8; 64],
+    ) -> Result<()> {
+        tsn::instructions::recover_private_escrow(
+            ctx,
+            recovery_nullifier,
+            recovery_amount,
+            expires_at_ts,
+            permit_signature,
+        )
+    }
+
     pub fn tsn_claim_vault_settlement(
         ctx: Context<ClaimVaultSettlement>,
         payment_intent_id: u64,

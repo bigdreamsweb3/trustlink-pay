@@ -22,6 +22,9 @@ async function fetchJson(path, init) {
     ...init,
     headers: {
       "content-type": "application/json",
+      ...(process.env.TSN_MEMPOOL_API_KEY
+        ? { "x-api-key": process.env.TSN_MEMPOOL_API_KEY }
+        : {}),
       ...(init?.headers ?? {}),
     },
   });

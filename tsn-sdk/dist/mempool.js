@@ -143,6 +143,7 @@ export class JsonFileTsnMempool {
                     settlementTokenAccount: intent.settlementTokenAccount,
                     tokenMintAddress: intent.tokenMintAddress,
                     settlementCrankerPubkey: request.cranker_pubkey,
+                    privacyVersion: Number(intent.privacyVersion ?? 1),
                     amount: Number(intent.amount),
                     epoch: Number(intent.settlementEpoch ?? 0),
                     rewardLamports: 10_000,

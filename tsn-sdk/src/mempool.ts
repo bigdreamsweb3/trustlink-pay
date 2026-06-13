@@ -200,6 +200,7 @@ export class JsonFileTsnMempool implements TsnMempool {
           settlementTokenAccount: intent.settlementTokenAccount,
           tokenMintAddress: intent.tokenMintAddress,
           settlementCrankerPubkey: request.cranker_pubkey,
+          privacyVersion: Number(intent.privacyVersion ?? 1),
           amount: Number(intent.amount),
           epoch: Number(intent.settlementEpoch ?? 0),
           rewardLamports: 10_000,
@@ -279,11 +280,14 @@ export class JsonFileTsnMempool implements TsnMempool {
 export class HttpTsnMempool implements TsnMempool {
   private readonly client: TsnHttpClient;
 
-  constructor(baseUrl = process.env.TSN_MEMPOOL_URL) {
+  constructor(
+    baseUrl = process.env.TSN_MEMPOOL_URL,
+    apiKey = process.env.TSN_MEMPOOL_API_KEY,
+  ) {
     if (!baseUrl) {
       throw new Error("TSN_MEMPOOL_URL is required for HttpTsnMempool");
     }
-    this.client = new TsnHttpClient({ baseUrl });
+    this.client = new TsnHttpClient({ baseUrl, apiKey });
   }
 
   postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent> {

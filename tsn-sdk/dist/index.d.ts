@@ -11,6 +11,7 @@ export * from "./payment-authorization-server.js";
 export * from "./payment-jobs.js";
 export * from "./sponsored-settlement.js";
 export * from "./settlement-token.js";
+export * from "./private-settlement.js";
 export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";

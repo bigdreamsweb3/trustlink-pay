@@ -76,6 +76,7 @@
     "tsn:redeploy:all": "node scripts/rebuild-redeploy-all.mjs --skip-tins",
     "rebuild:redeploy:all": "node scripts/rebuild-redeploy-all.mjs",
     "tsn:security:keys": "node scripts/tsn-generate-cranker-encryption-key.mjs",
+    "tsn:private:configure": "node scripts/tsn-private-settlement-config.mjs",
     "tsn:security:test": "npm --prefix tsn-sdk test && node scripts/tsn-settlement-security-demo.mjs",
     "tsn:secure:rebuild": "npm run tsn:program:build && npm run tsn:sdk:refresh",
     "tsn:secure:deploy": "npm run tsn:program:build && npm run tsn:program:deploy && npm run tsn:sdk:refresh",

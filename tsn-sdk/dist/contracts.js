@@ -17,6 +17,8 @@ export function buildCreateIntentRequest(params) {
         senderSignedSettlementTransaction: params.senderSignedSettlementTransaction ?? null,
         senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer ?? null,
         senderSettlementMode: params.senderSettlementMode ?? null,
+        privacyVersion: params.privacyVersion ?? null,
+        commitmentRecord: params.commitmentRecord ?? null,
         senderTokenAccount: params.senderTokenAccount ?? null,
         settlementVault: params.settlementVault ?? null,
         settlementTokenAccount: params.settlementTokenAccount ?? null,

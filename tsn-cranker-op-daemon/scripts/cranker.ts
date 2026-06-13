@@ -18,6 +18,13 @@ import {
   tsnSubmitSenderSignedSettlementTransaction,
 } from "../../tsn-sdk/src/blockchain/solana-tsn.ts";
 import {
+  getTsnSharedEscrowAuthorityPda,
+  requestPrivatePayoutPermit,
+  requestPrivateRecoveryPermit,
+  tsnExecutePrivatePayoutOnChain,
+  tsnRecoverPrivateEscrowOnChain,
+} from "../../tsn-sdk/src/private-settlement.ts";
+import {
   createOneTimeDecryptionToken,
   decodeSettlementSecret,
   decryptSettlementToken,
@@ -57,7 +64,14 @@ async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
 
   const baseUrl = process.env.TSN_MEMPOOL_URL.replace(/\/$/, "");
   const fetchJson = async <T>(path: string): Promise<T> => {
-    const response = await fetch(`${baseUrl}${path}`, { headers: { accept: "application/json" } });
+    const response = await fetch(`${baseUrl}${path}`, {
+      headers: {
+        accept: "application/json",
+        ...(process.env.TSN_MEMPOOL_API_KEY
+          ? { "x-api-key": process.env.TSN_MEMPOOL_API_KEY }
+          : {}),
+      },
+    });
     if (!response.ok) throw new Error(`GET ${path} failed (${response.status})`);
     return (await response.json()) as T;
   };
@@ -117,12 +131,7 @@ function loadOperatorKeypair() {
 
 function loadCrankerEncryptionSecretKey() {
   const value = process.env.TSN_CRANKER_ENCRYPTION_SECRET_KEY?.trim();
-  if (!value) {
-    throw new Error(
-      "Set TSN_CRANKER_ENCRYPTION_SECRET_KEY to the Cranker's 32-byte X25519 secret key (base64 or hex).",
-    );
-  }
-  return value;
+  return value || null;
 }
 
 function hex32(value: string, label: string) {
@@ -235,6 +244,8 @@ function validateSignedSettlementTransaction(params: {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    privacyVersion?: number | null;
+    commitmentRecord?: string | null;
     transferId?: string | null;
     commitmentHash?: string | null;
   };
@@ -264,6 +275,130 @@ function validateSignedSettlementTransaction(params: {
   if (!senderSignature?.signature) {
     return "settlement transaction is not signed by the sender wallet";
   }
+  if (Number(intent.privacyVersion ?? 1) >= 2) {
+    const coreInstructions = transaction.instructions.filter(
+      (instruction) => !instruction.programId.equals(ComputeBudgetProgram.programId),
+    );
+    const expectedCoreInstructionCount = expectedSenderFeeAmount > 0n ? 5 : 4;
+    if (coreInstructions.length !== expectedCoreInstructionCount) {
+      return `private settlement transaction must contain ${expectedCoreInstructionCount} core instructions, got ${coreInstructions.length}`;
+    }
+    const [
+      createEscrowAccountIx,
+      initializeEscrowAccountIx,
+      transferIx,
+      registerCommitmentIx,
+      senderFeeTransferIx,
+    ] = coreInstructions;
+    if (!createEscrowAccountIx.programId.equals(SystemProgram.programId)) {
+      return "private settlement first instruction is not System Program create_account";
+    }
+    if (!initializeEscrowAccountIx.programId.equals(TOKEN_PROGRAM_ID)) {
+      return "private settlement second instruction is not SPL Token initialize_account3";
+    }
+    if (!transferIx.programId.equals(TOKEN_PROGRAM_ID)) {
+      return "private settlement third instruction is not SPL Token transfer_checked";
+    }
+    if (!registerCommitmentIx.programId.equals(expectedProgramId)) {
+      return "private settlement fourth instruction is not TSN commitment registration";
+    }
+    if (senderFeeTransferIx && !senderFeeTransferIx.programId.equals(TOKEN_PROGRAM_ID)) {
+      return "private settlement sender-fee instruction is not SPL Token transfer_checked";
+    }
+
+    const escrowTokenAccount = expectedSettlementTokenAccount;
+    const commitmentRecord = intent.commitmentRecord
+      ? new PublicKey(intent.commitmentRecord)
+      : expectedSettlementVault;
+    if (!escrowTokenAccount || !commitmentRecord || !expectedCommitmentHash) {
+      return "private settlement is missing escrow token account or commitment record";
+    }
+    const escrowSignature = transaction.signatures.find((entry) =>
+      entry.publicKey.equals(escrowTokenAccount),
+    );
+    if (!escrowSignature?.signature) {
+      return "private escrow token account did not sign its create-account instruction";
+    }
+    if (!createEscrowAccountIx.keys[0]?.pubkey.equals(params.operator)) {
+      return "private escrow account payer is not the selected cranker";
+    }
+    if (!createEscrowAccountIx.keys[1]?.pubkey.equals(escrowTokenAccount)) {
+      return "private escrow create-account destination mismatch";
+    }
+    if (!initializeEscrowAccountIx.keys[0]?.pubkey.equals(escrowTokenAccount)) {
+      return "private escrow initialize-account destination mismatch";
+    }
+    if (!initializeEscrowAccountIx.keys[1]?.pubkey.equals(tokenMint)) {
+      return "private escrow initialize-account mint mismatch";
+    }
+    const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
+    if (
+      initializeEscrowAccountIx.data.length !== 33 ||
+      initializeEscrowAccountIx.data[0] !== 18 ||
+      !bufferEquals(initializeEscrowAccountIx.data.subarray(1, 33), sharedEscrowAuthority.toBytes())
+    ) {
+      return "private escrow token authority mismatch";
+    }
+    if (transferIx.data.length !== 10 || transferIx.data[0] !== 12) {
+      return "private escrow funding instruction is not transfer_checked";
+    }
+    if (transferIx.data.readBigUInt64LE(1) !== expectedAmount) {
+      return "private escrow transfer amount mismatch";
+    }
+    if (!transferIx.keys[0]?.pubkey.equals(expectedSenderTokenAccount)) {
+      return "private escrow source token account mismatch";
+    }
+    if (!transferIx.keys[1]?.pubkey.equals(tokenMint)) {
+      return "private escrow transfer mint mismatch";
+    }
+    if (!transferIx.keys[2]?.pubkey.equals(escrowTokenAccount)) {
+      return "private escrow transfer destination mismatch";
+    }
+    if (!transferIx.keys[3]?.pubkey.equals(senderWallet)) {
+      return "private escrow sender authority mismatch";
+    }
+    if (
+      registerCommitmentIx.data.length !== 48 ||
+      !bufferEquals(
+        registerCommitmentIx.data.subarray(0, 8),
+        instructionDiscriminator("tsn_register_private_commitment"),
+      )
+    ) {
+      return "private commitment instruction data mismatch";
+    }
+    if (!registerCommitmentIx.keys[0]?.pubkey.equals(params.operator)) {
+      return "private commitment cranker signer mismatch";
+    }
+    if (!registerCommitmentIx.keys[3]?.pubkey.equals(commitmentRecord)) {
+      return "private commitment record mismatch";
+    }
+    if (!registerCommitmentIx.keys[4]?.pubkey.equals(sharedEscrowAuthority)) {
+      return "private commitment shared escrow authority mismatch";
+    }
+    if (!registerCommitmentIx.keys[5]?.pubkey.equals(escrowTokenAccount)) {
+      return "private commitment escrow token account mismatch";
+    }
+    if (!bufferEquals(registerCommitmentIx.data.subarray(8, 40), expectedCommitmentHash)) {
+      return "private commitment hash mismatch";
+    }
+    if (!bufferEquals(registerCommitmentIx.data.subarray(40, 48), encodeU64(expectedAmount))) {
+      return "private commitment amount mismatch";
+    }
+    if (senderFeeTransferIx) {
+      if (
+        senderFeeTransferIx.data.length !== 10 ||
+        senderFeeTransferIx.data[0] !== 12 ||
+        senderFeeTransferIx.data.readBigUInt64LE(1) !== expectedSenderFeeAmount
+      ) {
+        return "private settlement sender-fee transfer mismatch";
+      }
+      if (!senderFeeTransferIx.keys[2]?.pubkey.equals(expectedTreasuryTokenAccount)) {
+        return "private settlement sender fee must route to TSN treasury";
+      }
+    }
+    return null;
+  }
+
   const unexpectedExtraPrograms = transaction.instructions
     .filter((instruction) => !instruction.programId.equals(ComputeBudgetProgram.programId))
     .filter(
@@ -432,7 +567,10 @@ async function validateIntentWork(params: {
   if (!intent.senderWallet || !intent.senderAuthorizationMessage || !intent.senderAuthorizationSignature) {
     return "missing sender payment authorization";
   }
-  if (intent.senderSettlementMode !== "sponsored_sender_cosigned") {
+  if (
+    intent.senderSettlementMode !== "sponsored_sender_cosigned" &&
+    intent.senderSettlementMode !== "private_permit_v2"
+  ) {
     return "unsupported sender settlement mode";
   }
   if (!intent.senderSignedSettlementTransaction) {
@@ -583,7 +721,7 @@ async function executeClaimWork(params: {
   item: TsnWorkItem;
   mempool: ReturnType<typeof createMempoolClient>;
   operator: Keypair;
-  crankerEncryptionSecretKey: string;
+  crankerEncryptionSecretKey: string | null;
   rpcUrl: string;
   tokenDecimals: number;
 }) {
@@ -593,19 +731,52 @@ async function executeClaimWork(params: {
     transferId?: string | null;
     commitmentHash?: string | null;
     settlementEpoch?: number | null;
+    privacyVersion?: number | null;
+    settlementTokenAccount?: string | null;
   };
-  if (!intent.encryptedSettlementToken || !intent.settlementPaymentIntentId) {
-    throw new Error("Intent is missing encrypted settlement token or payment vault id");
+  if (Number(intent.privacyVersion ?? 1) >= 2) {
+    if (!process.env.TSN_MEMPOOL_URL) {
+      throw new Error("TSN_MEMPOOL_URL is required for private payout permits");
+    }
+    const permit = await requestPrivatePayoutPermit({
+      mempoolUrl: process.env.TSN_MEMPOOL_URL,
+      apiKey: process.env.TSN_MEMPOOL_API_KEY,
+      claimRequestId: params.item.claimRequest.id,
+      operator: params.operator,
+    });
+    const payoutNullifier = hex32(permit.payoutNullifier, "payoutNullifier");
+    const payout = await tsnExecutePrivatePayoutOnChain({
+      operator: params.operator,
+      permitSigner: new PublicKey(permit.permitSigner),
+      permitSignature: Uint8Array.from(
+        Buffer.from(permit.permitSignatureBase64, "base64"),
+      ),
+      payoutNullifier,
+      tokenMint: new PublicKey(permit.tokenMintAddress),
+      recipientWallet: new PublicKey(permit.recipientWallet),
+      payoutAmount: BigInt(permit.payoutAmountBaseUnits),
+      claimFeeAmount: BigInt(permit.claimFeeAmountBaseUnits),
+      expiresAtTs: BigInt(permit.expiresAtTs),
+      rpcUrl: params.rpcUrl,
+    });
+    return {
+      intent: params.item.intent.id,
+      proofSignature: payout.signature,
+      otdtHash: permit.payoutNullifier,
+      commitmentHash: null,
+      transferId: null,
+    };
   }
-  const paymentIntentId = BigInt(intent.settlementPaymentIntentId);
-  const otdt = createOneTimeDecryptionToken();
-  await tsnClaimVaultSettlementOnChain({
-    operator: params.operator,
-    paymentIntentId,
-    otdtHash32: hex32(otdt.hash, "otdtHash"),
-    rpcUrl: params.rpcUrl,
-  });
 
+  if (
+    !intent.encryptedSettlementToken ||
+    !intent.settlementPaymentIntentId ||
+    !params.crankerEncryptionSecretKey
+  ) {
+    throw new Error(
+      "Legacy intent is missing its encrypted route, payment vault id, or legacy decryption key",
+    );
+  }
   const settlementToken = decryptSettlementToken({
     encrypted: intent.encryptedSettlementToken,
     crankerEncryptionSecretKey: params.crankerEncryptionSecretKey,
@@ -630,6 +801,14 @@ async function executeClaimWork(params: {
   const recipientWallet = new PublicKey(settlementToken.recipientWallet);
   const payoutAmountBaseUnits = BigInt(settlementToken.recipientAmountBaseUnits);
   const claimFeeAmountBaseUnits = BigInt(settlementToken.claimFeeAmountBaseUnits);
+  const paymentIntentId = BigInt(intent.settlementPaymentIntentId);
+  const otdt = createOneTimeDecryptionToken();
+  await tsnClaimVaultSettlementOnChain({
+    operator: params.operator,
+    paymentIntentId,
+    otdtHash32: hex32(otdt.hash, "otdtHash"),
+    rpcUrl: params.rpcUrl,
+  });
   const payout = await tsnExecuteVaultPayoutOnChain({
     operator: params.operator,
     paymentIntentId,
@@ -655,11 +834,46 @@ async function executeRecoveryWork(params: {
   item: TsnRecoveryWorkItem;
   operator: Keypair;
   rpcUrl: string;
+  tokenDecimals: number;
 }) {
-  const paymentIntentId = BigInt(params.item.paymentIntentId);
-  const tokenMint = new PublicKey(params.item.tokenMintAddress);
+  if (Number(params.item.privacyVersion ?? 1) >= 2) {
+    if (!process.env.TSN_MEMPOOL_URL) {
+      throw new Error("TSN_MEMPOOL_URL is required for private recovery permits");
+    }
+    const permit = await requestPrivateRecoveryPermit({
+      mempoolUrl: process.env.TSN_MEMPOOL_URL,
+      apiKey: process.env.TSN_MEMPOOL_API_KEY,
+      recoveryId: params.item.id,
+      operator: params.operator,
+    });
+    return tsnRecoverPrivateEscrowOnChain({
+      operator: params.operator,
+      permitSigner: new PublicKey(permit.permitSigner),
+      permitSignature: Uint8Array.from(
+        Buffer.from(permit.permitSignatureBase64, "base64"),
+      ),
+      recoveryNullifier: hex32(
+        permit.recoveryNullifier,
+        "recoveryNullifier",
+      ),
+      escrowTokenAccount: new PublicKey(permit.escrowTokenAccount),
+      settlementCrankerOperator: new PublicKey(
+        permit.settlementCrankerPubkey,
+      ),
+      tokenMint: new PublicKey(permit.tokenMintAddress),
+      recoveryAmount: BigInt(permit.recoveryAmountBaseUnits),
+      expiresAtTs: BigInt(permit.expiresAtTs),
+      rpcUrl: params.rpcUrl,
+    });
+  }
+  const legacyItem = params.item as TsnRecoveryWorkItem & {
+    paymentIntentId: string;
+    settlementCrankerPubkey: string;
+  };
+  const paymentIntentId = BigInt(legacyItem.paymentIntentId);
+  const tokenMint = new PublicKey(legacyItem.tokenMintAddress);
   const settlementCrankerOperator = new PublicKey(
-    params.item.settlementCrankerPubkey,
+    legacyItem.settlementCrankerPubkey,
   );
   try {
     await tsnClaimVaultRecoveryOnChain({
@@ -945,11 +1159,15 @@ async function main() {
         }
 
         try {
-          const leased = await mempool.claimRecoveryLease(item.id, operator);
+          const leased =
+            Number(item.privacyVersion ?? 1) >= 2
+              ? item
+              : await mempool.claimRecoveryLease(item.id, operator);
           const recovery = await executeRecoveryWork({
             item: leased,
             operator: operatorKeypair,
             rpcUrl,
+            tokenDecimals,
           });
           await mempool.updateRecoveryStatus(item.id, operator, "completed", {
             recoveryTxSig: recovery.signature,

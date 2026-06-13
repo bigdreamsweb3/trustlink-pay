@@ -2,7 +2,12 @@ const mempoolUrl = (process.env.TSN_MEMPOOL_URL || "http://localhost:8000").repl
 
 async function fetchJson(path) {
   const response = await fetch(`${mempoolUrl}${path}`, {
-    headers: { accept: "application/json" },
+    headers: {
+      accept: "application/json",
+      ...(process.env.TSN_MEMPOOL_API_KEY
+        ? { "x-api-key": process.env.TSN_MEMPOOL_API_KEY }
+        : {}),
+    },
   });
   if (!response.ok) {
     throw new Error(`GET ${path} failed (${response.status})`);

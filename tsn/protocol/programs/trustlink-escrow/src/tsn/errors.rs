@@ -72,4 +72,20 @@ pub enum TsnError {
     InvalidRecoveryVaultTokenAccount,
     #[msg("Payment vault has not received the authorized token amount")]
     InvalidPaymentVaultFunding,
+    #[msg("Private settlement permits are disabled")]
+    PrivateSettlementDisabled,
+    #[msg("Private settlement permit has expired")]
+    PermitExpired,
+    #[msg("Permit signer cannot be the default public key")]
+    InvalidPermitSigner,
+    #[msg("Required Ed25519 permit verification instruction is missing")]
+    MissingPermitVerification,
+    #[msg("Ed25519 permit verification instruction does not match this action")]
+    InvalidPermitVerification,
+    #[msg("Shared private escrow token account is invalid")]
+    InvalidPrivateEscrowTokenAccount,
+    #[msg("Private settlement commitment is invalid")]
+    InvalidPrivateCommitment,
+    #[msg("Private recovery amount does not match escrow liquidity")]
+    InvalidPrivateRecoveryAmount,
 }

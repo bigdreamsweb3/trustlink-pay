@@ -1,115 +1,194 @@
-# TSN Commitment Settlement
+# TSN Private Commitment Settlement
 
-TSN separates sender escrow, recipient payout, and liquidity recovery into different pieces of work. The public program state is a commitment registry; private routing remains encrypted off-chain.
+TSN private settlement version 2 separates sender escrow, recipient payout, and
+liquidity recovery so one public lifecycle account does not connect all three
+operations.
 
 ## Security Boundary
 
-Solana programs cannot privately decrypt secrets. Every instruction, account input, and program log is observable. TSN therefore uses this boundary:
+Solana programs cannot keep secrets. PDA data, instruction arguments, account
+lists, events, and logs are public. TSN therefore keeps recipient routing and
+the escrow-to-payout mapping encrypted off-chain.
 
-- The frontend encrypts the settlement route to a Cranker X25519 public key.
-- The mempool stores ciphertext, never the plaintext recipient wallet.
-- The payment vault stores only a transfer ID, commitment hash, epoch, timestamps, lease state, and recovery state.
-- A registered Cranker with valid DNA claims a settlement lease before decrypting.
-- The program verifies the one-time decryption token and recomputes the complete settlement commitment before permitting payout.
+The public program receives only:
 
-Cranker DNA proves protocol registration. It is not an encryption key. The encryption keypair is separate.
+- commitment hashes;
+- domain-separated payout and recovery nullifiers;
+- short-lived verifier-signed permits;
+- token accounts required by the action being executed.
 
-## Flow
+The program never receives a decryption key. Decryption happens locally after
+the mempool grants a lease to an authorized Cranker.
 
-### 1. Escrow and commitment
+## Public Accounts
 
-The sender co-signs the SDK-built escrow transaction. A Cranker verifies it, adds the fee-payer signature, and broadcasts it.
+### Commitment record
 
-The transaction:
+A commitment record proves that an encrypted settlement authorization was
+funded. It contains the commitment hash, token mint, amount, epoch, registering
+Cranker, and timestamp.
 
-1. Creates the isolated payment vault and vault token account.
-2. Registers `transfer_id` and `commitment_hash` in the vault state.
-3. Moves the sender-approved token amount into the vault.
-4. Credits the validating Cranker with one on-chain claim credit.
+It does not contain:
 
-No recipient wallet or plaintext settlement token is stored in the vault state.
+- the recipient wallet;
+- the random escrow token-account address;
+- the payout nullifier;
+- the recovery nullifier;
+- the encrypted settlement token.
 
-### 2. Settlement lease and OTDT
+### Spent nullifier
 
-A Cranker spends one claim credit to claim the settlement lease. It supplies the hash of a random 32-byte One-Time Decryption Token (OTDT).
+Payout and recovery each create a separate spent-nullifier PDA. The nullifiers
+are derived with different domains:
 
-The program rejects:
+```text
+payout_nullifier   = SHA256("TSN_PRIVATE_PAYOUT_V1"   || secret)
+recovery_nullifier = SHA256("TSN_PRIVATE_RECOVERY_V1" || secret)
+```
 
-- a vault that is already paid or recovered;
-- an active lease held by another Cranker;
-- a used OTDT state;
-- a zero OTDT hash;
-- a Cranker without claim credit or valid DNA.
+Without the secret, an observer cannot derive one nullifier from the other.
+Creating the PDA atomically prevents replay.
 
-After the lease is recorded, the Cranker decrypts the settlement token off-chain. During payout it reveals the OTDT and commitment secret. The program verifies the OTDT and recomputes a domain-separated commitment over the transfer ID, recipient token-account owner, token mint, payout amount, claim fee, epoch, and secret. Changing any committed settlement field makes payout fail.
+### Private settlement config
+
+The private settlement config stores the active Ed25519 permit signer. The TSN
+Mother Escrow authority can rotate or disable this signer. The secret key must
+remain in trusted platform infrastructure and must never be exposed to the
+frontend.
+
+## End-to-End Flow
+
+### 1. Sender escrow
+
+The TSN SDK builds one Cranker-sponsored, sender-co-signed transaction:
+
+1. Generate a random one-time SPL token account.
+2. Assign its token authority to the shared TSN escrow-authority PDA.
+3. Transfer the sender-approved amount into the token account.
+4. Register the settlement commitment.
+5. Credit the validating Cranker with one claim credit.
+6. Route any sender protocol fee directly to the treasury.
+
+The frontend signs but does not broadcast. The Cranker verifies and broadcasts
+the transaction.
+
+No `VaultState` lifecycle PDA is created for private v2 payments.
+
+### 2. Lease and decryption
+
+The mempool grants an atomic settlement lease. Only the leased Cranker receives
+the encrypted route and decrypts it locally.
+
+The platform verifier validates:
+
+- sender authorization;
+- commitment integrity;
+- lease ownership;
+- epoch and expiry;
+- token mint and amount;
+- recipient routing.
+
+It then signs a short-lived payout permit bound to the leased Cranker.
 
 ### 3. Recipient payout
 
-The leased Cranker pays the recipient from its liquidity vault. Sender escrow and recipient payout remain separate transactions. The payment vault becomes `Paid` and `recoverable`.
+The payout transaction contains:
 
-### 4. Smart recovery
+- the Cranker liquidity vault;
+- the recipient token account;
+- a payout nullifier;
+- an Ed25519 verification instruction;
+- the private payout instruction.
 
-The mempool creates a recovery job after proof submission. Recovery jobs contain operational public data only: transfer ID, epoch, amount, vault, settlement Cranker, priority, and reward.
+It does not contain:
 
-The daemon continuously:
+- the sender wallet;
+- the sender escrow token account;
+- the commitment record;
+- the recovery nullifier.
 
-1. Sorts recovery work by settlement-vault liquidity deficit, amount, age, and retry pressure.
-2. Claims an off-chain queue lease.
-3. Claims the matching on-chain recovery lease.
-4. Returns the payment-vault tokens to the Cranker vault that funded settlement.
-5. Closes the empty token account and marks the commitment record `Recovered`.
+The program verifies the permit and unused payout nullifier, consumes one claim
+credit, and pays the recipient from Cranker liquidity.
 
-An expired lease returns to the queue so another Cranker can preserve liveness. If the RPC liquidity snapshot is unavailable, recovery remains live and falls back to amount, age, and retry priority.
+### 4. Liquidity recovery
 
-## Privacy Guarantees and Limits
+After payout confirmation, the mempool creates a recovery job. A Cranker claims
+that off-chain lease and receives a separate recovery permit.
 
-TSN breaks the direct sender-wallet-to-recipient-wallet graph. It does not make Solana private:
+The recovery transaction:
 
-- Sender escrow activity is visible to observers who know the sender, transaction, or TSN vault.
-- Recipient payout activity is visible in the separate Cranker payout transaction.
-- Token mint and vault balances remain public.
-- The commitment registry does not publish sender wallet, recipient wallet, or plaintext routing.
+1. Verifies the permit and unused recovery nullifier.
+2. Drains the random escrow token account.
+3. Returns principal to the Cranker vault that funded payout.
+4. Closes the empty escrow token account.
+5. Returns account rent to the verifier reservoir.
+6. Reimburses the recovery operator.
+
+Recovery must reference the escrow token account because Solana requires the
+source account for a token transfer. It does not reference the recipient payout
+or payout nullifier.
+
+## Privacy Properties
+
+Version 2 removes the public lifecycle PDA that previously connected escrow,
+lease, payout, and recovery.
+
+It provides:
+
+- no direct sender-to-recipient transaction;
+- no escrow account in the payout transaction;
+- no recipient account in the recovery transaction;
+- domain-separated replay protection;
+- off-chain encrypted routing;
+- verifier-controlled lease authorization.
+
+It does not make Solana fully private:
+
+- sender escrow is visible from the sender transaction;
+- payout is visible from the recipient transaction;
+- escrow and recovery share the one-time token account;
+- a compromised verifier can reveal its private off-chain mapping.
+
+Hiding escrow from recovery requires a shielded pool or zero-knowledge system,
+not a conventional SPL token transfer.
 
 ## Operator Setup
 
-Generate a routing encryption keypair:
+Generate the routing encryption key and dedicated permit signer:
 
 ```bash
 npm run tsn:security:keys
 ```
 
-Put the public key in `frontend/.env.local` and the secret key in `tsn-cranker-op-daemon/.env.local`.
+Configure:
 
-Run the local cryptographic test:
+```text
+frontend/.env.local
+  NEXT_PUBLIC_TSN_CRANKER_ENCRYPTION_PUBLIC_KEY
 
-```bash
-npm run tsn:security:test
+tsn-cranker-op-daemon/.env.local
+  TSN_CRANKER_ENCRYPTION_SECRET_KEY
+  TSN_PERMIT_SIGNER_SECRET_KEY
 ```
 
-Build and refresh all consumers:
+After building and deploying the updated TSN program, register the public permit
+signer:
 
 ```bash
-npm run tsn:secure:rebuild
+npm run tsn:sdk:build
+npm run tsn:private:configure -- \
+  ~/.config/solana/id.json \
+  <TSN_PRIVATE_PERMIT_SIGNER_PUBKEY> \
+  https://api.devnet.solana.com
 ```
 
-Build, deploy, and refresh all consumers:
+The first keypair must be the Mother Escrow authority. Rotate the permit signer
+by running the same command with a new public key.
 
-```bash
-npm run tsn:secure:deploy
-```
+## Migration
 
-## Status Synchronization
-
-Frontend payment views read TSN state from the TrustLink database. The backend
-synchronizes only active intents from the mempool, shares one short-lived
-mempool snapshot across concurrent requests, and stops synchronizing terminal
-intent states. It does not query Solana signature status during normal payment
-history or detail reads.
-
-Hosted deployments call the protected `/api/tsn/sync` route once per minute.
-Set the same `CRON_SECRET` in the backend deployment and invoke a local/manual
-sync with:
-
-```bash
-npm run tsn:status:sync -- http://localhost:3000 YOUR_CRON_SECRET
-```
+- Existing version 1 intents continue through the legacy `VaultState` path.
+- New SDK-created intents set `privacyVersion = 2`.
+- The Cranker daemon selects the correct path from that version.
+- Do not remove legacy instructions until all existing version 1 escrow
+  accounts have been recovered.

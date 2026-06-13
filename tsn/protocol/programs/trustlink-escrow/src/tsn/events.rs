@@ -135,3 +135,34 @@ pub struct TsnVaultRecovered {
     pub recovered_amount: u64,
     pub recovered_at_ts: i64,
 }
+
+#[event]
+pub struct TsnPrivateSettlementConfigured {
+    pub mother_escrow: Pubkey,
+    pub permit_signer: Pubkey,
+    pub enabled: bool,
+}
+
+#[event]
+pub struct TsnPrivateCommitmentRegistered {
+    pub commitment_hash: [u8; 32],
+    pub token_mint: Pubkey,
+    pub amount: u64,
+    pub epoch_id: u64,
+}
+
+#[event]
+pub struct TsnPrivatePayoutExecuted {
+    pub payout_nullifier: [u8; 32],
+    pub cranker: Pubkey,
+    pub token_mint: Pubkey,
+    pub payout_amount: u64,
+}
+
+#[event]
+pub struct TsnPrivateEscrowRecovered {
+    pub recovery_nullifier: [u8; 32],
+    pub recovery_cranker: Pubkey,
+    pub token_mint: Pubkey,
+    pub recovered_amount: u64,
+}

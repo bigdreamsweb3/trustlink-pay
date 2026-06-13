@@ -29,7 +29,11 @@ type TsnState = NonNullable<PaymentRecord["tsn"]>;
 type ActivityViewerRole = "sender" | "receiver";
 
 function isEscrowedForSender(tsn: TsnState) {
-  return tsn.intentStatus === "escrowed" || tsn.intentStatus === "onchain" || tsn.intentStatus === "claimed";
+  return (
+    tsn.intentStatus === "escrowed" ||
+    tsn.intentStatus === "onchain" ||
+    tsn.intentStatus === "claimed"
+  );
 }
 
 function isUnpublishedTsn(tsn: TsnState) {
@@ -82,7 +86,8 @@ function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
     case "reverted":
       if (tsn.intentStatus === "canceled") return "Canceled";
       if (tsn.intentStatus === "failed") return "Failed";
-      if (tsn.claimRequestStatus === "failed") return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
+      if (tsn.claimRequestStatus === "failed")
+        return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
       return "Not processed";
   }
 }
@@ -120,10 +125,17 @@ export function PaymentActivityCard({
   const counterparty = isSend
     ? `To ${receiverIdentityLabel(payment)}`
     : `From ${payment.sender_display_name_snapshot}`;
-  const identityHint = isSend && payment.receiver_tin ? `TIN ${shortTin(payment.receiver_tin)}` : null;
+  const identityHint =
+    isSend && payment.receiver_tin
+      ? `TIN ${shortTin(payment.receiver_tin)}`
+      : null;
 
-  const statusLabel = payment.tsn ? tsnLabel(payment.tsn, viewerRole) : paymentStatusLabel(payment.status);
-  const statusClass = payment.tsn ? tsnTone(payment.tsn, viewerRole) : statusTone(payment.status);
+  const statusLabel = payment.tsn
+    ? tsnLabel(payment.tsn, viewerRole)
+    : paymentStatusLabel(payment.status);
+  const statusClass = payment.tsn
+    ? tsnTone(payment.tsn, viewerRole)
+    : statusTone(payment.status);
 
   return (
     <button
@@ -135,44 +147,68 @@ export function PaymentActivityCard({
       <div
         className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]"
         style={{
-          background: isSend ? "rgba(74, 190, 208, 0.06)" : "var(--accent-soft)",
+          background: isSend
+            ? "rgba(74, 190, 208, 0.06)"
+            : "var(--accent-soft)",
           border: `1px solid ${isSend ? "rgba(74, 190, 208, 0.08)" : "var(--accent-border)"}`,
         }}
       >
-        {isSend
-          ? <SendIcon className="h-4 w-4" style={{ color: "var(--primary-accent)" }} />
-          : <ReceiveIcon className="h-4 w-4" style={{ color: "var(--accent)" }} />
-        }
+        {isSend ? (
+          <SendIcon
+            className="h-4 w-4"
+            style={{ color: "var(--primary-accent)" }}
+          />
+        ) : (
+          <ReceiveIcon className="h-4 w-4" style={{ color: "var(--accent)" }} />
+        )}
       </div>
 
       {/* Details */}
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5 text-[0.82rem] font-semibold" style={{ color: "var(--text)" }}>
+        <div
+          className="flex items-center gap-1.5 text-[0.72rem] font-semibold"
+          style={{ color: "var(--text)" }}
+        >
           <span className="truncate">{counterparty}</span>
-          {identityHint ? (
+          {/* {identityHint ? (
             <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
               {identityHint}
             </span>
-          ) : null}
+          ) : null} */}
+
+          <span
+            className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]"
+            style={{ color: "var(--text-faint)" }}
+          >
+            {payment.reference_code}
+          </span>
         </div>
         <div className="mt-1 flex flex-nowrap items-center gap-2">
-          <span className="text-[0.68rem] font-medium text-nowrap" style={{ color: "var(--text-faint)" }}>
+          <span
+            className="text-[0.68rem] font-medium text-nowrap"
+            style={{ color: "var(--text-faint)" }}
+          >
             {formatPaymentShortDate(payment.created_at)}
           </span>
 
-          <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
-            {payment.reference_code}
-          </span>
-          {isSend ? <PaymentNotificationReceipt status={payment.notification_status} /> : null}
+          {isSend ? (
+            <PaymentNotificationReceipt status={payment.notification_status} />
+          ) : null}
         </div>
       </div>
 
       {/* Amount + Status */}
       <div className="flex flex-col items-end gap-1.5">
-        <span className="text-[0.82rem] font-semibold" style={{ color: "var(--text)" }}>
-          {isSend ? "-" : "+"}{formatTokenAmount(payment.amount)} {payment.token_symbol}
+        <span
+          className="text-[0.82rem] font-semibold"
+          style={{ color: "var(--text)" }}
+        >
+          {isSend ? "-" : "+"}
+          {formatTokenAmount(payment.amount)} {payment.token_symbol}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-[0.62rem] font-medium ${statusClass}`}>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[0.62rem] font-medium ${statusClass}`}
+        >
           {statusLabel}
         </span>
       </div>

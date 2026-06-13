@@ -42,6 +42,8 @@ export type CreateIntentRequest = {
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+    privacyVersion?: number | null;
+    commitmentRecord?: string | null;
     senderTokenAccount?: string | null;
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
@@ -119,6 +121,7 @@ export type TsnRecoveryWorkItem = {
     settlementTokenAccount: string;
     tokenMintAddress: string;
     settlementCrankerPubkey: string;
+    privacyVersion?: number | null;
     amount: number;
     epoch: number;
     rewardLamports: number;
@@ -151,6 +154,8 @@ export declare function buildCreateIntentRequest(params: {
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+    privacyVersion?: number | null;
+    commitmentRecord?: string | null;
     senderTokenAccount?: string | null;
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;

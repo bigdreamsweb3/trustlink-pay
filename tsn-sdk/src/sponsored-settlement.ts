@@ -1,5 +1,6 @@
 import {
   Connection,
+  Keypair,
   PublicKey,
   SystemProgram,
   Transaction,
@@ -7,8 +8,10 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import {
+  ACCOUNT_SIZE,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  createInitializeAccount3Instruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
@@ -22,7 +25,8 @@ const TSN_VERIFIER_SEED = utf8ToBytes("verifier");
 const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
 const TSN_CRANKER_SEED = utf8ToBytes("tsn_cranker");
 const TSN_TREASURY_SEED = utf8ToBytes("tsn_treasury");
-const TSN_PAYMENT_VAULT_SEED = utf8ToBytes("vault");
+const TSN_SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
+const TSN_COMMITMENT_RECORD_SEED = utf8ToBytes("tsn_commitment");
 
 function concatBytes(parts: Uint8Array[]) {
   const length = parts.reduce((total, part) => total + part.length, 0);
@@ -106,6 +110,7 @@ export function getSponsoredSettlementPdas(params: {
   crankerFeePayer: string | PublicKey;
   tokenMintAddress: string | PublicKey;
   intentSeedHash?: string;
+  commitmentHash?: string;
 }) {
   const programId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
   const crankerOperator =
@@ -122,6 +127,12 @@ export function getSponsoredSettlementPdas(params: {
   if (intentSeed32.length !== 32) {
     throw new Error("intentSeedHash must decode to 32 bytes");
   }
+  const commitmentHash32 = params.commitmentHash
+    ? hexToBytes(params.commitmentHash, "commitmentHash")
+    : intentSeed32;
+  if (commitmentHash32.length !== 32) {
+    throw new Error("commitmentHash must decode to 32 bytes");
+  }
 
   const paymentIntentId = paymentIdToU64(params.paymentId);
   const verifierPda = PublicKey.findProgramAddressSync([TSN_VERIFIER_SEED], programId)[0];
@@ -132,11 +143,14 @@ export function getSponsoredSettlementPdas(params: {
   )[0];
   const treasuryPda = PublicKey.findProgramAddressSync([TSN_TREASURY_SEED], programId)[0];
   const treasuryTokenAccount = getAssociatedTokenAddressSync(mint, treasuryPda, true);
-  const paymentVault = PublicKey.findProgramAddressSync(
-    [TSN_PAYMENT_VAULT_SEED, encodeU64(paymentIntentId)],
+  const sharedEscrowAuthority = PublicKey.findProgramAddressSync(
+    [TSN_SHARED_ESCROW_AUTHORITY_SEED, motherEscrow.toBuffer()],
     programId,
   )[0];
-  const paymentVaultTokenAccount = getAssociatedTokenAddressSync(mint, paymentVault, true);
+  const commitmentRecord = PublicKey.findProgramAddressSync(
+    [TSN_COMMITMENT_RECORD_SEED, commitmentHash32],
+    programId,
+  )[0];
 
   return {
     programId,
@@ -150,8 +164,8 @@ export function getSponsoredSettlementPdas(params: {
     cranker,
     treasuryPda,
     treasuryTokenAccount,
-    paymentVault,
-    paymentVaultTokenAccount,
+    sharedEscrowAuthority,
+    commitmentRecord,
   };
 }
 
@@ -212,56 +226,50 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     crankerFeePayer: params.crankerFeePayer,
     tokenMintAddress: params.tokenMintAddress,
     intentSeedHash: params.intentSeedHash,
+    commitmentHash: params.commitmentHash,
   });
   const senderTokenAccount = getAssociatedTokenAddressSync(pdas.mint, senderWallet);
   const amountBaseUnits = uiAmountToBaseUnits(params.amountUi, params.tokenDecimals);
   const senderFeeAmountBaseUnits = uiAmountToBaseUnits(params.senderFeeAmountUi ?? 0, params.tokenDecimals);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+  const escrowTokenAccount = Keypair.generate();
+  const escrowTokenAccountRent = await connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
 
-  const processPaymentIntentIx = new TransactionInstruction({
+  const createEscrowTokenAccountIx = SystemProgram.createAccount({
+    fromPubkey: pdas.crankerOperator,
+    newAccountPubkey: escrowTokenAccount.publicKey,
+    lamports: escrowTokenAccountRent,
+    space: ACCOUNT_SIZE,
+    programId: TOKEN_PROGRAM_ID,
+  });
+  const initializeEscrowTokenAccountIx = createInitializeAccount3Instruction(
+    escrowTokenAccount.publicKey,
+    pdas.mint,
+    pdas.sharedEscrowAuthority,
+  );
+  const lockFundsIx = createTransferCheckedInstruction(
+    senderTokenAccount,
+    pdas.mint,
+    escrowTokenAccount.publicKey,
+    senderWallet,
+    amountBaseUnits,
+    params.tokenDecimals,
+  );
+  const registerCommitmentIx = new TransactionInstruction({
     programId: pdas.programId,
     keys: [
       { pubkey: pdas.crankerOperator, isSigner: true, isWritable: true },
       { pubkey: pdas.motherEscrow, isSigner: false, isWritable: false },
       { pubkey: pdas.cranker, isSigner: false, isWritable: true },
+      { pubkey: pdas.commitmentRecord, isSigner: false, isWritable: true },
+      { pubkey: pdas.sharedEscrowAuthority, isSigner: false, isWritable: false },
+      { pubkey: escrowTokenAccount.publicKey, isSigner: false, isWritable: false },
       { pubkey: pdas.verifierPda, isSigner: false, isWritable: true },
-      { pubkey: pdas.paymentVault, isSigner: false, isWritable: true },
-      { pubkey: pdas.paymentVaultTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: pdas.mint, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(concatBytes([
-      tsnInstructionDiscriminator("tsn_process_payment_intent"),
-      encodeU64(pdas.paymentIntentId),
-      encodeU64(amountBaseUnits),
-      transferId,
+      tsnInstructionDiscriminator("tsn_register_private_commitment"),
       commitmentHash,
-    ])),
-  });
-
-  const lockFundsIx = createTransferCheckedInstruction(
-    senderTokenAccount,
-    pdas.mint,
-    pdas.paymentVaultTokenAccount,
-    senderWallet,
-    amountBaseUnits,
-    params.tokenDecimals,
-  );
-
-  const finalizePaymentIntentIx = new TransactionInstruction({
-    programId: pdas.programId,
-    keys: [
-      { pubkey: pdas.crankerOperator, isSigner: true, isWritable: false },
-      { pubkey: pdas.motherEscrow, isSigner: false, isWritable: false },
-      { pubkey: pdas.cranker, isSigner: false, isWritable: true },
-      { pubkey: pdas.paymentVault, isSigner: false, isWritable: true },
-      { pubkey: pdas.paymentVaultTokenAccount, isSigner: false, isWritable: false },
-    ],
-    data: Buffer.from(concatBytes([
-      tsnInstructionDiscriminator("tsn_finalize_payment_intent"),
-      encodeU64(pdas.paymentIntentId),
       encodeU64(amountBaseUnits),
     ])),
   });
@@ -283,11 +291,13 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   }).add(
-    processPaymentIntentIx,
+    createEscrowTokenAccountIx,
+    initializeEscrowTokenAccountIx,
     lockFundsIx,
-    finalizePaymentIntentIx,
+    registerCommitmentIx,
     ...(transferSenderFeeIx ? [transferSenderFeeIx] : []),
   );
+  transaction.partialSign(escrowTokenAccount);
 
   return {
     transactionBase64: bytesToBase64(
@@ -298,8 +308,12 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     ),
     intentSeedHash: pdas.intentSeedHash,
     paymentIntentId: pdas.paymentIntentId.toString(),
-    paymentVault: pdas.paymentVault.toBase58(),
-    paymentVaultTokenAccount: pdas.paymentVaultTokenAccount.toBase58(),
+    privacyVersion: 2 as const,
+    commitmentRecord: pdas.commitmentRecord.toBase58(),
+    sharedEscrowAuthority: pdas.sharedEscrowAuthority.toBase58(),
+    escrowTokenAccount: escrowTokenAccount.publicKey.toBase58(),
+    paymentVault: pdas.commitmentRecord.toBase58(),
+    paymentVaultTokenAccount: escrowTokenAccount.publicKey.toBase58(),
     senderTokenAccount: senderTokenAccount.toBase58(),
     crankerFeePayer: pdas.crankerOperator.toBase58(),
     verifierPda: pdas.verifierPda.toBase58(),

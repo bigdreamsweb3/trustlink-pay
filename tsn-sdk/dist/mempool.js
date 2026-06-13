@@ -165,7 +165,7 @@ export class JsonFileTsnMempool {
         const now = Date.now();
         return (snapshot.recoveries ?? [])
             .filter((item) => {
-            if (item.status === "pending" || item.status === "failed")
+            if (item.status === "pending")
                 return true;
             if (item.status !== "leased")
                 return false;

@@ -152,6 +152,57 @@ function bufferEquals(left: Buffer | Uint8Array, right: Buffer | Uint8Array) {
   return Buffer.from(left).equals(Buffer.from(right));
 }
 
+function isRecoveryLeaseStillActive(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const transactionLogs =
+    error && typeof error === "object" && "transactionLogs" in error
+      ? (error as { transactionLogs?: unknown }).transactionLogs
+      : null;
+  const logs = Array.isArray(transactionLogs) ? transactionLogs.join("\n") : "";
+  return (
+    message.includes("RecoveryLeaseStillActive") ||
+    message.includes("0x1790") ||
+    logs.includes("RecoveryLeaseStillActive") ||
+    logs.includes("Recovery lease is still active")
+  );
+}
+
+function recoveryErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const transactionLogs =
+    error && typeof error === "object" && "transactionLogs" in error
+      ? (error as { transactionLogs?: unknown }).transactionLogs
+      : null;
+  const logs = Array.isArray(transactionLogs) ? transactionLogs.join(" | ") : "";
+  return logs ? `${message} | ${logs}` : message;
+}
+
+function isBlockhashNotFoundError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const transactionMessage =
+    error && typeof error === "object" && "transactionMessage" in error
+      ? String((error as { transactionMessage?: unknown }).transactionMessage ?? "")
+      : "";
+  const transactionLogs =
+    error && typeof error === "object" && "transactionLogs" in error
+      ? (error as { transactionLogs?: unknown }).transactionLogs
+      : null;
+  const logs = Array.isArray(transactionLogs) ? transactionLogs.join("\n") : "";
+  return (
+    message.includes("Blockhash not found") ||
+    transactionMessage.includes("Blockhash not found") ||
+    logs.includes("Blockhash not found")
+  );
+}
+
+function isQuarantinedRecoveryReason(reason: string | null | undefined) {
+  if (!reason) return false;
+  return (
+    reason.includes("Access violation") ||
+    reason.includes("Program failed to complete")
+  );
+}
+
 function getRecipientAmountUi(item: TsnWorkItem) {
   const maybeRecipientAmount = Number((item.intent as TsnWorkItem["intent"] & { recipientAmount?: number }).recipientAmount);
   if (Number.isFinite(maybeRecipientAmount) && maybeRecipientAmount > 0 && maybeRecipientAmount <= Number(item.intent.amount)) {
@@ -489,25 +540,43 @@ async function submitIntentOnChainWork(params: {
     throw new Error("Sponsored settlement transaction is required; public PaymentIntent PDA creation is disabled.");
   }
 
-  const created = await tsnSubmitSenderSignedSettlementTransaction({
-    operator: params.operator,
-    signedTransactionBase64: sponsoredSettlement.senderSignedSettlementTransaction,
-    rpcUrl: params.rpcUrl,
-  });
+  try {
+    const created = await tsnSubmitSenderSignedSettlementTransaction({
+      operator: params.operator,
+      signedTransactionBase64: sponsoredSettlement.senderSignedSettlementTransaction,
+      rpcUrl: params.rpcUrl,
+    });
 
-  await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
-    source: params.item.intent.source,
-    assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-    escrowTxSig: created.signature,
-    settlementReason:
-      "Cranker verified the sender authorization, sponsored the sender co-signed escrow transaction, and locked funds into the private TSN vault.",
-  } as Partial<TsnIntentWorkItem["intent"]>);
+    await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
+      source: params.item.intent.source,
+      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
+      escrowTxSig: created.signature,
+      settlementReason:
+        "Cranker verified the sender authorization, sponsored the sender co-signed escrow transaction, and locked funds into the private TSN vault.",
+    } as Partial<TsnIntentWorkItem["intent"]>);
 
-  return {
-    intent: sponsoredSettlement.settlementVault ?? params.item.intent.id,
-    signature: created.signature,
-    created: true,
-  };
+    return {
+      intent: sponsoredSettlement.settlementVault ?? params.item.intent.id,
+      signature: created.signature,
+      created: true,
+    };
+  } catch (error) {
+    if (isBlockhashNotFoundError(error)) {
+      await params.mempool
+        .updateIntentStatus(params.item.intent.id, "expired", {
+          source: params.item.intent.source,
+          assignedCrankerPubkey: params.operator.publicKey.toBase58(),
+          settlementResolution: "reverted",
+          settlementReason:
+            "Sender-signed settlement transaction expired before the cranker could submit it. A fresh authorization is required.",
+        } as Partial<TsnIntentWorkItem["intent"]>)
+        .catch(() => undefined);
+      throw new Error(
+        "Sender-signed settlement transaction expired before submission; request a fresh authorization.",
+      );
+    }
+    throw error;
+  }
 }
 
 async function executeClaimWork(params: {
@@ -592,11 +661,18 @@ async function executeRecoveryWork(params: {
   const settlementCrankerOperator = new PublicKey(
     params.item.settlementCrankerPubkey,
   );
-  await tsnClaimVaultRecoveryOnChain({
-    operator: params.operator,
-    paymentIntentId,
-    rpcUrl: params.rpcUrl,
-  });
+  try {
+    await tsnClaimVaultRecoveryOnChain({
+      operator: params.operator,
+      paymentIntentId,
+      rpcUrl: params.rpcUrl,
+    });
+  } catch (error) {
+    if (!isRecoveryLeaseStillActive(error)) throw error;
+    console.log(
+      `[tsn-cranker] recovery-lease-already-active intent=${params.item.paymentId}; continuing with leased recovery`,
+    );
+  }
   return tsnRecoverPaymentVaultOnChain({
     operator: params.operator,
     paymentIntentId,
@@ -716,79 +792,120 @@ async function main() {
   await logMempoolOverview("startup");
 
   while (true) {
-    await postHeartbeat(operator);
-    await logMempoolOverview("changed");
+    try {
+      await postHeartbeat(operator);
+      await logMempoolOverview("changed");
 
-    const intentWork = await mempool.listPendingIntentWork(20);
-    for (const item of intentWork) {
-      try {
-        const sponsoredFeePayer = (item.intent as TsnIntentWorkItem["intent"] & {
-          senderSignedSettlementFeePayer?: string | null;
-        }).senderSignedSettlementFeePayer;
-        if (sponsoredFeePayer && sponsoredFeePayer !== operator) {
-          continue;
-        }
+      const intentWork = await mempool.listPendingIntentWork(20);
+      for (const item of intentWork) {
+        try {
+          const sponsoredFeePayer = (item.intent as TsnIntentWorkItem["intent"] & {
+            senderSignedSettlementFeePayer?: string | null;
+          }).senderSignedSettlementFeePayer;
+          if (sponsoredFeePayer && sponsoredFeePayer !== operator) {
+            continue;
+          }
 
-        const invalidReason = await validateIntentWork({
-          item,
-          operator: operatorKeypair.publicKey,
-          tokenDecimals,
-        });
-        if (invalidReason) {
-          await mempool.updateIntentStatus(item.intent.id, "canceled", {
-            source: item.intent.source,
-            settlementResolution: "reverted",
-            settlementReason: `Cranker fraud-protection preflight rejected payment intent: ${invalidReason}`,
+          const invalidReason = await validateIntentWork({
+            item,
+            operator: operatorKeypair.publicKey,
+            tokenDecimals,
           });
-          console.warn(`[tsn-cranker] canceled-invalid-intent intent=${item.intent.id} reason="${invalidReason}"`);
-          continue;
+          if (invalidReason) {
+            await mempool.updateIntentStatus(item.intent.id, "canceled", {
+              source: item.intent.source,
+              settlementResolution: "reverted",
+              settlementReason: `Cranker fraud-protection preflight rejected payment intent: ${invalidReason}`,
+            });
+            console.warn(`[tsn-cranker] canceled-invalid-intent intent=${item.intent.id} reason="${invalidReason}"`);
+            continue;
+          }
+
+          const submitted = await submitIntentOnChainWork({
+            item,
+            mempool,
+            operator: operatorKeypair,
+            rpcUrl,
+            tokenDecimals,
+          });
+          console.log(
+            `[tsn-cranker] submitted-intent intent=${item.intent.id} escrowed=${submitted.intent} tx=${submitted.signature} claimCredit=onchain+1`,
+          );
+        } catch (error) {
+          console.error(`[tsn-cranker] failed-intent-submission intent=${item.intent.id}`, error);
         }
-
-        const submitted = await submitIntentOnChainWork({
-          item,
-          mempool,
-          operator: operatorKeypair,
-          rpcUrl,
-          tokenDecimals,
-        });
-        console.log(
-          `[tsn-cranker] submitted-intent intent=${item.intent.id} escrowed=${submitted.intent} tx=${submitted.signature} claimCredit=onchain+1`,
-        );
-      } catch (error) {
-        console.error(`[tsn-cranker] failed-intent-submission intent=${item.intent.id}`, error);
       }
-    }
 
-    const work = await mempool.listPendingWork(20);
-    for (const item of work) {
-      try {
-        await mempool.updateClaimRequestStatus(
-          item.claimRequest.id,
-          "processing",
-        );
+      const work = await mempool.listPendingWork(20);
+      for (const item of work) {
+        try {
+          await mempool.updateClaimRequestStatus(
+            item.claimRequest.id,
+            "processing",
+          );
 
-        const economics = evaluateSettlementEconomics({
-          paymentAmountUi: item.intent.amount,
-          tokenUsd: Number(process.env.TSN_CRANKER_TOKEN_USD ?? 1),
-          estimatedExecutionCostLamports: Number(
-            process.env.TSN_CRANKER_EXECUTION_LAMPORTS ?? 20_000,
-          ),
-          ataCreationCostLamports: Number(
-            process.env.TSN_CRANKER_ATA_LAMPORTS ?? 2_039_280,
-          ),
-          solUsd: Number(process.env.TSN_CRANKER_SOL_USD ?? 150),
-          operatorFeeUi: Number(
-            process.env.TSN_CRANKER_OPERATOR_FEE_UI ?? 0.02,
-          ),
-          safetyMultiplier: Number(
-            process.env.TSN_CRANKER_SAFETY_MULTIPLIER ?? 1.25,
-          ),
-        });
+          const economics = evaluateSettlementEconomics({
+            paymentAmountUi: item.intent.amount,
+            tokenUsd: Number(process.env.TSN_CRANKER_TOKEN_USD ?? 1),
+            estimatedExecutionCostLamports: Number(
+              process.env.TSN_CRANKER_EXECUTION_LAMPORTS ?? 20_000,
+            ),
+            ataCreationCostLamports: Number(
+              process.env.TSN_CRANKER_ATA_LAMPORTS ?? 2_039_280,
+            ),
+            solUsd: Number(process.env.TSN_CRANKER_SOL_USD ?? 150),
+            operatorFeeUi: Number(
+              process.env.TSN_CRANKER_OPERATOR_FEE_UI ?? 0.02,
+            ),
+            safetyMultiplier: Number(
+              process.env.TSN_CRANKER_SAFETY_MULTIPLIER ?? 1.25,
+            ),
+          });
 
-        if (economics.likelihood === "economically_non_claimable") {
-          await mempool.updateIntentStatus(item.intent.id, "reverted", {
+          if (economics.likelihood === "economically_non_claimable") {
+            await mempool.updateIntentStatus(item.intent.id, "reverted", {
+              source: item.intent.source,
+              settlementResolution: "reverted",
+              settlementReason: economics.reason,
+            });
+            await mempool.updateClaimRequestStatus(
+              item.claimRequest.id,
+              "completed",
+              {
+                settlementReason: economics.reason,
+              },
+            );
+            console.log(
+              `[tsn-cranker] reverted intent=${item.intent.id} claim=${item.claimRequest.id} reason="${economics.reason}"`,
+            );
+            continue;
+          }
+
+          const execution = await executeClaimWork({
+            item,
+            mempool,
+            operator: operatorKeypair,
+            crankerEncryptionSecretKey,
+            rpcUrl,
+            tokenDecimals,
+          });
+
+          const proofTxSig = execution.proofSignature;
+          await mempool.postProof({
+            intent_id: item.intent.id,
+            timestamp: new Date().toISOString(),
+            cranker_pubkey: operator,
+            proof_tx: proofTxSig,
+            encrypted_payload: null,
+            transfer_id: execution.transferId,
+            commitment_hash: execution.commitmentHash,
+            otdt_hash: execution.otdtHash,
+          });
+
+          await mempool.updateIntentStatus(item.intent.id, "executed", {
             source: item.intent.source,
-            settlementResolution: "reverted",
+            proofTxSig,
+            settlementResolution: "completed",
             settlementReason: economics.reason,
           });
           await mempool.updateClaimRequestStatus(
@@ -799,82 +916,64 @@ async function main() {
             },
           );
           console.log(
-            `[tsn-cranker] reverted intent=${item.intent.id} claim=${item.claimRequest.id} reason="${economics.reason}"`,
+            `[tsn-cranker] executed-claim intent=${item.intent.id} escrowed=${execution.intent} claim=${item.claimRequest.id} proof=${proofTxSig} otdt=${execution.otdtHash} claimCredit=onchain-1`,
+          );
+        } catch (error) {
+          await mempool
+            .updateClaimRequestStatus(item.claimRequest.id, "failed")
+            .catch(() => undefined);
+          console.error(`[tsn-cranker] failed intent=${item.intent.id}`, error);
+        }
+      }
+
+      const recoveryWork = await mempool.listPendingRecoveryWork(operator, 20);
+      for (const item of recoveryWork) {
+        if (item.status !== "pending" && item.status !== "leased") {
+          continue;
+        }
+
+        if (isQuarantinedRecoveryReason(item.settlementReason)) {
+          await mempool
+            .updateRecoveryStatus(item.id, operator, "failed", {
+              settlementReason: item.settlementReason,
+            })
+            .catch(() => undefined);
+          console.warn(
+            `[tsn-cranker] recovery-quarantined intent=${item.paymentId} reason="previous permanent program failure"`,
           );
           continue;
         }
 
-        const execution = await executeClaimWork({
-          item,
-          mempool,
-          operator: operatorKeypair,
-          crankerEncryptionSecretKey,
-          rpcUrl,
-          tokenDecimals,
-        });
-
-        const proofTxSig = execution.proofSignature;
-        await mempool.postProof({
-          intent_id: item.intent.id,
-          timestamp: new Date().toISOString(),
-          cranker_pubkey: operator,
-          proof_tx: proofTxSig,
-          encrypted_payload: null,
-          transfer_id: execution.transferId,
-          commitment_hash: execution.commitmentHash,
-          otdt_hash: execution.otdtHash,
-        });
-
-        await mempool.updateIntentStatus(item.intent.id, "executed", {
-          source: item.intent.source,
-          proofTxSig,
-          settlementResolution: "completed",
-          settlementReason: economics.reason,
-        });
-        await mempool.updateClaimRequestStatus(
-          item.claimRequest.id,
-          "completed",
-          {
-            settlementReason: economics.reason,
-          },
-        );
-        console.log(
-          `[tsn-cranker] executed-claim intent=${item.intent.id} escrowed=${execution.intent} claim=${item.claimRequest.id} proof=${proofTxSig} otdt=${execution.otdtHash} claimCredit=onchain-1`,
-        );
-      } catch (error) {
-        await mempool
-          .updateClaimRequestStatus(item.claimRequest.id, "failed")
-          .catch(() => undefined);
-        console.error(`[tsn-cranker] failed intent=${item.intent.id}`, error);
-      }
-    }
-
-    const recoveryWork = await mempool.listPendingRecoveryWork(operator, 20);
-    for (const item of recoveryWork) {
-      try {
-        const leased = await mempool.claimRecoveryLease(item.id, operator);
-        const recovery = await executeRecoveryWork({
-          item: leased,
-          operator: operatorKeypair,
-          rpcUrl,
-        });
-        await mempool.updateRecoveryStatus(item.id, operator, "completed", {
-          recoveryTxSig: recovery.signature,
-          settlementReason:
-            "Escrow liquidity returned to the settlement Cranker vault.",
-        });
-        console.log(
-          `[tsn-cranker] recovered intent=${item.paymentId} transfer=${item.transferId} tx=${recovery.signature} rewardLamports=${item.rewardLamports}`,
-        );
-      } catch (error) {
-        await mempool
-          .updateRecoveryStatus(item.id, operator, "pending", {
+        try {
+          const leased = await mempool.claimRecoveryLease(item.id, operator);
+          const recovery = await executeRecoveryWork({
+            item: leased,
+            operator: operatorKeypair,
+            rpcUrl,
+          });
+          await mempool.updateRecoveryStatus(item.id, operator, "completed", {
+            recoveryTxSig: recovery.signature,
             settlementReason:
-              error instanceof Error ? error.message : "Recovery failed",
-          })
-          .catch(() => undefined);
-        console.error(`[tsn-cranker] recovery-failed intent=${item.paymentId}`, error);
+              "Escrow liquidity returned to the settlement Cranker vault.",
+          });
+          console.log(
+            `[tsn-cranker] recovered intent=${item.paymentId} transfer=${item.transferId} tx=${recovery.signature} rewardLamports=${item.rewardLamports}`,
+          );
+        } catch (error) {
+          const failureReason = recoveryErrorMessage(error);
+          await mempool
+            .updateRecoveryStatus(item.id, operator, "failed", {
+              settlementReason: failureReason,
+            })
+            .catch(() => undefined);
+          console.error(
+            `[tsn-cranker] recovery-quarantined intent=${item.paymentId}; manual retry required`,
+            error,
+          );
+        }
       }
+    } catch (error) {
+      console.error("[tsn-cranker] loop-failed", error);
     }
 
     await sleep(Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));

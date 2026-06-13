@@ -20,7 +20,6 @@ import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
 import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
 import { shortenAddress } from "@/src/lib/address";
-import { useAppPanel } from "@/src/lib/app-panel-provider";
 import { apiGet, apiPost } from "@/src/lib/api";
 import {
   formatTokenAmount,
@@ -28,14 +27,9 @@ import {
   shouldPollTsnPayment,
 } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
-import {
-  createOrLoadTinForWallet,
-  resolveTinFromChain,
-  type BrowserResolvedTin,
-} from "@/src/lib/tins";
+import { resolveTinFromChain, type BrowserResolvedTin } from "@/src/lib/tins";
 import type {
   IdentitySecurityResponse,
-  IdentitySecurityState,
   PaymentRecord,
   PendingBalanceSummary,
   TinIdentityState,
@@ -190,9 +184,8 @@ export function DashboardExperience() {
     completePendingAuth,
     logout,
   } = useAuthenticatedSession("/app");
-  const { session, walletAddress, requestWalletConnection } = useWallet();
+  const { walletAddress } = useWallet();
   const { showToast } = useToast();
-  const { openPanel } = useAppPanel();
   const router = useRouter();
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
@@ -209,12 +202,11 @@ export function DashboardExperience() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [balanceInfoOpen, setBalanceInfoOpen] = useState(false);
-  const [identitySecurity, setIdentitySecurity] =
-    useState<IdentitySecurityState | null>(null);
   const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
-  const [resolvedTin, setResolvedTin] = useState<BrowserResolvedTin | null>(null);
+  const [resolvedTin, setResolvedTin] = useState<BrowserResolvedTin | null>(
+    null,
+  );
   const [identityLoading, setIdentityLoading] = useState(true);
-  const [identityBusy, setIdentityBusy] = useState(false);
   const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] =
     useState(false);
   const [tinCopied, setTinCopied] = useState(false);
@@ -358,51 +350,11 @@ export function DashboardExperience() {
         "/api/identity",
         token,
       );
-      setIdentitySecurity(result.identity);
       setTinInfo(extractTinInfo(result));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load TINS identity");
     } finally {
       setIdentityLoading(false);
-    }
-  }
-
-  async function handleBindMainWallet() {
-    if (!accessToken || !user) return;
-    if (!walletAddress || !session) {
-      requestWalletConnection();
-      showToast("Connect the wallet you want to register with TINS.");
-      return;
-    }
-    setIdentityBusy(true);
-    setError(null);
-    try {
-      showToast("Checking your TINS identity.");
-      const tin = await createOrLoadTinForWallet({
-        walletId: session.walletId,
-        walletAddress,
-        phoneNumber: user.phoneNumber,
-        displayName: user.displayName,
-      });
-      const stored = await apiPost<TinIdentityState>(
-        "/api/identity/tin",
-        tin,
-        accessToken,
-      );
-      setTinInfo(stored);
-      await loadIdentitySecurity(accessToken);
-      showToast(
-        tin.created
-          ? `TIN ${tin.tin} created.`
-          : `TIN ${tin.tin} is already linked to this wallet.`,
-      );
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Could not create TINS identity";
-      setError(message);
-      showToast(message);
-    } finally {
-      setIdentityBusy(false);
     }
   }
 
@@ -424,7 +376,7 @@ export function DashboardExperience() {
 
   async function handleCopyTinNumber() {
     if (!activeTin) {
-      router.push("/app/settings");
+      router.push("/app/identity");
       return;
     }
 
@@ -440,12 +392,7 @@ export function DashboardExperience() {
   }
 
   function handleOpenIdentityPanel() {
-    if (activeTin) {
-      openPanel("identity");
-      return;
-    }
-
-    void handleBindMainWallet();
+    router.push("/app/identity");
   }
 
   async function handleCopyPhoneNumber() {
@@ -503,20 +450,15 @@ export function DashboardExperience() {
           action={
             <button
               type="button"
-              onClick={() => void handleBindMainWallet()}
-              disabled={identityBusy}
+              onClick={() => router.push("/app/identity")}
               className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
-              {identityBusy
-                ? "Creating..."
-                : walletAddress
-                  ? "Create TIN"
-                  : "Connect wallet"}
+              Open Identity Center
             </button>
           }
           secondaryAction={
             <Link
-              href="/app/settings"
+              href="/app/identity?section=security"
               className="tl-button-secondary rounded-[18px] px-4 py-3 text-center tl-body-sm font-medium"
             >
               Security settings
@@ -666,78 +608,124 @@ export function DashboardExperience() {
               </div>
 
               {/* Pending chip */}
-              <div className="flex flex-col items-end justify-end gap-2">
-                <div className="flex w-fit items-center gap-1.5 rounded-[14px] border border-white/5 bg-white/3 px-3 py-2">
-                  <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-
-                  <span className="text-[0.76rem] font-semibold text-text">
-                    Pending
-                  </span>
-
-                  <span className="text-[0.62rem] text-text/36">
+              <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
+                <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                  Escrow
+                </span>
+                <div className="mt-1 flex items-center gap-2">
+                  <Landmark className="h-3.5 w-3.5 text-[var(--warning)]" />
+                  <span className="text-[1.05rem] font-bold text-[var(--text)]">
                     {loading
-                      ? "â€”"
-                      : pendingPayments.length.toString().padStart(2, "0")}
+                      ? "\u2014"
+                      : balanceVisible
+                        ? formatPaymentUsd(totalPendingUsd)
+                        : "****"}
                   </span>
                 </div>
               </div>
+              {/* */}
             </div>
           </div>
 
           {/* STATS ROW */}
-          <div className="my-4 flex gap-3 px-2">
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
-              <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text)]-accent" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
-                Sent
-              </span>
-              <span className="text-[0.62rem] font-bold text-text">
-                {loading ? "\u2014" : sentCount}
-              </span>
+          <div className="my-3 gap-1.5 px-0.5 sm:gap-2 sm:px-2">
+            <div className="flex min-w-0 w-fit items-center justify-end rounded-[13px] border border-[var(--field-border)] bg-[var(--field)] px-2 py-2 sm:px-3">
+              <div
+                className="flex min-w-0 max-w-fit flex-1 items-center gap-1.5"
+                title={`Sent: ${loading ? "\u2014" : sentCount}`}
+              >
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--primary-accent)]" />
+                <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                  Sent
+                </span>
+                <span className="ml-auto shrink-0 text-[0.68rem] font-bold tabular-nums text-text">
+                  {loading ? "\u2014" : sentCount}
+                </span>
+              </div>
+
+              <span className="mx-2 h-5 w-px shrink-0 bg-[var(--field-border)]" />
+
+              <div
+                className="flex min-w-0 max-w-fit flex-1 items-center gap-1.5"
+                title={`Received: ${loading ? "\u2014" : receivedCount}`}
+              >
+                <ArrowDownLeft className="h-3.5 w-3.5 shrink-0 text-accent" />
+                <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                  Received
+                </span>
+                <span className="ml-auto shrink-0 text-[0.68rem] font-bold tabular-nums text-text">
+                  {loading ? "\u2014" : receivedCount}
+                </span>
+              </div>
+
+              <span className="mx-2 h-5 w-px shrink-0 bg-[var(--field-border)]" />
+
+              <div className="flex min-w-0 max-w-fit flex-1 items-center gap-1.5">
+                <Landmark className="h-3.5 w-3.5 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
+
+                <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                  Pending
+                </span>
+
+                <span className="text-[0.62rem] text-text/36">
+                  {loading
+                    ? "\u2014”"
+                    : pendingPayments.length.toString().padStart(2, "0")}
+                </span>
+              </div>
             </div>
 
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
-              <ArrowDownLeft className="h-3.5 w-3.5 text-accent" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
-                Received
-              </span>
-              <span className="text-[0.62rem] font-bold text-text">
-                {loading ? "\u2014" : receivedCount}
-              </span>
-            </div>
-
-            <div className="w-fit h-fit flex items-center gap-1.5 rounded-[14px] px-3 py-2">
-              <Landmark className="h-3.5 w-3.5 text-(--warning)" />
-              <span className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-text-faint">
+            {/* <div
+              className="flex min-w-0 items-center gap-1.5 rounded-[13px] border border-[var(--field-border)] bg-[var(--field)] px-2 py-2 sm:px-3"
+              title={`Escrow: ${loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "Hidden"}`}
+            >
+              <Landmark className="h-3.5 w-3.5 shrink-0 text-[var(--warning)]" />
+              <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
                 Escrow
               </span>
-              <span className="text-[0.62rem] font-bold text-text">
+              <span className="ml-auto min-w-0 truncate text-right text-[0.68rem] font-bold tabular-nums text-text">
                 {loading
                   ? "\u2014"
                   : balanceVisible
                     ? formatPaymentUsd(totalPendingUsd)
                     : "****"}
               </span>
-            </div>
+            </div> */}
             {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
-              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Sent</div>
+              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                Sent
+              </div>
               <div className="mt-1 flex items-center gap-2">
                 <ArrowUpRight className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : sentCount}</span>
+                <span className="text-[1.05rem] font-bold text-[var(--text)]">
+                  {loading ? "\u2014" : sentCount}
+                </span>
               </div>
-            </div> */}
-            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
-              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Received</div>
+            </div>
+            <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
+              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                Received
+              </div>
               <div className="mt-1 flex items-center gap-2">
                 <ArrowDownLeft className="h-3.5 w-3.5 text-[var(--accent)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : receivedCount}</span>
+                <span className="text-[1.05rem] font-bold text-[var(--text)]">
+                  {loading ? "\u2014" : receivedCount}
+                </span>
               </div>
             </div> */}
-            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
-              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">Escrow</div>
+            {/* <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
+              <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                Escrow
+              </span>
               <div className="mt-1 flex items-center gap-2">
                 <Landmark className="h-3.5 w-3.5 text-[var(--warning)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">{loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "****"}</span>
+                <span className="text-[1.05rem] font-bold text-[var(--text)]">
+                  {loading
+                    ? "\u2014"
+                    : balanceVisible
+                      ? formatPaymentUsd(totalPendingUsd)
+                      : "****"}
+                </span>
               </div>
             </div> */}
           </div>
@@ -869,7 +857,7 @@ export function DashboardExperience() {
                 Identity
               </div>
               <Link
-                href="/app/settings"
+                href="/app/identity"
                 className="text-[0.62rem] font-medium text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
               >
                 Manage
@@ -881,7 +869,6 @@ export function DashboardExperience() {
               <button
                 type="button"
                 onClick={handleOpenIdentityPanel}
-                disabled={identityBusy}
                 className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
               >
                 <svg
@@ -901,9 +888,7 @@ export function DashboardExperience() {
                   <div className="text-[0.74rem] font-medium">
                     {activeTin
                       ? resolvedTin?.legalName || "No verified legal name"
-                      : identityBusy
-                        ? "Creating TIN..."
-                        : "Create TIN"}
+                      : "Create TIN"}
                     <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">
                       Transfer Identity Number
                     </span>
@@ -929,7 +914,7 @@ export function DashboardExperience() {
                         }
                   }
                 >
-                  {activeTin ? "Active" : identityBusy ? "Working" : "Create"}
+                  {activeTin ? "Active" : "Create"}
                 </span>
               </button>
 

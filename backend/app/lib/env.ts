@@ -127,7 +127,7 @@ const envSchema = z
     TSN_MEMPOOL_URL: z.string().url().default("http://0.0.0.0:8000"),
     TSN_CREATE_INTENTS_ONCHAIN: booleanFromEnv.default(false),
     TSN_SYNC_ONCHAIN: booleanFromEnv.default(true),
-    TSN_STATUS_SYNC_INTERVAL_MS: z.coerce.number().int().min(5_000).default(15_000),
+    TSN_STATUS_SYNC_INTERVAL_MS: z.coerce.number().int().min(2_000).default(5_000),
     TSN_MEMPOOL_TIMEOUT_MS: z.coerce.number().int().min(1_000).default(4_000),
     CRON_SECRET: z.preprocess(
       (value) =>

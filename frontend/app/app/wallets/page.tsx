@@ -1,5 +1,5 @@
-import { WalletsExperience } from "@/src/components/experiences/wallets-experience";
+import { redirect } from "next/navigation";
 
 export default function WalletsPage() {
-  return <WalletsExperience />;
+  redirect("/app/identity?section=wallets");
 }

@@ -9,17 +9,12 @@ import {
   BackIcon,
   ClaimIcon,
   HomeIcon,
+  ProfileIcon,
   SendIcon,
-  SettingsIcon,
   WalletIcon,
 } from "@/src/components/app-icons";
-import { ProfileSheetModal } from "@/src/components/modals/profile-sheet-modal";
-import { SettingsSheetModal } from "@/src/components/modals/settings-sheet-modal";
-import { WalletSheetModal } from "@/src/components/modals/wallet-sheet-modal";
-import { IdentitySheetModal } from "@/src/components/modals/identity-sheet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import { shortenAddress } from "@/src/lib/address";
-import { useAppPanel } from "@/src/lib/app-panel-provider";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
@@ -34,7 +29,8 @@ type AppTab =
   | "activity"
   | "wallets"
   | "profile"
-  | "settings";
+  | "settings"
+  | "identity";
 
 type AppMobileShellProps = {
   currentTab: AppTab;
@@ -87,10 +83,10 @@ const sidebarNavItems: Array<{
     icon: <ActivityIcon size={18} className="text-current" />,
   },
   {
-    key: "settings",
-    href: "/app/settings",
-    label: "Settings",
-    icon: <SettingsIcon size={18} className="text-current" />,
+    key: "identity",
+    href: "/app/identity",
+    label: "Identity",
+    icon: <ProfileIcon className="h-[18px] w-[18px] text-current" />,
   },
 ];
 
@@ -125,10 +121,10 @@ const mobileNavItems: Array<{
     icon: <ActivityIcon size={18} className="text-current" />,
   },
   {
-    key: "settings",
-    href: "/app/settings",
-    label: "Settings",
-    icon: <SettingsIcon size={18} className="text-current" />,
+    key: "identity",
+    href: "/app/identity",
+    label: "Identity",
+    icon: <ProfileIcon className="h-[18px] w-[18px] text-current" />,
   },
 ];
 
@@ -143,23 +139,7 @@ export function AppMobileShell({
   backHref = "/app",
 }: AppMobileShellProps) {
   const router = useRouter();
-  const { activePanel, openPanel, closePanel } = useAppPanel();
-  const {
-    walletAddress,
-    session,
-    environment,
-    disconnectWallet,
-    requestWalletConnection,
-  } = useWallet();
-  const walletPanelOpen = activePanel === "wallet";
-  const settingsPanelOpen = activePanel === "settings";
-  const profilePanelOpen = activePanel === "profile";
-  const identityPanelOpen = activePanel === "identity";
-  const desktopPanelOpen =
-    walletPanelOpen ||
-    settingsPanelOpen ||
-    profilePanelOpen ||
-    identityPanelOpen;
+  const { walletAddress } = useWallet();
   const [headerScrolled, setHeaderScrolled] = useState(false);
 
   useEffect(() => {
@@ -177,14 +157,6 @@ export function AppMobileShell({
     }
     router.push(backHref);
   }
-  function handleWalletButtonPress() {
-    if (walletAddress) {
-      openPanel("wallet");
-      return;
-    }
-    requestWalletConnection();
-  }
-
   return (
     <main className="min-h-screen bg-bg">
       <div className="mx-auto flex h-full max-w-[1400px]">
@@ -223,9 +195,8 @@ export function AppMobileShell({
               })}
             </nav>
           </div>
-          <button
-            type="button"
-            onClick={() => openPanel("profile")}
+          <Link
+            href="/app/identity?section=profile"
             className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.98]"
           >
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-accent-border bg-[linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,0.08))] text-[0.6rem] font-bold text-accent-deep dark:text-accent">
@@ -239,7 +210,7 @@ export function AppMobileShell({
                 @{user.handle}
               </span>
             </span>
-          </button>
+          </Link>
         </aside>
 
         {/* ═══ MAIN CONTENT ═══ */}
@@ -266,7 +237,7 @@ export function AppMobileShell({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={handleWalletButtonPress}
+                onClick={() => router.push("/app/identity?section=wallets")}
                 className="tl-field-btn flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-[0.76rem] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
                 aria-label={walletAddress ? "Manage wallet" : "Connect wallet"}
               >
@@ -277,7 +248,7 @@ export function AppMobileShell({
               </button>
               <button
                 type="button"
-                onClick={() => openPanel("settings")}
+                onClick={() => router.push("/app/settings")}
                 className="tl-field-btn grid h-9 place-items-center rounded-[12px] px-3 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
                 aria-label="Preferences"
               >
@@ -312,7 +283,7 @@ export function AppMobileShell({
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => openPanel("identity")}
+                onClick={() => router.push("/app/identity")}
                 className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]"
                 aria-label="Identity"
               >
@@ -331,7 +302,7 @@ export function AppMobileShell({
               </button>
               <button
                 type="button"
-                onClick={handleWalletButtonPress}
+                onClick={() => router.push("/app/identity?section=wallets")}
                 className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]"
                 aria-label="Wallet"
               >
@@ -342,7 +313,7 @@ export function AppMobileShell({
               </button>
               <button
                 type="button"
-                onClick={() => openPanel("settings")}
+                onClick={() => router.push("/app/settings")}
                 className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]"
                 aria-label="Preferences"
               >
@@ -352,8 +323,7 @@ export function AppMobileShell({
           </header>
 
           {/* Page content area */}
-          <div className="flex min-w-0 flex-1">
-            <div className="min-w-0 flex-1 px-4 pb-24 md:px-6 md:pb-8">
+          <div className="min-w-0 flex-1 px-4 pb-24 md:px-6 md:pb-8">
               {/* Mobile breadcrumb */}
               <div className="md:hidden min-w-0 mb-4">
                 <div className="tl-coord-text mt-2">
@@ -380,41 +350,7 @@ export function AppMobileShell({
                 </p>
               </div>
 
-              {children}
-            </div>
-
-            {/* Desktop inline side panel */}
-            {desktopPanelOpen ? (
-              <div className="hidden md:block">
-                <WalletSheetModal
-                  open={walletPanelOpen}
-                  session={session}
-                  environment={environment}
-                  desktopInline
-                  onClose={closePanel}
-                  onDisconnect={() => {
-                    void disconnectWallet();
-                  }}
-                />
-                <SettingsSheetModal
-                  open={settingsPanelOpen}
-                  user={user}
-                  desktopInline
-                  onClose={closePanel}
-                />
-                <ProfileSheetModal
-                  open={profilePanelOpen}
-                  user={user}
-                  desktopInline
-                  onClose={closePanel}
-                />
-                <IdentitySheetModal
-                  open={identityPanelOpen}
-                  desktopInline
-                  onClose={closePanel}
-                />
-              </div>
-            ) : null}
+            {children}
           </div>
         </div>
       </div>
@@ -447,28 +383,7 @@ export function AppMobileShell({
         })}
       </nav>
 
-      {/* Mobile overlay modals */}
       {blockingOverlay}
-      <WalletSheetModal
-        open={walletPanelOpen}
-        session={session}
-        environment={environment}
-        onClose={closePanel}
-        onDisconnect={() => {
-          void disconnectWallet();
-        }}
-      />
-      <SettingsSheetModal
-        open={settingsPanelOpen}
-        user={user}
-        onClose={closePanel}
-      />
-      <ProfileSheetModal
-        open={profilePanelOpen}
-        user={user}
-        onClose={closePanel}
-      />
-      <IdentitySheetModal open={identityPanelOpen} onClose={closePanel} />
     </main>
   );
 }

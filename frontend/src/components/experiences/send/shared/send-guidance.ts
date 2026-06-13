@@ -2,7 +2,7 @@ export type SendGuidance = {
   title: string;
   message: string;
   ctaLabel?: string;
-  ctaHref?: "/app/settings";
+  ctaHref?: "/app/identity";
 };
 
 export function getSendGuidance(errorMessage: string | null): SendGuidance | null {
@@ -12,9 +12,9 @@ export function getSendGuidance(errorMessage: string | null): SendGuidance | nul
     return {
       title: "Finish secure wallet setup first",
       message:
-        "Before you can send invite escrow payments, create your TIN in Settings so TrustLink can route phone-number payments through TINS.",
-      ctaLabel: "Open Settings",
-      ctaHref: "/app/settings",
+        "Before you can send invite escrow payments, create your TIN in Identity Center so TrustLink can route phone-number payments through TINS.",
+      ctaLabel: "Open Identity Center",
+      ctaHref: "/app/identity",
     };
   }
 

@@ -1,5 +1,5 @@
-import { ProfileExperience } from "@/src/components/experiences/profile-experience";
+import { redirect } from "next/navigation";
 
 export default function ProfilePage() {
-  return <ProfileExperience />;
+  redirect("/app/identity?section=profile");
 }

@@ -66,11 +66,66 @@ import {
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
 import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
 
-const SEND_RECEIPT_REFRESH_INTERVAL_MS = 20_000;
+const SEND_RECEIPT_REFRESH_INTERVAL_MS = 4_000;
 
 function paymentStatusLabel(status: PaymentRecord["status"]) {
   if (status === "created") return "processing";
   return status.replace(/_/g, " ");
+}
+
+type LivePaymentStage = {
+  key: "awaiting_cranker" | "escrowed" | "claiming" | "recipient_paid" | "stopped";
+  label: string;
+  description: string;
+  step: number;
+  terminal: boolean;
+};
+
+function getLivePaymentStage(payment: Pick<PaymentRecord, "status" | "tsn">): LivePaymentStage {
+  const stage = payment.tsn?.stage;
+  if (stage === "reverted") {
+    return {
+      key: "stopped",
+      label: "Payment stopped",
+      description: payment.tsn?.settlementReason || "The payment could not continue through TSN.",
+      step: 0,
+      terminal: true,
+    };
+  }
+  if (stage === "cranker_paid" || stage === "epoch_settled" || payment.status === "claimed") {
+    return {
+      key: "recipient_paid",
+      label: "Recipient paid",
+      description: "The recipient payout has been completed.",
+      step: 4,
+      terminal: true,
+    };
+  }
+  if (stage === "claim_requested" || stage === "lease_claimed") {
+    return {
+      key: "claiming",
+      label: "Claiming",
+      description: "A Cranker is processing the recipient payout.",
+      step: 3,
+      terminal: false,
+    };
+  }
+  if (stage === "escrowed" || payment.status === "locked") {
+    return {
+      key: "escrowed",
+      label: "Escrowed",
+      description: "Funds are secured and awaiting recipient settlement.",
+      step: 2,
+      terminal: false,
+    };
+  }
+  return {
+    key: "awaiting_cranker",
+    label: "Awaiting Cranker",
+    description: "The authorization is waiting for Cranker verification.",
+    step: 1,
+    terminal: false,
+  };
 }
 
 function formatTokenBalance(balance: number, symbol: string) {
@@ -181,6 +236,7 @@ export function SendExperience() {
     manualInviteRequired: boolean;
     inviteShare: { onboardingLink: string; inviteMessage: string } | null;
     receiverPhone: string; recipientName: string; amount: string; token: string;
+    tsn?: PaymentRecord["tsn"];
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
@@ -203,7 +259,13 @@ export function SendExperience() {
     return allCountries.filter((c) => c.name.toLowerCase().includes(q) || c.dialCode.includes(q) || c.iso2.toLowerCase().includes(q));
   }, [allCountries, countrySearchQuery]);
   const sendSuccessPaymentId = sendSuccess?.paymentId ?? null;
-  const shouldPollSendSuccessReceipt = sendSuccess ? !sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus) : false;
+  const livePaymentStage = sendSuccess ? getLivePaymentStage(sendSuccess) : null;
+  const shouldPollSendSuccessReceipt = sendSuccess
+    ? (
+        (sendSuccess.blockchainMode === "tsn" && !livePaymentStage?.terminal) ||
+        (!sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus))
+      )
+    : false;
   const hasAmount = Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const receiverInputLooksLikeTin = looksLikeTinCandidate(receiverPhoneInput);
   const canContinueWithRecipient = Boolean(walletAddress) && Boolean(selectedToken) && hasAmount && Boolean(recipientPreview?.verified);
@@ -346,7 +408,7 @@ export function SendExperience() {
   /* catch block always reveals country fallback and unlocks */
   useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin(tin); if (latestLookupRequestId.current !== reqId) return; applyResolvedRecipient(resolved); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(!looksLikeTinCandidate(trimmed)); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
-  useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+  useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, tsn: r.payment!.tsn, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
   async function handleConnectWallet() { setError(null); const w = listAvailableSolanaWallets(); setAvailableWallets(w); if (w.length === 0) { setError("Install a Solana wallet to connect."); showToast("No Solana wallet detected."); return; } setWalletPickerOpen(true); }
   async function handleWalletSelect(walletId: string) { setConnectingWalletId(walletId); setError(null); try { const s = await connectSolanaWallet(walletId); setWalletSession(s); setWalletPickerOpen(false); setNotice(`${s.walletName} connected.`); showToast(`${s.walletName} connected.`); } catch (e) { setError(e instanceof Error ? e.message : "Could not connect wallet"); } finally { setConnectingWalletId(null); } }
@@ -568,6 +630,7 @@ export function SendExperience() {
       setNotice(null);
       setSendSuccess({
         ...result,
+        tsn: undefined,
         blockchainSignature: result.blockchainSignature ?? "tsn-intent-posted",
         receiverPhone: form.receiverPhone,
         recipientName,
@@ -637,18 +700,62 @@ export function SendExperience() {
           <div className="space-y-5">
             <div className="text-center py-2">
               <SuccessIcon className="mx-auto h-14 w-14" />
-              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Awaiting Cranker Verification</div>
+              <div className={`mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.2em] ${
+                livePaymentStage?.key === "stopped" ? "text-[var(--danger)]" : "text-[var(--accent-deep)] dark:text-[var(--accent)]"
+              }`}>
+                {livePaymentStage?.label ?? "Awaiting Cranker"}
+              </div>
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-text">
                 {sendSuccess.amount} {sendSuccess.token}
               </h2>
               <p className="mt-2  leading-relaxed text-text-soft max-w-[300px] mx-auto">
-                {sendSuccess.manualInviteRequired
+                {livePaymentStage?.description || (sendSuccess.manualInviteRequired
                   ? `Authorization queued for ${sendSuccess.recipientName}. Share the invite manually.`
                   : sendSuccess.notificationRetrying
                     ? `Authorization queued for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
-                    : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`}
+                    : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`)}
               </p>
             </div>
+
+            {sendSuccess.blockchainMode === "tsn" && livePaymentStage ? (
+              <div className="rounded-[20px] border border-[var(--field-border)] bg-[var(--field)] px-4 py-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                    Live settlement status
+                  </span>
+                  {!livePaymentStage.terminal ? (
+                    <span className="flex items-center gap-1.5 text-[0.66rem] text-[var(--text-soft)]">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+                      Updating
+                    </span>
+                  ) : null}
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { label: "Cranker", step: 1 },
+                    { label: "Escrowed", step: 2 },
+                    { label: "Claiming", step: 3 },
+                    { label: "Paid", step: 4 },
+                  ].map((item) => {
+                    const reached = livePaymentStage.key !== "stopped" && livePaymentStage.step >= item.step;
+                    const active = livePaymentStage.key !== "stopped" && livePaymentStage.step === item.step;
+                    return (
+                      <div key={item.label} className="min-w-0 text-center">
+                        <div className={`mx-auto h-2.5 w-2.5 rounded-full border ${
+                          reached
+                            ? "border-[var(--accent)] bg-[var(--accent)]"
+                            : "border-[var(--field-border)] bg-[var(--surface)]"
+                        } ${active && !livePaymentStage.terminal ? "animate-pulse" : ""}`} />
+                        <div className={`mx-auto mt-1 h-px w-full ${reached ? "bg-[var(--accent)]/50" : "bg-[var(--field-border)]"}`} />
+                        <div className={`mt-2 truncate text-[0.58rem] font-medium ${reached ? "text-[var(--text)]" : "text-[var(--text-faint)]"}`}>
+                          {item.label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             <div className="grid gap-3 md:grid-cols-2">
               {/* Left: Transfer details */}
@@ -657,7 +764,7 @@ export function SendExperience() {
                   { label: "Recipient", value: sendSuccess.recipientName },
                   { label: "WhatsApp", value: sendSuccess.receiverPhone },
                   { label: "Reference", value: sendSuccess.referenceCode },
-                  { label: "Status", value: paymentStatusLabel(sendSuccess.status), capitalize: true },
+                  { label: "Status", value: livePaymentStage?.label ?? paymentStatusLabel(sendSuccess.status), capitalize: true },
                 ].map((row) => (
                   <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
                     <span className="text-[0.78rem] text-text-soft">{row.label}</span>

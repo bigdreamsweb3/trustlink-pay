@@ -49,7 +49,7 @@ pub struct RecoverPaymentVault<'info> {
         constraint = payment_vault_token_account.owner == payment_vault.key()
             @ TsnError::InvalidRecoveryVaultTokenAccount
     )]
-    pub payment_vault_token_account: Account<'info, TokenAccount>,
+    pub payment_vault_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -61,14 +61,14 @@ pub struct RecoverPaymentVault<'info> {
         constraint = settlement_cranker_vault.vault_token_account == settlement_vault_token_account.key()
             @ TsnError::InvalidRecoveryDestination
     )]
-    pub settlement_cranker_vault: Account<'info, CrankerVault>,
+    pub settlement_cranker_vault: Box<Account<'info, CrankerVault>>,
 
     #[account(
         mut,
         constraint = settlement_vault_token_account.mint == payment_vault_token_account.mint
             @ TsnError::InvalidRecoveryDestination
     )]
-    pub settlement_vault_token_account: Account<'info, TokenAccount>,
+    pub settlement_vault_token_account: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: System-owned protocol reservoir used only for fixed recovery gas reimbursement.
     #[account(mut, seeds = [TSN_VERIFIER_SEED], bump)]

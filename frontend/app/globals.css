@@ -62,7 +62,7 @@
   );
   --warning: #c98d0a;
   --danger: #d45050;
-  --shadow: 0 1px 3px rgba(15, 26, 20, 0.04), 0 4px 16px rgba(15, 26, 20, 0.03);
+  --shadow: 0 1px 3px rgba(15, 26, 20, 0.04), 0 2px 8px rgba(15, 26, 20, 0.03);
   --overlay: rgba(15, 26, 20, 0.12);
   --phone-shell: #f3f7f5;
   --phone-screen: linear-gradient(180deg, #ffffff 0%, #f6f9f7 100%);

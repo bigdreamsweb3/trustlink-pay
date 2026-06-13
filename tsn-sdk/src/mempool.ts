@@ -223,7 +223,7 @@ export class JsonFileTsnMempool implements TsnMempool {
     const now = Date.now();
     return (snapshot.recoveries ?? [])
       .filter((item) => {
-        if (item.status === "pending" || item.status === "failed") return true;
+        if (item.status === "pending") return true;
         if (item.status !== "leased") return false;
         if (item.assignedCrankerPubkey === operatorPubkey) return true;
         return item.leaseExpiresAt ? Date.parse(item.leaseExpiresAt) <= now : false;

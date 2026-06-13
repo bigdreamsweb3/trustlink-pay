@@ -1,573 +1,166 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, ChevronRight, LockKeyhole, MoonStar, ShieldCheck, SunMedium, Wallet2 } from "lucide-react";
-
-import { FloatingGuidanceOverlay } from "@/src/components/floating-guidance-overlay";
-import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
-import { GuidedFlowModal } from "@/src/components/modals/guided-flow-modal";
-import { OtpModal } from "@/src/components/modals/otp-modal";
-import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
-import { TrustLinkGuidance } from "@/src/components/trustlink-guidance";
-import { useToast } from "@/src/components/toast-provider";
-import { shortenAddress } from "@/src/lib/address";
-import { apiGet, apiPost } from "@/src/lib/api";
-import { setStoredUser } from "@/src/lib/storage";
-import { createOrLoadTinForWallet } from "@/src/lib/tins";
-import { useTheme } from "@/src/lib/theme";
-import type { IdentitySecurityResponse, IdentitySecurityState, TinIdentityState, UserProfile } from "@/src/lib/types";
-import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
-import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { useWallet } from "@/src/lib/wallet-provider";
 import Link from "next/link";
+import {
+  BellRing,
+  ChevronRight,
+  CircleDollarSign,
+  LockKeyhole,
+  MoonStar,
+  SunMedium,
+} from "lucide-react";
 
-type BackupFlowStep = "intro" | "connect" | "success";
-type RecoveryFlowStep = "start" | "cooldown" | "set-wallet" | "success";
-
-/* ── Helpers (unchanged) ── */
-
-function PinDigitBoxes({ pin }: { pin: string }) {
-  return (
-    <div className="grid grid-cols-6 gap-2.5">
-      {Array.from({ length: 6 }).map((_, index) => {
-        const isFilled = Boolean(pin[index]);
-        const isActive = index === Math.min(pin.length, 5);
-
-        return (
-          <div
-            key={index}
-            className={`grid h-12 place-items-center rounded-[16px] border tl-h3 font-semibold transition-all duration-200 ${isFilled
-              ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--text)] dark:text-text"
-              : isActive
-                ? "border-[var(--accent-border)] bg-[var(--surface-soft)] text-[var(--text-soft)] scale-[1.02]"
-                : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
-              }`}
-          >
-            {isFilled ? "•" : ""}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function looksLikeWalletAddress(value: string) {
-  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.trim());
-}
-
-function formatCountdown(totalSeconds: number) {
-  const safeSeconds = Math.max(0, totalSeconds);
-  const hours = Math.floor(safeSeconds / 3600);
-  const minutes = Math.floor((safeSeconds % 3600) / 60);
-  const seconds = safeSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
-  }
-
-  return `${minutes}m ${seconds}s`;
-}
-
-function extractTinInfo(result: IdentitySecurityResponse | null): TinIdentityState | null {
-  if (!result?.tin) return null;
-  return {
-    tin: result.tin,
-    tinsIdentityPublicKey: result.tinsIdentityPublicKey ?? null,
-    tinsRegistryPublicKey: result.tinsRegistryPublicKey ?? null,
-    tinsWalletPublicKey: result.tinsWalletPublicKey ?? null,
-    tinsProgramId: result.tinsProgramId ?? null,
-    tinsCreatedAt: result.tinsCreatedAt ?? null,
-  };
-}
-
-/* ── Modals (unchanged logic, polished spacing/interactions) ── */
-
-function BackupWalletModal({
-  open, step, busy, mainWallet, connectedWallet, walletInput,
-  onClose, onSkip, onContinue, onConnectWallet, onUseConnectedWallet, onWalletInputChange, onSave,
-}: {
-  open: boolean; step: BackupFlowStep; busy: boolean; mainWallet: string | null;
-  connectedWallet: string | null; walletInput: string; onClose: () => void;
-  onSkip: () => void; onContinue: () => void; onConnectWallet: () => void;
-  onUseConnectedWallet: () => void; onWalletInputChange: (value: string) => void; onSave: () => void;
-}) {
-  const connectedWalletCanBeBackup = Boolean(mainWallet && connectedWallet && mainWallet !== connectedWallet);
-  const needsMainWalletApproval = Boolean(mainWallet && connectedWallet && mainWallet !== connectedWallet);
-
-  return (
-    <GuidedFlowModal
-      open={open}
-      onClose={busy ? () => undefined : onClose}
-      dismissible={!busy}
-      title={step === "intro" ? "Protect your funds" : step === "connect" ? "Connect a backup wallet" : "Backup wallet added"}
-      description={step === "intro" ? "If you lose access to your main wallet, your backup wallet lets you recover your money." : step === "connect" ? "This wallet will only be used if you need to recover your account." : "Your account now has recovery protection."}
-    >
-      <AnimatePresence mode="wait">
-        {step === "intro" ? (
-          <motion.div key="backup-intro" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
-            <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-5">
-              <div className="flex items-start gap-3.5">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#58f2b1]/14 text-accent-deep">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="tl-body-sm font-semibold text-text">Upgrade your protection</div>
-                  <p className="mt-1.5 tl-body-sm leading-relaxed text-text/62">Your backup wallet is only used if something goes wrong. It does not affect daily payments.</p>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onContinue} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
-              <button type="button" onClick={onSkip} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Skip</button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {step === "connect" ? (
-          <motion.div key="backup-connect" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-4">
-            <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Main wallet</div>
-              <div className="mt-2 tl-body-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available yet"}</div>
-              <p className="mt-2 tl-body-sm leading-relaxed text-text/58">This wallet stays in charge of your account and approves any backup changes.</p>
-            </div>
-            <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Detected wallet</div>
-                  <div className="mt-2 tl-body-sm font-semibold text-text">{connectedWallet ? shortenAddress(connectedWallet) : "No wallet connected"}</div>
-                </div>
-                <div className="grid h-10 w-10 place-items-center rounded-[16px] bg-[#58f2b1]/12 text-accent-deep"><Wallet2 className="h-4.5 w-4.5" /></div>
-              </div>
-              <div className="mt-4 space-y-3">
-                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
-                {connectedWalletCanBeBackup ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 tl-body-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
-                ) : null}
-                <div className="rounded-[20px] border border-white/6 bg-black/20 px-4 py-4">
-                  <label className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Wallet address</label>
-                  <input value={walletInput} onChange={(event) => onWalletInputChange(event.target.value)} placeholder="Paste backup wallet address" className="mt-3 w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm text-text outline-none transition placeholder:text-text/26 focus:border-[#58f2b1]/28" />
-                </div>
-              </div>
-              <div className="mt-4 rounded-[20px] border border-white/6 bg-black/20 px-4 py-4 tl-body-sm leading-relaxed text-text/58">
-                {needsMainWalletApproval ? "Reconnect your main wallet before saving this change." : "Paste your backup wallet address or connect it, then save with your main wallet."}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={onSave} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Saving..." : needsMainWalletApproval ? "Reconnect main wallet" : "Add backup wallet"}</button>
-              <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {step === "success" ? (
-          <motion.div key="backup-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
-            <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
-              <p className="mt-4 tl-body-sm leading-relaxed text-text/62">Your backup wallet is ready if you ever need to protect or recover this account.</p>
-            </div>
-            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </GuidedFlowModal>
-  );
-}
-
-function FreezeAccountModal({ open, busy, onClose, onConfirm }: { open: boolean; busy: boolean; onClose: () => void; onConfirm: () => void }) {
-  return (
-    <GuidedFlowModal open={open} onClose={busy ? () => undefined : onClose} dismissible={!busy} title="Freeze your account" description="This will immediately stop all activity and protect your funds.">
-      <div className="rounded-[24px] border border-[#ffb86b]/18 bg-[#ffb86b]/10 px-5 py-5">
-        <div className="flex items-start gap-3.5">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#ffb86b]/14 text-[#ffcf8c]"><LockKeyhole className="h-5 w-5" /></div>
-          <p className="tl-body-sm leading-relaxed text-text/64">While your account is frozen, payments stay protected and normal activity is paused until you unlock or recover.</p>
-        </div>
-      </div>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <button type="button" onClick={onConfirm} disabled={busy} className="rounded-[20px] bg-[linear-gradient(135deg,#ffb86b,#ffe1b0)] px-4 py-3.5 tl-body-sm font-semibold text-[#1e1303] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Locking..." : "Freeze Now"}</button>
-        <button type="button" onClick={onClose} disabled={busy} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/72 cursor-pointer active:scale-[0.97] transition-transform">Cancel</button>
-      </div>
-    </GuidedFlowModal>
-  );
-}
-
-function RecoveryFlowModal({
-  open, step, countdownSeconds, busy, connectedWallet, mainWallet, stagedWallet,
-  onClose, onStart, onContinue, onConnectWallet, onUseConnectedWallet,
-}: {
-  open: boolean; step: RecoveryFlowStep; countdownSeconds: number; busy: boolean;
-  connectedWallet: string | null; mainWallet: string | null; stagedWallet: string | null;
-  onClose: () => void; onStart: () => void; onContinue: () => void;
-  onConnectWallet: () => void; onUseConnectedWallet: () => void;
-}) {
-  return (
-    <GuidedFlowModal open={open} onClose={busy ? () => undefined : onClose} dismissible={!busy}
-      title={step === "start" ? "Recover your account" : step === "cooldown" ? "Recovery in progress" : step === "set-wallet" ? "Set a new main wallet" : "Account recovered"}
-      description={step === "start" ? "Use your backup wallet to restore access and set a new wallet." : step === "cooldown" ? "Your account is temporarily locked for security." : step === "set-wallet" ? "This will become your new wallet for receiving payments." : "Your new wallet is now active."}
-    >
-      <AnimatePresence mode="wait">
-        {step === "start" ? (
-          <motion.div key="recovery-start" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
-            <div className="rounded-[24px] border border-[#ffb86b]/18 bg-[#ffb86b]/10 px-5 py-5">
-              <div className="flex items-start gap-3.5">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#ffb86b]/14 text-[#ffcf8c]"><AlertTriangle className="h-5 w-5" /></div>
-                <div>
-                  <div className="tl-body-sm font-semibold text-text">Your funds stay protected</div>
-                  <p className="mt-1.5 tl-body-sm leading-relaxed text-text/64">As soon as recovery starts, your account is locked so no one can move funds during the safety window.</p>
-                </div>
-              </div>
-            </div>
-            <button type="button" onClick={onStart} disabled={busy} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform">{busy ? "Starting..." : "Continue with Backup Wallet"}</button>
-          </motion.div>
-        ) : null}
-
-        {step === "cooldown" ? (
-          <motion.div key="recovery-cooldown" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
-            <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-6 text-center">
-              <motion.div animate={{ scale: [1, 1.04, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#58f2b1]/10 text-accent-deep"><ShieldCheck className="h-7 w-7" /></motion.div>
-              <div className="mt-4 text-[2rem] font-semibold tracking-[-0.06em] text-text">{formatCountdown(countdownSeconds)}</div>
-              <p className="mt-2 tl-body-sm leading-relaxed text-text/60">Your funds are locked and protected. No one can move them during this countdown.</p>
-            </div>
-            <button type="button" onClick={onContinue} disabled={countdownSeconds > 0} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">{countdownSeconds > 0 ? "Waiting for cooldown" : "Set new wallet"}</button>
-          </motion.div>
-        ) : null}
-
-        {step === "set-wallet" ? (
-          <motion.div key="recovery-set-wallet" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-4">
-            <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">Current main wallet</div>
-              <div className="mt-2 tl-body-sm font-semibold text-text">{mainWallet ? shortenAddress(mainWallet) : "Not available"}</div>
-            </div>
-            <div className="rounded-[24px] border border-white/8 bg-black/20 px-5 py-4">
-              <div className="tl-meta-sm uppercase tracking-[0.2em] text-text/40">New wallet</div>
-              <div className="mt-2 tl-body-sm font-semibold text-text">{stagedWallet ? shortenAddress(stagedWallet) : connectedWallet ? shortenAddress(connectedWallet) : "Connect a wallet"}</div>
-              <p className="mt-2 tl-body-sm leading-relaxed text-text/58">Connect the wallet you want to use next.</p>
-              <div className="mt-4 grid gap-3">
-                <button type="button" onClick={onConnectWallet} className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-3.5 tl-body-sm font-medium text-text/78 cursor-pointer active:scale-[0.98] transition-transform">Connect wallet</button>
-                {connectedWallet && connectedWallet !== mainWallet ? (
-                  <button type="button" onClick={onUseConnectedWallet} className="w-full rounded-[18px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-4 py-3.5 tl-body-sm font-medium text-accent-deep cursor-pointer active:scale-[0.98] transition-transform">Use connected wallet</button>
-                ) : null}
-              </div>
-            </div>
-            <button type="button" onClick={onContinue} disabled={!stagedWallet} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-40 cursor-pointer active:scale-[0.97] transition-transform">Continue</button>
-          </motion.div>
-        ) : null}
-
-        {step === "success" ? (
-          <motion.div key="recovery-success" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.28, ease: "easeOut" }} className="space-y-5">
-            <div className="rounded-[24px] border border-[#58f2b1]/18 bg-[#58f2b1]/8 px-5 py-6 text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#58f2b1]/14 text-accent-deep"><CheckCircle2 className="h-7 w-7" /></div>
-              <p className="mt-4 tl-body-sm leading-relaxed text-text/62">Your next wallet is ready for the final secure handoff.</p>
-            </div>
-            <button type="button" onClick={onClose} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Done</button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </GuidedFlowModal>
-  );
-}
-
-/* ═══════════ MAIN SETTINGS PAGE ═══════════ */
+import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
+import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
+import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
+import { useTheme } from "@/src/lib/theme";
 
 export function SettingsExperience() {
-  const { hydrated, user, setUser, accessToken, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/settings");
-  const { showToast } = useToast();
+  const {
+    hydrated,
+    user,
+    pendingAuth,
+    completePendingAuth,
+    logout,
+  } = useAuthenticatedSession("/app/settings");
   const { theme, setTheme } = useTheme();
-  const { session, walletAddress, requestWalletConnection } = useWallet();
-  const [changePinOpen, setChangePinOpen] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [newPin, setNewPin] = useState("");
-  const [otpBusy, setOtpBusy] = useState(false);
-  const [pinBusy, setPinBusy] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [identity, setIdentity] = useState<IdentitySecurityState | null>(null);
-  const [tinInfo, setTinInfo] = useState<TinIdentityState | null>(null);
-  const [identityLoading, setIdentityLoading] = useState(true);
-  const [identityBusy, setIdentityBusy] = useState(false);
-  const [backupModalOpen, setBackupModalOpen] = useState(false);
-  const [backupFlowStep, setBackupFlowStep] = useState<BackupFlowStep>("intro");
-  const [backupWalletInput, setBackupWalletInput] = useState("");
-  const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] = useState(false);
-  const [freezeModalOpen, setFreezeModalOpen] = useState(false);
-  const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
-  const [recoveryFlowStep, setRecoveryFlowStep] = useState<RecoveryFlowStep>("start");
-  const [recoveryPreparedWallet, setRecoveryPreparedWallet] = useState<string | null>(null);
-  const [nowMs, setNowMs] = useState(Date.now());
-  const pinInputRef = useRef<HTMLInputElement | null>(null);
-
-  /* ── All useEffects and handlers unchanged ── */
-  useEffect(() => { if (!changePinOpen) { setOtp(""); setNewPin(""); setOtpCooldown(0); return; } const timer = window.setTimeout(() => pinInputRef.current?.focus(), 60); return () => window.clearTimeout(timer); }, [changePinOpen]);
-  useEffect(() => { if (otpCooldown === 0) return; const timer = window.setInterval(() => { setOtpCooldown((c) => Math.max(0, c - 1)); }, 1000); return () => window.clearInterval(timer); }, [otpCooldown]);
-  useEffect(() => { if (!accessToken) return; void loadIdentitySecurity(accessToken); }, [accessToken]);
-  useEffect(() => { if (!recoveryModalOpen && !identity?.recoveryCooldown) return; const timer = window.setInterval(() => setNowMs(Date.now()), 1000); return () => window.clearInterval(timer); }, [identity?.recoveryCooldown, recoveryModalOpen]);
-
-  const cooldownSeconds = useMemo(() => { if (!identity?.recoveryCooldown) return 0; return Math.max(0, Math.ceil((Number(identity.recoveryCooldown) * 1000 - nowMs) / 1000)); }, [identity?.recoveryCooldown, nowMs]);
-  const cooldownDate = identity != null && Number(identity.recoveryCooldown) > 0 ? new Date(Number(identity.recoveryCooldown) * 1000) : null;
-  const activeTin = tinInfo?.tin ?? user?.tin ?? null;
-  const showMainWalletGuidance = !identityLoading && !activeTin && !mainWalletGuidanceDismissed;
 
   if (!hydrated || !user) return null;
 
-  async function openChangePinFlow() { if (!accessToken) return; setOtpBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ otpSent: true; expiresAt: string | null }>("/api/auth/pin/change/start", {}, accessToken); setChangePinOpen(true); if (result.expiresAt) { const seconds = Math.max(0, Math.ceil((new Date(result.expiresAt).getTime() - Date.now()) / 1000)); setOtpCooldown(Math.min(seconds, 60)); } else { setOtpCooldown(60); } setNotice("WhatsApp OTP sent. Verify to change your PIN."); showToast("WhatsApp OTP sent for PIN change."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start PIN change"; setError(msg); showToast(msg); } finally { setOtpBusy(false); } }
-  async function resendChangePinOtp() { await openChangePinFlow(); }
-  async function handlePinChangeSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!accessToken) return; if (otp.length !== 6) { setError("Enter the 6-digit WhatsApp OTP."); return; } if (newPin.length !== 6) { setError("Enter the new 6-digit PIN."); return; } setPinBusy(true); setError(null); setNotice(null); try { const result = await apiPost<{ pinChanged: true; user: UserProfile }>("/api/auth/pin/change/verify", { otp, newPin }, accessToken); setUser(result.user); setStoredUser(result.user); setChangePinOpen(false); setOtp(""); setNewPin(""); setNotice("PIN updated."); showToast("PIN changed successfully."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not change PIN"; setError(msg); showToast(msg); } finally { setPinBusy(false); } }
-  async function loadIdentitySecurity(token: string) { setIdentityLoading(true); try { const result = await apiGet<IdentitySecurityResponse>("/api/identity", token); setIdentity(result.identity); setTinInfo(extractTinInfo(result)); if (result.identity?.recoveryWallet) setBackupWalletInput(result.identity.recoveryWallet); } catch (e) { setError(e instanceof Error ? e.message : "Could not load security details"); } finally { setIdentityLoading(false); } }
-  async function handleCompleteSecureSetup() { if (!accessToken || !user) return; if (!walletAddress || !session) { requestWalletConnection(); setError("Connect the wallet you want to register with TINS."); return; } setIdentityBusy(true); setError(null); setNotice(null); try { showToast("Checking your TINS identity."); const tin = await createOrLoadTinForWallet({ walletId: session.walletId, walletAddress, phoneNumber: user.phoneNumber, displayName: user.displayName }); const stored = await apiPost<TinIdentityState>("/api/identity/tin", tin, accessToken); setTinInfo(stored); const nextUser = { ...user, tin: stored.tin, tinsIdentityPublicKey: stored.tinsIdentityPublicKey, tinsRegistryPublicKey: stored.tinsRegistryPublicKey, tinsWalletPublicKey: stored.tinsWalletPublicKey, tinsProgramId: stored.tinsProgramId }; setUser(nextUser); setStoredUser(nextUser); await loadIdentitySecurity(accessToken); const msg = tin.created ? `TIN ${tin.tin} created and linked to your WhatsApp number.` : `TIN ${tin.tin} is already linked to this wallet.`; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not create TINS identity"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
-  async function handleAddBackupWallet() { if (!accessToken || !identity) { setError("Receive a payment first so your main wallet can be secured."); return; } const trimmed = backupWalletInput.trim(); if (!looksLikeWalletAddress(trimmed)) { setError("Enter a valid backup wallet address."); return; } if (trimmed === identity.mainWallet) { setError("Backup wallet must differ from main wallet."); return; } if (!walletAddress || walletAddress !== identity.mainWallet || !session) { requestWalletConnection(); setError("Reconnect your main wallet to approve."); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/add-recovery-wallet", { walletAddress: trimmed, allowUpdate: Boolean(identity.recoveryWallet) }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setBackupFlowStep("success"); const msg = identity.recoveryWallet ? "Backup wallet updated." : "Backup wallet added."; setNotice(msg); showToast(msg); } catch (e) { const msg = e instanceof Error ? e.message : "Could not add backup wallet"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
-  async function handleFreeze(frozen: boolean) { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/freeze", { authorityWallet: walletAddress, frozen }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); const msg = frozen ? "Account locked." : "Account unlocked."; setNotice(msg); showToast(msg); setFreezeModalOpen(false); } catch (e) { const msg = e instanceof Error ? e.message : "Could not update account lock"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
-  async function handleStartRecovery() { if (!accessToken || !identity) return; if (!identity.recoveryWallet) { setError("Add a backup wallet first."); return; } if (!walletAddress || !session) { requestWalletConnection(); return; } setIdentityBusy(true); setError(null); try { const prepared = await apiPost<{ serializedTransaction: string; rpcUrl: string }>("/api/identity/request-recovery", { authorityWallet: walletAddress }, accessToken); await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction }); await loadIdentitySecurity(accessToken); setRecoveryFlowStep("cooldown"); setNotice("Recovery started."); showToast("Recovery started."); } catch (e) { const msg = e instanceof Error ? e.message : "Could not start recovery"; setError(msg); showToast(msg); } finally { setIdentityBusy(false); } }
-  function openBackupWalletFlow() { setBackupFlowStep("intro"); setBackupModalOpen(true); }
-  function openRecoveryFlow() { if (!identity?.recoveryWallet) { setError("Add a backup wallet first."); return; } if (cooldownSeconds > 0) setRecoveryFlowStep("cooldown"); else if (identity?.isFrozen && Number(identity.recoveryCooldown) > 0) setRecoveryFlowStep("set-wallet"); else setRecoveryFlowStep("start"); setRecoveryModalOpen(true); }
-
-  /* ═══════════ RENDER ═══════════ */
-
   return (
-    <AppMobileShell currentTab="settings" title="Settings" subtitle="Keep everyday payments simple while adding stronger protection only when you want it." user={user} showBackButton backHref="/app"
-      blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
+    <AppMobileShell
+      currentTab="settings"
+      title="Preferences"
+      subtitle="Control how TrustLink Pay looks and communicates. Identity, wallets and security live in Identity Center."
+      user={user}
+      showBackButton
+      backHref="/app"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal
+            pendingAuth={pendingAuth}
+            user={user}
+            onAuthenticated={completePendingAuth}
+            onSignOut={logout}
+          />
+        ) : null
+      }
     >
-      <FloatingGuidanceOverlay
-        open={showMainWalletGuidance}
-        dismissible
-        onClose={() => setMainWalletGuidanceDismissed(true)}
-      >
-        <TrustLinkGuidance
-          tone="warning"
-          title="Create your TIN"
-          description="Your TIN links this WhatsApp account to the wallet that can receive TrustLink Pay settlement."
-          steps={[
-            {
-              title: "Connect the right wallet",
-              description: walletAddress ? `${shortenAddress(walletAddress)} is connected.` : "Connect the wallet you want to register with TINS.",
-              done: Boolean(walletAddress),
-            },
-            {
-              title: "Approve TINS registration",
-              description: "The transaction creates your on-chain Transfer Identity Number for this wallet.",
-            },
-            {
-              title: "Keep control of your funds",
-              description: "TrustLink stores your phone-to-TIN mapping, not custody over your wallet.",
-            },
-          ]}
-          action={
-            <button
-              type="button"
-              onClick={() => void handleCompleteSecureSetup()}
-              disabled={identityBusy}
-              className="rounded-[18px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
-            >
-              {identityBusy ? "Creating..." : walletAddress ? "Create TIN" : "Connect wallet"}
-            </button>
-          }
-        />
-      </FloatingGuidanceOverlay>
+      <section className="mx-auto w-full max-w-[720px] space-y-5">
+        <div className="tl-panel rounded-[28px] p-4 sm:p-5">
+          <div className="mb-4">
+            <h2 className="text-[1rem] font-semibold text-[var(--text)]">
+              App preferences
+            </h2>
+            <p className="mt-1 text-[0.76rem] leading-5 text-[var(--text-soft)]">
+              Settings here affect this TrustLink Pay experience, not your
+              protocol identity.
+            </p>
+          </div>
 
-      <section className="space-y-5">
-
-        {/* ── Notices ── */}
-        {notice ? <div className="tl-badge rounded-[18px] px-4 py-3 tl-body-sm">{notice}</div> : null}
-        {error ? <div className="tl-button-danger rounded-[18px] px-4 py-3 tl-body-sm">{error}</div> : null}
-
-
-        {/* ═══════════ Stats Card ═══════════ */}
-        <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Account</div>
-          <div className="tl-panel-header tl-field rounded-[22px]">
-            <div className="px-4">
-              <div className="flex items-center justify-between">
-                <div className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-text-soft">Trust Score</div>
-                <Link
-                  href="/app/profile"
-                  className="flex items-center gap-1.5 text-[0.76rem] font-semibold text-[var(--accent-deep)] dark:text-[var(--accent)] transition-colors hover:opacity-80 cursor-pointer"
+          <div className="space-y-2.5">
+            <div className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
+              <span className="min-w-0">
+                <span className="block text-[0.8rem] font-semibold text-[var(--text)]">
+                  Appearance
+                </span>
+                <span className="mt-0.5 block text-[0.66rem] text-[var(--text-faint)]">
+                  Choose the interface theme for this device.
+                </span>
+              </span>
+              <div className="flex shrink-0 items-center gap-1 rounded-[12px] bg-[var(--surface-soft)] p-1">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  aria-pressed={theme === "light"}
+                  className={`flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[0.7rem] font-semibold transition ${
+                    theme === "light"
+                      ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
+                      : "text-[var(--text-soft)]"
+                  }`}
                 >
-                  Profile
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
+                  <SunMedium className="h-3.5 w-3.5" />
+                  Light
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  aria-pressed={theme === "dark"}
+                  className={`flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[0.7rem] font-semibold transition ${
+                    theme === "dark"
+                      ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
+                      : "text-[var(--text-soft)]"
+                  }`}
+                >
+                  <MoonStar className="h-3.5 w-3.5" />
+                  Dark
+                </button>
               </div>
-              <div className="mt-3 text-[1.5rem] font-bold tracking-tight text-(--text)">0.00</div>
-              <div className="mt-2 h-1 w-10 rounded-full bg-accent-deep dark:bg-accent" />
             </div>
-          </div>
-        </div>
 
-        {/* ═══════════ SECURITY ═══════════ */}
-        <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Security</div>
-
-          {/* Main wallet row */}
-          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-            <span className="flex items-center gap-2.5">
-              <Wallet2 className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              <span className="tl-body-sm font-medium text-[var(--text)]">Main wallet</span>
-            </span>
-            <span className="text-[0.74rem] font-medium text-[var(--text-soft)]">
-              {identity?.mainWallet ? shortenAddress(identity.mainWallet) : tinInfo?.tinsWalletPublicKey ? shortenAddress(tinInfo.tinsWalletPublicKey) : user.walletAddress ? shortenAddress(user.walletAddress) : "Not set"}
-            </span>
-          </div>
-
-          <div className="tl-field mt-2.5 flex items-center justify-between rounded-[18px] px-4 py-3.5">
-            <span className="flex items-center gap-2.5">
-              <ShieldCheck className={`h-4 w-4 ${activeTin ? "text-[#4ae8c0]" : "text-[#ffb86b]"}`} />
-              <span className="tl-body-sm font-medium text-[var(--text)]">TIN</span>
-            </span>
-            <span className="text-right text-[0.74rem] font-medium text-[var(--text-soft)]">
-              {activeTin ?? "Not created"}
-              {tinInfo?.tinsIdentityPublicKey ? (
-                <span className="block text-[0.58rem] text-[var(--text-faint)]">
-                  {shortenAddress(tinInfo.tinsIdentityPublicKey)}
+            <div className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
+              <span className="flex min-w-0 items-center gap-3">
+                <CircleDollarSign className="h-4 w-4 shrink-0 text-accent" />
+                <span>
+                  <span className="block text-[0.8rem] font-semibold text-[var(--text)]">
+                    Display currency
+                  </span>
+                  <span className="mt-0.5 block text-[0.66rem] text-[var(--text-faint)]">
+                    Token values and summaries
+                  </span>
                 </span>
-              ) : null}
-            </span>
-          </div>
+              </span>
+              <span className="rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--text-soft)]">
+                USD
+              </span>
+            </div>
 
-          {/* Backup wallet row */}
-          <button
-            type="button"
-            onClick={openBackupWalletFlow}
-            className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]"
-          >
-            <span className="flex items-center gap-2.5">
-              <ShieldCheck className={`h-4 w-4 ${identity?.recoveryWallet ? "text-[#4ae8c0]" : "text-[#ffb86b]"}`} />
-              <span className="tl-body-sm font-medium text-[var(--text)]">Backup wallet</span>
-            </span>
-            {identity?.recoveryWallet ? (
-              <span className="flex items-center gap-1.5 rounded-[12px] bg-[#58f2b1]/10 px-2.5 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#4ae8c0]" />
-                <span className="tl-meta-sm font-medium text-accent-deep">Verified</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[0.74rem] font-medium text-[#ffb86b]">
-                Add
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </span>
-            )}
-          </button>
-
-          {/* Account lock */}
-          {identity?.recoveryWallet ? (
-            <button
-              type="button"
-              onClick={() => (identity.isFrozen ? void handleFreeze(false) : setFreezeModalOpen(true))}
-              disabled={identityBusy}
-              className="tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
-            >
-              <span className="flex items-center gap-2.5">
-                <LockKeyhole className={`h-4 w-4 ${identity.isFrozen ? "text-[#ffb86b]" : "text-[var(--accent-deep)] dark:text-[var(--accent)]"}`} />
-                <span className="tl-body-sm font-medium text-[var(--text)]">{identity.isFrozen ? "Unlock account" : "Lock account"}</span>
-              </span>
-              {identity.isFrozen ? (
-                <span className="flex items-center gap-1.5 rounded-[12px] bg-[#ffb86b]/10 px-2.5 py-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#ffb86b]" />
-                  <span className="tl-meta-sm font-medium text-[#ffcf8c]">Frozen</span>
+            <div className="tl-field flex items-center justify-between gap-4 rounded-[18px] px-4 py-3.5">
+              <span className="flex min-w-0 items-center gap-3">
+                <BellRing className="h-4 w-4 shrink-0 text-accent" />
+                <span>
+                  <span className="block text-[0.8rem] font-semibold text-[var(--text)]">
+                    WhatsApp payment updates
+                  </span>
+                  <span className="mt-0.5 block text-[0.66rem] text-[var(--text-faint)]">
+                    Delivery and settlement notifications
+                  </span>
                 </span>
-              ) : (
-                <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
-              )}
-            </button>
-          ) : null}
-
-          {/* Recovery */}
-          {identity?.recoveryWallet ? (
-            <button
-              type="button"
-              onClick={openRecoveryFlow}
-              disabled={identityBusy}
-              className="tl-field mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
-            >
-              <span className="flex items-center gap-2.5">
-                <AlertTriangle className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-                <span className="tl-body-sm font-medium text-[var(--text)]">Start recovery</span>
               </span>
-              <ChevronRight className="h-4 w-4 text-[var(--text-faint)]" />
-            </button>
-          ) : null}
-
-          {cooldownDate ? (
-            <div className="mt-2.5 tl-field rounded-[18px] px-4 py-3 text-[0.76rem] text-[var(--text-soft)]">
-              Cooldown ends {cooldownDate.toLocaleString()}
-            </div>
-          ) : null}
-        </div>
-
-        {/* ═══════════ PREFERENCES ═══════════ */}
-        <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Preferences</div>
-
-          {/* Theme */}
-          <div className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-            <span className="tl-body-sm font-medium text-[var(--text)]">Theme</span>
-            <div className="flex items-center gap-1 rounded-[12px] bg-[var(--surface-soft)] p-1">
-              <button
-                type="button"
-                onClick={() => setTheme("light")}
-                className={`flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[0.74rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.96] ${theme === "light"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--text-soft)]"
-                  }`}
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold ${
+                  user.whatsappOptedIn
+                    ? "border-accent-border bg-accent-soft text-accent"
+                    : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-faint)]"
+                }`}
               >
-                <SunMedium className="h-3.5 w-3.5" />
-                Light
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme("dark")}
-                className={`flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[0.74rem] font-semibold transition-all duration-200 cursor-pointer active:scale-[0.96] ${theme === "dark"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text)] shadow-sm"
-                  : "text-[var(--text-soft)]"
-                  }`}
-              >
-                <MoonStar className="h-3.5 w-3.5" />
-                Dark
-              </button>
+                {user.whatsappOptedIn ? "Enabled" : "Not enabled"}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Change PIN */}
-          <button
-            type="button"
-            onClick={() => void openChangePinFlow()}
-            disabled={otpBusy}
-            className="tl-field group mt-2.5 flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] disabled:opacity-50"
-          >
-            <span className="flex items-center gap-2.5">
-              <LockKeyhole className="h-4 w-4 text-[var(--accent-deep)] dark:text-[var(--accent)]" />
-              <span className="tl-body-sm font-medium text-[var(--text)]">{otpBusy ? "Sending OTP..." : "Change PIN"}</span>
+        <Link
+          href="/app/identity?section=security"
+          className="tl-panel group flex items-center justify-between gap-4 rounded-[22px] p-4 transition hover:border-accent-border"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-accent-soft text-accent">
+              <LockKeyhole className="h-4 w-4" />
             </span>
-            <ChevronRight className="h-4 w-4 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </div>
-
-        {/* ═══════════ ACCOUNT ═══════════ */}
-        <div>
-          <div className="tl-text-muted mb-3 text-[0.62rem] uppercase tracking-[0.2em]">Account</div>
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#ff7f7f]/18 bg-[#ff7f7f]/8 px-4 py-3.5 tl-body-sm font-semibold text-[#ffb1b1] transition-colors hover:bg-[#ff7f7f]/14 cursor-pointer active:scale-[0.98]"
-          >
-            Log out
-          </button>
-        </div>
+            <span>
+              <span className="block text-[0.82rem] font-semibold text-[var(--text)]">
+                Identity and security
+              </span>
+              <span className="mt-0.5 block text-[0.68rem] leading-4 text-[var(--text-soft)]">
+                Manage your TIN, profile, wallets, PIN and recovery in Identity
+                Center.
+              </span>
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-faint)] transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </section>
-
-      {/* ── All Modals (unchanged logic) ── */}
-      <BackupWalletModal open={backupModalOpen} step={backupFlowStep} busy={identityBusy} mainWallet={identity?.mainWallet ?? null} connectedWallet={walletAddress} walletInput={backupWalletInput} onClose={() => !identityBusy && setBackupModalOpen(false)} onSkip={() => setBackupModalOpen(false)} onContinue={() => setBackupFlowStep("connect")} onConnectWallet={requestWalletConnection} onUseConnectedWallet={() => setBackupWalletInput(walletAddress ?? "")} onWalletInputChange={setBackupWalletInput} onSave={() => void handleAddBackupWallet()} />
-      <FreezeAccountModal open={freezeModalOpen} busy={identityBusy} onClose={() => setFreezeModalOpen(false)} onConfirm={() => void handleFreeze(true)} />
-      <RecoveryFlowModal open={recoveryModalOpen} step={recoveryFlowStep} countdownSeconds={cooldownSeconds} busy={identityBusy} connectedWallet={walletAddress} mainWallet={identity?.mainWallet ?? null} stagedWallet={recoveryPreparedWallet} onClose={() => setRecoveryModalOpen(false)} onStart={() => void handleStartRecovery()} onContinue={() => { if (recoveryFlowStep === "cooldown") { setRecoveryFlowStep("set-wallet"); return; } if (recoveryFlowStep === "set-wallet") setRecoveryFlowStep("success"); }} onConnectWallet={requestWalletConnection} onUseConnectedWallet={() => setRecoveryPreparedWallet(walletAddress ?? null)} />
-      <OtpModal open={changePinOpen} title="Verify before changing PIN" description="TrustLink sent a WhatsApp OTP to confirm this PIN change." value={otp} onChange={(v) => setOtp(v.replace(/[^\d]/g, "").slice(0, 6))} onClose={() => { if (!pinBusy) setChangePinOpen(false); }} onResend={() => void resendChangePinOtp()} resendLabel="Resend OTP" resendDisabled={otpBusy || pinBusy} countdown={otpCooldown} busy={otpBusy}>
-        <form className="space-y-5" onSubmit={handlePinChangeSubmit}>
-          <label className="block">
-            <span className="tl-text-muted mb-2.5 block text-[0.72rem] font-medium uppercase tracking-[0.2em]">New 6-digit PIN</span>
-            <div className="relative" onClick={() => pinInputRef.current?.focus()}>
-              <input ref={pinInputRef} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))} className="absolute inset-0 h-full w-full cursor-text opacity-0" aria-label="Enter new 6 digit PIN" />
-              <PinDigitBoxes pin={newPin} />
-            </div>
-          </label>
-          <button type="submit" disabled={pinBusy || otp.length !== 6 || newPin.length !== 6} className="w-full rounded-[20px] bg-[linear-gradient(135deg,#58f2b1,#9fffe4)] px-4 py-3.5 tl-body-sm font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform">{pinBusy ? "Updating PIN..." : "Save new PIN"}</button>
-        </form>
-      </OtpModal>
     </AppMobileShell>
   );
 }

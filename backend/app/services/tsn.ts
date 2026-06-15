@@ -3,11 +3,11 @@ import { PublicKey } from "@solana/web3.js";
 import { getAllowedTokenByMint, toBaseUnits } from "@/app/blockchain/solana-core";
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
+import { sql } from "@/app/db/client";
 import {
   createClaimRequest,
   findLatestActiveClaimRequestByPaymentId,
   findPaymentIntentByPaymentId,
-  listActivePaymentIntents,
   listLatestClaimRequestsByPaymentIds,
   listPaymentIntentsByPaymentIds,
   updateClaimRequestStatus,
@@ -53,13 +53,11 @@ function resolveClaimMode(payment: { payment_mode?: string | null }) {
 }
 
 function getTsnMempoolClient() {
-  return new HttpTsnMempool(env.TSN_MEMPOOL_URL);
+  return new HttpTsnMempool(
+    env.TSN_MEMPOOL_URL,
+    env.TSN_MEMPOOL_API_KEY,
+  );
 }
-
-type TsnMempoolSnapshot = {
-  intents: TsnMempoolIntent[];
-  claimRequests: TsnMempoolClaimRequest[];
-};
 
 function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -80,53 +78,6 @@ function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
   });
 }
 
-let cachedMempoolSnapshot: TsnMempoolSnapshot | undefined;
-let mempoolSnapshotExpiresAt = 0;
-let mempoolSnapshotRetryAt = 0;
-let mempoolSnapshotPromise: Promise<TsnMempoolSnapshot> | undefined;
-
-async function getTsnMempoolSnapshot(force = false): Promise<TsnMempoolSnapshot> {
-  const now = Date.now();
-  if (!force && cachedMempoolSnapshot && mempoolSnapshotExpiresAt > now) {
-    return cachedMempoolSnapshot;
-  }
-  if (!force && mempoolSnapshotPromise) {
-    return mempoolSnapshotPromise;
-  }
-  if (!force && mempoolSnapshotRetryAt > now) {
-    if (cachedMempoolSnapshot) return cachedMempoolSnapshot;
-    throw new Error("TSN mempool status sync is temporarily unavailable");
-  }
-
-  const mempool = getTsnMempoolClient();
-  const promise = withMempoolTimeout(
-    Promise.all([
-      mempool.listIntents(),
-      mempool.listClaimRequests(),
-    ]),
-  )
-    .then(([intents, claimRequests]) => {
-      const value = { intents, claimRequests };
-      cachedMempoolSnapshot = value;
-      mempoolSnapshotExpiresAt =
-        Date.now() + env.TSN_STATUS_SYNC_INTERVAL_MS;
-      mempoolSnapshotRetryAt = 0;
-      return value;
-    })
-    .catch((error) => {
-      mempoolSnapshotRetryAt =
-        Date.now() + Math.max(env.TSN_STATUS_SYNC_INTERVAL_MS, 30_000);
-      if (cachedMempoolSnapshot) return cachedMempoolSnapshot;
-      throw error;
-    })
-    .finally(() => {
-      mempoolSnapshotPromise = undefined;
-    });
-
-  mempoolSnapshotPromise = promise;
-  return promise;
-}
-
 function isTerminalIntentStatus(status: PaymentIntentStatus) {
   return (
     status === "executed" ||
@@ -137,6 +88,13 @@ function isTerminalIntentStatus(status: PaymentIntentStatus) {
     status === "reverted"
   );
 }
+
+/** Minimum seconds between TSN status queries for the same transaction. */
+const STATUS_REFRESH_COOLDOWN_SECONDS = 15;
+/** Maximum seconds to wait before allowing another TSN query for a non-terminal intent. */
+const STATUS_REFRESH_MAX_COOLDOWN_SECONDS = 300;
+/** After this many seconds since creation, stop querying TSN for non-terminal intents. */
+const STATUS_REFRESH_MAX_AGE_SECONDS = 86_400; // 24 hours
 
 function resolveUnderlyingPaymentPublicKey(payment: PaymentRecord) {
   const candidate = payment.escrow_vault_address ?? payment.sender_wallet;
@@ -442,22 +400,6 @@ export async function requestPaymentClaimViaTsn(params: {
   };
 }
 
-export async function syncPaymentIntentFromChain(params: { intentId: string }) {
-  if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) return null;
-  const localIntent = await findPaymentIntentByPaymentId(params.intentId);
-  if (!localIntent) return null;
-  if (isTerminalIntentStatus(localIntent.status)) return localIntent;
-
-  const snapshot = await getTsnMempoolSnapshot();
-
-  const synced = await syncLocalIntentFromMempoolSnapshot({
-    localIntent,
-    mempoolIntents: snapshot.intents,
-    mempoolClaimRequests: snapshot.claimRequests,
-  });
-  return synced.intent;
-}
-
 function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRecord | null): TsnUiStage {
   return computeTsnUiStage(intent, claimRequest);
 }
@@ -480,185 +422,198 @@ function buildUnpublishedTsnState(): PaymentTsnState {
   };
 }
 
-type SyncedMempoolState = {
-  intent: PaymentIntentRecord;
-  claimRequest: ClaimRequestRecord | null;
-};
+/**
+ * Compute the cooldown delay (in ms) before the next TSN status query is allowed.
+ * Uses exponential backoff: starts at 15s, doubles each check, capped at 5 minutes.
+ */
+function computeRefreshCooldownMs(checkCount: number): number {
+  const base = STATUS_REFRESH_COOLDOWN_SECONDS * 1000;
+  const backoff = base * Math.pow(2, Math.min(checkCount, 5));
+  return Math.min(backoff, STATUS_REFRESH_MAX_COOLDOWN_SECONDS * 1000);
+}
 
-async function syncLocalIntentFromMempoolSnapshot(params: {
-  localIntent: PaymentIntentRecord;
-  mempoolIntents: TsnMempoolIntent[];
-  mempoolClaimRequests: TsnMempoolClaimRequest[];
-}): Promise<SyncedMempoolState> {
-  const mempoolIntent = params.mempoolIntents.find(
-    (intent) => intent.id === params.localIntent.id || intent.paymentId === params.localIntent.payment_id,
-  );
-  if (!mempoolIntent) {
-    if (params.localIntent.status === "pending") {
-      const fallbackIntent: PaymentIntentRecord = {
-        ...params.localIntent,
-        status: "canceled",
-      };
-      try {
-        const updatedIntent =
-          (await updatePaymentIntentStatus({
-            id: params.localIntent.id,
-            status: "canceled",
-          })) ?? fallbackIntent;
-        return { intent: updatedIntent, claimRequest: null as ClaimRequestRecord | null };
-      } catch (error) {
-        logger.warn("tsn.intent.missing_mempool_cancel_failed", {
-          intentId: params.localIntent.id,
-          paymentId: params.localIntent.payment_id,
-          error: error instanceof Error ? error.message : "Unknown error",
+/**
+ * Refresh the status of a single payment intent by querying the TSN mempool.
+ * - Skips if the intent is already finalized (terminal status).
+ * - Skips if the intent was checked within the cooldown window.
+ * - Skips if the intent is older than MAX_AGE_SECONDS.
+ * - Updates `last_status_checked_at`, `status_finalized_at`, and `status_check_count` in DB.
+ */
+export async function refreshSinglePaymentIntentStatus(paymentId: string): Promise<{
+  refreshed: boolean;
+  reason?: string;
+  previousIntentStatus?: PaymentIntentStatus | null;
+  latestIntentStatus?: PaymentIntentStatus | null;
+  previousClaimStatus?: ClaimRequestStatus | null;
+  latestClaimStatus?: ClaimRequestStatus | null;
+  tsnQueried: boolean;
+  dbUpdated: boolean;
+  finalized: boolean;
+  nextRefreshAfterMs: number | null;
+}> {
+  const payment = await findPaymentById(paymentId);
+  if (!payment) {
+    return { refreshed: false, reason: "Payment not found", tsnQueried: false, dbUpdated: false, finalized: false, nextRefreshAfterMs: null };
+  }
+
+  const intent = await findPaymentIntentByPaymentId(paymentId);
+  if (!intent) {
+    return { refreshed: false, reason: "No TSN intent found for payment", tsnQueried: false, dbUpdated: false, finalized: false, nextRefreshAfterMs: null };
+  }
+
+  const previousIntentStatus = intent.status;
+  const previousClaimStatus = (await findLatestActiveClaimRequestByPaymentId(paymentId))?.status ?? null;
+
+  // 1. Finalized check: if already terminal, never query TSN again
+  if (isTerminalIntentStatus(intent.status)) {
+    return {
+      refreshed: false,
+      reason: `Intent already finalized with status: ${intent.status}`,
+      previousIntentStatus,
+      latestIntentStatus: intent.status,
+      previousClaimStatus,
+      latestClaimStatus: previousClaimStatus,
+      tsnQueried: false,
+      dbUpdated: false,
+      finalized: true,
+      nextRefreshAfterMs: null,
+    };
+  }
+
+  // 2. Age check: if too old, stop querying
+  const ageSeconds = (Date.now() - new Date(intent.created_at).getTime()) / 1000;
+  if (ageSeconds > STATUS_REFRESH_MAX_AGE_SECONDS) {
+    return {
+      refreshed: false,
+      reason: `Intent exceeds max age of ${STATUS_REFRESH_MAX_AGE_SECONDS}s for status refresh`,
+      previousIntentStatus,
+      latestIntentStatus: intent.status,
+      previousClaimStatus,
+      latestClaimStatus: previousClaimStatus,
+      tsnQueried: false,
+      dbUpdated: false,
+      finalized: false,
+      nextRefreshAfterMs: null,
+    };
+  }
+
+  const lastCheckedAt = (intent as any).last_status_checked_at
+    ? new Date((intent as any).last_status_checked_at).getTime()
+    : 0;
+  const checkCount = (intent as any).status_check_count ?? 0;
+  const cooldownMs = computeRefreshCooldownMs(checkCount);
+  const now = Date.now();
+
+  // 3. Cooldown check
+  if (lastCheckedAt > 0 && now - lastCheckedAt < cooldownMs) {
+    const remainingMs = cooldownMs - (now - lastCheckedAt);
+    return {
+      refreshed: false,
+      reason: `Within cooldown window (${Math.ceil(remainingMs / 1000)}s remaining)`,
+      previousIntentStatus,
+      latestIntentStatus: intent.status,
+      previousClaimStatus,
+      latestClaimStatus: previousClaimStatus,
+      tsnQueried: false,
+      dbUpdated: false,
+      finalized: false,
+      nextRefreshAfterMs: remainingMs,
+    };
+  }
+
+  // 4. Query TSN mempool for this specific intent
+  let tsnQueried = false;
+  let dbUpdated = false;
+  let latestIntentStatus: PaymentIntentStatus = intent.status;
+  let latestClaimStatus = previousClaimStatus;
+
+  try {
+    const mempool = getTsnMempoolClient();
+    const mempoolIntents = await withMempoolTimeout(mempool.listIntents());
+    tsnQueried = true;
+
+    const foundIntent = Array.isArray(mempoolIntents) ? mempoolIntents.find(i => i.id === intent.id) : null;
+
+    if (foundIntent) {
+      const normalizedIntentStatus = normalizePaymentIntentStatus(foundIntent.status);
+      if (normalizedIntentStatus && normalizedIntentStatus !== intent.status) {
+        await updatePaymentIntentStatus({
+          id: intent.id,
+          status: normalizedIntentStatus,
+          assignedCrankerPubkey: foundIntent.assignedCrankerPubkey ?? null,
+          escrowTxSig: foundIntent.escrowTxSig ?? null,
+          claimTxSig: foundIntent.claimTxSig ?? null,
+          proofTxSig: foundIntent.proofTxSig ?? null,
         });
-        return { intent: fallbackIntent, claimRequest: null as ClaimRequestRecord | null };
+        latestIntentStatus = normalizedIntentStatus;
+        dbUpdated = true;
+      }
+
+      // Also sync claim request if present
+      if (foundIntent.paymentId) {
+        const mempoolClaims = await withMempoolTimeout(mempool.listClaimRequests({ intentId: intent.id }));
+        const foundClaim = Array.isArray(mempoolClaims) ? mempoolClaims[0] : null;
+        if (foundClaim) {
+          const normalizedClaimStatus = normalizeClaimRequestStatus(foundClaim.status);
+          if (normalizedClaimStatus) {
+            const localClaim = await findLatestActiveClaimRequestByPaymentId(paymentId);
+            if (localClaim && normalizedClaimStatus !== localClaim.status) {
+              await updateClaimRequestStatus({ id: localClaim.id, status: normalizedClaimStatus });
+              latestClaimStatus = normalizedClaimStatus;
+              dbUpdated = true;
+            }
+          }
+        }
       }
     }
-
-    return { intent: params.localIntent, claimRequest: null as ClaimRequestRecord | null };
-  }
-
-  const intentStatus = normalizePaymentIntentStatus(mempoolIntent.status);
-  const fallbackIntent: PaymentIntentRecord = {
-    ...params.localIntent,
-    status: intentStatus ?? params.localIntent.status,
-    assigned_cranker_pubkey: mempoolIntent.assignedCrankerPubkey ?? params.localIntent.assigned_cranker_pubkey,
-    escrow_tx_sig: mempoolIntent.escrowTxSig ?? params.localIntent.escrow_tx_sig,
-    claim_tx_sig: mempoolIntent.claimTxSig ?? params.localIntent.claim_tx_sig,
-    proof_tx_sig: mempoolIntent.proofTxSig ?? params.localIntent.proof_tx_sig,
-  };
-  let updatedIntent = fallbackIntent;
-  if (intentStatus != null) {
-    try {
-      updatedIntent =
-        (await updatePaymentIntentStatus({
-          id: params.localIntent.id,
-          status: intentStatus,
-          assignedCrankerPubkey: mempoolIntent.assignedCrankerPubkey ?? null,
-          escrowTxSig: mempoolIntent.escrowTxSig ?? null,
-          claimTxSig: mempoolIntent.claimTxSig ?? null,
-          proofTxSig: mempoolIntent.proofTxSig ?? null,
-        })) ?? fallbackIntent;
-    } catch (error) {
-      logger.warn("tsn.intent.local_status_update_failed", {
-        intentId: params.localIntent.id,
-        mempoolStatus: mempoolIntent.status,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
-
-  const matchingClaims = params.mempoolClaimRequests
-    .filter((claimRequest) => claimRequest.intentId === mempoolIntent.id || claimRequest.paymentId === mempoolIntent.paymentId)
-    .sort((left, right) => {
-      const rightTime = Date.parse(right.updatedAt || right.postedAt);
-      const leftTime = Date.parse(left.updatedAt || left.postedAt);
-      return rightTime - leftTime;
-    });
-  const mempoolClaimRequest = matchingClaims[0] ?? null;
-  if (!mempoolClaimRequest) {
-    return { intent: updatedIntent, claimRequest: null as ClaimRequestRecord | null };
-  }
-
-  const latestLocalClaims = await listLatestClaimRequestsByPaymentIds([mempoolIntent.paymentId]);
-  let localClaimRequest = latestLocalClaims[0] ?? null;
-  const claimStatus = normalizeClaimRequestStatus(mempoolClaimRequest.status);
-  const fallbackClaimRequest: ClaimRequestRecord = {
-    id: localClaimRequest?.id ?? mempoolClaimRequest.id,
-    payment_id: mempoolClaimRequest.paymentId,
-    intent_id: params.localIntent.id,
-    recipient_hash: mempoolClaimRequest.recipientHash,
-    destination_wallet: mempoolClaimRequest.destinationWallet ?? null,
-    autoclaim: mempoolClaimRequest.autoclaim,
-    status: claimStatus ?? localClaimRequest?.status ?? "pending",
-    requested_at: localClaimRequest?.requested_at ?? mempoolClaimRequest.postedAt,
-    updated_at: localClaimRequest?.updated_at ?? mempoolClaimRequest.updatedAt,
-  };
-  if (!localClaimRequest) {
-    try {
-      localClaimRequest = await createClaimRequest({
-        paymentId: mempoolClaimRequest.paymentId,
-        intentId: params.localIntent.id,
-        recipientHash: mempoolClaimRequest.recipientHash,
-        destinationWallet: mempoolClaimRequest.destinationWallet,
-        autoclaim: mempoolClaimRequest.autoclaim,
-      });
-    } catch (error) {
-      logger.warn("tsn.claim.local_create_failed", {
-        paymentId: mempoolClaimRequest.paymentId,
-        claimRequestId: mempoolClaimRequest.id,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      localClaimRequest = fallbackClaimRequest;
-    }
-  }
-
-  let updatedClaimRequest = {
-    ...fallbackClaimRequest,
-    ...localClaimRequest,
-    status: claimStatus ?? localClaimRequest.status,
-    updated_at: mempoolClaimRequest.updatedAt,
-  };
-  if (claimStatus != null) {
-    try {
-      updatedClaimRequest =
-        (await updateClaimRequestStatus({
-          id: localClaimRequest.id,
-          status: claimStatus,
-        })) ?? updatedClaimRequest;
-    } catch (error) {
-      logger.warn("tsn.claim.local_status_update_failed", {
-        claimRequestId: localClaimRequest.id,
-        mempoolStatus: mempoolClaimRequest.status,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
-
-  return {
-    intent: updatedIntent,
-    claimRequest: updatedClaimRequest,
-  };
-}
-
-async function syncPaymentIntentsFromMempool(intents: PaymentIntentRecord[]) {
-  if (intents.length === 0) return [] as SyncedMempoolState[];
-  try {
-    const { intents: mempoolIntents, claimRequests: mempoolClaimRequests } =
-      await getTsnMempoolSnapshot();
-    const results = await Promise.allSettled(
-      intents.map((localIntent) =>
-        syncLocalIntentFromMempoolSnapshot({
-          localIntent,
-          mempoolIntents,
-          mempoolClaimRequests,
-        }),
-      ),
-    );
-    return results.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
   } catch (error) {
-    logger.warn("tsn.intent.sync_mempool_failed", {
+    logger.warn("tsn.intent.refresh_query_failed", {
+      paymentId,
+      intentId: intent.id,
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    return [] as SyncedMempoolState[];
-  }
-}
 
-export async function syncActiveTsnPaymentIntents(limit = 100) {
-  if (!env.TSN_ENABLED || env.TSN_SYNC_ONCHAIN === false) {
-    return { scanned: 0, synchronized: 0 };
+    // TSN query failed — don't advance cooldown so the next attempt retries quickly
+    return {
+      refreshed: false,
+      reason: "TSN query failed",
+      previousIntentStatus,
+      latestIntentStatus: intent.status,
+      previousClaimStatus,
+      latestClaimStatus: previousClaimStatus,
+      tsnQueried: false,
+      dbUpdated: false,
+      finalized: false,
+      nextRefreshAfterMs: 5_000,
+    };
   }
 
-  const activeIntents = await listActivePaymentIntents(limit);
-  if (activeIntents.length === 0) {
-    return { scanned: 0, synchronized: 0 };
-  }
+  // 5. Update tracking fields (only reached when TSN was queried successfully)
+  const isFinalized = isTerminalIntentStatus(latestIntentStatus);
+  await sql`
+    UPDATE payment_intents
+    SET
+      last_status_checked_at = NOW(),
+      status_check_count = status_check_count + 1,
+      status_finalized_at = CASE
+        WHEN ${isFinalized} AND status_finalized_at IS NULL THEN NOW()
+        ELSE status_finalized_at
+      END
+    WHERE id = ${intent.id}
+  `;
 
-  const synchronized = await syncPaymentIntentsFromMempool(activeIntents);
+  const nextCooldownMs = computeRefreshCooldownMs(checkCount + 1);
+
   return {
-    scanned: activeIntents.length,
-    synchronized: synchronized.length,
+    refreshed: tsnQueried || dbUpdated,
+    previousIntentStatus,
+    latestIntentStatus,
+    previousClaimStatus,
+    latestClaimStatus,
+    tsnQueried,
+    dbUpdated,
+    finalized: isFinalized,
+    nextRefreshAfterMs: isFinalized ? null : nextCooldownMs,
   };
 }
 
@@ -706,25 +661,6 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
 
   const intentByPaymentId = new Map<string, PaymentIntentRecord>(intents.map((intent) => [intent.payment_id, intent]));
   const claimByPaymentId = new Map<string, ClaimRequestRecord>(claimRequests.map((claimRequest) => [claimRequest.payment_id, claimRequest]));
-
-  if (env.TSN_SYNC_ONCHAIN) {
-    const maybeStale = intents.filter((intent) => !isTerminalIntentStatus(intent.status));
-    const syncedStates = await syncPaymentIntentsFromMempool(maybeStale.slice(0, 10));
-    const [refreshedIntents, refreshedClaimRequests] = await Promise.all([
-      listPaymentIntentsByPaymentIds(paymentIds),
-      listLatestClaimRequestsByPaymentIds(paymentIds),
-    ]);
-    intentByPaymentId.clear();
-    for (const intent of refreshedIntents) intentByPaymentId.set(intent.payment_id, intent);
-    claimByPaymentId.clear();
-    for (const claimRequest of refreshedClaimRequests) claimByPaymentId.set(claimRequest.payment_id, claimRequest);
-    for (const syncedState of syncedStates) {
-      intentByPaymentId.set(syncedState.intent.payment_id, syncedState.intent);
-      if (syncedState.claimRequest) {
-        claimByPaymentId.set(syncedState.claimRequest.payment_id, syncedState.claimRequest);
-      }
-    }
-  }
 
   return payments.map((payment) => {
     const intent = intentByPaymentId.get(payment.id);

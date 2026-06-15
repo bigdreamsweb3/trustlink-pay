@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { tsnFetchMotherEscrowOnChain } from "../tsn-sdk/dist/blockchain/solana-tsn.js";
 import { tsnConfigurePrivateSettlementOnChain } from "../tsn-sdk/dist/private-settlement.js";
 
 const [authorityPath, permitSignerAddress, rpcUrlArg] = process.argv.slice(2);
@@ -21,6 +22,29 @@ const rpcUrl =
   process.env.SOLANA_RPC_URL ||
   "https://api.devnet.solana.com";
 
+const motherEscrow = await tsnFetchMotherEscrowOnChain(rpcUrl);
+if (!motherEscrow) {
+  throw new Error(`Mother Escrow is not initialized on ${rpcUrl}.`);
+}
+if (!motherEscrow.valid) {
+  throw new Error(
+    `Mother Escrow ${motherEscrow.address} is invalid: ${motherEscrow.reason}.`,
+  );
+}
+
+const suppliedAuthority = authority.publicKey.toBase58();
+if (motherEscrow.authority !== suppliedAuthority) {
+  throw new Error(
+    [
+      "Mother Escrow authority mismatch.",
+      `On-chain Mother Escrow: ${motherEscrow.address}`,
+      `Required authority: ${motherEscrow.authority}`,
+      `Supplied keypair: ${suppliedAuthority}`,
+      "Use the keypair that initialized Mother Escrow. The program upgrade authority cannot configure private settlement unless it is also the stored Mother Escrow authority.",
+    ].join("\n"),
+  );
+}
+
 const result = await tsnConfigurePrivateSettlementOnChain({
   authority,
   permitSigner,
@@ -30,8 +54,10 @@ const result = await tsnConfigurePrivateSettlementOnChain({
 
 console.log({
   programId: process.env.PROGRAM_ID ?? "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
-  authority: authority.publicKey.toBase58(),
+  motherEscrow: motherEscrow.address,
+  authority: suppliedAuthority,
   permitSigner: permitSigner.toBase58(),
   config: result.config,
+  replayRegistry: result.replayRegistry,
   signature: result.signature,
 });

@@ -9,10 +9,8 @@ pub const TSN_CRANKER_VAULT_AUTHORITY_SEED: &[u8] = b"tsn_cranker_vault_authorit
 pub const TSN_LIQUIDITY_POSITION_SEED: &[u8] = b"tsn_liquidity_position";
 pub const TSN_PAYMENT_VAULT_SEED: &[u8] = b"vault";
 pub const TSN_PRIVATE_SETTLEMENT_CONFIG_SEED: &[u8] = b"tsn_private_config";
+pub const TSN_PRIVATE_REPLAY_REGISTRY_SEED: &[u8] = b"tsn_private_replay";
 pub const TSN_SHARED_ESCROW_AUTHORITY_SEED: &[u8] = b"tsn_shared_escrow";
-pub const TSN_COMMITMENT_RECORD_SEED: &[u8] = b"tsn_commitment";
-pub const TSN_PAYOUT_NULLIFIER_SEED: &[u8] = b"tsn_payout_nullifier";
-pub const TSN_RECOVERY_NULLIFIER_SEED: &[u8] = b"tsn_recovery_nullifier";
 
 pub const TSN_DEFAULT_LEASE_SECONDS: i64 = 30;
 pub const TSN_DEFAULT_EPOCH_SECONDS: i64 = 7 * 60 * 60; // 7 hours

@@ -165,8 +165,9 @@ TSN also powers:
 - Gasless payments
 - Encrypted settlement routing
 - Commitment-only public settlement records
-- One-Time Decryption Token replay protection
+- Domain-separated one-time payout and recovery nullifiers
 - Claim-credit-gated settlement leases
+- Verifier-signed, Cranker-bound settlement permits
 - Settlement proofs
 - Vault liquidity
 - Cranker settlement markets
@@ -213,20 +214,20 @@ High
 
 ### Settlement
 
-1. Cranker claims settlement work.
-2. Vault liquidity performs payout.
-3. Settlement proof is generated.
-4. Commitment token is registered.
-5. Recovery rights are assigned.
-6. Payment becomes recoverable through reimbursement accounting.
+1. The sender-co-signed escrow transaction registers a commitment and funds a random one-time token account.
+2. A Cranker signs an authenticated lease request.
+3. The verifier validates the encrypted route and issues a short-lived payout permit.
+4. Cranker vault liquidity pays the recipient without referencing sender escrow.
+5. A separate recovery permit returns escrowed liquidity to the settlement vault.
+6. Domain-separated nullifiers prevent payout and recovery replay.
 
 ---
 
 ### Privacy Outcome
 
-- Sender does not know recipient wallet.
+- The public sender transaction does not reveal the recipient wallet.
 - Recipient does not know sender wallet.
-- Wallet relationships remain abstracted behind TSN.
+- Payout does not reference sender escrow or the commitment record.
 - Settlement remains verifiable through proofs and protocol rules.
 
 ---
@@ -299,6 +300,11 @@ TSN utilizes:
 - Signed payment authorizations
 - Cranker verification
 - Sponsored escrow transactions
+- Verifier-funded, random one-time escrow token accounts
+- Commitment-only public records
+- Authenticated off-chain work leases
+- Short-lived Ed25519 settlement permits
+- Domain-separated replay nullifiers
 - Verifier PDA infrastructure
 - Settlement vault liquidity
 - Off-chain proof records
@@ -429,6 +435,7 @@ Crankers earn claim rights through useful settlement participation rather than p
 | `docs/ARCHITECTURE.md` | System architecture        |
 | `docs/TINS.md`         | TINS identity protocol     |
 | `docs/PROTOCOL.md`     | TSN settlement protocol    |
+| `docs/TSN-COMMITMENT-SETTLEMENT.md` | Private commitment settlement |
 | `docs/SECURITY.md`     | Security and privacy model |
 | `docs/INTEGRATION.md`  | SDK integration guide      |
 | `docs/CRANKER.md`      | Cranker operator guide     |

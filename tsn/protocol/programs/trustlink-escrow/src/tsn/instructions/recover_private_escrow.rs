@@ -8,12 +8,15 @@ use anchor_spl::token::{self, CloseAccount, Token, TokenAccount, Transfer};
 use crate::tsn::{
     constants::{
         TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS,
-        TSN_PRIVATE_SETTLEMENT_CONFIG_SEED, TSN_RECOVERY_NULLIFIER_SEED,
+        TSN_PRIVATE_REPLAY_REGISTRY_SEED, TSN_PRIVATE_SETTLEMENT_CONFIG_SEED,
         TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivateEscrowRecovered,
-    state::{Cranker, CrankerVault, MotherEscrow, PrivateSettlementConfig, SpentNullifier},
+    state::{
+        Cranker, CrankerVault, MotherEscrow, PrivateReplayRegistry,
+        PrivateSettlementConfig,
+    },
     utils::{compute_cranker_dna, private_recovery_message, verify_ed25519_permit},
 };
 
@@ -40,13 +43,12 @@ pub struct RecoverPrivateEscrow<'info> {
     pub private_settlement_config: Box<Account<'info, PrivateSettlementConfig>>,
 
     #[account(
-        init,
-        payer = operator,
-        space = SpentNullifier::SPACE,
-        seeds = [TSN_RECOVERY_NULLIFIER_SEED, recovery_nullifier.as_ref()],
-        bump
+        mut,
+        seeds = [TSN_PRIVATE_REPLAY_REGISTRY_SEED, mother_escrow.key().as_ref()],
+        bump = private_replay_registry.bump,
+        has_one = mother_escrow
     )]
-    pub spent_nullifier: Account<'info, SpentNullifier>,
+    pub private_replay_registry: Box<Account<'info, PrivateReplayRegistry>>,
 
     /// CHECK: Shared authority controls random one-time escrow token accounts.
     #[account(
@@ -94,6 +96,7 @@ pub struct RecoverPrivateEscrow<'info> {
 pub fn recover_private_escrow(
     ctx: Context<RecoverPrivateEscrow>,
     recovery_nullifier: [u8; 32],
+    recovery_sequence: u64,
     recovery_amount: u64,
     expires_at_ts: i64,
     permit_signature: [u8; 64],
@@ -107,6 +110,10 @@ pub fn recover_private_escrow(
     require!(
         recovery_amount > 0 && ctx.accounts.escrow_token_account.amount == recovery_amount,
         TsnError::InvalidPrivateRecoveryAmount
+    );
+    require!(
+        recovery_sequence == ctx.accounts.private_replay_registry.next_recovery_sequence,
+        TsnError::InvalidPrivateReplaySequence
     );
     require_keys_eq!(
         *ctx.accounts.verifier_pda.owner,
@@ -129,6 +136,7 @@ pub fn recover_private_escrow(
         &ctx.accounts.mother_escrow.key(),
         &ctx.accounts.operator.key(),
         &recovery_nullifier,
+        recovery_sequence,
         &ctx.accounts.escrow_token_account.key(),
         &ctx.accounts.settlement_cranker_vault.key(),
         &ctx.accounts.settlement_vault_token_account.key(),
@@ -180,18 +188,11 @@ pub fn recover_private_escrow(
         .ok_or(TsnError::FeeSplitOverflow)?;
     ctx.accounts.recovery_cranker.last_active_ts = now;
 
-    let nullifier = &mut ctx.accounts.spent_nullifier;
-    nullifier.mother_escrow = ctx.accounts.mother_escrow.key();
-    nullifier.nullifier = recovery_nullifier;
-    nullifier.operator = ctx.accounts.operator.key();
-    nullifier.action = SpentNullifier::ACTION_RECOVERY;
-    nullifier.used_at_ts = now;
-    nullifier.bump = ctx.bumps.spent_nullifier;
+    ctx.accounts.private_replay_registry.next_recovery_sequence = recovery_sequence
+        .checked_add(1)
+        .ok_or(TsnError::PrivateReplaySequenceOverflow)?;
 
-    let reimbursement = Rent::get()?
-        .minimum_balance(SpentNullifier::SPACE)
-        .checked_add(TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS)
-        .ok_or(TsnError::PaymentIntentFundingOverflow)?;
+    let reimbursement = TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS;
     require!(
         ctx.accounts.verifier_pda.lamports() >= reimbursement,
         TsnError::InsufficientVerifierLamports
@@ -211,6 +212,7 @@ pub fn recover_private_escrow(
 
     emit!(TsnPrivateEscrowRecovered {
         recovery_nullifier,
+        recovery_sequence,
         recovery_cranker: ctx.accounts.recovery_cranker.key(),
         token_mint: ctx.accounts.escrow_token_account.mint,
         recovered_amount: recovery_amount,

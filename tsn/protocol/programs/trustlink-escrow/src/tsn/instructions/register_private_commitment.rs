@@ -1,18 +1,24 @@
 use anchor_lang::{
     prelude::*,
+    solana_program::{
+        program::invoke_signed,
+        program_pack::Pack,
+        system_instruction,
+    },
     system_program::{self, Transfer as SystemTransfer},
 };
-use anchor_spl::token::TokenAccount;
+use anchor_spl::token::{
+    self, InitializeAccount3, Mint, Token, TokenAccount, TransferChecked,
+};
 
 use crate::tsn::{
     constants::{
-        TSN_COMMITMENT_RECORD_SEED, TSN_CRANKER_SEED,
-        TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
+        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
         TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivateCommitmentRegistered,
-    state::{CommitmentRecord, Cranker, MotherEscrow},
+    state::{Cranker, MotherEscrow},
     utils::compute_cranker_dna,
 };
 
@@ -21,6 +27,8 @@ use crate::tsn::{
 pub struct RegisterPrivateCommitment<'info> {
     #[account(mut)]
     pub cranker_operator: Signer<'info>,
+
+    pub sender_authority: Signer<'info>,
 
     pub mother_escrow: Box<Account<'info, MotherEscrow>>,
 
@@ -38,31 +46,33 @@ pub struct RegisterPrivateCommitment<'info> {
     pub cranker: Box<Account<'info, Cranker>>,
 
     #[account(
-        init,
-        payer = cranker_operator,
-        space = CommitmentRecord::SPACE,
-        seeds = [TSN_COMMITMENT_RECORD_SEED, commitment_hash.as_ref()],
-        bump
+        mut,
+        constraint = sender_token_account.owner == sender_authority.key()
+            @ TsnError::InvalidPrivateEscrowTokenAccount,
+        constraint = sender_token_account.mint == token_mint.key()
+            @ TsnError::InvalidPrivateEscrowTokenAccount
     )]
-    pub commitment_record: Account<'info, CommitmentRecord>,
+    pub sender_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: Shared authority controls random one-time escrow token accounts.
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    /// CHECK: Shared authority controls one-time escrow token-account PDAs.
     #[account(
         seeds = [TSN_SHARED_ESCROW_AUTHORITY_SEED, mother_escrow.key().as_ref()],
         bump
     )]
     pub shared_escrow_authority: UncheckedAccount<'info>,
 
-    #[account(
-        constraint = escrow_token_account.owner == shared_escrow_authority.key()
-            @ TsnError::InvalidPrivateEscrowTokenAccount
-    )]
-    pub escrow_token_account: Box<Account<'info, TokenAccount>>,
+    /// CHECK: Random one-time token account signed by its ephemeral keypair and
+    /// funded by the verifier PDA inside this instruction.
+    #[account(mut)]
+    pub escrow_token_account: UncheckedAccount<'info>,
 
-    /// CHECK: System-owned protocol reservoir used to reimburse commitment setup.
+    /// CHECK: Protocol SOL reservoir pays escrow account rent and reimburses gas.
     #[account(mut, seeds = [TSN_VERIFIER_SEED], bump)]
     pub verifier_pda: UncheckedAccount<'info>,
 
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -76,15 +86,15 @@ pub fn register_private_commitment(
         TsnError::InvalidPrivateCommitment
     );
     require!(
-        ctx.accounts.escrow_token_account.amount >= amount,
-        TsnError::InvalidPaymentVaultFunding
+        ctx.accounts.escrow_token_account.lamports() == 0
+            && ctx.accounts.escrow_token_account.data_is_empty(),
+        TsnError::PaymentVaultAlreadyInitialized
     );
     require_keys_eq!(
         *ctx.accounts.verifier_pda.owner,
         system_program::ID,
         TsnError::InvalidVerifierPda
     );
-
     let mother_escrow = &ctx.accounts.mother_escrow;
     let expected_dna = compute_cranker_dna(
         &mother_escrow.key(),
@@ -96,17 +106,70 @@ pub fn register_private_commitment(
         TsnError::CrankerDnaMismatch
     );
 
-    let now = Clock::get()?.unix_timestamp;
-    let record = &mut ctx.accounts.commitment_record;
-    record.mother_escrow = mother_escrow.key();
-    record.commitment_hash = commitment_hash;
-    record.token_mint = ctx.accounts.escrow_token_account.mint;
-    record.amount = amount;
-    record.epoch_id = mother_escrow.epoch_id;
-    record.registered_by = ctx.accounts.cranker.key();
-    record.created_at_ts = now;
-    record.bump = ctx.bumps.commitment_record;
+    let token_account_space = anchor_spl::token::spl_token::state::Account::LEN;
+    let token_account_rent = Rent::get()?.minimum_balance(token_account_space);
+    let reimbursement = TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS;
+    let required_verifier_lamports = token_account_rent
+        .checked_add(reimbursement)
+        .ok_or(TsnError::FeeSplitOverflow)?;
+    require!(
+        ctx.accounts.verifier_pda.lamports() >= required_verifier_lamports,
+        TsnError::InsufficientVerifierLamports
+    );
 
+    let verifier_bump = ctx.bumps.verifier_pda;
+    let verifier_bump_seed = [verifier_bump];
+    let verifier_signer: &[&[u8]] = &[TSN_VERIFIER_SEED, &verifier_bump_seed];
+    invoke_signed(
+        &system_instruction::create_account(
+            &ctx.accounts.verifier_pda.key(),
+            &ctx.accounts.escrow_token_account.key(),
+            token_account_rent,
+            token_account_space as u64,
+            &ctx.accounts.token_program.key(),
+        ),
+        &[
+            ctx.accounts.verifier_pda.to_account_info(),
+            ctx.accounts.escrow_token_account.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+        &[verifier_signer],
+    )?;
+
+    token::initialize_account3(CpiContext::new(
+        ctx.accounts.token_program.to_account_info(),
+        InitializeAccount3 {
+            account: ctx.accounts.escrow_token_account.to_account_info(),
+            mint: ctx.accounts.token_mint.to_account_info(),
+            authority: ctx.accounts.shared_escrow_authority.to_account_info(),
+        },
+    ))?;
+    token::transfer_checked(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            TransferChecked {
+                from: ctx.accounts.sender_token_account.to_account_info(),
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.escrow_token_account.to_account_info(),
+                authority: ctx.accounts.sender_authority.to_account_info(),
+            },
+        ),
+        amount,
+        ctx.accounts.token_mint.decimals,
+    )?;
+    system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            SystemTransfer {
+                from: ctx.accounts.verifier_pda.to_account_info(),
+                to: ctx.accounts.cranker_operator.to_account_info(),
+            },
+            &[verifier_signer],
+        ),
+        reimbursement,
+    )?;
+
+    let now = Clock::get()?.unix_timestamp;
     ctx.accounts.cranker.claim_credits = ctx
         .accounts
         .cranker
@@ -115,32 +178,11 @@ pub fn register_private_commitment(
         .ok_or(TsnError::CrankerClaimCreditOverflow)?;
     ctx.accounts.cranker.last_active_ts = now;
 
-    let reimbursement = Rent::get()?
-        .minimum_balance(CommitmentRecord::SPACE)
-        .checked_add(TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS)
-        .ok_or(TsnError::PaymentIntentFundingOverflow)?;
-    require!(
-        ctx.accounts.verifier_pda.lamports() >= reimbursement,
-        TsnError::InsufficientVerifierLamports
-    );
-    let verifier_bump = ctx.bumps.verifier_pda;
-    system_program::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            SystemTransfer {
-                from: ctx.accounts.verifier_pda.to_account_info(),
-                to: ctx.accounts.cranker_operator.to_account_info(),
-            },
-            &[&[TSN_VERIFIER_SEED, &[verifier_bump]]],
-        ),
-        reimbursement,
-    )?;
-
     emit!(TsnPrivateCommitmentRegistered {
         commitment_hash,
-        token_mint: record.token_mint,
+        token_mint: ctx.accounts.token_mint.key(),
         amount,
-        epoch_id: record.epoch_id,
+        epoch_id: mother_escrow.epoch_id,
     });
     Ok(())
 }

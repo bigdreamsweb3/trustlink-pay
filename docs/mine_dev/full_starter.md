@@ -8,8 +8,11 @@ npm run tsn:security:keys
 
 Copy the generated:
 
-- Public key → `frontend/.env.local` as `NEXT_PUBLIC_TSN_CRANKER_ENCRYPTION_PUBLIC_KEY`
-- Secret key → `tsn-cranker-op-daemon/.env.local` as `TSN_CRANKER_ENCRYPTION_SECRET_KEY`
+- Public key → `frontend/.env.local` as `NEXT_PUBLIC_TSN_ROUTE_ENCRYPTION_PUBLIC_KEY`
+- Secret key → `tsn-mempool-backend/.env` as `TSN_ROUTE_ENCRYPTION_SECRET_KEY`
+- Permit signer secret → `tsn-mempool-backend/.env` as `TSN_PERMIT_SIGNER_SECRET_KEY`
+- Shared worker API key → `backend/.env.local`, `tsn-mempool-frontend/.env.local`,
+  `tsn-mempool-backend/.env`, and `tsn-cranker-op-daemon/.env`
 
 **2. Structural Checks**
 
@@ -51,6 +54,14 @@ Or deploy without rebuilding everything:
 npm run tsn:program:deploy
 npm run tsn:sdk:refresh
 ```
+
+Configure the deployed private-settlement permit signer:
+
+```bat
+npm run tsn:private:configure -- <mother-authority-keypair.json> <permit-signer-pubkey> <rpc-url>
+```
+
+The permit signer public key is printed by `npm run tsn:security:keys`.
 
 **7. Build and Deploy TINS**
 
@@ -103,7 +114,7 @@ Mempool UI:  http://localhost:3002
 3. Confirm mempool reports a pending intent.
 4. Start Cranker.
 5. Confirm status progresses through `pending → escrowed → executed`.
-6. Confirm claim lease and OTDT appear in Cranker logs.
+6. Confirm the authenticated claim lease and payout nullifier appear in Cranker logs.
 7. Confirm recipient receives payout.
 8. Confirm recovery job appears.
 9. Confirm escrow liquidity returns to the settlement Cranker vault.

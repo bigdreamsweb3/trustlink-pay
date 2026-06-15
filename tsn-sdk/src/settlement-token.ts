@@ -163,11 +163,17 @@ export function buildSettlementTokenPayload(params: {
 
 export function encryptSettlementToken(params: {
   payload: TsnSettlementTokenPayload;
-  crankerEncryptionPublicKey: string;
+  routeEncryptionPublicKey?: string;
+  crankerEncryptionPublicKey?: string;
 }): TsnEncryptedSettlementToken {
+  const routeEncryptionPublicKey =
+    params.routeEncryptionPublicKey ?? params.crankerEncryptionPublicKey;
+  if (!routeEncryptionPublicKey) {
+    throw new Error("routeEncryptionPublicKey is required");
+  }
   const recipientPublicKey = parseCurve25519Key(
-    params.crankerEncryptionPublicKey,
-    "crankerEncryptionPublicKey",
+    routeEncryptionPublicKey,
+    "routeEncryptionPublicKey",
   );
   const ephemeral = nacl.box.keyPair();
   const nonce = randomBytes(nacl.box.nonceLength);

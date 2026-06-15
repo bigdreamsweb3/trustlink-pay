@@ -8,10 +8,7 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import {
-  ACCOUNT_SIZE,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  createInitializeAccount3Instruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
@@ -26,7 +23,6 @@ const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
 const TSN_CRANKER_SEED = utf8ToBytes("tsn_cranker");
 const TSN_TREASURY_SEED = utf8ToBytes("tsn_treasury");
 const TSN_SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
-const TSN_COMMITMENT_RECORD_SEED = utf8ToBytes("tsn_commitment");
 
 function concatBytes(parts: Uint8Array[]) {
   const length = parts.reduce((total, part) => total + part.length, 0);
@@ -147,11 +143,6 @@ export function getSponsoredSettlementPdas(params: {
     [TSN_SHARED_ESCROW_AUTHORITY_SEED, motherEscrow.toBuffer()],
     programId,
   )[0];
-  const commitmentRecord = PublicKey.findProgramAddressSync(
-    [TSN_COMMITMENT_RECORD_SEED, commitmentHash32],
-    programId,
-  )[0];
-
   return {
     programId,
     crankerOperator,
@@ -165,7 +156,6 @@ export function getSponsoredSettlementPdas(params: {
     treasuryPda,
     treasuryTokenAccount,
     sharedEscrowAuthority,
-    commitmentRecord,
   };
 }
 
@@ -233,38 +223,19 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   const senderFeeAmountBaseUnits = uiAmountToBaseUnits(params.senderFeeAmountUi ?? 0, params.tokenDecimals);
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
   const escrowTokenAccount = Keypair.generate();
-  const escrowTokenAccountRent = await connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
-
-  const createEscrowTokenAccountIx = SystemProgram.createAccount({
-    fromPubkey: pdas.crankerOperator,
-    newAccountPubkey: escrowTokenAccount.publicKey,
-    lamports: escrowTokenAccountRent,
-    space: ACCOUNT_SIZE,
-    programId: TOKEN_PROGRAM_ID,
-  });
-  const initializeEscrowTokenAccountIx = createInitializeAccount3Instruction(
-    escrowTokenAccount.publicKey,
-    pdas.mint,
-    pdas.sharedEscrowAuthority,
-  );
-  const lockFundsIx = createTransferCheckedInstruction(
-    senderTokenAccount,
-    pdas.mint,
-    escrowTokenAccount.publicKey,
-    senderWallet,
-    amountBaseUnits,
-    params.tokenDecimals,
-  );
   const registerCommitmentIx = new TransactionInstruction({
     programId: pdas.programId,
     keys: [
       { pubkey: pdas.crankerOperator, isSigner: true, isWritable: true },
+      { pubkey: senderWallet, isSigner: true, isWritable: false },
       { pubkey: pdas.motherEscrow, isSigner: false, isWritable: false },
       { pubkey: pdas.cranker, isSigner: false, isWritable: true },
-      { pubkey: pdas.commitmentRecord, isSigner: false, isWritable: true },
+      { pubkey: senderTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: pdas.mint, isSigner: false, isWritable: false },
       { pubkey: pdas.sharedEscrowAuthority, isSigner: false, isWritable: false },
-      { pubkey: escrowTokenAccount.publicKey, isSigner: false, isWritable: false },
+      { pubkey: escrowTokenAccount.publicKey, isSigner: true, isWritable: true },
       { pubkey: pdas.verifierPda, isSigner: false, isWritable: true },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(concatBytes([
@@ -290,13 +261,7 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     feePayer: pdas.crankerOperator,
     blockhash: latestBlockhash.blockhash,
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  }).add(
-    createEscrowTokenAccountIx,
-    initializeEscrowTokenAccountIx,
-    lockFundsIx,
-    registerCommitmentIx,
-    ...(transferSenderFeeIx ? [transferSenderFeeIx] : []),
-  );
+  }).add(registerCommitmentIx, ...(transferSenderFeeIx ? [transferSenderFeeIx] : []));
   transaction.partialSign(escrowTokenAccount);
 
   return {
@@ -309,10 +274,10 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
     intentSeedHash: pdas.intentSeedHash,
     paymentIntentId: pdas.paymentIntentId.toString(),
     privacyVersion: 2 as const,
-    commitmentRecord: pdas.commitmentRecord.toBase58(),
+    commitmentRecord: null,
     sharedEscrowAuthority: pdas.sharedEscrowAuthority.toBase58(),
     escrowTokenAccount: escrowTokenAccount.publicKey.toBase58(),
-    paymentVault: pdas.commitmentRecord.toBase58(),
+    paymentVault: escrowTokenAccount.publicKey.toBase58(),
     paymentVaultTokenAccount: escrowTokenAccount.publicKey.toBase58(),
     senderTokenAccount: senderTokenAccount.toBase58(),
     crankerFeePayer: pdas.crankerOperator.toBase58(),

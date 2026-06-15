@@ -7,43 +7,38 @@ const backendUrl = (
   "http://localhost:3000"
 ).replace(/\/$/, "");
 
-function readBackendCronSecret() {
-  try {
-    const contents = readFileSync(resolve("backend/.env.local"), "utf8");
-    const line = contents
-      .split(/\r?\n/)
-      .find((entry) => entry.trim().startsWith("CRON_SECRET="));
-    if (!line) return undefined;
-    return line
-      .slice(line.indexOf("=") + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, "");
-  } catch {
-    return undefined;
-  }
-}
+/**
+ * DEPRECATED: Background TSN sync has been removed.
+ * Transaction status is now refreshed on-demand via:
+ *   POST /api/payment/[paymentId]/refresh-status
+ *
+ * This script can trigger a single refresh for a given payment.
+ * Usage: node scripts/tsn-sync-status.mjs [backendUrl] [paymentId]
+ */
 
-const secret =
-  process.argv[3] || process.env.CRON_SECRET || readBackendCronSecret();
+const paymentId = process.argv[3];
 
-if (!secret) {
-  throw new Error(
-    "Missing CRON_SECRET. Add it to backend/.env.local, pass it as the second argument, or set CRON_SECRET.",
+if (!paymentId) {
+  console.log(
+    JSON.stringify({
+      deprecated: true,
+      message:
+        "Background TSN sync has been removed. To refresh a specific payment status, run: node scripts/tsn-sync-status.mjs <backendUrl> <paymentId>",
+    }),
   );
-}
-if (secret.length < 16) {
-  throw new Error(
-    `CRON_SECRET must contain at least 16 characters; received ${secret.length}. Update backend/.env.local and restart the backend.`,
-  );
+  process.exit(0);
 }
 
 let response;
 try {
-  response = await fetch(`${backendUrl}/api/tsn/sync`, {
-    headers: {
-      Authorization: `Bearer ${secret}`,
+  response = await fetch(
+    `${backendUrl}/api/payment/${paymentId}/refresh-status`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
     },
-  });
+  );
 } catch (error) {
   throw new Error(
     `Could not reach the TrustLink backend at ${backendUrl}. Start or restart it with "npm run dev:backend".`,
@@ -61,7 +56,7 @@ if (!response.ok) {
       'The backend Next.js cache was removed while the dev server was running. Stop that backend process, then run "npm run dev:backend" before retrying.',
     );
   }
-  throw new Error(`TSN status sync failed (${response.status}): ${body}`);
+  throw new Error(`TSN status refresh failed (${response.status}): ${body}`);
 }
 
 console.log(body);

@@ -1,15 +1,23 @@
 export class TsnHttpClient {
     baseUrl;
     fetchImpl;
+    apiKey;
     constructor(options) {
         this.baseUrl = options.baseUrl.replace(/\/$/, "");
         const fetchImpl = options.fetchImpl ?? globalThis.fetch;
         this.fetchImpl = fetchImpl.bind(globalThis);
+        this.apiKey = options.apiKey?.trim() || undefined;
+    }
+    headers(includeJson = false) {
+        return {
+            ...(includeJson ? { "Content-Type": "application/json" } : {}),
+            ...(this.apiKey ? { "x-api-key": this.apiKey } : {}),
+        };
     }
     async post(path, body) {
         const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: this.headers(true),
             body: JSON.stringify(body),
         });
         if (!response.ok) {
@@ -18,7 +26,9 @@ export class TsnHttpClient {
         return (await response.json());
     }
     async get(path) {
-        const response = await this.fetchImpl(`${this.baseUrl}${path}`);
+        const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+            headers: this.headers(),
+        });
         if (!response.ok) {
             throw new Error(`TSN request failed (${response.status}): ${await response.text()}`);
         }
@@ -27,7 +37,7 @@ export class TsnHttpClient {
     async patch(path, body) {
         const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: this.headers(true),
             body: JSON.stringify(body),
         });
         if (!response.ok) {

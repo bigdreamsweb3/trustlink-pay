@@ -154,6 +154,7 @@ pub struct TsnPrivateCommitmentRegistered {
 #[event]
 pub struct TsnPrivatePayoutExecuted {
     pub payout_nullifier: [u8; 32],
+    pub payout_sequence: u64,
     pub cranker: Pubkey,
     pub token_mint: Pubkey,
     pub payout_amount: u64,
@@ -162,6 +163,7 @@ pub struct TsnPrivatePayoutExecuted {
 #[event]
 pub struct TsnPrivateEscrowRecovered {
     pub recovery_nullifier: [u8; 32],
+    pub recovery_sequence: u64,
     pub recovery_cranker: Pubkey,
     pub token_mint: Pubkey,
     pub recovered_amount: u64,

@@ -9,11 +9,13 @@ import { IdentityTree } from "@/src/components/identity-tree";
 import { PaymentNotificationReceipt } from "@/src/components/payment-notification-receipt";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { SectionLoader } from "@/src/components/section-loader";
-import { apiGet } from "@/src/lib/api";
+import { apiGet, apiPost } from "@/src/lib/api";
 import {
   formatTokenAmount,
   shouldPollPaymentNotification,
   shouldPollTsnPayment,
+  isTsnStatusFinal,
+  computeRefreshIntervalMs,
 } from "@/src/lib/formatters";
 import { shareInviteMessage } from "@/src/lib/share";
 import type { PaymentDetailResponse } from "@/src/lib/types";
@@ -283,12 +285,16 @@ export function TransactionDetailExperience({
 
   const [shareBusy, setShareBusy] = useState(false);
   const [receiverIdentityOpen, setReceiverIdentityOpen] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const shouldPollReceipt =
     detail?.viewerRole === "sender" &&
     shouldPollPaymentNotification(detail?.payment.notification_status);
   const shouldPollTsn = detail ? shouldPollTsnPayment(detail.payment) : false;
   const shouldPollDetail = shouldPollReceipt || shouldPollTsn;
+  const isTsnFinalized = detail?.payment.tsn
+    ? isTsnStatusFinal(detail.payment.tsn.intentStatus)
+    : false;
 
   useEffect(() => {
     if (!accessToken || !user) return;
@@ -326,25 +332,59 @@ export function TransactionDetailExperience({
     };
   }, [accessToken, paymentId, user]);
 
+  // Smart status refresh: polls /refresh-status with exponential backoff
   useEffect(() => {
-    if (!accessToken || !user || !shouldPollDetail) {
-      return;
-    }
+    if (!accessToken || !user) return;
+    if (!shouldPollDetail && isTsnFinalized) return;
 
     let cancelled = false;
 
-    async function refresh() {
+    async function refreshStatus() {
+      // Only query TSN if the transaction is not yet finalized
+      if (isTsnFinalized) return;
+
       try {
-        const r = await apiGet<PaymentDetailResponse>(
-          `/api/payment/${paymentId}`,
-          accessToken ?? undefined,
-        );
+        const result = await apiPost<{
+          paymentId: string;
+          tsnQueried: boolean;
+          dbUpdated: boolean;
+          finalized: boolean;
+          nextRefreshAfterMs: number | null;
+          settlementComplete: boolean;
+        }>(`/api/payment/${paymentId}/refresh-status`, {}, accessToken ?? undefined);
 
         if (!cancelled) {
-          setDetail(r);
+          setRefreshCount((c) => c + 1);
+
+          // Reload the full detail after a refresh-status call
+          const r = await apiGet<PaymentDetailResponse>(
+            `/api/payment/${paymentId}`,
+            accessToken ?? undefined,
+            { cache: "no-store" },
+          );
+          if (!cancelled) setDetail(r);
+
+          // Stop polling once finalized
+          if (result.finalized) {
+            return;
+          }
         }
-      } catch {}
+      } catch {
+        // Silently retry on next interval
+      }
     }
+
+    // Immediate refresh on mount if not finalized
+    if (!isTsnFinalized) {
+      void refreshStatus();
+    }
+
+    // Compute next interval based on refresh count
+    const intervalMs = computeRefreshIntervalMs(
+      refreshCount,
+      isTsnFinalized,
+    );
+    if (intervalMs === null) return;
 
     const interval = window.setInterval(() => {
       if (
@@ -353,15 +393,14 @@ export function TransactionDetailExperience({
       ) {
         return;
       }
-
-      void refresh();
-    }, DETAIL_REFRESH_INTERVAL_MS);
+      void refreshStatus();
+    }, intervalMs);
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [accessToken, paymentId, shouldPollDetail, user]);
+  }, [accessToken, paymentId, shouldPollDetail, isTsnFinalized, refreshCount, user]);
 
   const receiptUpdatedAt = useMemo(() => {
     if (!detail) return null;

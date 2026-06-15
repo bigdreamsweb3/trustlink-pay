@@ -1,19 +1,26 @@
 use anchor_lang::{
     prelude::*,
-    solana_program::sysvar,
+    solana_program::{program_pack::Pack, sysvar},
     system_program::{self, Transfer as SystemTransfer},
 };
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::{
+    associated_token::{self, get_associated_token_address, AssociatedToken},
+    token::{self, Mint, Token, TokenAccount, Transfer},
+};
 
 use crate::tsn::{
     constants::{
-        TSN_CRANKER_VAULT_AUTHORITY_SEED, TSN_PAYOUT_NULLIFIER_SEED,
+        TSN_CRANKER_VAULT_AUTHORITY_SEED,
         TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS,
-        TSN_PRIVATE_SETTLEMENT_CONFIG_SEED, TSN_VERIFIER_SEED,
+        TSN_PRIVATE_REPLAY_REGISTRY_SEED, TSN_PRIVATE_SETTLEMENT_CONFIG_SEED,
+        TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivatePayoutExecuted,
-    state::{Cranker, CrankerVault, MotherEscrow, PrivateSettlementConfig, SpentNullifier},
+    state::{
+        Cranker, CrankerVault, MotherEscrow, PrivateReplayRegistry,
+        PrivateSettlementConfig,
+    },
     utils::{compute_cranker_dna, private_payout_message, verify_ed25519_permit},
 };
 
@@ -40,13 +47,12 @@ pub struct ExecutePrivatePayout<'info> {
     pub private_settlement_config: Box<Account<'info, PrivateSettlementConfig>>,
 
     #[account(
-        init,
-        payer = operator,
-        space = SpentNullifier::SPACE,
-        seeds = [TSN_PAYOUT_NULLIFIER_SEED, payout_nullifier.as_ref()],
-        bump
+        mut,
+        seeds = [TSN_PRIVATE_REPLAY_REGISTRY_SEED, mother_escrow.key().as_ref()],
+        bump = private_replay_registry.bump,
+        has_one = mother_escrow
     )]
-    pub spent_nullifier: Account<'info, SpentNullifier>,
+    pub private_replay_registry: Box<Account<'info, PrivateReplayRegistry>>,
 
     #[account(
         mut,
@@ -71,11 +77,17 @@ pub struct ExecutePrivatePayout<'info> {
     )]
     pub vault_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: Recipient wallet owns the canonical associated token account.
+    pub recipient_wallet: UncheckedAccount<'info>,
+
     #[account(
-        mut,
-        constraint = recipient_token_account.mint == cranker_vault.token_mint
+        constraint = token_mint.key() == cranker_vault.token_mint
     )]
-    pub recipient_token_account: Box<Account<'info, TokenAccount>>,
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    /// CHECK: Canonical ATA, created by the verifier PDA when missing.
+    #[account(mut)]
+    pub recipient_token_account: UncheckedAccount<'info>,
 
     /// CHECK: Ed25519 instruction introspection sysvar.
     #[account(address = sysvar::instructions::ID)]
@@ -86,12 +98,14 @@ pub struct ExecutePrivatePayout<'info> {
     pub verifier_pda: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn execute_private_payout(
     ctx: Context<ExecutePrivatePayout>,
     payout_nullifier: [u8; 32],
+    payout_sequence: u64,
     payout_amount: u64,
     claim_fee_amount: u64,
     expires_at_ts: i64,
@@ -105,6 +119,10 @@ pub fn execute_private_payout(
     require!(now <= expires_at_ts, TsnError::PermitExpired);
     require!(payout_amount > 0, TsnError::InvalidPayoutAmount);
     require!(
+        payout_sequence == ctx.accounts.private_replay_registry.next_payout_sequence,
+        TsnError::InvalidPrivateReplaySequence
+    );
+    require!(
         ctx.accounts.cranker.claim_credits > 0,
         TsnError::InsufficientCrankerClaimCredits
     );
@@ -116,6 +134,14 @@ pub fn execute_private_payout(
         *ctx.accounts.verifier_pda.owner,
         system_program::ID,
         TsnError::InvalidVerifierPda
+    );
+    require_keys_eq!(
+        ctx.accounts.recipient_token_account.key(),
+        get_associated_token_address(
+            &ctx.accounts.recipient_wallet.key(),
+            &ctx.accounts.token_mint.key(),
+        ),
+        TsnError::InvalidRecoveryDestination
     );
 
     let expected_dna = compute_cranker_dna(
@@ -133,6 +159,7 @@ pub fn execute_private_payout(
         &ctx.accounts.mother_escrow.key(),
         &ctx.accounts.operator.key(),
         &payout_nullifier,
+        payout_sequence,
         &ctx.accounts.cranker_vault.key(),
         &ctx.accounts.recipient_token_account.key(),
         &ctx.accounts.cranker_vault.token_mint,
@@ -146,6 +173,46 @@ pub fn execute_private_payout(
         &permit_signature,
         &message,
     )?;
+
+    let verifier_bump = ctx.bumps.verifier_pda;
+    let verifier_bump_seed = [verifier_bump];
+    let verifier_signer: &[&[u8]] = &[TSN_VERIFIER_SEED, &verifier_bump_seed];
+    if ctx.accounts.recipient_token_account.lamports() == 0 {
+        let required_verifier_lamports = Rent::get()?
+            .minimum_balance(anchor_spl::token::spl_token::state::Account::LEN)
+            .checked_add(TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS)
+            .ok_or(TsnError::FeeSplitOverflow)?;
+        require!(
+            ctx.accounts.verifier_pda.lamports() >= required_verifier_lamports,
+            TsnError::InsufficientVerifierLamports
+        );
+        associated_token::create(CpiContext::new_with_signer(
+            ctx.accounts.associated_token_program.to_account_info(),
+            associated_token::Create {
+                payer: ctx.accounts.verifier_pda.to_account_info(),
+                associated_token: ctx.accounts.recipient_token_account.to_account_info(),
+                authority: ctx.accounts.recipient_wallet.to_account_info(),
+                mint: ctx.accounts.token_mint.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+            },
+            &[verifier_signer],
+        ))?;
+    }
+    let recipient_token_data = ctx.accounts.recipient_token_account.try_borrow_data()?;
+    let recipient_token_state =
+        anchor_spl::token::spl_token::state::Account::unpack(&recipient_token_data)?;
+    require_keys_eq!(
+        recipient_token_state.owner,
+        ctx.accounts.recipient_wallet.key(),
+        TsnError::InvalidRecoveryDestination
+    );
+    require_keys_eq!(
+        recipient_token_state.mint,
+        ctx.accounts.token_mint.key(),
+        TsnError::InvalidRecoveryDestination
+    );
+    drop(recipient_token_data);
 
     let cranker_vault_key = ctx.accounts.cranker_vault.key();
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -183,23 +250,15 @@ pub fn execute_private_payout(
     ctx.accounts.cranker.total_executes = ctx.accounts.cranker.total_executes.saturating_add(1);
     ctx.accounts.cranker.last_active_ts = now;
 
-    let nullifier = &mut ctx.accounts.spent_nullifier;
-    nullifier.mother_escrow = ctx.accounts.mother_escrow.key();
-    nullifier.nullifier = payout_nullifier;
-    nullifier.operator = ctx.accounts.operator.key();
-    nullifier.action = SpentNullifier::ACTION_PAYOUT;
-    nullifier.used_at_ts = now;
-    nullifier.bump = ctx.bumps.spent_nullifier;
+    ctx.accounts.private_replay_registry.next_payout_sequence = payout_sequence
+        .checked_add(1)
+        .ok_or(TsnError::PrivateReplaySequenceOverflow)?;
 
-    let reimbursement = Rent::get()?
-        .minimum_balance(SpentNullifier::SPACE)
-        .checked_add(TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS)
-        .ok_or(TsnError::PaymentIntentFundingOverflow)?;
+    let reimbursement = TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS;
     require!(
         ctx.accounts.verifier_pda.lamports() >= reimbursement,
         TsnError::InsufficientVerifierLamports
     );
-    let verifier_bump = ctx.bumps.verifier_pda;
     system_program::transfer(
         CpiContext::new_with_signer(
             ctx.accounts.system_program.to_account_info(),
@@ -207,13 +266,14 @@ pub fn execute_private_payout(
                 from: ctx.accounts.verifier_pda.to_account_info(),
                 to: ctx.accounts.operator.to_account_info(),
             },
-            &[&[TSN_VERIFIER_SEED, &[verifier_bump]]],
+            &[verifier_signer],
         ),
         reimbursement,
     )?;
 
     emit!(TsnPrivatePayoutExecuted {
         payout_nullifier,
+        payout_sequence,
         cranker: ctx.accounts.cranker.key(),
         token_mint: ctx.accounts.cranker_vault.token_mint,
         payout_amount,

@@ -1,8 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/tsn/sync",
-      "schedule": "* * * * *"
-    }
-  ]
+  "crons": []
 }

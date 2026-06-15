@@ -90,6 +90,8 @@ export type TsnMempoolIntent = CreateIntentRequest & {
 export type TsnMempoolClaimRequest = RequestClaimRequest & {
     id: string;
     status: TsnClaimRequestStatus;
+    assignedCrankerPubkey?: string | null;
+    leaseExpiresAt?: string | null;
     settlementReason?: string | null;
     postedAt: string;
     updatedAt: string;
@@ -114,13 +116,13 @@ export type ProofOfPaymentRequest = {
 export type TsnRecoveryStatus = "pending" | "leased" | "completed" | "failed" | "canceled";
 export type TsnRecoveryWorkItem = {
     id: string;
-    paymentId: string;
-    transferId: string;
-    paymentIntentId: string;
-    settlementVault: string;
-    settlementTokenAccount: string;
+    paymentId?: string;
+    transferId?: string;
+    paymentIntentId?: string;
+    settlementVault?: string;
+    settlementTokenAccount?: string;
     tokenMintAddress: string;
-    settlementCrankerPubkey: string;
+    settlementCrankerPubkey?: string;
     privacyVersion?: number | null;
     amount: number;
     epoch: number;

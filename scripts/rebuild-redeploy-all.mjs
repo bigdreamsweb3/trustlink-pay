@@ -84,7 +84,7 @@ const programs = {
       "pids/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V.json",
   },
   tins: {
-    build: ["cargo", ["build-sbf"]],
+    build: ["anchor", ["build"]],
     cwd: path.join(root, "tins-registrar", "program"),
     deployKeypair: path.join(
       root,

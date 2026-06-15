@@ -1,12 +1,12 @@
 export const runtime = "nodejs";
 import { randomUUID } from "node:crypto";
-import { Connection } from "@solana/web3.js";
-import { resolveTIN } from "@trustlink/tsn-sdk/tins";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { resolveTIN, getTinsIdentityPda, decodeTinAccount } from "@trustlink/tsn-sdk/tins";
 
 import { toErrorResponse, ok } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
 import { env } from "@/app/lib/env";
-import { findUserByPhoneNumber, findUserByTin } from "@/app/db/users";
+import { findUserByPhoneNumber, findUserByTin, updateUserTinMapping, ensureUserForPhoneNumber } from "@/app/db/users";
 import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
 import { sha256 } from "@/app/utils/hash";
@@ -74,9 +74,62 @@ export async function POST(request: Request) {
       Number.isFinite(quotedTotalRequired) && quotedTotalRequired >= paymentAmount
         ? quotedTotalRequired
         : paymentAmount + (Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : 0);
-    const sender = await findUserByPhoneNumber(senderPhoneNumber);
-    if (!sender) return toErrorResponse(new Error("Sender must register identity first"));
-    if (!sender.tin) return toErrorResponse(new Error("Sender must create a TIN before sending payments"));
+    let sender = await findUserByPhoneNumber(senderPhoneNumber);
+
+    // Fall back to TSN on-chain identity resolution when local DB misses or is incomplete
+    if (!sender || !sender.tin) {
+      const senderIdentity = await resolveSenderWalletToTin(senderWallet);
+
+      if (senderIdentity) {
+        if (sender && !sender.tin) {
+          // Local DB has the user but no TIN — repair with on-chain data
+          await updateUserTinMapping({
+            userId: sender.id,
+            tin: senderIdentity.tin,
+            tinsIdentityPublicKey: senderIdentity.identityPubkey,
+            tinsRegistryPublicKey: senderIdentity.registry,
+            tinsWalletPublicKey: senderIdentity.authority,
+            tinsProgramId: senderIdentity.programId,
+          });
+          sender.tin = senderIdentity.tin;
+          logger.info("payment.create.sender_tin_repaired_from_tsn", {
+            senderWallet,
+            senderId: sender.id,
+            tin: senderIdentity.tin,
+          });
+        } else {
+          // No local user record — create one from TSN identity data
+          const phoneToUse = senderIdentity.phone ?? senderPhoneNumber;
+          sender = await ensureUserForPhoneNumber({
+            phoneNumber: phoneToUse,
+            phoneHash: sha256(phoneToUse),
+            displayName: senderIdentity.displayName,
+          });
+          await updateUserTinMapping({
+            userId: sender.id,
+            tin: senderIdentity.tin,
+            tinsIdentityPublicKey: senderIdentity.identityPubkey,
+            tinsRegistryPublicKey: senderIdentity.registry,
+            tinsWalletPublicKey: senderIdentity.authority,
+            tinsProgramId: senderIdentity.programId,
+          });
+          logger.info("payment.create.sender_created_from_tsn_identity", {
+            senderWallet,
+            senderId: sender.id,
+            tin: senderIdentity.tin,
+            phone: phoneToUse,
+          });
+        }
+      } else {
+        // TSN could not confirm the sender wallet has an identity
+        if (!sender) {
+          return toErrorResponse(
+            new Error("Sender wallet is not registered with TSN. Please register your identity first."),
+          );
+        }
+        return toErrorResponse(new Error("Sender must create a TIN before sending payments"));
+      }
+    }
 
     let receiverTin: string;
     let receiverPhone: string;
@@ -204,5 +257,71 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : "Unknown error",
     });
     return toErrorResponse(error);
+  }
+}
+
+/**
+ * Resolve a sender's TIN and identity from TSN on-chain data using their wallet address.
+ * Returns null if the wallet has no TINS identity account on-chain.
+ */
+async function resolveSenderWalletToTin(senderWallet: string): Promise<{
+  tin: string;
+  authority: string;
+  registry: string;
+  identityPubkey: string;
+  displayName: string;
+  phone: string | null;
+  programId: string;
+} | null> {
+  try {
+    const connection = new Connection(
+      env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
+      "confirmed",
+    );
+    const walletPubkey = new PublicKey(senderWallet);
+    const programId = env.TINS_PROGRAM_ID;
+
+    const identityPda = getTinsIdentityPda({ walletPubkey, programId });
+    const accountInfo = await connection.getAccountInfo(identityPda);
+
+    if (!accountInfo) return null;
+
+    const decoded = decodeTinAccount(accountInfo.data);
+    const tin = decoded.tin.toString();
+
+    const resolved = await resolveTIN({
+      tin,
+      connection,
+      programId,
+    });
+
+    if (resolved.status !== 1) return null;
+
+    const whatsapp = resolved.socialIdentities.find(
+      (id) => id.type.toLowerCase() === "whatsapp",
+    );
+
+    logger.info("payment.create.sender_identity_resolved_from_tsn", {
+      senderWallet,
+      tin,
+      displayName: resolved.name,
+      hasPhone: !!whatsapp?.value,
+    });
+
+    return {
+      tin,
+      authority: resolved.authority.toBase58(),
+      registry: resolved.registry.toBase58(),
+      identityPubkey: identityPda.toBase58(),
+      displayName: resolved.name,
+      phone: whatsapp?.value ?? null,
+      programId: programId.toString(),
+    };
+  } catch (error) {
+    logger.warn("payment.create.sender_identity_resolution_failed", {
+      senderWallet,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    return null;
   }
 }

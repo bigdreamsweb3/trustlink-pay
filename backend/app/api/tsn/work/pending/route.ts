@@ -10,7 +10,10 @@ export async function GET() {
       return ok({ intents: [] });
     }
 
-    const client = new TsnHttpClient({ baseUrl: env.TSN_MEMPOOL_URL });
+    const client = new TsnHttpClient({
+      baseUrl: env.TSN_MEMPOOL_URL,
+      apiKey: env.TSN_MEMPOOL_API_KEY,
+    });
     return ok(await client.listPendingWork(50));
   } catch (error) {
     return toErrorResponse(error);

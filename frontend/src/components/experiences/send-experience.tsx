@@ -14,7 +14,11 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { isPaymentNotificationFinal } from "@/src/lib/formatters";
+import {
+  isPaymentNotificationFinal,
+  isTsnStatusFinal,
+  computeRefreshIntervalMs,
+} from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
 import {
   detectCountryFromLocale,
@@ -65,8 +69,6 @@ import {
 } from "@/src/components/experiences/send/shared/send-cost";
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
 import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
-
-const SEND_RECEIPT_REFRESH_INTERVAL_MS = 4_000;
 
 function paymentStatusLabel(status: PaymentRecord["status"]) {
   if (status === "created") return "processing";
@@ -408,7 +410,65 @@ export function SendExperience() {
   /* catch block always reveals country fallback and unlocks */
   useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin(tin); if (latestLookupRequestId.current !== reqId) return; applyResolvedRecipient(resolved); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(!looksLikeTinCandidate(trimmed)); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
 
-  useEffect(() => { if (!sendSuccessPaymentId || !accessToken) return; let cancelled = false; async function refresh() { try { const r = await apiGet<{ payment: PaymentRecord | null }>(`/api/payment/${sendSuccessPaymentId}`, accessToken ?? undefined); if (cancelled || !r.payment) return; setSendSuccess((c) => { if (!c || c.paymentId !== r.payment!.id) return c; return { ...c, status: r.payment!.status, tsn: r.payment!.tsn, notificationStatus: r.payment!.notification_status, notificationSentAt: r.payment!.notification_sent_at, notificationDeliveredAt: r.payment!.notification_delivered_at, notificationReadAt: r.payment!.notification_read_at, notificationFailedAt: r.payment!.notification_failed_at, notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed", notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount }; }); } catch { } } void refresh(); if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; }; const interval = window.setInterval(() => { if (typeof document !== "undefined" && document.visibilityState !== "visible") return; void refresh(); }, SEND_RECEIPT_REFRESH_INTERVAL_MS); return () => { cancelled = true; window.clearInterval(interval); }; }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+  // Smart post-send refresh: polls /refresh-status with backoff, then reloads full detail
+  useEffect(() => {
+    if (!sendSuccessPaymentId || !accessToken) return;
+    let cancelled = false;
+    let refreshAttempts = 0;
+
+    async function refreshStatus() {
+      try {
+        const result = await apiPost<{
+          paymentId: string;
+          tsnQueried: boolean;
+          dbUpdated: boolean;
+          finalized: boolean;
+          settlementComplete: boolean;
+        }>(`/api/payment/${sendSuccessPaymentId}/refresh-status`, {}, accessToken ?? undefined);
+
+        if (cancelled) return;
+        refreshAttempts++;
+
+        // Always re-fetch payment detail after a refresh-status call
+        const r = await apiGet<{ payment: PaymentRecord | null }>(
+          `/api/payment/${sendSuccessPaymentId}`,
+          accessToken ?? undefined,
+          { cache: "no-store" },
+        );
+        if (cancelled || !r.payment) return;
+        setSendSuccess((c) => {
+          if (!c || c.paymentId !== r.payment!.id) return c;
+          return {
+            ...c,
+            status: r.payment!.status,
+            tsn: r.payment!.tsn,
+            notificationStatus: r.payment!.notification_status,
+            notificationSentAt: r.payment!.notification_sent_at,
+            notificationDeliveredAt: r.payment!.notification_delivered_at,
+            notificationReadAt: r.payment!.notification_read_at,
+            notificationFailedAt: r.payment!.notification_failed_at,
+            notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed",
+            notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount,
+          };
+        });
+      } catch {
+        // Silently retry
+      }
+    }
+
+    void refreshStatus();
+    if (!shouldPollSendSuccessReceipt) return () => { cancelled = true; };
+
+    const intervalMs = computeRefreshIntervalMs(refreshAttempts, false);
+    if (intervalMs === null) return () => { cancelled = true; };
+
+    const interval = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void refreshStatus();
+    }, intervalMs);
+
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
   async function handleConnectWallet() { setError(null); const w = listAvailableSolanaWallets(); setAvailableWallets(w); if (w.length === 0) { setError("Install a Solana wallet to connect."); showToast("No Solana wallet detected."); return; } setWalletPickerOpen(true); }
   async function handleWalletSelect(walletId: string) { setConnectingWalletId(walletId); setError(null); try { const s = await connectSolanaWallet(walletId); setWalletSession(s); setWalletPickerOpen(false); setNotice(`${s.walletName} connected.`); showToast(`${s.walletName} connected.`); } catch (e) { setError(e instanceof Error ? e.message : "Could not connect wallet"); } finally { setConnectingWalletId(null); } }
@@ -553,11 +613,12 @@ export function SendExperience() {
           "NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER is required so the SDK can build the sender co-signed sponsored settlement.",
         );
       }
-      const crankerEncryptionPublicKey =
+      const routeEncryptionPublicKey =
+        process.env.NEXT_PUBLIC_TSN_ROUTE_ENCRYPTION_PUBLIC_KEY ??
         process.env.NEXT_PUBLIC_TSN_CRANKER_ENCRYPTION_PUBLIC_KEY;
-      if (!crankerEncryptionPublicKey) {
+      if (!routeEncryptionPublicKey) {
         throw new Error(
-          "NEXT_PUBLIC_TSN_CRANKER_ENCRYPTION_PUBLIC_KEY is required for private TSN settlement routing.",
+          "NEXT_PUBLIC_TSN_ROUTE_ENCRYPTION_PUBLIC_KEY is required for private TSN settlement routing.",
         );
       }
 
@@ -576,7 +637,7 @@ export function SendExperience() {
       });
       const encryptedSettlementToken = encryptSettlementToken({
         payload: settlementTokenPayload,
-        crankerEncryptionPublicKey,
+        routeEncryptionPublicKey,
       });
 
       const sponsoredSettlement = await buildTsnSponsoredSettlementTransaction({
@@ -616,7 +677,7 @@ export function SendExperience() {
         privacyVersion: sponsoredSettlement.privacyVersion,
         commitmentRecord: sponsoredSettlement.commitmentRecord,
         senderTokenAccount: sponsoredSettlement.senderTokenAccount,
-        settlementVault: sponsoredSettlement.commitmentRecord,
+        settlementVault: sponsoredSettlement.paymentVault,
         settlementTokenAccount: sponsoredSettlement.escrowTokenAccount,
         settlementPaymentIntentId: sponsoredSettlement.paymentIntentId,
         transferId: encryptedSettlementToken.transferId,

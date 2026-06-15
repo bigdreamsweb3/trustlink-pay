@@ -41,7 +41,7 @@ export declare class JsonFileTsnMempool implements TsnMempool {
 }
 export declare class HttpTsnMempool implements TsnMempool {
     private readonly client;
-    constructor(baseUrl?: string | undefined);
+    constructor(baseUrl?: string | undefined, apiKey?: string | undefined);
     postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
     postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
     listIntents(params?: {

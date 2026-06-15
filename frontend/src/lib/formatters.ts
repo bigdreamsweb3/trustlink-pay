@@ -46,3 +46,29 @@ export function shouldPollTsnPayment(payment: Pick<PaymentRecord, "tsn">) {
     status === "claimed"
   );
 }
+
+/** Statuses that are terminal — once reached, never query TSN again. */
+export const TERMINAL_TSN_STATUSES = new Set([
+  "executed",
+  "settled",
+  "expired",
+  "failed",
+  "canceled",
+  "reverted",
+]);
+
+export function isTsnStatusFinal(intentStatus: string | null | undefined): boolean {
+  return intentStatus ? TERMINAL_TSN_STATUSES.has(intentStatus) : false;
+}
+
+/** Compute the next polling interval based on check count and status. */
+export function computeRefreshIntervalMs(
+  checkCount: number,
+  isFinalized: boolean,
+): number | null {
+  if (isFinalized) return null;
+  // Exponential backoff: 4s, 8s, 16s, 30s, 30s (capped)
+  const intervals = [4_000, 8_000, 16_000, 30_000, 30_000];
+  const index = Math.min(checkCount, intervals.length - 1);
+  return intervals[index];
+}

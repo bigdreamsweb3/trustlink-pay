@@ -87,27 +87,55 @@ sends the signed transaction and `encryptedSettlementToken` to the mempool. It
 does not broadcast the transaction.
 
 For privacy version 2, this transaction creates a random one-time SPL token
-account controlled by the shared TSN escrow authority and registers only a
-commitment record. It does not create a public lifecycle `VaultState` PDA.
+account controlled by the shared TSN escrow authority. The verifier PDA pays
+the account rent inside the TSN instruction, while the Cranker pays only the
+outer Solana transaction fee and receives a direct SOL reimbursement. It does
+not create a public lifecycle `VaultState` PDA or per-payment commitment PDA.
 
-After the mempool grants a lease, trusted infrastructure signs short-lived,
-action-specific permits. Applications and React components must not construct
-these instructions.
+After the mempool grants an authenticated lease, the platform verifier decrypts
+the route and signs a short-lived, action-specific permit. The Cranker daemon
+holds only its operator key and mempool API key. It does not hold the platform
+route-decryption or permit-signing secrets.
 
 ```ts
+import { PublicKey } from "@solana/web3.js";
+import { Buffer } from "buffer";
 import {
-  createPrivatePayoutPermitMessage,
-  createPrivateSettlementNullifier,
-  signPrivateSettlementPermit,
+  requestPrivatePayoutPermit,
   tsnExecutePrivatePayoutOnChain,
-  tsnRecoverPrivateEscrowOnChain,
 } from "@trustlink/tsn-sdk/private-settlement";
+
+const permit = await requestPrivatePayoutPermit({
+  mempoolUrl: process.env.TSN_MEMPOOL_URL!,
+  apiKey: process.env.TSN_MEMPOOL_API_KEY,
+  claimRequestId,
+  operator,
+});
+
+await tsnExecutePrivatePayoutOnChain({
+  operator,
+  permitSigner: new PublicKey(permit.permitSigner),
+  permitSignature: Buffer.from(permit.permitSignatureBase64, "base64"),
+  payoutNullifier: Buffer.from(permit.payoutNullifier, "hex"),
+  payoutSequence: BigInt(permit.payoutSequence),
+  tokenMint: new PublicKey(permit.tokenMintAddress),
+  recipientWallet: new PublicKey(permit.recipientWallet),
+  payoutAmount: BigInt(permit.payoutAmountBaseUnits),
+  claimFeeAmount: BigInt(permit.claimFeeAmountBaseUnits),
+  expiresAtTs: BigInt(permit.expiresAtTs),
+});
 ```
 
-Payout and recovery use separate domain-separated nullifiers. The payout
+Payout and recovery use separate domain-separated nullifiers plus one fixed
+protocol replay-registry PDA. They do not create per-payment commitment or
+spent-nullifier PDAs. The payout
 transaction does not receive the sender escrow account or commitment record.
 Recovery receives the one-time escrow token account but does not receive the
 recipient route or payout nullifier.
+
+`requestPrivateRecoveryPermit` and `tsnRecoverPrivateEscrowOnChain` provide the
+equivalent recovery path. Permit construction and signing helpers are intended
+only for trusted verifier infrastructure, never browser applications.
 
 Legacy operations in `blockchain/solana-tsn` remain exported only for recovery
 of version 1 payments.

@@ -3,7 +3,6 @@ import { utf8ToBytes } from "@noble/hashes/utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import {
@@ -31,17 +30,17 @@ import { VERIFIED_TSN_PROGRAM_ID } from "./program.js";
 
 const PROGRAM_ID = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
 const PRIVATE_CONFIG_SEED = utf8ToBytes("tsn_private_config");
+const PRIVATE_REPLAY_REGISTRY_SEED = utf8ToBytes("tsn_private_replay");
 const SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
-const PAYOUT_NULLIFIER_SEED = utf8ToBytes("tsn_payout_nullifier");
-const RECOVERY_NULLIFIER_SEED = utf8ToBytes("tsn_recovery_nullifier");
-const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_V1");
-const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V1");
+const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_V2");
+const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V2");
 const MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1";
 
 export type PrivatePayoutPermit = {
   permitSigner: string;
   permitSignatureBase64: string;
   payoutNullifier: string;
+  payoutSequence: string;
   tokenMintAddress: string;
   recipientWallet: string;
   payoutAmountBaseUnits: string;
@@ -53,6 +52,7 @@ export type PrivateRecoveryPermit = {
   permitSigner: string;
   permitSignatureBase64: string;
   recoveryNullifier: string;
+  recoverySequence: string;
   escrowTokenAccount: string;
   settlementCrankerPubkey: string;
   tokenMintAddress: string;
@@ -119,18 +119,10 @@ export function getTsnSharedEscrowAuthorityPda() {
   )[0];
 }
 
-export function getTsnPayoutNullifierPda(nullifier: Uint8Array) {
-  assertBytes32(nullifier, "payout nullifier");
+export function getTsnPrivateReplayRegistryPda() {
+  const motherEscrow = getTsnMotherEscrowPda();
   return PublicKey.findProgramAddressSync(
-    [PAYOUT_NULLIFIER_SEED, Buffer.from(nullifier)],
-    PROGRAM_ID,
-  )[0];
-}
-
-export function getTsnRecoveryNullifierPda(nullifier: Uint8Array) {
-  assertBytes32(nullifier, "recovery nullifier");
-  return PublicKey.findProgramAddressSync(
-    [RECOVERY_NULLIFIER_SEED, Buffer.from(nullifier)],
+    [PRIVATE_REPLAY_REGISTRY_SEED, motherEscrow.toBuffer()],
     PROGRAM_ID,
   )[0];
 }
@@ -148,6 +140,7 @@ export function createPrivateSettlementNullifier(params: {
 export function createPrivatePayoutPermitMessage(params: {
   operator: PublicKey;
   payoutNullifier: Uint8Array;
+  payoutSequence: bigint;
   crankerVault: PublicKey;
   recipientTokenAccount: PublicKey;
   tokenMint: PublicKey;
@@ -162,6 +155,7 @@ export function createPrivatePayoutPermitMessage(params: {
     getTsnMotherEscrowPda().toBytes(),
     params.operator.toBytes(),
     params.payoutNullifier,
+    encodeU64(params.payoutSequence),
     params.crankerVault.toBytes(),
     params.recipientTokenAccount.toBytes(),
     params.tokenMint.toBytes(),
@@ -174,6 +168,7 @@ export function createPrivatePayoutPermitMessage(params: {
 export function createPrivateRecoveryPermitMessage(params: {
   operator: PublicKey;
   recoveryNullifier: Uint8Array;
+  recoverySequence: bigint;
   escrowTokenAccount: PublicKey;
   settlementCrankerVault: PublicKey;
   settlementVaultTokenAccount: PublicKey;
@@ -188,6 +183,7 @@ export function createPrivateRecoveryPermitMessage(params: {
     getTsnMotherEscrowPda().toBytes(),
     params.operator.toBytes(),
     params.recoveryNullifier,
+    encodeU64(params.recoverySequence),
     params.escrowTokenAccount.toBytes(),
     params.settlementCrankerVault.toBytes(),
     params.settlementVaultTokenAccount.toBytes(),
@@ -300,12 +296,14 @@ export async function tsnConfigurePrivateSettlementOnChain(params: {
   const connection = new Connection(params.rpcUrl ?? "https://api.devnet.solana.com", "confirmed");
   const motherEscrow = getTsnMotherEscrowPda();
   const config = getTsnPrivateSettlementConfigPda();
+  const replayRegistry = getTsnPrivateReplayRegistryPda();
   const instruction = new TransactionInstruction({
     programId: PROGRAM_ID,
     keys: [
       { pubkey: params.authority.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: config, isSigner: false, isWritable: true },
+      { pubkey: replayRegistry, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(
@@ -322,7 +320,11 @@ export async function tsnConfigurePrivateSettlementOnChain(params: {
     [params.authority],
     { commitment: "confirmed" },
   );
-  return { signature, config: config.toBase58() };
+  return {
+    signature,
+    config: config.toBase58(),
+    replayRegistry: replayRegistry.toBase58(),
+  };
 }
 
 export async function tsnExecutePrivatePayoutOnChain(params: {
@@ -330,6 +332,7 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   permitSigner: PublicKey;
   permitSignature: Uint8Array;
   payoutNullifier: Uint8Array;
+  payoutSequence: bigint;
   tokenMint: PublicKey;
   recipientWallet: PublicKey;
   payoutAmount: bigint;
@@ -343,7 +346,7 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const config = getTsnPrivateSettlementConfigPda();
-  const spentNullifier = getTsnPayoutNullifierPda(params.payoutNullifier);
+  const replayRegistry = getTsnPrivateReplayRegistryPda();
   const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
   const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
@@ -355,6 +358,7 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   const message = createPrivatePayoutPermitMessage({
     operator: params.operator.publicKey,
     payoutNullifier: params.payoutNullifier,
+    payoutSequence: params.payoutSequence,
     crankerVault,
     recipientTokenAccount,
     tokenMint: params.tokenMint,
@@ -374,20 +378,24 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: cranker, isSigner: false, isWritable: true },
       { pubkey: config, isSigner: false, isWritable: false },
-      { pubkey: spentNullifier, isSigner: false, isWritable: true },
+      { pubkey: replayRegistry, isSigner: false, isWritable: true },
       { pubkey: crankerVault, isSigner: false, isWritable: true },
       { pubkey: vaultAuthority, isSigner: false, isWritable: false },
       { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: params.recipientWallet, isSigner: false, isWritable: false },
+      { pubkey: params.tokenMint, isSigner: false, isWritable: false },
       { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
       { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
       { pubkey: verifierPda, isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(
       concatBytes([
         instructionDiscriminator("tsn_execute_private_payout"),
         params.payoutNullifier,
+        encodeU64(params.payoutSequence),
         encodeU64(params.payoutAmount),
         encodeU64(params.claimFeeAmount ?? 0n),
         encodeI64(params.expiresAtTs),
@@ -395,20 +403,10 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       ]),
     ),
   });
-  const transaction = new Transaction({ feePayer: params.operator.publicKey });
-  if (!(await connection.getAccountInfo(recipientTokenAccount, "confirmed"))) {
-    transaction.add(
-      createAssociatedTokenAccountInstruction(
-        params.operator.publicKey,
-        recipientTokenAccount,
-        params.recipientWallet,
-        params.tokenMint,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-      ),
-    );
-  }
-  transaction.add(verifyInstruction, payoutInstruction);
+  const transaction = new Transaction({ feePayer: params.operator.publicKey }).add(
+    verifyInstruction,
+    payoutInstruction,
+  );
   const signature = await sendAndConfirmTransaction(
     connection,
     transaction,
@@ -423,6 +421,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
   permitSigner: PublicKey;
   permitSignature: Uint8Array;
   recoveryNullifier: Uint8Array;
+  recoverySequence: bigint;
   escrowTokenAccount: PublicKey;
   settlementCrankerOperator: PublicKey;
   tokenMint: PublicKey;
@@ -443,7 +442,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
     operator: params.settlementCrankerOperator,
   });
   const config = getTsnPrivateSettlementConfigPda();
-  const spentNullifier = getTsnRecoveryNullifierPda(params.recoveryNullifier);
+  const replayRegistry = getTsnPrivateReplayRegistryPda();
   const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
   const settlementCrankerVault = getTsnCrankerVaultPda({
     cranker: settlementCranker,
@@ -456,6 +455,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
   const message = createPrivateRecoveryPermitMessage({
     operator: params.operator.publicKey,
     recoveryNullifier: params.recoveryNullifier,
+    recoverySequence: params.recoverySequence,
     escrowTokenAccount: params.escrowTokenAccount,
     settlementCrankerVault,
     settlementVaultTokenAccount,
@@ -475,7 +475,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: recoveryCranker, isSigner: false, isWritable: true },
       { pubkey: config, isSigner: false, isWritable: false },
-      { pubkey: spentNullifier, isSigner: false, isWritable: true },
+      { pubkey: replayRegistry, isSigner: false, isWritable: true },
       { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
       { pubkey: params.escrowTokenAccount, isSigner: false, isWritable: true },
       { pubkey: settlementCrankerVault, isSigner: false, isWritable: true },
@@ -489,6 +489,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
       concatBytes([
         instructionDiscriminator("tsn_recover_private_escrow"),
         params.recoveryNullifier,
+        encodeU64(params.recoverySequence),
         encodeU64(params.recoveryAmount),
         encodeI64(params.expiresAtTs),
         params.permitSignature,

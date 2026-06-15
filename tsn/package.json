@@ -9,7 +9,7 @@
     "setup": "tsx scripts/setup.ts",
     "cranker": "tsx scripts/cranker.ts",
     "protocol:build": "cd protocol && anchor build",
-    "protocol:deploy": "cd protocol && anchor deploy --program-name trustlink-escrow --program-keypair /mnt/c/Users/codepara/Desktop/trust-link/tsn/protocol/pids/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V.json",
+    "protocol:deploy": "cd protocol && anchor deploy --program-name trustlink-escrow --program-keypair /mnt/c/Users/codepara/Desktop/trust-link/tsn/protocol/pids/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V.json ",
     "protocol:test": "cd protocol && anchor test",
     "protocol:keys": "cd protocol && anchor keys list",
     "escrow:init-config": "tsx scripts/init-escrow-config.ts",

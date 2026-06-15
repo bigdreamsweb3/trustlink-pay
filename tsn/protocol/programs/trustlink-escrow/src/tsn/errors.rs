@@ -88,4 +88,8 @@ pub enum TsnError {
     InvalidPrivateCommitment,
     #[msg("Private recovery amount does not match escrow liquidity")]
     InvalidPrivateRecoveryAmount,
+    #[msg("Private settlement replay sequence is invalid or already consumed")]
+    InvalidPrivateReplaySequence,
+    #[msg("Private settlement replay sequence overflowed")]
+    PrivateReplaySequenceOverflow,
 }

@@ -425,6 +425,7 @@ pub mod trustlink_escrow {
     pub fn tsn_execute_private_payout(
         ctx: Context<ExecutePrivatePayout>,
         payout_nullifier: [u8; 32],
+        payout_sequence: u64,
         payout_amount: u64,
         claim_fee_amount: u64,
         expires_at_ts: i64,
@@ -433,6 +434,7 @@ pub mod trustlink_escrow {
         tsn::instructions::execute_private_payout(
             ctx,
             payout_nullifier,
+            payout_sequence,
             payout_amount,
             claim_fee_amount,
             expires_at_ts,
@@ -443,6 +445,7 @@ pub mod trustlink_escrow {
     pub fn tsn_recover_private_escrow(
         ctx: Context<RecoverPrivateEscrow>,
         recovery_nullifier: [u8; 32],
+        recovery_sequence: u64,
         recovery_amount: u64,
         expires_at_ts: i64,
         permit_signature: [u8; 64],
@@ -450,6 +453,7 @@ pub mod trustlink_escrow {
         tsn::instructions::recover_private_escrow(
             ctx,
             recovery_nullifier,
+            recovery_sequence,
             recovery_amount,
             expires_at_ts,
             permit_signature,

@@ -218,11 +218,11 @@ export class JsonFileTsnMempool {
 }
 export class HttpTsnMempool {
     client;
-    constructor(baseUrl = process.env.TSN_MEMPOOL_URL) {
+    constructor(baseUrl = process.env.TSN_MEMPOOL_URL, apiKey = process.env.TSN_MEMPOOL_API_KEY) {
         if (!baseUrl) {
             throw new Error("TSN_MEMPOOL_URL is required for HttpTsnMempool");
         }
-        this.client = new TsnHttpClient({ baseUrl });
+        this.client = new TsnHttpClient({ baseUrl, apiKey });
     }
     postIntent(request) {
         return this.client.postIntent(request);

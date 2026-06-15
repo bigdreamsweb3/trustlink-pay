@@ -26,6 +26,36 @@ function isPortOpen(port) {
   });
 }
 
+async function inspectMempoolApi(port) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/openapi.json`, {
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (!response.ok) return { compatible: false, reason: `HTTP ${response.status}` };
+
+    const document = await response.json();
+    const properties =
+      document?.components?.schemas?.CreateIntentRequest?.properties ?? {};
+    const requiredFields = [
+      "privacyVersion",
+      "commitmentRecord",
+      "encryptedSettlementToken",
+    ];
+    const missingFields = requiredFields.filter((field) => !(field in properties));
+    return missingFields.length === 0
+      ? { compatible: true }
+      : {
+          compatible: false,
+          reason: `missing private-settlement fields: ${missingFields.join(", ")}`,
+        };
+  } catch (error) {
+    return {
+      compatible: false,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function spawnTagged(name, command, args, options = {}) {
   const child = spawn(command, args, {
     cwd: options.cwd ?? rootDir,
@@ -55,7 +85,18 @@ const backendBusy = await isPortOpen(mempoolPort);
 const frontendBusy = await isPortOpen(frontendPort);
 
 if (backendBusy) {
-  console.log(`[mempool-api] port ${mempoolPort} already in use; reusing the existing API`);
+  const inspection = await inspectMempoolApi(mempoolPort);
+  if (!inspection.compatible) {
+    throw new Error(
+      [
+        `[mempool-api] port ${mempoolPort} is occupied by an incompatible or unknown service (${inspection.reason}).`,
+        "Stop the existing process and rerun this command so the current TSN mempool API starts.",
+        `Windows: netstat -ano | findstr :${mempoolPort}`,
+        `WSL/Linux: lsof -i :${mempoolPort}`,
+      ].join("\n"),
+    );
+  }
+  console.log(`[mempool-api] port ${mempoolPort} already in use; reusing the compatible API`);
 } else {
   const backendEnv = {
     ...process.env,

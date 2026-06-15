@@ -142,6 +142,9 @@ CREATE TABLE IF NOT EXISTS payment_intents (
   escrow_tx_sig VARCHAR(128),
   claim_tx_sig VARCHAR(128),
   proof_tx_sig VARCHAR(128),
+  last_status_checked_at TIMESTAMPTZ,
+  status_finalized_at TIMESTAMPTZ,
+  status_check_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

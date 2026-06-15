@@ -8,14 +8,15 @@ use anchor_lang::{
 
 use crate::tsn::errors::TsnError;
 
-pub const PRIVATE_PAYOUT_DOMAIN: &[u8] = b"TSN_PRIVATE_PAYOUT_V1";
-pub const PRIVATE_RECOVERY_DOMAIN: &[u8] = b"TSN_PRIVATE_RECOVERY_V1";
+pub const PRIVATE_PAYOUT_DOMAIN: &[u8] = b"TSN_PRIVATE_PAYOUT_V2";
+pub const PRIVATE_RECOVERY_DOMAIN: &[u8] = b"TSN_PRIVATE_RECOVERY_V2";
 
 pub fn private_payout_message(
     program_id: &Pubkey,
     mother_escrow: &Pubkey,
     operator: &Pubkey,
     payout_nullifier: &[u8; 32],
+    payout_sequence: u64,
     cranker_vault: &Pubkey,
     recipient_token_account: &Pubkey,
     token_mint: &Pubkey,
@@ -29,6 +30,7 @@ pub fn private_payout_message(
         mother_escrow.as_ref(),
         operator.as_ref(),
         payout_nullifier,
+        &payout_sequence.to_le_bytes(),
         cranker_vault.as_ref(),
         recipient_token_account.as_ref(),
         token_mint.as_ref(),
@@ -44,6 +46,7 @@ pub fn private_recovery_message(
     mother_escrow: &Pubkey,
     operator: &Pubkey,
     recovery_nullifier: &[u8; 32],
+    recovery_sequence: u64,
     escrow_token_account: &Pubkey,
     settlement_cranker_vault: &Pubkey,
     settlement_vault_token_account: &Pubkey,
@@ -57,6 +60,7 @@ pub fn private_recovery_message(
         mother_escrow.as_ref(),
         operator.as_ref(),
         recovery_nullifier,
+        &recovery_sequence.to_le_bytes(),
         escrow_token_account.as_ref(),
         settlement_cranker_vault.as_ref(),
         settlement_vault_token_account.as_ref(),

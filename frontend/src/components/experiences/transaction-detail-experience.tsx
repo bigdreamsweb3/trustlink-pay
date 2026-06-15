@@ -15,7 +15,6 @@ import {
   shouldPollPaymentNotification,
   shouldPollTsnPayment,
   isTsnStatusFinal,
-  computeRefreshIntervalMs,
 } from "@/src/lib/formatters";
 import { shareInviteMessage } from "@/src/lib/share";
 import type { PaymentDetailResponse } from "@/src/lib/types";
@@ -285,7 +284,6 @@ export function TransactionDetailExperience({
 
   const [shareBusy, setShareBusy] = useState(false);
   const [receiverIdentityOpen, setReceiverIdentityOpen] = useState(false);
-  const [refreshCount, setRefreshCount] = useState(0);
 
   const shouldPollReceipt =
     detail?.viewerRole === "sender" &&
@@ -332,7 +330,7 @@ export function TransactionDetailExperience({
     };
   }, [accessToken, paymentId, user]);
 
-  // Smart status refresh: polls /refresh-status with exponential backoff
+  // Smart status refresh: fast polling with dynamic scheduling for real-time UX
   useEffect(() => {
     if (!accessToken || !user) return;
     if (!shouldPollDetail && isTsnFinalized) return;
@@ -353,54 +351,43 @@ export function TransactionDetailExperience({
           settlementComplete: boolean;
         }>(`/api/payment/${paymentId}/refresh-status`, {}, accessToken ?? undefined);
 
-        if (!cancelled) {
-          setRefreshCount((c) => c + 1);
+        if (cancelled) return;
 
-          // Reload the full detail after a refresh-status call
-          const r = await apiGet<PaymentDetailResponse>(
-            `/api/payment/${paymentId}`,
-            accessToken ?? undefined,
-            { cache: "no-store" },
-          );
-          if (!cancelled) setDetail(r);
+        // Reload the full detail after a refresh-status call
+        const r = await apiGet<PaymentDetailResponse>(
+          `/api/payment/${paymentId}`,
+          accessToken ?? undefined,
+          { cache: "no-store" },
+        );
+        if (!cancelled) setDetail(r);
 
-          // Stop polling once finalized
-          if (result.finalized) {
-            return;
-          }
-        }
+        // Stop polling once finalized
+        if (result.finalized) return;
       } catch {
         // Silently retry on next interval
       }
     }
 
-    // Immediate refresh on mount if not finalized
-    if (!isTsnFinalized) {
-      void refreshStatus();
-    }
+    // Use dynamic setTimeout-based scheduling so interval adapts per response
+    let timerId: number | undefined;
 
-    // Compute next interval based on refresh count
-    const intervalMs = computeRefreshIntervalMs(
-      refreshCount,
-      isTsnFinalized,
-    );
-    if (intervalMs === null) return;
-
-    const interval = window.setInterval(() => {
-      if (
-        typeof document !== "undefined" &&
-        document.visibilityState !== "visible"
-      ) {
+    async function poll() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        timerId = window.setTimeout(poll, 500);
         return;
       }
-      void refreshStatus();
-    }, intervalMs);
+      if (cancelled) return;
+      await refreshStatus();
+      if (cancelled) return;
+      timerId = window.setTimeout(poll, 800);
+    }
 
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [accessToken, paymentId, shouldPollDetail, isTsnFinalized, refreshCount, user]);
+    if (!isTsnFinalized) {
+      timerId = window.setTimeout(poll, 0);
+    }
+
+    return () => { cancelled = true; if (timerId !== undefined) window.clearTimeout(timerId); };
+  }, [accessToken, paymentId, shouldPollDetail, isTsnFinalized, user]);
 
   const receiptUpdatedAt = useMemo(() => {
     if (!detail) return null;

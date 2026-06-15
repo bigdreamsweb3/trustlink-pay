@@ -90,7 +90,7 @@ function isTerminalIntentStatus(status: PaymentIntentStatus) {
 }
 
 /** Minimum seconds between TSN status queries for the same transaction. */
-const STATUS_REFRESH_COOLDOWN_SECONDS = 15;
+const STATUS_REFRESH_COOLDOWN_SECONDS = 2;
 /** Maximum seconds to wait before allowing another TSN query for a non-terminal intent. */
 const STATUS_REFRESH_MAX_COOLDOWN_SECONDS = 300;
 /** After this many seconds since creation, stop querying TSN for non-terminal intents. */

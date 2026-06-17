@@ -1,7 +1,7 @@
 import type { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 
-import { crankerPda, intentPda, motherEscrowPda } from "./tsnPdas.js";
+import { crankerPda, epochAccountPda, intentPda, motherEscrowPda, paymentCommitmentPda, peaPda, privacyReceivePda } from "./tsnPdas.js";
 import {
   assertVerifiedTsnProgramId,
   VERIFIED_TSN_PROGRAM_ID,
@@ -26,6 +26,22 @@ export class TsnClient {
     operator: PublicKey,
   ): [PublicKey, number] {
     return crankerPda(motherEscrow, operator, this.programId);
+  }
+
+  epochAccountPda(motherEscrow: PublicKey, epochId: bigint | number): [PublicKey, number] {
+    return epochAccountPda(motherEscrow, epochId, this.programId);
+  }
+
+  peaPda(epochId: bigint | number, mint: PublicKey): [PublicKey, number] {
+    return peaPda(epochId, mint, this.programId);
+  }
+
+  paymentCommitmentPda(epochAccount: PublicKey, commitmentHash: Uint8Array): [PublicKey, number] {
+    return paymentCommitmentPda(epochAccount, commitmentHash, this.programId);
+  }
+
+  privacyReceivePda(motherEscrow: PublicKey, tinRouteHash: Uint8Array): [PublicKey, number] {
+    return privacyReceivePda(motherEscrow, tinRouteHash, this.programId);
   }
 
   intentPda(

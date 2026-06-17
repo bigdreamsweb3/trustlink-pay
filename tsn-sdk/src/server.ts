@@ -30,6 +30,22 @@ createServer(async (request, response) => {
       const url = new URL(request.url, `http://localhost:${port}`);
       return send(response, 200, { intents: await mempool.listPendingWork(Number(url.searchParams.get("limit") ?? 50)) });
     }
+    if (request.method === "POST" && request.url === "/epoch-challenges") {
+      return send(response, 200, await mempool.publishEpochChallenge(await readJson(request)));
+    }
+    if (request.method === "GET" && request.url?.startsWith("/epoch-challenges")) {
+      const url = new URL(request.url, `http://localhost:${port}`);
+      return send(response, 200, await mempool.listOpenEpochChallenges(Number(url.searchParams.get("limit") ?? 20)));
+    }
+    const challengeStatusMatch = request.url?.match(/^\/epoch-challenges\/([^/]+)\/status$/);
+    if (request.method === "PATCH" && challengeStatusMatch) {
+      const body = await readJson(request);
+      return send(
+        response,
+        200,
+        await mempool.updateEpochChallengeStatus(decodeURIComponent(challengeStatusMatch[1]), body.status, body),
+      );
+    }
     return send(response, 404, { error: "Not found" });
   } catch (error) {
     return send(response, 500, { error: error instanceof Error ? error.message : "Unknown error" });

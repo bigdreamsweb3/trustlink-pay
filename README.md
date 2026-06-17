@@ -173,7 +173,11 @@ TSN also powers:
 - Cranker settlement markets
 - Smart recovery and epoch-based reimbursement
 
+Start here: [TrustLink Pay Start Here](docs/START-HERE.md)
+
 Protocol details: [TSN Commitment Settlement](docs/TSN-COMMITMENT-SETTLEMENT.md)
+
+Epoch settlement v1: [TSN Epoch Settlement v1 Experimental](docs/EPOCH-SETTLEMENT-v1-EXPERIMENTAL.md)
 
 ---
 

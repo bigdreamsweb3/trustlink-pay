@@ -11,6 +11,7 @@ import type {
   TsnMempoolIntent,
   TsnIntentWorkItem,
   TsnRecoveryStatus,
+  TsnEpochChallenge,
   TsnRecoveryWorkItem,
   TsnWorkItem,
   ProofOfPaymentRequest,
@@ -39,6 +40,9 @@ export interface TsnMempool {
     status: TsnRecoveryStatus,
     patch?: Partial<TsnRecoveryWorkItem>,
   ): Promise<TsnRecoveryWorkItem | null>;
+  publishEpochChallenge(challenge: Omit<TsnEpochChallenge, "id" | "status" | "postedAt" | "updatedAt"> & { id?: string; status?: TsnEpochChallenge["status"] }): Promise<TsnEpochChallenge>;
+  listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>;
+  updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge | null>;
 }
 
 type Snapshot = {
@@ -46,6 +50,7 @@ type Snapshot = {
   claimRequests: TsnMempoolClaimRequest[];
   proofs?: ProofOfPaymentRequest[];
   recoveries?: TsnRecoveryWorkItem[];
+  epochChallenges?: TsnEpochChallenge[];
 };
 
 function now() {
@@ -57,7 +62,7 @@ async function readSnapshot(path: string): Promise<Snapshot> {
     return JSON.parse(await readFile(path, "utf8")) as Snapshot;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { intents: [], claimRequests: [], proofs: [], recoveries: [] };
+      return { intents: [], claimRequests: [], proofs: [], recoveries: [], epochChallenges: [] };
     }
     throw error;
   }
@@ -275,7 +280,57 @@ export class JsonFileTsnMempool implements TsnMempool {
     await writeSnapshot(this.path, snapshot);
     return item;
   }
+
+  async publishEpochChallenge(
+    challenge: Omit<TsnEpochChallenge, "id" | "status" | "postedAt" | "updatedAt"> & {
+      id?: string;
+      status?: TsnEpochChallenge["status"];
+    },
+  ) {
+    const snapshot = await readSnapshot(this.path);
+    if (!snapshot.epochChallenges) snapshot.epochChallenges = [];
+    const id = challenge.id ?? `${challenge.epoch}:${challenge.tokenMintAddress ?? "native"}`;
+    const existing = snapshot.epochChallenges.find((candidate) => candidate.id === id);
+    if (existing) {
+      Object.assign(existing, challenge, { id, updatedAt: now() });
+      await writeSnapshot(this.path, snapshot);
+      return existing;
+    }
+    const timestamp = now();
+    const record: TsnEpochChallenge = {
+      ...challenge,
+      id,
+      status: challenge.status ?? "open",
+      postedAt: timestamp,
+      updatedAt: timestamp,
+    };
+    snapshot.epochChallenges.push(record);
+    await writeSnapshot(this.path, snapshot);
+    return record;
+  }
+
+  async listOpenEpochChallenges(limit = 20) {
+    const snapshot = await readSnapshot(this.path);
+    return (snapshot.epochChallenges ?? [])
+      .filter((challenge) => challenge.status === "open" || challenge.status === "failed")
+      .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
+      .slice(0, limit);
+  }
+
+  async updateEpochChallengeStatus(
+    id: string,
+    status: TsnEpochChallenge["status"],
+    patch: Partial<TsnEpochChallenge> = {},
+  ) {
+    const snapshot = await readSnapshot(this.path);
+    const challenge = (snapshot.epochChallenges ?? []).find((candidate) => candidate.id === id);
+    if (!challenge) return null;
+    Object.assign(challenge, patch, { status, updatedAt: now() });
+    await writeSnapshot(this.path, snapshot);
+    return challenge;
+  }
 }
+
 
 export class HttpTsnMempool implements TsnMempool {
   private readonly client: TsnHttpClient;
@@ -370,5 +425,29 @@ export class HttpTsnMempool implements TsnMempool {
       operatorPubkey,
       status,
     });
+  }
+
+  publishEpochChallenge(
+    challenge: Omit<TsnEpochChallenge, "id" | "status" | "postedAt" | "updatedAt"> & {
+      id?: string;
+      status?: TsnEpochChallenge["status"];
+    },
+  ) {
+    return this.client.post<typeof challenge, TsnEpochChallenge>("/epoch-challenges", challenge);
+  }
+
+  listOpenEpochChallenges(limit = 20) {
+    return this.client.get<TsnEpochChallenge[]>(`/epoch-challenges?status=open&limit=${limit}`);
+  }
+
+  updateEpochChallengeStatus(
+    id: string,
+    status: TsnEpochChallenge["status"],
+    patch: Partial<TsnEpochChallenge> = {},
+  ) {
+    return this.client.patch<Partial<TsnEpochChallenge> & { status: TsnEpochChallenge["status"] }, TsnEpochChallenge>(
+      `/epoch-challenges/${encodeURIComponent(id)}/status`,
+      { ...patch, status },
+    );
   }
 }

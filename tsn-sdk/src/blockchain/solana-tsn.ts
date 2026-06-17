@@ -7,6 +7,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
+  ComputeBudgetProgram,
   Keypair,
   PublicKey,
   SYSVAR_RENT_PUBKEY,
@@ -42,6 +43,8 @@ const TSN_CRANKER_VAULT_SEED = Buffer.from("tsn_cranker_vault");
 const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authority");
 const TSN_LIQUIDITY_POSITION_SEED = Buffer.from("tsn_liquidity_position");
 const TSN_PAYMENT_VAULT_SEED = Buffer.from("vault");
+const TSN_EPOCH_ACCOUNT_SEED = Buffer.from("tsn_epoch");
+const TSN_PEA_SEED = Buffer.from("pea");
 
 export function sha256Bytes(input: string): Buffer {
   return createHash("sha256").update(input).digest();
@@ -69,6 +72,22 @@ export function getTsnTreasuryPda(): PublicKey {
 export function getTsnCrankerPda(params: { motherEscrow: PublicKey; operator: PublicKey }): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TSN_CRANKER_SEED, params.motherEscrow.toBuffer(), params.operator.toBuffer()],
+    getVerifiedTsnProgramId(),
+  )[0];
+}
+
+export function getTsnEpochAccountPda(params: { motherEscrow: PublicKey; epochId: bigint | number }): PublicKey {
+  const epoch = encodeU64(BigInt(params.epochId));
+  return PublicKey.findProgramAddressSync(
+    [TSN_EPOCH_ACCOUNT_SEED, params.motherEscrow.toBuffer(), epoch],
+    getVerifiedTsnProgramId(),
+  )[0];
+}
+
+export function getTsnPeaPda(params: { epochId: bigint | number; tokenMint: PublicKey }): PublicKey {
+  const epoch = encodeU64(BigInt(params.epochId));
+  return PublicKey.findProgramAddressSync(
+    [TSN_PEA_SEED, epoch, params.tokenMint.toBuffer()],
     getVerifiedTsnProgramId(),
   )[0];
 }
@@ -383,6 +402,63 @@ export async function tsnSettleEpochOnChain(params: {
   const signature = await sendAndConfirmTransaction(connection, tx, [authority], { commitment: "confirmed" });
   logger.info("tsn.epoch.settled", { signature, force: params.force });
   return { mode: "devnet" as const, signature };
+}
+
+export async function tsnProcessBatchReimbursementOnChain(params: {
+  operator?: Keypair;
+  epochId: bigint | number;
+  recomputedRootHash: Buffer | Uint8Array | string;
+  totalToDistribute: bigint | number | string;
+  crankerCreditSumMod: bigint | number | string;
+  rpcUrl?: string;
+  secretKey?: string | null;
+  computeUnitPriceMicroLamports?: number | bigint | null;
+}) {
+  if (!params.operator && (params.secretKey === null || params.secretKey === undefined)) {
+    return { mode: "mock" as const, signature: null as string | null };
+  }
+
+  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const operator = params.operator ?? getEscrowAuthorityKeypair(params.secretKey);
+  const motherEscrow = getTsnMotherEscrowPda();
+  const cranker = getTsnCrankerPda({ motherEscrow, operator: operator.publicKey });
+  const epochAccount = getTsnEpochAccountPda({ motherEscrow, epochId: params.epochId });
+  const rootHash = typeof params.recomputedRootHash === "string"
+    ? Buffer.from(params.recomputedRootHash, "hex")
+    : Buffer.from(params.recomputedRootHash);
+  if (rootHash.length !== 32) throw new Error("TSN epoch root hash must be 32 bytes");
+
+  const ix = new TransactionInstruction({
+    programId: getVerifiedTsnProgramId(),
+    keys: [
+      { pubkey: operator.publicKey, isSigner: true, isWritable: true },
+      { pubkey: motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: epochAccount, isSigner: false, isWritable: true },
+      { pubkey: cranker, isSigner: false, isWritable: true },
+    ],
+    data: Buffer.concat([
+      instructionDiscriminator("tsn_process_batch_reimbursement"),
+      rootHash,
+      encodeU64(BigInt(params.totalToDistribute)),
+      encodeU64(BigInt(params.crankerCreditSumMod)),
+    ]),
+  });
+
+  const tx = new Transaction();
+  if (params.computeUnitPriceMicroLamports != null && BigInt(params.computeUnitPriceMicroLamports) > 0n) {
+    tx.add(ComputeBudgetProgram.setComputeUnitPrice({
+      microLamports: Number(params.computeUnitPriceMicroLamports),
+    }));
+  }
+  tx.add(ix);
+  const signature = await sendAndConfirmTransaction(connection, tx, [operator], { commitment: "confirmed" });
+  logger.info("tsn.epoch.reimbursement_processed", {
+    epochId: String(params.epochId),
+    epochAccount: epochAccount.toBase58(),
+    cranker: cranker.toBase58(),
+    signature,
+  });
+  return { mode: "devnet" as const, signature, epochAccount: epochAccount.toBase58(), cranker: cranker.toBase58() };
 }
 
 export async function tsnRegisterCrankerOnChain(params: {

@@ -1,0 +1,408 @@
+diff --git a/src/epochSettlement.ts b/src/epochSettlement.ts
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/epochSettlement.ts
+@@ -0,0 +1,286 @@
++import { createHash } from "node:crypto";
++import { EventEmitter } from "node:events";
++
++export type EpochStatus = "precreated" | "active" | "closing" | "challenge_released" | "reimbursed" | "residual_sweep_ready";
++
++export type CommitmentInput = {
++  id: string;
++  epochId: number;
++  commitmentHash: string;
++  amountBaseUnits: string;
++  nullifierHash?: string | null;
++  tinRouteHash?: string | null;
++  crankerLease?: string | null;
++  expiresAt?: string | null;
++};
++
++export type PrivacyReceiveWatch = {
++  pda: string;
++  tinRouteHash: string;
++  ownerCommitment: string;
++  tokenMintAddress?: string | null;
++  lastObservedSlot?: number | null;
++  lastSweepTxSig?: string | null;
++  status: "watching" | "sweep_required" | "swept" | "failed";
++  updatedAt: string;
++};
++
++export type EpochRecord = {
++  id: string;
++  epochId: number;
++  status: EpochStatus;
++  startsAt: string;
++  endsAt: string;
++  precreatedAt: string;
++  tokenMintAddress?: string | null;
++  epochAccount?: string | null;
++  pea?: string | null;
++  rootHash: string;
++  totalToDistribute: string;
++  crankerCreditSumMod: string;
++  commitmentCount: number;
++  challengeReleasedAt?: string | null;
++  winnerCrankerPubkey?: string | null;
++  reimbursementTxSig?: string | null;
++  settlementReason?: string | null;
++  updatedAt: string;
++};
++
++export type EpochChallenge = {
++  id: string;
++  epoch: number;
++  tokenMintAddress?: string | null;
++  epochAccount?: string | null;
++  pea?: string | null;
++  rootHash: string;
++  totalToDistribute: string;
++  crankerCreditSumMod: string;
++  commitmentCount: number;
++  status: "open" | "submitted" | "completed" | "failed";
++  winnerCrankerPubkey?: string | null;
++  reimbursementTxSig?: string | null;
++  settlementReason?: string | null;
++  postedAt: string;
++  updatedAt: string;
++};
++
++export type EpochSettlementSnapshot = {
++  epochs: EpochRecord[];
++  commitments: CommitmentInput[];
++  epochChallenges: EpochChallenge[];
++  privacyReceiveWatches: PrivacyReceiveWatch[];
++};
++
++export interface EpochSettlementStore {
++  read(): Promise<EpochSettlementSnapshot>;
++  write(snapshot: EpochSettlementSnapshot): Promise<void>;
++}
++
++export type EpochSettlementRuntimeOptions = {
++  epochSeconds?: number;
++  proactiveCreateBeforeSeconds?: number;
++  defaultTokenMintAddress?: string | null;
++  deriveEpochAccount?: (epochId: number, tokenMintAddress?: string | null) => string | null;
++  derivePea?: (epochId: number, tokenMintAddress?: string | null) => string | null;
++};
++
++function nowIso() {
++  return new Date().toISOString();
++}
++
++function emptySnapshot(): EpochSettlementSnapshot {
++  return { epochs: [], commitments: [], epochChallenges: [], privacyReceiveWatches: [] };
++}
++
++function encodeU64(value: bigint) {
++  const buffer = Buffer.alloc(8);
++  buffer.writeBigUInt64LE(value);
++  return buffer;
++}
++
++export function computeEpochAggregate(commitments: CommitmentInput[]) {
++  let root = Buffer.alloc(32);
++  let totalToDistribute = 0n;
++  let crankerCreditSumMod = 0n;
++  let commitmentCount = 0;
++
++  for (const commitment of [...commitments].sort((left, right) => left.id.localeCompare(right.id))) {
++    if (!/^[0-9a-fA-F]{64}$/.test(commitment.commitmentHash)) continue;
++    const amount = BigInt(commitment.amountBaseUnits);
++    root = createHash("sha256")
++      .update(Buffer.from("tsn_epoch_root"))
++      .update(root)
++      .update(Buffer.from(commitment.commitmentHash, "hex"))
++      .update(encodeU64(amount))
++      .digest();
++    totalToDistribute += amount;
++    crankerCreditSumMod = (crankerCreditSumMod + 1n) % 10_000_000_007n;
++    commitmentCount += 1;
++  }
++
++  return {
++    rootHash: root.toString("hex"),
++    totalToDistribute: totalToDistribute.toString(),
++    crankerCreditSumMod: crankerCreditSumMod.toString(),
++    commitmentCount,
++  };
++}
++
++export class EpochSettlementRuntime extends EventEmitter {
++  private timer: NodeJS.Timeout | null = null;
++  private readonly epochSeconds: number;
++  private readonly proactiveCreateBeforeSeconds: number;
++
++  constructor(
++    private readonly store: EpochSettlementStore,
++    private readonly options: EpochSettlementRuntimeOptions = {},
++  ) {
++    super();
++    this.epochSeconds = options.epochSeconds ?? Number(process.env.TSN_EPOCH_SECONDS ?? 7 * 60 * 60);
++    this.proactiveCreateBeforeSeconds = options.proactiveCreateBeforeSeconds ?? Number(process.env.TSN_EPOCH_PRECREATE_SECONDS ?? 45 * 60);
++  }
++
++  start() {
++    if (this.timer) return;
++    this.timer = setInterval(() => void this.tick().catch((error) => this.emit("error", error)), 15_000);
++    void this.tick().catch((error) => this.emit("error", error));
++  }
++
++  stop() {
++    if (!this.timer) return;
++    clearInterval(this.timer);
++    this.timer = null;
++  }
++
++  async tick(at = new Date()) {
++    const snapshot = await this.readSnapshot();
++    const currentEpochId = Math.floor(at.getTime() / 1000 / this.epochSeconds);
++    await this.ensureEpoch(snapshot, currentEpochId, "active");
++
++    const secondsIntoEpoch = Math.floor(at.getTime() / 1000) % this.epochSeconds;
++    if (this.epochSeconds - secondsIntoEpoch <= this.proactiveCreateBeforeSeconds) {
++      await this.ensureEpoch(snapshot, currentEpochId + 1, "precreated");
++    }
++
++    for (const epoch of snapshot.epochs) {
++      const endsAt = Date.parse(epoch.endsAt);
++      if (epoch.status === "active" && at.getTime() >= endsAt) {
++        await this.releaseChallenge(snapshot, epoch.epochId);
++      }
++    }
++
++    await this.store.write(snapshot);
++  }
++
++  async registerCommitment(input: CommitmentInput) {
++    const snapshot = await this.readSnapshot();
++    if (!snapshot.commitments.some((commitment) => commitment.id === input.id)) {
++      snapshot.commitments.push(input);
++    }
++    const epoch = await this.ensureEpoch(snapshot, input.epochId, "active");
++    this.refreshEpochAggregate(snapshot, epoch);
++    await this.store.write(snapshot);
++    return epoch;
++  }
++
++  async releaseChallenge(snapshot: EpochSettlementSnapshot, epochId: number) {
++    const epoch = snapshot.epochs.find((candidate) => candidate.epochId === epochId);
++    if (!epoch) throw new Error(`TSN epoch ${epochId} does not exist`);
++    this.refreshEpochAggregate(snapshot, epoch);
++    epoch.status = "challenge_released";
++    epoch.challengeReleasedAt = nowIso();
++    epoch.updatedAt = nowIso();
++
++    const challenge: EpochChallenge = {
++      id: `${epoch.epochId}:${epoch.tokenMintAddress ?? "native"}`,
++      epoch: epoch.epochId,
++      tokenMintAddress: epoch.tokenMintAddress ?? null,
++      epochAccount: epoch.epochAccount ?? null,
++      pea: epoch.pea ?? null,
++      rootHash: epoch.rootHash,
++      totalToDistribute: epoch.totalToDistribute,
++      crankerCreditSumMod: epoch.crankerCreditSumMod,
++      commitmentCount: epoch.commitmentCount,
++      status: "open",
++      postedAt: nowIso(),
++      updatedAt: nowIso(),
++    };
++    const existing = snapshot.epochChallenges.find((candidate) => candidate.id === challenge.id);
++    if (existing) Object.assign(existing, challenge);
++    else snapshot.epochChallenges.push(challenge);
++    this.emit("challenge", challenge);
++    return challenge;
++  }
++
++  async listEpochs() {
++    return (await this.readSnapshot()).epochs;
++  }
++
++  async listOpenChallenges() {
++    return (await this.readSnapshot()).epochChallenges.filter((challenge) => challenge.status === "open" || challenge.status === "failed");
++  }
++
++  async updateChallenge(id: string, patch: Partial<EpochChallenge>) {
++    const snapshot = await this.readSnapshot();
++    const challenge = snapshot.epochChallenges.find((candidate) => candidate.id === id);
++    if (!challenge) return null;
++    Object.assign(challenge, patch, { updatedAt: nowIso() });
++    const epoch = snapshot.epochs.find((candidate) => `${candidate.epochId}:${candidate.tokenMintAddress ?? "native"}` === id);
++    if (epoch) {
++      epoch.winnerCrankerPubkey = patch.winnerCrankerPubkey ?? epoch.winnerCrankerPubkey ?? null;
++      epoch.reimbursementTxSig = patch.reimbursementTxSig ?? epoch.reimbursementTxSig ?? null;
++      epoch.status = patch.status === "submitted" ? "reimbursed" : epoch.status;
++      epoch.updatedAt = nowIso();
++    }
++    await this.store.write(snapshot);
++    return challenge;
++  }
++
++  async upsertPrivacyReceiveWatch(watch: Omit<PrivacyReceiveWatch, "updatedAt">) {
++    const snapshot = await this.readSnapshot();
++    const existing = snapshot.privacyReceiveWatches.find((candidate) => candidate.pda === watch.pda);
++    if (existing) Object.assign(existing, watch, { updatedAt: nowIso() });
++    else snapshot.privacyReceiveWatches.push({ ...watch, updatedAt: nowIso() });
++    await this.store.write(snapshot);
++  }
++
++  private async ensureEpoch(snapshot: EpochSettlementSnapshot, epochId: number, status: EpochStatus) {
++    let epoch = snapshot.epochs.find((candidate) => candidate.epochId === epochId);
++    if (!epoch) {
++      const startsAtMs = epochId * this.epochSeconds * 1000;
++      epoch = {
++        id: String(epochId),
++        epochId,
++        status,
++        startsAt: new Date(startsAtMs).toISOString(),
++        endsAt: new Date(startsAtMs + this.epochSeconds * 1000).toISOString(),
++        precreatedAt: nowIso(),
++        tokenMintAddress: this.options.defaultTokenMintAddress ?? process.env.TSN_DEFAULT_TOKEN_MINT ?? null,
++        epochAccount: this.options.deriveEpochAccount?.(epochId, this.options.defaultTokenMintAddress ?? null) ?? null,
++        pea: this.options.derivePea?.(epochId, this.options.defaultTokenMintAddress ?? null) ?? null,
++        rootHash: Buffer.alloc(32).toString("hex"),
++        totalToDistribute: "0",
++        crankerCreditSumMod: "0",
++        commitmentCount: 0,
++        updatedAt: nowIso(),
++      };
++      snapshot.epochs.push(epoch);
++      this.emit("epoch", epoch);
++    } else if (epoch.status === "precreated" && status === "active") {
++      epoch.status = "active";
++      epoch.updatedAt = nowIso();
++    }
++    return epoch;
++  }
++
++  private refreshEpochAggregate(snapshot: EpochSettlementSnapshot, epoch: EpochRecord) {
++    const aggregate = computeEpochAggregate(snapshot.commitments.filter((commitment) => commitment.epochId === epoch.epochId));
++    Object.assign(epoch, aggregate, { updatedAt: nowIso() });
++  }
++
++  private async readSnapshot() {
++    const snapshot = await this.store.read().catch(() => emptySnapshot());
++    snapshot.epochs ??= [];
++    snapshot.commitments ??= [];
++    snapshot.epochChallenges ??= [];
++    snapshot.privacyReceiveWatches ??= [];
++    return snapshot;
++  }
++}
+diff --git a/src/epochSettlementStore.ts b/src/epochSettlementStore.ts
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/src/epochSettlementStore.ts
+@@ -0,0 +1,30 @@
++import { mkdir, readFile, writeFile } from "node:fs/promises";
++import { dirname, resolve } from "node:path";
++
++import type { EpochSettlementSnapshot, EpochSettlementStore } from "./epochSettlement";
++
++const defaultSnapshot: EpochSettlementSnapshot = {
++  epochs: [],
++  commitments: [],
++  epochChallenges: [],
++  privacyReceiveWatches: [],
++};
++
++export class JsonEpochSettlementStore implements EpochSettlementStore {
++  constructor(private readonly path = resolve(process.cwd(), process.env.TSN_EPOCH_STATE_FILE ?? ".tsn/epoch-settlement.json")) {}
++
++  async read(): Promise<EpochSettlementSnapshot> {
++    try {
++      return JSON.parse(await readFile(this.path, "utf8")) as EpochSettlementSnapshot;
++    } catch (error) {
++      if ((error as NodeJS.ErrnoException).code === "ENOENT") return structuredClone(defaultSnapshot);
++      throw error;
++    }
++  }
++
++  async write(snapshot: EpochSettlementSnapshot) {
++    await mkdir(dirname(this.path), { recursive: true });
++    await writeFile(this.path, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
++  }
++}
+diff --git a/src/epochSettlementRoutes.ts b/src/epochSettlementRoutes.ts
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/src/epochSettlementRoutes.ts
+@@ -0,0 +1,61 @@
++import type { IncomingMessage, ServerResponse } from "node:http";
++
++import type { EpochSettlementRuntime } from "./epochSettlement";
++
++async function readJson(request: IncomingMessage) {
++  const chunks: Buffer[] = [];
++  for await (const chunk of request) chunks.push(Buffer.from(chunk));
++  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
++}
++
++function send(response: ServerResponse, status: number, body: unknown) {
++  response.writeHead(status, { "Content-Type": "application/json" });
++  response.end(JSON.stringify(body));
++}
++
++export async function handleEpochSettlementRoute(
++  runtime: EpochSettlementRuntime,
++  request: IncomingMessage,
++  response: ServerResponse,
++) {
++  const url = new URL(request.url ?? "/", "http://localhost");
++
++  if (request.method === "GET" && url.pathname === "/epochs") {
++    return send(response, 200, await runtime.listEpochs());
++  }
++
++  if (request.method === "POST" && url.pathname === "/epochs/tick") {
++    await runtime.tick();
++    return send(response, 200, { ok: true });
++  }
++
++  if (request.method === "POST" && url.pathname === "/commitments") {
++    return send(response, 200, await runtime.registerCommitment(await readJson(request)));
++  }
++
++  if (request.method === "GET" && url.pathname === "/epoch-challenges") {
++    return send(response, 200, await runtime.listOpenChallenges());
++  }
++
++  const challengeStatusMatch = url.pathname.match(/^\/epoch-challenges\/([^/]+)\/status$/);
++  if (request.method === "PATCH" && challengeStatusMatch) {
++    const body = await readJson(request);
++    return send(response, 200, await runtime.updateChallenge(decodeURIComponent(challengeStatusMatch[1]), body));
++  }
++
++  if (request.method === "POST" && url.pathname === "/privacy-receive/watch") {
++    await runtime.upsertPrivacyReceiveWatch(await readJson(request));
++    return send(response, 200, { ok: true });
++  }
++
++  return null;
++}
+diff --git a/src/server.ts b/src/server.ts
+index 4444444..5555555 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -1,8 +1,15 @@
+ import { createServer } from "node:http";
++import { EpochSettlementRuntime } from "./epochSettlement";
++import { JsonEpochSettlementStore } from "./epochSettlementStore";
++import { handleEpochSettlementRoute } from "./epochSettlementRoutes";
+ 
++const epochRuntime = new EpochSettlementRuntime(new JsonEpochSettlementStore());
++epochRuntime.start();
++
+ createServer(async (request, response) => {
+   try {
++    const epochResponse = await handleEpochSettlementRoute(epochRuntime, request, response);
++    if (epochResponse !== null) return epochResponse;
+     // existing mempool routes stay below this line
+   } catch (error) {
+     response.writeHead(500, { "Content-Type": "application/json" });

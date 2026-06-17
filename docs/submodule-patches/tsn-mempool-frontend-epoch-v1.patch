@@ -1,0 +1,164 @@
+diff --git a/src/lib/epochSettlement.ts b/src/lib/epochSettlement.ts
+new file mode 100644
+index 0000000..aaaaaaa
+--- /dev/null
++++ b/src/lib/epochSettlement.ts
+@@ -0,0 +1,58 @@
++export type EpochRecord = {
++  id: string;
++  epochId: number;
++  status: "precreated" | "active" | "closing" | "challenge_released" | "reimbursed" | "residual_sweep_ready";
++  startsAt: string;
++  endsAt: string;
++  tokenMintAddress?: string | null;
++  epochAccount?: string | null;
++  pea?: string | null;
++  rootHash: string;
++  totalToDistribute: string;
++  crankerCreditSumMod: string;
++  commitmentCount: number;
++  winnerCrankerPubkey?: string | null;
++  reimbursementTxSig?: string | null;
++  updatedAt: string;
++};
++
++export type EpochChallenge = {
++  id: string;
++  epoch: number;
++  rootHash: string;
++  totalToDistribute: string;
++  crankerCreditSumMod: string;
++  commitmentCount: number;
++  status: "open" | "submitted" | "completed" | "failed";
++  winnerCrankerPubkey?: string | null;
++  reimbursementTxSig?: string | null;
++  updatedAt: string;
++};
++
++const baseUrl = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL ?? "http://localhost:8787";
++
++export function maskTsnValue(value?: string | null) {
++  if (!value) return "not published";
++  if (value.length <= 12) return value;
++  return `${value.slice(0, 6)}…${value.slice(-6)}`;
++}
++
++async function getJson<T>(path: string): Promise<T> {
++  const response = await fetch(`${baseUrl}${path}`, { cache: "no-store" });
++  if (!response.ok) throw new Error(`TSN mempool request failed: ${response.status}`);
++  return (await response.json()) as T;
++}
++
++export function listEpochs() {
++  return getJson<EpochRecord[]>("/epochs");
++}
++
++export function listEpochChallenges() {
++  return getJson<EpochChallenge[]>("/epoch-challenges");
++}
+diff --git a/src/components/EpochSettlementPanel.tsx b/src/components/EpochSettlementPanel.tsx
+new file mode 100644
+index 0000000..bbbbbbb
+--- /dev/null
++++ b/src/components/EpochSettlementPanel.tsx
+@@ -0,0 +1,103 @@
++import { listEpochChallenges, listEpochs, maskTsnValue } from "../lib/epochSettlement";
++
++export async function EpochSettlementPanel() {
++  const [epochs, challenges] = await Promise.all([
++    listEpochs().catch(() => []),
++    listEpochChallenges().catch(() => []),
++  ]);
++
++  return (
++    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100">
++      <div className="mb-6">
++        <p className="text-sm uppercase tracking-wide text-cyan-300">TSN epoch settlement</p>
++        <h2 className="mt-2 text-2xl font-semibold">PEA, commitments, and Cranker recovery race</h2>
++        <p className="mt-3 max-w-3xl text-sm text-slate-300">
++          This explorer shows epoch health without exposing TINS routes, OTDT payloads, phone numbers, raw wallet
++          addresses, or the private payment graph. Epoch roots and aggregate math are public; individual settlement
++          paths stay inside the Mempool runtime and authorised Cranker flow.
++        </p>
++      </div>
++
++      <div className="grid gap-4 lg:grid-cols-3">
++        {epochs.slice(0, 6).map((epoch) => (
++          <article key={epoch.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
++            <div className="flex items-center justify-between gap-3">
++              <h3 className="font-semibold">Epoch {epoch.epochId}</h3>
++              <span className="rounded-full bg-cyan-950 px-3 py-1 text-xs text-cyan-200">{epoch.status}</span>
++            </div>
++            <dl className="mt-4 space-y-2 text-sm">
++              <div className="flex justify-between gap-3">
++                <dt className="text-slate-400">Commitments</dt>
++                <dd>{epoch.commitmentCount}</dd>
++              </div>
++              <div className="flex justify-between gap-3">
++                <dt className="text-slate-400">Total</dt>
++                <dd>{epoch.totalToDistribute}</dd>
++              </div>
++              <div className="flex justify-between gap-3">
++                <dt className="text-slate-400">PEA</dt>
++                <dd>{maskTsnValue(epoch.pea)}</dd>
++              </div>
++              <div className="flex justify-between gap-3">
++                <dt className="text-slate-400">Root</dt>
++                <dd>{maskTsnValue(epoch.rootHash)}</dd>
++              </div>
++              <div className="flex justify-between gap-3">
++                <dt className="text-slate-400">Winner</dt>
++                <dd>{maskTsnValue(epoch.winnerCrankerPubkey)}</dd>
++              </div>
++            </dl>
++          </article>
++        ))}
++      </div>
++
++      <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4">
++        <h3 className="font-semibold">Open recovery challenges</h3>
++        <div className="mt-4 overflow-x-auto">
++          <table className="min-w-full text-left text-sm">
++            <thead className="text-slate-400">
++              <tr>
++                <th className="py-2 pr-4">Epoch</th>
++                <th className="py-2 pr-4">Status</th>
++                <th className="py-2 pr-4">Root</th>
++                <th className="py-2 pr-4">Total</th>
++                <th className="py-2 pr-4">Winner</th>
++              </tr>
++            </thead>
++            <tbody>
++              {challenges.map((challenge) => (
++                <tr key={challenge.id} className="border-t border-slate-800">
++                  <td className="py-2 pr-4">{challenge.epoch}</td>
++                  <td className="py-2 pr-4">{challenge.status}</td>
++                  <td className="py-2 pr-4">{maskTsnValue(challenge.rootHash)}</td>
++                  <td className="py-2 pr-4">{challenge.totalToDistribute}</td>
++                  <td className="py-2 pr-4">{maskTsnValue(challenge.winnerCrankerPubkey)}</td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      </div>
++    </section>
++  );
++}
+diff --git a/src/app/epochs/page.tsx b/src/app/epochs/page.tsx
+new file mode 100644
+index 0000000..ccccccc
+--- /dev/null
++++ b/src/app/epochs/page.tsx
+@@ -0,0 +1,13 @@
++import { EpochSettlementPanel } from "../../components/EpochSettlementPanel";
++
++export default function EpochsPage() {
++  return (
++    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 md:px-8">
++      <div className="mx-auto max-w-6xl">
++        <EpochSettlementPanel />
++      </div>
++    </main>
++  );
++}

@@ -11,6 +11,14 @@ export declare function getTsnCrankerPda(params: {
     motherEscrow: PublicKey;
     operator: PublicKey;
 }): PublicKey;
+export declare function getTsnEpochAccountPda(params: {
+    motherEscrow: PublicKey;
+    epochId: bigint | number;
+}): PublicKey;
+export declare function getTsnPeaPda(params: {
+    epochId: bigint | number;
+    tokenMint: PublicKey;
+}): PublicKey;
 export declare function getTsnCrankerVaultPda(params: {
     cranker: PublicKey;
     tokenMint: PublicKey;
@@ -107,6 +115,26 @@ export declare function tsnSettleEpochOnChain(params: {
 } | {
     mode: "devnet";
     signature: string;
+}>;
+export declare function tsnProcessBatchReimbursementOnChain(params: {
+    operator?: Keypair;
+    epochId: bigint | number;
+    recomputedRootHash: Buffer | Uint8Array | string;
+    totalToDistribute: bigint | number | string;
+    crankerCreditSumMod: bigint | number | string;
+    rpcUrl?: string;
+    secretKey?: string | null;
+    computeUnitPriceMicroLamports?: number | bigint | null;
+}): Promise<{
+    mode: "mock";
+    signature: string | null;
+    epochAccount?: undefined;
+    cranker?: undefined;
+} | {
+    mode: "devnet";
+    signature: string;
+    epochAccount: string;
+    cranker: string;
 }>;
 export declare function tsnRegisterCrankerOnChain(params: {
     operator?: Keypair;

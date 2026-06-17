@@ -23,6 +23,7 @@ Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They h
 
 | Document | Purpose |
 | --- | --- |
+| [START-HERE.md](./START-HERE.md) | Plain-language entry point for TINS, SAS, TSN, Crankers, OTDT, and privacy flows |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture across TINS, TSN, app, mempool, and crankers |
 | [PROTOCOL.md](./PROTOCOL.md) | Protocol-grade settlement specification |
 | [TINS.md](./TINS.md) | Transfer Identity Number System |
@@ -31,6 +32,7 @@ Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They h
 | [CRANKER.md](./CRANKER.md) | Cranker operator guide |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and LP model |
 | [EPOCH-SETTLEMENT.md](./EPOCH-SETTLEMENT.md) | Epoch reimbursement and accounting |
+| [EPOCH-SETTLEMENT-v1-EXPERIMENTAL.md](./EPOCH-SETTLEMENT-v1-EXPERIMENTAL.md) | v1 per-epoch PEA, PaymentCommitment, PrivacyReceivePDA, and competitive Cranker recovery race |
 
 ---
 

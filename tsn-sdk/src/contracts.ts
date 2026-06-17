@@ -129,6 +129,25 @@ export type ProofOfPaymentRequest = {
 
 export type TsnRecoveryStatus = "pending" | "leased" | "completed" | "failed" | "canceled";
 
+export type TsnEpochChallengeStatus = "open" | "submitted" | "completed" | "failed";
+
+export type TsnEpochChallenge = {
+  id: string;
+  epoch: number;
+  tokenMintAddress?: string | null;
+  epochAccount?: string | null;
+  pea?: string | null;
+  rootHash: string;
+  totalToDistribute: string;
+  crankerCreditSumMod: string;
+  status: TsnEpochChallengeStatus;
+  winnerCrankerPubkey?: string | null;
+  reimbursementTxSig?: string | null;
+  settlementReason?: string | null;
+  postedAt: string;
+  updatedAt: string;
+};
+
 export type TsnRecoveryWorkItem = {
   id: string;
   paymentId?: string;

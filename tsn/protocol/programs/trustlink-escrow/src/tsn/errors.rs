@@ -92,4 +92,12 @@ pub enum TsnError {
     InvalidPrivateReplaySequence,
     #[msg("Private settlement replay sequence overflowed")]
     PrivateReplaySequenceOverflow,
+    #[msg("Epoch root does not match the committed challenge")]
+    InvalidEpochRoot,
+    #[msg("Epoch reimbursement math does not match aggregate challenge totals")]
+    InvalidEpochMath,
+    #[msg("Epoch recovery race has already been won")]
+    EpochRecoveryAlreadyProcessed,
+    #[msg("Epoch residuals have already been swept")]
+    EpochResidualAlreadySwept,
 }

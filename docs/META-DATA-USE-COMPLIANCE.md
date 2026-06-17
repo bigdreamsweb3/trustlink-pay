@@ -2,7 +2,7 @@
 
 Last reviewed: May 26, 2026
 
-This document explains how TrustLink Pay uses Meta and WhatsApp platform services, what Meta policies cover that usage, and the operating rules future developers must follow so the app does not lose access to Meta APIs.
+This document explains how TrustLink Pay uses Meta and WhatsApp platform services, what Meta policies cover that usage, and the operating rules developers must follow so the app does not lose access to Meta APIs.
 
 This is an internal engineering and product policy. It is not legal advice. If TrustLink Pay changes its Meta use case, adds new permissions, expands marketing, or starts processing regulated data in new regions, the team must review this document with legal, privacy, and policy guidance before shipping.
 
@@ -10,11 +10,11 @@ This is an internal engineering and product policy. It is not legal advice. If T
 
 ## Why This Matters
 
-TrustLink Pay relies on Meta/WhatsApp for a meaningful part of the user experience, especially phone-based authentication, session verification, OTP-style flows, payment notifications, and user communication.
+TrustLink Pay relies on Meta and WhatsApp for phone-based authentication, session verification, OTP-style flows, payment notifications, and user communication.
 
-If Meta restricts the app, some TrustLink user flows may be degraded or interrupted. Because of that dependency, the team must treat Meta access as a critical platform risk, similar to database access, RPC access, wallet signing, or payment infrastructure.
+If Meta restricts access, some user flows may be degraded or interrupted. Because of that dependency, the team must treat Meta access as a critical platform risk -- similar to database access, RPC access, wallet signing, or payment infrastructure.
 
-Our goal is simple:
+The goal is simple:
 
 1. Use only the Meta permissions and WhatsApp capabilities required for TrustLink Pay.
 2. Handle Platform Data safely and minimally.
@@ -40,7 +40,7 @@ Meta policies can change. This document reflects the project posture as of May 2
 
 ## Current Meta/WhatsApp Use Case
 
-TrustLink Pay may use Meta/WhatsApp for:
+TrustLink Pay may use Meta and WhatsApp for:
 
 - User authentication and session verification.
 - OTP or verification-code delivery.
@@ -55,7 +55,7 @@ TrustLink Pay must not use Meta Platform Data for unrelated advertising, resale,
 
 ## Platform Data We May Receive
 
-"Platform Data" means data received from Meta or through Meta/WhatsApp platform services. Examples may include:
+"Platform Data" means data received from Meta or through Meta and WhatsApp platform services. Examples may include:
 
 - Meta app user ID or public profile fields.
 - WhatsApp phone number identifiers or messaging metadata.
@@ -112,7 +112,7 @@ The entity responsible for Platform Data is the legal person or business that co
 Use:
 
 - TrustLink Pay's registered legal entity name, if incorporated.
-- The founder/operator's full legal name, if no company exists yet.
+- The founder or operator's full legal name, if no company exists yet.
 
 Do not use an informal product name as the controller unless it is also the registered legal entity.
 
@@ -122,14 +122,14 @@ Do not use an informal product name as the controller unless it is also the regi
 
 TrustLink Pay's policy is:
 
-- Review every government/public authority request for legality before responding.
+- Review every government and public authority request for legality before responding.
 - Challenge unlawful, overbroad, or unclear requests where appropriate.
 - Disclose only the minimum data legally required.
 - Document the request, response, legal basis, reviewer, and decision.
 
 If TrustLink has not provided user personal data in response to national security requests in the past 12 months, the Meta form should answer "No".
 
-Developers must not disclose Platform Data to public authorities casually, through support channels, or without founder/legal approval.
+Developers must not disclose Platform Data to public authorities casually, through support channels, or without founder or legal approval.
 
 ---
 
@@ -146,7 +146,7 @@ Every developer working on TrustLink Pay must follow these rules:
 7. Do not share Platform Data with a new vendor until the vendor is added to this document and reviewed for the next Meta checkup.
 8. Do not use Platform Data to discriminate, surveil, or make eligibility decisions.
 9. Do not retain Platform Data longer than needed for authentication, security, audit, support, and payment record integrity.
-10. Do not ship a new Meta/WhatsApp feature without updating privacy documentation and this policy if data use changes.
+10. Do not ship a new Meta or WhatsApp feature without updating privacy documentation and this policy if data use changes.
 
 ---
 
@@ -170,9 +170,9 @@ Allowed examples:
 Avoid:
 
 - Unsolicited promotional blasts.
-- Investment promises or yield claims sent through WhatsApp without proper compliance review.
+- Investment promises or yield claims sent through WhatsApp without compliance review.
 - Messages that pressure users to connect wallets or reveal seed phrases.
-- Messages that expose sensitive sender/receiver wallet information unnecessarily.
+- Messages that expose sensitive sender or receiver wallet information unnecessarily.
 
 TrustLink must never ask for seed phrases, private keys, or wallet recovery phrases through WhatsApp.
 
@@ -182,7 +182,7 @@ TrustLink must never ask for seed phrases, private keys, or wallet recovery phra
 
 TrustLink Pay may retain Platform Data only as long as needed for:
 
-- Authentication and active account/session security.
+- Authentication and active account or session security.
 - Payment notification delivery and support.
 - Fraud, abuse, or audit logs.
 - Legal, accounting, or regulatory obligations.
@@ -198,7 +198,7 @@ User deletion requests must be honored according to TrustLink's privacy policy a
 
 TrustLink Pay must maintain a public privacy policy that explains:
 
-- What data is collected from Meta/WhatsApp.
+- What data is collected from Meta or WhatsApp.
 - Why the data is used.
 - Which service providers may process it.
 - How users can request deletion.
@@ -216,15 +216,15 @@ The Meta app dashboard must include:
 
 ## Why Our Current Use Should Stay Compliant
 
-As currently designed, TrustLink Pay's Meta/WhatsApp use is limited and purpose-bound:
+As currently designed, TrustLink Pay's Meta and WhatsApp use is limited and purpose-bound:
 
 - WhatsApp supports authentication, verification, security, and payment notification flows.
 - `public_profile` is used only for authentication and basic personalization if applicable.
 - Platform Data is not sold, licensed, or used for unrelated profiling.
-- Payment settlement is handled by TrustLink/TSN/Solana infrastructure, not by misusing Meta data.
+- Payment settlement is handled by TrustLink, TSN, and Solana infrastructure, not by misusing Meta data.
 - Service providers are infrastructure processors, not independent users of Platform Data.
 - Government requests are subject to legality review, minimization, challenge, and documentation.
-- Future developers are required to remove unused permissions and avoid unnecessary advanced access.
+- Developers are required to remove unused permissions and avoid unnecessary advanced access.
 
 This does not guarantee Meta will never restrict access. It does mean the current usage is structured to remain within the allowed purposes we certified during Data Use Checkup.
 
@@ -236,7 +236,7 @@ Before shipping any of these, pause and review Meta policy:
 
 - Adding new Meta permissions or advanced access.
 - Using WhatsApp for marketing campaigns.
-- Sending payment/yield/investment promotional messages.
+- Sending payment, yield, or investment promotional messages.
 - Sharing Meta-derived data with a new vendor.
 - Storing more user profile data than the app needs.
 - Building analytics that can identify individual users from Meta data.
@@ -267,7 +267,7 @@ During each annual checkup:
 
 ## Fallback Planning
 
-Because TrustLink relies partly on Meta/WhatsApp, the product should keep fallback options:
+Because TrustLink relies partly on Meta and WhatsApp, the product should keep fallback options:
 
 - Alternative OTP delivery provider.
 - Email-based session verification.
@@ -276,12 +276,3 @@ Because TrustLink relies partly on Meta/WhatsApp, the product should keep fallba
 - TINS-first identity resolution that does not depend entirely on WhatsApp.
 
 Meta access is important, but TrustLink architecture should not become permanently locked to one communications provider.
-
----
-
-## Owner
-
-Policy owner: TrustLink Pay founder/operator.
-
-Developers must update this document whenever Meta/WhatsApp data use changes.
-

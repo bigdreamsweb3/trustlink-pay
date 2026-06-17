@@ -1,14 +1,12 @@
-# TINS - Transfer Identity Number System
+# TINS — Transfer Identity Number System
 
-TINS is the identity layer of TrustLink Pay.
-
-It gives a user a permanent 10-digit Transfer Identity Number that can be shared instead of a wallet address.
+TINS is the identity layer of TrustLink Pay. It gives a user a permanent 10-digit Transfer Identity Number (TIN) that can be shared instead of a wallet address.
 
 ```text
 TIN -> identity PDA -> settlement route
 ```
 
-The TIN is the protocol-facing receive identity. Phone numbers and social accounts can be linked later as optional discovery and trust signals.
+A PDA (Program Derived Address) is an on-chain account controlled by the program, not by a private key. The TIN is the protocol-facing receive identity. Phone numbers and social accounts can be linked as optional discovery and trust signals.
 
 ---
 
@@ -66,7 +64,7 @@ PDA seed:
 registry, tin.to_le_bytes()
 ```
 
-The registry address allows TIN-based lookup and compatibility with wallet/app integrations.
+The registry address enables TIN-based lookup and wallet or app integrations.
 
 ---
 
@@ -74,13 +72,12 @@ The registry address allows TIN-based lookup and compatibility with wallet/app i
 
 TINS can be used by:
 
-- TrustLink Pay for TIN-first stablecoin payments,
-- wallets that want receive identities instead of raw addresses,
-- merchants that want safer customer-facing payment identifiers,
-- apps that want private settlement routes through TSN,
-- future social identity providers that map trust signals to TINs.
+- TrustLink Pay for TIN-first stablecoin payments
+- wallets that want receive identities instead of raw addresses
+- merchants that want safer customer-facing payment identifiers
+- apps that want private settlement routes through TSN
 
-The core rule is simple:
+The core rule:
 
 ```text
 Users share TINs. Protocols resolve settlement routes.
@@ -90,37 +87,16 @@ Users share TINs. Protocols resolve settlement routes.
 
 ## Privacy Position
 
-TINS is not a claim that all identity data is invisible.
+TINS reduces address exposure by moving the user-facing receive identity away from raw wallet addresses. TSN completes the privacy design by separating sender-side escrow from recipient-side payout.
 
-TINS reduces address exposure by moving the user-facing receive identity away from raw wallet addresses. TSN then completes the privacy design by separating sender-side escrow from recipient-side payout.
-
-Public data may include:
+Public data:
 
 | Data | Public? | Notes |
 | --- | --- | --- |
 | TIN | Yes | Public receive identity |
 | Display name | Yes | Helps sender confirm recipient |
 | TINS identity PDA | Yes | Program-owned identity account |
-| Optional encrypted payload | Yes | Public ciphertext, not plaintext |
-| Main wallet field | No direct field in active account | Routing is handled by app/protocol state |
-
----
-
-## TrustLink Pay Use
-
-TrustLink Pay uses TINS as the primary payment identity.
-
-Current app surfaces may still support WhatsApp notifications and optional phone linking, but docs and integrations should describe the payment flow as:
-
-```text
-sender pays recipient TIN -> TSN settles privately
-```
-
-not:
-
-```text
-sender pays phone number
-```
+| Encrypted payload | Yes | Public ciphertext, not plaintext |
 
 ---
 
@@ -141,8 +117,7 @@ import {
 
 ## Operational Rules
 
-- TINS program id must remain `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` for the current devnet deployment.
-- TSN program id must remain `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` for the current devnet deployment.
-- Do not replace TSN program id while updating TINS.
-- Do not deploy TINS with a generated local keypair unless its public key matches the configured TINS program id.
-- Treat phone/social identity as optional application linking, not as the TINS protocol identity.
+- The TINS program ID must remain `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` for the current devnet deployment.
+- The TSN program ID must remain `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` for the current devnet deployment.
+- Do not deploy TINS with a generated local keypair unless its public key matches the configured TINS program ID.
+- Treat phone and social identity as optional application linking, not as the TINS protocol identity.

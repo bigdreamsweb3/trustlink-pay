@@ -51,8 +51,20 @@ export function ActivityExperience() {
     });
   }, [filter, payments, user?.id, user?.phoneNumber]);
 
-  const visiblePayments = filteredPayments.slice(0, visibleCount);
-  const canLoadMore = filteredPayments.length > visiblePayments.length;
+  const displayPayments = useMemo(() => {
+    const items: { payment: PaymentRecord; forceReceiveView: boolean; displayKey: string }[] = [];
+    for (const payment of filteredPayments) {
+      const isSelfSend = payment.sender_user_id === user?.id && payment.receiver_phone === user?.phoneNumber;
+      items.push({ payment, forceReceiveView: false, displayKey: `${payment.id}-send` });
+      if (isSelfSend) {
+        items.push({ payment, forceReceiveView: true, displayKey: `${payment.id}-receive` });
+      }
+    }
+    return items;
+  }, [filteredPayments, user?.id, user?.phoneNumber]);
+
+  const visiblePayments = displayPayments.slice(0, visibleCount);
+  const canLoadMore = displayPayments.length > visiblePayments.length;
   const hasPendingStatus = useMemo(
     () =>
       payments.some(
@@ -125,12 +137,13 @@ export function ActivityExperience() {
           ) : visiblePayments.length === 0 ? (
             <div className="tl-panel-header tl-field rounded-[18px] px-4 py-5 text-center text-[0.82rem] tl-text-muted">No activity for this filter yet.</div>
           ) : (
-            visiblePayments.map((payment) => (
+            visiblePayments.map(({ payment, forceReceiveView, displayKey }) => (
               <PaymentActivityCard
-                key={payment.id}
+                key={displayKey}
                 payment={payment}
                 currentUserId={user.id}
-                onClick={(paymentId) => router.push(`/app/activity/${paymentId}`)}
+                onClick={(paymentId) => router.push(`/app/activity/${paymentId}?view=${forceReceiveView ? "receiver" : "sender"}`)}
+                forceReceiveView={forceReceiveView || undefined}
               />
             ))
           )}

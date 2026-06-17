@@ -8,14 +8,14 @@ The public product surface is simple:
 Send stablecoins to a 10-digit Transfer Identity Number.
 ```
 
-The protocol surface is deeper:
+The protocol surface has four parts:
 
-- **TINS** provides wallet-owned 10-digit payment identity.
-- **TSN** separates sender-side escrow from recipient-side payout.
-- **Crankers** verify and execute settlement work.
-- **Vault liquidity** makes recipient payout possible without direct wallet-to-wallet settlement.
+- **TINS** — the Transfer Identity Number System. Gives each user a 10-digit number (a TIN) to share instead of a wallet address.
+- **TSN** — the Transfer Settlement Network. Splits payment into sender-side escrow and recipient-side vault payout so the payment path is not a direct wallet-to-wallet transfer.
+- **Crankers** — verified operators that validate settlement work, sponsor escrow transactions, and execute vault payouts.
+- **TrustLink App** — the first product built on TINS and TSN.
 
-Phone numbers, WhatsApp, and social identities are optional application-layer links. They can help with notifications, account recovery, consent, and future discovery, but they are not the primary protocol identity.
+Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They help with notifications, recovery, and consent. The protocol identity is the TIN.
 
 ---
 
@@ -34,44 +34,6 @@ Phone numbers, WhatsApp, and social identities are optional application-layer li
 
 ---
 
-## Core Concepts
-
-### TINS
-
-TINS is the identity layer. It gives a user a 10-digit Transfer Identity Number that can be shared instead of a wallet address.
-
-TINs are designed to become a receive identity for:
-
-- TrustLink Pay,
-- wallets,
-- merchant tools,
-- payment links,
-- privacy-preserving Solana applications.
-
-### TSN
-
-TSN is the settlement layer. It exists because resolving a TIN directly to a wallet and transferring normally would expose the payment graph.
-
-TSN splits settlement into:
-
-1. sender authorization,
-2. cranker verification,
-3. sponsored escrow,
-4. vault payout,
-5. proof and accounting.
-
-### Crankers
-
-Crankers are verified operators. They monitor the mempool, reject invalid work, sponsor escrow transactions, earn claim credit, and execute recipient payouts from vault liquidity.
-
-### Privacy Boundary
-
-TrustLink does not claim that Solana transactions disappear. The privacy goal is narrower and stronger: the normal payment path should not expose a simple sender-wallet-to-recipient-wallet transfer.
-
-To understand the full settlement path, an observer needs specific transaction hashes, vault context, or program-level knowledge.
-
----
-
 ## Current Program IDs
 
 | Program | Devnet ID |
@@ -87,18 +49,9 @@ To understand the full settlement path, an observer needs specific transaction h
 | --- | --- |
 | `frontend/` | TrustLink Pay application UI |
 | `backend/` | API, user state, notifications, and payment records |
-| `tins-registrar/` | TINS Solana program |
 | `tins-sdk/` | TINS SDK package surface |
 | `tsn/protocol/` | TSN Anchor program workspace |
 | `tsn-sdk/` | TSN SDK |
 | `tsn-cranker-op-daemon/` | Reference cranker daemon |
 | `tsn-mempool-backend/` | TSN mempool service |
 | `tsn-mempool-frontend/` | Mempool explorer |
-
----
-
-## WhatsApp And Social Identity
-
-WhatsApp remains useful for authentication, notifications, consent, and optional social linking. It should be documented as an application feature, not as the core settlement identity.
-
-The protocol identity is the TIN.

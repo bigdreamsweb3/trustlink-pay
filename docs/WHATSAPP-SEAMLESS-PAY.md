@@ -1,20 +1,8 @@
-# WhatsApp And Social Notification Layer
+# WhatsApp Notification Layer
 
-WhatsApp is an application-layer support surface for TrustLink Pay.
+WhatsApp is an optional notification surface for TrustLink Pay. It is not the payment protocol or the core identity system.
 
-It is useful for:
-
-- notifications,
-- consent prompts,
-- authentication support,
-- recipient reminders,
-- optional social identity linking.
-
-It is not the core payment identity.
-
-The protocol identity is the 10-digit TIN.
-
----
+The protocol identity is the 10-digit Transfer Identity Number (TIN). A TIN is a unique number that identifies a user on the TrustLink network. WhatsApp simply delivers alerts and consent prompts about TIN-based payments.
 
 ## Correct Positioning
 
@@ -30,13 +18,23 @@ Do not position the protocol as:
 User pays a WhatsApp number.
 ```
 
-Phone numbers may be linked to TINs in the application layer, but the protocol should be documented and integrated as TIN-first.
+Phone numbers may be linked to TINs in the application layer, but the protocol should always be documented and integrated as TIN-first.
 
----
+## How WhatsApp Fits In
 
-## Optional Flow
+WhatsApp supports these use cases:
 
-```text
+- Transaction notifications
+- Consent prompts
+- Authentication support (OTP-style)
+- Recipient reminders about pending claims
+- Optional phone-to-TIN identity hints
+
+None of these replace the TIN. They are application-layer conveniences.
+
+## Optional Notification Flow
+
+```
 Sender enters recipient TIN
 TrustLink creates TSN payment authorization
 Cranker sponsors escrow
@@ -44,22 +42,6 @@ Recipient receives WhatsApp notification
 Recipient opens TrustLink claim/status surface
 TSN payout completes through vault settlement
 ```
-
----
-
-## Future Social Identity Direction
-
-TrustLink may later support:
-
-- phone-to-TIN discovery,
-- WhatsApp payment reminders,
-- X account to TIN verification,
-- business profile to TIN verification,
-- merchant notification flows.
-
-All of these should point back to the same TIN identity.
-
----
 
 ## Compliance Rules
 

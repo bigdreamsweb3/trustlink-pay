@@ -1,5 +1,7 @@
 # TrustLink Pay API Reference
 
+> This API is under active development. Endpoints, request shapes, and response formats may change.
+
 ## Base URL
 
 ```
@@ -59,49 +61,6 @@ POST /api/payment/estimate
   "protocolFee": 0.50,
   "total": 100.51,
   "recipientReceives": 99.50
-}
-```
-
-### Request Claim
-
-```
-POST /api/payment/claim/request
-```
-
-**Request:**
-```json
-{
-  "paymentId": "pay_abc123",
-  "wallet": "DGV..."
-}
-```
-
-**Response:**
-```json
-{
-  "claimRequestId": "claim_xyz789",
-  "status": "processing"
-}
-```
-
-### Link Optional Phone Identity
-
-```
-POST /api/phone/verify
-```
-
-**Request:**
-```json
-{
-  "phoneNumber": "+2348012345678"
-}
-```
-
-**Response:**
-```json
-{
-  "verified": true,
-  "tin": "1000000008"
 }
 ```
 
@@ -166,7 +125,6 @@ GET /api/payment/history?limit=20&offset=0
 | Code | Description |
 | --- | --- |
 | `INVALID_TIN` | TIN not found or not routable |
-| `INVALID_PHONE` | Optional phone link is invalid or unverified |
 | `INSUFFICIENT_BALANCE` | Sender lacks funds |
 | `PAYMENT_EXPIRED` | Escrow expired |
 | `INVALID_WALLET` | Invalid wallet address |

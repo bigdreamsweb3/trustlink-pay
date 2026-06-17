@@ -2,46 +2,43 @@
 
 TrustLink Pay has four active layers:
 
-1. TINS identity
-2. TSN settlement
-3. Cranker execution
-4. TrustLink Pay application
+1. TINS — identity
+2. TSN — settlement
+3. Cranker — execution
+4. TrustLink Pay — application
 
-The system is TIN-first. A user receives through a 10-digit Transfer Identity Number, while TSN handles private settlement behind the payment surface.
+The system is TIN-first. A user receives through a 10-digit Transfer Identity Number (TIN). TSN handles private settlement behind the payment surface.
 
 ---
 
 ## Layer 1: TINS Identity
 
-TINS is the Transfer Identity Number System.
-
-It gives users a permanent numeric identity that can be shared instead of a wallet address.
+TINS is the Transfer Identity Number System. It gives users a permanent numeric identity that can be shared instead of a wallet address.
 
 ```text
-10-digit TIN -> TINS identity PDA -> settlement route
+10-digit TIN -> identity PDA -> settlement route
 ```
 
-The TIN is the public payment identity. The wallet address is not the payment identity.
+A PDA (Program Derived Address) is an on-chain account controlled by a program, not by a private key. TINS uses PDAs to store identity records.
 
-Phone numbers, WhatsApp accounts, X accounts, business profiles, and other social signals can later point to the same TIN. Those links are application-layer trust signals. They are not required for the core protocol story.
+The TIN is the public payment identity. The wallet address is not exposed as the payment identity.
+
+Phone numbers, WhatsApp accounts, and other social links can be linked to a TIN. Those links are application-layer trust signals. They are not required for the protocol.
 
 ---
 
 ## Layer 2: TSN Settlement
 
-TSN is the Transfer Settlement Network.
-
-It separates sender-side funding from recipient-side payout so a payment does not look like a normal direct wallet-to-wallet transfer.
+TSN is the Transfer Settlement Network. It separates sender-side funding from recipient-side payout so a payment does not look like a direct wallet-to-wallet transfer.
 
 TSN settlement uses:
 
-- sender authorization,
-- cranker-sponsored escrow,
-- verifier PDA infrastructure funding,
-- vault/token-account isolation,
-- cranker vault liquidity,
-- claim credit,
-- off-chain proof records.
+- sender authorization
+- cranker-sponsored escrow
+- vault and token-account isolation
+- cranker vault liquidity
+- claim credit
+- off-chain proof records
 
 The sender signs approval. The cranker validates the work and broadcasts the settlement transaction.
 
@@ -49,37 +46,32 @@ The sender signs approval. The cranker validates the work and broadcasts the set
 
 ## Layer 3: Cranker Execution
 
-Crankers are verified settlement operators.
+Crankers are verified settlement operators. They:
 
-They:
+- monitor the TSN mempool for pending settlement work
+- validate sender-signed payloads
+- reject tampered work
+- sponsor escrow transactions
+- earn claim credit
+- execute payouts from vault liquidity
+- publish proof records
 
-- monitor TSN mempool work,
-- validate sender-signed settlement payloads,
-- reject tampered work,
-- sponsor escrow transactions,
-- earn claim credit,
-- execute claim work from vault liquidity,
-- publish proof records.
-
-Crankers are part of the privacy design. They break the clean relationship between sender-side escrow funding and recipient-side payout.
+Crankers are part of the privacy design. They break the clean link between sender-side escrow funding and recipient-side payout.
 
 ---
 
 ## Layer 4: TrustLink Pay App
 
-The TrustLink Pay app is the first product built on TINS and TSN.
+The TrustLink Pay app is the first product built on TINS and TSN. It provides:
 
-It provides:
+- TIN creation and display
+- payment creation
+- wallet signing
+- transaction history
+- status tracking
+- notifications
 
-- TIN creation and display,
-- payment creation,
-- wallet signing,
-- transaction history,
-- claim surfaces,
-- status tracking,
-- notifications.
-
-WhatsApp can support session authentication and notifications, but the core payment identity is the TIN.
+The payment identity is the TIN. WhatsApp is an optional channel for authentication and notifications.
 
 ---
 
@@ -95,7 +87,7 @@ Cranker sponsors escrow
 Funds move into TSN vault path
 Claim work becomes available
 Cranker executes payout from vault liquidity
-Proof is recorded through tx hashes and mempool state
+Proof is recorded through transaction hashes and mempool state
 ```
 
 ---
@@ -109,7 +101,7 @@ Proof is recorded through tx hashes and mempool state
 | Wallet address | Wallet / route | Not the public payment identity |
 | Sender authorization | TSN mempool / app record | Settlement work record |
 | Escrow transaction hash | TSN / app record | Sender-visible settlement hash |
-| Payout/proof transaction hash | TSN / app record | Recipient/operator settlement proof |
+| Payout or proof transaction hash | TSN / app record | Recipient or operator settlement proof |
 | Phone or WhatsApp link | TrustLink app | Optional private application mapping |
 
 ---

@@ -65,13 +65,6 @@ npm --prefix backend run db:init
 
 ## Build Programs
 
-TINS:
-
-```powershell
-npm run tins:program:id
-npm run tins:build
-```
-
 TSN:
 
 ```powershell
@@ -79,16 +72,11 @@ npm run tsn:program:id
 npm run tsn:program:build
 ```
 
+For TINS program build and deploy, see [TINS-OPERATOR.md](./TINS-OPERATOR.md).
+
 ## Manual Program Deployment
 
 Deployments are operator actions. Use the real deploy keypair for each program. Do not use a generated `target/deploy` keypair unless its public key is exactly the expected program id.
-
-TINS deploy shape:
-
-```powershell
-cd tins-registrar/program
-solana program deploy target/deploy/tins_program.so --url devnet --program-id <REAL_TINS_PROGRAM_KEYPAIR_JSON>
-```
 
 TSN deploy shape:
 
@@ -119,13 +107,7 @@ npm run cranker -- init-vault <TOKEN_MINT>
 
 ## Run Local Stack
 
-Without cranker:
-
-```powershell
-npm run dev:tsn:stack
-```
-
-With cranker:
+Start the local devnet stack:
 
 ```powershell
 npm run dev:tsn:stack:with-cranker

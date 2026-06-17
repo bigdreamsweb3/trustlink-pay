@@ -32,41 +32,6 @@ export function GlobalGridBackground() {
             "radial-gradient(circle at top left, black 18%, transparent 65%)",
         }}
       />
-
-      {/* Flow lines (tech “network feel”) */}
-      {/* <svg
-                className="absolute inset-0 w-full h-full opacity-[0.08]"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-            >
-                <defs>
-                    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#4abed0" />
-                        <stop offset="100%" stopColor="#ff7a18" />
-                    </linearGradient>
-                </defs>
-
-                <path
-                    d="M0 10 C 20 5, 40 25, 100 0"
-                    stroke="url(#flow)"
-                    strokeWidth="0.2"
-                    fill="none"
-                />
-
-                <path
-                    d="M0 40 C 30 30, 60 70, 100 35"
-                    stroke="url(#flow)"
-                    strokeWidth="0.2"
-                    fill="none"
-                />
-
-                <path
-                    d="M0 80 C 20 60, 70 95, 100 70"
-                    stroke="url(#flow)"
-                    strokeWidth="0.2"
-                    fill="none"
-                />
-            </svg> */}
     </div>
   );
 }

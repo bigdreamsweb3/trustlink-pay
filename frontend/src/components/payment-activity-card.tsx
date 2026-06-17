@@ -10,6 +10,7 @@ type PaymentActivityCardProps = {
   payment: PaymentRecord;
   currentUserId: string;
   onClick: (paymentId: string) => void;
+  forceReceiveView?: boolean;
 };
 
 function statusTone(status: PaymentRecord["status"]) {
@@ -80,7 +81,7 @@ function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
     case "lease_claimed":
       return "Claiming";
     case "cranker_paid":
-      return "Recipient paid";
+      return viewerRole === "receiver" ? "Paid" : "Recipient paid";
     case "epoch_settled":
       return "Settled";
     case "reverted":
@@ -119,8 +120,9 @@ export function PaymentActivityCard({
   payment,
   currentUserId,
   onClick,
+  forceReceiveView,
 }: PaymentActivityCardProps) {
-  const isSend = payment.sender_user_id === currentUserId;
+  const isSend = !forceReceiveView && payment.sender_user_id === currentUserId;
   const viewerRole: ActivityViewerRole = isSend ? "sender" : "receiver";
   const counterparty = isSend
     ? `To ${receiverIdentityLabel(payment)}`
@@ -170,11 +172,6 @@ export function PaymentActivityCard({
           style={{ color: "var(--text)" }}
         >
           <span className="truncate">{counterparty}</span>
-          {/* {identityHint ? (
-            <span className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]" style={{ color: "var(--text-faint)" }}>
-              {identityHint}
-            </span>
-          ) : null} */}
 
           <span
             className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]"

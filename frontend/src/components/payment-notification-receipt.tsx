@@ -2,7 +2,7 @@
 
 import { formatPaymentNotificationStatus } from "@/src/lib/formatters";
 import type { PaymentNotificationStatus } from "@/src/lib/types";
-import { WhatsAppIcon } from "@/src/components/whatsapp-icon";
+import { WhatsAppIcon } from "@/src/lib/whatsapp";
 
 function ReceiptTicks({ status }: { status: PaymentNotificationStatus }) {
   const stroke = status === "read" ? "#71b7ff" : status === "delivered" ? "#dce7f7" : "#f4f7fb";

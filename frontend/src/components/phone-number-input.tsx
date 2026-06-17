@@ -18,7 +18,7 @@ import type { CountryOption } from "@/src/lib/phone-countries";
 import { COUNTRY_OPTIONS, formatPhoneInput } from "@/src/lib/phone-countries";
 import type { RecipientLookupResult } from "@/src/lib/types";
 import { buildBackendUrl } from "@/src/lib/backend";
-import { WhatsAppIcon } from "./whatsapp-icon";
+import { WhatsAppIcon } from "@/src/lib/whatsapp";
 
 type PhoneVerificationDetails = {
   displayName: string | null;

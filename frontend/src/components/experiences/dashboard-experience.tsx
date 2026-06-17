@@ -276,6 +276,20 @@ export function DashboardExperience() {
         .length,
     [paymentHistory, user?.phoneNumber],
   );
+  const displayPayments = useMemo(() => {
+    const items: { payment: PaymentRecord; forceReceiveView: boolean; displayKey: string }[] = [];
+    const userPhone = user?.phoneNumber;
+    const userId = user?.id;
+    for (const payment of paymentHistory) {
+      const isSelfSend = payment.sender_user_id === userId && payment.receiver_phone === userPhone;
+      items.push({ payment, forceReceiveView: false, displayKey: `${payment.id}-send` });
+      if (isSelfSend) {
+        items.push({ payment, forceReceiveView: true, displayKey: `${payment.id}-receive` });
+      }
+    }
+    return items.slice(0, 12);
+  }, [paymentHistory, user?.id, user?.phoneNumber]);
+
   const activeTin = tinInfo?.tin ?? user?.tin ?? null;
   const activeTinIdentity =
     tinInfo?.tinsIdentityPublicKey ?? user?.tinsIdentityPublicKey ?? null;
@@ -675,59 +689,6 @@ export function DashboardExperience() {
               </div>
             </div>
 
-            {/* <div
-              className="flex min-w-0 items-center gap-1.5 rounded-[13px] border border-[var(--field-border)] bg-[var(--field)] px-2 py-2 sm:px-3"
-              title={`Escrow: ${loading ? "\u2014" : balanceVisible ? formatPaymentUsd(totalPendingUsd) : "Hidden"}`}
-            >
-              <Landmark className="h-3.5 w-3.5 shrink-0 text-[var(--warning)]" />
-              <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
-                Escrow
-              </span>
-              <span className="ml-auto min-w-0 truncate text-right text-[0.68rem] font-bold tabular-nums text-text">
-                {loading
-                  ? "\u2014"
-                  : balanceVisible
-                    ? formatPaymentUsd(totalPendingUsd)
-                    : "****"}
-              </span>
-            </div> */}
-            {/* <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
-              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                Sent
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <ArrowUpRight className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">
-                  {loading ? "\u2014" : sentCount}
-                </span>
-              </div>
-            </div>
-            <div className="tl-panel-header tl-field rounded-[16px] px-4 py-3.5">
-              <div className="text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                Received
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <ArrowDownLeft className="h-3.5 w-3.5 text-[var(--accent)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">
-                  {loading ? "\u2014" : receivedCount}
-                </span>
-              </div>
-            </div> */}
-            {/* <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
-              <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
-                Escrow
-              </span>
-              <div className="mt-1 flex items-center gap-2">
-                <Landmark className="h-3.5 w-3.5 text-[var(--warning)]" />
-                <span className="text-[1.05rem] font-bold text-[var(--text)]">
-                  {loading
-                    ? "\u2014"
-                    : balanceVisible
-                      ? formatPaymentUsd(totalPendingUsd)
-                      : "****"}
-                </span>
-              </div>
-            </div> */}
           </div>
 
           {/* â”€â”€â”€ ACTIVITY â€” desktop: starts right after stats â”€â”€â”€ */}
@@ -783,14 +744,15 @@ export function DashboardExperience() {
                   </div>
                 </div>
               ) : (
-                paymentHistory
+                displayPayments
                   .slice(0, 6)
-                  .map((payment) => (
+                  .map(({ payment, forceReceiveView, displayKey }) => (
                     <PaymentActivityCard
-                      key={payment.id}
+                      key={displayKey}
                       payment={payment}
                       currentUserId={user.id}
-                      onClick={(id) => router.push(`/app/activity/${id}`)}
+                      onClick={(id) => router.push(`/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`)}
+                      forceReceiveView={forceReceiveView || undefined}
                     />
                   ))
               )}
@@ -943,33 +905,8 @@ export function DashboardExperience() {
                   </span>
                 </div>
 
-                {/* X / Twitter */}
-                {/* <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 opacity-45">
-                  <XIcon className="h-3.5 w-3.5 shrink-0 text-text-faint" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[0.74rem] font-medium text-text-faint">X / Twitter</div>
-                    <div className="text-[0.58rem] text-text-faint text-text-faint" >Verification identity</div>
-                  </div>
-                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                    style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
-                  >
-                    <Lock className="h-2.5 w-2.5" />
-                    Soon
-                  </span>
-                </div> */}
-
-                {/* <Link href="/app/settings" className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99]">
-                  <Wallet className="h-3.5 w-3.5 shrink-0 text-text-faint" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[0.74rem] font-medium">Wallet login</div>
-                    <div className="text-[0.58rem] text-text-faint" >Future login path - link WhatsApp after wallet auth</div>
-                  </div>
-                  <span className="shrink-0 flex items-center gap-1 text-[0.56rem] font-medium rounded-full px-2 py-0.5"
-                    style={{ border: "1px solid var(--field-border)", color: "var(--text-faint)" }}
-                  >
-                    Soon
-                  </span>
-                </Link> */}
+                {/* Wallet login */}
+                
               </div>
             </div>
           </div>
@@ -1052,23 +989,6 @@ export function DashboardExperience() {
           </div>
 
           {/* MOBILE STATS */}
-          {/* <div className="grid grid-cols-3 gap-2 md:hidden">
-            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
-              <ArrowUpRight className="mx-auto h-3.5 w-3.5 text-[var(--primary-accent)]" />
-              <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : sentCount}</div>
-              <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Sent</div>
-            </div>
-            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
-              <ArrowDownLeft className="mx-auto h-3.5 w-3.5 text-[var(--accent)]" />
-              <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : receivedCount}</div>
-              <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Received</div>
-            </div>
-            <div className="tl-panel-header tl-field rounded-[14px] px-3 py-3 text-center">
-              <Landmark className="mx-auto h-3.5 w-3.5 text-[var(--warning)]" />
-              <div className="mt-1 text-[0.92rem] font-bold text-[var(--text)]">{loading ? "\u2014" : pendingPayments.length}</div>
-              <div className="text-[0.54rem] font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">Pending</div>
-            </div>
-          </div> */}
         </div>
       </div>
 
@@ -1126,14 +1046,15 @@ export function DashboardExperience() {
               </div>
             </div>
           ) : (
-            paymentHistory
+            displayPayments
               .slice(0, 6)
-              .map((payment) => (
+              .map(({ payment, forceReceiveView, displayKey }) => (
                 <PaymentActivityCard
-                  key={payment.id}
+                  key={displayKey}
                   payment={payment}
                   currentUserId={user.id}
-                  onClick={(id) => router.push(`/app/activity/${id}`)}
+                  onClick={(id) => router.push(`/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`)}
+                  forceReceiveView={forceReceiveView || undefined}
                 />
               ))
           )}

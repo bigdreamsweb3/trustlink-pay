@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
-import { WhatsAppWhiteIcon } from "@/src/components/whatsapp-icon";
+import { WhatsAppIcon, WhatsAppWhiteIcon, QRCodeDisplay, WhatsAppModal } from "@/src/lib/whatsapp";
 import type { Route } from "next";
-
-import { QRCodeDisplay } from "@/src/components/qr-code-display";
 import { useToast } from "@/src/components/toast-provider";
-import { WhatsAppModal } from "@/src/components/modals/whatsapp-modal";
 import { apiPost } from "@/src/lib/api";
 import {
   detectDevice,
@@ -433,7 +430,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
                 className="group flex w-full items-center justify-center gap-3 rounded-[16px] px-5 py-4 text-[0.92rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
                 style={{ background: "var(--panel)", color: "var(--text)" }}
               >
-                <WhatsAppWhiteIcon className="h-5 w-5 text-[#25D366]" />
+                <WhatsAppIcon className="h-5 w-5 text-[#25D366]" />
                 Continue with WhatsApp
               </button>
               <button

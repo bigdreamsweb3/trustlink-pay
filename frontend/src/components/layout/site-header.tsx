@@ -86,19 +86,6 @@ export function SiteHeader() {
               </Link>
             </div>
 
-            {/* <div className="flex min-w-0 items-center gap-3" onClick={() => setMenuOpen(false)}>
-              <TrustLinkMark compact />
-              <div className="min-w-0 flex  items-center gap-1.5">
-                <div className="rounded-full text-accent-deep px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.14em] sm:inline-flex">TrustLink Pay</div>
-                <Link
-                  href="/#tsn-protocol"
-                  onClick={() => setMenuOpen(false)}
-                  className="tl-text-muted text-[0.6rem] text-center tracking-[0.22em] leading-none"
-                >
-                  TSN Protocol
-                </Link>
-              </div>
-            </div> */}
           </div>
 
           <nav

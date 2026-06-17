@@ -4,7 +4,7 @@
 
 ### What is TrustLink Pay?
 
-TrustLink Pay is a private stablecoin payment system on Solana. Users send to 10-digit Transfer Identity Numbers, and TSN settles value through cranker-routed vault flows.
+TrustLink Pay is a private stablecoin payment system on Solana. Users send to 10-digit Transfer Identity Numbers. TSN settles value through cranker-routed vault flows.
 
 ### What is a TIN?
 
@@ -12,9 +12,9 @@ A TIN is a 10-digit Transfer Identity Number. It is the user-facing receive iden
 
 ### Is TrustLink Pay phone-number based?
 
-No. The protocol narrative is TIN-first.
+No. The protocol identity is the TIN.
 
-Phone numbers and WhatsApp can support notifications, authentication, optional linking, and future discovery. The primary payment identity is the TIN.
+Phone numbers and WhatsApp can support notifications, authentication, and optional linking. The primary payment identity is the TIN.
 
 ### Which tokens are supported?
 
@@ -32,11 +32,11 @@ TSN separates the sender-side escrow path from the recipient-side payout path.
 sender authorization -> cranker-sponsored escrow -> vault payout -> proof
 ```
 
-The payment is still on Solana, but the normal user wallet view does not expose a clean direct sender-to-recipient transfer.
+The payment is on Solana, but the normal wallet view does not expose a direct sender-to-recipient transfer.
 
 ### Is TrustLink anonymous?
 
-No. TrustLink is privacy-preserving, not accountability-free. Settlement can still be verified through transaction hashes, vault state, cranker records, and mempool proof records.
+No. TrustLink is privacy-preserving, not anonymous. Settlement can be verified through transaction hashes, vault state, cranker records, and mempool proof records.
 
 ---
 
@@ -44,7 +44,7 @@ No. TrustLink is privacy-preserving, not accountability-free. Settlement can sti
 
 ### Can another wallet use TINS?
 
-Yes. A wallet can use TINS as a privacy-friendly receive identity layer. A user can share a TIN instead of a raw wallet address.
+Yes. A wallet can use TINS as a receive identity layer. A user can share a TIN instead of a wallet address.
 
 ### Can another app use TSN?
 
@@ -60,16 +60,12 @@ No. The goal is open protocol infrastructure.
 
 ### What does escrowed mean?
 
-Escrowed means the cranker has verified the work and funds have moved into the TSN escrow/vault path.
+Escrowed means the cranker has verified the work and funds have moved into the TSN escrow or vault path.
 
-### What if claim fails?
+### What if a claim fails?
 
-For the sender, the payment remains escrowed. For the recipient, the claim may be retryable depending on current state.
+For the sender, the payment remains escrowed. For the recipient, the claim may be retryable depending on the current state.
 
 ### What is a cranker?
 
 A cranker is a verified settlement operator that validates work, sponsors escrow, executes payout, and records proof.
-
-### What is claim credit?
-
-Claim credit is earned when a cranker performs useful escrow work. It gates access to claim execution so the network prioritizes payment-intent processing before payout work.

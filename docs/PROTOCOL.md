@@ -2,7 +2,7 @@
 
 TrustLink Pay is a TIN-first private stablecoin settlement protocol on Solana.
 
-Users send to 10-digit Transfer Identity Numbers. TSN handles settlement without exposing a simple direct sender-wallet-to-recipient-wallet path.
+Users send to 10-digit Transfer Identity Numbers. TSN handles settlement without exposing a direct sender-wallet-to-recipient-wallet path.
 
 ---
 
@@ -34,15 +34,15 @@ Phone numbers, WhatsApp, and social identities are optional links to a TIN. They
 
 The sender signs approval for a specific payment.
 
-Authorization covers:
+Authorization includes:
 
-- sender wallet,
-- recipient identity hash,
-- token mint,
-- amount,
-- fee terms,
-- nonce,
-- expiry.
+- sender wallet
+- recipient identity hash
+- token mint
+- amount
+- fee terms
+- nonce (a unique number that prevents replay attacks)
+- expiry
 
 The sender does not broadcast the final settlement transaction directly. A cranker validates and sponsors the escrow transaction.
 
@@ -52,33 +52,18 @@ The sender does not broadcast the final settlement transaction directly. A crank
 
 ```text
 1. Sender enters recipient TIN.
-2. TINS/app state resolves the settlement route.
+2. TINS or app state resolves the settlement route.
 3. Sender signs TSN authorization.
 4. Authorization enters TSN mempool.
 5. Verified cranker validates the payload.
 6. Cranker sponsors escrow transaction.
-7. Funds lock into TSN vault/token account path.
+7. Funds lock into TSN vault path.
 8. Intent status becomes escrowed.
 9. Claim work becomes available.
 10. Cranker executes payout from vault liquidity.
 11. Proof is recorded through transaction hashes and mempool state.
-12. Payment status becomes executed/settled.
+12. Payment status becomes executed or settled.
 ```
-
----
-
-## Privacy Model
-
-TSN does not make Solana private in the absolute sense. It changes the payment graph.
-
-| Normal Transfer | TSN Settlement |
-| --- | --- |
-| Sender wallet transfers directly to recipient wallet | Sender funds escrow/vault path |
-| Recipient address appears in sender-side payment | Recipient payout is separated |
-| Wallet graph is easy to follow from either wallet | Full path requires tx/vault/program context |
-| App identity is wallet address | App identity is TIN |
-
-The goal is reduced wallet exposure, not accountability-free anonymity.
 
 ---
 
@@ -86,15 +71,15 @@ The goal is reduced wallet exposure, not accountability-free anonymity.
 
 Crankers:
 
-- verify sender authorization,
-- verify transaction structure,
-- reject tampered mempool work,
-- sponsor escrow,
-- earn claim credit,
-- execute payout,
-- publish proof records.
+- verify sender authorization
+- verify transaction structure
+- reject tampered mempool work
+- sponsor escrow
+- earn claim credit
+- execute payout
+- publish proof records
 
-Claim credit exists so cranker incentives stay balanced: useful escrow work creates eligibility for claim work.
+Claim credit keeps cranker incentives balanced: useful escrow work creates eligibility for claim work.
 
 ---
 
@@ -103,14 +88,14 @@ Claim credit exists so cranker incentives stay balanced: useful escrow work crea
 | Status | Meaning |
 | --- | --- |
 | `pending` | Authorization is waiting for cranker verification |
-| `escrowed` | Funds moved into TSN escrow/vault path |
+| `escrowed` | Funds moved into TSN escrow or vault path |
 | `claimed` | Claim work is in progress |
-| `executed` | Recipient payout/proof completed |
-| `settled` | Epoch/accounting settlement completed |
-| `canceled` | Work was rejected or expired before useful settlement |
-| `failed` | A claim attempt failed, but escrowed funds may still be claimable |
+| `executed` | Recipient payout and proof completed |
+| `settled` | Epoch or accounting settlement completed |
+| `canceled` | Work was rejected or expired before settlement |
+| `failed` | A claim attempt failed; escrowed funds may still be claimable |
 
-For sender UX, an escrowed payment should not be shown as failed because a recipient-side claim attempt failed. The sender-facing truth is that funds are escrowed for the recipient.
+For sender UX, an escrowed payment should not be shown as failed when a recipient-side claim attempt fails. The sender-facing truth is that funds are escrowed for the recipient.
 
 ---
 
@@ -118,18 +103,18 @@ For sender UX, an escrowed payment should not be shown as failed because a recip
 
 | Fee Type | Purpose |
 | --- | --- |
-| Sender fee | Protocol/treasury infrastructure |
+| Sender fee | Protocol or treasury infrastructure |
 | Claim fee | Settlement and vault economics |
-| Network fee | Paid by cranker/operator in sponsored flow |
+| Network fee | Paid by cranker or operator in sponsored flow |
 | Reimbursement | Protocol accounting for useful operator work |
 
-Current settlement-fee split:
+Settlement-fee split:
 
 | Recipient | Share |
 | --- | ---: |
 | Liquidity Providers | 87% |
 | TSN Protocol Treasury | 8% |
-| Cranker/Operator | 5% |
+| Cranker or Operator | 5% |
 
 ---
 

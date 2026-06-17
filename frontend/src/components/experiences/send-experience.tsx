@@ -907,10 +907,10 @@ export function SendExperience() {
 
           /* ═══════════ SEND FORM ═══════════ */
           <form onSubmit={handleSubmit}>
-            <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-start">
+            <div className="grid gap-5 md:grid-cols-[1fr_1fr] md:items-start">
 
-              {/* ── LEFT: Form fields ── */}
-              <div className="space-y-4">
+              {/* ── LEFT: Form fields (phone preview frame) ── */}
+              <div className="space-y-4 md:mx-auto md:w-full md:max-w-[380px]">
 
                 {/* Recipient input */}
 

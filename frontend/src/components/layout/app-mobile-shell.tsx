@@ -217,7 +217,7 @@ export function AppMobileShell({
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Desktop top bar */}
           <header
-            className={`hidden md:flex items-center justify-between gap-4 px-6 py-4 sticky top-0 z-50 transition-all duration-200 ${headerScrolled ? "bg-dock/45 backdrop-blur-lg border-b border-field-border" : "bg-transparent"}`}
+            className={`hidden md:flex items-center justify-between gap-4 px-6 py-4 sticky top-0 z-50 transition-all duration-200 ${headerScrolled ? "bg-dock/90 backdrop-blur-lg border-b border-field-border" : "bg-transparent"}`}
           >
             <div className="flex items-center gap-3">
               {showBackButton ? (
@@ -259,7 +259,7 @@ export function AppMobileShell({
 
           {/* Mobile top bar */}
           <header
-            className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 min-h-16 transition-all duration-200 ${headerScrolled ? "bg-dock/45 backdrop-blur-xl border-b border-[var(--field-border)]" : "bg-transparent"}`}
+            className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 h-fit+11px min-h-fit transition-all duration-200 ${headerScrolled ? "bg-dock/90 backdrop-blur-xl border-b border-[var(--field-border)]" : "bg-transparent"}`}
           >
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {showBackButton ? (

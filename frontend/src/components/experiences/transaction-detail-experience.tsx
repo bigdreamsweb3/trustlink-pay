@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
@@ -133,7 +134,7 @@ function tsnLabel(
     case "lease_claimed":
       return "Claiming";
     case "cranker_paid":
-      return "Recipient paid";
+      return viewerRole === "receiver" ? "Paid" : "Recipient paid";
     case "epoch_settled":
       return "Settled";
     case "reverted":
@@ -285,8 +286,13 @@ export function TransactionDetailExperience({
   const [shareBusy, setShareBusy] = useState(false);
   const [receiverIdentityOpen, setReceiverIdentityOpen] = useState(false);
 
+  const urlViewParam = useSearchParams().get("view");
+  const effectiveViewerRole = detail
+    ? (urlViewParam === "sender" || urlViewParam === "receiver" ? urlViewParam : detail.viewerRole)
+    : "sender";
+
   const shouldPollReceipt =
-    detail?.viewerRole === "sender" &&
+    effectiveViewerRole === "sender" &&
     shouldPollPaymentNotification(detail?.payment.notification_status);
   const shouldPollTsn = detail ? shouldPollTsnPayment(detail.payment) : false;
   const shouldPollDetail = shouldPollReceipt || shouldPollTsn;
@@ -402,13 +408,13 @@ export function TransactionDetailExperience({
   }, [detail]);
 
   const viewerFeeLabel = detail
-    ? detail.viewerRole === "sender"
+    ? effectiveViewerRole === "sender"
       ? "Send fee"
       : "Claim fee"
     : null;
 
   const viewerFeeAmount = detail
-    ? detail.viewerRole === "sender"
+    ? effectiveViewerRole === "sender"
       ? formatFeeAmount(
           detail.payment.sender_fee_amount,
           detail.payment.token_symbol,
@@ -424,7 +430,7 @@ export function TransactionDetailExperience({
     [detail],
   );
   const heroStatusLabel = detail?.payment.tsn
-    ? tsnLabel(detail.payment.tsn, detail.viewerRole)
+    ? tsnLabel(detail.payment.tsn, effectiveViewerRole)
     : detail
       ? paymentStatusLabel(detail.payment.status)
       : "";
@@ -486,7 +492,7 @@ export function TransactionDetailExperience({
 
               <div className="relative z-10 text-center">
                 <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.22em]">
-                  {detail.viewerRole === "sender"
+                  {effectiveViewerRole === "sender"
                     ? "Sent payment"
                     : "Incoming payment"}
                 </div>
@@ -505,7 +511,7 @@ export function TransactionDetailExperience({
                 </div>
 
                 <p className="mx-auto mt-4 max-w-[320px] text-[0.8rem] leading-relaxed text-text-soft">
-                  {detail.viewerRole === "sender"
+                  {effectiveViewerRole === "sender"
                     ? detail.receiver.manualInviteRequired
                       ? `In escrow for ${receiverLabel}. Recipient has not joined TrustLink yet.`
                       : `Securely being delivered to ${receiverLabel}.`
@@ -539,7 +545,7 @@ export function TransactionDetailExperience({
                     className={`shrink-0 rounded-full px-3 py-1 tl-meta-sm font-semibold ${detail.payment.tsn ? tsnTone(effectiveTsnStage(detail)) : ""}`}
                   >
                     {detail.payment.tsn
-                      ? tsnLabel(detail.payment.tsn, detail.viewerRole)
+                      ? tsnLabel(detail.payment.tsn, effectiveViewerRole)
                       : "TSN"}
                   </span>
                 </div>
@@ -604,35 +610,35 @@ export function TransactionDetailExperience({
                     <button
                       type="button"
                       onClick={() => {
-                        if (detail.viewerRole === "sender") {
+                        if (effectiveViewerRole === "sender") {
                           setReceiverIdentityOpen((open) => !open);
                         }
                       }}
                       className={`flex w-full items-center justify-between gap-4 text-left ${
-                        detail.viewerRole === "sender"
+                        effectiveViewerRole === "sender"
                           ? "cursor-pointer"
                           : "cursor-default"
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="tl-meta-sm uppercase tracking-[0.14em] text-text-soft">
-                          {detail.viewerRole === "sender"
+                          {effectiveViewerRole === "sender"
                             ? "Receiver"
                             : "Sender"}
                         </div>
 
                         <div className="mt-1 truncate text-[0.9rem] font-semibold text-text">
-                          {detail.viewerRole === "sender"
+                          {effectiveViewerRole === "sender"
                             ? receiverLabel
                             : detail.sender.displayName}
                         </div>
 
-                        {detail.viewerRole === "sender" &&
+                        {effectiveViewerRole === "sender" &&
                         detail.receiver.tin ? (
                           <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             TIN {detail.receiver.tin}
                           </div>
-                        ) : detail.viewerRole === "sender" &&
+                        ) : effectiveViewerRole === "sender" &&
                           detail.receiver.handle ? (
                           <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             @{detail.receiver.handle}
@@ -642,14 +648,14 @@ export function TransactionDetailExperience({
 
                       <ChevronRight
                         className={`h-4 w-4 text-text-soft transition-transform ${
-                          receiverIdentityOpen && detail.viewerRole === "sender"
+                          receiverIdentityOpen && effectiveViewerRole === "sender"
                             ? "rotate-90"
                             : ""
                         }`}
                       />
                     </button>
 
-                    {detail.viewerRole === "sender" && receiverIdentityOpen ? (
+                    {effectiveViewerRole === "sender" && receiverIdentityOpen ? (
                       <div className="mt-4">
                         <IdentityTree
                           compact
@@ -702,7 +708,7 @@ export function TransactionDetailExperience({
                 </div>
 
                 {/* SHARE INVITE */}
-                {detail.viewerRole === "sender" &&
+                {effectiveViewerRole === "sender" &&
                 detail.receiver.manualInviteRequired &&
                 detail.receiver.inviteShare ? (
                   <div className="tl-field rounded-[24px] px-5 py-5">
@@ -800,11 +806,11 @@ export function TransactionDetailExperience({
                       {
                         label: "TSN escrow tx",
                         sig:
-                          detail.viewerRole === "sender"
+                          effectiveViewerRole === "sender"
                             ? detail.trace.tsnEscrowSignature
                             : null,
                         url:
-                          detail.viewerRole === "sender"
+                          effectiveViewerRole === "sender"
                             ? detail.trace.tsnEscrowExplorerUrl
                             : null,
                       },

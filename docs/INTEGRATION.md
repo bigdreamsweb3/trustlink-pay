@@ -1,8 +1,8 @@
 # TrustLink Pay Integration Guide
 
-TrustLink Pay integrations should be TIN-first.
+TrustLink Pay integrations use the TIN (Transfer Identity Number) as the protocol identity. A TIN is a 10-digit number that identifies a recipient on the TrustLink network. TSN handles private settlement behind the scenes.
 
-The user-facing recipient is a 10-digit Transfer Identity Number. TSN handles private settlement behind the scenes.
+Phone numbers and WhatsApp are optional application-layer conveniences -- they do not replace the TIN.
 
 ---
 
@@ -12,7 +12,7 @@ The user-facing recipient is a 10-digit Transfer Identity Number. TSN handles pr
 npm install @trustlink/tsn-sdk
 ```
 
-Package names may change as the SDKs are published. In this repository, the active package surfaces are `tsn-sdk` and `tins-sdk`.
+Package names may change as the SDKs are published. In this repository, the active package surfaces are local to the monorepo under `tsn-sdk/`.
 
 ---
 
@@ -22,15 +22,15 @@ Package names may change as the SDKs are published. In this repository, the acti
 import {
   buildCreateTinInstruction,
   getTinsRegistryPda,
-} from "@trustlink/tsn-sdk/tins";
+} from "tsn-sdk/src/tins";
 
 import {
   buildTsnSponsoredSettlementTransaction,
-} from "@trustlink/tsn-sdk/sponsored-settlement";
+} from "tsn-sdk/src/sponsored-settlement";
 
 import {
   submitPaymentAuthorizationToMempool,
-} from "@trustlink/tsn-sdk/payment-authorization";
+} from "tsn-sdk/src/payment-authorization";
 ```
 
 ### 1. Resolve Recipient TIN
@@ -40,7 +40,7 @@ const recipientTin = "1000000008";
 const registryPda = getTinsRegistryPda({ tin: recipientTin });
 ```
 
-The application resolves the TIN to a settlement route using TINS/app state.
+The application resolves the TIN to a settlement route using TINS and app state.
 
 ### 2. Build Sponsored Settlement
 
@@ -61,37 +61,14 @@ The frontend requests the sender wallet to sign the payload. The sender does not
 
 ### 3. Submit Authorization
 
-```ts
-await submitPaymentAuthorizationToMempool({
-  mempoolUrl,
-  paymentId,
-  recipientHash,
-  tokenMintAddress,
-  senderWallet,
-  senderAuthorizationMessage,
-  senderAuthorizationSignature,
-  senderAuthorizationNonce,
-  senderAuthorizationIssuedAt,
-  senderAuthorizationExpiresAt,
-  senderSignedSettlementTransaction: signedTransactionBase64,
-  senderSignedSettlementFeePayer: settlement.crankerFeePayer,
-  senderSettlementMode: "sponsored_sender_cosigned",
-  senderTokenAccount: settlement.senderTokenAccount,
-  settlementVault: settlement.paymentVault,
-  settlementTokenAccount: settlement.paymentVaultTokenAccount,
-  settlementPaymentIntentId: settlement.paymentIntentId,
-  amount: 5,
-  recipientAmount: 5,
-  autoclaim: true,
-});
-```
+Call `submitPaymentAuthorizationToMempool` with the signed settlement payload and the response from step 2. See the SDK reference docs for the full parameter list and expected types.
 
 ### 4. Track Status
 
 | Status | User Meaning |
 | --- | --- |
 | `pending` | Awaiting cranker verification |
-| `escrowed` | Funds are in TSN escrow/vault path |
+| `escrowed` | Funds are in TSN escrow or vault path |
 | `claimed` | Claim work is being processed |
 | `executed` | Recipient payout completed |
 | `failed` | Retry may be needed, especially for recipient claim |
@@ -105,10 +82,10 @@ Sender UX should treat escrowed funds as escrowed, not failed, even if recipient
 
 Backend APIs should store product state and user history.
 
-The frontend/SDK should handle TSN-specific signing and settlement preparation. The backend can receive:
+The frontend and SDK should handle TSN-specific signing and settlement preparation. The backend can receive:
 
 - payment id,
-- TIN/recipient identity metadata,
+- TIN and recipient identity metadata,
 - mempool intent id,
 - escrow transaction hash,
 - proof transaction hash,

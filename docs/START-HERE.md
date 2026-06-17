@@ -74,3 +74,27 @@ npm --prefix tsn-sdk run build
 npm --prefix tsn-cranker-op-daemon run crank:start
 cd tsn/protocol && cargo test --no-default-features
 ```
+
+## Mempool runtime epoch lifecycle
+
+**Version / commit reference:** v1 experimental submodule patch handoff.
+
+The Mempool runtime is the coordinator for TSN epoch settlement. It does not custody user funds. It prepares epoch records, aggregates private commitments into a root hash, releases the minimal public challenge for Crankers, and exposes safe epoch status to the frontend.
+
+What the Mempool runtime manages:
+
+- Next-epoch creation 30-60 minutes before the active epoch ends.
+- Private commitment aggregation for `PaymentCommitment` records.
+- Minimal challenge release for the Cranker race.
+- PrivacyReceivePDA watch status and sweep-required signals.
+- Frontend-safe epoch status: epoch id, PEA reference, aggregate root, totals, challenge status, and recovery winner.
+
+What it must never expose:
+
+- Raw wallet addresses in user-facing views.
+- Phone numbers or WhatsApp identifiers.
+- Full payment graphs.
+- Decrypted OTDT settlement payloads.
+- Private TINS route metadata.
+
+The exact patches for the two mempool submodules live in `docs/submodule-patches/` and should be applied inside the separate `tsn-mempool-backend` and `tsn-mempool-frontend` repositories.

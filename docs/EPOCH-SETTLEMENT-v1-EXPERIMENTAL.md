@@ -122,3 +122,27 @@ npm --prefix tsn-cranker-sdk run cranker -- race-epoch \
 ```
 
 The Mempool runtime challenge object is intentionally small: epoch id, root hash, aggregate total, checksum, optional PEA/EpochAccount references, status, winner, and reimbursement signature. It does not publish raw TINS routes, OTDT payloads, wallet addresses, phone numbers, or payment graphs.
+
+## Mempool runtime epoch lifecycle ownership
+
+**Version / commit reference:** v1 experimental submodule patch handoff.
+
+The Mempool runtime owns the off-chain epoch lifecycle for v1. The TSN program verifies roots and reimbursement math, but the Mempool runtime is responsible for keeping Crankers synchronised before that proof reaches chain.
+
+### Mempool responsibilities
+
+- Proactively create the next `EpochRecord` 30-60 minutes before the active epoch ends so Crankers can pre-warm caches, PEA references, and RPC subscriptions.
+- Privately collect `PaymentCommitment` inputs from sender-authorised TSN work without publishing raw TINS routes, wallet addresses, phone numbers, or OTDT payloads.
+- Compute the epoch aggregate root with commitment hashes and amount math only.
+- Release the minimal public epoch challenge: `epoch`, `rootHash`, `totalToDistribute`, `crankerCreditSumMod`, optional `EpochAccount`, optional PEA, and challenge status.
+- Track PrivacyReceivePDA watches and mark deposits as `sweep_required` for authorised sweep workers.
+- Expose epoch state to the mempool frontend so operators can see liveness and recovery status without seeing the private payment graph.
+
+### Submodule patch handoff
+
+Because `tsn-mempool-backend` and `tsn-mempool-frontend` are separate git submodules, this repository carries patch files rather than editing those repos directly:
+
+- `docs/submodule-patches/tsn-mempool-backend-epoch-v1.patch`
+- `docs/submodule-patches/tsn-mempool-frontend-epoch-v1.patch`
+
+Apply each patch inside its submodule repository, adapt only file paths/import style if that submodule has diverged, then run that submodule's test/build pipeline.

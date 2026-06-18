@@ -288,3 +288,53 @@ Fix:
 - `npm run settle:force` -> force settle epoch (dev/test)
 - `npm run crank:start` -> start Cranker loop
 - `npm run crank:reference` -> alias to Cranker loop
+
+## Epoch Settlement v1: Competitive Recovery Race
+
+**Version / commit reference:** v1 experimental epoch settlement.
+
+### Summary
+
+The Cranker daemon now participates in TSN epoch settlement. During an epoch, the daemon still executes private payout and recovery work. At epoch close, the Mempool runtime publishes a minimal epoch challenge: root hash, total-to-distribute, checksum, and optional EpochAccount/PEA references. Every authorised Cranker recomputes the same root from its local encrypted mempool index and races to submit `tsn_process_batch_reimbursement` first.
+
+Speed matters because the first valid submitter records the recovery winner for the epoch and earns the recovery bonus path. Faster Crankers improve network-wide payout latency without asking users to trust a custodian.
+
+### New environment variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `SOLANA_WS_URL` | Recommended | WebSocket endpoint used for EpochAccount, PEA, and PrivacyReceivePDA subscriptions. Falls back to the RPC URL's default WebSocket behavior when omitted. |
+| `TSN_MEMPOOL_URL` | Recommended | Mempool runtime endpoint used for epoch challenge reads/writes. If omitted, the daemon uses local JSON-file mempool state. |
+| `TSN_MEMPOOL_API_KEY` | Optional | API key header for private mempool deployments. |
+| `TSN_ACTIVE_PEA_ADDRESS` | Optional | Single active PEA account to watch for balance/account changes. |
+| `TSN_ACTIVE_PEA_ADDRESSES` | Optional | Comma-separated PEA accounts to watch when multiple mints/epochs are active. |
+| `TSN_PRIVACY_RECEIVE_ADDRESSES` | Optional | Comma-separated PrivacyReceivePDA accounts to watch for sweep-required account changes. |
+| `TSN_CRANKER_PRIORITY_FEE_MICROLAMPORTS` | Optional | Fixed compute-unit price for epoch race transactions. Overrides dynamic fee sampling. |
+| `TSN_CRANKER_PRIORITY_FEE_CAP_MICROLAMPORTS` | Optional | Upper bound for dynamic priority fee sampling. Defaults to `250000`. |
+
+### Runtime behavior
+
+The daemon now:
+
+1. Opens a WebSocket subscription to TSN program account changes and filters in-process for `EpochAccount` records owned by the active Mother Escrow.
+2. Watches configured active PEA accounts and PrivacyReceivePDA accounts with `onAccountChange`.
+3. Maintains an in-memory `epochRaceCache` so the same root is not resubmitted repeatedly inside a short race window.
+4. Samples recent prioritization fees and adds a compute-unit price to `tsn_process_batch_reimbursement` unless a fixed fee is configured.
+5. Polls Mempool runtime epoch challenges, recomputes the local commitment root when indexed commitments are available, and immediately submits the reimbursement instruction when the challenge is valid.
+6. Handles `SIGINT`/`SIGTERM` by leaving the loop cleanly instead of continuing to pick up new work.
+
+### PrivacyReceivePDA sweeps
+
+For v1, PrivacyReceivePDA monitoring logs `action=sweep-required` when a configured receive PDA changes. The sweep executor remains intentionally explicit because direct receive deposits must not expose raw sender/recipient graphs in logs. Operators should wire their private sweep policy to the same event and submit the sweep through TSN-owned PEA instructions once the deployment's mint policy is configured.
+
+### Manual epoch race command
+
+```bash
+npm --prefix ../tsn-cranker-sdk run cranker -- race-epoch \
+  <EPOCH_ID> \
+  <ROOT_HASH_HEX_32_BYTES> \
+  <TOTAL_TO_DISTRIBUTE_BASE_UNITS> \
+  <CRANKER_CREDIT_SUM_MOD>
+```
+
+Use this only for testing or manual recovery. The daemon loop is the normal fast path.

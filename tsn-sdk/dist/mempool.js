@@ -11,7 +11,7 @@ async function readSnapshot(path) {
     }
     catch (error) {
         if (error.code === "ENOENT") {
-            return { intents: [], claimRequests: [], proofs: [], recoveries: [] };
+            return { intents: [], claimRequests: [], proofs: [], recoveries: [], epochChallenges: [] };
         }
         throw error;
     }
@@ -215,6 +215,45 @@ export class JsonFileTsnMempool {
         await writeSnapshot(this.path, snapshot);
         return item;
     }
+    async publishEpochChallenge(challenge) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.epochChallenges)
+            snapshot.epochChallenges = [];
+        const id = challenge.id ?? `${challenge.epoch}:${challenge.tokenMintAddress ?? "native"}`;
+        const existing = snapshot.epochChallenges.find((candidate) => candidate.id === id);
+        if (existing) {
+            Object.assign(existing, challenge, { id, updatedAt: now() });
+            await writeSnapshot(this.path, snapshot);
+            return existing;
+        }
+        const timestamp = now();
+        const record = {
+            ...challenge,
+            id,
+            status: challenge.status ?? "open",
+            postedAt: timestamp,
+            updatedAt: timestamp,
+        };
+        snapshot.epochChallenges.push(record);
+        await writeSnapshot(this.path, snapshot);
+        return record;
+    }
+    async listOpenEpochChallenges(limit = 20) {
+        const snapshot = await readSnapshot(this.path);
+        return (snapshot.epochChallenges ?? [])
+            .filter((challenge) => challenge.status === "open" || challenge.status === "failed")
+            .sort((left, right) => left.postedAt.localeCompare(right.postedAt))
+            .slice(0, limit);
+    }
+    async updateEpochChallengeStatus(id, status, patch = {}) {
+        const snapshot = await readSnapshot(this.path);
+        const challenge = (snapshot.epochChallenges ?? []).find((candidate) => candidate.id === id);
+        if (!challenge)
+            return null;
+        Object.assign(challenge, patch, { status, updatedAt: now() });
+        await writeSnapshot(this.path, snapshot);
+        return challenge;
+    }
 }
 export class HttpTsnMempool {
     client;
@@ -279,5 +318,14 @@ export class HttpTsnMempool {
             operatorPubkey,
             status,
         });
+    }
+    publishEpochChallenge(challenge) {
+        return this.client.post("/epoch-challenges", challenge);
+    }
+    listOpenEpochChallenges(limit = 20) {
+        return this.client.get(`/epoch-challenges?status=open&limit=${limit}`);
+    }
+    updateEpochChallengeStatus(id, status, patch = {}) {
+        return this.client.patch(`/epoch-challenges/${encodeURIComponent(id)}/status`, { ...patch, status });
     }
 }

@@ -14,6 +14,7 @@ import {
   tsnClaimVaultSettlementOnChain,
   tsnExecuteVaultPayoutOnChain,
   tsnFetchMotherEscrowOnChain,
+  tsnProcessBatchReimbursementOnChain,
   tsnRecoverPaymentVaultOnChain,
   tsnSubmitSenderSignedSettlementTransaction,
 } from "../../tsn-sdk/src/blockchain/solana-tsn.ts";
@@ -54,6 +55,60 @@ type MempoolOverview = {
   signature: string;
   line: string;
 };
+
+type EpochRaceCacheEntry = {
+  lastSeenSlot: number;
+  lastRootHash?: string;
+  submittedAt?: number;
+};
+
+const epochRaceCache = new Map<string, EpochRaceCacheEntry>();
+const shutdownControllers: number[] = [];
+let shuttingDown = false;
+
+function parsePubkeyList(value: string | undefined) {
+  return (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => new PublicKey(entry));
+}
+
+function epochChallengeCacheKey(epoch: number, rootHash: string) {
+  return `${epoch}:${rootHash}`;
+}
+
+async function dynamicPriorityFeeMicroLamports(connection: Connection) {
+  const configured = process.env.TSN_CRANKER_PRIORITY_FEE_MICROLAMPORTS;
+  if (configured) return Number(configured);
+  try {
+    const fees = await connection.getRecentPrioritizationFees();
+    const sorted = fees
+      .map((fee) => fee.prioritizationFee)
+      .filter((fee) => Number.isFinite(fee) && fee > 0)
+      .sort((left, right) => left - right);
+    if (sorted.length === 0) return 0;
+    const percentileIndex = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75));
+    return Math.min(sorted[percentileIndex], Number(process.env.TSN_CRANKER_PRIORITY_FEE_CAP_MICROLAMPORTS ?? 250_000));
+  } catch {
+    return 0;
+  }
+}
+
+function installShutdownHandlers() {
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    for (const subscriptionId of shutdownControllers.splice(0)) {
+      // Best-effort cleanup; connection-scoped removals are handled by each subscription owner.
+      void subscriptionId;
+    }
+    console.log("[tsn-cranker] shutdown requested; finishing current loop and exiting");
+    setTimeout(() => process.exit(0), 25).unref();
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -949,6 +1004,147 @@ async function assertPrivateReplayRegistryInitialized(rpcUrl: string) {
   console.log(`[tsn-cranker] privateReplayRegistry=${replayRegistry.toBase58()}`);
 }
 
+function computeLocalEpochAggregate(intents: TsnIntentWorkItem["intent"][], epoch: number) {
+  let root = Buffer.alloc(32);
+  let totalToDistribute = 0n;
+  let crankerCreditSumMod = 0n;
+  let commitments = 0;
+  for (const intent of intents) {
+    if (Number(intent.settlementEpoch ?? 0) !== epoch || !intent.commitmentHash) continue;
+    const commitmentHash = Buffer.from(intent.commitmentHash, "hex");
+    if (commitmentHash.length !== 32) continue;
+    const amount = BigInt(Math.trunc(Number(intent.amount ?? 0)));
+    const amountBuffer = encodeU64(amount);
+    root = createHash("sha256")
+      .update(Buffer.from("tsn_epoch_root"))
+      .update(root)
+      .update(commitmentHash)
+      .update(amountBuffer)
+      .digest();
+    totalToDistribute += amount;
+    crankerCreditSumMod = (crankerCreditSumMod + 1n) % 10_000_000_007n;
+    commitments += 1;
+  }
+  return {
+    rootHash: root.toString("hex"),
+    totalToDistribute,
+    crankerCreditSumMod,
+    commitments,
+  };
+}
+
+async function subscribeEpochSettlementAccounts(params: {
+  connection: Connection;
+  motherEscrow: PublicKey;
+}) {
+  const programId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
+  const epochAccountDiscriminator = createHash("sha256").update("account:EpochAccount").digest().subarray(0, 8);
+  const epochSubscriptionId = params.connection.onProgramAccountChange(
+    programId,
+    (change) => {
+      const data = Buffer.from(change.accountInfo.data);
+      if (data.length < 16 || !data.subarray(0, 8).equals(epochAccountDiscriminator)) return;
+      const accountMotherEscrow = new PublicKey(data.subarray(8, 40));
+      if (!accountMotherEscrow.equals(params.motherEscrow)) return;
+      const epochId = data.readBigUInt64LE(8 + 32);
+      const rootHash = data.subarray(8 + 32 + 8 + 32 + 32, 8 + 32 + 8 + 32 + 32 + 32).toString("hex");
+      epochRaceCache.set(change.accountId.toBase58(), {
+        lastSeenSlot: change.context.slot,
+        lastRootHash: rootHash,
+      });
+      console.log(`[tsn-cranker] epoch-account-update account=${change.accountId.toBase58()} epoch=${epochId} slot=${change.context.slot}`);
+    },
+    "confirmed",
+  );
+  shutdownControllers.push(epochSubscriptionId);
+
+  for (const pea of parsePubkeyList(process.env.TSN_ACTIVE_PEA_ADDRESSES ?? process.env.TSN_ACTIVE_PEA_ADDRESS)) {
+    const id = params.connection.onAccountChange(
+      pea,
+      (accountInfo, context) => {
+        console.log(`[tsn-cranker] pea-update pea=${pea.toBase58()} lamports=${accountInfo.lamports} slot=${context.slot}`);
+      },
+      "confirmed",
+    );
+    shutdownControllers.push(id);
+  }
+
+  for (const privacyReceive of parsePubkeyList(process.env.TSN_PRIVACY_RECEIVE_ADDRESSES)) {
+    const id = params.connection.onAccountChange(
+      privacyReceive,
+      (_accountInfo, context) => {
+        console.log(`[tsn-cranker] privacy-receive-update pda=${privacyReceive.toBase58()} slot=${context.slot} action=sweep-required`);
+      },
+      "confirmed",
+    );
+    shutdownControllers.push(id);
+  }
+
+  console.log(`[tsn-cranker] subscriptions epochAccounts=on pea=${parsePubkeyList(process.env.TSN_ACTIVE_PEA_ADDRESSES ?? process.env.TSN_ACTIVE_PEA_ADDRESS).length} privacyReceive=${parsePubkeyList(process.env.TSN_PRIVACY_RECEIVE_ADDRESSES).length}`);
+}
+
+async function raceEpochChallenges(params: {
+  mempool: ReturnType<typeof createMempoolClient>;
+  operator: Keypair;
+  rpcUrl: string;
+  connection: Connection;
+}) {
+  const challenges = await params.mempool.listOpenEpochChallenges(10);
+  const localIntents = await params.mempool.listIntents();
+  const priorityFee = await dynamicPriorityFeeMicroLamports(params.connection);
+  for (const challenge of challenges) {
+    const cacheKey = epochChallengeCacheKey(challenge.epoch, challenge.rootHash);
+    const cached = epochRaceCache.get(cacheKey);
+    if (cached?.submittedAt && Date.now() - cached.submittedAt < 30_000) continue;
+    try {
+      if (!/^[0-9a-fA-F]{64}$/.test(challenge.rootHash)) {
+        await params.mempool.updateEpochChallengeStatus(challenge.id, "failed", {
+          settlementReason: "Invalid TSN epoch root hash length; challenge quarantined before Cranker race.",
+        });
+        continue;
+      }
+
+      const localAggregate = computeLocalEpochAggregate(localIntents, challenge.epoch);
+      if (localAggregate.commitments > 0 && localAggregate.rootHash !== challenge.rootHash.toLowerCase()) {
+        await params.mempool.updateEpochChallengeStatus(challenge.id, "failed", {
+          settlementReason: `Local TSN epoch root mismatch; expected ${localAggregate.rootHash} from ${localAggregate.commitments} commitments.`,
+        });
+        continue;
+      }
+
+      const reimbursement = await tsnProcessBatchReimbursementOnChain({
+        operator: params.operator,
+        epochId: challenge.epoch,
+        recomputedRootHash: challenge.rootHash,
+        totalToDistribute: challenge.totalToDistribute,
+        crankerCreditSumMod: challenge.crankerCreditSumMod,
+        rpcUrl: params.rpcUrl,
+        computeUnitPriceMicroLamports: priorityFee,
+      });
+      epochRaceCache.set(cacheKey, {
+        lastSeenSlot: cached?.lastSeenSlot ?? 0,
+        lastRootHash: challenge.rootHash,
+        submittedAt: Date.now(),
+      });
+      await params.mempool.updateEpochChallengeStatus(challenge.id, "submitted", {
+        winnerCrankerPubkey: params.operator.publicKey.toBase58(),
+        reimbursementTxSig: reimbursement.signature,
+        epochAccount: reimbursement.epochAccount ?? challenge.epochAccount ?? null,
+        settlementReason: "TSN competitive recovery submitted by fastest local Cranker loop.",
+      });
+      console.log(
+        `[tsn-cranker] epoch-race-submitted epoch=${challenge.epoch} challenge=${challenge.id} tx=${reimbursement.signature} winner=${params.operator.publicKey.toBase58()}`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await params.mempool.updateEpochChallengeStatus(challenge.id, "failed", {
+        settlementReason: message,
+      }).catch(() => undefined);
+      console.error(`[tsn-cranker] epoch-race-failed epoch=${challenge.epoch} challenge=${challenge.id}`, error);
+    }
+  }
+}
+
 async function main() {
   const mempool = createMempoolClient();
   const operatorKeypair = loadOperatorKeypair();
@@ -961,7 +1157,12 @@ async function main() {
     );
   }
   const rpcUrl = process.env.RPC_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
+  const connection = new Connection(rpcUrl, {
+    commitment: "confirmed",
+    wsEndpoint: process.env.SOLANA_WS_URL,
+  });
   const tokenDecimals = Number(process.env.TSN_CRANKER_TOKEN_DECIMALS ?? 6);
+  installShutdownHandlers();
 
   console.log(`[tsn-cranker] operator=${operator}`);
   console.log("[tsn-cranker] source=tsn-mempool");
@@ -982,11 +1183,13 @@ async function main() {
   console.log(`[tsn-cranker] treasuryPda=${getTsnTreasuryPda().toBase58()}`);
   await logVerifierReservoir(rpcUrl);
   await assertPrivateReplayRegistryInitialized(rpcUrl);
+  const motherEscrow = new PublicKey(motherEscrowState.address);
   await assertCrankerRegistered({
     operator: operatorKeypair.publicKey,
-    motherEscrow: new PublicKey(motherEscrowState.address),
+    motherEscrow,
     rpcUrl,
   });
+  await subscribeEpochSettlementAccounts({ connection, motherEscrow });
 
   let lastMempoolOverviewSignature = "";
   const claimRetryAfter = new Map<string, number>();
@@ -1004,10 +1207,16 @@ async function main() {
   };
   await logMempoolOverview("startup");
 
-  while (true) {
+  while (!shuttingDown) {
     try {
       await postHeartbeat(operator);
       await logMempoolOverview("changed");
+      await raceEpochChallenges({
+        mempool,
+        operator: operatorKeypair,
+        rpcUrl,
+        connection,
+      });
 
       const intentWork = await mempool.listPendingIntentWork(20);
       for (const item of intentWork) {

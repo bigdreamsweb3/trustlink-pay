@@ -11,13 +11,13 @@ pub mod v3_state;
 
 pub use contexts::*;
 pub use tsn::instructions::*;
-pub use v3::{
-    AutoClaimEscrowArgs, AutoClaimEscrowV3, ClaimEscrowArgs, ClaimEscrowV3, CreateEscrowArgs,
-    CreateEscrowV3,
-};
 use v3::{
     __client_accounts_auto_claim_escrow_v3, __client_accounts_claim_escrow_v3,
     __client_accounts_create_escrow_v3,
+};
+pub use v3::{
+    AutoClaimEscrowArgs, AutoClaimEscrowV3, ClaimEscrowArgs, ClaimEscrowV3, CreateEscrowArgs,
+    CreateEscrowV3,
 };
 
 use state::PaymentMode;
@@ -473,11 +473,7 @@ pub mod trustlink_escrow {
         payment_intent_id: u64,
         authorized_amount: u64,
     ) -> Result<()> {
-        tsn::instructions::finalize_payment_intent(
-            ctx,
-            payment_intent_id,
-            authorized_amount,
-        )
+        tsn::instructions::finalize_payment_intent(ctx, payment_intent_id, authorized_amount)
     }
 
     pub fn tsn_claim_intent(ctx: Context<ClaimIntent>) -> Result<()> {
@@ -488,7 +484,11 @@ pub mod trustlink_escrow {
         tsn::instructions::reassign_intent(ctx)
     }
 
-    pub fn tsn_submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_amount: u64) -> Result<()> {
+    pub fn tsn_submit_proof(
+        ctx: Context<SubmitProof>,
+        payout_tx_sig: [u8; 64],
+        payout_amount: u64,
+    ) -> Result<()> {
         tsn::instructions::submit_proof(ctx, payout_tx_sig, payout_amount)
     }
 
@@ -526,6 +526,55 @@ pub mod trustlink_escrow {
 
     pub fn tsn_settle_epoch(ctx: Context<SettleEpoch>, force: bool) -> Result<()> {
         tsn::instructions::settle_epoch(ctx, force)
+    }
+    pub fn tsn_initialize_epoch(ctx: Context<InitializeEpoch>, epoch_id: u64) -> Result<()> {
+        tsn::instructions::initialize_epoch(ctx, epoch_id)
+    }
+
+    pub fn tsn_open_payment_commitment(
+        ctx: Context<OpenPaymentCommitment>,
+        commitment_hash: [u8; 32],
+        amount: u64,
+        nullifier_hash: [u8; 32],
+        tin_route_hash: [u8; 32],
+        cranker_lease: Pubkey,
+        expiry_ts: i64,
+    ) -> Result<()> {
+        tsn::instructions::open_payment_commitment(
+            ctx,
+            commitment_hash,
+            amount,
+            nullifier_hash,
+            tin_route_hash,
+            cranker_lease,
+            expiry_ts,
+        )
+    }
+
+    pub fn tsn_create_privacy_receive(
+        ctx: Context<CreatePrivacyReceive>,
+        tin_route_hash: [u8; 32],
+        owner_commitment: [u8; 32],
+    ) -> Result<()> {
+        tsn::instructions::create_privacy_receive(ctx, tin_route_hash, owner_commitment)
+    }
+
+    pub fn tsn_process_batch_reimbursement(
+        ctx: Context<ProcessBatchReimbursement>,
+        recomputed_root_hash: [u8; 32],
+        total_to_distribute: u64,
+        cranker_credit_sum_mod: u64,
+    ) -> Result<()> {
+        tsn::instructions::process_batch_reimbursement(
+            ctx,
+            recomputed_root_hash,
+            total_to_distribute,
+            cranker_credit_sum_mod,
+        )
+    }
+
+    pub fn tsn_residual_sweep(ctx: Context<ResidualSweep>) -> Result<()> {
+        tsn::instructions::residual_sweep(ctx)
     }
 
     pub fn tsn_withdraw_verifier_lamports(

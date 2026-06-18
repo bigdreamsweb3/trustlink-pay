@@ -6,7 +6,7 @@ TrustLink Pay replaces raw wallet addresses with simple, portable payment identi
 
 ## Philosophy: Secure Web3 Payments Without Regret
 
-TrustLink Pay is built from a security-first thesis: Web3 payments must be private, non-custodial, and safe enough for daily use. New team members, developers, Crankers, and community members should begin with our foundational post: **[TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](docs/SECURITY-PHILOSOPHY.md)**.
+TrustLink Pay is built from a security-first thesis: Web3 payments must be private, non-custodial, and safe enough for daily use. Team members, developers, Crankers, and community members should begin with our foundational post: **[TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](docs/SECURITY-PHILOSOPHY.md)**.
 
 ## Overview
 

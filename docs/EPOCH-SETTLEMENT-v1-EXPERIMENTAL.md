@@ -90,7 +90,7 @@ await tsn.openPaymentCommitment({
 - Cranker participation remains gated by Cranker DNA derived from the TSN mother escrow, operator, and protocol seed.
 - The 2% fastest recovery bonus is paid only after the aggregate root and math match the epoch challenge.
 - Residual sweeping is delayed for 14 days to preserve manual claim windows.
-- The broader security rationale is documented in [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md).
+
 
 ## Testing notes
 

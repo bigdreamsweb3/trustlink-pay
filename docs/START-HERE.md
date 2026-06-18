@@ -8,6 +8,14 @@ TrustLink Pay lets people send value to a 10-digit **TINS** identity while **TSN
 
 If you are new, read this file first. It explains the system without assuming a Solana background.
 
+
+
+## Foundational Reading
+
+- **[TrustLink Pay Security Philosophy: Why We Refuse to Let Web3 Become a Bank of Regret](./SECURITY-PHILOSOPHY.md)** — start here if you are joining the team, integrating TINS/TSN/SAS, operating a Cranker, or reviewing our security posture.
+
+
+
 ## The plain-language model
 
 1. A user shares a TINS number, not a raw wallet address.

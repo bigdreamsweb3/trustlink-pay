@@ -87,3 +87,7 @@ TrustLink should not claim absolute invisibility. The correct claim is reduced w
 - Recipient should see escrowed claimable payments until executed or canceled.
 - Canceled work should be clearly labeled.
 - Failed claim attempts should support retry where funds remain escrowed.
+
+## Foundational Security Philosophy
+
+Read [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md) for the team-level security thesis behind TINS, TSN, SAS, Crankers, OTDT, and the Mempool runtime.

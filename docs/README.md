@@ -19,10 +19,16 @@ Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They h
 
 ---
 
+## Foundational Reading
+
+- **[TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md)** — essential reading for new team members, developers, Crankers, and community members.
+
 ## Start Here
 
 | Document | Purpose |
 | --- | --- |
+
+| [SECURITY-PHILOSOPHY.md](./SECURITY-PHILOSOPHY.md) | TrustLink Pay security philosophy for secure Web3 payments, privacy, and operator responsibility |
 | [START-HERE.md](./START-HERE.md) | Plain-language entry point for TINS, SAS, TSN, Crankers, OTDT, and privacy flows |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture across TINS, TSN, app, mempool, and crankers |
 | [PROTOCOL.md](./PROTOCOL.md) | Protocol-grade settlement specification |

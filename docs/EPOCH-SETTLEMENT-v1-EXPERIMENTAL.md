@@ -91,6 +91,10 @@ await tsn.openPaymentCommitment({
 - The 2% fastest recovery bonus is paid only after the aggregate root and math match the epoch challenge.
 - Residual sweeping is delayed for 14 days to preserve manual claim windows.
 
+
+- The broader security rationale is documented in [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md).
+
+
 ## Testing notes
 
 Run the Anchor compile check from the protocol workspace:

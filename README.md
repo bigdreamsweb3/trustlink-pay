@@ -4,6 +4,10 @@
 
 TrustLink Pay replaces raw wallet addresses with simple, portable payment identities while linking social identities to build confidence in recipients. All payments are gasless—users don’t need SOL in their wallet to send or receive tokens.
 
+## Philosophy: Secure Web3 Payments Without Regret
+
+TrustLink Pay is built from a security-first thesis: Web3 payments must be private, non-custodial, and safe enough for daily use. New team members, developers, Crankers, and community members should begin with our foundational post: **[TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](docs/SECURITY-PHILOSOPHY.md)**.
+
 ## Overview
 
 TrustLink Pay is an identity-first payment network built on Solana.

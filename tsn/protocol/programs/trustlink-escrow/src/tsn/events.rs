@@ -168,3 +168,40 @@ pub struct TsnPrivateEscrowRecovered {
     pub token_mint: Pubkey,
     pub recovered_amount: u64,
 }
+
+#[event]
+pub struct TsnPaymentCommitmentOpened {
+    pub epoch_account: Pubkey,
+    pub commitment_hash: [u8; 32],
+    pub amount: u64,
+}
+
+#[event]
+pub struct TsnPrivacyReceiveCreated {
+    pub privacy_receive: Pubkey,
+    pub tin_route_hash: [u8; 32],
+}
+
+#[event]
+pub struct TsnEpochChallengeCommitted {
+    pub epoch_account: Pubkey,
+    pub root_hash: [u8; 32],
+    pub total_to_distribute: u64,
+    pub cranker_credit_sum_mod: u64,
+}
+
+#[event]
+pub struct TsnEpochReimbursementProcessed {
+    pub epoch_account: Pubkey,
+    pub winner: Pubkey,
+    pub lp_amount: u64,
+    pub operator_amount: u64,
+    pub treasury_amount: u64,
+    pub bonus_amount: u64,
+}
+
+#[event]
+pub struct TsnResidualSwept {
+    pub epoch_account: Pubkey,
+    pub swept_at_ts: i64,
+}

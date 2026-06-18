@@ -122,3 +122,7 @@ Proof is recorded through transaction hashes and mempool state
 - [SECURITY.md](./SECURITY.md)
 - [CRANKER.md](./CRANKER.md)
 - [LIQUIDITY.md](./LIQUIDITY.md)
+
+## Related Security Philosophy
+
+For the security-first reasoning behind this architecture, read [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md).

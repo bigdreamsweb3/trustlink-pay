@@ -84,3 +84,7 @@ After setup, the cranker daemon connects to the mempool, monitors for payment in
 - [LIQUIDITY.md](./LIQUIDITY.md) -- Vault funding and LP rewards
 - [DEPLOYMENT.md](./DEPLOYMENT.md) -- Deployment runbook
 - [ARCHITECTURE.md](./ARCHITECTURE.md) -- System architecture overview
+
+## Required Operator Reading
+
+Cranker operators should read [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md) before operating TSN infrastructure. It explains why speed, correctness, privacy, and restraint matter in the Cranker role.

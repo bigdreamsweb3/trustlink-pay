@@ -14,7 +14,7 @@ operator-state*.json
 **/operator-state.json
 **/operator-state*.json
 
-node_modules/
+
 
 # Logs
 *.log
@@ -58,5 +58,7 @@ frontend/.env.*
 .avm/
 .solana-install/
 
-# SDK node_modules
+# node_modules
+node_modules/
 */node_modules/
+**/node_modules/

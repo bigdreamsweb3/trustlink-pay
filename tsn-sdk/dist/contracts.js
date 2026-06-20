@@ -1,5 +1,24 @@
 import { sha256 } from "@noble/hashes/sha2";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
+export const TIN_OPERATION_FEE_SPLIT_BPS = {
+    verifier: 3000,
+    submitter: 4000,
+    treasury: 2000,
+    bonusPool: 1000,
+};
+export const TIN_CREATION_FEE_USDC = "0.05";
+export const TIN_UPDATE_FEE_USDC = "0.01";
+export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits) {
+    const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10000n;
+    const submitter = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.submitter)) / 10000n;
+    const treasury = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.treasury)) / 10000n;
+    return {
+        verifier,
+        submitter,
+        treasury,
+        bonusPool: amountBaseUnits - verifier - submitter - treasury,
+    };
+}
 export function sha256Hex(input) {
     return bytesToHex(sha256(utf8ToBytes(input)));
 }

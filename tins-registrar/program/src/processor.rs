@@ -2,7 +2,7 @@ use crate::instruction_auto::{
     ClaimEscrowParams, CreateEscrowParams, InitializeIdentityParams, InitializeProgramParams,
     CreateTinParams, InitializePlatformRegistryParams, LinkSensitiveFieldParams,
     LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams, ProgramInstruction,
-    RemoveVerificationPlatformParams, ResolveTinParams, UpsertVerificationPlatformParams,
+    RemoveVerificationPlatformParams, ResolveTinParams, UpdateTinParams, UpsertVerificationPlatformParams,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -16,6 +16,7 @@ pub mod create_escrow;
 pub mod init_program;
 pub mod initialize_identity;
 pub mod create_tin;
+pub mod update_tin;
 pub mod identity_links;
 pub mod resolve_tin;
 pub mod platform_registry;
@@ -62,10 +63,8 @@ impl Processor {
                 claim_escrow::process(program_id, accounts, params)
             }
             ProgramInstruction::CreateTin => {
-                msg!("Instruction: CreateTin");
-                let params = CreateTinParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                create_tin::process(program_id, accounts, params)
+                msg!("Instruction: CreateTinDisabledDirectPath");
+                Err(ProgramError::InvalidInstructionData)
             }
             ProgramInstruction::ResolveTin => {
                 msg!("Instruction: ResolveTin");
@@ -108,6 +107,18 @@ impl Processor {
                 let params = LinkVerifiedSocialIdentityParams::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 identity_links::link_verified_social_identity(program_id, accounts, params)
+            }
+            ProgramInstruction::TinCreationRegistry => {
+                msg!("Instruction: tin_creation_registry");
+                let params = CreateTinParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                create_tin::process(program_id, accounts, params)
+            }
+            ProgramInstruction::TinUpdate => {
+                msg!("Instruction: tin_update");
+                let params = UpdateTinParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                update_tin::process(program_id, accounts, params)
             }
         }
     }

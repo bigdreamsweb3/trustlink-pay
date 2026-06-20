@@ -20,6 +20,8 @@ pub enum ProgramInstruction {
     LinkSocialIdentity = 9,
     LinkSensitiveField = 10,
     LinkVerifiedSocialIdentity = 11,
+    TinCreationRegistry = 12,
+    TinUpdate = 13,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -43,8 +45,26 @@ pub struct ClaimEscrowParams {}
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct CreateTinParams {
+    pub owner_pubkey: Pubkey,
     pub display_name: String,
     pub encrypted_phone: Vec<u8>,
+    pub privacy_level: u8,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub intent_hash: [u8; 32],
+    pub expiry_ts: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct UpdateTinParams {
+    pub owner_pubkey: Pubkey,
+    pub display_name: String,
+    pub encrypted_phone: Vec<u8>,
+    pub privacy_level: u8,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub intent_hash: [u8; 32],
+    pub expiry_ts: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]

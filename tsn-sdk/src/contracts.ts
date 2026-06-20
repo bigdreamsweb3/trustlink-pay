@@ -36,6 +36,51 @@ export interface ClaimRequestRecord {
   updated_at: string;
 }
 
+
+
+export const TIN_OPERATION_FEE_SPLIT_BPS = {
+  verifier: 3000,
+  submitter: 4000,
+  treasury: 2000,
+  bonusPool: 1000,
+} as const;
+
+export const TIN_CREATION_FEE_USDC = "0.05" as const;
+export const TIN_UPDATE_FEE_USDC = "0.01" as const;
+
+export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint) {
+  const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10_000n;
+  const submitter = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.submitter)) / 10_000n;
+  const treasury = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.treasury)) / 10_000n;
+  return {
+    verifier,
+    submitter,
+    treasury,
+    bonusPool: amountBaseUnits - verifier - submitter - treasury,
+  };
+}
+
+export type TsnTinOperationKind = "tin_creation" | "tin_update";
+
+export type TsnTinOperationIntent = {
+  id: string;
+  kind: TsnTinOperationKind;
+  ownerPubkey: string;
+  tin?: string | null;
+  displayName: string;
+  encryptedPhoneBase64: string;
+  privacyLevel: 1 | 2 | 3 | 4;
+  encryptedMetadataHash: string;
+  pruConfigurationHash: string;
+  intentHash: string;
+  ownerSignatureBase64: string;
+  nonce: string;
+  expiryTs: number;
+  feeAmountUsdc?: "0.05" | "0.01" | string;
+  verifierCrankerPubkey?: string | null;
+  submitterCrankerPubkey?: string | null;
+};
+
 export type CreateIntentRequest = {
   paymentId: string;
   underlyingPayment?: string | null;

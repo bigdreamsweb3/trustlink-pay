@@ -73,6 +73,10 @@
     "./server": {
       "import": "./dist/server.js",
       "types": "./dist/server.d.ts"
+    },
+    "./pru": {
+      "import": "./dist/pru.js",
+      "types": "./dist/pru.d.ts"
     }
   },
   "scripts": {

@@ -1,0 +1,236 @@
+diff --git a/src/tinsOperations.ts b/src/tinsOperations.ts
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/tinsOperations.ts
+@@ -0,0 +1,260 @@
++import { createHash, randomUUID } from "node:crypto";
++import { EventEmitter } from "node:events";
++
++export type TinOperationKind = "tin_creation" | "tin_update";
++export type TinOperationStatus =
++  | "pending_verification"
++  | "verified"
++  | "fee_committed"
++  | "submitted"
++  | "completed"
++  | "failed"
++  | "canceled";
++
++export type TinOperationFeeSplit = {
++  verifierBps: 3000;
++  submitterBps: 4000;
++  treasuryBps: 2000;
++  bonusPoolBps: 1000;
++};
++
++export const TIN_OPERATION_FEE_SPLIT: TinOperationFeeSplit = {
++  verifierBps: 3000,
++  submitterBps: 4000,
++  treasuryBps: 2000,
++  bonusPoolBps: 1000,
++};
++
++export const DEFAULT_TIN_CREATION_FEE_USDC = "0.05";
++export const DEFAULT_TIN_UPDATE_FEE_USDC = "0.01";
++
++export type TinOperationIntent = {
++  id: string;
++  kind: TinOperationKind;
++  status: TinOperationStatus;
++  ownerPubkey: string;
++  tin?: string | null;
++  displayName: string;
++  encryptedPhoneBase64: string;
++  privacyLevel: 1 | 2 | 3 | 4;
++  encryptedMetadataHash: string;
++  pruConfigurationHash: string;
++  intentHash: string;
++  ownerSignatureBase64: string;
++  nonce: string;
++  expiryTs: number;
++  feeAmountUsdc: string;
++  feeCommitmentHash?: string | null;
++  feeCommitmentTxSig?: string | null;
++  registryTxSig?: string | null;
++  verifierCrankerPubkey?: string | null;
++  submitterCrankerPubkey?: string | null;
++  settlementReason?: string | null;
++  postedAt: string;
++  updatedAt: string;
++};
++
++export type TinOperationSnapshot = {
++  tinOperations: TinOperationIntent[];
++};
++
++export interface TinOperationStore {
++  read(): Promise<TinOperationSnapshot>;
++  write(snapshot: TinOperationSnapshot): Promise<void>;
++}
++
++function nowIso() {
++  return new Date().toISOString();
++}
++
++function assertHex32(value: string, label: string) {
++  if (!/^[0-9a-fA-F]{64}$/.test(value)) throw new Error(`${label} must be 32-byte hex`);
++}
++
++function assertBase64(value: string, label: string) {
++  if (!value || Buffer.from(value, "base64").length === 0) throw new Error(`${label} must be base64`);
++}
++
++export function computeTinOperationFeeSplit(amountUsdc: string) {
++  const units = BigInt(Math.round(Number(amountUsdc) * 1_000_000));
++  return {
++    verifier: ((units * 3000n) / 10_000n).toString(),
++    submitter: ((units * 4000n) / 10_000n).toString(),
++    treasury: ((units * 2000n) / 10_000n).toString(),
++    bonusPool: (units - ((units * 3000n) / 10_000n) - ((units * 4000n) / 10_000n) - ((units * 2000n) / 10_000n)).toString(),
++  };
++}
++
++export function computeTinFeeCommitmentHash(intent: Pick<TinOperationIntent, "id" | "kind" | "ownerPubkey" | "intentHash" | "feeAmountUsdc">) {
++  return createHash("sha256")
++    .update("TSN_TIN_FEE_COMMITMENT_V1")
++    .update(intent.id)
++    .update(intent.kind)
++    .update(intent.ownerPubkey)
++    .update(intent.intentHash)
++    .update(intent.feeAmountUsdc)
++    .digest("hex");
++}
++
++export class TinOperationRuntime extends EventEmitter {
++  constructor(private readonly store: TinOperationStore) {
++    super();
++  }
++
++  async postIntent(input: Omit<TinOperationIntent, "id" | "status" | "feeAmountUsdc" | "postedAt" | "updatedAt"> & { id?: string; feeAmountUsdc?: string }) {
++    validateTinOperationInput(input);
++    const snapshot = await this.store.read();
++    const id = input.id ?? randomUUID();
++    const existing = snapshot.tinOperations.find((item) => item.id === id || item.intentHash === input.intentHash);
++    if (existing) return existing;
++    const timestamp = nowIso();
++    const intent: TinOperationIntent = {
++      ...input,
++      id,
++      status: "pending_verification",
++      feeAmountUsdc: input.feeAmountUsdc ?? (input.kind === "tin_creation" ? DEFAULT_TIN_CREATION_FEE_USDC : DEFAULT_TIN_UPDATE_FEE_USDC),
++      feeCommitmentHash: null,
++      feeCommitmentTxSig: null,
++      registryTxSig: null,
++      verifierCrankerPubkey: null,
++      submitterCrankerPubkey: null,
++      postedAt: timestamp,
++      updatedAt: timestamp,
++    };
++    snapshot.tinOperations.push(intent);
++    await this.store.write(snapshot);
++    this.emit("tin-operation", intent);
++    return intent;
++  }
++
++  async list(status?: TinOperationStatus) {
++    const snapshot = await this.store.read();
++    return snapshot.tinOperations
++      .filter((item) => !status || item.status === status)
++      .sort((left, right) => left.postedAt.localeCompare(right.postedAt));
++  }
++
++  async listVerificationWork(limit = 50) {
++    return (await this.list("pending_verification")).slice(0, limit);
++  }
++
++  async listFeeCommitmentWork(limit = 50) {
++    return (await this.list("verified")).slice(0, limit);
++  }
++
++  async listRegistrySubmissionWork(operatorPubkey: string, limit = 50) {
++    return (await this.list("fee_committed"))
++      .filter((item) => !item.verifierCrankerPubkey || item.verifierCrankerPubkey !== operatorPubkey || process.env.TSN_ALLOW_SINGLE_CRANKER_TINS === "1")
++      .slice(0, limit);
++  }
++
++  async markVerified(id: string, verifierCrankerPubkey: string) {
++    return this.patch(id, "verified", { verifierCrankerPubkey });
++  }
++
++  async markFeeCommitted(id: string, feeCommitmentTxSig: string) {
++    const snapshot = await this.store.read();
++    const intent = snapshot.tinOperations.find((item) => item.id === id);
++    if (!intent) return null;
++    return this.patch(id, "fee_committed", {
++      feeCommitmentTxSig,
++      feeCommitmentHash: computeTinFeeCommitmentHash(intent),
++    });
++  }
++
++  async markSubmitted(id: string, submitterCrankerPubkey: string, registryTxSig: string) {
++    return this.patch(id, "submitted", { submitterCrankerPubkey, registryTxSig });
++  }
++
++  async markCompleted(id: string) {
++    return this.patch(id, "completed", {});
++  }
++
++  async patch(id: string, status: TinOperationStatus, patch: Partial<TinOperationIntent>) {
++    const snapshot = await this.store.read();
++    const intent = snapshot.tinOperations.find((item) => item.id === id);
++    if (!intent) return null;
++    Object.assign(intent, patch, { status, updatedAt: nowIso() });
++    await this.store.write(snapshot);
++    this.emit("tin-operation", intent);
++    return intent;
++  }
++}
++
++function validateTinOperationInput(input: Partial<TinOperationIntent>) {
++  if (input.kind !== "tin_creation" && input.kind !== "tin_update") throw new Error("invalid TINS operation kind");
++  if (!input.ownerPubkey) throw new Error("ownerPubkey is required");
++  if (!input.displayName) throw new Error("displayName is required");
++  if (![1, 2, 3, 4].includes(Number(input.privacyLevel))) throw new Error("privacyLevel must be 1..4");
++  assertBase64(input.encryptedPhoneBase64 ?? "", "encryptedPhoneBase64");
++  assertHex32(input.encryptedMetadataHash ?? "", "encryptedMetadataHash");
++  assertHex32(input.pruConfigurationHash ?? "", "pruConfigurationHash");
++  assertHex32(input.intentHash ?? "", "intentHash");
++  assertHex32(input.nonce ?? "", "nonce");
++  assertBase64(input.ownerSignatureBase64 ?? "", "ownerSignatureBase64");
++  if (!Number.isFinite(Number(input.expiryTs)) || Number(input.expiryTs) * 1000 <= Date.now()) throw new Error("expiryTs is expired");
++  if (input.kind === "tin_update" && !input.tin) throw new Error("tin is required for tin_update");
++}
++
++/* Integration points for existing backend:
++ * - Add `tinOperations: []` to the JSON snapshot initializer.
++ * - Mount endpoints:
++ *   POST /tin-operations -> runtime.postIntent(req.body)
++ *   GET /tin-operations -> runtime.list(req.query.status)
++ *   GET /tin-operations/verification-work -> runtime.listVerificationWork(limit)
++ *   GET /tin-operations/fee-work -> runtime.listFeeCommitmentWork(limit)
++ *   GET /tin-operations/registry-work?operator_pubkey=... -> runtime.listRegistrySubmissionWork(operator, limit)
++ *   PATCH /tin-operations/:id/verified -> runtime.markVerified(id, verifier)
++ *   PATCH /tin-operations/:id/fee-committed -> runtime.markFeeCommitted(id, txSig)
++ *   PATCH /tin-operations/:id/submitted -> runtime.markSubmitted(id, submitter, txSig)
++ *   PATCH /tin-operations/:id/completed -> runtime.markCompleted(id)
++ */
+diff --git a/src/server.ts b/src/server.ts
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -1,3 +1,37 @@
++// TINS Cranker-mediated endpoints to add beside existing TSN routes.
++// Import TinOperationRuntime from ./tinsOperations and mount these routes.
++app.post("/tin-operations", async (req, res) => res.json(await tinOperationRuntime.postIntent(req.body)));
++app.get("/tin-operations", async (req, res) => res.json(await tinOperationRuntime.list(req.query.status)));
++app.get("/tin-operations/verification-work", async (req, res) => res.json(await tinOperationRuntime.listVerificationWork(Number(req.query.limit ?? 50))));
++app.get("/tin-operations/fee-work", async (req, res) => res.json(await tinOperationRuntime.listFeeCommitmentWork(Number(req.query.limit ?? 50))));
++app.get("/tin-operations/registry-work", async (req, res) => {
++  const operator = String(req.query.operator_pubkey ?? "");
++  if (!operator) return res.status(400).json({ error: "operator_pubkey required" });
++  res.json(await tinOperationRuntime.listRegistrySubmissionWork(operator, Number(req.query.limit ?? 50)));
++});
++app.patch("/tin-operations/:id/verified", async (req, res) => res.json(await tinOperationRuntime.markVerified(req.params.id, req.body.verifierCrankerPubkey)));
++app.patch("/tin-operations/:id/fee-committed", async (req, res) => res.json(await tinOperationRuntime.markFeeCommitted(req.params.id, req.body.feeCommitmentTxSig)));
++app.patch("/tin-operations/:id/submitted", async (req, res) => res.json(await tinOperationRuntime.markSubmitted(req.params.id, req.body.submitterCrankerPubkey, req.body.registryTxSig)));
++app.patch("/tin-operations/:id/completed", async (req, res) => res.json(await tinOperationRuntime.markCompleted(req.params.id)));

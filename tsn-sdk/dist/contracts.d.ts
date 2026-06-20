@@ -29,6 +29,39 @@ export interface ClaimRequestRecord {
     requested_at: string;
     updated_at: string;
 }
+export declare const TIN_OPERATION_FEE_SPLIT_BPS: {
+    readonly verifier: 3000;
+    readonly submitter: 4000;
+    readonly treasury: 2000;
+    readonly bonusPool: 1000;
+};
+export declare const TIN_CREATION_FEE_USDC: "0.05";
+export declare const TIN_UPDATE_FEE_USDC: "0.01";
+export declare function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint): {
+    verifier: bigint;
+    submitter: bigint;
+    treasury: bigint;
+    bonusPool: bigint;
+};
+export type TsnTinOperationKind = "tin_creation" | "tin_update";
+export type TsnTinOperationIntent = {
+    id: string;
+    kind: TsnTinOperationKind;
+    ownerPubkey: string;
+    tin?: string | null;
+    displayName: string;
+    encryptedPhoneBase64: string;
+    privacyLevel: 1 | 2 | 3 | 4;
+    encryptedMetadataHash: string;
+    pruConfigurationHash: string;
+    intentHash: string;
+    ownerSignatureBase64: string;
+    nonce: string;
+    expiryTs: number;
+    feeAmountUsdc?: "0.05" | "0.01" | string;
+    verifierCrankerPubkey?: string | null;
+    submitterCrankerPubkey?: string | null;
+};
 export type CreateIntentRequest = {
     paymentId: string;
     underlyingPayment?: string | null;

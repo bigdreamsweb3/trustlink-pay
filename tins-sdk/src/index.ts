@@ -14,6 +14,16 @@ export const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
 );
 
 export const PROGRAM_SALT = "TINS_SALT_2026";
+export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
+
+const ZERO_HASH_32 = Buffer.alloc(32);
+
+function normalizeHash32(value: Buffer | Uint8Array | undefined, label: string): Buffer {
+  if (!value) return ZERO_HASH_32;
+  const buffer = Buffer.from(value);
+  if (buffer.length !== 32) throw new Error(`${label} must be exactly 32 bytes`);
+  return buffer;
+}
 
 // ==========================================
 // 1. DERIVATION & CRYPTO HELPERS (CLIENT-SIDE)
@@ -51,13 +61,13 @@ export function derivePhoneKey(
   identitySeed: Buffer
 ): Buffer {
   // phone_key = HKDF(wallet_signature_seed + identity_seed)
-  return crypto.hkdfSync(
+  return Buffer.from(crypto.hkdfSync(
     "sha256",
     walletSignatureSeed,
     identitySeed,
     Buffer.from("TINS_PHONE_KEY_INFO", "utf8"),
     32
-  );
+  ));
 }
 
 export async function encryptPhone(
@@ -116,30 +126,114 @@ export async function decryptPhone(
 // 2. BINARY INSTRUCTION SERIALIZERS (BORSH)
 // ==========================================
 
-export function serializeCreateTinParams(
-  displayName: string,
-  encryptedPhone: Buffer
+export function serializeTinCreationRegistryParams(params: {
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  intentHash: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}): Buffer {
+  return serializeTinRegistryMutationParams(12, params);
+}
+
+export function serializeTinUpdateParams(params: {
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  intentHash: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}): Buffer {
+  return serializeTinRegistryMutationParams(13, params);
+}
+
+/** @deprecated Direct user-signed CreateTin is disabled. Use serializeTinCreationRegistryParams after a TSN Cranker verifies the owner intent. */
+export function serializeCreateTinParams(): Buffer {
+  throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry");
+}
+
+function serializeTinRegistryMutationParams(
+  tag: 12 | 13,
+  params: {
+    ownerPubkey: PublicKey;
+    displayName: string;
+    encryptedPhone: Buffer;
+    privacyLevel?: TinsPrivacyLevel;
+    encryptedMetadataHash?: Buffer | Uint8Array;
+    pruConfigurationHash?: Buffer | Uint8Array;
+    intentHash: Buffer | Uint8Array;
+    expiryTs: bigint | number;
+  }
 ): Buffer {
-  const nameBuf = Buffer.from(displayName, "utf8");
-  const data = Buffer.alloc(1 + 4 + nameBuf.length + 4 + encryptedPhone.length);
+  const nameBuf = Buffer.from(params.displayName, "utf8");
+  const metadataHash = normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash");
+  const configurationHash = normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash");
+  const intentHash = normalizeHash32(params.intentHash, "intentHash");
+  const data = Buffer.alloc(1 + 32 + 4 + nameBuf.length + 4 + params.encryptedPhone.length + 1 + 32 + 32 + 32 + 8);
   let offset = 0;
 
-  // Tag 4 for CreateTin
-  data.writeUInt8(4, offset);
+  data.writeUInt8(tag, offset);
   offset += 1;
-
-  // display_name String (length prefix + bytes)
+  params.ownerPubkey.toBuffer().copy(data, offset);
+  offset += 32;
   data.writeUInt32LE(nameBuf.length, offset);
   offset += 4;
   nameBuf.copy(data, offset);
   offset += nameBuf.length;
-
-  // encrypted_phone Vec<u8> (length prefix + bytes)
-  data.writeUInt32LE(encryptedPhone.length, offset);
+  data.writeUInt32LE(params.encryptedPhone.length, offset);
   offset += 4;
-  encryptedPhone.copy(data, offset);
+  params.encryptedPhone.copy(data, offset);
+  offset += params.encryptedPhone.length;
+  data.writeUInt8(params.privacyLevel ?? 1, offset);
+  offset += 1;
+  metadataHash.copy(data, offset);
+  offset += 32;
+  configurationHash.copy(data, offset);
+  offset += 32;
+  intentHash.copy(data, offset);
+  offset += 32;
+  data.writeBigInt64LE(BigInt(params.expiryTs), offset);
 
   return data;
+}
+
+export function createTinOwnerIntentHash(params: {
+  purpose: "create" | "update";
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer | Uint8Array;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  nonce: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}): Buffer {
+  const hash = crypto.createHash("sha256");
+  hash.update(Buffer.from(`TINS_${params.purpose.toUpperCase()}_INTENT_V1`, "utf8"));
+  hash.update(params.ownerPubkey.toBuffer());
+  hash.update(Buffer.from(params.displayName, "utf8"));
+  hash.update(Buffer.from(params.encryptedPhone));
+  hash.update(Buffer.from([params.privacyLevel ?? 1]));
+  hash.update(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
+  hash.update(normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"));
+  hash.update(normalizeHash32(params.nonce, "nonce"));
+  const expiry = Buffer.alloc(8);
+  expiry.writeBigInt64LE(BigInt(params.expiryTs));
+  hash.update(expiry);
+  return hash.digest();
+}
+
+export function createOwnerIntentSignatureInstruction(params: { ownerPubkey: PublicKey; intentHash: Buffer | Uint8Array; signature: Buffer | Uint8Array }) {
+  return Ed25519Program.createInstructionWithPublicKey({
+    publicKey: params.ownerPubkey.toBytes(),
+    message: normalizeHash32(params.intentHash, "intentHash"),
+    signature: Buffer.from(params.signature),
+  });
 }
 
 export function serializeResolveTinParams(
@@ -173,15 +267,8 @@ export interface TinsClientConfig {
 export interface TinsClient {
   connection: Connection;
   programId: PublicKey;
-  createTin: (params: {
-    wallet: {
-      publicKey: PublicKey;
-      signTransaction: (tx: Transaction) => Promise<Transaction>;
-      signMessage: (msg: Uint8Array) => Promise<Uint8Array> | Uint8Array;
-    };
-    displayName: string;
-    phoneNumber: string;
-  }) => Promise<{ tin: bigint }>;
+  /** @deprecated Direct TINS creation is disabled. Use TSN Mempool runtime + Cranker tin_creation_registry. */
+  createTin: () => Promise<never>;
   resolveTin: (params: {
     wallet: {
       publicKey: PublicKey;
@@ -200,44 +287,8 @@ export function createTinsClient(config: TinsClientConfig = {}): TinsClient {
     connection,
     programId,
 
-    async createTin({ wallet, displayName, phoneNumber }) {
-      const payer = wallet.publicKey;
-      const [globalState] = getGlobalStatePda(programId);
-      const [identity] = getIdentityPda(payer, programId);
-
-      // Encrypt phone client-side
-      const encryptedPhone = await encryptPhone(phoneNumber, wallet, payer);
-
-      // Build serialized params and instruction
-      const data = serializeCreateTinParams(displayName, encryptedPhone);
-      const instruction = new TransactionInstruction({
-        keys: [
-          { pubkey: payer, isSigner: true, isWritable: true },
-          { pubkey: globalState, isSigner: false, isWritable: true },
-          { pubkey: identity, isSigner: false, isWritable: true },
-          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-        ],
-        programId,
-        data,
-      });
-
-      const tx = new Transaction().add(instruction);
-      tx.feePayer = payer;
-      const { blockhash } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-
-      const signedTx = await wallet.signTransaction(tx);
-      const txid = await connection.sendRawTransaction(signedTx.serialize());
-      await connection.confirmTransaction(txid, "confirmed");
-
-      // Load resulting PDA account to fetch generated TIN
-      const accountInfo = await connection.getAccountInfo(identity);
-      if (!accountInfo) {
-        throw new Error("TinAccount PDA failed to initialize");
-      }
-
-      const tin = accountInfo.data.readBigUInt64LE(0);
-      return { tin };
+    async createTin() {
+      throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and wait for Cranker-mediated tin_creation_registry");
     },
 
     async resolveTin({ wallet }) {

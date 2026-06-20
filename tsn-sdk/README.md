@@ -44,3 +44,24 @@ npm --prefix tsn-sdk run build
 - `docs/TSN-COMMITMENT-SETTLEMENT.md`
 - `docs/INTEGRATION.md`
 - `docs/CRANKER.md`
+
+## TSN V1 PRU deterministic settlement helpers
+
+The SDK exports `@trustlink/tsn-sdk/pru` and root exports for the TSN V1 PRU model:
+
+- deterministic PRU derivation from `master_seed + TIN + token_mint + index`;
+- privacy level PRU counts: L1=3, L2=10, L3=30, L4=100;
+- replayable allocation with no randomness;
+- unified 3-state TIN balance: `AVAILABLE + SETTLED - PENDING`;
+- deterministic spend selection and sweep planning.
+
+```ts
+import { derivePruSet, allocatePrusDeterministically } from "@trustlink/tsn-sdk/pru";
+
+const pruSet = derivePruSet({ masterSeed, tinId, tokenMint, privacyLevel: 2 });
+const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pruSet, amount });
+```
+
+The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TINS registry state.
+
+TINS registry awareness: TINS does not store PRU arrays. The TINS create flow receives the privacy level and PRU configuration commitment, while this TSN SDK derives the actual PRU set off-chain and replays it against that commitment.

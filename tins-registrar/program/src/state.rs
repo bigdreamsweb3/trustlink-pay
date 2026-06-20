@@ -193,13 +193,17 @@ impl EscrowState {
 pub struct TinAccount {
     pub tin: u64,                     // 10-digit ID
     pub display_name: String,         // public identity
-    pub identity_pubkey: Pubkey,      // PDA owner identity
+    pub identity_pubkey: Pubkey,      // TINS PDA identity
+    pub owner_pubkey: Pubkey,         // original owner that signed the TSN intent
     pub encrypted_phone: Vec<u8>,     // AES-256-GCM encrypted blob
     pub created_at: i64,
+    pub privacy_level: u8,            // TSN V1 PRU privacy tier: 1, 2, 3, or 4
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
 }
 
 impl TinAccount {
     pub fn space(display_name: &str, encrypted_phone_len: usize) -> usize {
-        8 + (4 + display_name.len()) + 32 + (4 + encrypted_phone_len) + 8
+        8 + (4 + display_name.len()) + 32 + 32 + (4 + encrypted_phone_len) + 8 + 1 + 32 + 32
     }
 }

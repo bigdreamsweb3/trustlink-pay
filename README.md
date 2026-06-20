@@ -12,6 +12,11 @@ The project is built from one practical belief:
 Blockchain payments should feel familiar for normal users, while still giving developers verifiable settlement and better privacy design.
 ```
 
+
+## TSN V1 deterministic PRU architecture
+
+TSN V1 is now defined as the Deterministic PRU Privacy Settlement Network. RPDA routing is removed from the production architecture: settlement uses TIN-governed, token-bound Privacy Receiving Units (PRUs), deterministic allocation, stateless Cranker execution, a PRU lifecycle (`PLANNED → ACTIVE → USED → SWEPT`), and 3-state accounting (`AVAILABLE + SETTLED - PENDING`). See [TSN V1 PRU architecture](./docs/TSN-V1-PRU-ARCHITECTURE.md).
+
 ## What TrustLink Pay Is
 
 TrustLink Pay combines two main protocol layers:

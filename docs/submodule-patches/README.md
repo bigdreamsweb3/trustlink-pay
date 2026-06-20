@@ -33,3 +33,12 @@ curl http://localhost:8000/epoch-challenges
 curl http://localhost:8000/privacy-receive-watches
 curl -X POST http://localhost:8000/epochs/proactive
 ```
+
+## TSN V1 TINS Cranker Handoff
+
+The mempool submodules are empty/not checked out in this environment. For Cranker-mediated TIN creation and update support, apply these patch handoffs when local Codex has the submodules available:
+
+- `tsn-mempool-backend-tins-cranker-v1.patch`
+- `tsn-mempool-frontend-tins-cranker-v1.patch`
+
+See `../TSN-TINS-MEMPOOL-IMPLEMENTATION.md` for the flow, endpoints, fee split, Cranker separation rules, privacy notes, and tests.

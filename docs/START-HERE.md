@@ -119,3 +119,33 @@ npm run deploy:doctor
 ```
 
 The deploy lockfiles also avoid newer Rust crates that require edition 2024. That keeps builds compatible with the Cargo version bundled inside the Solana/SBF 1.18 builder.
+
+## TSN + Cranker mediated TINS operations
+
+Version: TSN V1 Cranker-mediated TINS operations
+Commit reference: current branch worktree
+
+### Summary
+
+Start new TINS work from the TSN Mempool runtime. Direct user-submitted TIN creation is disabled. Owners sign intent hashes, Crankers verify and relay, and TINS enforces owner authority on-chain.
+
+### Implementation notes
+
+Creation uses two transactions: `tin_creation_fee_commitment` in TSN, then `tin_creation_registry` in TINS. Updates use an owner-signed update intent followed by Cranker-submitted `tin_update`.
+
+### Usage examples
+
+```bash
+tsn-cranker tins verify-create-intent --intent <INTENT_ID>
+tsn-cranker tins submit-create-registry --intent <INTENT_ID>
+tsn-cranker tins verify-update-intent --intent <INTENT_ID>
+tsn-cranker tins submit-update --intent <INTENT_ID>
+```
+
+### Security & privacy considerations
+
+The owner remains the only authority. Crankers only pay and relay transactions. TINS checks owner-signed intent hashes before creating or updating records.
+
+### Testing notes
+
+Run `npm --prefix tins-sdk run build` and `cargo test --manifest-path tins-registrar/program/Cargo.toml --lib` before changing TINS flows.

@@ -1,81 +1,40 @@
-# TrustLink Pay Opportunity
+# Opportunity
 
-TrustLink Pay creates a new payment primitive on Solana:
+TrustLink Pay focuses on identity-first stablecoin payments.
 
-```
-10-digit identity + private settlement + vault liquidity
-```
+## What Problem It Solves
 
-Users receive stablecoins through 10-digit TINs. TSN separates sender-side escrow from recipient-side payout so a payment does not look like a direct wallet-to-wallet transfer.
+Crypto payments still depend too much on wallet addresses.
 
----
+That is uncomfortable for normal users and risky for merchants. A wallet address can expose history, balances, and business activity.
 
-## The Problem
+## What TrustLink Pay Adds
 
-Crypto payments expose too much information on-chain.
+TrustLink Pay gives users:
 
-| Problem | Effect |
-| --- | --- |
-| Wallet addresses are the payment identity | Users paste unsafe, hard-to-read addresses |
-| Wallet graphs are easy to follow | Sender and recipient privacy is weak |
-| Wallet UX is not account-number friendly | Mainstream users struggle |
-| Settlement infrastructure is fragmented | Apps rebuild the same logic |
+- a 10-digit TIN
+- recipient identity confirmation
+- separated settlement through TSN
+- vault-based recipient payout
+- status tracking
+- optional WhatsApp notifications and identity confidence
 
-TrustLink Pay replaces the user-facing address with a TIN and routes settlement through TSN to break the direct wallet-to-wallet link.
+## Why This Is Useful
 
----
+People are used to paying account numbers, usernames, or phone numbers.
 
-## The Opportunity: TINS
+TrustLink Pay brings that kind of mental model to stablecoin payments while keeping settlement verifiable on Solana.
 
-TINS gives users a permanent 10-digit payment identity they can share instead of a wallet address.
+## Who It Can Serve
 
-This matters because:
+- users who want simpler payment identities
+- merchants who do not want to expose treasury wallets
+- wallets that want private receive aliases
+- apps that need stablecoin payment rails
+- Cranker operators who want to provide settlement work
 
-- Account-number-style UX is familiar to mainstream users
-- Wallet address abstraction protects against address poisoning
-- Developers get a standard identity resolution layer
-- Merchants can publish a stable receive identity without exposing treasury wallets
+## Important Limits
 
-TINS is not limited to TrustLink Pay. It can serve as a shared identity layer for any Solana payment application.
+TrustLink Pay is pre-launch.
 
----
-
-## The Opportunity: TSN
-
-TIN identity alone is not enough. If a TIN resolves directly to a wallet and payment happens normally, wallet privacy is still weak.
-
-TSN adds the private settlement path:
-
-```
-sender authorization -> cranker escrow -> vault payout -> proof
-```
-
-This makes payment history harder to follow from ordinary wallet views and keeps the recipient wallet out of the sender-facing payment path.
-
----
-
-## Fee Model
-
-Settlement fees are split by the protocol:
-
-| Recipient | Share | Purpose |
-| --- | ---: | --- |
-| Liquidity Providers | 87% | Rewards vault capital |
-| TSN Protocol Treasury | 8% | Operations, audits, reserves |
-| Cranker/Operator | 5% | Verification and execution |
-
-Revenue is tied to real settlement activity, not token emissions.
-
----
-
-## Current Focus
-
-The immediate goal is to prove the core payment rail:
-
-1. TIN-first identity
-2. Private TSN settlement
-3. Cranker execution
-4. Vault liquidity
-5. Developer SDK access
-
-Social identity linking and phone-number discovery can follow after the protocol rail is established.
+The current work is focused on proving the payment identity and settlement architecture before expanding to broader consumer distribution.

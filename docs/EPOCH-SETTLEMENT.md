@@ -1,100 +1,100 @@
-# Epoch Settlement Mechanism
+# Epoch Settlement
 
-The TSN uses epoch-based reimbursement to balance fast payment for users with capital efficiency for Liquidity Providers (LPs). This document explains how epochs work, why they exist, and what they mean for operators and LPs.
+Epoch settlement is how TrustLink Pay groups, proves, reimburses, and recovers settlement work over time.
 
----
+## What Is This?
 
-## Why Epochs Exist
+An **epoch** is a settlement window.
 
-When Alice sends money to Bob through TrustLink Pay, the payment should be private. That means no public link between Alice's wallet and Bob's wallet on the blockchain.
+Each epoch has an isolated reservoir called a **PEA**. The PEA keeps that epoch's funds and accounting separate from other epochs.
 
-The system breaks this link through a multi-stage settlement process. But this creates a timing gap: Bob wants his money immediately, while the sender's escrow cannot release funds until the payment is verified.
+## Why It Exists
 
-Epochs solve this timing problem by creating predictable reconciliation windows. Recipients get paid instantly from vault liquidity. Crankers get reimbursed from escrow at epoch close. LPs earn yields on deployed capital between epochs.
+Without epochs, every payment would need its own full recovery and reimbursement path. That is expensive and creates too much public activity.
 
-An epoch works like the daily batch settlement at a payment processor. Individual transactions happen in real time, but net settlement happens at the end of the batch window.
+Epoch settlement batches accounting work.
 
----
+It lets the system prove aggregate work with fewer transactions and keeps recovery focused on one settlement window at a time.
 
-## The Epoch Cycle
+## How It Works
 
-An epoch lasts approximately 7 hours. The cycle repeats continuously with no gap between epochs.
+### 1. Proactive Epoch Creation
 
-### Step-by-Step Flow
+The mempool backend should create the next epoch and PEA before the current epoch ends.
 
-| Step | Action | Who |
-|------|--------|-----|
-| 1 | Sender locks funds in escrow, creating a payment intent | Sender |
-| 2 | Recipient initiates a claim | Recipient |
-| 3 | Cranker detects the intent in the mempool | Cranker |
-| 4 | Cranker acquires an exclusive execution lease | Cranker |
-| 5 | Cranker pays the recipient from vault liquidity | Cranker |
-| 6 | Cranker submits on-chain proof of execution | Cranker |
-| 7 | Epoch closes, Mother Escrow processes reimbursements | System |
-| 8 | Cranker's vault is credited from sender escrow | System |
-| 9 | Settlement fees are distributed per protocol | System |
+The target window is 30 to 60 minutes before rollover. If this fails, operators should see a clear warning.
 
-### Epoch Schedule
+### 2. Commitment Collection
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Epoch Length | ~7 hours | Time between epoch closes |
-| Epochs per Day | ~3-4 | Frequency of reimbursement cycles |
+During an epoch, valid payments produce commitments.
 
-### What Happens at Epoch Close
+These commitments are added to the epoch's private aggregate set.
 
-1. Mother Escrow scans all executed payments from the epoch
-2. Proofs are verified for each payment
-3. Total reimbursement amounts are calculated per vault
-4. Funds move from sender escrow to cranker vaults
-5. Settlement fees are split: 87% LPs, 5% Cranker, 8% Treasury
-6. A new epoch begins with reset vault liquidity
+### 3. Root Hash
 
----
+The mempool backend calculates an aggregate root hash.
 
-## Vault Reimbursement
+The root proves the commitment set without exposing each private route.
 
-When a cranker pays a recipient, they use vault liquidity. At epoch close, the Mother Escrow repays the vault from the sender's escrowed funds.
+### 4. Minimal Challenge Release
 
-Sender Escrow -> Mother Escrow -> Cranker Vault -> Fee Split
-- 87% to LP depositors
-- 5% to Cranker
-- 8% to Protocol Treasury
+When an epoch needs settlement or recovery, the system releases a minimal public challenge.
 
-To receive reimbursement, the cranker must submit valid proof. This proof includes the payment intent ID, recipient wallet, amount transferred, timestamp, and cranker signature. Without valid proof, the reimbursement is not processed.
+The challenge includes only the values needed for Crankers to compete and verify work.
 
-### Failed Reimbursement Scenarios
+### 5. Cranker Race
 
-| Issue | Cause | Resolution |
-|-------|-------|------------|
-| Invalid proof | Incorrect data or signature | Cranker retries with correct proof |
-| Insufficient escrow | Sender escrow depleted | Protocol holds secondary escrow |
-| Epoch timeout | Cranker did not submit in time | Payment marked for manual review |
+Crankers compete to submit valid recovery or reimbursement work.
 
----
+The first valid Cranker wins the work. Invalid work can damage reputation and may be slashable depending on the active governance rules.
 
-## Impact on Liquidity Providers
+### 6. Distribution
 
-Epochs determine three things for LPs.
+Recovery distribution follows the protocol split:
 
-**Capital utilization.** Between epochs, vault funds are actively deployed to front payments. Higher utilization means more fee generation but also means more capital is in use at any given time.
+| Recipient | Share |
+| --- | ---: |
+| Liquidity providers | 85% |
+| Treasury | 8% |
+| Operator reward | 5% |
+| Reserve | 2% |
 
-**Yield timing.** LP earnings are calculated and distributed at each epoch close. Distributions are automatic and do not require manual claiming.
+## Example Flow
 
-**Risk exposure.** Capital is deployed for the duration of the epoch, approximately 7 hours. This bounded window limits the time funds are at risk between reimbursement cycles.
+```text
+Epoch starts
+PEA is active
+Payments create commitments
+Mempool builds aggregate root
+Next epoch is pre-created
+Current epoch closes
+Challenge is released
+Crankers race
+Valid Cranker settles recovery or reimbursement
+Epoch record is updated
+```
 
----
+## Security Considerations
 
-## Operational Implications
+- Epochs isolate accounting risk.
+- Public challenge data must be minimal.
+- Roots must be recomputable by authorized infrastructure.
+- Crankers must not be able to claim the same work twice.
+- Recovery should prioritize low-liquidity or high-risk states.
 
-**For Crankers.** Watch epoch timing to replenish vaults before close. Submit proof promptly or reimbursement is delayed. Monitor vault balance to avoid missing lease opportunities between epochs.
+## Important Limits
 
-**For Liquidity Providers.** Funds are deployed between epoch boundaries. Track vault utilization -- higher usage means more fee generation. Scale deposits based on cranker demand and network activity.
+Epoch settlement reduces transaction count and public detail. It does not make all accounting invisible.
 
----
+Operators still need monitoring and alerting. If epoch creation fails, the system should warn before users are affected.
 
-## Related Documentation
+## Technical Details
 
-- [CRANKER.md](./CRANKER.md) -- Cranker operator guide
-- [LIQUIDITY.md](./LIQUIDITY.md) -- LP rewards and vault funding
-- [ARCHITECTURE.md](./ARCHITECTURE.md) -- System architecture overview
+| Component | Role |
+| --- | --- |
+| `EpochAccount` | On-chain epoch state |
+| PEA | Per-epoch reservoir |
+| `PaymentCommitment` | Lightweight commitment account |
+| Mempool backend | Builds roots and releases challenges |
+| Cranker daemon | Races and executes work |
+| Mempool explorer | Shows masked epoch status |

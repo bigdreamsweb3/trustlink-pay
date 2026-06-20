@@ -1,105 +1,68 @@
-# TrustLink Pay Integration Guide
+# Integration Guide
 
-TrustLink Pay integrations use the TIN (Transfer Identity Number) as the protocol identity. A TIN is a 10-digit number that identifies a recipient on the TrustLink network. TSN handles private settlement behind the scenes.
+This guide is for apps that want to use TrustLink Pay, TINS, or TSN.
 
-Phone numbers and WhatsApp are optional application-layer conveniences -- they do not replace the TIN.
+## What Is This?
 
----
+TrustLink Pay is built so other wallets and apps can use TIN identities and TSN settlement without rebuilding the protocol.
 
-## Install
+## Why Integrate
 
-```bash
-npm install @trustlink/tsn-sdk
+An app can let users receive payments through a TIN instead of exposing a wallet address.
+
+An app can also use TSN settlement to separate sender funding from recipient payout.
+
+## Integration Rules
+
+### Use The SDKs
+
+Apps should call SDK methods.
+
+They should not manually derive TSN PDAs, build TSN instructions, or reimplement settlement logic.
+
+### Resolve TINs First
+
+Before payment, resolve the recipient TIN.
+
+Show:
+
+- TIN
+- verified name if available
+- verification status
+- supported token route
+- warning if no verified name exists
+
+### Keep Status In Sync
+
+Use backend payment status for normal user screens.
+
+Do not make every frontend page poll Solana RPC directly.
+
+## Example App Flow
+
+```text
+User enters TIN
+App resolves TIN through SDK/backend
+App displays identity confidence
+User approves payment
+App submits TSN payment work
+Backend tracks status
+Cranker executes settlement
+User sees escrowed, claiming, or paid status
 ```
 
-Package names may change as the SDKs are published. In this repository, the active package surfaces are local to the monorepo under `tsn-sdk/`.
+## Security Considerations
 
----
+- Never log private route payloads.
+- Do not display raw phone numbers unless the user authorized it.
+- Do not claim stronger privacy than the protocol provides.
+- Make failed or unverified identities obvious to users.
 
-## Basic Flow
+## Technical Details
 
-```ts
-import {
-  buildCreateTinInstruction,
-  getTinsRegistryPda,
-} from "tsn-sdk/src/tins";
-
-import {
-  buildTsnSponsoredSettlementTransaction,
-} from "tsn-sdk/src/sponsored-settlement";
-
-import {
-  submitPaymentAuthorizationToMempool,
-} from "tsn-sdk/src/payment-authorization";
-```
-
-### 1. Resolve Recipient TIN
-
-```ts
-const recipientTin = "1000000008";
-const registryPda = getTinsRegistryPda({ tin: recipientTin });
-```
-
-The application resolves the TIN to a settlement route using TINS and app state.
-
-### 2. Build Sponsored Settlement
-
-```ts
-const settlement = await buildTsnSponsoredSettlementTransaction({
-  paymentId,
-  crankerFeePayer,
-  senderWallet,
-  tokenMintAddress,
-  amountUi: "5",
-  senderFeeAmountUi: "0.003",
-  tokenDecimals: 6,
-  recipientHash,
-});
-```
-
-The frontend requests the sender wallet to sign the payload. The sender does not broadcast the settlement transaction.
-
-### 3. Submit Authorization
-
-Call `submitPaymentAuthorizationToMempool` with the signed settlement payload and the response from step 2. See the SDK reference docs for the full parameter list and expected types.
-
-### 4. Track Status
-
-| Status | User Meaning |
+| Need | Use |
 | --- | --- |
-| `pending` | Awaiting cranker verification |
-| `escrowed` | Funds are in TSN escrow or vault path |
-| `claimed` | Claim work is being processed |
-| `executed` | Recipient payout completed |
-| `failed` | Retry may be needed, especially for recipient claim |
-| `canceled` | Payment work was rejected or expired |
-
-Sender UX should treat escrowed funds as escrowed, not failed, even if recipient-side claim execution needs retry.
-
----
-
-## API Role
-
-Backend APIs should store product state and user history.
-
-The frontend and SDK should handle TSN-specific signing and settlement preparation. The backend can receive:
-
-- payment id,
-- TIN and recipient identity metadata,
-- mempool intent id,
-- escrow transaction hash,
-- proof transaction hash,
-- final status.
-
----
-
-## Optional Social Links
-
-Applications may add:
-
-- WhatsApp notifications,
-- phone recovery,
-- social profile verification,
-- business identity labels.
-
-These should point to a TIN. They should not replace the TIN as the protocol identity.
+| TIN identity | `tins-sdk` |
+| TSN settlement | `tsn-sdk` |
+| Cranker operation | `tsn-cranker-sdk` |
+| App payment status | TrustLink backend |

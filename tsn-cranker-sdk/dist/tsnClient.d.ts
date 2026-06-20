@@ -6,6 +6,10 @@ export declare class TsnClient {
     constructor(program: Program);
     motherEscrowPda(): [PublicKey, number];
     crankerPda(motherEscrow: PublicKey, operator: PublicKey): [PublicKey, number];
+    epochAccountPda(motherEscrow: PublicKey, epochId: bigint | number): [PublicKey, number];
+    peaPda(epochId: bigint | number, mint: PublicKey): [PublicKey, number];
+    paymentCommitmentPda(epochAccount: PublicKey, commitmentHash: Uint8Array): [PublicKey, number];
+    privacyReceivePda(motherEscrow: PublicKey, tinRouteHash: Uint8Array): [PublicKey, number];
     intentPda(motherEscrow: PublicKey, intentId: Uint8Array): [PublicKey, number];
     registerCrankerIx(motherEscrow: PublicKey, operator: PublicKey): import("@coral-xyz/anchor/dist/cjs/program/namespace/methods.js").MethodsBuilder<import("@coral-xyz/anchor").Idl, import("@coral-xyz/anchor/dist/cjs/idl.js").IdlInstruction & {
         name: string;

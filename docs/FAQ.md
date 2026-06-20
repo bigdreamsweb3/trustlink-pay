@@ -1,71 +1,61 @@
-# TrustLink Pay FAQ
+# FAQ
 
-## General
+## Is TrustLink Pay a wallet?
 
-### What is TrustLink Pay?
+No.
 
-TrustLink Pay is a private stablecoin payment system on Solana. Users send to 10-digit Transfer Identity Numbers. TSN settles value through cranker-routed vault flows.
+TrustLink Pay is a payment experience and protocol stack. Users still control their wallets.
 
-### What is a TIN?
+## What is a TIN?
 
-A TIN is a 10-digit Transfer Identity Number. It is the user-facing receive identity for TrustLink Pay and future wallet integrations.
+A TIN is a 10-digit Transfer Identity Number.
 
-### Is TrustLink Pay phone-number based?
+It is a public payment identity that can be shared instead of a wallet address.
 
-No. The protocol identity is the TIN.
+## Does TrustLink Pay hide every transaction?
 
-Phone numbers and WhatsApp can support notifications, authentication, and optional linking. The primary payment identity is the TIN.
+No.
 
-### Which tokens are supported?
+Solana is public. TrustLink Pay separates sender funding from recipient payout and uses commitments to reduce direct graph exposure. It does not make transactions invisible.
 
-Approved stablecoins first, with broader SPL asset support planned through allowlisted settlement routes.
+## What is TSN?
 
----
+TSN is the Transfer Settlement Network.
 
-## Privacy
+It handles settlement after a user authorizes payment.
 
-### How does TSN provide privacy?
+## What is a Cranker?
 
-TSN separates the sender-side escrow path from the recipient-side payout path.
+A Cranker is a settlement operator.
 
-```text
-sender authorization -> cranker-sponsored escrow -> vault payout -> proof
-```
+It validates work, executes payouts, and participates in recovery or reimbursement.
 
-The payment is on Solana, but the normal wallet view does not expose a direct sender-to-recipient transfer.
+## Why use vault liquidity?
 
-### Is TrustLink anonymous?
+Vault liquidity lets recipients be paid quickly.
 
-No. TrustLink is privacy-preserving, not anonymous. Settlement can be verified through transaction hashes, vault state, cranker records, and mempool proof records.
+The protocol later reconciles the vault through commitments and epoch accounting.
 
----
+## What is an epoch?
 
-## Integration
+An epoch is a settlement window.
 
-### Can another wallet use TINS?
+It groups payment commitments so accounting and recovery can happen in batches.
 
-Yes. A wallet can use TINS as a receive identity layer. A user can share a TIN instead of a wallet address.
+## What is a PEA?
 
-### Can another app use TSN?
+A PEA is a per-epoch reservoir.
 
-Yes. Apps should integrate through the SDK and avoid manually building TSN transactions.
+It isolates funds and accounting for one epoch.
 
-### Do I need permission to build on TINS or TSN?
+## What happens if settlement fails?
 
-No. The goal is open protocol infrastructure.
+The app should show the real payment state.
 
----
+Possible states include pending, escrowed, claiming, paid, failed, or canceled. Failed Cranker work should not hide funds that are already escrowed for a recipient.
 
-## Settlement
+## Is WhatsApp required?
 
-### What does escrowed mean?
+No.
 
-Escrowed means the cranker has verified the work and funds have moved into the TSN escrow or vault path.
-
-### What if a claim fails?
-
-For the sender, the payment remains escrowed. For the recipient, the claim may be retryable depending on the current state.
-
-### What is a cranker?
-
-A cranker is a verified settlement operator that validates work, sponsors escrow, executes payout, and records proof.
+WhatsApp can help with authentication, notifications, and confidence checks. The core payment identity is the TIN.

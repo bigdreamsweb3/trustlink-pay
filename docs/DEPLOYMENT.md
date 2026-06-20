@@ -1,134 +1,124 @@
-# TrustLink Pay Deployment Runbook
+# Deployment
 
-This runbook is the production source of truth for the local devnet flow. It documents the commands to build, configure, initialize, and test TrustLink Pay with TINS and TSN.
+This document explains how to deploy TrustLink Pay programs safely.
 
-## Program IDs
+## What Is This?
 
-| Program | Devnet program id |
-| --- | --- |
-| TINS | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+TrustLink Pay has two active Solana programs:
 
-The repository may contain local generated keypairs under `target/deploy/`. Those files are build artifacts, not the source of truth for production or devnet identity. A program deploy keypair must have a public key equal to the program id above before it is used to deploy that program.
+- TINS: payment identity
+- TSN: settlement
 
-## Required Tools
+Both must be built with a Solana/SBF toolchain that devnet supports.
 
-- Node.js 18+
-- npm
-- Solana CLI configured for devnet
-- Rust and Solana SBF build tools
-- Anchor for the TSN program workspace
-- Python for the mempool backend
+## Why Deploys Were Failing
 
-## Environment
+The error:
 
-Backend `.env.local`:
-
-```env
-SOLANA_RPC_URL=https://api.devnet.solana.com
-TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
+```text
+Detected sbpf_version required by the executable which are not enabled
 ```
 
-Frontend `.env.local`:
+means the compiled `.so` requires an sBPF version that the target cluster has not enabled.
 
-```env
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
-NEXT_PUBLIC_TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
+This is a toolchain problem, not a program authority problem.
+
+## Required Deploy Toolchain
+
+Use:
+
+```bash
+solana --version            # solana-cli 1.18.x
+cargo build-sbf --version   # solana-cargo-build-sbf 1.18.x
+anchor --version            # anchor-cli 0.30.1
+cargo --version             # host Cargo can be newer, but do not let it rewrite deploy lockfiles
+rustc --version             # host Rust can be newer; SBF uses the Solana 1.18 builder
 ```
 
-Cranker `.env.local`:
+The program crates remain pinned to `1.18.26`, but the deploy toolchain may be any compatible Solana/SBF `1.18.x` release.
 
-```env
-RPC_URL=https://api.devnet.solana.com
-PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
-TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
-KEYPAIR_PATH=./keys/cranker-keypair.json
+Do not deploy to devnet with Solana/SBF 3.x or standalone `cargo-build-sbf 4.x` until the target cluster supports that bytecode.
+
+Do not set `solana_version` inside `Anchor.toml`. Anchor can try to auto-download Solana through `solana-install`, which makes deploys depend on network access and can fail before the real build starts. TrustLink Pay uses `npm run deploy:doctor` to verify the active Solana/SBF toolchain instead.
+
+## Why The `edition2024` Error Happens
+
+Solana/SBF 1.18 uses an older Cargo internally.
+
+Some newer Rust crates now publish manifests that require Rust edition 2024. The older Cargo bundled with Solana/SBF 1.18 cannot even parse those manifests, so builds fail with:
+
+```text
+feature `edition2024` is required
 ```
 
-## Install And Build
+This does not mean the program needs edition 2024. It means a transitive dependency resolved too new for the deploy builder.
 
-```powershell
-npm --prefix tsn-sdk install
-npm --prefix tsn-sdk run build
-npm --prefix tsn-cranker-sdk install
-npm --prefix tsn-cranker-sdk run build
-npm --prefix backend install
-npm --prefix frontend install
-npm --prefix tsn-cranker-op-daemon install
+The deploy lockfiles are intentionally stabilized:
+
+- `Cargo.lock` format stays at version 3.
+- `blake3` stays on `1.5.5`.
+- `zeroize_derive` stays on `1.4.3`.
+- `proc-macro-crate` stays on `3.3.0` so it uses the `toml_edit 0.22.x` chain instead of `toml_parser 1.x`.
+- Anchor stays on `0.30.1`.
+- Solana program crates stay on `1.18.26`.
+
+If a dependency update changes the lockfiles, run:
+
+```bash
+npm run deploy:lockfiles:stabilize
+npm run deploy:doctor
 ```
 
-Initialize or migrate the local backend database:
+## Preflight Check
 
-```powershell
-npm --prefix backend run db:init
+From the repository root:
+
+```bash
+npm run deploy:lockfiles:stabilize
+npm run deploy:doctor
 ```
 
-## Build Programs
+If this fails, fix the toolchain before deploying.
 
-TSN:
+## Deploy TINS
 
-```powershell
-npm run tsn:program:id
-npm run tsn:program:build
+```bash
+npm run tins:deploy:checked
 ```
 
-For TINS program build and deploy, see [TINS-OPERATOR.md](./TINS-OPERATOR.md).
+## Deploy TSN
 
-## Manual Program Deployment
-
-Deployments are operator actions. Use the real deploy keypair for each program. Do not use a generated `target/deploy` keypair unless its public key is exactly the expected program id.
-
-TSN deploy shape:
-
-```powershell
-cd tsn/protocol
-anchor deploy --provider.cluster devnet
+```bash
+npm run tsn:program:deploy:checked
 ```
 
-## Initialize TSN With TINS
+## Close Failed Buffers
 
-After TSN is deployed, initialize the Mother Escrow with the configured TINS program id.
+Failed deploys can leave buffer accounts that hold SOL.
 
-```powershell
-cd tsn-cranker-sdk
-$env:RPC_URL="https://api.devnet.solana.com"
-$env:PROGRAM_ID="TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
-$env:TINS_PROGRAM_ID="TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
-$env:KEYPAIR_PATH="..\tsn-cranker-op-daemon\keys\cranker-keypair.json"
-npm run cranker -- init-mother
-npm run cranker -- register-cranker
+List them:
+
+```bash
+solana program show --buffers --url devnet
 ```
 
-Initialize a vault for each supported mint:
+Close each one:
 
-```powershell
-npm run cranker -- init-vault <TOKEN_MINT>
+```bash
+solana program close <BUFFER_ADDRESS> --buffer-authority ~/.config/solana/id.json --url devnet
 ```
 
-## Run Local Stack
+Only close deploy buffers that belong to your authority. Do not close deployed program IDs.
 
-Start the local devnet stack:
+## After Deploy
 
-```powershell
-npm run dev:tsn:stack:with-cranker
-```
+Rebuild SDKs and restart services:
 
-## Test Flow
-
-1. Log in to TrustLink Pay.
-2. Connect the wallet that should own settlement.
-3. Create or load the TIN from the dashboard identity section or settings.
-4. Confirm `/api/identity` returns `tin`, `tinsIdentityPublicKey`, `tinsRegistryPublicKey`, `tinsWalletPublicKey`, and `tinsProgramId`.
-5. Send a payment to a recipient TIN.
-6. Confirm the backend records the payment and TSN intent metadata.
-7. Confirm the mempool shows intent state before cranker settlement.
-8. Start the cranker and verify the payment advances from pending to escrowed to executed/settled state.
-
-## Verification Commands
-
-```powershell
-npm --prefix frontend run typecheck
-npm --prefix backend run typecheck
-npm --prefix tsn-sdk run build
-npm --prefix tsn-cranker-sdk run build
+```bash
+npm run sdk:refresh
+npm run sdk:build:all
+npm run dev:backend
+npm run dev:frontend
+npm run dev:tsn:stack
+npm run tsn:cranker:start
 ```

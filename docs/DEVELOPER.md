@@ -1,92 +1,66 @@
-# TrustLink Pay Developer Guide
+# Developer Guide
 
-This guide is for developers building on TrustLink Pay, TINS, and TSN.
+This guide is for developers working on TrustLink Pay.
 
-TrustLink Pay is a TIN-first system:
+## What Is This?
 
-```
-10-digit TIN -> TSN private settlement -> recipient payout
-```
+TrustLink Pay is a multi-part system:
 
-Phone and WhatsApp flows may exist in the app for notifications and optional linking, but integrations should treat the TIN as the primary payment identity.
+- web frontend
+- TrustLink backend
+- TINS program and SDK
+- TSN program and SDK
+- Cranker daemon
+- mempool backend
+- mempool explorer
 
----
+## Development Rule
 
-## Integration Rules
+Keep protocol logic in SDKs and programs.
 
-### Use the SDK
+The frontend should collect user input, connect wallets, show status, and call SDK or backend APIs. It should not manually build TSN instructions or derive TSN program accounts.
 
-Protocol-specific work belongs in the SDK. Applications should not:
+## Local Services
 
-- derive TSN account addresses,
-- assemble TSN instructions,
-- build settlement transactions,
-- serialize account layouts,
-- reproduce cranker logic.
+Common local ports:
 
-Applications should:
+| Service | Port |
+| --- | ---: |
+| Backend | 3000 |
+| Frontend | 3001 |
+| Mempool API | 8000 |
+| Mempool UI | 3002 |
 
-- collect user input,
-- connect wallets,
-- call SDK methods,
-- request wallet signatures,
-- display status.
+## Useful Commands
 
-### Keep TIN First
-
-New integrations should ask for a TIN, not a phone number.
-
-Good:
-```
-recipientTin: "1000000008"
-```
-
-Phone or social linking can be added later as optional discovery.
-
----
-
-## Example Use Cases
-
-**Wallet Receive Privacy.** A wallet can let users share a TIN instead of exposing a raw wallet address. Payments route through TSN so the normal payment path does not reveal the sender-to-recipient wallet graph.
-
-**Merchant Payments.** A merchant can publish a TIN as its receive identity. Customers pay the TIN, and the merchant's treasury wallets remain behind the settlement layer.
-
----
-
-## Architecture Summary
-
-```
-User enters TIN
-SDK prepares TSN authorization
-Sender signs authorization or co-signed settlement payload
-Mempool stores pending work
-Cranker verifies and sponsors escrow
-Funds enter TSN vault path
-Recipient claim work becomes available
-Cranker executes payout
-Proof is stored through tx hashes and mempool state
+```bash
+npm run dev:backend
+npm run dev:frontend
+npm run dev:tsn:stack
+npm run tsn:cranker:start
 ```
 
----
+## Build Commands
 
-## Security Considerations
+```bash
+npm --prefix tsn-sdk run build
+npm --prefix frontend run typecheck
+npm --prefix backend run typecheck
+npm --prefix tsn-mempool-frontend run typecheck
+```
 
-| Risk | Mitigation |
-| --- | --- |
-| Address exposure | TIN-first receive identity and TSN settlement separation |
-| Tampered mempool work | Cranker validates authorization and transaction structure |
-| Replay attacks | Unique counter and expiry in sender authorization |
-| Competing claim execution | Claim credit and cranker coordination |
-| Stuck escrow | Claim or retry surfaces and status tracking |
-| Misleading UX | Sender view shows escrowed, recipient view shows claim state |
+## Program Deploy Safety
 
----
+Before deploying programs, run:
 
-## Developer Checklist
+```bash
+npm run deploy:doctor
+```
 
-- [ ] Display TIN as the payment identity.
-- [ ] Do not expose raw wallet addresses as the normal receive flow.
-- [ ] Use the TSN SDK for settlement construction.
-- [ ] Use the TINS SDK for identity resolution.
-- [ ] Show payment status as pending, escrowed, claiming, executed, canceled, or retryable.
-- [ ] Keep phone or social linking optional and application-specific.
+This checks that the Solana, SBF, and Anchor versions are compatible with devnet deploys.
+
+## Important Limits
+
+Do not edit generated `dist/` files by hand. Change source files and rebuild.
+
+Do not expose private routes, phone numbers, permit secrets, or decrypted payloads in logs or UI.

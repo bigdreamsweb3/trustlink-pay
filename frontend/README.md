@@ -1,48 +1,48 @@
-# TrustLink Pay Frontend
+# TrustLink Frontend
 
-The frontend is the mobile-first app for sending and claiming TrustLink payments.
+The frontend is the user-facing TrustLink Pay app.
 
-It runs on Next.js 15 and talks to the backend on port `3000` during local development.
+## What Is This?
 
-## Main Screens
+It lets users create or view a TIN, resolve recipients, send payments, track payment status, and manage identity settings.
 
-- Send: enter phone number, verify recipient, choose token, lock funds in escrow.
-- Claim: verify receiver, connect wallet, enter PIN, request settlement.
-- Wallets: manage receiver wallets.
-- Activity: view payment history and details.
-- Settings: manage identity, PIN, recovery, and autoclaim.
+## Why It Exists
 
-## TSN Behavior
+The protocol is complex. The app should make it feel simple.
 
-When `TSN_ENABLED=true` on the backend:
+A user should understand:
 
-- the send page keeps using the same create-payment flow
-- the backend creates a TSN payment intent after escrow confirmation
-- the claim page sends a claim request instead of forcing a direct escrow release transaction
-- the UI shows that a Cranker will settle the claim
+- who they are paying
+- whether the payment is pending
+- whether funds are escrowed
+- whether the recipient has been paid
+- whether an identity is verified or missing verification
 
-When TSN is disabled, the claim page keeps the older direct claim transaction flow.
+## Responsibilities
 
-## Local Setup
+- Collect user input.
+- Connect wallets.
+- Display identity and payment status.
+- Call backend APIs.
+- Call SDK methods where client-side protocol interaction is required.
+
+## Important Rules
+
+- Do not manually build TSN program instructions in React components.
+- Do not expose private settlement payloads.
+- Do not display a full TIN in cramped activity cards if a shortened form is safer for layout.
+- Show full identity details only in the proper identity or transaction detail surfaces.
+- Use backend status for finalized payment states.
+
+## Local Development
 
 ```bash
-npm install
-npm run dev
+npm --prefix frontend install
+npm --prefix frontend run dev
 ```
 
-Open:
+Default local port:
 
 ```text
 http://localhost:3001
 ```
-
-Use `NEXT_PUBLIC_BACKEND_URL=http://localhost:3000` if the middleware proxy is not available.
-
-## Frontend Contract
-
-The claim page accepts two backend response modes from `POST /api/payment/accept`:
-
-- `blockchainMode: "devnet" | "mock"` means the receiver signs a prepared transaction.
-- `blockchainMode: "tsn"` means the backend created a DB claim request and the receiver waits for Cranker settlement.
-
-This keeps the app usable during the M4 migration while the old direct-claim path remains available.

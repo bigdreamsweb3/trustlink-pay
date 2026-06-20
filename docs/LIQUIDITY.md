@@ -1,61 +1,71 @@
-# Liquidity Providers and Vault Funding
+# Liquidity
 
-Liquidity Providers (LPs) are depositors who fund TSN vaults. A vault is a token-specific liquidity pool that crankers draw from to front instant payouts to recipients. Without LP deposits, crankers would have no capital to execute instant payments.
+Liquidity is what lets recipients get paid quickly.
 
-When a sender makes a payment through TrustLink Pay, the funds are locked in escrow. The recipient wants to be paid immediately, not wait for on-chain settlement. The cranker solves this by paying the recipient from vault liquidity. The vault is then reimbursed at epoch close from the sender's escrowed funds. LPs provide the capital that makes this instant payout possible and earn settlement fees in return.
+## What Is This?
 
----
+TrustLink Pay uses vault liquidity for recipient payouts.
 
-## What Is a Vault?
+A vault is a pool of funds that can be used to pay recipients while the protocol reconciles the sender-side escrow through commitments and epoch settlement.
 
-A vault holds one token type. For example, a USDC vault holds only USDC. Multiple LPs can fund the same vault, and each LP earns fees proportional to their share of the total deposits. An epoch is a fixed time window (approximately 7 hours) between reimbursement events.
+## Why It Exists
 
-| Property | Description |
-|----------|-------------|
-| Token-specific | Each vault holds one token type |
-| Multi-depositor | Multiple LPs can fund the same vault |
-| Proportional share | LP earnings based on deposit proportion |
-| Epoch-based | Reimbursed and fees distributed at epoch close |
+If every payment had to wait for every internal settlement step, the user experience would feel slow.
 
----
+Vault liquidity lets the recipient receive funds faster. The system then uses epoch accounting to reimburse or recover the vault.
 
-## Fee Distribution
+## How It Works
 
-Every settlement fee is split three ways:
+1. Sender authorizes payment.
+2. Funds enter the TSN escrow path.
+3. A valid Cranker pays the recipient from vault liquidity.
+4. The payment creates a commitment.
+5. The commitment is included in an epoch.
+6. Epoch settlement reimburses or recovers the reservoir.
 
-| Recipient | Share | Description |
-|-----------|------:|-------------|
-| **Liquidity Providers** | **87%** | Your earnings as vault depositor |
-| Protocol Treasury | 8% | Protocol operations and development |
-| Cranker/Operator | 5% | Operator execution rewards |
+## Epoch Reservoirs
 
----
+Each epoch has a PEA reservoir.
 
-## How Vault Funding Works
+The PEA keeps that epoch's settlement accounting separate. This makes it easier to know which funds belong to which settlement window.
 
-To become an LP, deposit stablecoins into a vault of your choice. The vault records your deposit and tracks your proportional share of the total pool.
+## Recovery Distribution
 
-At each epoch close, settlement fees from that epoch are distributed to LPs in proportion to their vault share. Your vault balance grows with each distribution.
+When recovery runs, the protocol split is:
 
-Withdrawals are processed at epoch boundaries. When you request a withdrawal, your proportional share is calculated and the funds are returned from the vault at the next epoch close.
+| Recipient | Share |
+| --- | ---: |
+| Liquidity providers | 85% |
+| Treasury | 8% |
+| Operator reward | 5% |
+| Reserve | 2% |
 
----
+This split is intended to keep liquidity providers whole, fund protocol operations, reward useful work, and maintain a small reserve.
 
-## Initializing a Vault
+## Smart Recovery
 
-Vaults must be initialized before they can accept deposits. From the repository root, run:
+Recovery should not run blindly after every payment.
 
-```powershell
-npm run cranker -- init-vault <TOKEN_MINT>
-```
+The system should monitor:
 
-This creates the on-chain vault account for the specified token mint. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full initialization sequence.
+- vault liquidity
+- pending intents
+- settlement velocity
+- epoch age
+- depleted Cranker or vault states
 
----
+Recovery should prioritize states that create real liquidity risk.
 
-## Related Documentation
+## Security Considerations
 
-- [CRANKER.md](./CRANKER.md) -- How crankers use vault liquidity
-- [EPOCH-SETTLEMENT.md](./EPOCH-SETTLEMENT.md) -- How epoch reimbursement affects LP returns
-- [DEPLOYMENT.md](./DEPLOYMENT.md) -- Deployment runbook
-- [ARCHITECTURE.md](./ARCHITECTURE.md) -- System architecture overview
+- Recovery work must be tied to valid commitments.
+- Recovery should not reveal private payment routes.
+- The same work must not be recoverable twice.
+- Low-liquidity states should receive priority.
+- Failed permanent recovery errors should be quarantined.
+
+## Important Limits
+
+Vault liquidity improves speed. It does not remove settlement risk.
+
+The protocol still needs monitoring, governance, operator discipline, and careful accounting.

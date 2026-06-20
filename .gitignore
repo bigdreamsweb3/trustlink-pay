@@ -62,3 +62,19 @@ frontend/.env.*
 node_modules/
 */node_modules/
 **/node_modules/
+
+# Generated outputs anywhere in the workspace
+**/.next/
+**/dist/
+**/build/
+**/coverage/
+**/target/
+**/.turbo/
+**/.cache/
+**/.parcel-cache/
+**/*.tsbuildinfo
+
+# Local runtime state
+**/.mempool-store.json
+tracked-node-modules.txt
+git-hygiene-report.txt

@@ -1,10 +1,44 @@
-# TINS Registrar Program
+# TINS Registrar
 
-TINS Registrar is the Solana program that creates wallet-owned Transfer Identity Numbers for TrustLink Pay and future integrations.
+TINS means **Transfer Identity Number System**.
 
-A TIN is a 10-digit payment identity that can be shared instead of a wallet address.
+It creates 10-digit payment identities for TrustLink Pay and other integrations.
 
----
+## What Is This?
+
+A TIN is a public payment identity.
+
+Users can share a TIN instead of a wallet address. Apps can resolve the TIN to safe public identity information before payment.
+
+## Why It Exists
+
+Wallet addresses are hard to read and easy to track.
+
+A TIN gives users a portable identity layer while allowing wallets, social identities, and verification records to stay behind the protocol.
+
+## What The Program Stores
+
+TINS stores identity records such as:
+
+- TIN number
+- owner or authority
+- public display or legal-name status
+- verification status
+- encrypted social identities
+- sensitive encrypted fields
+- verification platform proof references
+
+## Identity Encryption
+
+Social identities such as WhatsApp, email, and X should be stored encrypted.
+
+Sensitive data requires stronger access. It should require the TIN plus explicit user authorization before decryption.
+
+## Verification Platforms
+
+The program supports registered verification platform keys.
+
+These platforms can sign identity proofs off-chain. The program can verify that the proof came from an authorized platform key.
 
 ## Devnet Program ID
 
@@ -12,143 +46,48 @@ A TIN is a 10-digit payment identity that can be shared instead of a wallet addr
 TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
 ```
 
-The TSN settlement program is separate:
+## Deploy Toolchain
 
-```text
-TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+Use the devnet-compatible Solana/SBF toolchain:
+
+```bash
+solana --version            # solana-cli 1.18.x
+cargo build-sbf --version   # solana-cargo-build-sbf 1.18.x
+anchor --version            # anchor-cli 0.30.1
 ```
 
----
+Program crates are pinned to `1.18.26`, but the deploy toolchain can be any compatible Solana/SBF `1.18.x` release.
 
-## What The Program Stores
+`Anchor.toml` intentionally does not set `solana_version`. The repository verifies the active Solana/SBF toolchain with `npm run deploy:doctor` instead, so Anchor does not try to auto-download Solana during deploy.
 
-TINS has two compatible account paths:
+The lockfile must stay compatible with the Cargo version bundled in Solana/SBF 1.18. In practice:
 
-| Account | Purpose |
-| --- | --- |
-| `IdentityRegistry` | The TIN-derived registry PDA used by protocol integrations |
-| `TinAccount` | Legacy wallet-derived account kept for compatibility |
+- keep `Cargo.lock` at format version 3
+- keep `blake3` at `1.5.5`
+- keep `zeroize_derive` at `1.4.3`
+- keep `proc-macro-crate` at `3.3.0`
 
-The active protocol-grade path is `IdentityRegistry`, derived from the 10-digit TIN:
+Run:
 
-```text
-["registry", tin_le_u64]
+```bash
+npm run deploy:lockfiles:stabilize
+npm run deploy:doctor
+npm run tins:deploy:checked
 ```
 
-The legacy identity PDA is derived from:
+Do not deploy with Solana/SBF 3.x or standalone `cargo-build-sbf 4.x` until the target cluster supports that sBPF bytecode.
 
-```text
-["identity", sha256(wallet_pubkey || "TINS_SALT_2026")]
+## Failed Deploy Buffers
+
+If deploy fails after creating a buffer, close the buffer before retrying:
+
+```bash
+solana program show --buffers --url devnet
+solana program close <BUFFER_ADDRESS> --buffer-authority ~/.config/solana/id.json --url devnet
 ```
 
----
+## Related Docs
 
-## Encrypted Identity Graph
-
-Each `IdentityRegistry` stores a public TIN name plus encrypted identity links.
-
-| Field | Encryption model | Who can decrypt |
-| --- | --- | --- |
-| `social_identities` | AES-GCM key derived from the 10-digit TIN | Anyone with the TIN |
-| `sensitive_fields` | AES-GCM key derived from TIN + explicit user signature | Only a user-authorized resolver |
-
-Social identities are flexible records:
-
-```text
-identity_type = "whatsapp" | "x" | "email" | future platform string
-label         = user-facing route label
-metadata      = structured JSON string for UI and verification context
-nonce         = AES-GCM nonce
-ciphertext    = encrypted identity payload
-verified_by   = optional registered verification platform public key
-```
-
-Sensitive fields use the same encrypted container but require a fresh user authorization signature. The first supported example is:
-
-```text
-field_type = "kyc_document_hash"
-```
-
-This lets the registry prove that sensitive data exists without making the data public to everyone who knows the TIN.
-
----
-
-## Verification Platform Registry
-
-The program now includes a global `PlatformRegistry` PDA:
-
-```text
-["platform-registry"]
-```
-
-The registry authority can:
-
-- initialize the platform registry
-- add verification platform public keys
-- rotate platform keys by recording `rotated_from`
-- deactivate old platform keys
-
-When a user links a verified social identity:
-
-1. the platform verifies the identity off-chain
-2. the platform signs a proof message
-3. the transaction includes an Ed25519 verification instruction
-4. the TINS program checks that the signer exists and is active in `PlatformRegistry`
-5. the encrypted identity is appended to the owner’s `IdentityRegistry`
-
-Only the TIN owner can link identities. Platform signatures prove verification; they do not replace owner authorization.
-
----
-
-## Protocol Role
-
-TINS is the receive identity layer.
-
-```text
-10-digit TIN -> identity PDA -> settlement route
-```
-
-TrustLink Pay uses TINS as the main payment identity. Phone, WhatsApp, X, email, business, and future routes attach to a TIN as encrypted identity links.
-
----
-
-## Build
-
-```powershell
-cd tins-registrar/program
-cargo build-sbf
-```
-
-Or from the repository root:
-
-```powershell
-npm run tins:build
-```
-
----
-
-## Deployment
-
-Deployment is an operator action. Use the real TINS deploy keypair whose public key is:
-
-```text
-TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
-```
-
-Do not deploy with a generated local `target/deploy` keypair unless its public key matches that program id.
-
-Command shape:
-
-```powershell
-solana program deploy target/deploy/tins_program.so --url devnet --program-id <REAL_TINS_PROGRAM_KEYPAIR_JSON>
-```
-
----
-
-## Integration
-
-TrustLink Pay and external apps should treat TINs as the primary receive identity.
-
-Application-layer services may attach phone or social identity metadata, but those links should resolve to TINs instead of replacing TINs.
-
-See `docs/TINS.md` and `docs/INTEGRATION.md`.
+- `docs/TINS.md`
+- `docs/DEPLOYMENT.md`
+- `docs/INTEGRATION.md`

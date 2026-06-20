@@ -1,44 +1,35 @@
-# TSN Mempool Submodule Patch Handoff
+# Submodule Patch Notes
 
-**Version / commit reference:** v1 experimental epoch settlement.
+This folder contains patch handoff files generated during earlier remote work.
 
-## Summary
+The current working tree already applies the useful ideas directly inside the mempool submodules:
 
-`tsn-mempool-backend` and `tsn-mempool-frontend` are separate git submodules. We do not edit their working trees from this main repository. Instead, this folder contains patch files to apply inside each submodule repository.
+- proactive epoch creation
+- PEA and epoch status exposure
+- private commitment aggregation
+- aggregate root status
+- minimal public challenge release
+- PrivacyReceivePDA watch and sweep signaling
+- masked recovery information in the explorer
 
-## Patches
+## Current Source Of Truth
 
-| Patch | Apply inside | Purpose |
-| --- | --- | --- |
-| `tsn-mempool-backend-epoch-v1.patch` | `tsn-mempool-backend` | Adds automatic epoch creation, private commitment aggregation, minimal challenge release, PrivacyReceivePDA watch state, and epoch APIs. |
-| `tsn-mempool-frontend-epoch-v1.patch` | `tsn-mempool-frontend` | Adds an epoch settlement explorer panel showing epochs, PEA references, aggregate roots, challenge status, and recovery winners with masked values. |
+Use the submodule source code and these docs as the active source of truth:
 
-## Usage examples
+- `tsn-mempool-backend/`
+- `tsn-mempool-frontend/`
+- [Epoch Settlement](../EPOCH-SETTLEMENT.md)
+- [TSN Commitment Settlement](../TSN-COMMITMENT-SETTLEMENT.md)
 
-```bash
-cd tsn-mempool-backend
-git apply ../docs/submodule-patches/tsn-mempool-backend-epoch-v1.patch
-npm test
-npm run build
-```
+The patch files are not operational documentation. They are retained only as implementation handoff artifacts.
 
-```bash
-cd tsn-mempool-frontend
-git apply ../docs/submodule-patches/tsn-mempool-frontend-epoch-v1.patch
-npm test
-npm run build
-```
+## Smoke Checks
 
-## Security & privacy considerations
-
-The patches intentionally expose aggregate epoch state only. They do not expose raw TINS routes, phone numbers, raw wallet addresses, full payment graphs, or decrypted OTDT payloads.
-
-## Testing notes
-
-After applying patches in the submodules, smoke-test:
+When the mempool backend is running:
 
 ```bash
-curl http://localhost:8787/epochs
-curl http://localhost:8787/epoch-challenges
-curl -X POST http://localhost:8787/epochs/tick
+curl http://localhost:8000/epochs
+curl http://localhost:8000/epoch-challenges
+curl http://localhost:8000/privacy-receive-watches
+curl -X POST http://localhost:8000/epochs/proactive
 ```

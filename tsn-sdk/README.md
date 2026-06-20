@@ -1,253 +1,46 @@
 # TSN SDK
 
-TypeScript SDK for the TSN (Transfer Settlement Network) protocol on Solana.
+The TSN SDK is the application interface to the Transfer Settlement Network.
 
-## Installation
+## What Is This?
 
-```bash
-npm install @trustlink/tsn-sdk
-```
+Apps and services use this SDK to interact with TSN.
 
-## Usage
+The SDK should be the place where TSN transaction construction, PDA derivation, authorization helpers, quote helpers, and settlement calls live.
 
-```typescript
-import { TsnHttpClient, buildCreateIntentRequest, computeTsnUiStage } from "@trustlink/tsn-sdk";
+## Why It Exists
 
-// Create a mempool client
-const client = new TsnHttpClient({ baseUrl: "http://localhost:8787" });
+Frontend apps should not need to understand TSN internals.
 
-// Build an intent request
-const request = buildCreateIntentRequest({
-  paymentId: "...",
-  recipientHash: "...",
-  tokenMintAddress: "...",
-  amount: 1000,
-});
+They should call SDK methods instead of manually building instructions or deriving program accounts.
 
-// Post to mempool
-await client.postIntent(request);
-```
+## Responsibilities
 
-## Modules
+- Resolve TSN routes.
+- Build TSN transactions and instructions.
+- Derive TSN PDAs.
+- Create payment authorization payloads.
+- Submit mempool work.
+- Read settlement status.
+- Support TINS resolution where TSN needs identity context.
+- Expose safe helpers for Cranker and backend services.
 
-- `contracts` - Type definitions for TSN contracts and records
-- `client` - HTTP client for TSN mempool operations
-- `mempool` - Mempool implementations (JSON file and HTTP)
-- `quote` - Transfer fee quoting utilities
-- `settlement-economics` - Settlement economics evaluation
-- `program` - Program constants and ID verification
-- `blockchain/solana-core` - Core Solana utilities
-- `blockchain/solana-tsn` - TSN-specific blockchain operations
-- `sponsored-settlement` - SDK-owned sender escrow transaction construction
-- `settlement-token` - encrypted off-chain routing and settlement commitments
-- `private-settlement` - permit messages, domain-separated nullifiers, and private payout/recovery transactions
+## Important Rules
 
-## Private Commitment Settlement
+- Do not move TSN transaction-building logic into React components.
+- Do not expose private settlement payloads in logs.
+- Keep browser-safe and server-only APIs clearly separated.
+- Rebuild the SDK after changing source files.
 
-Applications must not build TSN instructions or derive TSN PDAs themselves. The SDK is the protocol boundary.
-
-```ts
-import {
-  buildSettlementTokenPayload,
-  encryptSettlementToken,
-} from "@trustlink/tsn-sdk/settlement-token";
-import {
-  buildTsnSponsoredSettlementTransaction,
-  uiAmountToBaseUnits,
-} from "@trustlink/tsn-sdk/sponsored-settlement";
-
-const payload = buildSettlementTokenPayload({
-  paymentId,
-  recipientWallet,
-  tokenMintAddress,
-  recipientAmountBaseUnits: uiAmountToBaseUnits("5", 6),
-  epoch,
-  expiresAt,
-});
-const encryptedSettlementToken = encryptSettlementToken({
-  payload,
-  crankerEncryptionPublicKey,
-});
-
-const settlement = await buildTsnSponsoredSettlementTransaction({
-  paymentId,
-  crankerFeePayer,
-  senderWallet,
-  tokenMintAddress,
-  amountUi: "5",
-  tokenDecimals: 6,
-  recipientHash,
-  transferId: encryptedSettlementToken.transferId,
-  commitmentHash: encryptedSettlementToken.commitmentHash,
-});
-```
-
-The frontend asks the wallet to co-sign `settlement.transactionBase64`, then
-sends the signed transaction and `encryptedSettlementToken` to the mempool. It
-does not broadcast the transaction.
-
-For privacy version 2, this transaction creates a random one-time SPL token
-account controlled by the shared TSN escrow authority. The verifier PDA pays
-the account rent inside the TSN instruction, while the Cranker pays only the
-outer Solana transaction fee and receives a direct SOL reimbursement. It does
-not create a public lifecycle `VaultState` PDA or per-payment commitment PDA.
-
-After the mempool grants an authenticated lease, the platform verifier decrypts
-the route and signs a short-lived, action-specific permit. The Cranker daemon
-holds only its operator key and mempool API key. It does not hold the platform
-route-decryption or permit-signing secrets.
-
-```ts
-import { PublicKey } from "@solana/web3.js";
-import { Buffer } from "buffer";
-import {
-  requestPrivatePayoutPermit,
-  tsnExecutePrivatePayoutOnChain,
-} from "@trustlink/tsn-sdk/private-settlement";
-
-const permit = await requestPrivatePayoutPermit({
-  mempoolUrl: process.env.TSN_MEMPOOL_URL!,
-  apiKey: process.env.TSN_MEMPOOL_API_KEY,
-  claimRequestId,
-  operator,
-});
-
-await tsnExecutePrivatePayoutOnChain({
-  operator,
-  permitSigner: new PublicKey(permit.permitSigner),
-  permitSignature: Buffer.from(permit.permitSignatureBase64, "base64"),
-  payoutNullifier: Buffer.from(permit.payoutNullifier, "hex"),
-  payoutSequence: BigInt(permit.payoutSequence),
-  tokenMint: new PublicKey(permit.tokenMintAddress),
-  recipientWallet: new PublicKey(permit.recipientWallet),
-  payoutAmount: BigInt(permit.payoutAmountBaseUnits),
-  claimFeeAmount: BigInt(permit.claimFeeAmountBaseUnits),
-  expiresAtTs: BigInt(permit.expiresAtTs),
-});
-```
-
-Payout and recovery use separate domain-separated nullifiers plus one fixed
-protocol replay-registry PDA. They do not create per-payment commitment or
-spent-nullifier PDAs. The payout
-transaction does not receive the sender escrow account or commitment record.
-Recovery receives the one-time escrow token account but does not receive the
-recipient route or payout nullifier.
-
-`requestPrivateRecoveryPermit` and `tsnRecoverPrivateEscrowOnChain` provide the
-equivalent recovery path. Permit construction and signing helpers are intended
-only for trusted verifier infrastructure, never browser applications.
-
-Legacy operations in `blockchain/solana-tsn` remain exported only for recovery
-of version 1 payments.
-
-See `docs/TSN-COMMITMENT-SETTLEMENT.md` in the TrustLink Pay repository for the complete security model.
-
-## TIN Resolution And Encrypted Identities
-
-The TSN SDK includes TINS helpers so payment applications can resolve a 10-digit TIN without reimplementing TINS internals.
-
-Social identities are encrypted with a key derived from the TIN. Anyone who knows the TIN can decrypt these social routes:
-
-```ts
-import {
-  encryptTinSocialIdentity,
-  getTinsRegistryPda,
-  buildLinkSocialIdentityInstruction,
-  resolveTIN,
-} from "@trustlink/tsn-sdk";
-
-const tin = "1000000008";
-const encrypted = await encryptTinSocialIdentity({
-  tin,
-  value: "+2349037334349",
-});
-
-const ix = buildLinkSocialIdentityInstruction({
-  owner: wallet.publicKey,
-  registry: getTinsRegistryPda({ tin }),
-  identityType: "whatsapp",
-  label: "Primary WhatsApp",
-  nonce: encrypted.nonce,
-  ciphertext: encrypted.ciphertext,
-  metadata: JSON.stringify({ display: "WhatsApp" }),
-});
-
-const resolved = await resolveTIN({ tin, connection });
-console.log(resolved.socialIdentities);
-```
-
-Sensitive fields are encrypted with TIN + explicit user authorization. Without the user signature, `resolveTIN` returns the encrypted sensitive records but does not decrypt them:
-
-```ts
-import {
-  buildSensitiveAuthorizationMessage,
-  encryptTinSensitiveField,
-  resolveTIN,
-} from "@trustlink/tsn-sdk";
-
-const message = buildSensitiveAuthorizationMessage({
-  tin,
-  fieldType: "kyc_document_hash",
-  nonce: "session-123",
-});
-const userSignature = await wallet.signMessage(new TextEncoder().encode(message));
-
-const encryptedKyc = await encryptTinSensitiveField({
-  tin,
-  fieldType: "kyc_document_hash",
-  value: "sha256:kyc-document-hash",
-  userSignature,
-});
-
-const resolvedWithSensitiveData = await resolveTIN({
-  tin,
-  connection,
-  sensitiveAuthorizations: {
-    kyc_document_hash: userSignature,
-  },
-});
-```
-
-## Platform Verification
-
-Verification platforms are registered on-chain in the TINS `PlatformRegistry` PDA. A platform verifies a social identity off-chain, signs a proof message, and the TINS program validates the Ed25519 proof against registered platform keys.
-
-```ts
-import {
-  buildPlatformSignedProofMessage,
-  buildLinkVerifiedSocialIdentityInstructions,
-} from "@trustlink/tsn-sdk";
-
-const proofMessage = buildPlatformSignedProofMessage({
-  tin,
-  identityType: "whatsapp",
-  label: "Primary WhatsApp",
-  encryptedPayloadHash,
-  subjectWallet: wallet.publicKey,
-  issuedAt: BigInt(Math.floor(Date.now() / 1000)),
-});
-
-const instructions = buildLinkVerifiedSocialIdentityInstructions({
-  owner: wallet.publicKey,
-  registry: getTinsRegistryPda({ tin }),
-  platformPubkey,
-  platformSignature,
-  proofMessage,
-  identityType: "whatsapp",
-  label: "Primary WhatsApp",
-  nonce: encrypted.nonce,
-  ciphertext: encrypted.ciphertext,
-});
-```
-
-The first instruction verifies the platform signature with Solana’s Ed25519 program. The second instruction stores the encrypted identity only if the platform key is active in the Platform Registry and the TIN owner signed the transaction.
-
-## Local Demo
-
-From the repository root:
+## Development
 
 ```bash
-npm run tins:identity:demo -- 1000000008 +2349037334349 sha256:demo-kyc
+npm --prefix tsn-sdk install
+npm --prefix tsn-sdk run build
 ```
 
-This builds the TSN SDK, encrypts/decrypts a WhatsApp identity with the TIN, and encrypts/decrypts `kyc_document_hash` with TIN + user authorization material.
+## Related Docs
+
+- `docs/TSN-COMMITMENT-SETTLEMENT.md`
+- `docs/INTEGRATION.md`
+- `docs/CRANKER.md`

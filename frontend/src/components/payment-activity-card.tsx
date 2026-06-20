@@ -124,9 +124,21 @@ export function PaymentActivityCard({
 }: PaymentActivityCardProps) {
   const isSend = !forceReceiveView && payment.sender_user_id === currentUserId;
   const viewerRole: ActivityViewerRole = isSend ? "sender" : "receiver";
-  const counterparty = isSend
-    ? `To ${receiverIdentityLabel(payment)}`
-    : `From ${payment.sender_display_name_snapshot}`;
+  const counterparty = isSend ? (
+    <>
+      <span className="text-[0.48rem] text-text-faint font-medium text-nowrap uppercase tracking-[0.10em]">
+        To
+      </span>{" "}
+      {receiverIdentityLabel(payment)}
+    </>
+  ) : (
+    <>
+      <span className="text-[0.48rem] text-text-faint font-medium text-nowrap uppercase tracking-[0.10em]">
+        From
+      </span>{" "}
+      {payment.sender_display_name_snapshot}
+    </>
+  );
   const identityHint =
     isSend && payment.receiver_tin
       ? `TIN ${shortTin(payment.receiver_tin)}`
@@ -143,7 +155,7 @@ export function PaymentActivityCard({
     <button
       type="button"
       onClick={() => onClick(payment.id)}
-      className="tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-surface-soft active:scale-[0.99]  justify-between"
+      className="tl-field group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] px-4 py-3 text-left transition-colors cursor-pointer hover:bg-surface-soft active:scale-[0.99] justify-between"
     >
       {/* Icon */}
       <div
@@ -171,10 +183,10 @@ export function PaymentActivityCard({
           className="flex items-center gap-1.5 text-[0.72rem] font-semibold"
           style={{ color: "var(--text)" }}
         >
-          <span className="truncate">{counterparty}</span>
+          <span className="truncate text-[0.58rem]">{counterparty}</span>
 
           <span
-            className="text-[0.58rem] font-medium text-nowrap uppercase tracking-[0.10em]"
+            className="text-[0.48rem] font-medium text-nowrap uppercase tracking-[0.10em]"
             style={{ color: "var(--text-faint)" }}
           >
             {payment.reference_code}
@@ -182,7 +194,7 @@ export function PaymentActivityCard({
         </div>
         <div className="mt-1 flex flex-nowrap items-center gap-2">
           <span
-            className="text-[0.68rem] font-medium text-nowrap"
+            className="text-[0.58rem] font-medium text-nowrap"
             style={{ color: "var(--text-faint)" }}
           >
             {formatPaymentShortDate(payment.created_at)}

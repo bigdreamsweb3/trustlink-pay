@@ -1,52 +1,40 @@
-# WhatsApp Notification Layer
+# WhatsApp In TrustLink Pay
 
-WhatsApp is an optional notification surface for TrustLink Pay. It is not the payment protocol or the core identity system.
+WhatsApp is an optional communication and confidence layer.
 
-The protocol identity is the 10-digit Transfer Identity Number (TIN). A TIN is a unique number that identifies a user on the TrustLink network. WhatsApp simply delivers alerts and consent prompts about TIN-based payments.
+It is not the core payment identity. The core payment identity is the TIN.
 
-## Correct Positioning
+## What It Does
 
-Use this framing:
+WhatsApp can help with:
 
-```text
-User pays a TIN. WhatsApp can notify the recipient.
-```
+- login and authentication flows
+- payment notifications
+- recipient confidence
+- account recovery workflows
+- social identity linking
 
-Do not position the protocol as:
+## Why It Exists
 
-```text
-User pays a WhatsApp number.
-```
+Many users already trust WhatsApp as a communication channel.
 
-Phone numbers may be linked to TINs in the application layer, but the protocol should always be documented and integrated as TIN-first.
+Using it can make payment alerts and identity checks feel familiar, especially for mobile-first users.
 
-## How WhatsApp Fits In
+## How It Fits With TINS
 
-WhatsApp supports these use cases:
+A WhatsApp number can be linked to a TIN.
 
-- Transaction notifications
-- Consent prompts
-- Authentication support (OTP-style)
-- Recipient reminders about pending claims
-- Optional phone-to-TIN identity hints
+When a sender resolves a TIN, the app may show safe WhatsApp-linked context if the user has allowed it and if the backend has verified it.
 
-None of these replace the TIN. They are application-layer conveniences.
+## Privacy Rules
 
-## Optional Notification Flow
+- Do not expose phone numbers publicly by default.
+- Do not store phone numbers as plaintext public protocol data.
+- Use encrypted identity links where possible.
+- Show whether a name came from TINS, TrustLink, or WhatsApp.
 
-```
-Sender enters recipient TIN
-TrustLink creates TSN payment authorization
-Cranker sponsors escrow
-Recipient receives WhatsApp notification
-Recipient opens TrustLink claim/status surface
-TSN payout completes through vault settlement
-```
+## Important Limits
 
-## Compliance Rules
+WhatsApp should not be required for every payment.
 
-- Do not send unsolicited payment messages.
-- Do not treat WhatsApp as custody or settlement infrastructure.
-- Do not ask users for seed phrases or private keys.
-- Do not describe WhatsApp as the payment protocol.
-- Keep WhatsApp data separate from public TINS/TSN protocol data.
+TrustLink Pay should remain a TIN-first payment system. WhatsApp is a useful integration, not the identity foundation.

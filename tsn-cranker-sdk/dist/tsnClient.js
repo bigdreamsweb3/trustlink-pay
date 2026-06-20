@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { crankerPda, intentPda, motherEscrowPda } from "./tsnPdas.js";
+import { crankerPda, epochAccountPda, intentPda, motherEscrowPda, paymentCommitmentPda, peaPda, privacyReceivePda } from "./tsnPdas.js";
 import { assertVerifiedTsnProgramId, VERIFIED_TSN_PROGRAM_ID, } from "../../tsn-sdk/dist/program.js";
 // Minimal, IDL-driven wrapper. The concrete `TrustlinkEscrow` type will come from generated IDL types.
 export class TsnClient {
@@ -14,6 +14,18 @@ export class TsnClient {
     }
     crankerPda(motherEscrow, operator) {
         return crankerPda(motherEscrow, operator, this.programId);
+    }
+    epochAccountPda(motherEscrow, epochId) {
+        return epochAccountPda(motherEscrow, epochId, this.programId);
+    }
+    peaPda(epochId, mint) {
+        return peaPda(epochId, mint, this.programId);
+    }
+    paymentCommitmentPda(epochAccount, commitmentHash) {
+        return paymentCommitmentPda(epochAccount, commitmentHash, this.programId);
+    }
+    privacyReceivePda(motherEscrow, tinRouteHash) {
+        return privacyReceivePda(motherEscrow, tinRouteHash, this.programId);
     }
     intentPda(motherEscrow, intentId) {
         return intentPda(motherEscrow, intentId, this.programId);

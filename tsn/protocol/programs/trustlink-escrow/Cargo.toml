@@ -17,5 +17,9 @@ cpi = ["no-entrypoint"]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
+# Keep Anchor and Solana crates on the devnet-compatible 1.18.x line.
+# Newer Solana crate lines can produce binaries that require unsupported sBPF
+# features on devnet.
 anchor-lang = { version = "=0.30.1", features = ["init-if-needed"] }
 anchor-spl = "=0.30.1"
+solana-program = "=1.18.26"

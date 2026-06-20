@@ -1,223 +1,51 @@
-# TrustLink Pay Backend
+# TrustLink Backend
 
-The backend is the operational core of TrustLink Pay. It handles identity, consent, OTP issuance, payment creation, recipient lookup, WhatsApp webhooks, notification retries, Solana escrow orchestration, and TSN payment-intent creation.
+The backend supports the TrustLink Pay app.
 
-## Backend Responsibilities
+## What Is This?
 
-### Phone-First Authentication
+This service stores application records and exposes APIs used by the frontend.
 
-TrustLink Pay uses phone-first authentication instead of email/password onboarding.
+It is not the TSN settlement program and it does not replace the TSN mempool.
 
-Authentication sequence:
+## Why It Exists
 
-1. user enters a WhatsApp number
-2. if the number is not opted in, TrustLink opens a prefilled `START TRUSTLINK` WhatsApp message
-3. inbound webhook marks the number as opted in
-4. backend creates an `auth` OTP
-5. OTP verification returns an app challenge
-6. the app requires PIN setup or PIN verification before use
+The frontend needs a reliable source for user-facing state:
 
-Users can opt out with `STOP`, and the backend records that state.
+- login status
+- identity records
+- payment records
+- notification state
+- payment history
+- status synchronization
 
-The backend also supports OTP-gated PIN change so a user must confirm a fresh WhatsApp code before updating their in-app PIN.
+The backend keeps this app state separate from protocol settlement state.
 
-### Recipient Handling
+## Responsibilities
 
-The backend now distinguishes carefully between:
+- Authenticate users.
+- Store TrustLink profile data.
+- Store payment records.
+- Track payment status from TSN.
+- Send or coordinate notifications.
+- Expose frontend-safe APIs.
 
-- registered and opted-in recipients
-- unregistered or not-opted-in recipients
+## Important Rules
 
-For registered recipients:
+- Do not store decrypted private TSN payloads.
+- Do not expose raw private routes.
+- Stop polling finalized payments.
+- Treat TSN and TINS as protocol systems accessed through SDKs and APIs.
 
-- identity preview is returned to the sender
-- WhatsApp payment notifications can be sent
-- message delivery status can be tracked
-
-For unregistered recipients:
-
-- no automatic WhatsApp business message is sent
-- backend returns a sender-written invite message for manual sharing
-
-This is the current compliance-safe notification model.
-
-### Payment Lifecycle
-
-The backend handles:
-
-- payment creation
-- escrow metadata persistence
-- reference generation
-- sender and receiver view shaping
-- claim OTP start
-- release acceptance state
-- sender-fee and claim-fee estimation
-- expiry sweep orchestration
-- transaction detail payloads
-- manual invite regeneration payloads for sender follow-up
-
-### Notification State
-
-For outbound WhatsApp notifications, TrustLink stores and updates:
-
-- `queued`
-- `sent`
-- `delivered`
-- `read`
-- `failed`
-
-The frontend reads this state from TrustLink's database. It does not need to query WhatsApp directly on page load.
-
-### Gasless Payment Handling
-
-TrustLink Pay uses a verifier wallet to pay Solana transaction fees and recoverable protocol account setup for normal payment operations.
-
-The backend:
-- estimates live Solana transaction cost
-- prepares partially signed escrow transactions
-- pays verifier-side Solana fees through the verifier wallet
-- quotes sender-side TSN fees in the token being sent
-- quotes claim-side settlement fees when applicable
-- treats recoverable protocol account rent as infrastructure funding
-- rejects payment preparation when the verifier wallet does not have enough SOL to create the required protocol accounts
-
-The verifier wallet must remain funded with SOL. If its balance is too low, Solana simulation fails before the sender transaction lands. The backend now checks this before returning a prepared send transaction and returns a direct funding error instead of allowing a raw wallet simulation failure.
-
-## Main Areas
-
-- `app/api`
-  - route handlers for auth, payments, profiles, webhooks, wallets, and claim flow
-- `app/services`
-  - business logic for auth, recipient resolution, payment orchestration, WhatsApp messaging, and viewer-safe transaction shaping
-- `app/db`
-  - schema and query layer
-- `app/blockchain`
-  - Solana integration helpers
-- `../tsn/protocol/programs/trustlink-escrow`
-  - Anchor escrow program workspace (moved out of backend)
-- `scripts`
-  - local setup and backend test utilities
-
-## Important Backend Behaviors
-
-### Webhook-Driven Opt-In
-
-The backend does not poll WhatsApp for inbound messages. It relies on Meta webhooks delivered to the TrustLink webhook route. If the webhook URL is stale, opt-in and OTP flows will stall.
-
-### OTP Timing
-
-OTP expiry is generated using the database clock, not the application clock. This avoids the server/database time drift bug that previously caused valid OTPs to appear expired immediately.
-
-### Notification Retry Strategy
-
-If a payment is created successfully but the WhatsApp notification fails:
-
-- the payment still remains valid in escrow
-- the sender should still receive a successful payment state
-- backend retries eligible queued or failed notifications using stored DB state and cooldown rules
-
-### Privacy Rules
-
-The backend shapes transaction views so that normal receivers do not get the sender's wallet address by default. Sensitive fields stay internal unless specifically required for authorized review.
-
-### Solana Error Reporting
-
-Frontend wallet sends can fail during RPC simulation. When Solana returns a `SendTransactionError`, the frontend reads the transaction logs and surfaces the relevant program failure. This is important for verifier-funding errors, account setup failures, and custom program errors.
-
-## Local Setup
+## Local Development
 
 ```bash
-npm install
-npm run db:init
-npm run dev
+npm --prefix backend install
+npm --prefix backend run dev
 ```
 
-## Useful Scripts
+Default local port:
 
-```bash
-npm run db:init
-npm run db:reset
-npm run escrow:init-config
-npm run escrow:update-config
-npm run escrow:expire-payments
-npm run test:payment-flow
-npm run test:auth-phone-flow
+```text
+http://localhost:3000
 ```
-
-## Related Docs
-
-- [Devnet testing guide](C:/Users/codepara/Desktop/trust-link/docs/devnet-testing.md)
-- [Wallet roles](C:/Users/codepara/Desktop/trust-link/docs/wallet-roles.md)
-- [Escrow V2 design](C:/Users/codepara/Desktop/trust-link/docs/escrow-v2-design.md)
-- [Payment escrow architecture](C:/Users/codepara/Desktop/trust-link/docs/payment-escrow-architecture.md)
-
-### `test:auth-phone-flow`
-
-Exercises the current phone-first auth path:
-
-- start auth
-- inspect auth OTP persistence
-- check auth status
-- verify the exact stored OTP
-
-### `test:payment-flow`
-
-Exercises the payment and claim flow utilities used during local development.
-
-## Environment Notes
-
-Sensitive values belong only in local env files or deployment secrets:
-
-- `DATABASE_URL`
-- `SESSION_SECRET`
-- `WHATSAPP_API_KEY`
-- `WHATSAPP_PHONE_ID`
-- `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
-- `WHATSAPP_APP_SECRET`
-- Solana program and authority values
-
-Token allowlisting for real escrow tests is configured by mint address, not symbol:
-
-- `SOLANA_ALLOWED_SPL_TOKENS`
-
-Escrow verifier and fee recovery are configured centrally through:
-
-- `app/config/escrow.ts`
-
-Important values:
-
-- `SOLANA_CLAIM_VERIFIER_SECRET_KEY`
-- `TRUSTLINK_TREASURY_OWNER`
-- `TRUSTLINK_SEND_FEE_BPS`
-- `TRUSTLINK_SEND_FEE_MAX_UI_AMOUNT`
-- `TRUSTLINK_SEND_FEE_MAX_USD`
-- `TRUSTLINK_CLAIM_FEE_BPS`
-- `TRUSTLINK_CLAIM_FEE_MAX_UI_AMOUNT`
-- `TRUSTLINK_CLAIM_FEE_MAX_USD`
-- `TRUSTLINK_FEE_COVERAGE_TX_COUNT`
-- `TRUSTLINK_DEFAULT_EXPIRY_SECONDS`
-- `TRUSTLINK_RECOVERY_WALLETS`
-
-See:
-
-- [`docs/devnet-testing.md`](../docs/devnet-testing.md)
-- [`docs/wallet-roles.md`](../docs/wallet-roles.md)
-
-Never commit environment files or private keys.
-
-## Current Backend Status
-
-This backend currently supports:
-
-- WhatsApp opt-in and opt-out tracking
-- phone-first OTP auth
-- PIN setup and PIN verify challenge flow
-- OTP-gated PIN change flow
-- manual invite generation for unregistered recipients
-- sender notification receipt state
-- viewer-safe transaction detail responses
-- live escrow-backed payment creation
-- TSN payment-intent creation after escrow lock
-- gasless send and claim preparation through the verifier wallet
-- verifier SOL balance checks before send transaction preparation
-- expiry sweep support for unclaimed payments

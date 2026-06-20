@@ -1,46 +1,67 @@
 # TrustLink Pay Documentation
 
-TrustLink Pay is a TIN-first private settlement ecosystem on Solana.
+TrustLink Pay is an identity-first payment system on Solana.
 
-The public product surface is simple:
+The product goal is simple:
 
 ```text
-Send stablecoins to a 10-digit Transfer Identity Number.
+Send stablecoins to a 10-digit Transfer Identity Number instead of a wallet address.
 ```
 
-The protocol surface has four parts:
+The protocol keeps the payment experience simple while separating the public parts of a payment from the private parts. It does this with TINS identities, TSN settlement, Cranker operators, liquidity vaults, and epoch-based accounting.
 
-- **TINS** — the Transfer Identity Number System. Gives each user a 10-digit number (a TIN) to share instead of a wallet address.
-- **TSN** — the Transfer Settlement Network. Splits payment into sender-side escrow and recipient-side vault payout so the payment path is not a direct wallet-to-wallet transfer.
-- **Crankers** — verified operators that validate settlement work, sponsor escrow transactions, and execute vault payouts.
-- **TrustLink App** — the first product built on TINS and TSN.
+## Read This First
 
-Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They help with notifications, recovery, and consent. The protocol identity is the TIN.
-
----
-
-## Foundational Reading
-
-- **[TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md)** — essential reading for new team members, developers, Crankers, and community members.
-
-## Start Here
-
-| Document | Purpose |
+| Document | Start here when you want to understand |
 | --- | --- |
+| [START-HERE.md](./START-HERE.md) | The plain-English overview of the whole system |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | How TINS, TSN, Crankers, vaults, and the app fit together |
+| [TINS.md](./TINS.md) | Transfer Identity Numbers and identity resolution |
+| [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md) | Confidential settlement using commitments and epoch reservoirs |
+| [CRANKER.md](./CRANKER.md) | What Crankers do and how they are rewarded |
+| [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity, reimbursements, and recovery |
+| [SECURITY.md](./SECURITY.md) | Security boundaries and privacy limits |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | How to build, deploy, and avoid failed deploy buffers |
+| [DOCUMENTATION-AUDIT.md](./DOCUMENTATION-AUDIT.md) | What changed in the documentation modernization pass |
+| [MENTIONS.md](./MENTIONS.md) | Community Mentions and external discussions about TrustLink Pay |
 
-| [SECURITY-PHILOSOPHY.md](./SECURITY-PHILOSOPHY.md) | TrustLink Pay security philosophy for secure Web3 payments, privacy, and operator responsibility |
-| [START-HERE.md](./START-HERE.md) | Plain-language entry point for TINS, SAS, TSN, Crankers, OTDT, and privacy flows |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture across TINS, TSN, app, mempool, and crankers |
-| [PROTOCOL.md](./PROTOCOL.md) | Protocol-grade settlement specification |
-| [TINS.md](./TINS.md) | Transfer Identity Number System |
-| [SECURITY.md](./SECURITY.md) | Security and privacy model |
-| [INTEGRATION.md](./INTEGRATION.md) | SDK integration guide |
-| [CRANKER.md](./CRANKER.md) | Cranker operator guide |
-| [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and LP model |
-| [EPOCH-SETTLEMENT.md](./EPOCH-SETTLEMENT.md) | Epoch reimbursement and accounting |
-| [EPOCH-SETTLEMENT-v1-EXPERIMENTAL.md](./EPOCH-SETTLEMENT-v1-EXPERIMENTAL.md) | v1 per-epoch PEA, PaymentCommitment, PrivacyReceivePDA, and competitive Cranker recovery race |
+## Main Concepts
 
----
+### TINS
+
+TINS means **Transfer Identity Number System**.
+
+It gives a user a 10-digit number that can be shared publicly. That number is easier to read than a wallet address and can carry public verification context, such as a display name or verification status.
+
+### TSN
+
+TSN means **Transfer Settlement Network**.
+
+It is the settlement layer. It separates the sender funding step from the recipient payout step so the chain does not show a simple sender-wallet-to-recipient-wallet payment graph.
+
+### Crankers
+
+Crankers are settlement operators.
+
+They watch the TSN mempool, validate payment work, compete for valid settlement jobs, and execute payouts from liquidity vaults. They earn fees when they do useful work and can be restricted or penalized if they act incorrectly.
+
+### Liquidity Vaults
+
+Liquidity vaults hold funds used for fast recipient payouts.
+
+Think of them like settlement reserves. A recipient can be paid quickly from vault liquidity while the protocol later reconciles the sender-side escrow through epoch accounting.
+
+### Epoch Reservoirs
+
+An epoch is a fixed settlement window.
+
+Each epoch has an isolated reservoir called a PEA. A PEA keeps accounting for one settlement window separate from another. This makes reimbursements easier to audit and reduces the risk that one bad window affects the whole system.
+
+### Commitments
+
+A commitment is a public hash.
+
+It proves that a payment or settlement record exists without revealing the full payment route. TrustLink Pay uses lightweight `PaymentCommitment` accounts and aggregate root hashes so public verification does not require exposing the full payment graph.
 
 ## Current Program IDs
 
@@ -49,17 +70,24 @@ Phone numbers, WhatsApp, and social accounts are optional links to a TIN. They h
 | TINS | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 | TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
----
-
 ## Repository Map
 
 | Path | Purpose |
 | --- | --- |
-| `frontend/` | TrustLink Pay application UI |
-| `backend/` | API, user state, notifications, and payment records |
-| `tins-sdk/` | TINS SDK package surface |
-| `tsn/protocol/` | TSN Anchor program workspace |
-| `tsn-sdk/` | TSN SDK |
-| `tsn-cranker-op-daemon/` | Reference cranker daemon |
-| `tsn-mempool-backend/` | TSN mempool service |
-| `tsn-mempool-frontend/` | Mempool explorer |
+| `frontend/` | TrustLink Pay web app |
+| `backend/` | API, user records, payment records, and notifications |
+| `tins-registrar/` | TINS on-chain program |
+| `tins-sdk/` | TINS SDK |
+| `tsn/protocol/` | TSN on-chain program |
+| `tsn-sdk/` | TSN SDK used by apps and services |
+| `tsn-cranker-op-daemon/` | Reference Cranker operator daemon |
+| `tsn-cranker-sdk/` | Cranker SDK and CLI helpers |
+| `tsn-mempool-backend/` | TSN mempool and epoch coordinator |
+| `tsn-mempool-frontend/` | Mempool and epoch explorer |
+| `tsn-epoch-records/` | Epoch records and operational notes |
+
+## Important Limits
+
+TrustLink Pay improves payment privacy by separating settlement steps. It does not make Solana private.
+
+On-chain transactions still exist. Program accounts still exist. Anyone with enough context can inspect public chain data. The design goal is to avoid exposing a clean everyday payment graph during normal use.

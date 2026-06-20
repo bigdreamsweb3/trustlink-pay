@@ -1,130 +1,68 @@
-# TrustLink Pay API Reference
+# API Guide
 
-> This API is under active development. Endpoints, request shapes, and response formats may change.
+The TrustLink Pay backend provides application APIs. The TSN mempool backend provides settlement coordination APIs.
 
-## Base URL
+## What Is This?
 
-```
-Development: http://localhost:3000
-Production: https://api.trustlink.pay
-```
+This document explains what the APIs are for. It is not a full generated OpenAPI reference.
 
-## Authentication
+## Why APIs Exist
 
-Session-based via wallet, PIN, or application-supported social authentication. WhatsApp can support notifications and optional account linking.
+The frontend should not talk directly to every service.
 
-## Endpoints
+The backend keeps user-facing records, authentication state, notifications, and payment history. The mempool backend coordinates TSN settlement work and exposes safe status views.
 
-### Create Payment
+## TrustLink Backend
 
-```
-POST /api/payment/create
-```
+The TrustLink backend handles:
 
-**Request:**
-```json
-{
-  "recipientTin": "1000000008",
-  "amount": 100,
-  "tokenMint": "EPjFWdd5AufqSSqeV6Z8oB2cX3Lv9iZ9pKQv2dNqV1mXg"
-}
-```
+- authentication
+- identity records
+- payment records
+- wallet token lookups
+- notification workflows
+- status synchronization from TSN
 
-**Response:**
-```json
-{
-  "paymentId": "pay_abc123",
-  "escrowAddress": "7xKX...",
-  "fee": 0.50,
-  "expiresAt": 1234567890
-}
-```
+The frontend should use backend status for normal screens. It should not constantly poll Solana RPC for finalized payment states.
 
-### Estimate Fee
+## TSN Mempool Backend
 
-```
-POST /api/payment/estimate
-```
+The mempool backend handles:
 
-**Request:**
-```json
-{
-  "recipientTin": "1000000008",
-  "amount": 100
-}
-```
+- pending payment intents
+- Cranker work queues
+- epoch records
+- aggregate commitment roots
+- minimal public challenge release
+- PrivacyReceivePDA watch signals
+- masked explorer data
 
-**Response:**
-```json
-{
-  "networkFee": 0.005,
-  "protocolFee": 0.50,
-  "total": 100.51,
-  "recipientReceives": 99.50
-}
-```
+It must not expose full private payment routes.
 
-### Payment History
+## Important API Rules
 
-```
-GET /api/payment/history?limit=20&offset=0
-```
+- Return clear statuses.
+- Stop polling finalized payments.
+- Mask recovery and privacy receive data in public views.
+- Keep private payloads out of logs.
+- Require worker/API keys for write operations.
+- Use backend status records for user-facing payment history.
 
-**Response:**
-```json
-{
-  "payments": [
-    {
-      "id": "pay_abc123",
-      "direction": "sent",
-      "amount": 50,
-      "status": "settled",
-      "createdAt": 1234567890
-    }
-  ],
-  "total": 100
-}
-```
+## Common Status Words
 
-## Webhooks
-
-### payment.created
-
-```json
-{
-  "type": "payment.created",
-  "paymentId": "pay_abc123",
-  "amount": 100,
-  "sender": "DGV..."
-}
-```
-
-### payment.claimed
-
-```json
-{
-  "type": "payment.claimed",
-  "paymentId": "pay_abc123",
-  "cranker": "DGV...",
-  "txHash": "abc..."
-}
-```
-
-### payment.settled
-
-```json
-{
-  "type": "payment.settled",
-  "paymentId": "pay_abc123",
-  "epoch": 42
-}
-```
-
-## Error Codes
-
-| Code | Description |
+| Status | Meaning |
 | --- | --- |
-| `INVALID_TIN` | TIN not found or not routable |
-| `INSUFFICIENT_BALANCE` | Sender lacks funds |
-| `PAYMENT_EXPIRED` | Escrow expired |
-| `INVALID_WALLET` | Invalid wallet address |
+| `pending` | Waiting for Cranker validation |
+| `escrowed` | Sender-side funds entered TSN escrow |
+| `claiming` | Payout work is in progress |
+| `executed` | Recipient payout succeeded |
+| `failed` | Work reached a terminal failure |
+| `canceled` | Work was rejected or expired |
+
+## Technical Details
+
+| Service | Path |
+| --- | --- |
+| TrustLink backend | `backend/` |
+| TSN mempool backend | `tsn-mempool-backend/` |
+| Frontend API proxy | `frontend/src/lib/api.ts` |

@@ -1,16 +1,20 @@
-# TrustLink Public Assets
+# Public Assets
 
-This folder contains public-safe assets used in the repository README, product walkthroughs, and demo materials.
+This folder contains static assets served by the TrustLink Pay frontend.
 
 ## What Belongs Here
 
-- README screenshots
-- brand-safe illustrations
-- mockups intended for public viewing
-- presentation assets that can safely ship in a public repository
+- images
+- icons
+- static metadata files
+- public web assets
 
-## Rules
+## What Does Not Belong Here
 
-- do not place secrets, exports, or private documents here
-- only keep assets that are safe for GitHub and public demos
-- use clear, stable filenames so the README image links continue to work
+- private keys
+- API secrets
+- user data
+- decrypted identity data
+- settlement payloads
+
+Anything in this folder may be publicly served.

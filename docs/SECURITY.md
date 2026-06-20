@@ -1,93 +1,102 @@
-# TrustLink Pay Security
+# Security
 
-This document describes the security and privacy model for TrustLink Pay, TINS, and TSN.
+This document explains the security model in plain English.
 
-## Core Principles
+## What Is This?
 
-- TINS provides the user-facing 10-digit receive identity.
-- TSN separates sender-side escrow from recipient-side payout.
-- Crankers verify and sponsor settlement work.
-- The backend does not custody user funds.
-- The app must show accurate state: pending, escrowed, claiming, executed, failed, or canceled.
-- Phone and WhatsApp links are optional application-layer signals, not the protocol identity.
+TrustLink Pay combines identity, settlement, operators, liquidity, and epoch accounting.
+
+Security depends on clear boundaries between those parts.
+
+## Main Security Goals
+
+1. Do not expose wallet addresses as the normal payment identity.
+2. Do not publish private social identity data.
+3. Do not expose the full payment graph when a normal user pays.
+4. Make settlement work verifiable.
+5. Prevent replay and duplicate settlement.
+6. Hold Crankers accountable for bad work.
+7. Keep epoch accounting isolated.
 
 ## Privacy Model
 
-TSN does not make Solana private in the absolute sense. It changes the payment graph.
+TrustLink Pay improves privacy through separation.
 
-| Normal Transfer | TSN Settlement |
-| --- | --- |
-| Sender wallet transfers directly to recipient wallet | Sender funds escrow path |
-| Recipient address appears in sender-side payment | Recipient payout is separated |
-| Wallet graph is easy to follow from either side | Full path requires transaction and program context |
-| App identity is wallet address | App identity is TIN |
+The sender-side funding step and recipient-side payout step are not the same public transfer. Commitments and epoch roots help prove work without publishing the full private route.
 
-## TINS Security
+This is not the same as complete anonymity.
 
-TINS identity validation confirms:
+Solana remains public. Program activity remains visible. The goal is to avoid exposing the most obvious payment graph.
 
-1. the configured TINS program ID,
-2. a valid TINS account derivation,
-3. on-chain account ownership,
-4. a decoded TIN value,
-5. wallet-to-TIN binding where the application requires it.
+## Identity Security
 
-The public receive identity is the TIN. Applications may attach social or phone proofs later, but those proofs should resolve to the TIN rather than replace it.
+TINs are public payment identities.
 
-## TSN Settlement Security
+Social identities should be encrypted. Sensitive fields should require explicit user authorization before decryption.
 
-TSN settlement security depends on:
+The app must show which identity source it is displaying:
 
-- sender authorization with nonce and expiry,
-- Cranker validation of signed payloads,
-- Cranker-sponsored transaction fee payment,
-- verifier account funding for infrastructure costs,
-- vault and token-account isolation,
-- claim credit gating,
-- proof recorded through transaction hashes and mempool state.
+- TINS registry name
+- TrustLink display name
+- WhatsApp or social profile name
+- verification platform result
 
-Crankers should reject work if:
+## Cranker Security
 
-- authorization is expired,
-- signature verification fails,
-- amount or mint is tampered,
-- fee payer is wrong,
-- settlement transaction structure is invalid,
-- vault route does not match expected state.
+Crankers must validate work before executing it.
 
-## Public and Private Data
+They should check:
 
-| Data | Visibility | Notes |
-| --- | --- | --- |
-| TIN | Public | User-facing receive identity |
-| Display name | Public/app-facing | Helps sender confirm identity |
-| Sender escrow transaction | Public if hash or program context is known | Sender-facing settlement hash |
-| Recipient payout transaction | Public if hash or vault context is known | Recipient/operator proof path |
-| Direct sender-to-recipient wallet path | Not exposed as a normal transfer | Split by TSN settlement |
-| Phone/WhatsApp link | Private application state | Optional notification and linking layer |
+- signatures
+- nonce
+- expiry
+- amount
+- token
+- recipient route
+- epoch
+- commitment hash
+- duplicate work status
 
-TrustLink should not claim absolute invisibility. The correct claim is reduced wallet graph exposure through settlement separation.
+Bad or repeated failures should be quarantined, not retried endlessly.
 
-## Threats and Mitigations
+## Epoch Security
 
-| Threat | Mitigation |
-| --- | --- |
-| Address poisoning | Users pay TINs, not pasted addresses |
-| Sender/recipient graph leakage | TSN separates escrow and payout paths |
-| Tampered mempool work | Cranker validates transaction structure and signatures |
-| Replay attacks | Nonce and expiry checks |
-| Competing claim work | Claim credit and Cranker coordination |
-| Wrong identity route | TINS and account verification before settlement |
-| Misleading UX | Sender and recipient status views are separated |
+Epochs isolate risk.
 
-## UX Security Rules
+Each epoch has its own reservoir and aggregate root. Public challenge data should include only what Crankers need to compete and verify work.
 
-- Sender should see escrow hash when funds are escrowed.
-- Sender should not see recipient claim failure as sender payment failure.
-- Recipient should see escrowed claimable payments until executed or canceled.
-- Canceled work should be clearly labeled.
-- Failed claim attempts should support retry where funds remain escrowed.
+## Operational Security
 
-## Foundational Security Philosophy
+Operators should protect:
 
-Read [TrustLink Pay Security Philosophy: Secure Web3 Payments Without Becoming a Bank of Regret](./SECURITY-PHILOSOPHY.md) for the team-level security thesis behind TINS, TSN, SAS, Crankers, OTDT, and the Mempool runtime.
+- Cranker keys
+- verifier keys
+- permit signing keys
+- mempool API keys
+- RPC credentials
+- deployment authority keys
+
+Never paste private keys into public chats, logs, screenshots, or dashboards.
+
+## Important Limits
+
+No documentation should promise impossible privacy.
+
+The correct claim is:
+
+```text
+TrustLink Pay reduces direct payment graph exposure through separated settlement and commitments.
+```
+
+The incorrect claim is:
+
+```text
+TrustLink Pay makes payments invisible.
+```
+
+## Related Docs
+
+- [Architecture](./ARCHITECTURE.md)
+- [TSN Commitment Settlement](./TSN-COMMITMENT-SETTLEMENT.md)
+- [Cranker](./CRANKER.md)
+- [Liquidity](./LIQUIDITY.md)

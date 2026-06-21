@@ -8,14 +8,21 @@ See what people are saying about the project: [Community Mentions](./docs/MENTIO
 
 The project is built from one practical belief:
 
-```text
-Blockchain payments should feel familiar for normal users, while still giving developers verifiable settlement and better privacy design.
-```
+Blockchain payments should feel familiar for normal users while still giving developers verifiable settlement and better privacy design.
 
 
-## TSN V1 deterministic PRU architecture
+## TSN V1 settlement model
 
-TSN V1 is now defined as the Deterministic PRU Privacy Settlement Network. RPDA routing is removed from the production architecture: settlement uses TIN-governed, token-bound Privacy Receiving Units (PRUs), deterministic allocation, stateless Cranker execution, a PRU lifecycle (`PLANNED → ACTIVE → USED → SWEPT`), and 3-state accounting (`AVAILABLE + SETTLED - PENDING`). See [TSN V1 PRU architecture](./docs/TSN-V1-PRU-ARCHITECTURE.md).
+TSN V1 is the current TrustLink Pay settlement model. It keeps the identity layer and settlement layer separate so the app stays simple for users while the payment path remains replayable, verifiable, and harder to map as a direct sender-wallet-to-recipient-wallet graph.
+
+In practice:
+
+- TINs remain the public payment identity.
+- Crankers handle settlement work.
+- Vaults and epoch accounting handle payout and reconciliation.
+- Implementation details live in the dedicated protocol docs.
+
+See [TSN V1 PRU architecture](./docs/TSN-V1-PRU-ARCHITECTURE.md) and [TSN-mediated TINS operations](./docs/TSN-TINS-MEMPOOL-IMPLEMENTATION.md) for the full protocol model.
 
 ## What TrustLink Pay Is
 
@@ -55,17 +62,7 @@ TrustLink Pay changes the surface:
 
 ## How A Payment Works
 
-```text
-Sender enters recipient TIN
-TINS resolves public identity context
-Social verification or SAS status is shown when available
-Sender reviews recipient details
-Sender authorizes payment
-TSN receives sender-side escrow funding
-Crankers validate and execute settlement work
-Recipient is paid through vault liquidity
-Epoch accounting reconciles the system
-```
+Sender enters a recipient TIN. TINS resolves the public identity context. Social verification or SAS status is shown when available. The sender reviews the recipient details and authorizes the payment. TSN receives the sender-side escrow funding, Crankers validate and execute settlement work, the recipient is paid through vault liquidity, and epoch accounting reconciles the system.
 
 The sender sees a normal payment experience. The protocol handles settlement, proofs, Cranker work, and recovery behind the scenes.
 

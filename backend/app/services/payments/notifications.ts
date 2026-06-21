@@ -7,6 +7,7 @@ import {
 import { logger } from "@/app/lib/logger";
 import type { PaymentRecord } from "@/app/types/payment";
 import { sendPaymentNotification } from "@/app/services/whatsapp";
+import { traceFunction } from "../../../../utils/observability/tracer";
 
 import { buildInviteShareData, requiresManualInvite } from "./invite";
 
@@ -55,7 +56,7 @@ function canRetryPaymentNotification(payment: PaymentRecord) {
   return Date.now() - new Date(payment.notification_last_attempt_at).getTime() >= NOTIFICATION_RETRY_INTERVAL_MS;
 }
 
-async function dispatchPaymentNotification(payment: PaymentRecord, reason: "initial" | "retry") {
+const dispatchPaymentNotification = traceFunction(async function dispatchPaymentNotification(payment: PaymentRecord, reason: "initial" | "retry") {
   if (inFlightNotificationRetries.has(payment.id)) {
     return payment;
   }
@@ -127,9 +128,15 @@ async function dispatchPaymentNotification(payment: PaymentRecord, reason: "init
   } finally {
     inFlightNotificationRetries.delete(payment.id);
   }
-}
+}, {
+  namespace: "Notifications",
+  name: "dispatchPaymentNotification",
+  module: "backend/app/services/payments/notifications.ts",
+  level: "info",
+  includeReturn: false,
+});
 
-export async function retryPaymentNotificationIfNeeded(payment: PaymentRecord, appBaseUrl?: string | null) {
+async function retryPaymentNotificationIfNeededImpl(payment: PaymentRecord, appBaseUrl?: string | null) {
   const manualInviteState = await resolveManualInviteState(payment, appBaseUrl);
   if (manualInviteState.manualInviteRequired) {
     return manualInviteState.payment;
@@ -142,11 +149,11 @@ export async function retryPaymentNotificationIfNeeded(payment: PaymentRecord, a
   return dispatchPaymentNotification(payment, "retry");
 }
 
-export async function sendInitialPaymentNotification(payment: PaymentRecord) {
+async function sendInitialPaymentNotificationImpl(payment: PaymentRecord) {
   return dispatchPaymentNotification(payment, "initial");
 }
 
-export async function retryOutstandingNotifications(payments: PaymentRecord[]) {
+async function retryOutstandingNotificationsImpl(payments: PaymentRecord[]) {
   const retriablePayments = payments.filter(canRetryPaymentNotification);
 
   if (retriablePayments.length === 0) {
@@ -164,3 +171,36 @@ export async function retryOutstandingNotifications(payments: PaymentRecord[]) {
 
   return payments.map((payment) => refreshedPayments.get(payment.id) ?? payment);
 }
+
+export const retryPaymentNotificationIfNeeded = traceFunction(
+  retryPaymentNotificationIfNeededImpl,
+  {
+    namespace: "Notifications",
+    name: "retryPaymentNotificationIfNeeded",
+    module: "backend/app/services/payments/notifications.ts",
+    level: "debug",
+    includeReturn: false,
+  },
+);
+
+export const sendInitialPaymentNotification = traceFunction(
+  sendInitialPaymentNotificationImpl,
+  {
+    namespace: "Notifications",
+    name: "sendInitialPaymentNotification",
+    module: "backend/app/services/payments/notifications.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
+
+export const retryOutstandingNotifications = traceFunction(
+  retryOutstandingNotificationsImpl,
+  {
+    namespace: "Notifications",
+    name: "retryOutstandingNotifications",
+    module: "backend/app/services/payments/notifications.ts",
+    level: "debug",
+    includeReturn: false,
+  },
+);

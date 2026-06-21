@@ -34,11 +34,15 @@ curl http://localhost:8000/privacy-receive-watches
 curl -X POST http://localhost:8000/epochs/proactive
 ```
 
-## TSN V1 TINS Cranker Handoff
+## TSN V1 TINS Cranker Notes
 
-The mempool submodules are empty/not checked out in this environment. For Cranker-mediated TIN creation and update support, apply these patch handoffs when local Codex has the submodules available:
+Cranker-mediated TIN creation and update support has been ported directly into the active mempool submodules:
 
-- `tsn-mempool-backend-tins-cranker-v1.patch`
-- `tsn-mempool-frontend-tins-cranker-v1.patch`
+- `tsn-mempool-backend/server.py`
+- `tsn-mempool-frontend/app/api/mempool/route.ts`
+- `tsn-mempool-frontend/app/page.tsx`
+- `tsn-mempool-frontend/app/globals.css`
 
-See `../TSN-TINS-MEMPOOL-IMPLEMENTATION.md` for the flow, endpoints, fee split, Cranker separation rules, privacy notes, and tests.
+The patch files are retained as history only. Do not treat them as the source of truth if they drift from the submodule code.
+
+See `../TSN-TINS-MEMPOOL-IMPLEMENTATION.md` for the active flow, endpoints, fee split, Cranker separation rules, privacy notes, and checks.

@@ -63,18 +63,7 @@ Each epoch uses an isolated PEA reservoir, aggregate roots, and public challenge
 
 ## Example Flow
 
-```text
-TIN resolved
-Sender authorizes payment
-Intent enters mempool
-Cranker validates intent
-Escrow is funded
-PaymentCommitment is opened
-Recipient payout is executed from vault liquidity
-Epoch aggregate root is produced
-Challenge data is released
-Crankers compete for valid recovery/reimbursement
-```
+TIN is resolved. The sender authorizes the payment. The intent enters the mempool. A Cranker validates the intent, escrows the funds, opens the `PaymentCommitment`, executes recipient payout from vault liquidity, produces the epoch aggregate root, releases the challenge data, and competes for valid recovery or reimbursement work.
 
 ## Security Considerations
 

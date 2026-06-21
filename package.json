@@ -42,19 +42,17 @@
     "dev:full": "npx concurrently -n backend,frontend -c cyan,green \"npm run backend:dev\" \"npm run frontend:dev\"",
     "dev:all": "npx concurrently -n backend,frontend,mempool -c cyan,green,magenta \"npm run backend:dev\" \"npm run frontend:dev\" \"npm run mempool:dev\"",
     "flow:check": "node scripts/flow-check.mjs",
-
+    "debug:fee-summary": "tsx scripts/debug-fee-summary.ts",
     "// === Frontend ===": "TrustLink Pay user interface on port 3001.",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:typecheck": "npm --prefix frontend run typecheck",
     "frontend:install": "npm --prefix frontend install",
     "frontend:clean": "node -e \"const fs=require('fs');fs.rmSync('frontend/.next',{recursive:true,force:true})\"",
-
     "// === Backend ===": "TrustLink Pay API, user records, notifications, and payment history on port 3000.",
     "backend:dev": "npm --prefix backend run dev",
     "backend:typecheck": "npm --prefix backend run typecheck",
     "backend:install": "npm --prefix backend install",
     "backend:clean": "node -e \"const fs=require('fs');fs.rmSync('backend/.next',{recursive:true,force:true})\"",
-
     "// === Mempool Stack ===": "TSN work queue, epoch coordinator, and mempool explorer.",
     "mempool:dev": "node scripts/start-tsn-mempool-stack.mjs",
     "mempool:backend:dev": "cd tsn-mempool-backend && set MEMPOOL_STORE=file&& set PYTHONUNBUFFERED=1&& python -u server.py",
@@ -62,19 +60,17 @@
     "mempool:install": "node scripts/install-tsn-mempool-python.mjs",
     "mempool:status": "node scripts/tsn-mempool-status.mjs",
     "mempool:cancel": "node scripts/tsn-cancel-mempool-work.mjs",
-
     "// === TSN Program ===": "Transfer Settlement Network on-chain program and private settlement setup.",
     "deploy:doctor": "node scripts/solana-deploy-doctor.mjs",
     "deploy:lockfiles:stabilize": "node scripts/solana-lockfile-stabilize.mjs",
     "tsn:program:id": "echo TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
-    "tsn:program:build": "cd tsn/protocol && anchor build",
-    "tsn:program:test": "cd tsn/protocol && anchor test",
-    "tsn:program:deploy": "cd tsn/protocol && anchor deploy",
-    "tsn:program:deploy:checked": "npm run deploy:lockfiles:stabilize && npm run deploy:doctor && cd tsn/protocol && anchor build && anchor deploy --provider.cluster devnet",
+    "tsn:program:build": "node scripts/run-anchor.mjs tsn/protocol build",
+    "tsn:program:test": "node scripts/run-anchor.mjs tsn/protocol test",
+    "tsn:program:deploy": "node scripts/run-anchor.mjs tsn/protocol deploy",
+    "tsn:program:deploy:checked": "npm run deploy:lockfiles:stabilize && npm run deploy:doctor && node scripts/run-anchor.mjs tsn/protocol build && node scripts/run-anchor.mjs tsn/protocol deploy --provider.cluster devnet",
     "tsn:private:configure": "node scripts/tsn-private-settlement-config.mjs",
     "tsn:security:keys": "node scripts/tsn-generate-cranker-encryption-key.mjs",
     "tsn:security:test": "npm --prefix tsn-sdk test && node scripts/tsn-settlement-security-demo.mjs",
-
     "// === TSN Treasury & Verifier ===": "Protocol PDAs used for account creation, sponsorship support, and treasury routing.",
     "tsn:verifier:info": "node scripts/tsn-verifier-pda.mjs info",
     "tsn:verifier:fund": "node scripts/tsn-verifier-pda.mjs fund",
@@ -84,17 +80,15 @@
     "tsn:verifier:withdraw-lamports": "node scripts/tsn-verifier-pda.mjs withdraw-lamports",
     "tsn:treasury:info": "node scripts/tsn-treasury-pda.mjs info",
     "tsn:treasury:ata": "node scripts/tsn-treasury-pda.mjs init-ata",
-
     "// === TINS Program ===": "Transfer Identity Number registry program and identity helpers.",
     "tins:program:id": "echo TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
-    "tins:build": "cd tins-registrar/program && anchor build",
-    "tins:deploy": "cd tins-registrar/program && anchor deploy",
-    "tins:deploy:checked": "npm run deploy:lockfiles:stabilize && npm run deploy:doctor && cd tins-registrar/program && anchor build && anchor deploy --provider.cluster devnet",
+    "tins:build": "node scripts/run-anchor.mjs tins-registrar/program build",
+    "tins:deploy": "node scripts/run-anchor.mjs tins-registrar/program deploy",
+    "tins:deploy:checked": "npm run deploy:lockfiles:stabilize && npm run deploy:doctor && node scripts/run-anchor.mjs tins-registrar/program build && node scripts/run-anchor.mjs tins-registrar/program deploy --provider.cluster devnet",
     "tins:init-global": "node scripts/tins-init-global.mjs",
     "tins:create": "node scripts/tins-create.mjs",
     "tins:lookup": "node scripts/tins-lookup.mjs 1000000008",
     "tins:identity:demo": "npm run tsn:sdk:build && node scripts/tins-identity-encryption-demo.mjs",
-
     "// === Cranker Daemon ===": "Reference TSN settlement operator. Start after backend, mempool, and programs are ready.",
     "tsn:mother:init": "npm --prefix tsn-cranker-op-daemon run mother:init",
     "tsn:mother:migrate": "npm --prefix tsn-cranker-op-daemon run mother:migrate",
@@ -102,7 +96,6 @@
     "tsn:cranker:setup": "npm --prefix tsn-cranker-op-daemon run setup",
     "tsn:cranker:start": "npm --prefix tsn-cranker-op-daemon run crank:start",
     "tsn:cranker:help": "npm --prefix tsn-cranker-op-daemon run help",
-
     "// === SDKs ===": "Build and refresh local SDKs after protocol or generated-code changes.",
     "tsn:sdk:build": "npm --prefix tsn-sdk run build",
     "tins:sdk:build": "npm --prefix tins-sdk run build",
@@ -111,16 +104,14 @@
     "sdk:install:all": "npm --prefix frontend install && npm --prefix backend install && npm --prefix tsn-cranker-sdk install && npm --prefix tsn-cranker-op-daemon install && npm --prefix tsn-mempool-frontend install",
     "sdk:refresh": "npm --prefix tsn-sdk install && npm run tsn:sdk:build && npm --prefix tsn-cranker-sdk install && npm run tsn:cranker-sdk:build && npm run sdk:install:all && npm run frontend:clean",
     "sdk:clean-cache": "node -e \"const fs=require('fs');['frontend/.next','backend/.next'].forEach((p)=>{try{fs.rmSync(p,{recursive:true,force:true});}catch{}})\"",
-
     "// === Utilities & Maintenance ===": "IDs, status sync, type checks, and full rebuild/deploy orchestration.",
-    "check:types": "npm --prefix tsn-sdk exec -- tsc -p tsconfig.json --noEmit && npm run backend:typecheck && npm run frontend:typecheck && cd tsn-cranker-op-daemon && .\\node_modules\\.bin\\tsc.cmd --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --allowImportingTsExtensions --skipLibCheck scripts\\cranker.ts",
+    "check:types": "npm run tsn:sdk:build && npm run backend:typecheck && npm run frontend:typecheck && cd tsn-cranker-op-daemon && npx tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --allowImportingTsExtensions --skipLibCheck scripts/cranker.ts",
     "tsn:id:update": "node tsn/update-program-id-tsn.mjs TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
     "tins:id:update": "node tins-registrar/update-program-id.mjs TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     "tsn:status:sync": "node scripts/tsn-sync-status.mjs",
     "tsn:rebuild:all": "npm run tsn:program:build && npm run sdk:refresh",
     "rebuild:redeploy:all": "node scripts/rebuild-redeploy-all.mjs",
     "tsn:redeploy:all": "node scripts/rebuild-redeploy-all.mjs --skip-tins",
-
     "// === Compatibility Aliases ===": "Older names kept so existing notes and terminals do not break.",
     "dev:backend": "npm run backend:dev",
     "dev:frontend": "npm run frontend:dev",
@@ -138,7 +129,6 @@
     "tsn:sdk:relink": "npm run frontend:install && npm run backend:install",
     "tsn:check:types": "npm run check:types",
     "tins:identity:test": "npm run tins:identity:demo",
-
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
     "git:status": "git status --short",
     "git:hygiene": "node scripts/git-hygiene-check.mjs",
@@ -151,5 +141,9 @@
     "@solana/web3.js": "^1.98.4",
     "bs58": "^6.0.0",
     "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "tsx": "^4.22.2"
   }
 }

@@ -28,6 +28,7 @@ Crankers can:
 - participate in epoch settlement races
 - monitor PrivacyReceivePDA sweep signals
 - help recover epoch reservoirs
+- verify and relay TINS creation/update intents
 
 ## Work Types
 
@@ -49,6 +50,14 @@ Recovery work handles vault or epoch states that need reimbursement.
 
 Crankers compete for these jobs through minimal public challenges. The winner must submit valid proof.
 
+### TINS Identity Work
+
+TINS work handles identity registry changes.
+
+The user signs an owner intent. A verifier Cranker checks the signature, nonce, expiry, privacy level, and commitment hashes. A submitter Cranker records the deterministic fee commitment and submits the TINS registry transaction.
+
+This keeps the owner in control while preventing direct app-side registry mutations.
+
 ## Reputation And Slashing
 
 Cranker reputation is the protocol's way to reward useful work and discourage bad work.
@@ -67,6 +76,17 @@ Recipient payout becomes available
 Cranker executes payout
 Commitment enters epoch accounting
 Cranker watches for recovery challenges
+```
+
+TIN creation follows the same operator pattern:
+
+```text
+User signs TIN owner intent
+Intent enters TSN mempool
+Verifier Cranker validates the intent
+Submitter Cranker records fee commitment
+Submitter Cranker relays TINS registry mutation
+TIN operation finalizes
 ```
 
 ## Security Considerations

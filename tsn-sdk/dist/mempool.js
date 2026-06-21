@@ -1,7 +1,66 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { computeTinOperationFeeSplitBaseUnits } from "./contracts.js";
 import { TsnHttpClient } from "./client.js";
+const TIN_CREATION_FEE_BASE_UNITS = 50000n;
+const TIN_UPDATE_FEE_BASE_UNITS = 10000n;
+function tinOperationFeeBaseUnits(operation) {
+    const raw = operation.intentType === "tin_creation"
+        ? operation.creationFeeAmount
+        : operation.updateFeeAmount;
+    if (!raw)
+        return operation.intentType === "tin_creation" ? TIN_CREATION_FEE_BASE_UNITS : TIN_UPDATE_FEE_BASE_UNITS;
+    const value = BigInt(raw);
+    if (value <= 0n)
+        throw new Error("TIN operation fee amount must be positive");
+    return value;
+}
+function computeTinFeeCommitmentHash(operation, feeRecord) {
+    return createHash("sha256")
+        .update(JSON.stringify({
+        domain: "TSN_TIN_FEE_COMMITMENT_V1",
+        intentId: operation.intentId,
+        intentType: operation.intentType,
+        tin: operation.tin,
+        ownerPubkey: operation.ownerPubkey,
+        ownerIntentHash: operation.ownerIntentHash,
+        feeMint: feeRecord.feeMint,
+        grossAmount: feeRecord.grossAmount,
+        verifierAmount: feeRecord.verifierAmount,
+        submitterAmount: feeRecord.submitterAmount,
+        treasuryAmount: feeRecord.treasuryAmount,
+        bonusPoolAmount: feeRecord.bonusPoolAmount,
+        verifierPubkey: feeRecord.verifierPubkey,
+        submitterPubkey: feeRecord.submitterPubkey,
+        treasuryPubkey: feeRecord.treasuryPubkey,
+        bonusPoolPubkey: feeRecord.bonusPoolPubkey,
+    }, Object.keys({
+        bonusPoolAmount: null,
+        bonusPoolPubkey: null,
+        domain: null,
+        feeMint: null,
+        grossAmount: null,
+        intentId: null,
+        intentType: null,
+        ownerIntentHash: null,
+        ownerPubkey: null,
+        submitterAmount: null,
+        submitterPubkey: null,
+        tin: null,
+        treasuryAmount: null,
+        treasuryPubkey: null,
+        verifierAmount: null,
+        verifierPubkey: null,
+    }).sort()))
+        .digest("hex");
+}
+function appendUniqueSignature(signatures, txSignature) {
+    const ordered = [...(signatures ?? [])];
+    if (!ordered.includes(txSignature))
+        ordered.push(txSignature);
+    return ordered;
+}
 function now() {
     return new Date().toISOString();
 }
@@ -254,6 +313,146 @@ export class JsonFileTsnMempool {
         await writeSnapshot(this.path, snapshot);
         return challenge;
     }
+    async listTinVerificationWork(limit = 50) {
+        const snapshot = await readSnapshot(this.path);
+        return (snapshot.tinOperations ?? [])
+            .filter((operation) => operation.status === "pending_verification" || operation.status === "verifier_assigned")
+            .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+            .slice(0, limit);
+    }
+    async listTinFeeWork(operatorPubkey, limit = 50) {
+        const snapshot = await readSnapshot(this.path);
+        const allowSingle = process.env.TSN_ALLOW_SINGLE_CRANKER_TINS === "1";
+        return (snapshot.tinOperations ?? [])
+            .filter((operation) => operation.status === "verified" || operation.status === "fee_pending")
+            .filter((operation) => allowSingle || operation.verifierCranker !== operatorPubkey)
+            .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+            .slice(0, limit);
+    }
+    async listTinRegistryWork(operatorPubkey, limit = 50) {
+        const snapshot = await readSnapshot(this.path);
+        return (snapshot.tinOperations ?? [])
+            .filter((operation) => operation.status === "fee_committed" || operation.status === "submitter_assigned")
+            .filter((operation) => !operation.submitterCranker || operation.submitterCranker === operatorPubkey)
+            .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt))
+            .slice(0, limit);
+    }
+    async patchTinOperation(id, patch) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.tinOperations)
+            snapshot.tinOperations = [];
+        const operation = snapshot.tinOperations.find((candidate) => candidate.intentId === id);
+        if (!operation)
+            return null;
+        Object.assign(operation, patch, { updatedAt: now() });
+        await writeSnapshot(this.path, snapshot);
+        return operation;
+    }
+    markTinOperationVerified(id, crankerPubkey) {
+        return this.patchTinOperation(id, {
+            status: "verified",
+            verifierCranker: crankerPubkey,
+            failureReason: null,
+        });
+    }
+    async markTinOperationFeeCommitted(id, crankerPubkey, feeCommitmentTx = null) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.tinOperations)
+            snapshot.tinOperations = [];
+        const operation = snapshot.tinOperations.find((candidate) => candidate.intentId === id);
+        if (!operation)
+            return null;
+        const gross = tinOperationFeeBaseUnits(operation);
+        const split = computeTinOperationFeeSplitBaseUnits(gross);
+        const timestamp = now();
+        const feeMetadata = {
+            intentId: id,
+            feeMint: operation.intentType === "tin_creation"
+                ? operation.creationFeeMint ?? process.env.TSN_TINS_FEE_MINT ?? "USDC"
+                : operation.updateFeeMint ?? process.env.TSN_TINS_FEE_MINT ?? "USDC",
+            grossAmount: gross.toString(),
+            verifierAmount: split.verifier.toString(),
+            submitterAmount: split.submitter.toString(),
+            treasuryAmount: split.treasury.toString(),
+            bonusPoolAmount: split.bonusPool.toString(),
+            verifierPubkey: operation.verifierCranker ?? null,
+            submitterPubkey: crankerPubkey,
+            treasuryPubkey: process.env.TSN_TINS_TREASURY_PUBKEY ?? null,
+            bonusPoolPubkey: process.env.TSN_TINS_BONUS_POOL_PUBKEY ?? null,
+            feeCommitmentTx,
+            feeCommitmentHash: "",
+            status: "committed",
+            createdAt: timestamp,
+            updatedAt: timestamp,
+        };
+        feeMetadata.feeCommitmentHash = computeTinFeeCommitmentHash(operation, feeMetadata);
+        Object.assign(operation, {
+            status: "fee_committed",
+            submitterCranker: crankerPubkey,
+            feeMetadata,
+            updatedAt: timestamp,
+        });
+        await writeSnapshot(this.path, snapshot);
+        return operation;
+    }
+    markTinOperationFeeCommittedPlaceholder(id, crankerPubkey, feeCommitmentTx = null) {
+        return this.patchTinOperation(id, {
+            status: "fee_committed",
+            submitterCranker: crankerPubkey,
+            feeMetadata: {
+                intentId: id,
+                feeMint: process.env.TSN_TINS_FEE_MINT ?? "USDC",
+                grossAmount: "0",
+                verifierAmount: "0",
+                submitterAmount: "0",
+                treasuryAmount: "0",
+                bonusPoolAmount: "0",
+                submitterPubkey: crankerPubkey,
+                feeCommitmentTx,
+                feeCommitmentHash: "",
+                status: "committed",
+                createdAt: now(),
+                updatedAt: now(),
+            },
+        });
+    }
+    async markTinOperationSubmitted(id, crankerPubkey, txSignature) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.tinOperations)
+            snapshot.tinOperations = [];
+        const operation = snapshot.tinOperations.find((candidate) => candidate.intentId === id);
+        if (!operation)
+            return null;
+        Object.assign(operation, {
+            status: "submitted_onchain",
+            submitterCranker: crankerPubkey,
+            onchainSignatures: appendUniqueSignature(operation.onchainSignatures, txSignature),
+            updatedAt: now(),
+        });
+        await writeSnapshot(this.path, snapshot);
+        return operation;
+    }
+    async markTinOperationFinalized(id, txSignature = null) {
+        const snapshot = await readSnapshot(this.path);
+        if (!snapshot.tinOperations)
+            snapshot.tinOperations = [];
+        const operation = snapshot.tinOperations.find((candidate) => candidate.intentId === id);
+        if (!operation)
+            return null;
+        Object.assign(operation, {
+            status: "finalized",
+            ...(txSignature ? { onchainSignatures: appendUniqueSignature(operation.onchainSignatures, txSignature) } : {}),
+            updatedAt: now(),
+        });
+        await writeSnapshot(this.path, snapshot);
+        return operation;
+    }
+    markTinOperationFailed(id, reason) {
+        return this.patchTinOperation(id, {
+            status: "failed",
+            failureReason: reason,
+        });
+    }
 }
 export class HttpTsnMempool {
     client;
@@ -327,5 +526,29 @@ export class HttpTsnMempool {
     }
     updateEpochChallengeStatus(id, status, patch = {}) {
         return this.client.patch(`/epoch-challenges/${encodeURIComponent(id)}/status`, { ...patch, status });
+    }
+    listTinVerificationWork(limit = 50) {
+        return this.client.get(`/tin-operations/verification-work?limit=${limit}`);
+    }
+    listTinFeeWork(operatorPubkey, limit = 50) {
+        return this.client.get(`/tin-operations/fee-work?operator_pubkey=${encodeURIComponent(operatorPubkey)}&limit=${limit}`);
+    }
+    listTinRegistryWork(operatorPubkey, limit = 50) {
+        return this.client.get(`/tin-operations/registry-work?operator_pubkey=${encodeURIComponent(operatorPubkey)}&limit=${limit}`);
+    }
+    markTinOperationVerified(id, crankerPubkey) {
+        return this.client.post(`/tin-operations/${encodeURIComponent(id)}/verified`, { crankerPubkey });
+    }
+    markTinOperationFeeCommitted(id, crankerPubkey, feeCommitmentTx = null) {
+        return this.client.post(`/tin-operations/${encodeURIComponent(id)}/fee-committed`, { crankerPubkey, feeCommitmentTx });
+    }
+    markTinOperationSubmitted(id, crankerPubkey, txSignature) {
+        return this.client.post(`/tin-operations/${encodeURIComponent(id)}/submitted`, { crankerPubkey, txSignature });
+    }
+    markTinOperationFinalized(id, txSignature = null) {
+        return this.client.post(`/tin-operations/${encodeURIComponent(id)}/finalized`, { txSignature });
+    }
+    markTinOperationFailed(id, reason) {
+        return this.client.post(`/tin-operations/${encodeURIComponent(id)}/failed`, { failureReason: reason });
     }
 }

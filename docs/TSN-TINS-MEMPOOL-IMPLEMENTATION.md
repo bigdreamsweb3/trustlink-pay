@@ -1,105 +1,204 @@
-# TSN + TINS Mempool Implementation Handoff
+# TSN-Mediated TINS Operations
 
-Version: TSN V1 Cranker-mediated TINS operations
-Commit reference: current branch worktree
+This document explains how TIN creation and TIN updates move through the TSN mempool before the TINS registry is changed.
 
-## Summary
+The short version: users do not submit TINS registry transactions directly. They sign an owner intent. Crankers verify that intent, record the fee commitment, and relay the registry transaction.
 
-The main repository now contains TINS program and SDK support for Cranker-mediated TIN creation and update registry writes. The TSN Mempool backend/frontend live in submodules that are not checked out in this environment, so this handoff adds patch files under `docs/submodule-patches/` for local Codex to apply when the submodules are available.
+## What This Is
 
-## Implementation notes
+TINS is the identity registry. It stores a user's Transfer Identity Number, public-safe profile fields, encrypted identity data, and PRU commitment hashes.
 
-### TypeScript components
+TSN is now the control plane for TINS mutations. A TIN creation or update first becomes a TSN mempool operation. Only after verification and fee commitment does a Cranker submit the TINS registry mutation on-chain.
 
-Apply these patches inside the relevant submodules:
+## Why It Exists
 
-```bash
-cd tsn-mempool-backend
-git apply ../docs/submodule-patches/tsn-mempool-backend-tins-cranker-v1.patch
+Direct TINS creation had three problems:
 
-cd ../tsn-mempool-frontend
-git apply ../docs/submodule-patches/tsn-mempool-frontend-tins-cranker-v1.patch
+- the user had to pay registry transaction costs directly
+- applications could bypass the protocol's verification and fee rules
+- identity updates were harder to audit as protocol work
+
+The new flow keeps owner authority while moving operational work into the Cranker network.
+
+The Cranker never becomes the TIN owner. The owner remains the authority because the TINS program verifies the owner's Ed25519 signature over the intent hash before creating or updating the record.
+
+## Status Pipeline
+
+TIN operations use these states:
+
+```text
+pending_verification
+verifier_assigned
+verified
+fee_pending
+fee_committed
+submitter_assigned
+submitted_onchain
+finalized
+rejected
+expired
+failed
 ```
 
-Backend patch adds:
+The current daemon uses the compact path:
 
-- `TinOperationRuntime` for TIN creation/update intents.
-- Status pipeline: `pending_verification → verified → fee_committed → submitted → completed`.
-- Fee split constants: 30% verifier, 40% submitter, 20% treasury, 10% bonus pool.
-- Separate work queues for verification, fee commitment, and registry submission.
-- Single-Cranker fallback gate through `TSN_ALLOW_SINGLE_CRANKER_TINS=1`.
-
-Frontend patch adds:
-
-- A masked TINS operation panel for creation/update intents.
-- Status counts for Cranker A verification, fee commitment, registry submission, and completion.
-- Masking for owner and commitment identifiers.
-- No rendering of encrypted phone payloads, owner signatures, raw phone numbers, or PRU arrays.
-
-### Python Cranker daemon
-
-The daemon should consume the backend endpoints in three stages:
-
-```bash
-tsn-cranker tins verify-create-intent --intent <INTENT_ID>
-tsn-cranker tins commit-create-fee --intent <INTENT_ID>
-tsn-cranker tins submit-create-registry --intent <INTENT_ID>
-tsn-cranker tins verify-update-intent --intent <INTENT_ID>
-tsn-cranker tins submit-update --intent <INTENT_ID>
+```text
+pending_verification -> verified -> fee_committed -> submitted_onchain -> finalized
 ```
 
-Cranker A marks the intent verified. Cranker B should be preferred for registry submission; if only one Cranker is online, set `TSN_ALLOW_SINGLE_CRANKER_TINS=1`.
+The additional assignment states are reserved for stricter multi-operator scheduling.
 
-## Usage examples
+## How Creation Works
 
-Post a creation intent to the Mempool runtime:
+1. The app prepares encrypted identity data and PRU configuration off-chain.
+2. The owner signs a TIN creation intent hash.
+3. The app posts the signed intent to `POST /tin-operations`.
+4. Cranker A pulls `/tin-operations/verification-work`.
+5. Cranker A verifies the owner signature, nonce, expiry, privacy level, and commitment hashes.
+6. The operation becomes `verified`.
+7. Cranker B pulls `/tin-operations/fee-work`.
+8. Cranker B records the deterministic fee commitment.
+9. The operation becomes `fee_committed`.
+10. Cranker B pulls `/tin-operations/registry-work`.
+11. Cranker B submits `tin_creation_registry` with the owner's Ed25519 signature instruction.
+12. The operation becomes `submitted_onchain`, then `finalized` after confirmation.
+
+## How Updates Work
+
+Updates follow the same pipeline.
+
+The main difference is that the verifier must confirm the owner still matches the stored TIN owner before allowing the update to continue.
+
+The update payload can change:
+
+- display name
+- encrypted phone payload
+- privacy level
+- encrypted metadata hash
+- PRU configuration hash
+
+The mempool stores only commitments and encrypted payloads. It does not decrypt social identities.
+
+## Fee Commitment
+
+Canonical fees:
+
+- TIN creation: `0.05 USDC`
+- TIN update: `0.01 USDC`
+
+Split:
+
+| Recipient | Share |
+| --- | ---: |
+| Verifier Cranker | 30% |
+| Submitter Cranker | 40% |
+| TSN treasury | 20% |
+| Bonus pool | 10% |
+
+The split is calculated in base units. Any rounding remainder goes to the bonus pool. The fee commitment hash is deterministic so the same intent can be replayed and checked later.
+
+Current implementation note: the mempool records the deterministic fee split and optional fee transaction hash. Actual token transfer wiring can be attached to the same commitment record without changing the status model.
+
+## Cranker Separation
+
+There are two roles:
+
+- verifier cranker
+- submitter cranker
+
+The backend prefers different crankers. If only one Cranker is online, set:
 
 ```bash
-curl -X POST http://localhost:8000/tin-operations \
-  -H 'content-type: application/json' \
-  -d '{
-    "kind":"tin_creation",
-    "ownerPubkey":"<OWNER>",
-    "displayName":"private receiver",
-    "encryptedPhoneBase64":"<ENCRYPTED>",
-    "privacyLevel":2,
-    "encryptedMetadataHash":"<32_BYTE_HEX>",
-    "pruConfigurationHash":"<32_BYTE_HEX>",
-    "intentHash":"<32_BYTE_HEX>",
-    "ownerSignatureBase64":"<SIG>",
-    "nonce":"<32_BYTE_HEX>",
-    "expiryTs":1893456000
-  }'
+TSN_ALLOW_SINGLE_CRANKER_TINS=1
 ```
 
-List registry submission work for Cranker B:
+Without that flag, the same operator cannot verify and submit the same TIN operation.
 
-```bash
-curl 'http://localhost:8000/tin-operations/registry-work?operator_pubkey=<CRANKER_B>&limit=20'
+## Backend Routes
+
+Public:
+
+```text
+POST /tin-operations
+GET  /tin-operations
+GET  /tin-operations/:intentId
 ```
 
-## Security & privacy considerations
+Worker protected:
 
-Hidden: raw phone numbers, owner operational network path, PRU lists, PRU derivation seeds, private keys, and clear balances.
-
-Exposed to the Mempool runtime: owner pubkey, masked/display-safe metadata, encrypted phone payload, owner signature over intent hash, fee commitment hash, and PRU commitment hash. This is enough for Crankers to verify and relay without taking ownership.
-
-The backend must require Cranker DNA auth before `verified`, `fee_committed`, or `submitted` state transitions in production.
-
-## Testing notes
-
-After applying patches, run the submodule checks:
-
-```bash
-npm --prefix tsn-mempool-backend test
-npm --prefix tsn-mempool-frontend test
-npm --prefix tsn-mempool-frontend run build
+```text
+GET  /tin-operations/verification-work
+GET  /tin-operations/fee-work
+GET  /tin-operations/registry-work
+POST /tin-operations/:intentId/verified
+POST /tin-operations/:intentId/fee-committed
+POST /tin-operations/:intentId/submitted
+POST /tin-operations/:intentId/finalized
+POST /tin-operations/:intentId/failed
+POST /tin-operations/:intentId/rejected
 ```
 
-Then run the root checks:
+The backend validates:
+
+- expired intents
+- reused nonce per owner
+- invalid privacy level
+- malformed 32-byte metadata hash
+- malformed 32-byte PRU hash
+- missing owner signature
+- mismatched owner intent hash
+- creation conflicts in the mempool registry shadow
+- update owner mismatch in the mempool registry shadow
+- registry submission before verification
+- registry submission before fee commitment
+
+## Explorer UI
+
+The mempool explorer shows a masked TINS queue.
+
+It can show:
+
+- intent type
+- TIN
+- masked owner pubkey
+- privacy level
+- status
+- verifier cranker
+- submitter cranker
+- fee amount and split
+- PRU commitment hash
+- on-chain transaction references
+
+It must not show:
+
+- decrypted social identity data
+- raw phone numbers
+- encrypted phone payload contents
+- owner signatures
+- full PRU arrays
+- private derivation material
+
+## Important Limitation
+
+Current on-chain TINS creation still assigns the next TIN from global state. The mempool accepts a `tin` field for scheduling and conflict checks, but the registry program is the final source of truth for the actual created TIN.
+
+If the protocol requires user-selected or pre-reserved TINs, the on-chain `tin_creation_registry` instruction must be extended to validate a requested TIN or reservation record.
+
+## Local Checks
+
+Use focused checks first:
 
 ```bash
+python -m py_compile tsn-mempool-backend/server.py
+npm --prefix tsn-mempool-frontend run typecheck
+npm --prefix tsn-sdk run build
 npm --prefix tins-sdk run build
-npm --prefix tsn-sdk test
-cargo test --manifest-path tins-registrar/program/Cargo.toml --lib
 ```
+
+Then run program tests when the Solana toolchain is stable:
+
+```bash
+cargo test --manifest-path tins-registrar/program/Cargo.toml --lib
+cargo test --manifest-path tsn/protocol/programs/trustlink-escrow/Cargo.toml --lib
+```
+

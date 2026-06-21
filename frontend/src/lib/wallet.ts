@@ -9,6 +9,7 @@ import {
   Transaction,
   type TransactionSignature,
 } from "@solana/web3.js";
+import { traceFunction } from "../../../utils/observability/tracer";
 
 const CONNECTED_WALLET_KEY = "trustlink.connectedWallet";
 
@@ -332,7 +333,7 @@ export function getConnectedWalletAddress() {
   return readStoredSession()?.address ?? null;
 }
 
-export async function connectSolanaWallet(walletId?: string) {
+async function connectSolanaWalletImpl(walletId?: string) {
   const selectedWallet =
     (walletId ? getWalletById(walletId) : null) ??
     listAvailableSolanaWallets()[0] ??
@@ -354,7 +355,7 @@ export async function connectSolanaWallet(walletId?: string) {
   return session;
 }
 
-export async function disconnectSolanaWallet() {
+async function disconnectSolanaWalletImpl() {
   const storedSession = readStoredSession();
   const provider = storedSession?.walletId
     ? (getWalletById(storedSession.walletId)?.provider ?? null)
@@ -375,7 +376,7 @@ function bytesToBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-export async function signSolanaMessage(params: {
+async function signSolanaMessageImpl(params: {
   walletId: string;
   address: string;
   message: string;
@@ -395,7 +396,7 @@ export async function signSolanaMessage(params: {
   return bytesToBase64(signature);
 }
 
-export async function signSolanaTransaction(params: {
+async function signSolanaTransactionImpl(params: {
   walletId: string;
   address: string;
   transactionBase64: string;
@@ -422,7 +423,7 @@ export async function signSolanaTransaction(params: {
   );
 }
 
-export async function sendSolanaPayment(params: {
+async function sendSolanaPaymentImpl(params: {
   walletId: string;
   fromAddress: string;
   toAddress: string;
@@ -490,7 +491,7 @@ export async function sendSolanaPayment(params: {
   return signature;
 }
 
-export async function signAndSendSolanaTransaction(params: {
+async function signAndSendSolanaTransactionImpl(params: {
   walletId: string;
   address: string;
   rpcUrl: string;
@@ -547,7 +548,7 @@ export async function signAndSendSolanaTransaction(params: {
   return signature;
 }
 
-export async function signAndSendSerializedSolanaTransaction(params: {
+async function signAndSendSerializedSolanaTransactionImpl(params: {
   walletId: string;
   rpcUrl: string;
   serializedTransaction: string;
@@ -618,3 +619,64 @@ export async function signAndSendSerializedSolanaTransaction(params: {
 
   return signature;
 }
+
+export const connectSolanaWallet = traceFunction(connectSolanaWalletImpl, {
+  namespace: "Wallet",
+  name: "connectSolanaWallet",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+});
+
+export const disconnectSolanaWallet = traceFunction(disconnectSolanaWalletImpl, {
+  namespace: "Wallet",
+  name: "disconnectSolanaWallet",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signSolanaMessage = traceFunction(signSolanaMessageImpl, {
+  namespace: "Wallet",
+  name: "signSolanaMessage",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signSolanaTransaction = traceFunction(signSolanaTransactionImpl, {
+  namespace: "Wallet",
+  name: "signSolanaTransaction",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const sendSolanaPayment = traceFunction(sendSolanaPaymentImpl, {
+  namespace: "Wallet",
+  name: "sendSolanaPayment",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signAndSendSolanaTransaction = traceFunction(
+  signAndSendSolanaTransactionImpl,
+  {
+    namespace: "Wallet",
+    name: "signAndSendSolanaTransaction",
+    module: "frontend/src/lib/wallet.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
+
+export const signAndSendSerializedSolanaTransaction = traceFunction(
+  signAndSendSerializedSolanaTransactionImpl,
+  {
+    namespace: "Wallet",
+    name: "signAndSendSerializedSolanaTransaction",
+    module: "frontend/src/lib/wallet.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);

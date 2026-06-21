@@ -1,4 +1,4 @@
-import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnRecoveryStatus, TsnEpochChallenge, TsnRecoveryWorkItem, TsnWorkItem, ProofOfPaymentRequest } from "./contracts.js";
+import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnRecoveryStatus, TsnEpochChallenge, TsnRecoveryWorkItem, TsnTinOperationRecord, TsnWorkItem, ProofOfPaymentRequest } from "./contracts.js";
 export interface TsnMempool {
     postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
     postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
@@ -23,6 +23,14 @@ export interface TsnMempool {
     }): Promise<TsnEpochChallenge>;
     listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>;
     updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge | null>;
+    listTinVerificationWork(limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinFeeWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinRegistryWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    markTinOperationVerified(id: string, crankerPubkey: string): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFeeCommitted(id: string, crankerPubkey: string, feeCommitmentTx?: string | null): Promise<TsnTinOperationRecord | null>;
+    markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord | null>;
 }
 export declare class JsonFileTsnMempool implements TsnMempool {
     private readonly path;
@@ -50,6 +58,16 @@ export declare class JsonFileTsnMempool implements TsnMempool {
     }): Promise<TsnEpochChallenge>;
     listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>;
     updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge | null>;
+    listTinVerificationWork(limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinFeeWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinRegistryWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    private patchTinOperation;
+    markTinOperationVerified(id: string, crankerPubkey: string): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFeeCommitted(id: string, crankerPubkey: string, feeCommitmentTx?: string | null): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFeeCommittedPlaceholder(id: string, crankerPubkey: string, feeCommitmentTx?: string | null): Promise<TsnTinOperationRecord | null>;
+    markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord | null>;
+    markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord | null>;
 }
 export declare class HttpTsnMempool implements TsnMempool {
     private readonly client;
@@ -77,5 +95,13 @@ export declare class HttpTsnMempool implements TsnMempool {
     }): Promise<TsnEpochChallenge>;
     listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>;
     updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge>;
+    listTinVerificationWork(limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinFeeWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    listTinRegistryWork(operatorPubkey: string, limit?: number): Promise<TsnTinOperationRecord[]>;
+    markTinOperationVerified(id: string, crankerPubkey: string): Promise<TsnTinOperationRecord>;
+    markTinOperationFeeCommitted(id: string, crankerPubkey: string, feeCommitmentTx?: string | null): Promise<TsnTinOperationRecord>;
+    markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord>;
+    markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord>;
+    markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord>;
 }
 //# sourceMappingURL=mempool.d.ts.map

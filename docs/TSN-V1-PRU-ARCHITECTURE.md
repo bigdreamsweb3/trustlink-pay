@@ -1,11 +1,10 @@
 # TSN V1 — Deterministic PRU Privacy Settlement Network
 
-Version: TSN V1 production architecture rewrite
-Commit reference: current branch worktree
+Version: current TSN V1 architecture
 
 ## Summary
 
-TSN V1 replaces RPDA-style routing with deterministic PRU settlement. A TIN remains the root identity layer, while token-bound Privacy Receiving Units (PRUs) become the execution endpoints used by TSN. The Cranker is stateless: it receives transaction inputs, computes the same allocation every verifier can replay, and executes the result without storing routing state or introducing randomness.
+TSN V1 uses deterministic PRU settlement instead of RPDA-style routing. A TIN remains the root identity layer, while token-bound Privacy Receiving Units (PRUs) become the execution endpoints used by TSN. The Cranker stays stateless: it receives transaction inputs, computes the same allocation every verifier can replay, and executes the result without storing routing state or introducing randomness.
 
 ## Core model
 
@@ -145,8 +144,11 @@ The daemon must not keep PRU routing state between jobs. Any local cache is advi
 
 1. Derive PRUs off-chain per token mint and privacy level.
 2. Compute the PRU configuration hash and encrypted metadata hash.
-3. Create the TIN through TINS with the privacy level and hashes.
-4. Store only TIN owner mapping, privacy level, encryption metadata hash, PRU metadata commitments, and PRU configuration hash.
+3. Build an owner-signed TIN creation intent.
+4. Submit the intent to the TSN mempool, not directly to TINS.
+5. A verifier Cranker checks the owner signature, nonce, expiry, privacy level, and commitment hashes.
+6. A submitter Cranker records the fee commitment and relays `tin_creation_registry`.
+7. TINS stores only owner mapping, privacy level, encryption metadata hash, PRU metadata commitments, and PRU configuration hash.
 
 ### Receiving
 

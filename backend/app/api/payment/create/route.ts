@@ -11,6 +11,7 @@ import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
+import { traceApiHandler } from "../../../../../utils/observability/tracer";
 
 const SENDER_AUTHORIZATION_MAX_AGE_MS = 5 * 60 * 1000;
 
@@ -22,7 +23,7 @@ const SENDER_AUTHORIZATION_MAX_AGE_MS = 5 * 60 * 1000;
  * This endpoint forwards payment requests to TSN mempool.
  * For now returns a placeholder - full integration pending TIN implementation.
  */
-export async function POST(request: Request) {
+async function postPaymentCreate(request: Request) {
   try {
     const body = await request.json();
     const { paymentId, phoneNumber, senderPhoneNumber, amount, tokenMintAddress, senderWallet, recipientTin } = body;
@@ -259,6 +260,12 @@ export async function POST(request: Request) {
     return toErrorResponse(error);
   }
 }
+
+export const POST = traceApiHandler(postPaymentCreate, {
+  name: "/api/payment/create",
+  module: "backend/app/api/payment/create/route.ts",
+  includeReturn: false,
+});
 
 /**
  * Resolve a sender's TIN and identity from TSN on-chain data using their wallet address.

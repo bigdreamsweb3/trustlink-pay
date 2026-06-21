@@ -39,11 +39,24 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  sendAndConfirmTransaction,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
   SystemProgram,
   Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import {
+  createOwnerIntentSignatureInstruction,
+  DEFAULT_TINS_PROGRAM_ID,
+  getGlobalStatePda,
+  getIdentityPda,
+  serializeTinCreationRegistryParams,
+  serializeTinUpdateParams,
+} from "../../tins-sdk/src/index.ts";
+import type { TsnTinOperationRecord } from "../../tsn-sdk/src/contracts.ts";
+import { traceFunction } from "../../utils/observability/tracer.ts";
 
 import "dotenv/config";
 
@@ -140,15 +153,27 @@ async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
   };
 
   const operator = process.env.TSN_CRANKER_OPERATOR_PUBKEY ?? "";
-  const [intents, claims, recoveries, intentWork, claimWork, recoveryWork] = await Promise.all([
+  const [intents, claims, recoveries, tinOperations, intentWork, claimWork, recoveryWork, tinVerificationWork, tinFeeWork, tinRegistryWork] = await Promise.all([
     fetchJson<Array<{ status: string }>>("/intents"),
     fetchJson<Array<{ status: string }>>("/claim-requests"),
     fetchJson<Array<{ status: string }>>("/recoveries"),
+    fetchJson<Array<{ status: string }>>("/tin-operations"),
     fetchJson<TsnIntentWorkItem[]>("/intent-work?limit=100"),
     fetchJson<TsnWorkItem[]>("/work?limit=100"),
     operator
       ? fetchJson<TsnRecoveryWorkItem[]>(
           `/recovery-work?operator_pubkey=${encodeURIComponent(operator)}&limit=100`,
+        )
+      : Promise.resolve([]),
+    fetchJson<TsnTinOperationRecord[]>("/tin-operations/verification-work?limit=100"),
+    operator
+      ? fetchJson<TsnTinOperationRecord[]>(
+          `/tin-operations/fee-work?operator_pubkey=${encodeURIComponent(operator)}&limit=100`,
+        )
+      : Promise.resolve([]),
+    operator
+      ? fetchJson<TsnTinOperationRecord[]>(
+          `/tin-operations/registry-work?operator_pubkey=${encodeURIComponent(operator)}&limit=100`,
         )
       : Promise.resolve([]),
   ]);
@@ -161,18 +186,23 @@ async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
   const intentStatuses = countByStatus(intents);
   const claimStatuses = countByStatus(claims);
   const recoveryStatuses = countByStatus(recoveries);
+  const tinStatuses = countByStatus(tinOperations);
   const signature = JSON.stringify({
     intents: intentStatuses,
     claims: claimStatuses,
     recoveries: recoveryStatuses,
+    tinOperations: tinStatuses,
     intentWork: intentWork.length,
     claimWork: claimWork.length,
     recoveryWork: recoveryWork.length,
+    tinVerificationWork: tinVerificationWork.length,
+    tinFeeWork: tinFeeWork.length,
+    tinRegistryWork: tinRegistryWork.length,
   });
 
   return {
     signature,
-    line: `intents=${intents.length} ${JSON.stringify(intentStatuses)} claims=${claims.length} ${JSON.stringify(claimStatuses)} recoveries=${recoveries.length} ${JSON.stringify(recoveryStatuses)} intentWork=${intentWork.length} claimWork=${claimWork.length} recoveryWork=${recoveryWork.length}`,
+    line: `intents=${intents.length} ${JSON.stringify(intentStatuses)} claims=${claims.length} ${JSON.stringify(claimStatuses)} recoveries=${recoveries.length} ${JSON.stringify(recoveryStatuses)} tinOps=${tinOperations.length} ${JSON.stringify(tinStatuses)} intentWork=${intentWork.length} claimWork=${claimWork.length} recoveryWork=${recoveryWork.length} tinVerify=${tinVerificationWork.length} tinFee=${tinFeeWork.length} tinRegistry=${tinRegistryWork.length}`,
   };
 }
 
@@ -1041,7 +1071,7 @@ async function subscribeEpochSettlementAccounts(params: {
   const epochAccountDiscriminator = createHash("sha256").update("account:EpochAccount").digest().subarray(0, 8);
   const epochSubscriptionId = params.connection.onProgramAccountChange(
     programId,
-    (change) => {
+    (change, context) => {
       const data = Buffer.from(change.accountInfo.data);
       if (data.length < 16 || !data.subarray(0, 8).equals(epochAccountDiscriminator)) return;
       const accountMotherEscrow = new PublicKey(data.subarray(8, 40));
@@ -1049,10 +1079,10 @@ async function subscribeEpochSettlementAccounts(params: {
       const epochId = data.readBigUInt64LE(8 + 32);
       const rootHash = data.subarray(8 + 32 + 8 + 32 + 32, 8 + 32 + 8 + 32 + 32 + 32).toString("hex");
       epochRaceCache.set(change.accountId.toBase58(), {
-        lastSeenSlot: change.context.slot,
+        lastSeenSlot: context.slot,
         lastRootHash: rootHash,
       });
-      console.log(`[tsn-cranker] epoch-account-update account=${change.accountId.toBase58()} epoch=${epochId} slot=${change.context.slot}`);
+      console.log(`[tsn-cranker] epoch-account-update account=${change.accountId.toBase58()} epoch=${epochId} slot=${context.slot}`);
     },
     "confirmed",
   );
@@ -1145,6 +1175,192 @@ async function raceEpochChallenges(params: {
   }
 }
 
+function base64Bytes(value: string | null | undefined, label: string) {
+  if (!value) throw new Error(`${label} is required`);
+  const bytes = Buffer.from(value, "base64");
+  if (bytes.length === 0) throw new Error(`${label} is empty`);
+  return bytes;
+}
+
+function tinsProgramId() {
+  return process.env.TINS_PROGRAM_ID
+    ? new PublicKey(process.env.TINS_PROGRAM_ID)
+    : DEFAULT_TINS_PROGRAM_ID;
+}
+
+async function submitTinRegistryMutation(params: {
+  operation: TsnTinOperationRecord;
+  operator: Keypair;
+  connection: Connection;
+}) {
+  const programId = tinsProgramId();
+  const ownerPubkey = new PublicKey(params.operation.ownerPubkey);
+  const [identity] = getIdentityPda(ownerPubkey, programId);
+  const intentHash = hex32(params.operation.ownerIntentHash, "ownerIntentHash");
+  const ownerSignature = base64Bytes(params.operation.ownerSignature, "ownerSignature");
+  const encryptedPhone = base64Bytes(
+    params.operation.intentType === "tin_creation"
+      ? params.operation.encryptedPhone
+      : params.operation.newEncryptedPhone,
+    "encryptedPhone",
+  );
+  const displayName =
+    (params.operation.intentType === "tin_creation"
+      ? params.operation.displayName
+      : params.operation.newDisplayName) ?? "";
+  if (!displayName.trim()) throw new Error("displayName is required for TINS registry mutation");
+  const privacyLevel = Number(params.operation.newPrivacyLevel ?? params.operation.privacyLevel) as 1 | 2 | 3 | 4;
+  if (![1, 2, 3, 4].includes(privacyLevel)) throw new Error("privacyLevel must be 1..4");
+
+  const ed25519Ix = createOwnerIntentSignatureInstruction({
+    ownerPubkey,
+    intentHash,
+    signature: ownerSignature,
+  });
+  const mutationData =
+    params.operation.intentType === "tin_creation"
+      ? serializeTinCreationRegistryParams({
+          ownerPubkey,
+          displayName,
+          encryptedPhone,
+          privacyLevel,
+          encryptedMetadataHash: hex32(params.operation.encryptedMetadataHash, "encryptedMetadataHash"),
+          pruConfigurationHash: hex32(params.operation.pruConfigurationHash, "pruConfigurationHash"),
+          intentHash,
+          expiryTs: params.operation.expiry,
+        })
+      : serializeTinUpdateParams({
+          ownerPubkey,
+          displayName,
+          encryptedPhone,
+          privacyLevel,
+          encryptedMetadataHash: hex32(params.operation.newEncryptedMetadataHash ?? params.operation.encryptedMetadataHash, "encryptedMetadataHash"),
+          pruConfigurationHash: hex32(params.operation.newPruConfigurationHash ?? params.operation.pruConfigurationHash, "pruConfigurationHash"),
+          intentHash,
+          expiryTs: params.operation.expiry,
+        });
+
+  const keys =
+    params.operation.intentType === "tin_creation"
+      ? [
+          { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+          { pubkey: getGlobalStatePda(programId)[0], isSigner: false, isWritable: true },
+          { pubkey: identity, isSigner: false, isWritable: true },
+          { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ]
+      : [
+          { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+          { pubkey: identity, isSigner: false, isWritable: true },
+          { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+        ];
+  const mutationIx = new TransactionInstruction({
+    programId,
+    keys,
+    data: mutationData,
+  });
+
+  const { blockhash } = await params.connection.getLatestBlockhash("confirmed");
+  const transaction = new Transaction().add(ed25519Ix, mutationIx);
+  transaction.feePayer = params.operator.publicKey;
+  transaction.recentBlockhash = blockhash;
+  const signature = await sendAndConfirmTransaction(
+    params.connection,
+    transaction,
+    [params.operator],
+    { commitment: "confirmed" },
+  );
+  return signature;
+}
+
+async function processTinOperationWork(params: {
+  mempool: ReturnType<typeof createMempoolClient>;
+  operator: Keypair;
+  connection: Connection;
+}) {
+  const operatorPubkey = params.operator.publicKey.toBase58();
+
+  for (const operation of await params.mempool.listTinVerificationWork(10)) {
+    try {
+      await params.mempool.markTinOperationVerified(operation.intentId, operatorPubkey);
+      console.log(`[tsn-cranker] tins.verified intent=${operation.intentId} tin=${operation.tin} verifier=${operatorPubkey}`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await params.mempool.markTinOperationFailed(operation.intentId, reason).catch(() => undefined);
+      console.error(`[tsn-cranker] tins.verify_failed intent=${operation.intentId}`, error);
+    }
+  }
+
+  for (const operation of await params.mempool.listTinFeeWork(operatorPubkey, 10)) {
+    try {
+      await params.mempool.markTinOperationFeeCommitted(operation.intentId, operatorPubkey, null);
+      console.log(`[tsn-cranker] tins.fee_committed intent=${operation.intentId} tin=${operation.tin} submitter=${operatorPubkey}`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await params.mempool.markTinOperationFailed(operation.intentId, reason).catch(() => undefined);
+      console.error(`[tsn-cranker] tins.fee_failed intent=${operation.intentId}`, error);
+    }
+  }
+
+  for (const operation of await params.mempool.listTinRegistryWork(operatorPubkey, 5)) {
+    if (operation.submitterCranker && operation.submitterCranker !== operatorPubkey) continue;
+    try {
+      const signature = await submitTinRegistryMutation({
+        operation,
+        operator: params.operator,
+        connection: params.connection,
+      });
+      await params.mempool.markTinOperationSubmitted(operation.intentId, operatorPubkey, signature);
+      await params.mempool.markTinOperationFinalized(operation.intentId, signature);
+      console.log(`[tsn-cranker] tins.finalized intent=${operation.intentId} tin=${operation.tin} tx=${signature}`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await params.mempool.markTinOperationFailed(operation.intentId, reason).catch(() => undefined);
+      console.error(`[tsn-cranker] tins.submit_failed intent=${operation.intentId}`, error);
+    }
+  }
+}
+
+const tracedRaceEpochChallenges = traceFunction(raceEpochChallenges, {
+  namespace: "Cranker",
+  name: "raceEpochChallenges",
+  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
+  level: "debug",
+  includeReturn: false,
+});
+
+const tracedProcessTinOperationWork = traceFunction(processTinOperationWork, {
+  namespace: "Cranker",
+  name: "processTinOperationWork",
+  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
+  level: "debug",
+  includeReturn: false,
+});
+
+const tracedSubmitIntentOnChainWork = traceFunction(submitIntentOnChainWork, {
+  namespace: "Cranker",
+  name: "submitIntentOnChainWork",
+  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+const tracedExecuteClaimWork = traceFunction(executeClaimWork, {
+  namespace: "Cranker",
+  name: "executeClaimWork",
+  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+const tracedExecuteRecoveryWork = traceFunction(executeRecoveryWork, {
+  namespace: "Cranker",
+  name: "executeRecoveryWork",
+  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
+  level: "info",
+  includeReturn: false,
+});
+
 async function main() {
   const mempool = createMempoolClient();
   const operatorKeypair = loadOperatorKeypair();
@@ -1211,10 +1427,15 @@ async function main() {
     try {
       await postHeartbeat(operator);
       await logMempoolOverview("changed");
-      await raceEpochChallenges({
+      await tracedRaceEpochChallenges({
         mempool,
         operator: operatorKeypair,
         rpcUrl,
+        connection,
+      });
+      await tracedProcessTinOperationWork({
+        mempool,
+        operator: operatorKeypair,
         connection,
       });
 
@@ -1243,7 +1464,7 @@ async function main() {
             continue;
           }
 
-          const submitted = await submitIntentOnChainWork({
+          const submitted = await tracedSubmitIntentOnChainWork({
             item,
             mempool,
             operator: operatorKeypair,
@@ -1310,7 +1531,7 @@ async function main() {
             continue;
           }
 
-          const execution = await executeClaimWork({
+          const execution = await tracedExecuteClaimWork({
             item,
             mempool,
             operator: operatorKeypair,
@@ -1395,7 +1616,7 @@ async function main() {
             Number(item.privacyVersion ?? 1) >= 2
               ? item
               : await mempool.claimRecoveryLease(item.id, operator);
-          const recovery = await executeRecoveryWork({
+          const recovery = await tracedExecuteRecoveryWork({
             item: leased,
             operator: operatorKeypair,
             rpcUrl,

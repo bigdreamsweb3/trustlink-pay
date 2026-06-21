@@ -21,6 +21,8 @@ import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, TsnUiStage, UserRecord } from "@/app/types/payment";
+import { trackTransactionFees } from "../../../utils/observability/fee-tracker";
+import { traceFunction } from "../../../utils/observability/tracer";
 import type {
   ClaimRequestRecord,
   ClaimRequestStatus,
@@ -57,6 +59,36 @@ function getTsnMempoolClient() {
     env.TSN_MEMPOOL_URL,
     env.TSN_MEMPOOL_API_KEY,
   );
+}
+
+function trackPaymentFeeSnapshot(params: {
+  flow: string;
+  payment: PaymentRecord;
+  token: { symbol: string; decimals: number };
+  destinationWallet?: string | null;
+}) {
+  try {
+    trackTransactionFees({
+      flow: params.flow,
+      tokenSymbol: params.token.symbol,
+      userAmountLamports: toBaseUnits(Number(params.payment.amount), params.token.decimals),
+      networkFeeLamports: 0n,
+      senderFeeLamports: toBaseUnits(Number(params.payment.sender_fee_amount ?? 0), params.token.decimals),
+      claimFeeLamports: toBaseUnits(Number(params.payment.claim_fee_amount ?? 0), params.token.decimals),
+      senderWallet: params.payment.sender_wallet,
+      recipientWallet: params.destinationWallet ?? null,
+      paymentId: params.payment.id,
+      metadata: {
+        tokenMintAddress: params.payment.token_mint_address,
+        status: params.payment.status,
+      },
+    });
+  } catch (error) {
+    logger.warn("observability.fee_snapshot_failed", {
+      paymentId: params.payment.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 }
 
 function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
@@ -107,7 +139,7 @@ function resolveUnderlyingPaymentPublicKey(payment: PaymentRecord) {
   }
 }
 
-async function postIntentToTsnMempool(request: CreateIntentRequest) {
+const postIntentToTsnMempool = traceFunction(async function postIntentToTsnMempool(request: CreateIntentRequest) {
   try {
     return await getTsnMempoolClient().postIntent(request);
   } catch (error) {
@@ -117,9 +149,15 @@ async function postIntentToTsnMempool(request: CreateIntentRequest) {
     });
     throw new Error("TSN mempool is unavailable; start the TSN service before creating TSN intents.");
   }
-}
+}, {
+  namespace: "TSN",
+  name: "postIntentToTsnMempool",
+  module: "backend/app/services/tsn.ts",
+  level: "info",
+  includeReturn: false,
+});
 
-async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
+const postClaimRequestToTsnMempool = traceFunction(async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
   try {
     return await getTsnMempoolClient().postClaimRequest(request);
   } catch (error) {
@@ -130,9 +168,15 @@ async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
     });
     throw new Error("TSN mempool is unavailable; start the TSN service before requesting TSN claims.");
   }
-}
+}, {
+  namespace: "TSN",
+  name: "postClaimRequestToTsnMempool",
+  module: "backend/app/services/tsn.ts",
+  level: "info",
+  includeReturn: false,
+});
 
-export async function createTsnIntentForPayment(payment: PaymentRecord) {
+async function createTsnIntentForPaymentImpl(payment: PaymentRecord) {
   if (!env.TSN_ENABLED) {
     return { enabled: false as const };
   }
@@ -159,6 +203,11 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
   } as CreateIntentRequest & { recipientAmount: number };
 
   const mempoolIntent = await postIntentToTsnMempool(intentRequest);
+  trackPaymentFeeSnapshot({
+    flow: "TSN Settlement",
+    payment,
+    token: allowed,
+  });
   const record = await upsertPaymentIntent({
     id: intentRequest.paymentId,
     paymentId: intentRequest.paymentId,
@@ -176,7 +225,7 @@ export async function createTsnIntentForPayment(payment: PaymentRecord) {
   return { enabled: true as const, record, mempoolIntent, onchain: null as null };
 }
 
-export async function requestOnboardedRecipientSettlementViaTsn(params: {
+async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
   payment: PaymentRecord;
   receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "tins_wallet_pubkey" | "wallet_address">;
 }) {
@@ -220,6 +269,12 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
     if (!tokenMint) throw new Error("Missing token mint for TSN settlement");
     const allowed = getAllowedTokenByMint(tokenMint);
     if (!allowed) throw new Error("Token mint not allowlisted for TSN settlement");
+    trackPaymentFeeSnapshot({
+      flow: "TSN Settlement",
+      payment,
+      token: allowed,
+      destinationWallet: settlementWalletAddress,
+    });
     const recipientAmount = Number(payment.amount);
     const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
     const jobs = prepareTsnPaymentMempoolJobRequests({
@@ -298,7 +353,7 @@ export async function requestOnboardedRecipientSettlementViaTsn(params: {
   };
 }
 
-export async function requestPaymentClaimViaTsn(params: {
+async function requestPaymentClaimViaTsnImpl(params: {
   authUser: AuthenticatedUser;
   paymentId: string;
   pin: string;
@@ -439,7 +494,7 @@ function computeRefreshCooldownMs(checkCount: number): number {
  * - Skips if the intent is older than MAX_AGE_SECONDS.
  * - Updates `last_status_checked_at`, `status_finalized_at`, and `status_check_count` in DB.
  */
-export async function refreshSinglePaymentIntentStatus(paymentId: string): Promise<{
+async function refreshSinglePaymentIntentStatusImpl(paymentId: string): Promise<{
   refreshed: boolean;
   reason?: string;
   previousIntentStatus?: PaymentIntentStatus | null;
@@ -648,7 +703,7 @@ function normalizeClaimRequestStatus(status: string): ClaimRequestStatus | null 
   return null;
 }
 
-export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Promise<Array<PaymentRecord & { tsn?: PaymentTsnState }>> {
+async function enrichPaymentsWithTsnStateImpl(payments: PaymentRecord[]): Promise<Array<PaymentRecord & { tsn?: PaymentTsnState }>> {
   if (!env.TSN_ENABLED || payments.length === 0) {
     return payments as Array<PaymentRecord & { tsn?: PaymentTsnState }>;
   }
@@ -696,3 +751,49 @@ export async function enrichPaymentsWithTsnState(payments: PaymentRecord[]): Pro
 export function isTsnSettled(payment: { tsn?: PaymentTsnState }) {
   return payment.tsn?.stage === "cranker_paid" || payment.tsn?.stage === "epoch_settled";
 }
+
+export const createTsnIntentForPayment = traceFunction(createTsnIntentForPaymentImpl, {
+  namespace: "TSN",
+  name: "createTsnIntentForPayment",
+  module: "backend/app/services/tsn.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const requestOnboardedRecipientSettlementViaTsn = traceFunction(
+  requestOnboardedRecipientSettlementViaTsnImpl,
+  {
+    namespace: "TSN",
+    name: "requestOnboardedRecipientSettlementViaTsn",
+    module: "backend/app/services/tsn.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
+
+export const requestPaymentClaimViaTsn = traceFunction(requestPaymentClaimViaTsnImpl, {
+  namespace: "TSN",
+  name: "requestPaymentClaimViaTsn",
+  module: "backend/app/services/tsn.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const refreshSinglePaymentIntentStatus = traceFunction(
+  refreshSinglePaymentIntentStatusImpl,
+  {
+    namespace: "TSN",
+    name: "refreshSinglePaymentIntentStatus",
+    module: "backend/app/services/tsn.ts",
+    level: "debug",
+    includeReturn: false,
+  },
+);
+
+export const enrichPaymentsWithTsnState = traceFunction(enrichPaymentsWithTsnStateImpl, {
+  namespace: "TSN",
+  name: "enrichPaymentsWithTsnState",
+  module: "backend/app/services/tsn.ts",
+  level: "debug",
+  includeReturn: false,
+});

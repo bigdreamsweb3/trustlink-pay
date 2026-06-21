@@ -1,9 +1,8 @@
 "use client";
 
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   DEFAULT_TINS_PROGRAM_ID,
-  buildCreateTinInstruction,
   decodeTinAccount,
   getTinsGlobalStatePda,
   getTinsIdentityPda,
@@ -13,7 +12,8 @@ import {
   type TinResolvedIdentity,
 } from "@trustlink/tsn-sdk/tins";
 
-import { signAndSendSolanaTransaction, signSolanaMessage } from "@/src/lib/wallet";
+import { signSolanaMessage } from "@/src/lib/wallet";
+import { traceFunction } from "../../../utils/observability/tracer";
 
 const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 const PHONE_KEY_MESSAGE = "TINS_PHONE_ENCRYPTION_SEED";
@@ -99,7 +99,7 @@ function resolveLegalName(identity: TinResolvedIdentity) {
   return null;
 }
 
-export async function resolveTinFromChain(tin: string): Promise<BrowserResolvedTin> {
+async function resolveTinFromChainImpl(tin: string): Promise<BrowserResolvedTin> {
   const identity = await resolveTIN({
     tin,
     connection: new Connection(getFrontendSolanaRpcUrl(), "confirmed"),
@@ -123,6 +123,14 @@ export async function resolveTinFromChain(tin: string): Promise<BrowserResolvedT
     legalName: resolveLegalName(identity),
   };
 }
+
+export const resolveTinFromChain = traceFunction(resolveTinFromChainImpl, {
+  namespace: "TINS",
+  name: "resolveTinFromChain",
+  module: "frontend/src/lib/tins.ts",
+  level: "debug",
+  includeReturn: false,
+});
 
 function buildTinBindingMessage(params: {
   userPhoneNumber: string;
@@ -219,7 +227,7 @@ async function encryptPhoneForTins(params: {
   return concatBytes([iv, tag, ciphertext]);
 }
 
-export async function createOrLoadTinForWallet(params: {
+async function createOrLoadTinForWalletImpl(params: {
   walletId: string;
   walletAddress: string;
   phoneNumber: string;
@@ -267,49 +275,15 @@ export async function createOrLoadTinForWallet(params: {
     throw new Error("TINS global state is not initialized on devnet yet.");
   }
 
-  const encryptedPhone = await encryptPhoneForTins({
-    walletId: params.walletId,
-    walletAddress: params.walletAddress,
-    walletPublicKey,
-    phoneNumber: params.phoneNumber,
-  });
-  const instruction = buildCreateTinInstruction({
-    payer: walletPublicKey,
-    identity,
-    displayName: normalizeDisplayName(params.displayName),
-    encryptedPhone,
-    programId,
-  });
-  const transaction = new Transaction().add(instruction);
-  const blockchainSignature = await signAndSendSolanaTransaction({
-    walletId: params.walletId,
-    address: params.walletAddress,
-    rpcUrl,
-    transaction,
-  });
-  const createdIdentity = await connection.getAccountInfo(identity, "confirmed");
-  if (!createdIdentity) {
-    throw new Error("TINS identity was submitted but the on-chain account was not found.");
-  }
-
-  const decoded = decodeTinAccount(createdIdentity.data);
-  const tin = decoded.tin.toString();
-  const binding = await signTinBinding({
-    walletId: params.walletId,
-    walletAddress: params.walletAddress,
-    phoneNumber: params.phoneNumber,
-    tin,
-    identityPublicKey: identity.toBase58(),
-    programId: programId.toBase58(),
-  });
-  return {
-    tin,
-    tinsIdentityPublicKey: identity.toBase58(),
-    tinsRegistryPublicKey: getTinsRegistryPda({ tin: decoded.tin, programId }).toBase58(),
-    tinsWalletPublicKey: walletPublicKey.toBase58(),
-    tinsProgramId: programId.toBase58(),
-    ...binding,
-    blockchainSignature,
-    created: true,
-  };
+  throw new Error(
+    "New TINS registrations now go through TSN mempool verification. This wallet has no on-chain TINS identity yet, so open Identity Center after the TSN TIN creation queue is enabled.",
+  );
 }
+
+export const createOrLoadTinForWallet = traceFunction(createOrLoadTinForWalletImpl, {
+  namespace: "TINS",
+  name: "createOrLoadTinForWallet",
+  module: "frontend/src/lib/tins.ts",
+  level: "info",
+  includeReturn: false,
+});

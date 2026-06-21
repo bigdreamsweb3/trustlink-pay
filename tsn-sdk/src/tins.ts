@@ -11,6 +11,7 @@ import {
 
 export const DEFAULT_TINS_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
+export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
 
 const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
 const TINS_IDENTITY_SEED = Buffer.from("identity");
@@ -18,6 +19,7 @@ const TINS_REGISTRY_SEED = Buffer.from("registry");
 const TINS_PLATFORM_REGISTRY_SEED = Buffer.from("platform-registry");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
+const ZERO_HASH_32 = Buffer.alloc(32);
 
 export type TinSocialIdentityType = "whatsapp" | "x" | "email" | "telegram" | "discord" | string;
 
@@ -180,6 +182,104 @@ function encodeInstruction(tag: number, parts: Buffer[]) {
   return Buffer.concat([Buffer.from([tag]), ...parts]);
 }
 
+function normalizeHash32(value: Buffer | Uint8Array | undefined, label: string): Buffer {
+  if (!value) return ZERO_HASH_32;
+  const buffer = Buffer.from(value);
+  if (buffer.length !== 32) throw new Error(`${label} must be exactly 32 bytes`);
+  return buffer;
+}
+
+export function createTinOwnerIntentHash(params: {
+  purpose: "create" | "update";
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer | Uint8Array;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  nonce: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}): Buffer {
+  const expiry = Buffer.alloc(8);
+  expiry.writeBigInt64LE(BigInt(params.expiryTs));
+  return Buffer.from(sha256(Buffer.concat([
+    Buffer.from(`TINS_${params.purpose.toUpperCase()}_INTENT_V1`, "utf8"),
+    params.ownerPubkey.toBuffer(),
+    Buffer.from(params.displayName, "utf8"),
+    Buffer.from(params.encryptedPhone),
+    Buffer.from([params.privacyLevel ?? 1]),
+    normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
+    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
+    normalizeHash32(params.nonce, "nonce"),
+    expiry,
+  ])));
+}
+
+export function createOwnerIntentSignatureInstruction(params: {
+  ownerPubkey: PublicKey;
+  intentHash: Buffer | Uint8Array;
+  signature: Buffer | Uint8Array;
+}) {
+  return Ed25519Program.createInstructionWithPublicKey({
+    publicKey: params.ownerPubkey.toBytes(),
+    message: normalizeHash32(params.intentHash, "intentHash"),
+    signature: Buffer.from(params.signature),
+  });
+}
+
+export function serializeTinCreationRegistryParams(params: {
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer | Uint8Array;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  intentHash: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}) {
+  return serializeTinRegistryMutationParams(12, params);
+}
+
+export function serializeTinUpdateParams(params: {
+  ownerPubkey: PublicKey;
+  displayName: string;
+  encryptedPhone: Buffer | Uint8Array;
+  privacyLevel?: TinsPrivacyLevel;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  intentHash: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}) {
+  return serializeTinRegistryMutationParams(13, params);
+}
+
+function serializeTinRegistryMutationParams(
+  tag: 12 | 13,
+  params: {
+    ownerPubkey: PublicKey;
+    displayName: string;
+    encryptedPhone: Buffer | Uint8Array;
+    privacyLevel?: TinsPrivacyLevel;
+    encryptedMetadataHash?: Buffer | Uint8Array;
+    pruConfigurationHash?: Buffer | Uint8Array;
+    intentHash: Buffer | Uint8Array;
+    expiryTs: bigint | number;
+  },
+) {
+  const parts: Buffer[] = [];
+  appendPubkey(parts, params.ownerPubkey);
+  appendString(parts, params.displayName);
+  appendBytes(parts, params.encryptedPhone);
+  appendU8(parts, params.privacyLevel ?? 1);
+  parts.push(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
+  parts.push(normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"));
+  parts.push(normalizeHash32(params.intentHash, "intentHash"));
+  const expiry = Buffer.alloc(8);
+  expiry.writeBigInt64LE(BigInt(params.expiryTs));
+  parts.push(expiry);
+  return encodeInstruction(tag, parts);
+}
+
 export function buildCreateTinInstruction(params: {
   payer: PublicKey;
   identity: PublicKey;
@@ -187,31 +287,8 @@ export function buildCreateTinInstruction(params: {
   encryptedPhone: Uint8Array;
   programId?: PublicKey | string | null;
 }) {
-  const name = Buffer.from(params.displayName, "utf8");
-  const encryptedPhone = Buffer.from(params.encryptedPhone);
-  const data = Buffer.alloc(1 + 4 + name.length + 4 + encryptedPhone.length);
-  let offset = 0;
-  data.writeUInt8(4, offset);
-  offset += 1;
-  data.writeUInt32LE(name.length, offset);
-  offset += 4;
-  name.copy(data, offset);
-  offset += name.length;
-  data.writeUInt32LE(encryptedPhone.length, offset);
-  offset += 4;
-  encryptedPhone.copy(data, offset);
-
-  const program = getTinsProgramPublicKey(params.programId);
-  return new TransactionInstruction({
-    programId: program,
-    keys: [
-      { pubkey: params.payer, isSigner: true, isWritable: true },
-      { pubkey: getTinsGlobalStatePda(program), isSigner: false, isWritable: true },
-      { pubkey: params.identity, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
+  void params;
+  throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry.");
 }
 
 export function buildInitializePlatformRegistryInstruction(params: {

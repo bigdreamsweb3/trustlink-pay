@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -24,6 +24,39 @@ function run(command, args) {
       `${command} ${args.join(" ")} failed${stderr || stdout ? `:\n${stderr || stdout}` : ""}`,
     );
   }
+}
+
+function resolveAnchorCommand() {
+  const candidates = [
+    process.env.ANCHOR_BIN,
+    process.env.HOME ? join(process.env.HOME, ".avm", "bin", "anchor-0.30.1") : null,
+    "anchor-0.30.1",
+    "anchor",
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const command = String(candidate);
+    if ((command.includes("/") || command.includes("\\")) && !existsSync(command)) {
+      continue;
+    }
+
+    try {
+      return {
+        command,
+        version: run(command, ["--version"]),
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(
+    [
+      "anchor --version failed and no pinned anchor-0.30.1 binary was usable.",
+      "If AVM is installed, set ANCHOR_BIN to the real binary:",
+      "  export ANCHOR_BIN=$HOME/.avm/bin/anchor-0.30.1",
+    ].join("\n"),
+  );
 }
 
 function parseVersion(label, output, pattern) {
@@ -112,7 +145,8 @@ function read(path) {
 
 const solanaVersion = run("solana", ["--version"]);
 const sbfVersion = run("cargo", ["build-sbf", "--version"]);
-const anchorVersion = run("anchor", ["--version"]);
+const anchor = resolveAnchorCommand();
+const anchorVersion = anchor.version;
 const cargoVersion = run("cargo", ["--version"]);
 const rustcVersion = run("rustc", ["--version"]);
 
@@ -182,6 +216,20 @@ for (const [path, body] of lockfiles) {
     );
   }
 
+  if (hasPackageVersion(packages, "indexmap", (version) => compareVersions(version, "2.3.0") > 0)) {
+    throw new Error(
+      `${path} uses indexmap ${packageVersions(packages, "indexmap").join(", ")}, but Solana/SBF 1.18.x cannot build newer indexmap crates that require newer Rust/edition support.\n` +
+        "Run inside this lockfile's program directory: cargo update -p indexmap --precise 2.3.0",
+    );
+  }
+
+  if (hasPackageVersion(packages, "borsh", (version) => compareVersions(version, "1.5.7") > 0)) {
+    throw new Error(
+      `${path} uses borsh ${packageVersions(packages, "borsh").join(", ")}, which requires Rust 1.77+ and breaks Solana/SBF 1.18.x deploy builds.\n` +
+        "Run inside this lockfile's program directory: cargo update -p borsh --precise 1.5.7",
+    );
+  }
+
   if (hasPackageVersion(packages, "zeroize_derive", (version) => version === "1.5.0")) {
     throw new Error(
       `${path} uses zeroize_derive 1.5.0, which requires Rust edition 2024.\n` +
@@ -214,7 +262,7 @@ for (const [path, body] of lockfiles) {
 console.log("Solana deploy doctor passed.");
 console.log(`- ${solanaVersion}`);
 console.log(`- ${sbfVersion.split("\n")[0]}`);
-console.log(`- ${anchorVersion}`);
+console.log(`- ${anchorVersion} (${anchor.command})`);
 console.log(`- ${cargoVersion}`);
 console.log(`- ${rustcVersion}`);
 

@@ -7,6 +7,7 @@ import { findPaymentIntentByPaymentId } from "@/app/db/tsn";
 import { refreshSinglePaymentIntentStatus, isTsnSettled } from "@/app/services/tsn";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
 import type { PaymentIntentStatus, ClaimRequestStatus } from "@trustlink/tsn-sdk";
+import { traceApiHandler } from "../../../../../../utils/observability/tracer";
 
 export type RefreshStatusResponse = {
   paymentId: string;
@@ -21,7 +22,7 @@ export type RefreshStatusResponse = {
   settlementComplete: boolean;
 };
 
-export async function POST(
+async function postPaymentRefreshStatus(
   request: Request,
   { params }: { params: Promise<{ paymentId: string }> }
 ) {
@@ -74,3 +75,9 @@ export async function POST(
     } satisfies RefreshStatusResponse);
   });
 }
+
+export const POST = traceApiHandler(postPaymentRefreshStatus, {
+  name: "/api/payment/[paymentId]/refresh-status",
+  module: "backend/app/api/payment/[paymentId]/refresh-status/route.ts",
+  includeReturn: false,
+});

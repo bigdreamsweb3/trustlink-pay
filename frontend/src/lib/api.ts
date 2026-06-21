@@ -4,6 +4,7 @@ import {
   clearStoredUser,
 } from "@/src/lib/storage";
 import { buildBackendUrl } from "@/src/lib/backend";
+import { traceFunction } from "../../../utils/observability/tracer";
 
 type ApiCacheMode = "default" | "no-store";
 
@@ -194,14 +195,14 @@ export async function apiPost<T>(
   accessToken?: string,
   options: ApiCacheOptions = {},
 ): Promise<T> {
-  const load = async () => {
+  const load = traceFunction(async function apiPostLoad(payloadBody: unknown) {
     const response = await fetch(buildBackendUrl(path), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payloadBody),
     });
 
     const payload = (await parseResponse(response)) as { error?: string } | null;
@@ -212,7 +213,13 @@ export async function apiPost<T>(
     }
 
     return payload as T;
-  };
+  }, {
+    namespace: "API",
+    name: `POST ${path}`,
+    module: "frontend/src/lib/api.ts",
+    level: "debug",
+    includeReturn: false,
+  });
 
   if (options.cache === "default") {
     const cacheKey = buildCacheKey({
@@ -222,10 +229,10 @@ export async function apiPost<T>(
       accessToken,
       cacheKey: options.cacheKey,
     });
-    return readThroughCache(cacheKey, options.ttlMs ?? DEFAULT_POST_READ_TTL_MS, load);
+    return readThroughCache(cacheKey, options.ttlMs ?? DEFAULT_POST_READ_TTL_MS, () => load(body));
   }
 
-  const result = await load();
+  const result = await load(body);
   invalidateAfterMutation(path);
   return result;
 }
@@ -235,7 +242,7 @@ export async function apiGet<T>(
   accessToken?: string,
   options: ApiCacheOptions = {},
 ): Promise<T> {
-  const load = async () => {
+  const load = traceFunction(async function apiGetLoad() {
     const response = await fetch(buildBackendUrl(path), {
       method: "GET",
       headers: accessToken
@@ -251,7 +258,13 @@ export async function apiGet<T>(
     }
 
     return payload as T;
-  };
+  }, {
+    namespace: "API",
+    name: `GET ${path}`,
+    module: "frontend/src/lib/api.ts",
+    level: "debug",
+    includeReturn: false,
+  });
 
   if (options.cache === "no-store") {
     return load();
@@ -271,44 +284,68 @@ export async function apiPatch<T>(
   body: unknown,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(buildBackendUrl(path), {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: JSON.stringify(body),
+  const execute = traceFunction(async function apiPatchLoad(payloadBody: unknown) {
+    const response = await fetch(buildBackendUrl(path), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify(payloadBody),
+    });
+
+    const payload = (await parseResponse(response)) as { error?: string } | null;
+
+    if (!response.ok) {
+      handleSessionFailure(response.status, payload?.error);
+      throw new Error(payload?.error ?? "Request failed");
+    }
+
+    return payload as T;
+  }, {
+    namespace: "API",
+    name: `PATCH ${path}`,
+    module: "frontend/src/lib/api.ts",
+    level: "debug",
+    includeReturn: false,
   });
 
-  const payload = (await parseResponse(response)) as { error?: string } | null;
-
-  if (!response.ok) {
-    handleSessionFailure(response.status, payload?.error);
-    throw new Error(payload?.error ?? "Request failed");
-  }
+  const payload = await execute(body);
 
   invalidateAfterMutation(path);
-  return payload as T;
+  return payload;
 }
 
 export async function apiDelete<T>(
   path: string,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(buildBackendUrl(path), {
-    method: "DELETE",
-    headers: accessToken
-      ? { Authorization: `Bearer ${accessToken}` }
-      : undefined,
+  const execute = traceFunction(async function apiDeleteLoad() {
+    const response = await fetch(buildBackendUrl(path), {
+      method: "DELETE",
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    });
+
+    const payload = (await parseResponse(response)) as { error?: string } | null;
+
+    if (!response.ok) {
+      handleSessionFailure(response.status, payload?.error);
+      throw new Error(payload?.error ?? "Request failed");
+    }
+
+    return payload as T;
+  }, {
+    namespace: "API",
+    name: `DELETE ${path}`,
+    module: "frontend/src/lib/api.ts",
+    level: "debug",
+    includeReturn: false,
   });
 
-  const payload = (await parseResponse(response)) as { error?: string } | null;
-
-  if (!response.ok) {
-    handleSessionFailure(response.status, payload?.error);
-    throw new Error(payload?.error ?? "Request failed");
-  }
+  const payload = await execute();
 
   invalidateAfterMutation(path);
-  return payload as T;
+  return payload;
 }

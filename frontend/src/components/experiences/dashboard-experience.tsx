@@ -451,9 +451,9 @@ export function DashboardExperience() {
               done: Boolean(walletAddress),
             },
             {
-              title: "Approve TINS registration",
+              title: "Queue TINS registration",
               description:
-                "The transaction creates your on-chain Transfer Identity Number for this wallet.",
+                "Your wallet signs an owner intent. A TSN Cranker verifies and submits the registry update.",
             },
             {
               title: "Keep control of your funds",
@@ -858,7 +858,7 @@ export function DashboardExperience() {
                   <div className="text-[0.58rem] text-text-faint">
                     {activeTin
                       ? `TIN ${activeTin}${resolvedTin?.name ? ` · Registry name: ${resolvedTin.name}` : ""}${activeTinIdentity ? ` · ${shortenAddress(activeTinIdentity)}` : ""}`
-                      : "Create on-chain payment identity - TINS Protocol"}
+                      : "Create payment identity through TSN verification"}
                   </div>
                 </div>
                 <span

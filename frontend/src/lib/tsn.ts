@@ -1,6 +1,7 @@
 import { apiPost } from "@/src/lib/api";
 import { submitPaymentAuthorizationToMempool } from "@trustlink/tsn-sdk/payment-authorization";
 import { estimateTsnSendCostFromChain as estimateTsnSendCostFromSdk } from "@trustlink/tsn-sdk/send-estimate";
+import { traceFunction } from "../../../utils/observability/tracer";
 
 function getTsnMempoolUrl() {
   const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL;
@@ -24,7 +25,7 @@ async function postTerminalLog(
   }
 }
 
-export async function enqueueTsnPaymentFromFrontend(params: {
+async function enqueueTsnPaymentFromFrontendImpl(params: {
   paymentId: string;
   recipientHash: string;
   destinationWallet: string;
@@ -114,6 +115,17 @@ export async function enqueueTsnPaymentFromFrontend(params: {
   };
 }
 
+export const enqueueTsnPaymentFromFrontend = traceFunction(
+  enqueueTsnPaymentFromFrontendImpl,
+  {
+    namespace: "TSN",
+    name: "enqueueTsnPaymentFromFrontend",
+    module: "frontend/src/lib/tsn.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
+
 function parseUsdPrice(value: string | undefined) {
   if (!value) return null;
   const parsed = Number(value);
@@ -185,7 +197,7 @@ function tokenUsdBySymbol(
   return null;
 }
 
-export async function estimateTsnSendCostFromChain(params: {
+async function estimateTsnSendCostFromChainImpl(params: {
   senderWallet: string;
   tokenMintAddress: string;
   amountUi: number;
@@ -213,3 +225,13 @@ export async function estimateTsnSendCostFromChain(params: {
   await postTerminalLog("tsn.frontend.estimate", estimate.debug);
   return estimate;
 }
+
+export const estimateTsnSendCostFromChain = traceFunction(
+  estimateTsnSendCostFromChainImpl,
+  {
+    namespace: "TSN",
+    name: "estimateTsnSendCostFromChain",
+    module: "frontend/src/lib/tsn.ts",
+    level: "debug",
+  },
+);

@@ -120,10 +120,101 @@ npm run deploy:doctor
 
 The deploy lockfiles also avoid newer Rust crates that require edition 2024. That keeps builds compatible with the Cargo version bundled inside the Solana/SBF 1.18 builder.
 
-## TSN + Cranker mediated TINS operations
+## Development Observability
 
-Version: TSN V1 Cranker-mediated TINS operations
-Commit reference: current branch worktree
+TrustLink Pay has development-only tracing for payment, TIN, TSN, Cranker, API, wallet, and notification flows.
+
+It is off by default. It is also disabled in production.
+
+Enable backend and daemon tracing:
+
+```bash
+DEBUG_TRACE=true TRACE_LEVEL=debug npm run backend:dev
+DEBUG_TRACE=true TRACE_LEVEL=debug npm run tsn:cranker:start
+```
+
+Enable frontend tracing:
+
+```bash
+NEXT_PUBLIC_DEBUG_TRACE=true NEXT_PUBLIC_TRACE_LEVEL=debug npm run frontend:dev
+```
+
+Trace levels:
+
+- `info`: important protocol and API boundaries.
+- `debug`: normal development tracing.
+- `verbose`: deeper payload summaries.
+- `full`: maximum detail after sanitization.
+
+Secrets are redacted. The tracer masks private keys, seeds, mnemonics, bearer tokens, cookies, passwords, signatures, sessions, API keys, and access tokens.
+
+Example wrapper:
+
+```ts
+import { traceFunction } from "../utils/observability/tracer";
+
+export const resolveTin = traceFunction(
+  async function resolveTin(tin: string) {
+    return tinsClient.resolve(tin);
+  },
+  {
+    name: "resolveTin",
+    namespace: "TINS",
+    module: "services/tins/resolveTin.ts",
+    level: "debug",
+    includeReturn: false,
+  },
+);
+```
+
+Example trace:
+
+```text
+[TRACE] TSN:createSettlementAuthorization
+  Module: services/tsn/payment-service.ts
+  Args: { amount: "1.25 SOL", senderTin: "123****890", recipientTin: "987****210" }
+  Started: 2026-06-19T...
+  Duration: 184ms
+  Depth: 2
+  Status: success
+```
+
+Fee accounting is also available for local development:
+
+```ts
+import { logFeeBreakdown } from "../utils/observability/fee-tracker";
+
+logFeeBreakdown({
+  flow: "TSN Settlement",
+  userAmountLamports,
+  networkFeeLamports,
+  senderFeeLamports,
+  claimFeeLamports,
+});
+```
+
+Run the local fee dashboard:
+
+```bash
+npm run debug:fee-summary
+```
+
+Example fee log:
+
+```text
+[FEE] TSN Settlement
+User paid: 1.000000000 SOL
+Actual network cost: 0.000005000 SOL
+Protocol earned: 0.003000000 SOL
+Net protocol result: +0.002995000 SOL
+Split:
+  LPs: 0.002550000 SOL
+  Operators: 0.000240000 SOL
+  Treasury: 0.000150000 SOL
+  Recovery Bonus: 0.000060000 SOL
+```
+
+## TSN + Cranker mediated TINS operations
 
 ### Summary
 
@@ -131,15 +222,12 @@ Start new TINS work from the TSN Mempool runtime. Direct user-submitted TIN crea
 
 ### Implementation notes
 
-Creation uses two transactions: `tin_creation_fee_commitment` in TSN, then `tin_creation_registry` in TINS. Updates use an owner-signed update intent followed by Cranker-submitted `tin_update`.
+Creation and update begin as `POST /tin-operations` requests in the TSN mempool. The reference Cranker daemon verifies the owner intent, records the fee commitment, then submits `tin_creation_registry` or `tin_update` to TINS.
 
-### Usage examples
+Run the normal Cranker daemon after the mempool is online:
 
 ```bash
-tsn-cranker tins verify-create-intent --intent <INTENT_ID>
-tsn-cranker tins submit-create-registry --intent <INTENT_ID>
-tsn-cranker tins verify-update-intent --intent <INTENT_ID>
-tsn-cranker tins submit-update --intent <INTENT_ID>
+npm run tsn:cranker:start
 ```
 
 ### Security & privacy considerations

@@ -151,7 +151,7 @@ export function IdentityOverviewSection({
     if (!accessToken) return;
     if (!walletAddress || !session) {
       requestWalletConnection();
-      showToast("Connect the wallet you want to register with TINS.");
+      showToast("Connect the wallet that will own the TIN intent.");
       return;
     }
 
@@ -301,8 +301,8 @@ export function IdentityOverviewSection({
               {busy
                 ? "Creating identity..."
                 : walletAddress
-                  ? "Create Transfer Identity Number"
-                  : "Connect wallet to create TIN"}
+                  ? "Queue TIN creation"
+                  : "Connect wallet to queue TIN"}
             </button>
           ) : null}
         </div>

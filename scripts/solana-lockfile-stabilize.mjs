@@ -6,6 +6,8 @@ const root = process.cwd();
 const lockfiles = ["tsn/protocol/Cargo.lock", "tins-registrar/program/Cargo.lock"];
 const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],
+  ["indexmap", "2.3.0", "cargo update -p indexmap --precise 2.3.0"],
+  ["borsh", "1.5.7", "cargo update -p borsh --precise 1.5.7"],
   ["zeroize_derive", "1.4.3", "cargo update -p zeroize_derive --precise 1.4.3"],
   ["proc-macro-crate", "3.3.0", "cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0"],
 ];
@@ -28,6 +30,17 @@ function parseCargoLockPackages(body) {
 
 function packageVersions(packages, name) {
   return packages.get(name) ?? [];
+}
+
+function compareVersions(left, right) {
+  const leftParts = left.split(".").map(Number);
+  const rightParts = right.split(".").map(Number);
+  for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+    const leftPart = leftParts[index] ?? 0;
+    const rightPart = rightParts[index] ?? 0;
+    if (leftPart !== rightPart) return leftPart - rightPart;
+  }
+  return 0;
 }
 
 function stabilizeLockfile(path) {
@@ -69,6 +82,12 @@ function stabilizeLockfile(path) {
   if (packageVersions(packages, "toml_edit").some((version) => version.startsWith("0.25."))) {
     errors.push(
       `${path} has toml_edit 0.25.x, which pulls toml_parser 1.x. Run inside this lockfile's program directory: cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0`,
+    );
+  }
+
+  if (packageVersions(packages, "borsh").some((version) => compareVersions(version, "1.5.7") > 0)) {
+    errors.push(
+      `${path} has borsh ${packageVersions(packages, "borsh").join(", ")}, which requires a newer Rust toolchain than Solana/SBF 1.18.x provides. Run inside this lockfile's program directory: cargo update -p borsh --precise 1.5.7`,
     );
   }
 

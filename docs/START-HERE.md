@@ -118,6 +118,39 @@ npm run deploy:lockfiles:stabilize
 npm run deploy:doctor
 ```
 
+## RPC Routing
+
+TrustLink Pay now resolves Solana RPC through one shared gateway entry point.
+
+Set the app-facing URL once:
+
+```bash
+TSN_SOLANA_RPC_URLS=http://127.0.0.1:8787
+```
+
+The frontend reads the same shared value automatically at build time.
+
+The gateway then reads its upstream list:
+
+```bash
+TSN_SOLANA_RPC_UPSTREAM_URLS=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY,https://api.devnet.solana.com
+```
+
+Inspect the current selection:
+
+```bash
+npm run rpc:inspect
+npm run rpc:gateway:inspect
+```
+
+Start the local gateway:
+
+```bash
+npm run rpc:gateway:dev
+```
+
+This keeps the protocol on one controlled RPC path while still letting the gateway route to the fastest or healthiest upstream provider.
+
 The deploy lockfiles also avoid newer Rust crates that require edition 2024. That keeps builds compatible with the Cargo version bundled inside the Solana/SBF 1.18 builder.
 
 ## Development Observability

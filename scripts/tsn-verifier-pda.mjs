@@ -15,6 +15,7 @@ const {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } = require("../tsn-sdk/node_modules/@solana/web3.js");
+import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_TSN_PROGRAM_ID = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";
 const MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
@@ -32,7 +33,7 @@ Usage:
 
 Environment:
   TSN_PROGRAM_ID or PROGRAM_ID overrides ${DEFAULT_TSN_PROGRAM_ID}
-  SOLANA_RPC_URL or RPC_URL overrides https://api.devnet.solana.com
+  TSN_SOLANA_RPC_URLS overrides https://api.devnet.solana.com
 
 Examples:
   npm run tsn:verifier:info
@@ -93,7 +94,7 @@ function encodeU64(value) {
 
 function getContext() {
   const programId = new PublicKey(process.env.TSN_PROGRAM_ID || process.env.PROGRAM_ID || DEFAULT_TSN_PROGRAM_ID);
-  const rpcUrl = process.env.SOLANA_RPC_URL || process.env.RPC_URL || "https://api.devnet.solana.com";
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const [motherEscrow] = PublicKey.findProgramAddressSync([MOTHER_ESCROW_SEED], programId);
   const [verifierPda, bump] = PublicKey.findProgramAddressSync([VERIFIER_SEED], programId);
   return {

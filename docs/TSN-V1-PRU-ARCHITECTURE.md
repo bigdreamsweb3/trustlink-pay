@@ -4,7 +4,7 @@ Version: current TSN V1 architecture
 
 ## Summary
 
-TSN V1 uses deterministic PRU settlement instead of RPDA-style routing. A TIN remains the root identity layer, while token-bound Privacy Receiving Units (PRUs) become the execution endpoints used by TSN. The Cranker stays stateless: it receives transaction inputs, computes the same allocation every verifier can replay, and executes the result without storing routing state or introducing randomness.
+TSN V1 uses deterministic PRU settlement and keeps RPDA-style routing out of the current architecture. A TIN remains the root identity layer, while token-bound Privacy Receiving Units (PRUs) become the execution endpoints used by TSN. The Cranker stays stateless: it receives transaction inputs, computes the same allocation every verifier can replay, and executes the result without storing routing state or introducing randomness.
 
 ## Core model
 
@@ -76,11 +76,7 @@ TSN balance states are:
 - `PENDING`
 - `SETTLED`
 
-Unified TIN balance is:
-
-```text
-TIN Balance = AVAILABLE + SETTLED - PENDING
-```
+Unified TIN balance is `AVAILABLE + SETTLED - PENDING`.
 
 The frontend and SDK must show only TINS-governed balance abstractions or masked representations. Raw wallet addresses and raw PRU balances are not public UI objects.
 

@@ -24,6 +24,15 @@ import {
 } from "../../../tsn-sdk/dist/tins.js";
 
 const PROGRAM_ID = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
+const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
+
+function resolveSolanaRpcUrl() {
+  return (
+    process.env.TSN_SOLANA_RPC_URLS?.split(/[,\s]+/g)
+      .map((entry) => entry.trim().replace(/\/+$/, ""))
+      .find(Boolean) ?? DEFAULT_SOLANA_RPC_URL
+  );
+}
 
 /**
  * Anchor-style integration script.
@@ -34,7 +43,10 @@ const PROGRAM_ID = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
  */
 describe("TINS encrypted identity registry", () => {
   it("links encrypted social and sensitive identities with platform proof", async () => {
-    const connection = new Connection(process.env.SOLANA_RPC_URL ?? "http://127.0.0.1:8899", "confirmed");
+    const connection = new Connection(
+      resolveSolanaRpcUrl({ frontendSafe: false }),
+      "confirmed",
+    );
     const owner = Keypair.generate();
     const platform = Keypair.generate();
     const tin = BigInt(process.env.TEST_TIN ?? "1000000008");

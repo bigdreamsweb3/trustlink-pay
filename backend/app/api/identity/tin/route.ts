@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { decodeTinAccount, getTinsIdentityPda, getTinsRegistryPda } from "@trustlink/tsn-sdk/tins";
 import { z } from "zod";
 
@@ -9,6 +9,7 @@ import { updateUserTinMapping } from "@/app/db/users";
 import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
 import { invalidateUserCache } from "@/app/lib/cache";
 import { getEnv } from "@/app/lib/env";
+import { createSolanaConnection } from "@/app/lib/rpc";
 import { fail, ok, toErrorResponse } from "@/app/lib/http";
 
 const TIN_BINDING_MAX_AGE_MS = 5 * 60 * 1000;
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
         return fail("TINS wallet binding signature is invalid", 400);
       }
 
-      const connection = new Connection(parsedEnv.SOLANA_RPC_URL ?? clusterApiUrl("devnet"), "confirmed");
+      const connection = createSolanaConnection({ frontendSafe: false });
       const account = await connection.getAccountInfo(identityPublicKey, "confirmed");
       if (!account) {
         return fail("TINS identity account was not found on devnet", 400);

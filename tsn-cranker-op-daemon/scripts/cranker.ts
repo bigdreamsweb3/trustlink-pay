@@ -45,6 +45,7 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { resolveSolanaRpcUrl } from "../../tsn-cranker-sdk/src/rpc.ts";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
@@ -1372,7 +1373,7 @@ async function main() {
       `[tsn-cranker] ignoring TSN_CRANKER_OPERATOR_PUBKEY=${process.env.TSN_CRANKER_OPERATOR_PUBKEY}; using signer keypair ${operator}`,
     );
   }
-  const rpcUrl = process.env.RPC_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const connection = new Connection(rpcUrl, {
     commitment: "confirmed",
     wsEndpoint: process.env.SOLANA_WS_URL,

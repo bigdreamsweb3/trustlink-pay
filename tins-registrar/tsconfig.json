@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "types": ["node", "mocha"],
+    "typeRoots": ["./node_modules/@types", "../backend/node_modules/@types"],
+    "paths": {
+      
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["programs/tests/**/*.ts"]
+}

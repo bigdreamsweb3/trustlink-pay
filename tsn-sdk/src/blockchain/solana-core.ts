@@ -4,6 +4,7 @@ import { TOKEN_PROGRAM_ID as SPL_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 
 import { VERIFIED_TSN_PROGRAM_ID } from "../program.js";
+import { resolveSolanaRpcUrl } from "../rpc.js";
 
 export const TOKEN_PROGRAM_ID = SPL_TOKEN_PROGRAM_ID;
 
@@ -51,8 +52,17 @@ export function getEscrowAuthorityKeypair(secretKeyValue?: string | null): Keypa
   return Keypair.fromSeed(Uint8Array.from(seed));
 }
 
-export function getConnection(rpcUrl: string) {
-  return new Connection(rpcUrl, "confirmed");
+export function getConnection(rpcUrl?: string) {
+  const normalizedRpcUrl =
+    !rpcUrl ||
+    rpcUrl === "http://127.0.0.1:8899" ||
+    rpcUrl === "https://api.devnet.solana.com"
+      ? resolveSolanaRpcUrl({ frontendSafe: false })
+      : rpcUrl;
+  return new Connection(
+    normalizedRpcUrl,
+    "confirmed",
+  );
 }
 
 export function getProgramId() {

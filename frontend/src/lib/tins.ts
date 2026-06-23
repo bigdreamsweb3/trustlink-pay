@@ -1,6 +1,6 @@
 "use client";
 
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
   DEFAULT_TINS_PROGRAM_ID,
   decodeTinAccount,
@@ -13,9 +13,8 @@ import {
 } from "@trustlink/tsn-sdk/tins";
 
 import { signSolanaMessage } from "@/src/lib/wallet";
+import { createSolanaConnection } from "@/src/lib/rpc";
 import { traceFunction } from "../../../utils/observability/tracer";
-
-const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 const PHONE_KEY_MESSAGE = "TINS_PHONE_ENCRYPTION_SEED";
 const PHONE_KEY_INFO = "TINS_PHONE_KEY_INFO";
 
@@ -60,10 +59,6 @@ function getFrontendTinsProgramId() {
   return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
 }
 
-function getFrontendSolanaRpcUrl() {
-  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? DEFAULT_SOLANA_RPC_URL;
-}
-
 export type BrowserResolvedTin = {
   tin: string;
   name: string | null;
@@ -102,7 +97,7 @@ function resolveLegalName(identity: TinResolvedIdentity) {
 async function resolveTinFromChainImpl(tin: string): Promise<BrowserResolvedTin> {
   const identity = await resolveTIN({
     tin,
-    connection: new Connection(getFrontendSolanaRpcUrl(), "confirmed"),
+    connection: createSolanaConnection({ frontendSafe: true }),
     programId: getFrontendTinsProgramId(),
   });
   const whatsapp =
@@ -234,8 +229,7 @@ async function createOrLoadTinForWalletImpl(params: {
   displayName?: string | null;
 }): Promise<BrowserTinRegistration> {
   const programId = getFrontendTinsProgramId();
-  const rpcUrl = getFrontendSolanaRpcUrl();
-  const connection = new Connection(rpcUrl, "confirmed");
+  const connection = createSolanaConnection({ frontendSafe: true });
   const walletPublicKey = new PublicKey(params.walletAddress);
   const identity = getTinsIdentityPda({ walletPubkey: walletPublicKey, programId });
   const existingIdentity = await connection.getAccountInfo(identity, "confirmed");

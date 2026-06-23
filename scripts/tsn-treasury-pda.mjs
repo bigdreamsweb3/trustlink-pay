@@ -18,6 +18,7 @@ const {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } = require("../tsn-sdk/node_modules/@solana/web3.js");
+import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_TSN_PROGRAM_ID = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";
 const DEFAULT_TOKEN_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
@@ -32,7 +33,7 @@ Usage:
 
 Environment:
   TSN_PROGRAM_ID or PROGRAM_ID overrides ${DEFAULT_TSN_PROGRAM_ID}
-  SOLANA_RPC_URL or RPC_URL overrides https://api.devnet.solana.com
+  TSN_SOLANA_RPC_URLS overrides https://api.devnet.solana.com
   TSN_TOKEN_MINT overrides ${DEFAULT_TOKEN_MINT}
 
 Examples:
@@ -82,7 +83,7 @@ function loadKeypair(path) {
 
 function getContext(rawTokenMint) {
   const programId = new PublicKey(process.env.TSN_PROGRAM_ID || process.env.PROGRAM_ID || DEFAULT_TSN_PROGRAM_ID);
-  const rpcUrl = process.env.SOLANA_RPC_URL || process.env.RPC_URL || "https://api.devnet.solana.com";
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const tokenMint = new PublicKey(rawTokenMint || process.env.TSN_TOKEN_MINT || DEFAULT_TOKEN_MINT);
   const [treasuryPda, bump] = PublicKey.findProgramAddressSync([TREASURY_SEED], programId);
   const treasuryTokenAccount = getAssociatedTokenAddressSync(

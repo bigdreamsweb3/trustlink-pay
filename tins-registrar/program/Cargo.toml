@@ -41,6 +41,7 @@ thiserror = "1.0.24"
 
 [features]
 no-entrypoint = []
+idl-build = []
 
 [lib]
 crate-type = ["cdylib", "lib"]

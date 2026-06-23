@@ -1,15 +1,12 @@
 export const runtime = "nodejs";
 
 import { ok, toErrorResponse } from "@/app/lib/http";
-import { env } from "@/app/lib/env";
 import { getEscrowDepositAddress } from "@/app/blockchain/solana";
+import { resolveSolanaRpcUrl } from "@/app/lib/rpc";
 
 export async function GET() {
   try {
-    const rpcUrl = env.SOLANA_RPC_URL;
-    if (!rpcUrl) {
-      throw new Error("SOLANA_RPC_URL environment variable is not set");
-    }
+    const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
 
     return ok({
       address: getEscrowDepositAddress(),

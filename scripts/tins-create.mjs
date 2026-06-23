@@ -1,6 +1,7 @@
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import { createTinsClient } from "../tins-sdk/dist/index.js"; 
+import { createSolanaConnection } from "./lib/tsn-rpc.mjs";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -9,7 +10,7 @@ async function main() {
 
   console.log(`Setting up new TIN for '${displayName}' with phone '${phoneNumber}'...`);
 
-  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
+  const connection = createSolanaConnection({ frontendSafe: false });
   
   // 1. Generate a brand new random wallet for testing
   const walletKeypair = Keypair.generate();

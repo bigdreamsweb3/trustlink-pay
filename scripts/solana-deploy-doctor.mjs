@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
@@ -144,7 +144,17 @@ function read(path) {
 }
 
 const solanaVersion = run("solana", ["--version"]);
-const sbfVersion = run("cargo", ["build-sbf", "--version"]);
+let sbfVersion;
+try {
+  sbfVersion = execFileSync("cargo-build-sbf", ["--version"], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 20000,
+  }).trim();
+} catch {
+  sbfVersion = run("cargo", ["build-sbf", "--version"]);
+}
 const anchor = resolveAnchorCommand();
 const anchorVersion = anchor.version;
 const cargoVersion = run("cargo", ["--version"]);

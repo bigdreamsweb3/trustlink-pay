@@ -186,7 +186,7 @@ export async function tsnCreateIntentOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const payer: Keypair = params.payer ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: payer.publicKey });
@@ -238,7 +238,7 @@ export async function tsnSubmitSenderSignedSettlementTransaction(params: {
   signedTransactionBase64: string;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const tx = Transaction.from(Buffer.from(params.signedTransactionBase64, "base64"));
   if (!tx.feePayer?.equals(params.operator.publicKey)) {
     throw new Error(
@@ -280,7 +280,7 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const authority = params.authority ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const existing = await tsnFetchMotherEscrowOnChain(params.rpcUrl);
@@ -340,7 +340,7 @@ export async function tsnMigrateMotherEscrowOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const authority = params.authority ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const existing = await tsnFetchMotherEscrowOnChain(params.rpcUrl);
@@ -385,7 +385,7 @@ export async function tsnSettleEpochOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const authority = params.authority ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
 
@@ -418,7 +418,7 @@ export async function tsnProcessBatchReimbursementOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const operator = params.operator ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: operator.publicKey });
@@ -470,7 +470,7 @@ export async function tsnRegisterCrankerOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const operator = params.operator ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: operator.publicKey });
@@ -502,7 +502,7 @@ export async function tsnSetCrankerFundingPolicyOnChain(params: {
   allowExternalFunding: boolean;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
 
@@ -533,7 +533,7 @@ export async function tsnInitializeCrankerVaultOnChain(params: {
     return { mode: "mock" as const, signature: null as string | null };
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const payer = params.payer ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
@@ -572,7 +572,7 @@ export async function tsnFundCrankerOnChain(params: {
   amountBaseUnits: bigint;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
   const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
@@ -612,7 +612,7 @@ export async function tsnWithdrawCrankerFundsOnChain(params: {
   amountBaseUnits: bigint;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
   const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
@@ -650,7 +650,7 @@ export async function tsnClaimIntentOnChain(params: {
   intent: PublicKey;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
 
@@ -680,7 +680,7 @@ export async function tsnReassignIntentOnChain(params: {
   intent: PublicKey;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
 
   const ix = new TransactionInstruction({
@@ -713,7 +713,7 @@ export async function tsnSubmitProofOnChain(params: {
     throw new Error("payoutTxSig64 must be 64 bytes");
   }
 
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
@@ -808,7 +808,7 @@ export async function tsnClaimVaultSettlementOnChain(params: {
   if (params.otdtHash32.length !== 32) {
     throw new Error("otdtHash32 must contain exactly 32 bytes");
   }
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
@@ -854,7 +854,7 @@ export async function tsnExecuteVaultPayoutOnChain(params: {
   if (params.otdt.length !== 32 || params.decryptionSecret.length !== 32) {
     throw new Error("OTDT and decryptionSecret must each contain exactly 32 bytes");
   }
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
@@ -918,7 +918,7 @@ export async function tsnClaimVaultRecoveryOnChain(params: {
   paymentIntentId: bigint;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
@@ -956,7 +956,7 @@ export async function tsnRecoverPaymentVaultOnChain(params: {
   settlementCrankerOperator: PublicKey;
   rpcUrl?: string;
 }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const recoveryCranker = getTsnCrankerPda({
     motherEscrow,
@@ -1015,7 +1015,7 @@ export async function tsnRecoverPaymentVaultOnChain(params: {
 }
 
 export async function tsnFetchIntentOnChain(params: { intent: PublicKey; rpcUrl?: string }) {
-  const connection = getConnection(params.rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(params.rpcUrl);
   const info = await connection.getAccountInfo(params.intent, "confirmed");
   if (!info?.data) return null;
 
@@ -1077,7 +1077,7 @@ export async function tsnFetchIntentOnChain(params: { intent: PublicKey; rpcUrl?
 }
 
 export async function tsnFetchMotherEscrowOnChain(rpcUrl?: string) {
-  const connection = getConnection(rpcUrl ?? "http://127.0.0.1:8899");
+  const connection = getConnection(rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const info = await connection.getAccountInfo(motherEscrow, "confirmed");
   if (!info?.data) {

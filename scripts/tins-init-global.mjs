@@ -13,9 +13,9 @@ const {
   TransactionInstruction,
   sendAndConfirmTransaction,
 } = require("../backend/node_modules/@solana/web3.js");
+import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
-const DEFAULT_RPC_URL = "https://api.devnet.solana.com";
 const DEFAULT_STARTING_SEQUENCE = "100000000";
 
 function usage() {
@@ -33,7 +33,7 @@ Examples:
   npm run tins:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json ${DEFAULT_STARTING_SEQUENCE}
 
 Environment:
-  SOLANA_RPC_URL or RPC_URL can override the devnet RPC endpoint.
+  TSN_SOLANA_RPC_URLS can override the devnet RPC endpoint.
 `);
 }
 
@@ -74,7 +74,7 @@ async function main() {
   const programId = new PublicKey(maybeProgramId || process.env.TINS_PROGRAM_ID || DEFAULT_PROGRAM_ID);
   const payerPath = maybeKeypairPath || process.env.TINS_AUTHORITY_KEYPAIR_PATH || "~/.config/solana/id.json";
   const startingSequence = BigInt(maybeStartingSequence || process.env.TINS_STARTING_SEQUENCE || DEFAULT_STARTING_SEQUENCE);
-  const rpcUrl = process.env.SOLANA_RPC_URL || process.env.RPC_URL || DEFAULT_RPC_URL;
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const { keypair: payer, keypairPath } = readKeypair(payerPath);
   const connection = new Connection(rpcUrl, "confirmed");
   const [globalState] = PublicKey.findProgramAddressSync([Buffer.from("global-state")], programId);

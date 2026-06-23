@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { tsnFetchMotherEscrowOnChain } from "../tsn-sdk/dist/blockchain/solana-tsn.js";
 import { tsnConfigurePrivateSettlementOnChain } from "../tsn-sdk/dist/private-settlement.js";
+import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const [authorityPath, permitSignerAddress, rpcUrlArg] = process.argv.slice(2);
 if (!authorityPath || !permitSignerAddress) {
@@ -18,9 +19,7 @@ const authority = Keypair.fromSecretKey(
 const permitSigner = new PublicKey(permitSignerAddress);
 const rpcUrl =
   rpcUrlArg ||
-  process.env.RPC_URL ||
-  process.env.SOLANA_RPC_URL ||
-  "https://api.devnet.solana.com";
+  resolveSolanaRpcUrl({ frontendSafe: false });
 
 const motherEscrow = await tsnFetchMotherEscrowOnChain(rpcUrl);
 if (!motherEscrow) {

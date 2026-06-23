@@ -1,9 +1,8 @@
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { createTinsClient } from "../tins-sdk/src/index.js"; 
 // Note: We might need to run this with tsx if the SDK is in typescript, 
 // or compile it, but let's assume it works or we'll adjust the import.
-// Actually, since it's a monorepo, let's use the local SDK directly.
-import * as TinsSdk from "../tins-sdk/src/index.ts"; // Will need a ts-node or tsx runner
+import { createSolanaConnection } from "./lib/tsn-rpc.mjs";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -12,7 +11,7 @@ async function main() {
 
   console.log(`Setting up new TIN for '${displayName}' with phone '${phoneNumber}'...`);
 
-  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
+  const connection = createSolanaConnection({ frontendSafe: false });
   
   // 1. Generate a brand new random wallet for testing
   const walletKeypair = Keypair.generate();
@@ -42,7 +41,7 @@ async function main() {
   };
 
   // 4. Initialize the TINS SDK client
-  const tinsClient = TinsSdk.createTinsClient({ connection });
+  const tinsClient = createTinsClient({ connection });
 
   // 5. Call createTin
   console.log("Calling SDK: tinsClient.createTin()...");

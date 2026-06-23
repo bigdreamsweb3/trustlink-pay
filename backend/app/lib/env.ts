@@ -30,7 +30,6 @@ const emptyStringToUndefined = z.preprocess((value) => {
 const envSchema = z
   .object({
     DATABASE_URL: z.string().startsWith("postgresql://").optional(),
-    SOLANA_RPC_URL: z.string().url().optional(),
     SOLANA_CLAIM_VERIFIER_SECRET_KEY: z.string().min(1).optional(),
     SOLANA_ESCROW_AUTHORITY_SECRET_KEY: z.string().min(1).optional(),
     SOLANA_ALLOWED_SPL_TOKENS: z.string().optional(),
@@ -165,7 +164,6 @@ function requireEnv(name: string): string {
 function readRawEnv() {
   return {
     DATABASE_URL: process.env.DATABASE_URL,
-    SOLANA_RPC_URL: process.env.SOLANA_RPC_URL,
     SOLANA_CLAIM_VERIFIER_SECRET_KEY:
       process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY ??
       process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY,
@@ -273,7 +271,6 @@ export const env = new Proxy({} as Env, {
     if (value === undefined) {
       const criticalVars = [
         "DATABASE_URL",
-        "SOLANA_RPC_URL",
         "SOLANA_CLAIM_VERIFIER_SECRET_KEY",
         "SOLANA_ESCROW_AUTHORITY_SECRET_KEY",
         "WHATSAPP_API_KEY",

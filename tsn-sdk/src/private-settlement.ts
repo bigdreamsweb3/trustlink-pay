@@ -17,6 +17,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import nacl from "tweetnacl";
+import { resolveSolanaRpcUrl } from "./rpc.js";
 
 import {
   getTsnCrankerPda,
@@ -293,7 +294,10 @@ export async function tsnConfigurePrivateSettlementOnChain(params: {
   enabled?: boolean;
   rpcUrl?: string;
 }) {
-  const connection = new Connection(params.rpcUrl ?? "https://api.devnet.solana.com", "confirmed");
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
   const motherEscrow = getTsnMotherEscrowPda();
   const config = getTsnPrivateSettlementConfigPda();
   const replayRegistry = getTsnPrivateReplayRegistryPda();
@@ -342,7 +346,10 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
 }) {
   assertBytes32(params.payoutNullifier, "payout nullifier");
   assertSignature(params.permitSignature);
-  const connection = new Connection(params.rpcUrl ?? "https://api.devnet.solana.com", "confirmed");
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const config = getTsnPrivateSettlementConfigPda();
@@ -431,7 +438,10 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
 }) {
   assertBytes32(params.recoveryNullifier, "recovery nullifier");
   assertSignature(params.permitSignature);
-  const connection = new Connection(params.rpcUrl ?? "https://api.devnet.solana.com", "confirmed");
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
   const motherEscrow = getTsnMotherEscrowPda();
   const recoveryCranker = getTsnCrankerPda({
     motherEscrow,

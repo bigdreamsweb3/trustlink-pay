@@ -14,6 +14,7 @@ import { getVerifiedTsnProgramId } from "@trustlink/tsn-sdk/program";
 import { createHash, randomUUID } from "node:crypto";
 
 import { getEscrowPolicyConfig } from "@/app/config/escrow";
+import { createSolanaConnection, resolveSolanaRpcUrl } from "@/app/lib/rpc";
 import { env } from "@/app/lib/env";
 import { logger } from "@/app/lib/logger";
 import { getUsdPricesForSymbols } from "@/app/services/pricing";
@@ -231,7 +232,7 @@ export function getEscrowAuthorityKeypair() {
 }
 
 export function getConnection() {
-  return new Connection(env.SOLANA_RPC_URL!, "confirmed");
+  return createSolanaConnection({ frontendSafe: false });
 }
 
 export function getProgramId() {
@@ -797,7 +798,7 @@ export async function prepareInitializeIdentityBindingTransaction(params: {
     serializedTransaction: transaction
       .serialize({ requireAllSignatures: false, verifySignatures: false })
       .toString("base64"),
-    rpcUrl: env.SOLANA_RPC_URL!,
+    rpcUrl: resolveSolanaRpcUrl({ frontendSafe: false }),
     programId: getProgramId().toBase58(),
     feePayer: claimVerifier.publicKey.toBase58(),
     estimatedNetworkFeeLamports,
@@ -873,7 +874,7 @@ export async function prepareAddRecoveryWalletTransaction(params: {
     serializedTransaction: transaction
       .serialize({ requireAllSignatures: false, verifySignatures: false })
       .toString("base64"),
-    rpcUrl: env.SOLANA_RPC_URL!,
+    rpcUrl: resolveSolanaRpcUrl({ frontendSafe: false }),
   };
 }
 
@@ -910,7 +911,7 @@ export async function prepareSetIdentityFreezeTransaction(params: {
     serializedTransaction: transaction
       .serialize({ requireAllSignatures: false, verifySignatures: false })
       .toString("base64"),
-    rpcUrl: env.SOLANA_RPC_URL!,
+    rpcUrl: resolveSolanaRpcUrl({ frontendSafe: false }),
   };
 }
 
@@ -943,7 +944,7 @@ export async function prepareRequestRecoveryTransaction(params: {
     serializedTransaction: transaction
       .serialize({ requireAllSignatures: false, verifySignatures: false })
       .toString("base64"),
-    rpcUrl: env.SOLANA_RPC_URL!,
+    rpcUrl: resolveSolanaRpcUrl({ frontendSafe: false }),
   };
 }
 

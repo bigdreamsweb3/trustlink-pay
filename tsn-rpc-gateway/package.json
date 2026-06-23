@@ -1,0 +1,20 @@
+{
+  "name": "@trustlink/tsn-rpc-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TrustLink TSN Solana RPC gateway.",
+  "exports": {
+    ".": {
+      "import": "./gateway.mjs"
+    }
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "inspect": "node inspect.mjs",
+    "check": "node --check config.mjs && node --check provider-pool.mjs && node --check gateway.mjs && node --check server.mjs && node --check worker.mjs && node --check inspect.mjs"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4"
+  }
+}

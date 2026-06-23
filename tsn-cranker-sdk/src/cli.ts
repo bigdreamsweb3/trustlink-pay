@@ -2,6 +2,7 @@ import { config as loadDotenv } from "dotenv";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+import { resolveSolanaRpcUrl } from "./rpc.js";
 
 import { Keypair, PublicKey } from "@solana/web3.js";
 
@@ -63,7 +64,7 @@ function parseBoolean(value: string | undefined) {
 
 async function handleCommand() {
   const command = process.argv[2];
-  const rpcUrl = process.env.RPC_URL;
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const secretKey = process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY ?? process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY;
 
   if (command === "init-mother") {
@@ -212,7 +213,6 @@ async function main() {
   const command = process.argv[2];
 
   if (!command) {
-    requireEnv("RPC_URL");
     requireEnv("PROGRAM_ID");
     console.log("[tsn-cranker-sdk] Ready for setup commands");
     console.log(
@@ -235,7 +235,7 @@ async function main() {
   race-epoch <args>              Submit TSN competitive recovery proof
   
 Environment Variables:
-  RPC_URL                        Solana RPC endpoint
+  TSN_SOLANA_RPC_URLS            Solana RPC gateway endpoint(s)
   PROGRAM_ID                     TSN program ID
   TINS_PROGRAM_ID                TINS registry program ID (defaults to local dev TINS id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);

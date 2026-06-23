@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 import { randomUUID } from "node:crypto";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { resolveTIN, getTinsIdentityPda, decodeTinAccount } from "@trustlink/tsn-sdk/tins";
 
 import { toErrorResponse, ok } from "@/app/lib/http";
@@ -9,6 +9,7 @@ import { env } from "@/app/lib/env";
 import { findUserByPhoneNumber, findUserByTin, updateUserTinMapping, ensureUserForPhoneNumber } from "@/app/db/users";
 import { findPaymentById } from "@/app/db/payments";
 import { createPaymentRecord } from "@/app/db/payments-write";
+import { createSolanaConnection } from "@/app/lib/rpc";
 import { sha256 } from "@/app/utils/hash";
 import { generatePaymentReference } from "@/app/utils/reference";
 import { traceApiHandler } from "../../../../../utils/observability/tracer";
@@ -143,10 +144,7 @@ async function postPaymentCreate(request: Request) {
       const indexedReceiver = await findUserByTin(receiverTin);
       const resolvedTin = await resolveTIN({
         tin: receiverTin,
-        connection: new Connection(
-          env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
-          "confirmed",
-        ),
+        connection: createSolanaConnection({ frontendSafe: false }),
         programId: env.TINS_PROGRAM_ID,
       });
       if (resolvedTin.status !== 1) {
@@ -281,10 +279,7 @@ async function resolveSenderWalletToTin(senderWallet: string): Promise<{
   programId: string;
 } | null> {
   try {
-    const connection = new Connection(
-      env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
-      "confirmed",
-    );
+    const connection = createSolanaConnection({ frontendSafe: false });
     const walletPubkey = new PublicKey(senderWallet);
     const programId = env.TINS_PROGRAM_ID;
 

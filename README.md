@@ -13,7 +13,7 @@ Blockchain payments should feel familiar for normal users while still giving dev
 
 ## TSN V1 settlement model
 
-TSN V1 is the current TrustLink Pay settlement model. It keeps the identity layer and settlement layer separate so the app stays simple for users while the payment path remains replayable, verifiable, and harder to map as a direct sender-wallet-to-recipient-wallet graph.
+TSN V1 is the current TrustLink Pay settlement model. It keeps the identity layer and settlement layer separate so the app stays simple for users while the payment path remains replayable and verifiable without exposing a direct sender-wallet-to-recipient-wallet graph.
 
 In practice:
 
@@ -282,6 +282,11 @@ npm run deploy:doctor
 
 The lockfiles intentionally avoid newer crate releases that require Rust edition 2024. This prevents the Solana/SBF 1.18 builder from failing before deployment.
 
+Set one shared RPC entry point for the repo with `TSN_SOLANA_RPC_URLS`.
+The frontend receives that value automatically at build time, so you only set the shared app-facing env once.
+
+The gateway process reads `TSN_SOLANA_RPC_UPSTREAM_URLS` to route traffic across Helius, Solana devnet, or any future RPC provider order. Confirm the active selection with `npm run rpc:inspect` and `npm run rpc:gateway:inspect`.
+
 ## Repository Map
 
 | Path                     | Purpose                                                   |
@@ -297,6 +302,7 @@ The lockfiles intentionally avoid newer crate releases that require Rust edition
 | `tsn-cranker-sdk/`       | Cranker SDK and CLI helpers                               |
 | `tsn-mempool-backend/`   | Mempool, epoch coordination, and challenge APIs           |
 | `tsn-mempool-frontend/`  | Mempool and epoch explorer                                |
+| `tsn-rpc-gateway/`       | Standalone Solana RPC gateway project and shared RPC client |
 
 ## Start Reading
 
@@ -305,6 +311,7 @@ The lockfiles intentionally avoid newer crate releases that require Rust edition
 - [Architecture](./docs/ARCHITECTURE.md)
 - [TINS](./docs/TINS.md)
 - [TSN commitment settlement](./docs/TSN-COMMITMENT-SETTLEMENT.md)
+- [RPC gateway](./docs/RPC-GATEWAY.md)
 - [Cranker guide](./docs/CRANKER.md)
 - [Liquidity](./docs/LIQUIDITY.md)
 - [Security](./docs/SECURITY.md)

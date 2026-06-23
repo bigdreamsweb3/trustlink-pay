@@ -3,11 +3,11 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
-  clusterApiUrl,
 } from "@solana/web3.js";
 
 import { getVerifiedTsnProgramId } from "./program.js";
 import { quoteTransferFeeUiAmount } from "./quote.js";
+import { resolveSolanaRpcUrl } from "./rpc.js";
 
 const DEFAULT_TSN_FEE_CONFIG = {
   sendFeeBps: 500,
@@ -154,7 +154,7 @@ export async function estimateTsnSendCostFromChain(params: {
   timeoutMs?: number;
 }) {
   const connection = new Connection(
-    params.rpcUrl ?? clusterApiUrl("devnet"),
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
     "confirmed",
   );
   const programId = new PublicKey(getVerifiedTsnProgramId());

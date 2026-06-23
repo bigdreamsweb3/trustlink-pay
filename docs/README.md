@@ -19,6 +19,7 @@ The protocol keeps the payment experience simple while separating the public par
 | [TINS.md](./TINS.md) | Transfer Identity Numbers and identity resolution |
 | [TSN-TINS-MEMPOOL-IMPLEMENTATION.md](./TSN-TINS-MEMPOOL-IMPLEMENTATION.md) | How TIN creation and updates move through TSN Crankers |
 | [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md) | Confidential settlement using commitments and epoch reservoirs |
+| [RPC-GATEWAY.md](./RPC-GATEWAY.md) | Shared Solana RPC gateway and upstream routing |
 | [CRANKER.md](./CRANKER.md) | What Crankers do and how they are rewarded |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity, reimbursements, and recovery |
 | [SECURITY.md](./SECURITY.md) | Security boundaries and privacy limits |

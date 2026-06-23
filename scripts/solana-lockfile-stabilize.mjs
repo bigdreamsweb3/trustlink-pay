@@ -8,6 +8,7 @@ const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],
   ["indexmap", "2.3.0", "cargo update -p indexmap --precise 2.3.0"],
   ["borsh", "1.5.7", "cargo update -p borsh --precise 1.5.7"],
+  ["unicode-segmentation", "1.12.0", "cargo update -p unicode-segmentation --precise 1.12.0"],
   ["zeroize_derive", "1.4.3", "cargo update -p zeroize_derive --precise 1.4.3"],
   ["proc-macro-crate", "3.3.0", "cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0"],
 ];
@@ -76,6 +77,12 @@ function stabilizeLockfile(path) {
   if (packageVersions(packages, "toml_parser").some((version) => version.startsWith("1."))) {
     errors.push(
       `${path} has toml_parser 1.x, which requires Rust edition 2024. Run inside this lockfile's program directory: cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0`,
+    );
+  }
+
+  if (packageVersions(packages, "unicode-segmentation").some((version) => compareVersions(version, "1.12.0") > 0)) {
+    errors.push(
+      `${path} has unicode-segmentation ${packageVersions(packages, "unicode-segmentation").join(", ")}, which is too new for the Solana/SBF 1.18.x Rust 1.75 toolchain. Run inside this lockfile's program directory: cargo update -p unicode-segmentation --precise 1.12.0`,
     );
   }
 

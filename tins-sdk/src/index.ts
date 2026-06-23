@@ -12,11 +12,23 @@ import * as crypto from "crypto";
 export const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
   "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
 );
+const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
 export const PROGRAM_SALT = "TINS_SALT_2026";
 export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
 
 const ZERO_HASH_32 = Buffer.alloc(32);
+
+function resolveSolanaRpcUrl() {
+  const configured = process.env.TSN_SOLANA_RPC_URLS?.split(/[,\s]+/g)
+    .map((entry) => entry.trim().replace(/\/+$/, ""))
+    .find(Boolean);
+  return configured ?? DEFAULT_SOLANA_RPC_URL;
+}
+
+function createSolanaConnection() {
+  return new Connection(resolveSolanaRpcUrl(), "confirmed");
+}
 
 function normalizeHash32(value: Buffer | Uint8Array | undefined, label: string): Buffer {
   if (!value) return ZERO_HASH_32;
@@ -278,9 +290,7 @@ export interface TinsClient {
 }
 
 export function createTinsClient(config: TinsClientConfig = {}): TinsClient {
-  const connection =
-    config.connection ??
-    new Connection(config.rpcUrl ?? "http://127.0.0.1:8899", "confirmed");
+  const connection = config.connection ?? createSolanaConnection();
   const programId = config.programId ?? DEFAULT_TINS_PROGRAM_ID;
 
   return {

@@ -97,6 +97,16 @@ It is a payment identity. Verification status comes from registered verification
 | TINS SDK | `tins-sdk/` |
 | Devnet program ID | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
+## Lookup Output
+
+The `npm run tins:lookup <TIN>` command now prints three separate views:
+
+- public on-chain fields
+- encrypted fields stored in the registry
+- the raw account bytes in hex and base64
+
+This makes it easier to see which parts of a TIN are public, which parts are encrypted, and which fields do not exist in older legacy accounts.
+
 ## TSN + Cranker mediated TINS creation and updates
 
 ### Summary

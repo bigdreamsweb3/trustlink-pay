@@ -22,14 +22,21 @@ import { PasskeyWallet } from "./wallet";
  */
 const WALLET_STATE_KEY = "trustlink.passkey-wallet";
 const BACKUP_WALLETS_KEY = "trustlink.backup-wallets";
+const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
+
+function resolvePasskeyRpcUrl() {
+  return (
+    process.env.NEXT_PUBLIC_TSN_SOLANA_RPC_URLS?.split(/[,\s]+/g)
+      .map((entry) => entry.trim().replace(/\/+$/, ""))
+      .find(Boolean) ?? DEFAULT_SOLANA_RPC_URL
+  );
+}
 
 /**
  * Configuration for the passkey wallet
  */
 const DEFAULT_CONFIG: PasskeyWalletConfig = {
-  rpcUrl: (typeof window !== "undefined" && process.env.NEXT_PUBLIC_SOLANA_RPC_URL) 
-    ? process.env.NEXT_PUBLIC_SOLANA_RPC_URL 
-    : "https://api.mainnet-beta.solana.com",
+  rpcUrl: resolvePasskeyRpcUrl(),
   rpId: (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RP_ID) 
     ? process.env.NEXT_PUBLIC_RP_ID 
     : "trustlink.pay",

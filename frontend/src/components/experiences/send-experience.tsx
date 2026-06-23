@@ -47,6 +47,7 @@ import {
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { enqueueTsnPaymentFromFrontend, estimateTsnSendCostFromChain } from "@/src/lib/tsn";
 import { resolveTinFromChain } from "@/src/lib/tins";
+import { resolveSolanaRpcUrl } from "@/src/lib/rpc";
 import {
   createPaymentAuthorization,
 } from "@trustlink/tsn-sdk/payment-authorization";
@@ -628,7 +629,7 @@ export function SendExperience() {
 
       const tokenDecimals = selectedToken.decimals ?? 6;
       const settlementEpoch = await fetchTsnSettlementEpoch(
-        process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
+        resolveSolanaRpcUrl({ frontendSafe: true }),
       );
       const settlementTokenPayload = buildSettlementTokenPayload({
         paymentId: result.paymentId,
@@ -655,7 +656,7 @@ export function SendExperience() {
         recipientHash,
         transferId: encryptedSettlementToken.transferId,
         commitmentHash: encryptedSettlementToken.commitmentHash,
-        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
+        rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
       });
       const senderSignedSettlementTransaction = await signSolanaTransaction({
         walletId: walletSession.walletId,

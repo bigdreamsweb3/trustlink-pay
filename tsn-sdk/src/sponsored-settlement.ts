@@ -5,7 +5,6 @@ import {
   SystemProgram,
   Transaction,
   TransactionInstruction,
-  clusterApiUrl,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -17,6 +16,7 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import { Buffer } from "buffer";
 
 import { VERIFIED_TSN_PROGRAM_ID } from "./program.js";
+import { resolveSolanaRpcUrl } from "./rpc.js";
 
 const TSN_VERIFIER_SEED = utf8ToBytes("verifier");
 const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
@@ -160,7 +160,10 @@ export function getSponsoredSettlementPdas(params: {
 }
 
 export async function fetchTsnSettlementEpoch(rpcUrl?: string) {
-  const connection = new Connection(rpcUrl ?? clusterApiUrl("devnet"), "confirmed");
+  const connection = new Connection(
+    rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
   const programId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
   const motherEscrow = PublicKey.findProgramAddressSync(
     [TSN_MOTHER_ESCROW_SEED],
@@ -200,7 +203,10 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   rpcUrl?: string;
   intentSeedHash?: string;
 }) {
-  const connection = new Connection(params.rpcUrl ?? clusterApiUrl("devnet"), "confirmed");
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
   const senderWallet = new PublicKey(params.senderWallet);
   if (hexToBytes(params.recipientHash, "recipientHash").length !== 32) {
     throw new Error("recipientHash must be a 32-byte hex string");

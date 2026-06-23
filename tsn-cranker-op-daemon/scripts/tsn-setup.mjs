@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { tsnResolveSplTokenInput } from "@trustlink/tsn-cranker-sdk";
+import { resolveSolanaRpcUrl } from "../../tsn-cranker-sdk/dist/rpc.js";
 
 import "dotenv";
 
@@ -148,10 +149,11 @@ async function updateOperatorState(args, tokenContext = null) {
     Keypair,
   );
   const now = new Date().toISOString();
-  const contextKey = `${programId.toBase58()}@${env.RPC_URL ?? "unknown-rpc"}`;
+  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
+  const contextKey = `${programId.toBase58()}@${rpcUrl}`;
 
   state.updatedAt = now;
-  state.rpcUrl = env.RPC_URL ?? null;
+  state.rpcUrl = rpcUrl;
   state.programId = programId.toBase58();
   state.keypairPath = env.KEYPAIR_PATH;
   state.operatorPubkey = operatorPubkey.toBase58();
@@ -164,7 +166,7 @@ async function updateOperatorState(args, tokenContext = null) {
   state.contexts[contextKey] = {
     ...(state.contexts[contextKey] ?? {}),
     updatedAt: now,
-    rpcUrl: env.RPC_URL ?? null,
+    rpcUrl,
     programId: programId.toBase58(),
     keypairPath: env.KEYPAIR_PATH,
     operatorPubkey: operatorPubkey.toBase58(),

@@ -1,5 +1,7 @@
 # TINS
 
+**Version: PRU Architecture v2 — commit reference: current branch**
+
 TINS means **Transfer Identity Number System**.
 
 It gives a user a 10-digit payment identity called a **TIN**.
@@ -107,48 +109,65 @@ The `npm run tins:lookup <TIN>` command now prints three separate views:
 
 This makes it easier to see which parts of a TIN are public, which parts are encrypted, and which fields do not exist in older legacy accounts.
 
-## TSN + Cranker mediated TINS creation and updates
+## Final upgraded PRU Architecture for TINs
 
 ### Summary
 
-TINS creation and TINS updates no longer use the old direct user-submitted path. The owner signs an intent, the intent enters the TSN Mempool runtime, one Cranker verifies it, and a Cranker submits the TINS transaction as a relayer. The owner remains the authority because the TINS program verifies the owner-signed intent hash through the Solana instructions sysvar before changing any TIN record.
+Every TIN now starts with **30 PRUs by default**. PRUs are **token-agnostic**: one client-derived PRU set serves SOL, USDC, and every future token supported by TSN. We separate identity from execution so public registry data remains static while settlement state changes inside TSN.
+
+### Strict separation of concerns
+
+| Layer | Stores | Mutation rule |
+| --- | --- | --- |
+| **TIN Registry** | owner pubkey, display name, encrypted phone blob, privacy level `3`, encrypted metadata hash, PRU configuration commitment | Created by `tin_creation_registry`; rarely updated by `tin_update`; never stores PRU keys, token balances, ATA state, or spend history. |
+| **PRU Lifecycle State** | per-token receipt/spend/sweep state, ATA creation status, rent subsidy counter, balance state | Lives in TSN / derived mempool state and changes on receipt, spend, sweep, and lazy ATA activation. |
 
 ### New creation flow versus old flow
 
-Old flow, now disabled:
+Old direct path, removed/disabled:
 
-1. User wallet signed and submitted `CreateTin` directly to TINS.
-2. User wallet paid network fees.
-3. TINS inferred owner authority from the transaction payer.
+1. User wallet submitted `CreateTin` directly to TINS.
+2. User wallet paid fees and acted as transaction payer.
+3. TINS inferred authority from the payer.
 
-New flow:
+New Cranker-mediated path:
 
-1. Owner signs a TIN creation intent hash.
-2. The signed intent is sent to the TSN Mempool runtime.
-3. Cranker A verifies owner signature, expiry, metadata shape, and PRU commitment.
-4. Cranker B records the deterministic 0.05 USDC creation-fee commitment and split.
-5. Cranker B submits `tin_creation_registry` to TINS with the owner signature instruction and the owner as `owner_pubkey`.
-6. TINS creates the identity PDA derived from the owner, not from the Cranker.
+1. SDK derives 30 token-agnostic PRUs client-side and computes only the PRU configuration commitment.
+2. Owner signs a TIN Creation Intent covering owner pubkey, encrypted metadata hashes, PRU commitment, nonce, and expiry.
+3. Cranker A verifies the owner signature, expiry, metadata shape, and that the PRU commitment is a 30-PRU commitment.
+4. Cranker A submits Transaction 1: the fee commitment split.
+5. Cranker B submits Transaction 2: `tin_creation_registry` with the owner Ed25519 verification instruction.
+6. TINS creates the identity PDA from the owner pubkey and stores only static registry fields.
 
-Creation fee split: 30% verifier, 40% submitter, 20% treasury, 10% bonus pool.
+### Receiving, spending, and ATA creation
 
-### New update flow
-
-1. Owner signs an update intent hash containing new encrypted metadata, nonce, expiry, privacy level, and PRU configuration commitment.
-2. The intent enters the TSN Mempool runtime.
-3. Cranker A verifies that the signer is the current TIN owner by reading TINS, checks data validity, and verifies the optional 0.01 USDC update fee commitment.
-4. Cranker B submits `tin_update` to TINS.
-5. TINS verifies the owner-signed intent hash on-chain before modifying the record.
+- Receiving uses deterministic allocation over the 30 PRUs for the incoming token. The allocation can be replayed by Crankers without seeing derivation seeds.
+- Spending uses a randomly selected PRU signing key in the SDK, then records spend lifecycle state through TSN + Crankers. This breaks the pattern where the same wallet key is always active.
+- Crankers create token ATAs lazily on first receipt for a PRU/token pair. TSN subsidizes the first few ATA rents per PRU as acquisition cost; after the subsidy window, a small activation fee can be deducted from the incoming amount.
 
 ### Implementation notes
 
-TypeScript uses `createTinOwnerIntentHash`, `createOwnerIntentSignatureInstruction`, `serializeTinCreationRegistryParams`, and `serializeTinUpdateParams` from `tins-sdk`. The deprecated `createTin` SDK path now throws so applications cannot accidentally bypass TSN.
+TypeScript uses `derivePruSet`, `computePruConfigurationHash`, `allocatePrusDeterministically`, `selectRandomPruForSpend`, `selectPrusForSpend`, and `planLazyAtaCreation` from `tsn-sdk`. TINS uses `DEFAULT_TIN_PRIVACY_LEVEL = 3` and `DEFAULT_TIN_PRU_COUNT = 30`; the deprecated `createTin` SDK path throws. The TINS program rejects the old `CreateTin` instruction and accepts only Cranker-mediated `tin_creation_registry` after owner intent verification.
 
-The reference Cranker daemon consumes `/tin-operations/*` work automatically when started with `npm run tsn:cranker:start`.
+Python Cranker daemon integration follows the same two-transaction model: verify intent, submit fee commitment, then submit registry transaction. Do not log PRU seeds, raw PRU arrays, phone numbers, raw wallet balances, or owner private material.
+
+### Usage examples
+
+```ts
+import { derivePruSet, computePruConfigurationHash } from "@trustlink/tsn-sdk/pru";
+
+const pruSet = derivePruSet({ masterSeed, tinId });
+const pruConfigurationHash = computePruConfigurationHash(pruSet);
+// Submit only the commitment in the TIN Creation Intent. Keep derivation client-side.
+```
+
+```bash
+npm run tsn:cranker:start
+```
 
 ### Security & privacy considerations
 
-Hidden: raw phone numbers, PRU arrays, PRU derivation seeds, private keys, and owner operational network details. Exposed: owner signature over an intent hash, privacy tier, and commitment hashes needed for replay verification. Crankers are relayers only; they cannot become TIN owners because TINS derives the identity PDA from the owner pubkey and verifies the owner signature before creation or update.
+Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, and spend selection randomness. Exposed: the TIN, static owner authority, privacy level 3, and commitment hashes. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent.
 
 ### Testing notes
 
@@ -156,5 +175,6 @@ Run:
 
 ```bash
 npm --prefix tins-sdk run build
+npm --prefix tsn-sdk test
 cargo test --manifest-path tins-registrar/program/Cargo.toml --lib
 ```

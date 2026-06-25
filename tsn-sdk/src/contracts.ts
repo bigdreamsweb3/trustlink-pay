@@ -47,6 +47,8 @@ export const TIN_OPERATION_FEE_SPLIT_BPS = {
 
 export const TIN_CREATION_FEE_USDC = "0.05" as const;
 export const TIN_UPDATE_FEE_USDC = "0.01" as const;
+export const DEFAULT_TIN_PRU_COUNT = 30 as const;
+export const DEFAULT_TIN_PRIVACY_LEVEL = 3 as const;
 
 export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint) {
   const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10_000n;
@@ -69,9 +71,10 @@ export type TsnTinOperationIntent = {
   tin?: string | null;
   displayName: string;
   encryptedPhoneBase64: string;
-  privacyLevel: 1 | 2 | 3 | 4;
+  privacyLevel?: 1 | 2 | 3 | 4;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
+  pruCount?: 30;
   intentHash: string;
   ownerSignatureBase64: string;
   nonce: string;
@@ -135,6 +138,7 @@ export type TsnTinOperationRecord = {
   privacyLevel: 1 | 2 | 3 | 4;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
+  pruCount?: 30;
   creationFeeAmount?: string | null;
   creationFeeMint?: string | null;
   newDisplayName?: string | null;
@@ -183,6 +187,21 @@ export type CreateIntentRequest = {
   amount: number;
   recipientAmount?: number;
   source?: string;
+  recipientTin?: string | null;
+  recipientPruIndex?: number | null;
+  recipientPruCommitment?: string | null;
+};
+
+export type PruLifecycleMutation = {
+  tinId: string;
+  tokenMint: string;
+  pruIndex: number;
+  transition: "receive" | "spend" | "sweep";
+  txId: string;
+  amount?: string | number | null;
+  ataCreated?: boolean;
+  ataRentSubsidized?: boolean;
+  activationFeeDeducted?: string | number | null;
 };
 
 export type RequestClaimRequest = {
@@ -205,6 +224,7 @@ export type TsnMempoolIntent = CreateIntentRequest & {
   settlementReason?: string | null;
   postedAt: string;
   updatedAt: string;
+  pruLifecycle?: PruLifecycleMutation[];
 };
 
 export type TsnMempoolClaimRequest = RequestClaimRequest & {

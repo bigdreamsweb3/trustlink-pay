@@ -92,6 +92,14 @@ export class JsonFileTsnMempool {
         const timestamp = now();
         const intent = {
             ...request,
+            pruLifecycle: request.recipientPruIndex === null || request.recipientPruIndex === undefined ? [] : [{
+                    tinId: request.recipientTin ?? request.recipientHash,
+                    tokenMint: request.tokenMintAddress,
+                    pruIndex: request.recipientPruIndex,
+                    transition: "receive",
+                    txId: request.paymentId,
+                    amount: request.amount,
+                }],
             id: request.paymentId,
             status: "pending",
             postedAt: timestamp,
@@ -453,6 +461,16 @@ export class JsonFileTsnMempool {
             failureReason: reason,
         });
     }
+    async recordPruLifecycleMutation(intentId, mutation) {
+        const snapshot = await readSnapshot(this.path);
+        const intent = snapshot.intents.find((candidate) => candidate.id === intentId || candidate.paymentId === intentId);
+        if (!intent)
+            return null;
+        intent.pruLifecycle = [...(intent.pruLifecycle ?? []), mutation];
+        intent.updatedAt = now();
+        await writeSnapshot(this.path, snapshot);
+        return intent;
+    }
 }
 export class HttpTsnMempool {
     client;
@@ -550,5 +568,8 @@ export class HttpTsnMempool {
     }
     markTinOperationFailed(id, reason) {
         return this.client.post(`/tin-operations/${encodeURIComponent(id)}/failed`, { failureReason: reason });
+    }
+    recordPruLifecycleMutation(intentId, mutation) {
+        return this.client.post(`/intents/${encodeURIComponent(intentId)}/pru-lifecycle`, mutation);
     }
 }

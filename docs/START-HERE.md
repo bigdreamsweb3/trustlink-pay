@@ -1,5 +1,7 @@
 # Start Here
 
+**Version: PRU Architecture v2 — commit reference: current branch**
+
 This document explains TrustLink Pay without assuming you know Solana.
 
 ## What Is TrustLink Pay?
@@ -245,6 +247,39 @@ Split:
   Operators: 0.000240000 SOL
   Treasury: 0.000150000 SOL
   Recovery Bonus: 0.000060000 SOL
+```
+
+
+## PRU Architecture v2: 30 private routes per TIN
+
+### Summary
+
+We now treat a TIN as a static identity record plus a client-derived set of **30 token-agnostic PRUs**. The TIN Registry stores only owner authority and commitments. TSN stores or derives lifecycle state for receipt, spend, sweep, and lazy ATA activation.
+
+### New flow versus old flow
+
+- **Old:** user directly called TINS `CreateTin`; PRU counts varied by privacy level; PRUs were derived with token mint material.
+- **New:** user signs a TIN Creation Intent; Cranker A verifies and commits the fee; Cranker B calls `tin_creation_registry`; the SDK derives 30 PRUs client-side and publishes only a commitment.
+
+### Implementation notes
+
+- TypeScript: `tins-sdk` defaults to privacy level 3 / 30 PRUs; `tsn-sdk/pru` derives token-agnostic PRUs, aggregates balances by token, randomizes spend signing, and plans ATA rent subsidies.
+- Python Cranker daemon: verify intent, submit Transaction 1 fee commitment, submit Transaction 2 registry call, and keep PRU seeds out of logs.
+
+### Security & privacy considerations
+
+Do not expose raw wallet addresses, balances, PRU private material, phone numbers, or PRU arrays. Deterministic allocation is replayable for verification; randomized PRU signing is local to the SDK and prevents a single always-active wallet pattern.
+
+### Usage and testing
+
+```ts
+const prus = derivePruSet({ masterSeed, tinId });
+const commitment = computePruConfigurationHash(prus);
+```
+
+```bash
+npm --prefix tsn-sdk test
+npm --prefix tins-sdk run build
 ```
 
 ## TSN + Cranker mediated TINS operations

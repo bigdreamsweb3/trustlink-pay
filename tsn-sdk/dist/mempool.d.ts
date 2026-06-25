@@ -1,4 +1,4 @@
-import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnRecoveryStatus, TsnEpochChallenge, TsnRecoveryWorkItem, TsnTinOperationRecord, TsnWorkItem, ProofOfPaymentRequest } from "./contracts.js";
+import type { CreateIntentRequest, RequestClaimRequest, TsnClaimRequestStatus, TsnIntentStatus, TsnMempoolClaimRequest, TsnMempoolIntent, TsnIntentWorkItem, TsnRecoveryStatus, TsnEpochChallenge, TsnRecoveryWorkItem, TsnTinOperationRecord, TsnWorkItem, ProofOfPaymentRequest, PruLifecycleMutation } from "./contracts.js";
 export interface TsnMempool {
     postIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>;
     postClaimRequest(request: RequestClaimRequest): Promise<TsnMempoolClaimRequest>;
@@ -31,6 +31,7 @@ export interface TsnMempool {
     markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord | null>;
     markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord | null>;
     markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord | null>;
+    recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation): Promise<TsnMempoolIntent | null>;
 }
 export declare class JsonFileTsnMempool implements TsnMempool {
     private readonly path;
@@ -68,6 +69,7 @@ export declare class JsonFileTsnMempool implements TsnMempool {
     markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord | null>;
     markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord | null>;
     markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord | null>;
+    recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation): Promise<TsnMempoolIntent | null>;
 }
 export declare class HttpTsnMempool implements TsnMempool {
     private readonly client;
@@ -103,5 +105,6 @@ export declare class HttpTsnMempool implements TsnMempool {
     markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord>;
     markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord>;
     markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord>;
+    recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation): Promise<TsnMempoolIntent>;
 }
 //# sourceMappingURL=mempool.d.ts.map

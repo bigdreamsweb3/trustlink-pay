@@ -17,6 +17,7 @@ import type {
   TsnTinOperationRecord,
   TsnWorkItem,
   ProofOfPaymentRequest,
+  PruLifecycleMutation,
 } from "./contracts.js";
 import { TsnHttpClient } from "./client.js";
 
@@ -112,6 +113,7 @@ export interface TsnMempool {
   markTinOperationSubmitted(id: string, crankerPubkey: string, txSignature: string): Promise<TsnTinOperationRecord | null>;
   markTinOperationFinalized(id: string, txSignature?: string | null): Promise<TsnTinOperationRecord | null>;
   markTinOperationFailed(id: string, reason: string): Promise<TsnTinOperationRecord | null>;
+  recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation): Promise<TsnMempoolIntent | null>;
 }
 
 type Snapshot = {
@@ -158,6 +160,14 @@ export class JsonFileTsnMempool implements TsnMempool {
     const timestamp = now();
     const intent: TsnMempoolIntent = {
       ...request,
+      pruLifecycle: request.recipientPruIndex === null || request.recipientPruIndex === undefined ? [] : [{
+        tinId: request.recipientTin ?? request.recipientHash,
+        tokenMint: request.tokenMintAddress,
+        pruIndex: request.recipientPruIndex,
+        transition: "receive",
+        txId: request.paymentId,
+        amount: request.amount,
+      }],
       id: request.paymentId,
       status: "pending",
       postedAt: timestamp,
@@ -541,6 +551,16 @@ export class JsonFileTsnMempool implements TsnMempool {
       failureReason: reason,
     });
   }
+
+  async recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation) {
+    const snapshot = await readSnapshot(this.path);
+    const intent = snapshot.intents.find((candidate) => candidate.id === intentId || candidate.paymentId === intentId);
+    if (!intent) return null;
+    intent.pruLifecycle = [...(intent.pruLifecycle ?? []), mutation];
+    intent.updatedAt = now();
+    await writeSnapshot(this.path, snapshot);
+    return intent;
+  }
 }
 
 
@@ -711,6 +731,14 @@ export class HttpTsnMempool implements TsnMempool {
     return this.client.post<{ failureReason: string }, TsnTinOperationRecord>(
       `/tin-operations/${encodeURIComponent(id)}/failed`,
       { failureReason: reason },
+    );
+  }
+
+
+  recordPruLifecycleMutation(intentId: string, mutation: PruLifecycleMutation) {
+    return this.client.post<PruLifecycleMutation, TsnMempoolIntent>(
+      `/intents/${encodeURIComponent(intentId)}/pru-lifecycle`,
+      mutation,
     );
   }
 }

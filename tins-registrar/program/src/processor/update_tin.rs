@@ -33,7 +33,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
     if Clock::get()?.unix_timestamp > params.expiry_ts {
         return Err(Error::InvalidInstruction.into());
     }
-    if !(1..=4).contains(&params.privacy_level) {
+    if params.privacy_level != 3 {
         return Err(Error::InvalidInstruction.into());
     }
     validate_name(&params.display_name)?;

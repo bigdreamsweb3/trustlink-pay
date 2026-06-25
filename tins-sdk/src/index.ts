@@ -16,6 +16,8 @@ const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
 export const PROGRAM_SALT = "TINS_SALT_2026";
 export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
+export const DEFAULT_TIN_PRIVACY_LEVEL: TinsPrivacyLevel = 3;
+export const DEFAULT_TIN_PRU_COUNT = 30;
 
 const ZERO_HASH_32 = Buffer.alloc(32);
 
@@ -201,7 +203,7 @@ function serializeTinRegistryMutationParams(
   offset += 4;
   params.encryptedPhone.copy(data, offset);
   offset += params.encryptedPhone.length;
-  data.writeUInt8(params.privacyLevel ?? 1, offset);
+  data.writeUInt8(params.privacyLevel ?? DEFAULT_TIN_PRIVACY_LEVEL, offset);
   offset += 1;
   metadataHash.copy(data, offset);
   offset += 32;
@@ -230,7 +232,7 @@ export function createTinOwnerIntentHash(params: {
   hash.update(params.ownerPubkey.toBuffer());
   hash.update(Buffer.from(params.displayName, "utf8"));
   hash.update(Buffer.from(params.encryptedPhone));
-  hash.update(Buffer.from([params.privacyLevel ?? 1]));
+  hash.update(Buffer.from([params.privacyLevel ?? DEFAULT_TIN_PRIVACY_LEVEL]));
   hash.update(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
   hash.update(normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"));
   hash.update(normalizeHash32(params.nonce, "nonce"));

@@ -49,16 +49,17 @@ npm --prefix tsn-sdk run build
 
 The SDK exports `@trustlink/tsn-sdk/pru` and root exports for the TSN V1 PRU model:
 
-- deterministic PRU derivation from `master_seed + TIN + token_mint + index`;
-- privacy level PRU counts: L1=3, L2=10, L3=30, L4=100;
-- replayable allocation with no randomness;
+- token-agnostic PRU derivation from `master_seed + TIN + index`;
+- every TIN receives 30 PRUs by default, regardless of token;
+- replayable deterministic receive allocation per token;
 - unified 3-state TIN balance: `AVAILABLE + SETTLED - PENDING`;
-- deterministic spend selection and sweep planning.
+- randomized spend signing plus deterministic spend/sweep planning;
+- lazy ATA creation planning with protocol subsidy before activation fees.
 
 ```ts
 import { derivePruSet, allocatePrusDeterministically } from "@trustlink/tsn-sdk/pru";
 
-const pruSet = derivePruSet({ masterSeed, tinId, tokenMint, privacyLevel: 2 });
+const pruSet = derivePruSet({ masterSeed, tinId });
 const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pruSet, amount });
 ```
 

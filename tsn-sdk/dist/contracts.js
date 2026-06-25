@@ -8,6 +8,8 @@ export const TIN_OPERATION_FEE_SPLIT_BPS = {
 };
 export const TIN_CREATION_FEE_USDC = "0.05";
 export const TIN_UPDATE_FEE_USDC = "0.01";
+export const DEFAULT_TIN_PRU_COUNT = 30;
+export const DEFAULT_TIN_PRIVACY_LEVEL = 3;
 export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits) {
     const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10000n;
     const submitter = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.submitter)) / 10000n;

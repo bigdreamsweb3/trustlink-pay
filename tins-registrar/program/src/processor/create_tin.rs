@@ -35,7 +35,7 @@ pub fn process(
         return Err(ProgramError::MissingRequiredSignature);
     }
     validate_name(&params.display_name)?;
-    if !(1..=4).contains(&params.privacy_level) {
+    if params.privacy_level != 3 {
         return Err(Error::InvalidInstruction.into());
     }
     if Clock::get()?.unix_timestamp > params.expiry_ts {

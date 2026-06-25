@@ -10,20 +10,6 @@ The project is built from one practical belief:
 
 Blockchain payments should feel familiar for normal users while still giving developers verifiable settlement and better privacy design.
 
-
-## TSN V1 settlement model
-
-TSN V1 is the current TrustLink Pay settlement model. It keeps the identity layer and settlement layer separate so the app stays simple for users while the payment path remains replayable and verifiable without exposing a direct sender-wallet-to-recipient-wallet graph.
-
-In practice:
-
-- TINs remain the public payment identity.
-- Crankers handle settlement work.
-- Vaults and epoch accounting handle payout and reconciliation.
-- Implementation details live in the dedicated protocol docs.
-
-See [TSN V1 PRU architecture](./docs/TSN-V1-PRU-ARCHITECTURE.md) and [TSN-mediated TINS operations](./docs/TSN-TINS-MEMPOOL-IMPLEMENTATION.md) for the full protocol model.
-
 ## What TrustLink Pay Is
 
 TrustLink Pay combines two main protocol layers:

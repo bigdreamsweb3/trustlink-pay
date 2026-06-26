@@ -33,7 +33,7 @@ Usage:
 
 Environment:
   TSN_PROGRAM_ID or PROGRAM_ID overrides ${DEFAULT_TSN_PROGRAM_ID}
-  TSN_SOLANA_RPC_URLS overrides https://api.devnet.solana.com
+  TSN_RPC_GATEWAY_URL overrides the local TSN RPC gateway URL
 
 Examples:
   npm run tsn:verifier:info

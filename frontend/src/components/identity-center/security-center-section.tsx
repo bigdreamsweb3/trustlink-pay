@@ -100,6 +100,8 @@ export function SecurityCenterSection({
       ),
     );
   }, [identity?.recoveryCooldown, nowMs]);
+  const visibleMainWallet =
+    identity?.mainWallet ?? user.tinsWalletPublicKey ?? user.walletAddress ?? null;
 
   async function loadIdentity(token: string) {
     setLoading(true);
@@ -359,13 +361,11 @@ export function SecurityCenterSection({
           icon={WalletCards}
           label="Main settlement wallet"
           value={
-            identity?.mainWallet
-              ? shortenAddress(identity.mainWallet)
-              : user.walletAddress
-                ? shortenAddress(user.walletAddress)
+            visibleMainWallet
+              ? shortenAddress(visibleMainWallet)
                 : "Not registered"
           }
-          active={Boolean(identity?.mainWallet)}
+          active={Boolean(visibleMainWallet)}
         />
 
         <button

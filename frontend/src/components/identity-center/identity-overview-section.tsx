@@ -74,6 +74,13 @@ export function IdentityOverviewSection({
   const activeTin = tinInfo?.tin ?? user.tin ?? null;
   const activeTinIdentity =
     tinInfo?.tinsIdentityPublicKey ?? user.tinsIdentityPublicKey ?? null;
+  const settlementAuthorityWallet =
+    identityResponse?.identity?.mainWallet ??
+    identityResponse?.settlementWalletPublicKey ??
+    identityResponse?.tinsWalletPublicKey ??
+    user.tinsWalletPublicKey ??
+    user.walletAddress ??
+    null;
 
   useEffect(() => {
     if (!accessToken) return;
@@ -366,8 +373,8 @@ export function IdentityOverviewSection({
             }
             whatsappBusiness={whatsappProfile?.isBusiness ?? false}
             walletLabel={
-              identityResponse?.identity?.mainWallet
-                ? shortenAddress(identityResponse.identity.mainWallet)
+              settlementAuthorityWallet
+                ? shortenAddress(settlementAuthorityWallet)
                 : undefined
             }
           />
@@ -383,7 +390,7 @@ export function IdentityOverviewSection({
               {busy
                 ? "Creating identity..."
                 : walletAddress
-                  ? "Queue TIN creation"
+                  ? "Load or queue TIN"
                   : "Connect wallet to queue TIN"}
             </button>
           ) : null}
@@ -425,18 +432,18 @@ export function IdentityOverviewSection({
             icon={WalletCards}
             title="Settlement authority"
             value={
-              identityResponse?.identity?.mainWallet
-                ? shortenAddress(identityResponse.identity.mainWallet)
+              settlementAuthorityWallet
+                ? shortenAddress(settlementAuthorityWallet)
                 : activeTin
                   ? "Awaiting wallet binding"
                   : "Not configured"
             }
             status={
-              resolvedTin?.settlementAuthorityVerified
+              resolvedTin?.settlementAuthorityVerified || settlementAuthorityWallet
                 ? "On-chain verified"
                 : "Not verified"
             }
-            active={Boolean(resolvedTin?.settlementAuthorityVerified)}
+            active={Boolean(resolvedTin?.settlementAuthorityVerified || settlementAuthorityWallet)}
           />
         </div>
       </div>

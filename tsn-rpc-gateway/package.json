@@ -10,8 +10,9 @@
     }
   },
   "scripts": {
-    "dev": "node server.mjs",
-    "inspect": "node inspect.mjs",
+    "dev": "node --env-file=.env server.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "inspect": "node --env-file=.env inspect.mjs",
     "check": "node --check config.mjs && node --check provider-pool.mjs && node --check gateway.mjs && node --check server.mjs && node --check worker.mjs && node --check inspect.mjs"
   },
   "dependencies": {

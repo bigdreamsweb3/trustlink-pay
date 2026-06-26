@@ -92,6 +92,15 @@ function epochChallengeCacheKey(epoch: number, rootHash: string) {
   return `${epoch}:${rootHash}`;
 }
 
+function isMissingMempoolEndpoint(error: unknown) {
+  return error instanceof Error && /TSN request failed \(404\)/.test(error.message);
+}
+
+function shouldUseAccountSubscriptions(rpcUrl: string) {
+  if (process.env.SOLANA_WS_URL) return true;
+  return !/^https?:\/\/(127\.0\.0\.1|localhost):8787\b/.test(rpcUrl);
+}
+
 async function dynamicPriorityFeeMicroLamports(connection: Connection) {
   const configured = process.env.TSN_CRANKER_PRIORITY_FEE_MICROLAMPORTS;
   if (configured) return Number(configured);
@@ -1120,7 +1129,15 @@ async function raceEpochChallenges(params: {
   rpcUrl: string;
   connection: Connection;
 }) {
-  const challenges = await params.mempool.listOpenEpochChallenges(10);
+  let challenges;
+  try {
+    challenges = await params.mempool.listOpenEpochChallenges(10);
+  } catch (error) {
+    if (isMissingMempoolEndpoint(error)) {
+      return;
+    }
+    throw error;
+  }
   const localIntents = await params.mempool.listIntents();
   const priorityFee = await dynamicPriorityFeeMicroLamports(params.connection);
   for (const challenge of challenges) {
@@ -1406,7 +1423,11 @@ async function main() {
     motherEscrow,
     rpcUrl,
   });
-  await subscribeEpochSettlementAccounts({ connection, motherEscrow });
+  if (shouldUseAccountSubscriptions(rpcUrl)) {
+    await subscribeEpochSettlementAccounts({ connection, motherEscrow });
+  } else {
+    console.log("[tsn-cranker] subscriptions disabled; set SOLANA_WS_URL to enable websocket account monitoring");
+  }
 
   let lastMempoolOverviewSignature = "";
   const claimRetryAfter = new Map<string, number>();

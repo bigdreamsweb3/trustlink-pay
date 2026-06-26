@@ -16,7 +16,7 @@ The goal is simple:
 Set the app-facing RPC URL once:
 
 ```bash
-TSN_SOLANA_RPC_URLS=http://127.0.0.1:8787
+TSN_RPC_GATEWAY_URL=http://127.0.0.1:8787
 ```
 
 That shared URL points to the TrustLink RPC gateway.
@@ -24,10 +24,10 @@ That shared URL points to the TrustLink RPC gateway.
 The gateway then reads its own upstream list:
 
 ```bash
-TSN_SOLANA_RPC_UPSTREAM_URLS=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY,https://api.devnet.solana.com
+TSN_SOLANA_RPC_URLS=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY,https://api.devnet.solana.com,https://rpc.ankr.com/solana_devnet
 ```
 
-The gateway ranks upstreams by health and latency, then forwards Solana JSON-RPC requests to the best option first.
+The gateway ranks upstreams by health and latency, then forwards Solana JSON-RPC requests to the best option first. If one provider fails, it moves to the next provider in the list.
 
 ## Local development
 

@@ -81,6 +81,27 @@ function shouldRetryRpcError(error) {
   );
 }
 
+function isBase64AccountData(data) {
+  return typeof data === "string" || (Array.isArray(data) && typeof data[0] === "string");
+}
+
+function hasMalformedAccountData(payload, responseBody) {
+  if (payload.method === "getAccountInfo") {
+    const data = responseBody?.result?.value?.data;
+    return data != null && !isBase64AccountData(data);
+  }
+
+  if (payload.method === "getMultipleAccounts") {
+    const accounts = responseBody?.result?.value;
+    return Array.isArray(accounts) && accounts.some((account) => {
+      if (!account) return false;
+      return account.data != null && !isBase64AccountData(account.data);
+    });
+  }
+
+  return false;
+}
+
 function requestLabel(payload) {
   const method = Array.isArray(payload) ? `batch:${payload.length}` : payload?.method;
   const id = Array.isArray(payload) ? "batch" : (payload?.id ?? "null");
@@ -149,6 +170,14 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
         responseBody: parsed,
       },
     );
+  }
+
+  if (isJsonObject(parsed) && hasMalformedAccountData(payload, parsed)) {
+    throw Object.assign(new Error(`Upstream ${provider.label} returned malformed account data`), {
+      latencyMs,
+      retryable: true,
+      responseBody: parsed,
+    });
   }
 
   return { body: parsed, latencyMs };

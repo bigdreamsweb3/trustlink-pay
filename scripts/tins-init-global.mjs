@@ -33,7 +33,7 @@ Examples:
   npm run tins:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json ${DEFAULT_STARTING_SEQUENCE}
 
 Environment:
-  TSN_SOLANA_RPC_URLS can override the devnet RPC endpoint.
+  TSN_RPC_GATEWAY_URL can override the local TSN RPC gateway URL.
 `);
 }
 

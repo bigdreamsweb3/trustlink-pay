@@ -1,6 +1,9 @@
 const FALLBACK_PORT = 8787;
 const FALLBACK_TIMEOUT_MS = 4_500;
-const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
+const DEFAULT_SOLANA_RPC_URLS = [
+  "https://api.devnet.solana.com",
+  "https://rpc.ankr.com/solana_devnet",
+];
 
 const ENV_KEYS = [
   "TSN_SOLANA_RPC_UPSTREAM_URLS",
@@ -79,7 +82,7 @@ export function redactRpcUrlForDisplay(url) {
 
 export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
   const upstreamUrls = collectUrls(source);
-  const urls = upstreamUrls.length > 0 ? upstreamUrls : [DEFAULT_SOLANA_RPC_URL];
+  const urls = upstreamUrls.length > 0 ? upstreamUrls : DEFAULT_SOLANA_RPC_URLS;
   return {
     port: parsePort(source),
     timeoutMs: parseTimeoutMs(source),

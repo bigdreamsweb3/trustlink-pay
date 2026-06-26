@@ -47,9 +47,7 @@ export function getEscrowAuthorityKeypair(secretKeyValue) {
     return Keypair.fromSeed(Uint8Array.from(seed));
 }
 export function getConnection(rpcUrl) {
-    const normalizedRpcUrl = !rpcUrl ||
-        rpcUrl === "http://127.0.0.1:8899" ||
-        rpcUrl === "https://api.devnet.solana.com"
+    const normalizedRpcUrl = !rpcUrl || rpcUrl === "http://127.0.0.1:8899"
         ? resolveSolanaRpcUrl({ frontendSafe: false })
         : rpcUrl;
     return new Connection(normalizedRpcUrl, "confirmed");

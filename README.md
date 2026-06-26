@@ -271,7 +271,7 @@ The lockfiles intentionally avoid newer crate releases that require Rust edition
 Set one shared RPC entry point for the repo with `TSN_SOLANA_RPC_URLS`.
 The frontend receives that value automatically at build time, so you only set the shared app-facing env once.
 
-The gateway process reads `TSN_SOLANA_RPC_UPSTREAM_URLS` to route traffic across Helius, Solana devnet, or any future RPC provider order. Confirm the active selection with `npm run rpc:inspect` and `npm run rpc:gateway:inspect`.
+The gateway process reads `TSN_SOLANA_RPC_URLS` to route traffic across Solana RPC providers. Confirm the active selection with `npm run rpc:inspect` and `npm run rpc:gateway:inspect`.
 
 ## Repository Map
 

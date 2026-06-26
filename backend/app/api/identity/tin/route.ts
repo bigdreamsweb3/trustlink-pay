@@ -58,6 +58,17 @@ function verifyTinBindingSignature(params: {
   return ed25519.verify(signature, new TextEncoder().encode(params.message), params.walletPublicKey.toBytes());
 }
 
+function decodeTinOwnerPublicKey(data: Uint8Array) {
+  const buffer = Buffer.from(data);
+  let offset = 0;
+  if (buffer.length < 8 + 4) return null;
+  offset += 8;
+  const displayNameLength = buffer.readUInt32LE(offset);
+  offset += 4 + displayNameLength + 32;
+  if (offset + 32 > buffer.length) return null;
+  return new PublicKey(buffer.subarray(offset, offset + 32));
+}
+
 export async function POST(request: Request) {
   return withAuthenticatedRoute(request, async (authUser) => {
     try {
@@ -70,9 +81,7 @@ export async function POST(request: Request) {
       const walletPublicKey = new PublicKey(payload.tinsWalletPublicKey);
       const identityPublicKey = new PublicKey(payload.tinsIdentityPublicKey);
       const expectedIdentityPublicKey = getTinsIdentityPda({ walletPubkey: walletPublicKey, programId });
-      if (!identityPublicKey.equals(expectedIdentityPublicKey)) {
-        return fail("TINS identity PDA does not match the wallet and program", 400);
-      }
+      const identityMatchesDerivedPda = identityPublicKey.equals(expectedIdentityPublicKey);
 
       const bindingIssuedAtMs = Date.parse(payload.bindingIssuedAt);
       if (!Number.isFinite(bindingIssuedAtMs) || Math.abs(Date.now() - bindingIssuedAtMs) > TIN_BINDING_MAX_AGE_MS) {
@@ -113,6 +122,15 @@ export async function POST(request: Request) {
       }
       if (!decoded.identityPubkey.equals(identityPublicKey)) {
         return fail("On-chain TINS account identity public key mismatch", 400);
+      }
+      const ownerPublicKey = decodeTinOwnerPublicKey(account.data);
+      if (ownerPublicKey && !ownerPublicKey.equals(walletPublicKey)) {
+        return fail("Connected wallet does not own this TINS account", 400);
+      }
+      if (!identityMatchesDerivedPda) {
+        if (!ownerPublicKey) {
+          return fail("Legacy TINS account does not expose an owner wallet", 400);
+        }
       }
       const registryPublicKey = getTinsRegistryPda({ tin: decoded.tin, programId }).toBase58();
       const submittedRegistryPublicKey = normalizeOptionalPublicKey(payload.tinsRegistryPublicKey);

@@ -100,4 +100,70 @@ export declare function planPruSweep(balances: PruBalance[], tokenMint?: string)
     tokenMint: string;
     amount: bigint;
 }[];
+export type TsnScopedPruIntentMessage = {
+    intent_id: string;
+    tsn_domain: string;
+    tin: string;
+    pru_index: number;
+    amount: string;
+    destination_hash: string;
+    expiry: number;
+    nonce: number;
+};
+export type TsnScopedPruIntent = {
+    message: TsnScopedPruIntentMessage;
+    messageBytes: Uint8Array;
+    pruPublicKey: string;
+    pruSignature: string;
+};
+export declare function generateTinMasterSeed(randomBytesFn?: (size: number) => Uint8Array): Uint8Array<ArrayBufferLike>;
+export declare function encryptTinMasterSeed(params: {
+    tinMasterSeed: Uint8Array;
+    mainWalletSignature: string | Uint8Array;
+    pin: string;
+}): Promise<{
+    algorithm: "AES-256-GCM";
+    iv: string;
+    ciphertext: string;
+}>;
+export declare function decryptTinMasterSeed(params: {
+    ciphertext: string;
+    iv: string;
+    mainWalletSignature: string | Uint8Array;
+    pin: string;
+}): Promise<Uint8Array<ArrayBuffer>>;
+export declare function computeTsnDomain(tsnVaultPubkey: string | Uint8Array): string;
+export declare function computeDestinationHash(recipientTin: string | number | bigint): string;
+export declare function computePruSpendAuthHash(params: {
+    tin: string | number | bigint;
+    pruIndex: number;
+    mainWalletPubkey: string | Uint8Array;
+    domainTag?: string;
+}): string;
+export declare function createScopedPruIntent(params: {
+    tinMasterSeed: Uint8Array;
+    tsnVaultPubkey: string | Uint8Array;
+    tin: string | number | bigint;
+    pruIndex: number;
+    amount: bigint | number | string;
+    recipientTin: string | number | bigint;
+    intentId?: string;
+    nowUnixSeconds?: number;
+    nonce?: number;
+}): {
+    message: TsnScopedPruIntentMessage;
+    messageBytes: NodeJS.NonSharedUint8Array;
+    pruPublicKey: string;
+    pruSignature: string;
+};
+export declare function verifyScopedPruIntent(params: {
+    intent: TsnScopedPruIntent;
+    expectedTsnVaultPubkey: string | Uint8Array;
+    mainWalletVerified: boolean;
+    expectedTin: string | number | bigint;
+    seenIntentIds?: Set<string>;
+    nonceBitmask: Uint8Array;
+    nowUnixSeconds?: number;
+    pruActive: boolean;
+}): boolean;
 //# sourceMappingURL=pru.d.ts.map

@@ -76,3 +76,29 @@ pub struct PruLifecycle {
 impl PruLifecycle {
     pub const SPACE: usize = 8 + 8 + 32 + 2 + 1 + 1 + 1 + 1 + 32 + 1;
 }
+
+#[account]
+pub struct PruSpendGuard {
+    pub tin: u64,
+    pub pru_index: u16,
+    pub spend_auth_hash: [u8; 32],
+    pub nonce_bitmask: [u8; 32],
+    pub active: bool,
+    pub bump: u8,
+}
+
+impl PruSpendGuard {
+    pub const SPACE: usize = 8 + 8 + 2 + 32 + 32 + 1 + 1;
+
+    pub fn nonce_is_used(&self, nonce: u8) -> bool {
+        let byte_index = (nonce / 8) as usize;
+        let bit = 1u8 << (nonce % 8);
+        (self.nonce_bitmask[byte_index] & bit) != 0
+    }
+
+    pub fn mark_nonce_used(&mut self, nonce: u8) {
+        let byte_index = (nonce / 8) as usize;
+        let bit = 1u8 << (nonce % 8);
+        self.nonce_bitmask[byte_index] |= bit;
+    }
+}

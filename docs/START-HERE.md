@@ -1,6 +1,6 @@
 # Start Here
 
-**Version: PRU Architecture v2 — commit reference: current branch**
+**Version: Stable PRU Architecture v1**
 
 This document explains TrustLink Pay without assuming you know Solana.
 
@@ -250,7 +250,7 @@ Split:
 ```
 
 
-## PRU Architecture v2: 30 private routes per TIN
+## PRU Architecture v1: 30 private routes per TIN
 
 ### Summary
 

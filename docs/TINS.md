@@ -1,6 +1,6 @@
 # TINS
 
-**Version: PRU Architecture v2 — commit reference: current branch**
+**Version: Stable PRU Architecture v1**
 
 TINS means **Transfer Identity Number System**.
 

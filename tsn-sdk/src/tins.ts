@@ -63,6 +63,8 @@ export type TinResolvedIdentity = {
   authority: PublicKey;
   registry: PublicKey;
   accountKind: "registry" | "legacy";
+  upgradeRequired: boolean;
+  upgradeReason: string | null;
   settlementAuthorityVerified: boolean;
   status: number;
   createdAt: string;
@@ -808,6 +810,8 @@ export async function resolveTIN(params: {
       authority: creationAuthority ?? legacy.decoded.identityPubkey,
       registry: legacy.address,
       accountKind: "legacy",
+      upgradeRequired: true,
+      upgradeReason: "Legacy TIN account does not yet store PRU commitments. Run the legacy TIN upgrade before PRU settlement features.",
       settlementAuthorityVerified: Boolean(creationAuthority),
       status: 1,
       createdAt: legacy.decoded.createdAt.toString(),
@@ -855,6 +859,8 @@ export async function resolveTIN(params: {
     authority: registry.authority,
     registry: registryPda,
     accountKind: "registry",
+    upgradeRequired: false,
+    upgradeReason: null,
     settlementAuthorityVerified: true,
     status: registry.status,
     createdAt: registry.createdAt.toString(),

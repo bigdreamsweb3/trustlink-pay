@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
@@ -55,6 +54,11 @@ export type TsnTinBalance = {
 
 const textEncoder = new TextEncoder();
 const TSN_DOMAIN_TAG = "TSN_TRUSTLINK_INTENT_V1";
+const PRU_DERIVATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU";
+const PRU_CONFIGURATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU_CONFIGURATION";
+const PRU_ALLOCATION_SEED_TAG = "TSN_V1_ALLOCATION_SEED";
+const PRU_WEIGHT_TAG = "TSN_V1_PRU_WEIGHT";
+const PRU_REMAINDER_TAG = "TSN_V1_REMAINDER";
 const TIN_MASTER_SEED_BYTES = 32;
 const PRU_INTENT_TTL_SECONDS = 60;
 
@@ -82,7 +86,7 @@ export function derivePruPublicKey(input: {
   if (!Number.isInteger(input.index) || input.index < 0) {
     throw new Error("PRU index must be a non-negative integer");
   }
-  return hashHex(["TSN_V2_TOKEN_AGNOSTIC_PRU", input.masterSeed, input.tinId, input.index]);
+  return hashHex([PRU_DERIVATION_TAG, input.masterSeed, input.tinId, input.index]);
 }
 
 export function derivePruSet(input: {
@@ -107,11 +111,11 @@ export function computePruConfigurationHash(prus: PruEndpoint[]) {
     .sort((left, right) => left.index - right.index)
     .map((pru) => `${pru.tinId}:${pru.index}:${pru.derivedPublicKey}:${pru.encryptedMetadata ?? ""}`)
     .join("\n");
-  return hashHex(["TSN_V2_TOKEN_AGNOSTIC_PRU_CONFIGURATION", canonical]);
+  return hashHex([PRU_CONFIGURATION_TAG, canonical]);
 }
 
 export function deterministicAllocationSeed(input: { txId: string; tinId: string; tokenMint: string }) {
-  return hashHex(["TSN_V2_ALLOCATION_SEED", input.txId, input.tinId, input.tokenMint]);
+  return hashHex([PRU_ALLOCATION_SEED_TAG, input.txId, input.tinId, input.tokenMint]);
 }
 
 export function allocatePrusDeterministically(input: {
@@ -131,7 +135,7 @@ export function allocatePrusDeterministically(input: {
   if (eligible.length === 0) throw new Error("PRU set must contain at least one non-swept token-agnostic endpoint");
 
   const seed = deterministicAllocationSeed(input);
-  const weights = eligible.map((pru) => BigInt(`0x${hashHex(["TSN_V2_PRU_WEIGHT", seed, pru.derivedPublicKey, pru.index])}`) + 1n);
+  const weights = eligible.map((pru) => BigInt(`0x${hashHex([PRU_WEIGHT_TAG, seed, pru.derivedPublicKey, pru.index])}`) + 1n);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0n);
 
   let assigned = 0n;
@@ -143,7 +147,7 @@ export function allocatePrusDeterministically(input: {
 
   let remainder = amount - assigned;
   const remainderOrder = eligible
-    .map((pru, position) => ({ position, rank: hashHex(["TSN_V2_REMAINDER", seed, pru.derivedPublicKey, pru.index]) }))
+    .map((pru, position) => ({ position, rank: hashHex([PRU_REMAINDER_TAG, seed, pru.derivedPublicKey, pru.index]) }))
     .sort((left, right) => left.rank.localeCompare(right.rank));
   for (let i = 0; remainder > 0n; i += 1) {
     distribution[remainderOrder[i % remainderOrder.length].position].amount += 1n;
@@ -183,7 +187,7 @@ export function computeTinBalance(balances: PruBalance[], tokenMint?: string): T
 export function selectRandomPruForSpend(input: { balances: PruBalance[]; tokenMint: string; randomBytesFn?: (size: number) => Uint8Array }) {
   const eligible = input.balances.filter((entry) => entry.tokenMint === input.tokenMint && entry.pru.state !== "SWEPT" && entry.available + entry.settled - entry.pending > 0n);
   if (eligible.length === 0) throw new Error("No spendable PRU key available for randomized signing");
-  const entropy = Buffer.from((input.randomBytesFn ?? randomBytes)(8));
+  const entropy = Buffer.from((input.randomBytesFn ?? randomBytesCsprng)(8));
   const offset = Number(entropy.readBigUInt64LE(0) % BigInt(eligible.length));
   return eligible[offset].pru;
 }
@@ -249,8 +253,7 @@ function randomBytesCsprng(size: number) {
     globalThis.crypto.getRandomValues(bytes);
     return bytes;
   }
-  bytes.set(randomBytes(size));
-  return bytes;
+  throw new Error("Web Crypto API (crypto.getRandomValues) is required for TrustLink SDK");
 }
 
 function canonicalizeIntentMessage(message: TsnScopedPruIntentMessage) {

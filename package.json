@@ -88,6 +88,7 @@
     "tins:init-global": "node scripts/tins-init-global.mjs",
     "tins:create": "node scripts/tins-create.mjs",
     "tins:lookup": "node scripts/tins-lookup.mjs",
+    "tins:update:legacy": "node scripts/tins-update-legacy.mjs",
     "tins:identity:demo": "npm run tsn:sdk:build && node scripts/tins-identity-encryption-demo.mjs",
     "// === Cranker Daemon ===": "Reference TSN settlement operator. Start after backend, mempool, and programs are ready.",
     "tsn:mother:init": "npm --prefix tsn-cranker-op-daemon run mother:init",

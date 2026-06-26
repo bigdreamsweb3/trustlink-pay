@@ -381,6 +381,18 @@ async function signSolanaMessageImpl(params: {
   address: string;
   message: string;
 }) {
+  return signSolanaBytesImpl({
+    walletId: params.walletId,
+    address: params.address,
+    message: new TextEncoder().encode(params.message),
+  });
+}
+
+async function signSolanaBytesImpl(params: {
+  walletId: string;
+  address: string;
+  message: Uint8Array;
+}) {
   const wallet = getWalletById(params.walletId);
   if (!wallet) {
     throw new Error("Selected wallet is no longer available in this browser");
@@ -391,7 +403,7 @@ async function signSolanaMessageImpl(params: {
     throw new Error("This wallet cannot sign authorization messages from the browser");
   }
 
-  const signed = await wallet.provider.signMessage(new TextEncoder().encode(params.message), "utf8");
+  const signed = await wallet.provider.signMessage(params.message, "utf8");
   const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
   return bytesToBase64(signature);
 }
@@ -638,6 +650,14 @@ export const disconnectSolanaWallet = traceFunction(disconnectSolanaWalletImpl, 
 export const signSolanaMessage = traceFunction(signSolanaMessageImpl, {
   namespace: "Wallet",
   name: "signSolanaMessage",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signSolanaBytes = traceFunction(signSolanaBytesImpl, {
+  namespace: "Wallet",
+  name: "signSolanaBytes",
   module: "frontend/src/lib/wallet.ts",
   level: "info",
   includeReturn: false,

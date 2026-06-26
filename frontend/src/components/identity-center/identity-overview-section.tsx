@@ -21,6 +21,7 @@ import { setStoredUser } from "@/src/lib/storage";
 import {
   createOrLoadTinForWallet,
   resolveTinFromChain,
+  upgradeLegacyTinForWallet,
   type BrowserResolvedTin,
 } from "@/src/lib/tins";
 import type {
@@ -65,6 +66,7 @@ export function IdentityOverviewSection({
     useState<WhatsAppNumberVerificationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -209,6 +211,60 @@ export function IdentityOverviewSection({
     window.setTimeout(() => setCopied(false), 1200);
   }
 
+  async function handleUpgradeTin() {
+    if (!accessToken || !activeTin || !resolvedTin?.upgradeRequired) return;
+    if (!walletAddress || !session) {
+      requestWalletConnection();
+      showToast("Connect the wallet that owns this TIN before upgrading.");
+      return;
+    }
+
+    setUpgradeBusy(true);
+    setError(null);
+    try {
+      const upgraded = await upgradeLegacyTinForWallet({
+        walletId: session.walletId,
+        walletAddress,
+        tin: activeTin,
+        phoneNumber: user.phoneNumber,
+        displayName: user.displayName,
+        legacyAccountPublicKey: resolvedTin.registry,
+      });
+      const stored = await apiPost<TinIdentityState>(
+        "/api/identity/tin",
+        upgraded,
+        accessToken,
+      );
+      setIdentityResponse((current) =>
+        current
+          ? { ...current, ...stored }
+          : ({ ...stored, identity: null } as IdentitySecurityResponse),
+      );
+      const nextUser: UserProfile = {
+        ...user,
+        tin: stored.tin,
+        tinsIdentityPublicKey: stored.tinsIdentityPublicKey,
+        tinsRegistryPublicKey: stored.tinsRegistryPublicKey,
+        tinsWalletPublicKey: stored.tinsWalletPublicKey,
+        tinsProgramId: stored.tinsProgramId,
+        tinsCreatedAt: stored.tinsCreatedAt,
+      };
+      setUser(nextUser);
+      setStoredUser(nextUser);
+      setResolvedTin(await resolveTinFromChain(activeTin));
+      showToast(`TIN upgraded. Seed backup downloaded as ${upgraded.seedBackupFileName}.`);
+    } catch (upgradeError) {
+      const message =
+        upgradeError instanceof Error
+          ? upgradeError.message
+          : "Could not upgrade TIN";
+      setError(message);
+      showToast(message);
+    } finally {
+      setUpgradeBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <section className="tl-panel rounded-[28px] p-5">
@@ -252,6 +308,32 @@ export function IdentityOverviewSection({
               </button>
             ) : null}
           </div>
+
+          {activeTin && resolvedTin?.upgradeRequired ? (
+            <div className="mb-4 rounded-[18px] border border-accent-border bg-accent-soft/60 p-4">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.8rem] font-semibold text-[var(--text)]">
+                    Legacy TIN upgrade required
+                  </p>
+                  <p className="mt-1 text-[0.74rem] leading-6 text-[var(--text-soft)]">
+                    {resolvedTin.upgradeReason ??
+                      "This TIN still uses the old layout. Upgrade it now so the network can attach the 30-PRU settlement commitment."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleUpgradeTin()}
+                    disabled={upgradeBusy}
+                    className="tl-button-primary mt-3 inline-flex items-center justify-center gap-2 rounded-[14px] px-3.5 py-2.5 text-[0.74rem] font-semibold disabled:opacity-50"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    {upgradeBusy ? "Upgrading TIN..." : "Upgrade TIN now"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <IdentityTree
             displayName={

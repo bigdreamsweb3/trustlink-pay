@@ -4,8 +4,8 @@ import { resolve } from "path";
 const nextConfig = {
   transpilePackages: ["trustlink-whatsapp-sdk"],
   env: {
-    NEXT_PUBLIC_TSN_SOLANA_RPC_URLS:
-      process.env.TSN_SOLANA_RPC_URLS ?? "http://127.0.0.1:8787",
+    NEXT_PUBLIC_TSN_RPC_GATEWAY_URL:
+      process.env.TSN_RPC_GATEWAY_URL ?? "http://127.0.0.1:8787",
   },
 
   // 🚀 Move typed routes into the experimental block for Next.js 14

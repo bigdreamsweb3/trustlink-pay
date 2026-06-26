@@ -76,7 +76,7 @@ async function main() {
 
   const programId = new PublicKey(process.env.TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
   const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
-  const connection = createSolanaConnection({ fallbackToDevnet: true });
+  const connection = createSolanaConnection();
   const ownerKeypairPath = String(flags.owner ?? process.env.TINS_OWNER_KEYPAIR ?? "~/.config/solana/id.json");
   const ownerKeypair = loadKeypair(ownerKeypairPath);
 

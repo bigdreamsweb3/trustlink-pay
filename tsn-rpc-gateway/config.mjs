@@ -5,6 +5,9 @@ const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 const ENV_KEYS = [
   "TSN_SOLANA_RPC_UPSTREAM_URLS",
   "TSN_SOLANA_RPC_UPSTREAM_URL",
+  "TSN_SOLANA_RPC_URLS",
+  "TSN_SOLANA_RPC_URL",
+  "SOLANA_RPC_URL",
 ];
 
 function readEnv(source, name) {
@@ -81,6 +84,7 @@ export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
     port: parsePort(source),
     timeoutMs: parseTimeoutMs(source),
     mode: String(readEnv(source, "TSN_RPC_GATEWAY_MODE") ?? "balanced").toLowerCase(),
+    logLevel: String(readEnv(source, "TSN_RPC_GATEWAY_LOG_LEVEL") ?? "info").toLowerCase(),
     upstreams: urls.map((url, index) => ({
       id: `provider-${index + 1}`,
       label: labelForUrl(url, index),

@@ -77,6 +77,7 @@ server.listen(config.port, "0.0.0.0", () => {
   console.log(`Port: ${config.port}`);
   console.log(`Mode: ${config.mode}`);
   console.log(`Timeout: ${config.timeoutMs}ms`);
+  console.log(`Log level: ${config.logLevel}`);
   console.log("Upstreams:");
   for (const upstream of config.upstreams) {
     console.log(`- ${upstream.id} (${upstream.label}) -> ${redactRpcUrlForDisplay(upstream.url)}`);

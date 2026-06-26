@@ -44,14 +44,6 @@ function parseJsonBody(text) {
   return JSON.parse(text);
 }
 
-function toRpcError(code, message, data) {
-  const error = { code, message };
-  if (data !== undefined) {
-    return { error: { ...error, data }, jsonrpc: "2.0", id: null };
-  }
-  return { error, jsonrpc: "2.0", id: null };
-}
-
 function summarizeSelection(provider, method, rankedProviders) {
   return {
     method: method ?? null,
@@ -70,10 +62,47 @@ function summarizeSelection(provider, method, rankedProviders) {
   };
 }
 
+function shouldRetryRpcError(error) {
+  if (!error) return false;
+  const message = String(error.message ?? "").toLowerCase();
+  return (
+    error.code === -32005 ||
+    error.code === 429 ||
+    message.includes("rate limit") ||
+    message.includes("too many requests") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("econnrefused") ||
+    message.includes("enotfound") ||
+    message.includes("eai_again") ||
+    message.includes("invalid url") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("service unavailable")
+  );
+}
+
+function requestLabel(payload) {
+  const method = Array.isArray(payload) ? `batch:${payload.length}` : payload?.method;
+  const id = Array.isArray(payload) ? "batch" : (payload?.id ?? "null");
+  return `method=${method ?? "unknown"} id=${id}`;
+}
+
+function logGatewayEvent(config, level, message, details = {}) {
+  if (config.logLevel === "silent") return;
+  if (level === "debug" && config.logLevel !== "debug") return;
+  const serialized = Object.entries(details)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(" ");
+  console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
+    `[tsn-rpc-gateway] ${message}${serialized ? ` ${serialized}` : ""}`,
+  );
+}
+
 async function fetchRpcPayload(provider, payload, timeoutMs) {
   const signal = createTimeoutSignal(timeoutMs);
   const startedAt = performance.now();
-  const response = await fetch(provider.url, {
+  const response = await globalThis.fetch(provider.url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -111,6 +140,17 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
     });
   }
 
+  if (isJsonObject(parsed) && parsed.error && shouldRetryRpcError(parsed.error)) {
+    throw Object.assign(
+      new Error(`Upstream ${provider.label} JSON-RPC error: ${parsed.error.message ?? parsed.error.code}`),
+      {
+        latencyMs,
+        retryable: true,
+        responseBody: parsed,
+      },
+    );
+  }
+
   return { body: parsed, latencyMs };
 }
 
@@ -120,7 +160,16 @@ async function proxySinglePayload(pool, config, payload) {
 
   for (const provider of rankedProviders) {
     try {
+      logGatewayEvent(config, "debug", "upstream request", {
+        ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
+        provider: provider.label,
+      });
       const result = await fetchRpcPayload(provider, payload, config.timeoutMs);
+      logGatewayEvent(config, "info", "upstream success", {
+        ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
+        provider: provider.label,
+        latencyMs: Math.round(result.latencyMs),
+      });
       pool.recordOutcome(provider.url, {
         type: "success",
         latencyMs: result.latencyMs,
@@ -131,6 +180,12 @@ async function proxySinglePayload(pool, config, payload) {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      logGatewayEvent(config, error?.retryable ? "warn" : "error", "upstream failure", {
+        ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
+        provider: provider.label,
+        retryable: Boolean(error?.retryable),
+        error: message.replace(/\s+/g, " "),
+      });
       pool.recordOutcome(provider.url, {
         type: "failure",
         latencyMs: Number(error?.latencyMs ?? config.timeoutMs),
@@ -202,6 +257,7 @@ export function createRpcGatewayApp(config = getRpcGatewayConfig()) {
         service: "trustlink-rpc-gateway",
         mode: config.mode,
         timeoutMs: config.timeoutMs,
+        logLevel: config.logLevel,
         upstreamCount: config.upstreams.length,
         upstreams: pool.snapshot(),
       });

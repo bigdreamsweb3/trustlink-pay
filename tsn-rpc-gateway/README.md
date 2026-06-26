@@ -12,7 +12,7 @@ It is structured as its own project because it can later move into a separate pr
 - keeps API keys out of the app code
 - exposes a fetch handler for Node and future Workers deployment
 
-TrustLink Pay apps, scripts, SDKs, and services point to the gateway by URL through `TSN_SOLANA_RPC_URLS`. They do not import this project as a client library.
+TrustLink Pay apps, scripts, SDKs, and services point to the gateway server by URL through `TSN_RPC_GATEWAY_URL` (or `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` in browser bundles). They do not import this project as a client library and do not configure upstream Solana RPC URLs directly.
 
 ## Local commands
 

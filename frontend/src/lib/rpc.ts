@@ -1,63 +1,42 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
-export const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
+export const DEFAULT_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
 
 type RpcSelectionOptions = {
-  fallbackToDevnet?: boolean;
   frontendSafe?: boolean;
 };
 
-function splitRpcUrlList(value: string | undefined): string[] {
-  return (value ?? "")
-    .split(/[,\s]+/g)
-    .map((entry) => entry.trim().replace(/\/+$/, ""))
-    .filter(Boolean);
+export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
+  return [resolveSolanaRpcUrl()];
 }
 
-export function resolveSolanaRpcUrls({
-  fallbackToDevnet = true,
-}: RpcSelectionOptions = {}) {
-  const urls = [
-    ...new Set(splitRpcUrlList(process.env.NEXT_PUBLIC_TSN_SOLANA_RPC_URLS)),
-  ];
-  if (urls.length > 0) return urls;
-  return fallbackToDevnet ? [DEFAULT_SOLANA_RPC_URL] : [];
-}
-
-export function resolveSolanaRpcUrl(options: RpcSelectionOptions = {}) {
-  return resolveSolanaRpcUrls(options)[0] ?? DEFAULT_SOLANA_RPC_URL;
+export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {
+  return (
+    process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL ?? DEFAULT_TSN_RPC_GATEWAY_URL
+  ).replace(/\/+$/, "");
 }
 
 export function createSolanaConnection({
   commitment = "confirmed",
-  fallbackToDevnet = true,
 }: {
   commitment?: Commitment;
-  fallbackToDevnet?: boolean;
   frontendSafe?: boolean;
 } = {}) {
-  return new Connection(resolveSolanaRpcUrl({ fallbackToDevnet }), commitment);
+  return new Connection(resolveSolanaRpcUrl(), commitment);
 }
 
 export async function withRpcFallback<T>(
   operation: (connection: Connection, rpcUrl: string) => Promise<T>,
   options: RpcSelectionOptions & { commitment?: Commitment } = {},
 ) {
-  let lastError: unknown;
-  for (const rpcUrl of resolveSolanaRpcUrls(options)) {
-    try {
-      return await operation(
-        new Connection(rpcUrl, options.commitment ?? "confirmed"),
-        rpcUrl,
-      );
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError ?? new Error("No Solana RPC endpoint is configured");
+  const rpcUrl = resolveSolanaRpcUrl(options);
+  return operation(
+    new Connection(rpcUrl, options.commitment ?? "confirmed"),
+    rpcUrl,
+  );
 }
 
 export function describeRpcSelection(options = {}) {
   const urls = resolveSolanaRpcUrls(options);
-  return { urls, selected: urls[0] ?? DEFAULT_SOLANA_RPC_URL };
+  return { urls, selected: urls[0] };
 }

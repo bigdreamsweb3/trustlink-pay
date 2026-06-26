@@ -1,10 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex } from "@noble/hashes/utils";
+import nacl from "tweetnacl";
 export const DEFAULT_PRU_COUNT = 30;
 export const DEFAULT_PRU_PRIVACY_LEVEL = 3;
 export const PRU_ATA_RENT_SUBSIDY_LIMIT = 3;
 const textEncoder = new TextEncoder();
+const TSN_DOMAIN_TAG = "TSN_TRUSTLINK_INTENT_V1";
+const TIN_MASTER_SEED_BYTES = 32;
+const PRU_INTENT_TTL_SECONDS = 60;
 function hashHex(parts) {
     const chunks = parts.map((part) => {
         if (part instanceof Uint8Array)
@@ -135,4 +139,144 @@ export function planPruSweep(balances, tokenMint) {
         .filter((entry) => (!tokenMint || entry.tokenMint === tokenMint) && entry.pru.state !== "SWEPT")
         .map((entry) => ({ pru: entry.pru, tokenMint: entry.tokenMint, amount: entry.available + entry.settled - entry.pending }))
         .filter((entry) => entry.amount > 0n);
+}
+function getBrowserCrypto() {
+    const subtle = globalThis.crypto?.subtle;
+    if (!globalThis.crypto || !subtle) {
+        throw new Error("WebCrypto is required for TrustLink TIN seed encryption");
+    }
+    return globalThis.crypto;
+}
+function randomBytesCsprng(size) {
+    const bytes = new Uint8Array(size);
+    if (globalThis.crypto?.getRandomValues) {
+        globalThis.crypto.getRandomValues(bytes);
+        return bytes;
+    }
+    bytes.set(randomBytes(size));
+    return bytes;
+}
+function canonicalizeIntentMessage(message) {
+    return JSON.stringify({
+        intent_id: message.intent_id,
+        tsn_domain: message.tsn_domain,
+        tin: message.tin,
+        pru_index: message.pru_index,
+        amount: message.amount,
+        destination_hash: message.destination_hash,
+        expiry: message.expiry,
+        nonce: message.nonce,
+    });
+}
+function wipeBytes(bytes) {
+    if (bytes)
+        bytes.fill(0);
+}
+function toArrayBuffer(bytes) {
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+export function generateTinMasterSeed(randomBytesFn = randomBytesCsprng) {
+    const seed = randomBytesFn(TIN_MASTER_SEED_BYTES);
+    if (seed.length !== TIN_MASTER_SEED_BYTES)
+        throw new Error("TIN Master Seed must be exactly 32 bytes");
+    return seed;
+}
+export async function encryptTinMasterSeed(params) {
+    if (params.tinMasterSeed.length !== TIN_MASTER_SEED_BYTES)
+        throw new Error("TIN Master Seed must be 32 bytes");
+    const cryptoImpl = getBrowserCrypto();
+    const signatureBytes = typeof params.mainWalletSignature === "string"
+        ? textEncoder.encode(params.mainWalletSignature)
+        : params.mainWalletSignature;
+    const keyMaterial = sha256(new Uint8Array([...signatureBytes, ...textEncoder.encode(params.pin)]));
+    const key = await cryptoImpl.subtle.importKey("raw", toArrayBuffer(keyMaterial), "AES-GCM", false, ["encrypt"]);
+    const iv = randomBytesCsprng(12);
+    const ciphertext = new Uint8Array(await cryptoImpl.subtle.encrypt({ name: "AES-GCM", iv: toArrayBuffer(iv) }, key, toArrayBuffer(params.tinMasterSeed)));
+    return {
+        algorithm: "AES-256-GCM",
+        iv: bytesToHex(iv),
+        ciphertext: bytesToHex(ciphertext),
+    };
+}
+export async function decryptTinMasterSeed(params) {
+    const cryptoImpl = getBrowserCrypto();
+    const signatureBytes = typeof params.mainWalletSignature === "string"
+        ? textEncoder.encode(params.mainWalletSignature)
+        : params.mainWalletSignature;
+    const keyMaterial = sha256(new Uint8Array([...signatureBytes, ...textEncoder.encode(params.pin)]));
+    const key = await cryptoImpl.subtle.importKey("raw", toArrayBuffer(keyMaterial), "AES-GCM", false, ["decrypt"]);
+    return new Uint8Array(await cryptoImpl.subtle.decrypt({ name: "AES-GCM", iv: toArrayBuffer(Buffer.from(params.iv, "hex")) }, key, toArrayBuffer(Buffer.from(params.ciphertext, "hex"))));
+}
+export function computeTsnDomain(tsnVaultPubkey) {
+    const vaultBytes = typeof tsnVaultPubkey === "string" ? textEncoder.encode(tsnVaultPubkey) : tsnVaultPubkey;
+    return bytesToHex(sha256(new Uint8Array([...textEncoder.encode(TSN_DOMAIN_TAG), ...vaultBytes])));
+}
+export function computeDestinationHash(recipientTin) {
+    return bytesToHex(sha256(textEncoder.encode(String(recipientTin))));
+}
+export function computePruSpendAuthHash(params) {
+    const walletBytes = typeof params.mainWalletPubkey === "string"
+        ? textEncoder.encode(params.mainWalletPubkey)
+        : params.mainWalletPubkey;
+    return bytesToHex(sha256(new Uint8Array([
+        ...textEncoder.encode(String(params.tin)),
+        ...new Uint8Array(new Uint16Array([params.pruIndex]).buffer),
+        ...walletBytes,
+        ...textEncoder.encode(params.domainTag ?? "TRUSTLINK_PRU_SPEND_GUARD_V1"),
+    ])));
+}
+function derivePruKeypair(params) {
+    const seed = sha256(textEncoder.encode(`TRUSTLINK_PRU_KEY_V1|${bytesToHex(params.tinMasterSeed)}|${String(params.tin)}|${params.pruIndex}`));
+    const keypair = nacl.sign.keyPair.fromSeed(seed);
+    wipeBytes(seed);
+    return keypair;
+}
+export function createScopedPruIntent(params) {
+    const keypair = derivePruKeypair({ tinMasterSeed: params.tinMasterSeed, tin: params.tin, pruIndex: params.pruIndex });
+    try {
+        const message = {
+            intent_id: params.intentId ?? bytesToHex(randomBytesCsprng(16)),
+            tsn_domain: computeTsnDomain(params.tsnVaultPubkey),
+            tin: String(params.tin),
+            pru_index: params.pruIndex,
+            amount: String(params.amount),
+            destination_hash: computeDestinationHash(params.recipientTin),
+            expiry: (params.nowUnixSeconds ?? Math.floor(Date.now() / 1000)) + PRU_INTENT_TTL_SECONDS,
+            nonce: params.nonce ?? randomBytesCsprng(1)[0],
+        };
+        const messageBytes = textEncoder.encode(canonicalizeIntentMessage(message));
+        const signature = nacl.sign.detached(messageBytes, keypair.secretKey);
+        return {
+            message,
+            messageBytes,
+            pruPublicKey: bytesToHex(keypair.publicKey),
+            pruSignature: bytesToHex(signature),
+        };
+    }
+    finally {
+        wipeBytes(keypair.secretKey);
+    }
+}
+export function verifyScopedPruIntent(params) {
+    const expectedDomain = computeTsnDomain(params.expectedTsnVaultPubkey);
+    if (params.intent.message.tsn_domain !== expectedDomain)
+        throw new Error("Invalid TSN domain");
+    if (!params.mainWalletVerified)
+        throw new Error("Invalid main wallet spend proof");
+    if (params.intent.message.tin !== String(params.expectedTin))
+        throw new Error("PRU spend guard TIN mismatch");
+    if (params.seenIntentIds?.has(params.intent.message.intent_id))
+        throw new Error("Intent replay rejected");
+    const nonce = params.intent.message.nonce;
+    if (!Number.isInteger(nonce) || nonce < 0 || nonce > 255)
+        throw new Error("Invalid PRU nonce");
+    const byteIndex = Math.floor(nonce / 8);
+    const bit = 1 << (nonce % 8);
+    if ((params.nonceBitmask[byteIndex] & bit) !== 0)
+        throw new Error("PRU nonce replay rejected");
+    if (params.intent.message.expiry <= (params.nowUnixSeconds ?? Math.floor(Date.now() / 1000)))
+        throw new Error("Expired PRU intent");
+    if (!params.pruActive)
+        throw new Error("PRU spend guard is inactive");
+    return true;
 }

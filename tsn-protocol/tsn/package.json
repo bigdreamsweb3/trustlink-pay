@@ -1,0 +1,33 @@
+{
+  "name": "@trustlink/tsn",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "protocol/target/idl/tsn.json",
+  "scripts": {
+    "mempool": "tsx ../tsn-sdk/src/server.ts",
+    "setup": "tsx scripts/setup.ts",
+    "cranker": "tsx scripts/cranker.ts",
+    "protocol:build": "cd protocol && anchor build",
+    "protocol:deploy": "cd protocol && anchor deploy --program-name trustlink-escrow --program-keypair ./pids/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V.json ",
+    "protocol:test": "cd protocol && anchor test",
+    "protocol:keys": "cd protocol && anchor keys list",
+    "escrow:init-config": "tsx scripts/init-escrow-config.ts",
+    "escrow:update-config": "tsx scripts/update-escrow-config.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "@trustlink/tsn-sdk": "file:../tsn-sdk",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.6",
+    "tsx": "^4.22.2",
+    "typescript": "^6.0.3"
+  }
+}

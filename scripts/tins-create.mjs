@@ -1,6 +1,6 @@
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { createTinsClient } from "../tins-sdk/dist/index.js"; 
+import { createTinsClient } from "../tin-system/tins-sdk/dist/index.js"; 
 import { createSolanaConnection } from "./lib/tsn-rpc.mjs";
 
 async function main() {

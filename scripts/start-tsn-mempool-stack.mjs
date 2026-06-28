@@ -6,7 +6,7 @@ const rootDir = process.cwd();
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const backendCommand = process.platform === "win32" ? "python" : "python3";
 const backendArgs = ["-u", "server.py"];
-const frontendNextBin = "../frontend/node_modules/next/dist/bin/next";
+const frontendNextBin = "../../frontend/node_modules/next/dist/bin/next";
 const frontendArgs = ["dev", "-p", "3002"];
 const mempoolPort = Number(process.env.MEMPOOL_PORT ?? "8000");
 const frontendPort = Number(process.env.MEMPOOL_FRONTEND_PORT ?? "3002");
@@ -105,7 +105,7 @@ if (backendBusy) {
   };
   children.push(
     spawnTagged("mempool-api", backendCommand, backendArgs, {
-      cwd: `${rootDir}/tsn-mempool-backend`,
+      cwd: `${rootDir}/tsn-protocol/tsn-mempool-backend`,
       env: backendEnv,
     }),
   );
@@ -116,7 +116,7 @@ if (frontendBusy) {
 } else {
   children.push(
     spawnTagged("mempool-ui", process.execPath, [frontendNextBin, ...frontendArgs], {
-      cwd: `${rootDir}/tsn-mempool-frontend`,
+      cwd: `${rootDir}/tsn-protocol/tsn-mempool-frontend`,
     }),
   );
 }

@@ -16,12 +16,6 @@ export function decodeLegacyTinAccount(data) {
   const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
   offset += 32;
 
-  let ownerPubkey = null;
-  if (offset + 32 <= buffer.length) {
-    ownerPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
-    offset += 32;
-  }
-
   let encryptedPhone = Buffer.alloc(0);
   if (offset + 4 <= buffer.length) {
     const encryptedPhoneLength = buffer.readUInt32LE(offset);
@@ -58,7 +52,6 @@ export function decodeLegacyTinAccount(data) {
     tin,
     displayName,
     identityPubkey,
-    ownerPubkey,
     encryptedPhone,
     createdAt,
     privacyLevel,

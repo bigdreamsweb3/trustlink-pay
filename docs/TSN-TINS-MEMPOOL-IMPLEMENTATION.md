@@ -2,7 +2,7 @@
 
 This document explains how TIN creation and TIN updates move through the TSN mempool before the TINS registry is changed.
 
-The short version: users do not submit TINS registry transactions directly. They sign an owner intent. Crankers verify that intent, record the fee commitment, and relay the registry transaction.
+The short version: users do not submit TINS registry transactions directly. They sign an owner intent in the frontend. That signed intent goes straight to the TSN mempool backend. Crankers verify it, record the fee commitment, and relay the registry transaction.
 
 ## What This Is
 
@@ -21,6 +21,8 @@ Direct TINS creation had three problems:
 The new flow keeps owner authority while moving operational work into the Cranker network.
 
 The Cranker never becomes the TIN owner. The owner remains the authority because the TINS program verifies the owner's Ed25519 signature over the intent hash before creating or updating the record.
+
+TrustLink backend is not part of this path. It can store app state and display identity data, but it must never proxy or bridge TIN creation, upgrade, or update operations into TSN.
 
 ## Status Pipeline
 
@@ -50,18 +52,19 @@ The additional assignment states are reserved for stricter multi-operator schedu
 
 ## How Creation Works
 
-1. The app prepares encrypted identity data and PRU configuration off-chain.
-2. The owner signs a TIN creation intent hash.
-3. The app posts the signed intent to `POST /tin-operations`.
-4. Cranker A pulls `/tin-operations/verification-work`.
-5. Cranker A verifies the owner signature, nonce, expiry, privacy level, and commitment hashes.
-6. The operation becomes `verified`.
-7. Cranker B pulls `/tin-operations/fee-work`.
-8. Cranker B records the deterministic fee commitment.
-9. The operation becomes `fee_committed`.
-10. Cranker B pulls `/tin-operations/registry-work`.
-11. Cranker B submits `tin_creation_registry` with the owner's Ed25519 signature instruction.
-12. The operation becomes `submitted_onchain`, then `finalized` after confirmation.
+1. The frontend collects the public form fields the user wants to submit.
+2. The owner wallet signs a plain owner-intent message buffer for the TIN operation. The frontend does not ask the wallet to sign a Solana transaction here.
+3. The frontend posts the signed intent directly to `POST /tin-operations` on the TSN mempool backend.
+4. The TSN mempool backend assembles the encrypted phone payload, private metadata commitment, and PRU configuration commitment.
+5. Cranker A pulls `/tin-operations/verification-work`.
+6. Cranker A verifies the owner signature, nonce, expiry, privacy level, and commitment hashes.
+7. The operation becomes `verified`.
+8. Cranker B pulls `/tin-operations/fee-work`.
+9. Cranker B records the deterministic fee commitment.
+10. The operation becomes `fee_committed`.
+11. Cranker B pulls `/tin-operations/registry-work`.
+12. Cranker B submits `tin_creation_registry` with the owner's Ed25519 signature instruction.
+13. The operation becomes `submitted_onchain`, then `finalized` after confirmation.
 
 ## How Updates Work
 
@@ -77,7 +80,7 @@ The update payload can change:
 - encrypted metadata hash
 - PRU configuration hash
 
-The mempool stores only commitments and encrypted payloads. It does not decrypt social identities.
+The mempool stores only commitments and encrypted payloads. It does not expose raw phone numbers, PRU derivation material, or TIN Master Seed material to the frontend.
 
 ## Fee Commitment
 
@@ -86,18 +89,20 @@ Canonical fees:
 - TIN creation: `0.05 USDC`
 - TIN update: `0.01 USDC`
 
+Collection follows the same supported-token or SOL handling path already used for payment-intent fees. The difference is only the split destination, not the collection boundary.
+
 Split:
 
 | Recipient | Share |
 | --- | ---: |
 | Verifier Cranker | 30% |
 | Submitter Cranker | 40% |
-| TSN treasury | 20% |
-| Bonus pool | 10% |
+| Team | 10% |
+| Reserve pool | 20% |
 
-The split is calculated in base units. Any rounding remainder goes to the bonus pool. The fee commitment hash is deterministic so the same intent can be replayed and checked later.
+The split is calculated in base units. Any rounding remainder stays in the reserve pool bucket. The fee commitment hash is deterministic so the same intent can be replayed and checked later.
 
-Current implementation note: the mempool records the deterministic fee split and optional fee transaction hash. Actual token transfer wiring can be attached to the same commitment record without changing the status model.
+Current implementation note: the split configuration is stored in TSN program state using the same Mother Escrow configuration pattern used by other TSN fee settings. The mempool reads that configuration and records the deterministic fee split plus the optional fee transaction hash.
 
 ## Cranker Separation
 
@@ -201,4 +206,3 @@ Then run program tests when the Solana toolchain is stable:
 cargo test --manifest-path tins-registrar/program/Cargo.toml --lib
 cargo test --manifest-path tsn/protocol/programs/trustlink-escrow/Cargo.toml --lib
 ```
-

@@ -3,7 +3,10 @@ import { join } from "node:path";
 import process from "node:process";
 
 const root = process.cwd();
-const lockfiles = ["tsn/protocol/Cargo.lock", "tins-registrar/program/Cargo.lock"];
+const lockfiles = [
+  "tsn-protocol/tsn/protocol/Cargo.lock",
+  "tin-system/tins-registrar/program/Cargo.lock",
+];
 const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],
   ["indexmap", "2.3.0", "cargo update -p indexmap --precise 2.3.0"],

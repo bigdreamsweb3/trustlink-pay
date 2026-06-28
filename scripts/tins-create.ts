@@ -1,5 +1,5 @@
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { createTinsClient } from "../tins-sdk/src/index.js"; 
+import { createTinsClient } from "../tin-system/tins-sdk/src/index.js"; 
 // Note: We might need to run this with tsx if the SDK is in typescript, 
 // or compile it, but let's assume it works or we'll adjust the import.
 import { createSolanaConnection } from "./lib/tsn-rpc.mjs";

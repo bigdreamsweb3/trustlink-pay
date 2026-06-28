@@ -169,16 +169,22 @@ requireSolana18Version(
 requireExactVersion("anchor-cli", anchorVersion, /anchor-cli\s+(\d+\.\d+\.\d+)/, requiredAnchor);
 warnIfHostCargoCanRewriteLockfile(cargoVersion);
 
-const tsnAnchor = read("tsn/protocol/Anchor.toml");
-const tinsAnchor = read("tins-registrar/program/Anchor.toml");
-const tinsCargo = read("tins-registrar/program/Cargo.toml");
-const tsnLock = read("tsn/protocol/Cargo.lock");
-const tinsLock = read("tins-registrar/program/Cargo.lock");
+const tsnAnchorPath = "tsn-protocol/tsn/protocol/Anchor.toml";
+const tinsAnchorPath = "tin-system/tins-registrar/program/Anchor.toml";
+const tinsCargoPath = "tin-system/tins-registrar/program/Cargo.toml";
+const tsnLockPath = "tsn-protocol/tsn/protocol/Cargo.lock";
+const tinsLockPath = "tin-system/tins-registrar/program/Cargo.lock";
+
+const tsnAnchor = read(tsnAnchorPath);
+const tinsAnchor = read(tinsAnchorPath);
+const tinsCargo = read(tinsCargoPath);
+const tsnLock = read(tsnLockPath);
+const tinsLock = read(tinsLockPath);
 
 const requiredSnippets = [
-  ["tsn/protocol/Anchor.toml", tsnAnchor, `anchor_version = "${requiredAnchor}"`],
-  ["tins-registrar/program/Anchor.toml", tinsAnchor, `anchor_version = "${requiredAnchor}"`],
-  ["tins-registrar/program/Cargo.toml", tinsCargo, `solana-program = "=${pinnedProgramCrate}"`],
+  [tsnAnchorPath, tsnAnchor, `anchor_version = "${requiredAnchor}"`],
+  [tinsAnchorPath, tinsAnchor, `anchor_version = "${requiredAnchor}"`],
+  [tinsCargoPath, tinsCargo, `solana-program = "=${pinnedProgramCrate}"`],
 ];
 
 for (const [path, body, snippet] of requiredSnippets) {
@@ -188,8 +194,8 @@ for (const [path, body, snippet] of requiredSnippets) {
 }
 
 const forbiddenSnippets = [
-  ["tsn/protocol/Anchor.toml", tsnAnchor, "solana_version"],
-  ["tins-registrar/program/Anchor.toml", tinsAnchor, "solana_version"],
+  [tsnAnchorPath, tsnAnchor, "solana_version"],
+  [tinsAnchorPath, tinsAnchor, "solana_version"],
 ];
 
 for (const [path, body, snippet] of forbiddenSnippets) {
@@ -203,8 +209,8 @@ for (const [path, body, snippet] of forbiddenSnippets) {
 }
 
 const lockfiles = [
-  ["tsn/protocol/Cargo.lock", tsnLock],
-  ["tins-registrar/program/Cargo.lock", tinsLock],
+  [tsnLockPath, tsnLock],
+  [tinsLockPath, tinsLock],
 ];
 
 for (const [path, body] of lockfiles) {

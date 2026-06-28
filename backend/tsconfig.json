@@ -22,8 +22,10 @@
     // "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@trustlink/tsn-cranker-sdk": ["../tsn/cranker-sdk"],
-      "@trustlink/tins-sdk": ["../tins-sdk/src"],
+      "@trustlink/tsn-sdk": ["../tsn-protocol/tsn-sdk/dist"],
+      "@trustlink/tsn-sdk/*": ["../tsn-protocol/tsn-sdk/dist/*"],
+      "@trustlink/tsn-cranker-sdk": ["../tsn-protocol/tsn-cranker-sdk/src"],
+      "@trustlink/tins-sdk": ["../tin-system/tins-sdk/src"],
       "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"],
       "@solana/spl-token": ["./node_modules/@solana/spl-token"],
       "@solana/web3.js": ["./node_modules/@solana/web3.js"]
@@ -35,8 +37,8 @@
     "frontend",
     "tests",
     "scripts/test-tins-*",
-    "../tins-sdk",
-    "../tsn-sdk",
-    "../tsn-cranker-sdk"
+    "../tin-system/tins-sdk",
+    "../tsn-protocol/tsn-sdk",
+    "../tsn-protocol/tsn-cranker-sdk"
   ]
 }

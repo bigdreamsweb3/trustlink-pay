@@ -89,6 +89,8 @@ Submitter Cranker relays TINS registry mutation
 TIN operation finalizes
 ```
 
+The owner wallet signs a message for this flow. It does not sign the on-chain registry transaction itself.
+
 ## Security Considerations
 
 - Crankers must never log private decrypted payloads.

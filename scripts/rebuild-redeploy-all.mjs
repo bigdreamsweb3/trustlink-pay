@@ -59,12 +59,13 @@ natively. Set TSN_NATIVE_SOLANA_TOOLS=1 to use Windows Solana tools instead.
   process.exit(0);
 }
 
-const programs = {
+  const programs = {
   tsn: {
     build: ["anchor", ["build"]],
-    cwd: path.join(root, "tsn", "protocol"),
+    cwd: path.join(root, "tsn-protocol", "tsn", "protocol"),
     deployKeypair: path.join(
       root,
+      "tsn-protocol",
       "tsn",
       "protocol",
       "target",
@@ -74,6 +75,7 @@ const programs = {
     expectedId: "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
     keypair: path.join(
       root,
+      "tsn-protocol",
       "tsn",
       "protocol",
       "pids",
@@ -85,9 +87,10 @@ const programs = {
   },
   tins: {
     build: ["anchor", ["build"]],
-    cwd: path.join(root, "tins-registrar", "program"),
+    cwd: path.join(root, "tin-system", "tins-registrar", "program"),
     deployKeypair: path.join(
       root,
+      "tin-system",
       "tins-registrar",
       "program",
       "target",
@@ -97,6 +100,7 @@ const programs = {
     expectedId: "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     keypair: path.join(
       root,
+      "tin-system",
       "tins-registrar",
       "program",
       "pids",
@@ -260,7 +264,7 @@ function cleanCaches() {
   const caches = [
     path.join(root, "frontend", ".next"),
     path.join(root, "backend", ".next"),
-    path.join(root, "tsn-mempool-frontend", ".next"),
+    path.join(root, "tsn-protocol", "tsn-mempool-frontend", ".next"),
   ];
 
   for (const cache of caches) {
@@ -279,9 +283,9 @@ function installConsumers() {
   const consumers = [
     ["frontend", "frontend"],
     ["backend", "backend"],
-    ["tsn", "TSN tools"],
-    ["tsn-cranker-op-daemon", "Cranker daemon"],
-    ["tsn-mempool-frontend", "mempool UI"],
+    ["tsn-protocol/tsn", "TSN tools"],
+    ["tsn-protocol/tsn-cranker-op-daemon", "Cranker daemon"],
+    ["tsn-protocol/tsn-mempool-frontend", "mempool UI"],
   ];
 
   for (const [directory, name] of consumers) {
@@ -306,7 +310,7 @@ function runTypeChecks() {
   );
   runNpm(
     ["run", "typecheck"],
-    path.join(root, "tsn-mempool-frontend"),
+    path.join(root, "tsn-protocol", "tsn-mempool-frontend"),
     "Type-check mempool UI",
   );
 
@@ -335,7 +339,7 @@ function runTypeChecks() {
       "--skipLibCheck",
       "scripts/cranker.ts",
     ],
-    path.join(root, "tsn-cranker-op-daemon"),
+    path.join(root, "tsn-protocol", "tsn-cranker-op-daemon"),
     "Type-check Cranker daemon",
   );
 }
@@ -344,7 +348,7 @@ function buildApps() {
   for (const [directory, name] of [
     ["backend", "backend"],
     ["frontend", "frontend"],
-    ["tsn-mempool-frontend", "mempool UI"],
+    ["tsn-protocol/tsn-mempool-frontend", "mempool UI"],
   ]) {
     runNpm(
       ["run", "build"],

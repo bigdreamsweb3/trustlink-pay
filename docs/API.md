@@ -12,6 +12,8 @@ The frontend should not talk directly to every service.
 
 The backend keeps user-facing records, authentication state, notifications, and payment history. The mempool backend coordinates TSN settlement work and exposes safe status views.
 
+For TIN creation, upgrade, and update, the frontend talks directly to the TSN mempool backend. TrustLink backend must not sit in the middle of that protocol path.
+
 ## TrustLink Backend
 
 The TrustLink backend handles:
@@ -22,6 +24,8 @@ The TrustLink backend handles:
 - wallet token lookups
 - notification workflows
 - status synchronization from TSN
+
+It does not relay TSN protocol mutations on behalf of the frontend.
 
 The frontend should use backend status for normal screens. It should not constantly poll Solana RPC for finalized payment states.
 

@@ -92,6 +92,17 @@ The app should show users:
 
 The app should not expose raw private routing data, phone numbers, or internal Cranker-only payloads.
 
+## TIN Upgrade Boundary
+
+Legacy TIN creation, upgrade, and update follow one rule:
+
+- frontend signs the owner intent
+- frontend sends that signed intent directly to the TSN mempool backend
+- TSN mempool backend assembles private TIN payloads
+- Crankers perform the on-chain TINS mutation
+
+TrustLink backend is not a bridge for TSN protocol work. It can store app-local identity state and display status, but it must not proxy TIN upgrade or creation requests into TSN.
+
 ## Community And Ecosystem
 
 TrustLink Pay is also shaped by public feedback, research, and external discussion.

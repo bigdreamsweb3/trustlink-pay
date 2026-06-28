@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import {
   decodeTinsIdentityRegistry,
   resolveTIN,
-} from "../tsn-sdk/dist/tins.js";
+} from "../tsn-protocol/tsn-sdk/dist/tins.js";
 import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
@@ -61,12 +61,6 @@ function decodeLegacyTinAccount(data) {
   const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
   offset += 32;
 
-  let ownerPubkey = null;
-  if (offset + 32 <= buffer.length) {
-    ownerPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
-    offset += 32;
-  }
-
   let encryptedPhone = Buffer.alloc(0);
   if (offset + 4 <= buffer.length) {
     const encryptedPhoneLength = buffer.readUInt32LE(offset);
@@ -103,7 +97,6 @@ function decodeLegacyTinAccount(data) {
     tin,
     displayName,
     identityPubkey,
-    ownerPubkey,
     encryptedPhone,
     createdAt,
     privacyLevel,
@@ -174,7 +167,7 @@ function printLegacyAccount(decoded, resolved, data) {
   printValue("TIN Number:", decoded.tin.toString());
   printValue("Display Name:", decoded.displayName);
   printValue("Identity PDA:", decoded.identityPubkey.toBase58());
-  printValue("Owner Pubkey:", decoded.ownerPubkey?.toBase58() ?? "legacy / unavailable");
+  printValue("Owner Pubkey:", "legacy / unavailable");
   printValue("Created At:", decoded.createdAt ? `${decoded.createdAt.toString()} (unix timestamp)` : "unknown");
   printValue("Privacy Level:", decoded.privacyLevel ?? "legacy / unavailable");
   printValue("Encrypted Metadata Hash:", decoded.encryptedMetadataHash ? toHex(decoded.encryptedMetadataHash) : "legacy / unavailable");
@@ -267,10 +260,10 @@ async function main() {
       const legacyResolved = resolved ?? {
         tin: legacy.tin.toString(),
         name: legacy.displayName,
-        authority: legacy.ownerPubkey ?? legacy.identityPubkey,
+        authority: legacy.identityPubkey,
         registry: account.pubkey,
         accountKind: "legacy",
-        settlementAuthorityVerified: Boolean(legacy.ownerPubkey),
+        settlementAuthorityVerified: false,
         status: 1,
         createdAt: legacy.createdAt?.toString() ?? "unknown",
         socialIdentities: [],

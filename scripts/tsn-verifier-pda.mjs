@@ -14,7 +14,7 @@ const {
   Transaction,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
-} = require("../tsn-sdk/node_modules/@solana/web3.js");
+} = require("../tsn-protocol/tsn-sdk/node_modules/@solana/web3.js");
 import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_TSN_PROGRAM_ID = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";

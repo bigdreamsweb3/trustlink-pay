@@ -12,7 +12,7 @@ import {
   serializeTinCreationRegistryParams,
   serializeResolveTinParams,
   createTinOwnerIntentHash,
-} from "../../tins-sdk/src/index";
+} from "../../tin-system/tins-sdk/src/index";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {

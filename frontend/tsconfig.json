@@ -29,6 +29,12 @@
       "framer-motion": [
         "./node_modules/framer-motion"
       ],
+      "@trustlink/tsn-sdk": [
+        "../tsn-protocol/tsn-sdk/dist"
+      ],
+      "@trustlink/tsn-sdk/*": [
+        "../tsn-protocol/tsn-sdk/dist/*"
+      ],
       "lucide-react": [
         "./node_modules/lucide-react"
       ],

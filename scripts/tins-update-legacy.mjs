@@ -2,20 +2,21 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import nacl from "tweetnacl";
-import { Keypair, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionInstruction, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Keypair, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, SystemProgram, Transaction, TransactionInstruction, sendAndConfirmTransaction } from "@solana/web3.js";
 import {
   DEFAULT_TINS_PROGRAM_ID,
   createOwnerIntentSignatureInstruction,
   createTinOwnerIntentHash,
+  getTinsIdentityPda,
   serializeTinUpdateParams,
-} from "../tsn-sdk/dist/tins.js";
+} from "../tsn-protocol/tsn-sdk/dist/tins.js";
 import {
   DEFAULT_PRU_COUNT,
   DEFAULT_PRU_PRIVACY_LEVEL,
   computePruConfigurationHash,
   derivePruSet,
   generateTinMasterSeed,
-} from "../tsn-sdk/dist/pru.js";
+} from "../tsn-protocol/tsn-sdk/dist/pru.js";
 import { createSolanaConnection, resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 import { findLegacyTinAccount } from "./lib/tins-legacy-account.mjs";
 
@@ -88,12 +89,13 @@ async function main() {
   if (!legacy) {
     throw new Error(`Legacy TIN ${tin} was not found in ${programId.toBase58()}`);
   }
-  if (!legacy.decoded.ownerPubkey) {
-    throw new Error("Legacy TIN does not expose an owner pubkey. This account cannot be safely upgraded with the current tool.");
-  }
-  if (!legacy.decoded.ownerPubkey.equals(ownerKeypair.publicKey)) {
+  const expectedIdentityPubkey = getTinsIdentityPda({
+    walletPubkey: ownerKeypair.publicKey,
+    programId,
+  });
+  if (!legacy.pubkey.equals(expectedIdentityPubkey)) {
     throw new Error(
-      `Owner mismatch. TIN owner is ${legacy.decoded.ownerPubkey.toBase58()} but supplied keypair is ${ownerKeypair.publicKey.toBase58()}.`,
+      `Wallet mismatch. Legacy TIN identity is ${legacy.pubkey.toBase58()} but supplied wallet derives ${expectedIdentityPubkey.toBase58()}.`,
     );
   }
   if (legacy.decoded.privacyLevel === DEFAULT_PRU_PRIVACY_LEVEL && legacy.decoded.pruConfigurationHash) {
@@ -106,6 +108,10 @@ async function main() {
     tinId: String(legacy.decoded.tin),
     privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
   });
+  const pruWallets = pruSet.map((pru) => ({
+    walletName: `pru-${String(pru.index).padStart(2, "0")}`,
+    walletAddress: new PublicKey(Buffer.from(pru.derivedPublicKey, "hex")).toBase58(),
+  }));
   const pruConfigurationHash = Buffer.from(computePruConfigurationHash(pruSet), "hex");
   const encryptedMetadataHash = ZERO_HASH_32;
   const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 900);
@@ -139,6 +145,7 @@ async function main() {
         { pubkey: ownerKeypair.publicKey, isSigner: true, isWritable: true },
         { pubkey: legacy.pubkey, isSigner: false, isWritable: true },
         { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
       data: serializeTinUpdateParams({
         ownerPubkey: ownerKeypair.publicKey,
@@ -161,10 +168,11 @@ async function main() {
   console.log("Legacy TIN upgrade submitted.");
   console.log(`TIN:                 ${legacy.decoded.tin.toString()}`);
   console.log(`Identity PDA:        ${legacy.pubkey.toBase58()}`);
-  console.log(`Owner:               ${ownerKeypair.publicKey.toBase58()}`);
+  console.log(`Signer wallet:       ${ownerKeypair.publicKey.toBase58()}`);
   console.log(`Privacy level:       ${DEFAULT_PRU_PRIVACY_LEVEL}`);
   console.log(`PRU count:           ${DEFAULT_PRU_COUNT}`);
   console.log(`PRU config hash:     ${pruConfigurationHash.toString("hex")}`);
+  console.log(`PRU wallets:         ${pruWallets.length}`);
   console.log(`Transaction:         ${signature}`);
   console.log("");
   console.log("TIN master seed backup");
@@ -180,6 +188,7 @@ async function main() {
       privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
       pruConfigurationHash: pruConfigurationHash.toString("hex"),
       tinMasterSeedHex: Buffer.from(masterSeed).toString("hex"),
+      pruWallets,
     });
     console.log(`Seed backup file:    ${savedTo}`);
   } else {

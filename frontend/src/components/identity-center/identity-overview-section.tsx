@@ -237,29 +237,7 @@ export function IdentityOverviewSection({
         displayName: user.displayName,
         legacyAccountPublicKey: resolvedTin.registry,
       });
-      const stored = await apiPost<TinIdentityState>(
-        "/api/identity/tin",
-        upgraded,
-        accessToken,
-      );
-      setIdentityResponse((current) =>
-        current
-          ? { ...current, ...stored }
-          : ({ ...stored, identity: null } as IdentitySecurityResponse),
-      );
-      const nextUser: UserProfile = {
-        ...user,
-        tin: stored.tin,
-        tinsIdentityPublicKey: stored.tinsIdentityPublicKey,
-        tinsRegistryPublicKey: stored.tinsRegistryPublicKey,
-        tinsWalletPublicKey: stored.tinsWalletPublicKey,
-        tinsProgramId: stored.tinsProgramId,
-        tinsCreatedAt: stored.tinsCreatedAt,
-      };
-      setUser(nextUser);
-      setStoredUser(nextUser);
-      setResolvedTin(await resolveTinFromChain(activeTin));
-      showToast(`TIN upgraded. Seed backup downloaded as ${upgraded.seedBackupFileName}.`);
+      showToast(`TIN upgrade intent queued in TSN mempool (${upgraded.intentId}).`);
     } catch (upgradeError) {
       const message =
         upgradeError instanceof Error

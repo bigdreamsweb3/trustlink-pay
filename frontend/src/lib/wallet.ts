@@ -381,11 +381,23 @@ async function signSolanaMessageImpl(params: {
   address: string;
   message: string;
 }) {
-  return signSolanaBytesImpl({
-    walletId: params.walletId,
-    address: params.address,
-    message: new TextEncoder().encode(params.message),
-  });
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) {
+    throw new Error("Selected wallet is no longer available in this browser");
+  }
+
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot sign authorization messages from the browser");
+  }
+
+  const signed = await wallet.provider.signMessage(
+    new TextEncoder().encode(params.message),
+    "utf8",
+  );
+  const signature =
+    signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
+  return bytesToBase64(signature);
 }
 
 async function signSolanaBytesImpl(params: {
@@ -403,7 +415,7 @@ async function signSolanaBytesImpl(params: {
     throw new Error("This wallet cannot sign authorization messages from the browser");
   }
 
-  const signed = await wallet.provider.signMessage(params.message, "utf8");
+  const signed = await wallet.provider.signMessage(new Uint8Array(params.message));
   const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
   return bytesToBase64(signature);
 }

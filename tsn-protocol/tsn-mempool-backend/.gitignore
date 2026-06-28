@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.fb_creds/
+*.service-account.json
+*firebase-adminsdk*.json
+__pycache__/
+*.pyc

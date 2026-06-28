@@ -7,7 +7,7 @@ import {
   createOneTimeDecryptionToken,
   decryptSettlementToken,
   encryptSettlementToken,
-} from "../tsn-sdk/dist/settlement-token.js";
+} from "../tsn-protocol/tsn-sdk/dist/settlement-token.js";
 
 const cranker = createCrankerEncryptionKeypair();
 const recipientWallet = Keypair.generate().publicKey.toBase58();

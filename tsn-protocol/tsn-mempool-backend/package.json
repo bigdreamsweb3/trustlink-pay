@@ -1,0 +1,9 @@
+{
+  "name": "tsn-mempool-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "git:quick:push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
+    "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force"
+  }
+}

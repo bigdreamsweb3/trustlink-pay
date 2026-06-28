@@ -1,37 +1,23 @@
 "use client";
 
+import { sha256 } from "@noble/hashes/sha2";
 import { PublicKey } from "@solana/web3.js";
 import {
   DEFAULT_TINS_PROGRAM_ID,
-  createOwnerIntentSignatureInstruction,
   createTinOwnerIntentHash,
   decodeTinAccount,
   getTinsGlobalStatePda,
   getTinsIdentityPda,
-  getTinsIdentitySeed,
   getTinsRegistryPda,
-  serializeTinUpdateParams,
   resolveTIN,
   type TinResolvedIdentity,
 } from "@trustlink/tsn-sdk/tins";
-import {
-  DEFAULT_PRU_COUNT,
-  DEFAULT_PRU_PRIVACY_LEVEL,
-  computePruConfigurationHash,
-  derivePruSet,
-  generateTinMasterSeed,
-} from "@trustlink/tsn-sdk/pru";
-import {
-  SYSVAR_INSTRUCTIONS_PUBKEY,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { DEFAULT_PRU_PRIVACY_LEVEL } from "@trustlink/tsn-sdk/pru";
 
-import { signAndSendSolanaTransaction, signSolanaBytes, signSolanaMessage } from "@/src/lib/wallet";
+import { signSolanaBytes, signSolanaMessage } from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
 import { traceFunction } from "../../../utils/observability/tracer";
-const PHONE_KEY_MESSAGE = "TINS_PHONE_ENCRYPTION_SEED";
-const PHONE_KEY_INFO = "TINS_PHONE_KEY_INFO";
+const TINS_OWNER_INTENT_UPDATE_DOMAIN = "TINS_UPDATE_OWNER_INTENT_V2";
 
 export type BrowserTinRegistration = {
   tin: string;
@@ -46,31 +32,20 @@ export type BrowserTinRegistration = {
   created: boolean;
 };
 
-export type BrowserTinUpgradeResult = BrowserTinRegistration & {
-  upgraded: true;
-  pruCount: number;
+export type BrowserTinUpgradeIntent = {
+  tin: string;
+  ownerPubkey: string;
+  displayName: string;
+  phoneNumber: string;
   privacyLevel: number;
-  pruConfigurationHash: string;
-  seedBackupFileName: string;
+  ownerIntentHash: string;
+  ownerSignature: string;
+  nonce: string;
+  expiry: number;
 };
 
 function utf8(value: string) {
   return new TextEncoder().encode(value);
-}
-
-function base64ToBytes(value: string) {
-  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
-}
-
-function concatBytes(parts: Uint8Array[]) {
-  const size = parts.reduce((total, part) => total + part.length, 0);
-  const output = new Uint8Array(size);
-  let offset = 0;
-  for (const part of parts) {
-    output.set(part, offset);
-    offset += part.length;
-  }
-  return output;
 }
 
 function normalizeDisplayName(value?: string | null) {
@@ -94,16 +69,8 @@ function base64ToSignatureBytes(value: string) {
   return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
 }
 
-function triggerJsonDownload(fileName: string, payload: unknown) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: "application/json",
-  });
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fileName;
-  anchor.click();
-  URL.revokeObjectURL(objectUrl);
+function base64FromBytes(value: Uint8Array) {
+  return btoa(String.fromCharCode(...value));
 }
 
 function decodeLegacyTinUpgradeAccount(data: Uint8Array) {
@@ -117,22 +84,28 @@ function decodeLegacyTinUpgradeAccount(data: Uint8Array) {
   offset += displayNameLength;
   const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
   offset += 32;
-  let ownerPubkey: PublicKey | null = null;
-  if (offset + 32 <= buffer.length) {
-    ownerPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
-    offset += 32;
-  }
   let encryptedPhone = Buffer.alloc(0);
   if (offset + 4 <= buffer.length) {
     const encryptedPhoneLength = buffer.readUInt32LE(offset);
     offset += 4;
     encryptedPhone = buffer.subarray(offset, Math.min(offset + encryptedPhoneLength, buffer.length));
+    offset += encryptedPhone.length;
   }
-  return { tin, displayName, identityPubkey, ownerPubkey, encryptedPhone };
+  let createdAt: bigint | null = null;
+  if (offset + 8 <= buffer.length) {
+    createdAt = buffer.readBigInt64LE(offset);
+  }
+  return { tin, displayName, identityPubkey, encryptedPhone, createdAt };
 }
 
 function getFrontendTinsProgramId() {
   return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
+}
+
+function getFrontendTsnMempoolUrl() {
+  const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL?.trim();
+  if (!url) throw new Error("NEXT_PUBLIC_TSN_MEMPOOL_URL is missing");
+  return url.replace(/\/$/, "");
 }
 
 export type BrowserResolvedTin = {
@@ -252,54 +225,47 @@ async function signTinBinding(params: {
   return { bindingIssuedAt, bindingMessage, bindingSignature };
 }
 
-async function encryptPhoneForTins(params: {
-  walletId: string;
-  walletAddress: string;
-  walletPublicKey: PublicKey;
-  phoneNumber: string;
-}) {
-  if (!globalThis.crypto?.subtle) {
-    throw new Error("This browser cannot create encrypted TINS phone data.");
-  }
+// createTinOwnerUpdateIntentHash removed in favor of SDK createTinOwnerIntentHash
 
-  const signatureBase64 = await signSolanaMessage({
-    walletId: params.walletId,
-    address: params.walletAddress,
-    message: PHONE_KEY_MESSAGE,
-  });
-  const walletSignatureSeed = base64ToBytes(signatureBase64);
-  const identitySeed = new Uint8Array(getTinsIdentitySeed(params.walletPublicKey));
-  const keyMaterial = await globalThis.crypto.subtle.importKey(
-    "raw",
-    walletSignatureSeed,
-    "HKDF",
-    false,
-    ["deriveKey"],
-  );
-  const phoneKey = await globalThis.crypto.subtle.deriveKey(
-    {
-      name: "HKDF",
-      hash: "SHA-256",
-      salt: identitySeed,
-      info: utf8(PHONE_KEY_INFO),
+async function postTinOperationIntent(request: BrowserTinUpgradeIntent) {
+  const response = await fetch(`${getFrontendTsnMempoolUrl()}/tin-operations`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
     },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt"],
-  );
-  const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = new Uint8Array(
-    await globalThis.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      phoneKey,
-      utf8(params.phoneNumber),
-    ),
-  );
-  const tag = encrypted.slice(encrypted.length - 16);
-  const ciphertext = encrypted.slice(0, encrypted.length - 16);
+    body: JSON.stringify({
+      intentType: "tin_update",
+      tin: request.tin,
+      ownerPubkey: request.ownerPubkey,
+      newDisplayName: request.displayName,
+      newPhoneNumber: request.phoneNumber,
+      newPrivacyLevel: request.privacyLevel,
+      ownerIntentHash: request.ownerIntentHash,
+      ownerSignature: request.ownerSignature,
+      nonce: request.nonce,
+      expiry: request.expiry,
+    }),
+  });
 
-  return concatBytes([iv, tag, ciphertext]);
+  const raw = await response.text();
+  let parsed: unknown = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = raw;
+  }
+  if (!response.ok) {
+    const detail =
+      parsed && typeof parsed === "object" && "detail" in parsed
+        ? String((parsed as { detail: unknown }).detail)
+        : "TSN mempool rejected the TIN upgrade intent.";
+    throw new Error(detail);
+  }
+  if (!parsed || typeof parsed !== "object" || !("intentId" in parsed)) {
+    throw new Error("TSN mempool accepted the TIN upgrade intent but returned no intent id.");
+  }
+  return { intentId: String((parsed as { intentId: unknown }).intentId) };
 }
 
 async function createOrLoadTinForWalletImpl(params: {
@@ -369,12 +335,11 @@ async function upgradeLegacyTinForWalletImpl(params: {
   phoneNumber: string;
   displayName?: string | null;
   legacyAccountPublicKey: string;
-}): Promise<BrowserTinUpgradeResult> {
+}): Promise<{ intentId: string }> {
   const programId = getFrontendTinsProgramId();
   const connection = createSolanaConnection({ frontendSafe: true });
   const walletPublicKey = new PublicKey(params.walletAddress);
   const legacyAccountPublicKey = new PublicKey(params.legacyAccountPublicKey);
-  const registryPublicKey = getTinsRegistryPda({ tin: params.tin, programId });
   const account = await connection.getAccountInfo(legacyAccountPublicKey, "confirmed");
 
   if (!account) {
@@ -388,38 +353,20 @@ async function upgradeLegacyTinForWalletImpl(params: {
   if (decoded.tin.toString() !== params.tin) {
     throw new Error("Loaded TIN account does not match the selected TIN.");
   }
-  const ownerPublicKey = decoded.ownerPubkey ?? decoded.identityPubkey;
-  if (!ownerPublicKey.equals(walletPublicKey)) {
-    throw new Error(`Connect the TIN owner wallet ${ownerPublicKey.toBase58()} before upgrading.`);
+  const expectedIdentityPublicKey = getTinsIdentityPda({ walletPubkey: walletPublicKey, programId });
+  if (!legacyAccountPublicKey.equals(expectedIdentityPublicKey)) {
+    throw new Error(
+      `Connect the wallet that controls legacy TIN identity ${decoded.identityPubkey.toBase58()} before upgrading.`,
+    );
   }
 
   const displayName = normalizeDisplayName(params.displayName || decoded.displayName);
-  const encryptedPhone = await encryptPhoneForTins({
-    walletId: params.walletId,
-    walletAddress: params.walletAddress,
-    walletPublicKey,
-    phoneNumber: params.phoneNumber,
-  });
-
-  const tinMasterSeed = generateTinMasterSeed();
-  const pruSet = derivePruSet({
-    masterSeed: tinMasterSeed,
-    tinId: params.tin,
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
-  });
-  const pruConfigurationHashHex = computePruConfigurationHash(pruSet);
-  const pruConfigurationHash = Buffer.from(pruConfigurationHashHex, "hex");
-  const encryptedMetadataHash = new Uint8Array(32);
   const nonce = randomBytes(32);
   const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 900);
   const intentHash = createTinOwnerIntentHash({
     purpose: "update",
     ownerPubkey: walletPublicKey,
     displayName,
-    encryptedPhone,
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
-    encryptedMetadataHash,
-    pruConfigurationHash,
     nonce,
     expiryTs,
   });
@@ -430,75 +377,20 @@ async function upgradeLegacyTinForWalletImpl(params: {
       message: intentHash,
     }),
   );
-
-  const transaction = new Transaction().add(
-    createOwnerIntentSignatureInstruction({
-      ownerPubkey: walletPublicKey,
-      intentHash,
-      signature: ownerSignature,
-    }),
-    new TransactionInstruction({
-      programId,
-      keys: [
-        { pubkey: walletPublicKey, isSigner: true, isWritable: true },
-        { pubkey: legacyAccountPublicKey, isSigner: false, isWritable: true },
-        { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
-      ],
-      data: serializeTinUpdateParams({
-        ownerPubkey: walletPublicKey,
-        displayName,
-        encryptedPhone,
-        privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
-        encryptedMetadataHash,
-        pruConfigurationHash,
-        intentHash,
-        expiryTs,
-      }),
-    }),
+  const queued = await postTinOperationIntent(
+    {
+      tin: params.tin,
+      ownerPubkey: walletPublicKey.toBase58(),
+      displayName,
+      phoneNumber: params.phoneNumber,
+      privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
+      ownerIntentHash: bytesToHex(intentHash),
+      ownerSignature: base64FromBytes(ownerSignature),
+      nonce: bytesToHex(nonce),
+      expiry: Number(expiryTs),
+    } satisfies BrowserTinUpgradeIntent,
   );
-
-  const blockchainSignature = await signAndSendSolanaTransaction({
-    walletId: params.walletId,
-    address: params.walletAddress,
-    rpcUrl: connection.rpcEndpoint,
-    transaction,
-  });
-
-  const binding = await signTinBinding({
-    walletId: params.walletId,
-    walletAddress: params.walletAddress,
-    phoneNumber: params.phoneNumber,
-    tin: params.tin,
-    identityPublicKey: legacyAccountPublicKey.toBase58(),
-    programId: programId.toBase58(),
-  });
-
-  const seedBackupFileName = `trustlink-tin-${params.tin}-master-seed.json`;
-  triggerJsonDownload(seedBackupFileName, {
-    tin: params.tin,
-    owner: params.walletAddress,
-    generatedAt: new Date().toISOString(),
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
-    pruCount: DEFAULT_PRU_COUNT,
-    pruConfigurationHash: pruConfigurationHashHex,
-    tinMasterSeedHex: bytesToHex(tinMasterSeed),
-  });
-
-  return {
-    tin: params.tin,
-    tinsIdentityPublicKey: legacyAccountPublicKey.toBase58(),
-    tinsRegistryPublicKey: registryPublicKey.toBase58(),
-    tinsWalletPublicKey: walletPublicKey.toBase58(),
-    tinsProgramId: programId.toBase58(),
-    ...binding,
-    blockchainSignature,
-    created: false,
-    upgraded: true,
-    pruCount: DEFAULT_PRU_COUNT,
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
-    pruConfigurationHash: pruConfigurationHashHex,
-    seedBackupFileName,
-  };
+  return queued;
 }
 
 export const upgradeLegacyTinForWallet = traceFunction(upgradeLegacyTinForWalletImpl, {

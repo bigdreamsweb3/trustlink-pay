@@ -132,12 +132,15 @@ Old direct path, removed/disabled:
 
 New Cranker-mediated path:
 
-1. SDK derives 30 token-agnostic PRUs client-side and computes only the PRU configuration commitment.
-2. Owner signs a TIN Creation Intent covering owner pubkey, encrypted metadata hashes, PRU commitment, nonce, and expiry.
-3. Cranker A verifies the owner signature, expiry, metadata shape, and that the PRU commitment is a 30-PRU commitment.
-4. Cranker A submits Transaction 1: the fee commitment split.
-5. Cranker B submits Transaction 2: `tin_creation_registry` with the owner Ed25519 verification instruction.
-6. TINS creates the identity PDA from the owner pubkey and stores only static registry fields.
+1. The frontend collects only the user-facing fields and asks the owner wallet to sign a plain TIN owner-intent message.
+2. The frontend posts that signed intent directly to the TSN mempool backend.
+3. The TSN mempool backend assembles the encrypted phone payload, private metadata commitment, and 30-PRU commitment.
+4. Cranker A verifies the owner signature, expiry, metadata shape, and that the PRU commitment is valid.
+5. Cranker A submits Transaction 1: the fee commitment split.
+6. Cranker B submits Transaction 2: `tin_creation_registry` with the owner Ed25519 verification instruction.
+7. TINS creates the identity PDA from the owner pubkey and stores only static registry fields.
+
+TrustLink backend is not a bridge in this flow. It can cache identity state for the app, but it must never proxy TIN creation, upgrade, or update requests into TSN.
 
 ### Receiving, spending, and ATA creation
 
@@ -149,16 +152,22 @@ New Cranker-mediated path:
 
 TypeScript uses `derivePruSet`, `computePruConfigurationHash`, `allocatePrusDeterministically`, `selectRandomPruForSpend`, `selectPrusForSpend`, and `planLazyAtaCreation` from `tsn-sdk`. TINS uses `DEFAULT_TIN_PRIVACY_LEVEL = 3` and `DEFAULT_TIN_PRU_COUNT = 30`; the deprecated `createTin` SDK path throws. The TINS program rejects the old `CreateTin` instruction and accepts only Cranker-mediated `tin_creation_registry` after owner intent verification.
 
+The important boundary is this:
+
+- frontend signs owner intent
+- TSN mempool backend assembles private payloads
+- Crankers submit on-chain mutations
+- TrustLink backend only handles app-local identity state and display
+
 Python Cranker daemon integration follows the same two-transaction model: verify intent, submit fee commitment, then submit registry transaction. Do not log PRU seeds, raw PRU arrays, phone numbers, raw wallet balances, or owner private material.
 
 ### Usage examples
 
-```ts
-import { derivePruSet, computePruConfigurationHash } from "@trustlink/tsn-sdk/pru";
-
-const pruSet = derivePruSet({ masterSeed, tinId });
-const pruConfigurationHash = computePruConfigurationHash(pruSet);
-// Submit only the commitment in the TIN Creation Intent. Keep derivation client-side.
+```text
+Frontend -> sign owner intent
+Frontend -> POST signed intent to TSN mempool
+TSN mempool -> assemble encrypted phone + PRU commitment
+Cranker -> verify + fee commit + submit TINS mutation
 ```
 
 ```bash
@@ -167,7 +176,7 @@ npm run tsn:cranker:start
 
 ### Security & privacy considerations
 
-Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, and spend selection randomness. Exposed: the TIN, static owner authority, privacy level 3, and commitment hashes. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent.
+Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, and spend selection randomness. Exposed: the TIN, static owner authority, privacy level 3, and commitment hashes. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
 
 ### Testing notes
 

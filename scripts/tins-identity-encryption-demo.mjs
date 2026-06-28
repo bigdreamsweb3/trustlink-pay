@@ -4,7 +4,7 @@ import {
   decryptTinSocialIdentity,
   encryptTinSensitiveField,
   encryptTinSocialIdentity,
-} from "../tsn-sdk/dist/tins.js";
+} from "../tsn-protocol/tsn-sdk/dist/tins.js";
 
 const tin = process.argv[2] ?? "1000000008";
 const whatsapp = process.argv[3] ?? "+2349037334349";

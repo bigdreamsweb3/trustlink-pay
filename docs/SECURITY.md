@@ -105,7 +105,7 @@ TrustLink Pay makes payments invisible.
 
 ### Summary
 
-We now treat PRU spend authority as a five-layer TrustLink-only control plane. The TIN Master Seed is CSPRNG material generated client-side, encrypted only for storage, and never derived from the main wallet key. PRU signing keys are re-derived inside the SDK only long enough to sign a TSN intent, then their secret bytes are overwritten. Every intent is bound to the real TSN vault domain, scoped to one amount and destination hash, and rejected by Crankers if the TIN, nonce, expiry, active guard, or main-wallet spend proof fails.
+We treat PRU spend authority as a five-layer TrustLink-only control plane. The TIN Master Seed is CSPRNG material generated inside the TSN mempool and Cranker layer, encrypted for storage, and never derived from the main wallet key. PRU signing keys are re-derived inside the SDK only long enough to sign a TSN intent, then their secret bytes are overwritten. Every intent is bound to the real TSN vault domain, scoped to one amount and destination hash, and rejected by Crankers if the TIN, nonce, expiry, active guard, or main-wallet spend proof fails.
 
 ### Implementation notes
 
@@ -154,4 +154,4 @@ tsn-cranker validate-pru-intent --vault <REAL_TSN_VAULT> --intent <INTENT_JSON> 
 
 ### Testing notes
 
-Run `npm --prefix tsn-sdk test` to exercise CSPRNG seed generation, TSN domain binding, main-wallet proof gating, TIN mismatch rejection, intent replay rejection, nonce replay rejection, 60-second expiry, and inactive PRU rejection.
+Run `npm --prefix tsn-protocol/tsn-sdk test` to exercise CSPRNG seed generation, TSN domain binding, main-wallet proof gating, TIN mismatch rejection, intent replay rejection, nonce replay rejection, 60-second expiry, and inactive PRU rejection.

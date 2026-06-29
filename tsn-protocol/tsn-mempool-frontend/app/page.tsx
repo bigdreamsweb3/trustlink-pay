@@ -51,7 +51,7 @@ type WorkItem = { intent: Intent; claimRequest: Claim };
 type TinOperation = {
   intentId: string;
   intentType: 'tin_creation' | 'tin_update';
-  tin: string;
+  tinHash: string;
   ownerPubkey: string | null;
   ownerIntentHash: string;
   nonce: string;
@@ -74,7 +74,6 @@ type TinOperation = {
   failureReason?: string | null;
   onchainSignatures: string[];
   displayName?: string | null;
-  privacyLevel: number;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
 };
@@ -496,16 +495,16 @@ export default function MempoolExplorer() {
                 <strong>{operation.intentType === 'tin_creation' ? 'TIN creation' : 'TIN update'}</strong>
               </div>
               <div>
-                <span>TIN</span>
-                <strong>{operation.tin}</strong>
+                <span>TIN route</span>
+                <strong>{truncate(operation.tinHash, 18)}</strong>
               </div>
               <div>
                 <span>owner</span>
                 <strong>{truncate(operation.ownerPubkey ?? '', 18)}</strong>
               </div>
               <div>
-                <span>privacy / fee</span>
-                <strong>L{operation.privacyLevel} · {formatUsdcBaseUnits(operation.feeMetadata?.grossAmount)}</strong>
+                <span>operation fee</span>
+                <strong>{formatUsdcBaseUnits(operation.feeMetadata?.grossAmount)}</strong>
               </div>
               <div>
                 <span>crankers</span>

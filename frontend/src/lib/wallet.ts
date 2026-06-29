@@ -376,6 +376,18 @@ function bytesToBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+function assertNonEmptyString(value: string, label: string) {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${label} is required before wallet signing`);
+  }
+}
+
+function assertSignableBytes(value: Uint8Array, label: string) {
+  if (!(value instanceof Uint8Array) || value.length === 0) {
+    throw new Error(`${label} must be a non-empty byte array before wallet signing`);
+  }
+}
+
 async function signSolanaMessageImpl(params: {
   walletId: string;
   address: string;
@@ -391,6 +403,7 @@ async function signSolanaMessageImpl(params: {
     throw new Error("This wallet cannot sign authorization messages from the browser");
   }
 
+  assertNonEmptyString(params.message, "message");
   const signed = await wallet.provider.signMessage(
     new TextEncoder().encode(params.message),
     "utf8",
@@ -415,7 +428,8 @@ async function signSolanaBytesImpl(params: {
     throw new Error("This wallet cannot sign authorization messages from the browser");
   }
 
-  const signed = await wallet.provider.signMessage(new Uint8Array(params.message));
+  assertSignableBytes(params.message, "message");
+  const signed = await wallet.provider.signMessage(new Uint8Array(params.message), "hex");
   const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
   return bytesToBase64(signature);
 }
@@ -435,6 +449,7 @@ async function signSolanaTransactionImpl(params: {
     throw new Error("This wallet cannot co-sign sponsored Solana transactions from the browser");
   }
 
+  assertNonEmptyString(params.transactionBase64, "transactionBase64");
   const raw = Uint8Array.from(atob(params.transactionBase64), (value) => value.charCodeAt(0));
   const transaction = Transaction.from(raw);
   const signedTransaction = await wallet.provider.signTransaction(transaction);

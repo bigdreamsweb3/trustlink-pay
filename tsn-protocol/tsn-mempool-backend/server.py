@@ -64,6 +64,8 @@ MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "file").strip().lower()
 MEMPOOL_FILE    = Path(os.environ.get("MEMPOOL_FILE", ".mempool-store.json")).resolve()
 FIREBASE_COLLECTION = os.environ.get("FIREBASE_COLLECTION", "tsn_mempool").strip()
 TSN_PROGRAM_ID  = os.environ.get("TSN_PROGRAM_ID") or os.environ.get("PROGRAM_ID") or "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
+TINS_PROGRAM_ID = os.environ.get("TINS_PROGRAM_ID", "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT")
+TINS_PROGRAM_SALT = b"TINS_SALT_2026"
 MEMPOOL_API_KEY  = os.environ.get("MEMPOOL_API_KEY", "").strip()
 TSN_ROUTE_ENCRYPTION_SECRET_KEY = (
     os.environ.get("TSN_ROUTE_ENCRYPTION_SECRET_KEY")
@@ -685,6 +687,7 @@ def k_crankers() -> str: return f"{MEMPOOL_NS}:crankers"
 def k_tin_operations() -> str: return f"{MEMPOOL_NS}:tin_operations"
 def k_tin_fees() -> str: return f"{MEMPOOL_NS}:tin_operation_fees"
 def k_tin_registry_shadow() -> str: return f"{MEMPOOL_NS}:tin_registry_shadow"
+def k_tin_pru_routes() -> str: return f"{MEMPOOL_NS}:tin_pru_routes"
 
 
 async def hget_all_json(key: str) -> list:
@@ -756,6 +759,146 @@ async def get_token_account_balance_ui(token_account: str) -> tuple[float, int]:
     response.raise_for_status()
     value = response.json().get("result", {}).get("value", {})
     return float(value.get("uiAmountString") or value.get("uiAmount") or 0), int(value.get("decimals") or 0)
+
+async def solana_rpc(method: str, params: list[Any], timeout: float = 12) -> dict[str, Any]:
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": params,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(TSN_SOLANA_RPC_URL, json=payload)
+        response.raise_for_status()
+        rpc_response = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Solana RPC unavailable for %s: %s", method, exc)
+        raise HTTPException(503, "Solana RPC is unavailable while verifying TINS state") from exc
+    if rpc_response.get("error"):
+        message = rpc_response["error"].get("message", "unknown error")
+        logger.warning("Solana RPC error for %s: %s", method, rpc_response["error"])
+        raise HTTPException(503, f"Solana RPC rejected TINS lookup: {message}")
+    return rpc_response
+
+def get_tins_program_pubkey() -> Pubkey:
+    return Pubkey.from_string(TINS_PROGRAM_ID)
+
+def get_tins_identity_pda(owner_pubkey: str) -> Pubkey:
+    owner_bytes = decode_base58(owner_pubkey)
+    identity_seed = hashlib.sha256(owner_bytes + TINS_PROGRAM_SALT).digest()
+    return Pubkey.find_program_address([b"identity", identity_seed], get_tins_program_pubkey())[0]
+
+def decode_tin_account_header(data: bytes) -> dict[str, Any]:
+    if len(data) < 8 + 4:
+        raise ValueError("TINS account data is too short")
+    offset = 0
+    tin = int.from_bytes(data[offset:offset + 8], "little")
+    offset += 8
+    display_name_len = int.from_bytes(data[offset:offset + 4], "little")
+    offset += 4
+    if display_name_len < 0 or offset + display_name_len + 32 > len(data):
+        raise ValueError("TINS account display name is invalid")
+    display_name = data[offset:offset + display_name_len].decode("utf-8", errors="replace")
+    offset += display_name_len
+    owner_pubkey_hash = data[offset:offset + 32]
+    return {
+        "tin": str(tin),
+        "displayName": display_name,
+        "ownerPubkeyHash": owner_pubkey_hash.hex(),
+    }
+
+async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
+    rpc_response = await solana_rpc(
+        "getAccountInfo",
+        [
+            str(pubkey),
+            {"encoding": "base64", "commitment": "confirmed"},
+        ],
+    )
+    value = rpc_response.get("result", {}).get("value")
+    if not value:
+        return None
+    if str(value.get("owner") or "") != TINS_PROGRAM_ID:
+        return None
+    encoded = ((value.get("data") or [None])[0])
+    if not encoded:
+        return None
+    try:
+        return base64.b64decode(encoded)
+    except (binascii.Error, TypeError):
+        return None
+
+async def find_legacy_tin_creation_authority(identity_pubkey: Pubkey) -> Optional[str]:
+    before: Optional[str] = None
+    oldest_signature: Optional[str] = None
+    for _ in range(5):
+        params: list[Any] = [str(identity_pubkey), {"limit": 1000}]
+        if before:
+            params[1]["before"] = before
+        rpc_response = await solana_rpc("getSignaturesForAddress", params, timeout=20)
+        signatures = rpc_response.get("result") or []
+        if not signatures:
+            break
+        oldest_signature = str(signatures[-1].get("signature") or "")
+        if len(signatures) < 1000:
+            break
+        before = oldest_signature
+    if not oldest_signature:
+        return None
+
+    rpc_response = await solana_rpc(
+        "getTransaction",
+        [
+            oldest_signature,
+            {
+                "commitment": "confirmed",
+                "encoding": "jsonParsed",
+                "maxSupportedTransactionVersion": 0,
+            },
+        ],
+        timeout=20,
+    )
+    value = rpc_response.get("result") or {}
+    account_keys = (((value.get("transaction") or {}).get("message") or {}).get("accountKeys") or [])
+    for account in account_keys:
+        if not isinstance(account, dict) or not account.get("signer"):
+            continue
+        pubkey = str(account.get("pubkey") or "")
+        if pubkey and pubkey != str(identity_pubkey):
+            return pubkey
+    return None
+
+async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Optional[dict[str, Any]]:
+    identity_pubkey = get_tins_identity_pda(str(operation["ownerPubkey"]))
+    data = await read_tins_account_data(identity_pubkey)
+    if not data:
+        return None
+    try:
+        decoded = decode_tin_account_header(data)
+    except ValueError:
+        return None
+    if decoded["tin"] != str(operation["tin"]):
+        return None
+    owner_pubkey_bytes = decode_base58(str(operation["ownerPubkey"]))
+    expected_owner_hash = hashlib.sha256(owner_pubkey_bytes).hexdigest()
+    legacy_owner_marker = owner_pubkey_bytes.hex()
+    legacy_identity_marker = decode_base58(str(identity_pubkey)).hex()
+    owner_pubkey_hash = str(decoded.get("ownerPubkeyHash") or "")
+    if owner_pubkey_hash not in {expected_owner_hash, legacy_owner_marker, legacy_identity_marker}:
+        return None
+    creation_authority = await find_legacy_tin_creation_authority(identity_pubkey)
+    if not creation_authority:
+        return None
+    return {
+        "tin": decoded["tin"],
+        "ownerPubkey": operation["ownerPubkey"],
+        "identityPubkey": str(identity_pubkey),
+        "ownerPubkeyHash": owner_pubkey_hash,
+        "displayName": decoded["displayName"],
+        "settlementAuthority": creation_authority,
+        "settlementAuthorityVerified": True,
+    }
 
 async def read_private_replay_sequences() -> tuple[int, int]:
     payload = {
@@ -969,6 +1112,10 @@ class CreateIntentRequest(BaseModel):
     paymentId:        str           = Field(..., description="Unique payment ID")
     intentSeedHash:   str           = Field(..., description="SHA-256 hex of paymentId")
     recipientHash:    str           = Field(..., description="Hashed recipient")
+    recipientTin:     Optional[str] = Field(
+        None,
+        description="Recipient TIN used by private settlement routing. Public responses do not expose it.",
+    )
     tokenMintAddress: str           = Field(..., description="SPL token mint address")
     amount:           float         = Field(..., description="Payment amount")
     recipientAmount:  Optional[float] = Field(None, description="Amount paid to recipient; amount minus this is protocol fee")
@@ -1131,7 +1278,6 @@ TIN_OWNER_INTENT_UPDATE_DOMAIN_V1 = "TINS_UPDATE_INTENT_V1"
 TIN_OWNER_INTENT_CREATE_DOMAIN_V2 = "TINS_CREATE_OWNER_INTENT_V2"
 TIN_OWNER_INTENT_UPDATE_DOMAIN_V2 = "TINS_UPDATE_OWNER_INTENT_V2"
 TIN_PRIVATE_METADATA_DOMAIN_V1 = "TINS_PRIVATE_METADATA_V1"
-TIN_PRU_DERIVATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU"
 TIN_PRU_CONFIGURATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU_CONFIGURATION"
 
 class TinOperationFeeRecord(BaseModel):
@@ -1159,6 +1305,7 @@ class TinOperationRecord(BaseModel):
     ownerPubkey: str
     ownerSignature: str
     ownerIntentHash: str
+    ownerIntentMessage: Optional[str] = None
     nonce: str
     expiry: int
     createdAt: str
@@ -1182,15 +1329,13 @@ class TinOperationRecord(BaseModel):
     failureReason: Optional[str] = None
     onchainSignatures: list[str] = Field(default_factory=list)
     displayName: Optional[str] = None
-    encryptedPhone: Optional[str] = None
-    privacyLevel: int
+    encryptedMasterSeed: Optional[str] = None
     encryptedMetadataHash: str
     pruConfigurationHash: str
     creationFeeAmount: Optional[str] = None
     creationFeeMint: Optional[str] = None
     newDisplayName: Optional[str] = None
-    newEncryptedPhone: Optional[str] = None
-    newPrivacyLevel: Optional[int] = None
+    newEncryptedMasterSeed: Optional[str] = None
     newEncryptedMetadataHash: Optional[str] = None
     newPruConfigurationHash: Optional[str] = None
     updateFeeAmount: Optional[str] = None
@@ -1199,7 +1344,7 @@ class TinOperationRecord(BaseModel):
 class PublicTinOperationRecord(BaseModel):
     intentId: str
     intentType: str
-    tin: str
+    tinHash: str
     ownerPubkey: str
     ownerIntentHash: str
     nonce: str
@@ -1213,7 +1358,6 @@ class PublicTinOperationRecord(BaseModel):
     failureReason: Optional[str] = None
     onchainSignatures: list[str] = Field(default_factory=list)
     displayName: Optional[str] = None
-    privacyLevel: int
     encryptedMetadataHash: str
     pruConfigurationHash: str
 
@@ -1466,7 +1610,6 @@ def _compute_owner_intent_hash_v2(
     tin: str,
     display_name: str,
     phone_number: str,
-    privacy_level: int,
     nonce_bytes: bytes,
     expiry: int,
 ) -> bytes:
@@ -1483,14 +1626,38 @@ def _compute_owner_intent_hash_v2(
                 tin.encode("utf-8"),
                 display_name.encode("utf-8"),
                 phone_number.encode("utf-8"),
-                bytes([privacy_level]),
                 nonce_bytes,
                 _encode_signed_i64_le(expiry),
             ]
         )
     ).digest()
 
-def _encrypt_tin_phone_payload(phone_number: str) -> str:
+def _build_owner_intent_message_v2(
+    *,
+    intent_type: str,
+    owner_pubkey: str,
+    tin: str,
+    display_name: str,
+    phone_number: str,
+    nonce: str,
+    expiry: int,
+) -> str:
+    purpose = "create" if intent_type == "tin_creation" else "update"
+    return "\n".join(
+        [
+            "TrustLink TINS Owner Intent",
+            "version=2",
+            f"purpose={purpose}",
+            f"ownerPubkey={owner_pubkey}",
+            f"tin={tin}",
+            f"displayName={display_name}",
+            f"phoneNumber={phone_number}",
+            f"nonce={nonce.lower()}",
+            f"expiryTs={expiry}",
+        ]
+    )
+
+def _encrypt_tin_master_seed_payload(master_seed_hex: str) -> str:
     secret = TSN_ROUTE_ENCRYPTION_SECRET_KEY.strip()
     if not secret:
         raise HTTPException(
@@ -1504,24 +1671,47 @@ def _encrypt_tin_phone_payload(phone_number: str) -> str:
             "TSN_ROUTE_ENCRYPTION_SECRET_KEY",
         )
         sealed_box = SealedBox(PrivateKey(secret_bytes).public_key)
-        ciphertext = sealed_box.encrypt(phone_number.encode("utf-8"))
+        ciphertext = sealed_box.encrypt(bytes.fromhex(master_seed_hex))
     except (ValueError, TypeError, CryptoError, binascii.Error) as exc:
         raise HTTPException(503, "TSN route encryption key is invalid") from exc
     return base64.b64encode(ciphertext).decode("ascii")
 
 def _derive_pru_configuration_hash(tin: str) -> str:
     master_seed_hex = secrets.token_hex(32)
+    return _derive_pru_route_record(tin=tin, master_seed_hex=master_seed_hex)["pruConfigurationHash"]
+
+def _derive_pru_public_key_hex(*, master_seed_hex: str, tin: str, index: int) -> str:
+    seed = hashlib.sha256(
+        f"TRUSTLINK_PRU_KEY_V1|{master_seed_hex}|{tin}|{index}".encode("utf-8")
+    ).digest()
+    return SigningKey(seed).verify_key.encode().hex()
+
+def _derive_pru_route_record(*, tin: str, master_seed_hex: Optional[str] = None) -> dict[str, Any]:
+    master_seed_hex = master_seed_hex or secrets.token_hex(32)
     canonical_lines = []
+    prus: list[dict[str, Any]] = []
     for index in range(TIN_DEFAULT_PRU_COUNT):
-        derived_public_key = _sha256_hex_utf8(
-            TIN_PRU_DERIVATION_TAG,
-            master_seed_hex,
-            tin,
-            index,
+        public_key_hex = _derive_pru_public_key_hex(
+            master_seed_hex=master_seed_hex,
+            tin=tin,
+            index=index,
         )
-        canonical_lines.append(f"{tin}:{index}:{derived_public_key}:")
+        canonical_lines.append(f"{tin}:{index}:{public_key_hex}:")
+        prus.append(
+            {
+                "index": index,
+                "publicKey": encode_base58(bytes.fromhex(public_key_hex)),
+                "publicKeyHex": public_key_hex,
+                "state": "ACTIVE",
+            }
+        )
     canonical = "\n".join(canonical_lines)
-    return _sha256_hex_utf8(TIN_PRU_CONFIGURATION_TAG, canonical)
+    return {
+        "tin": tin,
+        "masterSeedHex": master_seed_hex,
+        "pruConfigurationHash": _sha256_hex_utf8(TIN_PRU_CONFIGURATION_TAG, canonical),
+        "prus": prus,
+    }
 
 def _build_private_tin_payload(
     *,
@@ -1530,9 +1720,9 @@ def _build_private_tin_payload(
     owner_pubkey: str,
     display_name: str,
     phone_number: str,
-    privacy_level: int,
-) -> dict[str, str]:
-    encrypted_phone = _encrypt_tin_phone_payload(phone_number)
+) -> dict[str, Any]:
+    pru_route = _derive_pru_route_record(tin=tin)
+    encrypted_master_seed = _encrypt_tin_master_seed_payload(str(pru_route["masterSeedHex"]))
     encrypted_metadata_hash = hashlib.sha256(
         b"".join(
             [
@@ -1542,14 +1732,14 @@ def _build_private_tin_payload(
                 owner_pubkey.encode("utf-8"),
                 display_name.encode("utf-8"),
                 phone_number.encode("utf-8"),
-                bytes([privacy_level]),
             ]
         )
     ).hexdigest()
     return {
-        "encrypted_phone": encrypted_phone,
+        "encrypted_master_seed": encrypted_master_seed,
         "encrypted_metadata_hash": encrypted_metadata_hash,
-        "pru_configuration_hash": _derive_pru_configuration_hash(tin),
+        "pru_configuration_hash": str(pru_route["pruConfigurationHash"]),
+        "pru_route": pru_route,
     }
 
 def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1557,19 +1747,15 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     if intent_type not in {"tin_creation", "tin_update"}:
         raise HTTPException(422, "intent_type must be tin_creation or tin_update")
 
-    privacy_level = int(_field(payload, "privacy_level", "privacyLevel", default=0))
-    if privacy_level not in {1, 2, 3, 4}:
-        raise HTTPException(422, "privacy_level must be between 1 and 4")
-
     intent_id = str(_field(payload, "intent_id", "intentId", default=str(uuid4()))).strip()
     if not intent_id:
         raise HTTPException(422, "intent_id must not be empty")
 
     tin = _require_string(payload, "tin")
-    encrypted_phone = _field(payload, "encrypted_phone", "encryptedPhone")
-    if encrypted_phone is None:
-        encrypted_phone = _field(payload, "new_encrypted_phone", "newEncryptedPhone")
-    encrypted_phone = str(encrypted_phone or "").strip()
+    encrypted_master_seed = _field(payload, "encrypted_master_seed", "encryptedMasterSeed")
+    if encrypted_master_seed is None:
+        encrypted_master_seed = _field(payload, "new_encrypted_master_seed", "newEncryptedMasterSeed")
+    encrypted_master_seed = str(encrypted_master_seed or "").strip()
     encrypted_metadata_hash = str(
         _field(
             payload,
@@ -1593,6 +1779,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         or ""
     ).strip()
     owner_intent_hash = _require_string(payload, "owner_intent_hash", "ownerIntentHash")
+    owner_intent_message = str(_field(payload, "owner_intent_message", "ownerIntentMessage", default="") or "")
     nonce = _require_string(payload, "nonce")
     owner_pubkey = _require_string(payload, "owner_pubkey", "ownerPubkey")
     owner_signature = _require_string(payload, "owner_signature", "ownerSignature")
@@ -1607,11 +1794,13 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     if len(signature_bytes) != 64:
         raise HTTPException(422, "owner_signature must be a 64-byte Ed25519 signature")
     expiry = _expiry_from_input(_field(payload, "expiry", "expiry_ts", "expiryTs"))
+    signed_message_bytes = intent_hash_bytes
+    pru_route: Optional[dict[str, Any]] = None
     uses_client_assembled_payload = bool(
-        encrypted_phone or encrypted_metadata_hash or pru_configuration_hash
+        encrypted_master_seed or encrypted_metadata_hash or pru_configuration_hash
     )
     if uses_client_assembled_payload:
-        encrypted_phone_bytes = _decode_base64_blob(encrypted_phone, "encrypted_phone")
+        encrypted_master_seed_bytes = _decode_base64_blob(encrypted_master_seed, "encrypted_master_seed")
         metadata_hash_bytes = _decode_hash32(encrypted_metadata_hash, "encrypted_metadata_hash")
         configuration_hash_bytes = _decode_hash32(pru_configuration_hash, "pru_configuration_hash")
         domain = (
@@ -1625,8 +1814,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
                     domain.encode("utf-8"),
                     owner_bytes,
                     display_name.encode("utf-8"),
-                    encrypted_phone_bytes,
-                    bytes([privacy_level]),
+                    encrypted_master_seed_bytes,
                     metadata_hash_bytes,
                     configuration_hash_bytes,
                     nonce_bytes,
@@ -1636,31 +1824,45 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         ).digest()
     else:
         phone_number = _require_phone_number(payload, intent_type)
-        expected_hash = _compute_owner_intent_hash_v2(
+        canonical_owner_intent_message = _build_owner_intent_message_v2(
             intent_type=intent_type,
-            owner_bytes=owner_bytes,
+            owner_pubkey=owner_pubkey,
             tin=tin,
             display_name=display_name,
             phone_number=phone_number,
-            privacy_level=privacy_level,
-            nonce_bytes=nonce_bytes,
+            nonce=nonce,
             expiry=expiry,
         )
+        if not owner_intent_message:
+            expected_hash = _compute_owner_intent_hash_v2(
+                intent_type=intent_type,
+                owner_bytes=owner_bytes,
+                tin=tin,
+                display_name=display_name,
+                phone_number=phone_number,
+                nonce_bytes=nonce_bytes,
+                expiry=expiry,
+            )
+        else:
+            if owner_intent_message != canonical_owner_intent_message:
+                raise HTTPException(422, "owner_intent_message does not match the submitted TIN operation payload")
+            expected_hash = hashlib.sha256(owner_intent_message.encode("utf-8")).digest()
+            signed_message_bytes = owner_intent_message.encode("utf-8")
         assembled_payload = _build_private_tin_payload(
             intent_type=intent_type,
             tin=tin,
             owner_pubkey=owner_pubkey,
             display_name=display_name,
             phone_number=phone_number,
-            privacy_level=privacy_level,
         )
-        encrypted_phone = assembled_payload["encrypted_phone"]
+        encrypted_master_seed = assembled_payload["encrypted_master_seed"]
         encrypted_metadata_hash = assembled_payload["encrypted_metadata_hash"]
         pru_configuration_hash = assembled_payload["pru_configuration_hash"]
+        pru_route = assembled_payload["pru_route"]
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
         raise HTTPException(422, "owner_intent_hash does not match the submitted TIN operation payload")
     try:
-        VerifyKey(owner_bytes).verify(intent_hash_bytes, signature_bytes)
+        VerifyKey(owner_bytes).verify(signed_message_bytes, signature_bytes)
     except BadSignatureError as exc:
         raise HTTPException(401, "owner_signature is invalid for owner_intent_hash") from exc
 
@@ -1686,6 +1888,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "ownerPubkey": owner_pubkey,
         "ownerSignature": owner_signature,
         "ownerIntentHash": owner_intent_hash.lower(),
+        "ownerIntentMessage": owner_intent_message or None,
         "nonce": nonce.lower(),
         "expiry": expiry,
         "createdAt": now_iso,
@@ -1697,26 +1900,27 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "failureReason": None,
         "onchainSignatures": [],
         "displayName": display_name if intent_type == "tin_creation" else None,
-        "encryptedPhone": encrypted_phone if intent_type == "tin_creation" else None,
-        "privacyLevel": privacy_level,
+        "encryptedMasterSeed": encrypted_master_seed if intent_type == "tin_creation" else None,
         "encryptedMetadataHash": encrypted_metadata_hash.lower(),
         "pruConfigurationHash": pru_configuration_hash.lower(),
         "creationFeeAmount": str(fee_amount) if intent_type == "tin_creation" else None,
         "creationFeeMint": fee_mint if intent_type == "tin_creation" else None,
         "newDisplayName": display_name if intent_type == "tin_update" else None,
-        "newEncryptedPhone": encrypted_phone if intent_type == "tin_update" else None,
-        "newPrivacyLevel": privacy_level if intent_type == "tin_update" else None,
+        "newEncryptedMasterSeed": encrypted_master_seed if intent_type == "tin_update" else None,
         "newEncryptedMetadataHash": encrypted_metadata_hash.lower() if intent_type == "tin_update" else None,
         "newPruConfigurationHash": pru_configuration_hash.lower() if intent_type == "tin_update" else None,
         "updateFeeAmount": str(fee_amount) if intent_type == "tin_update" else None,
         "updateFeeMint": fee_mint if intent_type == "tin_update" else None,
+        **({"_pruRoute": pru_route} if pru_route else {}),
     }
     return base
 
 def public_tin_operation(record: TinOperationRecord | dict[str, Any]) -> PublicTinOperationRecord:
     data = record.model_dump() if isinstance(record, TinOperationRecord) else dict(record)
-    data.pop("encryptedPhone", None)
-    data.pop("newEncryptedPhone", None)
+    tin = str(data.pop("tin", ""))
+    data["tinHash"] = _sha256_hex_utf8("TSN_PUBLIC_TIN_OPERATION_ID", tin) if tin else ""
+    data.pop("encryptedMasterSeed", None)
+    data.pop("newEncryptedMasterSeed", None)
     data.pop("ownerSignature", None)
     return PublicTinOperationRecord(**data)
 
@@ -1802,13 +2006,110 @@ async def write_shadow_tin_owner(operation: dict[str, Any]) -> None:
         ),
     )
 
+async def import_shadow_tin_owner(operation: dict[str, Any], onchain: dict[str, Any]) -> None:
+    r = await get_mempool_store()
+    await r.hset(
+        k_tin_registry_shadow(),
+        str(operation["tin"]),
+        json.dumps(
+            {
+                "tin": operation["tin"],
+                "ownerPubkey": operation["ownerPubkey"],
+                "intentId": operation["intentId"],
+                "identityPubkey": onchain.get("identityPubkey"),
+                "displayName": onchain.get("displayName"),
+                "settlementAuthority": onchain.get("settlementAuthority"),
+                "settlementAuthorityVerified": True,
+                "source": "onchain_legacy_import",
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+    )
+
+async def write_tin_pru_route(operation: dict[str, Any], route: dict[str, Any]) -> None:
+    r = await get_mempool_store()
+    await r.hset(
+        k_tin_pru_routes(),
+        str(operation["tin"]),
+        json.dumps(
+            {
+                "tin": str(operation["tin"]),
+                "intentId": operation["intentId"],
+                "ownerPubkey": operation["ownerPubkey"],
+                "pruConfigurationHash": route["pruConfigurationHash"],
+                "prus": route["prus"],
+                "status": "pending",
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+    )
+
+async def mark_tin_pru_route_finalized(operation: dict[str, Any]) -> None:
+    r = await get_mempool_store()
+    raw = await r.hget(k_tin_pru_routes(), str(operation["tin"]))
+    if not raw:
+        return
+    try:
+        route = json.loads(raw)
+    except json.JSONDecodeError:
+        return
+    route["status"] = "finalized"
+    route["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    await r.hset(k_tin_pru_routes(), str(operation["tin"]), json.dumps(route))
+
+async def read_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
+    r = await get_mempool_store()
+    raw = await r.hget(k_tin_pru_routes(), str(tin))
+    if not raw:
+        return None
+    try:
+        route = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if route.get("status") != "finalized":
+        return None
+    prus = route.get("prus")
+    if not isinstance(prus, list) or not prus:
+        return None
+    return route
+
+def select_pru_for_payment(route: dict[str, Any], intent: dict[str, Any], token_mint: str) -> dict[str, Any]:
+    prus = [pru for pru in route.get("prus", []) if str(pru.get("state") or "ACTIVE") != "SWEPT"]
+    if not prus:
+        raise HTTPException(409, "Recipient TIN has no active PRU route")
+    seed = _sha256_hex_utf8(
+        "TSN_V1_ALLOCATION_SEED",
+        intent.get("transferId") or intent.get("id") or intent.get("paymentId"),
+        route["tin"],
+        token_mint,
+    )
+    ranked = sorted(
+        prus,
+        key=lambda pru: _sha256_hex_utf8(
+            "TSN_V1_PRU_WEIGHT",
+            seed,
+            pru.get("publicKeyHex") or pru.get("publicKey"),
+            int(pru.get("index") or 0),
+        ),
+    )
+    return ranked[0]
+
 async def assert_tin_operation_can_enter(operation: dict[str, Any]) -> None:
     existing_owner = await read_shadow_tin_owner(str(operation["tin"]))
     if operation["intentType"] == "tin_creation" and existing_owner:
         raise HTTPException(409, "TIN already exists in mempool registry shadow")
     if operation["intentType"] == "tin_update":
         if not existing_owner:
-            raise HTTPException(409, "TIN does not exist in mempool registry shadow")
+            onchain = await verify_onchain_tin_for_shadow_import(operation)
+            if not onchain:
+                raise HTTPException(409, "TIN does not exist in mempool registry shadow")
+            await import_shadow_tin_owner(operation, onchain)
+            existing_owner = operation["ownerPubkey"]
+            logger.info(
+                "Imported legacy TIN into mempool registry shadow: tin=%s identity=%s",
+                operation["tin"],
+                onchain.get("identityPubkey"),
+            )
         if existing_owner != operation["ownerPubkey"]:
             raise HTTPException(409, "owner_pubkey does not match stored TIN owner")
 
@@ -2262,12 +2563,15 @@ async def expire_stale_tin_operations() -> None:
 async def post_tin_operation(payload: dict[str, Any]) -> PublicTinOperationRecord:
     """Queue a TIN creation/update intent. The mempool never mutates TINS directly."""
     operation = _normalize_tin_operation_input(payload)
+    pru_route = operation.pop("_pruRoute", None)
     async with _tin_operation_lock:
         r = await get_mempool_store()
         existing = await r.hget(k_tin_operations(), operation["intentId"])
         if existing:
             return public_tin_operation(json.loads(existing))
         await assert_tin_operation_can_enter(operation)
+        if pru_route:
+            await write_tin_pru_route(operation, pru_route)
         await r.hset(k_tin_operations(), operation["intentId"], json.dumps(operation))
     logger.info("TIN operation queued: %s type=%s tin=%s", operation["intentId"], operation["intentType"], operation["tin"])
     return public_tin_operation(operation)
@@ -2498,6 +2802,7 @@ async def mark_tin_operation_finalized(
         patch["onchainSignatures"] = append_unique_signature(json.loads(raw).get("onchainSignatures"), tx_sig)
     finalized = await patch_tin_operation(intent_id, patch, {"submitted_onchain"})
     await write_shadow_tin_owner(finalized.model_dump())
+    await mark_tin_pru_route_finalized(finalized.model_dump())
     return finalized
 
 @app.post(
@@ -2944,9 +3249,6 @@ async def issue_private_payout_permit(
             raise HTTPException(422, "Settlement route transfer id mismatch")
 
         token_mint = Pubkey.from_string(str(payload["tokenMintAddress"]))
-        recipient_wallet = Pubkey.from_string(str(payload["recipientWallet"]))
-        payout_amount = int(payload["recipientAmountBaseUnits"])
-        claim_fee_amount = int(payload.get("claimFeeAmountBaseUnits") or 0)
         token_metadata = get_supported_token_metadata().get(str(token_mint))
         if not token_metadata:
             raise HTTPException(422, "Settlement token mint is not supported")
@@ -2954,11 +3256,31 @@ async def issue_private_payout_permit(
             intent.get("amount"),
             int(token_metadata["decimals"]),
         )
+        declared_payout_amount = int(payload["recipientAmountBaseUnits"])
+        claim_fee_amount = int(payload.get("claimFeeAmountBaseUnits") or 0)
+        payout_amount = expected_escrow_amount - claim_fee_amount
+        if payout_amount <= 0:
+            raise HTTPException(422, "Settlement route payout amount must be positive after recipient fee")
+        if declared_payout_amount != payout_amount:
+            raise HTTPException(
+                422,
+                "Settlement route payout amount must equal escrowed amount minus recipient fee",
+            )
         if payout_amount + claim_fee_amount != expected_escrow_amount:
             raise HTTPException(
                 422,
                 "Settlement route payout and claim fee do not equal the escrowed amount",
             )
+        recipient_tin = str(intent.get("recipientTin") or "").strip()
+        if not recipient_tin:
+            raise HTTPException(422, "Private settlement requires recipientTin for PRU routing")
+        route = await read_tin_pru_route(recipient_tin)
+        if not route:
+            raise HTTPException(409, "Recipient TIN has no finalized PRU route")
+        if str(route.get("pruConfigurationHash") or "").lower() == "":
+            raise HTTPException(409, "Recipient TIN PRU route is missing its commitment")
+        selected_pru = select_pru_for_payment(route, intent, str(token_mint))
+        recipient_wallet = Pubkey.from_string(str(selected_pru["publicKey"]))
         try:
             decryption_secret = base64.b64decode(
                 str(payload["decryptionSecret"]),
@@ -3013,6 +3335,9 @@ async def issue_private_payout_permit(
                 "updatedAt": now.isoformat(),
                 "settlementReason": "Private payout lease acquired.",
                 "payoutSequence": str(payout_sequence),
+                "recipientTinHash": _sha256_hex_utf8("TSN_RECIPIENT_TIN_ROUTE", recipient_tin),
+                "recipientPruIndex": int(selected_pru.get("index") or 0),
+                "recipientPruCommitment": str(route.get("pruConfigurationHash") or ""),
             }
         )
         await r.hset(k_claims(), claim_id, json.dumps(claim))

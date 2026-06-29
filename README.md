@@ -80,7 +80,7 @@ Current and planned social verification includes:
 - WhatsApp session-code authentication
 - WhatsApp notification flows
 - WhatsApp Business profile confidence where public business data is available
-- encrypted phone and social identity storage
+- encrypted TIN Master Seed and social identity storage
 - recipient preview before payment
 
 Phone numbers should help with confidence, not become the main public payment identity. The public payment identity is the TIN.

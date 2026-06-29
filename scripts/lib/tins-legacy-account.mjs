@@ -13,27 +13,21 @@ export function decodeLegacyTinAccount(data) {
   const displayName = buffer.subarray(offset, offset + displayNameLength).toString("utf8");
   offset += displayNameLength;
 
-  const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
+  const ownerPubkeyHash = buffer.subarray(offset, offset + 32);
   offset += 32;
 
-  let encryptedPhone = Buffer.alloc(0);
+  let encryptedMasterSeed = Buffer.alloc(0);
   if (offset + 4 <= buffer.length) {
-    const encryptedPhoneLength = buffer.readUInt32LE(offset);
+    const encryptedMasterSeedLength = buffer.readUInt32LE(offset);
     offset += 4;
-    encryptedPhone = buffer.subarray(offset, Math.min(offset + encryptedPhoneLength, buffer.length));
-    offset += encryptedPhone.length;
+    encryptedMasterSeed = buffer.subarray(offset, Math.min(offset + encryptedMasterSeedLength, buffer.length));
+    offset += encryptedMasterSeed.length;
   }
 
   let createdAt = null;
   if (offset + 8 <= buffer.length) {
     createdAt = buffer.readBigInt64LE(offset);
     offset += 8;
-  }
-
-  let privacyLevel = null;
-  if (offset + 1 <= buffer.length) {
-    privacyLevel = buffer.readUInt8(offset);
-    offset += 1;
   }
 
   let encryptedMetadataHash = null;
@@ -51,10 +45,9 @@ export function decodeLegacyTinAccount(data) {
     kind: "legacy",
     tin,
     displayName,
-    identityPubkey,
-    encryptedPhone,
+    ownerPubkeyHash,
+    encryptedMasterSeed,
     createdAt,
-    privacyLevel,
     encryptedMetadataHash,
     pruConfigurationHash,
   };

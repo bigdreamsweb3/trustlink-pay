@@ -193,7 +193,7 @@ impl EscrowState {
 pub struct TinAccount {
     pub tin: u64,                     // 10-digit ID
     pub display_name: String,         // public identity
-    pub identity_pubkey: Pubkey,      // TINS PDA identity
+    pub owner_pubkey_hash: [u8; 32],  // SHA-256 commitment to the owner wallet pubkey
     pub encrypted_master_seed: Vec<u8>, // AES-256-GCM encrypted blob
     pub created_at: i64,
     pub encrypted_metadata_hash: [u8; 32],

@@ -23,6 +23,15 @@ const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
 const TSN_CRANKER_SEED = utf8ToBytes("tsn_cranker");
 const TSN_TREASURY_SEED = utf8ToBytes("tsn_treasury");
 const TSN_SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
+const MOTHER_ESCROW_EPOCH_ID_OFFSET =
+  8 + // Anchor account discriminator
+  32 + // authority
+  32 + // tins_program_id
+  32 + // protocol_seed
+  8 + // epoch_seconds
+  8 + // lease_seconds
+  2 + 2 + 2 + // payment fee splits
+  2 + 2 + 2 + 2; // TIN operation fee splits
 
 function concatBytes(parts: Uint8Array[]) {
   const length = parts.reduce((total, part) => total + part.length, 0);
@@ -172,7 +181,7 @@ export async function fetchTsnSettlementEpoch(rpcUrl?: string) {
   const account = await connection.getAccountInfo(motherEscrow, "confirmed");
   if (!account) throw new Error("TSN Mother Escrow is not initialized");
   const data = Buffer.from(account.data);
-  const epochOffset = 8 + 32 + 32 + 32 + 8 + 8 + 2 + 2 + 2;
+  const epochOffset = MOTHER_ESCROW_EPOCH_ID_OFFSET;
   if (data.length < epochOffset + 8) {
     throw new Error("TSN Mother Escrow account is too small");
   }

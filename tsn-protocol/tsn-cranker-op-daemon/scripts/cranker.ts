@@ -1215,24 +1215,26 @@ async function submitTinRegistryMutation(params: {
   const ownerPubkey = new PublicKey(params.operation.ownerPubkey);
   const [identity] = getIdentityPda(ownerPubkey, programId);
   const intentHash = hex32(params.operation.ownerIntentHash, "ownerIntentHash");
+  const ownerIntentMessage = params.operation.ownerIntentMessage?.trim()
+    ? Buffer.from(params.operation.ownerIntentMessage, "utf8")
+    : intentHash;
   const ownerSignature = base64Bytes(params.operation.ownerSignature, "ownerSignature");
-  const encryptedPhone = base64Bytes(
+  const encryptedMasterSeed = base64Bytes(
     params.operation.intentType === "tin_creation"
-      ? params.operation.encryptedPhone
-      : params.operation.newEncryptedPhone,
-    "encryptedPhone",
+      ? params.operation.encryptedMasterSeed
+      : params.operation.newEncryptedMasterSeed,
+    "encryptedMasterSeed",
   );
   const displayName =
     (params.operation.intentType === "tin_creation"
       ? params.operation.displayName
       : params.operation.newDisplayName) ?? "";
   if (!displayName.trim()) throw new Error("displayName is required for TINS registry mutation");
-  const privacyLevel = Number(params.operation.newPrivacyLevel ?? params.operation.privacyLevel) as 1 | 2 | 3 | 4;
-  if (![1, 2, 3, 4].includes(privacyLevel)) throw new Error("privacyLevel must be 1..4");
 
   const ed25519Ix = createOwnerIntentSignatureInstruction({
     ownerPubkey,
     intentHash,
+    message: ownerIntentMessage,
     signature: ownerSignature,
   });
   const mutationData =
@@ -1240,8 +1242,7 @@ async function submitTinRegistryMutation(params: {
       ? serializeTinCreationRegistryParams({
           ownerPubkey,
           displayName,
-          encryptedPhone,
-          privacyLevel,
+          encryptedMasterSeed,
           encryptedMetadataHash: hex32(params.operation.encryptedMetadataHash, "encryptedMetadataHash"),
           pruConfigurationHash: hex32(params.operation.pruConfigurationHash, "pruConfigurationHash"),
           intentHash,
@@ -1250,8 +1251,7 @@ async function submitTinRegistryMutation(params: {
       : serializeTinUpdateParams({
           ownerPubkey,
           displayName,
-          encryptedPhone,
-          privacyLevel,
+          encryptedMasterSeed,
           encryptedMetadataHash: hex32(params.operation.newEncryptedMetadataHash ?? params.operation.encryptedMetadataHash, "encryptedMetadataHash"),
           pruConfigurationHash: hex32(params.operation.newPruConfigurationHash ?? params.operation.pruConfigurationHash, "pruConfigurationHash"),
           intentHash,
@@ -1271,6 +1271,7 @@ async function submitTinRegistryMutation(params: {
           { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
           { pubkey: identity, isSigner: false, isWritable: true },
           { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ];
   const mutationIx = new TransactionInstruction({
     programId,

@@ -585,6 +585,7 @@ export function SendExperience() {
         inviteShare: { onboardingLink: string; inviteMessage: string } | null;
         tsn?: {
           recipientHash: string;
+          recipientTin: string | null;
           destinationWallet: string | null;
         };
       }>("/api/payment/create", {
@@ -606,8 +607,9 @@ export function SendExperience() {
 
       const destinationWallet = result.tsn?.destinationWallet;
       const recipientHash = result.tsn?.recipientHash;
-      if (!destinationWallet || !recipientHash) {
-        throw new Error("Recipient settlement wallet is not ready for TSN enqueue");
+      const recipientTin = result.tsn?.recipientTin ?? recipientPreview.recipient.tin ?? null;
+      if (!destinationWallet || !recipientHash || !recipientTin) {
+        throw new Error("Recipient TIN route is not ready for private TSN enqueue");
       }
 
       const crankerFeePayer =
@@ -631,12 +633,16 @@ export function SendExperience() {
       const settlementEpoch = await fetchTsnSettlementEpoch(
         resolveSolanaRpcUrl({ frontendSafe: true }),
       );
+      const recipientFeeAmount = sendCostEstimate?.recipientFeeAmountUi ?? 0;
+      const recipientPayoutAmount = sendCostEstimate?.recipientPayoutAmountUi ?? Number(
+        Math.max(0, Number(form.amount) - recipientFeeAmount).toFixed(6),
+      );
       const settlementTokenPayload = buildSettlementTokenPayload({
         paymentId: result.paymentId,
         recipientWallet: destinationWallet,
         tokenMintAddress: selectedToken.mintAddress,
-        recipientAmountBaseUnits: uiAmountToBaseUnits(Number(form.amount), tokenDecimals),
-        claimFeeAmountBaseUnits: 0n,
+        recipientAmountBaseUnits: uiAmountToBaseUnits(recipientPayoutAmount, tokenDecimals),
+        claimFeeAmountBaseUnits: uiAmountToBaseUnits(recipientFeeAmount, tokenDecimals),
         epoch: settlementEpoch,
         expiresAt: senderAuthorization.expiresAt,
       });
@@ -667,6 +673,7 @@ export function SendExperience() {
       const enqueueResult = await enqueueTsnPaymentFromFrontend({
         paymentId: result.paymentId,
         recipientHash,
+        recipientTin,
         destinationWallet,
         tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
@@ -691,7 +698,7 @@ export function SendExperience() {
         encryptedSettlementToken,
         autoclaim: true,
         amount: Number(form.amount),
-        recipientAmount: Number(form.amount),
+        recipientAmount: recipientPayoutAmount,
       });
 
       if (receiverCountry) rememberCountryUsage(receiverCountry.iso2);
@@ -1232,6 +1239,13 @@ export function SendExperience() {
                       {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? <span className="block text-[0.68rem] text-text-faint">{formatUsd(sendCostEstimate.senderFeeAmountUsd)}</span> : null}
                     </span>
                   </div>
+                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
+                    <span className="text-[0.78rem] text-text-soft">Recipient fee</span>
+                    <span className="text-right">
+                      <span className="block  font-medium text-text">{sendCostEstimate.recipientFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
+                      {formatUsd(sendCostEstimate.recipientFeeAmountUsd) ? <span className="block text-[0.68rem] text-text-faint">{formatUsd(sendCostEstimate.recipientFeeAmountUsd)}</span> : null}
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
                       <div className="text-[0.68rem] text-text-soft">Solana network fee</div>
@@ -1241,6 +1255,10 @@ export function SendExperience() {
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
                       <div className="text-[0.68rem] text-text-soft">Total required</div>
                       <div className="mt-1  font-semibold text-text">{sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
+                    </div>
+                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
+                      <div className="text-[0.68rem] text-text-soft">Recipient receives</div>
+                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.recipientPayoutAmountUi.toFixed(6)} {selectedToken.symbol}</div>
                     </div>
                   </div>
                   {sendCostEstimate.settlementAssessment ? (

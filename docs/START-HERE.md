@@ -265,16 +265,15 @@ Split:
 
 ### Summary
 
-We now treat a TIN as a static identity record plus a client-derived set of **30 token-agnostic PRUs**. The TIN Registry stores only owner authority and commitments. TSN stores or derives lifecycle state for receipt, spend, sweep, and lazy ATA activation.
+We treat a TIN as a static identity record plus exactly **30 token-agnostic PRUs**. The TIN Registry stores the identity PDA, encrypted TIN Master Seed blob, and commitments. TSN stores or derives lifecycle state for receipt, spend, sweep, and lazy ATA activation.
 
-### New flow versus old flow
+### TIN creation flow
 
-- **Old:** user directly called TINS `CreateTin`; PRU counts varied by privacy level; PRUs were derived with token mint material.
-- **New:** user signs a TIN Creation Intent; Cranker A verifies and commits the fee; Cranker B calls `tin_creation_registry`; the SDK derives 30 PRUs client-side and publishes only a commitment.
+The user signs a TIN creation intent. The frontend sends it directly to the TSN mempool. The mempool and Cranker layer generate the TIN Master Seed, derive exactly 30 token-agnostic PRUs, encrypt private material, and publish only commitments through Cranker-submitted registry transactions.
 
 ### Implementation notes
 
-- TypeScript: `tins-sdk` defaults to privacy level 3 / 30 PRUs; `tsn-sdk/pru` derives token-agnostic PRUs, aggregates balances by token, randomizes spend signing, and plans ATA rent subsidies.
+- TypeScript: the frontend signs owner intents and payment authorizations. It does not derive PRUs, generate TIN Master Seeds, or handle PRU configuration.
 - Python Cranker daemon: verify intent, submit Transaction 1 fee commitment, submit Transaction 2 registry call, and keep PRU seeds out of logs.
 
 ### Security & privacy considerations
@@ -283,14 +282,16 @@ Do not expose raw wallet addresses, balances, PRU private material, phone number
 
 ### Usage and testing
 
-```ts
-const prus = derivePruSet({ masterSeed, tinId });
-const commitment = computePruConfigurationHash(prus);
+```text
+Frontend signs owner intent
+TSN mempool assembles encrypted TIN Master Seed and PRU commitment
+Cranker A records fee commitment
+Cranker B submits the registry mutation
 ```
 
 ```bash
-npm --prefix tsn-sdk test
-npm --prefix tins-sdk run build
+npm --prefix tsn-protocol/tsn-sdk test
+npm --prefix tin-system/tins-sdk run build
 ```
 
 ## TSN + Cranker mediated TINS operations
@@ -315,4 +316,4 @@ The owner remains the only authority. Crankers only pay and relay transactions. 
 
 ### Testing notes
 
-Run `npm --prefix tins-sdk run build` and `cargo test --manifest-path tins-registrar/program/Cargo.toml --lib` before changing TINS flows.
+Run `npm --prefix tin-system/tins-sdk run build` and `cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib` before changing TINS flows.

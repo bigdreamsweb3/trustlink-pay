@@ -12,7 +12,6 @@ import {
 } from "../tsn-protocol/tsn-sdk/dist/tins.js";
 import {
   DEFAULT_PRU_COUNT,
-  DEFAULT_PRU_PRIVACY_LEVEL,
   computePruConfigurationHash,
   derivePruSet,
   generateTinMasterSeed,
@@ -98,7 +97,7 @@ async function main() {
       `Wallet mismatch. Legacy TIN identity is ${legacy.pubkey.toBase58()} but supplied wallet derives ${expectedIdentityPubkey.toBase58()}.`,
     );
   }
-  if (legacy.decoded.privacyLevel === DEFAULT_PRU_PRIVACY_LEVEL && legacy.decoded.pruConfigurationHash) {
+  if (legacy.decoded.pruConfigurationHash) {
     throw new Error("This TIN already has PRU configuration data. It is not a legacy-upgrade target.");
   }
 
@@ -106,7 +105,6 @@ async function main() {
   const pruSet = derivePruSet({
     masterSeed,
     tinId: String(legacy.decoded.tin),
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
   });
   const pruWallets = pruSet.map((pru) => ({
     walletName: `pru-${String(pru.index).padStart(2, "0")}`,
@@ -122,8 +120,7 @@ async function main() {
     purpose: "update",
     ownerPubkey: ownerKeypair.publicKey,
     displayName,
-    encryptedPhone: legacy.decoded.encryptedPhone,
-    privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
+    encryptedMasterSeed: legacy.decoded.encryptedMasterSeed,
     encryptedMetadataHash,
     pruConfigurationHash,
     nonce,
@@ -150,8 +147,7 @@ async function main() {
       data: serializeTinUpdateParams({
         ownerPubkey: ownerKeypair.publicKey,
         displayName,
-        encryptedPhone: legacy.decoded.encryptedPhone,
-        privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
+        encryptedMasterSeed: legacy.decoded.encryptedMasterSeed,
         encryptedMetadataHash,
         pruConfigurationHash,
         intentHash,
@@ -169,7 +165,6 @@ async function main() {
   console.log(`TIN:                 ${legacy.decoded.tin.toString()}`);
   console.log(`Identity PDA:        ${legacy.pubkey.toBase58()}`);
   console.log(`Signer wallet:       ${ownerKeypair.publicKey.toBase58()}`);
-  console.log(`Privacy level:       ${DEFAULT_PRU_PRIVACY_LEVEL}`);
   console.log(`PRU count:           ${DEFAULT_PRU_COUNT}`);
   console.log(`PRU config hash:     ${pruConfigurationHash.toString("hex")}`);
   console.log(`PRU wallets:         ${pruWallets.length}`);
@@ -185,7 +180,6 @@ async function main() {
       owner: ownerKeypair.publicKey.toBase58(),
       generatedAt: new Date().toISOString(),
       pruCount: DEFAULT_PRU_COUNT,
-      privacyLevel: DEFAULT_PRU_PRIVACY_LEVEL,
       pruConfigurationHash: pruConfigurationHash.toString("hex"),
       tinMasterSeedHex: Buffer.from(masterSeed).toString("hex"),
       pruWallets,

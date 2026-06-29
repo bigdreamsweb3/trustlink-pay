@@ -42,7 +42,7 @@ A Cranker must verify signatures, amount, token, recipient route, nonce, expiry,
 
 Settlement work moves a valid payment into the escrow and payout process.
 
-The Cranker should only execute work that matches the sender authorization and TSN rules.
+The Cranker should only execute work that matches the sender authorization and TSN rules. For private TIN payments, the payout permit identifies a PRU token account selected by the mempool. The Cranker must not substitute the owner wallet as the destination.
 
 ### Recovery Work
 
@@ -54,7 +54,7 @@ Crankers compete for these jobs through minimal public challenges. The winner mu
 
 TINS work handles identity registry changes.
 
-The user signs an owner intent. A verifier Cranker checks the signature, nonce, expiry, privacy level, and commitment hashes. A submitter Cranker records the deterministic fee commitment and submits the TINS registry transaction.
+The user signs an owner intent. Cranker A checks the signature, nonce, expiry, and commitment hashes, then records the first fee transaction. Cranker B submits the TINS registry transaction.
 
 This keeps the owner in control while preventing direct app-side registry mutations.
 
@@ -73,7 +73,7 @@ Cranker sees pending intent
 Cranker validates it
 Cranker submits valid settlement work
 Recipient payout becomes available
-Cranker executes payout
+Cranker executes payout to the selected PRU token account
 Commitment enters epoch accounting
 Cranker watches for recovery challenges
 ```
@@ -83,9 +83,8 @@ TIN creation follows the same operator pattern:
 ```text
 User signs TIN owner intent
 Intent enters TSN mempool
-Verifier Cranker validates the intent
-Submitter Cranker records fee commitment
-Submitter Cranker relays TINS registry mutation
+Cranker A validates the intent and records the first fee transaction
+Cranker B relays the TINS registry mutation
 TIN operation finalizes
 ```
 
@@ -94,6 +93,7 @@ The owner wallet signs a message for this flow. It does not sign the on-chain re
 ## Security Considerations
 
 - Crankers must never log private decrypted payloads.
+- Crankers must not publish raw TIN numbers in public dashboards.
 - Crankers must reject stale or duplicate work.
 - Crankers should not expose full payment routes in dashboards.
 - Operator keys must be protected.

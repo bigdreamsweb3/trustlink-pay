@@ -48,8 +48,6 @@ export const TIN_OPERATION_FEE_SPLIT_BPS = {
 export const TIN_CREATION_FEE_USDC = "0.05" as const;
 export const TIN_UPDATE_FEE_USDC = "0.01" as const;
 export const DEFAULT_TIN_PRU_COUNT = 30 as const;
-export const DEFAULT_TIN_PRIVACY_LEVEL = 3 as const;
-
 export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint) {
   const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10_000n;
   const submitter = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.submitter)) / 10_000n;
@@ -70,13 +68,13 @@ export type TsnTinOperationIntent = {
   ownerPubkey: string;
   tin?: string | null;
   displayName: string;
-  encryptedPhoneBase64: string;
-  privacyLevel?: 1 | 2 | 3 | 4;
+  encryptedMasterSeedBase64: string;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
   pruCount?: 30;
   intentHash: string;
   ownerSignatureBase64: string;
+  ownerIntentMessage?: string;
   nonce: string;
   expiryTs: number;
   feeAmountUsdc?: "0.05" | "0.01" | string;
@@ -123,6 +121,7 @@ export type TsnTinOperationRecord = {
   ownerPubkey: string;
   ownerSignature?: string | null;
   ownerIntentHash: string;
+  ownerIntentMessage?: string | null;
   nonce: string;
   expiry: number;
   createdAt: string;
@@ -134,16 +133,14 @@ export type TsnTinOperationRecord = {
   failureReason?: string | null;
   onchainSignatures?: string[];
   displayName?: string | null;
-  encryptedPhone?: string | null;
-  privacyLevel: 1 | 2 | 3 | 4;
+  encryptedMasterSeed?: string | null;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
   pruCount?: 30;
   creationFeeAmount?: string | null;
   creationFeeMint?: string | null;
   newDisplayName?: string | null;
-  newEncryptedPhone?: string | null;
-  newPrivacyLevel?: 1 | 2 | 3 | 4 | null;
+  newEncryptedMasterSeed?: string | null;
   newEncryptedMetadataHash?: string | null;
   newPruConfigurationHash?: string | null;
   updateFeeAmount?: string | null;
@@ -337,6 +334,7 @@ export function buildCreateIntentRequest(params: {
   settlementEpoch?: number | null;
   encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
   recipientHash: string;
+  recipientTin?: string | null;
   tokenMintAddress: string;
   amount: number;
   source?: string;
@@ -366,6 +364,7 @@ export function buildCreateIntentRequest(params: {
     encryptedSettlementToken: params.encryptedSettlementToken ?? null,
     intentSeedHash: sha256Hex(params.paymentId),
     recipientHash: params.recipientHash,
+    recipientTin: params.recipientTin ?? null,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     source: params.source,

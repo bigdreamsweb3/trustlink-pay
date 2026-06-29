@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Connection, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import {
@@ -20,6 +21,10 @@ function toHex(value) {
 
 function toBase64(value) {
   return Buffer.from(value).toString("base64");
+}
+
+function sha256Hex(value) {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function printValue(label, value, padding = 28) {
@@ -58,27 +63,21 @@ function decodeLegacyTinAccount(data) {
   const displayName = buffer.subarray(offset, offset + displayNameLength).toString("utf8");
   offset += displayNameLength;
 
-  const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
+  const ownerPubkeyHash = buffer.subarray(offset, offset + 32);
   offset += 32;
 
-  let encryptedPhone = Buffer.alloc(0);
+  let encryptedMasterSeed = Buffer.alloc(0);
   if (offset + 4 <= buffer.length) {
-    const encryptedPhoneLength = buffer.readUInt32LE(offset);
+    const encryptedMasterSeedLength = buffer.readUInt32LE(offset);
     offset += 4;
-    encryptedPhone = buffer.subarray(offset, Math.min(offset + encryptedPhoneLength, buffer.length));
-    offset += encryptedPhone.length;
+    encryptedMasterSeed = buffer.subarray(offset, Math.min(offset + encryptedMasterSeedLength, buffer.length));
+    offset += encryptedMasterSeed.length;
   }
 
   let createdAt = null;
   if (offset + 8 <= buffer.length) {
     createdAt = buffer.readBigInt64LE(offset);
     offset += 8;
-  }
-
-  let privacyLevel = null;
-  if (offset + 1 <= buffer.length) {
-    privacyLevel = buffer.readUInt8(offset);
-    offset += 1;
   }
 
   let encryptedMetadataHash = null;
@@ -96,10 +95,9 @@ function decodeLegacyTinAccount(data) {
     kind: "legacy",
     tin,
     displayName,
-    identityPubkey,
-    encryptedPhone,
+    ownerPubkeyHash,
+    encryptedMasterSeed,
     createdAt,
-    privacyLevel,
     encryptedMetadataHash,
     pruConfigurationHash,
   };
@@ -117,7 +115,7 @@ function printModernRegistry(decoded, resolved, data) {
   printValue("Layout:", "current identity registry");
   printValue("TIN Number:", decoded.tin.toString());
   printValue("Registry Name:", decoded.name || resolved.name);
-  printValue("Authority:", decoded.authority.toBase58());
+  printValue("Owner Pubkey Hash:", resolved.ownerPubkeyHash ?? sha256Hex(decoded.authority.toBuffer()));
   printValue("Master Privacy:", decoded.masterPrivacy.toBase58());
   printValue("Last Escrow ID:", decoded.lastEscrowId.toString());
   printValue("Status:", String(decoded.status));
@@ -166,23 +164,21 @@ function printLegacyAccount(decoded, resolved, data) {
   printValue("Layout:", "legacy tin account");
   printValue("TIN Number:", decoded.tin.toString());
   printValue("Display Name:", decoded.displayName);
-  printValue("Identity PDA:", decoded.identityPubkey.toBase58());
-  printValue("Owner Pubkey:", "legacy / unavailable");
+  printValue("Owner Pubkey Hash:", toHex(decoded.ownerPubkeyHash));
   printValue("Created At:", decoded.createdAt ? `${decoded.createdAt.toString()} (unix timestamp)` : "unknown");
-  printValue("Privacy Level:", decoded.privacyLevel ?? "legacy / unavailable");
   printValue("Encrypted Metadata Hash:", decoded.encryptedMetadataHash ? toHex(decoded.encryptedMetadataHash) : "legacy / unavailable");
   printValue("PRU Config Hash:", decoded.pruConfigurationHash ? toHex(decoded.pruConfigurationHash) : "legacy / unavailable");
 
   console.log("\n=== Encrypted Payloads ===");
-  printValue("Encrypted Phone:", decoded.encryptedPhone.length > 0 ? `${decoded.encryptedPhone.length} bytes` : "unavailable");
-  if (decoded.encryptedPhone.length > 0) {
-    printValue("Encrypted Phone (base64):", toBase64(decoded.encryptedPhone));
-    printValue("Encrypted Phone (hex):", toHex(decoded.encryptedPhone));
+  printValue("Encrypted Master Seed:", decoded.encryptedMasterSeed.length > 0 ? `${decoded.encryptedMasterSeed.length} bytes` : "unavailable");
+  if (decoded.encryptedMasterSeed.length > 0) {
+    printValue("Encrypted Master Seed (base64):", toBase64(decoded.encryptedMasterSeed));
+    printValue("Encrypted Master Seed (hex):", toHex(decoded.encryptedMasterSeed));
   }
 
   console.log("\n=== Resolution Summary ===");
   printValue("Resolved Name:", resolved.name);
-  printValue("Authority:", resolved.authority.toBase58());
+  printValue("Owner Pubkey Hash:", resolved.ownerPubkeyHash ?? toHex(decoded.ownerPubkeyHash));
   printValue("Account Kind:", resolved.accountKind);
   printValue("Settlement Verified:", String(resolved.settlementAuthorityVerified));
 
@@ -245,6 +241,7 @@ async function main() {
         tin: modern.tin.toString(),
         name: modern.name,
         authority: modern.authority,
+        ownerPubkeyHash: sha256Hex(modern.authority.toBuffer()),
         registry: account.pubkey,
         accountKind: "registry",
         settlementAuthorityVerified: false,
@@ -260,7 +257,8 @@ async function main() {
       const legacyResolved = resolved ?? {
         tin: legacy.tin.toString(),
         name: legacy.displayName,
-        authority: legacy.identityPubkey,
+        authority: account.pubkey,
+        ownerPubkeyHash: toHex(legacy.ownerPubkeyHash),
         registry: account.pubkey,
         accountKind: "legacy",
         settlementAuthorityVerified: false,

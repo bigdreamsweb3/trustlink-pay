@@ -62,6 +62,13 @@ pub fn process(
 
     // 4. Load TinAccount and verify
     let tin_account: TinAccount = load_borsh(identity)?;
+    let owner_pubkey_hash = hash(params.wallet_pubkey.as_ref()).to_bytes();
+    if tin_account.owner_pubkey_hash != owner_pubkey_hash
+        && tin_account.owner_pubkey_hash != params.wallet_pubkey.to_bytes()
+        && tin_account.owner_pubkey_hash != identity.key.to_bytes()
+    {
+        return Err(Error::InvalidPda.into());
+    }
     
     // 5. Securely return TIN u64 as program return data
     set_return_data(&tin_account.tin.to_le_bytes());

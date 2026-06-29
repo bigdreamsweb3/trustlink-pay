@@ -11,9 +11,12 @@ import { resolveSolanaRpcUrl } from "./rpc.js";
 
 const DEFAULT_TSN_FEE_CONFIG = {
   sendFeeBps: 500,
+  recipientFeeBps: 500,
   feeCoverageTxCount: 4,
   sendFeeMaxUiAmount: 1,
+  recipientFeeMaxUiAmount: 1,
   sendFeeMaxUsd: 1,
+  recipientFeeMaxUsd: 1,
 };
 const DEFAULT_RPC_TIMEOUT_MS = 6_000;
 const DEFAULT_NETWORK_FEE_LAMPORTS = 5_000;
@@ -98,12 +101,21 @@ async function fetchEscrowConfigFromChain(
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let offset = 8 + 32 + 32 + 32 + 8 + 8;
   const feeSplitCrankerBps = view.getUint16(offset, true);
+  offset += 2;
+  const feeSplitLpBps = view.getUint16(offset, true);
+  offset += 2;
+  const feeSplitTreasuryBps = view.getUint16(offset, true);
 
   const value = {
     sendFeeBps: Math.max(0, feeSplitCrankerBps),
+    recipientFeeBps: Math.max(0, feeSplitCrankerBps),
     feeCoverageTxCount: DEFAULT_TSN_FEE_CONFIG.feeCoverageTxCount,
     sendFeeMaxUiAmount: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUiAmount,
+    recipientFeeMaxUiAmount: DEFAULT_TSN_FEE_CONFIG.recipientFeeMaxUiAmount,
     sendFeeMaxUsd: DEFAULT_TSN_FEE_CONFIG.sendFeeMaxUsd,
+    recipientFeeMaxUsd: DEFAULT_TSN_FEE_CONFIG.recipientFeeMaxUsd,
+    feeSplitLpBps,
+    feeSplitTreasuryBps,
   };
   feeConfigCache = {
     key: cacheKey,
@@ -184,15 +196,32 @@ export async function estimateTsnSendCostFromChain(params: {
     maxMarginUsd: config.sendFeeMaxUsd,
     maxUiAmount: config.sendFeeMaxUiAmount,
   });
+  const recipientFeeAmountUi = quoteTransferFeeUiAmount({
+    estimatedNetworkFeeLamports,
+    solUsd: params.solUsd,
+    tokenUsd: params.tokenUsd,
+    tokenDecimals,
+    coverageTxCount: config.feeCoverageTxCount,
+    feeBps: config.recipientFeeBps,
+    maxMarginUsd: config.recipientFeeMaxUsd,
+    maxUiAmount: config.recipientFeeMaxUiAmount,
+  });
 
   const networkFeeSol = estimatedNetworkFeeLamports / 1_000_000_000;
   const networkFeeUsd = networkFeeSol * params.solUsd;
   const senderFeeAmountUsd = senderFeeAmountUi * params.tokenUsd;
+  const recipientFeeAmountUsd = recipientFeeAmountUi * params.tokenUsd;
+  const recipientPayoutAmountUi = Number(
+    Math.max(0, params.amountUi - recipientFeeAmountUi).toFixed(6),
+  );
 
   return {
     tokenSymbol: params.tokenSymbol,
     senderFeeAmountUi,
     senderFeeAmountUsd,
+    recipientFeeAmountUi,
+    recipientFeeAmountUsd,
+    recipientPayoutAmountUi,
     totalTokenRequiredUi: Number(
       (params.amountUi + senderFeeAmountUi).toFixed(6),
     ),
@@ -201,7 +230,10 @@ export async function estimateTsnSendCostFromChain(params: {
     debug: {
       programId: programId.toBase58(),
       sendFeeBps: config.sendFeeBps,
+      recipientFeeBps: config.recipientFeeBps,
       feeCoverageTxCount: config.feeCoverageTxCount,
+      feeSplitLpBps: "feeSplitLpBps" in config ? config.feeSplitLpBps : null,
+      feeSplitTreasuryBps: "feeSplitTreasuryBps" in config ? config.feeSplitTreasuryBps : null,
       estimatedNetworkFeeLamports,
       solUsd: params.solUsd,
       tokenUsd: params.tokenUsd,

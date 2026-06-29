@@ -20,15 +20,15 @@ index 0000000..1111111
 +export type TinOperationFeeSplit = {
 +  verifierBps: 3000;
 +  submitterBps: 4000;
-+  treasuryBps: 2000;
-+  bonusPoolBps: 1000;
++  treasuryBps: 1000;
++  reservePoolBps: 2000;
 +};
 +
 +export const TIN_OPERATION_FEE_SPLIT: TinOperationFeeSplit = {
 +  verifierBps: 3000,
 +  submitterBps: 4000,
-+  treasuryBps: 2000,
-+  bonusPoolBps: 1000,
++  treasuryBps: 1000,
++  reservePoolBps: 2000,
 +};
 +
 +export const DEFAULT_TIN_CREATION_FEE_USDC = "0.05";
@@ -41,8 +41,7 @@ index 0000000..1111111
 +  ownerPubkey: string;
 +  tin?: string | null;
 +  displayName: string;
-+  encryptedPhoneBase64: string;
-+  privacyLevel: 1 | 2 | 3 | 4;
++  encryptedMasterSeedBase64: string;
 +  encryptedMetadataHash: string;
 +  pruConfigurationHash: string;
 +  intentHash: string;
@@ -87,7 +86,7 @@ index 0000000..1111111
 +    verifier: ((units * 3000n) / 10_000n).toString(),
 +    submitter: ((units * 4000n) / 10_000n).toString(),
 +    treasury: ((units * 2000n) / 10_000n).toString(),
-+    bonusPool: (units - ((units * 3000n) / 10_000n) - ((units * 4000n) / 10_000n) - ((units * 2000n) / 10_000n)).toString(),
++    reservePool: (units - ((units * 3000n) / 10_000n) - ((units * 4000n) / 10_000n) - ((units * 1000n) / 10_000n)).toString(),
 +  };
 +}
 +
@@ -191,8 +190,7 @@ index 0000000..1111111
 +  if (input.kind !== "tin_creation" && input.kind !== "tin_update") throw new Error("invalid TINS operation kind");
 +  if (!input.ownerPubkey) throw new Error("ownerPubkey is required");
 +  if (!input.displayName) throw new Error("displayName is required");
-+  if (![1, 2, 3, 4].includes(Number(input.privacyLevel))) throw new Error("privacyLevel must be 1..4");
-+  assertBase64(input.encryptedPhoneBase64 ?? "", "encryptedPhoneBase64");
++  assertBase64(input.encryptedMasterSeedBase64 ?? "", "encryptedMasterSeedBase64");
 +  assertHex32(input.encryptedMetadataHash ?? "", "encryptedMetadataHash");
 +  assertHex32(input.pruConfigurationHash ?? "", "pruConfigurationHash");
 +  assertHex32(input.intentHash ?? "", "intentHash");

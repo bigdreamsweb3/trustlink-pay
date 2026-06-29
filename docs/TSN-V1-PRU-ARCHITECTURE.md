@@ -4,13 +4,13 @@ Version: current TSN V1 architecture
 
 ## Summary
 
-TSN V1 uses deterministic PRU settlement. A TIN is the root identity layer. Privacy Receiving Units (PRUs) are the execution endpoints used by TSN for all settlement. The Cranker is stateless — it receives transaction inputs, computes the same allocation every verifier can replay, and executes the result without storing routing state or introducing randomness.
+TSN V1 uses deterministic PRU settlement. A TIN is the root identity layer. Privacy Receiving Units (PRUs) are the execution endpoints used by TSN for all settlement. The Cranker receives transaction inputs, resolves the finalized PRU route for the destination TIN, computes the same route every verifier can replay, and executes the payout without using the owner's wallet as the settlement destination.
 
 ## Core Model
 
 ### TIN Identity Layer
 
-A TIN stores only the owner wallet mapping, encryption metadata commitment, and PRU configuration commitment hash. TINS does not store PRU lists, balances, private keys, or derivation seeds. Every TIN receives exactly 30 PRUs by default.
+A TIN stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata commitment, and PRU configuration commitment hash. TINS does not store the raw owner wallet as an authority field, PRU lists, balances, private keys, or derivation seeds. Every TIN receives exactly 30 PRUs.
 
 TINS is aware of PRUs through commitments only, never enumeration. During TIN creation, the mempool and cranker layer handle all PRU derivation, compute the `pru_configuration_hash`, and submit only that hash to the TINS registry. This gives TSN and Crankers a verifiable replay target without exposing the full PRU set on-chain. The SDK and frontend have no visibility into how PRUs are generated or what they contain.
 
@@ -36,15 +36,24 @@ A PRU is in one of two states:
 
 ## Deterministic Settlement Allocation
 
-When TSN receives a payment destined for a TIN, the cranker computes allocation deterministically:
+When TSN receives a payment destined for a TIN, the mempool and cranker path resolves the recipient PRU deterministically:
 
 1. Cranker detects an incoming TSN transaction.
-2. Cranker receives the transaction ID, the destination TIN, and the PRU set commitment.
-3. Cranker computes a settlement seed from the transaction ID and TIN.
-4. Cranker computes the distribution from that seed and the PRU set.
-5. TSN splits and routes funds exactly according to the deterministic output.
+2. The mempool reads the finalized PRU route for the destination TIN.
+3. The mempool computes a settlement seed from the transaction ID, destination TIN, and token mint.
+4. The mempool selects an active PRU from the route and signs the private payout permit for that PRU's token account.
+5. The Cranker executes the payout to the selected PRU token account.
 
-The same inputs always produce the same output. Total distributed amount always equals the total input amount. No randomness is permitted in settlement logic. Replay verification is done against on-chain commitment hashes, not against SDK state.
+The same inputs always produce the same route. Gross escrowed amount equals the PRU payout plus the recipient fee. No randomness is permitted in settlement routing. Replay verification is done against the PRU configuration commitment and mempool route state, not against frontend state.
+
+## Payment Fee Flow
+
+Normal payment fees have two enforced portions:
+
+- the sender fee, paid on top of the sent amount in the sender co-signed sponsored settlement
+- the recipient fee, deducted from the escrowed settlement amount before the private payout permit is signed
+
+The selected PRU receives the net amount after recipient fee deduction. The private payout instruction accrues the recipient fee in the Cranker vault fee accounting. The owner wallet is never used as the recipient settlement destination.
 
 ## TIN Balance Accounting
 
@@ -64,10 +73,10 @@ The frontend and SDK must show only this unified balance abstraction. Raw PRU ad
 
 Every TIN creation and upgrade operation carries a fee. No part of TIN operation fees goes to liquidity providers or TrustLink liquidity pools. TIN fees are distributed as follows:
 
-- 30 percent to the Cranker that submits the first transaction
-- 40 percent to the Cranker that submits the actual on-chain TIN mutation
-- 10 percent to the team
-- 20 percent to the reserve pool for Cranker reimbursement rewards
+- 30 percent to Cranker A, the Cranker that submits the first transaction
+- 40 percent to Cranker B, the Cranker that submits the actual on-chain TIN mutation
+- 10 percent to the Protocol Treasury
+- 20 percent to the Reserve Pool for Cranker reimbursement rewards
 
 ## How TIN Creation Works
 
@@ -77,7 +86,7 @@ Every TIN creation and upgrade operation carries a fee. No part of TIN operation
 4. A verifier Cranker checks the owner signature, nonce, expiry, and commitment hashes.
 5. A submitter Cranker records the fee commitment on-chain in Transaction 1.
 6. The submitter Cranker submits the actual TIN creation in Transaction 2.
-7. TINS stores only the owner mapping, encryption metadata hash, PRU metadata commitments, and PRU configuration hash. The owner wallet is never stored as an authority field.
+7. TINS stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata hash, and PRU configuration hash. The owner wallet is never stored as a readable authority field.
 
 The owner wallet never appears as a signer, fee payer, or authority in any on-chain transaction. The Cranker signs and pays all chain transactions.
 
@@ -88,9 +97,9 @@ TIN upgrade follows the exact same flow as TIN creation. The owner signs an upgr
 ## How Receiving Works
 
 1. The destination TIN is resolved from the payment.
-2. PRU metadata is loaded from the commitment.
-3. Deterministic allocation is computed.
-4. TSN executes settlement through vaults. The user path is gasless.
+2. The mempool loads the finalized PRU route that matches the TIN's PRU commitment.
+3. The mempool selects the active PRU for the payment and token mint.
+4. The Cranker executes settlement through the private payout permit to the PRU token account. The user path is gasless after the sender co-signs the payment authorization.
 
 ## How Spending Works
 
@@ -110,6 +119,6 @@ TIN upgrade follows the exact same flow as TIN creation. The owner signs an upgr
 
 What is always hidden: derivation seeds, private keys, full PRU arrays, phone numbers, raw wallet address relationships, and individual balance states.
 
-What is publicly visible: owner commitment, PRU metadata commitment, and the replayable settlement distribution.
+What is publicly visible: the one-way owner pubkey commitment, PRU metadata commitment, and replayable settlement commitments. Public mempool views use opaque TIN route identifiers instead of raw TIN numbers.
 
 This boundary ensures TSN can prove settlement integrity to any verifier without turning the public ledger into a surveillance index for tracking user activity.

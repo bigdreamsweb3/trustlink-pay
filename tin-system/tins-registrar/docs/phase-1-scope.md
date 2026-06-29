@@ -8,7 +8,7 @@ TINS should provide:
 
 - 10-digit payment identity creation
 - TIN lookup
-- owner or authority tracking
+- SHA-256 owner pubkey commitment tracking
 - public name or missing-name status
 - encrypted social identity records
 - sensitive encrypted fields that require user authorization

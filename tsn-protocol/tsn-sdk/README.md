@@ -65,4 +65,4 @@ const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pru
 
 The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TINS registry state.
 
-TINS registry awareness: TINS does not store PRU arrays. The TINS create flow receives the privacy level and PRU configuration commitment, while this TSN SDK derives the actual PRU set off-chain and replays it against that commitment.
+TINS registry awareness: TINS does not store PRU arrays. Every TIN receives exactly 30 token-agnostic PRUs, and TINS stores the PRU configuration commitment produced by the TSN mempool and cranker layer.

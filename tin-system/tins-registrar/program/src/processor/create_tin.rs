@@ -59,6 +59,7 @@ pub fn process(
     if !verify_owner_intent(instructions_sysvar, &params.owner_pubkey, &params.intent_hash)? {
         return Err(Error::SignatureVerificationFailed.into());
     }
+    let owner_pubkey_hash = hash(params.owner_pubkey.as_ref()).to_bytes();
 
     // 3. Load global state and generate new 10-digit TIN
     let mut global: GlobalState = load_borsh(global_state)?;
@@ -85,7 +86,7 @@ pub fn process(
     let tin_account = TinAccount {
         tin,
         display_name: params.display_name,
-        identity_pubkey: *identity.key,
+        owner_pubkey_hash,
         encrypted_master_seed: params.encrypted_master_seed,
         created_at: Clock::get()?.unix_timestamp,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
@@ -123,6 +124,10 @@ fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_messag
     if pubkey_offset + 32 > data.len() || message_offset + message_size > data.len() {
         return false;
     }
-    &data[pubkey_offset..pubkey_offset + 32] == expected_pubkey.as_ref()
-        && &data[message_offset..message_offset + message_size] == expected_message.as_ref()
+    if &data[pubkey_offset..pubkey_offset + 32] != expected_pubkey.as_ref() {
+        return false;
+    }
+    let parsed_message = &data[message_offset..message_offset + message_size];
+    parsed_message == expected_message.as_ref()
+        || hash(parsed_message).to_bytes() == *expected_message
 }

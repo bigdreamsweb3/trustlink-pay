@@ -28,6 +28,7 @@ async function postTerminalLog(
 async function enqueueTsnPaymentFromFrontendImpl(params: {
   paymentId: string;
   recipientHash: string;
+  recipientTin: string;
   destinationWallet: string;
   tokenMintAddress: string;
   senderWallet: string;
@@ -85,6 +86,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     commitmentHash: params.commitmentHash,
     settlementEpoch: params.settlementEpoch,
     encryptedSettlementToken: params.encryptedSettlementToken,
+    recipientTin: params.recipientTin,
     destinationWallet: params.destinationWallet,
     autoclaim: params.autoclaim ?? true,
     recipientHash: params.recipientHash,
@@ -103,6 +105,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     intentId: intent.id,
     intentSeedHash: intentRequest.intentSeedHash,
     recipientHash: params.recipientHash,
+    recipientTin: params.recipientTin,
     destinationWallet: params.destinationWallet,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,

@@ -49,16 +49,23 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
     if !verify_owner_intent(instructions_sysvar, &params.owner_pubkey, &params.intent_hash)? {
         return Err(Error::SignatureVerificationFailed.into());
     }
+    let owner_pubkey_hash = hash(params.owner_pubkey.as_ref()).to_bytes();
 
     let existing_account = load_tin_account_for_update(identity)?;
     if identity.key != &expected_identity_pubkey {
+        return Err(Error::InvalidPda.into());
+    }
+    if existing_account.owner_pubkey_hash != owner_pubkey_hash
+        && existing_account.owner_pubkey_hash != params.owner_pubkey.to_bytes()
+        && existing_account.owner_pubkey_hash != identity.key.to_bytes()
+    {
         return Err(Error::InvalidPda.into());
     }
 
     let tin_account = TinAccount {
         tin: existing_account.tin,
         display_name: params.display_name,
-        identity_pubkey: *identity.key,
+        owner_pubkey_hash,
         encrypted_master_seed: params.encrypted_master_seed,
         created_at: existing_account.created_at,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
@@ -81,6 +88,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
 
 struct ExistingTinAccount {
     tin: u64,
+    owner_pubkey_hash: [u8; 32],
     created_at: i64,
 }
 
@@ -88,6 +96,7 @@ fn load_tin_account_for_update(identity: &AccountInfo) -> Result<ExistingTinAcco
     if let Ok(account) = load_borsh::<TinAccount>(identity) {
         return Ok(ExistingTinAccount {
             tin: account.tin,
+            owner_pubkey_hash: account.owner_pubkey_hash,
             created_at: account.created_at,
         });
     }
@@ -104,14 +113,17 @@ fn load_legacy_tin_account(identity: &AccountInfo) -> Result<ExistingTinAccount,
     let display_name_len = read_u32(&data, &mut offset)? as usize;
     offset = offset
         .checked_add(display_name_len)
-        .and_then(|next| next.checked_add(32))
         .ok_or(Error::Overflow)?;
-    if offset > data.len() {
+    if offset + 32 > data.len() {
         return Err(ProgramError::InvalidAccountData);
     }
-    let encrypted_phone_len = read_u32(&data, &mut offset)? as usize;
+    let owner_pubkey_hash = data[offset..offset + 32]
+        .try_into()
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+    offset += 32;
+    let encrypted_master_seed_len = read_u32(&data, &mut offset)? as usize;
     offset = offset
-        .checked_add(encrypted_phone_len)
+        .checked_add(encrypted_master_seed_len)
         .ok_or(Error::Overflow)?;
     if offset + 8 > data.len() {
         return Err(ProgramError::InvalidAccountData);
@@ -123,6 +135,7 @@ fn load_legacy_tin_account(identity: &AccountInfo) -> Result<ExistingTinAccount,
     );
     Ok(ExistingTinAccount {
         tin,
+        owner_pubkey_hash,
         created_at,
     })
 }
@@ -175,6 +188,10 @@ fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_messag
     if pubkey_offset + 32 > data.len() || message_offset + message_size > data.len() {
         return false;
     }
-    &data[pubkey_offset..pubkey_offset + 32] == expected_pubkey.as_ref()
-        && &data[message_offset..message_offset + message_size] == expected_message.as_ref()
+    if &data[pubkey_offset..pubkey_offset + 32] != expected_pubkey.as_ref() {
+        return false;
+    }
+    let parsed_message = &data[message_offset..message_offset + message_size];
+    parsed_message == expected_message.as_ref()
+        || hash(parsed_message).to_bytes() == *expected_message
 }

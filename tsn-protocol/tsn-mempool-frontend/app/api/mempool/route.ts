@@ -80,7 +80,7 @@ function redactTinOperation(operation: any) {
   return {
     intentId: opaqueId(operation.intentId),
     intentType: operation.intentType,
-    tin: operation.tin,
+    tinHash: operation.tinHash ?? opaqueId(operation.tin),
     ownerPubkey: opaqueId(operation.ownerPubkey),
     ownerIntentHash: operation.ownerIntentHash,
     nonce: operation.nonce,
@@ -107,7 +107,6 @@ function redactTinOperation(operation: any) {
       ? operation.onchainSignatures.map((signature: string) => opaqueId(signature))
       : [],
     displayName: operation.displayName,
-    privacyLevel: operation.privacyLevel,
     encryptedMetadataHash: operation.encryptedMetadataHash,
     pruConfigurationHash: operation.pruConfigurationHash,
   };

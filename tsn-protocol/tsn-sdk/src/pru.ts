@@ -2,12 +2,10 @@ import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
 
-export type TsnPrivacyLevel = 1 | 2 | 3 | 4;
 export type PruLifecycleState = "PLANNED" | "ACTIVE" | "USED" | "SWEPT";
 export type TsnBalanceState = "AVAILABLE" | "PENDING" | "SETTLED";
 
 export const DEFAULT_PRU_COUNT = 30 as const;
-export const DEFAULT_PRU_PRIVACY_LEVEL = 3 as const;
 export const PRU_ATA_RENT_SUBSIDY_LIMIT = 3 as const;
 
 export type PruEndpoint = {
@@ -54,7 +52,6 @@ export type TsnTinBalance = {
 
 const textEncoder = new TextEncoder();
 const TSN_DOMAIN_TAG = "TSN_TRUSTLINK_INTENT_V1";
-const PRU_DERIVATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU";
 const PRU_CONFIGURATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU_CONFIGURATION";
 const PRU_ALLOCATION_SEED_TAG = "TSN_V1_ALLOCATION_SEED";
 const PRU_WEIGHT_TAG = "TSN_V1_PRU_WEIGHT";
@@ -74,7 +71,7 @@ function assertNonNegativeAmount(amount: bigint, label: string) {
   if (amount < 0n) throw new Error(`${label} must be non-negative`);
 }
 
-export function pruCountForPrivacyLevel(_level: TsnPrivacyLevel = DEFAULT_PRU_PRIVACY_LEVEL) {
+export function getDefaultPruCount() {
   return DEFAULT_PRU_COUNT;
 }
 
@@ -86,17 +83,22 @@ export function derivePruPublicKey(input: {
   if (!Number.isInteger(input.index) || input.index < 0) {
     throw new Error("PRU index must be a non-negative integer");
   }
-  return hashHex([PRU_DERIVATION_TAG, input.masterSeed, input.tinId, input.index]);
+  const masterSeedHex = typeof input.masterSeed === "string"
+    ? input.masterSeed
+    : bytesToHex(input.masterSeed);
+  const seed = sha256(textEncoder.encode(`TRUSTLINK_PRU_KEY_V1|${masterSeedHex}|${input.tinId}|${input.index}`));
+  const keypair = nacl.sign.keyPair.fromSeed(seed);
+  wipeBytes(seed);
+  return bytesToHex(keypair.publicKey);
 }
 
 export function derivePruSet(input: {
   masterSeed: string | Uint8Array;
   tinId: string;
-  privacyLevel?: TsnPrivacyLevel;
   encryptedMetadataForIndex?: (index: number) => string | undefined;
   initialState?: PruLifecycleState;
 }) {
-  const count = pruCountForPrivacyLevel(input.privacyLevel ?? DEFAULT_PRU_PRIVACY_LEVEL);
+  const count = getDefaultPruCount();
   return Array.from({ length: count }, (_, index): PruEndpoint => ({
     tinId: input.tinId,
     index,

@@ -106,16 +106,14 @@ async function main() {
     purpose: "create",
     ownerPubkey: walletPubkey,
     displayName,
-    encryptedPhone: encryptedBlob,
-    privacyLevel: 2,
+    encryptedMasterSeed: encryptedBlob,
     nonce,
     expiryTs,
   });
   const registryParams = serializeTinCreationRegistryParams({
     ownerPubkey: walletPubkey,
     displayName,
-    encryptedPhone: encryptedBlob,
-    privacyLevel: 2,
+    encryptedMasterSeed: encryptedBlob,
     intentHash,
     expiryTs,
   });

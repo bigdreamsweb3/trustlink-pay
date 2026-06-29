@@ -5,23 +5,21 @@ import {
   computePruConfigurationHash,
   computeTinBalance,
   derivePruSet,
+  getDefaultPruCount,
   planLazyAtaCreation,
   planPruSweep,
-  pruCountForPrivacyLevel,
   selectPrusForSpend,
   selectRandomPruForSpend,
 } from "../dist/index.js";
 
 test("every TIN gets 30 token-agnostic PRUs by default", () => {
-  assert.equal(pruCountForPrivacyLevel(1), 30);
-  assert.equal(pruCountForPrivacyLevel(2), 30);
-  assert.equal(pruCountForPrivacyLevel(3), 30);
-  assert.equal(pruCountForPrivacyLevel(4), 30);
+  assert.equal(getDefaultPruCount(), 30);
+  assert.equal(derivePruSet({ masterSeed: "seed", tinId: "1234567890" }).length, 30);
 });
 
 test("PRU derivation and configuration commitments are token-agnostic and stable", () => {
-  const first = derivePruSet({ masterSeed: "seed", tinId: "1234567890", privacyLevel: 2 });
-  const second = derivePruSet({ masterSeed: "seed", tinId: "1234567890", privacyLevel: 4 });
+  const first = derivePruSet({ masterSeed: "seed", tinId: "1234567890" });
+  const second = derivePruSet({ masterSeed: "seed", tinId: "1234567890" });
   assert.equal(first.length, 30);
   assert.deepEqual(first, second);
   assert.equal(computePruConfigurationHash(first), computePruConfigurationHash(second));

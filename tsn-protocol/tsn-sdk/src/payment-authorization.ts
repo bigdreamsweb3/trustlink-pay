@@ -84,6 +84,7 @@ export function createPaymentAuthorization(params: {
 export function buildPaymentAuthorizationIntentRequest(params: {
   paymentId: string;
   recipientHash: string;
+  recipientTin?: string | null;
   tokenMintAddress: string;
   senderWallet: string;
   senderAuthorizationMessage: string;
@@ -134,6 +135,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       settlementEpoch: params.settlementEpoch,
       encryptedSettlementToken: params.encryptedSettlementToken,
       recipientHash: params.recipientHash,
+      recipientTin: params.recipientTin,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
       source: params.source,
@@ -147,6 +149,7 @@ export async function submitPaymentAuthorizationToMempool(params: {
   fetchImpl?: typeof fetch;
   paymentId: string;
   recipientHash: string;
+  recipientTin?: string | null;
   tokenMintAddress: string;
   senderWallet: string;
   senderAuthorizationMessage: string;

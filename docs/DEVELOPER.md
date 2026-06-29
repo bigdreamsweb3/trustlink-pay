@@ -43,10 +43,10 @@ npm run tsn:cranker:start
 ## Build Commands
 
 ```bash
-npm --prefix tsn-sdk run build
+npm --prefix tsn-protocol/tsn-sdk run build
 npm --prefix frontend run typecheck
 npm --prefix backend run typecheck
-npm --prefix tsn-mempool-frontend run typecheck
+npm --prefix tsn-protocol/tsn-mempool-frontend run typecheck
 ```
 
 ## Program Deploy Safety

@@ -38,7 +38,7 @@ TINS stores identity records on Solana.
 The record can include:
 
 - the TIN number
-- the owner or authority
+- an SHA-256 owner pubkey commitment
 - a public display name if one exists
 - verification status
 - encrypted social identities
@@ -113,44 +113,36 @@ This makes it easier to see which parts of a TIN are public, which parts are enc
 
 ### Summary
 
-Every TIN now starts with **30 PRUs by default**. PRUs are **token-agnostic**: one client-derived PRU set serves SOL, USDC, and every future token supported by TSN. We separate identity from execution so public registry data remains static while settlement state changes inside TSN.
+Every TIN starts with **exactly 30 PRUs**. PRUs are **token-agnostic**: one PRU can receive any token supported by TSN. PRU derivation, TIN Master Seed generation, and encryption belong to the TSN mempool and Cranker layer. The frontend and SDK sign authorization intents; they do not derive PRUs or handle PRU configuration.
 
 ### Strict separation of concerns
 
 | Layer | Stores | Mutation rule |
 | --- | --- | --- |
-| **TIN Registry** | owner pubkey, display name, encrypted phone blob, privacy level `3`, encrypted metadata hash, PRU configuration commitment | Created by `tin_creation_registry`; rarely updated by `tin_update`; never stores PRU keys, token balances, ATA state, or spend history. |
+| **TIN Registry** | TIN number, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encrypted metadata hash, PRU configuration commitment | Created by `tin_creation_registry`; rarely updated by `tin_update`; never stores the raw owner wallet as an authority field, PRU keys, token balances, ATA state, or spend history. |
 | **PRU Lifecycle State** | per-token receipt/spend/sweep state, ATA creation status, rent subsidy counter, balance state | Lives in TSN / derived mempool state and changes on receipt, spend, sweep, and lazy ATA activation. |
 
-### New creation flow versus old flow
-
-Old direct path, removed/disabled:
-
-1. User wallet submitted `CreateTin` directly to TINS.
-2. User wallet paid fees and acted as transaction payer.
-3. TINS inferred authority from the payer.
-
-New Cranker-mediated path:
+### Creation flow
 
 1. The frontend collects only the user-facing fields and asks the owner wallet to sign a plain TIN owner-intent message.
 2. The frontend posts that signed intent directly to the TSN mempool backend.
-3. The TSN mempool backend assembles the encrypted phone payload, private metadata commitment, and 30-PRU commitment.
+3. The TSN mempool backend assembles the encrypted TIN Master Seed payload, private metadata commitment, and 30-PRU commitment.
 4. Cranker A verifies the owner signature, expiry, metadata shape, and that the PRU commitment is valid.
 5. Cranker A submits Transaction 1: the fee commitment split.
 6. Cranker B submits Transaction 2: `tin_creation_registry` with the owner Ed25519 verification instruction.
-7. TINS creates the identity PDA from the owner pubkey and stores only static registry fields.
+7. TINS creates the identity PDA from the owner pubkey and stores only static registry fields. The owner wallet is stored only as an SHA-256 pubkey commitment, never as a readable authority field.
 
 TrustLink backend is not a bridge in this flow. It can cache identity state for the app, but it must never proxy TIN creation, upgrade, or update requests into TSN.
 
 ### Receiving, spending, and ATA creation
 
-- Receiving uses deterministic allocation over the 30 PRUs for the incoming token. The allocation can be replayed by Crankers without seeing derivation seeds.
+- Receiving resolves the finalized PRU route for the destination TIN and selects an active PRU deterministically for the incoming payment and token. The selected PRU receives the net amount after recipient fee deduction.
 - Spending uses a randomly selected PRU signing key in the SDK, then records spend lifecycle state through TSN + Crankers. This breaks the pattern where the same wallet key is always active.
 - Crankers create token ATAs lazily on first receipt for a PRU/token pair. TSN subsidizes the first few ATA rents per PRU as acquisition cost; after the subsidy window, a small activation fee can be deducted from the incoming amount.
 
 ### Implementation notes
 
-TypeScript uses `derivePruSet`, `computePruConfigurationHash`, `allocatePrusDeterministically`, `selectRandomPruForSpend`, `selectPrusForSpend`, and `planLazyAtaCreation` from `tsn-sdk`. TINS uses `DEFAULT_TIN_PRIVACY_LEVEL = 3` and `DEFAULT_TIN_PRU_COUNT = 30`; the deprecated `createTin` SDK path throws. The TINS program rejects the old `CreateTin` instruction and accepts only Cranker-mediated `tin_creation_registry` after owner intent verification.
+The TINS program accepts Cranker-mediated `tin_creation_registry` after owner intent verification. TSN uses a fixed `DEFAULT_TIN_PRU_COUNT = 30`; every PRU is token-agnostic.
 
 The important boundary is this:
 
@@ -166,7 +158,7 @@ Python Cranker daemon integration follows the same two-transaction model: verify
 ```text
 Frontend -> sign owner intent
 Frontend -> POST signed intent to TSN mempool
-TSN mempool -> assemble encrypted phone + PRU commitment
+TSN mempool -> assemble encrypted TIN Master Seed + PRU commitment
 Cranker -> verify + fee commit + submit TINS mutation
 ```
 
@@ -176,23 +168,23 @@ npm run tsn:cranker:start
 
 ### Security & privacy considerations
 
-Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, and spend selection randomness. Exposed: the TIN, static owner authority, privacy level 3, and commitment hashes. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
+Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Exposed on-chain: the TIN registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
 
 ### Testing notes
 
 Run:
 
 ```bash
-npm --prefix tins-sdk run build
-npm --prefix tsn-sdk test
-cargo test --manifest-path tins-registrar/program/Cargo.toml --lib
+npm --prefix tin-system/tins-sdk run build
+npm --prefix tsn-protocol/tsn-sdk test
+cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib
 ```
 
 ## PRU SpendGuard and isolated TIN Master Seed (2026-06-26)
 
 ### Summary
 
-TINS now separates identity ownership from PRU spend authority. A TIN owner still controls the TIN with the main wallet, but PRU spend keys come from a random TIN Master Seed generated by the SDK CSPRNG. The main wallet can encrypt that seed for recovery and storage; it cannot derive, predict, or expose PRU keys.
+TINS separates identity ownership from PRU spend authority. A TIN owner controls the TIN with an owner-signed intent, but PRU spend keys come from a random TIN Master Seed generated inside the TSN mempool and Cranker layer. The main wallet cannot derive, predict, or expose PRU keys.
 
 ### Implementation notes
 
@@ -214,8 +206,8 @@ const spendAuthHash = computePruSpendAuthHash({
 
 ### Security & privacy considerations
 
-The TIN Master Seed has zero mathematical relationship to wallet signatures. A malicious dApp can collect ordinary wallet signatures forever and still gains no path to the seed or PRU keys. The guard account records replay state and owner binding; it never stores a PRU private key.
+The TIN Master Seed has zero mathematical relationship to wallet signatures. A malicious app can collect ordinary wallet signatures forever and still gains no path to the seed or PRU keys. The guard account records replay state and owner binding; it never stores a PRU private key.
 
 ### Testing notes
 
-Use `npm --prefix tsn-sdk test` and confirm the PRU security tests reject cross-TIN spends and replayed nonces while preserving deterministic PRU guard hashing.
+Use `npm --prefix tsn-protocol/tsn-sdk test` and confirm the PRU security tests reject cross-TIN spends and replayed nonces while preserving deterministic PRU guard hashing.

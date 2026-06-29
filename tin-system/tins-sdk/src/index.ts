@@ -15,8 +15,6 @@ export const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
 const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
 export const PROGRAM_SALT = "TINS_SALT_2026";
-export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
-export const DEFAULT_TIN_PRIVACY_LEVEL: TinsPrivacyLevel = 3;
 export const DEFAULT_TIN_PRU_COUNT = 30;
 
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -229,10 +227,15 @@ export function createTinOwnerIntentHash(params: {
   return hash.digest();
 }
 
-export function createOwnerIntentSignatureInstruction(params: { ownerPubkey: PublicKey; intentHash: Buffer | Uint8Array; signature: Buffer | Uint8Array }) {
+export function createOwnerIntentSignatureInstruction(params: {
+  ownerPubkey: PublicKey;
+  intentHash: Buffer | Uint8Array;
+  signature: Buffer | Uint8Array;
+  message?: Buffer | Uint8Array;
+}) {
   return Ed25519Program.createInstructionWithPublicKey({
     publicKey: params.ownerPubkey.toBytes(),
-    message: normalizeHash32(params.intentHash, "intentHash"),
+    message: params.message ? Buffer.from(params.message) : normalizeHash32(params.intentHash, "intentHash"),
     signature: Buffer.from(params.signature),
   });
 }

@@ -21,7 +21,7 @@ A TIN gives users a portable identity layer while allowing wallets, social ident
 TINS stores identity records such as:
 
 - TIN number
-- owner or authority
+- SHA-256 owner pubkey commitment
 - public display or legal-name status
 - verification status
 - encrypted social identities

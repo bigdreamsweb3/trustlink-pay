@@ -11,7 +11,6 @@ import {
 
 export const DEFAULT_TINS_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
-export type TinsPrivacyLevel = 1 | 2 | 3 | 4;
 
 const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
 const TINS_IDENTITY_SEED = Buffer.from("identity");
@@ -61,6 +60,7 @@ export type TinResolvedIdentity = {
   tin: string;
   name: string;
   authority: PublicKey;
+  ownerPubkeyHash: string;
   registry: PublicKey;
   accountKind: "registry" | "legacy";
   upgradeRequired: boolean;
@@ -191,12 +191,54 @@ function normalizeHash32(value: Buffer | Uint8Array | undefined, label: string):
   return buffer;
 }
 
+function requireHash32(value: Buffer | Uint8Array | undefined, label: string): Buffer {
+  if (!value) throw new Error(`${label} is required`);
+  return normalizeHash32(value, label);
+}
+
+function bytesToHex(value: Buffer | Uint8Array) {
+  return Buffer.from(value).toString("hex");
+}
+
+function resolveEncryptedMasterSeed(params: {
+  encryptedMasterSeed?: Buffer | Uint8Array;
+}) {
+  const value = params.encryptedMasterSeed;
+  if (!value) {
+    throw new Error("encryptedMasterSeed is required for TINS registry mutation serialization");
+  }
+  return Buffer.from(value);
+}
+
+export function createTinOwnerIntentMessage(params: {
+  purpose: "create" | "update";
+  ownerPubkey: PublicKey;
+  tin: bigint | number | string;
+  displayName: string;
+  phoneNumber: string;
+  nonce: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}) {
+  return [
+    "TrustLink TINS Owner Intent",
+    "version=2",
+    `purpose=${params.purpose}`,
+    `ownerPubkey=${params.ownerPubkey.toBase58()}`,
+    `tin=${String(params.tin)}`,
+    `displayName=${params.displayName}`,
+    `phoneNumber=${params.phoneNumber}`,
+    `nonce=${bytesToHex(requireHash32(params.nonce, "nonce"))}`,
+    `expiryTs=${String(params.expiryTs)}`,
+  ].join("\n");
+}
+
 export function createTinOwnerIntentHash(params: {
   purpose: "create" | "update";
   ownerPubkey: PublicKey;
+  tin?: bigint | number | string;
   displayName: string;
-  encryptedPhone: Buffer | Uint8Array;
-  privacyLevel?: TinsPrivacyLevel;
+  phoneNumber?: string;
+  encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
   nonce: Buffer | Uint8Array;
@@ -204,15 +246,30 @@ export function createTinOwnerIntentHash(params: {
 }): Buffer {
   const expiry = Buffer.alloc(8);
   expiry.writeBigInt64LE(BigInt(params.expiryTs));
+
+  const encryptedMasterSeed = params.encryptedMasterSeed;
+  if (!encryptedMasterSeed) {
+    if (params.tin == null) throw new Error("tin is required for TINS owner intent V2 hashing");
+    if (!params.phoneNumber) throw new Error("phoneNumber is required for TINS owner intent V2 hashing");
+    return Buffer.from(sha256(TEXT_ENCODER.encode(createTinOwnerIntentMessage({
+      purpose: params.purpose,
+      ownerPubkey: params.ownerPubkey,
+      tin: params.tin,
+      displayName: params.displayName,
+      phoneNumber: params.phoneNumber,
+      nonce: params.nonce,
+      expiryTs: params.expiryTs,
+    }))));
+  }
+
   return Buffer.from(sha256(Buffer.concat([
     Buffer.from(`TINS_${params.purpose.toUpperCase()}_INTENT_V1`, "utf8"),
     params.ownerPubkey.toBuffer(),
     Buffer.from(params.displayName, "utf8"),
-    Buffer.from(params.encryptedPhone),
-    Buffer.from([params.privacyLevel ?? 1]),
+    Buffer.from(encryptedMasterSeed),
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
     normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-    normalizeHash32(params.nonce, "nonce"),
+    requireHash32(params.nonce, "nonce"),
     expiry,
   ])));
 }
@@ -221,10 +278,11 @@ export function createOwnerIntentSignatureInstruction(params: {
   ownerPubkey: PublicKey;
   intentHash: Buffer | Uint8Array;
   signature: Buffer | Uint8Array;
+  message?: Buffer | Uint8Array;
 }) {
   return Ed25519Program.createInstructionWithPublicKey({
     publicKey: params.ownerPubkey.toBytes(),
-    message: normalizeHash32(params.intentHash, "intentHash"),
+    message: params.message ? Buffer.from(params.message) : normalizeHash32(params.intentHash, "intentHash"),
     signature: Buffer.from(params.signature),
   });
 }
@@ -232,8 +290,7 @@ export function createOwnerIntentSignatureInstruction(params: {
 export function serializeTinCreationRegistryParams(params: {
   ownerPubkey: PublicKey;
   displayName: string;
-  encryptedPhone: Buffer | Uint8Array;
-  privacyLevel?: TinsPrivacyLevel;
+  encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
@@ -245,8 +302,7 @@ export function serializeTinCreationRegistryParams(params: {
 export function serializeTinUpdateParams(params: {
   ownerPubkey: PublicKey;
   displayName: string;
-  encryptedPhone: Buffer | Uint8Array;
-  privacyLevel?: TinsPrivacyLevel;
+  encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
@@ -260,8 +316,7 @@ function serializeTinRegistryMutationParams(
   params: {
     ownerPubkey: PublicKey;
     displayName: string;
-    encryptedPhone: Buffer | Uint8Array;
-    privacyLevel?: TinsPrivacyLevel;
+    encryptedMasterSeed?: Buffer | Uint8Array;
     encryptedMetadataHash?: Buffer | Uint8Array;
     pruConfigurationHash?: Buffer | Uint8Array;
     intentHash: Buffer | Uint8Array;
@@ -269,10 +324,10 @@ function serializeTinRegistryMutationParams(
   },
 ) {
   const parts: Buffer[] = [];
+  const encryptedMasterSeed = resolveEncryptedMasterSeed(params);
   appendPubkey(parts, params.ownerPubkey);
   appendString(parts, params.displayName);
-  appendBytes(parts, params.encryptedPhone);
-  appendU8(parts, params.privacyLevel ?? 1);
+  appendBytes(parts, encryptedMasterSeed);
   parts.push(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
   parts.push(normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"));
   parts.push(normalizeHash32(params.intentHash, "intentHash"));
@@ -286,7 +341,7 @@ export function buildCreateTinInstruction(params: {
   payer: PublicKey;
   identity: PublicKey;
   displayName: string;
-  encryptedPhone: Uint8Array;
+  encryptedMasterSeed: Uint8Array;
   programId?: PublicKey | string | null;
 }) {
   void params;
@@ -480,20 +535,30 @@ export function decodeTinAccount(data: Uint8Array) {
   offset += 4;
   const displayName = buffer.subarray(offset, offset + displayNameLength).toString("utf8");
   offset += displayNameLength;
-  const identityPubkey = new PublicKey(buffer.subarray(offset, offset + 32));
+  const ownerPubkeyHash = buffer.subarray(offset, offset + 32);
   offset += 32;
-  const encryptedPhoneLength = buffer.readUInt32LE(offset);
+  const encryptedMasterSeedLength = buffer.readUInt32LE(offset);
   offset += 4;
-  const encryptedPhone = buffer.subarray(offset, offset + encryptedPhoneLength);
-  offset += encryptedPhoneLength;
+  const encryptedMasterSeed = buffer.subarray(offset, offset + encryptedMasterSeedLength);
+  offset += encryptedMasterSeedLength;
   const createdAt = buffer.readBigInt64LE(offset);
+  offset += 8;
+  const encryptedMetadataHash = offset + 32 <= buffer.length
+    ? buffer.subarray(offset, offset + 32)
+    : null;
+  offset += encryptedMetadataHash ? 32 : 0;
+  const pruConfigurationHash = offset + 32 <= buffer.length
+    ? buffer.subarray(offset, offset + 32)
+    : null;
 
   return {
     tin,
     displayName,
-    identityPubkey,
-    encryptedPhone,
+    ownerPubkeyHash,
+    encryptedMasterSeed,
     createdAt,
+    encryptedMetadataHash,
+    pruConfigurationHash,
   };
 }
 
@@ -800,19 +865,18 @@ export async function resolveTIN(params: {
         `TIN ${String(params.tin)} was not found in TINS program ${programId.toBase58()}`,
       );
     }
-    const creationAuthority = await findLegacyTinCreationAuthority(
-      params.connection,
-      legacy.address,
-    );
     return {
       tin: legacy.decoded.tin.toString(),
       name: legacy.decoded.displayName,
-      authority: creationAuthority ?? legacy.decoded.identityPubkey,
+      authority: legacy.address,
+      ownerPubkeyHash: bytesToHex(legacy.decoded.ownerPubkeyHash),
       registry: legacy.address,
       accountKind: "legacy",
-      upgradeRequired: true,
-      upgradeReason: "Legacy TIN account does not yet store PRU commitments. Run the legacy TIN upgrade before PRU settlement features.",
-      settlementAuthorityVerified: Boolean(creationAuthority),
+      upgradeRequired: !legacy.decoded.pruConfigurationHash,
+      upgradeReason: legacy.decoded.pruConfigurationHash
+        ? null
+        : "Legacy TIN account does not yet store PRU commitments. Run the legacy TIN upgrade before PRU settlement features.",
+      settlementAuthorityVerified: true,
       status: 1,
       createdAt: legacy.decoded.createdAt.toString(),
       socialIdentities: [],
@@ -856,7 +920,8 @@ export async function resolveTIN(params: {
   return {
     tin: String(params.tin),
     name: registry.name,
-    authority: registry.authority,
+    authority: registryPda,
+    ownerPubkeyHash: bytesToHex(sha256(registry.authority.toBytes())),
     registry: registryPda,
     accountKind: "registry",
     upgradeRequired: false,

@@ -38,13 +38,11 @@ export interface RegisterRequest {
   otp: string;
   displayName: string;
   handle: string;
-  password: string;
   walletAddress?: string;
 }
 
 export interface LoginRequest {
   phoneNumber: string;
-  password: string;
   otp: string;
 }
 

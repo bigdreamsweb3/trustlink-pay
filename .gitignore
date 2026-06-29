@@ -78,5 +78,7 @@ node_modules/
 **/.mempool-store.json
 tracked-node-modules.txt
 git-hygiene-report.txt
-veil-privacy-protocol-vpp/
+
+project_coach/.env
 project_coach/
+vpp/

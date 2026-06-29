@@ -78,8 +78,8 @@ node_modules/
 **/.mempool-store.json
 tracked-node-modules.txt
 git-hygiene-report.txt
+project-coach-observations.md
 
 project_coach/.env
 project_coach/
 vpp/
-project-coach-observations.md

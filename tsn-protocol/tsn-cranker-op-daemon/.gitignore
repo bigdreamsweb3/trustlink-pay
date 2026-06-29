@@ -1,4 +1,5 @@
 .env
+.env.local
 operator-state.json
 operator-state*.json
 node_modules/

@@ -688,6 +688,10 @@ def k_tin_operations() -> str: return f"{MEMPOOL_NS}:tin_operations"
 def k_tin_fees() -> str: return f"{MEMPOOL_NS}:tin_operation_fees"
 def k_tin_registry_shadow() -> str: return f"{MEMPOOL_NS}:tin_registry_shadow"
 def k_tin_pru_routes() -> str: return f"{MEMPOOL_NS}:tin_pru_routes"
+def k_tin_pru_route_sessions() -> str: return f"{MEMPOOL_NS}:tin_pru_route_sessions"
+def k_tin_pru_route_nonces() -> str: return f"{MEMPOOL_NS}:tin_pru_route_nonces"
+def k_tin_read_delegations() -> str: return f"{MEMPOOL_NS}:tin_read_delegations"
+def k_platform_read_keys() -> str: return f"{MEMPOOL_NS}:platform_read_keys"
 
 
 async def hget_all_json(key: str) -> list:
@@ -829,46 +833,6 @@ async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
     except (binascii.Error, TypeError):
         return None
 
-async def find_legacy_tin_creation_authority(identity_pubkey: Pubkey) -> Optional[str]:
-    before: Optional[str] = None
-    oldest_signature: Optional[str] = None
-    for _ in range(5):
-        params: list[Any] = [str(identity_pubkey), {"limit": 1000}]
-        if before:
-            params[1]["before"] = before
-        rpc_response = await solana_rpc("getSignaturesForAddress", params, timeout=20)
-        signatures = rpc_response.get("result") or []
-        if not signatures:
-            break
-        oldest_signature = str(signatures[-1].get("signature") or "")
-        if len(signatures) < 1000:
-            break
-        before = oldest_signature
-    if not oldest_signature:
-        return None
-
-    rpc_response = await solana_rpc(
-        "getTransaction",
-        [
-            oldest_signature,
-            {
-                "commitment": "confirmed",
-                "encoding": "jsonParsed",
-                "maxSupportedTransactionVersion": 0,
-            },
-        ],
-        timeout=20,
-    )
-    value = rpc_response.get("result") or {}
-    account_keys = (((value.get("transaction") or {}).get("message") or {}).get("accountKeys") or [])
-    for account in account_keys:
-        if not isinstance(account, dict) or not account.get("signer"):
-            continue
-        pubkey = str(account.get("pubkey") or "")
-        if pubkey and pubkey != str(identity_pubkey):
-            return pubkey
-    return None
-
 async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Optional[dict[str, Any]]:
     identity_pubkey = get_tins_identity_pda(str(operation["ownerPubkey"]))
     data = await read_tins_account_data(identity_pubkey)
@@ -887,17 +851,14 @@ async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Opt
     owner_pubkey_hash = str(decoded.get("ownerPubkeyHash") or "")
     if owner_pubkey_hash not in {expected_owner_hash, legacy_owner_marker, legacy_identity_marker}:
         return None
-    creation_authority = await find_legacy_tin_creation_authority(identity_pubkey)
-    if not creation_authority:
-        return None
     return {
         "tin": decoded["tin"],
         "ownerPubkey": operation["ownerPubkey"],
         "identityPubkey": str(identity_pubkey),
         "ownerPubkeyHash": owner_pubkey_hash,
         "displayName": decoded["displayName"],
-        "settlementAuthority": creation_authority,
-        "settlementAuthorityVerified": True,
+        "settlementAuthority": None,
+        "settlementAuthorityVerified": False,
     }
 
 async def read_private_replay_sequences() -> tuple[int, int]:
@@ -1269,8 +1230,8 @@ TIN_DEFAULT_FEE_MINT = DEVNET_USDC_MINT
 TIN_FEE_SPLIT_BPS = {
     "verifier": 3_000,
     "submitter": 4_000,
-    "team": 1_000,
-    "reserve_pool": 2_000,
+    "team": 2_000,
+    "reserve_pool": 1_000,
 }
 TIN_DEFAULT_PRU_COUNT = 30
 TIN_OWNER_INTENT_CREATE_DOMAIN_V1 = "TINS_CREATE_INTENT_V1"
@@ -1297,6 +1258,58 @@ class TinOperationFeeRecord(BaseModel):
     status: Literal["pending", "committed", "distributed", "failed"] = "pending"
     createdAt: str
     updatedAt: str
+
+class TinPruPublicAddress(BaseModel):
+    index: int
+    publicKey: str
+    state: str
+
+class TinPruRoutePublicResponse(BaseModel):
+    tin: str
+    pruConfigurationHash: str
+    status: Literal["finalized"]
+    prus: list[TinPruPublicAddress]
+
+class TinPruRouteSessionRequest(BaseModel):
+    tin: str
+    owner_pubkey: str
+    signature: str
+    nonce: str
+    timestamp: int
+
+class TinPruRouteSessionResponse(BaseModel):
+    token: str
+    expiresAt: int
+    tin: str
+
+class TinDelegatedReadRequest(BaseModel):
+    tin: str
+    owner_pubkey: str
+    platform_read_key: str
+    signature: str
+    nonce: str
+    timestamp: int
+    expiry: Optional[int] = None
+
+class TinDelegatedReadResponse(BaseModel):
+    tin: str
+    platformReadKey: str
+    expiresAt: Optional[int] = None
+    status: Literal["active", "revoked"]
+
+class TinDelegatedPlatformRecord(BaseModel):
+    platformReadKey: str
+    contact: Optional[str] = None
+    expiresAt: int
+
+class PlatformReadKeyRegistrationRequest(BaseModel):
+    platform_read_key: str
+    contact: str
+
+class PlatformReadKeyRegistrationResponse(BaseModel):
+    platformReadKey: str
+    contact: str
+    status: Literal["registered"]
 
 class TinOperationRecord(BaseModel):
     intentId: str
@@ -2028,6 +2041,7 @@ async def import_shadow_tin_owner(operation: dict[str, Any], onchain: dict[str, 
 
 async def write_tin_pru_route(operation: dict[str, Any], route: dict[str, Any]) -> None:
     r = await get_mempool_store()
+    owner_pubkey_hash = hashlib.sha256(decode_base58(str(operation["ownerPubkey"]))).hexdigest()
     await r.hset(
         k_tin_pru_routes(),
         str(operation["tin"]),
@@ -2035,7 +2049,7 @@ async def write_tin_pru_route(operation: dict[str, Any], route: dict[str, Any]) 
             {
                 "tin": str(operation["tin"]),
                 "intentId": operation["intentId"],
-                "ownerPubkey": operation["ownerPubkey"],
+                "ownerPubkeyHash": owner_pubkey_hash,
                 "pruConfigurationHash": route["pruConfigurationHash"],
                 "prus": route["prus"],
                 "status": "pending",
@@ -2072,6 +2086,219 @@ async def read_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
     if not isinstance(prus, list) or not prus:
         return None
     return route
+
+def _route_owner_pubkey_hash(route: dict[str, Any]) -> Optional[str]:
+    owner_pubkey_hash = route.get("ownerPubkeyHash")
+    if isinstance(owner_pubkey_hash, str) and owner_pubkey_hash.strip():
+        return owner_pubkey_hash.strip().lower()
+    legacy_owner = route.get("ownerPubkey")
+    if not isinstance(legacy_owner, str) or not legacy_owner.strip():
+        return None
+    try:
+        return hashlib.sha256(decode_base58(legacy_owner.strip())).hexdigest()
+    except ValueError:
+        return None
+
+def public_tin_pru_route(route: dict[str, Any]) -> TinPruRoutePublicResponse:
+    public_prus = []
+    for pru in route.get("prus", []):
+        if not isinstance(pru, dict):
+            continue
+        public_key = str(pru.get("publicKey") or "").strip()
+        if not public_key:
+            continue
+        public_prus.append(
+            TinPruPublicAddress(
+                index=int(pru.get("index") or 0),
+                publicKey=public_key,
+                state=str(pru.get("state") or "ACTIVE"),
+            )
+        )
+    return TinPruRoutePublicResponse(
+        tin=str(route["tin"]),
+        pruConfigurationHash=str(route["pruConfigurationHash"]),
+        status="finalized",
+        prus=public_prus,
+    )
+
+def _build_pru_route_proof_message(
+    *,
+    tin: str,
+    purpose: str,
+    owner_pubkey: str,
+    nonce: str,
+    timestamp: int,
+    platform_read_key: Optional[str] = None,
+    expiry: Optional[int] = None,
+) -> bytes:
+    lines = [
+        "TrustLink TSN PRU Route Authorization",
+        "version=1",
+        f"purpose={purpose}",
+        f"tin={tin}",
+        f"ownerPubkey={owner_pubkey}",
+        f"nonce={nonce}",
+        f"timestamp={timestamp}",
+    ]
+    if platform_read_key:
+        lines.append(f"platformReadKey={platform_read_key}")
+    if expiry:
+        lines.append(f"expiry={expiry}")
+    return "\n".join(lines).encode("utf-8")
+
+def _build_platform_pru_route_request_message(*, tin: str, platform_read_key: str) -> bytes:
+    return "\n".join(
+        [
+            "TrustLink TSN Platform PRU Route Request",
+            "version=1",
+            f"tin={tin}",
+            f"platformReadKey={platform_read_key}",
+        ]
+    ).encode("utf-8")
+
+def _decode_base64_signature(value: str) -> bytes:
+    try:
+        signature = base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(403, "signature is not valid base64") from exc
+    if len(signature) != 64:
+        raise HTTPException(403, "signature must be 64 bytes")
+    return signature
+
+def _verify_ed25519_signature(*, public_key: str, message: bytes, signature_base64: str) -> None:
+    try:
+        VerifyKey(decode_base58(public_key)).verify(message, _decode_base64_signature(signature_base64))
+    except (BadSignatureError, ValueError) as exc:
+        raise HTTPException(403, "signature verification failed") from exc
+
+async def _read_onchain_tin_owner_hash(*, tin: str, owner_pubkey: str) -> Optional[str]:
+    identity_pubkey = get_tins_identity_pda(owner_pubkey)
+    data = await read_tins_account_data(identity_pubkey)
+    if not data:
+        return None
+    try:
+        decoded = decode_tin_account_header(data)
+    except ValueError:
+        return None
+    if str(decoded.get("tin")) != str(tin):
+        return None
+    return str(decoded.get("ownerPubkeyHash") or "").lower()
+
+async def _assert_owner_controls_tin(
+    *,
+    tin: str,
+    owner_pubkey: str,
+    accepted_owner_hash: Optional[str] = None,
+) -> str:
+    owner_hash = hashlib.sha256(decode_base58(owner_pubkey)).hexdigest()
+    onchain_hash = await _read_onchain_tin_owner_hash(tin=tin, owner_pubkey=owner_pubkey)
+    if not onchain_hash:
+        raise HTTPException(403, "TIN owner account was not found on-chain")
+    if onchain_hash != owner_hash and accepted_owner_hash != owner_hash:
+        raise HTTPException(403, "owner_pubkey does not match the on-chain TIN owner commitment")
+    return owner_hash
+
+async def _assert_pru_route_nonce_unused(*, purpose: str, tin: str, owner_pubkey: str, nonce: str) -> None:
+    now = int(time.time())
+    nonce_key = hashlib.sha256(f"{purpose}|{tin}|{owner_pubkey}|{nonce}".encode("utf-8")).hexdigest()
+    r = await get_mempool_store()
+    for key, raw in list((await r.hgetall(k_tin_pru_route_nonces())).items()):
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if int(value.get("expiresAt") or 0) <= now:
+            await r.hset(k_tin_pru_route_nonces(), key, json.dumps({"expired": True, "expiresAt": 0}))
+    existing = await r.hget(k_tin_pru_route_nonces(), nonce_key)
+    if existing:
+        try:
+            value = json.loads(existing)
+        except json.JSONDecodeError:
+            value = {}
+        if int(value.get("expiresAt") or 0) > now:
+            raise HTTPException(403, "nonce has already been used")
+    await r.hset(
+        k_tin_pru_route_nonces(),
+        nonce_key,
+        json.dumps({"tin": tin, "ownerPubkey": owner_pubkey, "purpose": purpose, "expiresAt": now + 300}),
+    )
+
+async def _verify_owner_pru_route_proof(
+    *,
+    tin: str,
+    owner_pubkey: str,
+    signature: str,
+    nonce: str,
+    timestamp: int,
+    purpose: str,
+    platform_read_key: Optional[str] = None,
+    expiry: Optional[int] = None,
+    accepted_owner_hash: Optional[str] = None,
+) -> str:
+    now = int(time.time())
+    if abs(now - int(timestamp)) > 60:
+        raise HTTPException(403, "authorization timestamp is outside the allowed window")
+    await _assert_pru_route_nonce_unused(purpose=purpose, tin=tin, owner_pubkey=owner_pubkey, nonce=nonce)
+    owner_hash = await _assert_owner_controls_tin(
+        tin=tin,
+        owner_pubkey=owner_pubkey,
+        accepted_owner_hash=accepted_owner_hash,
+    )
+    message = _build_pru_route_proof_message(
+        tin=tin,
+        purpose=purpose,
+        owner_pubkey=owner_pubkey,
+        nonce=nonce,
+        timestamp=timestamp,
+        platform_read_key=platform_read_key,
+        expiry=expiry,
+    )
+    _verify_ed25519_signature(public_key=owner_pubkey, message=message, signature_base64=signature)
+    return owner_hash
+
+async def _create_pru_route_session(*, tin: str, owner_hash: str) -> TinPruRouteSessionResponse:
+    token = secrets.token_urlsafe(32)
+    expires_at = int(time.time()) + 24 * 60 * 60
+    r = await get_mempool_store()
+    await r.hset(
+        k_tin_pru_route_sessions(),
+        token,
+        json.dumps({"tin": tin, "ownerPubkeyHash": owner_hash, "expiresAt": expires_at}),
+    )
+    return TinPruRouteSessionResponse(token=token, expiresAt=expires_at, tin=tin)
+
+async def _read_pru_route_session(token: str) -> Optional[dict[str, Any]]:
+    raw = await (await get_mempool_store()).hget(k_tin_pru_route_sessions(), token)
+    if not raw:
+        return None
+    try:
+        session = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if int(session.get("expiresAt") or 0) <= int(time.time()):
+        return None
+    return session
+
+def _bearer_token(authorization: Optional[str]) -> Optional[str]:
+    if not authorization:
+        return None
+    prefix = "Bearer "
+    return authorization[len(prefix):].strip() if authorization.startswith(prefix) else authorization.strip()
+
+def _delegation_key(tin: str, platform_read_key: str) -> str:
+    return hashlib.sha256(f"{tin}|{platform_read_key}".encode("utf-8")).hexdigest()
+
+async def _read_active_delegation(*, tin: str, platform_read_key: str) -> Optional[dict[str, Any]]:
+    raw = await (await get_mempool_store()).hget(k_tin_read_delegations(), _delegation_key(tin, platform_read_key))
+    if not raw:
+        return None
+    try:
+        delegation = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if int(delegation.get("expiresAt") or 0) <= int(time.time()):
+        return None
+    return delegation
 
 def select_pru_for_payment(route: dict[str, Any], intent: dict[str, Any], token_mint: str) -> dict[str, Any]:
     prus = [pru for pru in route.get("prus", []) if str(pru.get("state") or "ACTIVE") != "SWEPT"]
@@ -2653,6 +2880,183 @@ async def get_tin_operation(intent_id: str = ApiPath(...)) -> PublicTinOperation
     if not raw:
         raise HTTPException(404, f"TIN operation {intent_id} not found")
     return public_tin_operation(json.loads(raw))
+
+@app.post("/tin-routes/session", response_model=TinPruRouteSessionResponse)
+async def create_tin_pru_route_session(body: TinPruRouteSessionRequest) -> TinPruRouteSessionResponse:
+    route = await read_tin_pru_route(str(body.tin))
+    if not route:
+        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
+    expected_hash = _route_owner_pubkey_hash(route)
+    owner_hash = await _verify_owner_pru_route_proof(
+        tin=str(body.tin),
+        owner_pubkey=body.owner_pubkey,
+        signature=body.signature,
+        nonce=body.nonce,
+        timestamp=body.timestamp,
+        purpose="pru_route_lookup",
+        accepted_owner_hash=expected_hash,
+    )
+    if expected_hash and expected_hash != owner_hash:
+        raise HTTPException(403, "owner proof does not match the finalized PRU route")
+    return await _create_pru_route_session(tin=str(body.tin), owner_hash=owner_hash)
+
+@app.post("/platform/register-read-key", response_model=PlatformReadKeyRegistrationResponse)
+async def register_platform_read_key(body: PlatformReadKeyRegistrationRequest) -> PlatformReadKeyRegistrationResponse:
+    try:
+        decode_base58(body.platform_read_key)
+    except ValueError as exc:
+        raise HTTPException(422, "platform_read_key is not valid base58") from exc
+    contact = body.contact.strip()
+    if not contact:
+        raise HTTPException(422, "contact is required")
+    await (await get_mempool_store()).hset(
+        k_platform_read_keys(),
+        body.platform_read_key,
+        json.dumps(
+            {
+                "platformReadKey": body.platform_read_key,
+                "contact": contact,
+                "registeredAt": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+    )
+    return PlatformReadKeyRegistrationResponse(
+        platformReadKey=body.platform_read_key,
+        contact=contact,
+        status="registered",
+    )
+
+@app.post("/tin-routes/delegate", response_model=TinDelegatedReadResponse)
+async def grant_tin_delegated_read_access(body: TinDelegatedReadRequest) -> TinDelegatedReadResponse:
+    platform_raw = await (await get_mempool_store()).hget(k_platform_read_keys(), body.platform_read_key)
+    if not platform_raw:
+        raise HTTPException(403, "platform read key is not registered")
+    expires_at = int(body.expiry or (int(time.time()) + 30 * 24 * 60 * 60))
+    if expires_at <= int(time.time()):
+        raise HTTPException(422, "delegation expiry must be in the future")
+    route = await read_tin_pru_route(str(body.tin))
+    if not route:
+        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
+    await _verify_owner_pru_route_proof(
+        tin=str(body.tin),
+        owner_pubkey=body.owner_pubkey,
+        signature=body.signature,
+        nonce=body.nonce,
+        timestamp=body.timestamp,
+        purpose="delegate_read_access",
+        platform_read_key=body.platform_read_key,
+        expiry=expires_at,
+        accepted_owner_hash=_route_owner_pubkey_hash(route),
+    )
+    await (await get_mempool_store()).hset(
+        k_tin_read_delegations(),
+        _delegation_key(str(body.tin), body.platform_read_key),
+        json.dumps(
+            {
+                "tin": str(body.tin),
+                "platformReadKey": body.platform_read_key,
+                "expiresAt": expires_at,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+    )
+    return TinDelegatedReadResponse(
+        tin=str(body.tin),
+        platformReadKey=body.platform_read_key,
+        expiresAt=expires_at,
+        status="active",
+    )
+
+@app.delete("/tin-routes/delegate", response_model=TinDelegatedReadResponse)
+async def revoke_tin_delegated_read_access(body: TinDelegatedReadRequest) -> TinDelegatedReadResponse:
+    route = await read_tin_pru_route(str(body.tin))
+    if not route:
+        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
+    await _verify_owner_pru_route_proof(
+        tin=str(body.tin),
+        owner_pubkey=body.owner_pubkey,
+        signature=body.signature,
+        nonce=body.nonce,
+        timestamp=body.timestamp,
+        purpose="revoke_read_access",
+        platform_read_key=body.platform_read_key,
+        accepted_owner_hash=_route_owner_pubkey_hash(route),
+    )
+    await (await get_mempool_store()).hset(
+        k_tin_read_delegations(),
+        _delegation_key(str(body.tin), body.platform_read_key),
+        json.dumps(
+            {
+                "tin": str(body.tin),
+                "platformReadKey": body.platform_read_key,
+                "expiresAt": 0,
+                "revokedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+    )
+    return TinDelegatedReadResponse(
+        tin=str(body.tin),
+        platformReadKey=body.platform_read_key,
+        status="revoked",
+    )
+
+@app.get("/tin-routes/{tin}/delegations", response_model=list[TinDelegatedPlatformRecord])
+async def list_tin_delegated_read_access(
+    tin: str = ApiPath(...),
+    authorization: Optional[str] = Header(None),
+) -> list[TinDelegatedPlatformRecord]:
+    token = _bearer_token(authorization)
+    session = await _read_pru_route_session(token or "")
+    if not session or str(session.get("tin")) != str(tin):
+        raise HTTPException(403, "valid PRU route session is required")
+    platform_records = await (await get_mempool_store()).hgetall(k_platform_read_keys())
+    rows: list[TinDelegatedPlatformRecord] = []
+    now = int(time.time())
+    for raw in (await (await get_mempool_store()).hgetall(k_tin_read_delegations())).values():
+        try:
+            delegation = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if str(delegation.get("tin")) != str(tin):
+            continue
+        expires_at = int(delegation.get("expiresAt") or 0)
+        if expires_at <= now:
+            continue
+        platform_key = str(delegation.get("platformReadKey") or "")
+        platform_contact = None
+        if platform_key in platform_records:
+            try:
+                platform_contact = json.loads(platform_records[platform_key]).get("contact")
+            except json.JSONDecodeError:
+                platform_contact = None
+        rows.append(TinDelegatedPlatformRecord(platformReadKey=platform_key, contact=platform_contact, expiresAt=expires_at))
+    return rows
+
+@app.get("/tin-routes/{tin}/prus", response_model=TinPruRoutePublicResponse)
+async def get_tin_pru_public_addresses(
+    tin: str = ApiPath(...),
+    authorization: Optional[str] = Header(None),
+    platform_read_key: Optional[str] = Header(None, alias="x-platform-key"),
+    platform_signature: Optional[str] = Header(None, alias="x-platform-signature"),
+) -> TinPruRoutePublicResponse:
+    route = await read_tin_pru_route(tin)
+    if not route:
+        raise HTTPException(404, f"Finalized PRU route for TIN {tin} not found")
+    token = _bearer_token(authorization)
+    session = await _read_pru_route_session(token or "")
+    if session and str(session.get("tin")) == str(tin):
+        return public_tin_pru_route(route)
+    if platform_read_key and platform_signature:
+        delegation = await _read_active_delegation(tin=str(tin), platform_read_key=platform_read_key)
+        if not delegation:
+            raise HTTPException(403, "platform read key has no active delegation for this TIN")
+        _verify_ed25519_signature(
+            public_key=platform_read_key,
+            message=_build_platform_pru_route_request_message(tin=str(tin), platform_read_key=platform_read_key),
+            signature_base64=platform_signature,
+        )
+        return public_tin_pru_route(route)
+    raise HTTPException(403, "valid PRU route session or delegated platform signature is required")
 
 async def patch_tin_operation(intent_id: str, patch: dict[str, Any], allowed_statuses: set[str]) -> TinOperationRecord:
     r = await get_mempool_store()

@@ -38,6 +38,7 @@ const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_INTENT_SEED = Buffer.from("tsn_intent");
 const TSN_VERIFIER_SEED = Buffer.from("verifier");
 const TSN_TREASURY_SEED = Buffer.from("tsn_treasury");
+const TSN_RESERVE_POOL_SEED = Buffer.from("tsn_reserve_pool");
 const TSN_CRANKER_SEED = Buffer.from("tsn_cranker");
 const TSN_CRANKER_VAULT_SEED = Buffer.from("tsn_cranker_vault");
 const TSN_CRANKER_VAULT_AUTHORITY_SEED = Buffer.from("tsn_cranker_vault_authority");
@@ -67,6 +68,10 @@ export function getTsnVerifierPda(): PublicKey {
 
 export function getTsnTreasuryPda(): PublicKey {
   return PublicKey.findProgramAddressSync([TSN_TREASURY_SEED], getVerifiedTsnProgramId())[0];
+}
+
+export function getTsnReservePoolPda(): PublicKey {
+  return PublicKey.findProgramAddressSync([TSN_RESERVE_POOL_SEED], getVerifiedTsnProgramId())[0];
 }
 
 export function getTsnCrankerPda(params: { motherEscrow: PublicKey; operator: PublicKey }): PublicKey {
@@ -862,6 +867,11 @@ export async function tsnExecuteVaultPayoutOnChain(params: {
   const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
   const recipientTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.recipientWallet);
+  const operatorTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, params.operator.publicKey);
+  const treasuryOwner = getTsnTreasuryPda();
+  const treasuryTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, treasuryOwner, true);
+  const reservePoolOwner = getTsnReservePoolPda();
+  const reservePoolTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, reservePoolOwner, true);
 
   const ix = new TransactionInstruction({
     programId: getVerifiedTsnProgramId(),
@@ -874,6 +884,9 @@ export async function tsnExecuteVaultPayoutOnChain(params: {
       { pubkey: vaultAuthority, isSigner: false, isWritable: false },
       { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
       { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: operatorTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: reservePoolTokenAccount, isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
     data: Buffer.concat([
@@ -887,13 +900,36 @@ export async function tsnExecuteVaultPayoutOnChain(params: {
   });
 
   const tx = new Transaction({ feePayer: params.operator.publicKey });
-  const recipientTokenAccountInfo = await connection.getAccountInfo(recipientTokenAccount, "confirmed");
-  if (!recipientTokenAccountInfo) {
+  const tokenAccounts = [
+    {
+      address: recipientTokenAccount,
+      owner: params.recipientWallet,
+      allowOwnerOffCurve: false,
+    },
+    {
+      address: operatorTokenAccount,
+      owner: params.operator.publicKey,
+      allowOwnerOffCurve: false,
+    },
+    {
+      address: treasuryTokenAccount,
+      owner: treasuryOwner,
+      allowOwnerOffCurve: true,
+    },
+    {
+      address: reservePoolTokenAccount,
+      owner: reservePoolOwner,
+      allowOwnerOffCurve: true,
+    },
+  ];
+  for (const tokenAccount of tokenAccounts) {
+    const info = await connection.getAccountInfo(tokenAccount.address, "confirmed");
+    if (info) continue;
     tx.add(
       createAssociatedTokenAccountInstruction(
         params.operator.publicKey,
-        recipientTokenAccount,
-        params.recipientWallet,
+        tokenAccount.address,
+        tokenAccount.owner,
         params.tokenMint,
         SPL_TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID,

@@ -52,6 +52,10 @@ The protocol should show a clear difference between:
 
 If a TIN has no verified name, the UI should say so plainly.
 
+## On-Chain Account Privacy Model
+
+The TIN account stores only public identity fields, encrypted recovery material, and one-way hash commitments. It never stores the owner's wallet address or PRU addresses in readable form. The full field-level privacy model is documented in [TIN Account Data Structure](./TIN-ACCOUNT-DATA-STRUCTURE.md).
+
 ## Social Identity Encryption
 
 Social identities are optional links such as WhatsApp, email, or X.
@@ -134,11 +138,38 @@ Every TIN starts with **exactly 30 PRUs**. PRUs are **token-agnostic**: one PRU 
 
 TrustLink backend is not a bridge in this flow. It can cache identity state for the app, but it must never proxy TIN creation, upgrade, or update requests into TSN.
 
-### Receiving, spending, and ATA creation
+### Receiving and ATA creation
 
 - Receiving resolves the finalized PRU route for the destination TIN and selects an active PRU deterministically for the incoming payment and token. The selected PRU receives the net amount after recipient fee deduction.
-- Spending uses a randomly selected PRU signing key in the SDK, then records spend lifecycle state through TSN + Crankers. This breaks the pattern where the same wallet key is always active.
 - Crankers create token ATAs lazily on first receipt for a PRU/token pair. TSN subsidizes the first few ATA rents per PRU as acquisition cost; after the subsidy window, a small activation fee can be deducted from the incoming amount.
+
+### TIN balance
+
+The dashboard shows a unified TIN balance by reading the finalized PRU public route from the TSN mempool with the owner's hash commitment, then querying supported token accounts for all 30 PRU public addresses through the RPC gateway. The frontend receives public PRU addresses only. It does not receive PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs.
+
+The displayed TIN balance is the sum of all non-zero supported token balances across the active PRUs linked to the authenticated TIN. This balance is shown together with the main wallet balance so the user sees one spendable payment balance while the routing still settles into PRUs.
+
+## PRU Route Authentication and Delegated Access
+
+PRU public addresses are private route metadata. They are not exposed through an unauthenticated TIN lookup because revealing them would make it easier to watch a recipient's payment routes. A caller must prove that it is the TIN owner or a platform that the owner explicitly trusted.
+
+### Owner route sessions
+
+The frontend loads a TIN balance through the TSN SDK. The SDK builds a plain UTF-8 ownership proof message with the TIN, purpose `pru_route_lookup`, owner public key, nonce, and timestamp. The wallet signs that message with `signMessage`; it never signs a Solana transaction and no fee is charged.
+
+The signed proof is sent to the TSN mempool at `POST /tin-routes/session`. The mempool verifies the on-chain owner pubkey commitment, the Ed25519 signature, a one-use nonce, and a fresh timestamp. If the proof is valid, the mempool returns a 24-hour route session token. The SDK stores this token in memory only, keyed by TIN. It is not written to `localStorage` or `sessionStorage`.
+
+The SDK then calls `GET /tin-routes/:tin/prus` with the session token. The endpoint returns only public PRU addresses and route state. It does not return PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs.
+
+### Delegated platform access
+
+A trusted platform can register a read key with `POST /platform/register-read-key`. Registration only identifies the platform read key and contact. It does not grant access to any user TIN.
+
+The TIN owner grants a platform access by signing a plain delegation message with purpose `delegate_read_access`. The signed grant is sent to `POST /tin-routes/delegate` with the platform read key and expiry. The default SDK grant duration is 30 days. The owner can revoke access by signing a `revoke_read_access` message and sending it to `DELETE /tin-routes/delegate`.
+
+After a grant is active, the platform can call `GET /tin-routes/:tin/prus` using its platform key and a signature proving control of that key. If the grant is active and unexpired, the mempool returns the public PRU address list. If the grant is expired, revoked, or missing, the request returns `403`.
+
+Delegated read access is read-only. It can reveal public PRU addresses for balance reads, but it cannot authorize spending, sweeping, TIN updates, PRU lifecycle mutation, or any on-chain transaction.
 
 ### Implementation notes
 
@@ -168,7 +199,7 @@ npm run tsn:cranker:start
 
 ### Security & privacy considerations
 
-Hidden: PRU seeds, PRU private keys, raw PRU arrays, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Exposed on-chain: the TIN registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
+Hidden from public views: PRU seeds, PRU private keys, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Authenticated owners can request their finalized public PRU address list for balance reads. Exposed on-chain: the TIN registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
 
 ### Testing notes
 

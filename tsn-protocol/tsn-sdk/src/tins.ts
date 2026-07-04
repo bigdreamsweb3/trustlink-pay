@@ -884,6 +884,30 @@ export async function resolveTIN(params: {
       encryptedSensitiveFields: [],
     };
   }
+  try {
+    const tinAccount = decodeTinAccount(account.data);
+    if (tinAccount.tin.toString() === String(params.tin)) {
+      return {
+        tin: tinAccount.tin.toString(),
+        name: tinAccount.displayName,
+        authority: registryPda,
+        ownerPubkeyHash: bytesToHex(tinAccount.ownerPubkeyHash),
+        registry: registryPda,
+        accountKind: "registry",
+        upgradeRequired: !tinAccount.pruConfigurationHash,
+        upgradeReason: tinAccount.pruConfigurationHash
+          ? null
+          : "TIN account does not yet store PRU commitments. Run the TIN upgrade before PRU settlement features.",
+        settlementAuthorityVerified: true,
+        status: 1,
+        createdAt: tinAccount.createdAt.toString(),
+        socialIdentities: [],
+        sensitiveFields: [],
+        encryptedSensitiveFields: [],
+      };
+    }
+  } catch {
+  }
   const registry = decodeTinsIdentityRegistry(account.data);
   const socialIdentities = await Promise.all(
     registry.socialIdentities.map(async (identity) => ({

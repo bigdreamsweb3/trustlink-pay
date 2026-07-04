@@ -120,9 +120,6 @@ export async function POST(request: Request) {
       if (decoded.tin.toString() !== payload.tin) {
         return fail("Submitted TIN does not match the on-chain TINS account", 400);
       }
-      if (!decoded.identityPubkey.equals(identityPublicKey)) {
-        return fail("On-chain TINS account identity public key mismatch", 400);
-      }
       const ownerPublicKey = decodeTinOwnerPublicKey(account.data);
       if (ownerPublicKey && !ownerPublicKey.equals(walletPublicKey)) {
         return fail("Connected wallet does not own this TINS account", 400);

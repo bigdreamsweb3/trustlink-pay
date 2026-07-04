@@ -29,17 +29,18 @@ pub const TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS: u64 = 10_000;
 // Fee split bps (out of 10_000) for internal settlement distribution.
 // Default policy prioritizes LP incentives while keeping operator and treasury sustainable.
 // Current default:
-// - LP: 87%
-// - Cranker/Operator: 10%
+// - LP: 85%
+// - Cranker/Operator: 8%
 // - Treasury: 5%
-pub const TSN_SPLIT_BPS_CRANKER: u16 = 1_000;
+// - Recovery bonus pool: 2%
+pub const TSN_SPLIT_BPS_CRANKER: u16 = 800;
 pub const TSN_SPLIT_BPS_LP: u16 = 8_500;
 pub const TSN_SPLIT_BPS_TREASURY: u16 = 500;
 pub const TSN_SPLIT_BPS_RECOVERY_BONUS: u16 = 200;
 
 pub const TSN_TIN_FEE_SPLIT_BPS_VERIFY_CRANKER: u16 = 3_000;
 pub const TSN_TIN_FEE_SPLIT_BPS_SUBMIT_CRANKER: u16 = 4_000;
-pub const TSN_TIN_FEE_SPLIT_BPS_TEAM: u16 = 1_000;
-pub const TSN_TIN_FEE_SPLIT_BPS_RESERVE_POOL: u16 = 2_000;
+pub const TSN_TIN_FEE_SPLIT_BPS_TEAM: u16 = 2_000;
+pub const TSN_TIN_FEE_SPLIT_BPS_RESERVE_POOL: u16 = 1_000;
 
 pub const BPS_DENOMINATOR: u64 = 10_000;

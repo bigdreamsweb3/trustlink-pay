@@ -27,6 +27,7 @@ import {
   shouldPollTsnPayment,
 } from "@/src/lib/formatters";
 import { formatPaymentUsd } from "@/src/lib/payment-display";
+import { loadTinTokenBalances } from "@/src/lib/tin-balance";
 import { resolveTinFromChain, type BrowserResolvedTin } from "@/src/lib/tins";
 import type {
   IdentitySecurityResponse,
@@ -184,11 +185,15 @@ export function DashboardExperience() {
     completePendingAuth,
     logout,
   } = useAuthenticatedSession("/app");
-  const { walletAddress } = useWallet();
+  const { session: walletSession, walletAddress } = useWallet();
   const { showToast } = useToast();
   const router = useRouter();
   const [walletTokens, setWalletTokens] = useState<WalletTokenOption[]>([]);
   const [walletTokenLoading, setWalletTokenLoading] = useState(false);
+  const [tinTokens, setTinTokens] = useState<WalletTokenOption[]>([]);
+  const [tinTokenLoading, setTinTokenLoading] = useState(false);
+  const [tinPruCount, setTinPruCount] = useState(0);
+  const [tinBalanceStatus, setTinBalanceStatus] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
@@ -246,9 +251,17 @@ export function DashboardExperience() {
     void loadIdentitySecurity(accessToken);
   }, [accessToken, user]);
 
-  const supportedBalanceUsd = useMemo(
+  const walletBalanceUsd = useMemo(
     () => walletTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0),
     [walletTokens],
+  );
+  const tinBalanceUsd = useMemo(
+    () => tinTokens.reduce((s, t) => s + (t.balanceUsd ?? 0), 0),
+    [tinTokens],
+  );
+  const supportedBalanceUsd = useMemo(
+    () => Number((walletBalanceUsd + tinBalanceUsd).toFixed(2)),
+    [walletBalanceUsd, tinBalanceUsd],
   );
   const combinedVisibleBalanceUsd = useMemo(
     () => Number((supportedBalanceUsd + totalPendingUsd).toFixed(2)),
@@ -313,6 +326,49 @@ export function DashboardExperience() {
       cancelled = true;
     };
   }, [activeTin]);
+
+  useEffect(() => {
+    if (!activeTin || !walletSession || walletTokens.length === 0) {
+      setTinTokens([]);
+      setTinPruCount(0);
+      setTinBalanceStatus(null);
+      return;
+    }
+    const tin = activeTin;
+    const session = walletSession;
+    const ctrl = new AbortController();
+    async function load() {
+      setTinTokenLoading(true);
+      try {
+        showToast("Sign to load your TIN balance. This does not cost any fees and does not send a transaction.");
+        const result = await loadTinTokenBalances({
+          tin,
+          walletSession: session,
+          supportedTokens: walletTokens,
+          signal: ctrl.signal,
+        });
+        if (!ctrl.signal.aborted) {
+          setTinTokens(result.tokens);
+          setTinPruCount(result.pruCount);
+          setTinBalanceStatus(
+            result.tokens.length > 0
+              ? `${result.nonZeroPruCount} funded PRUs`
+              : `${result.pruCount} PRUs scanned`,
+          );
+        }
+      } catch (error) {
+        if (!ctrl.signal.aborted) {
+          setTinTokens([]);
+          setTinPruCount(0);
+          setTinBalanceStatus(error instanceof Error ? error.message : "TIN PRU route unavailable");
+        }
+      } finally {
+        if (!ctrl.signal.aborted) setTinTokenLoading(false);
+      }
+    }
+    void load();
+    return () => ctrl.abort();
+  }, [activeTin, walletSession, walletTokens, showToast]);
 
   useEffect(() => {
     if (!accessToken || !user || !hasPendingStatus) return;
@@ -518,7 +574,7 @@ export function DashboardExperience() {
                 </div>
 
                 <div className="mt-1 flex items-center gap-2.5">
-                  {walletTokenLoading ? (
+                  {walletTokenLoading || tinTokenLoading ? (
                     <div className="text-[1.8rem] font-bold tracking-tight text-text">
                       ...
                     </div>
@@ -915,7 +971,7 @@ export function DashboardExperience() {
           <div className="tl-panel-header rounded-[22px] hidden md:block">
             <div className="flex items-start justify-between mx-[0.75rem] mb-3">
               <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">
-                Wallet
+                Wallet + TIN
               </div>
               <div className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] pl-2.5 pr-1 py-0.5">
                 <WalletIcon
@@ -957,15 +1013,47 @@ export function DashboardExperience() {
                     Connect a wallet to see your tokens
                   </span>
                 </div>
-              ) : walletTokens.length === 0 ? (
+              ) : walletTokens.length === 0 && tinTokens.length === 0 ? (
                 <div className="py-2 text-[0.78rem] text-[var(--muted)]">
                   No supported tokens found
                 </div>
               ) : (
-                <div className="">
+                <div className="space-y-4">
+                  {tinTokens.length > 0 ? (
+                    <div>
+                      <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
+                        <span>TIN balance</span>
+                        <span>{tinPruCount} PRUs</span>
+                      </div>
+                      {tinTokens.slice(0, 5).map((token) => (
+                        <div
+                          key={`tin-${token.symbol}`}
+                          className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--accent-soft)] text-[0.56rem] font-bold text-accent">
+                              {token.symbol.slice(0, 3)}
+                            </div>
+                            <span className="tl-body-sm font-medium text-[var(--text)]">
+                              {token.symbol}
+                            </span>
+                          </div>
+                          <span className="tl-body-sm font-semibold text-[var(--text)]">
+                            {balanceVisible
+                              ? formatPaymentUsd(token.balanceUsd ?? 0)
+                              : "****"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div>
+                    <div className="mb-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
+                      Main wallet
+                    </div>
                   {walletTokens.slice(0, 5).map((token) => (
                     <div
-                      key={token.symbol}
+                      key={`wallet-${token.symbol}`}
                       className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
                     >
                       <div className="flex items-center gap-2.5">
@@ -983,6 +1071,7 @@ export function DashboardExperience() {
                       </span>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1096,11 +1185,16 @@ export function DashboardExperience() {
                   sub: null,
                 },
                 {
-                  label: "Wallet",
-                  value: formatPaymentUsd(supportedBalanceUsd),
+                  label: "Main wallet",
+                  value: formatPaymentUsd(walletBalanceUsd),
                   sub: walletAddress
                     ? shortenAddress(walletAddress)
                     : "Not connected",
+                },
+                {
+                  label: "TIN balance",
+                  value: formatPaymentUsd(tinBalanceUsd),
+                  sub: tinBalanceStatus ?? (tinPruCount > 0 ? `${tinPruCount} PRUs scanned` : "No PRU route loaded"),
                 },
                 {
                   label: "Escrow",

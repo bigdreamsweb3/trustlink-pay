@@ -41,8 +41,8 @@ export interface ClaimRequestRecord {
 export const TIN_OPERATION_FEE_SPLIT_BPS = {
   verifier: 3000,
   submitter: 4000,
-  team: 1000,
-  reservePool: 2000,
+  team: 2000,
+  reservePool: 1000,
 } as const;
 
 export const TIN_CREATION_FEE_USDC = "0.05" as const;

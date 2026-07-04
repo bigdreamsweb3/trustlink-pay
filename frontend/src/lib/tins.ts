@@ -102,11 +102,24 @@ function getFrontendTinsProgramId() {
   return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
 }
 
-function getFrontendTsnMempoolUrl() {
+export function getFrontendTsnMempoolUrl() {
   const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL?.trim();
   if (!url) throw new Error("NEXT_PUBLIC_TSN_MEMPOOL_URL is missing");
   return url.replace(/\/$/, "");
 }
+
+export type TinPruPublicAddress = {
+  index: number;
+  publicKey: string;
+  state: string;
+};
+
+export type TinPruRoutePublicResponse = {
+  tin: string;
+  pruConfigurationHash: string;
+  status: "finalized";
+  prus: TinPruPublicAddress[];
+};
 
 export type BrowserResolvedTin = {
   tin: string;
@@ -181,6 +194,26 @@ export const resolveTinFromChain = traceFunction(resolveTinFromChainImpl, {
   level: "debug",
   includeReturn: false,
 });
+
+export async function fetchTinPruPublicAddresses(params: {
+  tin: string;
+  ownerPubkeyHash: string;
+  signal?: AbortSignal;
+}): Promise<TinPruRoutePublicResponse> {
+  const response = await fetch(
+    `${getFrontendTsnMempoolUrl()}/tin-routes/${encodeURIComponent(params.tin)}/prus`,
+    {
+      headers: {
+        "x-owner-pubkey-hash": params.ownerPubkeyHash,
+      },
+      signal: params.signal,
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`TIN PRU route lookup failed (${response.status})`);
+  }
+  return response.json() as Promise<TinPruRoutePublicResponse>;
+}
 
 function buildTinBindingMessage(params: {
   userPhoneNumber: string;

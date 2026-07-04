@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::tsn::{
-    constants::TSN_CRANKER_VAULT_AUTHORITY_SEED,
+    constants::{BPS_DENOMINATOR, TSN_CRANKER_VAULT_AUTHORITY_SEED, TSN_SPLIT_BPS_RECOVERY_BONUS},
     errors::TsnError,
     events::TsnProofSubmitted,
     state::{Cranker, CrankerVault, IntentStatus, MotherEscrow, PaymentIntent},
@@ -64,6 +64,12 @@ pub struct SubmitProof<'info> {
 
     #[account(
         mut,
+        constraint = reserve_pool_token_account.mint == intent.token_mint
+    )]
+    pub reserve_pool_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
         constraint = recipient_token_account.mint == intent.token_mint
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
@@ -90,9 +96,16 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
     require!(payout_amount <= intent.amount, TsnError::InvalidPayoutAmount);
 
     let fee_amount = intent.amount.saturating_sub(payout_amount);
-    let operator_fee_amount = 0;
-    let lp_fee_amount = fee_amount;
-    let treasury_fee_amount = 0;
+    let operator_fee_amount = split_fee_floor(fee_amount, mother_escrow.fee_split_cranker_bps)?;
+    let treasury_fee_amount = split_fee_floor(fee_amount, mother_escrow.fee_split_treasury_bps)?;
+    let reserve_fee_amount = split_fee_floor(fee_amount, TSN_SPLIT_BPS_RECOVERY_BONUS)?;
+    let external_fee_amount = operator_fee_amount
+        .checked_add(treasury_fee_amount)
+        .and_then(|value| value.checked_add(reserve_fee_amount))
+        .ok_or(TsnError::FeeSplitOverflow)?;
+    let lp_fee_amount = fee_amount
+        .checked_sub(external_fee_amount)
+        .ok_or(TsnError::InvalidFeeSplit)?;
 
     let cranker_vault_key = ctx.accounts.cranker_vault.key();
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -114,8 +127,35 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
         payout_amount,
     )?;
 
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.operator_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        operator_fee_amount,
+    )?;
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.treasury_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        treasury_fee_amount,
+    )?;
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.reserve_pool_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        reserve_fee_amount,
+    )?;
+
     ctx.accounts.cranker_vault.total_liquidity =
-        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(payout_amount);
+        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(
+            payout_amount.saturating_add(external_fee_amount)
+        );
     ctx.accounts.cranker_vault.total_rewards_accrued = ctx
         .accounts
         .cranker_vault
@@ -140,4 +180,36 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
         treasury_fee_amount,
     });
     Ok(())
+}
+
+fn split_fee_floor(amount: u64, bps: u16) -> Result<u64> {
+    amount
+        .checked_mul(bps as u64)
+        .and_then(|value| value.checked_div(BPS_DENOMINATOR))
+        .ok_or(TsnError::FeeSplitOverflow.into())
+}
+
+fn transfer_from_vault<'info>(
+    token_program: AccountInfo<'info>,
+    from: AccountInfo<'info>,
+    to: AccountInfo<'info>,
+    authority: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    amount: u64,
+) -> Result<()> {
+    if amount == 0 {
+        return Ok(());
+    }
+    token::transfer(
+        CpiContext::new_with_signer(
+            token_program,
+            Transfer {
+                from,
+                to,
+                authority,
+            },
+            signer_seeds,
+        ),
+        amount,
+    )
 }

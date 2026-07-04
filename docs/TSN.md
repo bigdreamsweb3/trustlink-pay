@@ -43,3 +43,45 @@ Crankers never need custody. They verify domain binding, owner proof, replay sta
 ### Testing notes
 
 Run `npm --prefix tsn-protocol/tsn-sdk test`. The PRU security test suite covers all seven expected-fail attack scenarios: malicious signature harvesting, fake TSN intent, captured PRU signature replay, wallet-adapter PRU access absence, nonce replay, cross-TIN spend, and inactive/expired runtime attempts.
+
+## Normal Payment Fee Distribution
+
+### Summary
+
+Every normal TSN payment settlement separates the recipient payout from the recipient-side protocol fee. The recipient PRU receives the net payout amount. The fee is split during settlement so it does not remain silently inside the Cranker vault.
+
+### Split
+
+The normal payment fee split is:
+
+- 85% stays in the LP Cranker vault and is recorded as LP rewards.
+- 8% transfers to the settlement Cranker operator token account.
+- 5% transfers to the TSN protocol treasury token account.
+- 2% transfers to the TSN reserve pool token account.
+
+The LP share remains in the Cranker vault because that vault is the active liquidity vault for the payout. The non-LP shares are transferred out of the vault in the same payout transaction.
+
+### Settlement behavior
+
+For a payment amount `A` and recipient fee `F`:
+
+```text
+Recipient PRU receives: A - F
+LP vault reward:        F * 85%
+Cranker operator:       F * 8%
+Protocol treasury:      F * 5%
+Reserve pool:           F * 2%
+```
+
+Integer division is deterministic in base units. Any rounding remainder stays with the LP vault share because the LP share is calculated as the fee remainder after operator, treasury, and reserve transfers.
+
+### Verification
+
+A successful private PRU payout transaction includes:
+
+1. Cranker vault to recipient PRU token account for the net payout.
+2. Cranker vault to operator token account for the 8% Cranker share.
+3. Cranker vault to protocol treasury token account for the 5% treasury share.
+4. Cranker vault to reserve pool token account for the 2% reserve share.
+
+The 85% LP share remains in the Cranker vault and is accounted as LP rewards.

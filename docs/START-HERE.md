@@ -274,11 +274,12 @@ The user signs a TIN creation intent. The frontend sends it directly to the TSN 
 ### Implementation notes
 
 - TypeScript: the frontend signs owner intents and payment authorizations. It does not derive PRUs, generate TIN Master Seeds, or handle PRU configuration.
+- TIN balance: after authentication, the frontend asks the TSN mempool for the finalized public PRU address list using the owner's hash commitment, then sums supported token accounts across those 30 PRUs through the RPC gateway.
 - Python Cranker daemon: verify intent, submit Transaction 1 fee commitment, submit Transaction 2 registry call, and keep PRU seeds out of logs.
 
 ### Security & privacy considerations
 
-Do not expose raw wallet addresses, balances, PRU private material, phone numbers, or PRU arrays. Deterministic allocation is replayable for verification; randomized PRU signing is local to the SDK and prevents a single always-active wallet pattern.
+Do not expose raw wallet addresses, balances, PRU private material, phone numbers, or public PRU arrays to unauthenticated users. Authenticated owners can load their own public PRU addresses for balance reads. Deterministic allocation is replayable for verification; randomized PRU signing is local to the SDK and prevents a single always-active wallet pattern.
 
 ### Usage and testing
 

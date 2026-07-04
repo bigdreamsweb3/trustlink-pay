@@ -3,7 +3,7 @@ use anchor_lang::solana_program::hash::{hash, hashv};
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::tsn::{
-    constants::{TSN_CRANKER_VAULT_AUTHORITY_SEED, TSN_PAYMENT_VAULT_SEED},
+    constants::{BPS_DENOMINATOR, TSN_CRANKER_VAULT_AUTHORITY_SEED, TSN_PAYMENT_VAULT_SEED, TSN_SPLIT_BPS_RECOVERY_BONUS},
     errors::TsnError,
     events::TsnSettlementCommitted,
     state::{Cranker, CrankerVault, MotherEscrow, VaultSettlementStatus, VaultState},
@@ -61,6 +61,25 @@ pub struct ExecuteVaultPayout<'info> {
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
+    #[account(
+        mut,
+        constraint = operator_token_account.owner == operator.key(),
+        constraint = operator_token_account.mint == cranker_vault.token_mint
+    )]
+    pub operator_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == cranker_vault.token_mint
+    )]
+    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = reserve_pool_token_account.mint == cranker_vault.token_mint
+    )]
+    pub reserve_pool_token_account: Box<Account<'info, TokenAccount>>,
+
     pub token_program: Program<'info, Token>,
 }
 
@@ -73,8 +92,30 @@ pub fn execute_vault_payout(
     decryption_secret: [u8; 32],
 ) -> Result<()> {
     require!(payout_amount > 0, TsnError::InvalidPayoutAmount);
+    let operator_fee_amount = split_fee_floor(
+        claim_fee_amount,
+        ctx.accounts.mother_escrow.fee_split_cranker_bps,
+    )?;
+    let treasury_fee_amount = split_fee_floor(
+        claim_fee_amount,
+        ctx.accounts.mother_escrow.fee_split_treasury_bps,
+    )?;
+    let reserve_fee_amount = split_fee_floor(
+        claim_fee_amount,
+        TSN_SPLIT_BPS_RECOVERY_BONUS,
+    )?;
+    let external_fee_amount = operator_fee_amount
+        .checked_add(treasury_fee_amount)
+        .and_then(|value| value.checked_add(reserve_fee_amount))
+        .ok_or(TsnError::FeeSplitOverflow)?;
+    let lp_fee_amount = claim_fee_amount
+        .checked_sub(external_fee_amount)
+        .ok_or(TsnError::InvalidFeeSplit)?;
+    let total_debit = payout_amount
+        .checked_add(external_fee_amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
     require!(
-        ctx.accounts.cranker_vault.total_liquidity >= payout_amount,
+        ctx.accounts.cranker_vault.total_liquidity >= total_debit,
         TsnError::InsufficientCrankerVaultLiquidity
     );
 
@@ -138,13 +179,38 @@ pub fn execute_vault_payout(
         payout_amount,
     )?;
 
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.operator_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        operator_fee_amount,
+    )?;
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.treasury_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        treasury_fee_amount,
+    )?;
+    transfer_from_vault(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.reserve_pool_token_account.to_account_info(),
+        ctx.accounts.vault_authority.to_account_info(),
+        signer_seeds,
+        reserve_fee_amount,
+    )?;
+
     ctx.accounts.cranker_vault.total_liquidity =
-        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(payout_amount);
+        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(total_debit);
     ctx.accounts.cranker_vault.total_rewards_accrued = ctx
         .accounts
         .cranker_vault
         .total_rewards_accrued
-        .saturating_add(claim_fee_amount);
+        .saturating_add(lp_fee_amount);
 
     ctx.accounts.cranker.total_executes = ctx.accounts.cranker.total_executes.saturating_add(1);
     ctx.accounts.cranker.last_active_ts = now;
@@ -165,4 +231,36 @@ pub fn execute_vault_payout(
     });
 
     Ok(())
+}
+
+fn split_fee_floor(amount: u64, bps: u16) -> Result<u64> {
+    amount
+        .checked_mul(bps as u64)
+        .and_then(|value| value.checked_div(BPS_DENOMINATOR))
+        .ok_or(TsnError::FeeSplitOverflow.into())
+}
+
+fn transfer_from_vault<'info>(
+    token_program: AccountInfo<'info>,
+    from: AccountInfo<'info>,
+    to: AccountInfo<'info>,
+    authority: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    amount: u64,
+) -> Result<()> {
+    if amount == 0 {
+        return Ok(());
+    }
+    token::transfer(
+        CpiContext::new_with_signer(
+            token_program,
+            Transfer {
+                from,
+                to,
+                authority,
+            },
+            signer_seeds,
+        ),
+        amount,
+    )
 }

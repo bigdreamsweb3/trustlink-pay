@@ -41,6 +41,17 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  pruSpendTin?: string | null;
+  pruSpendAmountBaseUnits?: string | null;
+  pruSpendSenderFeeBaseUnits?: string | null;
+  walletTopUpAmountBaseUnits?: string | null;
+  walletTopUpSenderFeeBaseUnits?: string | null;
+  pruSpendSelections?: Array<{
+    pruIndex: number;
+    amountBaseUnits: string;
+    nonce: number;
+  }> | null;
+  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -76,6 +87,13 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
     senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
     senderSettlementMode: params.senderSettlementMode,
+    pruSpendTin: params.pruSpendTin,
+    pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits,
+    pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits,
+    walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
+    walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
+    pruSpendSelections: params.pruSpendSelections,
+    settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64,
     privacyVersion: params.privacyVersion,
     commitmentRecord: params.commitmentRecord,
     senderTokenAccount: params.senderTokenAccount,

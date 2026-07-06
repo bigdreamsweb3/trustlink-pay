@@ -5,11 +5,12 @@ import {
   type TsnMempoolClaimRequest,
   type TsnMempoolIntent,
 } from "./contracts.js";
+import {
+  buildMixedPaymentMessage,
+  buildPaymentIntentMessage,
+  buildPruSpendMessage,
+} from "./canonical-message.js";
 import { TsnHttpClient } from "./client.js";
-
-function formatPaymentNumber(value: number) {
-  return Number(value.toFixed(9)).toString();
-}
 
 export function createSenderPaymentAuthorizationMessage(params: {
   senderWallet: string;
@@ -22,21 +23,46 @@ export function createSenderPaymentAuthorizationMessage(params: {
   nonce?: string;
   issuedAt: string;
   expiresAt?: string;
+  fundingMode?: "pru_only" | "mixed_pru_and_wallet" | "wallet_only";
+  pruPortionBaseUnits?: bigint | number | string;
+  walletTopUpPortionBaseUnits?: bigint | number | string;
 }) {
-  return [
-    "Transfer Settlement Network Payment Authorization",
-    "version=1",
-    `senderWallet=${params.senderWallet}`,
-    `senderIdentity=${params.senderIdentity}`,
-    `receiverIdentity=${params.receiverIdentity}`,
-    `tokenMintAddress=${params.tokenMintAddress}`,
-    `amount=${formatPaymentNumber(params.amount)}`,
-    `senderFeeAmount=${formatPaymentNumber(params.senderFeeAmount)}`,
-    `totalTokenRequiredUi=${formatPaymentNumber(params.totalTokenRequiredUi)}`,
-    `nonce=${params.nonce ?? ""}`,
-    `issuedAt=${params.issuedAt}`,
-    `expiresAt=${params.expiresAt ?? ""}`,
-  ].join("\n");
+  const recipientTin =
+    params.receiverIdentity.match(/(?:^|\|)tin:(\d+)/)?.[1] ??
+    params.receiverIdentity.match(/^tin:(\d+)/)?.[1];
+  if (!recipientTin) {
+    throw new Error("recipient TIN is required for canonical TSN payment authorization");
+  }
+  const amountBaseUnits = BigInt(Math.round(params.amount * 1_000_000));
+  const feeBaseUnits = BigInt(Math.round(params.senderFeeAmount * 1_000_000));
+  if (params.fundingMode === "mixed_pru_and_wallet") {
+    return buildMixedPaymentMessage({
+      amountBaseUnits,
+      recipientTin,
+      feeBaseUnits,
+      pruPortionBaseUnits: BigInt(params.pruPortionBaseUnits ?? 0),
+      walletTopUpPortionBaseUnits: BigInt(params.walletTopUpPortionBaseUnits ?? 0),
+      nonce: params.nonce ?? "",
+      expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+    });
+  }
+  const usesPruSource = params.senderIdentity.includes("tin:");
+  return usesPruSource
+    ? buildPruSpendMessage({
+        amountBaseUnits,
+        recipientTin,
+        feeBaseUnits,
+        nonce: params.nonce ?? "",
+        expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+      })
+    : buildPaymentIntentMessage({
+        amountBaseUnits,
+        recipientTin,
+        feeBaseUnits,
+        sender: "Main Wallet",
+        nonce: params.nonce ?? "",
+        expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+      });
 }
 
 export function createPaymentAuthorizationNonce() {
@@ -62,6 +88,9 @@ export function createPaymentAuthorization(params: {
   nonce?: string;
   issuedAt?: string;
   expiresAt?: string;
+  fundingMode?: "pru_only" | "mixed_pru_and_wallet" | "wallet_only";
+  pruPortionBaseUnits?: bigint | number | string;
+  walletTopUpPortionBaseUnits?: bigint | number | string;
 }) {
   const nonce = params.nonce ?? createPaymentAuthorizationNonce();
   const issuedAt = params.issuedAt ?? new Date().toISOString();
@@ -96,6 +125,13 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  pruSpendTin?: string | null;
+  pruSpendAmountBaseUnits?: string | null;
+  pruSpendSenderFeeBaseUnits?: string | null;
+  walletTopUpAmountBaseUnits?: string | null;
+  walletTopUpSenderFeeBaseUnits?: string | null;
+  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -124,6 +160,13 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
       senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
       senderSettlementMode: params.senderSettlementMode,
+      pruSpendTin: params.pruSpendTin,
+      pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits,
+      pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits,
+      walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
+      walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
+      pruSpendSelections: params.pruSpendSelections,
+      settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64,
       privacyVersion: params.privacyVersion,
       commitmentRecord: params.commitmentRecord,
       senderTokenAccount: params.senderTokenAccount,
@@ -161,6 +204,13 @@ export async function submitPaymentAuthorizationToMempool(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  pruSpendTin?: string | null;
+  pruSpendAmountBaseUnits?: string | null;
+  pruSpendSenderFeeBaseUnits?: string | null;
+  walletTopUpAmountBaseUnits?: string | null;
+  walletTopUpSenderFeeBaseUnits?: string | null;
+  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;

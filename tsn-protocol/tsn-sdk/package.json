@@ -18,6 +18,10 @@
       "import": "./dist/contracts.js",
       "types": "./dist/contracts.d.ts"
     },
+    "./canonical-message": {
+      "import": "./dist/canonical-message.js",
+      "types": "./dist/canonical-message.d.ts"
+    },
     "./client": {
       "import": "./dist/client.js",
       "types": "./dist/client.d.ts"
@@ -81,6 +85,10 @@
     "./pru-route-auth": {
       "import": "./dist/pru-route-auth.js",
       "types": "./dist/pru-route-auth.d.ts"
+    },
+    "./tin-balance-spend-planner": {
+      "import": "./dist/tin-balance-spend-planner.js",
+      "types": "./dist/tin-balance-spend-planner.d.ts"
     }
   },
   "scripts": {

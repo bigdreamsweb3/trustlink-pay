@@ -80,6 +80,6 @@ tracked-node-modules.txt
 git-hygiene-report.txt
 project-coach-observations.md
 
-project_coach/.env
 project_coach/
 vpp/
+ZK-PRU/

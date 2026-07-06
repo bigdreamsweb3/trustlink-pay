@@ -29,6 +29,10 @@ It does not relay TSN protocol mutations on behalf of the frontend.
 
 The frontend should use backend status for normal screens. It should not constantly poll Solana RPC for finalized payment states.
 
+### Payment Activity Views
+
+Payment activity views show different safe details for the sender and receiver. The sender view can show recipient identity context and sender-side transaction records. The receiver view can show the sender's display name, TrustLink handle, masked phone context when available, verification status, payment reference, and receiver-side TSN payout or proof transaction hashes. It does not reveal the sender wallet address, full phone number, sender funding transaction, or sender escrow transaction.
+
 ## TSN Mempool Backend
 
 The mempool backend handles:

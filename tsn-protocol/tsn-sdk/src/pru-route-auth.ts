@@ -1,3 +1,8 @@
+import {
+  buildPruRouteSessionMessage,
+  parsePruRouteSessionMessage,
+} from "./canonical-message.js";
+
 export type PruRouteProofPurpose =
   | "pru_route_lookup"
   | "delegate_read_access"
@@ -86,18 +91,26 @@ function normalizeSignature(value: Uint8Array | { signature: Uint8Array | number
 }
 
 export function encodePruRouteProofMessage(proof: PruRouteProof) {
-  const lines = [
-    "TrustLink TSN PRU Route Authorization",
-    "version=1",
-    `purpose=${proof.purpose}`,
-    `tin=${proof.tin}`,
-    `ownerPubkey=${proof.ownerPubkey}`,
-    `nonce=${proof.nonce}`,
-    `timestamp=${proof.timestamp}`,
-  ];
-  if (proof.platformReadKey) lines.push(`platformReadKey=${proof.platformReadKey}`);
-  if (proof.expiry) lines.push(`expiry=${proof.expiry}`);
-  return TEXT_ENCODER.encode(lines.join("\n"));
+  const purpose =
+    proof.purpose === "pru_route_lookup"
+      ? "Load TIN Balance"
+      : proof.purpose === "delegate_read_access"
+        ? "Delegate Balance Access"
+        : "Revoke Balance Access";
+  return TEXT_ENCODER.encode(
+    buildPruRouteSessionMessage({
+      tin: proof.tin,
+      purpose,
+      nonce: proof.nonce,
+      expires: new Date((proof.expiry ?? proof.timestamp + 300) * 1000).toISOString(),
+    }),
+  );
+}
+
+export function decodePruRouteProofMessage(message: Uint8Array | string) {
+  return parsePruRouteSessionMessage(
+    typeof message === "string" ? message : new TextDecoder().decode(message),
+  );
 }
 
 export function buildPruRouteProof(tin: string | number, walletPublicKey: string): PruRouteProof {
@@ -148,6 +161,7 @@ export async function requestPruRouteSession(
       signature,
       nonce: proof.nonce,
       timestamp: proof.timestamp,
+      signed_message_base64: encodeBase64(message),
     }),
   });
   const session = await parseJsonResponse<PruRouteSession>(response);
@@ -227,7 +241,13 @@ export async function grantDelegatedReadAccess(
   const response = await fetch(`${normalizeMempoolUrl(mempoolUrl)}/tin-routes/delegate`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ...proof, owner_pubkey: ownerPubkey, platform_read_key: platformReadKey, signature }),
+    body: JSON.stringify({
+      ...proof,
+      owner_pubkey: ownerPubkey,
+      platform_read_key: platformReadKey,
+      signature,
+      signed_message_base64: encodeBase64(encodePruRouteProofMessage(proof)),
+    }),
   });
   return parseJsonResponse<{ tin: string; platformReadKey: string; expiresAt: number; status: "active" }>(response);
 }
@@ -249,7 +269,13 @@ export async function revokeDelegatedReadAccess(
   const response = await fetch(`${normalizeMempoolUrl(mempoolUrl)}/tin-routes/delegate`, {
     method: "DELETE",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ...proof, owner_pubkey: ownerPubkey, platform_read_key: platformReadKey, signature }),
+    body: JSON.stringify({
+      ...proof,
+      owner_pubkey: ownerPubkey,
+      platform_read_key: platformReadKey,
+      signature,
+      signed_message_base64: encodeBase64(encodePruRouteProofMessage(proof)),
+    }),
   });
   return parseJsonResponse<{ tin: string; platformReadKey: string; status: "revoked" }>(response);
 }

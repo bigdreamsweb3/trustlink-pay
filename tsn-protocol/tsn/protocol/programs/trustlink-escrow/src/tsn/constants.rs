@@ -2,6 +2,7 @@
 
 pub const TSN_MOTHER_ESCROW_SEED: &[u8] = b"tsn_mother_escrow";
 pub const TSN_VERIFIER_SEED: &[u8] = b"verifier";
+pub const TSN_TREASURY_SEED: &[u8] = b"tsn_treasury";
 pub const TSN_INTENT_SEED: &[u8] = b"tsn_intent";
 pub const TSN_CRANKER_SEED: &[u8] = b"tsn_cranker";
 pub const TSN_CRANKER_VAULT_SEED: &[u8] = b"tsn_cranker_vault";

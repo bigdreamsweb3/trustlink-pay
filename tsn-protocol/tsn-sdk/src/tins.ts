@@ -8,6 +8,7 @@ import {
   SystemProgram,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { buildTinUpgradeMessage } from "./canonical-message.js";
 
 export const DEFAULT_TINS_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
@@ -219,17 +220,15 @@ export function createTinOwnerIntentMessage(params: {
   nonce: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
-  return [
-    "TrustLink TINS Owner Intent",
-    "version=2",
-    `purpose=${params.purpose}`,
-    `ownerPubkey=${params.ownerPubkey.toBase58()}`,
-    `tin=${String(params.tin)}`,
-    `displayName=${params.displayName}`,
-    `phoneNumber=${params.phoneNumber}`,
-    `nonce=${bytesToHex(requireHash32(params.nonce, "nonce"))}`,
-    `expiryTs=${String(params.expiryTs)}`,
-  ].join("\n");
+  if (params.purpose !== "update") {
+    throw new Error("TIN creation owner intent must use the TSN mempool TIN creation builder");
+  }
+  return buildTinUpgradeMessage({
+    tin: String(params.tin),
+    displayName: params.displayName,
+    nonce: bytesToHex(requireHash32(params.nonce, "nonce")),
+    expires: new Date(Number(params.expiryTs) * 1000).toISOString(),
+  });
 }
 
 export function createTinOwnerIntentHash(params: {

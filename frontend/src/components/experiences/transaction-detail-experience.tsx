@@ -181,6 +181,29 @@ function receiverIdentityNameSource(
   return "Identity name unavailable";
 }
 
+function senderIdentityRows(sender: PaymentDetailResponse["sender"]) {
+  return [
+    {
+      label: "TrustLink handle",
+      value: sender.handle ? `@${sender.handle}` : null,
+    },
+    {
+      label: "Sender phone",
+      value: sender.phoneMasked,
+    },
+    {
+      label: "Verification",
+      value: sender.trustStatusLabel,
+    },
+    {
+      label: "Payment reference",
+      value: sender.referenceCode,
+    },
+  ].filter((row): row is { label: string; value: string } =>
+    Boolean(row.value),
+  );
+}
+
 function formatDuration(
   from: string | null | undefined,
   to: string | null | undefined,
@@ -633,8 +656,13 @@ export function TransactionDetailExperience({
                             : detail.sender.displayName}
                         </div>
 
-                        {effectiveViewerRole === "sender" &&
-                        detail.receiver.tin ? (
+                        {effectiveViewerRole === "receiver" &&
+                        detail.sender.handle ? (
+                          <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
+                            @{detail.sender.handle}
+                          </div>
+                        ) : effectiveViewerRole === "sender" &&
+                          detail.receiver.tin ? (
                           <div className="mt-0.5 truncate text-[0.66rem] text-text-faint">
                             TIN {detail.receiver.tin}
                           </div>
@@ -674,6 +702,29 @@ export function TransactionDetailExperience({
                           }
                           hideMissingNodes
                         />
+                      </div>
+                    ) : null}
+
+                    {effectiveViewerRole === "receiver" ? (
+                      <div className="mt-4 space-y-2 rounded-[18px] border border-white/5 bg-white/[0.02] px-3 py-3">
+                        {senderIdentityRows(detail.sender).map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-center justify-between gap-4"
+                          >
+                            <span className="text-[0.72rem] text-text-soft">
+                              {row.label}
+                            </span>
+
+                            <span className="max-w-[58%] truncate text-right text-[0.78rem] font-medium text-text">
+                              {row.value}
+                            </span>
+                          </div>
+                        ))}
+
+                        <p className="pt-1 text-[0.7rem] leading-relaxed text-text-faint">
+                          Sender wallet and full phone number stay hidden.
+                        </p>
                       </div>
                     ) : null}
                   </div>
@@ -815,17 +866,26 @@ export function TransactionDetailExperience({
                             : null,
                       },
                       {
-                        label: "Claim tx",
+                        label:
+                          effectiveViewerRole === "receiver"
+                            ? "Receiver payout tx"
+                            : "Claim tx",
                         sig: detail.trace.releaseSignature,
                         url: detail.trace.releaseExplorerUrl,
                       },
                       {
-                        label: "TSN lease claim",
+                        label:
+                          effectiveViewerRole === "receiver"
+                            ? "TSN payout lease"
+                            : "TSN lease claim",
                         sig: detail.trace.tsnClaimSignature,
                         url: detail.trace.tsnClaimExplorerUrl,
                       },
                       {
-                        label: "TSN proof",
+                        label:
+                          effectiveViewerRole === "receiver"
+                            ? "TSN settlement proof"
+                            : "TSN proof",
                         sig: detail.trace.tsnProofSignature,
                         url: detail.trace.tsnProofExplorerUrl,
                       },

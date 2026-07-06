@@ -422,6 +422,28 @@ pub mod trustlink_escrow {
         tsn::instructions::register_private_commitment(ctx, commitment_hash, amount)
     }
 
+    pub fn tsn_execute_pru_spend(
+        ctx: Context<ExecutePruSpend>,
+        tin: u64,
+        pru_index: u16,
+        nonce: u8,
+        commitment_hash: [u8; 32],
+        spend_auth_hash: [u8; 32],
+        amount: u64,
+        sender_fee_amount: u64,
+    ) -> Result<()> {
+        tsn::instructions::execute_pru_spend(
+            ctx,
+            tin,
+            pru_index,
+            nonce,
+            commitment_hash,
+            spend_auth_hash,
+            amount,
+            sender_fee_amount,
+        )
+    }
+
     pub fn tsn_execute_private_payout(
         ctx: Context<ExecutePrivatePayout>,
         payout_nullifier: [u8; 32],

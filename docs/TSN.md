@@ -85,3 +85,36 @@ A successful private PRU payout transaction includes:
 4. Cranker vault to reserve pool token account for the 2% reserve share.
 
 The 85% LP share remains in the Cranker vault and is accounted as LP rewards.
+
+## PRU-Funded Spending
+
+### Summary
+
+TSN can fund a payment directly from a sender's TIN balance when the selected PRUs hold enough of the payment token. This keeps the sender's owner wallet out of the on-chain funding transaction and preserves the PRU-first payment model.
+
+### Execution path
+
+The send screen first loads the authenticated PRU route and builds a PRU-first spend plan. If the TIN balance covers the payment amount plus sender fee, the frontend submits a normal signed payment authorization to the TSN mempool with:
+
+- sender settlement mode `pru_private_commitment_v1`
+- sender TIN
+- selected PRU indexes
+- base-unit amounts
+- one-byte PRU spend nonces
+
+The mempool verifies the finalized PRU route and the encrypted TIN Master Seed record. A Cranker requests a worker-only PRU spend permit, receives only the selected ephemeral signing material for that intent, and executes `tsn_execute_pru_spend` on-chain.
+
+The PRU spend instruction:
+
+1. Checks the `PruSpendGuard` for the TIN and PRU index.
+2. Rejects reused PRU spend nonces.
+3. Creates or reuses the one-time private escrow token account.
+4. Transfers the payment amount from PRUs into the private escrow.
+5. Transfers the sender fee from PRUs to the TSN treasury token account.
+6. Records the Cranker activity and emits the PRU spend event.
+
+After the private escrow is funded, the normal private payout flow pays the recipient PRU and the normal recovery flow returns escrowed liquidity into the Cranker vault.
+
+### Privacy boundary
+
+The frontend never derives PRU keys and never receives the TIN Master Seed. The TrustLink backend does not broker PRU spend execution. The TSN mempool and Cranker network perform the route verification and on-chain funding path. Mixed PRU plus main-wallet funding is not submitted as a PRU spend because it would combine two funding authorities in one user action.

@@ -100,4 +100,10 @@ pub enum TsnError {
     EpochRecoveryAlreadyProcessed,
     #[msg("Epoch residuals have already been swept")]
     EpochResidualAlreadySwept,
+    #[msg("PRU spend guard is inactive")]
+    InactivePruSpendGuard,
+    #[msg("PRU spend nonce was already used")]
+    PruSpendNonceAlreadyUsed,
+    #[msg("Invalid PRU spend authority")]
+    InvalidPruSpendAuthority,
 }

@@ -63,7 +63,10 @@ function buildCountryList(suggestedCountries: CountryOption[]) {
 
 function looksLikeTinInput(value: string) {
   const trimmed = value.trim();
-  return /^tin[:\s_-]*/i.test(trimmed) || (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"));
+  return (
+    /^tin[:\s_-]*/i.test(trimmed) ||
+    (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"))
+  );
 }
 
 export function PhoneNumberInput({
@@ -91,19 +94,24 @@ export function PhoneNumberInput({
   const [avatarBroken, setAvatarBroken] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const formattedValue = useMemo(() => looksLikeTinInput(value) ? value : formatPhoneInput(value), [value]);
+  const formattedValue = useMemo(
+    () => (looksLikeTinInput(value) ? value : formatPhoneInput(value)),
+    [value],
+  );
   const filteredCountries = useMemo(() => {
     const ordered = buildCountryList(suggestedCountries);
-    return ordered.filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.dialCode.includes(search) ||
-      c.iso2.toLowerCase().includes(search.toLowerCase()),
+    return ordered.filter(
+      (c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.dialCode.includes(search) ||
+        c.iso2.toLowerCase().includes(search.toLowerCase()),
     );
   }, [search, suggestedCountries]);
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!dropdownRef.current?.contains(event.target as Node)) setIsOpen(false);
+      if (!dropdownRef.current?.contains(event.target as Node))
+        setIsOpen(false);
     }
     if (isOpen) window.addEventListener("mousedown", handleOutsideClick);
     return () => window.removeEventListener("mousedown", handleOutsideClick);
@@ -128,25 +136,39 @@ export function PhoneNumberInput({
           : "border-[var(--field-border)] bg-[var(--surface-soft)] text-[var(--text-soft)]";
 
   const indicatorText =
-    verificationState === "valid" ? "OK" : verificationState === "warning" ? "!" : verificationState === "invalid" ? "X" : "...";
+    verificationState === "valid"
+      ? "OK"
+      : verificationState === "warning"
+        ? "!"
+        : verificationState === "invalid"
+          ? "X"
+          : "...";
 
-  const showSummaryCard = verificationDetails && verificationState !== "checking";
-  const showLookupCard = lookupBusy || Boolean(lookupError) || Boolean(recipientPreview) || Boolean(showSummaryCard);
+  const showSummaryCard =
+    verificationDetails && verificationState !== "checking";
+  const showLookupCard =
+    lookupBusy ||
+    Boolean(lookupError) ||
+    Boolean(recipientPreview) ||
+    Boolean(showSummaryCard);
   const inputValue = value.trim();
   const isTinCandidate = looksLikeTinInput(inputValue);
   const isBusiness = Boolean(verificationDetails?.isBusiness);
   const displayName = verificationDetails?.displayName?.trim() || null;
-  const avatarSrc =
-    verificationDetails?.profilePic
-      ? `${buildBackendUrl("/api/whatsapp/avatar")}?url=${encodeURIComponent(verificationDetails.profilePic)}`
-      : null;
+  const avatarSrc = verificationDetails?.profilePic
+    ? `${buildBackendUrl("/api/whatsapp/avatar")}?url=${encodeURIComponent(verificationDetails.profilePic)}`
+    : null;
 
-  useEffect(() => { setAvatarBroken(false); }, [avatarSrc]);
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [avatarSrc]);
 
   const trustLinkToneClass =
-    recipientPreview?.status === "registered" || recipientPreview?.status === "tins_resolved"
+    recipientPreview?.status === "registered" ||
+    recipientPreview?.status === "tins_resolved"
       ? "border-[#58f2b1]/18 bg-accent-deep/17"
-      : recipientPreview?.status === "whatsapp_only" || recipientPreview?.status === "manual_invite_required"
+      : recipientPreview?.status === "whatsapp_only" ||
+          recipientPreview?.status === "manual_invite_required"
         ? "border-[#f3c96b]/30 bg-[#f3c96b]/10"
         : recipientPreview?.status === "invalid_whatsapp_number" || lookupError
           ? "border-[#ff7f7f]/18 bg-[#ff7f7f]/8"
@@ -169,7 +191,9 @@ export function PhoneNumberInput({
                   onError={() => setAvatarBroken(true)}
                 />
               ) : (
-                <span className="tl-text-muted text-[0.58rem] font-semibold tracking-[0.12em]">WA</span>
+                <span className="tl-text-muted text-[0.58rem] font-semibold tracking-[0.12em]">
+                  WA
+                </span>
               )}
             </div>
           ) : null}
@@ -185,7 +209,8 @@ export function PhoneNumberInput({
                 </div>
                 {verificationDetails.detectedCountry ? (
                   <div className="tl-text-muted shrink-0 text-[0.68rem]">
-                    {verificationDetails.detectedCountry.flag} {verificationDetails.detectedCountry.name}
+                    {verificationDetails.detectedCountry.flag}{" "}
+                    {verificationDetails.detectedCountry.name}
                   </div>
                 ) : null}
               </div>
@@ -205,7 +230,7 @@ export function PhoneNumberInput({
               href={verificationDetails.url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-[12px] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] dark:text-[#86ffda] transition-colors hover:opacity-80 cursor-pointer"
+              className="rounded-[12px] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] dark:text-[var(--accent)] transition-colors hover:opacity-80 cursor-pointer"
             >
               Verify on WhatsApp
             </a>
@@ -275,24 +300,32 @@ export function PhoneNumberInput({
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--accent-deep)] dark:text-[var(--accent)]">
-                  {isInvalid ? <CircleAlert className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />}
+                  {isInvalid ? (
+                    <CircleAlert className="h-3.5 w-3.5" />
+                  ) : (
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                  )}
                   {statusLabel}
                 </div>
                 <div className="mt-1 truncate text-[1rem] font-bold text-[var(--text)]">
                   {recipientName}
                 </div>
-                {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber ? (
+                {verificationDetails?.resolvedPhoneNumber ||
+                recipient.phoneNumber ? (
                   <div className="mt-0.5 truncate text-[0.68rem] text-[var(--text-faint)]">
-                    {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber}
+                    {verificationDetails?.resolvedPhoneNumber ||
+                      recipient.phoneNumber}
                   </div>
                 ) : null}
               </div>
             </div>
-            <span className={`rounded-full border px-2.5 py-1 text-[0.62rem] font-semibold ${
-              isInvalid
-                ? "border-[#ff7f7f]/25 bg-[#ff7f7f]/10 text-[#ffadad]"
-                : "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]"
-            }`}>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[0.62rem] font-semibold ${
+                isInvalid
+                  ? "border-[#ff7f7f]/25 bg-[#ff7f7f]/10 text-[#ffadad]"
+                  : "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-deep)] dark:text-[var(--accent)]"
+              }`}
+            >
               {isInvalid ? "Review" : "Active"}
             </span>
           </div>
@@ -315,11 +348,15 @@ export function PhoneNumberInput({
               <div className="flex items-start gap-3">
                 <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-faint)]" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">Public TIN name</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">
+                    Public TIN name
+                  </div>
                   <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
                     {identityName || "No public identity name found"}
                   </div>
-                  <div className="text-[0.64rem] text-[var(--text-faint)]">Source: TINS on-chain registry</div>
+                  <div className="text-[0.64rem] text-[var(--text-faint)]">
+                    Source: TINS on-chain registry
+                  </div>
                 </div>
               </div>
 
@@ -330,12 +367,18 @@ export function PhoneNumberInput({
                   <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#f3c96b]" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">Legal identity</div>
-                  <div className={`mt-0.5 text-[0.78rem] font-semibold ${legalName ? "text-[var(--text)]" : "text-[#f3c96b]"}`}>
+                  <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">
+                    Legal identity
+                  </div>
+                  <div
+                    className={`mt-0.5 text-[0.78rem] font-semibold ${legalName ? "text-[var(--text)]" : "text-[#f3c96b]"}`}
+                  >
                     {legalName || "No legal name is available for this TIN"}
                   </div>
                   <div className="text-[0.64rem] text-[var(--text-faint)]">
-                    {legalName ? "Verified identity data supplied by the TIN registry." : "Confirm the TIN with the recipient before sending."}
+                    {legalName
+                      ? "Verified identity data supplied by the TIN registry."
+                      : "Confirm the TIN with the recipient before sending."}
                   </div>
                 </div>
               </div>
@@ -347,12 +390,19 @@ export function PhoneNumberInput({
               <WhatsAppIcon className="h-2.5 w-2.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">WhatsApp identity</div>
+              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">
+                WhatsApp identity
+              </div>
               <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
-                {whatsappName || (isBusiness ? "Business account" : "Personal or unverified account")}
+                {whatsappName ||
+                  (isBusiness
+                    ? "Business account"
+                    : "Personal or unverified account")}
               </div>
               <div className="text-[0.64rem] text-[var(--text-faint)]">
-                {verificationDetails?.resolvedPhoneNumber || recipient.phoneNumber || "No linked WhatsApp number"}
+                {verificationDetails?.resolvedPhoneNumber ||
+                  recipient.phoneNumber ||
+                  "No linked WhatsApp number"}
               </div>
             </div>
           </div>
@@ -360,12 +410,17 @@ export function PhoneNumberInput({
           <div className="flex items-start gap-3">
             <AtSign className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-faint)]" />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">TrustLink profile</div>
+              <div className="text-[0.62rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">
+                TrustLink profile
+              </div>
               <div className="mt-0.5 text-[0.78rem] font-semibold text-[var(--text)]">
-                {recipient.handle ? `@${recipient.handle}` : "Not indexed in TrustLink Pay"}
+                {recipient.handle
+                  ? `@${recipient.handle}`
+                  : "Not indexed in TrustLink Pay"}
               </div>
               <div className="text-[0.64rem] text-[var(--text-faint)]">
-                TrustLink enrichment is optional and does not determine whether this identity route is valid.
+                TrustLink enrichment is optional and does not determine whether
+                this identity route is valid.
               </div>
             </div>
           </div>
@@ -381,7 +436,10 @@ export function PhoneNumberInput({
                     key={`${identity.type}:${identity.value}`}
                     className="rounded-full border border-[var(--field-border)] bg-[var(--field)] px-2.5 py-1.5 text-[0.68rem] text-[var(--text-soft)]"
                   >
-                    {identity.label || identity.type}: <strong className="font-semibold text-[var(--text)]">{identity.value}</strong>
+                    {identity.label || identity.type}:{" "}
+                    <strong className="font-semibold text-[var(--text)]">
+                      {identity.value}
+                    </strong>
                   </span>
                 ))}
               </div>
@@ -389,11 +447,13 @@ export function PhoneNumberInput({
           ) : null}
 
           {"warning" in recipientPreview && recipientPreview.warning ? (
-            <div className={`rounded-[12px] border px-3 py-2 text-[0.7rem] leading-relaxed ${
-              isInvalid
-                ? "border-[#ff7f7f]/20 bg-[#ff7f7f]/8 text-[#ffadad]"
-                : "border-[#f3c96b]/20 bg-[#f3c96b]/8 text-[#f3c96b]"
-            }`}>
+            <div
+              className={`rounded-[12px] border px-3 py-2 text-[0.7rem] leading-relaxed ${
+                isInvalid
+                  ? "border-[#ff7f7f]/20 bg-[#ff7f7f]/8 text-[#ffadad]"
+                  : "border-[#f3c96b]/20 bg-[#f3c96b]/8 text-[#f3c96b]"
+              }`}
+            >
               {recipientPreview.warning}
             </div>
           ) : null}
@@ -404,7 +464,7 @@ export function PhoneNumberInput({
                 href={verificationDetails.url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-[12px] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] transition-colors hover:opacity-80 dark:text-[#86ffda]"
+                className="rounded-[12px] bg-[var(--accent-soft)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--accent-deep)] transition-colors hover:opacity-80 dark:text-[var(--accent)]"
               >
                 Verify on WhatsApp
               </a>
@@ -433,10 +493,13 @@ export function PhoneNumberInput({
       ) : null}
 
       <div className="relative group mt-1.5">
-        <div className={`flex h-fit items-stretch rounded-[18px] border transition-all duration-200 ${toneClass}`}>
-
+        <div
+          className={`flex h-fit items-stretch rounded-[18px] border transition-all duration-200 ${toneClass}`}
+        >
           <div className="flex flex-1 flex-col px-4 py-3.5">
-            <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Recipient Identity</span>
+            <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">
+              Recipient Identity
+            </span>
             <input
               type="tel"
               value={formattedValue}
@@ -445,7 +508,6 @@ export function PhoneNumberInput({
               inputMode="tel"
               className="mt-1.5 block  w-full bg-transparent text-[1rem] font-bold text-(--text) outline-none placeholder:text-text-faint"
             />
-
           </div>
 
           {verificationState !== "idle" ? (
@@ -482,11 +544,15 @@ export function PhoneNumberInput({
                     {selectedCountry ? selectedCountry.name : "Select Country"}
                   </span>
                   <span className="tl-text-muted block text-[0.62rem] leading-tight mt-0.5">
-                    {selectedCountry ? selectedCountry.dialCode : "Suggested countries first"}
+                    {selectedCountry
+                      ? selectedCountry.dialCode
+                      : "Suggested countries first"}
                   </span>
                 </span>
               </span>
-              <ChevronDown className={`tl-text-muted h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`tl-text-muted h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              />
             </button>
 
             <AnimatePresence>
@@ -518,18 +584,28 @@ export function PhoneNumberInput({
                       <button
                         key={country.iso2}
                         type="button"
-                        onClick={() => { onCountrySelect?.(country); setIsOpen(false); setSearch(""); }}
+                        onClick={() => {
+                          onCountrySelect?.(country);
+                          setIsOpen(false);
+                          setSearch("");
+                        }}
                         className={`w-full px-4 py-3 text-left transition-colors cursor-pointer hover:bg-[var(--surface-soft)] active:scale-[0.99] ${selectedCountry?.iso2 === country.iso2 ? "bg-[var(--accent-soft)]" : ""}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <span className="text-lg">{country.flag}</span>
                             <div>
-                              <div className="text-[0.84rem] font-semibold text-[var(--text)]">{country.name}</div>
-                              <div className="tl-text-muted text-[0.6rem]">{country.iso2}</div>
+                              <div className="text-[0.84rem] font-semibold text-[var(--text)]">
+                                {country.name}
+                              </div>
+                              <div className="tl-text-muted text-[0.6rem]">
+                                {country.iso2}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-[0.84rem] font-medium text-[var(--text)]">{country.dialCode}</div>
+                          <div className="text-[0.84rem] font-medium text-[var(--text)]">
+                            {country.dialCode}
+                          </div>
                         </div>
                       </button>
                     ))}
@@ -543,23 +619,30 @@ export function PhoneNumberInput({
 
       {/* ── Checking label ── */}
       {verificationLabel && verificationState === "checking" ? (
-        <div className="tl-text-muted ml-0.5 text-[0.68rem]">{verificationLabel}</div>
+        <div className="tl-text-muted ml-0.5 text-[0.68rem]">
+          {verificationLabel}
+        </div>
       ) : null}
 
       {/* ── Lookup Result Card ── */}
       {showLookupCard ? (
-        recipientPreview && !lookupBusy && !lookupError
-          ? renderRecipientIdentityCard()
-          : <div className={`relative z-10 rounded-[18px] px-4 py-3.5  ${trustLinkToneClass}`}>
-          {lookupBusy ? (
-            <SectionLoader label="Verifying recipient..." />
-          ) : lookupError ? (
-            <div className="text-[0.82rem] text-[#ffadad]">{lookupError}</div>
-          ) : null}
-          {!lookupBusy && !lookupError && !recipientPreview && showSummaryCard ? renderWhatsAppCard() : null}
+        recipientPreview && !lookupBusy && !lookupError ? (
+          renderRecipientIdentityCard()
+        ) : (
+          <div
+            className={`relative z-10 rounded-[18px] px-4 py-3.5  ${trustLinkToneClass}`}
+          >
+            {lookupBusy ? (
+              <SectionLoader label="Verifying recipient..." />
+            ) : lookupError ? (
+              <div className="text-[0.82rem] text-[#ffadad]">{lookupError}</div>
+            ) : null}
+            {!lookupBusy && !lookupError && !recipientPreview && showSummaryCard
+              ? renderWhatsAppCard()
+              : null}
           </div>
+        )
       ) : null}
-
     </div>
   );
 }

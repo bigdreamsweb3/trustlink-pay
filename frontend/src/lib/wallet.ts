@@ -382,6 +382,16 @@ function assertNonEmptyString(value: string, label: string) {
   }
 }
 
+function assertCanonicalTsnMessage(value: string) {
+  if (!value.startsWith("TSN ") || !value.includes("\n---\n")) {
+    console.error("Blocked non-canonical TSN signing payload", {
+      startsWithTsn: value.startsWith("TSN "),
+      preview: value.slice(0, 80),
+    });
+    throw new Error("Wallet signing requires a canonical TSN message string.");
+  }
+}
+
 function assertSignableBytes(value: Uint8Array, label: string) {
   if (!(value instanceof Uint8Array) || value.length === 0) {
     throw new Error(`${label} must be a non-empty byte array before wallet signing`);
@@ -404,6 +414,7 @@ async function signSolanaMessageImpl(params: {
   }
 
   assertNonEmptyString(params.message, "message");
+  assertCanonicalTsnMessage(params.message);
   const signed = await wallet.provider.signMessage(
     new TextEncoder().encode(params.message),
     "utf8",
@@ -429,7 +440,9 @@ async function signSolanaBytesImpl(params: {
   }
 
   assertSignableBytes(params.message, "message");
-  const signed = await wallet.provider.signMessage(new Uint8Array(params.message), "hex");
+  const decoded = new TextDecoder().decode(params.message);
+  assertCanonicalTsnMessage(decoded);
+  const signed = await wallet.provider.signMessage(new TextEncoder().encode(decoded), "utf8");
   const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
   return bytesToBase64(signature);
 }

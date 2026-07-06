@@ -12,7 +12,7 @@ import { getTransactionExplorerUrl } from "@/app/utils/blockchain-explorer";
 import { env } from "@/app/lib/env";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, PaymentViewerRole } from "@/app/types/payment";
-import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
+import { enrichPaymentsWithTsnState, syncPaymentIntentTraceFromMempool } from "@/app/services/tsn";
 
 function getViewerRole(payment: PaymentRecord, authUser: AuthenticatedUser): PaymentViewerRole | null {
   if (payment.sender_user_id === authUser.id) {
@@ -213,6 +213,7 @@ export async function getPaymentDetailForViewer(
   }
 
   const paymentWithReceipts = await retryPaymentNotificationIfNeeded(paymentRecord, appBaseUrl);
+  await syncPaymentIntentTraceFromMempool(paymentWithReceipts.id);
   const payment = (await enrichPaymentsWithTsnState([paymentWithReceipts]))[0];
   const manualInviteRequired = await requiresManualInvite(payment.receiver_phone);
   const inviteShare = manualInviteRequired ? buildInviteShareData(payment, appBaseUrl) : null;

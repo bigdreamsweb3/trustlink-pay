@@ -307,7 +307,7 @@ def require_worker_api_key(
         raise HTTPException(401, "Invalid TSN mempool API key")
 
 def lease_authorization_message(
-    action: Literal["payout", "recovery"],
+    action: Literal["payout", "recovery", "pru-spend"],
     work_id: str,
     operator_pubkey: str,
     requested_at_ts: int,
@@ -323,7 +323,7 @@ def lease_authorization_message(
     ).encode()
 
 def verify_lease_authorization(
-    action: Literal["payout", "recovery"],
+    action: Literal["payout", "recovery", "pru-spend"],
     work_id: str,
     operator_pubkey: str,
     requested_at_ts: int,
@@ -690,6 +690,7 @@ def k_tin_registry_shadow() -> str: return f"{MEMPOOL_NS}:tin_registry_shadow"
 def k_tin_pru_routes() -> str: return f"{MEMPOOL_NS}:tin_pru_routes"
 def k_tin_pru_route_sessions() -> str: return f"{MEMPOOL_NS}:tin_pru_route_sessions"
 def k_tin_pru_route_nonces() -> str: return f"{MEMPOOL_NS}:tin_pru_route_nonces"
+def k_canonical_message_nonces() -> str: return f"{MEMPOOL_NS}:canonical_message_nonces"
 def k_tin_read_delegations() -> str: return f"{MEMPOOL_NS}:tin_read_delegations"
 def k_platform_read_keys() -> str: return f"{MEMPOOL_NS}:platform_read_keys"
 
@@ -832,6 +833,27 @@ async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
         return base64.b64decode(encoded)
     except (binascii.Error, TypeError):
         return None
+
+async def find_tins_owner_hash_by_tin(tin: str) -> Optional[str]:
+    rpc_response = await solana_rpc(
+        "getProgramAccounts",
+        [
+            TINS_PROGRAM_ID,
+            {"encoding": "base64", "commitment": "confirmed"},
+        ],
+    )
+    accounts = rpc_response.get("result") or []
+    for account in accounts:
+        encoded = (((account.get("account") or {}).get("data") or [None])[0])
+        if not encoded:
+            continue
+        try:
+            decoded = decode_tin_account_header(base64.b64decode(encoded))
+        except (ValueError, binascii.Error, TypeError):
+            continue
+        if str(decoded.get("tin")) == str(tin):
+            return str(decoded.get("ownerPubkeyHash") or "").lower()
+    return None
 
 async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Optional[dict[str, Any]]:
     identity_pubkey = get_tins_identity_pda(str(operation["ownerPubkey"]))
@@ -1091,6 +1113,13 @@ class CreateIntentRequest(BaseModel):
     senderSignedSettlementTransaction: Optional[str] = Field(None, description="Sender co-signed settlement transaction for cranker sponsorship")
     senderSignedSettlementFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast the settlement")
     senderSettlementMode: Optional[str] = Field(None, description="Settlement authority model")
+    pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
+    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the private escrow")
+    pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
+    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into private escrow")
+    walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
+    pruSpendSelections: Optional[list[dict[str, Any]]] = Field(None, description="PRU indexes and amounts selected after authenticated route loading")
+    settlementEscrowSecretKeyBase64: Optional[str] = Field(None, description="Ephemeral escrow token-account signer reused by mixed funding")
     privacyVersion: Optional[int] = Field(None, description="TSN private settlement protocol version")
     commitmentRecord: Optional[str] = Field(None, description="Public commitment-only record PDA")
     senderTokenAccount: Optional[str] = Field(None, description="Sender token account used by the sponsored settlement")
@@ -1276,6 +1305,7 @@ class TinPruRouteSessionRequest(BaseModel):
     signature: str
     nonce: str
     timestamp: int
+    signed_message_base64: Optional[str] = None
 
 class TinPruRouteSessionResponse(BaseModel):
     token: str
@@ -1290,6 +1320,7 @@ class TinDelegatedReadRequest(BaseModel):
     nonce: str
     timestamp: int
     expiry: Optional[int] = None
+    signed_message_base64: Optional[str] = None
 
 class TinDelegatedReadResponse(BaseModel):
     tin: str
@@ -1414,6 +1445,23 @@ class PrivateRecoveryPermitResponse(BaseModel):
     recoveryAmountBaseUnits: str
     expiresAtTs: int
 
+class PruSpendPermitSelection(BaseModel):
+    tin: str
+    pruIndex: int
+    nonce: int
+    publicKey: str
+    secretKeyBase64: str
+    spendAuthHash: str
+    amountBaseUnits: str
+
+class PruSpendPermitResponse(BaseModel):
+    paymentId: str
+    tokenMintAddress: str
+    commitmentHash: str
+    escrowAmountBaseUnits: str
+    senderFeeAmountBaseUnits: str
+    selections: list[PruSpendPermitSelection]
+
 class RecoveryStatusRequest(BaseModel):
     operatorPubkey: str = Field(...)
     status: Literal["pending", "completed", "failed", "canceled"]
@@ -1433,6 +1481,9 @@ class UpdateStatusRequest(BaseModel):
     escrowTxSig:          Optional[str] = Field(None)
     claimTxSig:           Optional[str] = Field(None)
     proofTxSig:           Optional[str] = Field(None)
+    settlementVault:      Optional[str] = Field(None)
+    settlementTokenAccount: Optional[str] = Field(None)
+    settlementPaymentIntentId: Optional[str] = Field(None)
     settlementResolution: Optional[str] = Field(None)
     settlementReason:     Optional[str] = Field(None)
 
@@ -1655,20 +1706,141 @@ def _build_owner_intent_message_v2(
     nonce: str,
     expiry: int,
 ) -> str:
-    purpose = "create" if intent_type == "tin_creation" else "update"
-    return "\n".join(
-        [
-            "TrustLink TINS Owner Intent",
-            "version=2",
-            f"purpose={purpose}",
-            f"ownerPubkey={owner_pubkey}",
-            f"tin={tin}",
-            f"displayName={display_name}",
-            f"phoneNumber={phone_number}",
-            f"nonce={nonce.lower()}",
-            f"expiryTs={expiry}",
+    if intent_type == "tin_creation":
+        action = "TIN Creation"
+        fields = [
+            ("TIN", tin),
+            ("Display Name", display_name),
+            ("Privacy", "30 PRUs"),
+            ("Nonce", nonce.lower()),
+            ("Expires", datetime.fromtimestamp(expiry, tz=timezone.utc).isoformat().replace("+00:00", "Z")),
         ]
+    else:
+        action = "TIN Upgrade"
+        fields = [
+            ("TIN", tin),
+            ("Display Name", display_name),
+            ("Nonce", nonce.lower()),
+            ("Expires", datetime.fromtimestamp(expiry, tz=timezone.utc).isoformat().replace("+00:00", "Z")),
+        ]
+    return _build_canonical_message(action, fields)
+
+TSN_CANONICAL_DOMAIN_DISPLAY = "..." + hashlib.sha256(
+    b"trustlink-pay:tsn:canonical-signing:v1"
+).hexdigest()[-8:]
+
+def _build_canonical_message(action: str, fields: list[tuple[str, str]]) -> str:
+    return "\n".join(
+        [f"TSN {action}", "---"]
+        + [f"{label}: {value}" for label, value in fields]
+        + [f"Domain: {TSN_CANONICAL_DOMAIN_DISPLAY}"]
     )
+
+def _parse_canonical_message(message: str, expected_action: str) -> dict[str, str]:
+    if not isinstance(message, str) or not message.startswith("TSN "):
+        raise HTTPException(400, "signed message is not a canonical TSN message")
+    lines = message.split("\n")
+    if len(lines) < 4 or lines[0] != f"TSN {expected_action}" or lines[1] != "---":
+        raise HTTPException(400, f"signed message must use the TSN {expected_action} template")
+    parsed: dict[str, str] = {}
+    for line in lines[2:]:
+        if ": " not in line:
+            raise HTTPException(400, f"canonical signed message field is malformed: {line}")
+        label, value = line.split(": ", 1)
+        if label in parsed:
+            raise HTTPException(400, f"canonical signed message field is duplicated: {label}")
+        parsed[label] = value
+    if parsed.get("Domain") != TSN_CANONICAL_DOMAIN_DISPLAY:
+        raise HTTPException(400, "canonical signed message domain does not match TSN")
+    return parsed
+
+def _parse_usdc_base_units(value: str, label: str) -> int:
+    match = re.fullmatch(r"(\d+)(?:\.(\d{1,6}))? USDC", value)
+    if not match:
+        raise HTTPException(400, f"{label} must be a decimal USDC amount in the signed message")
+    return int(match.group(1)) * 1_000_000 + int((match.group(2) or "").ljust(6, "0"))
+
+def _parse_canonical_expiry(value: str) -> datetime:
+    try:
+        expires_at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(400, "signed message expiry is not valid ISO 8601") from exc
+    if expires_at <= datetime.now(timezone.utc):
+        raise HTTPException(400, "signed message has expired")
+    return expires_at
+
+async def _assert_canonical_nonce_unused(*, action: str, nonce: str) -> None:
+    key = hashlib.sha256(f"{action}|{nonce}".encode("utf-8")).hexdigest()
+    r = await get_mempool_store()
+    if await r.hget(k_canonical_message_nonces(), key):
+        raise HTTPException(400, "signed message nonce has already been used")
+    await r.hset(
+        k_canonical_message_nonces(),
+        key,
+        json.dumps({"action": action, "nonce": nonce, "usedAt": datetime.now(timezone.utc).isoformat()}),
+    )
+
+async def _verify_payment_authorization_from_signed_message(req: CreateIntentRequest) -> dict[str, Any]:
+    mode = req.senderSettlementMode or ""
+    action = (
+        "PRU Spend"
+        if mode == "pru_private_commitment_v1"
+        else "Mixed Payment"
+        if mode == "mixed_pru_wallet_v1"
+        else "Payment Intent"
+    )
+    fields = _parse_canonical_message(req.senderAuthorizationMessage or "", action)
+    amount_base_units = _parse_usdc_base_units(str(fields.get("Amount") or ""), "Amount")
+    fee_base_units = _parse_usdc_base_units(str(fields.get("Fee") or ""), "Fee")
+    recipient_tin = str(fields.get("Recipient TIN") or "")
+    if not re.fullmatch(r"\d+", recipient_tin):
+        raise HTTPException(400, "Recipient TIN must be plain digits in the signed message")
+    if req.recipientTin and req.recipientTin != recipient_tin:
+        raise HTTPException(400, "recipientTin differs from the signed message")
+    token_decimals = int(get_supported_token_metadata().get(str(req.tokenMintAddress), {}).get("decimals", 6))
+    request_amount_base_units = ui_amount_to_base_units(req.amount, token_decimals)
+    if amount_base_units != request_amount_base_units:
+        raise HTTPException(400, "amount differs from the signed message")
+    request_fee_base_units = ui_amount_to_base_units(req.senderFeeAmount or 0, token_decimals)
+    if fee_base_units != request_fee_base_units:
+        raise HTTPException(400, "senderFeeAmount differs from the signed message")
+    if mode == "mixed_pru_wallet_v1":
+        pru_portion_base_units = _parse_usdc_base_units(str(fields.get("PRU Portion") or ""), "PRU Portion")
+        wallet_portion_base_units = _parse_usdc_base_units(
+            str(fields.get("Wallet Top-Up Portion") or ""),
+            "Wallet Top-Up Portion",
+        )
+        if pru_portion_base_units + wallet_portion_base_units != amount_base_units + fee_base_units:
+            raise HTTPException(400, "mixed funding portions do not equal amount plus fee")
+        submitted_pru_portion = int(str(req.pruSpendAmountBaseUnits or "0")) + int(str(req.pruSpendSenderFeeBaseUnits or "0"))
+        submitted_wallet_portion = int(str(req.walletTopUpAmountBaseUnits or "0")) + int(str(req.walletTopUpSenderFeeBaseUnits or "0"))
+        if pru_portion_base_units != submitted_pru_portion:
+            raise HTTPException(400, "PRU funding portion differs from the signed message")
+        if wallet_portion_base_units != submitted_wallet_portion:
+            raise HTTPException(400, "wallet top-up portion differs from the signed message")
+        wallet_top_up_amount = int(str(req.walletTopUpAmountBaseUnits or "0"))
+        if not req.senderSignedSettlementTransaction:
+            raise HTTPException(400, "mixed funding requires the sender co-signed settlement transaction")
+        if wallet_top_up_amount > 0 and not req.settlementEscrowSecretKeyBase64:
+            raise HTTPException(400, "mixed funding requires the shared escrow signer artifact")
+    if req.senderAuthorizationNonce and req.senderAuthorizationNonce != fields.get("Nonce"):
+        raise HTTPException(400, "senderAuthorizationNonce differs from the signed message")
+    expires_at = _parse_canonical_expiry(str(fields.get("Expires") or ""))
+    if req.senderAuthorizationExpiresAt:
+        submitted_expiry = datetime.fromisoformat(req.senderAuthorizationExpiresAt.replace("Z", "+00:00"))
+        if submitted_expiry != expires_at:
+            raise HTTPException(400, "senderAuthorizationExpiresAt differs from the signed message")
+    await _assert_canonical_nonce_unused(action=action, nonce=str(fields.get("Nonce") or ""))
+    _verify_ed25519_signature(
+        public_key=str(req.senderWallet or ""),
+        message=(req.senderAuthorizationMessage or "").encode("utf-8"),
+        signature_base64=str(req.senderAuthorizationSignature or ""),
+    )
+    return {
+        "recipientTin": recipient_tin,
+        "senderAuthorizationNonce": str(fields["Nonce"]),
+        "senderAuthorizationExpiresAt": expires_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+    }
 
 def _encrypt_tin_master_seed_payload(master_seed_hex: str) -> str:
     secret = TSN_ROUTE_ENCRYPTION_SECRET_KEY.strip()
@@ -1689,6 +1861,28 @@ def _encrypt_tin_master_seed_payload(master_seed_hex: str) -> str:
         raise HTTPException(503, "TSN route encryption key is invalid") from exc
     return base64.b64encode(ciphertext).decode("ascii")
 
+def _decrypt_tin_master_seed_payload(encrypted_master_seed: str) -> str:
+    secret = TSN_ROUTE_ENCRYPTION_SECRET_KEY.strip()
+    if not secret:
+        raise HTTPException(
+            503,
+            "TSN_ROUTE_ENCRYPTION_SECRET_KEY is missing; mempool cannot authorize PRU spending",
+        )
+    try:
+        secret_bytes = decode_secret_key(
+            secret,
+            {32},
+            "TSN_ROUTE_ENCRYPTION_SECRET_KEY",
+        )
+        plaintext = SealedBox(PrivateKey(secret_bytes)).decrypt(
+            base64.b64decode(encrypted_master_seed, validate=True)
+        )
+    except (ValueError, TypeError, CryptoError, binascii.Error) as exc:
+        raise HTTPException(503, "TIN Master Seed payload cannot be decrypted") from exc
+    if len(plaintext) != 32:
+        raise HTTPException(503, "TIN Master Seed payload has an invalid length")
+    return plaintext.hex()
+
 def _derive_pru_configuration_hash(tin: str) -> str:
     master_seed_hex = secrets.token_hex(32)
     return _derive_pru_route_record(tin=tin, master_seed_hex=master_seed_hex)["pruConfigurationHash"]
@@ -1698,6 +1892,14 @@ def _derive_pru_public_key_hex(*, master_seed_hex: str, tin: str, index: int) ->
         f"TRUSTLINK_PRU_KEY_V1|{master_seed_hex}|{tin}|{index}".encode("utf-8")
     ).digest()
     return SigningKey(seed).verify_key.encode().hex()
+
+def _derive_pru_secret_key_base64(*, master_seed_hex: str, tin: str, index: int) -> str:
+    seed = hashlib.sha256(
+        f"TRUSTLINK_PRU_KEY_V1|{master_seed_hex}|{tin}|{index}".encode("utf-8")
+    ).digest()
+    signing_key = SigningKey(seed)
+    secret_key = signing_key.encode() + signing_key.verify_key.encode()
+    return base64.b64encode(secret_key).decode("ascii")
 
 def _derive_pru_route_record(*, tin: str, master_seed_hex: Optional[str] = None) -> dict[str, Any]:
     master_seed_hex = master_seed_hex or secrets.token_hex(32)
@@ -2085,7 +2287,46 @@ async def read_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
     prus = route.get("prus")
     if not isinstance(prus, list) or not prus:
         return None
+    owner_pubkey_hash = _route_owner_pubkey_hash(route)
+    if owner_pubkey_hash and route.get("ownerPubkeyHash") != owner_pubkey_hash:
+        route["ownerPubkeyHash"] = owner_pubkey_hash
+        await r.hset(k_tin_pru_routes(), str(tin), json.dumps(route))
     return route
+
+def _compute_pru_spend_auth_hash(*, tin: str, pru_index: int, owner_pubkey: str) -> str:
+    return hashlib.sha256(
+        b"".join(
+            [
+                int(tin).to_bytes(8, "little", signed=False),
+                int(pru_index).to_bytes(2, "little", signed=False),
+                decode_base58(owner_pubkey),
+                b"TRUSTLINK_PRU_SPEND_GUARD_V1",
+            ]
+        )
+    ).hexdigest()
+
+async def read_finalized_tin_route_material(tin: str) -> Optional[dict[str, str]]:
+    operations = sorted(
+        [
+            item for item in await hget_all_json(k_tin_operations())
+            if str(item.get("tin") or "") == str(tin)
+            and item.get("status") == "finalized"
+        ],
+        key=lambda item: str(item.get("updatedAt") or item.get("createdAt") or ""),
+        reverse=True,
+    )
+    for operation in operations:
+        encrypted_master_seed = (
+            operation.get("newEncryptedMasterSeed")
+            or operation.get("encryptedMasterSeed")
+        )
+        if not encrypted_master_seed:
+            continue
+        return {
+            "masterSeedHex": _decrypt_tin_master_seed_payload(str(encrypted_master_seed)),
+            "ownerPubkey": str(operation.get("ownerPubkey") or ""),
+        }
+    return None
 
 def _route_owner_pubkey_hash(route: dict[str, Any]) -> Optional[str]:
     owner_pubkey_hash = route.get("ownerPubkeyHash")
@@ -2131,20 +2372,22 @@ def _build_pru_route_proof_message(
     platform_read_key: Optional[str] = None,
     expiry: Optional[int] = None,
 ) -> bytes:
-    lines = [
-        "TrustLink TSN PRU Route Authorization",
-        "version=1",
-        f"purpose={purpose}",
-        f"tin={tin}",
-        f"ownerPubkey={owner_pubkey}",
-        f"nonce={nonce}",
-        f"timestamp={timestamp}",
-    ]
-    if platform_read_key:
-        lines.append(f"platformReadKey={platform_read_key}")
-    if expiry:
-        lines.append(f"expiry={expiry}")
-    return "\n".join(lines).encode("utf-8")
+    purpose_label = {
+        "pru_route_lookup": "Load TIN Balance",
+        "delegate_read_access": "Delegate Balance Access",
+        "revoke_read_access": "Revoke Balance Access",
+    }.get(purpose, purpose)
+    expires_ts = expiry or (timestamp + 300)
+    expires_iso = datetime.fromtimestamp(expires_ts, tz=timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return _build_canonical_message(
+        "Balance Access",
+        [
+            ("TIN", tin),
+            ("Purpose", purpose_label),
+            ("Nonce", nonce),
+            ("Expires", expires_iso),
+        ],
+    ).encode("utf-8")
 
 def _build_platform_pru_route_request_message(*, tin: str, platform_read_key: str) -> bytes:
     return "\n".join(
@@ -2171,18 +2414,66 @@ def _verify_ed25519_signature(*, public_key: str, message: bytes, signature_base
     except (BadSignatureError, ValueError) as exc:
         raise HTTPException(403, "signature verification failed") from exc
 
+def _decode_signed_message_base64(value: Optional[str]) -> Optional[bytes]:
+    if not value:
+        return None
+    try:
+        return base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(403, "signed message is not valid base64") from exc
+
+def _assert_pru_route_signed_message_matches(
+    *,
+    signed_message: bytes,
+    tin: str,
+    purpose: str,
+    nonce: str,
+    timestamp: int,
+    expiry: Optional[int] = None,
+) -> bytes:
+    try:
+        message_text = signed_message.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(403, "signed message is not valid UTF-8") from exc
+    fields = _parse_canonical_message(message_text, "Balance Access")
+    purpose_label = {
+        "pru_route_lookup": "Load TIN Balance",
+        "delegate_read_access": "Delegate Balance Access",
+        "revoke_read_access": "Revoke Balance Access",
+    }.get(purpose, purpose)
+    expected_expires = datetime.fromtimestamp(
+        expiry or (timestamp + 300),
+        tz=timezone.utc,
+    ).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    if fields.get("TIN") != str(tin):
+        raise HTTPException(403, "signed message TIN does not match the request")
+    if fields.get("Purpose") != purpose_label:
+        raise HTTPException(403, "signed message purpose does not match the request")
+    if fields.get("Nonce") != nonce:
+        raise HTTPException(403, "signed message nonce does not match the request")
+    if fields.get("Expires") != expected_expires:
+        raise HTTPException(403, "signed message expiry does not match the request")
+    return signed_message
+
 async def _read_onchain_tin_owner_hash(*, tin: str, owner_pubkey: str) -> Optional[str]:
     identity_pubkey = get_tins_identity_pda(owner_pubkey)
     data = await read_tins_account_data(identity_pubkey)
-    if not data:
-        return None
-    try:
-        decoded = decode_tin_account_header(data)
-    except ValueError:
-        return None
-    if str(decoded.get("tin")) != str(tin):
-        return None
-    return str(decoded.get("ownerPubkeyHash") or "").lower()
+    if data:
+        try:
+            decoded = decode_tin_account_header(data)
+            if str(decoded.get("tin")) == str(tin):
+                return str(decoded.get("ownerPubkeyHash") or "").lower()
+        except ValueError:
+            pass
+    return await find_tins_owner_hash_by_tin(tin)
+
+def _accepted_onchain_owner_markers(owner_pubkey: str) -> set[str]:
+    owner_pubkey_bytes = decode_base58(owner_pubkey)
+    return {
+        hashlib.sha256(owner_pubkey_bytes).hexdigest(),
+        owner_pubkey_bytes.hex(),
+        bytes(get_tins_identity_pda(owner_pubkey)).hex(),
+    }
 
 async def _assert_owner_controls_tin(
     *,
@@ -2191,10 +2482,34 @@ async def _assert_owner_controls_tin(
     accepted_owner_hash: Optional[str] = None,
 ) -> str:
     owner_hash = hashlib.sha256(decode_base58(owner_pubkey)).hexdigest()
+    accepted_onchain_markers = _accepted_onchain_owner_markers(owner_pubkey)
     onchain_hash = await _read_onchain_tin_owner_hash(tin=tin, owner_pubkey=owner_pubkey)
+    if accepted_owner_hash == owner_hash:
+        if onchain_hash and onchain_hash not in accepted_onchain_markers:
+            logger.warning(
+                "PRU route owner proof rejected: tin=%s ownerHash=%s routeHash=%s onchainHash=%s",
+                tin,
+                owner_hash[:12],
+                str(accepted_owner_hash)[:12],
+                onchain_hash[:12],
+            )
+            raise HTTPException(403, "owner_pubkey does not match the on-chain TIN owner commitment")
+        return owner_hash
     if not onchain_hash:
+        logger.warning(
+            "PRU route owner proof rejected: tin=%s ownerHash=%s reason=missing-onchain-owner",
+            tin,
+            owner_hash[:12],
+        )
         raise HTTPException(403, "TIN owner account was not found on-chain")
-    if onchain_hash != owner_hash and accepted_owner_hash != owner_hash:
+    if onchain_hash not in accepted_onchain_markers and accepted_owner_hash != owner_hash:
+        logger.warning(
+            "PRU route owner proof rejected: tin=%s ownerHash=%s routeHash=%s onchainHash=%s",
+            tin,
+            owner_hash[:12],
+            str(accepted_owner_hash or "")[:12],
+            onchain_hash[:12],
+        )
         raise HTTPException(403, "owner_pubkey does not match the on-chain TIN owner commitment")
     return owner_hash
 
@@ -2234,6 +2549,7 @@ async def _verify_owner_pru_route_proof(
     platform_read_key: Optional[str] = None,
     expiry: Optional[int] = None,
     accepted_owner_hash: Optional[str] = None,
+    signed_message_base64: Optional[str] = None,
 ) -> str:
     now = int(time.time())
     if abs(now - int(timestamp)) > 60:
@@ -2244,14 +2560,26 @@ async def _verify_owner_pru_route_proof(
         owner_pubkey=owner_pubkey,
         accepted_owner_hash=accepted_owner_hash,
     )
-    message = _build_pru_route_proof_message(
-        tin=tin,
-        purpose=purpose,
-        owner_pubkey=owner_pubkey,
-        nonce=nonce,
-        timestamp=timestamp,
-        platform_read_key=platform_read_key,
-        expiry=expiry,
+    provided_signed_message = _decode_signed_message_base64(signed_message_base64)
+    message = (
+        _assert_pru_route_signed_message_matches(
+            signed_message=provided_signed_message,
+            tin=tin,
+            purpose=purpose,
+            nonce=nonce,
+            timestamp=timestamp,
+            expiry=expiry,
+        )
+        if provided_signed_message is not None
+        else _build_pru_route_proof_message(
+            tin=tin,
+            purpose=purpose,
+            owner_pubkey=owner_pubkey,
+            nonce=nonce,
+            timestamp=timestamp,
+            platform_read_key=platform_read_key,
+            expiry=expiry,
+        )
     )
     _verify_ed25519_signature(public_key=owner_pubkey, message=message, signature_base64=signature)
     return owner_hash
@@ -2887,18 +3215,31 @@ async def create_tin_pru_route_session(body: TinPruRouteSessionRequest) -> TinPr
     if not route:
         raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
     expected_hash = _route_owner_pubkey_hash(route)
-    owner_hash = await _verify_owner_pru_route_proof(
-        tin=str(body.tin),
-        owner_pubkey=body.owner_pubkey,
-        signature=body.signature,
-        nonce=body.nonce,
-        timestamp=body.timestamp,
-        purpose="pru_route_lookup",
-        accepted_owner_hash=expected_hash,
-    )
-    if expected_hash and expected_hash != owner_hash:
-        raise HTTPException(403, "owner proof does not match the finalized PRU route")
-    return await _create_pru_route_session(tin=str(body.tin), owner_hash=owner_hash)
+    try:
+        owner_hash = await _verify_owner_pru_route_proof(
+            tin=str(body.tin),
+            owner_pubkey=body.owner_pubkey,
+            signature=body.signature,
+            nonce=body.nonce,
+            timestamp=body.timestamp,
+            purpose="pru_route_lookup",
+            accepted_owner_hash=expected_hash,
+            signed_message_base64=body.signed_message_base64,
+        )
+        if expected_hash and expected_hash != owner_hash:
+            raise HTTPException(403, "owner proof does not match the finalized PRU route")
+        return await _create_pru_route_session(tin=str(body.tin), owner_hash=owner_hash)
+    except HTTPException as exc:
+        if exc.status_code == 403:
+            logger.warning(
+                "PRU route session rejected: tin=%s owner=%s nonce=%s timestamp=%s detail=%s",
+                body.tin,
+                f"{str(body.owner_pubkey)[:4]}...{str(body.owner_pubkey)[-4:]}",
+                body.nonce,
+                body.timestamp,
+                exc.detail,
+            )
+        raise
 
 @app.post("/platform/register-read-key", response_model=PlatformReadKeyRegistrationResponse)
 async def register_platform_read_key(body: PlatformReadKeyRegistrationRequest) -> PlatformReadKeyRegistrationResponse:
@@ -2947,6 +3288,7 @@ async def grant_tin_delegated_read_access(body: TinDelegatedReadRequest) -> TinD
         platform_read_key=body.platform_read_key,
         expiry=expires_at,
         accepted_owner_hash=_route_owner_pubkey_hash(route),
+        signed_message_base64=body.signed_message_base64,
     )
     await (await get_mempool_store()).hset(
         k_tin_read_delegations(),
@@ -2981,6 +3323,7 @@ async def revoke_tin_delegated_read_access(body: TinDelegatedReadRequest) -> Tin
         purpose="revoke_read_access",
         platform_read_key=body.platform_read_key,
         accepted_owner_hash=_route_owner_pubkey_hash(route),
+        signed_message_base64=body.signed_message_base64,
     )
     await (await get_mempool_store()).hset(
         k_tin_read_delegations(),
@@ -3246,8 +3589,11 @@ async def post_intent(req: CreateIntentRequest) -> PublicMempoolIntent:
     existing = await r.hget(k_intents(), req.paymentId)
     if existing:
         return public_intent(json.loads(existing))
+    parsed_signed_fields = await _verify_payment_authorization_from_signed_message(req)
     now = datetime.now(timezone.utc).isoformat()
-    intent = MempoolIntent(**req.model_dump(), id=req.paymentId,
+    data = req.model_dump()
+    data.update(parsed_signed_fields)
+    intent = MempoolIntent(**data, id=req.paymentId,
                            status="pending", postedAt=now, updatedAt=now)
     await r.hset(k_intents(), req.paymentId, json.dumps(intent.model_dump()))
     logger.info("Intent posted: %s", intent.id)
@@ -3287,6 +3633,12 @@ async def update_intent_status(
         data["claimTxSig"] = body.claimTxSig
     if body.proofTxSig is not None:
         data["proofTxSig"] = body.proofTxSig
+    if body.settlementVault is not None:
+        data["settlementVault"] = body.settlementVault
+    if body.settlementTokenAccount is not None:
+        data["settlementTokenAccount"] = body.settlementTokenAccount
+    if body.settlementPaymentIntentId is not None:
+        data["settlementPaymentIntentId"] = body.settlementPaymentIntentId
     if body.settlementResolution is not None:
         data["settlementResolution"] = body.settlementResolution
     if body.settlementReason is not None:
@@ -3295,6 +3647,116 @@ async def update_intent_status(
     return MempoolIntent(**data)
 
 # ── Claim Requests ────────────────────────────────────────────────────────────
+@app.post(
+    "/intents/{intent_id}/pru-spend-permit",
+    response_model=PruSpendPermitResponse,
+    dependencies=[Depends(require_worker_api_key)],
+)
+async def issue_pru_spend_permit(
+    intent_id: str = ApiPath(...),
+    body: SignedLeasePermitRequest = ...,
+) -> PruSpendPermitResponse:
+    verify_lease_authorization(
+        "pru-spend",
+        intent_id,
+        body.operatorPubkey,
+        body.requestedAtTs,
+        body.requestSignatureBase64,
+    )
+    r = await get_mempool_store()
+    raw = await r.hget(k_intents(), intent_id)
+    if not raw:
+        raise HTTPException(404, f"Intent {intent_id} not found")
+    intent = json.loads(raw)
+    if intent.get("status") != "pending":
+        raise HTTPException(409, "PRU spend intent is not pending")
+    if intent.get("senderSettlementMode") not in {"pru_private_commitment_v1", "mixed_pru_wallet_v1"}:
+        raise HTTPException(409, "Intent is not a PRU spend intent")
+    auth_message = str(intent.get("senderAuthorizationMessage") or "")
+    if auth_message.startswith("TSN PRU Spend\n---\n"):
+        _parse_canonical_message(auth_message, "PRU Spend")
+    elif auth_message.startswith("TSN Mixed Payment\n---\n"):
+        _parse_canonical_message(auth_message, "Mixed Payment")
+    else:
+        raise HTTPException(422, "PRU spend intent is missing canonical signed PRU funding authorization")
+    tin = str(intent.get("pruSpendTin") or "").strip()
+    if not tin:
+        raise HTTPException(422, "PRU spend intent is missing pruSpendTin")
+    route = await read_tin_pru_route(tin)
+    if not route:
+        raise HTTPException(409, "Sender TIN has no finalized PRU route")
+    route_material = await read_finalized_tin_route_material(tin)
+    if not route_material:
+        raise HTTPException(409, "Sender TIN does not have decryptable PRU route material")
+    token_metadata = get_supported_token_metadata().get(str(intent.get("tokenMintAddress") or ""))
+    if not token_metadata:
+        raise HTTPException(422, "PRU spend token mint is not supported")
+    expected_escrow_amount = ui_amount_to_base_units(intent.get("amount"), int(token_metadata["decimals"]))
+    escrow_amount = int(str(intent.get("pruSpendAmountBaseUnits") or "0"))
+    sender_fee_amount = int(str(intent.get("pruSpendSenderFeeBaseUnits") or "0"))
+    if escrow_amount != expected_escrow_amount:
+        raise HTTPException(422, "PRU spend escrow amount does not match the payment amount")
+    selections_raw = intent.get("pruSpendSelections")
+    if not isinstance(selections_raw, list) or not selections_raw:
+        raise HTTPException(422, "PRU spend intent has no selected PRUs")
+    route_prus = {
+        int(pru.get("index")): str(pru.get("publicKey") or "")
+        for pru in route.get("prus", [])
+        if isinstance(pru, dict) and str(pru.get("publicKey") or "")
+    }
+    selections: list[PruSpendPermitSelection] = []
+    total_selected = 0
+    seen_nonces: set[tuple[int, int]] = set()
+    for raw_selection in selections_raw:
+        if not isinstance(raw_selection, dict):
+            raise HTTPException(422, "PRU spend selection must be an object")
+        pru_index = int(raw_selection.get("pruIndex"))
+        nonce = int(raw_selection.get("nonce"))
+        amount = int(str(raw_selection.get("amountBaseUnits") or "0"))
+        if pru_index < 0 or pru_index >= TIN_DEFAULT_PRU_COUNT:
+            raise HTTPException(422, "PRU spend selection index is out of range")
+        if nonce < 0 or nonce > 255:
+            raise HTTPException(422, "PRU spend nonce must fit in one byte")
+        if amount <= 0:
+            raise HTTPException(422, "PRU spend amount must be positive")
+        if (pru_index, nonce) in seen_nonces:
+            raise HTTPException(422, "PRU spend selection nonce is duplicated")
+        seen_nonces.add((pru_index, nonce))
+        public_key = route_prus.get(pru_index)
+        if not public_key:
+            raise HTTPException(422, "Selected PRU is not part of the finalized route")
+        selections.append(PruSpendPermitSelection(
+            tin=tin,
+            pruIndex=pru_index,
+            nonce=nonce,
+            publicKey=public_key,
+            secretKeyBase64=_derive_pru_secret_key_base64(
+                master_seed_hex=route_material["masterSeedHex"],
+                tin=tin,
+                index=pru_index,
+            ),
+            spendAuthHash=_compute_pru_spend_auth_hash(
+                tin=tin,
+                pru_index=pru_index,
+                owner_pubkey=route_material["ownerPubkey"],
+            ),
+            amountBaseUnits=str(amount),
+        ))
+        total_selected += amount
+    if total_selected != escrow_amount + sender_fee_amount:
+        raise HTTPException(422, "PRU spend selections must equal escrow amount plus sender fee")
+    intent["assignedCrankerPubkey"] = body.operatorPubkey
+    intent["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    await r.hset(k_intents(), intent_id, json.dumps(intent))
+    return PruSpendPermitResponse(
+        paymentId=str(intent["paymentId"]),
+        tokenMintAddress=str(intent["tokenMintAddress"]),
+        commitmentHash=str(intent.get("commitmentHash") or ""),
+        escrowAmountBaseUnits=str(escrow_amount),
+        senderFeeAmountBaseUnits=str(sender_fee_amount),
+        selections=selections,
+    )
+
 @app.post("/claim-requests", response_model=MempoolClaimRequest)
 async def post_claim_request(req: PostClaimRequest) -> MempoolClaimRequest:
     """Post a claim request. Idempotent — returns existing active claim for intent."""

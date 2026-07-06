@@ -152,6 +152,18 @@ pub struct TsnPrivateCommitmentRegistered {
 }
 
 #[event]
+pub struct TsnPruSpendExecuted {
+    pub tin: u64,
+    pub pru_index: u16,
+    pub nonce: u8,
+    pub pru_authority: Pubkey,
+    pub token_mint: Pubkey,
+    pub amount: u64,
+    pub commitment_hash: [u8; 32],
+    pub epoch_id: u64,
+}
+
+#[event]
 pub struct TsnPrivatePayoutExecuted {
     pub payout_nullifier: [u8; 32],
     pub payout_sequence: u64,

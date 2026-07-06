@@ -160,6 +160,17 @@ export type CreateIntentRequest = {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  pruSpendTin?: string | null;
+  pruSpendAmountBaseUnits?: string | null;
+  pruSpendSenderFeeBaseUnits?: string | null;
+  walletTopUpAmountBaseUnits?: string | null;
+  walletTopUpSenderFeeBaseUnits?: string | null;
+  pruSpendSelections?: Array<{
+    pruIndex: number;
+    amountBaseUnits: string;
+    nonce: number;
+  }> | null;
+  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -323,6 +334,13 @@ export function buildCreateIntentRequest(params: {
   senderSignedSettlementTransaction?: string | null;
   senderSignedSettlementFeePayer?: string | null;
   senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  pruSpendTin?: string | null;
+  pruSpendAmountBaseUnits?: string | null;
+  pruSpendSenderFeeBaseUnits?: string | null;
+  walletTopUpAmountBaseUnits?: string | null;
+  walletTopUpSenderFeeBaseUnits?: string | null;
+  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -352,6 +370,13 @@ export function buildCreateIntentRequest(params: {
     senderSignedSettlementTransaction: params.senderSignedSettlementTransaction ?? null,
     senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer ?? null,
     senderSettlementMode: params.senderSettlementMode ?? null,
+    pruSpendTin: params.pruSpendTin ?? null,
+    pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits ?? null,
+    pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits ?? null,
+    walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits ?? null,
+    walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits ?? null,
+    pruSpendSelections: params.pruSpendSelections ?? null,
+    settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64 ?? null,
     privacyVersion: params.privacyVersion ?? null,
     commitmentRecord: params.commitmentRecord ?? null,
     senderTokenAccount: params.senderTokenAccount ?? null,

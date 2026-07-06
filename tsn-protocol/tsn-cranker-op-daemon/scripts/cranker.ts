@@ -22,7 +22,9 @@ import {
   getTsnPrivateReplayRegistryPda,
   getTsnSharedEscrowAuthorityPda,
   requestPrivatePayoutPermit,
+  requestPruSpendPermit,
   requestPrivateRecoveryPermit,
+  tsnExecutePruSpendOnChain,
   tsnExecutePrivatePayoutOnChain,
   tsnRecoverPrivateEscrowOnChain,
 } from "../../tsn-sdk/src/private-settlement.ts";
@@ -32,6 +34,11 @@ import {
   decryptSettlementToken,
 } from "../../tsn-sdk/src/settlement-token.ts";
 import { verifySenderPaymentAuthorization } from "../../tsn-sdk/src/payment-authorization-server.ts";
+import {
+  parseMixedPaymentMessage,
+  parsePaymentIntentMessage,
+  parsePruSpendMessage,
+} from "../../tsn-sdk/src/canonical-message.ts";
 import { VERIFIED_TSN_PROGRAM_ID } from "../../tsn-sdk/src/program.ts";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import {
@@ -325,13 +332,42 @@ function getRecipientAmountUi(item: TsnWorkItem) {
 }
 
 function parseAuthorizationMessage(message: string) {
-  return Object.fromEntries(
-    message
-      .split("\n")
-      .map((line) => line.split("="))
-      .filter(([key, value]) => key && value != null)
-      .map(([key, ...value]) => [key, value.join("=")]),
-  );
+  if (message.startsWith("TSN PRU Spend\n")) {
+    const parsed = parsePruSpendMessage(message);
+    return {
+      action: "pru_private_commitment_v1",
+      amountBaseUnits: parsed.amountBaseUnits,
+      recipientTin: parsed.recipientTin,
+      senderFeeBaseUnits: parsed.feeBaseUnits,
+      nonce: parsed.nonce,
+      expiresAt: parsed.expires.toISOString(),
+    };
+  }
+  if (message.startsWith("TSN Payment Intent\n")) {
+    const parsed = parsePaymentIntentMessage(message);
+    return {
+      action: "payment_intent",
+      amountBaseUnits: parsed.amountBaseUnits,
+      recipientTin: parsed.recipientTin,
+      senderFeeBaseUnits: parsed.feeBaseUnits,
+      nonce: parsed.nonce,
+      expiresAt: parsed.expires.toISOString(),
+    };
+  }
+  if (message.startsWith("TSN Mixed Payment\n")) {
+    const parsed = parseMixedPaymentMessage(message);
+    return {
+      action: "mixed_pru_wallet_v1",
+      amountBaseUnits: parsed.amountBaseUnits,
+      recipientTin: parsed.recipientTin,
+      senderFeeBaseUnits: parsed.feeBaseUnits,
+      pruPortionBaseUnits: parsed.pruPortionBaseUnits,
+      walletTopUpPortionBaseUnits: parsed.walletTopUpPortionBaseUnits,
+      nonce: parsed.nonce,
+      expiresAt: parsed.expires.toISOString(),
+    };
+  }
+  throw new Error("sender authorization message is not canonical TSN text");
 }
 
 function validateSignedSettlementTransaction(params: {
@@ -347,6 +383,8 @@ function validateSignedSettlementTransaction(params: {
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
     settlementPaymentIntentId?: string | null;
+    walletTopUpAmountBaseUnits?: string | null;
+    walletTopUpSenderFeeBaseUnits?: string | null;
     privacyVersion?: number | null;
     commitmentRecord?: string | null;
     transferId?: string | null;
@@ -361,11 +399,15 @@ function validateSignedSettlementTransaction(params: {
 
   const senderWallet = new PublicKey(intent.senderWallet ?? "");
   const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
-  const expectedAmount = toBaseUnits(params.item.intent.amount, params.tokenDecimals);
-  const expectedSenderFeeAmount = toBaseUnits(
-    Number((params.item.intent as TsnIntentWorkItem["intent"] & { senderFeeAmount?: number | null }).senderFeeAmount ?? 0),
-    params.tokenDecimals,
-  );
+  const expectedAmount = intent.senderSettlementMode === "mixed_pru_wallet_v1"
+    ? BigInt(intent.walletTopUpAmountBaseUnits ?? "0")
+    : toBaseUnits(params.item.intent.amount, params.tokenDecimals);
+  const expectedSenderFeeAmount = intent.senderSettlementMode === "mixed_pru_wallet_v1"
+    ? BigInt(intent.walletTopUpSenderFeeBaseUnits ?? "0")
+    : toBaseUnits(
+      Number((params.item.intent as TsnIntentWorkItem["intent"] & { senderFeeAmount?: number | null }).senderFeeAmount ?? 0),
+      params.tokenDecimals,
+    );
   const expectedProgramId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
   const expectedPaymentIntentId = BigInt(intent.settlementPaymentIntentId ?? "0");
   const expectedSenderTokenAccount = intent.senderTokenAccount ? new PublicKey(intent.senderTokenAccount) : null;
@@ -385,12 +427,17 @@ function validateSignedSettlementTransaction(params: {
     const coreInstructions = transaction.instructions.filter(
       (instruction) => !instruction.programId.equals(ComputeBudgetProgram.programId),
     );
-    const expectedCoreInstructionCount = expectedSenderFeeAmount > 0n ? 2 : 1;
+    const registerCommitmentRequired = expectedAmount > 0n;
+    const expectedCoreInstructionCount =
+      (registerCommitmentRequired ? 1 : 0) + (expectedSenderFeeAmount > 0n ? 1 : 0);
     if (coreInstructions.length !== expectedCoreInstructionCount) {
       return `private settlement transaction must contain ${expectedCoreInstructionCount} core instructions, got ${coreInstructions.length}`;
     }
-    const [registerCommitmentIx, senderFeeTransferIx] = coreInstructions;
-    if (!registerCommitmentIx.programId.equals(expectedProgramId)) {
+    const registerCommitmentIx = registerCommitmentRequired ? coreInstructions[0] : null;
+    const senderFeeTransferIx = registerCommitmentRequired
+      ? coreInstructions[1]
+      : coreInstructions[0];
+    if (registerCommitmentRequired && !registerCommitmentIx?.programId.equals(expectedProgramId)) {
       return "private settlement first instruction is not TSN commitment registration";
     }
     if (senderFeeTransferIx && !senderFeeTransferIx.programId.equals(TOKEN_PROGRAM_ID)) {
@@ -398,64 +445,62 @@ function validateSignedSettlementTransaction(params: {
     }
 
     const escrowTokenAccount = expectedSettlementTokenAccount;
-    if (
-      !escrowTokenAccount ||
-      !expectedCommitmentHash ||
-      !expectedSenderTokenAccount
-    ) {
+    if ((!expectedSenderTokenAccount) || (registerCommitmentRequired && (!escrowTokenAccount || !expectedCommitmentHash))) {
       return "private settlement is missing sender, escrow, or commitment metadata";
     }
     const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
-    const escrowSignature = transaction.signatures.find((entry) =>
-      entry.publicKey.equals(escrowTokenAccount),
-    );
-    if (!escrowSignature?.signature) {
-      return "private escrow token account did not sign its verifier-funded creation";
-    }
-    if (expectedSettlementVault && !expectedSettlementVault.equals(escrowTokenAccount)) {
-      return "private settlement vault metadata mismatch";
-    }
-    if (
-      registerCommitmentIx.data.length !== 48 ||
-      !bufferEquals(
-        registerCommitmentIx.data.subarray(0, 8),
-        instructionDiscriminator("tsn_register_private_commitment"),
-      )
-    ) {
-      return "private commitment instruction data mismatch";
-    }
-    if (!registerCommitmentIx.keys[0]?.pubkey.equals(params.operator)) {
-      return "private commitment cranker signer mismatch";
-    }
-    if (!registerCommitmentIx.keys[1]?.pubkey.equals(senderWallet)) {
-      return "private commitment sender signer mismatch";
-    }
-    if (!registerCommitmentIx.keys[4]?.pubkey.equals(expectedSenderTokenAccount)) {
-      return "private commitment sender token account mismatch";
-    }
-    if (!registerCommitmentIx.keys[5]?.pubkey.equals(tokenMint)) {
-      return "private commitment token mint mismatch";
-    }
-    if (!registerCommitmentIx.keys[6]?.pubkey.equals(sharedEscrowAuthority)) {
-      return "private commitment shared escrow authority mismatch";
-    }
-    if (!registerCommitmentIx.keys[7]?.pubkey.equals(escrowTokenAccount)) {
-      return "private commitment escrow token account mismatch";
-    }
-    if (!registerCommitmentIx.keys[8]?.pubkey.equals(getTsnVerifierPda())) {
-      return "private commitment verifier PDA mismatch";
-    }
-    if (!registerCommitmentIx.keys[9]?.pubkey.equals(TOKEN_PROGRAM_ID)) {
-      return "private commitment token program mismatch";
-    }
-    if (!registerCommitmentIx.keys[10]?.pubkey.equals(SystemProgram.programId)) {
-      return "private commitment system program mismatch";
-    }
-    if (!bufferEquals(registerCommitmentIx.data.subarray(8, 40), expectedCommitmentHash)) {
-      return "private commitment hash mismatch";
-    }
-    if (!bufferEquals(registerCommitmentIx.data.subarray(40, 48), encodeU64(expectedAmount))) {
-      return "private commitment amount mismatch";
+    if (registerCommitmentRequired) {
+      const escrowSignature = transaction.signatures.find((entry) =>
+        entry.publicKey.equals(escrowTokenAccount!),
+      );
+      if (!escrowSignature?.signature) {
+        return "private escrow token account did not sign its verifier-funded creation";
+      }
+      if (expectedSettlementVault && !expectedSettlementVault.equals(escrowTokenAccount!)) {
+        return "private settlement vault metadata mismatch";
+      }
+      if (
+        registerCommitmentIx!.data.length !== 48 ||
+        !bufferEquals(
+          registerCommitmentIx!.data.subarray(0, 8),
+          instructionDiscriminator("tsn_register_private_commitment"),
+        )
+      ) {
+        return "private commitment instruction data mismatch";
+      }
+      if (!registerCommitmentIx!.keys[0]?.pubkey.equals(params.operator)) {
+        return "private commitment cranker signer mismatch";
+      }
+      if (!registerCommitmentIx!.keys[1]?.pubkey.equals(senderWallet)) {
+        return "private commitment sender signer mismatch";
+      }
+      if (!registerCommitmentIx!.keys[4]?.pubkey.equals(expectedSenderTokenAccount)) {
+        return "private commitment sender token account mismatch";
+      }
+      if (!registerCommitmentIx!.keys[5]?.pubkey.equals(tokenMint)) {
+        return "private commitment token mint mismatch";
+      }
+      if (!registerCommitmentIx!.keys[6]?.pubkey.equals(sharedEscrowAuthority)) {
+        return "private commitment shared escrow authority mismatch";
+      }
+      if (!registerCommitmentIx!.keys[7]?.pubkey.equals(escrowTokenAccount!)) {
+        return "private commitment escrow token account mismatch";
+      }
+      if (!registerCommitmentIx!.keys[8]?.pubkey.equals(getTsnVerifierPda())) {
+        return "private commitment verifier PDA mismatch";
+      }
+      if (!registerCommitmentIx!.keys[9]?.pubkey.equals(TOKEN_PROGRAM_ID)) {
+        return "private commitment token program mismatch";
+      }
+      if (!registerCommitmentIx!.keys[10]?.pubkey.equals(SystemProgram.programId)) {
+        return "private commitment system program mismatch";
+      }
+      if (!bufferEquals(registerCommitmentIx!.data.subarray(8, 40), expectedCommitmentHash!)) {
+        return "private commitment hash mismatch";
+      }
+      if (!bufferEquals(registerCommitmentIx!.data.subarray(40, 48), encodeU64(expectedAmount))) {
+        return "private commitment amount mismatch";
+      }
     }
     if (senderFeeTransferIx) {
       if (
@@ -605,6 +650,17 @@ async function validateIntentWork(params: {
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: string | null;
+    pruSpendTin?: string | null;
+    pruSpendAmountBaseUnits?: string | null;
+    pruSpendSenderFeeBaseUnits?: string | null;
+    walletTopUpAmountBaseUnits?: string | null;
+    walletTopUpSenderFeeBaseUnits?: string | null;
+    pruSpendSelections?: Array<{
+      pruIndex: number;
+      amountBaseUnits: string;
+      nonce: number;
+    }> | null;
+    settlementEscrowSecretKeyBase64?: string | null;
     senderTokenAccount?: string | null;
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
@@ -642,11 +698,13 @@ async function validateIntentWork(params: {
   }
   if (
     intent.senderSettlementMode !== "sponsored_sender_cosigned" &&
-    intent.senderSettlementMode !== "private_permit_v2"
+    intent.senderSettlementMode !== "private_permit_v2" &&
+    intent.senderSettlementMode !== "pru_private_commitment_v1" &&
+    intent.senderSettlementMode !== "mixed_pru_wallet_v1"
   ) {
     return "unsupported sender settlement mode";
   }
-  if (!intent.senderSignedSettlementTransaction) {
+  if (intent.senderSettlementMode !== "pru_private_commitment_v1" && !intent.senderSignedSettlementTransaction) {
     return "missing sender co-signed settlement transaction";
   }
   if (!intent.encryptedSettlementToken || !intent.transferId || !intent.commitmentHash) {
@@ -664,10 +722,27 @@ async function validateIntentWork(params: {
   ) {
     return "encrypted settlement token epoch mismatch";
   }
-  if (!intent.senderSignedSettlementFeePayer) {
+  if (intent.senderSettlementMode === "pru_private_commitment_v1") {
+    if (!intent.pruSpendTin || !intent.pruSpendAmountBaseUnits || !intent.pruSpendSelections?.length) {
+      return "missing PRU spend route selection";
+    }
+  } else if (intent.senderSettlementMode === "mixed_pru_wallet_v1") {
+    if (!intent.pruSpendTin || !intent.pruSpendSelections?.length) {
+      return "mixed funding is missing PRU route selection";
+    }
+    if (BigInt(intent.walletTopUpAmountBaseUnits ?? "0") > 0n && !intent.settlementEscrowSecretKeyBase64) {
+      return "mixed funding is missing shared escrow signer artifact";
+    }
+    if (
+      BigInt(intent.walletTopUpAmountBaseUnits ?? "0") <= 0n &&
+      BigInt(intent.walletTopUpSenderFeeBaseUnits ?? "0") <= 0n
+    ) {
+      return "mixed funding is missing wallet top-up amounts";
+    }
+  } else if (!intent.senderSignedSettlementFeePayer) {
     return "missing sponsored settlement fee payer";
   }
-  if (intent.senderSignedSettlementFeePayer !== params.operator.toBase58()) {
+  if (intent.senderSettlementMode !== "pru_private_commitment_v1" && intent.senderSignedSettlementFeePayer !== params.operator.toBase58()) {
     return "sponsored settlement fee payer does not match this cranker";
   }
   if (!intent.senderAuthorizationNonce) {
@@ -685,35 +760,57 @@ async function validateIntentWork(params: {
       return "sender authorization has expired";
     }
   }
-  const authorization = parseAuthorizationMessage(intent.senderAuthorizationMessage);
-  if (authorization.senderWallet !== intent.senderWallet) {
-    return "sender authorization wallet mismatch";
+  let authorization: ReturnType<typeof parseAuthorizationMessage>;
+  try {
+    authorization = parseAuthorizationMessage(intent.senderAuthorizationMessage);
+  } catch (error) {
+    return error instanceof Error ? error.message : "sender authorization message is not canonical TSN text";
   }
-  if (authorization.tokenMintAddress !== item.intent.tokenMintAddress) {
-    return "sender authorization token mint mismatch";
+  const authorizedAmount = Number(authorization.amountBaseUnits) / 1_000_000;
+  const authorizedSenderFeeAmount = Number(authorization.senderFeeBaseUnits) / 1_000_000;
+  if (authorization.recipientTin !== (intent.recipientTin ?? null)) {
+    return "sender authorization recipient TIN mismatch";
   }
-  const authorizedTotal = Number(authorization.totalTokenRequiredUi);
-  const authorizedAmount = Number(authorization.amount);
-  const authorizedSenderFeeAmount = Number(authorization.senderFeeAmount ?? 0);
-  if (!Number.isFinite(authorizedAmount) || Math.abs(authorizedAmount - Number(item.intent.amount)) > 0.000001) {
+  if (authorization.action === "pru_private_commitment_v1" && intent.senderSettlementMode !== "pru_private_commitment_v1") {
+    return "sender authorization action does not match settlement mode";
+  }
+  if (authorization.action === "payment_intent" && intent.senderSettlementMode === "pru_private_commitment_v1") {
+    return "sender authorization action does not match PRU spend mode";
+  }
+  if (authorization.action === "mixed_pru_wallet_v1" && intent.senderSettlementMode !== "mixed_pru_wallet_v1") {
+    return "sender authorization action does not match mixed funding mode";
+  }
+  if (authorization.action !== "mixed_pru_wallet_v1" && intent.senderSettlementMode === "mixed_pru_wallet_v1") {
+    return "sender authorization action does not match mixed funding mode";
+  }
+  if (Math.abs(authorizedAmount - Number(item.intent.amount)) > 0.000001) {
     return "sender authorization amount mismatch";
   }
   if (
-    !Number.isFinite(authorizedSenderFeeAmount) ||
     Math.abs(authorizedSenderFeeAmount - Number((item.intent as TsnIntentWorkItem["intent"] & { senderFeeAmount?: number | null }).senderFeeAmount ?? 0)) > 0.000001
   ) {
     return "sender authorization fee mismatch";
   }
-  if (!Number.isFinite(authorizedTotal) || Math.abs(authorizedTotal - (authorizedAmount + authorizedSenderFeeAmount)) > 0.000001) {
-    return "sender authorization total mismatch";
+  if (authorization.action === "mixed_pru_wallet_v1") {
+    const expectedPruPortion = BigInt(intent.pruSpendAmountBaseUnits ?? "0") + BigInt(intent.pruSpendSenderFeeBaseUnits ?? "0");
+    const expectedWalletPortion = BigInt(intent.walletTopUpAmountBaseUnits ?? "0") + BigInt(intent.walletTopUpSenderFeeBaseUnits ?? "0");
+    if (authorization.pruPortionBaseUnits !== expectedPruPortion) {
+      return "sender authorization PRU funding portion mismatch";
+    }
+    if (authorization.walletTopUpPortionBaseUnits !== expectedWalletPortion) {
+      return "sender authorization wallet top-up portion mismatch";
+    }
   }
   if (authorization.nonce !== intent.senderAuthorizationNonce) {
     return "sender authorization nonce mismatch";
   }
-  if (authorization.issuedAt !== intent.senderAuthorizationIssuedAt) {
-    return "sender authorization issue timestamp mismatch";
-  }
-  if (authorization.expiresAt !== intent.senderAuthorizationExpiresAt) {
+  const authorizationExpiryMs = Date.parse(authorization.expiresAt);
+  const intentExpiryMs = Date.parse(intent.senderAuthorizationExpiresAt);
+  if (
+    !Number.isFinite(authorizationExpiryMs) ||
+    !Number.isFinite(intentExpiryMs) ||
+    authorizationExpiryMs !== intentExpiryMs
+  ) {
     return "sender authorization expiry mismatch";
   }
   const signatureValid = await verifySenderPaymentAuthorization({
@@ -724,13 +821,15 @@ async function validateIntentWork(params: {
   if (!signatureValid) {
     return "sender authorization signature verification failed";
   }
-  const transactionInvalidReason = validateSignedSettlementTransaction({
-    item,
-    operator: params.operator,
-    tokenDecimals: params.tokenDecimals,
-  });
-  if (transactionInvalidReason) {
-    return transactionInvalidReason;
+  if (intent.senderSettlementMode !== "pru_private_commitment_v1") {
+    const transactionInvalidReason = validateSignedSettlementTransaction({
+      item,
+      operator: params.operator,
+      tokenDecimals: params.tokenDecimals,
+    });
+    if (transactionInvalidReason) {
+      return transactionInvalidReason;
+    }
   }
   return null;
 }
@@ -745,8 +844,124 @@ async function submitIntentOnChainWork(params: {
   const sponsoredSettlement = params.item.intent as TsnIntentWorkItem["intent"] & {
     senderSignedSettlementTransaction?: string | null;
     senderSignedSettlementFeePayer?: string | null;
+    senderSettlementMode?: string | null;
     settlementVault?: string | null;
+    settlementEscrowSecretKeyBase64?: string | null;
   };
+  if (sponsoredSettlement.senderSettlementMode === "pru_private_commitment_v1") {
+    if (!process.env.TSN_MEMPOOL_URL) {
+      throw new Error("TSN_MEMPOOL_URL is required for PRU spend permits");
+    }
+    const permit = await requestPruSpendPermit({
+      mempoolUrl: process.env.TSN_MEMPOOL_URL,
+      apiKey: process.env.TSN_MEMPOOL_API_KEY,
+      intentId: params.item.intent.id,
+      operator: params.operator,
+    });
+    const created = await tsnExecutePruSpendOnChain({
+      operator: params.operator,
+      tokenMint: new PublicKey(permit.tokenMintAddress),
+      commitmentHash: Uint8Array.from(Buffer.from(permit.commitmentHash, "hex")),
+      escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
+      senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
+      selections: permit.selections.map((selection) => ({
+        tin: selection.tin,
+        pruIndex: selection.pruIndex,
+        nonce: selection.nonce,
+        amountBaseUnits: BigInt(selection.amountBaseUnits),
+        spendAuthHash: Uint8Array.from(Buffer.from(selection.spendAuthHash, "hex")),
+        pruAuthority: Keypair.fromSecretKey(
+          Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
+        ),
+      })),
+      rpcUrl: params.rpcUrl,
+    });
+
+    await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
+      source: params.item.intent.source,
+      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
+      escrowTxSig: created.signature,
+      settlementVault: created.escrowTokenAccount,
+      settlementTokenAccount: created.escrowTokenAccount,
+      settlementPaymentIntentId: created.escrowTokenAccount,
+      settlementReason:
+        "Cranker executed PRU-funded private escrow from the authenticated TIN balance route.",
+    } as Partial<TsnIntentWorkItem["intent"]>);
+
+    return {
+      intent: created.escrowTokenAccount,
+      signature: created.signature,
+      created: true,
+    };
+  }
+  if (sponsoredSettlement.senderSettlementMode === "mixed_pru_wallet_v1") {
+    if (!process.env.TSN_MEMPOOL_URL) {
+      throw new Error("TSN_MEMPOOL_URL is required for PRU spend permits");
+    }
+    if (!sponsoredSettlement.senderSignedSettlementTransaction) {
+      throw new Error("Mixed funding requires the sender co-signed settlement transaction");
+    }
+    const permit = await requestPruSpendPermit({
+      mempoolUrl: process.env.TSN_MEMPOOL_URL,
+      apiKey: process.env.TSN_MEMPOOL_API_KEY,
+      intentId: params.item.intent.id,
+      operator: params.operator,
+    });
+    const walletTopUpAmountBaseUnits = BigInt((params.item.intent as TsnIntentWorkItem["intent"] & {
+      walletTopUpAmountBaseUnits?: string | null;
+    }).walletTopUpAmountBaseUnits ?? "0");
+    const walletSettlement =
+      walletTopUpAmountBaseUnits > 0n || sponsoredSettlement.settlementEscrowSecretKeyBase64 == null
+        ? await tsnSubmitSenderSignedSettlementTransaction({
+            operator: params.operator,
+            signedTransactionBase64: sponsoredSettlement.senderSignedSettlementTransaction,
+            rpcUrl: params.rpcUrl,
+          })
+        : null;
+    const created = await tsnExecutePruSpendOnChain({
+      operator: params.operator,
+      tokenMint: new PublicKey(permit.tokenMintAddress),
+      commitmentHash: Uint8Array.from(Buffer.from(permit.commitmentHash, "hex")),
+      escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
+      senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
+      ...(sponsoredSettlement.settlementEscrowSecretKeyBase64
+        ? {
+            escrowTokenAccount: Keypair.fromSecretKey(
+              Uint8Array.from(Buffer.from(sponsoredSettlement.settlementEscrowSecretKeyBase64, "base64")),
+            ),
+          }
+        : {}),
+      selections: permit.selections.map((selection) => ({
+        tin: selection.tin,
+        pruIndex: selection.pruIndex,
+        nonce: selection.nonce,
+        amountBaseUnits: BigInt(selection.amountBaseUnits),
+        spendAuthHash: Uint8Array.from(Buffer.from(selection.spendAuthHash, "hex")),
+        pruAuthority: Keypair.fromSecretKey(
+          Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
+        ),
+      })),
+      rpcUrl: params.rpcUrl,
+    });
+
+    await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
+      source: params.item.intent.source,
+      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
+      escrowTxSig: created.signature,
+      settlementVault: created.escrowTokenAccount,
+      settlementTokenAccount: created.escrowTokenAccount,
+      settlementReason:
+        walletSettlement
+          ? `Cranker locked the wallet top-up into shared escrow (${walletSettlement.signature}) and completed the PRU top-up into the same TSN settlement (${created.signature}).`
+          : `Cranker completed the PRU-funded escrow and submitted the wallet-funded sender fee in the same mixed TSN settlement (${created.signature}).`,
+    } as Partial<TsnIntentWorkItem["intent"]>);
+
+    return {
+      intent: created.escrowTokenAccount,
+      signature: created.signature,
+      created: true,
+    };
+  }
   if (!sponsoredSettlement.senderSignedSettlementTransaction) {
     throw new Error("Sponsored settlement transaction is required; public PaymentIntent PDA creation is disabled.");
   }

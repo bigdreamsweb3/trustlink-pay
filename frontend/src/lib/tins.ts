@@ -2,6 +2,7 @@
 
 import { sha256 } from "@noble/hashes/sha2";
 import { PublicKey } from "@solana/web3.js";
+import { buildTinCreationMessage } from "@trustlink/tsn-sdk/canonical-message";
 import {
   DEFAULT_TINS_PROGRAM_ID,
   createTinOwnerIntentMessage,
@@ -223,15 +224,13 @@ function buildTinBindingMessage(params: {
   programId: string;
   issuedAt: string;
 }) {
-  return [
-    "TrustLink Pay TINS phone mapping",
-    `Phone: ${params.userPhoneNumber}`,
-    `TIN: ${params.tin}`,
-    `Wallet: ${params.walletPublicKey}`,
-    `Identity: ${params.identityPublicKey}`,
-    `Program: ${params.programId}`,
-    `Issued At: ${params.issuedAt}`,
-  ].join("\n");
+  return buildTinCreationMessage({
+    tin: params.tin,
+    displayName: "Existing TIN Binding",
+    privacy: "30 PRUs",
+    nonce: params.issuedAt,
+    expires: new Date(Date.now() + 5 * 60_000).toISOString(),
+  });
 }
 
 async function signTinBinding(params: {

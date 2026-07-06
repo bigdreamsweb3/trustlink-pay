@@ -290,14 +290,28 @@ export function DashboardExperience() {
     [paymentHistory, user?.phoneNumber],
   );
   const displayPayments = useMemo(() => {
-    const items: { payment: PaymentRecord; forceReceiveView: boolean; displayKey: string }[] = [];
+    const items: {
+      payment: PaymentRecord;
+      forceReceiveView: boolean;
+      displayKey: string;
+    }[] = [];
     const userPhone = user?.phoneNumber;
     const userId = user?.id;
     for (const payment of paymentHistory) {
-      const isSelfSend = payment.sender_user_id === userId && payment.receiver_phone === userPhone;
-      items.push({ payment, forceReceiveView: false, displayKey: `${payment.id}-send` });
+      const isSelfSend =
+        payment.sender_user_id === userId &&
+        payment.receiver_phone === userPhone;
+      items.push({
+        payment,
+        forceReceiveView: false,
+        displayKey: `${payment.id}-send`,
+      });
       if (isSelfSend) {
-        items.push({ payment, forceReceiveView: true, displayKey: `${payment.id}-receive` });
+        items.push({
+          payment,
+          forceReceiveView: true,
+          displayKey: `${payment.id}-receive`,
+        });
       }
     }
     return items.slice(0, 12);
@@ -340,7 +354,9 @@ export function DashboardExperience() {
     async function load() {
       setTinTokenLoading(true);
       try {
-        showToast("Sign to load your TIN balance. This does not cost any fees and does not send a transaction.");
+        showToast(
+          "Sign to load your TIN balance. This does not cost any fees and does not send a transaction.",
+        );
         const result = await loadTinTokenBalances({
           tin,
           walletSession: session,
@@ -360,7 +376,11 @@ export function DashboardExperience() {
         if (!ctrl.signal.aborted) {
           setTinTokens([]);
           setTinPruCount(0);
-          setTinBalanceStatus(error instanceof Error ? error.message : "TIN PRU route unavailable");
+          setTinBalanceStatus(
+            error instanceof Error
+              ? error.message
+              : "TIN PRU route unavailable",
+          );
         }
       } finally {
         if (!ctrl.signal.aborted) setTinTokenLoading(false);
@@ -744,7 +764,6 @@ export function DashboardExperience() {
                 </span>
               </div>
             </div>
-
           </div>
 
           {/* â”€â”€â”€ ACTIVITY â€” desktop: starts right after stats â”€â”€â”€ */}
@@ -807,7 +826,11 @@ export function DashboardExperience() {
                       key={displayKey}
                       payment={payment}
                       currentUserId={user.id}
-                      onClick={(id) => router.push(`/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`)}
+                      onClick={(id) =>
+                        router.push(
+                          `/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`,
+                        )
+                      }
                       forceReceiveView={forceReceiveView || undefined}
                     />
                   ))
@@ -940,7 +963,7 @@ export function DashboardExperience() {
               <div className="mt-2 space-y-1">
                 {/* WhatsApp identity */}
                 <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2.5">
-                  <WhatsAppIcon className="h-4 w-4 text-[#25D366] shrink-0" />
+                  <WhatsAppIcon className="h-4 w-4 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[0.78rem] font-semibold truncate">
                       {userPhoneNumber}
@@ -962,7 +985,6 @@ export function DashboardExperience() {
                 </div>
 
                 {/* Wallet login */}
-                
               </div>
             </div>
           </div>
@@ -1051,26 +1073,26 @@ export function DashboardExperience() {
                     <div className="mb-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
                       Main wallet
                     </div>
-                  {walletTokens.slice(0, 5).map((token) => (
-                    <div
-                      key={`wallet-${token.symbol}`}
-                      className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
-                          {token.symbol.slice(0, 3)}
+                    {walletTokens.slice(0, 5).map((token) => (
+                      <div
+                        key={`wallet-${token.symbol}`}
+                        className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.56rem] font-bold text-accent">
+                            {token.symbol.slice(0, 3)}
+                          </div>
+                          <span className="tl-body-sm font-medium text-[var(--text)]">
+                            {token.symbol}
+                          </span>
                         </div>
-                        <span className="tl-body-sm font-medium text-[var(--text)]">
-                          {token.symbol}
+                        <span className="tl-body-sm font-semibold text-[var(--text)]">
+                          {balanceVisible
+                            ? formatPaymentUsd(token.balanceUsd ?? 0)
+                            : "****"}
                         </span>
                       </div>
-                      <span className="tl-body-sm font-semibold text-[var(--text)]">
-                        {balanceVisible
-                          ? formatPaymentUsd(token.balanceUsd ?? 0)
-                          : "****"}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 </div>
               )}
@@ -1142,7 +1164,11 @@ export function DashboardExperience() {
                   key={displayKey}
                   payment={payment}
                   currentUserId={user.id}
-                  onClick={(id) => router.push(`/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`)}
+                  onClick={(id) =>
+                    router.push(
+                      `/app/activity/${id}?view=${forceReceiveView ? "receiver" : "sender"}`,
+                    )
+                  }
                   forceReceiveView={forceReceiveView || undefined}
                 />
               ))
@@ -1194,7 +1220,11 @@ export function DashboardExperience() {
                 {
                   label: "TIN balance",
                   value: formatPaymentUsd(tinBalanceUsd),
-                  sub: tinBalanceStatus ?? (tinPruCount > 0 ? `${tinPruCount} PRUs scanned` : "No PRU route loaded"),
+                  sub:
+                    tinBalanceStatus ??
+                    (tinPruCount > 0
+                      ? `${tinPruCount} PRUs scanned`
+                      : "No PRU route loaded"),
                 },
                 {
                   label: "Escrow",

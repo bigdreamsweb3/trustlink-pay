@@ -104,9 +104,7 @@ export function IdentityTree({
           }`,
         }
       : null,
-    walletLabel
-      ? { label: "Settlement wallet", value: walletLabel }
-      : null,
+    walletLabel ? { label: "Settlement wallet", value: walletLabel } : null,
   ].filter((node): node is IdentityNode => Boolean(node));
 
   return (
@@ -119,7 +117,7 @@ export function IdentityTree({
         <div
           className={`grid h-9 w-9 shrink-0 place-items-center rounded-[14px] border text-[0.78rem] font-black ${
             hasWhatsAppIdentity
-              ? "border-[#25D366]/25 bg-[#25D366]/12 text-[#25D366]"
+              ? "border-[#25D366]/25 bg-[#25D366]/12 "
               : "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
           }`}
         >

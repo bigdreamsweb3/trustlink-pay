@@ -25,6 +25,7 @@ import {
   getTsnCrankerVaultPda,
   getTsnCrankerVaultTokenPda,
   getTsnMotherEscrowPda,
+  getTsnTreasuryPda,
   getTsnVerifierPda,
 } from "./blockchain/solana-tsn.js";
 import { VERIFIED_TSN_PROGRAM_ID } from "./program.js";
@@ -36,6 +37,7 @@ const SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
 const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_V2");
 const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V2");
 const MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1";
+const PRU_SPEND_GUARD_SEED = utf8ToBytes("pru_spend_guard");
 
 export type PrivatePayoutPermit = {
   permitSigner: string;
@@ -61,6 +63,25 @@ export type PrivateRecoveryPermit = {
   expiresAtTs: number;
 };
 
+export type PruSpendPermitSelection = {
+  tin: string;
+  pruIndex: number;
+  nonce: number;
+  publicKey: string;
+  secretKeyBase64: string;
+  spendAuthHash: string;
+  amountBaseUnits: string;
+};
+
+export type PruSpendPermit = {
+  paymentId: string;
+  tokenMintAddress: string;
+  commitmentHash: string;
+  escrowAmountBaseUnits: string;
+  senderFeeAmountBaseUnits: string;
+  selections: PruSpendPermitSelection[];
+};
+
 function concatBytes(parts: Uint8Array[]) {
   const output = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
   let offset = 0;
@@ -82,6 +103,13 @@ function encodeU64(value: bigint) {
     remaining >>= 8n;
   }
   return output;
+}
+
+function encodeU16(value: number) {
+  if (!Number.isInteger(value) || value < 0 || value > 0xffff) {
+    throw new Error("u16 value is out of range");
+  }
+  return Uint8Array.of(value & 0xff, (value >> 8) & 0xff);
 }
 
 function encodeI64(value: bigint) {
@@ -202,7 +230,7 @@ export function signPrivateSettlementPermit(params: {
 }
 
 export function createMempoolLeaseAuthorizationMessage(params: {
-  action: "payout" | "recovery";
+  action: "payout" | "recovery" | "pru-spend";
   workId: string;
   operator: PublicKey;
   requestedAtTs: number;
@@ -224,7 +252,7 @@ export function createMempoolLeaseAuthorizationMessage(params: {
 async function requestPrivatePermit<T>(params: {
   mempoolUrl: string;
   apiKey?: string | null;
-  action: "payout" | "recovery";
+  action: "payout" | "recovery" | "pru-spend";
   workId: string;
   operator: Keypair;
   fetchImpl?: typeof fetch;
@@ -241,7 +269,9 @@ async function requestPrivatePermit<T>(params: {
   const endpoint =
     params.action === "payout"
       ? `/work/${encodeURIComponent(params.workId)}/lease-permit`
-      : `/recoveries/${encodeURIComponent(params.workId)}/lease-permit`;
+      : params.action === "recovery"
+        ? `/recoveries/${encodeURIComponent(params.workId)}/lease-permit`
+        : `/intents/${encodeURIComponent(params.workId)}/pru-spend-permit`;
   const response = await fetchImpl(`${params.mempoolUrl.replace(/\/$/, "")}${endpoint}`, {
     method: "POST",
     headers: {
@@ -286,6 +316,146 @@ export function requestPrivateRecoveryPermit(params: {
     action: "recovery",
     workId: params.recoveryId,
   });
+}
+
+export function requestPruSpendPermit(params: {
+  mempoolUrl: string;
+  apiKey?: string | null;
+  intentId: string;
+  operator: Keypair;
+  fetchImpl?: typeof fetch;
+}) {
+  return requestPrivatePermit<PruSpendPermit>({
+    ...params,
+    action: "pru-spend",
+    workId: params.intentId,
+  });
+}
+
+export function getTsnPruSpendGuardPda(params: { tin: bigint | number | string; pruIndex: number }) {
+  return PublicKey.findProgramAddressSync(
+    [
+      PRU_SPEND_GUARD_SEED,
+      encodeU64(BigInt(params.tin)),
+      encodeU16(params.pruIndex),
+    ],
+    PROGRAM_ID,
+  )[0];
+}
+
+export async function tsnExecutePruSpendOnChain(params: {
+  operator: Keypair;
+  tokenMint: PublicKey;
+  commitmentHash: Uint8Array;
+  escrowAmountBaseUnits: bigint;
+  senderFeeAmountBaseUnits?: bigint;
+  escrowTokenAccount?: Keypair;
+  selections: Array<{
+    tin: bigint | number | string;
+    pruIndex: number;
+    nonce: number;
+    pruAuthority: Keypair;
+    spendAuthHash: Uint8Array;
+    amountBaseUnits: bigint;
+  }>;
+  rpcUrl?: string;
+}) {
+  assertBytes32(params.commitmentHash, "PRU spend commitment hash");
+  if (params.escrowAmountBaseUnits <= 0n) {
+    throw new Error("escrowAmountBaseUnits must be positive");
+  }
+  if (!params.selections.length) {
+    throw new Error("at least one PRU spend selection is required");
+  }
+  const selectionTotal = params.selections.reduce(
+    (total, selection) => total + selection.amountBaseUnits,
+    0n,
+  );
+  const senderFeeAmount = params.senderFeeAmountBaseUnits ?? 0n;
+  if (selectionTotal !== params.escrowAmountBaseUnits + senderFeeAmount) {
+    throw new Error("PRU selections must equal escrow amount plus sender fee");
+  }
+
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
+  const motherEscrow = getTsnMotherEscrowPda();
+  const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+  const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
+  const verifierPda = getTsnVerifierPda();
+  const treasuryPda = getTsnTreasuryPda();
+  const treasuryTokenAccount = getAssociatedTokenAddressSync(
+    params.tokenMint,
+    treasuryPda,
+    true,
+  );
+  const escrowTokenAccount = params.escrowTokenAccount ?? Keypair.generate();
+  let remainingSenderFee = senderFeeAmount;
+  const instructions = params.selections.map((selection) => {
+    const feeForThisSelection =
+      remainingSenderFee > 0n
+        ? remainingSenderFee >= selection.amountBaseUnits
+          ? selection.amountBaseUnits
+          : remainingSenderFee
+        : 0n;
+    remainingSenderFee -= feeForThisSelection;
+    const escrowAmountForThisSelection = selection.amountBaseUnits - feeForThisSelection;
+    const pruTokenAccount = getAssociatedTokenAddressSync(
+      params.tokenMint,
+      selection.pruAuthority.publicKey,
+    );
+    const pruSpendGuard = getTsnPruSpendGuardPda({
+      tin: selection.tin,
+      pruIndex: selection.pruIndex,
+    });
+    return new TransactionInstruction({
+      programId: PROGRAM_ID,
+      keys: [
+        { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+        { pubkey: selection.pruAuthority.publicKey, isSigner: true, isWritable: false },
+        { pubkey: motherEscrow, isSigner: false, isWritable: false },
+        { pubkey: cranker, isSigner: false, isWritable: true },
+        { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
+        { pubkey: pruTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: params.tokenMint, isSigner: false, isWritable: false },
+        { pubkey: treasuryPda, isSigner: false, isWritable: false },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
+        { pubkey: escrowTokenAccount.publicKey, isSigner: true, isWritable: true },
+        { pubkey: verifierPda, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.from(
+        concatBytes([
+          instructionDiscriminator("tsn_execute_pru_spend"),
+          encodeU64(BigInt(selection.tin)),
+          encodeU16(selection.pruIndex),
+          Uint8Array.of(selection.nonce),
+          params.commitmentHash,
+          selection.spendAuthHash,
+          encodeU64(escrowAmountForThisSelection),
+          encodeU64(feeForThisSelection),
+        ]),
+      ),
+    });
+  });
+
+  const signature = await sendAndConfirmTransaction(
+    connection,
+    new Transaction({ feePayer: params.operator.publicKey }).add(...instructions),
+    [
+      params.operator,
+      escrowTokenAccount,
+      ...params.selections.map((selection) => selection.pruAuthority),
+    ],
+    { commitment: "confirmed" },
+  );
+  return {
+    signature,
+    escrowTokenAccount: escrowTokenAccount.publicKey.toBase58(),
+  };
 }
 
 export async function tsnConfigurePrivateSettlementOnChain(params: {

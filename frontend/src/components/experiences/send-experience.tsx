@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
@@ -14,9 +22,7 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
-import {
-  isPaymentNotificationFinal,
-} from "@/src/lib/formatters";
+import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
 import {
   detectCountryFromLocale,
@@ -25,7 +31,10 @@ import {
   COUNTRY_OPTIONS,
   type CountryOption,
 } from "@/src/lib/phone-countries";
-import { loadPreferredCountryIso2, rememberCountryUsage } from "@/src/lib/phone-preferences";
+import {
+  loadPreferredCountryIso2,
+  rememberCountryUsage,
+} from "@/src/lib/phone-preferences";
 import { shareInviteMessage } from "@/src/lib/share";
 import type {
   PaymentNotificationStatus,
@@ -42,15 +51,20 @@ import {
   signSolanaMessage,
   signSolanaTransaction,
   type ConnectedWalletSession,
-  type DetectedWallet
+  type DetectedWallet,
 } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
-import { enqueueTsnPaymentFromFrontend, estimateTsnSendCostFromChain } from "@/src/lib/tsn";
+import {
+  enqueueTsnPaymentFromFrontend,
+  estimateTsnSendCostFromChain,
+} from "@/src/lib/tsn";
+import {
+  buildTinSpendPlan,
+  type TinSpendPlanResult,
+} from "@/src/lib/tin-spend-planner";
 import { resolveTinFromChain } from "@/src/lib/tins";
 import { resolveSolanaRpcUrl } from "@/src/lib/rpc";
-import {
-  createPaymentAuthorization,
-} from "@trustlink/tsn-sdk/payment-authorization";
+import { createPaymentAuthorization } from "@trustlink/tsn-sdk/payment-authorization";
 import {
   buildTsnSponsoredSettlementTransaction,
   fetchTsnSettlementEpoch,
@@ -67,7 +81,16 @@ import {
   type SendCostEstimate,
 } from "@/src/components/experiences/send/shared/send-cost";
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
-import { AlertCircle, ChevronDown, ChevronRight, Globe, Loader2, RefreshCw, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  Loader2,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
 
 function paymentStatusLabel(status: PaymentRecord["status"]) {
   if (status === "created") return "processing";
@@ -75,25 +98,38 @@ function paymentStatusLabel(status: PaymentRecord["status"]) {
 }
 
 type LivePaymentStage = {
-  key: "awaiting_cranker" | "escrowed" | "claiming" | "recipient_paid" | "stopped";
+  key:
+    | "awaiting_cranker"
+    | "escrowed"
+    | "claiming"
+    | "recipient_paid"
+    | "stopped";
   label: string;
   description: string;
   step: number;
   terminal: boolean;
 };
 
-function getLivePaymentStage(payment: Pick<PaymentRecord, "status" | "tsn">): LivePaymentStage {
+function getLivePaymentStage(
+  payment: Pick<PaymentRecord, "status" | "tsn">,
+): LivePaymentStage {
   const stage = payment.tsn?.stage;
   if (stage === "reverted") {
     return {
       key: "stopped",
       label: "Payment stopped",
-      description: payment.tsn?.settlementReason || "The payment could not continue through TSN.",
+      description:
+        payment.tsn?.settlementReason ||
+        "The payment could not continue through TSN.",
       step: 0,
       terminal: true,
     };
   }
-  if (stage === "cranker_paid" || stage === "epoch_settled" || payment.status === "claimed") {
+  if (
+    stage === "cranker_paid" ||
+    stage === "epoch_settled" ||
+    payment.status === "claimed"
+  ) {
     return {
       key: "recipient_paid",
       label: "Recipient paid",
@@ -131,15 +167,37 @@ function getLivePaymentStage(payment: Pick<PaymentRecord, "status" | "tsn">): Li
 
 function formatTokenBalance(balance: number, symbol: string) {
   const digits = symbol === "SOL" ? 4 : 2;
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: digits }).format(balance);
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
+  }).format(balance);
+}
+
+function formatPlanTokenAmount(
+  valueBaseUnits: string,
+  decimals: number,
+  symbol: string,
+) {
+  const value = Number(valueBaseUnits) / 10 ** decimals;
+  return `${formatTokenBalance(value, symbol)} ${symbol}`;
 }
 
 function formatReceiptTime(value: string | null) {
   if (!value) return null;
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-type ResolvedRecipientLookup = { verification: WhatsAppNumberVerificationResult; recipient: RecipientLookupResult | null; normalizedPhone: string; country: CountryOption | null };
+type ResolvedRecipientLookup = {
+  verification: WhatsAppNumberVerificationResult;
+  recipient: RecipientLookupResult | null;
+  normalizedPhone: string;
+  country: CountryOption | null;
+};
 
 function normalizeTinInput(value: string) {
   const trimmed = value.trim();
@@ -160,18 +218,33 @@ function normalizeTinInput(value: string) {
     sum += digit;
     double = !double;
   }
-  return ((10 - (sum % 10)) % 10) === checkDigit ? digits : null;
+  return (10 - (sum % 10)) % 10 === checkDigit ? digits : null;
 }
 
 function looksLikeTinCandidate(value: string) {
   const trimmed = value.trim();
-  return /^tin[:\s_-]*/i.test(trimmed) || (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"));
+  return (
+    /^tin[:\s_-]*/i.test(trimmed) ||
+    (/^\d{10}$/.test(trimmed.replace(/\D/g, "")) && !trimmed.startsWith("+"))
+  );
 }
 
 function resetRecipientResolution(params: {
-  setPhoneVerificationState: (value: "idle" | "checking" | "valid" | "warning" | "invalid") => void;
+  setPhoneVerificationState: (
+    value: "idle" | "checking" | "valid" | "warning" | "invalid",
+  ) => void;
   setPhoneVerificationLabel: (value: string | null) => void;
-  setPhoneVerificationDetails: (value: { displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null) => void;
+  setPhoneVerificationDetails: (
+    value: {
+      displayName: string | null;
+      profilePic: string | null;
+      exists: boolean;
+      isBusiness: boolean;
+      url: string;
+      resolvedPhoneNumber?: string | null;
+      detectedCountry?: CountryOption | null;
+    } | null,
+  ) => void;
   setReceiverWhatsAppVerified: (value: boolean) => void;
   setReceiverCheckSkipped: (value: boolean) => void;
   setRecipientPreview: (value: RecipientLookupResult | null) => void;
@@ -180,7 +253,9 @@ function resetRecipientResolution(params: {
   setShowCountryFallback: (value: boolean) => void;
   setSuggestedCountries: (value: CountryOption[]) => void;
   setReceiverCountry: (value: CountryOption | null) => void;
-  setForm: Dispatch<SetStateAction<{ receiverPhone: string; amount: string; token: string }>>;
+  setForm: Dispatch<
+    SetStateAction<{ receiverPhone: string; amount: string; token: string }>
+  >;
 }) {
   params.setPhoneVerificationState("idle");
   params.setPhoneVerificationLabel(null);
@@ -197,92 +272,207 @@ function resetRecipientResolution(params: {
 }
 
 export function SendExperience() {
-  const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession("/app/send");
+  const {
+    hydrated,
+    accessToken,
+    user,
+    pendingAuth,
+    completePendingAuth,
+    logout,
+  } = useAuthenticatedSession("/app/send");
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [walletSession, setWalletSession] = useState<ConnectedWalletSession | null>(null);
-  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>([]);
+  const [walletSession, setWalletSession] =
+    useState<ConnectedWalletSession | null>(null);
+  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>(
+    [],
+  );
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(
+    null,
+  );
   const [receiverPhoneInput, setReceiverPhoneInput] = useState("");
-  const [receiverCountry, setReceiverCountry] = useState<CountryOption | null>(null);
-  const [manualCountry, setManualCountry] = useState<CountryOption | null>(null);
+  const [receiverCountry, setReceiverCountry] = useState<CountryOption | null>(
+    null,
+  );
+  const [manualCountry, setManualCountry] = useState<CountryOption | null>(
+    null,
+  );
   const [manualCountryLocked, setManualCountryLocked] = useState(false);
   const [showCountryFallback, setShowCountryFallback] = useState(false);
-  const [suggestedCountries, setSuggestedCountries] = useState<CountryOption[]>([]);
+  const [suggestedCountries, setSuggestedCountries] = useState<CountryOption[]>(
+    [],
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
-  const [recipientPreview, setRecipientPreview] = useState<RecipientLookupResult | null>(null);
-  const [phoneVerificationState, setPhoneVerificationState] = useState<"idle" | "checking" | "valid" | "warning" | "invalid">("idle");
-  const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<string | null>(null);
-  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{ displayName: string | null; profilePic: string | null; exists: boolean; isBusiness: boolean; url: string; resolvedPhoneNumber?: string | null; detectedCountry?: CountryOption | null } | null>(null);
-  const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] = useState(false);
+  const [recipientPreview, setRecipientPreview] =
+    useState<RecipientLookupResult | null>(null);
+  const [phoneVerificationState, setPhoneVerificationState] = useState<
+    "idle" | "checking" | "valid" | "warning" | "invalid"
+  >("idle");
+  const [phoneVerificationLabel, setPhoneVerificationLabel] = useState<
+    string | null
+  >(null);
+  const [phoneVerificationDetails, setPhoneVerificationDetails] = useState<{
+    displayName: string | null;
+    profilePic: string | null;
+    exists: boolean;
+    isBusiness: boolean;
+    url: string;
+    resolvedPhoneNumber?: string | null;
+    detectedCountry?: CountryOption | null;
+  } | null>(null);
+  const [receiverWhatsAppVerified, setReceiverWhatsAppVerified] =
+    useState(false);
   const [receiverCheckSkipped, setReceiverCheckSkipped] = useState(false);
-  const [supportedTokens, setSupportedTokens] = useState<WalletTokenOption[]>([]);
+  const [supportedTokens, setSupportedTokens] = useState<WalletTokenOption[]>(
+    [],
+  );
   const [previewBusy, setPreviewBusy] = useState(false);
   const [tokenBusy, setTokenBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [estimateBusy, setEstimateBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
-  const [sendCostEstimate, setSendCostEstimate] = useState<SendCostEstimate | null>(null);
+  const [sendCostEstimate, setSendCostEstimate] =
+    useState<SendCostEstimate | null>(null);
+  const [tinSpendPlan, setTinSpendPlan] = useState<TinSpendPlanResult | null>(
+    null,
+  );
   const [estimateError, setEstimateError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<{
-    paymentId: string; status: PaymentRecord["status"]; notificationStatus: PaymentNotificationStatus;
-    notificationSentAt: string | null; notificationDeliveredAt: string | null; notificationReadAt: string | null;
-    notificationFailedAt: string | null; referenceCode: string; senderDisplayName: string; senderHandle: string;
-    escrowAccount: string | null; blockchainSignature: string; blockchainMode: "tsn" | "mock" | "devnet";
-    depositAddress: string | null; notificationRetrying: boolean; notificationAttemptCount: number;
+    paymentId: string;
+    status: PaymentRecord["status"];
+    notificationStatus: PaymentNotificationStatus;
+    notificationSentAt: string | null;
+    notificationDeliveredAt: string | null;
+    notificationReadAt: string | null;
+    notificationFailedAt: string | null;
+    referenceCode: string;
+    senderDisplayName: string;
+    senderHandle: string;
+    escrowAccount: string | null;
+    blockchainSignature: string;
+    blockchainMode: "tsn" | "mock" | "devnet";
+    depositAddress: string | null;
+    notificationRetrying: boolean;
+    notificationAttemptCount: number;
     manualInviteRequired: boolean;
     inviteShare: { onboardingLink: string; inviteMessage: string } | null;
-    receiverPhone: string; recipientName: string; amount: string; token: string;
+    receiverPhone: string;
+    recipientName: string;
+    amount: string;
+    token: string;
     tsn?: PaymentRecord["tsn"];
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
-  const hasVerifiedOnce = phoneVerificationState !== "idle" && phoneVerificationState !== "checking";
+  const hasVerifiedOnce =
+    phoneVerificationState !== "idle" && phoneVerificationState !== "checking";
   const resolutionCache = useRef(new Map<string, ResolvedRecipientLookup>());
   const latestLookupRequestId = useRef(0);
-  const [form, setForm] = useState({ receiverPhone: "", amount: "", token: "" });
+  const [form, setForm] = useState({
+    receiverPhone: "",
+    amount: "",
+    token: "",
+  });
 
   const localeCountry = useMemo(() => detectCountryFromLocale(), []);
-  const preferredCountry = useMemo(() => { const iso2 = loadPreferredCountryIso2(); return getCountryByIso2(iso2) ?? localeCountry; }, [localeCountry]);
-  const sendableTokens = useMemo(() => supportedTokens.filter((t) => t.supported), [supportedTokens]);
-  const selectedToken = sendableTokens.find((t) => t.mintAddress === form.token) ?? null;
+  const preferredCountry = useMemo(() => {
+    const iso2 = loadPreferredCountryIso2();
+    return getCountryByIso2(iso2) ?? localeCountry;
+  }, [localeCountry]);
+  const sendableTokens = useMemo(
+    () => supportedTokens.filter((t) => t.supported),
+    [supportedTokens],
+  );
+  const selectedToken =
+    sendableTokens.find((t) => t.mintAddress === form.token) ?? null;
   const walletAddress = walletSession?.address ?? null;
-  const displayCountry = manualCountry ?? receiverCountry ?? phoneVerificationDetails?.detectedCountry ?? preferredCountry ?? localeCountry;
+  const displayCountry =
+    manualCountry ??
+    receiverCountry ??
+    phoneVerificationDetails?.detectedCountry ??
+    preferredCountry ??
+    localeCountry;
   const allCountries = useMemo(() => COUNTRY_OPTIONS, []);
   const filteredCountries = useMemo(() => {
     if (!countrySearchQuery.trim()) return allCountries;
     const q = countrySearchQuery.toLowerCase();
-    return allCountries.filter((c) => c.name.toLowerCase().includes(q) || c.dialCode.includes(q) || c.iso2.toLowerCase().includes(q));
+    return allCountries.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.dialCode.includes(q) ||
+        c.iso2.toLowerCase().includes(q),
+    );
   }, [allCountries, countrySearchQuery]);
   const sendSuccessPaymentId = sendSuccess?.paymentId ?? null;
-  const livePaymentStage = sendSuccess ? getLivePaymentStage(sendSuccess) : null;
+  const livePaymentStage = sendSuccess
+    ? getLivePaymentStage(sendSuccess)
+    : null;
   const shouldPollSendSuccessReceipt = sendSuccess
-    ? (
-        (sendSuccess.blockchainMode === "tsn" && !livePaymentStage?.terminal) ||
-        (!sendSuccess.manualInviteRequired && !isPaymentNotificationFinal(sendSuccess.notificationStatus))
-      )
+    ? (sendSuccess.blockchainMode === "tsn" && !livePaymentStage?.terminal) ||
+      (!sendSuccess.manualInviteRequired &&
+        !isPaymentNotificationFinal(sendSuccess.notificationStatus))
     : false;
-  const hasAmount = Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
+  const hasAmount =
+    Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const receiverInputLooksLikeTin = looksLikeTinCandidate(receiverPhoneInput);
-  const canContinueWithRecipient = Boolean(walletAddress) && Boolean(selectedToken) && hasAmount && Boolean(recipientPreview?.verified);
+  const canContinueWithRecipient =
+    Boolean(walletAddress) &&
+    Boolean(selectedToken) &&
+    hasAmount &&
+    Boolean(recipientPreview?.verified);
   const costEstimateReady = hasCompleteCostEstimate(sendCostEstimate);
-  const confirmSendDisabled = busy || estimateBusy || !costEstimateReady;
+  const spendPlanBlocksSend = Boolean(
+    tinSpendPlan?.fundingMode === "insufficient",
+  );
+  const confirmSendDisabled =
+    busy || estimateBusy || !costEstimateReady || spendPlanBlocksSend;
   const sendGuidance = useMemo(() => getSendGuidance(error), [error]);
 
-  useEffect(() => { setWalletSession(getConnectedWalletSession()); setAvailableWallets(listAvailableSolanaWallets()); }, []);
-  useEffect(() => { const p = searchParams.get("phone")?.trim(); if (p) setReceiverPhoneInput(p); }, [searchParams]);
+  useEffect(() => {
+    setWalletSession(getConnectedWalletSession());
+    setAvailableWallets(listAvailableSolanaWallets());
+  }, []);
+  useEffect(() => {
+    const p = searchParams.get("phone")?.trim();
+    if (p) setReceiverPhoneInput(p);
+  }, [searchParams]);
 
-  async function lookupResolvedRecipient(normalizedPhone: string, country: CountryOption | null, options?: { allowUnverified?: boolean }) {
+  async function lookupResolvedRecipient(
+    normalizedPhone: string,
+    country: CountryOption | null,
+    options?: { allowUnverified?: boolean },
+  ) {
     const key = `${normalizedPhone}:${options?.allowUnverified ? "manual" : "auto"}`;
     const cached = resolutionCache.current.get(key);
     if (cached) return cached;
-    const [verification, recipient] = await Promise.all([apiPost<WhatsAppNumberVerificationResult>("/api/whatsapp/verify-number", { phoneNumber: normalizedPhone }, undefined, { cache: "default", ttlMs: 5 * 60_000 }), apiPost<RecipientLookupResult>("/api/recipient/lookup", { phoneNumber: normalizedPhone, skipWhatsAppCheck: options?.allowUnverified }, undefined, { cache: "default", ttlMs: 60_000 })]);
-    const resolved = { verification, recipient, normalizedPhone, country } satisfies ResolvedRecipientLookup;
+    const [verification, recipient] = await Promise.all([
+      apiPost<WhatsAppNumberVerificationResult>(
+        "/api/whatsapp/verify-number",
+        { phoneNumber: normalizedPhone },
+        undefined,
+        { cache: "default", ttlMs: 5 * 60_000 },
+      ),
+      apiPost<RecipientLookupResult>(
+        "/api/recipient/lookup",
+        {
+          phoneNumber: normalizedPhone,
+          skipWhatsAppCheck: options?.allowUnverified,
+        },
+        undefined,
+        { cache: "default", ttlMs: 60_000 },
+      ),
+    ]);
+    const resolved = {
+      verification,
+      recipient,
+      normalizedPhone,
+      country,
+    } satisfies ResolvedRecipientLookup;
     resolutionCache.current.set(key, resolved);
     return resolved;
   }
@@ -293,7 +483,9 @@ export function SendExperience() {
     if (cached) return cached;
     const onchain = await resolveTinFromChain(tin);
     if (!onchain.active) {
-      throw new Error("This TIN exists, but its on-chain identity is not active.");
+      throw new Error(
+        "This TIN exists, but its on-chain identity is not active.",
+      );
     }
     let enrichment: RecipientLookupResult | null = null;
     try {
@@ -310,9 +502,7 @@ export function SendExperience() {
     const trustLinkRecipient =
       enrichment?.status === "registered" ? enrichment.recipient : null;
     const normalizedPhone =
-      onchain.whatsapp ||
-      trustLinkRecipient?.phoneNumber ||
-      `tin:${tin}`;
+      onchain.whatsapp || trustLinkRecipient?.phoneNumber || `tin:${tin}`;
     const identityName = onchain.name;
     const displayName =
       onchain.legalName ||
@@ -355,7 +545,9 @@ export function SendExperience() {
       displayName,
       profilePic: null,
       hasProfilePic: false,
-      url: onchain.whatsapp ? `https://wa.me/${onchain.whatsapp.replace(/\D/g, "")}` : "",
+      url: onchain.whatsapp
+        ? `https://wa.me/${onchain.whatsapp.replace(/\D/g, "")}`
+        : "",
       source: "mock",
     };
     if (!normalizedPhone.startsWith("tin:")) {
@@ -370,44 +562,240 @@ export function SendExperience() {
         // On-chain TIN resolution remains authoritative when WhatsApp enrichment is unavailable.
       }
     }
-    const resolved = { verification, recipient, normalizedPhone, country: null } satisfies ResolvedRecipientLookup;
+    const resolved = {
+      verification,
+      recipient,
+      normalizedPhone,
+      country: null,
+    } satisfies ResolvedRecipientLookup;
     resolutionCache.current.set(key, resolved);
     return resolved;
   }
 
   function applyRecipientVerificationState(resolved: ResolvedRecipientLookup) {
     const trustLinkVerified = resolved.recipient?.status === "registered";
-    const whatsappVerified = resolved.verification.exists || receiverCheckSkipped;
+    const whatsappVerified =
+      resolved.verification.exists || receiverCheckSkipped;
     setReceiverWhatsAppVerified(whatsappVerified);
-    setPhoneVerificationState(trustLinkVerified || whatsappVerified ? (whatsappVerified ? "valid" : "warning") : "warning");
-    setPhoneVerificationLabel(trustLinkVerified && !whatsappVerified ? "Verify on WhatsApp or skip to continue." : null);
+    setPhoneVerificationState(
+      trustLinkVerified || whatsappVerified
+        ? whatsappVerified
+          ? "valid"
+          : "warning"
+        : "warning",
+    );
+    setPhoneVerificationLabel(
+      trustLinkVerified && !whatsappVerified
+        ? "Verify on WhatsApp or skip to continue."
+        : null,
+    );
   }
 
   function applyResolvedRecipient(resolved: ResolvedRecipientLookup) {
     setForm((c) => ({ ...c, receiverPhone: resolved.normalizedPhone }));
-    setReceiverCountry(resolved.country); setShowCountryFallback(false); setSuggestedCountries([]); setLookupError(null);
+    setReceiverCountry(resolved.country);
+    setShowCountryFallback(false);
+    setSuggestedCountries([]);
+    setLookupError(null);
     applyRecipientVerificationState(resolved);
     const isTinResolution = resolved.recipient?.status === "tins_resolved";
-    setPhoneVerificationDetails({ displayName: resolved.verification.displayName, profilePic: resolved.verification.profilePic, exists: resolved.verification.exists, isBusiness: resolved.verification.isBusiness, url: resolved.verification.url, resolvedPhoneNumber: isTinResolution ? (resolved.recipient?.recipient.phoneNumber || null) : formatPhoneInput(resolved.normalizedPhone), detectedCountry: resolved.country });
+    setPhoneVerificationDetails({
+      displayName: resolved.verification.displayName,
+      profilePic: resolved.verification.profilePic,
+      exists: resolved.verification.exists,
+      isBusiness: resolved.verification.isBusiness,
+      url: resolved.verification.url,
+      resolvedPhoneNumber: isTinResolution
+        ? resolved.recipient?.recipient.phoneNumber || null
+        : formatPhoneInput(resolved.normalizedPhone),
+      detectedCountry: resolved.country,
+    });
     setRecipientPreview(resolved.recipient);
   }
 
   /* Always reveal country fallback when WhatsApp didn't verify */
-  function applyRecipientResolutionPreview(resolved: ResolvedRecipientLookup, options?: { revealCountryFallback?: boolean }) {
+  function applyRecipientResolutionPreview(
+    resolved: ResolvedRecipientLookup,
+    options?: { revealCountryFallback?: boolean },
+  ) {
     setForm((c) => ({ ...c, receiverPhone: resolved.normalizedPhone }));
     setReceiverCountry(resolved.country);
-    const shouldReveal = Boolean(options?.revealCountryFallback) || !resolved.verification.exists;
+    const shouldReveal =
+      Boolean(options?.revealCountryFallback) || !resolved.verification.exists;
     setShowCountryFallback(shouldReveal);
-    setSuggestedCountries(resolved.country ? [resolved.country, ...suggestedCountries].filter((c, i, a) => a.findIndex((x) => x.iso2 === c.iso2) === i) : suggestedCountries);
-    setLookupError(null); applyRecipientVerificationState(resolved);
-    setPhoneVerificationDetails({ displayName: resolved.verification.displayName, profilePic: resolved.verification.profilePic, exists: resolved.verification.exists, isBusiness: resolved.verification.isBusiness, url: resolved.verification.url, resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone), detectedCountry: resolved.country });
+    setSuggestedCountries(
+      resolved.country
+        ? [resolved.country, ...suggestedCountries].filter(
+            (c, i, a) => a.findIndex((x) => x.iso2 === c.iso2) === i,
+          )
+        : suggestedCountries,
+    );
+    setLookupError(null);
+    applyRecipientVerificationState(resolved);
+    setPhoneVerificationDetails({
+      displayName: resolved.verification.displayName,
+      profilePic: resolved.verification.profilePic,
+      exists: resolved.verification.exists,
+      isBusiness: resolved.verification.isBusiness,
+      url: resolved.verification.url,
+      resolvedPhoneNumber: formatPhoneInput(resolved.normalizedPhone),
+      detectedCountry: resolved.country,
+    });
     setRecipientPreview(resolved.recipient);
   }
 
-  useEffect(() => { if (!walletAddress) { setSupportedTokens([]); setForm((c) => ({ ...c, token: "" })); return; } const ctrl = new AbortController(); async function load() { setTokenBusy(true); try { const r = await apiPost<{ tokens: WalletTokenOption[] }>("/api/wallet/tokens", { walletAddress }, undefined, { cache: "default", ttlMs: 20_000 }); if (ctrl.signal.aborted) return; setSupportedTokens(r.tokens); setForm((c) => ({ ...c, token: r.tokens.find((t) => t.supported && t.mintAddress === c.token)?.mintAddress ?? r.tokens.find((t) => t.supported)?.mintAddress ?? "" })); } catch (e) { if (!ctrl.signal.aborted) { setSupportedTokens([]); setError(e instanceof Error ? e.message : "Could not load tokens"); } } finally { if (!ctrl.signal.aborted) setTokenBusy(false); } } void load(); return () => ctrl.abort(); }, [walletAddress]);
+  useEffect(() => {
+    if (!walletAddress) {
+      setSupportedTokens([]);
+      setForm((c) => ({ ...c, token: "" }));
+      return;
+    }
+    const ctrl = new AbortController();
+    async function load() {
+      setTokenBusy(true);
+      try {
+        const r = await apiPost<{ tokens: WalletTokenOption[] }>(
+          "/api/wallet/tokens",
+          { walletAddress },
+          undefined,
+          { cache: "default", ttlMs: 20_000 },
+        );
+        if (ctrl.signal.aborted) return;
+        setSupportedTokens(r.tokens);
+        setForm((c) => ({
+          ...c,
+          token:
+            r.tokens.find((t) => t.supported && t.mintAddress === c.token)
+              ?.mintAddress ??
+            r.tokens.find((t) => t.supported)?.mintAddress ??
+            "",
+        }));
+      } catch (e) {
+        if (!ctrl.signal.aborted) {
+          setSupportedTokens([]);
+          setError(e instanceof Error ? e.message : "Could not load tokens");
+        }
+      } finally {
+        if (!ctrl.signal.aborted) setTokenBusy(false);
+      }
+    }
+    void load();
+    return () => ctrl.abort();
+  }, [walletAddress]);
 
   /* catch block always reveals country fallback and unlocks */
-  useEffect(() => { const trimmed = receiverPhoneInput.trim(); if (!trimmed) { resetRecipientResolution({ setPhoneVerificationState, setPhoneVerificationLabel, setPhoneVerificationDetails, setReceiverWhatsAppVerified, setReceiverCheckSkipped, setRecipientPreview, setLookupError, setPreviewBusy, setShowCountryFallback, setSuggestedCountries, setReceiverCountry, setForm }); return; } const reqId = latestLookupRequestId.current + 1; latestLookupRequestId.current = reqId; const timer = window.setTimeout(async () => { setPreviewBusy(true); setLookupError(null); setPhoneVerificationDetails(null); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel("Detecting recipient..."); try { let resolved: ResolvedRecipientLookup | null = null; const tin = normalizeTinInput(trimmed); if (tin) { resolved = await lookupResolvedTin(tin); if (latestLookupRequestId.current !== reqId) return; applyResolvedRecipient(resolved); return; } const plan = buildPhoneResolutionPlan({ input: trimmed, localeCountry, preferredCountry, selectedCountry: manualCountry, selectedCountryLocked: manualCountryLocked }); if (plan.kind === "idle") { setPhoneVerificationState("idle"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } if (plan.kind === "fallback") { setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setSuggestedCountries(plan.suggestedCountries); setShowCountryFallback(true); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setPreviewBusy(false); return; } setSuggestedCountries(plan.suggestedCountries); const candidates = plan.kind === "single" ? [plan.candidate] : plan.candidates; for (const candidate of candidates) { resolved = await lookupResolvedRecipient(candidate.normalizedPhone, candidate.country, { allowUnverified: receiverCheckSkipped }); if (latestLookupRequestId.current !== reqId) return; if (resolved.recipient?.verified) { applyResolvedRecipient(resolved); return; } if (plan.kind === "single") { applyRecipientResolutionPreview(resolved, { revealCountryFallback: candidate.revealFallback }); return; } } setForm((c) => ({ ...c, receiverPhone: "" })); setReceiverCountry(null); setShowCountryFallback(true); setManualCountryLocked(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); } catch (e) { setLookupError(e instanceof Error ? e.message : "Could not verify recipient"); setRecipientPreview(null); setReceiverWhatsAppVerified(false); setPhoneVerificationState("warning"); setPhoneVerificationLabel(null); setShowCountryFallback(!looksLikeTinCandidate(trimmed)); setManualCountryLocked(false); } finally { if (latestLookupRequestId.current === reqId) setPreviewBusy(false); } }, 420); return () => window.clearTimeout(timer); }, [localeCountry, manualCountry, manualCountryLocked, preferredCountry, receiverCheckSkipped, receiverPhoneInput]);
+  useEffect(() => {
+    const trimmed = receiverPhoneInput.trim();
+    if (!trimmed) {
+      resetRecipientResolution({
+        setPhoneVerificationState,
+        setPhoneVerificationLabel,
+        setPhoneVerificationDetails,
+        setReceiverWhatsAppVerified,
+        setReceiverCheckSkipped,
+        setRecipientPreview,
+        setLookupError,
+        setPreviewBusy,
+        setShowCountryFallback,
+        setSuggestedCountries,
+        setReceiverCountry,
+        setForm,
+      });
+      return;
+    }
+    const reqId = latestLookupRequestId.current + 1;
+    latestLookupRequestId.current = reqId;
+    const timer = window.setTimeout(async () => {
+      setPreviewBusy(true);
+      setLookupError(null);
+      setPhoneVerificationDetails(null);
+      setRecipientPreview(null);
+      setReceiverWhatsAppVerified(false);
+      setShowCountryFallback(false);
+      setPhoneVerificationState("checking");
+      setPhoneVerificationLabel("Detecting recipient...");
+      try {
+        let resolved: ResolvedRecipientLookup | null = null;
+        const tin = normalizeTinInput(trimmed);
+        if (tin) {
+          resolved = await lookupResolvedTin(tin);
+          if (latestLookupRequestId.current !== reqId) return;
+          applyResolvedRecipient(resolved);
+          return;
+        }
+        const plan = buildPhoneResolutionPlan({
+          input: trimmed,
+          localeCountry,
+          preferredCountry,
+          selectedCountry: manualCountry,
+          selectedCountryLocked: manualCountryLocked,
+        });
+        if (plan.kind === "idle") {
+          setPhoneVerificationState("idle");
+          setPhoneVerificationLabel(null);
+          setPreviewBusy(false);
+          return;
+        }
+        if (plan.kind === "fallback") {
+          setForm((c) => ({ ...c, receiverPhone: "" }));
+          setReceiverCountry(null);
+          setSuggestedCountries(plan.suggestedCountries);
+          setShowCountryFallback(true);
+          setPhoneVerificationState("warning");
+          setPhoneVerificationLabel(null);
+          setPreviewBusy(false);
+          return;
+        }
+        setSuggestedCountries(plan.suggestedCountries);
+        const candidates =
+          plan.kind === "single" ? [plan.candidate] : plan.candidates;
+        for (const candidate of candidates) {
+          resolved = await lookupResolvedRecipient(
+            candidate.normalizedPhone,
+            candidate.country,
+            { allowUnverified: receiverCheckSkipped },
+          );
+          if (latestLookupRequestId.current !== reqId) return;
+          if (resolved.recipient?.verified) {
+            applyResolvedRecipient(resolved);
+            return;
+          }
+          if (plan.kind === "single") {
+            applyRecipientResolutionPreview(resolved, {
+              revealCountryFallback: candidate.revealFallback,
+            });
+            return;
+          }
+        }
+        setForm((c) => ({ ...c, receiverPhone: "" }));
+        setReceiverCountry(null);
+        setShowCountryFallback(true);
+        setManualCountryLocked(false);
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
+      } catch (e) {
+        setLookupError(
+          e instanceof Error ? e.message : "Could not verify recipient",
+        );
+        setRecipientPreview(null);
+        setReceiverWhatsAppVerified(false);
+        setPhoneVerificationState("warning");
+        setPhoneVerificationLabel(null);
+        setShowCountryFallback(!looksLikeTinCandidate(trimmed));
+        setManualCountryLocked(false);
+      } finally {
+        if (latestLookupRequestId.current === reqId) setPreviewBusy(false);
+      }
+    }, 420);
+    return () => window.clearTimeout(timer);
+  }, [
+    localeCountry,
+    manualCountry,
+    manualCountryLocked,
+    preferredCountry,
+    receiverCheckSkipped,
+    receiverPhoneInput,
+  ]);
 
   // Smart post-send refresh: fast polling with dynamic scheduling for real-time UX
   useEffect(() => {
@@ -424,7 +812,11 @@ export function SendExperience() {
           finalized: boolean;
           settlementComplete: boolean;
           nextRefreshAfterMs: number | null;
-        }>(`/api/payment/${sendSuccessPaymentId}/refresh-status`, {}, accessToken ?? undefined);
+        }>(
+          `/api/payment/${sendSuccessPaymentId}/refresh-status`,
+          {},
+          accessToken ?? undefined,
+        );
 
         if (cancelled) return;
 
@@ -446,8 +838,12 @@ export function SendExperience() {
             notificationDeliveredAt: r.payment!.notification_delivered_at,
             notificationReadAt: r.payment!.notification_read_at,
             notificationFailedAt: r.payment!.notification_failed_at,
-            notificationRetrying: r.payment!.notification_status === "queued" || r.payment!.notification_status === "failed",
-            notificationAttemptCount: r.payment!.notification_attempt_count ?? c.notificationAttemptCount,
+            notificationRetrying:
+              r.payment!.notification_status === "queued" ||
+              r.payment!.notification_status === "failed",
+            notificationAttemptCount:
+              r.payment!.notification_attempt_count ??
+              c.notificationAttemptCount,
           };
         });
       } catch {
@@ -459,7 +855,10 @@ export function SendExperience() {
     let timerId: number | undefined;
 
     async function poll() {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
         timerId = window.setTimeout(poll, 500);
         return;
       }
@@ -472,12 +871,44 @@ export function SendExperience() {
     // Fire first poll immediately
     timerId = window.setTimeout(poll, 0);
 
-    return () => { cancelled = true; if (timerId !== undefined) window.clearTimeout(timerId); };
+    return () => {
+      cancelled = true;
+      if (timerId !== undefined) window.clearTimeout(timerId);
+    };
   }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
-  async function handleConnectWallet() { setError(null); const w = listAvailableSolanaWallets(); setAvailableWallets(w); if (w.length === 0) { setError("Install a Solana wallet to connect."); showToast("No Solana wallet detected."); return; } setWalletPickerOpen(true); }
-  async function handleWalletSelect(walletId: string) { setConnectingWalletId(walletId); setError(null); try { const s = await connectSolanaWallet(walletId); setWalletSession(s); setWalletPickerOpen(false); setNotice(`${s.walletName} connected.`); showToast(`${s.walletName} connected.`); } catch (e) { setError(e instanceof Error ? e.message : "Could not connect wallet"); } finally { setConnectingWalletId(null); } }
-  async function handleDisconnectWallet() { await disconnectSolanaWallet(); setWalletSession(null); setNotice("Wallet disconnected."); showToast("Wallet disconnected."); }
+  async function handleConnectWallet() {
+    setError(null);
+    const w = listAvailableSolanaWallets();
+    setAvailableWallets(w);
+    if (w.length === 0) {
+      setError("Install a Solana wallet to connect.");
+      showToast("No Solana wallet detected.");
+      return;
+    }
+    setWalletPickerOpen(true);
+  }
+  async function handleWalletSelect(walletId: string) {
+    setConnectingWalletId(walletId);
+    setError(null);
+    try {
+      const s = await connectSolanaWallet(walletId);
+      setWalletSession(s);
+      setWalletPickerOpen(false);
+      setNotice(`${s.walletName} connected.`);
+      showToast(`${s.walletName} connected.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not connect wallet");
+    } finally {
+      setConnectingWalletId(null);
+    }
+  }
+  async function handleDisconnectWallet() {
+    await disconnectSolanaWallet();
+    setWalletSession(null);
+    setNotice("Wallet disconnected.");
+    showToast("Wallet disconnected.");
+  }
 
   async function loadSendCostEstimate() {
     if (!user || !walletAddress || !selectedToken) return;
@@ -485,6 +916,7 @@ export function SendExperience() {
     setEstimateError(null);
     setError(null);
     setSendCostEstimate(null);
+    setTinSpendPlan(null);
     try {
       const amount = Number(form.amount);
       const localEstimate = await estimateTsnSendCostFromChain({
@@ -496,15 +928,29 @@ export function SendExperience() {
         timeoutMs: 6_000,
       });
       const estimate = normalizeSendCostEstimate(localEstimate, amount);
-      if (!hasCompleteCostEstimate(estimate)) {
-        throw new Error("Payment quote is incomplete. Retry before confirming.");
+      if (!estimate || !hasCompleteCostEstimate(estimate)) {
+        throw new Error(
+          "Payment quote is incomplete. Retry before confirming.",
+        );
+      }
+      if (walletSession) {
+        const spendPlan = await buildTinSpendPlan({
+          user,
+          walletSession,
+          token: selectedToken,
+          amountUi: amount,
+          feeAmountUi: estimate.senderFeeAmountUi,
+        });
+        setTinSpendPlan(spendPlan);
       }
       setSendCostEstimate(estimate);
     } catch (e) {
-      const rawMessage = e instanceof Error ? e.message : "Could not estimate transfer cost";
+      const rawMessage =
+        e instanceof Error ? e.message : "Could not estimate transfer cost";
       const guidance = getSendGuidance(rawMessage);
       const msg = guidance?.message ?? rawMessage;
       setSendCostEstimate(null);
+      setTinSpendPlan(null);
       setEstimateError(msg);
       setError(rawMessage);
       showToast(guidance?.title ?? msg);
@@ -515,9 +961,20 @@ export function SendExperience() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || !walletAddress) { setError("Connect a sender wallet first."); return; }
-    if (!recipientPreview?.verified) { setError("Verify the recipient before sending."); showToast("Verify the recipient first."); return; }
-    if (!selectedToken) { setError("Choose a token before sending."); showToast("Choose a token first."); return; }
+    if (!user || !walletAddress) {
+      setError("Connect a sender wallet first.");
+      return;
+    }
+    if (!recipientPreview?.verified) {
+      setError("Verify the recipient before sending.");
+      showToast("Verify the recipient first.");
+      return;
+    }
+    if (!selectedToken) {
+      setError("Choose a token before sending.");
+      showToast("Choose a token first.");
+      return;
+    }
     setConfirmOpen(true);
     await loadSendCostEstimate();
   }
@@ -533,11 +990,19 @@ export function SendExperience() {
       return;
     }
     if (!costEstimateReady) {
-      setError("Wait for the payment quote, sender fee, and Solana network fee before confirming.");
-      setEstimateError("Quote is not ready. Retry fee calculation before confirming.");
+      setError(
+        "Wait for the payment quote, sender fee, and Solana network fee before confirming.",
+      );
+      setEstimateError(
+        "Quote is not ready. Retry fee calculation before confirming.",
+      );
       return;
     }
-
+    if (tinSpendPlan?.fundingMode === "insufficient") {
+      setError(tinSpendPlan.userMessage);
+      showToast(tinSpendPlan.userMessage);
+      return;
+    }
     const recipientName = recipientPreview.recipient.displayName;
     setBusy(true);
     setError(null);
@@ -545,10 +1010,18 @@ export function SendExperience() {
 
     try {
       const senderFeeAmount = sendCostEstimate?.senderFeeAmountUi ?? 0;
-      const totalTokenRequiredUi = sendCostEstimate?.totalTokenRequiredUi ?? Number(form.amount) + senderFeeAmount;
+      const totalTokenRequiredUi =
+        sendCostEstimate?.totalTokenRequiredUi ??
+        Number(form.amount) + senderFeeAmount;
+      const usesPruSpendExecution = tinSpendPlan?.fundingMode === "pru_only";
+      const usesMixedPruWalletExecution =
+        tinSpendPlan?.fundingMode === "mixed_pru_and_wallet";
       const senderAuthorization = createPaymentAuthorization({
         senderWallet: walletAddress,
-        senderIdentity: `phone:${user.phoneNumber}`,
+        senderIdentity:
+          (usesPruSpendExecution || usesMixedPruWalletExecution) && user.tin
+            ? `tin:${user.tin}`
+            : `phone:${user.phoneNumber}`,
         receiverIdentity: recipientPreview.recipient.tin
           ? `tin:${recipientPreview.recipient.tin}|phone:${form.receiverPhone}|name:${recipientName}`
           : `phone:${form.receiverPhone}|name:${recipientName}`,
@@ -556,6 +1029,11 @@ export function SendExperience() {
         amount: Number(form.amount),
         senderFeeAmount,
         totalTokenRequiredUi,
+        fundingMode: tinSpendPlan?.fundingMode ?? "wallet_only",
+        pruPortionBaseUnits: BigInt(tinSpendPlan?.pruSpendBaseUnits ?? "0"),
+        walletTopUpPortionBaseUnits: BigInt(
+          tinSpendPlan?.walletSpendBaseUnits ?? "0",
+        ),
       });
       const senderAuthorizationSignature = await signSolanaMessage({
         walletId: walletSession.walletId,
@@ -607,15 +1085,21 @@ export function SendExperience() {
 
       const destinationWallet = result.tsn?.destinationWallet;
       const recipientHash = result.tsn?.recipientHash;
-      const recipientTin = result.tsn?.recipientTin ?? recipientPreview.recipient.tin ?? null;
+      const recipientTin =
+        result.tsn?.recipientTin ?? recipientPreview.recipient.tin ?? null;
       if (!destinationWallet || !recipientHash || !recipientTin) {
-        throw new Error("Recipient TIN route is not ready for private TSN enqueue");
+        throw new Error(
+          "Recipient TIN route is not ready for private TSN enqueue",
+        );
       }
 
       const crankerFeePayer =
         process.env.NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER ??
         process.env.NEXT_PUBLIC_TSN_SPONSOR_FEE_PAYER;
-      if (!crankerFeePayer) {
+      if (
+        (!usesPruSpendExecution || usesMixedPruWalletExecution) &&
+        !crankerFeePayer
+      ) {
         throw new Error(
           "NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER is required so the SDK can build the sender co-signed sponsored settlement.",
         );
@@ -634,15 +1118,23 @@ export function SendExperience() {
         resolveSolanaRpcUrl({ frontendSafe: true }),
       );
       const recipientFeeAmount = sendCostEstimate?.recipientFeeAmountUi ?? 0;
-      const recipientPayoutAmount = sendCostEstimate?.recipientPayoutAmountUi ?? Number(
-        Math.max(0, Number(form.amount) - recipientFeeAmount).toFixed(6),
-      );
+      const recipientPayoutAmount =
+        sendCostEstimate?.recipientPayoutAmountUi ??
+        Number(
+          Math.max(0, Number(form.amount) - recipientFeeAmount).toFixed(6),
+        );
       const settlementTokenPayload = buildSettlementTokenPayload({
         paymentId: result.paymentId,
         recipientWallet: destinationWallet,
         tokenMintAddress: selectedToken.mintAddress,
-        recipientAmountBaseUnits: uiAmountToBaseUnits(recipientPayoutAmount, tokenDecimals),
-        claimFeeAmountBaseUnits: uiAmountToBaseUnits(recipientFeeAmount, tokenDecimals),
+        recipientAmountBaseUnits: uiAmountToBaseUnits(
+          recipientPayoutAmount,
+          tokenDecimals,
+        ),
+        claimFeeAmountBaseUnits: uiAmountToBaseUnits(
+          recipientFeeAmount,
+          tokenDecimals,
+        ),
         epoch: settlementEpoch,
         expiresAt: senderAuthorization.expiresAt,
       });
@@ -651,24 +1143,34 @@ export function SendExperience() {
         routeEncryptionPublicKey,
       });
 
-      const sponsoredSettlement = await buildTsnSponsoredSettlementTransaction({
-        paymentId: result.paymentId,
-        crankerFeePayer,
-        senderWallet: walletAddress,
-        tokenMintAddress: selectedToken.mintAddress,
-        amountUi: Number(form.amount),
-        senderFeeAmountUi: senderFeeAmount,
-        tokenDecimals,
-        recipientHash,
-        transferId: encryptedSettlementToken.transferId,
-        commitmentHash: encryptedSettlementToken.commitmentHash,
-        rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
-      });
-      const senderSignedSettlementTransaction = await signSolanaTransaction({
-        walletId: walletSession.walletId,
-        address: walletAddress,
-        transactionBase64: sponsoredSettlement.transactionBase64,
-      });
+      const sponsoredSettlement = usesPruSpendExecution
+        ? null
+        : await buildTsnSponsoredSettlementTransaction({
+            paymentId: result.paymentId,
+            crankerFeePayer: crankerFeePayer as string,
+            senderWallet: walletAddress,
+            tokenMintAddress: selectedToken.mintAddress,
+            amountUi: usesMixedPruWalletExecution
+              ? Number(tinSpendPlan?.walletEscrowAmountBaseUnits ?? "0") /
+                10 ** tokenDecimals
+              : Number(form.amount),
+            senderFeeAmountUi: usesMixedPruWalletExecution
+              ? Number(tinSpendPlan?.walletSenderFeeBaseUnits ?? "0") /
+                10 ** tokenDecimals
+              : senderFeeAmount,
+            tokenDecimals,
+            recipientHash,
+            transferId: encryptedSettlementToken.transferId,
+            commitmentHash: encryptedSettlementToken.commitmentHash,
+            rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
+          });
+      const senderSignedSettlementTransaction = sponsoredSettlement
+        ? await signSolanaTransaction({
+            walletId: walletSession.walletId,
+            address: walletAddress,
+            transactionBase64: sponsoredSettlement.transactionBase64,
+          })
+        : null;
 
       const enqueueResult = await enqueueTsnPaymentFromFrontend({
         paymentId: result.paymentId,
@@ -684,14 +1186,39 @@ export function SendExperience() {
         senderAuthorizationExpiresAt: senderAuthorization.expiresAt,
         senderFeeAmount,
         senderSignedSettlementTransaction,
-        senderSignedSettlementFeePayer: sponsoredSettlement.crankerFeePayer,
-        senderSettlementMode: "private_permit_v2",
-        privacyVersion: sponsoredSettlement.privacyVersion,
-        commitmentRecord: sponsoredSettlement.commitmentRecord,
-        senderTokenAccount: sponsoredSettlement.senderTokenAccount,
-        settlementVault: sponsoredSettlement.paymentVault,
-        settlementTokenAccount: sponsoredSettlement.escrowTokenAccount,
-        settlementPaymentIntentId: sponsoredSettlement.paymentIntentId,
+        senderSignedSettlementFeePayer:
+          sponsoredSettlement?.crankerFeePayer ?? null,
+        senderSettlementMode: usesPruSpendExecution
+          ? "pru_private_commitment_v1"
+          : usesMixedPruWalletExecution
+            ? "mixed_pru_wallet_v1"
+            : "private_permit_v2",
+        pruSpendTin: tinSpendPlan?.requiresPruExecution
+          ? (user.tin ?? null)
+          : null,
+        pruSpendAmountBaseUnits: tinSpendPlan?.requiresPruExecution
+          ? String(tinSpendPlan?.pruEscrowAmountBaseUnits ?? "0")
+          : null,
+        pruSpendSenderFeeBaseUnits: tinSpendPlan?.requiresPruExecution
+          ? String(tinSpendPlan?.pruSenderFeeBaseUnits ?? "0")
+          : null,
+        walletTopUpAmountBaseUnits: usesMixedPruWalletExecution
+          ? String(tinSpendPlan?.walletEscrowAmountBaseUnits ?? "0")
+          : null,
+        walletTopUpSenderFeeBaseUnits: usesMixedPruWalletExecution
+          ? String(tinSpendPlan?.walletSenderFeeBaseUnits ?? "0")
+          : null,
+        pruSpendSelections: tinSpendPlan?.requiresPruExecution
+          ? (tinSpendPlan?.pruSpendSelections ?? [])
+          : null,
+        settlementEscrowSecretKeyBase64:
+          sponsoredSettlement?.escrowTokenSecretKeyBase64 ?? null,
+        privacyVersion: sponsoredSettlement?.privacyVersion ?? 2,
+        commitmentRecord: sponsoredSettlement?.commitmentRecord ?? null,
+        senderTokenAccount: sponsoredSettlement?.senderTokenAccount ?? null,
+        settlementVault: sponsoredSettlement?.paymentVault ?? null,
+        settlementTokenAccount: sponsoredSettlement?.escrowTokenAccount ?? null,
+        settlementPaymentIntentId: sponsoredSettlement?.paymentIntentId ?? null,
         transferId: encryptedSettlementToken.transferId,
         commitmentHash: encryptedSettlementToken.commitmentHash,
         settlementEpoch,
@@ -728,7 +1255,8 @@ export function SendExperience() {
             : `Sponsored settlement queued. Awaiting Cranker Verification. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
       );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not create payment intent";
+      const msg =
+        e instanceof Error ? e.message : "Could not create payment intent";
       setError(msg);
       showToast(msg);
     } finally {
@@ -738,14 +1266,33 @@ export function SendExperience() {
 
   if (!hydrated || !user) return null;
 
-  const receiptTimestamp = sendSuccess?.notificationReadAt ?? sendSuccess?.notificationDeliveredAt ?? sendSuccess?.notificationSentAt ?? sendSuccess?.notificationFailedAt ?? null;
+  const receiptTimestamp =
+    sendSuccess?.notificationReadAt ??
+    sendSuccess?.notificationDeliveredAt ??
+    sendSuccess?.notificationSentAt ??
+    sendSuccess?.notificationFailedAt ??
+    null;
 
   return (
-    <AppMobileShell currentTab="send" title="Send" subtitle="Confirm the person, choose a supported token, then co-sign a cranker-sponsored TSN settlement." user={user} showBackButton backHref="/app"
-      blockingOverlay={pendingAuth ? <PinGateModal pendingAuth={pendingAuth} user={user} onAuthenticated={completePendingAuth} onSignOut={logout} /> : null}
+    <AppMobileShell
+      currentTab="send"
+      title="Send"
+      subtitle="Confirm the person, choose a supported token, then co-sign a cranker-sponsored TSN settlement."
+      user={user}
+      showBackButton
+      backHref="/app"
+      blockingOverlay={
+        pendingAuth ? (
+          <PinGateModal
+            pendingAuth={pendingAuth}
+            user={user}
+            onAuthenticated={completePendingAuth}
+            onSignOut={logout}
+          />
+        ) : null
+      }
     >
       <section className="space-y-5">
-
         {/* Notices */}
         {notice && !sendSuccess ? (
           <div className="tl-badge rounded-[18px] px-4 py-3 ">{notice}</div>
@@ -757,8 +1304,12 @@ export function SendExperience() {
         ) : null}
         {sendGuidance ? (
           <div className="rounded-[20px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-4">
-            <div className="text-[0.8rem] font-semibold text-text">{sendGuidance.title}</div>
-            <div className="mt-1.5 text-[0.78rem] leading-relaxed text-text-soft">{sendGuidance.message}</div>
+            <div className="text-[0.8rem] font-semibold text-text">
+              {sendGuidance.title}
+            </div>
+            <div className="mt-1.5 text-[0.78rem] leading-relaxed text-text-soft">
+              {sendGuidance.message}
+            </div>
             {sendGuidance.ctaHref && sendGuidance.ctaLabel ? (
               <Link
                 href={sendGuidance.ctaHref}
@@ -775,20 +1326,25 @@ export function SendExperience() {
           <div className="space-y-5">
             <div className="text-center py-2">
               <SuccessIcon className="mx-auto h-14 w-14" />
-              <div className={`mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.2em] ${
-                livePaymentStage?.key === "stopped" ? "text-[var(--danger)]" : "text-[var(--accent-deep)] dark:text-[var(--accent)]"
-              }`}>
+              <div
+                className={`mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.2em] ${
+                  livePaymentStage?.key === "stopped"
+                    ? "text-[var(--danger)]"
+                    : "text-[var(--accent-deep)] dark:text-[var(--accent)]"
+                }`}
+              >
                 {livePaymentStage?.label ?? "Awaiting Cranker"}
               </div>
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-text">
                 {sendSuccess.amount} {sendSuccess.token}
               </h2>
               <p className="mt-2  leading-relaxed text-text-soft max-w-[300px] mx-auto">
-                {livePaymentStage?.description || (sendSuccess.manualInviteRequired
-                  ? `Authorization queued for ${sendSuccess.recipientName}. Share the invite manually.`
-                  : sendSuccess.notificationRetrying
-                    ? `Authorization queued for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
-                    : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`)}
+                {livePaymentStage?.description ||
+                  (sendSuccess.manualInviteRequired
+                    ? `Authorization queued for ${sendSuccess.recipientName}. Share the invite manually.`
+                    : sendSuccess.notificationRetrying
+                      ? `Authorization queued for ${sendSuccess.recipientName}. WhatsApp delivery retrying.`
+                      : `Intent queued for ${sendSuccess.recipientName}. Waiting for Cranker verification and on-chain submission.`)}
               </p>
             </div>
 
@@ -812,17 +1368,27 @@ export function SendExperience() {
                     { label: "Claiming", step: 3 },
                     { label: "Paid", step: 4 },
                   ].map((item) => {
-                    const reached = livePaymentStage.key !== "stopped" && livePaymentStage.step >= item.step;
-                    const active = livePaymentStage.key !== "stopped" && livePaymentStage.step === item.step;
+                    const reached =
+                      livePaymentStage.key !== "stopped" &&
+                      livePaymentStage.step >= item.step;
+                    const active =
+                      livePaymentStage.key !== "stopped" &&
+                      livePaymentStage.step === item.step;
                     return (
                       <div key={item.label} className="min-w-0 text-center">
-                        <div className={`mx-auto h-2.5 w-2.5 rounded-full border ${
-                          reached
-                            ? "border-[var(--accent)] bg-[var(--accent)]"
-                            : "border-[var(--field-border)] bg-[var(--surface)]"
-                        } ${active && !livePaymentStage.terminal ? "animate-pulse" : ""}`} />
-                        <div className={`mx-auto mt-1 h-px w-full ${reached ? "bg-[var(--accent)]/50" : "bg-[var(--field-border)]"}`} />
-                        <div className={`mt-2 truncate text-[0.58rem] font-medium ${reached ? "text-[var(--text)]" : "text-[var(--text-faint)]"}`}>
+                        <div
+                          className={`mx-auto h-2.5 w-2.5 rounded-full border ${
+                            reached
+                              ? "border-[var(--accent)] bg-[var(--accent)]"
+                              : "border-[var(--field-border)] bg-[var(--surface)]"
+                          } ${active && !livePaymentStage.terminal ? "animate-pulse" : ""}`}
+                        />
+                        <div
+                          className={`mx-auto mt-1 h-px w-full ${reached ? "bg-[var(--accent)]/50" : "bg-[var(--field-border)]"}`}
+                        />
+                        <div
+                          className={`mt-2 truncate text-[0.58rem] font-medium ${reached ? "text-[var(--text)]" : "text-[var(--text-faint)]"}`}
+                        >
                           {item.label}
                         </div>
                       </div>
@@ -839,11 +1405,26 @@ export function SendExperience() {
                   { label: "Recipient", value: sendSuccess.recipientName },
                   { label: "WhatsApp", value: sendSuccess.receiverPhone },
                   { label: "Reference", value: sendSuccess.referenceCode },
-                  { label: "Status", value: livePaymentStage?.label ?? paymentStatusLabel(sendSuccess.status), capitalize: true },
+                  {
+                    label: "Status",
+                    value:
+                      livePaymentStage?.label ??
+                      paymentStatusLabel(sendSuccess.status),
+                    capitalize: true,
+                  },
                 ].map((row) => (
-                  <div key={row.label} className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">{row.label}</span>
-                    <span className={` font-medium text-text ${row.capitalize ? "capitalize" : ""}`}>{row.value}</span>
+                  <div
+                    key={row.label}
+                    className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3"
+                  >
+                    <span className="text-[0.78rem] text-text-soft">
+                      {row.label}
+                    </span>
+                    <span
+                      className={` font-medium text-text ${row.capitalize ? "capitalize" : ""}`}
+                    >
+                      {row.value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -852,33 +1433,57 @@ export function SendExperience() {
               <div className="space-y-2">
                 {!sendSuccess.manualInviteRequired ? (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">WhatsApp receipt</span>
-                    <PaymentNotificationReceipt status={sendSuccess.notificationStatus} />
+                    <span className="text-[0.78rem] text-text-soft">
+                      WhatsApp receipt
+                    </span>
+                    <PaymentNotificationReceipt
+                      status={sendSuccess.notificationStatus}
+                    />
                   </div>
                 ) : (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Sender invite</span>
-                    <span className=" font-medium text-text">Share manually</span>
+                    <span className="text-[0.78rem] text-text-soft">
+                      Sender invite
+                    </span>
+                    <span className=" font-medium text-text">
+                      Share manually
+                    </span>
                   </div>
                 )}
 
                 {sendSuccess.notificationRetrying ? (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Delivery retries</span>
-                    <span className=" font-medium text-text">{sendSuccess.notificationAttemptCount}</span>
+                    <span className="text-[0.78rem] text-text-soft">
+                      Delivery retries
+                    </span>
+                    <span className=" font-medium text-text">
+                      {sendSuccess.notificationAttemptCount}
+                    </span>
                   </div>
                 ) : null}
 
                 {!sendSuccess.manualInviteRequired && receiptTimestamp ? (
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Receipt updated</span>
-                    <span className=" font-medium text-text">{formatReceiptTime(receiptTimestamp)}</span>
+                    <span className="text-[0.78rem] text-text-soft">
+                      Receipt updated
+                    </span>
+                    <span className=" font-medium text-text">
+                      {formatReceiptTime(receiptTimestamp)}
+                    </span>
                   </div>
                 ) : null}
 
                 <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                  <span className="text-[0.78rem] text-text-soft">{sendSuccess.blockchainMode === "mock" ? "Mock ref" : sendSuccess.blockchainMode === "tsn" ? "Intent id" : "Deposit tx"}</span>
-                  <span className=" font-medium text-text">{shortenAddress(sendSuccess.blockchainSignature)}</span>
+                  <span className="text-[0.78rem] text-text-soft">
+                    {sendSuccess.blockchainMode === "mock"
+                      ? "Mock ref"
+                      : sendSuccess.blockchainMode === "tsn"
+                        ? "Intent id"
+                        : "Deposit tx"}
+                  </span>
+                  <span className=" font-medium text-text">
+                    {shortenAddress(sendSuccess.blockchainSignature)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -893,11 +1498,35 @@ export function SendExperience() {
 
             {sendSuccess.manualInviteRequired && sendSuccess.inviteShare ? (
               <div className="tl-panel tl-field rounded-[22px] px-5 py-4">
-                <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">Shareable invite</div>
-                <pre className="mt-3 whitespace-pre-wrap  leading-relaxed text-text-soft">{sendSuccess.inviteShare.inviteMessage}</pre>
+                <div className="tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">
+                  Shareable invite
+                </div>
+                <pre className="mt-3 whitespace-pre-wrap  leading-relaxed text-text-soft">
+                  {sendSuccess.inviteShare.inviteMessage}
+                </pre>
                 <button
                   type="button"
-                  onClick={async () => { setShareBusy(true); try { const outcome = await shareInviteMessage(sendSuccess.inviteShare!.inviteMessage); showToast(outcome === "shared" ? "Share dialog opened." : "Invite copied."); } catch (e) { setError(e instanceof Error ? e.message : "Could not share invite"); } finally { setShareBusy(false); } }}
+                  onClick={async () => {
+                    setShareBusy(true);
+                    try {
+                      const outcome = await shareInviteMessage(
+                        sendSuccess.inviteShare!.inviteMessage,
+                      );
+                      showToast(
+                        outcome === "shared"
+                          ? "Share dialog opened."
+                          : "Invite copied.",
+                      );
+                    } catch (e) {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Could not share invite",
+                      );
+                    } finally {
+                      setShareBusy(false);
+                    }
+                  }}
                   disabled={shareBusy}
                   className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform"
                 >
@@ -907,31 +1536,51 @@ export function SendExperience() {
             ) : null}
 
             <div className="grid grid-cols-2 gap-3 md:max-w-[400px]">
-              <Link href="/app" className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center  font-medium cursor-pointer active:scale-[0.97] transition-transform">Back home</Link>
-              <button type="button" onClick={() => { setSendSuccess(null); setNotice(null); }} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform">Send another</button>
+              <Link
+                href="/app"
+                className="tl-button-secondary rounded-[18px] px-4 py-3.5 text-center  font-medium cursor-pointer active:scale-[0.97] transition-transform"
+              >
+                Back home
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setSendSuccess(null);
+                  setNotice(null);
+                }}
+                className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] cursor-pointer active:scale-[0.97] transition-transform"
+              >
+                Send another
+              </button>
             </div>
           </div>
         ) : (
-
           /* ═══════════ SEND FORM ═══════════ */
           <form onSubmit={handleSubmit}>
             <div className="grid gap-5 md:grid-cols-[1fr_1fr] md:items-start">
-
               {/* ── LEFT: Form fields (phone preview frame) ── */}
               <div className="space-y-4 md:mx-auto md:w-full md:max-w-[380px]">
-
                 {/* Recipient input */}
 
                 <div className="relative">
                   {/* Country chip — inline, after first verification */}
-                  {hasVerifiedOnce && displayCountry && !receiverInputLooksLikeTin ? (
+                  {hasVerifiedOnce &&
+                  displayCountry &&
+                  !receiverInputLooksLikeTin ? (
                     <button
                       type="button"
-                      onClick={() => { setCountrySearchOpen(true); setCountrySearchQuery(""); }}
+                      onClick={() => {
+                        setCountrySearchOpen(true);
+                        setCountrySearchQuery("");
+                      }}
                       className="absolute right-16 top-[34px] z-10 flex items-center gap-1 rounded-[8px] px-2 py-1 tl-meta-sm font-medium transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
                     >
-                      <span className="text-[0.78rem] leading-none">{displayCountry.flag}</span>
-                      <span className="text-[var(--text-soft)]">{displayCountry.dialCode}</span>
+                      <span className="text-[0.78rem] leading-none">
+                        {displayCountry.flag}
+                      </span>
+                      <span className="text-[var(--text-soft)]">
+                        {displayCountry.dialCode}
+                      </span>
                       <ChevronDown className="h-2.5 w-2.5 text-[var(--text-faint)]" />
                     </button>
                   ) : null}
@@ -945,28 +1594,77 @@ export function SendExperience() {
                     recipientPreview={recipientPreview}
                     lookupBusy={previewBusy}
                     lookupError={lookupError}
-                    showVerificationActions={!receiverCheckSkipped && !receiverWhatsAppVerified}
-                    showCountryFallback={!receiverInputLooksLikeTin && !manualCountryLocked && (showCountryFallback || (receiverPhoneInput.trim() !== "" && (phoneVerificationState === "warning" || phoneVerificationState === "invalid")))}
+                    showVerificationActions={
+                      !receiverCheckSkipped && !receiverWhatsAppVerified
+                    }
+                    showCountryFallback={
+                      !receiverInputLooksLikeTin &&
+                      !manualCountryLocked &&
+                      (showCountryFallback ||
+                        (receiverPhoneInput.trim() !== "" &&
+                          (phoneVerificationState === "warning" ||
+                            phoneVerificationState === "invalid")))
+                    }
                     selectedCountry={manualCountry}
                     suggestedCountries={suggestedCountries}
-                    onChange={(value) => { setReceiverPhoneInput(value); setCountrySearchOpen(false); setManualCountry(null); setManualCountryLocked(false); setConfirmOpen(false); setSendCostEstimate(null); setEstimateError(null); setLookupError(null); setRecipientPreview(null); setPhoneVerificationDetails(null); setReceiverCheckSkipped(false); setForm((c) => ({ ...c, receiverPhone: "" })); }}
-                    onCountrySelect={(country) => { setManualCountry(country); setManualCountryLocked(true); setReceiverCountry(country); setReceiverCheckSkipped(false); setLookupError(null); setShowCountryFallback(false); setPhoneVerificationState("checking"); setPhoneVerificationLabel(`Retrying with ${country.name}...`); }}
-                    onSkipVerification={() => { setReceiverCheckSkipped(true); setReceiverWhatsAppVerified(true); setLookupError(null); setPhoneVerificationState("valid"); setPhoneVerificationLabel(manualCountry ? `Continuing with ${manualCountry.name}...` : null); }}
+                    onChange={(value) => {
+                      setReceiverPhoneInput(value);
+                      setCountrySearchOpen(false);
+                      setManualCountry(null);
+                      setManualCountryLocked(false);
+                      setConfirmOpen(false);
+                      setSendCostEstimate(null);
+                      setTinSpendPlan(null);
+                      setEstimateError(null);
+                      setLookupError(null);
+                      setRecipientPreview(null);
+                      setPhoneVerificationDetails(null);
+                      setReceiverCheckSkipped(false);
+                      setForm((c) => ({ ...c, receiverPhone: "" }));
+                    }}
+                    onCountrySelect={(country) => {
+                      setManualCountry(country);
+                      setManualCountryLocked(true);
+                      setReceiverCountry(country);
+                      setReceiverCheckSkipped(false);
+                      setLookupError(null);
+                      setShowCountryFallback(false);
+                      setPhoneVerificationState("checking");
+                      setPhoneVerificationLabel(
+                        `Retrying with ${country.name}...`,
+                      );
+                    }}
+                    onSkipVerification={() => {
+                      setReceiverCheckSkipped(true);
+                      setReceiverWhatsAppVerified(true);
+                      setLookupError(null);
+                      setPhoneVerificationState("valid");
+                      setPhoneVerificationLabel(
+                        manualCountry
+                          ? `Continuing with ${manualCountry.name}...`
+                          : null,
+                      );
+                    }}
                     skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
                   />
                 </div>
 
-
-
                 {/* Amount + Token row */}
                 <div className="flex items-stretch rounded-[22px] tl-panel tl-field overflow-hidden transition-all focus-within:border-[var(--accent-deep)]/30">
                   <div className="flex flex-1 flex-col px-4 py-3.5">
-                    <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">Amount</span>
+                    <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-[var(--text-soft)]">
+                      Amount
+                    </span>
                     <input
                       type="number"
                       step="any"
                       value={form.amount}
-                      onChange={(e) => { setForm((c) => ({ ...c, amount: e.target.value })); setSendCostEstimate(null); setEstimateError(null); }}
+                      onChange={(e) => {
+                        setForm((c) => ({ ...c, amount: e.target.value }));
+                        setSendCostEstimate(null);
+                        setTinSpendPlan(null);
+                        setEstimateError(null);
+                      }}
                       placeholder="0.00"
                       className="mt-1 w-full bg-transparent text-[1rem] font-bold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
                     />
@@ -979,8 +1677,15 @@ export function SendExperience() {
                   >
                     {selectedToken ? (
                       <div className="flex flex-col overflow-hidden text-left">
-                        <span className=" font-bold text-text">{selectedToken.symbol}</span>
-                        <span className="truncate text-[0.62rem] text-[var(--accent-deep)] dark:text-[var(--accent)]">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</span>
+                        <span className=" font-bold text-text">
+                          {selectedToken.symbol}
+                        </span>
+                        <span className="truncate text-[0.62rem] text-[var(--accent-deep)] dark:text-[var(--accent)]">
+                          {formatTokenBalance(
+                            selectedToken.balance,
+                            selectedToken.symbol,
+                          )}
+                        </span>
                       </div>
                     ) : (
                       <span className=" text-text-soft">Token</span>
@@ -1001,17 +1706,26 @@ export function SendExperience() {
 
               {/* ── RIGHT: Context cards (desktop) ── */}
               <div className="space-y-4">
-
                 {/* Recipient preview card */}
                 {phoneVerificationDetails ? (
                   <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
-                    <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-3">Recipient</div>
+                    <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-3">
+                      Recipient
+                    </div>
                     <div className="flex items-center gap-3">
                       {phoneVerificationDetails.profilePic ? (
-                        <img src={phoneVerificationDetails.profilePic} alt="" className="h-11 w-11 rounded-full border border-[var(--field-border)] object-cover" />
+                        <img
+                          src={phoneVerificationDetails.profilePic}
+                          alt=""
+                          className="h-11 w-11 rounded-full border border-[var(--field-border)] object-cover"
+                        />
                       ) : (
                         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--field-border)] bg-[var(--surface-soft)] text-[0.7rem] font-bold text-accent">
-                          {phoneVerificationDetails.displayName ? phoneVerificationDetails.displayName.slice(0, 2).toUpperCase() : "?"}
+                          {phoneVerificationDetails.displayName
+                            ? phoneVerificationDetails.displayName
+                                .slice(0, 2)
+                                .toUpperCase()
+                            : "?"}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
@@ -1019,42 +1733,62 @@ export function SendExperience() {
                           {phoneVerificationDetails.displayName || "Unknown"}
                         </div>
                         {phoneVerificationDetails.resolvedPhoneNumber ? (
-                          <div className="text-[0.72rem] text-text-faint truncate">{phoneVerificationDetails.resolvedPhoneNumber}</div>
+                          <div className="text-[0.72rem] text-text-faint truncate">
+                            {phoneVerificationDetails.resolvedPhoneNumber}
+                          </div>
                         ) : null}
                       </div>
-                      <div className={`shrink-0 rounded-full px-2.5 py-1 text-[0.62rem] font-medium ${phoneVerificationDetails.exists
-                        ? "bg-[var(--accent-soft)] text-accent border border-accent-border"
-                        : "bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger)]/14"
-                        }`}>
-                        {phoneVerificationDetails.exists ? "Verified" : "Not found"}
+                      <div
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[0.62rem] font-medium ${
+                          phoneVerificationDetails.exists
+                            ? "bg-[var(--accent-soft)] text-accent border border-accent-border"
+                            : "bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger)]/14"
+                        }`}
+                      >
+                        {phoneVerificationDetails.exists
+                          ? "Verified"
+                          : "Not found"}
                       </div>
                     </div>
                     {phoneVerificationDetails.detectedCountry ? (
                       <div className="mt-2.5 flex items-center gap-1.5 tl-meta-sm text-text-faint">
                         <Globe className="h-3 w-3" />
-                        {phoneVerificationDetails.detectedCountry.name} ({phoneVerificationDetails.detectedCountry.dialCode})
+                        {phoneVerificationDetails.detectedCountry.name} (
+                        {phoneVerificationDetails.detectedCountry.dialCode})
                       </div>
                     ) : null}
                     {recipientPreview ? (
                       recipientPreview.status === "tins_resolved" ? (
                         <div className="mt-3 space-y-2 rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-3">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-[0.68rem] text-text-faint">On-chain TIN</span>
-                            <span className="text-[0.7rem] font-semibold text-accent">Verified</span>
+                            <span className="text-[0.68rem] text-text-faint">
+                              On-chain TIN
+                            </span>
+                            <span className="text-[0.7rem] font-semibold text-accent">
+                              Verified
+                            </span>
                           </div>
                           <div className="font-mono text-[0.84rem] font-bold tracking-[0.12em] text-text">
                             {recipientPreview.recipient.tin}
                           </div>
                           <div className="border-t border-[var(--accent-border)] pt-2">
-                            <div className="text-[0.66rem] text-text-faint">Public TIN name</div>
+                            <div className="text-[0.66rem] text-text-faint">
+                              Public TIN name
+                            </div>
                             <div className="text-[0.75rem] font-semibold text-text">
-                              {recipientPreview.recipient.identityName || "No public identity name found"}
+                              {recipientPreview.recipient.identityName ||
+                                "No public identity name found"}
                             </div>
                           </div>
                           <div>
-                            <div className="text-[0.66rem] text-text-faint">Legal identity</div>
-                            <div className={`text-[0.75rem] font-semibold ${recipientPreview.recipient.legalName ? "text-text" : "text-[var(--warning)]"}`}>
-                              {recipientPreview.recipient.legalName || "No legal name available"}
+                            <div className="text-[0.66rem] text-text-faint">
+                              Legal identity
+                            </div>
+                            <div
+                              className={`text-[0.75rem] font-semibold ${recipientPreview.recipient.legalName ? "text-text" : "text-[var(--warning)]"}`}
+                            >
+                              {recipientPreview.recipient.legalName ||
+                                "No legal name available"}
                             </div>
                           </div>
                           <div className="text-[0.66rem] leading-relaxed text-text-faint">
@@ -1063,30 +1797,53 @@ export function SendExperience() {
                               : "This valid TIN is not indexed in the current TrustLink database."}
                           </div>
                         </div>
-                      ) : <div className="mt-3 rounded-[14px] bg-[var(--surface-soft)] px-3 py-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[0.72rem] text-text-faint">TrustLink status</span>
-                          <span className={`text-[0.72rem] font-medium capitalize ${recipientPreview.status === "registered" ? "text-accent" : "text-[var(--warning)]"
-                            }`}>{recipientPreview.status.replace(/_/g, " ")}</span>
-                        </div>
-                        <div className="mt-2 flex items-center gap-1.5 text-[0.72rem] text-text">
-                          <span className="grid h-4 w-4 place-items-center rounded-full bg-[#25D366]/16">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="h-2.5 w-2.5 text-[#25D366]">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                            </svg>
-                          </span>
-                          <span>WhatsApp: {phoneVerificationDetails.resolvedPhoneNumber ?? recipientPreview.recipient.phoneNumber}</span>
-                        </div>
-                        <div className="tl-meta-sm text-text-faint">X: coming soon (not linked yet)</div>
-                        <div className="tl-meta-sm text-text-faint">
-                          TIN: {recipientPreview.recipient.tin ?? "not linked yet"}
-                        </div>
-                        {normalizeTinInput(receiverPhoneInput.trim()) ? (
-                          <div className="mt-2 text-[0.66rem] text-[#bde8ff]">
-                            TIN resolved. Payment will route to the linked TrustLink recipient.
+                      ) : (
+                        <div className="mt-3 rounded-[14px] bg-[var(--surface-soft)] px-3 py-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[0.72rem] text-text-faint">
+                              TrustLink status
+                            </span>
+                            <span
+                              className={`text-[0.72rem] font-medium capitalize ${
+                                recipientPreview.status === "registered"
+                                  ? "text-accent"
+                                  : "text-[var(--warning)]"
+                              }`}
+                            >
+                              {recipientPreview.status.replace(/_/g, " ")}
+                            </span>
                           </div>
-                        ) : null}
-                      </div>
+                          <div className="mt-2 flex items-center gap-1.5 text-[0.72rem] text-text">
+                            <span className="grid h-4 w-4 place-items-center rounded-full bg-[#25D366]/16">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                className="h-2.5 w-2.5 "
+                              >
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                              </svg>
+                            </span>
+                            <span>
+                              WhatsApp:{" "}
+                              {phoneVerificationDetails.resolvedPhoneNumber ??
+                                recipientPreview.recipient.phoneNumber}
+                            </span>
+                          </div>
+                          <div className="tl-meta-sm text-text-faint">
+                            X: coming soon (not linked yet)
+                          </div>
+                          <div className="tl-meta-sm text-text-faint">
+                            TIN:{" "}
+                            {recipientPreview.recipient.tin ?? "not linked yet"}
+                          </div>
+                          {normalizeTinInput(receiverPhoneInput.trim()) ? (
+                            <div className="mt-2 text-[0.66rem] text-[#bde8ff]">
+                              TIN resolved. Payment will route to the linked
+                              TrustLink recipient.
+                            </div>
+                          ) : null}
+                        </div>
+                      )
                     ) : null}
                   </div>
                 ) : previewBusy ? (
@@ -1097,18 +1854,25 @@ export function SendExperience() {
 
                 {/* How it works */}
                 <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
-                  <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-3">How it works</div>
+                  <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-3">
+                    How it works
+                  </div>
                   <div className="space-y-2.5">
                     {[
                       { step: "1", text: "Verify recipient identity" },
                       { step: "2", text: "Sign TSN authorization" },
                       { step: "3", text: "Cranker verifies and settles" },
                     ].map((item) => (
-                      <div key={item.step} className="flex items-center gap-2.5">
+                      <div
+                        key={item.step}
+                        className="flex items-center gap-2.5"
+                      >
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.58rem] font-bold bg-[var(--accent-soft)] text-accent border border-accent-border">
                           {item.step}
                         </div>
-                        <span className="text-[0.76rem] text-text-soft">{item.text}</span>
+                        <span className="text-[0.76rem] text-text-soft">
+                          {item.text}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1117,18 +1881,33 @@ export function SendExperience() {
                 {/* Selected token info */}
                 {selectedToken ? (
                   <div className="tl-panel tl-field rounded-[22px] px-4 py-4">
-                    <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-2">Sending with</div>
+                    <div className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-text-faint mb-2">
+                      Sending with
+                    </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.8rem]">{selectedToken.logo}</span>
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.8rem]">
+                          {selectedToken.logo}
+                        </span>
                         <div>
-                          <div className=" font-semibold text-text">{selectedToken.symbol}</div>
-                          <div className="text-[0.66rem] text-text-faint">{selectedToken.name}</div>
+                          <div className=" font-semibold text-text">
+                            {selectedToken.symbol}
+                          </div>
+                          <div className="text-[0.66rem] text-text-faint">
+                            {selectedToken.name}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className=" font-semibold text-text">{formatTokenBalance(selectedToken.balance, selectedToken.symbol)}</div>
-                        <div className="text-[0.62rem] text-text-faint">Available</div>
+                        <div className=" font-semibold text-text">
+                          {formatTokenBalance(
+                            selectedToken.balance,
+                            selectedToken.symbol,
+                          )}
+                        </div>
+                        <div className="text-[0.62rem] text-text-faint">
+                          Available
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1141,36 +1920,68 @@ export function SendExperience() {
 
       {/* ═══════════ TOKEN PICKER MODAL ═══════════ */}
       {tokenPickerOpen ? (
-        <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setTokenPickerOpen(false)}>
-          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center"
+          onClick={() => setTokenPickerOpen(false)}
+        >
+          <div
+            className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">Choose token</h2>
-              <p className="mt-1  text-text-soft">Supported tokens from your wallet.</p>
+              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">
+                Choose token
+              </h2>
+              <p className="mt-1  text-text-soft">
+                Supported tokens from your wallet.
+              </p>
             </div>
             <div className="space-y-2.5">
               {tokenBusy ? (
-                <div className="tl-panel tl-field rounded-[18px] px-4 py-5"><SectionLoader size="md" label="Loading tokens..." /></div>
-              ) : sendableTokens.map((token) => {
-                const active = token.mintAddress === form.token;
-                return (
-                  <button key={token.mintAddress} type="button"
-                    onClick={() => { setForm((c) => ({ ...c, token: token.mintAddress })); setSendCostEstimate(null); setEstimateError(null); setTokenPickerOpen(false); }}
-                    className={`tl-panel tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.9rem]">{token.logo}</span>
-                      <span>
-                        <span className="block  font-semibold leading-tight text-text">{token.symbol}</span>
-                        <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">{token.name}</span>
+                <div className="tl-panel tl-field rounded-[18px] px-4 py-5">
+                  <SectionLoader size="md" label="Loading tokens..." />
+                </div>
+              ) : (
+                sendableTokens.map((token) => {
+                  const active = token.mintAddress === form.token;
+                  return (
+                    <button
+                      key={token.mintAddress}
+                      type="button"
+                      onClick={() => {
+                        setForm((c) => ({ ...c, token: token.mintAddress }));
+                        setSendCostEstimate(null);
+                        setTinSpendPlan(null);
+                        setEstimateError(null);
+                        setTokenPickerOpen(false);
+                      }}
+                      className={`tl-panel tl-field flex w-full items-center justify-between rounded-[18px] px-4 py-3.5 transition-colors cursor-pointer active:scale-[0.99] ${active ? "border-[var(--accent-deep)]/30 bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-soft)]"}`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--surface-soft)] text-[0.9rem]">
+                          {token.logo}
+                        </span>
+                        <span>
+                          <span className="block  font-semibold leading-tight text-text">
+                            {token.symbol}
+                          </span>
+                          <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">
+                            {token.name}
+                          </span>
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block  font-semibold leading-tight text-text">{formatTokenBalance(token.balance, token.symbol)}</span>
-                      <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">Available</span>
-                    </span>
-                  </button>
-                );
-              })}
+                      <span className="text-right">
+                        <span className="block  font-semibold leading-tight text-text">
+                          {formatTokenBalance(token.balance, token.symbol)}
+                        </span>
+                        <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">
+                          Available
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -1178,28 +1989,55 @@ export function SendExperience() {
 
       {/* ═══════════ CONFIRM MODAL ═══════════ */}
       {confirmOpen && recipientPreview?.verified && selectedToken ? (
-        <div className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center" onClick={() => setConfirmOpen(false)}>
-          <div className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center"
+          onClick={() => setConfirmOpen(false)}
+        >
+          <div
+            className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">Authorize transfer</h2>
-              <p className="mt-1  text-text-soft">You will sign a TSN authorization message. Your wallet will not broadcast a Solana transaction.</p>
+              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">
+                Authorize transfer
+              </h2>
+              <p className="mt-1  text-text-soft">
+                You will sign a TSN authorization message. Your wallet will not
+                broadcast a Solana transaction.
+              </p>
             </div>
 
             <div className="space-y-2.5">
               <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
-                <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">Sending to</div>
+                <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">
+                  Sending to
+                </div>
                 <div className="mt-1.5 text-[0.92rem] font-semibold text-text">
                   {recipientPreview.recipient.displayName}
-                  {"handle" in recipientPreview.recipient && recipientPreview.recipient.handle ? ` (@${recipientPreview.recipient.handle})` : recipientPreview.status === "whatsapp_only" || recipientPreview.status === "manual_invite_required" ? " (Not on TrustLink)" : ""}
+                  {"handle" in recipientPreview.recipient &&
+                  recipientPreview.recipient.handle
+                    ? ` (@${recipientPreview.recipient.handle})`
+                    : recipientPreview.status === "whatsapp_only" ||
+                        recipientPreview.status === "manual_invite_required"
+                      ? " (Not on TrustLink)"
+                      : ""}
                 </div>
-                {recipientPreview.recipient.whatsappProfileName && recipientPreview.recipient.whatsappProfileName !== recipientPreview.recipient.displayName ? (
-                  <div className="mt-1 text-[0.76rem] text-text-soft">WhatsApp: {recipientPreview.recipient.whatsappProfileName}</div>
+                {recipientPreview.recipient.whatsappProfileName &&
+                recipientPreview.recipient.whatsappProfileName !==
+                  recipientPreview.recipient.displayName ? (
+                  <div className="mt-1 text-[0.76rem] text-text-soft">
+                    WhatsApp: {recipientPreview.recipient.whatsappProfileName}
+                  </div>
                 ) : null}
               </div>
 
               <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-                <span className=" font-medium text-text">{form.amount} {selectedToken.symbol}</span>
-                <span className="text-[0.78rem] text-text-soft">{form.receiverPhone}</span>
+                <span className=" font-medium text-text">
+                  {form.amount} {selectedToken.symbol}
+                </span>
+                <span className="text-[0.78rem] text-text-soft">
+                  {form.receiverPhone}
+                </span>
               </div>
 
               {estimateBusy ? (
@@ -1207,8 +2045,12 @@ export function SendExperience() {
                   <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
                     <div>
-                      <div className=" font-semibold text-text">Calculating payment quote</div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-text-soft">Fetching TSN sender fee and current Solana network fee.</div>
+                      <div className=" font-semibold text-text">
+                        Calculating payment quote
+                      </div>
+                      <div className="mt-1 text-[0.72rem] leading-relaxed text-text-soft">
+                        Fetching TSN sender fee and current Solana network fee.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1217,8 +2059,12 @@ export function SendExperience() {
                   <div className="flex items-start gap-2.5">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--danger)]" />
                     <div>
-                      <div className=" font-semibold text-[var(--danger)]">Quote unavailable</div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--danger)]/80">{estimateError}</div>
+                      <div className=" font-semibold text-[var(--danger)]">
+                        Quote unavailable
+                      </div>
+                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--danger)]/80">
+                        {estimateError}
+                      </div>
                       <button
                         type="button"
                         onClick={() => void loadSendCostEstimate()}
@@ -1233,50 +2079,184 @@ export function SendExperience() {
               ) : sendCostEstimate ? (
                 <>
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Sender fee</span>
+                    <span className="text-[0.78rem] text-text-soft">
+                      Sender fee
+                    </span>
                     <span className="text-right">
-                      <span className="block  font-medium text-text">{sendCostEstimate.senderFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
-                      {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? <span className="block text-[0.68rem] text-text-faint">{formatUsd(sendCostEstimate.senderFeeAmountUsd)}</span> : null}
+                      <span className="block  font-medium text-text">
+                        {sendCostEstimate.senderFeeAmountUi.toFixed(6)}{" "}
+                        {selectedToken.symbol}
+                      </span>
+                      {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? (
+                        <span className="block text-[0.68rem] text-text-faint">
+                          {formatUsd(sendCostEstimate.senderFeeAmountUsd)}
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                   <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">Recipient fee</span>
+                    <span className="text-[0.78rem] text-text-soft">
+                      Recipient fee
+                    </span>
                     <span className="text-right">
-                      <span className="block  font-medium text-text">{sendCostEstimate.recipientFeeAmountUi.toFixed(6)} {selectedToken.symbol}</span>
-                      {formatUsd(sendCostEstimate.recipientFeeAmountUsd) ? <span className="block text-[0.68rem] text-text-faint">{formatUsd(sendCostEstimate.recipientFeeAmountUsd)}</span> : null}
+                      <span className="block  font-medium text-text">
+                        {sendCostEstimate.recipientFeeAmountUi.toFixed(6)}{" "}
+                        {selectedToken.symbol}
+                      </span>
+                      {formatUsd(sendCostEstimate.recipientFeeAmountUsd) ? (
+                        <span className="block text-[0.68rem] text-text-faint">
+                          {formatUsd(sendCostEstimate.recipientFeeAmountUsd)}
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">Solana network fee</div>
-                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.networkFeeSol.toFixed(6)} SOL</div>
-                      {formatUsd(sendCostEstimate.networkFeeUsd) ? <div className="mt-0.5 text-[0.66rem] text-text-faint">{formatUsd(sendCostEstimate.networkFeeUsd)}</div> : null}
+                      <div className="text-[0.68rem] text-text-soft">
+                        Solana network fee
+                      </div>
+                      <div className="mt-1  font-semibold text-text">
+                        {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
+                      </div>
+                      {formatUsd(sendCostEstimate.networkFeeUsd) ? (
+                        <div className="mt-0.5 text-[0.66rem] text-text-faint">
+                          {formatUsd(sendCostEstimate.networkFeeUsd)}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">Total required</div>
-                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.totalTokenRequiredUi.toFixed(6)} {selectedToken.symbol}</div>
+                      <div className="text-[0.68rem] text-text-soft">
+                        Total required
+                      </div>
+                      <div className="mt-1  font-semibold text-text">
+                        {sendCostEstimate.totalTokenRequiredUi.toFixed(6)}{" "}
+                        {selectedToken.symbol}
+                      </div>
                     </div>
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">Recipient receives</div>
-                      <div className="mt-1  font-semibold text-text">{sendCostEstimate.recipientPayoutAmountUi.toFixed(6)} {selectedToken.symbol}</div>
+                      <div className="text-[0.68rem] text-text-soft">
+                        Recipient receives
+                      </div>
+                      <div className="mt-1  font-semibold text-text">
+                        {sendCostEstimate.recipientPayoutAmountUi.toFixed(6)}{" "}
+                        {selectedToken.symbol}
+                      </div>
                     </div>
                   </div>
+                  {tinSpendPlan ? (
+                    <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[0.68rem] uppercase tracking-[0.18em] text-text-soft">
+                            Funding plan
+                          </div>
+                          <div className="mt-1 text-[0.82rem] font-semibold text-text">
+                            {tinSpendPlan.fundingMode === "pru_only"
+                              ? "TIN balance first"
+                              : tinSpendPlan.fundingMode ===
+                                  "mixed_pru_and_wallet"
+                                ? "TIN balance + wallet top-up"
+                                : tinSpendPlan.fundingMode === "wallet_only"
+                                  ? "Main wallet"
+                                  : "Insufficient funds"}
+                          </div>
+                        </div>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[0.62rem] font-semibold ${
+                            tinSpendPlan.privacyLevel === "highest"
+                              ? "bg-[var(--accent-soft)] text-accent"
+                              : tinSpendPlan.privacyLevel === "reduced"
+                                ? "bg-[var(--warning)]/10 text-[var(--warning)]"
+                                : tinSpendPlan.privacyLevel === "blocked"
+                                  ? "bg-[var(--danger-soft)] text-[var(--danger)]"
+                                  : "bg-white/[0.04] text-text-soft"
+                          }`}
+                        >
+                          {tinSpendPlan.privacyLevel === "highest"
+                            ? "Highest privacy"
+                            : tinSpendPlan.privacyLevel === "reduced"
+                              ? "Mixed privacy"
+                              : tinSpendPlan.privacyLevel === "blocked"
+                                ? "Blocked"
+                                : "Wallet visible"}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
+                        <div className="flex items-center justify-between gap-3 text-[0.76rem]">
+                          <span className="text-text-soft">
+                            From TIN balance
+                          </span>
+                          <span className="font-medium text-text">
+                            {formatPlanTokenAmount(
+                              tinSpendPlan.pruSpendBaseUnits,
+                              tinSpendPlan.tokenDecimals,
+                              tinSpendPlan.tokenSymbol,
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-[0.76rem]">
+                          <span className="text-text-soft">
+                            From main wallet
+                          </span>
+                          <span className="font-medium text-text">
+                            {formatPlanTokenAmount(
+                              tinSpendPlan.walletSpendBaseUnits,
+                              tinSpendPlan.tokenDecimals,
+                              tinSpendPlan.tokenSymbol,
+                            )}
+                          </span>
+                        </div>
+                        {tinSpendPlan.shortfallBaseUnits !== "0" ? (
+                          <div className="flex items-center justify-between gap-3 text-[0.76rem] text-[var(--danger)]">
+                            <span>Shortfall</span>
+                            <span className="font-medium">
+                              {formatPlanTokenAmount(
+                                tinSpendPlan.shortfallBaseUnits,
+                                tinSpendPlan.tokenDecimals,
+                                tinSpendPlan.tokenSymbol,
+                              )}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-3 text-[0.72rem] leading-relaxed text-text-soft">
+                        {tinSpendPlan.requiresPruExecution &&
+                        tinSpendPlan.fundingMode === "pru_only"
+                          ? "This payment will be funded from TIN balance through TSN Cranker PRU-spend execution. Your owner wallet does not sign the on-chain funding transaction."
+                          : tinSpendPlan.requiresPruExecution
+                            ? "This payment will use TIN balance first, then top up the remaining amount from your main wallet inside the same TSN settlement."
+                            : tinSpendPlan.userMessage}
+                      </p>
+                    </div>
+                  ) : null}
                   {sendCostEstimate.settlementAssessment ? (
                     <div
-                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
-                        ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
-                        : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
-                          ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
-                          : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
-                        }`}
+                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${
+                        sendCostEstimate.settlementAssessment.likelihood ===
+                        "likely_claimable"
+                          ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
+                          : sendCostEstimate.settlementAssessment.likelihood ===
+                              "risky_claim_amount"
+                            ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
+                            : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
+                      }`}
                     >
-                      {sendCostEstimate.settlementAssessment.likelihood === "likely_claimable"
+                      {sendCostEstimate.settlementAssessment.likelihood ===
+                      "likely_claimable"
                         ? "✅ Likely claimable"
-                        : sendCostEstimate.settlementAssessment.likelihood === "risky_claim_amount"
+                        : sendCostEstimate.settlementAssessment.likelihood ===
+                            "risky_claim_amount"
                           ? "⚠️ Risky claim amount"
                           : "❌ Economically non-claimable"}
                       <div className="mt-1 tl-meta-sm opacity-90">
-                        {sendCostEstimate.settlementAssessment.reason} Minimum suggested send: {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(4)} {selectedToken.symbol}.
+                        {sendCostEstimate.settlementAssessment.reason} Minimum
+                        suggested send:{" "}
+                        {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(
+                          4,
+                        )}{" "}
+                        {selectedToken.symbol}.
                       </div>
                     </div>
                   ) : null}
@@ -1285,26 +2265,58 @@ export function SendExperience() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setConfirmOpen(false)} className="tl-button-secondary rounded-[18px] px-4 py-3.5  font-medium cursor-pointer active:scale-[0.97] transition-transform tl-body-sm">Cancel</button>
-              <button type="button" onClick={() => void handleConfirmSend()} disabled={confirmSendDisabled} className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform tl-body-sm text-nowrap">{busy ? "Queuing..." : estimateBusy ? "Calculating..." : "Co-sign sponsored send"}</button>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="tl-button-secondary rounded-[18px] px-4 py-3.5  font-medium cursor-pointer active:scale-[0.97] transition-transform tl-body-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmSend()}
+                disabled={confirmSendDisabled}
+                className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform tl-body-sm text-nowrap"
+              >
+                {busy
+                  ? "Queuing..."
+                  : estimateBusy
+                    ? "Calculating..."
+                    : tinSpendPlan?.fundingMode === "pru_only"
+                      ? "Send from TIN balance"
+                      : tinSpendPlan?.fundingMode === "mixed_pru_and_wallet"
+                        ? "Send with wallet top-up"
+                        : "Co-sign sponsored send"}
+              </button>
             </div>
           </div>
         </div>
       ) : null}
 
-
       {/* ═══════════ COUNTRY SEARCH MODAL ═══════════ */}
       {countrySearchOpen ? (
-        <div className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center" onClick={() => setCountrySearchOpen(false)}>
-          <div className="tl-modal flex w-full max-h-[85vh] flex-col rounded-t-[28px] md:max-w-[430px] md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="tl-overlay fixed inset-0 z-999 grid place-items-end md:place-items-center"
+          onClick={() => setCountrySearchOpen(false)}
+        >
+          <div
+            className="tl-modal flex w-full max-h-[85vh] flex-col rounded-t-[28px] md:max-w-[430px] md:rounded-[28px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header + search */}
             <div className="shrink-0 px-6 pt-6 pb-3">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-[var(--text)]">Select Country</h2>
-                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">Choose the recipient country code</p>
+                  <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-[var(--text)]">
+                    Select Country
+                  </h2>
+                  <p className="mt-0.5 text-[0.76rem] text-[var(--text-faint)]">
+                    Choose the recipient country code
+                  </p>
                 </div>
-                <button type="button" onClick={() => setCountrySearchOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => setCountrySearchOpen(false)}
                   className="grid h-8 w-8 place-items-center rounded-full bg-[var(--surface-soft)] text-[var(--text-faint)] transition-colors hover:text-[var(--text)] cursor-pointer active:scale-[0.93]"
                 >
                   <X className="h-4 w-4" />
@@ -1329,26 +2341,44 @@ export function SendExperience() {
                 {filteredCountries.map((c) => {
                   const isActive = c.iso2 === displayCountry?.iso2;
                   return (
-                    <button key={c.iso2} type="button"
+                    <button
+                      key={c.iso2}
+                      type="button"
                       onClick={() => {
-                        setManualCountry(c); setManualCountryLocked(true); setReceiverCountry(c);
-                        setReceiverCheckSkipped(false); setLookupError(null); setShowCountryFallback(false);
-                        setPhoneVerificationState("checking"); setPhoneVerificationLabel(`Retrying with ${c.name}...`);
+                        setManualCountry(c);
+                        setManualCountryLocked(true);
+                        setReceiverCountry(c);
+                        setReceiverCheckSkipped(false);
+                        setLookupError(null);
+                        setShowCountryFallback(false);
+                        setPhoneVerificationState("checking");
+                        setPhoneVerificationLabel(`Retrying with ${c.name}...`);
                         setCountrySearchOpen(false);
                       }}
-                      className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors cursor-pointer active:scale-[0.99] ${isActive ? "bg-[var(--accent-soft)] border border-[var(--accent-border)]" : "hover:bg-[var(--surface-soft)]"
-                        }`}
+                      className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors cursor-pointer active:scale-[0.99] ${
+                        isActive
+                          ? "bg-[var(--accent-soft)] border border-[var(--accent-border)]"
+                          : "hover:bg-[var(--surface-soft)]"
+                      }`}
                     >
-                      <span className="text-[1.1rem] leading-none">{c.flag}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block  font-medium text-text truncate">{c.name}</span>
+                      <span className="text-[1.1rem] leading-none">
+                        {c.flag}
                       </span>
-                      <span className="shrink-0 text-[0.76rem] font-medium text-text-faint">{c.dialCode}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block  font-medium text-text truncate">
+                          {c.name}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[0.76rem] font-medium text-text-faint">
+                        {c.dialCode}
+                      </span>
                     </button>
                   );
                 })}
                 {filteredCountries.length === 0 ? (
-                  <div className="py-8 text-center  tl-text-muted">No countries match {countrySearchQuery}</div>
+                  <div className="py-8 text-center  tl-text-muted">
+                    No countries match {countrySearchQuery}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -1356,7 +2386,15 @@ export function SendExperience() {
         </div>
       ) : null}
 
-      <WalletPickerModal open={walletPickerOpen} wallets={availableWallets} connectingWalletId={connectingWalletId} onClose={() => { if (!connectingWalletId) setWalletPickerOpen(false); }} onSelect={(id) => void handleWalletSelect(id)} />
+      <WalletPickerModal
+        open={walletPickerOpen}
+        wallets={availableWallets}
+        connectingWalletId={connectingWalletId}
+        onClose={() => {
+          if (!connectingWalletId) setWalletPickerOpen(false);
+        }}
+        onSelect={(id) => void handleWalletSelect(id)}
+      />
     </AppMobileShell>
   );
 }

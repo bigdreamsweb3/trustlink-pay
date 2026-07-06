@@ -477,6 +477,51 @@ function buildUnpublishedTsnState(): PaymentTsnState {
   };
 }
 
+async function syncPaymentIntentTraceFromMempoolImpl(paymentId: string) {
+  const intent = await findPaymentIntentByPaymentId(paymentId);
+  if (!intent) return false;
+
+  try {
+    const mempool = getTsnMempoolClient();
+    const mempoolIntents = await withMempoolTimeout(mempool.listIntents());
+    const foundIntent = Array.isArray(mempoolIntents)
+      ? mempoolIntents.find((candidate) => candidate.id === intent.id)
+      : null;
+
+    if (!foundIntent) return false;
+
+    const normalizedIntentStatus = normalizePaymentIntentStatus(foundIntent.status);
+    const hasNewTrace =
+      Boolean(foundIntent.escrowTxSig && !intent.escrow_tx_sig) ||
+      Boolean(foundIntent.claimTxSig && !intent.claim_tx_sig) ||
+      Boolean(foundIntent.proofTxSig && !intent.proof_tx_sig);
+    const statusChanged = Boolean(
+      normalizedIntentStatus && normalizedIntentStatus !== intent.status,
+    );
+
+    if (!hasNewTrace && !statusChanged) return false;
+
+    await updatePaymentIntentStatus({
+      id: intent.id,
+      status: normalizedIntentStatus ?? intent.status,
+      assignedCrankerPubkey: foundIntent.assignedCrankerPubkey ?? null,
+      escrowTxSig: foundIntent.escrowTxSig ?? null,
+      claimTxSig: foundIntent.claimTxSig ?? null,
+      proofTxSig: foundIntent.proofTxSig ?? null,
+    });
+
+    return true;
+  } catch (error) {
+    logger.warn("tsn.intent.trace_sync_failed", {
+      paymentId,
+      intentId: intent.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
+    return false;
+  }
+}
+
 /**
  * Compute the cooldown delay (in ms) before the next TSN status query is allowed.
  * Uses exponential backoff: starts at 15s, doubles each check, capped at 5 minutes.
@@ -591,7 +636,15 @@ async function refreshSinglePaymentIntentStatusImpl(paymentId: string): Promise<
 
     if (foundIntent) {
       const normalizedIntentStatus = normalizePaymentIntentStatus(foundIntent.status);
-      if (normalizedIntentStatus && normalizedIntentStatus !== intent.status) {
+      const hasNewTrace =
+        Boolean(foundIntent.escrowTxSig && !intent.escrow_tx_sig) ||
+        Boolean(foundIntent.claimTxSig && !intent.claim_tx_sig) ||
+        Boolean(foundIntent.proofTxSig && !intent.proof_tx_sig);
+
+      if (
+        normalizedIntentStatus &&
+        (normalizedIntentStatus !== intent.status || hasNewTrace)
+      ) {
         await updatePaymentIntentStatus({
           id: intent.id,
           status: normalizedIntentStatus,
@@ -751,6 +804,14 @@ async function enrichPaymentsWithTsnStateImpl(payments: PaymentRecord[]): Promis
 export function isTsnSettled(payment: { tsn?: PaymentTsnState }) {
   return payment.tsn?.stage === "cranker_paid" || payment.tsn?.stage === "epoch_settled";
 }
+
+export const syncPaymentIntentTraceFromMempool = traceFunction(syncPaymentIntentTraceFromMempoolImpl, {
+  namespace: "TSN",
+  name: "syncPaymentIntentTraceFromMempool",
+  module: "backend/app/services/tsn.ts",
+  level: "debug",
+  includeReturn: false,
+});
 
 export const createTsnIntentForPayment = traceFunction(createTsnIntentForPaymentImpl, {
   namespace: "TSN",

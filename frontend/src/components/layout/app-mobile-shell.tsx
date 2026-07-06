@@ -259,7 +259,7 @@ export function AppMobileShell({
 
           {/* Mobile top bar */}
           <header
-            className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 h-fit+11px min-h-fit transition-all duration-200 ${headerScrolled ? "bg-dock/90 backdrop-blur-xl border-b border-[var(--field-border)]" : "bg-transparent"}`}
+            className={`md:hidden sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-1 max-h-fit min-h-fit md:min-h-16  transition-all duration-200 ${headerScrolled ? "bg-dock/90 backdrop-blur-xl border-b border-[var(--field-border)]" : "bg-transparent"}`}
           >
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {showBackButton ? (
@@ -324,31 +324,31 @@ export function AppMobileShell({
 
           {/* Page content area */}
           <div className="min-w-0 flex-1 px-4 pb-24 md:px-6 md:pb-8">
-              {/* Mobile breadcrumb */}
-              <div className="md:hidden min-w-0 mb-4">
-                <div className="tl-coord-text mt-2">
-                  <div className="flex w-full items-center justify-between gap-2 text-[0.66rem] leading-4 tracking-[0.01em]">
-                    <div className="flex items-center gap-1.5 whitespace-nowrap">
-                      <span className="opacity-75">Sector</span>
-                      <span className="opacity-55">›</span>
-                      <span className="text-accent font-medium">
-                        {currentTab.toUpperCase()}
-                      </span>
-                    </div>
-                    <ExpandableMetaRow
-                      currentTab={currentTab}
-                      subtitle={subtitle}
-                    />
+            {/* Mobile breadcrumb */}
+            <div className="md:hidden min-w-0 mb-4">
+              <div className="tl-coord-text mt-2">
+                <div className="flex w-full items-center justify-between gap-2 text-[0.56rem] leading-4 tracking-[0.01em]">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-75">Sector</span>
+                    <span className="opacity-55">›</span>
+                    <span className="text-accent font-medium">
+                      {currentTab.toUpperCase()}
+                    </span>
                   </div>
+                  <ExpandableMetaRow
+                    currentTab={currentTab}
+                    subtitle={subtitle}
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Desktop subtitle */}
-              <div className="hidden md:block mb-6">
-                <p className="text-[0.82rem] text-[var(--text-soft)] max-w-[500px]">
-                  {subtitle}
-                </p>
-              </div>
+            {/* Desktop subtitle */}
+            <div className="hidden md:block mb-6">
+              <p className="text-[0.82rem] text-[var(--text-soft)] max-w-[500px]">
+                {subtitle}
+              </p>
+            </div>
 
             {children}
           </div>
@@ -369,7 +369,7 @@ export function AppMobileShell({
               className={`grid justify-items-center gap-0.5 rounded-[16px] px-1 py-1.5 text-center transition-all duration-200 cursor-pointer ${active ? "tl-badge shadow-softbox" : "tl-text-muted hover:bg-[var(--surface-soft)] hover:text-[var(--text)]"}`}
             >
               <span
-                className={`grid h-6 w-6 place-items-center rounded-full transition-transform duration-200 ${active ? "translate-y-[-1px] text-[var(--accent-deep)] dark:text-[#86ffda]" : "opacity-80 text-current"}`}
+                className={`grid h-6 w-6 place-items-center rounded-full transition-transform duration-200 ${active ? "translate-y-[-1px] text-[var(--accent-deep)] dark:text-[var(--accent)]" : "opacity-80 text-current"}`}
               >
                 {item.icon}
               </span>

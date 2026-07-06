@@ -149,6 +149,22 @@ The dashboard shows a unified TIN balance by reading the finalized PRU public ro
 
 The displayed TIN balance is the sum of all non-zero supported token balances across the active PRUs linked to the authenticated TIN. This balance is shown together with the main wallet balance so the user sees one spendable payment balance while the routing still settles into PRUs.
 
+### TIN balance spend planning
+
+The send screen evaluates a TIN balance spend plan before the user authorizes a payment. The planner uses the authenticated PRU route session to read supported token balances across the user's PRUs, then compares that amount with the connected wallet balance.
+
+Funding priority is:
+
+1. TIN balance from PRUs.
+2. Connected main wallet top-up.
+3. Stop if the combined balance is not enough.
+
+The plan shown to the user separates the amount coming from TIN balance and the amount coming from the connected wallet. A PRU-only plan gives the strongest privacy. A wallet-only plan is the least private path and is used when no spendable TIN balance is available for the selected token.
+
+For PRU-only payments, the frontend sends the signed payment authorization and selected public PRU indexes to the TSN mempool. The mempool verifies that the TIN route is finalized, decrypts the stored TIN Master Seed inside the TSN layer, derives the selected PRU signing keys, and releases a worker-only PRU spend permit to the assigned Cranker. The Cranker executes the on-chain PRU spend instruction, moves the payment amount into the private escrow, routes the sender fee to the TSN treasury, and then the normal private payout path pays the recipient PRU.
+
+The frontend never receives PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs. It only sees public PRU addresses after authenticated route proof, public balances, and the selected PRU indexes needed for mempool authorization. Mixed PRU plus main-wallet funding is blocked in the send screen so TrustLink does not silently downgrade privacy or split authority across two settlement paths.
+
 ## PRU Route Authentication and Delegated Access
 
 PRU public addresses are private route metadata. They are not exposed through an unauthenticated TIN lookup because revealing them would make it easier to watch a recipient's payment routes. A caller must prove that it is the TIN owner or a platform that the owner explicitly trusted.

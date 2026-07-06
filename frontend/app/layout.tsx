@@ -20,10 +20,10 @@ const jetbrainsMono = JetBrains_Mono({
 const baseUrl = "https://trustlink-pay.vercel.app/";
 
 const title =
-  "TrustLink Pay - Web3 Payment Infrastructure";
+  "TrustLink Pay - Web3 Payment System";
 
 const description =
-  "Securely verify your identity and send stablecoins using your phone number. TrustLink Pay is a noncustodial crypto payment protocol on Solana.";
+  "Securely verify your identity and send stablecoins using your phone number. TrustLink Pay is a noncustodial crypto payment system on Solana.";
 
 /* ---------------- METADATA ---------------- */
 

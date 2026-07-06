@@ -10,6 +10,13 @@ import { signSolanaBytes, type ConnectedWalletSession } from "@/src/lib/wallet";
 
 export type TinTokenBalanceResult = {
   tokens: WalletTokenOption[];
+  pruBalances: Array<{
+    pruIndex: number;
+    publicKey: string;
+    tokenMintAddress: string;
+    balance: number;
+    balanceBaseUnits: string;
+  }>;
   pruCount: number;
   nonZeroPruCount: number;
 };
@@ -29,7 +36,7 @@ async function loadPruTokenBalance(params: {
     "confirmed",
   );
   const decimals = params.token.decimals ?? 6;
-  return accounts.value.reduce((sum, account) => {
+  const balanceBaseUnits = accounts.value.reduce((sum, account) => {
     const parsed = account.account.data as {
       parsed: {
         info: {
@@ -40,12 +47,12 @@ async function loadPruTokenBalance(params: {
         };
       };
     };
-    const amount =
-      parsed.parsed.info.tokenAmount.uiAmount ??
-      Number(parsed.parsed.info.tokenAmount.amount) /
-        10 ** decimals;
-    return sum + amount;
-  }, 0);
+    return sum + BigInt(parsed.parsed.info.tokenAmount.amount);
+  }, 0n);
+  return {
+    balance: Number(balanceBaseUnits) / 10 ** decimals,
+    balanceBaseUnits: balanceBaseUnits.toString(),
+  };
 }
 
 export async function loadTinTokenBalances(params: {
@@ -70,14 +77,24 @@ export async function loadTinTokenBalances(params: {
   }
   const activePrus = route.prus.filter((pru) => pru.state !== "SWEPT");
   const nonZeroPrus = new Set<number>();
+  const pruBalances: TinTokenBalanceResult["pruBalances"] = [];
   const tokenBalances = await Promise.all(
     params.supportedTokens.map(async (token) => {
       let balance = 0;
       for (const pru of activePrus) {
         if (params.signal?.aborted) throw new DOMException("Aborted", "AbortError");
         const pruBalance = await loadPruTokenBalance({ pru, token });
-        if (pruBalance > 0) nonZeroPrus.add(pru.index);
-        balance += pruBalance;
+        if (pruBalance.balance > 0) {
+          nonZeroPrus.add(pru.index);
+          pruBalances.push({
+            pruIndex: pru.index,
+            publicKey: pru.publicKey,
+            tokenMintAddress: token.mintAddress,
+            balance: pruBalance.balance,
+            balanceBaseUnits: pruBalance.balanceBaseUnits,
+          });
+        }
+        balance += pruBalance.balance;
       }
       return {
         ...token,
@@ -89,6 +106,7 @@ export async function loadTinTokenBalances(params: {
   const tokens = tokenBalances.filter((token) => token.balance > 0);
   return {
     tokens,
+    pruBalances,
     pruCount: route.prus.length,
     nonZeroPruCount: nonZeroPrus.size,
   };

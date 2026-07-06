@@ -430,7 +430,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
                 className="group flex w-full items-center justify-center gap-3 rounded-[16px] px-5 py-4 text-[0.92rem] font-semibold transition-all duration-200 active:scale-[0.97] cursor-pointer border border-[var(--surface-border)] hover:border-[var(--accent-border)] hover:bg-white/[0.02]"
                 style={{ background: "var(--panel)", color: "var(--text)" }}
               >
-                <WhatsAppIcon className="h-5 w-5 text-[#25D366]" />
+                <WhatsAppIcon className="h-5 w-5" />
                 Continue with WhatsApp
               </button>
               <button

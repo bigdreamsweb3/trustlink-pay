@@ -16,8 +16,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "ignoreDeprecations": "6.0"
+    "noEmit": true
   },
   "include": ["scripts/**/*.ts", "protocol/tests/**/*.ts"]
 }

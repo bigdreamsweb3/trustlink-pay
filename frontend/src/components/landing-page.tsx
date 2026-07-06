@@ -58,7 +58,8 @@ const heroStats = [
 const transparentFeesRows = [
   ["Transfer amount", "The amount to be sent"],
   ["Solana network fee", "Current chain transaction fee"],
-  ["Settlement fee estimates", "TSN protocol coordination fees"],
+  ["Sender fee", "Covers sender-side TSN execution and network sponsorship"],
+  ["Recipient fee", "Deducted from the recipient payout and split by TSN policy"],
   ["Recipient readiness", "Status of the recipient identity"],
 ];
 
@@ -221,18 +222,23 @@ const sasFeatures = [
 const feeDistribution = [
   {
     role: "Liquidity Providers",
-    share: "87%",
-    desc: "Market makers providing stablecoin liquidity",
+    share: "85%",
+    desc: "Vault liquidity providers backing settlement payouts",
   },
   {
-    role: "TSN Treasury",
+    role: "Cranker Operators",
     share: "8%",
+    desc: "Operators that execute and settle TSN work",
+  },
+  {
+    role: "Protocol Treasury",
+    share: "5%",
     desc: "Protocol development and operations",
   },
   {
-    role: "Cranker / Operator",
-    share: "5%",
-    desc: "Settlement verification and processing",
+    role: "Recovery Bonus Pool",
+    share: "2%",
+    desc: "Reserve incentives for fastest recovery and reimbursement work",
   },
 ];
 

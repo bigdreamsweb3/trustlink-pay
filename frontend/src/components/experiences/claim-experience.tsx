@@ -226,7 +226,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <AnimatePresence>
                 {feeInfoOpen ? (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: "easeOut" }} className="mt-2 rounded-[14px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-[0.74rem] leading-relaxed text-text/68">
-                    TrustLink covers gas even when receiver has no SOL. Fee = network cost + margin.
+                    Recipient-side TSN fees support gasless settlement and split as 85% LP vault rewards, 8% cranker operators, 5% protocol treasury, and 2% recovery bonus pool.
                   </motion.div>
                 ) : null}
               </AnimatePresence>

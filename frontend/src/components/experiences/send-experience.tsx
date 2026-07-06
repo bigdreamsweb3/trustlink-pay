@@ -2110,6 +2110,11 @@ export function SendExperience() {
                       ) : null}
                     </span>
                   </div>
+                  <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2 text-[0.68rem] leading-relaxed text-text-faint">
+                    Recipient-side TSN fees split as 85% LP vault rewards, 8%
+                    cranker operators, 5% protocol treasury, and 2% recovery
+                    bonus pool.
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
                       <div className="text-[0.68rem] text-text-soft">

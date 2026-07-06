@@ -781,7 +781,7 @@ export function LandingPage() {
                 Gasless by Design
               </p>
               <p className="text-xs text-text-faint mt-1">
-                Fees included in transfer amount
+                Sender and recipient fees are shown before authorization
               </p>
             </div>
           </div>

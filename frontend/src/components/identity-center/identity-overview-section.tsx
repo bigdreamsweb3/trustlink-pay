@@ -274,7 +274,7 @@ export function IdentityOverviewSection({
                 Identity map
               </h3>
               <p className="mt-1 text-[0.74rem] text-[var(--text-soft)]">
-                One identity root across TINS, TrustLink and verified social
+                One Transfer Identity root across TrustLink and verified social
                 channels.
               </p>
             </div>

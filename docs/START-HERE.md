@@ -6,9 +6,9 @@ This document explains TrustLink Pay without assuming you know Solana.
 
 ## What Is TrustLink Pay?
 
-TrustLink Pay is a payment system that lets a person receive money through a 10-digit **Transfer Identity Number**, called a **TIN**.
+TrustLink Pay is a payment system that lets a person receive money through a **Transfer Identity**.
 
-The TIN is the public identity. The wallet address stays behind the payment system.
+A Transfer Identity can contain a 10-digit **TIN** (**Transfer Identity Number**), public-safe identity context, verification fields, and PRU routing commitments. The wallet address stays behind the payment system.
 
 ## Why It Exists
 
@@ -18,7 +18,7 @@ A wallet address is hard to read, hard to verify, and easy to track once it beco
 
 ## The Real-World Analogy
 
-Think of a TIN like an account number.
+Think of a TIN like an account number inside a broader identity profile.
 
 When someone pays a bank account, they do not need to know the bank's internal ledger process. They only need enough information to trust that they are paying the right person.
 
@@ -26,11 +26,11 @@ TrustLink Pay tries to bring that kind of experience to stablecoin payments.
 
 ## The Main Parts
 
-### TINS
+### Transfer Identity System
 
-TINS is the **Transfer Identity Number System**.
+The Transfer Identity System is the identity layer.
 
-It creates and resolves 10-digit TINs. A TIN can have public identity context, such as a display name or verification status. Social links can be encrypted and attached to the identity.
+It creates and resolves Transfer Identities. A Transfer Identity can have a 10-digit TIN, public identity context, a display name, verified legal-name status, encrypted social links, and PRU commitments.
 
 ### TSN
 
@@ -112,7 +112,7 @@ TrustLink Pay is also shaped by public feedback, research, and external discussi
 ## Where To Go Next
 
 - [Architecture](./ARCHITECTURE.md)
-- [TINS](./TINS.md)
+- [Transfer Identity System](./TINS.md)
 - [TSN commitment settlement](./TSN-COMMITMENT-SETTLEMENT.md)
 - [Cranker guide](./CRANKER.md)
 - [Liquidity](./LIQUIDITY.md)
@@ -295,15 +295,15 @@ npm --prefix tsn-protocol/tsn-sdk test
 npm --prefix tin-system/tins-sdk run build
 ```
 
-## TSN + Cranker mediated TINS operations
+## TSN + Cranker Mediated Transfer Identity Operations
 
 ### Summary
 
-Start new TINS work from the TSN Mempool runtime. Direct user-submitted TIN creation is disabled. Owners sign intent hashes, Crankers verify and relay, and TINS enforces owner authority on-chain.
+Start new Transfer Identity work from the TSN Mempool runtime. Direct user-submitted TIN creation is disabled. Owners sign intent hashes, Crankers verify and relay, and the Transfer Identity program enforces owner authority on-chain.
 
 ### Implementation notes
 
-Creation and update begin as `POST /tin-operations` requests in the TSN mempool. The reference Cranker daemon verifies the owner intent, records the fee commitment, then submits `tin_creation_registry` or `tin_update` to TINS.
+Creation and update begin as `POST /tin-operations` requests in the TSN mempool. The reference Cranker daemon verifies the owner intent, records the fee commitment, then submits `tin_creation_registry` or `tin_update` to the Transfer Identity program.
 
 Run the normal Cranker daemon after the mempool is online:
 
@@ -313,8 +313,8 @@ npm run tsn:cranker:start
 
 ### Security & privacy considerations
 
-The owner remains the only authority. Crankers only pay and relay transactions. TINS checks owner-signed intent hashes before creating or updating records.
+The owner remains the only authority. Crankers only pay and relay transactions. The Transfer Identity program checks owner-signed intent hashes before creating or updating records.
 
 ### Testing notes
 
-Run `npm --prefix tin-system/tins-sdk run build` and `cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib` before changing TINS flows.
+Run `npm --prefix tin-system/tins-sdk run build` and `cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib` before changing Transfer Identity flows.

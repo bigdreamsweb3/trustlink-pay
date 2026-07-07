@@ -3,7 +3,7 @@ import { BASE_URL, getAbsoluteUrl } from "./routes";
 
 export const defaultTitle = "TrustLink Pay | Private Identity-First Crypto Payments on Solana";
 export const defaultDescription =
-  "Send crypto payments using a phone number or 10-digit TIN instead of wallet addresses with private settlement through TSN.";
+  "Send crypto payments using a phone number or Transfer Identity instead of wallet addresses with private settlement through TSN.";
 
 export const defaultKeywords = [
   "TrustLink Pay",
@@ -18,6 +18,7 @@ export const defaultKeywords = [
   "Transfer Settlement Network",
   "TIN",
   "Transfer Identity Number",
+  "Transfer Identity System",
 ];
 
 interface ConstructMetadataProps {

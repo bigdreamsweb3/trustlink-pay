@@ -3706,9 +3706,15 @@ async def issue_pru_spend_permit(
     token_metadata = get_supported_token_metadata().get(str(intent.get("tokenMintAddress") or ""))
     if not token_metadata:
         raise HTTPException(422, "PRU spend token mint is not supported")
-    expected_escrow_amount = ui_amount_to_base_units(intent.get("amount"), int(token_metadata["decimals"]))
     escrow_amount = int(str(intent.get("pruSpendAmountBaseUnits") or "0"))
     sender_fee_amount = int(str(intent.get("pruSpendSenderFeeBaseUnits") or "0"))
+    full_payment_amount = ui_amount_to_base_units(intent.get("amount"), int(token_metadata["decimals"]))
+    wallet_top_up_amount = int(str(intent.get("walletTopUpAmountBaseUnits") or "0"))
+    expected_escrow_amount = (
+        max(0, full_payment_amount - wallet_top_up_amount)
+        if intent.get("senderSettlementMode") == "mixed_pru_wallet_v1"
+        else full_payment_amount
+    )
     if escrow_amount != expected_escrow_amount:
         raise HTTPException(422, "PRU spend escrow amount does not match the payment amount")
     selections_raw = intent.get("pruSpendSelections")

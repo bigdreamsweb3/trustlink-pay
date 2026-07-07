@@ -1753,7 +1753,7 @@ export function SendExperience() {
                         </span>
                         <span className="truncate text-[0.62rem] text-[var(--accent-deep)] dark:text-[var(--accent)]">
                           {formatTokenBalance(
-                            selectedToken.balance,
+                            unifiedTokenBalance(selectedToken),
                             selectedToken.symbol,
                           )}
                         </span>
@@ -2004,7 +2004,7 @@ export function SendExperience() {
                 Choose token
               </h2>
               <p className="mt-1  text-text-soft">
-                Supported tokens from your wallet.
+                Supported tokens across your connected wallet and TIN balance.
               </p>
             </div>
             <div className="space-y-2.5">

@@ -32,8 +32,8 @@ const heroStats = [
   {
     icon: Fingerprint,
     label: "Identity Layer",
-    value: "TINS",
-    note: "10-digit payment identity for Solana transfers",
+    value: "Transfer Identity",
+    note: "Portable identity for Solana payments",
   },
   {
     icon: ShieldCheck,
@@ -412,7 +412,7 @@ export function LandingPage() {
             <p className="tl-body-lg mt-4 text-text-soft">
               Instead of copying complex wallet addresses, users pay a{" "}
               <strong>phone number</strong> or a permanent{" "}
-              <strong>Transfer Identity Number (TIN)</strong>.
+              <strong>Transfer Identity</strong> with a 10-digit TIN.
             </p>
           </div>
 
@@ -433,25 +433,25 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* How TINS Works */}
+        {/* How Transfer Identity Works */}
         <div className="mt-12">
-          <h3 className="tl-h3 mb-6">How TINS Works</h3>
+          <h3 className="tl-h3 mb-6">How Transfer Identity Works</h3>
           <div className="grid gap-4 lg:grid-cols-3">
             {[
               {
                 icon: Phone,
                 title: "Phone-Number Routing",
-                desc: "Send payments to any phone number registered on TINS. The system resolves the phone to the recipient's TIN and settlement identity.",
+                desc: "Send payments to any phone number linked to a Transfer Identity. The system resolves the phone to the recipient's TIN and settlement route.",
               },
               {
                 icon: Fingerprint,
                 title: "Portable Payment Identity",
-                desc: "Your TIN is tied to your identity, not a specific wallet. Change wallets without changing your payment address.",
+                desc: "Your Transfer Identity is not tied to one wallet. Change wallets without changing your public payment identity.",
               },
               {
                 icon: Lock,
                 title: "Address Protection",
-                desc: "Your actual wallet address stays hidden from recipients. They see only your TIN or verified display name.",
+                desc: "Your actual wallet address stays hidden from recipients. They see only your TIN, Transfer Identity name, or verified display name.",
               },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="tl-panel rounded-[22px] px-4 py-4">
@@ -470,10 +470,10 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Identity Resolution</h3>
             <p className="tl-body text-text-soft">
-              TINS maintains a secure mapping between human-readable identifiers
-              (phone numbers, TINs) and settlement identities. When you initiate
-              a payment, TINS resolves the recipient's identifier to their
-              verified settlement wallet without exposing raw addresses.
+              The Transfer Identity System maintains a secure mapping between
+              human-readable identifiers, TINs, and settlement routes. When you
+              initiate a payment, the system resolves the recipient's identifier
+              without exposing raw wallet addresses.
             </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -504,7 +504,7 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Identity Lifecycle</h3>
             <p className="tl-body text-text-soft">
-              Each identity on TINS can connect multiple identifiers — phone
+              Each Transfer Identity can connect multiple identifiers — phone
               numbers, social handles, and verification credentials — to a
               single settlement identity. This creates a portable payment
               identity that works across applications.
@@ -548,9 +548,9 @@ export function LandingPage() {
           <div>
             <h2 className="tl-h2 mt-5">Trust without sacrificing privacy.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TINS provides identity. SAS (Solana Attestation Service) provides
-              verifiable credentials. Together, they enable trust without
-              exposing personal data.
+              Transfer Identity provides the payment identity. SAS (Solana
+              Attestation Service) provides verifiable credentials. Together,
+              they enable trust without exposing personal data.
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
               Verification is optional. Users can receive payments without
@@ -841,10 +841,10 @@ export function LandingPage() {
           <div>
             <h2 className="tl-h2 mt-5">TSN SDK — Production-ready APIs.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              TSN SDK provides developer APIs for identity resolution,
+              TSN SDK provides developer APIs for Transfer Identity resolution,
               verification, and payment settlement on Solana. Build applications
-              that consume TINS and TSN without rebuilding payment
-              infrastructure from scratch.
+              that consume Transfer Identity and TSN without rebuilding payment
+              flows from scratch.
             </p>
 
             <div className="mt-6 px-4 py-4 grid gap-3 sm:grid-cols-2">

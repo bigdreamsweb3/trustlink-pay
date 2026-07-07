@@ -1,12 +1,12 @@
-# TINS Operator Guide
+# Transfer Identity Operator Guide
 
-This guide explains how TINS should be operated and maintained.
+This guide explains how the Transfer Identity System should be operated and maintained.
 
 ## What Is This?
 
-TINS is the Transfer Identity Number System.
+The Transfer Identity System is the identity layer.
 
-It creates and resolves 10-digit payment identities.
+It creates and resolves Transfer Identities. Each identity can include a 10-digit TIN, public-safe identity fields, encrypted identity links, and verification references.
 
 ## Operator Responsibilities
 
@@ -23,7 +23,7 @@ Operators should make sure:
 
 A verification platform is a service that signs an identity proof.
 
-TINS can check whether that platform is registered. This allows the protocol to accept proofs from authorized issuers and reject unknown issuers.
+The Transfer Identity program can check whether that platform is registered. This allows the protocol to accept proofs from authorized issuers and reject unknown issuers.
 
 ## Key Rotation
 

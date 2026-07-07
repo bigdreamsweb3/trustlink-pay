@@ -5,18 +5,18 @@ TrustLink Pay is an identity-first payment system on Solana.
 The product goal is simple:
 
 ```text
-Send stablecoins to a 10-digit Transfer Identity Number instead of a wallet address.
+Send stablecoins to a Transfer Identity instead of a wallet address.
 ```
 
-The protocol keeps the payment experience simple while separating the public parts of a payment from the private parts. It does this with TINS identities, TSN settlement, Cranker operators, liquidity vaults, and epoch-based accounting.
+The protocol keeps the payment experience simple while separating the public parts of a payment from the private parts. It does this with Transfer Identities, TSN settlement, Cranker operators, liquidity vaults, and epoch-based accounting.
 
 ## Read This First
 
 | Document | Start here when you want to understand |
 | --- | --- |
 | [START-HERE.md](./START-HERE.md) | The plain-English overview of the whole system |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | How TINS, TSN, Crankers, vaults, and the app fit together |
-| [TINS.md](./TINS.md) | Transfer Identity Numbers and identity resolution |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | How Transfer Identity, TSN, Crankers, vaults, and the app fit together |
+| [TINS.md](./TINS.md) | Transfer Identity records, TINs, and identity resolution |
 | [TSN-TINS-MEMPOOL-IMPLEMENTATION.md](./TSN-TINS-MEMPOOL-IMPLEMENTATION.md) | How TIN creation and updates move through TSN Crankers |
 | [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md) | Confidential settlement using commitments and epoch reservoirs |
 | [RPC-GATEWAY.md](./RPC-GATEWAY.md) | Shared Solana RPC gateway and upstream routing |
@@ -29,11 +29,11 @@ The protocol keeps the payment experience simple while separating the public par
 
 ## Main Concepts
 
-### TINS
+### Transfer Identity System
 
-TINS means **Transfer Identity Number System**.
+The Transfer Identity System is the identity layer.
 
-It gives a user a 10-digit number that can be shared publicly. That number is easier to read than a wallet address and can carry public verification context, such as a display name or verification status.
+It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and PRU commitments. The TIN is easier to read than a wallet address and can carry public verification context.
 
 ### TSN
 

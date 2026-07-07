@@ -6,7 +6,7 @@ The short version: users do not submit TINS registry transactions directly. They
 
 ## What This Is
 
-TINS is the identity registry. It stores a user's Transfer Identity Number, public-safe profile fields, encrypted identity data, and PRU commitment hashes.
+The Transfer Identity registry stores a user's TIN, public-safe profile fields, encrypted identity data, and PRU commitment hashes.
 
 TSN is now the control plane for TINS mutations. A TIN creation or update first becomes a TSN mempool operation. Only after verification and fee commitment does a Cranker submit the TINS registry mutation on-chain.
 

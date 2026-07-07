@@ -143,14 +143,14 @@ export function IdentityTree({
           </div>
           <div className="text-[0.64rem] text-[var(--text-faint)]">
             {nameSourceLabel ??
-              "One identity root mapped across TrustLink and TINS"}
+              "One Transfer Identity root mapped across TrustLink and TSN"}
           </div>
         </div>
       </div>
 
       {missingTinName ? (
         <div className="mt-3 rounded-[14px] border border-[#f3c96b]/25 bg-[#f3c96b]/10 px-3 py-2 text-[0.72rem] leading-relaxed text-[#f3c96b]">
-          No verified legal name was found on this transfer identity number.
+          No verified legal name was found on this Transfer Identity.
         </div>
       ) : null}
 

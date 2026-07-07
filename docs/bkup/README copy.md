@@ -48,7 +48,7 @@ The sender sees a familiar payment experience. The protocol handles settlement, 
 
 ## Main Concepts
 
-### TINS: Transfer Identity Number System
+### Transfer Identity System
 
 A TIN is a 10-digit number.
 
@@ -162,4 +162,3 @@ Start with:
 ## Development Status
 
 TrustLink Pay is pre-launch and currently focused on devnet testing.
-

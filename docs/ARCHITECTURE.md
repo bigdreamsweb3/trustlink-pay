@@ -10,7 +10,7 @@ The protocol layers make that possible without turning every payment into a simp
 
 TrustLink Pay is made of:
 
-1. **TINS**: payment identity
+1. **Transfer Identity System**: payment identity
 2. **TSN**: settlement
 3. **Crankers**: execution
 4. **Vaults**: payout liquidity
@@ -29,15 +29,15 @@ TrustLink Pay avoids making that the normal payment path. It separates identity,
 
 ## How The Layers Work
 
-### TINS: Identity Layer
+### Transfer Identity System: Identity Layer
 
-TINS creates 10-digit Transfer Identity Numbers.
+The Transfer Identity System creates and resolves payment identities.
 
-A TIN is the public payment identity. It can be shared like an account number. The wallet address is not the normal payment identity.
+A Transfer Identity is the public payment identity. It can include a 10-digit TIN that is shared like an account number. The wallet address is not the normal payment identity.
 
-TINS can store:
+The Transfer Identity registry can store:
 
-- the TIN owner
+- the TIN number
 - public display or legal-name status
 - encrypted social identities
 - verification platform references

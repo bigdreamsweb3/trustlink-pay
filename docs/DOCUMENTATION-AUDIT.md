@@ -8,7 +8,7 @@ The docs now explain the current TrustLink Pay architecture in plain English bef
 
 The active architecture is:
 
-- TINS as the portable payment identity layer
+- Transfer Identity as the portable payment identity layer
 - TSN as the settlement layer
 - Crankers as settlement operators
 - vault liquidity for fast payouts

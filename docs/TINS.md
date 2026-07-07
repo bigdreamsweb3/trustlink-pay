@@ -1,14 +1,14 @@
-# TINS
+# Transfer Identity System
 
 **Version: Stable PRU Architecture v1**
 
-TINS means **Transfer Identity Number System**.
+The **Transfer Identity System** is the identity layer used by TrustLink Pay.
 
-It gives a user a 10-digit payment identity called a **TIN**.
+It gives a user a Transfer Identity profile. That profile can contain a 10-digit **TIN** (**Transfer Identity Number**), a public display name, verified identity fields, encrypted social identity links, and PRU routing commitments.
 
 ## What Is This?
 
-A TIN is a number that can be shared instead of a wallet address.
+A TIN is the 10-digit number inside a Transfer Identity. It can be shared instead of a wallet address.
 
 Example:
 
@@ -16,24 +16,24 @@ Example:
 1000000008
 ```
 
-The TIN is the public payment identity. Wallets, social accounts, and verification records can be linked behind it.
+The Transfer Identity is the public payment identity. The TIN is the numeric handle people can type, scan, or share. Wallets, social accounts, legal-name attestations, and verification records can be linked behind the Transfer Identity.
 
-TINS are designed around a simple privacy principle: people should be discoverable by the identities they choose to share, not by the identities others search for.
+Transfer Identities are designed around a simple privacy principle: people should be discoverable by the identities they choose to share, not by the identities others search for.
 
 Identity fields such as social profiles and legal names can be stored in encrypted form within the registry. Once a sender has a recipient's 10-digit TIN, they can resolve and verify the identity information associated with that TIN. However, someone browsing the public registry cannot easily work backwards from a name, social handle, or public profile to discover the recipient's TIN.
 
-This prevents a public payment identity from becoming a public directory. The TIN becomes the key that unlocks confidence, rather than personal information becoming the key that unlocks the TIN.
+This prevents a public payment identity from becoming a public directory. The TIN becomes one key for resolving confidence, rather than personal information becoming the key that exposes the TIN.
 
 
 ## Why It Exists
 
 Wallet addresses are not friendly for everyday payments.
 
-They are long, easy to mistype, and once shared they can expose a lot of activity. A TIN gives users a simpler identity that can move across apps and wallets.
+They are long, easy to mistype, and once shared they can expose a lot of activity. A Transfer Identity gives users a simpler payment identity that can move across apps and wallets.
 
 ## How It Works
 
-TINS stores identity records on Solana.
+The Transfer Identity registry stores identity records on Solana.
 
 The record can include:
 
@@ -68,7 +68,7 @@ Sensitive records use a stronger rule. They require the TIN plus a fresh user si
 
 Verification platforms are trusted services that can sign identity proofs.
 
-The TINS program supports a platform registry so the protocol can check whether a proof came from an authorized platform key. Platforms can rotate keys over time.
+The Transfer Identity program supports a platform registry so the protocol can check whether a proof came from an authorized platform key. Platforms can rotate keys over time.
 
 ## Example Flow
 
@@ -76,7 +76,7 @@ The TINS program supports a platform registry so the protocol can check whether 
 2. The user links a wallet.
 3. The user may link WhatsApp or another social identity.
 4. A verification platform signs proof that the identity link is valid.
-5. TINS stores the encrypted identity link and proof reference.
+5. The registry stores the encrypted identity link and proof reference.
 6. A sender resolves the TIN before payment.
 7. The app shows safe public identity details.
 
@@ -98,9 +98,9 @@ It is a payment identity. Verification status comes from registered verification
 
 | Item | Location |
 | --- | --- |
-| TINS program | `tins-registrar/program/` |
-| TINS docs | `tins-registrar/README.md` |
-| TINS SDK | `tins-sdk/` |
+| Transfer Identity program | `tins-registrar/program/` |
+| Transfer Identity docs | `tins-registrar/README.md` |
+| Transfer Identity SDK | `tins-sdk/` |
 | Devnet program ID | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 ## Lookup Output
@@ -113,17 +113,17 @@ The `npm run tins:lookup <TIN>` command now prints three separate views:
 
 This makes it easier to see which parts of a TIN are public, which parts are encrypted, and which fields do not exist in older legacy accounts.
 
-## Final upgraded PRU Architecture for TINs
+## Final Upgraded PRU Architecture
 
 ### Summary
 
-Every TIN starts with **exactly 30 PRUs**. PRUs are **token-agnostic**: one PRU can receive any token supported by TSN. PRU derivation, TIN Master Seed generation, and encryption belong to the TSN mempool and Cranker layer. The frontend and SDK sign authorization intents; they do not derive PRUs or handle PRU configuration.
+Every Transfer Identity starts with **exactly 30 PRUs**. PRUs are **token-agnostic**: one PRU can receive any token supported by TSN. PRU derivation, TIN Master Seed generation, and encryption belong to the TSN mempool and Cranker layer. The frontend and SDK sign authorization intents; they do not derive PRUs or handle PRU configuration.
 
 ### Strict separation of concerns
 
 | Layer | Stores | Mutation rule |
 | --- | --- | --- |
-| **TIN Registry** | TIN number, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encrypted metadata hash, PRU configuration commitment | Created by `tin_creation_registry`; rarely updated by `tin_update`; never stores the raw owner wallet as an authority field, PRU keys, token balances, ATA state, or spend history. |
+| **Transfer Identity Registry** | TIN number, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encrypted metadata hash, PRU configuration commitment | Created by `tin_creation_registry`; rarely updated by `tin_update`; never stores the raw owner wallet as an authority field, PRU keys, token balances, ATA state, or spend history. |
 | **PRU Lifecycle State** | per-token receipt/spend/sweep state, ATA creation status, rent subsidy counter, balance state | Lives in TSN / derived mempool state and changes on receipt, spend, sweep, and lazy ATA activation. |
 
 ### Creation flow
@@ -134,7 +134,7 @@ Every TIN starts with **exactly 30 PRUs**. PRUs are **token-agnostic**: one PRU 
 4. Cranker A verifies the owner signature, expiry, metadata shape, and that the PRU commitment is valid.
 5. Cranker A submits Transaction 1: the fee commitment split.
 6. Cranker B submits Transaction 2: `tin_creation_registry` with the owner Ed25519 verification instruction.
-7. TINS creates the identity PDA from the owner pubkey and stores only static registry fields. The owner wallet is stored only as an SHA-256 pubkey commitment, never as a readable authority field.
+7. The Transfer Identity program creates the identity PDA from the owner pubkey and stores only static registry fields. The owner wallet is stored only as an SHA-256 pubkey commitment, never as a readable authority field.
 
 TrustLink backend is not a bridge in this flow. It can cache identity state for the app, but it must never proxy TIN creation, upgrade, or update requests into TSN.
 
@@ -189,7 +189,7 @@ Delegated read access is read-only. It can reveal public PRU addresses for balan
 
 ### Implementation notes
 
-The TINS program accepts Cranker-mediated `tin_creation_registry` after owner intent verification. TSN uses a fixed `DEFAULT_TIN_PRU_COUNT = 30`; every PRU is token-agnostic.
+The Transfer Identity program accepts Cranker-mediated `tin_creation_registry` after owner intent verification. TSN uses a fixed `DEFAULT_TIN_PRU_COUNT = 30`; every PRU is token-agnostic.
 
 The important boundary is this:
 
@@ -206,7 +206,7 @@ Python Cranker daemon integration follows the same two-transaction model: verify
 Frontend -> sign owner intent
 Frontend -> POST signed intent to TSN mempool
 TSN mempool -> assemble encrypted TIN Master Seed + PRU commitment
-Cranker -> verify + fee commit + submit TINS mutation
+Cranker -> verify + fee commit + submit Transfer Identity mutation
 ```
 
 ```bash
@@ -215,7 +215,7 @@ npm run tsn:cranker:start
 
 ### Security & privacy considerations
 
-Hidden from public views: PRU seeds, PRU private keys, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Authenticated owners can request their finalized public PRU address list for balance reads. Exposed on-chain: the TIN registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
+Hidden from public views: PRU seeds, PRU private keys, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Authenticated owners can request their finalized public PRU address list for balance reads. Exposed on-chain: the Transfer Identity registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
 
 ### Testing notes
 
@@ -231,11 +231,11 @@ cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib
 
 ### Summary
 
-TINS separates identity ownership from PRU spend authority. A TIN owner controls the TIN with an owner-signed intent, but PRU spend keys come from a random TIN Master Seed generated inside the TSN mempool and Cranker layer. The main wallet cannot derive, predict, or expose PRU keys.
+The Transfer Identity program separates identity ownership from PRU spend authority. A TIN owner controls the TIN with an owner-signed intent, but PRU spend keys come from a random TIN Master Seed generated inside the TSN mempool and Cranker layer. The main wallet cannot derive, predict, or expose PRU keys.
 
 ### Implementation notes
 
-- TINS program state includes `PruSpendGuard` per PRU: `tin`, `pru_index`, `spend_auth_hash`, `nonce_bitmask`, `active`, and `bump`.
+- Transfer Identity program state includes `PruSpendGuard` per PRU: `tin`, `pru_index`, `spend_auth_hash`, `nonce_bitmask`, `active`, and `bump`.
 - `spend_auth_hash = SHA256(tin + pru_index + main_wallet_pubkey + TRUSTLINK_PRU_SPEND_GUARD_V1)` binds that PRU to the real TIN owner.
 - PDA seeds are `["pru_spend_guard", tin.to_le_bytes(), pru_index.to_le_bytes()]` so Crankers and SDK clients can find the guard deterministically without exposing PRU private keys.
 

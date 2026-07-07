@@ -355,7 +355,7 @@ export function PhoneNumberInput({
                     {identityName || "No public identity name found"}
                   </div>
                   <div className="text-[0.64rem] text-[var(--text-faint)]">
-                    Source: TINS on-chain registry
+                    Source: Transfer Identity registry
                   </div>
                 </div>
               </div>

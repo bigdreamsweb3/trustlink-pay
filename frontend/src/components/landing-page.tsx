@@ -32,8 +32,8 @@ const heroStats = [
   {
     icon: Fingerprint,
     label: "Identity Layer",
-    value: "Transfer Identity",
-    note: "Portable identity for Solana payments",
+    value: "TIS",
+    note: "Transfer Identity System for Solana payments",
   },
   {
     icon: ShieldCheck,
@@ -42,10 +42,10 @@ const heroStats = [
     note: "Attestation-based identity and trust verification",
   },
   {
-    icon: Zap,
-    label: "Fee Model",
-    value: "Gasless",
-    note: "Network and TSN fees shown before sending",
+    icon: Network,
+    label: "Privacy Layer",
+    value: "PRU",
+    note: "Privacy Receiving Units for each Transfer Identity",
   },
   {
     icon: Clock,
@@ -413,6 +413,9 @@ export function LandingPage() {
               Instead of copying complex wallet addresses, users pay a{" "}
               <strong>phone number</strong> or a permanent{" "}
               <strong>Transfer Identity</strong> with a 10-digit TIN.
+              Each upgraded Transfer Identity receives 30 Privacy Receiving
+              Units (PRUs), so received funds land in private payment routes
+              that are still controlled by the user's wallet proof.
             </p>
           </div>
 
@@ -453,6 +456,11 @@ export function LandingPage() {
                 title: "Address Protection",
                 desc: "Your actual wallet address stays hidden from recipients. They see only your TIN, Transfer Identity name, or verified display name.",
               },
+              {
+                icon: Network,
+                title: "PRU-Routed Balances",
+                desc: "Each upgraded Transfer Identity has 30 Privacy Receiving Units. The app shows them as one TIN balance while TSN routes payments into PRUs instead of a public owner wallet.",
+              },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="tl-panel rounded-[22px] px-4 py-4">
                 <div className="p-2 rounded-[10px] bg-[var(--accent-soft)] inline-block">
@@ -468,12 +476,12 @@ export function LandingPage() {
         {/* Identity Resolution Flow */}
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           <div className="tl-field rounded-[14px] p-4">
-            <h3 className="tl-h3 mb-4">Identity Resolution</h3>
+            <h3 className="tl-h3 mb-4">Identity And PRU Resolution</h3>
             <p className="tl-body text-text-soft">
               The Transfer Identity System maintains a secure mapping between
-              human-readable identifiers, TINs, and settlement routes. When you
-              initiate a payment, the system resolves the recipient's identifier
-              without exposing raw wallet addresses.
+              human-readable identifiers, TINs, and PRU settlement routes. When
+              you initiate a payment, the system resolves the recipient's
+              identifier without exposing raw wallet addresses.
             </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -495,7 +503,7 @@ export function LandingPage() {
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
                 <span className="text-text-soft">
-                  Privacy-preserving resolution
+                  PRU route authentication
                 </span>
               </div>
             </div>

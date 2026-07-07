@@ -44,4 +44,4 @@ The registry should support multiple authorized keys and removal of old keys.
 | --- | --- |
 | Program | `tins-registrar/program/` |
 | SDK | `tins-sdk/` |
-| Docs | `docs/TINS.md` |
+| Docs | `docs/TRANSFER-IDENTITY.md` |

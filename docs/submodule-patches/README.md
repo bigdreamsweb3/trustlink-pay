@@ -34,7 +34,7 @@ curl http://localhost:8000/privacy-receive-watches
 curl -X POST http://localhost:8000/epochs/proactive
 ```
 
-## TSN V1 TINS Cranker Notes
+## TSN V1 Transfer Identity Cranker Notes
 
 Cranker-mediated TIN creation and update support has been ported directly into the active mempool submodules:
 
@@ -45,4 +45,4 @@ Cranker-mediated TIN creation and update support has been ported directly into t
 
 The patch files are retained as history only. Do not treat them as the source of truth if they drift from the submodule code.
 
-See `../TSN-TINS-MEMPOOL-IMPLEMENTATION.md` for the active flow, endpoints, fee split, Cranker separation rules, privacy notes, and checks.
+See `../TSN-TRANSFER-IDENTITY-MEMPOOL.md` for the active flow, endpoints, fee split, Cranker separation rules, privacy notes, and checks.

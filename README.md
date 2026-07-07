@@ -1,6 +1,6 @@
 # TrustLink Pay
 
-> Identity-first, privacy-conscious Solana payments using 10-digit Transfer Identity Numbers, verified identity context, and TSN settlement.
+> Identity-first Solana payments using Transfer Identity, PRU-routed balances, and TSN settlement.
 
 TrustLink Pay lets people send stablecoins to a **10-digit Transfer Identity Number (TIN)** instead of copying and pasting wallet addresses.
 
@@ -12,16 +12,26 @@ Blockchain payments should feel familiar for normal users while still giving dev
 
 ## What TrustLink Pay Is
 
-TrustLink Pay combines two main protocol layers:
+TrustLink Pay combines four protocol layers:
 
-- **Identity Layer**
-  - **TINS**: Transfer Identity Number System. Gives users a portable 10-digit payment identity.
+- **Transfer Identity Layer**
+  - **Transfer Identity System**: gives each user a portable payment identity with a 10-digit TIN inside it.
   - **Social verification**: WhatsApp and WhatsApp Business confidence signals for communication, authentication, and recipient checks.
-  - **SAS**: Solana Attestation Service. The trust and verification layer we are prioritizing next for verified names, merchants, and compliance attestations.
+  - **SAS**: Solana Attestation Service support for verified names, merchants, and compliance attestations when those credentials are present.
+
+- **Privacy Layer**
+  - **PRUs**: Privacy Receiving Units. Every upgraded Transfer Identity has 30 PRUs by default.
+  - **TIN balance**: the unified balance across PRUs owned by a Transfer Identity.
+  - **PRU-first spending**: TrustLink Pay spends from PRUs first, then uses connected wallet top-up when the user chooses a mixed funding path.
+  - **VPP-ready privacy assets**: VPP is the privacy-asset layer planned for vAssets; PRUs are the current receiving and routing mechanism.
 
 - **Settlement Layer**
   - **TSN**: Transfer Settlement Network. Separates sender funding from recipient payout.
   - **Crankers**: Settlement operators that validate work, execute payouts, compete for recovery jobs, and keep the network live.
+
+- **Liquidity And Accounting Layer**
+  - **Vaults**: settlement liquidity used for recipient payouts.
+  - **Epoch reservoirs**: isolated settlement windows for reimbursement, recovery, and auditability.
 
 The goal is simple: payments should feel as familiar as sending to a bank account number, while settlement remains verifiable and avoids exposing a clean sender-wallet-to-recipient-wallet graph.
 
@@ -43,39 +53,47 @@ TrustLink Pay changes the surface:
 | Share a wallet address                   | Share a 10-digit TIN                                               |
 | Sender pays directly to recipient wallet | Sender funds a TSN settlement path                                 |
 | Recipient wallet is the payment identity | TIN is the payment identity                                        |
-| Identity confidence is weak              | Social verification and future SAS attestations improve confidence |
-| Apps rebuild infrastructure              | Apps can integrate TINS, SAS, and TSN through SDKs                 |
+| Identity confidence is weak              | Social verification and SAS attestations improve confidence when present |
+| Apps rebuild payment flows               | Apps can integrate Transfer Identity, PRUs, and TSN through SDKs   |
 
 ## How A Payment Works
 
-Sender enters a recipient TIN. TINS resolves the public identity context. Social verification or SAS status is shown when available. The sender reviews the recipient details and authorizes the payment. TSN receives the sender-side escrow funding, Crankers validate and execute settlement work, the recipient is paid through vault liquidity, and epoch accounting reconciles the system.
+Sender enters a recipient TIN. The Transfer Identity layer resolves the public identity context. Social verification or SAS status is shown when available. The sender reviews the recipient details and authorizes the payment. TSN receives the sender-side funding intent, Crankers validate and execute settlement work, and the recipient is paid into a PRU route rather than a public owner wallet.
 
-The sender sees a normal payment experience. The protocol handles settlement, proofs, Cranker work, and recovery behind the scenes.
+The sender sees a normal payment experience. The protocol handles route authentication, PRU selection, settlement proofs, Cranker work, and recovery behind the scenes.
 
 ## The Identity Layer
 
-### TINS
+### Transfer Identity System
 
-TINS is the Transfer Identity Number System.
+The Transfer Identity System is the identity layer.
 
-A TIN is a 10-digit number that works like a portable payment identity. It lets a user receive payments without exposing a wallet address as their public identity.
+A TIN is the 10-digit number inside a Transfer Identity. It works like a portable payment identity and lets a user receive payments without exposing a wallet address as their public identity.
 
-TINS is designed to support:
+Transfer Identity supports:
 
 - 10-digit payment identities
 - public display context
 - encrypted social identity links
 - wallet abstraction
 - developer-accessible identity resolution
-- future wallet-native TIN payments
+- PRU route commitments for private receiving and TIN balance
 
-The long-term idea is that wallets, payment apps, merchant tools, and on-chain products can use TINs as a top layer for safer payment identity.
+Wallets, payment apps, merchant tools, and on-chain products can use Transfer Identity as the top layer for safer payment identity.
+
+### PRUs
+
+PRU means Privacy Receiving Unit.
+
+Every upgraded Transfer Identity has 30 PRUs by default. PRUs are token-agnostic receiving and spending endpoints controlled by the Transfer Identity owner through TSN intent proofs. When someone receives through TrustLink Pay, funds land in PRU routes instead of a public owner wallet. The frontend can load public PRU addresses only after the owner proves control through a signed route-auth message. It never receives PRU private keys or the TIN Master Seed.
+
+TIN balance is the sum of supported token balances across the PRUs linked to the authenticated Transfer Identity. In the send flow, TrustLink Pay shows wallet balance and TIN balance as one usable payment balance, while still showing the split when a payment needs PRU funds plus connected-wallet top-up.
 
 ### Social Verification
 
 TrustLink Pay started with phone-number and WhatsApp confidence because this is how many users already understand payment trust.
 
-Current and planned social verification includes:
+Social verification includes:
 
 - WhatsApp session-code authentication
 - WhatsApp notification flows
@@ -89,7 +107,7 @@ Phone numbers should help with confidence, not become the main public payment id
 
 SAS means Solana Attestation Service.
 
-This is the next trust layer we plan to prioritize. SAS can let trusted issuers attach reusable verification credentials to a TIN.
+SAS lets trusted issuers attach reusable verification credentials to a Transfer Identity.
 
 Examples:
 
@@ -113,9 +131,9 @@ Identity alone does not create privacy. If a TIN simply resolves to a wallet and
 TSN separates settlement into stages:
 
 - sender authorization
-- escrow funding
+- PRU or wallet funding
 - Cranker validation
-- vault payout
+- PRU recipient payout
 - settlement proof
 - epoch accounting
 - recovery and reimbursement
@@ -168,32 +186,23 @@ That journey moved TrustLink Pay from an app idea into payment identity and sett
 
 ## Current Status
 
-### Working Today
+### Working On Devnet
 
-- TINS devnet registry
+- Transfer Identity devnet registry
 - 10-digit TIN resolution
+- upgraded TIN account layout with owner hash commitment
+- authenticated PRU route loading
+- 30-PRU Transfer Identity route model
+- TIN balance display from PRU balances
+- PRU-funded payments
+- mixed PRU plus wallet top-up payments
+- recipient payout into PRU routes
 - TrustLink Pay frontend and backend
 - WhatsApp session-code authentication
 - TSN mempool
 - Cranker settlement daemon
 - escrow funding and vault payout flow
 - commitment-based settlement direction
-
-### In Progress
-
-- epoch reservoir settlement
-- PEA reimbursement flow
-- stronger SDK documentation
-- encrypted social identity resolution
-- production-grade Cranker operator tooling
-
-### Prioritized Next
-
-- SAS verified-name resolution
-- merchant and business attestations
-- stronger social verification UX
-- better wallet-native TIN integration
-- expanded SPL asset support
 
 ## Milestones
 
@@ -216,9 +225,9 @@ This milestone proved the first end-to-end identity payment path:
 
 This milestone extended the TrustLink payment model toward identity-first SPL asset transfers and wallet-address-free recipient experiences.
 
-### TINS Protocol
+### Transfer Identity Protocol
 
-TINS became the protocol answer to portable payment identity.
+Transfer Identity became the protocol answer to portable payment identity.
 
 Instead of making a phone number the main payment identity, TrustLink Pay moved toward a 10-digit TIN that wallets and apps can integrate.
 
@@ -226,10 +235,10 @@ Instead of making a phone number the main payment identity, TrustLink Pay moved 
 
 TSN became the protocol answer to privacy-conscious settlement.
 
-Working progress includes:
+TSN settlement includes:
 
 - Cranker-sponsored escrow submission
-- private vault payout
+- PRU recipient payout
 - proof records
 - mempool-first settlement work
 - commitment-only settlement records
@@ -252,7 +261,7 @@ TrustLink Pay needs supporters, sponsors, reviewers, and ecosystem partners to m
 
 | Program | Devnet ID                                     |
 | ------- | --------------------------------------------- |
-| TINS    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 | TSN     | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Stable Devnet Toolchain
@@ -280,8 +289,8 @@ The gateway process reads `TSN_SOLANA_RPC_URLS` to route traffic across Solana R
 | `frontend/`              | TrustLink Pay user interface                              |
 | `backend/`               | API, payment records, identity records, and notifications |
 | `docs/`                  | Product and protocol documentation                        |
-| `tins-registrar/`        | TINS on-chain program                                     |
-| `tins-sdk/`              | TINS SDK                                                  |
+| `tin-system/tins-registrar/` | Transfer Identity on-chain program                   |
+| `tin-system/tins-sdk/`       | Transfer Identity SDK                                |
 | `tsn/protocol/`          | TSN on-chain program                                      |
 | `tsn-sdk/`               | TSN SDK                                                   |
 | `tsn-cranker-op-daemon/` | Reference Cranker daemon                                  |
@@ -295,7 +304,7 @@ The gateway process reads `TSN_SOLANA_RPC_URLS` to route traffic across Solana R
 - [Documentation index](./docs/README.md)
 - [Start Here](./docs/START-HERE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
-- [TINS](./docs/TINS.md)
+- [Transfer Identity](./docs/TRANSFER-IDENTITY.md)
 - [TSN commitment settlement](./docs/TSN-COMMITMENT-SETTLEMENT.md)
 - [RPC gateway](./docs/RPC-GATEWAY.md)
 - [Cranker guide](./docs/CRANKER.md)
@@ -307,4 +316,4 @@ The gateway process reads `TSN_SOLANA_RPC_URLS` to route traffic across Solana R
 
 TrustLink Pay is pre-launch and focused on devnet testing.
 
-> TrustLink Pay - TIN-first Solana payments with social confidence, future SAS attestations, and TSN settlement.
+> TrustLink Pay - Transfer Identity payments with PRU-routed balances, social confidence, SAS-ready attestations, and TSN settlement.

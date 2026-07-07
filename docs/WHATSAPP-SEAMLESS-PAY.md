@@ -20,7 +20,7 @@ Many users already trust WhatsApp as a communication channel.
 
 Using it can make payment alerts and identity checks feel familiar, especially for mobile-first users.
 
-## How It Fits With TINS
+## How It Fits With Transfer Identity
 
 A WhatsApp number can be linked to a TIN.
 
@@ -31,7 +31,7 @@ When a sender resolves a TIN, the app may show safe WhatsApp-linked context if t
 - Do not expose phone numbers publicly by default.
 - Do not store phone numbers as plaintext public protocol data.
 - Use encrypted identity links where possible.
-- Show whether a name came from TINS, TrustLink, or WhatsApp.
+- Show whether a name came from Transfer Identity, TrustLink, or WhatsApp.
 
 ## Important Limits
 

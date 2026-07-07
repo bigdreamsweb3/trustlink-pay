@@ -4,9 +4,7 @@ TrustLink Pay is an identity-first payment system on Solana.
 
 The product goal is simple:
 
-```text
 Send stablecoins to a Transfer Identity instead of a wallet address.
-```
 
 The protocol keeps the payment experience simple while separating the public parts of a payment from the private parts. It does this with Transfer Identities, TSN settlement, Cranker operators, liquidity vaults, and epoch-based accounting.
 
@@ -16,8 +14,8 @@ The protocol keeps the payment experience simple while separating the public par
 | --- | --- |
 | [START-HERE.md](./START-HERE.md) | The plain-English overview of the whole system |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | How Transfer Identity, TSN, Crankers, vaults, and the app fit together |
-| [TINS.md](./TINS.md) | Transfer Identity records, TINs, and identity resolution |
-| [TSN-TINS-MEMPOOL-IMPLEMENTATION.md](./TSN-TINS-MEMPOOL-IMPLEMENTATION.md) | How TIN creation and updates move through TSN Crankers |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | Transfer Identity records, TINs, PRUs, and identity resolution |
+| [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers |
 | [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md) | Confidential settlement using commitments and epoch reservoirs |
 | [RPC-GATEWAY.md](./RPC-GATEWAY.md) | Shared Solana RPC gateway and upstream routing |
 | [CRANKER.md](./CRANKER.md) | What Crankers do and how they are rewarded |
@@ -69,7 +67,7 @@ It proves that a payment or settlement record exists without revealing the full 
 
 | Program | Devnet ID |
 | --- | --- |
-| TINS | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 | TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Repository Map
@@ -78,8 +76,8 @@ It proves that a payment or settlement record exists without revealing the full 
 | --- | --- |
 | `frontend/` | TrustLink Pay web app |
 | `backend/` | API, user records, payment records, and notifications |
-| `tins-registrar/` | TINS on-chain program |
-| `tins-sdk/` | TINS SDK |
+| `tin-system/tins-registrar/` | Transfer Identity on-chain program |
+| `tin-system/tins-sdk/` | Transfer Identity SDK |
 | `tsn/protocol/` | TSN on-chain program |
 | `tsn-sdk/` | TSN SDK used by apps and services |
 | `tsn-cranker-op-daemon/` | Reference Cranker operator daemon |

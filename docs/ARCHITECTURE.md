@@ -114,7 +114,7 @@ The system must never claim impossible privacy guarantees.
 
 | Component | Path |
 | --- | --- |
-| TINS program | `tins-registrar/program/` |
+| Transfer Identity program | `tin-system/tins-registrar/program/` |
 | TSN program | `tsn/protocol/` |
 | TSN SDK | `tsn-sdk/` |
 | Cranker daemon | `tsn-cranker-op-daemon/` |
@@ -126,7 +126,7 @@ The system must never claim impossible privacy guarantees.
 
 ## Related Docs
 
-- [TINS](./TINS.md)
+- [Transfer Identity](./TRANSFER-IDENTITY.md)
 - [TSN commitment settlement](./TSN-COMMITMENT-SETTLEMENT.md)
 - [Cranker guide](./CRANKER.md)
 - [Liquidity](./LIQUIDITY.md)

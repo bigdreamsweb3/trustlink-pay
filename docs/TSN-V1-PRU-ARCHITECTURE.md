@@ -10,9 +10,9 @@ TSN V1 uses deterministic PRU settlement. A TIN is the root identity layer. Priv
 
 ### TIN Identity Layer
 
-A TIN stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata commitment, and PRU configuration commitment hash. TINS does not store the raw owner wallet as an authority field, PRU lists, balances, private keys, or derivation seeds. Every TIN receives exactly 30 PRUs.
+A TIN stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata commitment, and PRU configuration commitment hash. The Transfer Identity registry does not store the raw owner wallet as an authority field, PRU lists, balances, private keys, or derivation seeds. Every TIN receives exactly 30 PRUs.
 
-TINS is aware of PRUs through commitments only, never enumeration. During TIN creation, the mempool and cranker layer handle all PRU derivation, compute the `pru_configuration_hash`, and submit only that hash to the TINS registry. This gives TSN and Crankers a verifiable replay target without exposing the full PRU set on-chain. The SDK and frontend have no visibility into how PRUs are generated or what they contain.
+Transfer Identity is aware of PRUs through commitments only, never enumeration. During TIN creation, the mempool and cranker layer handle all PRU derivation, compute the `pru_configuration_hash`, and submit only that hash to the registry. This gives TSN and Crankers a verifiable replay target without exposing the full PRU set on-chain. The SDK and frontend have no visibility into how PRUs are generated or what they contain.
 
 ### PRU Execution Endpoint
 
@@ -86,7 +86,7 @@ Every TIN creation and upgrade operation carries a fee. No part of TIN operation
 4. A verifier Cranker checks the owner signature, nonce, expiry, and commitment hashes.
 5. A submitter Cranker records the fee commitment on-chain in Transaction 1.
 6. The submitter Cranker submits the actual TIN creation in Transaction 2.
-7. TINS stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata hash, and PRU configuration hash. The owner wallet is never stored as a readable authority field.
+7. Transfer Identity stores only the identity PDA, SHA-256 owner pubkey commitment, encrypted TIN Master Seed blob, encryption metadata hash, and PRU configuration hash. The owner wallet is never stored as a readable authority field.
 
 The owner wallet never appears as a signer, fee payer, or authority in any on-chain transaction. The Cranker signs and pays all chain transactions.
 

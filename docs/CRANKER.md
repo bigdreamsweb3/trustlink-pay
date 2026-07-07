@@ -28,7 +28,7 @@ Crankers can:
 - participate in epoch settlement races
 - monitor PrivacyReceivePDA sweep signals
 - help recover epoch reservoirs
-- verify and relay TINS creation/update intents
+- verify and relay Transfer Identity creation/update intents
 
 ## Work Types
 
@@ -50,11 +50,11 @@ Recovery work handles vault or epoch states that need reimbursement.
 
 Crankers compete for these jobs through minimal public challenges. The winner must submit valid proof.
 
-### TINS Identity Work
+### Transfer Identity Work
 
-TINS work handles identity registry changes.
+Transfer Identity work handles identity registry changes.
 
-The user signs an owner intent. Cranker A checks the signature, nonce, expiry, and commitment hashes, then records the first fee transaction. Cranker B submits the TINS registry transaction.
+The user signs an owner intent. Cranker A checks the signature, nonce, expiry, and commitment hashes, then records the first fee transaction. Cranker B submits the Transfer Identity registry transaction.
 
 This keeps the owner in control while preventing direct app-side registry mutations.
 
@@ -84,7 +84,7 @@ TIN creation follows the same operator pattern:
 User signs TIN owner intent
 Intent enters TSN mempool
 Cranker A validates the intent and records the first fee transaction
-Cranker B relays the TINS registry mutation
+Cranker B relays the Transfer Identity registry mutation
 TIN operation finalizes
 ```
 

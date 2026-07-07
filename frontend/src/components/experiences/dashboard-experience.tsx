@@ -442,7 +442,7 @@ export function DashboardExperience() {
       );
       setTinInfo(extractTinInfo(result));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load TINS identity");
+      setError(e instanceof Error ? e.message : "Could not load Transfer Identity");
     } finally {
       setIdentityLoading(false);
     }
@@ -523,11 +523,11 @@ export function DashboardExperience() {
               title: "Connect the right wallet",
               description: walletAddress
                 ? `${shortenAddress(walletAddress)} is connected.`
-                : "Connect the wallet you want to register with TINS.",
+                : "Connect the wallet you want to register with Transfer Identity.",
               done: Boolean(walletAddress),
             },
             {
-              title: "Queue TINS registration",
+              title: "Queue Transfer Identity registration",
               description:
                 "Your wallet signs an owner intent. A TSN Cranker verifies and submits the registry update.",
             },

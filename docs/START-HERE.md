@@ -99,7 +99,7 @@ Legacy TIN creation, upgrade, and update follow one rule:
 - frontend signs the owner intent
 - frontend sends that signed intent directly to the TSN mempool backend
 - TSN mempool backend assembles private TIN payloads
-- Crankers perform the on-chain TINS mutation
+- Crankers perform the on-chain Transfer Identity mutation
 
 TrustLink backend is not a bridge for TSN protocol work. It can store app-local identity state and display status, but it must not proxy TIN upgrade or creation requests into TSN.
 
@@ -112,7 +112,7 @@ TrustLink Pay is also shaped by public feedback, research, and external discussi
 ## Where To Go Next
 
 - [Architecture](./ARCHITECTURE.md)
-- [Transfer Identity System](./TINS.md)
+- [Transfer Identity System](./TRANSFER-IDENTITY.md)
 - [TSN commitment settlement](./TSN-COMMITMENT-SETTLEMENT.md)
 - [Cranker guide](./CRANKER.md)
 - [Liquidity](./LIQUIDITY.md)
@@ -205,7 +205,7 @@ export const resolveTin = traceFunction(
   },
   {
     name: "resolveTin",
-    namespace: "TINS",
+    namespace: "Transfer Identity",
     module: "services/tins/resolveTin.ts",
     level: "debug",
     includeReturn: false,

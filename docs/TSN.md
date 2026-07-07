@@ -1,23 +1,21 @@
 
-## TSN PRU intent validation order (2026-06-26)
+## TSN PRU Intent Validation
 
 ### Summary
 
 TSN Crankers must reject a PRU-backed settlement before touching funds unless all seven security gates pass. This makes a PRU signature useful only inside the real TrustLink TSN vault, for one TIN, one PRU index, one destination hash, one amount, one nonce, and one short expiry window.
 
-### Implementation notes
-
 Cranker validation order is fixed:
 
 1. `tsn_domain == SHA256("TSN_TRUSTLINK_INTENT_V1" + tsn_vault_pubkey)` rejects fake TSN vaults.
-2. Verify the spend proof against `identity_binding.main_wallet`, the on-chain TINS owner wallet.
+2. Verify the spend proof against the authorized owner proof for the Transfer Identity.
 3. Require `spend_proof.message.tin == pru_spend_guard.tin` to reject cross-TIN settlement attempts.
 4. Require `intent_id` to be unseen in Cranker replay state.
 5. Require the PRU nonce bit to be unset in `pru_spend_guard.nonce_bitmask`.
 6. Require `expiry > Clock::get().unix_timestamp`; SDK intents default to a 60-second window.
 7. Require `pru_spend_guard.active == true` so a deactivated PRU cannot spend.
 
-### Usage examples
+### SDK validation helper
 
 ```ts
 import { validatePruSpendForCranker } from "@trustlink/tsn-sdk/payment-authorization-server";
@@ -40,9 +38,9 @@ tsn-cranker run --require-pru-spend-guard --reject-expired-pru-intents --vault <
 
 Crankers never need custody. They verify domain binding, owner proof, replay state, and guard activity before executing TSN settlement. The destination is represented by `SHA256(recipient_tin)`, keeping the recipient TIN preimage out of public Cranker logs.
 
-### Testing notes
+### Security coverage
 
-Run `npm --prefix tsn-protocol/tsn-sdk test`. The PRU security test suite covers all seven expected-fail attack scenarios: malicious signature harvesting, fake TSN intent, captured PRU signature replay, wallet-adapter PRU access absence, nonce replay, cross-TIN spend, and inactive/expired runtime attempts.
+The PRU security test suite covers the expected-fail attack scenarios: malicious signature harvesting, fake TSN intent, captured PRU signature replay, wallet-adapter PRU access absence, nonce replay, cross-TIN spend, and inactive or expired runtime attempts.
 
 ## Normal Payment Fee Distribution
 
@@ -90,11 +88,11 @@ The 85% LP share remains in the Cranker vault and is accounted as LP rewards.
 
 ### Summary
 
-TSN can fund a payment directly from a sender's TIN balance when the selected PRUs hold enough of the payment token. This keeps the sender's owner wallet out of the on-chain funding transaction and preserves the PRU-first payment model.
+TSN can fund a payment from the sender's TIN balance when selected PRUs hold the payment token. This keeps the owner wallet out of the funding transaction for the PRU-funded portion and preserves the PRU-first payment model.
 
 ### Execution path
 
-The send screen first loads the authenticated PRU route and builds a PRU-first spend plan. If the TIN balance covers the payment amount plus sender fee, the frontend submits a normal signed payment authorization to the TSN mempool with:
+The send screen first loads the authenticated PRU route and builds a PRU-first spend plan. If the TIN balance covers the payment amount plus sender fee, the frontend submits a signed payment authorization to the TSN mempool with:
 
 - sender settlement mode `pru_private_commitment_v1`
 - sender TIN
@@ -113,8 +111,14 @@ The PRU spend instruction:
 5. Transfers the sender fee from PRUs to the TSN treasury token account.
 6. Records the Cranker activity and emits the PRU spend event.
 
-After the private escrow is funded, the normal private payout flow pays the recipient PRU and the normal recovery flow returns escrowed liquidity into the Cranker vault.
+After the private escrow is funded, the normal private payout flow pays the recipient PRU and the recovery flow returns escrowed liquidity into the Cranker vault.
+
+### Mixed PRU and wallet funding
+
+When the PRU balance is not enough but the connected wallet can cover the remaining amount, TrustLink Pay supports a mixed funding path. The PRU portion is still funded through `pru_private_commitment_v1`, and the connected wallet signs the visible top-up portion.
+
+The mempool validates the PRU-selected amount against the PRU portion, not the full payment amount. This keeps PRU-only validation strict while allowing one send experience to combine private PRU funds with an explicit wallet top-up. The wallet-funded remainder has the normal public-chain visibility of a wallet-funded payment, so the UI shows the user the privacy tradeoff before authorization.
 
 ### Privacy boundary
 
-The frontend never derives PRU keys and never receives the TIN Master Seed. The TrustLink backend does not broker PRU spend execution. The TSN mempool and Cranker network perform the route verification and on-chain funding path. Mixed PRU plus main-wallet funding is not submitted as a PRU spend because it would combine two funding authorities in one user action.
+The frontend never derives PRU keys and never receives the TIN Master Seed. The TrustLink backend does not broker PRU spend execution. The TSN mempool and Cranker network perform route verification and on-chain funding. Mixed funding keeps the PRU portion inside the PRU-spend path and treats the connected-wallet top-up as an explicit privacy downgrade selected by the user.

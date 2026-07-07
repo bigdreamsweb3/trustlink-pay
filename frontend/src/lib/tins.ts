@@ -189,7 +189,7 @@ async function resolveTinFromChainImpl(tin: string): Promise<BrowserResolvedTin>
 }
 
 export const resolveTinFromChain = traceFunction(resolveTinFromChainImpl, {
-  namespace: "TINS",
+  namespace: "Transfer Identity",
   name: "resolveTinFromChain",
   module: "frontend/src/lib/tins.ts",
   level: "debug",
@@ -316,7 +316,7 @@ async function createOrLoadTinForWalletImpl(params: {
 
   if (existingIdentity) {
     if (!existingIdentity.owner.equals(programId)) {
-      throw new Error("The derived TINS identity account is not owned by the configured TINS program.");
+      throw new Error("The derived Transfer Identity account is not owned by the configured Transfer Identity program.");
     }
 
     const decoded = decodeTinAccount(existingIdentity.data);
@@ -346,16 +346,16 @@ async function createOrLoadTinForWalletImpl(params: {
     "confirmed",
   );
   if (!globalState) {
-    throw new Error("TINS global state is not initialized on devnet yet.");
+    throw new Error("Transfer Identity global state is not initialized on devnet yet.");
   }
 
   throw new Error(
-    "New TINS registrations now go through TSN mempool verification. This wallet has no on-chain TINS identity yet, so open Identity Center after the TSN TIN creation queue is enabled.",
+    "New Transfer Identity registrations now go through TSN mempool verification. This wallet has no on-chain Transfer Identity yet, so open Identity Center after the TSN TIN creation queue is enabled.",
   );
 }
 
 export const createOrLoadTinForWallet = traceFunction(createOrLoadTinForWalletImpl, {
-  namespace: "TINS",
+  namespace: "Transfer Identity",
   name: "createOrLoadTinForWallet",
   module: "frontend/src/lib/tins.ts",
   level: "info",
@@ -380,7 +380,7 @@ async function upgradeLegacyTinForWalletImpl(params: {
     throw new Error("This TIN is not available for legacy upgrade on the current network.");
   }
   if (!account.owner.equals(programId)) {
-    throw new Error("The loaded TIN account is not owned by the configured TINS program.");
+    throw new Error("The loaded TIN account is not owned by the configured Transfer Identity program.");
   }
 
   const decoded = decodeLegacyTinUpgradeAccount(account.data);
@@ -439,7 +439,7 @@ async function upgradeLegacyTinForWalletImpl(params: {
 }
 
 export const upgradeLegacyTinForWallet = traceFunction(upgradeLegacyTinForWalletImpl, {
-  namespace: "TINS",
+  namespace: "Transfer Identity",
   name: "upgradeLegacyTinForWallet",
   module: "frontend/src/lib/tins.ts",
   level: "info",

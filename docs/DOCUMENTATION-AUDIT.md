@@ -28,7 +28,7 @@ The active architecture is:
 | `docs/README.md` | Rebuilt as a documentation index | Duplicate historical index wording |
 | `docs/START-HERE.md` | Rewritten for non-developers | Experimental/version framing and jargon-first explanation |
 | `docs/ARCHITECTURE.md` | Rebuilt around current layers | Old settlement flow wording and direct implementation-first sections |
-| `docs/TINS.md` | Rewritten around TIN identity and encrypted links | Confusing legacy identity wording |
+| `docs/TRANSFER-IDENTITY.md` | Rewritten around Transfer Identity, TINs, PRUs, and encrypted links | Confusing legacy identity wording |
 | `docs/PROTOCOL.md` | Rewritten as a plain-language protocol overview | Research-style protocol wording |
 | `docs/TSN-COMMITMENT-SETTLEMENT.md` | Rewritten around commitments, PEA, roots, and challenges | Older private settlement wording that did not explain why commitments exist |
 | `docs/EPOCH-SETTLEMENT.md` | Rewritten as the active epoch settlement guide | Versioned and experimental framing |
@@ -45,11 +45,11 @@ The active architecture is:
 | `docs/OPPORTUNITY.md` | Simplified around the product opportunity | Hype-style language |
 | `docs/META-DATA-USE-COMPLIANCE.md` | Rewritten around data minimization | Unclear metadata handling |
 | `docs/WHATSAPP-SEAMLESS-PAY.md` | Rewritten to position WhatsApp as optional | Phone-number-first framing |
-| `docs/TINS-OPERATOR.md` | Rewritten for operator responsibilities | Phase or legacy operator wording |
+| `docs/TRANSFER-IDENTITY-OPERATOR.md` | Rewritten for operator responsibilities | Phase or legacy operator wording |
 | `docs/submodule-patches/README.md` | Rewritten to clarify patches are handoff artifacts | Treating patch files as active source of truth |
 | `backend/README.md` | Rewritten as backend responsibility guide | Duplicate technical detail |
 | `frontend/README.md` | Rewritten as frontend responsibility guide | Unclear boundaries between frontend and SDK |
-| `tins-registrar/README.md` | Rewritten around active TINS behavior and deploy guard | Long mixed implementation/history notes |
+| `tin-system/tins-registrar/README.md` | Rewritten around active Transfer Identity behavior and deploy guard | Long mixed implementation/history notes |
 | `tins-registrar/docs/phase-1-scope.md` | Converted to active scope | Phase-based wording |
 | `tins-registrar/docs/tins-change-log.md` | Converted to current notes | Historical framing |
 | `tsn/README.md` | Rewritten as TSN folder overview | Duplicate architecture notes |
@@ -71,7 +71,7 @@ These areas should be reviewed again after the next full end-to-end devnet test:
 
 - exact Cranker slashing rules once governance parameters are finalized
 - final PrivacyReceivePDA sweep policy
-- final wording for sensitive TINS identity decryption
+- final wording for sensitive Transfer Identity decryption
 - exact payment status mapping between mempool, backend, and frontend
 - final hosted production deployment instructions
 

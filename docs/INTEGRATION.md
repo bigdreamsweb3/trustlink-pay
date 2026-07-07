@@ -1,10 +1,10 @@
 # Integration Guide
 
-This guide is for apps that want to use TrustLink Pay, TINS, or TSN.
+This guide is for apps that want to use TrustLink Pay, Transfer Identity, or TSN.
 
 ## What Is This?
 
-TrustLink Pay is built so other wallets and apps can use TIN identities and TSN settlement without rebuilding the protocol.
+TrustLink Pay is built so other wallets and apps can use Transfer Identity and TSN settlement without rebuilding the protocol.
 
 ## Why Integrate
 

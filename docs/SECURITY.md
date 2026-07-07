@@ -36,7 +36,7 @@ Social identities should be encrypted. Sensitive fields should require explicit 
 
 The app must show which identity source it is displaying:
 
-- TINS registry name
+- Transfer Identity registry name
 - TrustLink display name
 - WhatsApp or social profile name
 - verification platform result

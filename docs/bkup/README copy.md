@@ -14,7 +14,7 @@ Payment identity should be simple for users, while settlement remains verifiable
 
 TrustLink Pay combines three active layers:
 
-- **TINS**: the identity layer. It gives users a portable 10-digit payment identity.
+- **Transfer Identity**: the identity layer. It gives users a portable 10-digit payment identity.
 - **TSN**: the settlement layer. It separates sender funding from recipient payout.
 - **Crankers**: settlement operators. They validate work, execute payouts, and compete for recovery jobs.
 
@@ -52,7 +52,7 @@ The sender sees a familiar payment experience. The protocol handles settlement, 
 
 A TIN is a 10-digit number.
 
-It works like a portable payment identity. A user can share a TIN instead of exposing a wallet address. TINS are designed around a simple privacy principle: people should be discoverable by the identities they choose to share, not by the identities others search for.
+It works like a portable payment identity. A user can share a TIN instead of exposing a wallet address. Transfer Identity is designed around a simple privacy principle: people should be discoverable by the identities they choose to share, not by the identities others search for.
 
 Identity fields such as social profiles and legal names can be stored in encrypted form within the registry. Once a sender has a recipient's 10-digit TIN, they can resolve and verify the identity information associated with that TIN. However, someone browsing the public registry cannot easily work backwards from a name, social handle, or public profile to discover the recipient's TIN.
 
@@ -114,7 +114,7 @@ The privacy goal is narrower and practical:
 
 | Program | Devnet ID                                     |
 | ------- | --------------------------------------------- |
-| TINS    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 | TSN     | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Stable Devnet Toolchain
@@ -137,8 +137,8 @@ The lockfiles intentionally avoid newer crate releases that require Rust edition
 | `frontend/`              | TrustLink Pay user interface                              |
 | `backend/`               | API, payment records, identity records, and notifications |
 | `docs/`                  | Product and protocol documentation                        |
-| `tins-registrar/`        | TINS on-chain program                                     |
-| `tins-sdk/`              | TINS SDK                                                  |
+| `tin-system/tins-registrar/` | Transfer Identity on-chain program                   |
+| `tin-system/tins-sdk/`       | Transfer Identity SDK                                |
 | `tsn/protocol/`          | TSN on-chain program                                      |
 | `tsn-sdk/`               | TSN SDK                                                   |
 | `tsn-cranker-op-daemon/` | Reference Cranker daemon                                  |
@@ -153,7 +153,7 @@ Start with:
 - [Documentation index](./docs/README.md)
 - [Start Here](./docs/START-HERE.md)
 - [Architecture](./docs/ARCHITECTURE.md)
-- [TINS](./docs/TINS.md)
+- [Transfer Identity](./docs/TRANSFER-IDENTITY.md)
 - [TSN commitment settlement](./docs/TSN-COMMITMENT-SETTLEMENT.md)
 - [Cranker guide](./docs/CRANKER.md)
 - [Liquidity](./docs/LIQUIDITY.md)

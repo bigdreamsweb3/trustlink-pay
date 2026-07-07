@@ -1,20 +1,20 @@
-# TSN-Mediated TINS Operations
+# TSN-Mediated Transfer Identity Operations
 
-This document explains how TIN creation and TIN updates move through the TSN mempool before the TINS registry is changed.
+This document explains how Transfer Identity creation and updates move through the TSN mempool before the registry is changed.
 
-The short version: users do not submit TINS registry transactions directly. They sign an owner intent in the frontend. That signed intent goes straight to the TSN mempool backend. Crankers verify it, record the fee commitment, and relay the registry transaction.
+The short version: users do not submit registry transactions directly. They sign an owner intent in the frontend. That signed intent goes straight to the TSN mempool backend. Crankers verify it, record the fee commitment, and relay the registry transaction.
 
 ## What This Is
 
 The Transfer Identity registry stores a user's TIN, public-safe profile fields, encrypted identity data, and PRU commitment hashes.
 
-TSN is now the control plane for TINS mutations. A TIN creation or update first becomes a TSN mempool operation. Only after verification and fee commitment does a Cranker submit the TINS registry mutation on-chain.
+TSN is the control plane for Transfer Identity mutations. A TIN creation or update first becomes a TSN mempool operation. Only after verification and fee commitment does a Cranker submit the registry mutation on-chain.
 
 ## Why It Exists
 
 The flow keeps owner control while moving operational work into the Cranker network.
 
-The Cranker never becomes the TIN owner. Ownership is proven by the owner's Ed25519 signature over the intent hash and by matching the SHA-256 commitment stored in the TINS account. The raw owner wallet pubkey is not stored as a readable account authority.
+The Cranker never becomes the TIN owner. Ownership is proven by the owner's Ed25519 signature over the intent hash and by matching the SHA-256 commitment stored in the Transfer Identity account. The raw owner wallet pubkey is not stored as a readable account authority.
 
 TrustLink backend is not part of this path. It can store app state and display identity data, but it must never proxy or bridge TIN creation, upgrade, or update operations into TSN.
 
@@ -146,15 +146,15 @@ The backend validates:
 - missing owner signature
 - mismatched owner intent hash
 - creation conflicts in the mempool registry shadow
-- update owner mismatch after checking the mempool registry shadow and, for legacy TINs, verified on-chain TINS state
+- update owner mismatch after checking the mempool registry shadow and, for legacy TINs, verified on-chain Transfer Identity state
 - registry submission before verification
 - registry submission before fee commitment
 
-For `tin_update`, the TINS on-chain account is the source of truth. If the mempool registry shadow does not yet contain the TIN, the mempool derives the owner's TINS identity PDA, reads that account from the TINS program, confirms the TIN number matches, checks the signed owner pubkey against the stored owner commitment, verifies the legacy settlement authority from Solana transaction history when importing older accounts, and imports the TIN into the shadow registry before accepting the update intent.
+For `tin_update`, the Transfer Identity on-chain account is the source of truth. If the mempool registry shadow does not yet contain the TIN, the mempool derives the owner's identity PDA, reads that account from the Transfer Identity program, confirms the TIN number matches, checks the signed owner pubkey against the stored owner commitment, verifies the legacy settlement authority from Solana transaction history when importing older accounts, and imports the TIN into the shadow registry before accepting the update intent.
 
 ## Explorer UI
 
-The mempool explorer shows a masked TINS queue.
+The mempool explorer shows a masked Transfer Identity queue.
 
 It can show:
 

@@ -72,13 +72,13 @@ export function IdentityTree({
           },
     tinsIdentityPublicKey
       ? {
-          label: "TINS identity PDA",
+          label: "Transfer Identity PDA",
           value: shortenAddress(tinsIdentityPublicKey),
         }
       : hideMissingNodes
         ? null
         : {
-            label: "TINS identity PDA",
+            label: "Transfer Identity PDA",
             value: "Not available",
             tone: "muted",
           },

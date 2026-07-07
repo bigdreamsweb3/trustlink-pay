@@ -4,7 +4,7 @@ This document explains the active TrustLink Pay protocol in plain English.
 
 ## What Is This?
 
-The protocol is the set of rules that connect TINS identity, TSN settlement, Cranker work, vault liquidity, and epoch accounting.
+The protocol is the set of rules that connect Transfer Identity, TSN settlement, Cranker work, vault liquidity, and epoch accounting.
 
 It is designed so apps can offer simple TIN-based payments while the settlement layer avoids exposing a direct sender-to-recipient graph.
 
@@ -84,7 +84,7 @@ On-chain accounts and transactions remain visible.
 
 | Area | Current component |
 | --- | --- |
-| Identity | TINS program and SDK |
+| Identity | Transfer Identity program and SDK |
 | Settlement | TSN program and SDK |
 | Coordination | TSN mempool backend |
 | Operation | Cranker daemon and SDK |

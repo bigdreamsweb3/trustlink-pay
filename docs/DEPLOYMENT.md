@@ -6,7 +6,7 @@ This document explains how to deploy TrustLink Pay programs safely.
 
 TrustLink Pay has two active Solana programs:
 
-- TINS: payment identity
+- Transfer Identity: payment identity
 - TSN: settlement
 
 Both must be built with a Solana/SBF toolchain that devnet supports.
@@ -80,7 +80,7 @@ npm run deploy:doctor
 
 If this fails, fix the toolchain before deploying.
 
-## Deploy TINS
+## Deploy Transfer Identity
 
 ```bash
 npm run tins:deploy:checked

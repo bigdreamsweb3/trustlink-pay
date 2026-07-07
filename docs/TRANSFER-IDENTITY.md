@@ -163,7 +163,7 @@ The plan shown to the user separates the amount coming from TIN balance and the 
 
 For PRU-only payments, the frontend sends the signed payment authorization and selected public PRU indexes to the TSN mempool. The mempool verifies that the TIN route is finalized, decrypts the stored TIN Master Seed inside the TSN layer, derives the selected PRU signing keys, and releases a worker-only PRU spend permit to the assigned Cranker. The Cranker executes the on-chain PRU spend instruction, moves the payment amount into the private escrow, routes the sender fee to the TSN treasury, and then the normal private payout path pays the recipient PRU.
 
-The frontend never receives PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs. It only sees public PRU addresses after authenticated route proof, public balances, and the selected PRU indexes needed for mempool authorization. Mixed PRU plus main-wallet funding is blocked in the send screen so TrustLink does not silently downgrade privacy or split authority across two settlement paths.
+The frontend never receives PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs. It only sees public PRU addresses after authenticated route proof, public balances, and the selected PRU indexes needed for mempool authorization. Mixed PRU plus main-wallet funding is supported only when the user explicitly authorizes the visible wallet top-up portion; the PRU-funded portion still goes through TSN PRU-spend execution.
 
 ## PRU Route Authentication and Delegated Access
 

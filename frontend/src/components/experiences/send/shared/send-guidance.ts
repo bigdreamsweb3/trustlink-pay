@@ -12,7 +12,7 @@ export function getSendGuidance(errorMessage: string | null): SendGuidance | nul
     return {
       title: "Finish secure wallet setup first",
       message:
-        "Before you can send invite escrow payments, create your TIN in Identity Center so TrustLink can route phone-number payments through TINS.",
+        "Before you can send invite escrow payments, create your TIN in Identity Center so TrustLink can route phone-number payments through Transfer Identity.",
       ctaLabel: "Open Identity Center",
       ctaHref: "/app/identity",
     };

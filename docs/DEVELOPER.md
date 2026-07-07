@@ -8,7 +8,7 @@ TrustLink Pay is a multi-part system:
 
 - web frontend
 - TrustLink backend
-- TINS program and SDK
+- Transfer Identity program and SDK
 - TSN program and SDK
 - Cranker daemon
 - mempool backend

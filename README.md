@@ -20,7 +20,7 @@ TrustLink Pay combines four protocol layers:
   - **SAS**: Solana Attestation Service support for verified names, merchants, and compliance attestations when those credentials are present.
 
 - **Privacy Layer**
-  - **PRUs**: Privacy Receiving Units. Every upgraded Transfer Identity has 30 PRUs by default.
+  - **PRUs**: Privacy Receiving Units. Every Transfer Identity has 30 PRUs by default.
   - **TIN balance**: the unified balance across PRUs owned by a Transfer Identity.
   - **PRU-first spending**: TrustLink Pay spends from PRUs first, then uses connected wallet top-up when the user chooses a mixed funding path.
   - **VPP-ready privacy assets**: VPP is the privacy-asset layer planned for vAssets; PRUs are the current receiving and routing mechanism.
@@ -48,13 +48,13 @@ That creates problems:
 
 TrustLink Pay changes the surface:
 
-| Traditional crypto payment               | TrustLink Pay                                                      |
-| ---------------------------------------- | ------------------------------------------------------------------ |
-| Share a wallet address                   | Share a 10-digit TIN                                               |
-| Sender pays directly to recipient wallet | Sender funds a TSN settlement path                                 |
-| Recipient wallet is the payment identity | TIN is the payment identity                                        |
+| Traditional crypto payment               | TrustLink Pay                                                            |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| Share a wallet address                   | Share a 10-digit TIN                                                     |
+| Sender pays directly to recipient wallet | Sender funds a TSN settlement path                                       |
+| Recipient wallet is the payment identity | TIN is the payment identity                                              |
 | Identity confidence is weak              | Social verification and SAS attestations improve confidence when present |
-| Apps rebuild payment flows               | Apps can integrate Transfer Identity, PRUs, and TSN through SDKs   |
+| Apps rebuild payment flows               | Apps can integrate Transfer Identity, PRUs, and TSN through SDKs         |
 
 ## How A Payment Works
 
@@ -259,10 +259,10 @@ TrustLink Pay needs supporters, sponsors, reviewers, and ecosystem partners to m
 
 ## Current Program IDs
 
-| Program | Devnet ID                                     |
-| ------- | --------------------------------------------- |
+| Program           | Devnet ID                                     |
+| ----------------- | --------------------------------------------- |
 | Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN     | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| TSN               | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Stable Devnet Toolchain
 
@@ -284,20 +284,20 @@ The gateway process reads `TSN_SOLANA_RPC_URLS` to route traffic across Solana R
 
 ## Repository Map
 
-| Path                     | Purpose                                                   |
-| ------------------------ | --------------------------------------------------------- |
-| `frontend/`              | TrustLink Pay user interface                              |
-| `backend/`               | API, payment records, identity records, and notifications |
-| `docs/`                  | Product and protocol documentation                        |
-| `tin-system/tins-registrar/` | Transfer Identity on-chain program                   |
-| `tin-system/tins-sdk/`       | Transfer Identity SDK                                |
-| `tsn/protocol/`          | TSN on-chain program                                      |
-| `tsn-sdk/`               | TSN SDK                                                   |
-| `tsn-cranker-op-daemon/` | Reference Cranker daemon                                  |
-| `tsn-cranker-sdk/`       | Cranker SDK and CLI helpers                               |
-| `tsn-mempool-backend/`   | Mempool, epoch coordination, and challenge APIs           |
-| `tsn-mempool-frontend/`  | Mempool and epoch explorer                                |
-| `tsn-rpc-gateway/`       | Standalone Solana RPC gateway project and shared RPC client |
+| Path                         | Purpose                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| `frontend/`                  | TrustLink Pay user interface                                |
+| `backend/`                   | API, payment records, identity records, and notifications   |
+| `docs/`                      | Product and protocol documentation                          |
+| `tin-system/tins-registrar/` | Transfer Identity on-chain program                          |
+| `tin-system/tins-sdk/`       | Transfer Identity SDK                                       |
+| `tsn/protocol/`              | TSN on-chain program                                        |
+| `tsn-sdk/`                   | TSN SDK                                                     |
+| `tsn-cranker-op-daemon/`     | Reference Cranker daemon                                    |
+| `tsn-cranker-sdk/`           | Cranker SDK and CLI helpers                                 |
+| `tsn-mempool-backend/`       | Mempool, epoch coordination, and challenge APIs             |
+| `tsn-mempool-frontend/`      | Mempool and epoch explorer                                  |
+| `tsn-rpc-gateway/`           | Standalone Solana RPC gateway project and shared RPC client |
 
 ## Start Reading
 

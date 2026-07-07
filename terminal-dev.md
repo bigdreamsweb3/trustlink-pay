@@ -36,6 +36,8 @@ solana address
 
 # Get the current cluster version
 
+<!--  -->
+
 solana cluster-version --url devnet
 
 # Show cluster health and node status

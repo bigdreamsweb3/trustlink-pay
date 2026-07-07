@@ -3,7 +3,12 @@ export const runtime = "nodejs";
 import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
 import { fail, ok } from "@/app/lib/http";
 import { findPaymentById } from "@/app/db/payments";
-import { findPaymentIntentByPaymentId } from "@/app/db/tsn";
+import {
+  findLatestActiveClaimRequestByPaymentId,
+  findPaymentIntentByPaymentId,
+  updateClaimRequestStatus,
+  updatePaymentIntentStatus,
+} from "@/app/db/tsn";
 import { refreshSinglePaymentIntentStatus, isTsnSettled } from "@/app/services/tsn";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
 import type { PaymentIntentStatus, ClaimRequestStatus } from "@trustlink/tsn-sdk";
@@ -28,6 +33,16 @@ async function postPaymentRefreshStatus(
 ) {
   return withAuthenticatedRoute(request, async () => {
     const { paymentId } = await params;
+    const body = await request.json().catch(() => ({})) as {
+      observedTsnStatus?: {
+        intentStatus?: PaymentIntentStatus;
+        claimRequestStatus?: ClaimRequestStatus | null;
+        assignedCrankerPubkey?: string | null;
+        escrowTxSig?: string | null;
+        claimTxSig?: string | null;
+        proofTxSig?: string | null;
+      };
+    };
 
     if (!paymentId) {
       return fail("Missing payment id", 400);
@@ -52,6 +67,43 @@ async function postPaymentRefreshStatus(
         finalized: false,
         nextRefreshAfterMs: null,
         settlementComplete: false,
+      } satisfies RefreshStatusResponse);
+    }
+
+    if (body.observedTsnStatus?.intentStatus) {
+      const claim = await findLatestActiveClaimRequestByPaymentId(paymentId);
+      await updatePaymentIntentStatus({
+        id: intent.id,
+        status: body.observedTsnStatus.intentStatus,
+        assignedCrankerPubkey: body.observedTsnStatus.assignedCrankerPubkey ?? null,
+        escrowTxSig: body.observedTsnStatus.escrowTxSig ?? null,
+        claimTxSig: body.observedTsnStatus.claimTxSig ?? null,
+        proofTxSig: body.observedTsnStatus.proofTxSig ?? null,
+      });
+      if (claim && body.observedTsnStatus.claimRequestStatus) {
+        await updateClaimRequestStatus({
+          id: claim.id,
+          status: body.observedTsnStatus.claimRequestStatus,
+        });
+      }
+      const enriched = await enrichPaymentsWithTsnState([payment]);
+      return ok({
+        paymentId,
+        previousIntentStatus: intent.status,
+        latestIntentStatus: body.observedTsnStatus.intentStatus,
+        previousClaimStatus: claim?.status ?? null,
+        latestClaimStatus: body.observedTsnStatus.claimRequestStatus ?? claim?.status ?? null,
+        tsnQueried: false,
+        dbUpdated: true,
+        finalized:
+          body.observedTsnStatus.intentStatus === "executed" ||
+          body.observedTsnStatus.intentStatus === "settled" ||
+          body.observedTsnStatus.intentStatus === "failed" ||
+          body.observedTsnStatus.intentStatus === "canceled" ||
+          body.observedTsnStatus.intentStatus === "expired" ||
+          body.observedTsnStatus.intentStatus === "reverted",
+        nextRefreshAfterMs: null,
+        settlementComplete: isTsnSettled(enriched[0]),
       } satisfies RefreshStatusResponse);
     }
 

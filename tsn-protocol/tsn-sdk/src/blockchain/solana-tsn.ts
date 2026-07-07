@@ -289,7 +289,7 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
   const authority = params.authority ?? getEscrowAuthorityKeypair(params.secretKey);
   const motherEscrow = getTsnMotherEscrowPda();
   const existing = await tsnFetchMotherEscrowOnChain(params.rpcUrl);
-  if (existing?.valid) {
+  if (existing && existing.valid) {
     if (existing.tinsProgramId !== params.tinsProgramId.toBase58()) {
       throw new Error(
         `TSN mother escrow is initialized with TINS program ${existing.tinsProgramId}, not ${params.tinsProgramId.toBase58()}.`,
@@ -299,8 +299,9 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
     return { mode: "devnet" as const, signature: null as string | null, motherEscrow: existing.address };
   }
   if (existing && !existing.valid) {
+    const reason = "reason" in existing ? existing.reason : "unknown";
     throw new Error(
-      `TSN mother escrow ${motherEscrow.toBase58()} already exists but is not readable as the current MotherEscrow layout (${existing.reason}). Deploy a fresh TSN program id or add a migration/close instruction for this PDA before running init-mother again.`,
+      `TSN mother escrow ${motherEscrow.toBase58()} already exists but is not readable as the current MotherEscrow layout (${reason}). Deploy a fresh TSN program id or add a migration/close instruction for this PDA before running init-mother again.`,
     );
   }
 

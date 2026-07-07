@@ -57,11 +57,14 @@ import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import {
   enqueueTsnPaymentFromFrontend,
   estimateTsnSendCostFromChain,
+  fetchTsnMempoolPaymentStatus,
+  toPaymentTsnState,
 } from "@/src/lib/tsn";
 import {
   buildTinSpendPlan,
   type TinSpendPlanResult,
 } from "@/src/lib/tin-spend-planner";
+import { loadTinTokenBalances } from "@/src/lib/tin-balance";
 import { resolveTinFromChain } from "@/src/lib/tins";
 import { resolveSolanaRpcUrl } from "@/src/lib/rpc";
 import { createPaymentAuthorization } from "@trustlink/tsn-sdk/payment-authorization";
@@ -340,6 +343,9 @@ export function SendExperience() {
   const [tinSpendPlan, setTinSpendPlan] = useState<TinSpendPlanResult | null>(
     null,
   );
+  const [tinTokenBalanceByMint, setTinTokenBalanceByMint] = useState<
+    Record<string, number>
+  >({});
   const [estimateError, setEstimateError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<{
     paymentId: string;
@@ -390,6 +396,8 @@ export function SendExperience() {
   );
   const selectedToken =
     sendableTokens.find((t) => t.mintAddress === form.token) ?? null;
+  const unifiedTokenBalance = (token: WalletTokenOption) =>
+    token.balance + (tinTokenBalanceByMint[token.mintAddress] ?? 0);
   const walletAddress = walletSession?.address ?? null;
   const displayCountry =
     manualCountry ??
@@ -647,6 +655,7 @@ export function SendExperience() {
   useEffect(() => {
     if (!walletAddress) {
       setSupportedTokens([]);
+      setTinTokenBalanceByMint({});
       setForm((c) => ({ ...c, token: "" }));
       return;
     }
@@ -682,6 +691,38 @@ export function SendExperience() {
     void load();
     return () => ctrl.abort();
   }, [walletAddress]);
+
+  useEffect(() => {
+    const tin = user?.tin;
+    const activeWalletSession = walletSession;
+    if (!tin || !activeWalletSession || sendableTokens.length === 0) {
+      setTinTokenBalanceByMint({});
+      return;
+    }
+    const tinForBalanceLoad = tin;
+    const walletSessionForBalanceLoad = activeWalletSession;
+    const ctrl = new AbortController();
+    async function loadTinBalances() {
+      try {
+        const result = await loadTinTokenBalances({
+          tin: tinForBalanceLoad,
+          walletSession: walletSessionForBalanceLoad,
+          supportedTokens: sendableTokens,
+          signal: ctrl.signal,
+        });
+        if (ctrl.signal.aborted) return;
+        setTinTokenBalanceByMint(
+          Object.fromEntries(
+            result.tokens.map((token) => [token.mintAddress, token.balance]),
+          ),
+        );
+      } catch {
+        if (!ctrl.signal.aborted) setTinTokenBalanceByMint({});
+      }
+    }
+    void loadTinBalances();
+    return () => ctrl.abort();
+  }, [sendableTokens, user?.tin, walletSession]);
 
   /* catch block always reveals country fallback and unlocks */
   useEffect(() => {
@@ -799,30 +840,53 @@ export function SendExperience() {
 
   // Smart post-send refresh: fast polling with dynamic scheduling for real-time UX
   useEffect(() => {
-    if (!sendSuccessPaymentId || !accessToken) return;
+    const activeSendSuccess = sendSuccess;
+    if (!sendSuccessPaymentId || !accessToken || !activeSendSuccess) return;
     if (!shouldPollSendSuccessReceipt) return;
+    const paymentIdForPolling = sendSuccessPaymentId;
+    const sendSuccessForPolling = activeSendSuccess;
     let cancelled = false;
 
     async function refreshStatus() {
       try {
-        const result = await apiPost<{
-          paymentId: string;
-          tsnQueried: boolean;
-          dbUpdated: boolean;
-          finalized: boolean;
-          settlementComplete: boolean;
-          nextRefreshAfterMs: number | null;
-        }>(
-          `/api/payment/${sendSuccessPaymentId}/refresh-status`,
-          {},
-          accessToken ?? undefined,
-        );
+        const observedStatus =
+          sendSuccessForPolling.blockchainMode === "tsn"
+            ? await fetchTsnMempoolPaymentStatus({
+                paymentId: paymentIdForPolling,
+                intentId: sendSuccessForPolling.blockchainSignature,
+              })
+            : null;
 
         if (cancelled) return;
 
+        if (observedStatus) {
+          setSendSuccess((current) => {
+            if (!current || current.paymentId !== paymentIdForPolling) return current;
+            return {
+              ...current,
+              tsn: toPaymentTsnState(observedStatus, current.tsn?.destinationWallet ?? null),
+              status:
+                observedStatus.intentStatus === "executed" ||
+                observedStatus.intentStatus === "settled"
+                  ? "claimed"
+                  : observedStatus.intentStatus === "escrowed" ||
+                      observedStatus.intentStatus === "onchain" ||
+                      observedStatus.intentStatus === "claimed"
+                    ? "locked"
+                    : current.status,
+            };
+          });
+        }
+
+        await apiPost(
+          `/api/payment/${paymentIdForPolling}/refresh-status`,
+          observedStatus ? { observedTsnStatus: observedStatus } : {},
+          accessToken ?? undefined,
+        );
+
         // Always re-fetch payment detail after a refresh-status call
         const r = await apiGet<{ payment: PaymentRecord | null }>(
-          `/api/payment/${sendSuccessPaymentId}`,
+          `/api/payment/${paymentIdForPolling}`,
           accessToken ?? undefined,
           { cache: "no-store" },
         );
@@ -875,7 +939,7 @@ export function SendExperience() {
       cancelled = true;
       if (timerId !== undefined) window.clearTimeout(timerId);
     };
-  }, [accessToken, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+  }, [accessToken, sendSuccess, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
   async function handleConnectWallet() {
     setError(null);
@@ -1325,7 +1389,14 @@ export function SendExperience() {
         {sendSuccess ? (
           <div className="space-y-5">
             <div className="text-center py-2">
-              <SuccessIcon className="mx-auto h-14 w-14" />
+              {livePaymentStage?.key === "recipient_paid" ||
+              livePaymentStage?.key === "escrowed" ? (
+                <SuccessIcon className="mx-auto h-14 w-14" />
+              ) : livePaymentStage?.key === "stopped" ? (
+                <AlertCircle className="mx-auto h-14 w-14 text-[var(--danger)]" />
+              ) : (
+                <Loader2 className="mx-auto h-14 w-14 animate-spin text-[var(--accent)]" />
+              )}
               <div
                 className={`mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.2em] ${
                   livePaymentStage?.key === "stopped"
@@ -1901,12 +1972,12 @@ export function SendExperience() {
                       <div className="text-right">
                         <div className=" font-semibold text-text">
                           {formatTokenBalance(
-                            selectedToken.balance,
+                            unifiedTokenBalance(selectedToken),
                             selectedToken.symbol,
                           )}
                         </div>
                         <div className="text-[0.62rem] text-text-faint">
-                          Available
+                          Wallet + TIN available
                         </div>
                       </div>
                     </div>
@@ -1972,11 +2043,23 @@ export function SendExperience() {
                       </span>
                       <span className="text-right">
                         <span className="block  font-semibold leading-tight text-text">
-                          {formatTokenBalance(token.balance, token.symbol)}
+                          {formatTokenBalance(
+                            unifiedTokenBalance(token),
+                            token.symbol,
+                          )}
                         </span>
                         <span className="tl-text-soft block mt-0.5 tl-meta-sm leading-tight">
-                          Available
+                          Wallet + TIN available
                         </span>
+                        {(tinTokenBalanceByMint[token.mintAddress] ?? 0) > 0 ? (
+                          <span className="tl-text-soft block mt-0.5 text-[0.62rem] leading-tight">
+                            Wallet {formatTokenBalance(token.balance, token.symbol)} · TIN{" "}
+                            {formatTokenBalance(
+                              tinTokenBalanceByMint[token.mintAddress] ?? 0,
+                              token.symbol,
+                            )}
+                          </span>
+                        ) : null}
                       </span>
                     </button>
                   );

@@ -1,13 +1,3 @@
+import { generateSitemap } from "@/src/seo/sitemap";
 
-import { MetadataRoute } from 'next'
-
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: 'https://trustlink-pay.vercel.app',
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    }
-  ]
-}
+export default generateSitemap;

@@ -465,6 +465,20 @@ async def read_finalized_tin_route_material(tin: str) -> Optional[dict[str, str]
             "masterSeedHex": _decrypt_tin_master_seed_payload(str(encrypted_master_seed)),
             "ownerPubkey": str(operation.get("ownerPubkey") or ""),
         }
+    route = await read_tin_pru_route(tin)
+    if route:
+        legacy_master_seed = str(route.get("masterSeedHex") or "").strip()
+        legacy_owner_pubkey = str(route.get("ownerPubkey") or "").strip()
+        if legacy_master_seed and legacy_owner_pubkey:
+            try:
+                bytes.fromhex(legacy_master_seed)
+                decode_base58(legacy_owner_pubkey)
+            except ValueError:
+                return None
+            return {
+                "masterSeedHex": legacy_master_seed,
+                "ownerPubkey": legacy_owner_pubkey,
+            }
     return None
 
 

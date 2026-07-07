@@ -322,6 +322,14 @@ function isQuarantinedRecoveryReason(reason: string | null | undefined) {
   );
 }
 
+function isPermanentPruSpendPermitFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("TSN permit request failed (409)") ||
+    message.includes("TSN permit request failed (422)")
+  );
+}
+
 function getRecipientAmountUi(item: TsnWorkItem) {
   const maybeRecipientAmount = Number((item.intent as TsnWorkItem["intent"] & { recipientAmount?: number }).recipientAmount);
   if (Number.isFinite(maybeRecipientAmount) && maybeRecipientAmount > 0 && maybeRecipientAmount <= Number(item.intent.amount)) {
@@ -1619,8 +1627,9 @@ async function main() {
   console.log("[tsn-cranker] execution=real-onchain");
 
   const motherEscrowState = await tsnFetchMotherEscrowOnChain(rpcUrl);
-  if (!motherEscrowState?.valid) {
-    const reason = motherEscrowState ? motherEscrowState.reason : "missing";
+  if (!motherEscrowState || !motherEscrowState.valid) {
+    const reason =
+      motherEscrowState && "reason" in motherEscrowState ? motherEscrowState.reason : "missing";
     const dataLength =
       motherEscrowState && "dataLength" in motherEscrowState
         ? motherEscrowState.dataLength
@@ -1713,6 +1722,16 @@ async function main() {
             `[tsn-cranker] submitted-intent intent=${item.intent.id} escrowed=${submitted.intent} tx=${submitted.signature} claimCredit=onchain+1`,
           );
         } catch (error) {
+          if (isPermanentPruSpendPermitFailure(error)) {
+            const message = error instanceof Error ? error.message : String(error);
+            await mempool.updateIntentStatus(item.intent.id, "canceled", {
+              source: item.intent.source,
+              settlementResolution: "reverted",
+              settlementReason: `PRU spend permit rejected permanently: ${message}`,
+            });
+            console.warn(`[tsn-cranker] canceled-pru-spend-intent intent=${item.intent.id} reason="${message}"`);
+            continue;
+          }
           console.error(`[tsn-cranker] failed-intent-submission intent=${item.intent.id}`, error);
         }
       }

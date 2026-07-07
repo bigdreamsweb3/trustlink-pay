@@ -1,12 +1,103 @@
 import { apiPost } from "@/src/lib/api";
+import type { PaymentRecord } from "@/src/lib/types";
 import { submitPaymentAuthorizationToMempool } from "@trustlink/tsn-sdk/payment-authorization";
 import { estimateTsnSendCostFromChain as estimateTsnSendCostFromSdk } from "@trustlink/tsn-sdk/send-estimate";
 import { traceFunction } from "../../../utils/observability/tracer";
+
+type PaymentTsnState = NonNullable<PaymentRecord["tsn"]>;
 
 function getTsnMempoolUrl() {
   const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL;
   if (!url) throw new Error("NEXT_PUBLIC_TSN_MEMPOOL_URL is missing");
   return url.replace(/\/$/, "");
+}
+
+export type TsnMempoolPaymentStatus = {
+  intentStatus: PaymentTsnState["intentStatus"];
+  claimRequestStatus: PaymentTsnState["claimRequestStatus"];
+  assignedCrankerPubkey: string | null;
+  escrowTxSig: string | null;
+  claimTxSig: string | null;
+  proofTxSig: string | null;
+  settlementReason: string | null;
+};
+
+function deriveTsnStage(status: TsnMempoolPaymentStatus): PaymentTsnState["stage"] {
+  if (
+    status.intentStatus === "failed" ||
+    status.intentStatus === "canceled" ||
+    status.intentStatus === "expired" ||
+    status.intentStatus === "reverted" ||
+    status.claimRequestStatus === "failed" ||
+    status.claimRequestStatus === "canceled"
+  ) {
+    return "reverted";
+  }
+  if (
+    status.intentStatus === "executed" ||
+    status.intentStatus === "settled" ||
+    status.claimRequestStatus === "completed"
+  ) {
+    return "cranker_paid";
+  }
+  if (status.claimRequestStatus === "processing") return "lease_claimed";
+  if (status.claimRequestStatus === "pending") return "claim_requested";
+  if (
+    status.intentStatus === "escrowed" ||
+    status.intentStatus === "onchain" ||
+    status.intentStatus === "claimed"
+  ) {
+    return "escrowed";
+  }
+  return "intent_pending";
+}
+
+export async function fetchTsnMempoolPaymentStatus(params: {
+  paymentId: string;
+  intentId?: string | null;
+  signal?: AbortSignal;
+}): Promise<TsnMempoolPaymentStatus | null> {
+  const baseUrl = getTsnMempoolUrl();
+  const [intentsResponse, claimsResponse] = await Promise.all([
+    fetch(`${baseUrl}/intents`, { headers: { accept: "application/json" }, signal: params.signal }),
+    fetch(`${baseUrl}/claim-requests`, { headers: { accept: "application/json" }, signal: params.signal }),
+  ]);
+  if (!intentsResponse.ok || !claimsResponse.ok) return null;
+  const intents = (await intentsResponse.json()) as Array<Record<string, unknown>>;
+  const claims = (await claimsResponse.json()) as Array<Record<string, unknown>>;
+  const intent = intents.find((item) =>
+    String(item.id ?? "") === String(params.intentId ?? "") ||
+    String(item.paymentId ?? "") === params.paymentId,
+  );
+  if (!intent) return null;
+  const claim = claims.find((item) => String(item.intentId ?? "") === String(intent.id ?? ""));
+  const status = {
+    intentStatus: String(intent.status ?? "pending") as PaymentTsnState["intentStatus"],
+    claimRequestStatus: claim ? String(claim.status ?? "pending") as PaymentTsnState["claimRequestStatus"] : null,
+    assignedCrankerPubkey: typeof intent.assignedCrankerPubkey === "string" ? intent.assignedCrankerPubkey : null,
+    escrowTxSig: typeof intent.escrowTxSig === "string" ? intent.escrowTxSig : null,
+    claimTxSig: typeof intent.claimTxSig === "string" ? intent.claimTxSig : null,
+    proofTxSig: typeof intent.proofTxSig === "string" ? intent.proofTxSig : null,
+    settlementReason: typeof intent.settlementReason === "string" ? intent.settlementReason : null,
+  };
+  return status;
+}
+
+export function toPaymentTsnState(
+  status: TsnMempoolPaymentStatus,
+  destinationWallet: string | null = null,
+): PaymentRecord["tsn"] {
+  return {
+    stage: deriveTsnStage(status),
+    intentStatus: status.intentStatus,
+    claimRequestStatus: status.claimRequestStatus,
+    destinationWallet,
+    assignedCrankerPubkey: status.assignedCrankerPubkey,
+    escrowTxSig: status.escrowTxSig,
+    claimTxSig: status.claimTxSig,
+    proofTxSig: status.proofTxSig,
+    settlementReason: status.settlementReason,
+  };
 }
 
 async function postTerminalLog(

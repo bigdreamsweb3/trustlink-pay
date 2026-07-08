@@ -148,7 +148,7 @@
     "tsn:check:types": "npm run check:types",
     "tins:identity:test": "npm run tins:identity:demo",
     "// === Tmux Background Stack ===": "Commands to manage the full TSN stack in the background using tmux.",
-    "stack:start": "wsl ./start-tsn-stack.sh",
+    "stack:start": "wsl ./start-tsn-stack.sh && npm run stack:attach",
     "stack:start:with-cranker": "wsl ./start-tsn-stack.sh start-with-cranker",
     "stack:add-cranker": "wsl ./start-tsn-stack.sh add-cranker",
     "dev:stack:with-cranker": "npm run stack:start:with-cranker && npm run stack:attach",

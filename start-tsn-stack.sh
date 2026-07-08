@@ -45,7 +45,23 @@ for arg in "$@"; do
   esac
  done
 
-CRANKER_CMD="$ENV_SETUP && npm run tsn:cranker:start"
+
+CRANKER_DIR="$PROJECT_ROOT/tsn-protocol/tsn-cranker-op-daemon"
+CRANKER_PKG="$CRANKER_DIR/package.json"
+CRANKER_LOCK="$CRANKER_DIR/package-lock.json"
+CRANKER_MARKER="$CRANKER_DIR/node_modules/.cranker-deps-installed"
+
+if [ ! -f "$CRANKER_MARKER" ] || [ "$CRANKER_PKG" -nt "$CRANKER_MARKER" ] || [ "$CRANKER_LOCK" -nt "$CRANKER_MARKER" ]; then
+  echo "Installing/updating cranker Node dependencies..."
+  npm --prefix "$CRANKER_DIR" install
+  npm --prefix "$CRANKER_DIR" rebuild esbuild
+  mkdir -p "$CRANKER_DIR/node_modules"
+  touch "$CRANKER_MARKER"
+else
+  echo "Cranker Node dependencies already installed."
+fi
+
+CRANKER_CMD="cd $PROJECT_ROOT && npm run tsn:cranker:start"
 
 if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
   if [ "$MODE" = "add-cranker" ] || [ "$MODE" = "start-with-cranker" ]; then
@@ -79,7 +95,9 @@ rm -f "$LOG_DIR/tsn-*.log"
 tmux new-session -d -s $SESSION_NAME -n monitor
 
 # Create the monitor window
- tmux send-keys -t $SESSION_NAME:monitor "btop || htop || top" C-m
+tmux send-keys -t $SESSION_NAME:monitor "btop || htop || top" C-m
+tmux new-window -t $SESSION_NAME -n network
+tmux send-keys -t $SESSION_NAME:network "sudo nethogs" C-m
 
 # Iterate over the services and create a window for each
 for service in "${!SERVICES[@]}"; do

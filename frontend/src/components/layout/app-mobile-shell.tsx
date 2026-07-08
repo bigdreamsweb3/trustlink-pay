@@ -159,7 +159,7 @@ export function AppMobileShell({
   }
   return (
     <main className="min-h-screen bg-bg">
-      <div className="mx-auto flex h-full max-w-[1400px]">
+      <div className="flex h-full w-full max-w-[1400px] md:mr-auto">
         {/* ═══ DESKTOP SIDEBAR ═══ */}
         <aside className="tl-sidebar hidden md:sticky md:top-0 md:flex md:h-screen md:w-[240px] md:shrink-0 md:flex-col md:justify-between md:border-r md:border-[var(--field-border)] md:px-4 md:py-6">
           <div>

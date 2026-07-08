@@ -926,31 +926,53 @@ async function submitIntentOnChainWork(params: {
             rpcUrl: params.rpcUrl,
           })
         : null;
-    const created = await tsnExecutePruSpendOnChain({
-      operator: params.operator,
-      tokenMint: new PublicKey(permit.tokenMintAddress),
-      commitmentHash: Uint8Array.from(Buffer.from(permit.commitmentHash, "hex")),
-      escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
-      senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
-      ...(sponsoredSettlement.settlementEscrowSecretKeyBase64
-        ? {
-            escrowTokenAccount: Keypair.fromSecretKey(
-              Uint8Array.from(Buffer.from(sponsoredSettlement.settlementEscrowSecretKeyBase64, "base64")),
-            ),
-          }
-        : {}),
-      selections: permit.selections.map((selection) => ({
-        tin: selection.tin,
-        pruIndex: selection.pruIndex,
-        nonce: selection.nonce,
-        amountBaseUnits: BigInt(selection.amountBaseUnits),
-        spendAuthHash: Uint8Array.from(Buffer.from(selection.spendAuthHash, "hex")),
-        pruAuthority: Keypair.fromSecretKey(
-          Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
-        ),
-      })),
-      rpcUrl: params.rpcUrl,
-    });
+    let created: Awaited<ReturnType<typeof tsnExecutePruSpendOnChain>>;
+    try {
+      created = await tsnExecutePruSpendOnChain({
+        operator: params.operator,
+        tokenMint: new PublicKey(permit.tokenMintAddress),
+        commitmentHash: Uint8Array.from(Buffer.from(permit.commitmentHash, "hex")),
+        escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
+        senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
+        ...(sponsoredSettlement.settlementEscrowSecretKeyBase64
+          ? {
+              escrowTokenAccount: Keypair.fromSecretKey(
+                Uint8Array.from(Buffer.from(sponsoredSettlement.settlementEscrowSecretKeyBase64, "base64")),
+              ),
+            }
+          : {}),
+        selections: permit.selections.map((selection) => ({
+          tin: selection.tin,
+          pruIndex: selection.pruIndex,
+          nonce: selection.nonce,
+          amountBaseUnits: BigInt(selection.amountBaseUnits),
+          spendAuthHash: Uint8Array.from(Buffer.from(selection.spendAuthHash, "hex")),
+          pruAuthority: Keypair.fromSecretKey(
+            Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
+          ),
+        })),
+        rpcUrl: params.rpcUrl,
+      });
+    } catch (error) {
+      if (walletSettlement) {
+        const message = error instanceof Error ? error.message : String(error);
+        await params.mempool.updateIntentStatus(params.item.intent.id, "failed", {
+          source: params.item.intent.source,
+          assignedCrankerPubkey: params.operator.publicKey.toBase58(),
+          escrowTxSig: walletSettlement.signature,
+          settlementVault: sponsoredSettlement.settlementVault ?? undefined,
+          settlementTokenAccount: sponsoredSettlement.settlementTokenAccount ?? undefined,
+          settlementResolution: "reverted",
+          settlementReason:
+            `Mixed funding wallet top-up landed (${walletSettlement.signature}) but PRU funding failed before recipient payout. ` +
+            `Funds in the mixed escrow require an explicit refund/recovery instruction before this intent can be retried. Cause: ${message}`,
+        } as Partial<TsnIntentWorkItem["intent"]>);
+        throw new Error(
+          `Mixed funding partial failure after wallet top-up ${walletSettlement.signature}; manual refund/recovery required before retry. Cause: ${message}`,
+        );
+      }
+      throw error;
+    }
 
     await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
       source: params.item.intent.source,

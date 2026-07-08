@@ -117,7 +117,11 @@ After the private escrow is funded, the normal private payout flow pays the reci
 
 When the PRU balance is not enough but the connected wallet can cover the remaining amount, TrustLink Pay supports a mixed funding path. The PRU portion is still funded through `pru_private_commitment_v1`, and the connected wallet signs the visible top-up portion.
 
-The mempool validates the PRU-selected amount against the PRU portion, not the full payment amount. This keeps PRU-only validation strict while allowing one send experience to combine private PRU funds with an explicit wallet top-up. The wallet-funded remainder has the normal public-chain visibility of a wallet-funded payment, so the UI shows the user the privacy tradeoff before authorization.
+The spend planner chooses the largest PRU balances first and caps one PRU-spend transaction to a compact selection set so the Solana transaction fits on-chain. If the compact PRU set cannot cover the PRU portion, the remainder moves to the explicit wallet top-up path or the send is blocked when the combined compact PRU and wallet balance is not enough.
+
+The mempool validates the PRU-selected amount against the PRU portion, not the full payment amount, and rejects PRU selections that exceed the one-transaction cap before any wallet top-up is submitted. This keeps PRU-only validation strict while allowing one send experience to combine private PRU funds with an explicit wallet top-up. The wallet-funded remainder has the normal public-chain visibility of a wallet-funded payment, so the UI shows the user the privacy tradeoff before authorization.
+
+If a wallet top-up lands but the PRU leg fails before recipient payout, the intent is marked failed with the wallet top-up transaction signature and a manual recovery requirement. This preserves evidence and prevents retry spam. A dedicated sender-refund instruction is required before that partial escrow can be automatically returned to the sender.
 
 ### Privacy boundary
 

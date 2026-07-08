@@ -34,6 +34,26 @@ function getVerifiedTsnProgramId() {
   return VERIFIED_TSN_PROGRAM_PUBLIC_KEY;
 }
 
+function isAlreadyProcessedTransactionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const transactionMessage =
+    error && typeof error === "object" && "transactionMessage" in error
+      ? String((error as { transactionMessage?: unknown }).transactionMessage ?? "")
+      : "";
+  return (
+    message.includes("This transaction has already been processed") ||
+    transactionMessage.includes("This transaction has already been processed")
+  );
+}
+
+function getSignedTransactionSignature(tx: Transaction) {
+  const signature = tx.signature ?? tx.signatures.find((entry) => entry.signature)?.signature;
+  if (!signature) {
+    throw new Error("Sender-signed settlement transaction is missing a signature after cranker signing.");
+  }
+  return anchorUtils.bytes.bs58.encode(signature);
+}
+
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_INTENT_SEED = Buffer.from("tsn_intent");
 const TSN_VERIFIER_SEED = Buffer.from("verifier");
@@ -252,13 +272,26 @@ export async function tsnSubmitSenderSignedSettlementTransaction(params: {
   }
 
   tx.partialSign(params.operator);
-  const signature = await connection.sendRawTransaction(
-    tx.serialize({
-      requireAllSignatures: true,
-      verifySignatures: true,
-    }),
-    { preflightCommitment: "confirmed" },
-  );
+  const signedTransaction = tx.serialize({
+    requireAllSignatures: true,
+    verifySignatures: true,
+  });
+  const signedTransactionSignature = getSignedTransactionSignature(tx);
+  let signature: string;
+  try {
+    signature = await connection.sendRawTransaction(signedTransaction, {
+      preflightCommitment: "confirmed",
+    });
+  } catch (error) {
+    if (!isAlreadyProcessedTransactionError(error)) {
+      throw error;
+    }
+    signature = signedTransactionSignature;
+    logger.info("tsn.intent.sender_signed_settlement_replay_confirmed", {
+      feePayer: params.operator.publicKey.toBase58(),
+      signature,
+    });
+  }
   await connection.confirmTransaction(signature, "confirmed");
 
   logger.info("tsn.intent.sender_signed_settlement_submitted", {

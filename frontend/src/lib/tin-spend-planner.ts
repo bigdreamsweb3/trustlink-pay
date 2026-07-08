@@ -97,11 +97,18 @@ function tinBalancesToSelections(
 ) {
   const selections = [];
   let remaining = spendBaseUnits;
-  for (const balance of balances) {
+  const spendableBalances = balances
+    .filter((balance) => balance.tokenMintAddress === tokenMintAddress)
+    .filter((balance) => BigInt(balance.balanceBaseUnits) > 0n)
+    .sort((left, right) => {
+      const leftBalance = BigInt(left.balanceBaseUnits);
+      const rightBalance = BigInt(right.balanceBaseUnits);
+      return leftBalance > rightBalance ? -1 : leftBalance < rightBalance ? 1 : 0;
+    });
+
+  for (const balance of spendableBalances) {
     if (remaining <= 0n) break;
-    if (balance.tokenMintAddress !== tokenMintAddress) continue;
     const available = BigInt(balance.balanceBaseUnits);
-    if (available <= 0n) continue;
     const amount = available >= remaining ? remaining : available;
     selections.push({
       pruIndex: balance.pruIndex,

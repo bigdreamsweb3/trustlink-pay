@@ -1,6 +1,6 @@
 # TrustLink Pay Documentation
 
-TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, Transfer Identity, PRU routing, and TSN settlement.
+TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, Transfer Identity, PRU routing, and the Transfer Settlement Network (TSN).
 
 The product goal is simple:
 
@@ -10,17 +10,17 @@ The documentation is part of the product. It should help a developer understand 
 
 ## Read This First
 
-| Document | Start here when you want to understand |
-| --- | --- |
-| [START-HERE.md](./START-HERE.md) | Plain-English onboarding for the whole payment system |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | How the product, identity, privacy, settlement, and liquidity layers fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIS, TINs, PRUs, route authentication, and identity resolution |
-| [TSN.md](./TSN.md) | TSN payment execution, PRU-funded spending, and fee distribution |
-| [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers |
-| [API.md](./API.md) | TrustLink backend APIs vs TSN mempool APIs |
-| [DEVELOPER.md](./DEVELOPER.md) | Local development, service boundaries, commands, and integration rules |
-| [SECURITY.md](./SECURITY.md) | Security boundaries, privacy guarantees, and limits |
-| [FAQ.md](./FAQ.md) | Direct answers to common product and protocol questions |
+| Document                                                               | Start here when you want to understand                                            |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [START-HERE.md](./START-HERE.md)                                       | Plain-English onboarding for the whole payment system                             |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)                                   | How the product, identity, privacy, settlement, and liquidity layers fit together |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIS, TINs, PRUs, route authentication, and identity resolution                    |
+| [TSN.md](./TSN.md)                                                     | TSN payment execution, PRU-funded spending, and fee distribution                  |
+| [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers              |
+| [API.md](./API.md)                                                     | TrustLink backend APIs vs TSN mempool APIs                                        |
+| [DEVELOPER.md](./DEVELOPER.md)                                         | Local development, service boundaries, commands, and integration rules            |
+| [SECURITY.md](./SECURITY.md)                                           | Security boundaries, privacy guarantees, and limits                               |
+| [FAQ.md](./FAQ.md)                                                     | Direct answers to common product and protocol questions                           |
 
 ## Main Concepts
 
@@ -32,9 +32,9 @@ It gives a user a Transfer Identity that can include a 10-digit TIN, public disp
 
 ### TSN: Transfer Settlement Network Protocol
 
-TSN means **Transfer Settlement Network Protocol**.
+TSN means **Transfer Settlement Network**.
 
-It is the settlement layer. It separates the sender funding step from the recipient payout step so the chain does not show a simple sender-wallet-to-recipient-wallet payment graph.
+It is the settlement layer that coordinates Payment Intents, Escrow Holds, Cranker execution, and Settlement Proofs so the chain does not show a simple sender-wallet-to-recipient-wallet payment graph.
 
 ### PRU: Privacy Receiving Unit
 
@@ -77,25 +77,25 @@ It proves that a payment or settlement record exists without revealing the full 
 
 ## Current Program IDs
 
-| Program | Devnet ID |
-| --- | --- |
+| Program           | Devnet ID                                     |
+| ----------------- | --------------------------------------------- |
 | Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| TSN               | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Repository Map
 
-| Path | Purpose |
-| --- | --- |
-| `frontend/` | TrustLink Pay web app |
-| `backend/` | API, user records, payment records, and notifications |
-| `tin-system/tins-registrar/` | TIS Solana program |
-| `tin-system/tins-sdk/` | Transfer Identity SDK |
-| `tsn-protocol/tsn-sdk/` | TSN SDK used by apps and services |
-| `tsn-protocol/tsn-cranker-op-daemon/` | Reference Cranker operator daemon |
-| `tsn-protocol/tsn-cranker-sdk/` | Cranker SDK and CLI helpers |
-| `tsn-protocol/tsn-mempool-backend/` | TSN mempool and epoch coordinator |
-| `tsn-protocol/tsn-mempool-frontend/` | Mempool and epoch explorer |
-| `tsn-protocol/tsn-rpc-gateway/` | Shared Solana RPC gateway |
+| Path                                  | Purpose                                               |
+| ------------------------------------- | ----------------------------------------------------- |
+| `frontend/`                           | TrustLink Pay web app                                 |
+| `backend/`                            | API, user records, payment records, and notifications |
+| `tin-system/tins-registrar/`          | TIS Solana program                                    |
+| `tin-system/tins-sdk/`                | Transfer Identity SDK                                 |
+| `tsn-protocol/tsn-sdk/`               | TSN SDK used by apps and services                     |
+| `tsn-protocol/tsn-cranker-op-daemon/` | Reference Cranker operator daemon                     |
+| `tsn-protocol/tsn-cranker-sdk/`       | Cranker SDK and CLI helpers                           |
+| `tsn-protocol/tsn-mempool-backend/`   | TSN mempool and epoch coordinator                     |
+| `tsn-protocol/tsn-mempool-frontend/`  | Mempool and epoch explorer                            |
+| `tsn-protocol/tsn-rpc-gateway/`       | Shared Solana RPC gateway                             |
 
 ## Important Limits
 

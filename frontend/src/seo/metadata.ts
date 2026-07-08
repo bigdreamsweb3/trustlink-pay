@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
 import { BASE_URL, getAbsoluteUrl } from "./routes";
 
-export const defaultTitle = "TrustLink Pay | Private Identity-First Crypto Payments on Solana";
+export const defaultTitle = "TrustLink Pay | Identity-First Blockchain Payment Solution on Solana";
 export const defaultDescription =
-  "Send crypto payments using a phone number or Transfer Identity instead of wallet addresses with private settlement through TSN.";
+  "TrustLink Pay is an identity-first blockchain payment solution for stablecoin payments on Solana, powered by Transfer Identity, PRUs, and TSN settlement.";
 
 export const defaultKeywords = [
   "TrustLink Pay",
   "crypto payments",
+  "blockchain solution",
+  "blockchain payment solution",
+  "blockchain payment system",
+  "blockchain payment protocol",
+  "stablecoin payment solution",
+  "identity-first blockchain solution",
+  "blockchain identity",
+  "blockchain settlement",
+  "blockchain payments on Solana",
   "send crypto with phone number",
   "stablecoin payments",
   "Solana payments",
@@ -65,7 +74,7 @@ export function constructMetadata({
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: title ? `${title} - TrustLink Pay` : "TrustLink Pay - Identity-First Crypto Payments",
+          alt: title ? `${title} - TrustLink Pay` : "TrustLink Pay - Identity-first blockchain payment solution",
         },
       ],
     },

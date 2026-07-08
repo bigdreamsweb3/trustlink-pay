@@ -1,6 +1,8 @@
 
 ## TSN PRU Intent Validation
 
+TrustLink Pay is the user-facing [blockchain payment solution](../README.md). TSN is the settlement protocol that validates and executes the payment work behind that system.
+
 ### Summary
 
 TSN Crankers must reject a PRU-backed settlement before touching funds unless all seven security gates pass. This makes a PRU signature useful only inside the real TrustLink TSN vault, for one TIN, one PRU index, one destination hash, one amount, one nonce, and one short expiry window.

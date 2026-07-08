@@ -1,21 +1,22 @@
 # Architecture
 
-TrustLink Pay has one product surface and several protocol layers.
+TrustLink Pay is a Web3 payment system with one user-facing product surface and several protocol layers. For the product overview, start from the [identity-first payments](../README.md) homepage.
 
-The product surface is simple: users send stablecoins to a TIN.
+The product surface is simple: users send stablecoins to a 10-digit TIN.
 
-The protocol layers make that possible without turning every payment into a simple public wallet-to-wallet graph.
+The architecture exists so that identity, privacy, settlement, execution, and accounting stay separate. That separation is what makes TrustLink Pay useful as an identity-first blockchain payment solution instead of another wallet-address transfer UI.
 
 ## What Is This?
 
 TrustLink Pay is made of:
 
-1. **Transfer Identity System**: payment identity
-2. **TSN**: settlement
-3. **Crankers**: execution
-4. **Vaults**: payout liquidity
-5. **Epoch accounting**: reimbursement and recovery
-6. **TrustLink app and backend**: user experience and records
+1. **TrustLink Pay app**: user experience, payment records, and identity display
+2. **TIS**: Transfer Identity System for TIN identity records
+3. **Privacy layer**: PRU routes and authenticated route access
+4. **TSN**: Transfer Settlement Network Protocol for payment settlement
+5. **Crankers**: operator execution and recovery work
+6. **Vaults**: payout liquidity
+7. **Epoch accounting**: reimbursement, recovery, and auditability
 
 ## Why This Structure Exists
 
@@ -29,9 +30,15 @@ TrustLink Pay avoids making that the normal payment path. It separates identity,
 
 ## How The Layers Work
 
-### Transfer Identity System: Identity Layer
+### Product Layer: TrustLink Pay
 
-The Transfer Identity System creates and resolves payment identities.
+TrustLink Pay is the payment system users and developers interact with.
+
+The frontend collects payment input, shows identity confidence, requests wallet signatures, displays payment state, and helps users understand the status of their money. The backend stores app-local records such as user profile data, payment history, notification state, and display-safe status. It does not act as a bridge for TSN protocol mutations.
+
+### Identity Layer: TIS
+
+TIS creates and resolves Transfer Identities.
 
 A Transfer Identity is the public payment identity. It can include a 10-digit TIN that is shared like an account number. The wallet address is not the normal payment identity.
 
@@ -41,11 +48,20 @@ The Transfer Identity registry can store:
 - public display or legal-name status
 - encrypted social identities
 - verification platform references
-- routing metadata needed by integrations
+- encrypted recovery material and route commitments
+- SHA-256 owner pubkey commitments instead of readable owner wallet addresses
 
-### TSN: Settlement Layer
+### Privacy Layer: PRUs
 
-TSN handles payment settlement.
+PRUs are Privacy Receiving Units.
+
+Every upgraded Transfer Identity has 30 PRUs by default. Recipient payouts go to PRU routes instead of the owner wallet. The authenticated owner can load public PRU addresses for balance reads, but the frontend never receives PRU private keys or the TIN Master Seed.
+
+TIN balance is the sum of supported token balances across those PRUs. In the send flow, TrustLink Pay can use PRU funds first and then add connected-wallet top-up only when the user explicitly authorizes that mixed path.
+
+### Settlement Layer: TSN
+
+TSN is the Transfer Settlement Network Protocol.
 
 It accepts sender-authorized payment work, moves funds through an escrow path, and coordinates recipient payout through vault liquidity.
 
@@ -79,28 +95,27 @@ Each epoch has an isolated reservoir called a PEA. The PEA keeps that epoch's ac
 
 ## Example Flow
 
-```text
-Recipient has a TIN
-Sender enters that TIN
-TrustLink resolves public identity details
-Sender approves payment
-Payment enters the TSN mempool
-Cranker validates the work
-Sender-side escrow is created
-Recipient is paid from vault liquidity
-Payment commitment is recorded
-Epoch root is calculated
-Crankers compete to settle or recover the epoch
-```
+1. Recipient has a Transfer Identity with a 10-digit TIN and finalized PRU route.
+2. Sender enters that TIN.
+3. TrustLink resolves display-safe identity and verification context.
+4. Sender approves a canonical TSN payment message.
+5. Payment enters the TSN mempool as settlement work.
+6. Cranker validates the work, nonce, expiry, amount, route, and signatures.
+7. Sender-side funds enter the settlement path.
+8. Recipient is paid into a PRU route.
+9. Commitment and epoch records make the settlement auditable.
+10. Recovery or reimbursement work handles unresolved settlement state.
 
 ## Security Considerations
 
 - Payment identity is a TIN, not a raw wallet address.
+- TIS stores an owner pubkey hash commitment, not a readable owner wallet authority.
+- The frontend never derives PRUs and never receives the TIN Master Seed.
 - Public records use commitments and roots where possible.
 - Crankers must validate structure, signatures, routing, and timing before acting.
 - Epoch reservoirs limit the blast radius of accounting problems.
 - Cranker reputation and slashing are part of the operator safety model.
-- Governance and operator tooling should warn before epoch handoff or recovery fails.
+- Operator tooling should warn before epoch handoff or recovery fails.
 
 ## Important Limits
 
@@ -114,13 +129,14 @@ The system must never claim impossible privacy guarantees.
 
 | Component | Path |
 | --- | --- |
-| Transfer Identity program | `tin-system/tins-registrar/program/` |
-| TSN program | `tsn/protocol/` |
-| TSN SDK | `tsn-sdk/` |
-| Cranker daemon | `tsn-cranker-op-daemon/` |
-| Cranker SDK | `tsn-cranker-sdk/` |
-| Mempool backend | `tsn-mempool-backend/` |
-| Mempool explorer | `tsn-mempool-frontend/` |
+| TIS Solana program | `tin-system/tins-registrar/program/` |
+| Transfer Identity SDK | `tin-system/tins-sdk/` |
+| TSN SDK | `tsn-protocol/tsn-sdk/` |
+| Cranker daemon | `tsn-protocol/tsn-cranker-op-daemon/` |
+| Cranker SDK | `tsn-protocol/tsn-cranker-sdk/` |
+| Mempool backend | `tsn-protocol/tsn-mempool-backend/` |
+| Mempool explorer | `tsn-protocol/tsn-mempool-frontend/` |
+| RPC gateway | `tsn-protocol/tsn-rpc-gateway/` |
 | TrustLink app | `frontend/` |
 | TrustLink API | `backend/` |
 

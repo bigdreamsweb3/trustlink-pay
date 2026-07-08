@@ -59,7 +59,10 @@ const transparentFeesRows = [
   ["Transfer amount", "The amount to be sent"],
   ["Solana network fee", "Current chain transaction fee"],
   ["Sender fee", "Covers sender-side TSN execution and network sponsorship"],
-  ["Recipient fee", "Deducted from the recipient payout and split by TSN policy"],
+  [
+    "Recipient fee",
+    "Deducted from the recipient payout and split by TSN policy",
+  ],
   ["Recipient readiness", "Status of the recipient identity"],
 ];
 
@@ -262,21 +265,24 @@ const securityFeatures = [
 
 const footerLinks = [
   { label: "App", href: "/app" },
-  { label: "Dashboard", href: "/dashboard" },
   {
     label: "Docs",
     href: "https://github.com/bigdreamsweb3/trustlink-pay#readme",
   },
-  { label: "TSN Explorer", href: "/tsn-mempool" },
+  { label: "TSN Explorer", href: "/#" },
 ] as const;
 
 const communityLinks = [
+  // {
+  //   label: "Discord",
+  //   href: "#",
+  //   icon: MessageCircle,
+  // },
   {
-    label: "Discord",
-    href: "https://discord.gg/trustlink",
-    icon: MessageCircle,
+    label: "Twitter",
+    href: "https://twitter.com/trustlinklabs",
+    icon: Twitter,
   },
-  { label: "Twitter", href: "https://twitter.com/trustlinkpay", icon: Twitter },
   {
     label: "GitHub",
     href: "https://github.com/bigdreamsweb3/trustlink-pay",
@@ -314,9 +320,10 @@ export function LandingPage() {
             </h1>
 
             <p className="tl-body-lg mt-5 pr-3 max-w-[680px] text-[var(--text-soft)]">
-              Pay anyone on Solana using a phone number or 10-digit TIN instead
-              of a wallet address, with private settlement and SAS-powered
-              identity verification.
+              TrustLink Pay is an identity-first blockchain payment solution for
+              stablecoin payments on Solana. Pay anyone using a phone number or
+              10-digit TIN instead of a wallet address, with private settlement
+              and SAS-powered identity verification.
             </p>
 
             {/* HERO CARDS */}
@@ -391,8 +398,65 @@ export function LandingPage() {
       </section>
 
       {/* ============================================================ */}
-      {/* SECTION 01 — IDENTITY */}
+      {/* SECTION 00 — BLOCKCHAIN SOLUTION */}
       {/* ============================================================ */}
+      <section
+        id="blockchain-solution"
+        className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
+      >
+        <SectionLabel index="00" title="Blockchain Solution" />
+
+        <div className="mt-6 grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <h2 className="tl-h2 mt-5">
+              Why TrustLink Pay Is a Modern Blockchain Solution
+            </h2>
+            <p className="tl-body-lg mt-4 text-text-soft">
+              A useful blockchain solution should make payments easier for
+              people while preserving the verifiability that makes blockchain
+              settlement valuable. TrustLink Pay does this by combining
+              identity-first payments, stablecoin-native flows, private
+              settlement routing, and developer APIs.
+            </p>
+            <p className="tl-body-lg mt-4 text-text-soft">
+              TrustLink Pay is the Web3 payment system users interact with. TSN
+              is the settlement protocol that moves payment work through
+              Crankers, PRU routes, and escrow-backed blockchain settlement on
+              Solana.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                title: "Blockchain Payments Without Wallet Addresses",
+                desc: "Users can pay a phone number or TIN while the system resolves identity and settlement routes behind the scenes.",
+              },
+              {
+                title: "Identity-First Blockchain Solution",
+                desc: "The Transfer Identity System connects payment identity, verification context, and PRU route commitments.",
+              },
+              {
+                title: "Private Blockchain Settlement",
+                desc: "TSN separates sender funding from recipient payout so payments do not look like simple wallet-to-wallet transfers.",
+              },
+              {
+                title: "Developer-Friendly Payment Protocol",
+                desc: "SDKs expose identity resolution, payment authorization, fee transparency, and settlement status for apps building on TrustLink Pay.",
+              },
+            ].map(({ title, desc }) => (
+              <article
+                key={title}
+                className="tl-panel rounded-[22px] px-4 py-4"
+              >
+                <h3 className="font-semibold text-text">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-text-faint">{desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section
         id="identity"
         className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
@@ -412,10 +476,10 @@ export function LandingPage() {
             <p className="tl-body-lg mt-4 text-text-soft">
               Instead of copying complex wallet addresses, users pay a{" "}
               <strong>phone number</strong> or a permanent{" "}
-              <strong>Transfer Identity</strong> with a 10-digit TIN.
-              Each upgraded Transfer Identity receives 30 Privacy Receiving
-              Units (PRUs), so received funds land in private payment routes
-              that are still controlled by the user's wallet proof.
+              <strong>Transfer Identity</strong> with a 10-digit TIN. Each
+              upgraded Transfer Identity receives 30 Privacy Receiving Units
+              (PRUs), so received funds land in private payment routes that are
+              still controlled by the user's wallet proof.
             </p>
           </div>
 
@@ -502,9 +566,7 @@ export function LandingPage() {
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
-                <span className="text-text-soft">
-                  PRU route authentication
-                </span>
+                <span className="text-text-soft">PRU route authentication</span>
               </div>
             </div>
           </div>

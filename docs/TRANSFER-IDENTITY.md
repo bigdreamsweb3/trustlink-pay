@@ -2,7 +2,7 @@
 
 **Version: Stable PRU Architecture v1**
 
-The **Transfer Identity System** is the identity layer used by TrustLink Pay.
+The **Transfer Identity System** is the identity layer used by TrustLink Pay. It supports the [blockchain payment solution](../README.md) by giving users a payment identity that does not require sharing a wallet address.
 
 It gives a user a Transfer Identity profile. That profile can contain a 10-digit **TIN** (**Transfer Identity Number**), a public display name, verified identity fields, encrypted social identity links, and PRU routing commitments.
 

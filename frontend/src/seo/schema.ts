@@ -23,7 +23,8 @@ export function getOrganizationSchema() {
       "https://twitter.com/0xbigdream",
       "https://github.com/bigdreamsweb3/trustlink-pay",
     ],
-    description: "Web3 payment protocol and identity-first crypto payment system on Solana.",
+    description:
+      "TrustLink Pay is an identity-first blockchain payment solution for stablecoin payments on Solana.",
   };
 }
 
@@ -36,7 +37,8 @@ export function getWebSiteSchema() {
     "@type": "WebSite",
     name: "TrustLink Pay",
     url: BASE_URL,
-    description: "Web3 payment protocol for secure, noncustodial crypto payments.",
+    description:
+      "Identity-first blockchain payment solution for stablecoin payments, Transfer Identity resolution, and TSN settlement on Solana.",
   };
 }
 
@@ -56,7 +58,17 @@ export function getSoftwareApplicationSchema() {
       price: "0",
       priceCurrency: "USD",
     },
-    description: "Send stablecoins using phone numbers on Solana with private settlement through TSN.",
+    featureList: [
+      "Identity-first blockchain payments",
+      "Phone number and TIN payments",
+      "Transfer Identity resolution",
+      "PRU-routed payment balances",
+      "TSN private settlement",
+      "Stablecoin payment support",
+      "Developer payment APIs",
+    ],
+    description:
+      "A Web3 payment system and stablecoin payment solution for sending blockchain payments on Solana using phone numbers, TINs, and private TSN settlement.",
   };
 }
 

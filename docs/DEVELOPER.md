@@ -1,6 +1,6 @@
 # Developer Guide
 
-This guide is for developers working on TrustLink Pay.
+This guide is for developers working on TrustLink Pay. TrustLink Pay gives developers a [payment protocol](../README.md) surface for identity-first blockchain payments on Solana.
 
 ## What Is This?
 

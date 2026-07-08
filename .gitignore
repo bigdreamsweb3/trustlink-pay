@@ -3,6 +3,7 @@
 Thumbs.db
 .vscode/
 .idea/
+.venv/
 
 .env
 .fb_creds/

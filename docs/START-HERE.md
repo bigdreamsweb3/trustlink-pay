@@ -1,12 +1,10 @@
 # Start Here
 
-**Version: Stable PRU Architecture v1**
-
-This document explains TrustLink Pay without assuming you know Solana.
+This document explains TrustLink Pay without assuming you already know Solana payment architecture.
 
 ## What Is TrustLink Pay?
 
-TrustLink Pay is a payment system that lets a person receive money through a **Transfer Identity**.
+TrustLink Pay is an identity-first Web3 payment system that lets a person receive stablecoins through a **Transfer Identity**.
 
 A Transfer Identity can contain a 10-digit **TIN** (**Transfer Identity Number**), public-safe identity context, verification fields, and PRU routing commitments. The wallet address stays behind the payment system.
 
@@ -26,15 +24,21 @@ TrustLink Pay tries to bring that kind of experience to stablecoin payments.
 
 ## The Main Parts
 
-### Transfer Identity System
+### TIS: Transfer Identity System
 
-The Transfer Identity System is the identity layer.
+TIS is the identity layer.
 
 It creates and resolves Transfer Identities. A Transfer Identity can have a 10-digit TIN, public identity context, a display name, verified legal-name status, encrypted social links, and PRU commitments.
 
+### PRUs
+
+PRU means **Privacy Receiving Unit**.
+
+Every upgraded Transfer Identity has 30 PRUs by default. Recipient payouts land in PRU routes instead of the public owner wallet. The user's TIN balance is the sum of supported token balances across those PRUs.
+
 ### TSN
 
-TSN is the **Transfer Settlement Network**.
+TSN is the **Transfer Settlement Network Protocol**.
 
 It handles the payment settlement path. It separates sender funding from recipient payout.
 
@@ -70,7 +74,7 @@ It proves that something exists without revealing everything inside it. TrustLin
 4. The payment enters TSN as settlement work.
 5. A Cranker validates the work.
 6. Sender-side funds move into the escrow path.
-7. A Cranker pays Bob from vault liquidity.
+7. A Cranker pays Bob into a PRU route.
 8. The system records commitments and epoch accounting.
 9. Recovery or reimbursement happens through the epoch process if needed.
 
@@ -88,13 +92,14 @@ The app should show users:
 - the recipient display name if available
 - verification status if available
 - payment status
+- TIN balance and wallet balance as one usable payment balance where appropriate
 - escrow or payout transaction references where appropriate
 
 The app should not expose raw private routing data, phone numbers, or internal Cranker-only payloads.
 
-## TIN Upgrade Boundary
+## Protocol Boundary
 
-Legacy TIN creation, upgrade, and update follow one rule:
+TIN creation, upgrade, and update follow one rule:
 
 - frontend signs the owner intent
 - frontend sends that signed intent directly to the TSN mempool backend
@@ -102,6 +107,22 @@ Legacy TIN creation, upgrade, and update follow one rule:
 - Crankers perform the on-chain Transfer Identity mutation
 
 TrustLink backend is not a bridge for TSN protocol work. It can store app-local identity state and display status, but it must not proxy TIN upgrade or creation requests into TSN.
+
+Payment execution follows the same boundary. The frontend signs canonical TSN messages. TSN mempool and Crankers handle settlement work. TrustLink backend records product state and display-safe status; it does not become the settlement protocol.
+
+## Developer Mental Model
+
+Use this rule when deciding where code belongs:
+
+| Concern | Belongs in |
+| --- | --- |
+| User screens, confirmation, and status display | TrustLink frontend |
+| App records, notifications, payment history | TrustLink backend |
+| TIN creation or upgrade intents | TSN mempool |
+| PRU route material and spend permits | TSN mempool and Crankers |
+| On-chain settlement execution | TSN program and Crankers |
+| Transfer Identity registry mutation | TIS program through Crankers |
+| Solana RPC routing | TSN RPC gateway |
 
 ## Community And Ecosystem
 
@@ -113,6 +134,8 @@ TrustLink Pay is also shaped by public feedback, research, and external discussi
 
 - [Architecture](./ARCHITECTURE.md)
 - [Transfer Identity System](./TRANSFER-IDENTITY.md)
+- [TSN](./TSN.md)
+- [Developer Guide](./DEVELOPER.md)
 - [TSN commitment settlement](./TSN-COMMITMENT-SETTLEMENT.md)
 - [Cranker guide](./CRANKER.md)
 - [Liquidity](./LIQUIDITY.md)

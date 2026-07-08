@@ -1,43 +1,46 @@
 # TrustLink Pay Documentation
 
-TrustLink Pay is an identity-first payment system on Solana.
+TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, Transfer Identity, PRU routing, and TSN settlement.
 
 The product goal is simple:
 
-Send stablecoins to a Transfer Identity instead of a wallet address.
+Send stablecoins to a 10-digit payment identity instead of a wallet address.
 
-The protocol keeps the payment experience simple while separating the public parts of a payment from the private parts. It does this with Transfer Identities, TSN settlement, Cranker operators, liquidity vaults, and epoch-based accounting.
+The documentation is part of the product. It should help a developer understand what TrustLink Pay does, why the architecture exists, and how each layer should be integrated without needing a founder explanation.
 
 ## Read This First
 
 | Document | Start here when you want to understand |
 | --- | --- |
-| [START-HERE.md](./START-HERE.md) | The plain-English overview of the whole system |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | How Transfer Identity, TSN, Crankers, vaults, and the app fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | Transfer Identity records, TINs, PRUs, and identity resolution |
+| [START-HERE.md](./START-HERE.md) | Plain-English onboarding for the whole payment system |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | How the product, identity, privacy, settlement, and liquidity layers fit together |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIS, TINs, PRUs, route authentication, and identity resolution |
+| [TSN.md](./TSN.md) | TSN payment execution, PRU-funded spending, and fee distribution |
 | [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers |
-| [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md) | Confidential settlement using commitments and epoch reservoirs |
-| [RPC-GATEWAY.md](./RPC-GATEWAY.md) | Shared Solana RPC gateway and upstream routing |
-| [CRANKER.md](./CRANKER.md) | What Crankers do and how they are rewarded |
-| [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity, reimbursements, and recovery |
-| [SECURITY.md](./SECURITY.md) | Security boundaries and privacy limits |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | How to build, deploy, and avoid failed deploy buffers |
-| [DOCUMENTATION-AUDIT.md](./DOCUMENTATION-AUDIT.md) | What changed in the documentation modernization pass |
-| [MENTIONS.md](./MENTIONS.md) | Community Mentions and external discussions about TrustLink Pay |
+| [API.md](./API.md) | TrustLink backend APIs vs TSN mempool APIs |
+| [DEVELOPER.md](./DEVELOPER.md) | Local development, service boundaries, commands, and integration rules |
+| [SECURITY.md](./SECURITY.md) | Security boundaries, privacy guarantees, and limits |
+| [FAQ.md](./FAQ.md) | Direct answers to common product and protocol questions |
 
 ## Main Concepts
 
-### Transfer Identity System
+### TIS: Transfer Identity System
 
-The Transfer Identity System is the identity layer.
+TIS is the identity layer.
 
-It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and PRU commitments. The TIN is easier to read than a wallet address and can carry public verification context.
+It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and PRU commitments. The TIN is easier to read than a wallet address and can carry safe public verification context.
 
-### TSN
+### TSN: Transfer Settlement Network Protocol
 
-TSN means **Transfer Settlement Network**.
+TSN means **Transfer Settlement Network Protocol**.
 
 It is the settlement layer. It separates the sender funding step from the recipient payout step so the chain does not show a simple sender-wallet-to-recipient-wallet payment graph.
+
+### PRU: Privacy Receiving Unit
+
+A PRU is a privacy receiving route owned by a Transfer Identity.
+
+Every upgraded Transfer Identity has 30 PRUs by default. A TIN balance is the sum of supported token balances across those PRUs. The app can show one spendable balance to the user while TSN keeps the receiving and spending path routed through PRUs.
 
 ### Crankers
 
@@ -63,6 +66,15 @@ A commitment is a public hash.
 
 It proves that a payment or settlement record exists without revealing the full payment route. TrustLink Pay uses lightweight `PaymentCommitment` accounts and aggregate root hashes so public verification does not require exposing the full payment graph.
 
+## Developer Journey
+
+1. Read [Start Here](./START-HERE.md) to understand the product model.
+2. Read [Architecture](./ARCHITECTURE.md) to understand layer boundaries.
+3. Read [Transfer Identity](./TRANSFER-IDENTITY.md) before touching TIN, PRU, or route-auth code.
+4. Read [TSN](./TSN.md) before touching payment execution or Cranker work.
+5. Read [Developer Guide](./DEVELOPER.md) before running services locally.
+6. Read [Security](./SECURITY.md) before changing signing, route access, or private payload handling.
+
 ## Current Program IDs
 
 | Program | Devnet ID |
@@ -76,15 +88,14 @@ It proves that a payment or settlement record exists without revealing the full 
 | --- | --- |
 | `frontend/` | TrustLink Pay web app |
 | `backend/` | API, user records, payment records, and notifications |
-| `tin-system/tins-registrar/` | Transfer Identity on-chain program |
+| `tin-system/tins-registrar/` | TIS Solana program |
 | `tin-system/tins-sdk/` | Transfer Identity SDK |
-| `tsn/protocol/` | TSN on-chain program |
-| `tsn-sdk/` | TSN SDK used by apps and services |
-| `tsn-cranker-op-daemon/` | Reference Cranker operator daemon |
-| `tsn-cranker-sdk/` | Cranker SDK and CLI helpers |
-| `tsn-mempool-backend/` | TSN mempool and epoch coordinator |
-| `tsn-mempool-frontend/` | Mempool and epoch explorer |
-| `tsn-epoch-records/` | Epoch records and operational notes |
+| `tsn-protocol/tsn-sdk/` | TSN SDK used by apps and services |
+| `tsn-protocol/tsn-cranker-op-daemon/` | Reference Cranker operator daemon |
+| `tsn-protocol/tsn-cranker-sdk/` | Cranker SDK and CLI helpers |
+| `tsn-protocol/tsn-mempool-backend/` | TSN mempool and epoch coordinator |
+| `tsn-protocol/tsn-mempool-frontend/` | Mempool and epoch explorer |
+| `tsn-protocol/tsn-rpc-gateway/` | Shared Solana RPC gateway |
 
 ## Important Limits
 

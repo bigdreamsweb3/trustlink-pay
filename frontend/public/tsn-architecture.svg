@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Transfer Settlement Network architecture diagram</title>
+  <desc id="desc">A flow diagram showing payment intent, escrow hold, cranker execution, and settlement proof for the Transfer Settlement Network.</desc>
+  <rect width="1600" height="900" rx="32" fill="#07111f"/>
+  <rect x="60" y="60" width="1480" height="780" rx="28" fill="#0c1728" stroke="#2a3a58" stroke-width="2"/>
+  <text x="110" y="125" fill="#f5f7ff" font-size="30" font-family="Arial, Helvetica, sans-serif" font-weight="700">Transfer Settlement Network — TrustLink Pay</text>
+  <text x="110" y="160" fill="#86b4ff" font-size="18" font-family="Arial, Helvetica, sans-serif">Payment Intent → Escrow Hold → Cranker Execution → Settlement Proof</text>
+
+  <rect x="120" y="240" width="300" height="150" rx="20" fill="#13243f" stroke="#4c7cff" stroke-width="2"/>
+  <text x="170" y="295" fill="#f5f7ff" font-size="26" font-family="Arial, Helvetica, sans-serif" font-weight="700">1. Payment Intent</text>
+  <text x="150" y="330" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">Sender authorizes a</text>
+  <text x="150" y="355" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">private settlement intent.</text>
+
+  <rect x="470" y="240" width="300" height="150" rx="20" fill="#13243f" stroke="#4c7cff" stroke-width="2"/>
+  <text x="520" y="295" fill="#f5f7ff" font-size="26" font-family="Arial, Helvetica, sans-serif" font-weight="700">2. Escrow Hold</text>
+  <text x="500" y="330" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">Funds move into escrow-backed</text>
+  <text x="500" y="355" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">settlement paths.</text>
+
+  <rect x="820" y="240" width="300" height="150" rx="20" fill="#13243f" stroke="#4c7cff" stroke-width="2"/>
+  <text x="870" y="295" fill="#f5f7ff" font-size="26" font-family="Arial, Helvetica, sans-serif" font-weight="700">3. Cranker Execution</text>
+  <text x="850" y="330" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">Independent operators execute</text>
+  <text x="850" y="355" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">settlement work on Solana.</text>
+
+  <rect x="1170" y="240" width="310" height="150" rx="20" fill="#13243f" stroke="#4c7cff" stroke-width="2"/>
+  <text x="1210" y="295" fill="#f5f7ff" font-size="26" font-family="Arial, Helvetica, sans-serif" font-weight="700">4. Settlement Proof</text>
+  <text x="1200" y="330" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">Execution is recorded as</text>
+  <text x="1200" y="355" fill="#c6d4f0" font-size="18" font-family="Arial, Helvetica, sans-serif">verifiable on-chain evidence.</text>
+
+  <path d="M420 315 L470 315" stroke="#7ad8ff" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M770 315 L820 315" stroke="#7ad8ff" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M1120 315 L1170 315" stroke="#7ad8ff" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L8,3 z" fill="#7ad8ff"/>
+    </marker>
+  </defs>
+
+  <rect x="200" y="520" width="1200" height="220" rx="24" fill="#0f213d" stroke="#2d4f7d" stroke-width="2"/>
+  <text x="250" y="585" fill="#f5f7ff" font-size="24" font-family="Arial, Helvetica, sans-serif" font-weight="700">Why it matters</text>
+  <text x="250" y="635" fill="#c6d4f0" font-size="22" font-family="Arial, Helvetica, sans-serif">TrustLink Pay turns identity-first payments into a private, cryptographically verifiable settlement flow.</text>
+  <text x="250" y="670" fill="#c6d4f0" font-size="22" font-family="Arial, Helvetica, sans-serif">TSN makes that flow executable, auditable, and economically coordinated on Solana.</text>
+</svg>

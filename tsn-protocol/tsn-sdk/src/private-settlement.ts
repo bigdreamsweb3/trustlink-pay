@@ -83,7 +83,9 @@ export type PruSpendPermit = {
 };
 
 function concatBytes(parts: Uint8Array[]) {
-  const output = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+  const output = new Uint8Array(
+    parts.reduce((total, part) => total + part.length, 0),
+  );
   let offset = 0;
   for (const part of parts) {
     output.set(part, offset);
@@ -125,11 +127,13 @@ function instructionDiscriminator(name: string) {
 }
 
 function assertBytes32(value: Uint8Array, label: string) {
-  if (value.length !== 32) throw new Error(`${label} must contain exactly 32 bytes`);
+  if (value.length !== 32)
+    throw new Error(`${label} must contain exactly 32 bytes`);
 }
 
 function assertSignature(value: Uint8Array) {
-  if (value.length !== 64) throw new Error("permit signature must contain exactly 64 bytes");
+  if (value.length !== 64)
+    throw new Error("permit signature must contain exactly 64 bytes");
 }
 
 export function getTsnPrivateSettlementConfigPda() {
@@ -162,7 +166,9 @@ export function createPrivateSettlementNullifier(params: {
 }) {
   assertBytes32(params.secret, "private settlement secret");
   const domain =
-    params.action === "payout" ? PRIVATE_PAYOUT_DOMAIN : PRIVATE_RECOVERY_DOMAIN;
+    params.action === "payout"
+      ? PRIVATE_PAYOUT_DOMAIN
+      : PRIVATE_RECOVERY_DOMAIN;
   return sha256(concatBytes([domain, params.secret]));
 }
 
@@ -264,28 +270,39 @@ async function requestPrivatePermit<T>(params: {
     operator: params.operator.publicKey,
     requestedAtTs,
   });
-  const requestSignature = nacl.sign.detached(message, params.operator.secretKey);
-  const fetchImpl = (params.fetchImpl ?? globalThis.fetch).bind(globalThis) as typeof fetch;
+  const requestSignature = nacl.sign.detached(
+    message,
+    params.operator.secretKey,
+  );
+  const fetchImpl = (params.fetchImpl ?? globalThis.fetch).bind(
+    globalThis,
+  ) as typeof fetch;
   const endpoint =
     params.action === "payout"
       ? `/work/${encodeURIComponent(params.workId)}/lease-permit`
       : params.action === "recovery"
         ? `/recoveries/${encodeURIComponent(params.workId)}/lease-permit`
         : `/intents/${encodeURIComponent(params.workId)}/pru-spend-permit`;
-  const response = await fetchImpl(`${params.mempoolUrl.replace(/\/$/, "")}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(params.apiKey ? { "x-api-key": params.apiKey } : {}),
+  const response = await fetchImpl(
+    `${params.mempoolUrl.replace(/\/$/, "")}${endpoint}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(params.apiKey ? { "x-api-key": params.apiKey } : {}),
+      },
+      body: JSON.stringify({
+        operatorPubkey: params.operator.publicKey.toBase58(),
+        requestedAtTs,
+        requestSignatureBase64:
+          Buffer.from(requestSignature).toString("base64"),
+      }),
     },
-    body: JSON.stringify({
-      operatorPubkey: params.operator.publicKey.toBase58(),
-      requestedAtTs,
-      requestSignatureBase64: Buffer.from(requestSignature).toString("base64"),
-    }),
-  });
+  );
   if (!response.ok) {
-    throw new Error(`TSN permit request failed (${response.status}): ${await response.text()}`);
+    throw new Error(
+      `TSN permit request failed (${response.status}): ${await response.text()}`,
+    );
   }
   return (await response.json()) as T;
 }
@@ -332,7 +349,10 @@ export function requestPruSpendPermit(params: {
   });
 }
 
-export function getTsnPruSpendGuardPda(params: { tin: bigint | number | string; pruIndex: number }) {
+export function getTsnPruSpendGuardPda(params: {
+  tin: bigint | number | string;
+  pruIndex: number;
+}) {
   return PublicKey.findProgramAddressSync(
     [
       PRU_SPEND_GUARD_SEED,
@@ -341,6 +361,234 @@ export function getTsnPruSpendGuardPda(params: { tin: bigint | number | string; 
     ],
     PROGRAM_ID,
   )[0];
+}
+
+const SOLANA_MAX_TX_BYTES = 1232;
+const PRU_SPEND_BASE_TX_OVERHEAD_BYTES = 400;
+const PRU_SPEND_SIGNATURE_OVERHEAD_BYTES = 64;
+const PRU_SPEND_SELECTION_OVERHEAD_BYTES = 240;
+
+export function estimatePruSpendTxBytes(selectionCount: number): number {
+  const signerCount = 2 + selectionCount;
+  return (
+    PRU_SPEND_BASE_TX_OVERHEAD_BYTES +
+    signerCount * PRU_SPEND_SIGNATURE_OVERHEAD_BYTES +
+    selectionCount * PRU_SPEND_SELECTION_OVERHEAD_BYTES
+  );
+}
+
+export function maxPruSelectionsPerTx(): number {
+  let count = 1;
+  while (estimatePruSpendTxBytes(count + 1) <= SOLANA_MAX_TX_BYTES) {
+    count++;
+  }
+  return count;
+}
+
+type PruSpendSelection = {
+  tin: bigint | number | string;
+  pruIndex: number;
+  nonce: number;
+  pruAuthority: Keypair;
+  spendAuthHash: Uint8Array;
+  amountBaseUnits: bigint;
+};
+
+function buildPruSpendInstructions(params: {
+  operator: PublicKey;
+  tokenMint: PublicKey;
+  commitmentHash: Uint8Array;
+  senderFeeAmountBaseUnits: bigint;
+  selections: PruSpendSelection[];
+  escrowTokenAccountPubkey: PublicKey;
+}) {
+  const motherEscrow = getTsnMotherEscrowPda();
+  const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
+  const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
+  const verifierPda = getTsnVerifierPda();
+  const treasuryPda = getTsnTreasuryPda();
+  const treasuryTokenAccount = getAssociatedTokenAddressSync(
+    params.tokenMint,
+    treasuryPda,
+    true,
+  );
+  let remainingSenderFee = params.senderFeeAmountBaseUnits;
+  return params.selections.map((selection) => {
+    const feeForThisSelection =
+      remainingSenderFee > 0n
+        ? remainingSenderFee >= selection.amountBaseUnits
+          ? selection.amountBaseUnits
+          : remainingSenderFee
+        : 0n;
+    remainingSenderFee -= feeForThisSelection;
+    const escrowAmountForThisSelection =
+      selection.amountBaseUnits - feeForThisSelection;
+    const pruTokenAccount = getAssociatedTokenAddressSync(
+      params.tokenMint,
+      selection.pruAuthority.publicKey,
+    );
+    const pruSpendGuard = getTsnPruSpendGuardPda({
+      tin: selection.tin,
+      pruIndex: selection.pruIndex,
+    });
+    return new TransactionInstruction({
+      programId: PROGRAM_ID,
+      keys: [
+        { pubkey: params.operator, isSigner: true, isWritable: true },
+        {
+          pubkey: selection.pruAuthority.publicKey,
+          isSigner: true,
+          isWritable: false,
+        },
+        { pubkey: motherEscrow, isSigner: false, isWritable: false },
+        { pubkey: cranker, isSigner: false, isWritable: true },
+        { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
+        { pubkey: pruTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: params.tokenMint, isSigner: false, isWritable: false },
+        { pubkey: treasuryPda, isSigner: false, isWritable: false },
+        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
+        {
+          pubkey: params.escrowTokenAccountPubkey,
+          isSigner: true,
+          isWritable: true,
+        },
+        { pubkey: verifierPda, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.from(
+        concatBytes([
+          instructionDiscriminator("tsn_execute_pru_spend"),
+          encodeU64(BigInt(selection.tin)),
+          encodeU16(selection.pruIndex),
+          Uint8Array.of(selection.nonce),
+          params.commitmentHash,
+          selection.spendAuthHash,
+          encodeU64(escrowAmountForThisSelection),
+          encodeU64(feeForThisSelection),
+        ]),
+      ),
+    });
+  });
+}
+
+export type BatchedPruSpendResult = {
+  signature: string;
+  escrowTokenAccount: string;
+  batchIndex: number;
+  selectionCount: number;
+};
+
+export async function tsnExecutePruSpendOnChainBatched(params: {
+  operator: Keypair;
+  tokenMint: PublicKey;
+  commitmentHash: Uint8Array;
+  escrowAmountBaseUnits: bigint;
+  senderFeeAmountBaseUnits?: bigint;
+  escrowTokenAccount?: Keypair;
+  selections: PruSpendSelection[];
+  rpcUrl?: string;
+  maxBatchSize?: number;
+}): Promise<BatchedPruSpendResult[]> {
+  assertBytes32(params.commitmentHash, "PRU spend commitment hash");
+  if (params.escrowAmountBaseUnits <= 0n) {
+    throw new Error("escrowAmountBaseUnits must be positive");
+  }
+  if (!params.selections.length) {
+    throw new Error("at least one PRU spend selection is required");
+  }
+  const selectionTotal = params.selections.reduce(
+    (total, selection) => total + selection.amountBaseUnits,
+    0n,
+  );
+  const senderFeeAmount = params.senderFeeAmountBaseUnits ?? 0n;
+  if (selectionTotal !== params.escrowAmountBaseUnits + senderFeeAmount) {
+    throw new Error("PRU selections must equal escrow amount plus sender fee");
+  }
+
+  const maxBatch = params.maxBatchSize ?? maxPruSelectionsPerTx();
+  const connection = new Connection(
+    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
+    "confirmed",
+  );
+  const escrowTokenAccount = params.escrowTokenAccount ?? Keypair.generate();
+
+  const feeToAllocate = senderFeeAmount;
+  const amountToEscrow = params.escrowAmountBaseUnits;
+  const batches: {
+    selections: PruSpendSelection[];
+    batchAmount: bigint;
+    batchFee: bigint;
+  }[] = [];
+  let feeRemaining = feeToAllocate;
+  let amountRemaining = amountToEscrow;
+
+  for (let i = 0; i < params.selections.length; i += maxBatch) {
+    const batchSelections = params.selections.slice(i, i + maxBatch);
+    const batchSelectionTotal = batchSelections.reduce(
+      (sum, s) => sum + s.amountBaseUnits,
+      0n,
+    );
+    const feeForBatch =
+      batchSelectionTotal >= feeRemaining ? feeRemaining : batchSelectionTotal;
+    feeRemaining -= feeForBatch;
+    const amountForBatch = batchSelectionTotal - feeForBatch;
+    amountRemaining -= amountForBatch;
+
+    batches.push({
+      selections: batchSelections,
+      batchAmount: amountForBatch,
+      batchFee: feeForBatch,
+    });
+  }
+
+  const results: BatchedPruSpendResult[] = [];
+
+  for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+    const batch = batches[batchIdx];
+    const batchSenderFee =
+      senderFeeAmount > 0n && batchIdx === 0 ? senderFeeAmount : 0n;
+    const instructions = buildPruSpendInstructions({
+      operator: params.operator.publicKey,
+      tokenMint: params.tokenMint,
+      commitmentHash: params.commitmentHash,
+      senderFeeAmountBaseUnits: batchSenderFee,
+      selections: batch.selections,
+      escrowTokenAccountPubkey: escrowTokenAccount.publicKey,
+    });
+
+    const signers = [
+      params.operator,
+      escrowTokenAccount,
+      ...batch.selections.map((s) => s.pruAuthority),
+    ];
+
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      new Transaction({ feePayer: params.operator.publicKey }).add(
+        ...instructions,
+      ),
+      signers,
+      { commitment: "confirmed" },
+    );
+
+    results.push({
+      signature,
+      escrowTokenAccount: escrowTokenAccount.publicKey.toBase58(),
+      batchIndex: batchIdx,
+      selectionCount: batch.selections.length,
+    });
+
+    console.log(
+      `[tsn-pru-batch] batch=${batchIdx + 1}/${batches.length} ` +
+        `selections=${batch.selections.length} ` +
+        `amount=${batch.batchAmount} ` +
+        `tx=${signature}`,
+    );
+  }
+
+  return results;
 }
 
 export async function tsnExecutePruSpendOnChain(params: {
@@ -380,71 +628,22 @@ export async function tsnExecutePruSpendOnChain(params: {
     params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
     "confirmed",
   );
-  const motherEscrow = getTsnMotherEscrowPda();
-  const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
-  const sharedEscrowAuthority = getTsnSharedEscrowAuthorityPda();
-  const verifierPda = getTsnVerifierPda();
-  const treasuryPda = getTsnTreasuryPda();
-  const treasuryTokenAccount = getAssociatedTokenAddressSync(
-    params.tokenMint,
-    treasuryPda,
-    true,
-  );
   const escrowTokenAccount = params.escrowTokenAccount ?? Keypair.generate();
-  let remainingSenderFee = senderFeeAmount;
-  const instructions = params.selections.map((selection) => {
-    const feeForThisSelection =
-      remainingSenderFee > 0n
-        ? remainingSenderFee >= selection.amountBaseUnits
-          ? selection.amountBaseUnits
-          : remainingSenderFee
-        : 0n;
-    remainingSenderFee -= feeForThisSelection;
-    const escrowAmountForThisSelection = selection.amountBaseUnits - feeForThisSelection;
-    const pruTokenAccount = getAssociatedTokenAddressSync(
-      params.tokenMint,
-      selection.pruAuthority.publicKey,
-    );
-    const pruSpendGuard = getTsnPruSpendGuardPda({
-      tin: selection.tin,
-      pruIndex: selection.pruIndex,
-    });
-    return new TransactionInstruction({
-      programId: PROGRAM_ID,
-      keys: [
-        { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
-        { pubkey: selection.pruAuthority.publicKey, isSigner: true, isWritable: false },
-        { pubkey: motherEscrow, isSigner: false, isWritable: false },
-        { pubkey: cranker, isSigner: false, isWritable: true },
-        { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
-        { pubkey: pruTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: params.tokenMint, isSigner: false, isWritable: false },
-        { pubkey: treasuryPda, isSigner: false, isWritable: false },
-        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
-        { pubkey: escrowTokenAccount.publicKey, isSigner: true, isWritable: true },
-        { pubkey: verifierPda, isSigner: false, isWritable: true },
-        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(
-        concatBytes([
-          instructionDiscriminator("tsn_execute_pru_spend"),
-          encodeU64(BigInt(selection.tin)),
-          encodeU16(selection.pruIndex),
-          Uint8Array.of(selection.nonce),
-          params.commitmentHash,
-          selection.spendAuthHash,
-          encodeU64(escrowAmountForThisSelection),
-          encodeU64(feeForThisSelection),
-        ]),
-      ),
-    });
+
+  const instructions = buildPruSpendInstructions({
+    operator: params.operator.publicKey,
+    tokenMint: params.tokenMint,
+    commitmentHash: params.commitmentHash,
+    senderFeeAmountBaseUnits: senderFeeAmount,
+    selections: params.selections,
+    escrowTokenAccountPubkey: escrowTokenAccount.publicKey,
   });
 
   const signature = await sendAndConfirmTransaction(
     connection,
-    new Transaction({ feePayer: params.operator.publicKey }).add(...instructions),
+    new Transaction({ feePayer: params.operator.publicKey }).add(
+      ...instructions,
+    ),
     [
       params.operator,
       escrowTokenAccount,
@@ -521,10 +720,16 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     "confirmed",
   );
   const motherEscrow = getTsnMotherEscrowPda();
-  const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+  const cranker = getTsnCrankerPda({
+    motherEscrow,
+    operator: params.operator.publicKey,
+  });
   const config = getTsnPrivateSettlementConfigPda();
   const replayRegistry = getTsnPrivateReplayRegistryPda();
-  const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
+  const crankerVault = getTsnCrankerVaultPda({
+    cranker,
+    tokenMint: params.tokenMint,
+  });
   const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault });
   const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
   const recipientTokenAccount = getAssociatedTokenAddressSync(
@@ -562,10 +767,18 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       { pubkey: params.recipientWallet, isSigner: false, isWritable: false },
       { pubkey: params.tokenMint, isSigner: false, isWritable: false },
       { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+      {
+        pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
       { pubkey: verifierPda, isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      {
+        pubkey: ASSOCIATED_TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data: Buffer.from(
@@ -580,17 +793,19 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       ]),
     ),
   });
-  const transaction = new Transaction({ feePayer: params.operator.publicKey }).add(
-    verifyInstruction,
-    payoutInstruction,
-  );
+  const transaction = new Transaction({
+    feePayer: params.operator.publicKey,
+  }).add(verifyInstruction, payoutInstruction);
   const signature = await sendAndConfirmTransaction(
     connection,
     transaction,
     [params.operator],
     { commitment: "confirmed" },
   );
-  return { signature, payoutNullifier: Buffer.from(params.payoutNullifier).toString("hex") };
+  return {
+    signature,
+    payoutNullifier: Buffer.from(params.payoutNullifier).toString("hex"),
+  };
 }
 
 export async function tsnRecoverPrivateEscrowOnChain(params: {
@@ -659,8 +874,16 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
       { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
       { pubkey: params.escrowTokenAccount, isSigner: false, isWritable: true },
       { pubkey: settlementCrankerVault, isSigner: false, isWritable: true },
-      { pubkey: settlementVaultTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+      {
+        pubkey: settlementVaultTokenAccount,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
       { pubkey: verifierPda, isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
@@ -685,5 +908,8 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
     [params.operator],
     { commitment: "confirmed" },
   );
-  return { signature, recoveryNullifier: Buffer.from(params.recoveryNullifier).toString("hex") };
+  return {
+    signature,
+    recoveryNullifier: Buffer.from(params.recoveryNullifier).toString("hex"),
+  };
 }

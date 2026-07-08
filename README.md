@@ -1,4 +1,4 @@
-# TrustLink Pay
+# TrustLink Pay | Transfer Settlement Network (TSN)
 
 > Identity-first Solana payments using Transfer Identity, PRU-routed balances, and TSN settlement.
 

@@ -82,6 +82,10 @@
       "import": "./dist/pru.js",
       "types": "./dist/pru.d.ts"
     },
+    "./pru-denomination": {
+      "import": "./dist/pru-denomination.js",
+      "types": "./dist/pru-denomination.d.ts"
+    },
     "./pru-route-auth": {
       "import": "./dist/pru-route-auth.js",
       "types": "./dist/pru-route-auth.d.ts"

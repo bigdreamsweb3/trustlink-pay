@@ -96,8 +96,8 @@ tmux new-session -d -s $SESSION_NAME -n monitor
 
 # Create the monitor window
 tmux send-keys -t $SESSION_NAME:monitor "btop || htop || top" C-m
-tmux new-window -t $SESSION_NAME -n network
-tmux send-keys -t $SESSION_NAME:network "sudo nethogs" C-m
+# tmux new-window -t $SESSION_NAME -n network
+# tmux send-keys -t $SESSION_NAME:network "sudo nethogs" C-m
 
 # Iterate over the services and create a window for each
 for service in "${!SERVICES[@]}"; do

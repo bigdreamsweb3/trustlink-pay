@@ -21,4 +21,5 @@ export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
 export * from "./pru.js";
 export * from "./pru-route-auth.js";
+export * from "./pru-denomination.js";
 export * from "./tin-balance-spend-planner.js";

@@ -320,11 +320,29 @@ export function LandingPage() {
             </h1>
 
             <p className="tl-body-lg mt-5 pr-3 max-w-[680px] text-[var(--text-soft)]">
-              TrustLink Pay is an identity-first blockchain payment solution for
-              stablecoin payments on Solana. Pay anyone using a phone number or
-              10-digit TIN instead of a wallet address, with private settlement
-              and SAS-powered identity verification.
+              TrustLink Pay is built on the Transfer Settlement Network — a
+              decentralized settlement layer for Solana that turns payment
+              intents into private, cryptographically verifiable execution
+              through Escrow Hold, Cranker execution, and Settlement Proof. Pay
+              anyone using a phone number or 10-digit TIN instead of a wallet
+              address, with private settlement and SAS-powered identity
+              verification.
             </p>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/tsn"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--bg-main)] transition hover:opacity-90"
+              >
+                Learn about TSN <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="https://github.com/bigdreamsweb3/trustlink-pay"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--field-border)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition hover:border-[var(--accent)]"
+              >
+                Read the repo
+              </Link>
+            </div>
 
             {/* HERO CARDS */}
             <div className="mt-6 grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2 items-stretch lg:hidden">

@@ -1,8 +1,10 @@
-# TrustLink Pay | Transfer Settlement Network (TSN)
+# TrustLink Pay
 
-> Identity-first Solana payments using Transfer Identity, PRU-routed balances, and the Transfer Settlement Network.
+> Identity-first, privacy-conscious, and confidential crypto payments powered by the Transfer Settlement Network (TSN) on Solana.
 
-TrustLink Pay lets people send stablecoins to a **10-digit Transfer Identity Number (TIN)** instead of copying and pasting wallet addresses. The product is built around the Transfer Settlement Network (TSN), a settlement layer that helps private payments move through intents, escrow holds, Cranker execution, and settlement proofs.
+TrustLink Pay is a Solana payment system that enables users and applications to send stablecoins using **10-digit Transfer Identity Number (TIN)** instead of wallet addresses.
+
+The Transfer Settlement Network (TSN) is TrustLink Pay's settlement protocol designed to separate payment authorization, settlement execution, and recipient payout through verifiable settlement flows.
 
 See what people are saying about the project: [Community Mentions](./docs/MENTIONS.md).
 

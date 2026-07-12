@@ -138,7 +138,8 @@ export async function createSession(params: {
 }): Promise<{ session: PrivateSessionRecord; token: string }> {
   const token = generateSessionToken();
   const tokenHash = computeSessionTokenHash(token);
-  const ttl = params.ttlHours ?? SESSION_TTL.DEFAULT;
+  const ttlHours = params.ttlHours ?? SESSION_TTL.DEFAULT;
+  const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
   
   const permissions = {
     ...DEFAULT_SESSION_PERMISSIONS,
@@ -158,7 +159,7 @@ export async function createSession(params: {
       ${tokenHash},
       ${JSON.stringify(permissions)}::jsonb,
       'active',
-      NOW() + INTERVAL '${sql.unsafe(`${ttl} hours`)}'
+      ${expiresAt}
     )
     RETURNING 
       id, user_id, tin, device_id, device_signing_public_key,

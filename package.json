@@ -191,6 +191,7 @@
     "bs58": "^6.0.0",
     "tweetnacl": "^1.0.3"
   },
+  
   "devDependencies": {
     "@types/node": "^26.0.0",
     "tsx": "^4.22.2"

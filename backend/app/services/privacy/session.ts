@@ -336,6 +336,7 @@ export async function recordNonce(params: {
   expiresInMs?: number;
 }): Promise<boolean> {
   const expiresMs = params.expiresInMs ?? NONCE_VALIDITY_MS;
+  const expiresAt = new Date(Date.now() + expiresMs);
   
   try {
     await sql`
@@ -347,7 +348,7 @@ export async function recordNonce(params: {
         ${params.deviceId},
         ${params.nonceHash},
         ${params.purpose},
-        NOW() + INTERVAL '${sql.unsafe(`${Math.ceil(expiresMs / 1000)} seconds`)}'
+        ${expiresAt}
       )
     `;
     return true;

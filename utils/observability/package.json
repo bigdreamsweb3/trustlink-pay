@@ -23,6 +23,10 @@
     "./fee-tracker": {
       "types": "./dist/fee-tracker.d.ts",
       "import": "./dist/fee-tracker.js"
+    },
+    ".": {
+      "types": "./dist/tracer.d.ts",
+      "import": "./dist/tracer.js"
     }
   }
 }

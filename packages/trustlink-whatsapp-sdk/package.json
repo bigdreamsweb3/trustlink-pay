@@ -36,7 +36,8 @@
     "./backend/ports": {
       "types": "./dist/backend/ports.d.ts",
       "import": "./dist/backend/ports.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "framer-motion": "^12.39.0",

@@ -15,6 +15,21 @@ import { logger } from "@/app/lib/logger";
 const DEVICE_DOMAIN = "tsn_device_identity_v1";
 
 /**
+ * Database row type for device registry queries
+ */
+interface DeviceRow {
+  id: string;
+  user_id: string;
+  device_id: string;
+  device_signing_public_key: string;
+  device_encryption_public_key: string;
+  status: string;
+  permissions: SessionPermissions;
+  created_at: Date;
+  last_used_at: Date | null;
+}
+
+/**
  * Compute device identity hash
  */
 export function computeDeviceHash(ownerPublicKey: string, deviceId: string): string {
@@ -243,7 +258,7 @@ export async function listUserDevices(userId: string): Promise<DeviceRegistryRec
     ORDER BY created_at DESC
   `;
   
-  return result.map((row) => ({
+  return result.map((row: DeviceRow) => ({
     id: row.id,
     user_id: row.user_id,
     device_id: row.device_id,

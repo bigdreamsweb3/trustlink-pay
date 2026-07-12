@@ -8,11 +8,13 @@ import {
   ActivityIcon,
   BackIcon,
   ClaimIcon,
+  ContactsIcon,
   HomeIcon,
   ProfileIcon,
   SendIcon,
   WalletIcon,
 } from "@/src/components/app-icons";
+import { ConnectedWalletModal } from "@/src/components/modals/connected-wallet-modal";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 import { shortenAddress } from "@/src/lib/address";
 import type { UserProfile } from "@/src/lib/types";
@@ -27,7 +29,7 @@ type AppTab =
   | "receive"
   | "claim"
   | "activity"
-  | "wallets"
+  | "contacts"
   | "profile"
   | "settings"
   | "identity";
@@ -83,6 +85,12 @@ const sidebarNavItems: Array<{
     icon: <ActivityIcon size={18} className="text-current" />,
   },
   {
+    key: "contacts",
+    href: "/app/contacts",
+    label: "Contacts",
+    icon: <ContactsIcon size={18} className="text-current" />,
+  },
+  {
     key: "identity",
     href: "/app/identity",
     label: "Identity",
@@ -109,16 +117,16 @@ const mobileNavItems: Array<{
     icon: <SendIcon size={18} className="text-current" />,
   },
   {
-    key: "claim",
-    href: "/app/claim",
-    label: "Claim",
-    icon: <ClaimIcon size={18} className="text-current" />,
-  },
-  {
     key: "activity",
     href: "/app/activity",
     label: "History",
     icon: <ActivityIcon size={18} className="text-current" />,
+  },
+  {
+    key: "contacts",
+    href: "/app/contacts",
+    label: "Contacts",
+    icon: <ContactsIcon size={18} className="text-current" />,
   },
   {
     key: "identity",
@@ -139,8 +147,10 @@ export function AppMobileShell({
   backHref = "/app",
 }: AppMobileShellProps) {
   const router = useRouter();
-  const { walletAddress } = useWallet();
+  const { walletAddress, requestWalletConnection, disconnectWallet } = useWallet();
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [disconnectingWallet, setDisconnectingWallet] = useState(false);
 
   useEffect(() => {
     function h() {
@@ -157,6 +167,27 @@ export function AppMobileShell({
     }
     router.push(backHref);
   }
+
+  function handleWalletButtonClick() {
+    if (!walletAddress) {
+      requestWalletConnection();
+      return;
+    }
+
+    setWalletModalOpen(true);
+  }
+
+  async function handleWalletDisconnect() {
+    setDisconnectingWallet(true);
+
+    try {
+      await disconnectWallet();
+      setWalletModalOpen(false);
+    } finally {
+      setDisconnectingWallet(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-bg">
       <div className="flex h-full w-full max-w-[1400px] md:mr-auto">
@@ -237,9 +268,9 @@ export function AppMobileShell({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => router.push("/app/identity?section=wallets")}
+                onClick={handleWalletButtonClick}
                 className="tl-field-btn flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-[0.76rem] transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
-                aria-label={walletAddress ? "Manage wallet" : "Connect wallet"}
+                aria-label={walletAddress ? "Open wallet details" : "Connect wallet"}
               >
                 <WalletIcon size={14} className="text-current" />
                 <span className="font-medium">
@@ -302,9 +333,9 @@ export function AppMobileShell({
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/app/identity?section=wallets")}
+                onClick={handleWalletButtonClick}
                 className="tl-field-btn flex h-8 items-center gap-1 rounded-full px-2.5 transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]"
-                aria-label="Wallet"
+                aria-label={walletAddress ? "Open wallet details" : "Connect wallet"}
               >
                 <WalletIcon size={13} className="text-current" />
                 <span className="tl-coord-text text-[0.52rem]! leading-none">
@@ -384,6 +415,15 @@ export function AppMobileShell({
       </nav>
 
       {blockingOverlay}
+      <ConnectedWalletModal
+        open={walletModalOpen}
+        walletAddress={walletAddress}
+        disconnecting={disconnectingWallet}
+        onClose={() => setWalletModalOpen(false)}
+        onDisconnect={() => {
+          void handleWalletDisconnect();
+        }}
+      />
     </main>
   );
 }

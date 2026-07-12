@@ -5,7 +5,7 @@ import { crankerPda, epochAccountPda, intentPda, motherEscrowPda, paymentCommitm
 import {
   assertVerifiedTsnProgramId,
   VERIFIED_TSN_PROGRAM_ID,
-} from "../../tsn-sdk/dist/program.js";
+} from "@trustlink/tsn-sdk/program";
 
 // Minimal, IDL-driven wrapper. The concrete `TrustlinkEscrow` type will come from generated IDL types.
 export class TsnClient {

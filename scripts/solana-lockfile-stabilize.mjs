@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -6,6 +6,7 @@ const root = process.cwd();
 const lockfiles = [
   "tsn-protocol/tsn/protocol/Cargo.lock",
   "tin-system/tins-registrar/program/Cargo.lock",
+  "ZK-PRU/programs/zk-pru-registry/Cargo.lock",
 ];
 const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],
@@ -101,6 +102,12 @@ function stabilizeLockfile(path) {
     );
   }
 
+  if (packageVersions(packages, "jobserver").some((version) => compareVersions(version, "0.1.34") > 0)) {
+    errors.push(
+      `${path} has jobserver ${packageVersions(packages, "jobserver").join(", ")}, which is too new for the Solana/SBF 1.18.x Rust 1.75 toolchain. Run inside this lockfile's program directory: cargo update -p jobserver@0.1.35 --precise 0.1.32`,
+    );
+  }
+
   if (errors.length > 0) {
     throw new Error(errors.join("\n"));
   }
@@ -114,5 +121,9 @@ function stabilizeLockfile(path) {
 }
 
 for (const lockfile of lockfiles) {
+  if (!existsSync(join(root, lockfile))) {
+    console.log(`Skipped missing ${lockfile}`);
+    continue;
+  }
   stabilizeLockfile(lockfile);
 }

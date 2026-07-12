@@ -24,7 +24,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "dev": "node --watch dist/cli.js",
     "cranker": "node dist/cli.js"
   },

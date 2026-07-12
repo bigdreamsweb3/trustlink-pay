@@ -96,7 +96,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "watch": "tsc --watch",
     "test": "npm run build && node --test tests/*.test.mjs"
   },
@@ -111,5 +111,10 @@
   "devDependencies": {
     "@types/node": "^25.9.0",
     "typescript": "^6.0.3"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ]
 }

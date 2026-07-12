@@ -9,7 +9,9 @@
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -23,16 +25,9 @@
         "name": "next"
       }
     ],
-    // "baseUrl": ".",
     "paths": {
       "framer-motion": [
         "./node_modules/framer-motion"
-      ],
-      "@trustlink/tsn-sdk": [
-        "../tsn-protocol/tsn-sdk/dist"
-      ],
-      "@trustlink/tsn-sdk/*": [
-        "../tsn-protocol/tsn-sdk/dist/*"
       ],
       "lucide-react": [
         "./node_modules/lucide-react"
@@ -62,6 +57,22 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    ".next",
+    ".pytest_cache",
+    ".tsn-logs",
+    ".venv",
+    "__pycache__",
+    "archives",
+    "build",
+    "coverage",
+    "dist",
+    "firebase-export",
+    "ipfs-data",
+    "logs",
+    "node_modules",
+    "out",
+    "runtime",
+    "target",
+    "venv"
   ]
 }

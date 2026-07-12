@@ -9,7 +9,7 @@ import {
   Transaction,
   type TransactionSignature,
 } from "@solana/web3.js";
-import { traceFunction } from "../../../utils/observability/tracer";
+import { traceFunction } from "@trustlink/observability/tracer";
 
 const CONNECTED_WALLET_KEY = "trustlink.connectedWallet";
 
@@ -111,6 +111,8 @@ type WalletDefinition = {
   name: string;
   resolver: (walletWindow: BrowserWindow) => SolanaProvider | null;
 };
+
+let externalSolanaWallet: DetectedWallet | null = null;
 
 function getBackpackProvider(backpackValue: BrowserWindow["backpack"]) {
   if (!backpackValue) {
@@ -252,6 +254,10 @@ async function ensureWalletAuthorization(wallet: DetectedWallet, expectedAddress
 }
 
 function getWalletById(walletId: string) {
+  if (walletId === externalSolanaWallet?.id) {
+    return externalSolanaWallet;
+  }
+
   if (typeof window === "undefined") {
     return null;
   }
@@ -276,13 +282,13 @@ function getWalletById(walletId: string) {
 
 export function listAvailableSolanaWallets() {
   if (typeof window === "undefined") {
-    return [] as DetectedWallet[];
+    return externalSolanaWallet ? [externalSolanaWallet] : [] as DetectedWallet[];
   }
 
   const walletWindow = window as BrowserWindow;
   const seenProviders = new Set<SolanaProvider>();
 
-  return WALLET_DEFINITIONS.flatMap((definition) => {
+  const injectedWallets = WALLET_DEFINITIONS.flatMap((definition) => {
     const provider = definition.resolver(walletWindow);
     if (!provider || seenProviders.has(provider)) {
       return [];
@@ -297,6 +303,15 @@ export function listAvailableSolanaWallets() {
       } satisfies DetectedWallet,
     ];
   });
+
+  if (!externalSolanaWallet) {
+    return injectedWallets;
+  }
+
+  return [
+    externalSolanaWallet,
+    ...injectedWallets.filter((wallet) => wallet.id !== externalSolanaWallet?.id),
+  ];
 }
 
 export function getWalletEnvironment(): WalletEnvironment {
@@ -323,6 +338,44 @@ export function getInjectedSolanaProvider() {
   }
 
   return listAvailableSolanaWallets()[0]?.provider ?? null;
+}
+
+export function registerExternalSolanaWallet(params: {
+  id: string;
+  name: string;
+  address: string;
+  provider: Partial<SolanaProvider>;
+}) {
+  const provider = {
+    ...params.provider,
+    publicKey: {
+      toString: () => params.address,
+    },
+    connect: async () => ({
+      publicKey: {
+        toString: () => params.address,
+      },
+    }),
+  } satisfies SolanaProvider;
+
+  externalSolanaWallet = {
+    id: params.id,
+    name: params.name,
+    provider,
+  };
+
+  const session = {
+    walletId: params.id,
+    walletName: params.name,
+    address: params.address,
+  } satisfies ConnectedWalletSession;
+
+  writeStoredSession(session);
+  return session;
+}
+
+export function clearExternalSolanaWallet() {
+  externalSolanaWallet = null;
 }
 
 export function getConnectedWalletSession() {

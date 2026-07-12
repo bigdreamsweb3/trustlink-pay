@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Installing TSN CLI..."
+
+sudo tee /usr/local/bin/tsn > /dev/null << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+SESSION="tsn"
+ROOT="${TSN_ROOT:-$(pwd)}"
+LOG_DIR="$HOME/.tsn-logs"
+VENV="$ROOT/.venv"
+
+CMD="${1:-up}"
+ARG="${2:-core}"
+
+mkdir -p "$LOG_DIR"
+
+exists() {
+  tmux has-session -t "$SESSION" 2>/dev/null
+}
+
+window_exists() {
+  tmux list-windows -t "$SESSION" 2>/dev/null | grep -q "^$1:"
+}
+
+ensure_node() {
+  local dir="$1"
+  local marker="$dir/node_modules/.deps-installed"
+
+  if [[ ! -f "$marker" || "$dir/package.json" -nt "$marker" ]]; then
+    echo "Installing deps → $dir"
+    npm --prefix "$dir" install --silent
+    mkdir -p "$dir/node_modules"
+    touch "$marker"
+  fi
+}
+
+ensure_python() {
+  [[ -d "$VENV" ]] || python3 -m venv "$VENV"eq="$ROOT/tsn-protocol/tsn-mempool-backend/requirements.txt"
+  local marker="$VENV/.deps-installed"
+
+  if [[ ! -f "$marker" || "$req" -nt "$marker" ]]; then
+    echo "Installing python deps"
+    "$VENV/bin/pip" install -r "$req"
+    touch "$marker"
+  fi
+}
+
+start() {
+  local name="$1"
+  local cmd="$2"
+
+  if window_exists "$name"; then
+    echo "$name already running"
+    return
+  fi
+
+  tmux new-window -t "$SESSION" -n "$name"
+  tmux send-keys -t "$SESSION:$name" \
+    "cd '$ROOT' && $cmd >> '$LOG_DIR/$name.log' 2>&1" C-m
+
+  echo "Started $name"
+}
+
+stop_window() {
+  local name="$1"
+
+  if ! window_exists "$name"; then
+    echo "$name not running"
+    return
+  fi
+
+  tmux kill-window -t "$SESSION:$name"
+  echo "Stopped $name"
+}
+
+case "$CMD" in
+
+  up)
+    if exists; then
+      echo "Already running → attach"
+      tmux attach -t "$SESSION"
+      exit 0
+    fi
+
+    echo "Starting TSN → $ARG"
+
+    tmux new-session -d -s "$SESSION" -n monitor
+    tmux send-keys -t "$SESSION:monitor" "btop || htop || top" C-m
+
+    case "$ARG" in
+
+      core)
+        ensure_node "$ROOT/frontend"
+        ensure_node "$ROOT/backend"
+        start backend "NODE_OPTIONS='--max-old-space-size=768' npm run backend:dev"
+        start frontend "NODE_OPTIONS='--max-old-space-size=4096' npm run frontend:dev"
+        ;;
+
+      frontend)
+        ensure_node "$ROOT/frontend"
+        start frontend "NODE_OPTIONS='--max-old-space-size=4096' npm run frontend:dev"
+        ;;
+
+      backend)
+        ensure_node "$ROOT/backend"
+        start backend "NODE_OPTIONS='--max-old-space-size=768' npm run backend:dev"
+        ;;
+
+      mempool)
+        ensure_python
+        start mempool "$VENV/bin/python -u tsn-protocol/tsn-mempool-backend/server.py"
+        ;;
+
+      mempool-ui)
+        ensure_node "$ROOT/tsn-protocol/tsn-mempool-frontend"
+        start mempool-ui "NODE_OPTIONS='--max-old-space-size=768' npm run mempool:frontend:dev"
+        ;;
+
+      rpc)
+        ensure_node "$ROOT/tsn-protocol/tsn-rpc-gateway"
+        start rpc "NODE_OPTIONS='--max-old-space-size=512' npm run rpc:gateway:dev"
+        ;;
+
+      cranker)
+        ensure_node "$ROOT/tsn-protocol/tsn-cranker-op-daemon"
+        start cranker "NODE_OPTIONS='--max-old-space-size=512' npm run tsn:cranker:start"
+        ;;
+
+      full)
+        ensure_node "$ROOT/frontend"
+        ensure_node "$ROOT/backend"
+        ensure_node "$ROOT/tsn-protocol/tsn-rpc-gateway"
+        ensure_node "$ROOT/tsn-protocol/tsn-mempool-frontend"
+        ensure_node "$ROOT/tsn-protocol/tsn-cranker-op-daemon"
+        ensure_python
+
+        start backend "NODE_OPTIONS='--max-old-space-size=768' npm run backend:dev"
+        start frontend "NODE_OPTIONS='--max-old-space-size=4096' npm run frontend:dev"
+        start mempool "$VENV/bin/python -u tsn-protocol/tsn-mempool-backend/server.py"
+        start mempool-ui "NODE_OPTIONS='--max-old-space-size=768' npm run mempool:frontend:dev"
+        start rpc "NODE_OPTIONS='--max-old-space-size=512' npm run rpc:gateway:dev"
+        start cranker "NODE_OPTIONS='--max-old-space-size=512' npm run tsn:cranker:start"
+        ;;
+
+      *)
+        echo "Unknown profile"
+        exit 1
+        ;;
+    esac
+
+    tmux attach -t "$SESSION"
+    ;;
+
+  down)
+    tmux kill-session -t "$SESSION" 2>/dev/null || true
+    echo "TSN stopped"
+    ;;
+
+  restart)
+    "$0" down
+    "$0" up "$ARG"
+    ;;
+
+  start-service)
+    if ! exists; then
+      echo "Run tsn up first"
+      exit 1
+    fi
+
+    "$0" up "$ARG"
+    ;;
+
+  stop-service)
+    if ! exists; then
+      echo "Session not running"
+      exit 1
+    fi
+
+    stop_window "$ARG"
+    ;;
+
+  restart-service)
+    "$0" stop-service "$ARG"
+    sleep 1
+    "$0" start-service "$ARG"
+    ;;
+
+  attach)
+    tmux attach -t "$SESSION"
+    ;;
+
+  status)
+    if exists; then
+      echo "Running:"
+      tmux list-windows -t "$SESSION"
+    else
+      echo "TSN not running"
+    fi
+    ;;
+
+  logs)
+    tail -f "$LOG_DIR/$ARG.log"
+    ;;
+
+  *)
+    echo "Usage:"
+    echo "  tsn up [core|frontend|backend|mempool|mempool-ui|rpc|cranker|full]"
+    echo "  tsn down"
+    echo "  tsn restart [profile]"
+    echo "  tsn start-service [service]"
+    echo "  tsn stop-service [service]"
+    echo "  tsn restart-service [service]"
+    echo "  tsn status"
+    echo "  tsn attach"
+    echo "  tsn logs [service]"
+    ;;
+esac
+EOF
+
+sudo chmod +x /usr/local/bin/tsn
+
+echo "TSN installed successfully!"
+echo "Run: tsn up core"

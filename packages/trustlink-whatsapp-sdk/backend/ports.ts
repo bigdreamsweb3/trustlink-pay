@@ -26,6 +26,21 @@ export type WhatsAppPaymentNotificationStatus = "queued" | "sent" | "delivered" 
 
 export type WhatsAppWebhookEventRecord = unknown;
 
+export type WhatsAppSessionCode = {
+  code: string;
+  sessionId: string;
+  status: "pending" | "awaiting_confirmation" | "verified" | "declined" | "expired" | string;
+  phoneNumber?: string;
+  createdAt: Date;
+  expiresAt: Date;
+  requestContext?: {
+    device?: string;
+    location?: string;
+    requestedAt?: string;
+  };
+};
+
+
 export type WhatsAppSdkPorts = {
   users: {
     findByPhoneNumber(phoneNumber: string): Promise<WhatsAppUserProfile | null>;
@@ -63,6 +78,30 @@ export type WhatsAppSdkPorts = {
       status?: string | null;
       payload: unknown;
     }): Promise<WhatsAppWebhookEventRecord>;
+  };
+  sessions: {
+    findSessionCode(code: string): Promise<WhatsAppSessionCode | null>;
+    findPendingSessionForPhone(phoneNumber: string, replyMessageId?: string | null): Promise<WhatsAppSessionCode | null>;
+    markSessionAwaitingConfirmation(code: string, phoneNumber: string, reviewMessageId?: string | null): Promise<WhatsAppSessionCode | null>;
+    markSessionDeclined(code: string, phoneNumber?: string): Promise<WhatsAppSessionCode | null>;
+    verifySessionCode(code: string, phoneNumber: string): Promise<WhatsAppSessionCode | null>;
+  };
+  auth: {
+    issueChallengeToken(params: {
+      id: string;
+      phoneNumber: string;
+      stage: "pin_verify" | "pin_setup" | string;
+    }): string;
+    sanitizeUser(user: WhatsAppUserProfile): unknown;
+    notifySessionVerification(sessionId: string, payload: {
+      challengeToken: string;
+      user: unknown;
+      stage: "pin_verify" | "pin_setup" | string;
+      status?: "verified";
+    }): void | Promise<void>;
+  };
+  phoneVerification: {
+    sendOtp(phoneNumber: string, purpose: "auth" | "payment" | string): Promise<unknown>;
   };
 };
 

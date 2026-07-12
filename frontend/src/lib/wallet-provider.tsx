@@ -8,11 +8,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
 
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import {
   getWalletEnvironment,
   getConnectedWalletSession,
+  registerExternalSolanaWallet,
+  clearExternalSolanaWallet,
   type WalletEnvironment,
   type ConnectedWalletSession,
   type DetectedWallet,
@@ -25,6 +28,11 @@ import {
   getWalletsForConnection,
 } from "@/src/lib/wallet-actions";
 import { useToast } from "@/src/components/toast-provider";
+import {
+  configureTrustLinkAppKit,
+  hasReownProjectId,
+  openTrustLinkWalletModal,
+} from "@/src/lib/wallet-connection/reown-appkit";
 
 type WalletContextValue = {
   session: ConnectedWalletSession | null;
@@ -50,16 +58,46 @@ function readInitialSession() {
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
-  const [session, setSession] = useState<ConnectedWalletSession | null>(readInitialSession);
+  const reownAccount = useAppKitAccount({ namespace: "solana" });
+  const { walletProvider: reownWalletProvider } = useAppKitProvider("solana");
+  const [session, setSession] = useState<ConnectedWalletSession | null>(
+    readInitialSession,
+  );
   const [wallets, setWallets] = useState<DetectedWallet[]>([]);
-  const [environment, setEnvironment] = useState<WalletEnvironment>(() => getWalletEnvironment());
+  const [environment, setEnvironment] = useState<WalletEnvironment>(() =>
+    getWalletEnvironment(),
+  );
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setSession(readInitialSession());
     setEnvironment(getWalletEnvironment());
+    configureTrustLinkAppKit();
   }, []);
+
+  useEffect(() => {
+    if (
+      !reownAccount.isConnected ||
+      !reownAccount.address ||
+      !reownWalletProvider
+    ) {
+      return;
+    }
+
+    const nextSession = registerExternalSolanaWallet({
+      id: "reown-solana",
+      name: "WalletConnect",
+      address: reownAccount.address,
+      provider: reownWalletProvider,
+    });
+
+    setSession(nextSession);
+    setEnvironment(getWalletEnvironment());
+    setWalletPickerOpen(false);
+  }, [reownAccount.address, reownAccount.isConnected, reownWalletProvider]);
 
   function requestWalletConnection() {
     try {
@@ -70,6 +108,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       setWallets([]);
       setEnvironment(getWalletEnvironment());
+
+      if (hasReownProjectId()) {
+        try {
+          openTrustLinkWalletModal();
+          return;
+        } catch (modalError) {
+          showToast(getWalletConnectionErrorMessage(modalError));
+          return;
+        }
+      }
+
       showToast(getWalletConnectionErrorMessage(error));
       setWalletPickerOpen(true);
     }
@@ -94,6 +143,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   async function disconnectWallet() {
     try {
       await disconnectTrustLinkWallet();
+      clearExternalSolanaWallet();
       setSession(null);
       setEnvironment(getWalletEnvironment());
       showToast("Wallet disconnected.");

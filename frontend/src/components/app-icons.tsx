@@ -81,6 +81,17 @@ export function WalletIcon(props: IconProps) {
   );
 }
 
+export function ContactsIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M8.5 7.5a3.5 3.5 0 1 0 7 0 3.5 3.5 0 0 0-7 0Z" />
+      <path d="M5.5 20c1.45-3.1 3.6-4.65 6.5-4.65S17.05 16.9 18.5 20" />
+      <path d="M3.5 5.5v13" />
+      <path d="M20.5 5.5v13" />
+    </BaseIcon>
+  );
+}
+
 export function ActivityIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

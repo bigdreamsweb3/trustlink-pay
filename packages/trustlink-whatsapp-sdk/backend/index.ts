@@ -3,3 +3,7 @@ export * from "./messaging";
 export * from "./number-verification";
 export * from "./ports";
 export * from "./webhook";
+export * from "./config";
+export * from "./logger";
+export * from "./phone";
+export * from "./hash";

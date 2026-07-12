@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "tsx scripts/reset-db.ts",
-
     "test:auth-phone-flow": "tsx scripts/test-auth-phone-flow.ts",
     "test:identity-binding": "tsx scripts/test-identity-binding.ts",
     "test:whatsapp-number": "tsx scripts/test-whatsapp-number.ts",
@@ -19,7 +18,8 @@
     "test:tins:unb": "tsx scripts/test-tins-unbreakable.ts",
     "tsn:setup": "npm --prefix ../tsn-protocol/tsn run setup --",
     "tsn:cranker": "npm --prefix ../tsn-protocol/tsn run cranker --",
-    "ngrok:https": "npx ngrok http 3000"
+    "ngrok:https": "npx ngrok http 3000",
+    "dev:turbo": "next dev --turbo -p 3000"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

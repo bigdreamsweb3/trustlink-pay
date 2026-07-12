@@ -2,7 +2,7 @@ import { apiPost } from "@/src/lib/api";
 import type { PaymentRecord } from "@/src/lib/types";
 import { submitPaymentAuthorizationToMempool } from "@trustlink/tsn-sdk/payment-authorization";
 import { estimateTsnSendCostFromChain as estimateTsnSendCostFromSdk } from "@trustlink/tsn-sdk/send-estimate";
-import { traceFunction } from "../../../utils/observability/tracer";
+import { traceFunction } from "@trustlink/observability/tracer";
 
 type PaymentTsnState = NonNullable<PaymentRecord["tsn"]>;
 

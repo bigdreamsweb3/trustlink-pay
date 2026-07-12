@@ -17,7 +17,7 @@ import {
 
 import { signSolanaMessage } from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
-import { traceFunction } from "../../../utils/observability/tracer";
+import { traceFunction } from "@trustlink/observability/tracer";
 const TINS_OWNER_INTENT_UPDATE_DOMAIN = "TINS_UPDATE_OWNER_INTENT_V2";
 
 export type BrowserTinRegistration = {

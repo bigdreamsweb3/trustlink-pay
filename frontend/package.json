@@ -8,13 +8,17 @@
     "build": "next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
-    "ngrok:https": "npx ngrok http 3001"
+    "ngrok:https": "npx ngrok http 3001",
+    "dev:turbo": "NODE_OPTIONS='--max-old-space-size=4096' TRUSTLINK_TURBOPACK_DEV=1 next dev --turbo -p 3001"
   },
   "dependencies": {
     "@noble/curves": "^1.9.7",
+    "@reown/appkit": "^1.8.22",
+    "@reown/appkit-adapter-solana": "^1.8.22",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@tailwindcss/postcss": "^4.3.0",
+    "@trustlink/observability": "file:../utils/observability",
     "@trustlink/tsn-sdk": "file:../tsn-protocol/tsn-sdk",
     "framer-motion": "^12.39.0",
     "lightningcss-linux-x64-gnu": "^1.32.0",
@@ -24,6 +28,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^4.3.0",
+    "trustlink-whatsapp-sdk": "file:../packages/trustlink-whatsapp-sdk",
     "zod": "^3.24.0"
   },
   "devDependencies": {

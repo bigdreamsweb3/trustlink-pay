@@ -1,0 +1,28 @@
+{
+  "name": "@trustlink/observability",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/tracer.js",
+  "types": "dist/tracer.d.ts",
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "exports": {
+    "./tracer": {
+      "types": "./dist/tracer.d.ts",
+      "import": "./dist/tracer.js"
+    },
+    "./fee-tracker": {
+      "types": "./dist/fee-tracker.d.ts",
+      "import": "./dist/fee-tracker.js"
+    }
+  }
+}

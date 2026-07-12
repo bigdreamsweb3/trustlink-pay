@@ -6,7 +6,9 @@ type SqlFunction = (...args: any[]) => Promise<any>;
 
 let sqlInstance: SqlFunction | null = null;
 let neonConfigured = false;
-const DATABASE_FETCH_TIMEOUT_MS = 8000;
+const DATABASE_FETCH_TIMEOUT_MS = Number(
+  process.env.DATABASE_FETCH_TIMEOUT_MS ?? "20000",
+);
 
 function isTransientDatabaseError(error: unknown) {
   if (!(error instanceof Error)) {
@@ -56,13 +58,13 @@ function configureNeon() {
   ) => {
     let lastError: unknown;
 
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
         return await fetchWithTimeout(input, init);
       } catch (error) {
         lastError = error;
 
-        if (!isTransientDatabaseError(error) || attempt === 1) {
+        if (!isTransientDatabaseError(error) || attempt === 2) {
           throw error;
         }
 

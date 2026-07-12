@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-import { VERIFIED_TSN_PROGRAM_ID } from "../../tsn-sdk/dist/program.js";
+import { VERIFIED_TSN_PROGRAM_ID } from "@trustlink/tsn-sdk/program";
 
 export const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 export const TSN_INTENT_SEED = Buffer.from("tsn_intent");

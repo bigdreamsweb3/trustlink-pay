@@ -160,6 +160,35 @@ export const addReceiverWalletSchema = z.object({
   otp: z.string().regex(/^\d{6}$/),
 });
 
+export const contactSourceSchema = z.enum([
+  "manual",
+  "payment",
+  "device_import",
+  "tin_lookup",
+]);
+
+export const upsertContactSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(80),
+    phoneNumber: phoneNumberSchema.optional().nullable(),
+    tin: z
+      .string()
+      .trim()
+      .regex(/^\d{10}$/, "tin must be a 10-digit Transfer Identity Number")
+      .optional()
+      .nullable(),
+    trustlinkHandle: handleSchema.optional().nullable(),
+    source: contactSourceSchema.default("manual"),
+    markPaid: z.boolean().optional(),
+  })
+  .refine((value) => Boolean(value.phoneNumber || value.tin), {
+    message: "phoneNumber or tin is required",
+  });
+
+export const contactSearchSchema = z.object({
+  q: z.string().trim().max(80).optional().default(""),
+});
+
 export const startReceiverWalletVerificationSchema = z.object({});
 
 export const updateProfileSchema = z.object({

@@ -172,20 +172,34 @@ warnIfHostCargoCanRewriteLockfile(cargoVersion);
 const tsnAnchorPath = "tsn-protocol/tsn/protocol/Anchor.toml";
 const tinsAnchorPath = "tin-system/tins-registrar/program/Anchor.toml";
 const tinsCargoPath = "tin-system/tins-registrar/program/Cargo.toml";
+const zkPruAnchorPath = "ZK-PRU/programs/zk-pru-registry/Anchor.toml";
+const zkPruCargoPath = "ZK-PRU/programs/zk-pru-registry/programs/zk-pru-registry/Cargo.toml";
 const tsnLockPath = "tsn-protocol/tsn/protocol/Cargo.lock";
 const tinsLockPath = "tin-system/tins-registrar/program/Cargo.lock";
+const zkPruLockPath = "ZK-PRU/programs/zk-pru-registry/Cargo.lock";
 
 const tsnAnchor = read(tsnAnchorPath);
 const tinsAnchor = read(tinsAnchorPath);
 const tinsCargo = read(tinsCargoPath);
+const zkPruAnchor = existsSync(join(root, zkPruAnchorPath)) ? read(zkPruAnchorPath) : null;
+const zkPruCargo = existsSync(join(root, zkPruCargoPath)) ? read(zkPruCargoPath) : null;
 const tsnLock = read(tsnLockPath);
 const tinsLock = read(tinsLockPath);
+const zkPruLock = existsSync(join(root, zkPruLockPath)) ? read(zkPruLockPath) : null;
 
 const requiredSnippets = [
   [tsnAnchorPath, tsnAnchor, `anchor_version = "${requiredAnchor}"`],
   [tinsAnchorPath, tinsAnchor, `anchor_version = "${requiredAnchor}"`],
   [tinsCargoPath, tinsCargo, `solana-program = "=${pinnedProgramCrate}"`],
 ];
+
+if (zkPruAnchor) {
+  requiredSnippets.push([zkPruAnchorPath, zkPruAnchor, `anchor_version = "${requiredAnchor}"`]);
+}
+
+if (zkPruCargo) {
+  requiredSnippets.push([zkPruCargoPath, zkPruCargo, `anchor-lang = "0.30.1"`]);
+}
 
 for (const [path, body, snippet] of requiredSnippets) {
   if (!body.includes(snippet)) {
@@ -197,6 +211,10 @@ const forbiddenSnippets = [
   [tsnAnchorPath, tsnAnchor, "solana_version"],
   [tinsAnchorPath, tinsAnchor, "solana_version"],
 ];
+
+if (zkPruAnchor) {
+  forbiddenSnippets.push([zkPruAnchorPath, zkPruAnchor, "solana_version"]);
+}
 
 for (const [path, body, snippet] of forbiddenSnippets) {
   if (body.includes(snippet)) {
@@ -212,6 +230,10 @@ const lockfiles = [
   [tsnLockPath, tsnLock],
   [tinsLockPath, tinsLock],
 ];
+
+if (zkPruLock) {
+  lockfiles.push([zkPruLockPath, zkPruLock]);
+}
 
 for (const [path, body] of lockfiles) {
   const lockVersion = getCargoLockVersion(body);
@@ -257,6 +279,13 @@ for (const [path, body] of lockfiles) {
     throw new Error(
       `${path} uses proc-macro-crate 3.5.0, which resolves to toml_edit 0.25.x and toml_parser 1.1.x.\n` +
         "That TOML parser chain requires Rust edition 2024. Pin proc-macro-crate to 3.3.0, then run npm run deploy:lockfiles:stabilize.",
+    );
+  }
+
+  if (hasPackageVersion(packages, "jobserver", (version) => compareVersions(version, "0.1.34") > 0)) {
+    throw new Error(
+      `${path} uses jobserver ${packageVersions(packages, "jobserver").join(", ")}, which requires a newer Rust toolchain than Solana/SBF 1.18.x provides.\n` +
+        "Run inside this lockfile's program directory: cargo update -p jobserver@0.1.35 --precise 0.1.32",
     );
   }
 

@@ -3,33 +3,65 @@
   "version": "0.1.0",
   "description": "TrustLink WhatsApp SDK for authentication and messaging",
   "private": true,
-  "main": "frontend/index.ts",
+  "main": "dist/frontend/index.js",
   "exports": {
+    ".": {
+      "types": "./dist/frontend/index.d.ts",
+      "import": "./dist/frontend/index.js"
+    },
+    "./auth": {
+      "types": "./dist/frontend/auth/index.d.ts",
+      "import": "./dist/frontend/auth/index.js"
+    },
+    "./ui": {
+      "types": "./dist/frontend/ui/index.d.ts",
+      "import": "./dist/frontend/ui/index.js"
+    },
+    "./utils/device-detection": {
+      "types": "./dist/frontend/utils/device-detection.d.ts",
+      "import": "./dist/frontend/utils/device-detection.js"
+    },
     "./frontend": {
-      "import": "./frontend/index.ts",
-      "require": "./frontend/index.ts"
+      "types": "./dist/frontend/index.d.ts",
+      "import": "./dist/frontend/index.js"
     },
     "./backend": {
-      "import": "./backend/index.ts",
-      "require": "./backend/index.ts"
+      "types": "./dist/backend/index.d.ts",
+      "import": "./dist/backend/index.js"
+    },
+    "./backend/config": {
+      "types": "./dist/backend/config.d.ts",
+      "import": "./dist/backend/config.js"
+    },
+    "./backend/ports": {
+      "types": "./dist/backend/ports.d.ts",
+      "import": "./dist/backend/ports.js"
     }
   },
   "dependencies": {
     "framer-motion": "^12.39.0",
     "lucide-react": "^1.16.0",
     "qrcode.react": "^4.2.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react": ">=18.3.1 <20",
+    "react-dom": ">=18.3.1 <20"
   },
   "devDependencies": {
     "@types/node": "^25.9.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "type": "module",
+  "types": "dist/frontend/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
   }
 }

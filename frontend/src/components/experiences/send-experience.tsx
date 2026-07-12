@@ -22,6 +22,11 @@ import { useToast } from "@/src/components/toast-provider";
 import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
+import {
+  listTrustLinkContacts,
+  saveTrustLinkContact,
+} from "@/src/lib/contacts/contacts-api";
+import type { TrustLinkContact } from "@/src/lib/contacts/types";
 import { isPaymentNotificationFinal } from "@/src/lib/formatters";
 import { buildPhoneResolutionPlan } from "@/src/lib/phone-input-resolution";
 import {
@@ -367,12 +372,16 @@ export function SendExperience() {
     manualInviteRequired: boolean;
     inviteShare: { onboardingLink: string; inviteMessage: string } | null;
     receiverPhone: string;
+    recipientTin: string | null;
+    recipientHandle: string | null;
     recipientName: string;
     amount: string;
     token: string;
     tsn?: PaymentRecord["tsn"];
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
+  const [contactSaveBusy, setContactSaveBusy] = useState(false);
+  const [savedContacts, setSavedContacts] = useState<TrustLinkContact[]>([]);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
   const hasVerifiedOnce =
@@ -428,6 +437,23 @@ export function SendExperience() {
   const hasAmount =
     Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const receiverInputLooksLikeTin = looksLikeTinCandidate(receiverPhoneInput);
+  const contactSuggestions = useMemo(() => {
+    const trimmed = receiverPhoneInput.trim().toLowerCase();
+    if (!trimmed) return savedContacts.slice(0, 4);
+
+    return savedContacts
+      .filter((contact) =>
+        [
+          contact.displayName,
+          contact.phoneNumber,
+          contact.tin,
+          contact.trustlinkHandle,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(trimmed)),
+      )
+      .slice(0, 4);
+  }, [receiverPhoneInput, savedContacts]);
   const canContinueWithRecipient =
     Boolean(walletAddress) &&
     Boolean(selectedToken) &&
@@ -445,10 +471,45 @@ export function SendExperience() {
     setWalletSession(getConnectedWalletSession());
     setAvailableWallets(listAvailableSolanaWallets());
   }, []);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const token = accessToken;
+    let cancelled = false;
+
+    async function loadContacts() {
+      try {
+        const result = await listTrustLinkContacts(token);
+        if (!cancelled) setSavedContacts(result.contacts);
+      } catch {
+        if (!cancelled) setSavedContacts([]);
+      }
+    }
+
+    void loadContacts();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
+
   useEffect(() => {
     const p = searchParams.get("phone")?.trim();
     if (p) setReceiverPhoneInput(p);
   }, [searchParams]);
+
+  function applyContactToRecipient(contact: TrustLinkContact) {
+    const route = contact.tin ?? contact.phoneNumber ?? "";
+    setReceiverPhoneInput(route);
+    setForm((current) => ({ ...current, receiverPhone: "" }));
+    setLookupError(null);
+    setRecipientPreview(null);
+    setPhoneVerificationDetails(null);
+    setReceiverCheckSkipped(false);
+    setConfirmOpen(false);
+    setSendCostEstimate(null);
+    setTinSpendPlan(null);
+    setEstimateError(null);
+  }
 
   async function lookupResolvedRecipient(
     normalizedPhone: string,
@@ -1299,6 +1360,8 @@ export function SendExperience() {
         tsn: undefined,
         blockchainSignature: result.blockchainSignature ?? "tsn-intent-posted",
         receiverPhone: form.receiverPhone,
+        recipientTin: recipientPreview.recipient.tin ?? null,
+        recipientHandle: recipientPreview.recipient.handle ?? null,
         recipientName,
         amount: form.amount,
         token: result.tokenSymbol ?? selectedToken.symbol,
@@ -1325,6 +1388,38 @@ export function SendExperience() {
       showToast(msg);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleSaveSuccessfulRecipient() {
+    if (!accessToken || !sendSuccess) return;
+
+    setContactSaveBusy(true);
+
+    try {
+      const result = await saveTrustLinkContact({
+        accessToken,
+        contact: {
+          displayName: sendSuccess.recipientName,
+          phoneNumber: sendSuccess.receiverPhone || null,
+          tin: sendSuccess.recipientTin,
+          trustlinkHandle: sendSuccess.recipientHandle,
+          source: "payment",
+          markPaid: true,
+        },
+      });
+
+      setSavedContacts((current) => [
+        result.contact,
+        ...current.filter((contact) => contact.id !== result.contact.id),
+      ]);
+      showToast("Recipient saved to contacts.");
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : "Could not save recipient",
+      );
+    } finally {
+      setContactSaveBusy(false);
     }
   }
 
@@ -1559,6 +1654,15 @@ export function SendExperience() {
               </div>
             </div>
 
+            <button
+              type="button"
+              onClick={() => void handleSaveSuccessfulRecipient()}
+              disabled={contactSaveBusy}
+              className="tl-button-secondary w-full rounded-[18px] px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:max-w-[400px]"
+            >
+              {contactSaveBusy ? "Saving recipient..." : "Save recipient to contacts"}
+            </button>
+
             <div className="text-[0.72rem] text-[var(--text-soft)] leading-relaxed">
               {sendSuccess.blockchainMode === "mock"
                 ? "Mock mode \u2014 reference is not an on-chain signature."
@@ -1718,6 +1822,32 @@ export function SendExperience() {
                     }}
                     skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
                   />
+                  {contactSuggestions.length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {contactSuggestions.map((contact) => (
+                        <button
+                          key={contact.id}
+                          type="button"
+                          onClick={() => applyContactToRecipient(contact)}
+                          className="tl-panel tl-field flex w-full items-center justify-between gap-3 rounded-[16px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)]"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-[0.78rem] font-semibold text-text">
+                              {contact.displayName}
+                            </span>
+                            <span className="tl-text-muted block truncate text-[0.66rem]">
+                              {contact.tin
+                                ? `TIN ${contact.tin}`
+                                : contact.phoneNumber}
+                            </span>
+                          </span>
+                          <span className="shrink-0 rounded-full border border-accent-border bg-accent-soft px-2 py-1 text-[0.6rem] font-medium text-accent">
+                            Use
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Amount + Token row */}

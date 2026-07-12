@@ -102,6 +102,20 @@ CREATE TABLE IF NOT EXISTS receiver_wallets (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS contacts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  display_name VARCHAR(80) NOT NULL,
+  phone_number VARCHAR(32),
+  tin VARCHAR(32),
+  trustlink_handle VARCHAR(32),
+  source VARCHAR(32) NOT NULL DEFAULT 'manual',
+  last_paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT contacts_has_route CHECK (phone_number IS NOT NULL OR tin IS NOT NULL)
+);
+
 CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_type VARCHAR(32) NOT NULL,
@@ -537,4 +551,7 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_message_id ON whatsapp_we
 CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_related_payment_id ON whatsapp_webhook_events (related_payment_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_receiver_wallets_user_wallet_name ON receiver_wallets (user_id, wallet_name);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_receiver_wallets_user_wallet_address ON receiver_wallets (user_id, wallet_address);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_user_phone ON contacts (user_id, phone_number) WHERE phone_number IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_user_tin ON contacts (user_id, tin) WHERE tin IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_contacts_user_updated ON contacts (user_id, updated_at DESC);
 

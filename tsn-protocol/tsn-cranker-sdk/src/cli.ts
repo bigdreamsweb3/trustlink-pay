@@ -17,7 +17,7 @@ import {
   tsnWithdrawCrankerFundsOnChain,
   tsnSettleEpochOnChain,
   tsnProcessBatchReimbursementOnChain,
-} from "../../tsn-sdk/dist/blockchain/solana-tsn.js";
+} from "@trustlink/tsn-sdk/blockchain/solana-tsn";
 
 loadDotenv();
 loadDotenv({ path: ".env.local", override: true });

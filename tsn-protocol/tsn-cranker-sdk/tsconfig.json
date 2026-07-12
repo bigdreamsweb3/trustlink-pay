@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
@@ -13,11 +15,28 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@trustlink/tsn-sdk": [
+        "../tsn-sdk/src/index.ts"
+      ],
+      "@trustlink/tsn-sdk/*": [
+        "../tsn-sdk/src/*"
+      ]
+    }
   },
   "references": [
-    { "path": "../tsn-sdk" }
+    {
+      "path": "../tsn-sdk"
+    }
   ],
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

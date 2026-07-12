@@ -12,7 +12,7 @@
     "incremental": true,
     "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -29,6 +29,22 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    ".next",
+    ".pytest_cache",
+    ".tsn-logs",
+    ".venv",
+    "__pycache__",
+    "archives",
+    "build",
+    "coverage",
+    "dist",
+    "firebase-export",
+    "ipfs-data",
+    "logs",
+    "node_modules",
+    "out",
+    "runtime",
+    "target",
+    "venv"
   ]
 }

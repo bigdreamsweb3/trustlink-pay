@@ -1,31 +1,30 @@
 # TrustLink WhatsApp SDK
 
-This package supports WhatsApp-based TrustLink workflows.
+Standalone WhatsApp SDK for TrustLink authentication, session approval, notifications, number checks, and webhook handling.
 
-## What Is This?
+WhatsApp is not the protocol identity. TIN is the protocol identity. WhatsApp is only a communication and confirmation layer.
 
-It contains helpers for WhatsApp authentication, notifications, and identity confidence flows.
+## Docs
 
-## Why It Exists
+Read in this order:
 
-WhatsApp is familiar to many users.
+1. Overview: docs/01-overview.md
+2. Install And Build: docs/02-install-and-build.md
+3. Frontend Usage: docs/03-frontend-usage.md
+4. Backend Setup: docs/04-backend-setup.md
+5. Webhooks: docs/05-webhooks.md
+6. Messaging: docs/06-messaging.md
+7. Session Flow: docs/07-session-flow.md
+8. Security: docs/08-security.md
 
-TrustLink Pay can use it to send alerts, support recovery flows, and help users confirm that a TIN belongs to the expected person or business.
+## Quick Commands
 
-## Important Rule
+Install and build the SDK:
 
-WhatsApp is not the protocol identity.
+    npm --prefix packages/trustlink-whatsapp-sdk install
+    npm --prefix packages/trustlink-whatsapp-sdk run build
 
-The protocol identity is the TIN. WhatsApp is an optional communication and confidence layer.
+For TrustLink frontend development:
 
-## Privacy Rules
-
-- Do not expose phone numbers publicly by default.
-- Do not store phone numbers in public protocol accounts.
-- Clearly label WhatsApp-sourced names.
-- Prefer encrypted identity links.
-
-## Related Docs
-
-- `docs/WHATSAPP-SEAMLESS-PAY.md`
-- `docs/META-DATA-USE-COMPLIANCE.md`
+    npm run sdk:sync:frontend
+    npm run frontend:dev:synced

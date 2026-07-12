@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "es2022"],
-    "types": ["node"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
+    "types": [
+      "node"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -19,26 +25,62 @@
         "name": "next"
       }
     ],
-    // "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@trustlink/tsn-sdk": ["../tsn-protocol/tsn-sdk/dist"],
-      "@trustlink/tsn-sdk/*": ["../tsn-protocol/tsn-sdk/dist/*"],
-      "@trustlink/tsn-cranker-sdk": ["../tsn-protocol/tsn-cranker-sdk/src"],
-      "@trustlink/tins-sdk": ["../tin-system/tins-sdk/src"],
-      "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"],
-      "@solana/spl-token": ["./node_modules/@solana/spl-token"],
-      "@solana/web3.js": ["./node_modules/@solana/web3.js"]
+      "@/*": [
+        "./*"
+      ],
+      "@trustlink/tsn-sdk": [
+        "../tsn-protocol/tsn-sdk/dist"
+      ],
+      "@trustlink/tsn-sdk/*": [
+        "../tsn-protocol/tsn-sdk/dist/*"
+      ],
+      "@trustlink/tsn-cranker-sdk": [
+        "../tsn-protocol/tsn-cranker-sdk/src"
+      ],
+      "@trustlink/tins-sdk": [
+        "../tin-system/tins-sdk/src"
+      ],
+      "@coral-xyz/anchor": [
+        "./node_modules/@coral-xyz/anchor"
+      ],
+      "@solana/spl-token": [
+        "./node_modules/@solana/spl-token"
+      ],
+      "@solana/web3.js": [
+        "./node_modules/@solana/web3.js"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
   "exclude": [
-    "node_modules",
-    "frontend",
-    "tests",
-    "scripts/test-tins-*",
     "../tin-system/tins-sdk",
+    "../tsn-protocol/tsn-cranker-sdk",
     "../tsn-protocol/tsn-sdk",
-    "../tsn-protocol/tsn-cranker-sdk"
+    ".next",
+    ".pytest_cache",
+    ".tsn-logs",
+    ".venv",
+    "__pycache__",
+    "archives",
+    "build",
+    "coverage",
+    "dist",
+    "firebase-export",
+    "frontend",
+    "ipfs-data",
+    "logs",
+    "node_modules",
+    "out",
+    "runtime",
+    "scripts/test-tins-*",
+    "target",
+    "tests",
+    "venv"
   ]
 }

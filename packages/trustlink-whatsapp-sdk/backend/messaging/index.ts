@@ -1,7 +1,19 @@
-import { env } from "@/app/lib/env";
-import { logger } from "@/app/lib/logger";
-import { normalizePhoneNumber, toWhatsAppRecipient } from "@/app/utils/phone";
+import { getWhatsAppSdkConfig, type WhatsAppSdkConfig } from "../config";
+import { getWhatsAppSdkLogger, type WhatsAppSdkLogger } from "../logger";
+import { normalizePhoneNumber, toWhatsAppRecipient } from "../phone";
 import { getWhatsAppSdkPorts } from "../ports";
+
+const env = new Proxy({} as WhatsAppSdkConfig, {
+  get(_target, property) {
+    return getWhatsAppSdkConfig()[property as keyof WhatsAppSdkConfig];
+  },
+});
+
+const logger = new Proxy({} as WhatsAppSdkLogger, {
+  get(_target, property) {
+    return getWhatsAppSdkLogger()[property as keyof WhatsAppSdkLogger];
+  },
+});
 
 interface WhatsAppTemplateComponentParameter {
   type: "text";

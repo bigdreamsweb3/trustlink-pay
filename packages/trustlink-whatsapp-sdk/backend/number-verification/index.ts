@@ -1,5 +1,8 @@
-import { logger } from "@/app/lib/logger";
-import { normalizePhoneNumber } from "@/app/utils/phone";
+import { getWhatsAppSdkConfig } from "../config";
+import { getWhatsAppSdkLogger } from "../logger";
+import { normalizePhoneNumber } from "../phone";
+
+const logger = getWhatsAppSdkLogger();
 
 export type WhatsAppNumberVerificationResult = {
   phoneNumber: string;
@@ -58,7 +61,7 @@ export async function verifyWhatsAppNumber(phoneNumber: string): Promise<WhatsAp
   const cleanNumber = normalizedPhoneNumber.replace(/[^\d]/g, "");
   const url = `https://api.whatsapp.com/send?phone=${cleanNumber}`;
 
-  if (process.env.WHATSAPP_MOCK_MODE?.trim().toLowerCase() === "true") {
+  if (getWhatsAppSdkConfig().WHATSAPP_MOCK_MODE) {
     const result = {
       phoneNumber: normalizedPhoneNumber,
       exists: true,

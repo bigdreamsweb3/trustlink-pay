@@ -8,7 +8,8 @@
     "start": "next start -p 3002",
     "typecheck": "tsc --noEmit",
     "git:quick:push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
-    "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force"
+    "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force",
+    "dev:turbo": "next dev --turbo -p 3002"
   },
   "dependencies": {
     "lucide-react": "^0.473.0",

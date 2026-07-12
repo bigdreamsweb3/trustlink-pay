@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
 
-import { env } from "@/app/lib/env";
+import { getWhatsAppSdkConfig } from "../config";
 
 export const TRUSTLINK_SESSION_CODE_PREFIX = "TLS";
 export const TRUSTLINK_SESSION_CODE_LEGACY_PREFIX = "TL";
 export const TRUSTLINK_SESSION_CODE_BODY_LENGTH = 6;
 
 export function getTrustLinkSessionExpiryMinutes() {
-  return env.AUTH_SESSION_CODE_TTL_MINUTES;
+  return getWhatsAppSdkConfig().AUTH_SESSION_CODE_TTL_MINUTES;
 }
 
 export function generateTrustLinkSessionCode(): string {

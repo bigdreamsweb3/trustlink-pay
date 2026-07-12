@@ -1,10 +1,5 @@
-import { createHmac, timingSafeEqual, createHash } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
-import type { PaymentNotificationStatus } from "@/app/types/payment";
-import { issueAuthChallengeToken } from "@/app/lib/auth";
-import { env } from "@/app/lib/env";
-import { logger } from "@/app/lib/logger";
-import { sendPhoneVerificationOtp } from "@/app/services/phone-verification";
 import {
   isTrustLinkOptInMessage,
   isTrustLinkStopMessage,
@@ -13,19 +8,28 @@ import {
   sendSessionDeclinedMessage,
   sendSessionReviewRequest,
 } from "../messaging";
-import {
-  findPendingSessionForPhone,
-  findSessionCode,
-  markSessionAwaitingConfirmation,
-  markSessionDeclined,
-  verifySessionCode,
-  type SessionCode,
-} from "@/app/lib/session-codes";
 import { extractTrustLinkSessionCodeFromText } from "../auth";
-import { sanitizeUser } from "@/app/services/auth/shared";
-import { normalizePhoneNumber } from "@/app/utils/phone";
-import { sha256 } from "@/app/utils/hash";
-import { getWhatsAppSdkPorts } from "../ports";
+import { getWhatsAppSdkConfig, type WhatsAppSdkConfig } from "../config";
+import { getWhatsAppSdkLogger, type WhatsAppSdkLogger } from "../logger";
+import { normalizePhoneNumber } from "../phone";
+import { sha256 } from "../hash";
+import {
+  getWhatsAppSdkPorts,
+  type WhatsAppPaymentNotificationStatus,
+  type WhatsAppSessionCode,
+} from "../ports";
+
+const env = new Proxy({} as WhatsAppSdkConfig, {
+  get(_target, property) {
+    return getWhatsAppSdkConfig()[property as keyof WhatsAppSdkConfig];
+  },
+});
+
+const logger = new Proxy({} as WhatsAppSdkLogger, {
+  get(_target, property) {
+    return getWhatsAppSdkLogger()[property as keyof WhatsAppSdkLogger];
+  },
+});
 
 interface WhatsAppWebhookPayload {
   object?: string;
@@ -91,7 +95,7 @@ function secureCompare(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function normalizeNotificationStatus(status: string | undefined): PaymentNotificationStatus | null {
+function normalizeNotificationStatus(status: string | undefined): WhatsAppPaymentNotificationStatus | null {
   switch (status) {
     case "sent":
     case "delivered":
@@ -116,7 +120,7 @@ function parseWhatsAppTimestamp(timestamp: string | undefined): string | null {
   return new Date(numericTimestamp * 1000).toISOString();
 }
 
-  function getInboundText(message: WhatsAppMessage) {
+function getInboundText(message: WhatsAppMessage) {
   return message.text?.body ?? message.button?.text ?? "";
 }
 
@@ -173,7 +177,7 @@ async function ensureSessionUser(
       contactName,
     });
 
-    const phoneHash = createHash("sha256").update(phoneNumber).digest("hex");
+    const phoneHash = sha256(phoneNumber);
 
     user = await ports.users.upsertProfile({
       phoneNumber,
@@ -193,7 +197,7 @@ async function ensureSessionUser(
 }
 
 async function completeSessionApproval(
-  verifiedSession: SessionCode,
+  verifiedSession: WhatsAppSessionCode,
   phoneNumber: string,
   contactName?: string,
 ) {
@@ -205,10 +209,12 @@ async function completeSessionApproval(
     hasPinHash: !!user?.pin_hash,
   });
 
-  const challengeToken = issueAuthChallengeToken({
+  const ports = getWhatsAppSdkPorts();
+  const stage = user.pin_hash ? "pin_verify" : "pin_setup";
+  const challengeToken = ports.auth.issueChallengeToken({
     id: user.id,
     phoneNumber: user.phone_number,
-    stage: user.pin_hash ? "pin_verify" : "pin_setup",
+    stage,
   });
 
   try {
@@ -218,11 +224,11 @@ async function completeSessionApproval(
       userId: user.id,
     });
 
-    const { notifySessionVerification } = await import("@/app/lib/session-events");
-    notifySessionVerification(verifiedSession.sessionId, {
+    await ports.auth.notifySessionVerification(verifiedSession.sessionId, {
       challengeToken,
-      user: sanitizeUser(user),
-      stage: user.pin_hash ? "pin_verify" : "pin_setup",
+      user: ports.auth.sanitizeUser(user),
+      stage,
+      status: "verified",
     });
 
     logger.info("whatsapp.webhook.sse_notification_sent", {
@@ -240,7 +246,7 @@ async function completeSessionApproval(
     userId: user.id,
     phoneNumber,
     challengeToken,
-    stage: user.pin_hash ? "pin_verify" : "pin_setup",
+    stage,
   });
 }
 
@@ -312,7 +318,7 @@ async function processInboundMessage(
       optedInAt: message.timestamp ? new Date(Number(message.timestamp) * 1000) : new Date(),
     });
 
-    await sendPhoneVerificationOtp(normalizedPhoneNumber, "auth");
+    await ports.phoneVerification.sendOtp(normalizedPhoneNumber, "auth");
 
     logger.info("whatsapp.webhook.opt_in_received", {
       phoneNumber: normalizedPhoneNumber,
@@ -331,21 +337,21 @@ async function processInboundMessage(
     return;
   }
 
-  const extractedSessionCode = extractTrustLinkSessionCodeFromText(inboundText);
+  const extractedWhatsAppSessionCode = extractTrustLinkSessionCodeFromText(inboundText);
   
   logger.info("whatsapp.webhook.session_code_check", {
     inboundText,
-    hasMatch: Boolean(extractedSessionCode),
-    match: extractedSessionCode,
+    hasMatch: Boolean(extractedWhatsAppSessionCode),
+    match: extractedWhatsAppSessionCode,
   });
   
-  if (extractedSessionCode) {
-    const sessionCode = extractedSessionCode;
+  if (extractedWhatsAppSessionCode) {
+    const sessionCode = extractedWhatsAppSessionCode;
     logger.info("whatsapp.webhook.session_code_found", {
       sessionCode,
       phoneNumber: normalizedPhoneNumber,
     });
-    await handleSessionCodeVerification(sessionCode, normalizedPhoneNumber, contactName);
+    await handleWhatsAppSessionCodeVerification(sessionCode, normalizedPhoneNumber, contactName);
     return;
   }
 
@@ -357,7 +363,7 @@ async function processInboundMessage(
   });
 }
 
-async function handleSessionCodeVerification(
+async function handleWhatsAppSessionCodeVerification(
   sessionCode: string,
   phoneNumber: string,
   contactName?: string
@@ -367,7 +373,8 @@ async function handleSessionCodeVerification(
     phoneNumber,
   });
 
-  const activeSession = await findSessionCode(sessionCode);
+  const ports = getWhatsAppSdkPorts();
+  const activeSession = await ports.sessions.findSessionCode(sessionCode);
 
   logger.info("whatsapp.webhook.session_code_lookup_result", {
     sessionCode,
@@ -397,7 +404,7 @@ async function handleSessionCodeVerification(
     expiresIn: formatExpiresIn(activeSession.expiresAt),
   });
 
-  const updatedSession = await markSessionAwaitingConfirmation(
+  const updatedSession = await ports.sessions.markSessionAwaitingConfirmation(
     sessionCode,
     phoneNumber,
     reviewMessage.messageId,
@@ -418,7 +425,9 @@ async function handleSessionReviewResponse(params: {
   contactName?: string;
   replyMessageId?: string | null;
 }) {
-  const pendingSession = await findPendingSessionForPhone(
+  const ports = getWhatsAppSdkPorts();
+
+  const pendingSession = await ports.sessions.findPendingSessionForPhone(
     params.phoneNumber,
     params.replyMessageId,
   );
@@ -434,12 +443,12 @@ async function handleSessionReviewResponse(params: {
   }
 
   if (params.action === "decline") {
-    await markSessionDeclined(pendingSession.code, params.phoneNumber);
+    await ports.sessions.markSessionDeclined(pendingSession.code, params.phoneNumber);
     await sendSessionDeclinedMessage(params.phoneNumber);
     return;
   }
 
-  const verifiedSession = await verifySessionCode(
+  const verifiedSession = await ports.sessions.verifySessionCode(
     pendingSession.code,
     params.phoneNumber,
   );

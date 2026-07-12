@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test:attacks": "node tests/attack-simulations/run-attacks.mjs",
+    "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
+    "git:status": "git status --short",
+    "git:hygiene": "node scripts/git-hygiene-check.mjs",
+    "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
+    "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
+    "git:pull:all": "git pull origin main",
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push origin main"
+  }
+}

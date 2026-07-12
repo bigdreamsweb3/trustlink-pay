@@ -4,7 +4,7 @@ import {
   clearStoredUser,
 } from "@/src/lib/storage";
 import { buildBackendUrl } from "@/src/lib/backend";
-import { traceFunction } from "../../../utils/observability/tracer";
+import { traceFunction } from "@trustlink/observability/tracer";
 
 type ApiCacheMode = "default" | "no-store";
 
@@ -121,6 +121,7 @@ export function invalidateApiCache(predicate?: (key: string) => boolean) {
 function invalidateAfterMutation(path: string) {
   if (
     path.startsWith("/api/payment") ||
+    path.startsWith("/api/contacts") ||
     path.startsWith("/api/identity") ||
     path.startsWith("/api/receiver-wallets") ||
     path.startsWith("/api/settings")

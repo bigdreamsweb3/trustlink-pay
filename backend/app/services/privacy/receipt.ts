@@ -10,6 +10,29 @@ import type { PrivateReceiptRecord, EncryptionMetadata, PrivateReceiptMetadataRe
 import { logger } from "@/app/lib/logger";
 
 /**
+ * Database row type for private receipt queries
+ */
+interface ReceiptRow {
+  id: string;
+  payment_id: string;
+  tin_hash: string;
+  ciphertext: Buffer;
+  encryption_metadata: EncryptionMetadata;
+  created_at: Date;
+  expires_at: Date;
+}
+
+/**
+ * Metadata row type for receipt metadata queries
+ */
+interface ReceiptMetadataRow {
+  id: string;
+  payment_id: string;
+  created_at: Date;
+  expires_at: Date;
+}
+
+/**
  * Store an encrypted private receipt
  */
 export async function storePrivateReceipt(params: {
@@ -126,7 +149,7 @@ export async function findReceiptsByTinHash(
     LIMIT ${limit}
   `;
   
-  return result.map((row) => ({
+  return result.map((row: ReceiptRow) => ({
     id: row.id,
     payment_id: row.payment_id,
     tin_hash: row.tin_hash,
@@ -245,7 +268,7 @@ export async function getUserReceiptsMetadata(params: {
   
   const now = new Date();
   
-  return result.map((row) => ({
+  return result.map((row: ReceiptMetadataRow) => ({
     receiptId: row.id,
     paymentId: row.payment_id,
     createdAt: row.created_at.toISOString(),

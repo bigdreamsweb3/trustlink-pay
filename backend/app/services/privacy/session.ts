@@ -18,6 +18,22 @@ const SESSION_TOKEN_LENGTH = 32;
 const NONCE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Database row type for private session queries
+ */
+interface SessionRow {
+  id: string;
+  user_id: string;
+  tin: string;
+  device_id: string;
+  device_signing_public_key: string;
+  permissions: SessionPermissions;
+  status: string;
+  created_at: Date;
+  expires_at: Date;
+  last_accessed_at: Date | null;
+}
+
+/**
  * Generate session token
  */
 function generateSessionToken(): string {
@@ -392,7 +408,7 @@ export async function listUserSessions(userId: string): Promise<PrivateSessionRe
     ORDER BY created_at DESC
   `;
   
-  return result.map((row) => ({
+  return result.map((row: SessionRow) => ({
     id: row.id,
     user_id: row.user_id,
     tin: row.tin,

@@ -20,12 +20,10 @@
  */
 
 import {
-  encryptWithEcdh,
   decryptWithEcdh,
   deserializeEncryptedPayload,
   verifyContextHash,
   type EncryptionContext,
-  type EncryptedResult,
 } from "../encryption/index.js";
 
 import {
@@ -40,19 +38,38 @@ import {
   type PrivateSession,
   type ActivePrivateSession,
   type SessionPermissions,
-  type CreateSessionRequest,
-  type CreateSessionResult,
   validateSession,
-  createSession,
   activateSession,
-  isSessionExpired,
-  getRemainingTtlMs,
   hasPermission,
-  computeSessionIdHash,
-  computeSessionTokenHash,
-  buildSessionCreationMessage,
   SESSION_TTL,
 } from "../sessions/index.js";
+
+// Base58 alphabet (Bitcoin style)
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/**
+ * Decode base58 string to Uint8Array
+ */
+function base58Decode(str: string): Uint8Array {
+  let result = new Uint8Array(0);
+  for (let i = 0; i < str.length; i++) {
+    let carry = BASE58_ALPHABET.indexOf(str[i]);
+    if (carry === -1) throw new Error(`Invalid base58 character: ${str[i]}`);
+    for (let j = 0; j < result.length; j++) {
+      carry += 58 * result[j];
+      result[j] = carry % 256;
+      carry = Math.floor(carry / 256);
+    }
+    while (carry > 0) {
+      result = new Uint8Array([carry % 256, ...result]);
+      carry = Math.floor(carry / 256);
+    }
+  }
+  for (let i = 0; i < str.length && str[i] === "1"; i++) {
+    result = new Uint8Array([0, ...result]);
+  }
+  return result;
+}
 
 // Constants
 const PRIVATE_VIEW_DOMAIN = "tsn_private_view_v1";
@@ -241,7 +258,7 @@ export class TSNPrivateViewSDK {
       receiptId: encryptedReceipt.receiptId,
       tinHash: encryptedReceipt.tinHash,
       deviceId: this.deviceKeyPair ? 
-        Buffer.from(this.deviceKeyPair.signing.publicKey).toString("base58") : "",
+        Buffer.from(this.deviceKeyPair.signing.publicKey).toString("hex") : "",
       protocolVersion: PROTOCOL_VERSION,
     };
 
@@ -317,7 +334,7 @@ export class TSNPrivateViewSDK {
       proof: params.proof,
       expectedDeviceSigningPublicKey: Buffer.from(
         this.deviceKeyPair?.signing.publicKey ?? new Uint8Array(32)
-      ).toString("base58"),
+      ).toString("hex"),
       expectedPurpose: params.purpose as any,
       nonce: params.nonce,
       currentTime,
@@ -376,14 +393,3 @@ export function isReceiptExpired(metadata: ReceiptMetadata): boolean {
 export function getReceiptRemainingTtl(metadata: ReceiptMetadata): number {
   return Math.max(0, new Date(metadata.expiresAt).getTime() - Date.now());
 }
-
-// Re-export types
-export type {
-  PrivateViewState,
-  PrivateReceipt,
-  SettlementStatus,
-  ReceiptMetadata,
-  StoredEncryptedReceipt,
-  PrivateViewConfig,
-  OpenPrivateViewRequest,
-} from "./index.js";

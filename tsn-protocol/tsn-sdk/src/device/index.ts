@@ -15,6 +15,58 @@ import nacl from "tweetnacl";
 import { sha256 } from "@noble/hashes/sha2";
 import { utf8ToBytes } from "@noble/hashes/utils";
 
+// Base58 alphabet (Bitcoin style)
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/**
+ * Decode base58 string to Uint8Array
+ */
+function base58Decode(str: string): Uint8Array {
+  let result = new Uint8Array(0);
+  for (let i = 0; i < str.length; i++) {
+    let carry = BASE58_ALPHABET.indexOf(str[i]);
+    if (carry === -1) throw new Error(`Invalid base58 character: ${str[i]}`);
+    for (let j = 0; j < result.length; j++) {
+      carry += 58 * result[j];
+      result[j] = carry % 256;
+      carry = Math.floor(carry / 256);
+    }
+    while (carry > 0) {
+      result = new Uint8Array([carry % 256, ...result]);
+      carry = Math.floor(carry / 256);
+    }
+  }
+  // Count leading zeros
+  for (let i = 0; i < str.length && str[i] === "1"; i++) {
+    result = new Uint8Array([0, ...result]);
+  }
+  return result;
+}
+
+/**
+ * Encode Uint8Array to base58 string
+ */
+function base58Encode(bytes: Uint8Array): string {
+  let result = "";
+  let leadingZeros = 0;
+  for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
+    leadingZeros++;
+  }
+  for (let i = 0; i < bytes.length; i++) {
+    let carry = bytes[i];
+    for (let j = result.length - 1; j >= 0; j--) {
+      carry += 256 * result.charCodeAt(j);
+      result = result.slice(0, j) + BASE58_ALPHABET[carry % 58] + result.slice(j + 1);
+      carry = Math.floor(carry / 58);
+    }
+    while (carry > 0) {
+      result = BASE58_ALPHABET[carry % 58] + result;
+      carry = Math.floor(carry / 58);
+    }
+  }
+  return "1".repeat(leadingZeros) + result;
+}
+
 // Constants
 const DEVICE_ID_LENGTH = 16;
 const PROTOCOL_VERSION = "1.0";
@@ -55,6 +107,7 @@ export interface DeviceAuthorizationProof {
   deviceSigningPublicKey: string;
   deviceEncryptionPublicKey: string;
   ownerPublicKey: string;
+  tin: string;
   permissions: DevicePermissions;
   nonce: string;
   issuedAt: number; // Unix timestamp
@@ -232,7 +285,7 @@ export function validateDeviceAuthorization(params: {
   });
 
   const signatureBytes = Buffer.from(params.proof.signature, "base64");
-  const publicKeyBytes = Buffer.from(params.proof.ownerPublicKey, "base58");
+  const publicKeyBytes = base58Decode(params.proof.ownerPublicKey);
 
   const isValid = nacl.sign.detached.verify(message, signatureBytes, publicKeyBytes);
   if (!isValid) {
@@ -279,7 +332,7 @@ export function validateDeviceSignature(params: {
   });
 
   const signatureBytes = Buffer.from(params.proof.signature, "base64");
-  const publicKeyBytes = Buffer.from(params.proof.deviceSigningPublicKey, "base58");
+  const publicKeyBytes = base58Decode(params.proof.deviceSigningPublicKey);
 
   const isValid = nacl.sign.detached.verify(message, signatureBytes, publicKeyBytes);
   if (!isValid) {
@@ -355,6 +408,7 @@ export function createDeviceAuthorization(params: {
     deviceSigningPublicKey: params.deviceSigningPublicKey,
     deviceEncryptionPublicKey: params.deviceEncryptionPublicKey,
     ownerPublicKey: params.ownerPublicKey,
+    tin: params.tin,
     permissions,
     nonce: params.nonce,
     issuedAt: params.issuedAt,
@@ -375,7 +429,7 @@ export function createDeviceSignature(params: {
 }): DeviceSignatureProof {
   const message = buildDeviceSignatureMessage({
     deviceId: params.deviceId,
-    deviceSigningPublicKey: Buffer.from(params.deviceSigningKeyPair.publicKey).toString("base58"),
+    deviceSigningPublicKey: base58Encode(params.deviceSigningKeyPair.publicKey),
     purpose: params.purpose,
     nonce: params.nonce,
     timestamp: params.timestamp,
@@ -385,21 +439,10 @@ export function createDeviceSignature(params: {
 
   return {
     deviceId: params.deviceId,
-    deviceSigningPublicKey: Buffer.from(params.deviceSigningKeyPair.publicKey).toString("base58"),
+    deviceSigningPublicKey: base58Encode(params.deviceSigningKeyPair.publicKey),
     purpose: params.purpose,
     nonce: params.nonce,
     timestamp: params.timestamp,
     signature: Buffer.from(signature).toString("base64"),
   };
 }
-
-// Re-export types
-export type {
-  DeviceIdentity,
-  DeviceStatus,
-  DeviceKeyPair,
-  DeviceAuthorizationProof,
-  DevicePermissions,
-  DeviceSignatureProof,
-  SignaturePurpose,
-} from "./index.js";

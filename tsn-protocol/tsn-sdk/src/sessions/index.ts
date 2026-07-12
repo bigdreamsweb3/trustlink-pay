@@ -22,6 +22,33 @@ import { sha256 } from "@noble/hashes/sha2";
 import { utf8ToBytes } from "@noble/hashes/utils";
 import { randomBytes } from "@noble/hashes/utils";
 
+// Base58 alphabet (Bitcoin style)
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/**
+ * Decode base58 string to Uint8Array
+ */
+function base58Decode(str: string): Uint8Array {
+  let result = new Uint8Array(0);
+  for (let i = 0; i < str.length; i++) {
+    let carry = BASE58_ALPHABET.indexOf(str[i]);
+    if (carry === -1) throw new Error(`Invalid base58 character: ${str[i]}`);
+    for (let j = 0; j < result.length; j++) {
+      carry += 58 * result[j];
+      result[j] = carry % 256;
+      carry = Math.floor(carry / 256);
+    }
+    while (carry > 0) {
+      result = new Uint8Array([carry % 256, ...result]);
+      carry = Math.floor(carry / 256);
+    }
+  }
+  for (let i = 0; i < str.length && str[i] === "1"; i++) {
+    result = new Uint8Array([0, ...result]);
+  }
+  return result;
+}
+
 // Constants
 const SESSION_DOMAIN = "tsn_private_session_v1";
 const SESSION_TOKEN_LENGTH = 32;
@@ -222,7 +249,7 @@ export function validateSessionCreationRequest(params: {
   });
 
   const signatureBytes = Buffer.from(params.request.deviceSignatureProof.signature, "base64");
-  const devicePublicKeyBytes = Buffer.from(params.request.deviceSigningPublicKey, "base58");
+  const devicePublicKeyBytes = base58Decode(params.request.deviceSigningPublicKey);
 
   const isValid = nacl.sign.detached.verify(message, signatureBytes, devicePublicKeyBytes);
   if (!isValid) {
@@ -331,12 +358,14 @@ export function validateSession(params: {
 
   const remainingTtlMs = getRemainingTtlMs(params.session.expiresAt);
   
+  // Return as PrivateSession since ActivePrivateSession requires sessionToken
+  // which is only available after activation
   return {
     valid: true,
     session: {
       ...params.session,
       remainingTtlMs,
-    },
+    } as unknown as ActivePrivateSession,
   };
 }
 
@@ -368,14 +397,3 @@ export const PERMISSION_SCOPES = {
   VIEW_BALANCE: "viewBalance",
   DECRYPT_RECEIPTS: "decryptReceipts",
 } as const;
-
-// Re-export types
-export type {
-  PrivateSession,
-  ActivePrivateSession,
-  SessionStatus,
-  SessionPermissions,
-  CreateSessionRequest,
-  CreateSessionResult,
-  ValidateSessionResult,
-} from "./index.js";

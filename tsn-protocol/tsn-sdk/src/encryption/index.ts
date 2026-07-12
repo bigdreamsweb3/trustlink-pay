@@ -147,16 +147,16 @@ export async function encryptAes256Gcm(
   // Use Web Crypto API for AES-GCM
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    key,
+    key.buffer as ArrayBuffer,
     { name: "AES-GCM" },
     false,
     ["encrypt"]
   );
 
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv, tagLength: AUTH_TAG_LENGTH * 8 },
+    { name: "AES-GCM", iv: new Uint8Array(iv), tagLength: AUTH_TAG_LENGTH * 8 },
     cryptoKey,
-    plaintext
+    plaintext.buffer as ArrayBuffer
   );
 
   const encryptedArray = new Uint8Array(encrypted);
@@ -190,7 +190,7 @@ export async function decryptAes256Gcm(
 
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    key,
+    key.buffer as ArrayBuffer,
     { name: "AES-GCM" },
     false,
     ["decrypt"]
@@ -202,9 +202,9 @@ export async function decryptAes256Gcm(
   combined.set(authTag, ciphertext.length);
 
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv, tagLength: AUTH_TAG_LENGTH * 8 },
+    { name: "AES-GCM", iv: new Uint8Array(iv), tagLength: AUTH_TAG_LENGTH * 8 },
     cryptoKey,
-    combined
+    combined.buffer as ArrayBuffer
   );
 
   return new Uint8Array(decrypted);
@@ -326,11 +326,3 @@ export function verifyContextHash(
   const computedHash = hashContext(context);
   return Buffer.from(computedHash).toString("hex") === expectedHash;
 }
-
-// Re-export types
-export type {
-  EncryptionContext,
-  EncryptedPayload,
-  EncryptionMetadata,
-  EncryptedResult,
-} from "./index.js";

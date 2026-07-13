@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prebuild": "npm --prefix ../utils/observability install && npm --prefix ../utils/observability run build && npm --prefix ../packages/trustlink-whatsapp-sdk install && npm --prefix ../packages/trustlink-whatsapp-sdk run build && npm --prefix ../tsn-protocol/tsn-sdk install && npm --prefix ../tsn-protocol/tsn-sdk run build",
+    "prebuild": "NODE_ENV=development npm --prefix ../utils/observability ci --include=dev && npm --prefix ../utils/observability run build && NODE_ENV=development npm --prefix ../packages/trustlink-whatsapp-sdk ci --include=dev && npm --prefix ../packages/trustlink-whatsapp-sdk run build && npm --prefix ../tsn-protocol/tsn-sdk ci && npm --prefix ../tsn-protocol/tsn-sdk run build",
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",

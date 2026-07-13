@@ -23,3 +23,9 @@ export * from "./pru.js";
 export * from "./pru-route-auth.js";
 export * from "./pru-denomination.js";
 export * from "./tin-balance-spend-planner.js";
+
+// TSN V1 Privacy Architecture exports
+export * from "./encryption/index.js";
+export * from "./device/index.js";
+export * from "./sessions/index.js";
+export * from "./private-view/index.js";

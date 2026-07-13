@@ -29,8 +29,8 @@ const SKIP_DIRS = new Set([
   ".turbo",
 ]);
 
-// Keep this conservative: never replace the TSN program id while updating TINS.
-// Pass previous TINS ids explicitly as extra arguments when rotating the TINS id.
+// Keep this conservative: never replace the TSN program id while updating TIP.
+// Pass previous TIP ids explicitly as extra arguments when rotating the TIP id.
 const oldIds = new Set([...EXTRA_OLD_IDS]);
 oldIds.delete(NEW_ID);
 

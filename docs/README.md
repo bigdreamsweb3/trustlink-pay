@@ -1,6 +1,10 @@
-# TrustLink Pay Documentation
+# TrustLink Pay | Transfer Settlement Network (TSN) Documentation
+
+> Identity-first Solana payments using Transfer Identity, PRU-routed balances, and the Transfer Settlement Network.
 
 TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, Transfer Identity, PRU routing, and the Transfer Settlement Network (TSN).
+
+See what people are saying about the project: [Community Mentions](./docs/MENTIONS.md).
 
 The product goal is simple:
 
@@ -14,7 +18,7 @@ The documentation is part of the product. It should help a developer understand 
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [START-HERE.md](./START-HERE.md)                                       | Plain-English onboarding for the whole payment system                             |
 | [ARCHITECTURE.md](./ARCHITECTURE.md)                                   | How the product, identity, privacy, settlement, and liquidity layers fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIS, TINs, PRUs, route authentication, and identity resolution                    |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIP, TINs, PRUs, route authentication, and identity resolution                    |
 | [TSN.md](./TSN.md)                                                     | TSN payment execution, PRU-funded spending, and fee distribution                  |
 | [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers              |
 | [API.md](./API.md)                                                     | TrustLink backend APIs vs TSN mempool APIs                                        |
@@ -24,9 +28,9 @@ The documentation is part of the product. It should help a developer understand 
 
 ## Main Concepts
 
-### TIS: Transfer Identity System
+### TIP: Transfer Identity Protocol
 
-TIS is the identity layer.
+TIP is the identity layer.
 
 It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and PRU commitments. The TIN is easier to read than a wallet address and can carry safe public verification context.
 
@@ -88,8 +92,8 @@ It proves that a payment or settlement record exists without revealing the full 
 | ------------------------------------- | ----------------------------------------------------- |
 | `frontend/`                           | TrustLink Pay web app                                 |
 | `backend/`                            | API, user records, payment records, and notifications |
-| `tin-system/tins-registrar/`          | TIS Solana program                                    |
-| `tin-system/tins-sdk/`                | Transfer Identity SDK                                 |
+| `transfer-identity-protocol/tin-registrar/`          | TIP Solana program                                    |
+| `transfer-identity-protocol/tip-sdk/`                | Transfer Identity SDK                                 |
 | `tsn-protocol/tsn-sdk/`               | TSN SDK used by apps and services                     |
 | `tsn-protocol/tsn-cranker-op-daemon/` | Reference Cranker operator daemon                     |
 | `tsn-protocol/tsn-cranker-sdk/`       | Cranker SDK and CLI helpers                           |

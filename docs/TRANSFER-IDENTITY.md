@@ -1,8 +1,8 @@
-# Transfer Identity System
+# Transfer Identity Protocol
 
 **Version: Stable PRU Architecture v1**
 
-The **Transfer Identity System** is the identity layer used by TrustLink Pay. It supports the [blockchain payment solution](../README.md) by giving users a payment identity that does not require sharing a wallet address.
+The **Transfer Identity Protocol** is the identity layer used by TrustLink Pay. It supports the [blockchain payment solution](../README.md) by giving users a payment identity that does not require sharing a wallet address.
 
 It gives a user a Transfer Identity profile. That profile can contain a 10-digit **TIN** (**Transfer Identity Number**), a public display name, verified identity fields, encrypted social identity links, and PRU routing commitments.
 
@@ -70,6 +70,14 @@ Verification platforms are trusted services that can sign identity proofs.
 
 The Transfer Identity program supports a platform registry so the protocol can check whether a proof came from an authorized platform key. Platforms can rotate keys over time.
 
+### Solana Attestation Service
+
+Verification is optional trust context inside Transfer Identity. It is not a separate TrustLink protocol layer, and a TIN can receive payments without a verification credential.
+
+TrustLink is designed to accept credentials issued through the Solana Attestation Service (SAS) when SAS credential-provider integration is available. This can support trusted legal-name, business-name, and personhood evidence for a TIN. The purpose is similar to a bank confirming that an account holder's submitted name matches a trusted identity record: it increases confidence in the identity without making that identity record the public payment identifier.
+
+SAS credentials are not part of the current TSN settlement path. The TIN remains the public payment handle, while the credential is evidence about the identity associated with that handle.
+
 ## Example Flow
 
 1. A user creates a TIN.
@@ -98,14 +106,14 @@ It is a payment identity. Verification status comes from registered verification
 
 | Item | Location |
 | --- | --- |
-| Transfer Identity program | `tins-registrar/program/` |
-| Transfer Identity docs | `tins-registrar/README.md` |
-| Transfer Identity SDK | `tins-sdk/` |
+| Transfer Identity program | `tin-registrar/program/` |
+| Transfer Identity docs | `tin-registrar/README.md` |
+| Transfer Identity SDK | `tip-sdk/` |
 | Devnet program ID | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 ## Lookup Output
 
-The `npm run tins:lookup <TIN>` command now prints three separate views:
+The `npm run tin:lookup <TIN>` command now prints three separate views:
 
 - public on-chain fields
 - encrypted fields stored in the registry
@@ -222,9 +230,9 @@ Hidden from public views: PRU seeds, PRU private keys, token-specific lifecycle 
 Run:
 
 ```bash
-npm --prefix tin-system/tins-sdk run build
+npm --prefix transfer-identity-protocol/tip-sdk run build
 npm --prefix tsn-protocol/tsn-sdk test
-cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib
+cargo test --manifest-path transfer-identity-protocol/tin-registrar/program/Cargo.toml --lib
 ```
 
 ## PRU SpendGuard and isolated TIN Master Seed (2026-06-26)

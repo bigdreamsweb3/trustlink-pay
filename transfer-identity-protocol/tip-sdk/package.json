@@ -1,7 +1,7 @@
 {
-  "name": "tins-sdk",
+  "name": "tip-sdk",
   "version": "1.0.0",
-  "description": "TypeScript SDK for the TINS (Transfer Identity Number System) protocol on Solana",
+  "description": "TypeScript SDK for the TIP (Transfer Identity Protocol) protocol on Solana",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

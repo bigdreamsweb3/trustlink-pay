@@ -325,7 +325,7 @@ export async function tsnInitializeMotherEscrowOnChain(params: {
   if (existing && existing.valid) {
     if (existing.tinsProgramId !== params.tinsProgramId.toBase58()) {
       throw new Error(
-        `TSN mother escrow is initialized with TINS program ${existing.tinsProgramId}, not ${params.tinsProgramId.toBase58()}.`,
+        `TSN mother escrow is initialized with TIP program ${existing.tinsProgramId}, not ${params.tinsProgramId.toBase58()}.`,
       );
     }
     logger.info("tsn.mother_escrow.already_initialized", { motherEscrow: existing.address });

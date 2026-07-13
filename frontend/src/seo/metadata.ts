@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { BASE_URL, getAbsoluteUrl } from "./routes";
 
-export const defaultTitle = "TrustLink Pay | Identity-First Blockchain Payment Solution on Solana";
+export const defaultTitle =
+  "TrustLink Pay | Identity-First Blockchain Payment Solution";
 export const defaultDescription =
   "TrustLink Pay is an identity-first blockchain payment solution for stablecoin payments on Solana, powered by Transfer Identity, PRUs, and TSN settlement.";
 
@@ -27,7 +28,7 @@ export const defaultKeywords = [
   "Transfer Settlement Network",
   "TIN",
   "Transfer Identity Number",
-  "Transfer Identity System",
+  "Transfer Identity Protocol",
 ];
 
 interface ConstructMetadataProps {
@@ -74,7 +75,9 @@ export function constructMetadata({
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: title ? `${title} - TrustLink Pay` : "TrustLink Pay - Identity-first blockchain payment solution",
+          alt: title
+            ? `${title} - TrustLink Pay`
+            : "TrustLink Pay - Identity-first blockchain payment solution",
         },
       ],
     },

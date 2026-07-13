@@ -1,0 +1,73 @@
+# TrustLink Pay
+
+> Identity-first stablecoin payments on Solana, powered by Transfer Identity and the Transfer Settlement Network (TSN).
+
+TrustLink Pay lets people send stablecoins to a 10-digit Transfer Identity Number (TIN) instead of sharing wallet addresses. It combines portable payment identity, Privacy Receiving Units (PRUs), and TSN settlement so a normal payment experience does not need to expose a simple sender-wallet-to-recipient-wallet path.
+
+## What it does
+
+- Uses a TIN as the public payment identity rather than a wallet address.
+- Resolves recipient context before a payment is authorized.
+- Routes supported balance through PRUs and TSN settlement workflows.
+- Uses Cranker operators, liquidity vaults, and settlement proofs for payout execution.
+- Keeps the owner's primary wallet out of TIN creation, upgrade, and TSN settlement transactions as an on-chain signer, fee payer, or authority.
+
+TrustLink Pay improves the privacy design of everyday payments. It does not make Solana private: transactions and program accounts remain public, and on-chain activity can still be inspected with enough context.
+
+## Architecture
+
+| Layer | Responsibility |
+| --- | --- |
+| Transfer Identity | TINs, identity resolution, public display context, ownership proofs, and optional trust attestations |
+| PRU routing | Privacy Receiving Unit routes and unified TIN balance handling |
+| TSN | Payment intents, escrow holds, settlement proof records, and epoch accounting |
+| Crankers | Validation, settlement execution, recovery work, and liveness |
+| Liquidity | Vault-funded recipient payout and settlement reserves |
+
+Verification is not a separate protocol layer. It is optional trust context within Transfer Identity: a TIN can be used without it, while a verified legal or business name can give a sender more confidence in the recipient they are paying.
+
+TrustLink is designed to accept credentials from the Solana Attestation Service (SAS) when its credential-provider integration is available. SAS is not part of the current settlement path. The intended use is to let a TIN present trusted legal-name, business, or personhood evidence without turning the credential itself into a public on-chain payment record.
+
+## Read the documentation
+
+Start with the [documentation portal](./docs/README.md).
+
+- [Start Here](./docs/START-HERE.md) — product and protocol overview
+- [Architecture](./docs/ARCHITECTURE.md) — system boundaries and components
+- [Transfer Identity](./docs/TRANSFER-IDENTITY.md) — TINs, PRUs, and route authentication
+- [TSN](./docs/TSN.md) — payment execution and settlement design
+- [Developer Guide](./docs/DEVELOPER.md) — local development and integration rules
+- [Security](./docs/SECURITY.md) — security boundaries and privacy limits
+
+## Development status
+
+The repository contains the TrustLink Pay web app, backend, Transfer Identity program and SDK, TSN SDK, mempool services, RPC gateway, and reference Cranker operator. Development and protocol validation are active on Solana devnet.
+
+Current devnet program IDs:
+
+| Program | Address |
+| --- | --- |
+| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+
+## Milestones and ecosystem support
+
+TrustLink Pay has progressed through StableHacks and The Bags Hackathon, and received support through the Superteam Agentic Engineering Grant program for fraud-protection development. The factual project history and acknowledgements are in [Project Journey](./docs/PROJECT-JOURNEY.md).
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `frontend/` | TrustLink Pay web application |
+| `backend/` | API, user and payment records, notifications |
+| `transfer-identity-protocol/` | Transfer Identity program and SDK |
+| `tsn-protocol/` | TSN SDK, mempool, RPC gateway, and Cranker tooling |
+| `docs/` | Product, protocol, security, and developer documentation |
+
+## Local development
+
+For the Windows-native development workflow, see [Windows TSN Commands](./docs/WINDOWS-TSN-COMMANDS.md). The default PM2 stack runs the frontend, backend, and RPC gateway; mempool services and the Cranker are explicit opt-in processes.
+
+## License
+
+[MIT](./LICENSE)

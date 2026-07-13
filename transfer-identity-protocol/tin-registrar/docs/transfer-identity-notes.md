@@ -1,10 +1,10 @@
-# TINS Notes
+# TIP Notes
 
-This file records current TINS behavior in plain English.
+This file records current TIP behavior in plain English.
 
 ## Current Direction
 
-TINS is the portable payment identity layer for TrustLink Pay.
+TIP is the portable payment identity layer for TrustLink Pay.
 
 The active design focuses on:
 
@@ -18,4 +18,4 @@ The active design focuses on:
 
 Avoid presenting old experiments as active protocol versions.
 
-If implementation changes, update `docs/TINS.md` and `tins-registrar/README.md` first.
+If implementation changes, update `docs/TIP.md` and `tin-registrar/README.md` first.

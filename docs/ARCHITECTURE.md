@@ -11,7 +11,7 @@ The architecture exists so that identity, privacy, settlement, execution, and ac
 TrustLink Pay is made of:
 
 1. **TrustLink Pay app**: user experience, payment records, and identity display
-2. **TIS**: Transfer Identity System for TIN identity records
+2. **TIP**: Transfer Identity Protocol for TIN identity records
 3. **Privacy layer**: PRU routes and authenticated route access
 4. **TSN**: Transfer Settlement Network Protocol for payment settlement
 5. **Crankers**: operator execution and recovery work
@@ -36,11 +36,15 @@ TrustLink Pay is the payment system users and developers interact with.
 
 The frontend collects payment input, shows identity confidence, requests wallet signatures, displays payment state, and helps users understand the status of their money. The backend stores app-local records such as user profile data, payment history, notification state, and display-safe status. It does not act as a bridge for TSN protocol mutations.
 
-### Identity Layer: TIS
+### Identity Layer: TIP
 
-TIS creates and resolves Transfer Identities.
+TIP creates and resolves Transfer Identities.
 
 A Transfer Identity is the public payment identity. It can include a 10-digit TIN that is shared like an account number. The wallet address is not the normal payment identity.
+
+Verification is part of this identity layer, not a separate protocol layer. A TIN remains usable without verification. Optional attestations add trust context, such as a trusted legal-name or business-name confirmation, when a sender needs more confidence in who they are paying.
+
+TrustLink is designed to accept Solana Attestation Service (SAS) credentials when SAS credential-provider integration is available. SAS credentials do not participate in TSN settlement, and credential values are not intended to become public payment records.
 
 The Transfer Identity registry can store:
 
@@ -109,7 +113,7 @@ Each epoch has an isolated reservoir called a PEA. The PEA keeps that epoch's ac
 ## Security Considerations
 
 - Payment identity is a TIN, not a raw wallet address.
-- TIS stores an owner pubkey hash commitment, not a readable owner wallet authority.
+- TIP stores an owner pubkey hash commitment, not a readable owner wallet authority.
 - The frontend never derives PRUs and never receives the TIN Master Seed.
 - Public records use commitments and roots where possible.
 - Crankers must validate structure, signatures, routing, and timing before acting.
@@ -129,8 +133,8 @@ The system must never claim impossible privacy guarantees.
 
 | Component | Path |
 | --- | --- |
-| TIS Solana program | `tin-system/tins-registrar/program/` |
-| Transfer Identity SDK | `tin-system/tins-sdk/` |
+| TIP Solana program | `transfer-identity-protocol/tin-registrar/program/` |
+| Transfer Identity SDK | `transfer-identity-protocol/tip-sdk/` |
 | TSN SDK | `tsn-protocol/tsn-sdk/` |
 | Cranker daemon | `tsn-protocol/tsn-cranker-op-daemon/` |
 | Cranker SDK | `tsn-protocol/tsn-cranker-sdk/` |

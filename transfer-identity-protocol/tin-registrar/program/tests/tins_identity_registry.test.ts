@@ -37,11 +37,11 @@ function resolveSolanaRpcUrl() {
 /**
  * Anchor-style integration script.
  *
- * Run after building `tsn-sdk` and deploying/initializing TINS on a local validator
+ * Run after building `tsn-sdk` and deploying/initializing TIP on a local validator
  * or devnet. The script intentionally uses SDK builders so external developers can
  * copy the same flow into wallet/app integrations.
  */
-describe("TINS encrypted identity registry", () => {
+describe("TIP encrypted identity registry", () => {
   it("links encrypted social and sensitive identities with platform proof", async () => {
     const connection = new Connection(
       resolveSolanaRpcUrl({ frontendSafe: false }),

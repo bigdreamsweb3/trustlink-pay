@@ -4,7 +4,7 @@ import { sha256 } from "@noble/hashes/sha2";
 import { PublicKey } from "@solana/web3.js";
 import { buildTinCreationMessage } from "@trustlink/tsn-sdk/canonical-message";
 import {
-  DEFAULT_TINS_PROGRAM_ID,
+  DEFAULT_TIP_PROGRAM_ID,
   createTinOwnerIntentMessage,
   createTinOwnerIntentHash,
   decodeTinAccount,
@@ -100,7 +100,7 @@ function decodeLegacyTinUpgradeAccount(data: Uint8Array) {
 }
 
 function getFrontendTinsProgramId() {
-  return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
+  return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TIP_PROGRAM_ID);
 }
 
 export function getFrontendTsnMempoolUrl() {

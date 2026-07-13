@@ -483,7 +483,7 @@ export default function MempoolExplorer() {
         <div className="section-title-row">
           <div>
             <div className="section-kicker">identity operations</div>
-            <h2>TINS Cranker Queue</h2>
+            <h2>TIP Cranker Queue</h2>
           </div>
           <span className="queue-count">{data?.tinOperations.length ?? 0} operations</span>
         </div>
@@ -516,7 +516,7 @@ export default function MempoolExplorer() {
               </div>
               <StatusBadge status={operation.status} />
             </div>
-          )) : <div className="empty-state roomy">No TINS operations yet. TIN creation and updates will appear here after owner-signed intents enter TSN.</div>}
+          )) : <div className="empty-state roomy">No TIP operations yet. TIN creation and updates will appear here after owner-signed intents enter TSN.</div>}
         </div>
       </section>
 

@@ -1,10 +1,10 @@
 # Transfer Identity Operator Guide
 
-This guide explains how the Transfer Identity System should be operated and maintained.
+This guide explains how the Transfer Identity Protocol should be operated and maintained.
 
 ## What Is This?
 
-The Transfer Identity System is the identity layer.
+The Transfer Identity Protocol is the identity layer.
 
 It creates and resolves Transfer Identities. Each identity can include a 10-digit TIN, public-safe identity fields, encrypted identity links, and verification references.
 
@@ -42,6 +42,6 @@ The registry should support multiple authorized keys and removal of old keys.
 
 | Item | Path |
 | --- | --- |
-| Program | `tins-registrar/program/` |
-| SDK | `tins-sdk/` |
+| Program | `tin-registrar/program/` |
+| SDK | `tip-sdk/` |
 | Docs | `docs/TRANSFER-IDENTITY.md` |

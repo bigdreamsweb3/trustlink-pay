@@ -35,7 +35,7 @@ The backend keeps this app state separate from protocol settlement state.
 - Do not store decrypted private TSN payloads.
 - Do not expose raw private routes.
 - Stop polling finalized payments.
-- Treat TSN and TINS as protocol systems accessed through SDKs and APIs.
+- Treat TSN and TIP as protocol systems accessed through SDKs and APIs.
 
 ## Local Development
 

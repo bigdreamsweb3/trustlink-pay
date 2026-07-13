@@ -7,7 +7,7 @@ import {
 } from "../tsn-protocol/tsn-sdk/dist/tins.js";
 import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
-const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
+const DEFAULT_TIP_PROGRAM_ID = new PublicKey(
   "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
 );
 
@@ -208,7 +208,7 @@ async function main() {
   const tinBuffer = Buffer.alloc(8);
   tinBuffer.writeBigUInt64LE(targetTin, 0);
 
-  const accounts = await connection.getProgramAccounts(DEFAULT_TINS_PROGRAM_ID, {
+  const accounts = await connection.getProgramAccounts(DEFAULT_TIP_PROGRAM_ID, {
     filters: [
       {
         memcmp: {
@@ -220,7 +220,7 @@ async function main() {
   });
 
   if (accounts.length === 0) {
-    console.log(`No TINS account found for TIN ${targetTin.toString()}`);
+    console.log(`No TIP account found for TIN ${targetTin.toString()}`);
     return;
   }
 
@@ -233,7 +233,7 @@ async function main() {
     const resolved = await resolveTIN({
       tin: targetTin,
       connection,
-      programId: DEFAULT_TINS_PROGRAM_ID,
+      programId: DEFAULT_TIP_PROGRAM_ID,
     }).catch(() => null);
 
     if (modern) {

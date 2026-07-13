@@ -24,9 +24,9 @@ TrustLink Pay tries to bring that kind of experience to stablecoin payments.
 
 ## The Main Parts
 
-### TIS: Transfer Identity System
+### TIP: Transfer Identity Protocol
 
-TIS is the identity layer.
+TIP is the identity layer.
 
 It creates and resolves Transfer Identities. A Transfer Identity can have a 10-digit TIN, public identity context, a display name, verified legal-name status, encrypted social links, and PRU commitments.
 
@@ -121,7 +121,7 @@ Use this rule when deciding where code belongs:
 | TIN creation or upgrade intents | TSN mempool |
 | PRU route material and spend permits | TSN mempool and Crankers |
 | On-chain settlement execution | TSN program and Crankers |
-| Transfer Identity registry mutation | TIS program through Crankers |
+| Transfer Identity registry mutation | TIP program through Crankers |
 | Solana RPC routing | TSN RPC gateway |
 
 ## Community And Ecosystem
@@ -133,7 +133,7 @@ TrustLink Pay is also shaped by public feedback, research, and external discussi
 ## Where To Go Next
 
 - [Architecture](./ARCHITECTURE.md)
-- [Transfer Identity System](./TRANSFER-IDENTITY.md)
+- [Transfer Identity Protocol](./TRANSFER-IDENTITY.md)
 - [TSN](./TSN.md)
 - [Developer Guide](./DEVELOPER.md)
 - [TSN commitment settlement](./TSN-COMMITMENT-SETTLEMENT.md)
@@ -224,7 +224,7 @@ import { traceFunction } from "../utils/observability/tracer";
 
 export const resolveTin = traceFunction(
   async function resolveTin(tin: string) {
-    return tinsClient.resolve(tin);
+    return tipClient.resolve(tin);
   },
   {
     name: "resolveTin",
@@ -315,7 +315,7 @@ Cranker B submits the registry mutation
 
 ```bash
 npm --prefix tsn-protocol/tsn-sdk test
-npm --prefix tin-system/tins-sdk run build
+npm --prefix transfer-identity-protocol/tip-sdk run build
 ```
 
 ## TSN + Cranker Mediated Transfer Identity Operations
@@ -340,4 +340,4 @@ The owner remains the only authority. Crankers only pay and relay transactions. 
 
 ### Testing notes
 
-Run `npm --prefix tin-system/tins-sdk run build` and `cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib` before changing Transfer Identity flows.
+Run `npm --prefix transfer-identity-protocol/tip-sdk run build` and `cargo test --manifest-path transfer-identity-protocol/tin-registrar/program/Cargo.toml --lib` before changing Transfer Identity flows.

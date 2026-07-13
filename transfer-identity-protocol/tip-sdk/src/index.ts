@@ -9,7 +9,7 @@ import {
 } from "@solana/web3.js";
 import * as crypto from "crypto";
 
-export const DEFAULT_TINS_PROGRAM_ID = new PublicKey(
+export const DEFAULT_TIP_PROGRAM_ID = new PublicKey(
   "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
 );
 const DEFAULT_SOLANA_RPC_URL = "https://api.devnet.solana.com";
@@ -50,7 +50,7 @@ export function getIdentitySeed(walletPubkey: PublicKey): Buffer {
 
 export function getIdentityPda(
   walletPubkey: PublicKey,
-  programId: PublicKey = DEFAULT_TINS_PROGRAM_ID
+  programId: PublicKey = DEFAULT_TIP_PROGRAM_ID
 ): [PublicKey, number] {
   const seed = getIdentitySeed(walletPubkey);
   return PublicKey.findProgramAddressSync(
@@ -60,7 +60,7 @@ export function getIdentityPda(
 }
 
 export function getGlobalStatePda(
-  programId: PublicKey = DEFAULT_TINS_PROGRAM_ID
+  programId: PublicKey = DEFAULT_TIP_PROGRAM_ID
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("global-state", "utf8")],
@@ -164,7 +164,7 @@ export function serializeTinUpdateParams(params: {
 
 /** @deprecated Direct user-signed CreateTin is disabled. Use serializeTinCreationRegistryParams after a TSN Cranker verifies the owner intent. */
 export function serializeCreateTinParams(): Buffer {
-  throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry");
+  throw new Error("Direct TIP create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry");
 }
 
 function serializeTinRegistryMutationParams(
@@ -262,16 +262,16 @@ export function serializeResolveTinParams(
 // 3. CORE SDK CLIENT INTERFACE
 // ==========================================
 
-export interface TinsClientConfig {
+export interface TipClientConfig {
   rpcUrl?: string;
   programId?: PublicKey;
   connection?: Connection;
 }
 
-export interface TinsClient {
+export interface TipClient {
   connection: Connection;
   programId: PublicKey;
-  /** @deprecated Direct TINS creation is disabled. Use TSN Mempool runtime + Cranker tin_creation_registry. */
+  /** @deprecated Direct TIP creation is disabled. Use TSN Mempool runtime + Cranker tin_creation_registry. */
   createTin: () => Promise<never>;
   resolveTin: (params: {
     wallet: {
@@ -281,16 +281,16 @@ export interface TinsClient {
   }) => Promise<bigint | null>;
 }
 
-export function createTinsClient(config: TinsClientConfig = {}): TinsClient {
+export function createTipClient(config: TipClientConfig = {}): TipClient {
   const connection = config.connection ?? createSolanaConnection();
-  const programId = config.programId ?? DEFAULT_TINS_PROGRAM_ID;
+  const programId = config.programId ?? DEFAULT_TIP_PROGRAM_ID;
 
   return {
     connection,
     programId,
 
     async createTin() {
-      throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and wait for Cranker-mediated tin_creation_registry");
+      throw new Error("Direct TIP create is disabled; submit a TSN TIN creation intent and wait for Cranker-mediated tin_creation_registry");
     },
 
     async resolveTin({ wallet }) {
@@ -310,7 +310,7 @@ export function createTinsClient(config: TinsClientConfig = {}): TinsClient {
         signature: signature,
       });
 
-      // 4. Build TINS ResolveTin instruction
+      // 4. Build TIP ResolveTin instruction
       const data = serializeResolveTinParams(walletPubkey, challengeNonce);
       const resolveInstruction = new TransactionInstruction({
         keys: [

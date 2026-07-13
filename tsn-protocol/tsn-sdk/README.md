@@ -22,7 +22,7 @@ They should call SDK methods instead of manually building instructions or derivi
 - Create payment authorization payloads.
 - Submit mempool work.
 - Read settlement status.
-- Support TINS resolution where TSN needs identity context.
+- Support TIP resolution where TSN needs identity context.
 - Expose safe helpers for Cranker and backend services.
 
 ## Important Rules
@@ -63,6 +63,6 @@ const pruSet = derivePruSet({ masterSeed, tinId });
 const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pruSet, amount });
 ```
 
-The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TINS registry state.
+The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TIP registry state.
 
-TINS registry awareness: TINS does not store PRU arrays. Every TIN receives exactly 30 token-agnostic PRUs, and TINS stores the PRU configuration commitment produced by the TSN mempool and cranker layer.
+TIP registry awareness: TIP does not store PRU arrays. Every TIN receives exactly 30 token-agnostic PRUs, and TIP stores the PRU configuration commitment produced by the TSN mempool and cranker layer.

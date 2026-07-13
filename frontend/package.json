@@ -21,7 +21,7 @@
     "@trustlink/observability": "file:../utils/observability",
     "@trustlink/tsn-sdk": "file:../tsn-protocol/tsn-sdk",
     "framer-motion": "^12.39.0",
-    "lightningcss-linux-x64-gnu": "^1.32.0",
+    "idb-keyval": "^6.3.0",
     "lucide-react": "^0.473.0",
     "next": "14.2.26",
     "postcss": "^8.5.14",

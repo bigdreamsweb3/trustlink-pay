@@ -267,7 +267,7 @@ export const POST = traceApiHandler(postPaymentCreate, {
 
 /**
  * Resolve a sender's TIN and identity from TSN on-chain data using their wallet address.
- * Returns null if the wallet has no TINS identity account on-chain.
+ * Returns null if the wallet has no TIP identity account on-chain.
  */
 async function resolveSenderWalletToTin(senderWallet: string): Promise<{
   tin: string;

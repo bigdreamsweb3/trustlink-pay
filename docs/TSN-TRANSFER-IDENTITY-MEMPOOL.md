@@ -186,12 +186,12 @@ Use focused checks first:
 python -m py_compile tsn-mempool-backend/server.py
 npm --prefix tsn-mempool-frontend run typecheck
 npm --prefix tsn-protocol/tsn-sdk run build
-npm --prefix tin-system/tins-sdk run build
+npm --prefix transfer-identity-protocol/tip-sdk run build
 ```
 
 Then run program tests when the Solana toolchain is stable:
 
 ```bash
-cargo test --manifest-path tin-system/tins-registrar/program/Cargo.toml --lib
+cargo test --manifest-path transfer-identity-protocol/tin-registrar/program/Cargo.toml --lib
 cargo test --manifest-path tsn-protocol/tsn/protocol/programs/trustlink-escrow/Cargo.toml --lib
 ```

@@ -39,7 +39,7 @@ function buildTinBindingMessage(params: {
   issuedAt: string;
 }) {
   return [
-    "TrustLink Pay TINS phone mapping",
+    "TrustLink Pay TIP phone mapping",
     `Phone: ${params.userPhoneNumber}`,
     `TIN: ${params.tin}`,
     `Wallet: ${params.walletPublicKey}`,
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
       const bindingIssuedAtMs = Date.parse(payload.bindingIssuedAt);
       if (!Number.isFinite(bindingIssuedAtMs) || Math.abs(Date.now() - bindingIssuedAtMs) > TIN_BINDING_MAX_AGE_MS) {
-        return fail("TINS wallet binding signature expired. Please sign again.", 400);
+        return fail("TIP wallet binding signature expired. Please sign again.", 400);
       }
       const expectedBindingMessage = buildTinBindingMessage({
         userPhoneNumber: authUser.phoneNumber,
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         issuedAt: payload.bindingIssuedAt,
       });
       if (payload.bindingMessage !== expectedBindingMessage) {
-        return fail("TINS wallet binding message does not match this account", 400);
+        return fail("TIP wallet binding message does not match this account", 400);
       }
       if (
         !verifyTinBindingSignature({
@@ -105,34 +105,34 @@ export async function POST(request: Request) {
           walletPublicKey,
         })
       ) {
-        return fail("TINS wallet binding signature is invalid", 400);
+        return fail("TIP wallet binding signature is invalid", 400);
       }
 
       const connection = createSolanaConnection({ frontendSafe: false });
       const account = await connection.getAccountInfo(identityPublicKey, "confirmed");
       if (!account) {
-        return fail("TINS identity account was not found on devnet", 400);
+        return fail("TIP identity account was not found on devnet", 400);
       }
       if (!account.owner.equals(programId)) {
-        return fail("TINS identity account is not owned by the configured TINS program", 400);
+        return fail("TIP identity account is not owned by the configured TIP program", 400);
       }
       const decoded = decodeTinAccount(account.data);
       if (decoded.tin.toString() !== payload.tin) {
-        return fail("Submitted TIN does not match the on-chain TINS account", 400);
+        return fail("Submitted TIN does not match the on-chain TIP account", 400);
       }
       const ownerPublicKey = decodeTinOwnerPublicKey(account.data);
       if (ownerPublicKey && !ownerPublicKey.equals(walletPublicKey)) {
-        return fail("Connected wallet does not own this TINS account", 400);
+        return fail("Connected wallet does not own this TIP account", 400);
       }
       if (!identityMatchesDerivedPda) {
         if (!ownerPublicKey) {
-          return fail("Legacy TINS account does not expose an owner wallet", 400);
+          return fail("Legacy TIP account does not expose an owner wallet", 400);
         }
       }
       const registryPublicKey = getTinsRegistryPda({ tin: decoded.tin, programId }).toBase58();
       const submittedRegistryPublicKey = normalizeOptionalPublicKey(payload.tinsRegistryPublicKey);
       if (submittedRegistryPublicKey && submittedRegistryPublicKey !== registryPublicKey) {
-        return fail("TINS registry PDA does not match the submitted TIN", 400);
+        return fail("TIP registry PDA does not match the submitted TIN", 400);
       }
 
       const updated = await updateUserTinMapping({

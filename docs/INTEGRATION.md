@@ -62,7 +62,7 @@ User sees escrowed, claiming, or paid status
 
 | Need | Use |
 | --- | --- |
-| TIN identity | `tins-sdk` |
+| TIN identity | `tip-sdk` |
 | TSN settlement | `tsn-sdk` |
 | Cranker operation | `tsn-cranker-sdk` |
 | App payment status | TrustLink backend |

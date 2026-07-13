@@ -50,7 +50,7 @@ Options:
   --build-only     Build and validate without deploying programs
   --build-apps     Also run production builds for frontend/backend/mempool UI
   --skip-checks    Skip application TypeScript checks
-  --skip-tins      Skip the TINS program and TINS SDK
+  --skip-tins      Skip the TIP program and TIP SDK
   --dry-run        Print the commands without executing them
 
 On Windows, Solana/Anchor commands run inside WSL while npm commands run
@@ -87,11 +87,11 @@ natively. Set TSN_NATIVE_SOLANA_TOOLS=1 to use Windows Solana tools instead.
   },
   tins: {
     build: ["anchor", ["build"]],
-    cwd: path.join(root, "tin-system", "tins-registrar", "program"),
+    cwd: path.join(root, "transfer-identity-protocol", "tin-registrar", "program"),
     deployKeypair: path.join(
       root,
-      "tin-system",
-      "tins-registrar",
+      "transfer-identity-protocol",
+      "tin-registrar",
       "program",
       "target",
       "deploy",
@@ -100,8 +100,8 @@ natively. Set TSN_NATIVE_SOLANA_TOOLS=1 to use Windows Solana tools instead.
     expectedId: "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     keypair: path.join(
       root,
-      "tin-system",
-      "tins-registrar",
+      "transfer-identity-protocol",
+      "tin-registrar",
       "program",
       "pids",
       "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT.json",
@@ -363,13 +363,13 @@ async function main() {
   console.log(`[release] Cluster: ${options.url}`);
 
   prepareProgram(programs.tsn, "TSN");
-  if (options.includeTins) prepareProgram(programs.tins, "TINS");
+  if (options.includeTins) prepareProgram(programs.tins, "TIP");
 
   buildProgram(programs.tsn, "TSN");
-  if (options.includeTins) buildProgram(programs.tins, "TINS");
+  if (options.includeTins) buildProgram(programs.tins, "TIP");
 
   if (options.includeTins) {
-    installAndBuildSdk("tins-sdk", "TINS SDK");
+    installAndBuildSdk("tip-sdk", "TIP SDK");
   }
   installAndBuildSdk("tsn-sdk", "TSN SDK");
   installAndBuildSdk("tsn-cranker-sdk", "TSN Cranker SDK");
@@ -381,7 +381,7 @@ async function main() {
 
   if (!options.buildOnly) {
     deployProgram(programs.tsn, "TSN");
-    if (options.includeTins) deployProgram(programs.tins, "TINS");
+    if (options.includeTins) deployProgram(programs.tins, "TIP");
   }
 
   console.log("\n[release] Complete.");

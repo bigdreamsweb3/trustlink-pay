@@ -4,7 +4,7 @@ import path from "node:path";
 import nacl from "tweetnacl";
 import { Keypair, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, SystemProgram, Transaction, TransactionInstruction, sendAndConfirmTransaction } from "@solana/web3.js";
 import {
-  DEFAULT_TINS_PROGRAM_ID,
+  DEFAULT_TIP_PROGRAM_ID,
   createOwnerIntentSignatureInstruction,
   createTinOwnerIntentHash,
   getTinsIdentityPda,
@@ -22,7 +22,7 @@ import { findLegacyTinAccount } from "./lib/tins-legacy-account.mjs";
 const ZERO_HASH_32 = Buffer.alloc(32);
 
 function usage() {
-  console.error("Usage: npm run tins:update:legacy -- <TIN> [--owner <keypair.json>] [--save-seed <path>] [--display-name \"Name\"]");
+  console.error("Usage: npm run tin:update:legacy -- <TIN> [--owner <keypair.json>] [--save-seed <path>] [--display-name \"Name\"]");
 }
 
 function expandHome(value) {
@@ -74,14 +74,14 @@ async function main() {
     process.exit(1);
   }
 
-  const programId = new PublicKey(process.env.TINS_PROGRAM_ID ?? DEFAULT_TINS_PROGRAM_ID);
+  const programId = new PublicKey(process.env.TINS_PROGRAM_ID ?? DEFAULT_TIP_PROGRAM_ID);
   const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
   const connection = createSolanaConnection();
   const ownerKeypairPath = String(flags.owner ?? process.env.TINS_OWNER_KEYPAIR ?? "~/.config/solana/id.json");
   const ownerKeypair = loadKeypair(ownerKeypairPath);
 
   console.log(`Upgrading legacy TIN ${tin} on ${rpcUrl}`);
-  console.log(`Using TINS program ${programId.toBase58()}`);
+  console.log(`Using TIP program ${programId.toBase58()}`);
   console.log(`Using owner keypair ${expandHome(ownerKeypairPath)}`);
 
   const legacy = await findLegacyTinAccount({ connection, programId, tin });
@@ -191,7 +191,7 @@ async function main() {
   }
 
   console.log("");
-  console.log(`Next check: npm run tins:lookup ${legacy.decoded.tin.toString()}`);
+  console.log(`Next check: npm run tin:lookup ${legacy.decoded.tin.toString()}`);
 }
 
 main().catch((error) => {

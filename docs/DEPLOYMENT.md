@@ -83,7 +83,7 @@ If this fails, fix the toolchain before deploying.
 ## Deploy Transfer Identity
 
 ```bash
-npm run tins:deploy:checked
+npm run tip:deploy:checked
 ```
 
 ## Deploy TSN

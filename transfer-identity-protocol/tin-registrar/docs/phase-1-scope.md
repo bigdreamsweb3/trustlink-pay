@@ -1,10 +1,10 @@
-# TINS Scope
+# TIP Scope
 
 TrustLink Pay is pre-launch, so this document describes the active scope instead of old phases.
 
 ## Active Scope
 
-TINS should provide:
+TIP should provide:
 
 - 10-digit payment identity creation
 - TIN lookup
@@ -15,9 +15,9 @@ TINS should provide:
 - registered verification platform keys
 - platform-signed identity proofs
 
-## Out Of Scope For Core TINS
+## Out Of Scope For Core TIP
 
-TINS should not become a general social network.
+TIP should not become a general social network.
 
 It should not publish phone numbers, private documents, or full wallet history. It should provide enough identity context for safer payments.
 

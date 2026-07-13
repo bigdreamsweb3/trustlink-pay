@@ -55,7 +55,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   createOwnerIntentSignatureInstruction,
-  DEFAULT_TINS_PROGRAM_ID,
+  DEFAULT_TIP_PROGRAM_ID,
   getTinsGlobalStatePda,
   getTinsIdentityPda,
   serializeTinCreationRegistryParams,
@@ -1892,7 +1892,7 @@ function base64Bytes(value: string | null | undefined, label: string) {
 function tinsProgramId() {
   return process.env.TINS_PROGRAM_ID
     ? new PublicKey(process.env.TINS_PROGRAM_ID)
-    : DEFAULT_TINS_PROGRAM_ID;
+    : DEFAULT_TIP_PROGRAM_ID;
 }
 
 async function submitTinRegistryMutation(params: {
@@ -1922,7 +1922,7 @@ async function submitTinRegistryMutation(params: {
       ? params.operation.displayName
       : params.operation.newDisplayName) ?? "";
   if (!displayName.trim())
-    throw new Error("displayName is required for TINS registry mutation");
+    throw new Error("displayName is required for TIP registry mutation");
 
   const ed25519Ix = createOwnerIntentSignatureInstruction({
     ownerPubkey,

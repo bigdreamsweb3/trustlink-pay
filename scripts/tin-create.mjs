@@ -1,7 +1,6 @@
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { createTinsClient } from "../tin-system/tins-sdk/src/index.js"; 
-// Note: We might need to run this with tsx if the SDK is in typescript, 
-// or compile it, but let's assume it works or we'll adjust the import.
+import nacl from "tweetnacl";
+import { createTipClient } from "../transfer-identity-protocol/tip-sdk/dist/index.js"; 
 import { createSolanaConnection } from "./lib/tsn-rpc.mjs";
 
 async function main() {
@@ -30,29 +29,23 @@ async function main() {
       return tx;
     },
     signMessage: async (msg) => {
-      import("tweetnacl").then((nacl) => {
-          // just for nodejs fallback if tweetnacl is needed
-      });
-      // A quick hack for signMessage in node without tweetnacl directly imported:
-      // We will just use the standard solana/web3.js nacl 
-      const nacl = await import("tweetnacl");
-      return nacl.default.sign.detached(msg, walletKeypair.secretKey);
+      return nacl.sign.detached(msg, walletKeypair.secretKey);
     }
   };
 
-  // 4. Initialize the TINS SDK client
-  const tinsClient = createTinsClient({ connection });
+  // 4. Initialize the TIP SDK client
+  const tipClient = createTipClient({ connection });
 
   // 5. Call createTin
-  console.log("Calling SDK: tinsClient.createTin()...");
+  console.log("Calling SDK: tipClient.createTin()...");
   console.log("Under the hood this will:");
   console.log(" - Hash your wallet pubkey to get an identity seed");
   console.log(" - Derive a Program Derived Address (PDA) for your TinAccount");
   console.log(" - Encrypt your phone number using a derived key");
-  console.log(" - Send the CreateTin instruction to the TINS Registrar program");
+  console.log(" - Send the CreateTin instruction to the TIN Registrar program");
   
   try {
-    const result = await tinsClient.createTin({
+    const result = await tipClient.createTin({
       wallet: mockWallet,
       displayName,
       phoneNumber
@@ -60,7 +53,7 @@ async function main() {
 
     console.log("\n✅ TIN Created Successfully!");
     console.log(`Your new TIN is: ${result.tin.toString()}`);
-    console.log(`You can now run: npm run test:lookup ${result.tin.toString()}`);
+    console.log(`You can now run: npm run tin:lookup ${result.tin.toString()}`);
   } catch (error) {
     console.error("Failed to create TIN:", error);
   }

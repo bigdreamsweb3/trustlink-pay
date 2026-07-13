@@ -29,7 +29,7 @@ const SKIP_DIRS = new Set([
   ".turbo",
 ]);
 
-// Defaults from your recent TINS/Anchor history
+// Defaults from your recent TIP/Anchor history
 const oldIds = new Set([
   "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
   "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",

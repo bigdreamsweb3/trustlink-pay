@@ -1,6 +1,6 @@
-# TINS Registrar
+# TIN Registrar
 
-TINS means **Transfer Identity Number System**.
+TIP means **Transfer Identity Protocol**.
 
 It creates 10-digit payment identities for TrustLink Pay and other integrations.
 
@@ -18,7 +18,7 @@ A TIN gives users a portable identity layer while allowing wallets, social ident
 
 ## What The Program Stores
 
-TINS stores identity records such as:
+TIP stores identity records such as:
 
 - TIN number
 - SHA-256 owner pubkey commitment
@@ -72,7 +72,7 @@ Run:
 ```bash
 npm run deploy:lockfiles:stabilize
 npm run deploy:doctor
-npm run tins:deploy:checked
+npm run tip:deploy:checked
 ```
 
 Do not deploy with Solana/SBF 3.x or standalone `cargo-build-sbf 4.x` until the target cluster supports that sBPF bytecode.
@@ -88,6 +88,6 @@ solana program close <BUFFER_ADDRESS> --buffer-authority ~/.config/solana/id.jso
 
 ## Related Docs
 
-- `docs/TINS.md`
+- `docs/TIP.md`
 - `docs/DEPLOYMENT.md`
 - `docs/INTEGRATION.md`

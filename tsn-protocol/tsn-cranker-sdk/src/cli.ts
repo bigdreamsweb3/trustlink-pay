@@ -237,7 +237,7 @@ async function main() {
 Environment Variables:
   TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: http://127.0.0.1:8787)
   PROGRAM_ID                     TSN program ID
-  TINS_PROGRAM_ID                TINS registry program ID (defaults to local dev TINS id)
+  TINS_PROGRAM_ID                TIP registry program ID (defaults to local dev TIP id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);
     return;
   }

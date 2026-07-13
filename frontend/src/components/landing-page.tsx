@@ -32,14 +32,8 @@ const heroStats = [
   {
     icon: Fingerprint,
     label: "Identity Layer",
-    value: "TIS",
-    note: "Transfer Identity System for Solana payments",
-  },
-  {
-    icon: ShieldCheck,
-    label: "Verification",
-    value: "SAS",
-    note: "Attestation-based identity and trust verification",
+    value: "TIP",
+    note: "Payment identity and optional trust attestations",
   },
   {
     icon: Network,
@@ -52,6 +46,12 @@ const heroStats = [
     label: "Settlement",
     value: "TSN",
     note: "Private escrow-backed payment settlement",
+  },
+  {
+    icon: Wallet,
+    label: "Liquidity",
+    value: "Vaults",
+    note: "Liquidity for recipient payouts and settlement reserves",
   },
 ];
 
@@ -129,8 +129,8 @@ const sdkFeatures = [
   },
   {
     icon: ShieldCheck,
-    title: "Verification APIs",
-    desc: "Query SAS attestations and trust credentials",
+    title: "Identity APIs",
+    desc: "Resolve payment identity and its available trust context",
   },
   {
     icon: Zap,
@@ -174,11 +174,11 @@ const currentCapabilities = [
 const upcomingCapabilities = [
   {
     title: "X Business Verification",
-    desc: "Business identity verification through X Business credentials",
+    desc: "Business identity credentials linked to Transfer Identity",
   },
   {
-    title: "Additional SAS Credentials",
-    desc: "Government, merchant, and proof-of-personhood attestations",
+    title: "SAS Credential Providers",
+    desc: "Government, merchant, and proof-of-personhood attestations when provider integration is available",
   },
   {
     title: "Multi-Cranker Network",
@@ -202,23 +202,23 @@ const socialIdentities = [
 const sasFeatures = [
   {
     icon: ShieldCheck,
-    title: "Government Verified",
-    desc: "Identity verified through trusted SAS issuers",
+    title: "Government Identity",
+    desc: "A future trusted credential category for legal-name confirmation",
   },
   {
     icon: Wallet,
-    title: "Merchant Verified",
-    desc: "Trusted business and merchant credentials",
+    title: "Business Identity",
+    desc: "A future credential category for verified business context",
   },
   {
     icon: Users,
     title: "Proof Of Personhood",
-    desc: "Human verification without exposing personal data",
+    desc: "A future credential category for privacy-preserving human verification",
   },
   {
     icon: CheckCircle2,
-    title: "Reusable Trust Credentials",
-    desc: "Verify once and reuse credentials across applications",
+    title: "Reusable Attestations",
+    desc: "Attestation evidence associated with a Transfer Identity",
   },
 ];
 
@@ -325,8 +325,8 @@ export function LandingPage() {
               intents into private, cryptographically verifiable execution
               through Escrow Hold, Cranker execution, and Settlement Proof. Pay
               anyone using a phone number or 10-digit TIN instead of a wallet
-              address, with private settlement and SAS-powered identity
-              verification.
+              address, with private settlement and optional identity trust
+              context.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -452,7 +452,7 @@ export function LandingPage() {
               },
               {
                 title: "Identity-First Blockchain Solution",
-                desc: "The Transfer Identity System connects payment identity, verification context, and PRU route commitments.",
+                desc: "The Transfer Identity Protocol connects payment identity, verification context, and PRU route commitments.",
               },
               {
                 title: "Private Blockchain Settlement",
@@ -560,7 +560,7 @@ export function LandingPage() {
           <div className="tl-field rounded-[14px] p-4">
             <h3 className="tl-h3 mb-4">Identity And PRU Resolution</h3>
             <p className="tl-body text-text-soft">
-              The Transfer Identity System maintains a secure mapping between
+              The Transfer Identity Protocol maintains a secure mapping between
               human-readable identifiers, TINs, and PRU settlement routes. When
               you initiate a payment, the system resolves the recipient's
               identifier without exposing raw wallet addresses.
@@ -624,30 +624,32 @@ export function LandingPage() {
       </section>
 
       {/* ============================================================ */}
-      {/* SECTION 02 — VERIFICATION */}
+      {/* SECTION 02 — IDENTITY ATTESTATIONS */}
       {/* ============================================================ */}
       <section
-        id="verification"
+        id="identity-attestations"
         className="border-t border-accent-border mx-auto w-full max-w-[1180px] scroll-mt-14 px-0 py-14 sm:px-6 lg:px-0"
       >
-        <SectionLabel index="02" title="Verification" />
+        <SectionLabel index="02" title="Identity confidence" />
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <div>
-            <h2 className="tl-h2 mt-5">Trust without sacrificing privacy.</h2>
+            <h2 className="tl-h2 mt-5">Trust context belongs with identity.</h2>
             <p className="tl-body-lg mt-4 text-text-soft">
-              Transfer Identity provides the payment identity. SAS (Solana
-              Attestation Service) provides verifiable credentials. Together,
-              they enable trust without exposing personal data.
+              Transfer Identity provides the payment identity and can carry
+              optional trust context. A TIN is still usable without a verified
+              name or business credential.
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
-              Verification is optional. Users can receive payments without
-              verification. But when verification is present, it increases
-              confidence for both parties.
+              TrustLink is designed to accept Solana Attestation Service (SAS)
+              credentials when its credential-provider integration is
+              available. That can let a sender confirm that a displayed legal
+              or business name comes from a trusted issuer without making the
+              credential itself a public payment record.
             </p>
           </div>
 
-          {/* Verification Stats */}
+          {/* Identity-attestation context */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="tl-field rounded-[14px] p-4 max-h-fit">
               <p className="text-3xl font-black text-accent">SAS</p>
@@ -655,7 +657,7 @@ export function LandingPage() {
                 Solana Attestation Service
               </p>
               <p className="text-xs text-text-soft mt-1">
-                Verifiable credentials
+                Future credential-provider integration
               </p>
             </div>
             <div className="tl-field rounded-[14px] p-4 h-fit">
@@ -664,15 +666,15 @@ export function LandingPage() {
                 Personal Data Exposed
               </p>
               <p className="text-xs text-text-soft mt-1">
-                Proof without revelation
+                Trust context is separate from payment settlement
               </p>
             </div>
           </div>
         </div>
 
-        {/* Verification Types */}
+        {/* Future attestation categories */}
         <div className="mt-12">
-          <h3 className="tl-h3 mb-6">SAS Verification Sources</h3>
+          <h3 className="tl-h3 mb-6">Future SAS attestation categories</h3>
           <div className="grid gap-4 lg:grid-cols-2">
             {sasFeatures.map(({ icon: Icon, title, desc }) => (
               <div
@@ -691,15 +693,14 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Social Verification */}
+        {/* Identity links and attestation design */}
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           <div className="tl-field rounded-[14px] p-4">
-            <h3 className="tl-h3 mb-4">Social Verification</h3>
+            <h3 className="tl-h3 mb-4">Identity links</h3>
             <p className="tl-body text-text-soft">
-              Connect verified social accounts to your TIN for increased trust.
-              Currently supporting WhatsApp verification with encrypted
-              phone-number linking. X Business verification under integration
-              testing.
+              Link supported identity channels to your TIN for additional
+              payment context. WhatsApp uses encrypted phone-number linking.
+              X Business credentials are part of the planned attestation path.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               {socialIdentities.map(({ icon: Icon, name, status, color }) => (
@@ -724,30 +725,29 @@ export function LandingPage() {
           </div>
 
           <div className="tl-field rounded-[14px] p-4">
-            <h3 className="tl-h3 mb-4">Reusable Credentials</h3>
+            <h3 className="tl-h3 mb-4">Attestation design</h3>
             <p className="tl-body text-text-soft">
-              Verify once through SAS and reuse your credentials across
-              applications built on TSN. Your attestations persist with your
-              identity, reducing redundant verification while maintaining
-              privacy.
+              When SAS credential providers are available, TrustLink can use
+              their attestations as trust evidence for a Transfer Identity.
+              The payment identity remains separate from the settlement layer.
             </p>
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
                 <span className="text-text-soft">
-                  Single verification, multiple uses
+                  Trust evidence is associated with identity
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
                 <span className="text-text-soft">
-                  Credentials persist with identity
+                  TINs remain usable without attestations
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-accent" />
                 <span className="text-text-soft">
-                  Privacy-preserving verification
+                  Settlement does not depend on credential exposure
                 </span>
               </div>
             </div>

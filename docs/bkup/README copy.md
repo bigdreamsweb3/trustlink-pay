@@ -48,7 +48,7 @@ The sender sees a familiar payment experience. The protocol handles settlement, 
 
 ## Main Concepts
 
-### Transfer Identity System
+### Transfer Identity Protocol
 
 A TIN is a 10-digit number.
 
@@ -137,8 +137,8 @@ The lockfiles intentionally avoid newer crate releases that require Rust edition
 | `frontend/`              | TrustLink Pay user interface                              |
 | `backend/`               | API, payment records, identity records, and notifications |
 | `docs/`                  | Product and protocol documentation                        |
-| `tin-system/tins-registrar/` | Transfer Identity on-chain program                   |
-| `tin-system/tins-sdk/`       | Transfer Identity SDK                                |
+| `transfer-identity-protocol/tin-registrar/` | Transfer Identity on-chain program                   |
+| `transfer-identity-protocol/tip-sdk/`       | Transfer Identity SDK                                |
 | `tsn/protocol/`          | TSN on-chain program                                      |
 | `tsn-sdk/`               | TSN SDK                                                   |
 | `tsn-cranker-op-daemon/` | Reference Cranker daemon                                  |

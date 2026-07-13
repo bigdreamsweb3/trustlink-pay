@@ -10,8 +10,8 @@
       "@coral-xyz/anchor": ["../backend/node_modules/@coral-xyz/anchor"],
       "@solana/spl-token": ["../backend/node_modules/@solana/spl-token"],
       "@solana/web3.js": ["../backend/node_modules/@solana/web3.js"],
-      "@trustlink/tins-sdk": ["../tins-sdk/dist"],
-      "@trustlink/tins-sdk/*": ["../tins-sdk/dist/*"]
+      "@trustlink/tip-sdk": ["../tip-sdk/dist"],
+      "@trustlink/tip-sdk/*": ["../tip-sdk/dist/*"]
     },
     "strict": true,
     "esModuleInterop": true,

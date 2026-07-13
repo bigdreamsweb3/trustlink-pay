@@ -21,7 +21,7 @@ const DEFAULT_STARTING_SEQUENCE = "100000000";
 function usage() {
   console.log(`
 Usage:
-  npm run tins:init-global -- [programId] [payerKeypairPath] [startingSequence]
+  npm run tin:init-global -- [programId] [payerKeypairPath] [startingSequence]
 
 Defaults:
   programId          ${DEFAULT_PROGRAM_ID}
@@ -29,8 +29,8 @@ Defaults:
   startingSequence   ${DEFAULT_STARTING_SEQUENCE}
 
 Examples:
-  npm run tins:init-global
-  npm run tins:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json ${DEFAULT_STARTING_SEQUENCE}
+  npm run tin:init-global
+  npm run tin:init-global -- TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT ~/.config/solana/id.json ${DEFAULT_STARTING_SEQUENCE}
 
 Environment:
   TSN_RPC_GATEWAY_URL can override the local TSN RPC gateway URL.

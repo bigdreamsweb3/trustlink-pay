@@ -12,7 +12,7 @@ import {
   serializeTinCreationRegistryParams,
   serializeResolveTinParams,
   createTinOwnerIntentHash,
-} from "../../tin-system/tins-sdk/src/index";
+} from "../../transfer-identity-protocol/tip-sdk/src/index";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -22,7 +22,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 async function main() {
   console.log("=========================================");
-  console.log("   TINS UNBREAKABLE INTEGRATION CHECKS   ");
+  console.log("   TIP UNBREAKABLE INTEGRATION CHECKS   ");
   console.log("=========================================");
 
   const keypair = Keypair.generate();
@@ -98,7 +98,7 @@ async function main() {
     "Decrypted phone number does not match original",
   );
 
-  console.log("\n[3] Testing TSN-mediated TINS serializers...");
+  console.log("\n[3] Testing TSN-mediated TIP serializers...");
   const displayName = "Alice Payne";
   const nonce = crypto.randomBytes(32);
   const expiryTs = Math.floor(Date.now() / 1000) + 600;
@@ -167,11 +167,11 @@ async function main() {
   );
   assert(signatureValid, "Generated signature is invalid");
 
-  console.log("\nAll TINS offline checks passed.");
+  console.log("\nAll TIP offline checks passed.");
 }
 
 main().catch((error) => {
-  console.error("TINS offline checks failed.");
+  console.error("TIP offline checks failed.");
   console.error(error);
   process.exit(1);
 });

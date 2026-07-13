@@ -170,12 +170,12 @@ requireExactVersion("anchor-cli", anchorVersion, /anchor-cli\s+(\d+\.\d+\.\d+)/,
 warnIfHostCargoCanRewriteLockfile(cargoVersion);
 
 const tsnAnchorPath = "tsn-protocol/tsn/protocol/Anchor.toml";
-const tinsAnchorPath = "tin-system/tins-registrar/program/Anchor.toml";
-const tinsCargoPath = "tin-system/tins-registrar/program/Cargo.toml";
+const tinsAnchorPath = "transfer-identity-protocol/tin-registrar/program/Anchor.toml";
+const tinsCargoPath = "transfer-identity-protocol/tin-registrar/program/Cargo.toml";
 const zkPruAnchorPath = "ZK-PRU/programs/zk-pru-registry/Anchor.toml";
 const zkPruCargoPath = "ZK-PRU/programs/zk-pru-registry/programs/zk-pru-registry/Cargo.toml";
 const tsnLockPath = "tsn-protocol/tsn/protocol/Cargo.lock";
-const tinsLockPath = "tin-system/tins-registrar/program/Cargo.lock";
+const tinsLockPath = "transfer-identity-protocol/tin-registrar/program/Cargo.lock";
 const zkPruLockPath = "ZK-PRU/programs/zk-pru-registry/Cargo.lock";
 
 const tsnAnchor = read(tsnAnchorPath);

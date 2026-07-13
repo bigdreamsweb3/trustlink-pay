@@ -122,7 +122,9 @@ export function getTechArticleSchema({
 /**
  * FAQ Schema
  */
-export function getFAQSchema(questions: { question: string; answer: string }[]) {
+export function getFAQSchema(
+  questions: { question: string; answer: string }[],
+) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",

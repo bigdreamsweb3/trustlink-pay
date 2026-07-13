@@ -10,7 +10,7 @@ import {
 } from "@solana/web3.js";
 import { buildTinUpgradeMessage } from "./canonical-message.js";
 
-export const DEFAULT_TINS_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
+export const DEFAULT_TIP_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
 
 const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
@@ -87,7 +87,7 @@ export type TinResolvedIdentity = {
 };
 
 function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
-  return programId instanceof PublicKey ? programId : new PublicKey(programId ?? DEFAULT_TINS_PROGRAM_ID);
+  return programId instanceof PublicKey ? programId : new PublicKey(programId ?? DEFAULT_TIP_PROGRAM_ID);
 }
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -206,7 +206,7 @@ function resolveEncryptedMasterSeed(params: {
 }) {
   const value = params.encryptedMasterSeed;
   if (!value) {
-    throw new Error("encryptedMasterSeed is required for TINS registry mutation serialization");
+    throw new Error("encryptedMasterSeed is required for TIP registry mutation serialization");
   }
   return Buffer.from(value);
 }
@@ -248,8 +248,8 @@ export function createTinOwnerIntentHash(params: {
 
   const encryptedMasterSeed = params.encryptedMasterSeed;
   if (!encryptedMasterSeed) {
-    if (params.tin == null) throw new Error("tin is required for TINS owner intent V2 hashing");
-    if (!params.phoneNumber) throw new Error("phoneNumber is required for TINS owner intent V2 hashing");
+    if (params.tin == null) throw new Error("tin is required for TIP owner intent V2 hashing");
+    if (!params.phoneNumber) throw new Error("phoneNumber is required for TIP owner intent V2 hashing");
     return Buffer.from(sha256(TEXT_ENCODER.encode(createTinOwnerIntentMessage({
       purpose: params.purpose,
       ownerPubkey: params.ownerPubkey,
@@ -344,7 +344,7 @@ export function buildCreateTinInstruction(params: {
   programId?: PublicKey | string | null;
 }) {
   void params;
-  throw new Error("Direct TINS create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry.");
+  throw new Error("Direct TIP create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry.");
 }
 
 export function buildInitializePlatformRegistryInstruction(params: {
@@ -586,7 +586,7 @@ async function findLegacyTinAccount(params: {
         return { address: account.pubkey, decoded };
       }
     } catch {
-      // Other TINS account layouts can share the same leading bytes.
+      // Other TIP account layouts can share the same leading bytes.
     }
   }
   return null;
@@ -681,7 +681,7 @@ export function decodeTinsIdentityRegistry(data: Uint8Array): TinIdentityRegistr
     };
   }
   if (offsetRef.offset + 4 > buffer.length) {
-    throw new Error("TINS identity registry data is truncated");
+    throw new Error("TIP identity registry data is truncated");
   }
   const socialCount = buffer.readUInt32LE(offsetRef.offset);
   offsetRef.offset += 4;
@@ -762,7 +762,7 @@ export function buildSensitiveAuthorizationMessage(params: {
   fieldType: string;
   nonce?: string;
 }) {
-  return `TrustLink TINS sensitive decrypt\nTIN: ${String(params.tin)}\nField: ${params.fieldType}\nNonce: ${params.nonce ?? ""}`;
+  return `TrustLink TIP sensitive decrypt\nTIN: ${String(params.tin)}\nField: ${params.fieldType}\nNonce: ${params.nonce ?? ""}`;
 }
 
 export function deriveTinSensitiveKey(params: {
@@ -861,7 +861,7 @@ export async function resolveTIN(params: {
     });
     if (!legacy) {
       throw new Error(
-        `TIN ${String(params.tin)} was not found in TINS program ${programId.toBase58()}`,
+        `TIN ${String(params.tin)} was not found in TIP program ${programId.toBase58()}`,
       );
     }
     return {

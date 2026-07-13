@@ -16,7 +16,7 @@ TSN is designed for everyday stablecoin payments—not only institutional or cro
 flowchart TD
     A[TrustLink Labs<br/>Protocol Research & Infrastructure] --> B[Transfer Settlement Network — TSN]
     B --> C[TrustLink Pay<br/>User-Facing Payment Experience]
-    B --> D[TIS<br/>Identity Layer]
+    B --> D[TIP<br/>Identity Layer]
     B --> E[ZK-PRU<br/>Privacy Layer]
     B --> F[TSN Protocol<br/>Settlement Coordination]
     B --> G[Cranker Network<br/>Settlement Operators]
@@ -27,7 +27,7 @@ flowchart TD
 
 | System           | Responsibility                                                                  |
 | ---------------- | ------------------------------------------------------------------------------- |
-| **TIS**          | Human-readable identity abstraction through Transfer Identity Numbers and Names |
+| **TIP**          | Human-readable identity abstraction through Transfer Identity Numbers and Names |
 | **ZK-PRU**       | Private, deterministic receiving infrastructure and layered authorization       |
 | **TSN Protocol** | Intent coordination, escrow, payouts, commitments, fees, and epoch accounting   |
 | **Crankers**     | Independent operators that verify and execute authorized TSN work               |
@@ -39,7 +39,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    I[Identity Layer<br/>TIS · TIN · Identity Registry] --> V[Verification Layer<br/>Intent Validation · Signatures · Authorization · Protocol Rules]
+    I[Identity Layer<br/>TIP · TIN · Identity Registry] --> V[Verification Layer<br/>Intent Validation · Signatures · Authorization · Protocol Rules]
     V --> P[Privacy Layer<br/>ZK-PRU · PRUs · Layered Authority · Delegated Capabilities]
     P --> S[Settlement Layer<br/>TSN · Escrow · Vault Payouts · Epoch Accounting]
     S --> O[Operators<br/>Crankers · Trancap-Enabled Vaults · Liquidity Providers]
@@ -50,13 +50,13 @@ The Verification Layer is a top-level control function, while Crankers and liqui
 
 ---
 
-## Transfer Identity System (TIS)
+## Transfer Identity Protocol (TIP)
 
-The **Transfer Identity System** is the identity foundation of the TrustLink ecosystem and provides the identity layer used by TSN-powered payments.
+The **Transfer Identity Protocol** is the identity foundation of the TrustLink ecosystem and provides the identity layer used by TSN-powered payments.
 
 Traditional blockchain payments require users to share wallet addresses. Wallet addresses are effective ownership identifiers, but they are poor payment identities because they are difficult to use, expose public transaction relationships, and create risks such as address poisoning.
 
-TIS introduces payment identities that applications and users can understand without treating wallet addresses as public usernames.
+TIP introduces payment identities that applications and users can understand without treating wallet addresses as public usernames.
 
 ### Transfer Identity Number (TIN)
 
@@ -80,7 +80,7 @@ A TIN does not own funds by itself. Ownership remains secured through cryptograp
 
 > People should be discoverable by the identities they choose to share, not by the identities others search for.
 
-TIS separates discoverable identity from settlement infrastructure. It does not need to expose a readable public map between a user's identity, wallet, PRUs, and financial activity.
+TIP separates discoverable identity from settlement infrastructure. It does not need to expose a readable public map between a user's identity, wallet, PRUs, and financial activity.
 
 ---
 

@@ -38,8 +38,8 @@
       "@trustlink/tsn-cranker-sdk": [
         "../tsn-protocol/tsn-cranker-sdk/src"
       ],
-      "@trustlink/tins-sdk": [
-        "../tin-system/tins-sdk/src"
+      "@trustlink/tip-sdk": [
+        "../transfer-identity-protocol/tip-sdk/src"
       ],
       "@coral-xyz/anchor": [
         "./node_modules/@coral-xyz/anchor"
@@ -59,7 +59,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "../tin-system/tins-sdk",
+    "../transfer-identity-protocol/tip-sdk",
     "../tsn-protocol/tsn-cranker-sdk",
     "../tsn-protocol/tsn-sdk",
     ".next",

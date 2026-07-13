@@ -59,17 +59,17 @@ Current challenges include:
 
 Blockchain payments require a better abstraction layer that separates human payment identity from settlement infrastructure.
 
-## TIS: The Transfer Identity System
+## TIP: The Transfer Identity Protocol
 
-The Transfer Identity System is the identity foundation of TrustLink Pay. It provides a human-friendly identity layer for blockchain payments while separating user identity from public settlement infrastructure.
+The Transfer Identity Protocol is the identity foundation of TrustLink Pay. It provides a human-friendly identity layer for blockchain payments while separating user identity from public settlement infrastructure.
 
 Traditional blockchain payments require users to share wallet addresses as payment identifiers. While wallet addresses provide ownership control, they expose settlement history, create privacy concerns, and introduce usability challenges for everyday payments.
 
-TIS introduces a new identity model where users interact through payment identities instead of directly sharing blockchain addresses.
+TIP introduces a new identity model where users interact through payment identities instead of directly sharing blockchain addresses.
 
 ### Transfer Identity Number (TIN)
 
-At the core of TIS is the **Transfer Identity Number (TIN)** — a unique 10-digit payment identity designed to allow users and businesses to send and receive payments without exposing their wallet addresses.
+At the core of TIP is the **Transfer Identity Number (TIN)** — a unique 10-digit payment identity designed to allow users and businesses to send and receive payments without exposing their wallet addresses.
 
 A TIN functions as a portable payment identifier that connects a user's chosen identity to the TSN settlement architecture.
 
@@ -89,34 +89,34 @@ The TIN does not represent ownership of funds by itself. Ownership remains secur
 
 ### Transfer Identity Name
 
-TIS also supports human-readable identity information through Transfer Identity Names.
+TIP also supports human-readable identity information through Transfer Identity Names.
 
 While the TIN provides a reliable numerical payment identifier, Transfer Identity Names improve usability by allowing users and businesses to create recognizable payment identities.
 
-TIS separates discoverable identity from settlement infrastructure, allowing users to decide what identity information they share.
+TIP separates discoverable identity from settlement infrastructure, allowing users to decide what identity information they share.
 
 ### Identity Privacy Model
 
-The principle behind TIS is:
+The principle behind TIP is:
 
 > People should be discoverable by the identities they choose to share, not by the identities others search for.
 
-TIS does not create a public directory of wallet ownership. Instead, it provides a controlled identity layer where:
+TIP does not create a public directory of wallet ownership. Instead, it provides a controlled identity layer where:
 
 - Users own their identity association
 - Identity information is selectively exposed
 - Settlement destinations remain separated from public identity discovery
 - Blockchain verification remains transparent
 
-### Role of TIS Within TSN
+### Role of TIP Within TSN
 
-TIS provides the identity abstraction layer required for TSN's settlement architecture.
+TIP provides the identity abstraction layer required for TSN's settlement architecture.
 
 The relationship is:
 
 ```
 ┌─────────────────┐
-│  TIS            │
+│  TIP            │
 │  Identity Layer │
 └────────┬────────┘
          ↓
@@ -133,7 +133,7 @@ The relationship is:
 └─────────────────┘
 ```
 
-TIS makes blockchain payments more understandable for users, while TSN handles the coordination and execution required to complete private, identity-based stablecoin payments.
+TIP makes blockchain payments more understandable for users, while TSN handles the coordination and execution required to complete private, identity-based stablecoin payments.
 
 ## PRUs: Privacy Receiving Units
 
@@ -369,7 +369,7 @@ The frontend never derives PRUs and never receives the TIN Master Seed. The Trus
 TSN represents a new settlement architecture where:
 
 - Blockchain provides verification
-- TIS provides usability
+- TIP provides usability
 - Privacy-preserving coordination enables everyday payments
 - Crankers provide operational execution
 - Epoch accounting provides auditability
@@ -383,7 +383,7 @@ The Transfer Settlement Network is designed to become an open settlement layer f
 | Document | Purpose |
 | --- | --- |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | How product, identity, privacy, settlement, and liquidity layers fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIS, TINs, PRUs, route authentication, and identity resolution |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIP, TINs, PRUs, route authentication, and identity resolution |
 | [TSN.md](./TSN.md) | TSN payment execution, PRU-funded spending, and fee distribution |
 | [CRANKER.md](./CRANKER.md) | Settlement operator network and work types |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and epoch reservoirs |

@@ -46,7 +46,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
 
   // Documentation pages
   // { path: "/docs", priority: 0.9, changeFrequency: "weekly" },
-  // { path: "/docs/tin-system", priority: 0.8, changeFrequency: "monthly" },
+  // { path: "/docs/transfer-identity-protocol", priority: 0.8, changeFrequency: "monthly" },
   // { path: "/docs/tsn", priority: 0.8, changeFrequency: "monthly" },
   // { path: "/docs/security", priority: 0.8, changeFrequency: "monthly" },
   // { path: "/docs/transfer-settlement-network", priority: 0.8, changeFrequency: "monthly" },

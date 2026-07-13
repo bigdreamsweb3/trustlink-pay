@@ -49,9 +49,9 @@ The active architecture is:
 | `docs/submodule-patches/README.md` | Rewritten to clarify patches are handoff artifacts | Treating patch files as active source of truth |
 | `backend/README.md` | Rewritten as backend responsibility guide | Duplicate technical detail |
 | `frontend/README.md` | Rewritten as frontend responsibility guide | Unclear boundaries between frontend and SDK |
-| `tin-system/tins-registrar/README.md` | Rewritten around active Transfer Identity behavior and deploy guard | Long mixed implementation/history notes |
-| `tins-registrar/docs/phase-1-scope.md` | Converted to active scope | Phase-based wording |
-| `tins-registrar/docs/tins-change-log.md` | Converted to current notes | Historical framing |
+| `transfer-identity-protocol/tin-registrar/README.md` | Rewritten around active Transfer Identity behavior and deploy guard | Long mixed implementation/history notes |
+| `tin-registrar/docs/phase-1-scope.md` | Converted to active scope | Phase-based wording |
+| `tin-registrar/docs/tins-change-log.md` | Converted to current notes | Historical framing |
 | `tsn/README.md` | Rewritten as TSN folder overview | Duplicate architecture notes |
 | `tsn/protocol/README.md` | Updated deploy toolchain guidance | Unsafe deploy instructions |
 | `tsn/protocol/programs/trustlink-escrow/README.md` | Rewritten as program overview | Sparse implementation-only text |

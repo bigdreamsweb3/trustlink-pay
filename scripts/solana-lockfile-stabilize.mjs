@@ -5,7 +5,7 @@ import process from "node:process";
 const root = process.cwd();
 const lockfiles = [
   "tsn-protocol/tsn/protocol/Cargo.lock",
-  "tin-system/tins-registrar/program/Cargo.lock",
+  "transfer-identity-protocol/tin-registrar/program/Cargo.lock",
   "ZK-PRU/programs/zk-pru-registry/Cargo.lock",
 ];
 const requiredPins = [

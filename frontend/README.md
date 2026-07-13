@@ -21,7 +21,7 @@ A user should understand:
 ## Responsibilities
 
 - Collect user input.
-- Connect wallets.
+- Connect Solana wallets through Reown AppKit.
 - Display identity and payment status.
 - Call backend APIs.
 - Call SDK methods where client-side protocol interaction is required.
@@ -46,3 +46,11 @@ Default local port:
 ```text
 http://localhost:3001
 ```
+
+## Public Pages and SEO
+
+Place every indexable page under `app/(public)/`. The route group does not change the browser URL.
+
+Before development, type checking, and production builds, `npm run seo:generate` scans that folder and generates the route manifest used by both `sitemap.xml` and `robots.txt`. Dynamic route folders such as `[paymentId]` are excluded.
+
+Route-specific priority and change-frequency values belong in `scripts/seo/public-route-settings.mjs`. Private and API route prefixes remain explicitly blocked in `src/seo/routes.ts`.

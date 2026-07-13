@@ -100,7 +100,11 @@ function decodeLegacyTinUpgradeAccount(data: Uint8Array) {
 }
 
 function getFrontendTinsProgramId() {
-  return new PublicKey(process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ?? DEFAULT_TIP_PROGRAM_ID);
+  return new PublicKey(
+    process.env.NEXT_PUBLIC_TIP_PROGRAM_ID ??
+      process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ??
+      DEFAULT_TIP_PROGRAM_ID,
+  );
 }
 
 export function getFrontendTsnMempoolUrl() {

@@ -10,145 +10,69 @@ import {
 } from "react";
 import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
 
-import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import {
-  getWalletEnvironment,
-  getConnectedWalletSession,
-  registerExternalSolanaWallet,
   clearExternalSolanaWallet,
-  type WalletEnvironment,
+  disconnectSolanaWallet,
+  registerExternalSolanaWallet,
   type ConnectedWalletSession,
-  type DetectedWallet,
 } from "@/src/lib/wallet";
-import {
-  connectTrustLinkWallet,
-  disconnectTrustLinkWallet,
-  getWalletConnectionErrorMessage,
-  getWalletDisconnectionErrorMessage,
-  getWalletsForConnection,
-} from "@/src/lib/wallet-actions";
 import { useToast } from "@/src/components/toast-provider";
 import {
   configureTrustLinkAppKit,
-  hasReownProjectId,
   openTrustLinkWalletModal,
 } from "@/src/lib/wallet-connection/reown-appkit";
+import { bindReownSolanaProvider } from "@/src/lib/wallet-connection/reown-solana-provider";
 
 type WalletContextValue = {
   session: ConnectedWalletSession | null;
   walletAddress: string | null;
-  wallets: DetectedWallet[];
-  environment: WalletEnvironment;
-  connectingWalletId: string | null;
-  walletPickerOpen: boolean;
   requestWalletConnection: () => void;
   disconnectWallet: () => Promise<void>;
-  closeWalletPicker: () => void;
 };
 
 const WalletContext = createContext<WalletContextValue | null>(null);
-
-function readInitialSession() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return getConnectedWalletSession();
-}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const reownAccount = useAppKitAccount({ namespace: "solana" });
   const { walletProvider: reownWalletProvider } = useAppKitProvider("solana");
-  const [session, setSession] = useState<ConnectedWalletSession | null>(
-    readInitialSession,
-  );
-  const [wallets, setWallets] = useState<DetectedWallet[]>([]);
-  const [environment, setEnvironment] = useState<WalletEnvironment>(() =>
-    getWalletEnvironment(),
-  );
-  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(
-    null,
-  );
+  const [session, setSession] = useState<ConnectedWalletSession | null>(null);
 
   useEffect(() => {
-    setSession(readInitialSession());
-    setEnvironment(getWalletEnvironment());
     configureTrustLinkAppKit();
   }, []);
 
   useEffect(() => {
-    if (
-      !reownAccount.isConnected ||
-      !reownAccount.address ||
-      !reownWalletProvider
-    ) {
+    if (!reownAccount.isConnected || !reownAccount.address || !reownWalletProvider) {
       return;
     }
 
     const nextSession = registerExternalSolanaWallet({
       id: "reown-solana",
-      name: "WalletConnect",
+      name: "Reown",
       address: reownAccount.address,
-      provider: reownWalletProvider,
+      provider: bindReownSolanaProvider(reownWalletProvider),
     });
 
     setSession(nextSession);
-    setEnvironment(getWalletEnvironment());
-    setWalletPickerOpen(false);
   }, [reownAccount.address, reownAccount.isConnected, reownWalletProvider]);
 
   function requestWalletConnection() {
     try {
-      const detectedWallets = getWalletsForConnection();
-      setWallets(detectedWallets);
-      setEnvironment(getWalletEnvironment());
-      setWalletPickerOpen(true);
+      openTrustLinkWalletModal();
     } catch (error) {
-      setWallets([]);
-      setEnvironment(getWalletEnvironment());
-
-      if (hasReownProjectId()) {
-        try {
-          openTrustLinkWalletModal();
-          return;
-        } catch (modalError) {
-          showToast(getWalletConnectionErrorMessage(modalError));
-          return;
-        }
-      }
-
-      showToast(getWalletConnectionErrorMessage(error));
-      setWalletPickerOpen(true);
-    }
-  }
-
-  async function handleWalletSelect(walletId: string) {
-    setConnectingWalletId(walletId);
-
-    try {
-      const nextSession = await connectTrustLinkWallet(walletId);
-      setSession(nextSession);
-      setEnvironment(getWalletEnvironment());
-      setWalletPickerOpen(false);
-      showToast(`${nextSession.walletName} connected successfully.`);
-    } catch (error) {
-      showToast(getWalletConnectionErrorMessage(error));
-    } finally {
-      setConnectingWalletId(null);
+      showToast(error instanceof Error ? error.message : "Could not open Reown wallet connection.");
     }
   }
 
   async function disconnectWallet() {
     try {
-      await disconnectTrustLinkWallet();
+      await disconnectSolanaWallet();
       clearExternalSolanaWallet();
       setSession(null);
-      setEnvironment(getWalletEnvironment());
       showToast("Wallet disconnected.");
     } catch (error) {
-      showToast(getWalletDisconnectionErrorMessage(error));
+      showToast(error instanceof Error ? error.message : "Could not disconnect wallet.");
     }
   }
 
@@ -156,36 +80,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       walletAddress: session?.address ?? null,
-      wallets,
-      environment,
-      connectingWalletId,
-      walletPickerOpen,
       requestWalletConnection,
       disconnectWallet,
-      closeWalletPicker: () => {
-        if (!connectingWalletId) {
-          setWalletPickerOpen(false);
-        }
-      },
     }),
-    [connectingWalletId, environment, session, walletPickerOpen, wallets],
+    [session],
   );
 
-  return (
-    <WalletContext.Provider value={value}>
-      {children}
-      <WalletPickerModal
-        open={walletPickerOpen}
-        wallets={wallets}
-        connectingWalletId={connectingWalletId}
-        emptyStateMessage={environment.helpMessage}
-        onClose={value.closeWalletPicker}
-        onSelect={(walletId) => {
-          void handleWalletSelect(walletId);
-        }}
-      />
-    </WalletContext.Provider>
-  );
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 export function useWallet() {

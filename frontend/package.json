@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "prebuild": "NODE_ENV=development npm --prefix ../utils/observability ci --include=dev && npm --prefix ../utils/observability run build && NODE_ENV=development npm --prefix ../packages/trustlink-whatsapp-sdk ci --include=dev && npm --prefix ../packages/trustlink-whatsapp-sdk run build && npm --prefix ../tsn-protocol/tsn-sdk ci && npm --prefix ../tsn-protocol/tsn-sdk run build",
-    "dev": "next dev -p 3001",
-    "build": "next build",
+    "dev": "npm run seo:generate && next dev -p 3001",
+    "build": "npm run seo:generate && next build",
     "start": "next start -p 3001",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run seo:generate && tsc --noEmit",
     "ngrok:https": "npx ngrok http 3001",
-    "dev:turbo": "NODE_OPTIONS='--max-old-space-size=4096' TRUSTLINK_TURBOPACK_DEV=1 next dev --turbo -p 3001"
+    "dev:turbo": "npm run seo:generate && NODE_OPTIONS='--max-old-space-size=4096' TRUSTLINK_TURBOPACK_DEV=1 next dev --turbo -p 3001",
+    "seo:generate": "node scripts/seo/generate-public-routes.mjs"
   },
   "dependencies": {
     "@noble/curves": "^1.9.7",

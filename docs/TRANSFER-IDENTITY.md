@@ -181,7 +181,7 @@ PRU public addresses are private route metadata. They are not exposed through an
 
 The frontend loads a TIN balance through the TSN SDK. The SDK builds a plain UTF-8 ownership proof message with the TIN, purpose `pru_route_lookup`, owner public key, nonce, and timestamp. The wallet signs that message with `signMessage`; it never signs a Solana transaction and no fee is charged.
 
-The signed proof is sent to the TSN mempool at `POST /tin-routes/session`. The mempool verifies the on-chain owner pubkey commitment, the Ed25519 signature, a one-use nonce, and a fresh timestamp. If the proof is valid, the mempool returns a 24-hour route session token. The SDK stores this token in memory only, keyed by TIN. It is not written to `localStorage` or `sessionStorage`.
+The signed proof is sent to the TSN mempool at `POST /tin-routes/session`. The mempool verifies the on-chain owner pubkey commitment, the Ed25519 signature, a one-use nonce, and a fresh timestamp. If the proof is valid, the mempool returns a 24-hour route session token. The SDK stores this token in memory only, scoped to the TIN, connected owner wallet, and mempool endpoint. It is not written to `localStorage` or `sessionStorage`. Concurrent balance loads for the same TIN and connected owner share one authorization request, so the dashboard and send screen cannot produce duplicate signature prompts.
 
 The SDK then calls `GET /tin-routes/:tin/prus` with the session token. The endpoint returns only public PRU addresses and route state. It does not return PRU private keys, the TIN Master Seed, encrypted seed material, or PRU derivation inputs.
 

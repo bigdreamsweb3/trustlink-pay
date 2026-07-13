@@ -18,12 +18,6 @@ type WalletPublicKey = {
 };
 
 type SolanaProvider = {
-  isPhantom?: boolean;
-  isSolflare?: boolean;
-  isBackpack?: boolean;
-  isGlow?: boolean;
-  isExodus?: boolean;
-  isTrust?: boolean;
   publicKey?: WalletPublicKey;
   connect: (options?: {
     onlyIfTrusted?: boolean;
@@ -43,51 +37,6 @@ type SolanaProvider = {
   ) => Promise<{ signature: TransactionSignature }>;
 };
 
-type BrowserWindow = Window & {
-  solana?: SolanaProvider;
-  phantom?: {
-    solana?: SolanaProvider;
-  };
-  solflare?: SolanaProvider;
-  backpack?: SolanaProvider | { solana?: SolanaProvider };
-  glowSolana?: SolanaProvider;
-  exodus?: {
-    solana?: SolanaProvider;
-  };
-  trustwallet?: {
-    solana?: SolanaProvider;
-  };
-};
-
-async function enrichSolanaTransactionError(error: unknown, connection: Connection) {
-  const baseMessage = error instanceof Error ? error.message : "Solana transaction failed";
-  const details = error as {
-    getLogs?: (connection: Connection) => Promise<string[]>;
-    logs?: string[];
-    transactionLogs?: string[];
-  };
-
-  let logs = Array.isArray(details.logs) ? details.logs : Array.isArray(details.transactionLogs) ? details.transactionLogs : null;
-  if (!logs?.length && typeof details.getLogs === "function") {
-    try {
-      logs = await details.getLogs(connection);
-    } catch {
-      logs = null;
-    }
-  }
-
-  if (!logs?.length) {
-    return error instanceof Error ? error : new Error(baseMessage);
-  }
-
-  const insufficientLamports = logs.find((entry) => /insufficient lamports/i.test(entry));
-  const message = insufficientLamports
-    ? `Solana transaction failed because the TrustLink verifier wallet does not have enough SOL to fund protocol account creation. ${insufficientLamports}`
-    : baseMessage;
-
-  return new Error(`${message}\n\nSolana logs:\n${logs.join("\n")}`, { cause: error });
-}
-
 export type DetectedWallet = {
   id: string;
   name: string;
@@ -100,94 +49,7 @@ export type ConnectedWalletSession = {
   address: string;
 };
 
-export type WalletEnvironment = {
-  isMobile: boolean;
-  hasDetectedWallets: boolean;
-  helpMessage: string;
-};
-
-type WalletDefinition = {
-  id: string;
-  name: string;
-  resolver: (walletWindow: BrowserWindow) => SolanaProvider | null;
-};
-
 let externalSolanaWallet: DetectedWallet | null = null;
-
-function getBackpackProvider(backpackValue: BrowserWindow["backpack"]) {
-  if (!backpackValue) {
-    return null;
-  }
-
-  if ("solana" in backpackValue) {
-    return (backpackValue as { solana?: SolanaProvider }).solana ?? null;
-  }
-
-  return backpackValue as SolanaProvider;
-}
-
-declare global {
-  interface Window {
-    solana?: SolanaProvider;
-    phantom?: {
-      solana?: SolanaProvider;
-    };
-    solflare?: SolanaProvider;
-    backpack?: SolanaProvider | { solana?: SolanaProvider };
-    glowSolana?: SolanaProvider;
-    exodus?: {
-      solana?: SolanaProvider;
-    };
-    trustwallet?: {
-      solana?: SolanaProvider;
-    };
-  }
-}
-
-const WALLET_DEFINITIONS: WalletDefinition[] = [
-  {
-    id: "phantom",
-    name: "Phantom",
-    resolver: (walletWindow) =>
-      walletWindow.phantom?.solana ??
-      (walletWindow.solana?.isPhantom ? walletWindow.solana : null),
-  },
-  {
-    id: "solflare",
-    name: "Solflare",
-    resolver: (walletWindow) =>
-      walletWindow.solflare ??
-      (walletWindow.solana?.isSolflare ? walletWindow.solana : null),
-  },
-  {
-    id: "backpack",
-    name: "Backpack",
-    resolver: (walletWindow) =>
-      getBackpackProvider(walletWindow.backpack) ??
-      (walletWindow.solana?.isBackpack ? walletWindow.solana : null),
-  },
-  {
-    id: "glow",
-    name: "Glow",
-    resolver: (walletWindow) =>
-      walletWindow.glowSolana ??
-      (walletWindow.solana?.isGlow ? walletWindow.solana : null),
-  },
-  {
-    id: "exodus",
-    name: "Exodus",
-    resolver: (walletWindow) =>
-      walletWindow.exodus?.solana ??
-      (walletWindow.solana?.isExodus ? walletWindow.solana : null),
-  },
-  {
-    id: "trustwallet",
-    name: "Trust Wallet",
-    resolver: (walletWindow) =>
-      walletWindow.trustwallet?.solana ??
-      (walletWindow.solana?.isTrust ? walletWindow.solana : null),
-  },
-];
 
 function readStoredSession() {
   if (typeof window === "undefined") {
@@ -254,90 +116,7 @@ async function ensureWalletAuthorization(wallet: DetectedWallet, expectedAddress
 }
 
 function getWalletById(walletId: string) {
-  if (walletId === externalSolanaWallet?.id) {
-    return externalSolanaWallet;
-  }
-
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const walletWindow = window as BrowserWindow;
-  const definition = WALLET_DEFINITIONS.find((entry) => entry.id === walletId);
-  if (!definition) {
-    return null;
-  }
-
-  const provider = definition.resolver(walletWindow);
-  if (!provider) {
-    return null;
-  }
-
-  return {
-    id: definition.id,
-    name: definition.name,
-    provider,
-  } satisfies DetectedWallet;
-}
-
-export function listAvailableSolanaWallets() {
-  if (typeof window === "undefined") {
-    return externalSolanaWallet ? [externalSolanaWallet] : [] as DetectedWallet[];
-  }
-
-  const walletWindow = window as BrowserWindow;
-  const seenProviders = new Set<SolanaProvider>();
-
-  const injectedWallets = WALLET_DEFINITIONS.flatMap((definition) => {
-    const provider = definition.resolver(walletWindow);
-    if (!provider || seenProviders.has(provider)) {
-      return [];
-    }
-
-    seenProviders.add(provider);
-    return [
-      {
-        id: definition.id,
-        name: definition.name,
-        provider,
-      } satisfies DetectedWallet,
-    ];
-  });
-
-  if (!externalSolanaWallet) {
-    return injectedWallets;
-  }
-
-  return [
-    externalSolanaWallet,
-    ...injectedWallets.filter((wallet) => wallet.id !== externalSolanaWallet?.id),
-  ];
-}
-
-export function getWalletEnvironment(): WalletEnvironment {
-  const wallets = listAvailableSolanaWallets();
-  const isMobile =
-    typeof window !== "undefined" &&
-    /Android|webOS|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(
-      window.navigator.userAgent,
-    );
-
-  return {
-    isMobile,
-    hasDetectedWallets: wallets.length > 0,
-    helpMessage: isMobile
-      ? "No wallet is exposed in this browser yet. On mobile, open TrustLink inside your wallet app browser like Phantom, Solflare, Backpack, or Trust Wallet, then try again."
-      : "No Solana wallet was detected in this browser. Install or enable a wallet extension like Phantom, Solflare, Backpack, or Trust Wallet and try again.",
-  };
-}
-
-export function getInjectedSolanaProvider() {
-  const storedSession = readStoredSession();
-  if (storedSession?.walletId) {
-    return getWalletById(storedSession.walletId)?.provider ?? null;
-  }
-
-  return listAvailableSolanaWallets()[0]?.provider ?? null;
+  return walletId === externalSolanaWallet?.id ? externalSolanaWallet : null;
 }
 
 export function registerExternalSolanaWallet(params: {
@@ -386,36 +165,9 @@ export function getConnectedWalletAddress() {
   return readStoredSession()?.address ?? null;
 }
 
-async function connectSolanaWalletImpl(walletId?: string) {
-  const selectedWallet =
-    (walletId ? getWalletById(walletId) : null) ??
-    listAvailableSolanaWallets()[0] ??
-    null;
-
-  if (!selectedWallet) {
-    throw new Error("No Solana wallet detected on this browser");
-  }
-
-  const response = await selectedWallet.provider.connect();
-  const address = response.publicKey.toString();
-  const session = {
-    walletId: selectedWallet.id,
-    walletName: selectedWallet.name,
-    address,
-  } satisfies ConnectedWalletSession;
-
-  writeStoredSession(session);
-  return session;
-}
-
 async function disconnectSolanaWalletImpl() {
-  const storedSession = readStoredSession();
-  const provider = storedSession?.walletId
-    ? (getWalletById(storedSession.walletId)?.provider ?? null)
-    : getInjectedSolanaProvider();
-
-  if (provider?.disconnect) {
-    await provider.disconnect();
+  if (externalSolanaWallet?.provider.disconnect) {
+    await externalSolanaWallet.provider.disconnect();
   }
 
   if (typeof window !== "undefined") {
@@ -724,13 +476,6 @@ async function signAndSendSerializedSolanaTransactionImpl(params: {
 
   return signature;
 }
-
-export const connectSolanaWallet = traceFunction(connectSolanaWalletImpl, {
-  namespace: "Wallet",
-  name: "connectSolanaWallet",
-  module: "frontend/src/lib/wallet.ts",
-  level: "info",
-});
 
 export const disconnectSolanaWallet = traceFunction(disconnectSolanaWalletImpl, {
   namespace: "Wallet",

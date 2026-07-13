@@ -1,5 +1,7 @@
 # Windows TSN commands
 
+The PM2-managed Next.js frontend uses a 2 GB Node.js heap. This is sized for an 8 GB Windows development machine: it gives Next.js enough room to compile TrustLink Pay while retaining memory for Windows, the browser, VS Code, the backend, and the RPC gateway.
+
 Use these commands from Windows PowerShell in the TrustLink project folder.
 
 ```powershell

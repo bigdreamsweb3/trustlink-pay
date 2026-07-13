@@ -19,7 +19,6 @@ import { PhoneNumberInput } from "@/src/components/phone-number-input";
 import { SectionLoader } from "@/src/components/section-loader";
 import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
-import { WalletPickerModal } from "@/src/components/modals/wallet-picker-modal";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import {
@@ -49,15 +48,10 @@ import type {
   WhatsAppNumberVerificationResult,
 } from "@/src/lib/types";
 import {
-  connectSolanaWallet,
-  disconnectSolanaWallet,
-  getConnectedWalletSession,
-  listAvailableSolanaWallets,
   signSolanaMessage,
   signSolanaTransaction,
-  type ConnectedWalletSession,
-  type DetectedWallet,
 } from "@/src/lib/wallet";
+import { useWallet } from "@/src/lib/wallet-provider";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import {
   enqueueTsnPaymentFromFrontend,
@@ -290,15 +284,12 @@ export function SendExperience() {
   } = useAuthenticatedSession("/app/send");
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [walletSession, setWalletSession] =
-    useState<ConnectedWalletSession | null>(null);
-  const [availableWallets, setAvailableWallets] = useState<DetectedWallet[]>(
-    [],
-  );
-  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
-  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(
-    null,
-  );
+  const {
+    session: walletSession,
+    walletAddress,
+    requestWalletConnection,
+    disconnectWallet,
+  } = useWallet();
   const [receiverPhoneInput, setReceiverPhoneInput] = useState("");
   const [receiverCountry, setReceiverCountry] = useState<CountryOption | null>(
     null,
@@ -407,7 +398,6 @@ export function SendExperience() {
     sendableTokens.find((t) => t.mintAddress === form.token) ?? null;
   const unifiedTokenBalance = (token: WalletTokenOption) =>
     token.balance + (tinTokenBalanceByMint[token.mintAddress] ?? 0);
-  const walletAddress = walletSession?.address ?? null;
   const displayCountry =
     manualCountry ??
     receiverCountry ??
@@ -466,11 +456,6 @@ export function SendExperience() {
   const confirmSendDisabled =
     busy || estimateBusy || !costEstimateReady || spendPlanBlocksSend;
   const sendGuidance = useMemo(() => getSendGuidance(error), [error]);
-
-  useEffect(() => {
-    setWalletSession(getConnectedWalletSession());
-    setAvailableWallets(listAvailableSolanaWallets());
-  }, []);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -1002,37 +987,14 @@ export function SendExperience() {
     };
   }, [accessToken, sendSuccess, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
 
-  async function handleConnectWallet() {
+  function handleConnectWallet() {
     setError(null);
-    const w = listAvailableSolanaWallets();
-    setAvailableWallets(w);
-    if (w.length === 0) {
-      setError("Install a Solana wallet to connect.");
-      showToast("No Solana wallet detected.");
-      return;
-    }
-    setWalletPickerOpen(true);
+    requestWalletConnection();
   }
-  async function handleWalletSelect(walletId: string) {
-    setConnectingWalletId(walletId);
-    setError(null);
-    try {
-      const s = await connectSolanaWallet(walletId);
-      setWalletSession(s);
-      setWalletPickerOpen(false);
-      setNotice(`${s.walletName} connected.`);
-      showToast(`${s.walletName} connected.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not connect wallet");
-    } finally {
-      setConnectingWalletId(null);
-    }
-  }
+
   async function handleDisconnectWallet() {
-    await disconnectSolanaWallet();
-    setWalletSession(null);
+    await disconnectWallet();
     setNotice("Wallet disconnected.");
-    showToast("Wallet disconnected.");
   }
 
   async function loadSendCostEstimate() {
@@ -2604,15 +2566,6 @@ export function SendExperience() {
         </div>
       ) : null}
 
-      <WalletPickerModal
-        open={walletPickerOpen}
-        wallets={availableWallets}
-        connectingWalletId={connectingWalletId}
-        onClose={() => {
-          if (!connectingWalletId) setWalletPickerOpen(false);
-        }}
-        onSelect={(id) => void handleWalletSelect(id)}
-      />
     </AppMobileShell>
   );
 }

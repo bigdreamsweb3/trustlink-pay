@@ -18,7 +18,7 @@ TrustLink Pay is a multi-part system:
 
 Keep protocol logic in SDKs and programs.
 
-The frontend should collect user input, connect wallets, show status, and call SDK or backend APIs. It should not manually build TSN instructions or derive TSN program accounts.
+The frontend should collect user input, connect Solana wallets exclusively through Reown AppKit, show status, and call SDK or backend APIs. It should not manually build TSN instructions or derive TSN program accounts.
 
 ## Local Services
 
@@ -64,3 +64,15 @@ This checks that the Solana, SBF, and Anchor versions are compatible with devnet
 Do not edit generated `dist/` files by hand. Change source files and rebuild.
 
 Do not expose private routes, phone numbers, permit secrets, or decrypted payloads in logs or UI.
+
+## Public Route Discovery
+
+Create indexable frontend pages inside `frontend/app/(public)/`. The frontend generates one public-route manifest from this folder and uses it for both the sitemap and robots metadata.
+
+Run the generator directly when reviewing SEO route changes:
+
+```bash
+npm --prefix frontend run seo:generate
+```
+
+The frontend development, type-check, and build commands run the generator automatically. Dynamic routes are excluded so account-specific and transaction-specific URLs cannot enter the sitemap by accident.

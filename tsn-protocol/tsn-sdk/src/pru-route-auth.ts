@@ -54,6 +54,7 @@ export class PruRouteAuthorizationError extends Error {
 
 const TEXT_ENCODER = new TextEncoder();
 const sessionStore = new Map<string, PruRouteSession>();
+const pendingRouteLoads = new Map<string, Promise<TinPruRoutePublicResponse>>();
 
 function normalizeMempoolUrl(mempoolUrl: string) {
   const trimmed = mempoolUrl.trim();
@@ -69,6 +70,10 @@ function getWalletPublicKey(wallet: PruRouteSigningWallet) {
   return typeof wallet.publicKey === "string"
     ? wallet.publicKey
     : wallet.publicKey.toString();
+}
+
+function getSessionKey(tin: string | number, ownerPubkey: string, mempoolUrl: string) {
+  return [normalizeMempoolUrl(mempoolUrl), String(tin), ownerPubkey].join(":");
 }
 
 function createNonce() {
@@ -123,10 +128,11 @@ export function buildPruRouteProof(tin: string | number, walletPublicKey: string
   };
 }
 
-function getSession(tin: string) {
-  const session = sessionStore.get(tin);
+function getSession(tin: string | number, ownerPubkey: string, mempoolUrl: string) {
+  const sessionKey = getSessionKey(tin, ownerPubkey, mempoolUrl);
+  const session = sessionStore.get(sessionKey);
   if (!session || session.expiresAt <= nowSeconds() + 30) {
-    sessionStore.delete(tin);
+    sessionStore.delete(sessionKey);
     return null;
   }
   return session;
@@ -165,24 +171,30 @@ export async function requestPruRouteSession(
     }),
   });
   const session = await parseJsonResponse<PruRouteSession>(response);
-  sessionStore.set(session.tin, session);
+  sessionStore.set(getSessionKey(session.tin, ownerPubkey, mempoolUrl), session);
   return session.token;
 }
 
-export async function getPruRouteWithSession(tin: string | number, mempoolUrl: string) {
+export async function getPruRouteWithSession(
+  tin: string | number,
+  wallet: PruRouteSigningWallet,
+  mempoolUrl: string,
+) {
   const tinKey = String(tin);
-  const session = getSession(tinKey);
-  if (!session) return null;
+  const sessionKey = getSessionKey(tinKey, getWalletPublicKey(wallet), mempoolUrl);
+  const session = sessionStore.get(sessionKey);
+  if (!session || session.expiresAt <= nowSeconds() + 30) {
+    sessionStore.delete(sessionKey);
+    return null;
+  }
   const response = await fetch(
     `${normalizeMempoolUrl(mempoolUrl)}/tin-routes/${encodeURIComponent(tinKey)}/prus`,
     {
-      headers: {
-        authorization: `Bearer ${session.token}`,
-      },
+      headers: { authorization: `Bearer ${session.token}` },
     },
   );
   if (response.status === 401 || response.status === 403) {
-    sessionStore.delete(tinKey);
+    sessionStore.delete(sessionKey);
   }
   return parseJsonResponse<TinPruRoutePublicResponse>(response);
 }
@@ -192,16 +204,35 @@ export async function loadPruRoute(
   wallet: PruRouteSigningWallet,
   mempoolUrl: string,
 ) {
-  const existing = await getPruRouteWithSession(tin, mempoolUrl);
+  const existing = await getPruRouteWithSession(tin, wallet, mempoolUrl);
   if (existing) return existing;
-  await requestPruRouteSession(tin, wallet, mempoolUrl);
-  const route = await getPruRouteWithSession(tin, mempoolUrl);
-  if (!route) {
-    throw new PruRouteAuthorizationError(
-      "Sign to load your TIN balance. This does not cost any fees and does not send a transaction.",
-    );
+  const loadKey = [
+    normalizeMempoolUrl(mempoolUrl),
+    String(tin),
+    getWalletPublicKey(wallet),
+  ].join(":");
+  const pendingLoad = pendingRouteLoads.get(loadKey);
+  if (pendingLoad) return pendingLoad;
+
+  const routeLoad = (async () => {
+    await requestPruRouteSession(tin, wallet, mempoolUrl);
+    const route = await getPruRouteWithSession(tin, wallet, mempoolUrl);
+    if (!route) {
+      throw new PruRouteAuthorizationError(
+        "Sign to load your TIN balance. This does not cost any fees and does not send a transaction.",
+      );
+    }
+    return route;
+  })();
+  pendingRouteLoads.set(loadKey, routeLoad);
+
+  try {
+    return await routeLoad;
+  } finally {
+    if (pendingRouteLoads.get(loadKey) === routeLoad) {
+      pendingRouteLoads.delete(loadKey);
+    }
   }
-  return route;
 }
 
 function buildDelegationProof(params: {
@@ -286,7 +317,7 @@ export async function listDelegatedPlatforms(
   mempoolUrl: string,
 ) {
   await loadPruRoute(tin, wallet, mempoolUrl);
-  const session = getSession(String(tin));
+  const session = getSession(String(tin), getWalletPublicKey(wallet), mempoolUrl);
   if (!session) throw new PruRouteAuthorizationError("PRU route session is required");
   const response = await fetch(
     `${normalizeMempoolUrl(mempoolUrl)}/tin-routes/${encodeURIComponent(String(tin))}/delegations`,

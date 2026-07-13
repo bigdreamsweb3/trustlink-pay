@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { BASE_URL, getAbsoluteUrl } from "./routes";
 
 export const defaultTitle =
-  "TrustLink Pay | Identity-First Blockchain Payment Solution";
+  "TrustLink Pay | Identity-First Blockchain Payment System";
 export const defaultDescription =
-  "TrustLink Pay is an identity-first blockchain payment solution for stablecoin payments on Solana, powered by Transfer Identity, PRUs, and TSN settlement.";
+  "TrustLink Pay is an identity-first, privacy-aware stablecoin payment system on Solana, powered by TIP, ZK-PRUs, and TSN settlement.";
 
 export const defaultKeywords = [
   "TrustLink Pay",
@@ -24,9 +24,16 @@ export const defaultKeywords = [
   "Web3 payments",
   "noncustodial payments",
   "identity-first crypto",
+  "confidential stablecoin payments",
+  "confidential blockchain payments",
+  "zero-knowledge payments",
+  "zero-knowledge privacy",
+  "ZK-PRU",
+  "Privacy Receiving Unit",
   "TSN",
   "Transfer Settlement Network",
   "TIN",
+  "TIP",
   "Transfer Identity Number",
   "Transfer Identity Protocol",
 ];

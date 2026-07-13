@@ -54,3 +54,10 @@ Place every indexable page under `app/(public)/`. The route group does not chang
 Before development, type checking, and production builds, `npm run seo:generate` scans that folder and generates the route manifest used by both `sitemap.xml` and `robots.txt`. Dynamic route folders such as `[paymentId]` are excluded.
 
 Route-specific priority and change-frequency values belong in `scripts/seo/public-route-settings.mjs`. Private and API route prefixes remain explicitly blocked in `src/seo/routes.ts`.
+
+
+## Recipient Selection
+
+The Send screen keeps saved recipients hidden until the sender starts typing a matching name, phone number, TIN, or TrustLink handle. Matching entries are presented as explicit Select controls.
+
+The Search recipients button opens a dedicated search modal backed by authenticated TrustLink contacts and the sender's real payment history. Selecting an entry fills the recipient route and runs the normal recipient verification flow before payment authorization.

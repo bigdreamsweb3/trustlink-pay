@@ -83,6 +83,16 @@ import {
   type SendCostEstimate,
 } from "@/src/components/experiences/send/shared/send-cost";
 import { getSendGuidance } from "@/src/components/experiences/send/shared/send-guidance";
+import { RecipientSearchModal } from "@/src/components/experiences/send/recipient/recipient-search-modal";
+import { RecipientSuggestions } from "@/src/components/experiences/send/recipient/recipient-suggestions";
+import {
+  buildSendRecipientOptions,
+  searchSendRecipientOptions,
+} from "@/src/components/experiences/send/recipient/recipient-options";
+import {
+  getRecipientRoute,
+  type SendRecipientOption,
+} from "@/src/components/experiences/send/recipient/types";
 import {
   AlertCircle,
   ChevronDown,
@@ -373,6 +383,8 @@ export function SendExperience() {
   const [shareBusy, setShareBusy] = useState(false);
   const [contactSaveBusy, setContactSaveBusy] = useState(false);
   const [savedContacts, setSavedContacts] = useState<TrustLinkContact[]>([]);
+  const [recipientPayments, setRecipientPayments] = useState<PaymentRecord[]>([]);
+  const [recipientSearchOpen, setRecipientSearchOpen] = useState(false);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
   const hasVerifiedOnce =
@@ -427,23 +439,24 @@ export function SendExperience() {
   const hasAmount =
     Number.isFinite(Number(form.amount)) && Number(form.amount) > 0;
   const receiverInputLooksLikeTin = looksLikeTinCandidate(receiverPhoneInput);
-  const contactSuggestions = useMemo(() => {
-    const trimmed = receiverPhoneInput.trim().toLowerCase();
-    if (!trimmed) return savedContacts.slice(0, 4);
-
-    return savedContacts
-      .filter((contact) =>
-        [
-          contact.displayName,
-          contact.phoneNumber,
-          contact.tin,
-          contact.trustlinkHandle,
-        ]
-          .filter(Boolean)
-          .some((value) => value!.toLowerCase().includes(trimmed)),
-      )
-      .slice(0, 4);
-  }, [receiverPhoneInput, savedContacts]);
+  const recipientOptions = useMemo(
+    () =>
+      user?.id
+        ? buildSendRecipientOptions({
+            contacts: savedContacts,
+            payments: recipientPayments,
+            userId: user.id,
+          })
+        : [],
+    [recipientPayments, savedContacts, user?.id],
+  );
+  const recipientSuggestions = useMemo(() => {
+    if (!receiverPhoneInput.trim()) return [];
+    return searchSendRecipientOptions(
+      recipientOptions,
+      receiverPhoneInput,
+    ).slice(0, 4);
+  }, [receiverPhoneInput, recipientOptions]);
   const canContinueWithRecipient =
     Boolean(walletAddress) &&
     Boolean(selectedToken) &&
@@ -478,12 +491,34 @@ export function SendExperience() {
   }, [accessToken]);
 
   useEffect(() => {
+    if (!accessToken) return;
+    const token = accessToken;
+    let cancelled = false;
+
+    void apiGet<{ payments: PaymentRecord[] }>(
+      "/api/payment/history?limit=100",
+      token,
+    )
+      .then((result) => {
+        if (!cancelled) setRecipientPayments(result.payments);
+      })
+      .catch(() => {
+        if (!cancelled) setRecipientPayments([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
     const p = searchParams.get("phone")?.trim();
     if (p) setReceiverPhoneInput(p);
   }, [searchParams]);
 
-  function applyContactToRecipient(contact: TrustLinkContact) {
-    const route = contact.tin ?? contact.phoneNumber ?? "";
+  function applyRecipientToForm(option: SendRecipientOption) {
+    const route = getRecipientRoute(option);
+    if (!route) return;
     setReceiverPhoneInput(route);
     setForm((current) => ({ ...current, receiverPhone: "" }));
     setLookupError(null);
@@ -1700,6 +1735,16 @@ export function SendExperience() {
                 {/* Recipient input */}
 
                 <div className="relative">
+                  <div className="mb-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setRecipientSearchOpen(true)}
+                      className="flex items-center gap-1.5 rounded-full border border-accent-border bg-accent-soft px-3 py-1.5 text-[0.68rem] font-semibold text-accent transition-all hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      Search recipients
+                    </button>
+                  </div>
                   {/* Country chip — inline, after first verification */}
                   {hasVerifiedOnce &&
                   displayCountry &&
@@ -1710,7 +1755,7 @@ export function SendExperience() {
                         setCountrySearchOpen(true);
                         setCountrySearchQuery("");
                       }}
-                      className="absolute right-16 top-[34px] z-10 flex items-center gap-1 rounded-[8px] px-2 py-1 tl-meta-sm font-medium transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
+                      className="absolute right-16 top-[72px] z-10 flex items-center gap-1 rounded-[8px] px-2 py-1 tl-meta-sm font-medium transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.97]"
                     >
                       <span className="text-[0.78rem] leading-none">
                         {displayCountry.flag}
@@ -1784,32 +1829,10 @@ export function SendExperience() {
                     }}
                     skipVerificationLabel={receiverCheckSkipped ? null : "Skip"}
                   />
-                  {contactSuggestions.length > 0 ? (
-                    <div className="mt-2 space-y-2">
-                      {contactSuggestions.map((contact) => (
-                        <button
-                          key={contact.id}
-                          type="button"
-                          onClick={() => applyContactToRecipient(contact)}
-                          className="tl-panel tl-field flex w-full items-center justify-between gap-3 rounded-[16px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-soft)]"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-[0.78rem] font-semibold text-text">
-                              {contact.displayName}
-                            </span>
-                            <span className="tl-text-muted block truncate text-[0.66rem]">
-                              {contact.tin
-                                ? `TIN ${contact.tin}`
-                                : contact.phoneNumber}
-                            </span>
-                          </span>
-                          <span className="shrink-0 rounded-full border border-accent-border bg-accent-soft px-2 py-1 text-[0.6rem] font-medium text-accent">
-                            Use
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+                  <RecipientSuggestions
+                    options={recipientSuggestions}
+                    onSelect={applyRecipientToForm}
+                  />
                 </div>
 
                 {/* Amount + Token row */}
@@ -2161,6 +2184,13 @@ export function SendExperience() {
           </div>
         </div>
       ) : null}
+
+      <RecipientSearchModal
+        open={recipientSearchOpen}
+        options={recipientOptions}
+        onClose={() => setRecipientSearchOpen(false)}
+        onSelect={applyRecipientToForm}
+      />
 
       {/* ═══════════ CONFIRM MODAL ═══════════ */}
       {confirmOpen && recipientPreview?.verified && selectedToken ? (

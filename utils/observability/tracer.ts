@@ -19,7 +19,7 @@ const TRACE_LEVELS: Record<TraceLevel, number> = {
 
 const REDACTED = "[REDACTED]";
 const SENSITIVE_KEY_PATTERN =
-  /(privatekey|private_key|secret|seed|mnemonic|token|bearer|authorization|cookie|password|signature|session|apikey|api_key|accesstoken|access_token|refreshtoken|refresh_token)/i;
+  /(privatekey|private_key|secret|seed|mnemonic|token|bearer|authorization|cookie|password|signature|session|apikey|api_key|accesstoken|access_token|refreshtoken|refresh_token|destination_wallet|destinationWallet|settlement_wallet|settlementWallet|receiver_wallet|receiverWallet|sender_wallet|senderWallet|escrow_tx_sig|escrowTxSig|claim_tx_sig|claimTxSig|proof_tx_sig|proofTxSig|released_to_wallet|releasedToWallet|ephemeral_pubkey|ephemeralPubkey|refund_ephemeral_pubkey|pru_route|pruRoute|pru_address|pruAddress|private_key_base64|secret_key|signing_key|encryption_key)/i;
 
 let traceDepth = 0;
 

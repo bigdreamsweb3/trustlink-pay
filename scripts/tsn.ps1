@@ -2,15 +2,25 @@ param([Parameter(Position=0,Mandatory=$true)][ValidateSet("start","stop","restar
 $ErrorActionPreference="Stop"
 $root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ecosystem=Join-Path $root "ecosystem.config.cjs"
+$node=(Get-Command node.exe -ErrorAction Stop).Source
+$pm2Cli=Join-Path $root "node_modules\pm2\bin\pm2"
 $core=@("trustlink-frontend","trustlink-backend","trustlink-rpc-gateway")
 $managed=@("trustlink-frontend","trustlink-backend","trustlink-rpc-gateway","trustlink-mempool","trustlink-mempool-ui","trustlink-cranker")
 if($Service -and $Service -notin @("frontend","backend","rpc-gateway","mempool","mempool-ui","cranker")){throw "Unknown service: $Service"}
+if(!(Test-Path -LiteralPath $pm2Cli)){throw "Local PM2 is missing. Run: npm.cmd install"}
 $selected=if($Service){@("trustlink-"+$Service)}else{$core}
-function Invoke-Pm2([string[]]$Arguments){ & npx.cmd --no-install pm2 @Arguments; if($LASTEXITCODE -ne 0){throw "PM2 command failed"} }
-function Remove-Pm2Apps([string[]]$Apps){ foreach($app in $Apps){ & cmd.exe /d /s /c "npx.cmd --no-install pm2 delete $app >nul 2>&1" } }
+function Start-Pm2([string[]]$Arguments){
+ $process=Start-Process -FilePath $node -ArgumentList (@($pm2Cli)+$Arguments) -NoNewWindow -Wait -PassThru
+ return $process.ExitCode
+}
+function Invoke-Pm2([string[]]$Arguments){
+ $exitCode=Start-Pm2 $Arguments
+ if($exitCode -ne 0){throw "PM2 command failed with exit code $exitCode"}
+}
+function Remove-Pm2Apps([string[]]$Apps){ foreach($app in $Apps){ [void](Start-Pm2 @("delete",$app)) } }
 switch($Command){
  "start" { New-Item -ItemType Directory -Force -Path (Join-Path $root ".logs")|Out-Null; Invoke-Pm2 @("start",$ecosystem,"--only",($selected -join ",")) }
- "stop" { foreach($app in $(if($Service){$selected}else{$managed})){ & cmd.exe /d /s /c "npx.cmd --no-install pm2 stop $app >nul 2>&1" } }
+ "stop" { foreach($app in $(if($Service){$selected}else{$managed})){ [void](Start-Pm2 @("stop",$app)) } }
  "restart" { foreach($app in $selected){ Invoke-Pm2 @("restart",$app) } }
  "delete" { Remove-Pm2Apps $(if($Service){$selected}else{$managed}) }
  "status" { Invoke-Pm2 @("status") }

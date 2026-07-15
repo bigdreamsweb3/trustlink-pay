@@ -3,6 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSessionCode, getSessionCodeBySessionId } from "@/app/lib/session-codes";
 import { logger } from "@/app/lib/logger";
 import { addCorsHeaders, handleCors } from "@/app/lib/cors";
+import { env } from "@/app/lib/env";
+
+function getPublicWhatsAppBusinessNumber() {
+  const businessNumber = env.TRUSTLINK_BUSINESS_NUMBER;
+  if (!businessNumber) {
+    throw new Error("TRUSTLINK_BUSINESS_NUMBER is not configured");
+  }
+
+  return `+${businessNumber.replace(/^\+/, "")}`;
+}
 
 export async function POST(request: NextRequest) {
   // Handle CORS preflight
@@ -28,6 +38,7 @@ export async function POST(request: NextRequest) {
         success: true,
         sessionCode: existingCode.code,
         expiresAt: existingCode.expiresAt.toISOString(),
+        businessNumber: getPublicWhatsAppBusinessNumber(),
       });
       return addCorsHeaders(response, request.headers.get("origin"));
     }
@@ -43,6 +54,7 @@ export async function POST(request: NextRequest) {
       success: true,
       sessionCode: sessionCode.code,
       expiresAt: sessionCode.expiresAt.toISOString(),
+      businessNumber: getPublicWhatsAppBusinessNumber(),
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
@@ -90,6 +102,7 @@ export async function GET(request: NextRequest) {
       sessionCode: sessionCode.code,
       status: sessionCode.status,
       expiresAt: sessionCode.expiresAt.toISOString(),
+      businessNumber: getPublicWhatsAppBusinessNumber(),
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {

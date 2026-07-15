@@ -58,10 +58,6 @@
       "import": "./dist/settlement-token.js",
       "types": "./dist/settlement-token.d.ts"
     },
-    "./private-settlement": {
-      "import": "./dist/private-settlement.js",
-      "types": "./dist/private-settlement.d.ts"
-    },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"
@@ -93,6 +89,18 @@
     "./tin-balance-spend-planner": {
       "import": "./dist/tin-balance-spend-planner.js",
       "types": "./dist/tin-balance-spend-planner.d.ts"
+    },
+    "./worker/private-settlement": {
+      "import": "./dist/worker/private-settlement.js",
+      "types": "./dist/worker/private-settlement.d.ts"
+    },
+    "./authorization/server": {
+      "import": "./dist/authorization/server/index.js",
+      "types": "./dist/authorization/server/index.d.ts"
+    },
+    "./sessions/server": {
+      "import": "./dist/sessions/server/index.js",
+      "types": "./dist/sessions/server/index.d.ts"
     }
   },
   "scripts": {
@@ -101,11 +109,12 @@
     "test": "npm run build && node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@noble/hashes": "^1.8.0",
     "@coral-xyz/anchor": "^0.32.1",
+    "@noble/hashes": "^1.8.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "buffer": "^6.0.3",
+    "lit": "^3.3.0",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {

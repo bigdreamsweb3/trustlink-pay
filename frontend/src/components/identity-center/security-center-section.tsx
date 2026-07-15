@@ -101,7 +101,7 @@ export function SecurityCenterSection({
     );
   }, [identity?.recoveryCooldown, nowMs]);
   const visibleMainWallet =
-    identity?.mainWallet ?? user.tinsWalletPublicKey ?? user.walletAddress ?? null;
+    identity?.mainWallet ?? user.walletAddress ?? null;
 
   async function loadIdentity(token: string) {
     setLoading(true);

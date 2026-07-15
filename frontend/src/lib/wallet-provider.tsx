@@ -33,14 +33,41 @@ type WalletContextValue = {
 const WalletContext = createContext<WalletContextValue | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const appKit = configureTrustLinkAppKit();
+
+  if (!appKit) {
+    return <UnavailableReownWalletProvider>{children}</UnavailableReownWalletProvider>;
+  }
+
+  return <ConfiguredReownWalletProvider>{children}</ConfiguredReownWalletProvider>;
+}
+
+function UnavailableReownWalletProvider({ children }: { children: ReactNode }) {
+  const { showToast } = useToast();
+  const value = useMemo<WalletContextValue>(
+    () => ({
+      session: null,
+      walletAddress: null,
+      requestWalletConnection: () => {
+        showToast(
+          "Reown is not configured. Add a valid Reown project ID, restart the frontend, and try again.",
+        );
+      },
+      disconnectWallet: async () => {
+        clearExternalSolanaWallet();
+      },
+    }),
+    [showToast],
+  );
+
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+}
+
+function ConfiguredReownWalletProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
   const reownAccount = useAppKitAccount({ namespace: "solana" });
   const { walletProvider: reownWalletProvider } = useAppKitProvider("solana");
   const [session, setSession] = useState<ConnectedWalletSession | null>(null);
-
-  useEffect(() => {
-    configureTrustLinkAppKit();
-  }, []);
 
   useEffect(() => {
     if (!reownAccount.isConnected || !reownAccount.address || !reownWalletProvider) {

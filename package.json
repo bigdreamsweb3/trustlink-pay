@@ -50,7 +50,7 @@
   },
   "scripts": {
     "// === Core Development ===": "Start here. Daily local commands for the main app and TSN stack.",
-    "help": "echo \"Common commands:\" && echo \"npm run dev:full              - backend + frontend\" && echo \"npm run dev:all               - backend + frontend + mempool\" && echo \"npm run mempool:dev           - TSN mempool API + explorer\" && echo \"npm run rpc:gateway:dev       - start the TSN RPC gateway\" && echo \"npm run rpc:gateway:inspect   - inspect gateway upstream order\" && echo \"npm run tsn:cranker:start     - start real settlement operator\" && echo \"npm run rpc:inspect           - show active RPC order\" && echo \"npm run deploy:doctor         - check deploy toolchain\"",
+    "help": "echo \"Common commands:\" && echo \"npm run dev:full              - backend + frontend\" && echo \"npm run dev:all               - backend + frontend + mempool\" && echo \"npm run whatsapp:tunnel       - expose the local WhatsApp webhook\" && echo \"npm run mempool:dev           - TSN mempool API + explorer\" && echo \"npm run rpc:gateway:dev       - start the TSN RPC gateway\" && echo \"npm run rpc:gateway:inspect   - inspect gateway upstream order\" && echo \"npm run tsn:cranker:start     - start real settlement operator\" && echo \"npm run rpc:inspect           - show active RPC order\" && echo \"npm run deploy:doctor         - check deploy toolchain\"",
     "dev:full": "npx concurrently -n backend,frontend -c cyan,green \"npm run backend:dev\" \"npm run frontend:dev\"",
     "dev:all": "npx concurrently -n backend,frontend,mempool -c cyan,green,magenta \"npm run backend:dev\" \"npm run frontend:dev\" \"npm run mempool:dev\"",
     "flow:check": "node scripts/flow-check.mjs",
@@ -65,6 +65,7 @@
     "backend:typecheck": "npm --prefix backend run typecheck",
     "backend:install": "npm --prefix backend install",
     "backend:clean": "node -e \"const fs=require('fs');fs.rmSync('backend/.next',{recursive:true,force:true})\"",
+    "whatsapp:tunnel": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows/start-whatsapp-tunnel.ps1",
     "// === Mempool Stack ===": "TSN work queue, epoch coordinator, and mempool explorer.",
     "mempool:dev": "node scripts/start-tsn-mempool-stack.mjs",
     "mempool:backend:dev": "cd tsn-protocol/tsn-mempool-backend && set MEMPOOL_STORE=file&& set PYTHONUNBUFFERED=1&& python -u server.py",

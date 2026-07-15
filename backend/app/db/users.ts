@@ -81,7 +81,6 @@ async function insertUserProfile(params: {
       tin,
       tins_identity_pubkey,
       tins_registry_pubkey,
-      tins_wallet_pubkey,
       tins_program_id,
       tins_created_at,
       phone_identity_pubkey,
@@ -120,7 +119,6 @@ export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserRe
       tin,
       tins_identity_pubkey,
       tins_registry_pubkey,
-      tins_wallet_pubkey,
       tins_program_id,
       tins_created_at,
       phone_identity_pubkey,
@@ -161,7 +159,6 @@ export async function findUserByTin(tin: string): Promise<UserRecord | null> {
       tin,
       tins_identity_pubkey,
       tins_registry_pubkey,
-      tins_wallet_pubkey,
       tins_program_id,
       tins_created_at,
       phone_identity_pubkey,
@@ -202,7 +199,6 @@ export async function findUserById(id: string): Promise<UserRecord | null> {
       tin,
       tins_identity_pubkey,
       tins_registry_pubkey,
-      tins_wallet_pubkey,
       tins_program_id,
       tins_created_at,
       phone_identity_pubkey,
@@ -763,7 +759,6 @@ export async function updateUserTinMapping(params: {
   tin: string;
   tinsIdentityPublicKey?: string | null;
   tinsRegistryPublicKey?: string | null;
-  tinsWalletPublicKey?: string | null;
   tinsProgramId?: string | null;
   bindingSignature?: string | null;
 }): Promise<{
@@ -771,7 +766,6 @@ export async function updateUserTinMapping(params: {
   tin: string | null;
   tins_identity_pubkey: string | null;
   tins_registry_pubkey: string | null;
-  tins_wallet_pubkey: string | null;
   tins_program_id: string | null;
   tins_created_at: string | null;
 }> {
@@ -781,7 +775,6 @@ export async function updateUserTinMapping(params: {
       tin = ${params.tin},
       tins_identity_pubkey = ${params.tinsIdentityPublicKey ?? null},
       tins_registry_pubkey = ${params.tinsRegistryPublicKey ?? null},
-      tins_wallet_pubkey = ${params.tinsWalletPublicKey ?? null},
       tins_program_id = ${params.tinsProgramId ?? null},
       binding_signature = ${params.bindingSignature ?? null},
       tins_created_at = COALESCE(tins_created_at, NOW()),
@@ -792,7 +785,6 @@ export async function updateUserTinMapping(params: {
       tin,
       tins_identity_pubkey,
       tins_registry_pubkey,
-      tins_wallet_pubkey,
       tins_program_id,
       tins_created_at
   `) as Array<{
@@ -800,8 +792,7 @@ export async function updateUserTinMapping(params: {
     tin: string | null;
     tins_identity_pubkey: string | null;
     tins_registry_pubkey: string | null;
-    tins_wallet_pubkey: string | null;
-    tins_program_id: string | null;
+      tins_program_id: string | null;
     tins_created_at: string | null;
   }>;
 

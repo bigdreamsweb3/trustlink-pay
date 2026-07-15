@@ -1,5 +1,58 @@
-const path = require("node:path"); const root = __dirname; const log = path.join(root, ".logs");
+const fs = require("node:fs");
+const path = require("node:path");
 
-const npmApp = (name, cwd, command, env = {}) => ({ name: "trustlink-" + name, script: "cmd.exe", args: "/d /s /c \"npm.cmd run " + command + "\"", cwd: path.join(root, cwd), interpreter: "none", instances: 1, autorestart: true, watch: false, windowsHide: true, kill_timeout: 10000, out_file: path.join(log, name + "-out.log"), error_file: path.join(log, name + "-error.log"), time: true, env: { NODE_ENV: "development", ...env } }); 
+const root = fs.realpathSync.native(__dirname);
+const logDirectory = path.join(root, ".logs");
 
-module.exports = { apps: [npmApp("frontend", "frontend", "dev", { NODE_OPTIONS: "--max-old-space-size=2048" }), npmApp("backend", "backend", "dev"), { name: "trustlink-mempool", script: path.join(root, ".venv", "Scripts", "python.exe"), args: "-u server.py", cwd: path.join(root, "tsn-protocol", "tsn-mempool-backend"), interpreter: "none", instances: 1, autorestart: true, watch: false, windowsHide: true, kill_timeout: 10000, out_file: path.join(log, "mempool-out.log"), error_file: path.join(log, "mempool-error.log"), time: true, env: { PYTHONUNBUFFERED: "1", MEMPOOL_STORE: "file" } }, npmApp("mempool-ui", "tsn-protocol/tsn-mempool-frontend", "dev"), npmApp("rpc-gateway", "tsn-protocol/tsn-rpc-gateway", "dev"), npmApp("cranker", "tsn-protocol/tsn-cranker-op-daemon", "crank:start")] };
+function createNpmApplication(name, workingDirectory, command, environment = {}) {
+  return {
+    name: `trustlink-${name}`,
+    script: "cmd.exe",
+    args: `/d /s /c "npm.cmd run ${command}"`,
+    cwd: path.join(root, workingDirectory),
+    interpreter: "none",
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    windowsHide: true,
+    kill_timeout: 10000,
+    out_file: path.join(logDirectory, `${name}-out.log`),
+    error_file: path.join(logDirectory, `${name}-error.log`),
+    time: true,
+    env: {
+      NODE_ENV: "development",
+      ...environment,
+    },
+  };
+}
+
+const mempoolApplication = {
+  name: "trustlink-mempool",
+  script: path.join(root, ".venv", "Scripts", "python.exe"),
+  args: "-u server.py",
+  cwd: path.join(root, "tsn-protocol", "tsn-mempool-backend"),
+  interpreter: "none",
+  instances: 1,
+  autorestart: true,
+  watch: false,
+  windowsHide: true,
+  kill_timeout: 10000,
+  out_file: path.join(logDirectory, "mempool-out.log"),
+  error_file: path.join(logDirectory, "mempool-error.log"),
+  time: true,
+  env: {
+    PYTHONUNBUFFERED: "1",
+    MEMPOOL_STORE: "file",
+  },
+};
+
+module.exports = {
+  apps: [
+    // createNpmApplication("frontend", "frontend", "dev"),
+    createNpmApplication("backend", "backend", "dev"),
+    mempoolApplication,
+    createNpmApplication("mempool-ui", "tsn-protocol/tsn-mempool-frontend", "dev"),
+    createNpmApplication("rpc-gateway", "tsn-protocol/tsn-rpc-gateway", "dev"),
+    createNpmApplication("cranker", "tsn-protocol/tsn-cranker-op-daemon", "crank:start"),
+  ],
+};

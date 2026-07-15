@@ -32,8 +32,8 @@ interface DeviceRow {
 /**
  * Compute device identity hash
  */
-export function computeDeviceHash(ownerPublicKey: string, deviceId: string): string {
-  const message = utf8ToBytes(`${DEVICE_DOMAIN}|${ownerPublicKey}|${deviceId}`);
+export function computeDeviceHash(ownerIdentityCommitment: string, deviceId: string): string {
+  const message = utf8ToBytes(`${DEVICE_DOMAIN}|${ownerIdentityCommitment}|${deviceId}`);
   return Buffer.from(sha256(message)).toString("hex");
 }
 

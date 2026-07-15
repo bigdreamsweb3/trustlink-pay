@@ -170,7 +170,6 @@ function extractTinInfo(
     tin: result.tin,
     tinsIdentityPublicKey: result.tinsIdentityPublicKey ?? null,
     tinsRegistryPublicKey: result.tinsRegistryPublicKey ?? null,
-    tinsWalletPublicKey: result.tinsWalletPublicKey ?? null,
     tinsProgramId: result.tinsProgramId ?? null,
     tinsCreatedAt: result.tinsCreatedAt ?? null,
   };

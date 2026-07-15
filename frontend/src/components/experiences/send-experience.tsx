@@ -87,7 +87,7 @@ import { RecipientSearchModal } from "@/src/components/experiences/send/recipien
 import { RecipientSuggestions } from "@/src/components/experiences/send/recipient/recipient-suggestions";
 import {
   buildSendRecipientOptions,
-  searchSendRecipientOptions,
+  searchSendRecipientRoutes,
 } from "@/src/components/experiences/send/recipient/recipient-options";
 import {
   getRecipientRoute,
@@ -452,7 +452,7 @@ export function SendExperience() {
   );
   const recipientSuggestions = useMemo(() => {
     if (!receiverPhoneInput.trim()) return [];
-    return searchSendRecipientOptions(
+    return searchSendRecipientRoutes(
       recipientOptions,
       receiverPhoneInput,
     ).slice(0, 4);

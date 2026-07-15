@@ -397,3 +397,4 @@ export const PERMISSION_SCOPES = {
   VIEW_BALANCE: "viewBalance",
   DECRYPT_RECEIPTS: "decryptReceipts",
 } as const;
+export * from "./proof-of-possession.js";

@@ -4,7 +4,6 @@ export interface UserProfile {
   tin?: string | null;
   tinsIdentityPublicKey?: string | null;
   tinsRegistryPublicKey?: string | null;
-  tinsWalletPublicKey?: string | null;
   tinsProgramId?: string | null;
   tinsCreatedAt?: string | null;
   displayName: string;
@@ -55,7 +54,6 @@ export interface TinIdentityState {
   tin: string | null;
   tinsIdentityPublicKey: string | null;
   tinsRegistryPublicKey: string | null;
-  tinsWalletPublicKey: string | null;
   tinsProgramId: string | null;
   tinsCreatedAt?: string | null;
 }

@@ -11,6 +11,8 @@ import {
 } from "@solana/web3.js";
 import { traceFunction } from "@trustlink/observability/tracer";
 
+import { enrichSolanaTransactionError } from "@/src/lib/wallet-connection/solana-transaction-error";
+
 const CONNECTED_WALLET_KEY = "trustlink.connectedWallet";
 
 type WalletPublicKey = {

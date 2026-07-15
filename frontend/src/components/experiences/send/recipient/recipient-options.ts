@@ -80,3 +80,24 @@ export function searchSendRecipientOptions(
       .some((value) => value!.toLowerCase().includes(normalizedQuery)),
   );
 }
+
+export function searchSendRecipientRoutes(
+  options: SendRecipientOption[],
+  query: string,
+) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const digitQuery = normalizedQuery.replace(/\D/g, "");
+  if (!normalizedQuery) return [];
+
+  return options.filter((option) => {
+    const phoneNumber = option.phoneNumber?.toLowerCase() ?? "";
+    const phoneDigits = phoneNumber.replace(/\D/g, "");
+    const tin = option.tin ?? "";
+
+    return (
+      phoneNumber.includes(normalizedQuery) ||
+      (digitQuery.length > 0 &&
+        (phoneDigits.includes(digitQuery) || tin.includes(digitQuery)))
+    );
+  });
+}

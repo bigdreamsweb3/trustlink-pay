@@ -30,7 +30,7 @@ Use focused imports when a file only needs one area:
       sessionCode: "TLSA1B2C3"
     });
 
-Use this for browser flows and QR codes.
+Use this for browser flows and QR codes. The SDK renders the URL with the standards-compliant `qrcode.react` encoder so phone cameras can open the prepared WhatsApp conversation reliably.
 
 ## Build A Native WhatsApp Link
 
@@ -53,7 +53,7 @@ Use this when the user is on a phone that can open WhatsApp directly.
       }}
     />
 
-The modal helps the user continue into WhatsApp.
+The modal uses a TrustLink-themed connection experience on every screen size. Desktop presents a scannable QR panel beside the session controls. Mobile presents the same flow as a bottom sheet and opens the installed WhatsApp application directly.
 
 The backend still completes the session through webhook processing.
 

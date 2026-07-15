@@ -40,7 +40,6 @@ function extractTinInfo(
     tin: result.tin,
     tinsIdentityPublicKey: result.tinsIdentityPublicKey ?? null,
     tinsRegistryPublicKey: result.tinsRegistryPublicKey ?? null,
-    tinsWalletPublicKey: result.tinsWalletPublicKey ?? null,
     tinsProgramId: result.tinsProgramId ?? null,
     tinsCreatedAt: result.tinsCreatedAt ?? null,
   };
@@ -77,8 +76,6 @@ export function IdentityOverviewSection({
   const settlementAuthorityWallet =
     identityResponse?.identity?.mainWallet ??
     identityResponse?.settlementWalletPublicKey ??
-    identityResponse?.tinsWalletPublicKey ??
-    user.tinsWalletPublicKey ??
     user.walletAddress ??
     null;
 
@@ -188,7 +185,6 @@ export function IdentityOverviewSection({
         tin: stored.tin,
         tinsIdentityPublicKey: stored.tinsIdentityPublicKey,
         tinsRegistryPublicKey: stored.tinsRegistryPublicKey,
-        tinsWalletPublicKey: stored.tinsWalletPublicKey,
         tinsProgramId: stored.tinsProgramId,
         tinsCreatedAt: stored.tinsCreatedAt,
       };

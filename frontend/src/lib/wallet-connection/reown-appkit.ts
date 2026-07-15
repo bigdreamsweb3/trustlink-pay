@@ -7,12 +7,14 @@ import { solana, solanaDevnet } from "@reown/appkit/networks";
 let appKitConfigured = false;
 let trustLinkAppKit: AppKit | null = null;
 
+const REOWN_PROJECT_ID_PATTERN = /^[0-9a-f]{32}$/i;
+
 function getReownProjectId() {
   return process.env.NEXT_PUBLIC_REOWN_PROJECT_ID ?? "";
 }
 
 export function hasReownProjectId() {
-  return getReownProjectId().length > 0 && getReownProjectId() !== "replace_with_reown_project_id";
+  return REOWN_PROJECT_ID_PATTERN.test(getReownProjectId());
 }
 
 function getConfiguredAppUrl() {
@@ -36,7 +38,7 @@ export function configureTrustLinkAppKit() {
 
   const projectId = getReownProjectId();
 
-  if (!projectId || projectId === "replace_with_reown_project_id") {
+  if (!hasReownProjectId()) {
     appKitConfigured = true;
     return null;
   }
@@ -69,7 +71,9 @@ export function openTrustLinkWalletModal() {
   const appKit = configureTrustLinkAppKit();
 
   if (!appKit) {
-    throw new Error("WalletConnect is not configured. Add NEXT_PUBLIC_REOWN_PROJECT_ID to frontend/.env.local.");
+    throw new Error(
+      "Reown is not configured. Set a valid 32-character NEXT_PUBLIC_REOWN_PROJECT_ID in frontend/.env.local, then restart the frontend.",
+    );
   }
 
   appKit.open();

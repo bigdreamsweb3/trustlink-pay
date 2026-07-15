@@ -24,7 +24,7 @@ export type BrowserTinRegistration = {
   tin: string;
   tinsIdentityPublicKey: string;
   tinsRegistryPublicKey: string;
-  tinsWalletPublicKey: string;
+  signerPublicKey: string;
   tinsProgramId: string;
   bindingIssuedAt: string;
   bindingMessage: string;
@@ -337,7 +337,7 @@ async function createOrLoadTinForWalletImpl(params: {
       tin,
       tinsIdentityPublicKey: identity.toBase58(),
       tinsRegistryPublicKey: getTinsRegistryPda({ tin: decoded.tin, programId }).toBase58(),
-      tinsWalletPublicKey: walletPublicKey.toBase58(),
+      signerPublicKey: walletPublicKey.toBase58(),
       tinsProgramId: programId.toBase58(),
       ...binding,
       blockchainSignature: null,

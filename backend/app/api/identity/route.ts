@@ -20,7 +20,6 @@ const getCachedIdentitySecurity = cachedQuery(
       tin: result.user.tin ?? null,
       tinsIdentityPublicKey: result.user.tins_identity_pubkey ?? null,
       tinsRegistryPublicKey: result.user.tins_registry_pubkey ?? null,
-      tinsWalletPublicKey: result.user.tins_wallet_pubkey ?? null,
       tinsProgramId: result.user.tins_program_id ?? null,
       tinsCreatedAt: result.user.tins_created_at ?? null,
       phoneIdentityPublicKey: result.phoneIdentity?.publicKey ?? null,

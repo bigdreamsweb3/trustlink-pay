@@ -190,11 +190,13 @@ export function WhatsAppModal({
 
         <div className="pointer-events-none fixed inset-0 grid place-items-end sm:place-items-center sm:p-4">
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={
+              isMobile ? { y: "100%" } : { opacity: 0, y: 20, scale: 0.98 }
+            }
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={isMobile ? { y: "100%" } : { opacity: 0, y: 16, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
-            className="pointer-events-auto w-full rounded-t-2xl sm:max-w-[430px] sm:rounded-2xl"
+            className="pointer-events-auto w-full rounded-t-[28px] border border-[var(--field-border)] shadow-2xl sm:w-auto sm:max-w-[640px] sm:rounded-[28px]"
             style={{ background: "var(--panel)", maxHeight: "90dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -265,323 +267,331 @@ export function WhatsAppModal({
                   ) : null}
                 </div>
 
-                <div className="mb-4">
-                  <h2
-                    className="text-[1rem] font-bold sm:text-[1.1rem]"
-                    style={{ color: "var(--text)" }}
-                  >
-                    {handoffStatus === "waiting"
-                      ? "Waiting for verification..."
-                      : "Approve your session"}
-                  </h2>
-                  <p
-                    className="mt-1 text-[0.74rem] leading-relaxed"
-                    style={{ color: "var(--muted)" }}
-                  >
-                    {handoffStatus === "waiting"
-                      ? isMobile
-                        ? "Send the code in WhatsApp, then come back here."
-                        : "Scan the QR code or approve the session in WhatsApp."
-                      : "Verify your identity by connecting via WhatsApp."}
-                  </p>
-                </div>
-
-                {!isMobile && qrEnabled && handoffStatus !== "waiting" ? (
-                  <div className="mb-4 flex flex-col items-center">
-                    <div
-                      className="rounded-[18px] p-3"
-                      style={{
-                        background: "white",
-                        border: "1px solid var(--field-border)",
-                      }}
+                <div className="sm:grid sm:grid-cols-[220px_minmax(0,1fr)] sm:gap-x-7">
+                  <div className="mb-4 sm:col-start-2 sm:row-start-1">
+                    <h2
+                      className="text-[1rem] font-bold sm:text-[1.25rem]"
+                      style={{ color: "var(--text)" }}
                     >
-                      <QRCodeDisplay
-                        value={qrValue}
-                        size={160}
-                        logoUrl={qr?.logoUrl}
-                      />
-                    </div>
+                      {handoffStatus === "waiting"
+                        ? "Waiting for verification..."
+                        : "Connect with WhatsApp"}
+                    </h2>
                     <p
-                      className="mt-2 text-center text-[0.68rem] font-semibold"
-                      style={{ color: "var(--text-faint)" }}
+                      className="mt-1 text-[0.74rem] leading-relaxed"
+                      style={{ color: "var(--muted)" }}
                     >
-                      Scan to open WhatsApp
+                      {handoffStatus === "waiting"
+                        ? isMobile
+                          ? "Send the code in WhatsApp, then come back here."
+                          : "Scan the QR code or approve the session in WhatsApp."
+                        : "Verify your identity by connecting via WhatsApp."}
                     </p>
                   </div>
-                ) : null}
 
-                <div
-                  className="relative mb-4 min-h-[120px] overflow-hidden rounded-[14px] border p-2.5"
-                  style={{
-                    background: "var(--field)",
-                    borderColor: "var(--field-border)",
-                  }}
-                >
-                  <div
-                    className="pointer-events-none absolute inset-0 opacity-[0.03]"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(var(--accent-border) 1px, transparent 1px), linear-gradient(90deg, var(--accent-border) 1px, transparent 1px)",
-                      backgroundSize: "12px 12px",
-                    }}
-                  />
-                  <div className="space-y-1.5">
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="flex justify-end"
-                    >
+                  {!isMobile && qrEnabled ? (
+                    <div className="mb-4 flex flex-col items-center rounded-[22px] border border-[var(--field-border)] bg-[var(--surface-soft)] p-4 sm:col-start-1 sm:row-start-1 sm:row-span-4 sm:mb-0 sm:self-start">
                       <div
-                        className="max-w-[80%] rounded-[8px] rounded-tr-[2px] px-2.5 py-1.5"
+                        className="rounded-[20px] p-2"
                         style={{
-                          background: "rgba(37,211,102,0.12)",
-                          border: "1px solid rgba(37,211,102,0.14)",
+                          background: "white",
                         }}
                       >
-                        <p
-                          className="text-[0.6rem] font-semibold"
-                          style={{ color: "var(--text)" }}
-                        >
-                          {authMessage}
-                        </p>
+                        <QRCodeDisplay
+                          value={qrValue}
+                          size={qr?.size ?? 188}
+                          logoUrl={qr?.logoUrl}
+                        />
                       </div>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, x: -4 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.2 }}
-                      className="flex justify-start"
-                    >
-                      <div
-                        className="w-[85%] rounded-[8px] rounded-tl-[2px] px-2.5 py-2"
-                        style={{
-                          background: "var(--panel)",
-                          border: "1px solid var(--field-border)",
-                        }}
+                      <p
+                        className="mt-3 text-center text-[0.76rem] font-semibold"
+                        style={{ color: "var(--text)" }}
                       >
-                        <p
-                          className="mb-1 text-[0.56rem]"
-                          style={{ color: "var(--text-soft)" }}
+                        Scan with your phone
+                      </p>
+                      <p className="mt-1 text-center text-[0.64rem] leading-relaxed text-[var(--text-faint)]">
+                        Your camera opens WhatsApp with the secure session
+                        message ready to send.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <div
+                    className="relative mb-4 min-h-[120px] overflow-hidden rounded-[14px] border p-2.5 sm:col-start-2 sm:row-start-2"
+                    style={{
+                      background: "var(--field)",
+                      borderColor: "var(--field-border)",
+                    }}
+                  >
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-[0.03]"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(var(--accent-border) 1px, transparent 1px), linear-gradient(90deg, var(--accent-border) 1px, transparent 1px)",
+                        backgroundSize: "12px 12px",
+                      }}
+                    />
+                    <div className="space-y-1.5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex justify-end"
+                      >
+                        <div
+                          className="max-w-[80%] rounded-[8px] rounded-tr-[2px] px-2.5 py-1.5"
+                          style={{
+                            background: "rgba(37,211,102,0.12)",
+                            border: "1px solid rgba(37,211,102,0.14)",
+                          }}
                         >
-                          Confirm sign-in to TrustLink Pay?
-                        </p>
-                        <div className="flex gap-1">
-                          <div
-                            className="flex-1 rounded-[4px] py-0.5 text-center text-[0.52rem] font-semibold"
-                            style={{
-                              background: "var(--surface-soft)",
-                              border: "1px solid var(--field-border)",
-                              color: "var(--text-faint)",
-                            }}
+                          <p
+                            className="text-[0.6rem] font-semibold"
+                            style={{ color: "var(--text)" }}
                           >
-                            Decline
-                          </div>
-                          <div
-                            className="flex-1 rounded-[4px] py-0.5 text-center text-[0.52rem] font-semibold"
-                            style={{
-                              background: "var(--accent)",
-                              color: "#04110a",
-                            }}
+                            {authMessage}
+                          </p>
+                        </div>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1.2 }}
+                        className="flex justify-start"
+                      >
+                        <div
+                          className="w-[85%] rounded-[8px] rounded-tl-[2px] px-2.5 py-2"
+                          style={{
+                            background: "var(--panel)",
+                            border: "1px solid var(--field-border)",
+                          }}
+                        >
+                          <p
+                            className="mb-1 text-[0.56rem]"
+                            style={{ color: "var(--text-soft)" }}
                           >
-                            Approve
+                            Confirm sign-in to TrustLink Pay?
+                          </p>
+                          <div className="flex gap-1">
+                            <div
+                              className="flex-1 rounded-[4px] py-0.5 text-center text-[0.52rem] font-semibold"
+                              style={{
+                                background: "var(--surface-soft)",
+                                border: "1px solid var(--field-border)",
+                                color: "var(--text-faint)",
+                              }}
+                            >
+                              Decline
+                            </div>
+                            <div
+                              className="flex-1 rounded-[4px] py-0.5 text-center text-[0.52rem] font-semibold"
+                              style={{
+                                background: "var(--accent)",
+                                color: "#04110a",
+                              }}
+                            >
+                              Approve
+                            </div>
                           </div>
                         </div>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 2.4, duration: 0.25 }}
+                        className="flex justify-end"
+                      >
+                        <div
+                          className="rounded-[6px] rounded-tr-[2px] px-2 py-1"
+                          style={{
+                            background: "rgba(37,211,102,0.12)",
+                            border: "1px solid rgba(37,211,102,0.14)",
+                          }}
+                        >
+                          <p
+                            className="text-[0.56rem] font-semibold"
+                            style={{ color: "var(--text)" }}
+                          >
+                            Approve Session
+                          </p>
+                        </div>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 3.25, duration: 0.25 }}
+                        className="flex justify-start"
+                      >
+                        <div
+                          className="flex items-center gap-1 rounded-[6px] rounded-tl-[2px] px-2 py-1"
+                          style={{
+                            background: "var(--accent-soft)",
+                            border: "1px solid var(--accent-border)",
+                          }}
+                        >
+                          <Check
+                            className="h-2.5 w-2.5"
+                            style={{ color: "var(--accent)" }}
+                          />
+                          <p
+                            className="text-[0.56rem] font-semibold"
+                            style={{ color: "var(--accent)" }}
+                          >
+                            Session approved
+                          </p>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4 space-y-2.5 sm:col-start-2 sm:row-start-3">
+                    <div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-1">
+                        Phone
                       </div>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 2.4, duration: 0.25 }}
-                      className="flex justify-end"
-                    >
                       <div
-                        className="rounded-[6px] rounded-tr-[2px] px-2 py-1"
+                        className="flex items-center justify-between rounded-xl border px-3.5 py-2.5"
                         style={{
-                          background: "rgba(37,211,102,0.12)",
-                          border: "1px solid rgba(37,211,102,0.14)",
+                          background: "var(--panel-lighter)",
+                          borderColor: "var(--field-border)",
                         }}
                       >
-                        <p
-                          className="text-[0.56rem] font-semibold"
-                          style={{ color: "var(--text)" }}
+                        <span className="font-mono text-xs font-semibold text-white select-all">
+                          {formattedPhoneNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyText("phone", formattedPhoneNumber)
+                          }
+                          className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg transition-colors active:scale-90"
+                          style={{
+                            background: "var(--surface-soft)",
+                            color: "var(--text-faint)",
+                          }}
                         >
-                          Approve Session
-                        </p>
+                          {copiedField === "phone" ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
                       </div>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.92 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 3.25, duration: 0.25 }}
-                      className="flex justify-start"
-                    >
+                    </div>
+                    <div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-1">
+                        Session Code
+                      </div>
                       <div
-                        className="flex items-center gap-1 rounded-[6px] rounded-tl-[2px] px-2 py-1"
+                        className="flex items-center justify-between rounded-xl border px-3.5 py-2.5"
+                        style={{
+                          background: "var(--panel-lighter)",
+                          borderColor: "var(--field-border)",
+                        }}
+                      >
+                        <span className="font-mono text-xs font-semibold text-white truncate max-w-[200px] select-all">
+                          {authMessage}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyText("message", authMessage)}
+                          className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-lg transition-colors active:scale-90"
+                          style={{
+                            background: "var(--surface-soft)",
+                            color: "var(--text-faint)",
+                          }}
+                        >
+                          {copiedField === "message" ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 sm:col-start-2 sm:row-start-4">
+                    {handoffStatus === "waiting" ? (
+                      <div
+                        className="flex items-center justify-center gap-2.5 rounded-[18px] py-3"
                         style={{
                           background: "var(--accent-soft)",
                           border: "1px solid var(--accent-border)",
                         }}
                       >
-                        <Check
-                          className="h-2.5 w-2.5"
-                          style={{ color: "var(--accent)" }}
-                        />
-                        <p
-                          className="text-[0.56rem] font-semibold"
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span
+                            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50"
+                            style={{ background: "var(--accent)" }}
+                          />
+                          <span
+                            className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                            style={{ background: "var(--accent)" }}
+                          />
+                        </span>
+                        <span
+                          className="text-[0.82rem] font-semibold"
                           style={{ color: "var(--accent)" }}
                         >
-                          Session approved
-                        </p>
+                          Listening for verification...
+                        </span>
                       </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                <div className="mb-4 space-y-2.5">
-                  <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-1">
-                      Phone
-                    </div>
-                    <div
-                      className="flex items-center justify-between rounded-xl border px-3.5 py-2.5"
-                      style={{
-                        background: "var(--panel-lighter)",
-                        borderColor: "var(--field-border)",
-                      }}
-                    >
-                      <span className="font-mono text-xs font-semibold text-white select-all">
-                        {formattedPhoneNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copyText("phone", formattedPhoneNumber)}
-                        className="grid h-7 w-7 cursor-pointer place-items-center rounded-lg transition-colors active:scale-90"
+                    ) : (
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={handleOpenWhatsApp}
+                        disabled={handoffStatus === "opening"}
+                        className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] py-3 text-[0.88rem] font-semibold transition-all disabled:opacity-70"
                         style={{
-                          background: "var(--surface-soft)",
-                          color: "var(--text-faint)",
+                          background:
+                            "linear-gradient(135deg, #25D366, #20BA5C)",
+                          color: "#ffffff",
+                          boxShadow: "0 4px 16px rgba(37,211,102,0.20)",
                         }}
                       >
-                        {copiedField === "phone" ? (
-                          <Check className="h-3.5 w-3.5" />
+                        {handoffStatus === "opening" ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Opening WhatsApp...</span>
+                          </>
+                        ) : handoffStatus === "fallback" ? (
+                          <>
+                            <WhatsAppIcon className="h-[18px] w-[18px]" />
+                            <span>Try Again</span>
+                            <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                          </>
                         ) : (
-                          <Copy className="h-3.5 w-3.5" />
+                          <>
+                            <WhatsAppIcon className="h-[18px] w-[18px]" />
+                            <span>Open WhatsApp</span>
+                            <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                          </>
                         )}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-1">
-                      Session Code
-                    </div>
-                    <div
-                      className="flex items-center justify-between rounded-xl border px-3.5 py-2.5"
-                      style={{
-                        background: "var(--panel-lighter)",
-                        borderColor: "var(--field-border)",
-                      }}
-                    >
-                      <span className="font-mono text-xs font-semibold text-white truncate max-w-[200px] select-all">
-                        {authMessage}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copyText("message", authMessage)}
-                        className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-lg transition-colors active:scale-90"
-                        style={{
-                          background: "var(--surface-soft)",
-                          color: "var(--text-faint)",
-                        }}
-                      >
-                        {copiedField === "message" ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                      </motion.button>
+                    )}
 
-                <div className="space-y-2.5">
-                  {handoffStatus === "waiting" ? (
-                    <div
-                      className="flex items-center justify-center gap-2.5 rounded-[18px] py-3"
-                      style={{
-                        background: "var(--accent-soft)",
-                        border: "1px solid var(--accent-border)",
-                      }}
-                    >
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span
-                          className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50"
-                          style={{ background: "var(--accent)" }}
-                        />
-                        <span
-                          className="relative inline-flex h-2.5 w-2.5 rounded-full"
-                          style={{ background: "var(--accent)" }}
-                        />
-                      </span>
+                    {statusLabel ? (
+                      <p
+                        className="text-center text-[0.68rem]"
+                        style={{ color: "var(--text-faint)" }}
+                      >
+                        {statusLabel}
+                      </p>
+                    ) : null}
+
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Shield
+                        className="h-3 w-3"
+                        style={{ color: "var(--text-faint)" }}
+                      />
                       <span
-                        className="text-[0.82rem] font-semibold"
-                        style={{ color: "var(--accent)" }}
+                        className="text-[0.58rem] font-medium uppercase tracking-[0.2em]"
+                        style={{ color: "var(--text-faint)" }}
                       >
-                        Listening for verification...
+                        End-to-end encrypted
                       </span>
                     </div>
-                  ) : (
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleOpenWhatsApp}
-                      disabled={handoffStatus === "opening"}
-                      className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] py-3 text-[0.88rem] font-semibold transition-all disabled:opacity-70"
-                      style={{
-                        background: "linear-gradient(135deg, #25D366, #20BA5C)",
-                        color: "#ffffff",
-                        boxShadow: "0 4px 16px rgba(37,211,102,0.20)",
-                      }}
-                    >
-                      {handoffStatus === "opening" ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Opening WhatsApp...</span>
-                        </>
-                      ) : handoffStatus === "fallback" ? (
-                        <>
-                          <WhatsAppIcon className="h-[18px] w-[18px]" />
-                          <span>Try Again</span>
-                          <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                        </>
-                      ) : (
-                        <>
-                          <WhatsAppIcon className="h-[18px] w-[18px]" />
-                          <span>Open WhatsApp</span>
-                          <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                        </>
-                      )}
-                    </motion.button>
-                  )}
-
-                  {statusLabel ? (
-                    <p
-                      className="text-center text-[0.68rem]"
-                      style={{ color: "var(--text-faint)" }}
-                    >
-                      {statusLabel}
-                    </p>
-                  ) : null}
-
-                  <div className="flex items-center justify-center gap-1.5">
-                    <Shield
-                      className="h-3 w-3"
-                      style={{ color: "var(--text-faint)" }}
-                    />
-                    <span
-                      className="text-[0.58rem] font-medium uppercase tracking-[0.2em]"
-                      style={{ color: "var(--text-faint)" }}
-                    >
-                      End-to-end encrypted
-                    </span>
                   </div>
                 </div>
               </div>

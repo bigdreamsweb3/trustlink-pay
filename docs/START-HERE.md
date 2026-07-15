@@ -86,7 +86,7 @@ The design avoids publishing the full private payment route. It does not claim t
 
 ## What The App Shows
 
-The app should show users:
+The app presents:
 
 - the recipient TIN
 - the recipient display name if available
@@ -95,7 +95,7 @@ The app should show users:
 - TIN balance and wallet balance as one usable payment balance where appropriate
 - escrow or payout transaction references where appropriate
 
-The app should not expose raw private routing data, phone numbers, or internal Cranker-only payloads.
+The app excludes raw private routing data, phone numbers, and internal Cranker-only payloads from user-facing views.
 
 ## Protocol Boundary
 
@@ -288,13 +288,13 @@ Split:
 
 ### Summary
 
-We treat a TIN as a static identity record plus exactly **30 token-agnostic PRUs**. The TIN Registry stores the identity PDA, encrypted TIN Master Seed blob, and commitments. TSN stores or derives lifecycle state for receipt, spend, sweep, and lazy ATA activation.
+A TIN consists of a static identity record and exactly **30 token-agnostic PRUs**. The TIN Registry stores the identity PDA, encrypted TIN Master Seed blob, and commitments. TSN stores or derives lifecycle state for receipt, spend, sweep, and lazy ATA activation.
 
 ### TIN creation flow
 
 The user signs a TIN creation intent. The frontend sends it directly to the TSN mempool. The mempool and Cranker layer generate the TIN Master Seed, derive exactly 30 token-agnostic PRUs, encrypt private material, and publish only commitments through Cranker-submitted registry transactions.
 
-### Implementation notes
+### Protocol enforcement
 
 - TypeScript: the frontend signs owner intents and payment authorizations. It does not derive PRUs, generate TIN Master Seeds, or handle PRU configuration.
 - TIN balance: after authentication, the frontend asks the TSN mempool for the finalized public PRU address list using the owner's hash commitment, then sums supported token accounts across those 30 PRUs through the RPC gateway.
@@ -324,7 +324,7 @@ npm --prefix transfer-identity-protocol/tip-sdk run build
 
 Start new Transfer Identity work from the TSN Mempool runtime. Direct user-submitted TIN creation is disabled. Owners sign intent hashes, Crankers verify and relay, and the Transfer Identity program enforces owner authority on-chain.
 
-### Implementation notes
+### Protocol enforcement
 
 Creation and update begin as `POST /tin-operations` requests in the TSN mempool. The reference Cranker daemon verifies the owner intent, records the fee commitment, then submits `tin_creation_registry` or `tin_update` to the Transfer Identity program.
 
@@ -338,6 +338,6 @@ npm run tsn:cranker:start
 
 The owner remains the only authority. Crankers only pay and relay transactions. The Transfer Identity program checks owner-signed intent hashes before creating or updating records.
 
-### Testing notes
+### Verification commands
 
 Run `npm --prefix transfer-identity-protocol/tip-sdk run build` and `cargo test --manifest-path transfer-identity-protocol/tin-registrar/program/Cargo.toml --lib` before changing Transfer Identity flows.

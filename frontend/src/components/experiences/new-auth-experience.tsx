@@ -95,6 +95,7 @@ interface SessionData {
   sessionId: string;
   sessionCode: string;
   expiresAt: string;
+  businessNumber: string;
 }
 
 const SESSION_QUERY_PARAM = "session";
@@ -142,8 +143,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
 
   const deviceInfo = useMemo(() => detectDevice(), []);
   const useQRCode = useMemo(() => shouldUseQRCode(deviceInfo), [deviceInfo]);
-  const businessNumber =
-    process.env.NEXT_PUBLIC_TRUSTLINK_BUSINESS_NUMBER || "+1234567890";
+  const businessNumber = sessionData?.businessNumber ?? "";
 
   /* ── Auth check ── */
   useEffect(() => {
@@ -159,6 +159,11 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
     const restorePendingSession = async () => {
       const storedSession = getStoredPendingSession();
       if (!storedSession) return;
+      if (!storedSession.businessNumber) {
+        clearStoredPendingSession();
+        clearSessionQueryParam();
+        return;
+      }
       if (new Date(storedSession.expiresAt).getTime() <= Date.now()) {
         clearStoredPendingSession();
         clearSessionQueryParam();
@@ -230,6 +235,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
         success: boolean;
         sessionCode: string;
         expiresAt: string;
+        businessNumber: string;
       }>("/api/auth/session", {
         sessionId,
         device: formatSessionDevice(deviceInfo.userAgent),
@@ -244,6 +250,7 @@ export function NewAuthExperience({ redirectTo }: { redirectTo: string }) {
         sessionId,
         sessionCode: response.sessionCode,
         expiresAt: response.expiresAt,
+        businessNumber: response.businessNumber,
       };
       setSessionData(newSessionData);
       persistPendingSession(newSessionData);

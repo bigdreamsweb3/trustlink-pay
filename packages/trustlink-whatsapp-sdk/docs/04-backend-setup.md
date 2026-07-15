@@ -1,6 +1,6 @@
 # Backend Setup
 
-The backend must configure the SDK before using backend features.
+The backend must configure the SDK before using backend features. Config, logger, ports, and webhook processing must all resolve through one SDK backend entrypoint so they share one runtime registry.
 
 The SDK is standalone. It does not load your app database, auth system, logger, or environment by itself.
 
@@ -32,6 +32,8 @@ Configure these once during backend startup:
       WHATSAPP_OTP_TEMPLATE_NAME: process.env.WHATSAPP_OTP_TEMPLATE_NAME,
       WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME: process.env.WHATSAPP_SESSION_REVIEW_TEMPLATE_NAME
     });
+
+`TRUSTLINK_BUSINESS_NUMBER` is the verified WhatsApp Business display number in international format. The backend returns this public contact number with each authentication session, so consuming frontends do not maintain a second number configuration or silently fall back to an invalid destination.
 
 ## Configure SDK Logger
 

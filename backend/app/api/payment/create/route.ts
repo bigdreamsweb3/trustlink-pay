@@ -90,7 +90,6 @@ async function postPaymentCreate(request: Request) {
             tin: senderIdentity.tin,
             tinsIdentityPublicKey: senderIdentity.identityPubkey,
             tinsRegistryPublicKey: senderIdentity.registry,
-            tinsWalletPublicKey: senderIdentity.authority,
             tinsProgramId: senderIdentity.programId,
           });
           sender.tin = senderIdentity.tin;
@@ -112,7 +111,6 @@ async function postPaymentCreate(request: Request) {
             tin: senderIdentity.tin,
             tinsIdentityPublicKey: senderIdentity.identityPubkey,
             tinsRegistryPublicKey: senderIdentity.registry,
-            tinsWalletPublicKey: senderIdentity.authority,
             tinsProgramId: senderIdentity.programId,
           });
           logger.info("payment.create.sender_created_from_tsn_identity", {
@@ -179,7 +177,7 @@ async function postPaymentCreate(request: Request) {
         );
       }
       receiverTin = receiver.tin;
-      destinationWallet = receiver.tins_wallet_pubkey ?? receiver.wallet_address ?? "";
+      destinationWallet = receiver.wallet_address ?? "";
       if (!destinationWallet) {
         return toErrorResponse(
           new Error("Recipient TIN does not have a settlement wallet"),

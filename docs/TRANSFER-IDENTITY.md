@@ -45,12 +45,12 @@ The record can include:
 - sensitive fields that require explicit user authorization to decrypt
 - platform verification proof references
 
-The protocol should show a clear difference between:
+The identity display distinguishes between:
 
 - a verified legal or registry name
 - and social profile name
 
-If a TIN has no verified name, the UI should say so plainly.
+When a TIN has no verified name, the interface labels that status explicitly.
 
 ## On-Chain Account Privacy Model
 
@@ -72,11 +72,11 @@ The Transfer Identity program supports a platform registry so the protocol can c
 
 ### Solana Attestation Service
 
-Verification is optional trust context inside Transfer Identity. It is not a separate TrustLink protocol layer, and a TIN can receive payments without a verification credential.
+Transfer Identity supports optional identity assurance while keeping every TIN payment-capable without a credential.
 
-TrustLink is designed to accept credentials issued through the Solana Attestation Service (SAS) when SAS credential-provider integration is available. This can support trusted legal-name, business-name, and personhood evidence for a TIN. The purpose is similar to a bank confirming that an account holder's submitted name matches a trusted identity record: it increases confidence in the identity without making that identity record the public payment identifier.
+The Solana Attestation Service (SAS) is the designated credential framework for trusted legal-name, business-name, and personhood evidence. This assurance works like bank account-name validation: the credential confirms identity context while the TIN remains the public payment identifier.
 
-SAS credentials are not part of the current TSN settlement path. The TIN remains the public payment handle, while the credential is evidence about the identity associated with that handle.
+SAS credentials remain outside TSN settlement. The TIN identifies the payment destination, while the credential provides evidence about the identity associated with that TIN.
 
 ## Example Flow
 
@@ -195,7 +195,7 @@ After a grant is active, the platform can call `GET /tin-routes/:tin/prus` using
 
 Delegated read access is read-only. It can reveal public PRU addresses for balance reads, but it cannot authorize spending, sweeping, TIN updates, PRU lifecycle mutation, or any on-chain transaction.
 
-### Implementation notes
+### Protocol enforcement
 
 The Transfer Identity program accepts Cranker-mediated `tin_creation_registry` after owner intent verification. TSN uses a fixed `DEFAULT_TIN_PRU_COUNT = 30`; every PRU is token-agnostic.
 
@@ -225,7 +225,7 @@ npm run tsn:cranker:start
 
 Hidden from public views: PRU seeds, PRU private keys, token-specific lifecycle state, phone numbers, balances, TIN Master Seed material, spend selection randomness, the raw owner wallet pubkey, and raw TIN numbers in public mempool views. Authenticated owners can request their finalized public PRU address list for balance reads. Exposed on-chain: the Transfer Identity registry fields, display name, identity PDA, SHA-256 owner pubkey commitment, encrypted seed blob, encrypted metadata hash, and PRU configuration commitment. Crankers relay and verify; they never become custodians and cannot mutate ownership without the owner-signed intent. The wallet signs a message, not a Solana transaction, for TIN creation or upgrade authorization.
 
-### Testing notes
+### Verification commands
 
 Run:
 
@@ -241,7 +241,7 @@ cargo test --manifest-path transfer-identity-protocol/tin-registrar/program/Carg
 
 The Transfer Identity program separates identity ownership from PRU spend authority. A TIN owner controls the TIN with an owner-signed intent, but PRU spend keys come from a random TIN Master Seed generated inside the TSN mempool and Cranker layer. The main wallet cannot derive, predict, or expose PRU keys.
 
-### Implementation notes
+### Protocol enforcement
 
 - Transfer Identity program state includes `PruSpendGuard` per PRU: `tin`, `pru_index`, `spend_auth_hash`, `nonce_bitmask`, `active`, and `bump`.
 - `spend_auth_hash = SHA256(tin + pru_index + main_wallet_pubkey + TRUSTLINK_PRU_SPEND_GUARD_V1)` binds that PRU to the real TIN owner.
@@ -263,6 +263,6 @@ const spendAuthHash = computePruSpendAuthHash({
 
 The TIN Master Seed has zero mathematical relationship to wallet signatures. A malicious app can collect ordinary wallet signatures forever and still gains no path to the seed or PRU keys. The guard account records replay state and owner binding; it never stores a PRU private key.
 
-### Testing notes
+### Verification commands
 
 Use `npm --prefix tsn-protocol/tsn-sdk test` and confirm the PRU security tests reject cross-TIN spends and replayed nonces while preserving deterministic PRU guard hashing.

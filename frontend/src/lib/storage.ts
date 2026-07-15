@@ -10,6 +10,7 @@ export interface PendingSessionReview {
   sessionId: string;
   sessionCode: string;
   expiresAt: string;
+  businessNumber: string;
 }
 
 export function getStoredToken() {

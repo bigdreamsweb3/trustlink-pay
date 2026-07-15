@@ -10,7 +10,7 @@ The product goal is simple:
 
 Send stablecoins to a 10-digit payment identity instead of a wallet address.
 
-The documentation is part of the product. It should help a developer understand what TrustLink Pay does, why the architecture exists, and how each layer should be integrated without needing a founder explanation.
+The documentation defines TrustLink Pay's product model, protocol architecture, integration boundaries, security assumptions, and operator workflows.
 
 ## Read This First
 
@@ -20,6 +20,7 @@ The documentation is part of the product. It should help a developer understand 
 | [ARCHITECTURE.md](./ARCHITECTURE.md)                                   | How the product, identity, privacy, settlement, and liquidity layers fit together |
 | [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIP, TINs, PRUs, route authentication, and identity resolution                    |
 | [TSN.md](./TSN.md)                                                     | TSN payment execution, PRU-funded spending, and fee distribution                  |
+| [TSN-DEVICE-AUTHORIZATION.md](./TSN-DEVICE-AUTHORIZATION.md)             | User-owned device keys, TINS owner verification, sessions, and proof of possession |
 | [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers              |
 | [API.md](./API.md)                                                     | TrustLink backend APIs vs TSN mempool APIs                                        |
 | [DEVELOPER.md](./DEVELOPER.md)                                         | Local development, service boundaries, commands, and integration rules            |

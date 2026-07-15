@@ -227,7 +227,7 @@ async function createTsnIntentForPaymentImpl(payment: PaymentRecord) {
 
 async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
   payment: PaymentRecord;
-  receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "tins_wallet_pubkey" | "wallet_address">;
+  receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "wallet_address">;
 }) {
   if (!env.TSN_ENABLED) {
     return { enabled: false as const };
@@ -238,7 +238,7 @@ async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
   if (!receiver.tin) {
     throw new Error("Recipient must create a TIN before receiving TSN payments.");
   }
-  const settlementWalletAddress = receiver.tins_wallet_pubkey ?? receiver.wallet_address ?? undefined;
+  const settlementWalletAddress = receiver.wallet_address ?? undefined;
   if (!settlementWalletAddress) {
     throw new Error("Recipient TIN does not have a settlement wallet.");
   }
@@ -388,7 +388,7 @@ async function requestPaymentClaimViaTsnImpl(params: {
   const requestedSettlementWalletAddress =
     params.receiverWalletId != null
       ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
-      : params.walletAddress ?? existingUser.tins_wallet_pubkey ?? existingUser.wallet_address ?? undefined;
+      : params.walletAddress ?? existingUser.wallet_address ?? undefined;
 
   const paymentPhoneIdentityPublicKey = payment.phone_identity_pubkey ?? existingUser.phone_identity_pubkey;
   const settlementWalletAddress = requestedSettlementWalletAddress;

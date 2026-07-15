@@ -1,3 +1,5 @@
+import { redactPrivateIdentityFields } from "@/app/lib/logging/privacy-redaction";
+
 type LogLevel = "info" | "warn" | "error";
 
 interface LogMeta {
@@ -13,7 +15,7 @@ function writeLog(level: LogLevel, event: string, meta?: LogMeta) {
     timestamp: new Date().toISOString(),
     level,
     event,
-    ...(meta ? { meta } : {})
+    ...(meta ? { meta: redactPrivateIdentityFields(meta) } : {})
   };
 
   const line = JSON.stringify(payload);

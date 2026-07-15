@@ -107,7 +107,7 @@ export interface CreateSessionRequest {
     timestamp: number;
     signature: string;
   };
-  ownerPublicKey: string;
+  ownerIdentityCommitment: string;
 }
 
 /**
@@ -167,7 +167,6 @@ export type DeviceStatus = "active" | "suspended" | "revoked";
 export interface TSNPrivateViewConfig {
   tsnMempoolUrl: string;
   deviceEncryptionPublicKey: string;
-  ownerPublicKey: string;
 }
 
 /**

@@ -156,7 +156,7 @@ export interface CreateSessionRequest {
     timestamp: number;
     signature: string;
   };
-  ownerPublicKey: string;
+  ownerIdentityCommitment: string;
 }
 
 /**

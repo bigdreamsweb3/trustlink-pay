@@ -22,7 +22,7 @@ import {
   tsnExecutePruSpendOnChainBatched,
   tsnExecutePrivatePayoutOnChain,
   tsnRecoverPrivateEscrowOnChain,
-} from "../../tsn-sdk/src/private-settlement";
+} from "../../tsn-sdk/src/worker/private-settlement";
 import {
   createOneTimeDecryptionToken,
   decodeSettlementSecret,

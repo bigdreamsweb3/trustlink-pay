@@ -5,9 +5,9 @@ export type WhatsAppSdkLogger = {
 };
 
 let configuredLogger: WhatsAppSdkLogger = {
-  info: (event, metadata) => console.info(event, metadata ?? {}),
-  warn: (event, metadata) => console.warn(event, metadata ?? {}),
-  error: (event, metadata) => console.error(event, metadata ?? {}),
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
 };
 
 export function configureWhatsAppSdkLogger(logger: WhatsAppSdkLogger) {

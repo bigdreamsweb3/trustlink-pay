@@ -11,7 +11,6 @@ export function sanitizeUser(user: PersistedUser) {
     tin: user.tin,
     tinsIdentityPublicKey: user.tins_identity_pubkey,
     tinsRegistryPublicKey: user.tins_registry_pubkey,
-    tinsWalletPublicKey: user.tins_wallet_pubkey,
     tinsProgramId: user.tins_program_id,
     tinsCreatedAt: user.tins_created_at,
     displayName: user.display_name,

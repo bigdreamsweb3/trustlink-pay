@@ -28,7 +28,6 @@ export function WalletCenterSection({
   const {
     session,
     walletAddress,
-    environment,
     requestWalletConnection,
     disconnectWallet,
   } = useWallet();
@@ -211,7 +210,7 @@ export function WalletCenterSection({
             <span className="mt-1 block truncate text-[0.68rem] text-[var(--text-faint)]">
               {walletAddress
                 ? walletAddress
-                : environment.helpMessage}
+                : "Connect securely through Reown to authorize TrustLink payments."}
             </span>
           </span>
           {walletAddress ? (

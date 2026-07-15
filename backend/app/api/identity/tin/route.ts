@@ -18,7 +18,7 @@ const tinRegistrationSchema = z.object({
   tin: z.union([z.string(), z.number(), z.bigint()]).transform((value) => String(value)),
   tinsIdentityPublicKey: z.string(),
   tinsRegistryPublicKey: z.string().optional().nullable(),
-  tinsWalletPublicKey: z.string(),
+  signerPublicKey: z.string(),
   tinsProgramId: z.string().optional().nullable(),
   bindingIssuedAt: z.string(),
   bindingMessage: z.string(),
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       }
       const parsedEnv = getEnv();
       const programId = new PublicKey(payload.tinsProgramId ?? parsedEnv.TINS_PROGRAM_ID);
-      const walletPublicKey = new PublicKey(payload.tinsWalletPublicKey);
+      const walletPublicKey = new PublicKey(payload.signerPublicKey);
       const identityPublicKey = new PublicKey(payload.tinsIdentityPublicKey);
       const expectedIdentityPublicKey = getTinsIdentityPda({ walletPubkey: walletPublicKey, programId });
       const identityMatchesDerivedPda = identityPublicKey.equals(expectedIdentityPublicKey);
@@ -140,7 +140,6 @@ export async function POST(request: Request) {
         tin: payload.tin,
         tinsIdentityPublicKey: identityPublicKey.toBase58(),
         tinsRegistryPublicKey: registryPublicKey,
-        tinsWalletPublicKey: walletPublicKey.toBase58(),
         tinsProgramId: programId.toBase58(),
         bindingSignature: payload.bindingSignature,
       });
@@ -150,7 +149,6 @@ export async function POST(request: Request) {
         tin: updated.tin,
         tinsIdentityPublicKey: updated.tins_identity_pubkey,
         tinsRegistryPublicKey: updated.tins_registry_pubkey,
-        tinsWalletPublicKey: updated.tins_wallet_pubkey,
         tinsProgramId: updated.tins_program_id,
         tinsCreatedAt: updated.tins_created_at,
       });

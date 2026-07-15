@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { tsnFetchMotherEscrowOnChain } from "../tsn-protocol/tsn-sdk/dist/blockchain/solana-tsn.js";
-import { tsnConfigurePrivateSettlementOnChain } from "../tsn-protocol/tsn-sdk/dist/private-settlement.js";
+import { tsnConfigurePrivateSettlementOnChain } from "../tsn-protocol/tsn-sdk/dist/worker/private-settlement.js";
 import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const [authorityPath, permitSignerAddress, rpcUrlArg] = process.argv.slice(2);

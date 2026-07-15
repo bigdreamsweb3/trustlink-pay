@@ -1,6 +1,6 @@
 # Windows TSN commands
 
-The PM2-managed Next.js frontend uses a 2 GB Node.js heap. This is sized for an 8 GB Windows development machine: it gives Next.js enough room to compile TrustLink Pay while retaining memory for Windows, the browser, VS Code, the backend, and the RPC gateway.
+The PM2-managed services use their normal runtime memory behavior. TrustLink does not force a separate Node.js heap allocation for the frontend.
 
 Use these commands from Windows PowerShell in the TrustLink project folder.
 
@@ -24,6 +24,23 @@ The normal stack starts frontend, backend, and the TSN RPC gateway. It does not 
 ```powershell
 npm run tsn:start
 ```
+
+## Start the WhatsApp webhook tunnel
+
+Start the backend before opening the tunnel:
+
+```powershell
+npm run tsn:start:backend
+npm run whatsapp:tunnel
+```
+
+The tunnel exposes the local backend on port `3000` through the configured ngrok development domain. Its Meta callback URL is:
+
+```text
+https://unimpressionable-overambitious-jessie.ngrok-free.dev/api/webhooks/whatsapp
+```
+
+The ngrok authentication token stays in the user's ngrok configuration and is never stored in the TrustLink repository. Press `Ctrl+C` to close the tunnel without stopping the backend.
 
 ## Start optional services
 

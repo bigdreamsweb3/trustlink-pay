@@ -24,9 +24,9 @@ TrustLink Pay improves the privacy design of everyday payments. It does not make
 | Crankers | Validation, settlement execution, recovery work, and liveness |
 | Liquidity | Vault-funded recipient payout and settlement reserves |
 
-Verification is not a separate protocol layer. It is optional trust context within Transfer Identity: a TIN can be used without it, while a verified legal or business name can give a sender more confidence in the recipient they are paying.
+Transfer Identity combines payment identity with optional identity assurance. Every TIN remains payment-capable without an attestation. Legal-name, business-name, and personhood attestations provide additional recipient confidence when available.
 
-TrustLink is designed to accept credentials from the Solana Attestation Service (SAS) when its credential-provider integration is available. SAS is not part of the current settlement path. The intended use is to let a TIN present trusted legal-name, business, or personhood evidence without turning the credential itself into a public on-chain payment record.
+The Solana Attestation Service (SAS) is the designated credential framework for identity assurance. SAS credentials remain outside TSN payment execution and credential contents do not become public on-chain payment records. Credential-provider connectivity follows the SAS provider interface.
 
 ## Read the documentation
 

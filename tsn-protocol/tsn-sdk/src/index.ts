@@ -15,7 +15,7 @@ export * from "./payment-authorization-server.js";
 export * from "./payment-jobs.js";
 export * from "./sponsored-settlement.js";
 export * from "./settlement-token.js";
-export * from "./private-settlement.js";
+
 export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
@@ -25,7 +25,13 @@ export * from "./pru-denomination.js";
 export * from "./tin-balance-spend-planner.js";
 
 // TSN V1 Privacy Architecture exports
-export * from "./encryption/index.js";
-export * from "./device/index.js";
-export * from "./sessions/index.js";
-export * from "./private-view/index.js";
+
+
+
+
+export * from "./receipts/index.js";
+export * from "./authorization/index.js";
+export * from "./recovery/index.js";
+export * from "./sessions/proof-of-possession.js";
+export * from "./device/public.js";
+export * from "./sessions/private-session-request.js";

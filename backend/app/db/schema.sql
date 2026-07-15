@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
   tin VARCHAR(32),
   tins_identity_pubkey VARCHAR(64),
   tins_registry_pubkey VARCHAR(64),
-  tins_wallet_pubkey VARCHAR(64),
   tins_program_id VARCHAR(64),
   tins_created_at TIMESTAMPTZ,
   phone_identity_pubkey VARCHAR(64),
@@ -166,7 +165,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_intents_payment_id ON payment_inte
 CREATE INDEX IF NOT EXISTS idx_payment_intents_status ON payment_intents (status);
 CREATE INDEX IF NOT EXISTS idx_payment_intents_recipient_hash ON payment_intents (recipient_hash);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_tin ON users (tin) WHERE tin IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_users_tins_wallet_pubkey ON users (tins_wallet_pubkey) WHERE tins_wallet_pubkey IS NOT NULL;
 
 ALTER TABLE payment_intents
   ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128);
@@ -240,7 +238,6 @@ ALTER TABLE users
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS tins_registry_pubkey VARCHAR(64);
 ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS tins_wallet_pubkey VARCHAR(64);
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS tins_program_id VARCHAR(64);
 ALTER TABLE users

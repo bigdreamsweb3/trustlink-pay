@@ -72,7 +72,7 @@ export function SiteHeader() {
               >
                 <TrustLinkMark compact />
 
-                <span className="text-[0.65rem] font-black uppercase tracking-widest text-accent-deep">
+                <span className="text-[0.55rem] font-black uppercase tracking-widest text-accent-deep">
                   TrustLink Pay
                 </span>
               </Link>
@@ -85,7 +85,6 @@ export function SiteHeader() {
                 <span className="hidden md:inline"> Protocol</span>
               </Link>
             </div>
-
           </div>
 
           <nav

@@ -121,3 +121,5 @@ When Meta sends message status updates, the SDK calls:
 Webhook logic must stay server-side.
 
 Frontend code must never process WhatsApp webhook payloads.
+
+The consuming backend must configure the SDK config, logger, and persistence ports before invoking webhook verification or processing. Webhook logs must redact phone numbers, message contents, session codes, message identifiers, and authentication tokens.

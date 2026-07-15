@@ -42,9 +42,9 @@ TIP creates and resolves Transfer Identities.
 
 A Transfer Identity is the public payment identity. It can include a 10-digit TIN that is shared like an account number. The wallet address is not the normal payment identity.
 
-Verification is part of this identity layer, not a separate protocol layer. A TIN remains usable without verification. Optional attestations add trust context, such as a trusted legal-name or business-name confirmation, when a sender needs more confidence in who they are paying.
+Identity assurance is a capability of TIP. Every TIN remains payment-capable without an attestation. Optional legal-name, business-name, and personhood attestations add trusted recipient context.
 
-TrustLink is designed to accept Solana Attestation Service (SAS) credentials when SAS credential-provider integration is available. SAS credentials do not participate in TSN settlement, and credential values are not intended to become public payment records.
+The Solana Attestation Service (SAS) is the designated credential framework for identity assurance. SAS credentials remain outside TSN settlement, and their contents do not become public payment records. Credential-provider connectivity follows the SAS provider interface.
 
 The Transfer Identity registry can store:
 

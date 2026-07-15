@@ -26,7 +26,6 @@ export interface UserRecord {
   tin?: string | null;
   tins_identity_pubkey?: string | null;
   tins_registry_pubkey?: string | null;
-  tins_wallet_pubkey?: string | null;
   tins_program_id?: string | null;
   tins_created_at?: string | null;
   phone_identity_pubkey?: string | null;

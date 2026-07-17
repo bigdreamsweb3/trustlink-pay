@@ -1,4 +1,4 @@
-import { canonicalFields, sha256Hex, toArrayBuffer } from "../receipts/internal/encoding.js";
+import { base64UrlToBytes, bytesToBase64Url, canonicalFields, sha256Hex, toArrayBuffer } from "../receipts/internal/encoding.js";
 
 export const TSN_SESSION_PROOF_VERSION = "tsn-session-proof-v1";
 export const TSN_SESSION_PROOF_DOMAIN = "TSN_PRIVATE_REQUEST_PROOF";
@@ -54,7 +54,7 @@ export async function signSessionProof(
     deviceSigningPrivateKey,
     toArrayBuffer(serializeSessionProof(claims)),
   );
-  return { ...claims, signatureBase64Url: Buffer.from(signature).toString("base64url") };
+  return { ...claims, signatureBase64Url: bytesToBase64Url(new Uint8Array(signature)) };
 }
 
 export async function verifySessionProof(params: {
@@ -92,7 +92,7 @@ export async function verifySessionProof(params: {
   const signatureValid = await crypto.subtle.verify(
     "Ed25519",
     publicKey,
-    Buffer.from(proof.signatureBase64Url, "base64url"),
+    toArrayBuffer(base64UrlToBytes(proof.signatureBase64Url)),
     toArrayBuffer(serializeSessionProof(proof)),
   );
   if (!signatureValid) return { valid: false, reason: "invalid-device-signature" };

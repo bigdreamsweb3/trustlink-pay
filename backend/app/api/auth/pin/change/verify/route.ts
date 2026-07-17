@@ -7,7 +7,7 @@ import { changeUserPinWithOtp } from "@/app/services/auth";
 
 export async function POST(request: Request) {
   try {
-    const authUser = requireAuthenticatedUser(request);
+    const authUser = await requireAuthenticatedUser(request);
     const body = await request.json();
     const payload = pinChangeVerifySchema.parse(body);
     const result = await changeUserPinWithOtp(authUser, payload);

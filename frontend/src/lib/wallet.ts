@@ -254,6 +254,31 @@ async function signSolanaBytesImpl(params: {
   return bytesToBase64(signature);
 }
 
+async function signTsnDeviceAuthorizationBytesImpl(params: {
+  walletId: string;
+  address: string;
+  message: Uint8Array;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) throw new Error("Selected wallet is no longer available in this browser");
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot sign device authorization messages");
+  }
+  assertSignableBytes(params.message, "device authorization message");
+  const decoded = new TextDecoder().decode(params.message);
+  if (
+    !decoded.includes("TSN_OWNER_DEVICE_AUTHORIZATION") ||
+    !decoded.includes("tsn-device-authorization-v1")
+  ) {
+    throw new Error("Blocked a non-TSN device authorization signing payload");
+  }
+  const signed = await wallet.provider.signMessage(params.message, "utf8");
+  return signed instanceof Uint8Array
+    ? signed
+    : Uint8Array.from(signed.signature);
+}
+
 async function signSolanaTransactionImpl(params: {
   walletId: string;
   address: string;
@@ -502,6 +527,17 @@ export const signSolanaBytes = traceFunction(signSolanaBytesImpl, {
   level: "info",
   includeReturn: false,
 });
+
+export const signTsnDeviceAuthorizationBytes = traceFunction(
+  signTsnDeviceAuthorizationBytesImpl,
+  {
+    namespace: "Wallet",
+    name: "signTsnDeviceAuthorizationBytes",
+    module: "frontend/src/lib/wallet.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
 
 export const signSolanaTransaction = traceFunction(signSolanaTransactionImpl, {
   namespace: "Wallet",

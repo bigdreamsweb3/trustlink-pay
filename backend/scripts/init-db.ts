@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { Pool, neonConfig } from "@neondatabase/serverless";
@@ -133,27 +133,52 @@ async function main() {
   }
 
   const schemaPath = resolve(process.cwd(), "app/db/schema.sql");
-  const schemaSql = readFileSync(schemaPath, "utf8");
-  const statements = splitSqlStatements(schemaSql);
+  const migrationsPath = resolve(process.cwd(), "app/db/migrations");
+  const sources = [
+    schemaPath,
+    ...readdirSync(migrationsPath)
+      .filter((fileName) => fileName.endsWith(".sql"))
+      .sort()
+      .map((fileName) => resolve(migrationsPath, fileName)),
+  ];
 
   const pool = new Pool({ connectionString: databaseUrl });
   const client = await pool.connect();
 
   try {
-    console.log("Resetting database schema...");
+    await client.query("BEGIN");
+    try {
+      console.log("Resetting database schema...");
 
-    await client.query(`
-      DROP SCHEMA public CASCADE;
-      CREATE SCHEMA public;
-    `);
+      await client.query(`
+        DROP SCHEMA public CASCADE;
+        CREATE SCHEMA public;
+      `);
 
-    console.log("Applying schema.sql...");
+      for (const sourcePath of sources) {
+        const sourceName = sourcePath.slice(process.cwd().length + 1);
+        const statements = splitSqlStatements(readFileSync(sourcePath, "utf8"));
+        console.log(`Applying ${sourceName}...`);
 
-    for (const statement of statements) {
-      await client.query(statement);
+        for (const [index, statement] of statements.entries()) {
+          if (/^(BEGIN|COMMIT)$/i.test(statement.trim())) continue;
+          try {
+            await client.query(statement);
+          } catch (error) {
+            console.error(
+              `Failed at ${sourceName}, statement ${index + 1}: ${statement.slice(0, 160)}`,
+            );
+            throw error;
+          }
+        }
+      }
+
+      await client.query("COMMIT");
+      console.log("Database schema initialized successfully.");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
     }
-
-    console.log("Database schema initialized successfully.");
   } finally {
     client.release();
     await pool.end();

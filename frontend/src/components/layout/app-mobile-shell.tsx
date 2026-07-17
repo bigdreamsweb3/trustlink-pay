@@ -10,7 +10,6 @@ import {
   ClaimIcon,
   ContactsIcon,
   HomeIcon,
-  ProfileIcon,
   SendIcon,
   WalletIcon,
 } from "@/src/components/app-icons";
@@ -20,7 +19,7 @@ import { shortenAddress } from "@/src/lib/address";
 import type { UserProfile } from "@/src/lib/types";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/src/lib/wallet-provider";
-import { SlidersHorizontal } from "lucide-react";
+import { Fingerprint, SlidersHorizontal, UserRound } from "lucide-react";
 import ExpandableMetaRow from "../ui/ExpandableMetaRow";
 
 type AppTab =
@@ -94,7 +93,7 @@ const sidebarNavItems: Array<{
     key: "identity",
     href: "/app/identity",
     label: "Identity",
-    icon: <ProfileIcon className="h-[18px] w-[18px] text-current" />,
+    icon: <Fingerprint className="h-[18px] w-[18px] text-current" />,
   },
 ];
 
@@ -132,7 +131,7 @@ const mobileNavItems: Array<{
     key: "identity",
     href: "/app/identity",
     label: "Identity",
-    icon: <ProfileIcon className="h-[18px] w-[18px] text-current" />,
+    icon: <Fingerprint className="h-[18px] w-[18px] text-current" />,
   },
 ];
 
@@ -186,6 +185,10 @@ export function AppMobileShell({
     } finally {
       setDisconnectingWallet(false);
     }
+  }
+
+  if (blockingOverlay) {
+    return <main className="min-h-screen bg-bg">{blockingOverlay}</main>;
   }
 
   return (
@@ -314,22 +317,11 @@ export function AppMobileShell({
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => router.push("/app/identity")}
+                onClick={() => router.push("/app/identity?section=profile")}
                 className="tl-field-btn grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-surface-soft cursor-pointer active:scale-[0.96]"
-                aria-label="Identity"
+                aria-label="Profile"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4 text-current"
-                >
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <UserRound className="h-4 w-4 text-current" />
               </button>
               <button
                 type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/src/components/toast-provider";
 import { apiPost } from "@/src/lib/api";
@@ -61,14 +61,11 @@ export function PinGateModal({
     return () => window.clearTimeout(timer);
   }, []);
 
-  const heading = pendingAuth.pinMode === "setup" ? "Create your TrustLink PIN" : "Unlock with your PIN";
-  const description = useMemo(() => {
-    if (pendingAuth.pinMode === "setup") {
-      return "Your account is already verified. Create your 6-digit PIN here before any part of the app becomes usable.";
-    }
-
-    return "Your WhatsApp login is complete. Enter your 6-digit TrustLink PIN to unlock the app and continue safely.";
-  }, [pendingAuth.pinMode]);
+  const heading = pendingAuth.pinMode === "setup" ? "Create your PIN" : "Account locked";
+  const description =
+    pendingAuth.pinMode === "setup"
+      ? "Create a 6-digit PIN to protect your account."
+      : "Enter your 6-digit PIN to continue.";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,23 +101,10 @@ export function PinGateModal({
   return (
     <div className="tl-overlay fixed inset-0 z-[90] flex items-end justify-center p-4 md:items-center">
       <div className="tl-modal w-full max-w-[430px] rounded-[30px] p-5">
-        <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="mb-5">
           <div>
-            <div className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--accent-deep)] dark:text-accent-deep">TrustLink secure access</div>
-            <h2 className="mt-2 text-[1.45rem] font-semibold tracking-[-0.05em] text-[var(--text)]">{heading}</h2>
+            <h2 className="text-[1.45rem] font-semibold tracking-[-0.05em] text-[var(--text)]">{heading}</h2>
             <p className="tl-text-soft mt-2 max-w-[24rem] text-sm leading-6">{description}</p>
-          </div>
-          <div className="tl-badge rounded-full px-3 py-1 text-[0.72rem] font-medium">
-            @{user.handle}
-          </div>
-        </div>
-
-        <div className="tl-panel-header tl-field mb-4 rounded-[22px] px-4 py-3">
-          <div className="text-sm font-semibold text-[var(--text)]">{user.displayName}</div>
-          <div className="tl-text-muted mt-1 text-sm">
-            {pendingAuth.pinMode === "setup"
-              ? "Set the transaction PIN that will protect future sessions and high-trust actions."
-              : "This session stays blocked until the correct transaction PIN is entered."}
           </div>
         </div>
 

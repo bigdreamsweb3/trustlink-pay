@@ -40,6 +40,7 @@ export async function registerOwnerAuthorizedDevice(params: {
 
   await registerAuthorizedDevice({
     ...verified,
+    authorizedAudience: verified.audience,
     status: "active",
     expiresAt: null,
   });

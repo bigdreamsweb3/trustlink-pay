@@ -6,6 +6,7 @@ import { generatePhoneIdentityPublicKey } from "@/app/lib/privacy-keys";
 import { normalizePhoneNumber } from "@/app/utils/phone";
 
 let userAutoclaimColumnReady: Promise<void> | null = null;
+let userActiveSessionColumnReady: Promise<void> | null = null;
 
 function createGeneratedHandle() {
   return `user_${randomUUID().replace(/-/g, "").slice(0, 8)}`;
@@ -27,6 +28,19 @@ async function ensureUserAutoclaimColumn() {
   }
 
   await userAutoclaimColumnReady;
+}
+
+async function ensureUserActiveSessionColumn() {
+  if (!userActiveSessionColumnReady) {
+    userActiveSessionColumnReady = (async () => {
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id UUID`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_users_active_session_id ON users (active_session_id) WHERE active_session_id IS NOT NULL`;
+    })().catch((error) => {
+      userActiveSessionColumnReady = null;
+      throw error;
+    });
+  }
+  await userActiveSessionColumnReady;
 }
 
 async function insertUserProfile(params: {
@@ -255,6 +269,30 @@ export async function findUserByHandle(handle: string): Promise<UserRecord | nul
   `) as UserRecord[];
 
   return rows[0] ?? null;
+}
+
+export async function rotateUserActiveSession(userId: string): Promise<string> {
+  await ensureUserActiveSessionColumn();
+  const sessionId = randomUUID();
+  const rows = (await sql`
+    UPDATE users
+    SET active_session_id = ${sessionId}, last_login_at = NOW()
+    WHERE id = ${userId}
+    RETURNING active_session_id
+  `) as Array<{ active_session_id: string }>;
+  if (!rows[0]?.active_session_id) throw new Error("Account not found");
+  return rows[0].active_session_id;
+}
+
+export async function isUserActiveSession(userId: string, sessionId: string) {
+  await ensureUserActiveSessionColumn();
+  const rows = (await sql`
+    SELECT 1 AS active
+    FROM users
+    WHERE id = ${userId} AND active_session_id = ${sessionId}
+    LIMIT 1
+  `) as Array<{ active: number }>;
+  return Boolean(rows[0]);
 }
 
 export async function upsertUserProfile(params: {

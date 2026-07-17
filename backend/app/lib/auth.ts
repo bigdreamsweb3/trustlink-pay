@@ -1,10 +1,12 @@
 import { env } from "@/app/lib/env";
 import type { AuthenticatedUser } from "@/app/types/auth";
+import { isUserActiveSession } from "@/app/db/users";
 import { signToken, verifyToken } from "@/app/utils/token";
 
 interface AccessTokenPayload {
   sub: string;
   phoneNumber: string;
+  sessionId: string;
   exp: number;
 }
 
@@ -15,10 +17,11 @@ interface AuthChallengePayload {
   exp: number;
 }
 
-export function issueAccessToken(user: { id: string; phoneNumber: string }) {
+export function issueAccessToken(user: { id: string; phoneNumber: string; sessionId: string }) {
   const payload: AccessTokenPayload = {
     sub: user.id,
     phoneNumber: user.phoneNumber,
+    sessionId: user.sessionId,
     exp: Math.floor(Date.now() / 1000) + env.ACCESS_TOKEN_TTL_MINUTES * 60,
   };
 
@@ -66,7 +69,7 @@ export function requireAuthChallengeToken(
   return payload;
 }
 
-export function requireAuthenticatedUser(request: Request): AuthenticatedUser {
+export async function requireAuthenticatedUser(request: Request): Promise<AuthenticatedUser> {
   const header = request.headers.get("authorization");
   const token = header?.startsWith("Bearer ")
     ? header.slice("Bearer ".length)
@@ -81,6 +84,10 @@ export function requireAuthenticatedUser(request: Request): AuthenticatedUser {
 
   if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error("Invalid or expired access token");
+  }
+
+  if (!payload.sessionId || !(await isUserActiveSession(payload.sub, payload.sessionId))) {
+    throw new Error("Access token was replaced by a newer login");
   }
 
   return {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, ExternalLink, Loader2, Shield, X } from "lucide-react";
 import {
@@ -43,6 +44,8 @@ export function WhatsAppModal({
   qr,
 }: WhatsAppModalProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const handoffStatusRef = useRef<"idle" | "opening" | "waiting" | "fallback">(
     "idle",
@@ -70,7 +73,19 @@ export function WhatsAppModal({
   );
 
   useEffect(() => {
+    setIsMounted(true);
+
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const updateViewport = () => setIsCompactViewport(mediaQuery.matches);
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     return () => {
+      mediaQuery.removeEventListener("change", updateViewport);
+      document.body.style.overflow = previousOverflow;
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
       if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
@@ -161,7 +176,7 @@ export function WhatsAppModal({
     }, 1400);
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
   const statusLabel = {
     idle: null,
@@ -176,9 +191,15 @@ export function WhatsAppModal({
     if (!isConnecting) closeModal();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[999]">
+      <div
+        className="fixed inset-0"
+        style={{ zIndex: 2147483647, isolation: "isolate" }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Connect with WhatsApp"
+      >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -188,21 +209,49 @@ export function WhatsAppModal({
           onClick={handleBackdropClick}
         />
 
-        <div className="pointer-events-none fixed inset-0 grid place-items-end sm:place-items-center sm:p-4">
+        <div
+          className="pointer-events-none fixed inset-0 flex justify-center"
+          style={{
+            alignItems: isCompactViewport ? "flex-end" : "center",
+            padding: isCompactViewport
+              ? 0
+              : "clamp(24px, 5vh, 64px) clamp(24px, 5vw, 80px)",
+          }}
+        >
           <motion.div
             initial={
-              isMobile ? { y: "100%" } : { opacity: 0, y: 20, scale: 0.98 }
+              isCompactViewport
+                ? { y: "100%" }
+                : { opacity: 0, y: 20, scale: 0.98 }
             }
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={isMobile ? { y: "100%" } : { opacity: 0, y: 16, scale: 0.98 }}
+            exit={
+              isCompactViewport
+                ? { y: "100%" }
+                : { opacity: 0, y: 16, scale: 0.98 }
+            }
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
-            className="pointer-events-auto w-full rounded-t-[28px] border border-[var(--field-border)] shadow-2xl sm:w-auto sm:max-w-[640px] sm:rounded-[28px]"
-            style={{ background: "var(--panel)", maxHeight: "90dvh" }}
+            className="pointer-events-auto overflow-hidden border border-[var(--field-border)] shadow-2xl"
+            style={{
+              background: "var(--panel)",
+              width: isCompactViewport
+                ? "100%"
+                : "min(860px, calc(100vw - 48px))",
+              maxWidth: "860px",
+              maxHeight: isCompactViewport
+                ? "90dvh"
+                : "calc(100dvh - 48px)",
+              borderRadius: isCompactViewport ? "28px 28px 0 0" : "28px",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               className="overflow-y-auto overscroll-contain"
-              style={{ WebkitOverflowScrolling: "touch" }}
+              style={{
+                WebkitOverflowScrolling: "touch",
+                maxHeight: "inherit",
+                overflowY: isCompactViewport ? "auto" : "visible",
+              }}
             >
               {(handoffStatus === "opening" || handoffStatus === "waiting") && (
                 <div
@@ -267,8 +316,26 @@ export function WhatsAppModal({
                   ) : null}
                 </div>
 
-                <div className="sm:grid sm:grid-cols-[220px_minmax(0,1fr)] sm:gap-x-7">
-                  <div className="mb-4 sm:col-start-2 sm:row-start-1">
+                <div
+                  style={
+                    isCompactViewport
+                      ? undefined
+                      : {
+                          display: "grid",
+                          gridTemplateColumns: "220px minmax(0, 1fr)",
+                          columnGap: "28px",
+                          rowGap: "14px",
+                        }
+                  }
+                >
+                  <div
+                    className="mb-4"
+                    style={
+                      isCompactViewport
+                        ? undefined
+                        : { gridColumn: "1 / -1", gridRow: 1, marginBottom: 0 }
+                    }
+                  >
                     <h2
                       className="text-[1rem] font-bold sm:text-[1.25rem]"
                       style={{ color: "var(--text)" }}
@@ -290,7 +357,8 @@ export function WhatsAppModal({
                   </div>
 
                   {!isMobile && qrEnabled ? (
-                    <div className="mb-4 flex flex-col items-center rounded-[22px] border border-[var(--field-border)] bg-[var(--surface-soft)] p-4 sm:col-start-1 sm:row-start-1 sm:row-span-4 sm:mb-0 sm:self-start">
+                    <div className="mb-4 flex flex-col items-center rounded-[22px] border border-[var(--field-border)] bg-[var(--surface-soft)] p-4"
+                      style={{ gridColumn: 1, gridRow: 2, marginBottom: 0 }}>
                       <div
                         className="rounded-[20px] p-2"
                         style={{
@@ -299,7 +367,7 @@ export function WhatsAppModal({
                       >
                         <QRCodeDisplay
                           value={qrValue}
-                          size={qr?.size ?? 188}
+                          size={qr?.size ?? 168}
                           logoUrl={qr?.logoUrl}
                         />
                       </div>
@@ -321,6 +389,9 @@ export function WhatsAppModal({
                     style={{
                       background: "var(--field)",
                       borderColor: "var(--field-border)",
+                      ...(isCompactViewport
+                        ? {}
+                        : { gridColumn: 2, gridRow: 2, marginBottom: 0 }),
                     }}
                   >
                     <div
@@ -444,7 +515,21 @@ export function WhatsAppModal({
                     </div>
                   </div>
 
-                  <div className="mb-4 space-y-2.5 sm:col-start-2 sm:row-start-3">
+                  <div
+                    className="mb-4 space-y-2.5"
+                    style={
+                      isCompactViewport
+                        ? undefined
+                        : {
+                            gridColumn: "1 / -1",
+                            gridRow: 3,
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                            gap: "12px",
+                            marginBottom: 0,
+                          }
+                    }
+                  >
                     <div>
                       <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--text-faint)] mb-1">
                         Phone
@@ -511,7 +596,14 @@ export function WhatsAppModal({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 sm:col-start-2 sm:row-start-4">
+                  <div
+                    className="space-y-2.5"
+                    style={
+                      isCompactViewport
+                        ? undefined
+                        : { gridColumn: "1 / -1", gridRow: 4 }
+                    }
+                  >
                     {handoffStatus === "waiting" ? (
                       <div
                         className="flex items-center justify-center gap-2.5 rounded-[18px] py-3"
@@ -599,6 +691,7 @@ export function WhatsAppModal({
           </motion.div>
         </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

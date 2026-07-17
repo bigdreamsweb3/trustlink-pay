@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
   identity_verified_at TIMESTAMPTZ,
   last_login_at TIMESTAMPTZ,
   last_login_ip VARCHAR(64),
+  active_session_id UUID,
   referred_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   referral_source_payment_id UUID,
   referred_at TIMESTAMPTZ,
@@ -238,7 +239,6 @@ ALTER TABLE users
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS tins_registry_pubkey VARCHAR(64);
 ALTER TABLE users
-ALTER TABLE users
   ADD COLUMN IF NOT EXISTS tins_program_id VARCHAR(64);
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS tins_created_at TIMESTAMPTZ;
@@ -272,6 +272,8 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(64);
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS active_session_id UUID;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS receiver_autoclaim_enabled BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE users
@@ -513,6 +515,9 @@ EXCEPTION
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_users_phone_hash ON users (phone_hash);
+CREATE INDEX IF NOT EXISTS idx_users_active_session_id
+  ON users (active_session_id)
+  WHERE active_session_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_identity_public_key
   ON users (phone_identity_pubkey)
   WHERE phone_identity_pubkey IS NOT NULL;

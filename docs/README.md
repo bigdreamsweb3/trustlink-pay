@@ -21,6 +21,8 @@ The documentation defines TrustLink Pay's product model, protocol architecture, 
 | [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIP, TINs, PRUs, route authentication, and identity resolution                    |
 | [TSN.md](./TSN.md)                                                     | TSN payment execution, PRU-funded spending, and fee distribution                  |
 | [TSN-DEVICE-AUTHORIZATION.md](./TSN-DEVICE-AUTHORIZATION.md)             | User-owned device keys, TINS owner verification, sessions, and proof of possession |
+| [TSN-PRIVATE-VIEW-LIT.md](./TSN-PRIVATE-VIEW-LIT.md)                   | SDK-owned Lit renderer, closed Shadow DOM, threat model, and integration contract  |
+| [TSN Private View research paper](https://github.com/Trustlink-Labs/Trustlink-Research/tree/main/papers/TLR-008) | Device-authorized Lit and canvas rendering, security analysis, and conformance requirements |
 | [TSN-TRANSFER-IDENTITY-MEMPOOL.md](./TSN-TRANSFER-IDENTITY-MEMPOOL.md) | How Transfer Identity creation and updates move through TSN Crankers              |
 | [API.md](./API.md)                                                     | TrustLink backend APIs vs TSN mempool APIs                                        |
 | [DEVELOPER.md](./DEVELOPER.md)                                         | Local development, service boundaries, commands, and integration rules            |

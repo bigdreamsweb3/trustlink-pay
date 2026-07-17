@@ -825,11 +825,27 @@ select {
 
 .tl-button-primary {
   color: #04110a;
-  background: linear-gradient(135deg, var(--accent), var(--accent-icon));
+  background: var(--accent);
+  background-image: none;
   box-shadow: var(--shadow);
   font-size: 0.875rem;
   line-height: calc(1.25 / 0.875);
   font-weight: 600;
+}
+
+button,
+.tl-btn,
+.tl-button-primary,
+.tl-button-secondary,
+.tl-button-danger,
+.tl-button-transparent {
+  white-space: nowrap;
+}
+
+button[class*="bg-[linear-gradient"],
+a[class*="bg-[linear-gradient"] {
+  background: var(--accent) !important;
+  background-image: none !important;
 }
 
 .tl-button-secondary {

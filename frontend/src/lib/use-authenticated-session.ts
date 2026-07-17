@@ -32,6 +32,7 @@ export function useAuthenticatedSession(redirectPath: string) {
   const pinChallengeBusyRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
     const token = getStoredToken();
     const savedUser = getStoredUser();
     const savedPendingAuth = getStoredPendingAuth();
@@ -49,10 +50,65 @@ export function useAuthenticatedSession(redirectPath: string) {
       return;
     }
 
-    setAccessToken(token);
     setUser(savedUser);
-    setPendingAuth(savedPendingAuth ?? null);
-    setHydrated(true);
+    if (savedPendingAuth) {
+      setAccessToken(null);
+      setPendingAuth(savedPendingAuth);
+      setHydrated(true);
+      return;
+    }
+
+    if (savedUser.pinConfigured === false) {
+      clearStoredToken();
+      clearStoredUser();
+      clearStoredSessionActivityAt();
+      router.replace(`/auth?mode=login&redirect=${encodeURIComponent(redirectPath)}`);
+      return;
+    }
+
+    const activityAt = getStoredSessionActivityAt();
+    if (activityAt != null && Date.now() - activityAt < PIN_RELOCK_IDLE_MS) {
+      setAccessToken(token);
+      setPendingAuth(null);
+      setHydrated(true);
+      return;
+    }
+
+    void apiPost<{ challengeToken: string; user: UserProfile }>(
+      "/api/auth/pin/challenge",
+      {},
+      token,
+      {
+        cache: "default",
+        cacheKey: `pin-challenge:${token}`,
+        ttlMs: 5_000,
+      },
+    )
+      .then((result) => {
+        if (cancelled) return;
+        const nextPendingAuth = {
+          challengeToken: result.challengeToken,
+          pinMode: "verify" as const,
+          user: result.user,
+          redirectTo: redirectPath,
+        } satisfies PendingAuthSession;
+        setStoredPendingAuth(nextPendingAuth);
+        setAccessToken(null);
+        setPendingAuth(nextPendingAuth);
+        setHydrated(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearStoredPendingAuth();
+        clearStoredToken();
+        clearStoredUser();
+        clearStoredSessionActivityAt();
+        router.replace(`/auth?mode=login&redirect=${encodeURIComponent(redirectPath)}`);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [redirectPath, router]);
 
   useEffect(() => {
@@ -88,6 +144,7 @@ export function useAuthenticatedSession(redirectPath: string) {
           redirectTo: redirectPath,
         } satisfies PendingAuthSession;
         setStoredPendingAuth(nextPendingAuth);
+        setAccessToken(null);
         setPendingAuth(nextPendingAuth);
       } finally {
         pinChallengeBusyRef.current = false;
@@ -136,6 +193,7 @@ export function useAuthenticatedSession(redirectPath: string) {
           redirectTo: redirectPath,
         } satisfies PendingAuthSession;
         setStoredPendingAuth(nextPendingAuth);
+        setAccessToken(null);
         setPendingAuth(nextPendingAuth);
       } finally {
         pinChallengeBusyRef.current = false;

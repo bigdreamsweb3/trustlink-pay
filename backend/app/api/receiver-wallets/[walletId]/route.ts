@@ -7,7 +7,7 @@ import { deleteReceiverWalletForUser } from "@/app/services/auth";
 
 export async function DELETE(request: Request, context: { params: Promise<{ walletId: string }> }) {
   try {
-    const authUser = requireAuthenticatedUser(request);
+    const authUser = await requireAuthenticatedUser(request);
     const { walletId } = await context.params;
     const wallet = await deleteReceiverWalletForUser(authUser, walletId);
     invalidateUserCache(authUser.id);

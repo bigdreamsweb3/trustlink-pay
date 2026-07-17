@@ -18,6 +18,7 @@ import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { setStoredUser } from "@/src/lib/storage";
+import "@/src/lib/tsn-device-authorization";
 import {
   createOrLoadTinForWallet,
   resolveTinFromChain,
@@ -73,11 +74,6 @@ export function IdentityOverviewSection({
   const activeTin = tinInfo?.tin ?? user.tin ?? null;
   const activeTinIdentity =
     tinInfo?.tinsIdentityPublicKey ?? user.tinsIdentityPublicKey ?? null;
-  const settlementAuthorityWallet =
-    identityResponse?.identity?.mainWallet ??
-    identityResponse?.settlementWalletPublicKey ??
-    user.walletAddress ??
-    null;
 
   useEffect(() => {
     if (!accessToken) return;
@@ -346,11 +342,7 @@ export function IdentityOverviewSection({
                 : null
             }
             whatsappBusiness={whatsappProfile?.isBusiness ?? false}
-            walletLabel={
-              settlementAuthorityWallet
-                ? shortenAddress(settlementAuthorityWallet)
-                : undefined
-            }
+            walletLabel={undefined}
           />
 
           {!activeTin ? (
@@ -361,11 +353,7 @@ export function IdentityOverviewSection({
               className="tl-button-primary mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[18px] px-4 py-3.5 text-[0.82rem] font-semibold disabled:opacity-50"
             >
               <Fingerprint className="h-4 w-4" />
-              {busy
-                ? "Creating identity..."
-                : walletAddress
-                  ? "Load or queue TIN"
-                  : "Connect wallet to queue TIN"}
+              {busy ? "Checking TIN..." : "Create or connect TIN"}
             </button>
           ) : null}
         </div>
@@ -374,7 +362,7 @@ export function IdentityOverviewSection({
           <StatusCard
             icon={Fingerprint}
             title="Transfer Identity Number"
-            value={activeTin ? `TIN ${activeTin}` : "Not created"}
+            value={activeTin ? `TIN ${activeTin}` : "Not linked"}
             status={activeTin ? "Active" : "Action required"}
             active={Boolean(activeTin)}
           />
@@ -404,20 +392,14 @@ export function IdentityOverviewSection({
           />
           <StatusCard
             icon={WalletCards}
-            title="Settlement authority"
+            title="Settlement wallet"
             value={
-              settlementAuthorityWallet
-                ? shortenAddress(settlementAuthorityWallet)
-                : activeTin
-                  ? "Awaiting wallet binding"
-                  : "Not configured"
+              activeTin
+                ? <tsn-private-value tin={activeTin} field="settlementWallet" fallback="Privately verified" />
+                : "Not configured"
             }
-            status={
-              resolvedTin?.settlementAuthorityVerified || settlementAuthorityWallet
-                ? "On-chain verified"
-                : "Not verified"
-            }
-            active={Boolean(resolvedTin?.settlementAuthorityVerified || settlementAuthorityWallet)}
+            status={activeTin ? "Private View" : "Not verified"}
+            active={Boolean(activeTin)}
           />
         </div>
       </div>
@@ -434,7 +416,7 @@ function StatusCard({
 }: {
   icon: typeof Link2;
   title: string;
-  value: string;
+  value: React.ReactNode;
   status: string;
   active: boolean;
 }) {

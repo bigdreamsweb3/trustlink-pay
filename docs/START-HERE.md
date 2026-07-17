@@ -123,6 +123,9 @@ Use this rule when deciding where code belongs:
 | On-chain settlement execution | TSN program and Crankers |
 | Transfer Identity registry mutation | TIP program through Crankers |
 | Solana RPC routing | TSN RPC gateway |
+| Private-data rendering | TSN SDK Lit Private View component |
+
+Private values are rendered by the TSN SDK-owned [`<tsn-private-value>` component](./TSN-PRIVATE-VIEW-LIT.md), not by application React components. The element combines device authorization and local decryption with a closed Shadow DOM and lifecycle cleanup. Closed Shadow DOM reduces exposure to ordinary host-page DOM access; it does not replace cryptography or secure an already compromised authorized browser.
 
 ## Community And Ecosystem
 

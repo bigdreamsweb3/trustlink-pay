@@ -1,13 +1,14 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { fail, toErrorResponse } from "@/app/lib/http";
 import { logger } from "@/app/lib/logger";
+import type { AuthenticatedUser } from "@/app/types/auth";
 
 export async function withAuthenticatedRoute<T>(
   request: Request,
-  handler: (authUser: ReturnType<typeof requireAuthenticatedUser>) => Promise<T>,
+  handler: (authUser: AuthenticatedUser) => Promise<T>,
 ) {
   try {
-    const authUser = requireAuthenticatedUser(request);
+    const authUser = await requireAuthenticatedUser(request);
     const response = await handler(authUser);
     logger.info("api.request", {
       name: new URL(request.url).pathname,

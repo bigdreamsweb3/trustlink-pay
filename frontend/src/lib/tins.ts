@@ -2,7 +2,7 @@
 
 import { sha256 } from "@noble/hashes/sha2";
 import { PublicKey } from "@solana/web3.js";
-import { buildTinCreationMessage } from "@trustlink/tsn-sdk/canonical-message";
+import { buildTinWalletBindingMessage } from "@trustlink/tsn-sdk/canonical-message";
 import {
   DEFAULT_TIP_PROGRAM_ID,
   createTinOwnerIntentMessage,
@@ -220,34 +220,16 @@ export async function fetchTinPruPublicAddresses(params: {
   return response.json() as Promise<TinPruRoutePublicResponse>;
 }
 
-function buildTinBindingMessage(params: {
-  userPhoneNumber: string;
-  tin: string;
-  walletPublicKey: string;
-  identityPublicKey: string;
-  programId: string;
-  issuedAt: string;
-}) {
-  return buildTinCreationMessage({
-    tin: params.tin,
-    displayName: "Existing TIN Binding",
-    privacy: "30 PRUs",
-    nonce: params.issuedAt,
-    expires: new Date(Date.now() + 5 * 60_000).toISOString(),
-  });
-}
 
 async function signTinBinding(params: {
   walletId: string;
   walletAddress: string;
-  phoneNumber: string;
   tin: string;
   identityPublicKey: string;
   programId: string;
 }) {
   const bindingIssuedAt = new Date().toISOString();
-  const bindingMessage = buildTinBindingMessage({
-    userPhoneNumber: params.phoneNumber,
+  const bindingMessage = buildTinWalletBindingMessage({
     tin: params.tin,
     walletPublicKey: params.walletAddress,
     identityPublicKey: params.identityPublicKey,
@@ -328,7 +310,6 @@ async function createOrLoadTinForWalletImpl(params: {
     const binding = await signTinBinding({
       walletId: params.walletId,
       walletAddress: params.walletAddress,
-      phoneNumber: params.phoneNumber,
       tin,
       identityPublicKey: identity.toBase58(),
       programId: programId.toBase58(),

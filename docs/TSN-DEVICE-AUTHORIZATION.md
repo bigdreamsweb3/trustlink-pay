@@ -17,6 +17,8 @@ The owner wallet is the root authorization authority. The actual TINS account is
 
 Private keys, unwrapped DEKs, and decrypted receipt objects never cross the device boundary.
 
+Private values are rendered through the SDK-owned Lit component described in [TSN Private View: Lit Component Architecture](./TSN-PRIVATE-VIEW-LIT.md). Integrating applications mount the custom element but do not own its internal plaintext DOM, decryption lifecycle, or cleanup behavior.
+
 ## Authorization flow
 
 ```mermaid

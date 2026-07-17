@@ -214,6 +214,32 @@ export function buildTinCreationMessage(params: {
   ]);
 }
 
+export function buildTinWalletBindingMessage(params: {
+  tin: string;
+  walletPublicKey: string;
+  identityPublicKey: string;
+  programId: string;
+  issuedAt: string | Date;
+}) {
+  return buildMessage("TIN Wallet Binding", [
+    ["TIN", parseTin(params.tin, "TIN")],
+    ["Wallet", params.walletPublicKey],
+    ["Identity", params.identityPublicKey],
+    ["Program", params.programId],
+    ["Issued At", params.issuedAt instanceof Date ? params.issuedAt : new Date(params.issuedAt)],
+  ]);
+}
+
+export function parseTinWalletBindingMessage(message: string) {
+  const fields = parseMessage(message, "TIN Wallet Binding");
+  return {
+    tin: parseTin(requireField(fields, "TIN"), "TIN"),
+    walletPublicKey: requireField(fields, "Wallet"),
+    identityPublicKey: requireField(fields, "Identity"),
+    programId: requireField(fields, "Program"),
+    issuedAt: parseExpiry(requireField(fields, "Issued At")),
+  };
+}
 export function parseTinCreationMessage(message: string) {
   const fields = parseMessage(message, "TIN Creation");
   return {

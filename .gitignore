@@ -4,6 +4,8 @@ Thumbs.db
 .vscode/
 .idea/
 .venv/
+.agents/
+.logs/
 
 .env
 .fb_creds/
@@ -92,3 +94,6 @@ tsn-protocol-extraction/
 
 
 C/
+
+# Independent TrustLink Labs research checkout (published from its own repository)
+/research/Trustlink-Research/

@@ -18,6 +18,7 @@ export type TinTokenBalanceResult = {
     balanceBaseUnits: string;
   }>;
   pruCount: number;
+  activePruCount: number;
   nonZeroPruCount: number;
 };
 
@@ -60,7 +61,9 @@ export async function loadTinTokenBalances(params: {
   walletSession: ConnectedWalletSession;
   supportedTokens: WalletTokenOption[];
   signal?: AbortSignal;
+  onProgress?: (message: string) => void;
 }): Promise<TinTokenBalanceResult> {
+  params.onProgress?.("Authorizing private TIN balance view...");
   const route = await loadPruRoute(params.tin, {
     publicKey: params.walletSession.address,
     signMessage: async (message) => {
@@ -76,6 +79,9 @@ export async function loadTinTokenBalances(params: {
     throw new DOMException("Aborted", "AbortError");
   }
   const activePrus = route.prus.filter((pru) => pru.state !== "SWEPT");
+  params.onProgress?.(
+    `Found ${activePrus.length} active PRUs. Loading balances...`,
+  );
   const nonZeroPrus = new Set<number>();
   const pruBalances: TinTokenBalanceResult["pruBalances"] = [];
   const tokenBalances = await Promise.all(
@@ -108,6 +114,7 @@ export async function loadTinTokenBalances(params: {
     tokens,
     pruBalances,
     pruCount: route.prus.length,
+    activePruCount: activePrus.length,
     nonZeroPruCount: nonZeroPrus.size,
   };
 }

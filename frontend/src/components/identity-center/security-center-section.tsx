@@ -16,9 +16,13 @@ import { GuidedFlowModal } from "@/src/components/modals/guided-flow-modal";
 import { OtpModal } from "@/src/components/modals/otp-modal";
 import { SectionLoader } from "@/src/components/section-loader";
 import { useToast } from "@/src/components/toast-provider";
-import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
 import { setStoredUser } from "@/src/lib/storage";
+import {
+  authorizeCurrentTsnDevice,
+  createTsnPrivateSession,
+  getTsnDeviceAuthorization,
+} from "@/src/lib/tsn-device-authorization";
 import type {
   IdentitySecurityResponse,
   IdentitySecurityState,
@@ -69,12 +73,38 @@ export function SecurityCenterSection({
   const [otpCooldown, setOtpCooldown] = useState(0);
   const [otpBusy, setOtpBusy] = useState(false);
   const [pinBusy, setPinBusy] = useState(false);
+  const [deviceAuthorized, setDeviceAuthorized] = useState(false);
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const [privateSessionActive, setPrivateSessionActive] = useState(false);
   const pinInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
     void loadIdentity(accessToken);
   }, [accessToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user.tin) {
+      setDeviceAuthorized(false);
+      return;
+    }
+    void getTsnDeviceAuthorization(user.tin).then(async (device) => {
+      if (cancelled) return;
+      setDeviceAuthorized(Boolean(device));
+      if (device) {
+        try {
+          await createTsnPrivateSession(user.tin!);
+          if (!cancelled) setPrivateSessionActive(true);
+        } catch {
+          if (!cancelled) setPrivateSessionActive(false);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user.tin]);
 
   useEffect(() => {
     if (!identity?.recoveryCooldown) return;
@@ -100,8 +130,7 @@ export function SecurityCenterSection({
       ),
     );
   }, [identity?.recoveryCooldown, nowMs]);
-  const visibleMainWallet =
-    identity?.mainWallet ?? user.walletAddress ?? null;
+  const settlementWalletVerified = Boolean(user.tin || identity);
 
   async function loadIdentity(token: string) {
     setLoading(true);
@@ -297,6 +326,49 @@ export function SecurityCenterSection({
     }
   }
 
+  async function authorizeThisDevice() {
+    if (!user.tin) {
+      setError("Link your TIN before authorizing this device.");
+      return;
+    }
+    if (deviceAuthorized) {
+      setDeviceBusy(true);
+      setError(null);
+      try {
+        await createTsnPrivateSession(user.tin);
+        setPrivateSessionActive(true);
+        showToast("Private View session is active.");
+      } catch (sessionError) {
+        setError(sessionError instanceof Error ? sessionError.message : "Could not create Private View session");
+      } finally {
+        setDeviceBusy(false);
+      }
+      return;
+    }
+    if (!session) {
+      requestWalletConnection();
+      setError("Connect the wallet that owns this TIN, then authorize this device.");
+      return;
+    }
+    setDeviceBusy(true);
+    setError(null);
+    try {
+      await authorizeCurrentTsnDevice({ tin: user.tin, walletSession: session });
+      await createTsnPrivateSession(user.tin);
+      setDeviceAuthorized(true);
+      setPrivateSessionActive(true);
+      showToast("This device is authorized for Private View.");
+    } catch (deviceError) {
+      const message = deviceError instanceof Error
+        ? deviceError.message
+        : "Could not authorize this device";
+      setError(message);
+      showToast(message);
+    } finally {
+      setDeviceBusy(false);
+    }
+  }
+
   async function submitPinChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!accessToken) return;
@@ -359,13 +431,13 @@ export function SecurityCenterSection({
 
         <SecurityRow
           icon={WalletCards}
-          label="Main settlement wallet"
+          label="Settlement wallet"
           value={
-            visibleMainWallet
-              ? shortenAddress(visibleMainWallet)
-                : "Not registered"
+            settlementWalletVerified
+              ? <tsn-private-value tin={user.tin ?? ""} field="settlementWallet" fallback="Privately verified" />
+              : "Not linked"
           }
-          active={Boolean(visibleMainWallet)}
+          active={settlementWalletVerified}
         />
 
         <button
@@ -386,7 +458,7 @@ export function SecurityCenterSection({
             </span>
             <span className="mt-0.5 block text-[0.66rem] text-[var(--text-faint)]">
               {identity?.recoveryWallet
-                ? shortenAddress(identity.recoveryWallet)
+                ? "Privately verified"
                 : "Not configured"}
             </span>
           </span>
@@ -395,6 +467,30 @@ export function SecurityCenterSection({
           ) : (
             <ChevronDown className="h-4 w-4 text-[var(--text-faint)]" />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void authorizeThisDevice()}
+          disabled={deviceBusy || privateSessionActive}
+          className="tl-field mt-2.5 flex w-full items-center gap-3 rounded-[18px] px-4 py-3.5 text-left disabled:opacity-70"
+        >
+          <Smartphone className={`h-4 w-4 ${deviceAuthorized ? "text-accent" : "text-[var(--warning)]"}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.78rem] font-medium text-[var(--text)]">
+              This device
+            </span>
+            <span className="mt-0.5 block text-[0.66rem] text-[var(--text-faint)]">
+              {deviceAuthorized
+                ? privateSessionActive
+                  ? "Private View session active"
+                  : "Authorized; private session unavailable"
+                : "Wallet authorization required"}
+            </span>
+          </span>
+          <span className="whitespace-nowrap text-[0.68rem] font-medium text-accent">
+            {deviceBusy ? "Authorizing..." : privateSessionActive ? "Active" : deviceAuthorized ? "Authorized" : "Authorize"}
+          </span>
         </button>
 
         {backupOpen ? (
@@ -639,7 +735,7 @@ function SecurityRow({
 }: {
   icon: typeof ShieldCheck;
   label: string;
-  value: string;
+  value: React.ReactNode;
   active: boolean;
 }) {
   return (
@@ -652,7 +748,7 @@ function SecurityRow({
       <span className="min-w-0 flex-1 text-[0.78rem] font-medium text-[var(--text)]">
         {label}
       </span>
-      <span className="max-w-[48%] truncate text-right text-[0.68rem] text-[var(--text-soft)]">
+      <span className="max-w-[58%] truncate text-right text-[0.68rem] text-[var(--text-soft)]">
         {value}
       </span>
     </div>

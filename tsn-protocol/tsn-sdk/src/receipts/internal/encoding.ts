@@ -1,13 +1,18 @@
 export function bytesToBase64Url(value: Uint8Array): string {
-  return Buffer.from(value).toString("base64url");
+  let binary = "";
+  for (const byte of value) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 export function base64UrlToBytes(value: string): Uint8Array {
-  return new Uint8Array(Buffer.from(value, "base64url"));
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
 export function bytesToHex(value: Uint8Array): string {
-  return Buffer.from(value).toString("hex");
+  return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function canonicalFields(fields: readonly string[]): Uint8Array {

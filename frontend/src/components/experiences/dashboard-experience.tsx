@@ -192,6 +192,8 @@ export function DashboardExperience() {
   const [tinTokens, setTinTokens] = useState<WalletTokenOption[]>([]);
   const [tinTokenLoading, setTinTokenLoading] = useState(false);
   const [tinPruCount, setTinPruCount] = useState(0);
+  const [tinActivePruCount, setTinActivePruCount] = useState(0);
+  const [tinFundedPruCount, setTinFundedPruCount] = useState(0);
   const [tinBalanceStatus, setTinBalanceStatus] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
@@ -344,6 +346,7 @@ export function DashboardExperience() {
     if (!activeTin || !walletSession || walletTokens.length === 0) {
       setTinTokens([]);
       setTinPruCount(0);
+      setTinActivePruCount(0);
       setTinBalanceStatus(null);
       return;
     }
@@ -352,6 +355,7 @@ export function DashboardExperience() {
     const ctrl = new AbortController();
     async function load() {
       setTinTokenLoading(true);
+      setTinBalanceStatus("Preparing your TIN balance...");
       try {
         showToast(
           "Sign to load your TIN balance. This does not cost any fees and does not send a transaction.",
@@ -361,20 +365,24 @@ export function DashboardExperience() {
           walletSession: session,
           supportedTokens: walletTokens,
           signal: ctrl.signal,
+          onProgress: (message) => {
+            if (!ctrl.signal.aborted) setTinBalanceStatus(message);
+          },
         });
         if (!ctrl.signal.aborted) {
           setTinTokens(result.tokens);
           setTinPruCount(result.pruCount);
+          setTinActivePruCount(result.activePruCount);
+          setTinFundedPruCount(result.nonZeroPruCount);
           setTinBalanceStatus(
-            result.tokens.length > 0
-              ? `${result.nonZeroPruCount} funded PRUs`
-              : `${result.pruCount} PRUs scanned`,
+            `${result.nonZeroPruCount} funded PRU${result.nonZeroPruCount === 1 ? "" : "s"}`,
           );
         }
       } catch (error) {
         if (!ctrl.signal.aborted) {
           setTinTokens([]);
           setTinPruCount(0);
+          setTinActivePruCount(0);
           setTinBalanceStatus(
             error instanceof Error
               ? error.message
@@ -515,8 +523,8 @@ export function DashboardExperience() {
       >
         <TrustLinkGuidance
           tone="warning"
-          title="Create your TIN"
-          description="Your TIN links this WhatsApp account to the wallet that can receive TrustLink Pay settlement."
+          title="Link your TIN"
+          description="Connect your existing TIN, or create one if this wallet does not have one yet."
           steps={[
             {
               title: "Connect the right wallet",
@@ -526,23 +534,23 @@ export function DashboardExperience() {
               done: Boolean(walletAddress),
             },
             {
-              title: "Queue Transfer Identity registration",
+              title: "Check for your TIN",
               description:
-                "Your wallet signs an owner intent. A TSN Cranker verifies and submits the registry update.",
+                "TrustLink checks the connected wallet and links its existing TIN. A new TIN is created only when needed.",
             },
             {
               title: "Keep control of your funds",
               description:
-                "TrustLink stores your phone-to-TIN mapping, not custody over your wallet.",
+                "Your wallet remains in control throughout the identity check.",
             },
           ]}
           action={
             <button
               type="button"
               onClick={() => router.push("/app/identity")}
-              className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 tl-body-sm font-semibold text-[#04110a] disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
+              className="tl-button-primary rounded-[18px] px-4 py-3 tl-body-sm font-semibold disabled:opacity-60 cursor-pointer active:scale-[0.97] transition-transform"
             >
-              Open Identity Center
+              Link your TIN
             </button>
           }
           secondaryAction={
@@ -619,7 +627,7 @@ export function DashboardExperience() {
 
                 {balanceVisible && totalPendingUsd > 0 ? (
                   <div className="mt-0.5 tl-meta-sm text-text/36">
-                    + {formatPaymentUsd(totalPendingUsd)} in escrow
+                    + {formatPaymentUsd(totalPendingUsd)} pending settlement
                   </div>
                 ) : null}
               </div>
@@ -629,7 +637,7 @@ export function DashboardExperience() {
                 type="button"
                 onClick={() => void handleCopyTinNumber()}
                 className="group flex shrink-0 flex-col items-end gap-1.5 cursor-pointer transition-transform active:scale-[0.97]"
-                aria-label={activeTin ? `Copy TIN ${activeTin}` : "Create TIN"}
+                aria-label={activeTin ? `Copy TIN ${activeTin}` : "Link your TIN"}
               >
                 <div className="flex items-center gap-1">
                   {/* Provider badge */}
@@ -644,7 +652,7 @@ export function DashboardExperience() {
 
                   {/* Local number */}
                   <span className="whitespace-nowrap tl-body-sm font-bold tracking-wide text-text/78">
-                    {activeTin ?? "Create TIN"}
+                    {activeTin ?? "Link TIN"}
                   </span>
 
                   {tinCopied ? (
@@ -658,7 +666,7 @@ export function DashboardExperience() {
                 <span className="whitespace-nowrap text-[0.54rem] font-medium tracking-[0.08em] text-text/24">
                   {activeTin
                     ? "Transfer Identity Number"
-                    : "Register payment identity"}
+                    : "TIN not linked"}
                 </span>
               </button>
             </div>
@@ -696,20 +704,25 @@ export function DashboardExperience() {
                 </Link>
               </div>
 
-              {/* Pending chip */}
+              {/* TIN balance chip */}
               <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
                 <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
-                  Escrow
+                  TIN balance
                 </span>
                 <div className="mt-1 flex items-center gap-2">
-                  <Landmark className="h-3.5 w-3.5 text-[var(--warning)]" />
+                  <Landmark className="h-3.5 w-3.5 text-[var(--accent)]" />
                   <span className="text-[1.05rem] font-bold text-[var(--text)]">
-                    {loading
+                    {tinTokenLoading
                       ? "\u2014"
                       : balanceVisible
-                        ? formatPaymentUsd(totalPendingUsd)
+                        ? formatPaymentUsd(tinBalanceUsd)
                         : "****"}
                   </span>
+                </div>
+                <div className="mt-0.5 whitespace-nowrap text-[0.5rem] font-semibold text-[var(--accent)]">
+                  {tinTokenLoading
+                    ? "Loading PRUs..."
+                    : `${tinFundedPruCount} funded PRU${tinFundedPruCount === 1 ? "" : "s"}`}
                 </div>
               </div>
               {/* */}
@@ -928,7 +941,7 @@ export function DashboardExperience() {
                   <div className="text-[0.74rem] font-medium">
                     {activeTin
                       ? resolvedTin?.legalName || "No verified legal name"
-                      : "Create TIN"}
+                      : "Link your TIN"}
                     <span className="ml-1.5 text-[0.52rem] font-normal opacity-60">
                       Transfer Identity Number
                     </span>
@@ -936,7 +949,7 @@ export function DashboardExperience() {
                   <div className="text-[0.58rem] text-text-faint">
                     {activeTin
                       ? `TIN ${activeTin}${resolvedTin?.name ? ` · Registry name: ${resolvedTin.name}` : ""}${activeTinIdentity ? ` · ${shortenAddress(activeTinIdentity)}` : ""}`
-                      : "Create payment identity through TSN verification"}
+                      : "Connect an existing TIN or create one if needed"}
                   </div>
                 </div>
                 <span
@@ -1015,7 +1028,7 @@ export function DashboardExperience() {
             </div>
 
             <div className="tl-field rounded-t-0 rounded-[18px] px-4 py-4">
-              {walletTokenLoading ? (
+              {walletTokenLoading || tinTokenLoading ? (
                 <div className="space-y-3 py-2">
                   {[0, 1].map((i) => (
                     <div key={i} className="flex items-center justify-between">
@@ -1044,7 +1057,7 @@ export function DashboardExperience() {
                     <div>
                       <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
                         <span>TIN balance</span>
-                        <span>{tinPruCount} PRUs</span>
+                        <span>{tinFundedPruCount} funded PRU{tinFundedPruCount === 1 ? "" : "s"}</span>
                       </div>
                       {tinTokens.slice(0, 5).map((token) => (
                         <div
@@ -1191,7 +1204,7 @@ export function DashboardExperience() {
                   Balance details
                 </h2>
                 <p className="tl-text-muted mt-1 tl-body-sm leading-relaxed">
-                  Spendable balance plus funds waiting in escrow.
+                  Your main-wallet balance, private TIN balance, and pending settlement.
                 </p>
               </div>
               <button
@@ -1221,12 +1234,12 @@ export function DashboardExperience() {
                   value: formatPaymentUsd(tinBalanceUsd),
                   sub:
                     tinBalanceStatus ??
-                    (tinPruCount > 0
-                      ? `${tinPruCount} PRUs scanned`
-                      : "No PRU route loaded"),
+                    (tinTokenLoading
+                      ? "Loading your PRU balances..."
+                      : `${tinFundedPruCount} funded PRU${tinFundedPruCount === 1 ? "" : "s"}`),
                 },
                 {
-                  label: "Escrow",
+                  label: "Pending settlement",
                   value: formatPaymentUsd(totalPendingUsd),
                   sub: `${pendingBalanceSummary.claimableCount} ${pendingBalanceSummary.claimableCount === 1 ? "payment" : "payments"}`,
                 },

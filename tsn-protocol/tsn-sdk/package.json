@@ -98,6 +98,30 @@
       "import": "./dist/authorization/server/index.js",
       "types": "./dist/authorization/server/index.d.ts"
     },
+    "./authorization": {
+      "import": "./dist/authorization/index.js",
+      "types": "./dist/authorization/index.d.ts"
+    },
+    "./device": {
+      "import": "./dist/device/public.js",
+      "types": "./dist/device/public.d.ts"
+    },
+    "./sessions/proof-of-possession": {
+      "import": "./dist/sessions/proof-of-possession.js",
+      "types": "./dist/sessions/proof-of-possession.d.ts"
+    },
+    "./sessions/private-session-request": {
+      "import": "./dist/sessions/private-session-request.js",
+      "types": "./dist/sessions/private-session-request.d.ts"
+    },
+    "./receipts": {
+      "import": "./dist/receipts/index.js",
+      "types": "./dist/receipts/index.d.ts"
+    },
+    "./private-view": {
+      "import": "./dist/private-view/public.js",
+      "types": "./dist/private-view/public.d.ts"
+    },
     "./sessions/server": {
       "import": "./dist/sessions/server/index.js",
       "types": "./dist/sessions/server/index.d.ts"

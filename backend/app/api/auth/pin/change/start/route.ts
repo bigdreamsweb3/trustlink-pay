@@ -8,7 +8,7 @@ import { startPinChangeOtp } from "@/app/services/auth";
 
 export async function POST(request: Request) {
   try {
-    const authUser = requireAuthenticatedUser(request);
+    const authUser = await requireAuthenticatedUser(request);
     const body = await request.json().catch(() => ({}));
     pinChangeStartSchema.parse(body);
     const result = await startPinChangeOtp(authUser, getClientIp(request));

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       request: sessionRequest,
       proof: payload.proof,
       device,
-      expectedAudience: new URL(request.url).origin,
+      expectedAudience: device.authorizedAudience,
       expectedResource: "/api/tsn/privacy/sessions",
       consumeNonce: consumePrivateRequestNonce,
     });

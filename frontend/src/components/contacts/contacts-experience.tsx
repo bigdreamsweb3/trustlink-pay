@@ -7,6 +7,7 @@ import { ContactCard } from "@/src/components/contacts/contact-card";
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { PinGateModal } from "@/src/components/modals/pin-gate-modal";
 import { useToast } from "@/src/components/toast-provider";
+import { apiPost } from "@/src/lib/api";
 import {
   deleteTrustLinkContact,
   listTrustLinkContacts,
@@ -17,6 +18,8 @@ import {
   pickDeviceContacts,
 } from "@/src/lib/contacts/device-contact-picker";
 import type { TrustLinkContact } from "@/src/lib/contacts/types";
+import type { RecipientLookupResult } from "@/src/lib/types";
+import { resolveTinFromChain } from "@/src/lib/tins";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 
 function normalizeTin(value: string) {
@@ -39,6 +42,10 @@ export function ContactsExperience() {
   const [displayName, setDisplayName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [tin, setTin] = useState("");
+  const [resolvedTin, setResolvedTin] = useState("");
+  const [resolvingTin, setResolvingTin] = useState(false);
+  const [tinLookupMessage, setTinLookupMessage] = useState<string | null>(null);
+  const [resolvedPhoneAvailable, setResolvedPhoneAvailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -76,6 +83,75 @@ export function ContactsExperience() {
     };
   }, [accessToken, showToast]);
 
+  useEffect(() => {
+    const digits = tin.replace(/\D/g, "").slice(0, 10);
+    if (digits !== tin) setTin(digits);
+
+    setResolvedTin("");
+    setDisplayName("");
+    setPhoneNumber("");
+    setResolvedPhoneAvailable(false);
+    if (digits.length !== 10) {
+      setResolvingTin(false);
+      setTinLookupMessage(digits ? "Enter all 10 TIN digits." : null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setResolvingTin(true);
+      setTinLookupMessage("Finding this TIN...");
+      try {
+        const onchain = await resolveTinFromChain(digits);
+        if (cancelled) return;
+        if (!onchain.active) {
+          throw new Error("This TIN exists, but it is not active.");
+        }
+        let indexed: RecipientLookupResult | null = null;
+        try {
+          indexed = await apiPost<RecipientLookupResult>(
+            "/api/recipient/lookup",
+            { tin: digits },
+            accessToken ?? undefined,
+            { cache: "default", ttlMs: 60_000 },
+          );
+        } catch {
+          // A valid on-chain TIN remains saveable without platform enrichment.
+        }
+        if (cancelled) return;
+        const indexedRecipient = indexed?.verified ? indexed.recipient : null;
+        const resolvedPhone =
+          onchain.whatsapp?.trim() || indexedRecipient?.phoneNumber?.trim() || "";
+        const resolvedName =
+          onchain.legalName ||
+          onchain.name ||
+          indexedRecipient?.displayName ||
+          `TIN ${digits}`;
+        setDisplayName(resolvedName);
+        setPhoneNumber(resolvedPhone);
+        setResolvedPhoneAvailable(Boolean(resolvedPhone));
+        setResolvedTin(digits);
+        setTinLookupMessage(
+          resolvedPhone
+            ? "TIN verified. Name and phone loaded automatically."
+            : "TIN verified. No phone number is linked; you may add one.",
+        );
+      } catch (error) {
+        if (cancelled) return;
+        setTinLookupMessage(
+          error instanceof Error ? error.message : "This TIN could not be verified.",
+        );
+      } finally {
+        if (!cancelled) setResolvingTin(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [tin, accessToken]);
+
   const filteredContacts = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return contacts;
@@ -99,8 +175,8 @@ export function ContactsExperience() {
     const normalizedTin = normalizeTin(tin);
     const normalizedPhone = phoneNumber.trim();
 
-    if (!normalizedTin && !normalizedPhone) {
-      showToast("Add a TIN or phone number before saving.");
+    if (!normalizedTin || resolvedTin !== normalizedTin || !displayName.trim()) {
+      showToast("Enter a verified TIN before saving.");
       return;
     }
 
@@ -123,6 +199,8 @@ export function ContactsExperience() {
       setDisplayName("");
       setPhoneNumber("");
       setTin("");
+      setResolvedTin("");
+      setTinLookupMessage(null);
       showToast("Contact saved.");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Could not save contact");
@@ -262,28 +340,33 @@ export function ContactsExperience() {
             <div className="space-y-3">
               <label className="block">
                 <span className="tl-text-muted mb-1 block text-[0.68rem]">
-                  Name
-                </span>
-                <input
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                  maxLength={80}
-                  className="tl-field w-full rounded-[16px] px-3 py-3 text-sm outline-none"
-                  placeholder="Amina Yusuf"
-                />
-              </label>
-              <label className="block">
-                <span className="tl-text-muted mb-1 block text-[0.68rem]">
                   TIN
                 </span>
                 <input
                   value={tin}
-                  onChange={(event) => setTin(event.target.value)}
+                  onChange={(event) => setTin(event.target.value.replace(/\D/g, "").slice(0, 10))}
                   inputMode="numeric"
                   maxLength={14}
                   className="tl-field w-full rounded-[16px] px-3 py-3 text-sm outline-none"
                   placeholder="10-digit TIN"
+                />
+                {tinLookupMessage ? (
+                  <span className={`mt-1.5 block text-[0.66rem] ${resolvedTin ? "text-accent" : "text-text-faint"}`}>
+                    {tinLookupMessage}
+                  </span>
+                ) : null}
+              </label>
+              <label className="block">
+                <span className="tl-text-muted mb-1 block text-[0.68rem]">
+                  Name
+                </span>
+                <input
+                  value={displayName}
+                  readOnly
+                  required
+                  maxLength={80}
+                  className="tl-field w-full rounded-[16px] px-3 py-3 text-sm outline-none read-only:cursor-default read-only:opacity-80"
+                  placeholder={resolvingTin ? "Finding name..." : "Loaded from TIN"}
                 />
               </label>
               <label className="block">
@@ -293,15 +376,16 @@ export function ContactsExperience() {
                 <input
                   value={phoneNumber}
                   onChange={(event) => setPhoneNumber(event.target.value)}
+                  readOnly={resolvedPhoneAvailable}
                   inputMode="tel"
                   className="tl-field w-full rounded-[16px] px-3 py-3 text-sm outline-none"
-                  placeholder="+234..."
+                  placeholder={resolvedTin ? "No phone number — optional" : "Loaded from TIN"}
                 />
               </label>
               <button
                 type="submit"
-                disabled={saving}
-                className="w-full rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-50"
+                disabled={saving || resolvingTin || resolvedTin !== normalizeTin(tin)}
+                className="tl-button-primary w-full rounded-[18px] px-4 py-3 text-sm font-semibold disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save contact"}
               </button>

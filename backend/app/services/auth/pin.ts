@@ -3,6 +3,7 @@ import {
   findUserById,
   findUserByPhoneNumber,
   updateUserPin,
+  rotateUserActiveSession,
 } from "@/app/db/users";
 import { findLatestReferralCandidateByReceiverPhone } from "@/app/db/payments";
 import { issueAccessToken, issueAuthChallengeToken, requireAuthChallengeToken } from "@/app/lib/auth";
@@ -42,11 +43,13 @@ export async function setupUserPin(params: { challengeToken: string; pin: string
     userId: updatedUser.id,
     phoneNumber: updatedUser.phone_number,
   });
+  const sessionId = await rotateUserActiveSession(updatedUser.id);
 
   return {
     accessToken: issueAccessToken({
       id: updatedUser.id,
       phoneNumber: updatedUser.phone_number,
+      sessionId,
     }),
     user: sanitizeUser(updatedUser),
   };
@@ -69,11 +72,13 @@ export async function verifyUserPin(params: { challengeToken: string; pin: strin
     userId: user.id,
     phoneNumber: user.phone_number,
   });
+  const sessionId = await rotateUserActiveSession(user.id);
 
   return {
     accessToken: issueAccessToken({
       id: user.id,
       phoneNumber: user.phone_number,
+      sessionId,
     }),
     user: sanitizeUser(user),
   };

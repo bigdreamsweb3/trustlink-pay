@@ -33,31 +33,57 @@ type WalletContextValue = {
 const WalletContext = createContext<WalletContextValue | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const appKit = configureTrustLinkAppKit();
+  const [appKitReady, setAppKitReady] = useState(false);
 
-  if (!appKit) {
-    return <UnavailableReownWalletProvider>{children}</UnavailableReownWalletProvider>;
+  if (!appKitReady) {
+    return (
+      <DeferredReownWalletProvider onReady={() => setAppKitReady(true)}>
+        {children}
+      </DeferredReownWalletProvider>
+    );
   }
 
   return <ConfiguredReownWalletProvider>{children}</ConfiguredReownWalletProvider>;
 }
 
-function UnavailableReownWalletProvider({ children }: { children: ReactNode }) {
+function DeferredReownWalletProvider({
+  children,
+  onReady,
+}: {
+  children: ReactNode;
+  onReady: () => void;
+}) {
   const { showToast } = useToast();
   const value = useMemo<WalletContextValue>(
     () => ({
       session: null,
       walletAddress: null,
       requestWalletConnection: () => {
-        showToast(
-          "Reown is not configured. Add a valid Reown project ID, restart the frontend, and try again.",
-        );
+        try {
+          const appKit = configureTrustLinkAppKit();
+
+          if (!appKit) {
+            showToast(
+              "Reown is not configured. Add a valid Reown project ID, restart the frontend, and try again.",
+            );
+            return;
+          }
+
+          onReady();
+          appKit.open();
+        } catch (error) {
+          showToast(
+            error instanceof Error
+              ? error.message
+              : "Could not initialize Reown wallet connection.",
+          );
+        }
       },
       disconnectWallet: async () => {
         clearExternalSolanaWallet();
       },
     }),
-    [showToast],
+    [onReady, showToast],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

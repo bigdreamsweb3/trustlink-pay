@@ -1,7 +1,9 @@
 export const runtime = "nodejs";
 
+import { createHash } from "node:crypto";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { PublicKey } from "@solana/web3.js";
+import { buildTinWalletBindingMessage } from "@trustlink/tsn-sdk/canonical-message";
 import { decodeTinAccount, getTinsIdentityPda, getTinsRegistryPda } from "@trustlink/tsn-sdk/tins";
 import { z } from "zod";
 
@@ -30,24 +32,6 @@ function normalizeOptionalPublicKey(value: string | null | undefined) {
   return new PublicKey(value).toBase58();
 }
 
-function buildTinBindingMessage(params: {
-  userPhoneNumber: string;
-  tin: string;
-  walletPublicKey: string;
-  identityPublicKey: string;
-  programId: string;
-  issuedAt: string;
-}) {
-  return [
-    "TrustLink Pay TIP phone mapping",
-    `Phone: ${params.userPhoneNumber}`,
-    `TIN: ${params.tin}`,
-    `Wallet: ${params.walletPublicKey}`,
-    `Identity: ${params.identityPublicKey}`,
-    `Program: ${params.programId}`,
-    `Issued At: ${params.issuedAt}`,
-  ].join("\n");
-}
 
 function verifyTinBindingSignature(params: {
   message: string;
@@ -58,15 +42,19 @@ function verifyTinBindingSignature(params: {
   return ed25519.verify(signature, new TextEncoder().encode(params.message), params.walletPublicKey.toBytes());
 }
 
-function decodeTinOwnerPublicKey(data: Uint8Array) {
-  const buffer = Buffer.from(data);
-  let offset = 0;
-  if (buffer.length < 8 + 4) return null;
-  offset += 8;
-  const displayNameLength = buffer.readUInt32LE(offset);
-  offset += 4 + displayNameLength + 32;
-  if (offset + 32 > buffer.length) return null;
-  return new PublicKey(buffer.subarray(offset, offset + 32));
+function walletMatchesTinOwnerCommitment(params: {
+  ownerCommitment: Uint8Array;
+  walletPublicKey: PublicKey;
+  identityPublicKey: PublicKey;
+}) {
+  const walletBytes = params.walletPublicKey.toBytes();
+  const commitment = Buffer.from(params.ownerCommitment);
+  const acceptedCommitments = [
+    createHash("sha256").update(walletBytes).digest(),
+    Buffer.from(walletBytes),
+    Buffer.from(params.identityPublicKey.toBytes()),
+  ];
+  return acceptedCommitments.some((candidate) => commitment.equals(candidate));
 }
 
 export async function POST(request: Request) {
@@ -81,14 +69,12 @@ export async function POST(request: Request) {
       const walletPublicKey = new PublicKey(payload.signerPublicKey);
       const identityPublicKey = new PublicKey(payload.tinsIdentityPublicKey);
       const expectedIdentityPublicKey = getTinsIdentityPda({ walletPubkey: walletPublicKey, programId });
-      const identityMatchesDerivedPda = identityPublicKey.equals(expectedIdentityPublicKey);
 
       const bindingIssuedAtMs = Date.parse(payload.bindingIssuedAt);
       if (!Number.isFinite(bindingIssuedAtMs) || Math.abs(Date.now() - bindingIssuedAtMs) > TIN_BINDING_MAX_AGE_MS) {
         return fail("TIP wallet binding signature expired. Please sign again.", 400);
       }
-      const expectedBindingMessage = buildTinBindingMessage({
-        userPhoneNumber: authUser.phoneNumber,
+      const expectedBindingMessage = buildTinWalletBindingMessage({
         tin: payload.tin,
         walletPublicKey: walletPublicKey.toBase58(),
         identityPublicKey: identityPublicKey.toBase58(),
@@ -120,14 +106,17 @@ export async function POST(request: Request) {
       if (decoded.tin.toString() !== payload.tin) {
         return fail("Submitted TIN does not match the on-chain TIP account", 400);
       }
-      const ownerPublicKey = decodeTinOwnerPublicKey(account.data);
-      if (ownerPublicKey && !ownerPublicKey.equals(walletPublicKey)) {
-        return fail("Connected wallet does not own this TIP account", 400);
+      if (
+        !walletMatchesTinOwnerCommitment({
+          ownerCommitment: decoded.ownerPubkeyHash,
+          walletPublicKey,
+          identityPublicKey,
+        })
+      ) {
+        return fail("Connected wallet does not match the on-chain TIP owner commitment", 400);
       }
-      if (!identityMatchesDerivedPda) {
-        if (!ownerPublicKey) {
-          return fail("Legacy TIP account does not expose an owner wallet", 400);
-        }
+      if (!identityPublicKey.equals(expectedIdentityPublicKey)) {
+        return fail("TIP identity account is not derived from the connected wallet", 400);
       }
       const registryPublicKey = getTinsRegistryPda({ tin: decoded.tin, programId }).toBase58();
       const submittedRegistryPublicKey = normalizeOptionalPublicKey(payload.tinsRegistryPublicKey);

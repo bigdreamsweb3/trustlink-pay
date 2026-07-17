@@ -48,9 +48,8 @@ const mempoolApplication = {
 
 module.exports = {
   apps: [
-    // createNpmApplication("frontend", "frontend", "dev"),
-    createNpmApplication("backend", "backend", "dev"),
     mempoolApplication,
+    createNpmApplication("backend", "backend", "dev"),
     createNpmApplication("mempool-ui", "tsn-protocol/tsn-mempool-frontend", "dev"),
     createNpmApplication("rpc-gateway", "tsn-protocol/tsn-rpc-gateway", "dev"),
     createNpmApplication("cranker", "tsn-protocol/tsn-cranker-op-daemon", "crank:start"),

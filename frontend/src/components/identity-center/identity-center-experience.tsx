@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
-  IdCard,
+  Fingerprint,
   LockKeyhole,
   UserRound,
   WalletCards,
@@ -24,13 +24,13 @@ const sections: Array<{
   id: IdentitySection;
   label: string;
   description: string;
-  icon: typeof IdCard;
+  icon: typeof Fingerprint;
 }> = [
   {
     id: "overview",
     label: "Identity",
     description: "TIN, verification and linked identities",
-    icon: IdCard,
+    icon: Fingerprint,
   },
   {
     id: "profile",
@@ -123,7 +123,7 @@ export function IdentityCenterExperience() {
                 </div>
                 <p className="mt-1 truncate text-[0.76rem] text-[var(--text-soft)]">
                   @{user.handle}
-                  {user.tin ? ` · TIN ${user.tin}` : " · TIN not created"}
+                  {user.tin ? ` · TIN ${user.tin}` : " · TIN not linked"}
                 </p>
               </div>
             </div>

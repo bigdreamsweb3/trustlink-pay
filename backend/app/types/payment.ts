@@ -44,6 +44,7 @@ export interface UserRecord {
   opt_out_timestamp: string | null;
   phone_verified_at: string | null;
   identity_verified_at: string | null;
+  active_session_id?: string | null;
   referred_by_user_id: string | null;
   referral_source_payment_id: string | null;
   referred_at: string | null;

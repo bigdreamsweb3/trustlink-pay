@@ -1,4 +1,5 @@
 import { ClaimExperience } from "@/src/components/experiences/claim-experience";
+import { WalletProvider } from "@/src/lib/wallet-provider";
 
 export default async function ClaimPage({
   params
@@ -7,5 +8,9 @@ export default async function ClaimPage({
 }) {
   const { paymentId } = await params;
 
-  return <ClaimExperience paymentId={paymentId} />;
+  return (
+    <WalletProvider>
+      <ClaimExperience paymentId={paymentId} />
+    </WalletProvider>
+  );
 }

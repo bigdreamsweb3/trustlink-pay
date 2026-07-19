@@ -1,0 +1,56 @@
+name: TCAP SBF build
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: tcap-protocol
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CI Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install repository Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.75.0
+          components: rustfmt
+
+      - name: Install Solana SBF 1.18.26
+        working-directory: .
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor AVM and select Anchor 0.30.1
+        working-directory: .
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo +stable install --git https://github.com/coral-xyz/anchor avm --locked
+          avm install 0.30.1
+          avm use 0.30.1
+          echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
+
+      - name: Verify build toolchain
+        run: |
+          rustc --version
+          cargo --version
+          solana --version
+          cargo-build-sbf --version
+          anchor --version
+          node --version
+
+      - name: Build SBF without regenerating IDL
+        run: anchor build --no-idl

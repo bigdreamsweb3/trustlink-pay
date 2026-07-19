@@ -1,0 +1,52 @@
+name: TCAP Cargo validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: tcap-protocol
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install repository Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.75.0
+          components: rustfmt
+
+      - name: Restore Cargo caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tcap-protocol/target
+          key: ${{ runner.os }}-tcap-cargo-rust-1.75.0-${{ hashFiles('tcap-protocol/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-tcap-cargo-rust-1.75.0-
+
+      - name: Verify toolchain
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Cargo metadata
+        run: cargo metadata --locked --no-deps
+
+      - name: Cargo check
+        run: cargo check --locked
+
+      - name: Cargo tests
+        run: cargo test --locked

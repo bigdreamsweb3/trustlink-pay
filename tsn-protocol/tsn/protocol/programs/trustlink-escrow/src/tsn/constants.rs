@@ -20,6 +20,8 @@ pub const TSN_EPOCH_ACCOUNT_SEED: &[u8] = b"tsn_epoch";
 pub const TSN_PEA_SEED: &[u8] = b"pea";
 pub const TSN_PAYMENT_COMMITMENT_SEED: &[u8] = b"tsn_payment_commitment";
 pub const TSN_PRIVACY_RECEIVE_SEED: &[u8] = b"tsn_privacy_receive";
+/// Domain for non-spendable TSN -> TCAP authorization records.
+pub const TSN_TCAP_AUTHORIZATION_SEED: &[u8] = b"tsn:tcap-authorization:v1";
 
 pub const TSN_DEFAULT_LEASE_SECONDS: i64 = 30;
 pub const TSN_DEFAULT_EPOCH_SECONDS: i64 = 7 * 60 * 60; // 7 hours

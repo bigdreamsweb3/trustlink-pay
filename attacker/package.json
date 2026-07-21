@@ -1,0 +1,9 @@
+{
+  "name": "@trustlink/tcap-attacker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate-case": "node src/validate-case.mjs",
+    "monitor": "node src/monitor.mjs"
+  }
+}

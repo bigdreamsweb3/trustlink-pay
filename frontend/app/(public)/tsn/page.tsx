@@ -12,7 +12,7 @@ import {
 export const metadata = {
   title: "Transfer Settlement Network (TSN) — TrustLink Pay",
   description:
-    "TrustLink Pay is built on the Transfer Settlement Network, a Solana settlement protocol where Payment Intents, Escrow Holds, Cranker execution, and Settlement Proofs coordinate private payments.",
+    "TrustLink Pay is built on the Transfer Settlement Network, a Solana coordination protocol for Payment Intents, epochs, Crankers, fees, authorization, and settlement receipts.",
 };
 
 const stages = [
@@ -22,19 +22,19 @@ const stages = [
       "A sender creates a cryptographically signed intent that defines the amount, recipient, and settlement constraints.",
   },
   {
-    title: "Escrow Hold",
+    title: "Funding authorization",
     description:
-      "Funds are routed into an escrow-backed settlement path so the payment is secured before execution completes.",
+      "The sender authorizes the payment intent and its settlement constraints while TSN coordinates the work.",
   },
   {
     title: "Cranker Execution",
     description:
-      "Independent operators called Crankers execute the settlement work, sponsor fees, and keep the system moving.",
+      "Independent operators called Crankers validate eligible intents, submit settlement work, and earn protocol-defined rewards.",
   },
   {
     title: "Settlement Proof",
     description:
-      "The system records verifiable proof of execution so the final payout can be audited and trusted.",
+      "TSN records authorization and settlement receipts so completed work can be audited and verified.",
   },
 ];
 
@@ -58,9 +58,9 @@ const roles = [
     icon: Zap,
   },
   {
-    title: "Liquidity Providers",
+    title: "TSN coordinators",
     description:
-      "Back the settlement economy with capital that earns yield from real payment volume.",
+      "Coordinate eligible settlement work and receive protocol-defined rewards. TSN does not require a liquidity-provider protocol layer.",
     icon: ShieldCheck,
   },
 ];

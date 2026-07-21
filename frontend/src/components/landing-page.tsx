@@ -45,13 +45,13 @@ const heroStats = [
     icon: Clock,
     label: "Settlement",
     value: "TSN",
-    note: "Private escrow-backed payment settlement",
+    note: "Payment intents, epochs, Crankers, fees, and receipts",
   },
   {
-    icon: Wallet,
-    label: "Liquidity",
-    value: "Vaults",
-    note: "Liquidity for recipient payouts and settlement reserves",
+    icon: Lock,
+    label: "Confidential assets",
+    value: "TCAP",
+    note: "Reserve metadata, commitments, nullifiers, and private roots",
   },
 ];
 
@@ -224,32 +224,27 @@ const sasFeatures = [
 
 const feeDistribution = [
   {
-    role: "Liquidity Providers",
-    share: "85%",
-    desc: "Vault liquidity providers backing settlement payouts",
+    role: "Settlement execution",
+    share: "TSN",
+    desc: "Fees are coordinated by TSN according to the active network policy",
   },
   {
     role: "Cranker Operators",
-    share: "8%",
-    desc: "Operators that execute and settle TSN work",
+    share: "TSN",
+    desc: "Operators earn rewards for valid settlement work",
   },
   {
-    role: "Protocol Treasury",
-    share: "5%",
-    desc: "Protocol development and operations",
-  },
-  {
-    role: "Recovery Bonus Pool",
-    share: "2%",
-    desc: "Reserve incentives for fastest recovery and reimbursement work",
+    role: "Protocol policy",
+    share: "TSN",
+    desc: "Exact fee allocation is versioned by TSN governance",
   },
 ];
 
 const securityFeatures = [
   {
     icon: LockKeyhole,
-    title: "Escrow Vaults",
-    desc: "Funds secured in protocol-controlled accounts",
+    title: "Intent authorization",
+    desc: "Payment intents are signed and coordinated before settlement",
   },
   {
     icon: ShieldCheck,
@@ -439,7 +434,7 @@ export function LandingPage() {
             <p className="tl-body-lg mt-4 text-text-soft">
               TrustLink Pay is the Web3 payment system users interact with. TSN
               is the settlement protocol that moves payment work through
-              Crankers, PRU routes, and escrow-backed blockchain settlement on
+              Crankers, PRU routes, and programmable blockchain settlement on
               Solana.
             </p>
           </div>
@@ -774,7 +769,7 @@ export function LandingPage() {
             </p>
             <p className="tl-body-lg mt-4 text-text-soft">
               TSN (Transfer Settlement Network) coordinates settlement through
-              escrow-backed flows, crankers, and verifiable off-chain proof
+              identity-first flows, Crankers, and verifiable settlement receipts
               trails.
             </p>
           </div>

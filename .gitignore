@@ -6,6 +6,7 @@ Thumbs.db
 .venv/
 .agents/
 .logs/
+.codex-target/
 
 .env
 .fb_creds/
@@ -92,8 +93,33 @@ ZK-PRU/
 
 tsn-protocol-extraction/
 
+# TCAP deployment program keypair
+tcap-protocol/tcap-program-keys/
+**/tcap-program-keypair.json
+
+# Windows downloaded-file metadata
+*:Zone.Identifier
+*Zone.Identifier
+
 
 C/
 
 # Independent TrustLink Labs research checkout (published from its own repository)
-/research/Trustlink-Research/
+research/Trustlink-Research/
+
+# Local Blogger publication workspace (not part of TrustLink Pay repository)
+blogger/
+tools/
+/tools/add_blogger_updates.py
+/tools/add_blogger_search_pagination.py
+/tools/add_mobile_blogger_navigation.py
+/tools/add_automatic_blogger_toc.py
+/tools/add_blogger_share_tools.py
+/tools/refine_blogger_share_tools.py
+/tools/enable_blogger_navigation_order.py
+/tools/convert_blogger_nav_to_more.py
+/tools/blogger_theme_shell.xml
+/tools/build_blogger_theme.py
+/tools/build_multipage_blogger_publication.py
+/tools/optimize_blogger_publication.py
+/tools/validate_blogger_publication.py

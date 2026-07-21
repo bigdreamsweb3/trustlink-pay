@@ -4,7 +4,7 @@ import { BASE_URL, getAbsoluteUrl } from "./routes";
 export const defaultTitle =
   "TrustLink Pay | Identity-First Blockchain Payment System";
 export const defaultDescription =
-  "TrustLink Pay is an identity-first, privacy-aware and confidential stablecoin payment system on Solana, powered by TIP, ZK-PRUs, VPP, and TSN settlement.";
+  "TrustLink Pay is an identity-first, privacy-aware and confidential stablecoin payment system on Solana, powered by TIP identity, TSN settlement coordination, and the independent TCAP confidential-asset protocol.";
 
 export const defaultKeywords = [
   "TrustLink Pay",
@@ -29,11 +29,12 @@ export const defaultKeywords = [
   "zero-knowledge payments",
   "zero-knowledge privacy",
   "ZK-PRU",
+  "TCAP",
+  "Transfer Confidential Asset Protocol",
   "Privacy Receiving Unit",
   "TSN",
   "Transfer Settlement Network",
   "TIN",
-  "VPP",
   "TIP",
   "Transfer Identity Number",
   "Transfer Identity Protocol",

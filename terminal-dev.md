@@ -97,3 +97,23 @@ solana confirm <SIGNATURE> --url devnet
 # Add a new line for every command you want to remember.
 
 # Use comments (#) to explain what each command does.
+
+PAPERS
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol$ cd /mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol
+
+node scripts/devnet-initialize.mjs
+(node:2486) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+TCAP initialized on devnet: TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
+Config PDA: 2Q48b1TAhJECiGtLwMirvyNerFSBUBcpQvCPPemQryVY
+Registry PDA: 6oGZV9yt5M6uPH66UZPhJZsGsqfJg2Ec1mtV8VEjQjbE
+Signature: 5YyRWBndQYxDVBGL6JRPUeU46e5S8mGo4jbTSJYvQYsi8d9kfmdUPcdUXS6H9gs1Uzum654dT6tnB9e1vbkYok9n
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol$
+
+spl-token create-token --decimals 2
+Creating token 9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK under program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+
+Address: 9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK
+Decimals: 2
+
+Signature: 4K1fzTKTpbvypWgJ6Za3tYwk7wdxi8NJBsCQ9ZhtC6URs8tSfdkGNHiJZv5SxbtR8Q3CAxmdGCih6ZmcYLzNZb1L

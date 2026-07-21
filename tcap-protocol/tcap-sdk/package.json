@@ -1,0 +1,16 @@
+{
+  "name": "@trustlink/tcap-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "validate:program-id": "node ../scripts/validate-program-id.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

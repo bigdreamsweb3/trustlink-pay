@@ -106,4 +106,12 @@ pub enum TsnError {
     PruSpendNonceAlreadyUsed,
     #[msg("Invalid PRU spend authority")]
     InvalidPruSpendAuthority,
+    #[msg("The TCAP program ID is invalid")]
+    InvalidTcapProgramId,
+    #[msg("The TCAP authorization digest must be non-zero")]
+    InvalidTcapAuthorizationDigest,
+    #[msg("The TCAP authorization validity window is invalid")]
+    InvalidTcapAuthorizationWindow,
+    #[msg("The TCAP authorization record is not non-spendable")]
+    InvalidTcapAuthorizationRecord,
 }

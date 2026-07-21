@@ -7,6 +7,7 @@ const lockfiles = [
   "tsn-protocol/tsn/protocol/Cargo.lock",
   "transfer-identity-protocol/tin-registrar/program/Cargo.lock",
   "ZK-PRU/programs/zk-pru-registry/Cargo.lock",
+  "tcap-protocol/Cargo.lock",
 ];
 const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],
@@ -78,6 +79,21 @@ function stabilizeLockfile(path) {
     }
   }
 
+  if (path === "tcap-protocol/Cargo.lock") {
+    const rayonVersions = packageVersions(packages, "rayon");
+    if (rayonVersions.some((version) => compareVersions(version, "1.10.0") > 0)) {
+      errors.push(
+        `${path} has rayon ${rayonVersions.join(", ")}; expected 1.10.0. Run inside this lockfile's program directory: cargo update -p rayon --precise 1.10.0`,
+      );
+    }
+    const procMacro2Versions = packageVersions(packages, "proc-macro2");
+    if (procMacro2Versions.some((version) => compareVersions(version, "1.0.94") > 0)) {
+      errors.push(
+        `${path} has proc-macro2 ${procMacro2Versions.join(", ")}; expected 1.0.94. Run inside this lockfile's program directory: cargo update -p proc-macro2 --precise 1.0.94`,
+      );
+    }
+  }
+
   if (packageVersions(packages, "toml_parser").some((version) => version.startsWith("1."))) {
     errors.push(
       `${path} has toml_parser 1.x, which requires Rust edition 2024. Run inside this lockfile's program directory: cargo update -p proc-macro-crate@3.5.0 --precise 3.3.0`,
@@ -109,6 +125,13 @@ function stabilizeLockfile(path) {
   }
 
   if (errors.length > 0) {
+    // Persist only the Cargo format downgrade before reporting dependency pins.
+    // Cargo 1.75 cannot parse v4, so the precise updates below would otherwise
+    // be impossible to run. No dependency resolution is performed here.
+    if (body !== original) {
+      writeFileSync(absolutePath, body);
+      console.log(`Downgraded ${path}: Cargo.lock format v4 -> v3 (dependency pins still required)`);
+    }
     throw new Error(errors.join("\n"));
   }
 

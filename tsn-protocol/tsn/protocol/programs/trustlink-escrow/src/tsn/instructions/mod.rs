@@ -24,6 +24,7 @@ pub mod submit_proof;
 pub mod withdraw_cranker_funds;
 pub mod withdraw_verifier_lamports;
 pub mod tin_action_fee;
+pub mod prepare_tcap_authorization;
 
 pub use claim_intent::*;
 pub use claim_vault_recovery::*;
@@ -51,3 +52,4 @@ pub use submit_proof::*;
 pub use withdraw_cranker_funds::*;
 pub use withdraw_verifier_lamports::*;
 pub use tin_action_fee::*;
+pub use prepare_tcap_authorization::*;

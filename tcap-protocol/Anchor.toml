@@ -1,0 +1,22 @@
+[toolchain]
+anchor_version = "0.30.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+
+[programs.devnet]
+tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["programs/tcap"]
+
+# This development ID has no committed deployment keypair. Generate the TCAP
+# program keypair and synchronize declare_id!/Anchor.toml before any deployment.

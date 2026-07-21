@@ -177,6 +177,9 @@ const zkPruCargoPath = "ZK-PRU/programs/zk-pru-registry/programs/zk-pru-registry
 const tsnLockPath = "tsn-protocol/tsn/protocol/Cargo.lock";
 const tinsLockPath = "transfer-identity-protocol/tin-registrar/program/Cargo.lock";
 const zkPruLockPath = "ZK-PRU/programs/zk-pru-registry/Cargo.lock";
+const tcapAnchorPath = "tcap-protocol/Anchor.toml";
+const tcapCargoPath = "tcap-protocol/programs/tcap/Cargo.toml";
+const tcapLockPath = "tcap-protocol/Cargo.lock";
 
 const tsnAnchor = read(tsnAnchorPath);
 const tinsAnchor = read(tinsAnchorPath);
@@ -186,6 +189,9 @@ const zkPruCargo = existsSync(join(root, zkPruCargoPath)) ? read(zkPruCargoPath)
 const tsnLock = read(tsnLockPath);
 const tinsLock = read(tinsLockPath);
 const zkPruLock = existsSync(join(root, zkPruLockPath)) ? read(zkPruLockPath) : null;
+const tcapAnchor = existsSync(join(root, tcapAnchorPath)) ? read(tcapAnchorPath) : null;
+const tcapCargo = existsSync(join(root, tcapCargoPath)) ? read(tcapCargoPath) : null;
+const tcapLock = existsSync(join(root, tcapLockPath)) ? read(tcapLockPath) : null;
 
 const requiredSnippets = [
   [tsnAnchorPath, tsnAnchor, `anchor_version = "${requiredAnchor}"`],
@@ -199,6 +205,14 @@ if (zkPruAnchor) {
 
 if (zkPruCargo) {
   requiredSnippets.push([zkPruCargoPath, zkPruCargo, `anchor-lang = "0.30.1"`]);
+}
+
+if (tcapAnchor) {
+  requiredSnippets.push([tcapAnchorPath, tcapAnchor, `anchor_version = "${requiredAnchor}"`]);
+}
+
+if (tcapCargo) {
+  requiredSnippets.push([tcapCargoPath, tcapCargo, `anchor-lang = { version = "=0.30.1"`]);
 }
 
 for (const [path, body, snippet] of requiredSnippets) {
@@ -233,6 +247,10 @@ const lockfiles = [
 
 if (zkPruLock) {
   lockfiles.push([zkPruLockPath, zkPruLock]);
+}
+
+if (tcapLock) {
+  lockfiles.push([tcapLockPath, tcapLock]);
 }
 
 for (const [path, body] of lockfiles) {
@@ -289,6 +307,13 @@ for (const [path, body] of lockfiles) {
     );
   }
 
+  if (path === "tcap-protocol/Cargo.lock" && hasPackageVersion(packages, "rayon", (version) => compareVersions(version, "1.10.0") > 0)) {
+    throw new Error(
+      `${path} uses rayon ${packageVersions(packages, "rayon").join(", ")}, which is too new for the pinned Anchor/IDL Rust toolchain.\n` +
+        "Run inside this lockfile's program directory: cargo update -p rayon --precise 1.10.0",
+    );
+  }
+
   if (hasPackageVersion(packages, "toml_parser", (version) => version.startsWith("1."))) {
     throw new Error(
       `${path} uses toml_parser 1.x, which requires Rust edition 2024.\n` +
@@ -300,6 +325,13 @@ for (const [path, body] of lockfiles) {
     throw new Error(
       `${path} uses toml_edit 0.25.x, which pulls toml_parser 1.x and requires Rust edition 2024.\n` +
         "Pin proc-macro-crate to 3.3.0 so Cargo resolves toml_edit 0.22.x.",
+    );
+  }
+
+  if (path === "tcap-protocol/Cargo.lock" && hasPackageVersion(packages, "proc-macro2", (version) => compareVersions(version, "1.0.94") > 0)) {
+    throw new Error(
+      `${path} uses proc-macro2 ${packageVersions(packages, "proc-macro2").join(", ")}; expected 1.0.94 for Anchor 0.30.1 IDL builds.\n` +
+        "Run inside this lockfile's program directory: cargo update -p proc-macro2 --precise 1.0.94",
     );
   }
 }

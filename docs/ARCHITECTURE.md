@@ -11,12 +11,10 @@ The architecture exists so that identity, privacy, settlement, execution, and ac
 TrustLink Pay is made of:
 
 1. **TrustLink Pay app**: user experience, payment records, and identity display
-2. **TIP**: Transfer Identity Protocol for TIN identity records
-3. **Privacy layer**: PRU routes and authenticated route access
-4. **TSN**: Transfer Settlement Network Protocol for payment settlement
-5. **Crankers**: operator execution and recovery work
-6. **Vaults**: payout liquidity
-7. **Epoch accounting**: reimbursement, recovery, and auditability
+2. **TIP**: Transfer Identity Protocol for TINs, phone routing, trust context, attestations, and credentials
+3. **TSN**: Transfer Settlement Network for intents, epochs, Crankers, fees, authorization, and receipts
+4. **TCAP**: Transfer Confidential Asset Protocol for confidential asset representation and reserve metadata
+5. **ZK-PRU**: separate zero-knowledge privacy technology under development
 
 ## Why This Structure Exists
 
@@ -65,11 +63,7 @@ TIN balance is the sum of supported token balances across those PRUs. In the sen
 
 ### Settlement Layer: TSN
 
-TSN is the Transfer Settlement Network Protocol.
-
-It accepts sender-authorized payment work, moves funds through an escrow path, and coordinates recipient payout through vault liquidity.
-
-TSN uses commitments and epoch records so the public chain can verify settlement without needing the full private payment graph.
+TSN is the Transfer Settlement Network Protocol. It accepts sender-authorized payment intents, coordinates epochs and Crankers, records fees and authorization, and emits settlement receipts. The current public architecture does not define escrow-backed settlement or Cranker-funded payouts as the finalized model.
 
 ### Crankers: Operator Layer
 
@@ -80,22 +74,23 @@ They:
 - watch the mempool
 - validate payment work
 - reject tampered or expired work
-- sponsor settlement transactions when required
-- execute vault payouts
-- race to recover or reimburse epoch reservoirs
+- submit eligible settlement work and authorization records
+- coordinate settlement receipts and liveness
 - build reputation through correct work
 
-### Vaults: Liquidity Layer
+### Confidential Asset Layer: TCAP
 
-Vaults provide liquidity for payouts.
+TCAP is an independent program boundary for confidential asset representation, approved-asset metadata, reserve state, commitments, nullifiers, and confidential ownership roots. Its current implementation is initialization-only; deposits, transfers, redemption, and proof acceptance are not production capabilities.
 
-A Cranker can pay the recipient from vault liquidity, then the protocol later reconciles the vault using commitments and epoch accounting.
+### ZK-PRU
+
+ZK-PRU is a separate zero-knowledge privacy technology under development. It is not a TCAP submodule and only verified capabilities should be presented as available.
 
 ### Epoch Accounting
 
 An epoch is a settlement window.
 
-Each epoch has an isolated reservoir called a PEA. The PEA keeps that epoch's accounting separate from other epochs. This reduces risk and gives the system a clean place to perform reimbursement and recovery.
+Each epoch records accepted intents, eligibility, authorization, fees, and settlement receipts. Legacy reimbursement and liquidity records remain compatibility code and are not the canonical architecture.
 
 ## Example Flow
 
@@ -104,11 +99,11 @@ Each epoch has an isolated reservoir called a PEA. The PEA keeps that epoch's ac
 3. TrustLink resolves display-safe identity and verification context.
 4. Sender approves a canonical TSN payment message.
 5. Payment enters the TSN mempool as settlement work.
-6. Cranker validates the work, nonce, expiry, amount, route, and signatures.
-7. Sender-side funds enter the settlement path.
-8. Recipient is paid into a PRU route.
-9. Commitment and epoch records make the settlement auditable.
-10. Recovery or reimbursement work handles unresolved settlement state.
+6. Cranker performs advisory preflight validation of work, nonce, expiry,
+   amount, route, and signatures.
+7. TSN coordinates the authorized settlement work.
+8. Settlement receipts and epoch commitments make the work auditable.
+9. Future TCAP confidential settlement and public exits remain separate, not yet production paths.
 
 ## Security Considerations
 
@@ -117,6 +112,9 @@ Each epoch has an isolated reservoir called a PEA. The PEA keeps that epoch's ac
 - The frontend never derives PRUs and never receives the TIN Master Seed.
 - Public records use commitments and roots where possible.
 - Crankers must validate structure, signatures, routing, and timing before acting.
+- Cranker checks are never consensus security. TCAP atomically enforces the
+  expected state version/nonce, expiry, fee authorization, proof validity, and
+  unused nullifier while inserting the nullifier and writing replacement state.
 - Epoch reservoirs limit the blast radius of accounting problems.
 - Cranker reputation and slashing are part of the operator safety model.
 - Operator tooling should warn before epoch handoff or recovery fails.

@@ -9,7 +9,7 @@ TrustLink Pay lets people send stablecoins to a 10-digit Transfer Identity Numbe
 - Uses a TIN as the public payment identity rather than a wallet address.
 - Resolves recipient context before a payment is authorized.
 - Routes supported balance through PRUs and TSN settlement workflows.
-- Uses Cranker operators, liquidity vaults, and settlement proofs for payout execution.
+- Uses TSN Cranker coordination, authorization records, fees, and settlement receipts for payment execution.
 - Keeps the owner's primary wallet out of TIN creation, upgrade, and TSN settlement transactions as an on-chain signer, fee payer, or authority.
 
 TrustLink Pay improves the privacy design of everyday payments. It does not make Solana private: transactions and program accounts remain public, and on-chain activity can still be inspected with enough context.
@@ -18,11 +18,10 @@ TrustLink Pay improves the privacy design of everyday payments. It does not make
 
 | Layer | Responsibility |
 | --- | --- |
-| Transfer Identity | TINs, identity resolution, public display context, ownership proofs, and optional trust attestations |
-| PRU routing | Privacy Receiving Unit routes and unified TIN balance handling |
-| TSN | Payment intents, escrow holds, settlement proof records, and epoch accounting |
-| Crankers | Validation, settlement execution, recovery work, and liveness |
-| Liquidity | Vault-funded recipient payout and settlement reserves |
+| TIP | TINs, phone routing, identity resolution, optional trust context, attestations, and credentials |
+| TSN | Payment intents, epochs, Crankers, settlement coordination, fees, authorization, and receipts |
+| TCAP | Confidential asset representation, reserve metadata, commitments, nullifiers, and confidential roots |
+| ZK-PRU | Separate zero-knowledge privacy technology under development; not a TCAP submodule |
 
 Transfer Identity combines payment identity with optional identity assurance. Every TIN remains payment-capable without an attestation. Legal-name, business-name, and personhood attestations provide additional recipient confidence when available.
 

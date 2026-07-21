@@ -1,0 +1,19 @@
+{
+  "network": "localnet",
+  "rpcUrl": "http://127.0.0.1:8899",
+  "programs": {
+    "tip": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+    "tsn": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+    "tcap": "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+  },
+  "services": {
+    "mempoolUrl": "http://127.0.0.1:8000",
+    "rpcGatewayUrl": "http://127.0.0.1:8787"
+  },
+  "cloudAi": {
+    "provider": "claude-advisory-only",
+    "apiKeyEnv": "ANTHROPIC_API_KEY",
+    "sendRawTransactions": false,
+    "executeGeneratedCode": false
+  }
+}

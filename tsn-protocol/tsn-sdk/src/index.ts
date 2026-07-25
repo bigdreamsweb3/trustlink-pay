@@ -24,6 +24,11 @@ export * from "./pru-route-auth.js";
 export * from "./pru-denomination.js";
 export * from "./tin-balance-spend-planner.js";
 
+// ZK-PRU Redesign: Adaptive accumulation with tranche-based spending
+export * from "./zk-pru-execution-planner.js";
+export * from "./zk-pru-state-manager.js";
+export * from "./zk-pru-receive-accumulator.js";
+
 // TSN V1 Privacy Architecture exports
 
 

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type KeyboardEvent as ReactKeyboardEvent,
   type SetStateAction,
 } from "react";
 import { useSearchParams } from "next/navigation";
@@ -47,10 +48,7 @@ import type {
   WalletTokenOption,
   WhatsAppNumberVerificationResult,
 } from "@/src/lib/types";
-import {
-  signSolanaMessage,
-  signSolanaTransaction,
-} from "@/src/lib/wallet";
+import { signSolanaMessage, signSolanaTransaction } from "@/src/lib/wallet";
 import { useWallet } from "@/src/lib/wallet-provider";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import {
@@ -343,6 +341,7 @@ export function SendExperience() {
   const [busy, setBusy] = useState(false);
   const [estimateBusy, setEstimateBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showReviewDetails, setShowReviewDetails] = useState(false);
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [sendCostEstimate, setSendCostEstimate] =
     useState<SendCostEstimate | null>(null);
@@ -383,7 +382,9 @@ export function SendExperience() {
   const [shareBusy, setShareBusy] = useState(false);
   const [contactSaveBusy, setContactSaveBusy] = useState(false);
   const [savedContacts, setSavedContacts] = useState<TrustLinkContact[]>([]);
-  const [recipientPayments, setRecipientPayments] = useState<PaymentRecord[]>([]);
+  const [recipientPayments, setRecipientPayments] = useState<PaymentRecord[]>(
+    [],
+  );
   const [recipientSearchOpen, setRecipientSearchOpen] = useState(false);
   const [countrySearchOpen, setCountrySearchOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
@@ -396,6 +397,8 @@ export function SendExperience() {
     amount: "",
     token: "",
   });
+  const reviewDialogRef = useRef<HTMLDivElement>(null);
+  const previousReviewFocusRef = useRef<HTMLElement | null>(null);
 
   const localeCountry = useMemo(() => detectCountryFromLocale(), []);
   const preferredCountry = useMemo(() => {
@@ -942,10 +945,14 @@ export function SendExperience() {
 
         if (observedStatus) {
           setSendSuccess((current) => {
-            if (!current || current.paymentId !== paymentIdForPolling) return current;
+            if (!current || current.paymentId !== paymentIdForPolling)
+              return current;
             return {
               ...current,
-              tsn: toPaymentTsnState(observedStatus, current.tsn?.destinationWallet ?? null),
+              tsn: toPaymentTsnState(
+                observedStatus,
+                current.tsn?.destinationWallet ?? null,
+              ),
               status:
                 observedStatus.intentStatus === "executed" ||
                 observedStatus.intentStatus === "settled"
@@ -1020,7 +1027,73 @@ export function SendExperience() {
       cancelled = true;
       if (timerId !== undefined) window.clearTimeout(timerId);
     };
-  }, [accessToken, sendSuccess, sendSuccessPaymentId, shouldPollSendSuccessReceipt]);
+  }, [
+    accessToken,
+    sendSuccess,
+    sendSuccessPaymentId,
+    shouldPollSendSuccessReceipt,
+  ]);
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+
+    previousReviewFocusRef.current =
+      document.activeElement as HTMLElement | null;
+    const dialog = reviewDialogRef.current;
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    const focusFirst = () => {
+      const focusables =
+        dialog?.querySelectorAll<HTMLElement>(focusableSelector);
+      const firstFocusable = focusables?.[0];
+      if (firstFocusable) {
+        firstFocusable.focus();
+      } else {
+        dialog?.focus();
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConfirmOpen(false);
+        return;
+      }
+
+      if (event.key === "Tab" && dialog) {
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>(focusableSelector),
+        ).filter((element) => !element.hasAttribute("disabled"));
+        if (focusables.length === 0) {
+          event.preventDefault();
+          dialog.focus();
+          return;
+        }
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    requestAnimationFrame(focusFirst);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousReviewFocusRef.current?.focus();
+    };
+  }, [confirmOpen]);
 
   function handleConnectWallet() {
     setError(null);
@@ -1657,7 +1730,9 @@ export function SendExperience() {
               disabled={contactSaveBusy}
               className="tl-button-secondary w-full rounded-[18px] px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:max-w-[400px]"
             >
-              {contactSaveBusy ? "Saving recipient..." : "Save recipient to contacts"}
+              {contactSaveBusy
+                ? "Saving recipient..."
+                : "Save recipient to contacts"}
             </button>
 
             <div className="text-[0.72rem] text-[var(--text-soft)] leading-relaxed">
@@ -2168,7 +2243,9 @@ export function SendExperience() {
                         </span>
                         {(tinTokenBalanceByMint[token.mintAddress] ?? 0) > 0 ? (
                           <span className="tl-text-soft block mt-0.5 text-[0.62rem] leading-tight">
-                            Wallet {formatTokenBalance(token.balance, token.symbol)} · TIN{" "}
+                            Wallet{" "}
+                            {formatTokenBalance(token.balance, token.symbol)} ·
+                            TIN{" "}
                             {formatTokenBalance(
                               tinTokenBalanceByMint[token.mintAddress] ?? 0,
                               token.symbol,
@@ -2197,310 +2274,363 @@ export function SendExperience() {
         <div
           className="fixed inset-0 z-999 grid place-items-end tl-overlay md:place-items-center"
           onClick={() => setConfirmOpen(false)}
+          role="presentation"
         >
           <div
-            className="tl-modal w-full rounded-t-[28px] px-6 pb-8 pt-6 md:max-w-[430px] md:rounded-[28px]"
+            className="tl-modal w-full rounded-t-[28px] md:rounded-[28px] md:max-w-[520px] flex flex-col max-h-[calc(100dvh-32px)] md:max-h-[calc(100dvh-32px)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            ref={reviewDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-payment-title"
           >
-            <div className="mb-5">
-              <h2 className="tl-h3 font-semibold tracking-[-0.04em] text-text">
-                Authorize transfer
-              </h2>
-              <p className="mt-1  text-text-soft">
-                You will sign a TSN authorization message. Your wallet will not
-                broadcast a Solana transaction.
-              </p>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
-                <div className="tl-meta-sm uppercase tracking-[0.18em] text-text-soft">
-                  Sending to
-                </div>
-                <div className="mt-1.5 text-[0.92rem] font-semibold text-text">
-                  {recipientPreview.recipient.displayName}
-                  {"handle" in recipientPreview.recipient &&
-                  recipientPreview.recipient.handle
-                    ? ` (@${recipientPreview.recipient.handle})`
-                    : recipientPreview.status === "whatsapp_only" ||
-                        recipientPreview.status === "manual_invite_required"
-                      ? " (Not on TrustLink)"
-                      : ""}
-                </div>
-                {recipientPreview.recipient.whatsappProfileName &&
-                recipientPreview.recipient.whatsappProfileName !==
-                  recipientPreview.recipient.displayName ? (
-                  <div className="mt-1 text-[0.76rem] text-text-soft">
-                    WhatsApp: {recipientPreview.recipient.whatsappProfileName}
-                  </div>
-                ) : null}
+            {/* ─────────── FIXED HEADER ─────────── */}
+            <div className="shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 
+                  id="review-payment-title"
+                  className="tl-h3 font-semibold tracking-[-0.04em] text-text"
+                >
+                  Review Payment
+                </h2>
+                <p className="mt-1 text-[0.82rem] leading-relaxed text-text-soft">
+                  Confirm recipient and total before signing.
+                </p>
               </div>
-
-              <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3.5">
-                <span className=" font-medium text-text">
-                  {form.amount} {selectedToken.symbol}
-                </span>
-                <span className="text-[0.78rem] text-text-soft">
-                  {form.receiverPhone}
-                </span>
-              </div>
-
-              {estimateBusy ? (
-                <div className="tl-panel tl-field rounded-[18px] px-4 py-5">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-                    <div>
-                      <div className=" font-semibold text-text">
-                        Calculating payment quote
-                      </div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-text-soft">
-                        Fetching TSN sender fee and current Solana network fee.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : estimateError ? (
-                <div className="rounded-[18px] border border-[var(--danger)]/20 bg-danger-soft px-4 py-3.5">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--danger)]" />
-                    <div>
-                      <div className=" font-semibold text-[var(--danger)]">
-                        Quote unavailable
-                      </div>
-                      <div className="mt-1 text-[0.72rem] leading-relaxed text-[var(--danger)]/80">
-                        {estimateError}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void loadSendCostEstimate()}
-                        className="mt-3 inline-flex items-center gap-2 rounded-[14px] border border-[var(--danger)]/20 bg-[var(--field)] px-3 py-2 text-[0.72rem] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--surface-soft)]"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        Retry quote
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : sendCostEstimate ? (
-                <>
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">
-                      Sender fee
-                    </span>
-                    <span className="text-right">
-                      <span className="block  font-medium text-text">
-                        {sendCostEstimate.senderFeeAmountUi.toFixed(6)}{" "}
-                        {selectedToken.symbol}
-                      </span>
-                      {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? (
-                        <span className="block text-[0.68rem] text-text-faint">
-                          {formatUsd(sendCostEstimate.senderFeeAmountUsd)}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                  <div className="tl-panel tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
-                    <span className="text-[0.78rem] text-text-soft">
-                      Recipient fee
-                    </span>
-                    <span className="text-right">
-                      <span className="block  font-medium text-text">
-                        {sendCostEstimate.recipientFeeAmountUi.toFixed(6)}{" "}
-                        {selectedToken.symbol}
-                      </span>
-                      {formatUsd(sendCostEstimate.recipientFeeAmountUsd) ? (
-                        <span className="block text-[0.68rem] text-text-faint">
-                          {formatUsd(sendCostEstimate.recipientFeeAmountUsd)}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                  <div className="rounded-[14px] border border-[var(--field-border)] bg-[var(--surface-soft)] px-3 py-2 text-[0.68rem] leading-relaxed text-text-faint">
-                    Recipient-side TSN fees split as 85% LP vault rewards, 8%
-                    cranker operators, 5% protocol treasury, and 2% recovery
-                    bonus pool.
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">
-                        Solana network fee
-                      </div>
-                      <div className="mt-1  font-semibold text-text">
-                        {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
-                      </div>
-                      {formatUsd(sendCostEstimate.networkFeeUsd) ? (
-                        <div className="mt-0.5 text-[0.66rem] text-text-faint">
-                          {formatUsd(sendCostEstimate.networkFeeUsd)}
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">
-                        Total required
-                      </div>
-                      <div className="mt-1  font-semibold text-text">
-                        {sendCostEstimate.totalTokenRequiredUi.toFixed(6)}{" "}
-                        {selectedToken.symbol}
-                      </div>
-                    </div>
-                    <div className="tl-panel tl-field rounded-[14px] px-3 py-2.5">
-                      <div className="text-[0.68rem] text-text-soft">
-                        Recipient receives
-                      </div>
-                      <div className="mt-1  font-semibold text-text">
-                        {sendCostEstimate.recipientPayoutAmountUi.toFixed(6)}{" "}
-                        {selectedToken.symbol}
-                      </div>
-                    </div>
-                  </div>
-                  {tinSpendPlan ? (
-                    <div className="tl-panel tl-field rounded-[18px] px-4 py-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-[0.68rem] uppercase tracking-[0.18em] text-text-soft">
-                            Funding plan
-                          </div>
-                          <div className="mt-1 text-[0.82rem] font-semibold text-text">
-                            {tinSpendPlan.fundingMode === "pru_only"
-                              ? "TIN balance first"
-                              : tinSpendPlan.fundingMode ===
-                                  "mixed_pru_and_wallet"
-                                ? "TIN balance + wallet top-up"
-                                : tinSpendPlan.fundingMode === "wallet_only"
-                                  ? "Main wallet"
-                                  : "Insufficient funds"}
-                          </div>
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[0.62rem] font-semibold ${
-                            tinSpendPlan.privacyLevel === "highest"
-                              ? "bg-[var(--accent-soft)] text-accent"
-                              : tinSpendPlan.privacyLevel === "reduced"
-                                ? "bg-[var(--warning)]/10 text-[var(--warning)]"
-                                : tinSpendPlan.privacyLevel === "blocked"
-                                  ? "bg-[var(--danger-soft)] text-[var(--danger)]"
-                                  : "bg-white/[0.04] text-text-soft"
-                          }`}
-                        >
-                          {tinSpendPlan.privacyLevel === "highest"
-                            ? "Highest privacy"
-                            : tinSpendPlan.privacyLevel === "reduced"
-                              ? "Mixed privacy"
-                              : tinSpendPlan.privacyLevel === "blocked"
-                                ? "Blocked"
-                                : "Wallet visible"}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
-                        <div className="flex items-center justify-between gap-3 text-[0.76rem]">
-                          <span className="text-text-soft">
-                            From TIN balance
-                          </span>
-                          <span className="font-medium text-text">
-                            {formatPlanTokenAmount(
-                              tinSpendPlan.pruSpendBaseUnits,
-                              tinSpendPlan.tokenDecimals,
-                              tinSpendPlan.tokenSymbol,
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3 text-[0.76rem]">
-                          <span className="text-text-soft">
-                            From main wallet
-                          </span>
-                          <span className="font-medium text-text">
-                            {formatPlanTokenAmount(
-                              tinSpendPlan.walletSpendBaseUnits,
-                              tinSpendPlan.tokenDecimals,
-                              tinSpendPlan.tokenSymbol,
-                            )}
-                          </span>
-                        </div>
-                        {tinSpendPlan.shortfallBaseUnits !== "0" ? (
-                          <div className="flex items-center justify-between gap-3 text-[0.76rem] text-[var(--danger)]">
-                            <span>Shortfall</span>
-                            <span className="font-medium">
-                              {formatPlanTokenAmount(
-                                tinSpendPlan.shortfallBaseUnits,
-                                tinSpendPlan.tokenDecimals,
-                                tinSpendPlan.tokenSymbol,
-                              )}
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <p className="mt-3 text-[0.72rem] leading-relaxed text-text-soft">
-                        {tinSpendPlan.requiresPruExecution &&
-                        tinSpendPlan.fundingMode === "pru_only"
-                          ? "This payment will be funded from TIN balance through TSN Cranker ZK-PRU spend execution. Your owner wallet does not sign the on-chain funding transaction."
-                          : tinSpendPlan.requiresPruExecution
-                            ? "This payment will use TIN balance first, then top up the remaining amount from your main wallet inside the same TSN settlement."
-                            : tinSpendPlan.userMessage}
-                      </p>
-                    </div>
-                  ) : null}
-                  {sendCostEstimate.settlementAssessment ? (
-                    <div
-                      className={`rounded-[14px] border px-3 py-2 text-[0.72rem] ${
-                        sendCostEstimate.settlementAssessment.likelihood ===
-                        "likely_claimable"
-                          ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
-                          : sendCostEstimate.settlementAssessment.likelihood ===
-                              "risky_claim_amount"
-                            ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
-                            : "border-[var(--danger)]/35 bg-[var(--danger-soft)] text-[var(--danger)]"
-                      }`}
-                    >
-                      {sendCostEstimate.settlementAssessment.likelihood ===
-                      "likely_claimable"
-                        ? "✅ Likely claimable"
-                        : sendCostEstimate.settlementAssessment.likelihood ===
-                            "risky_claim_amount"
-                          ? "⚠️ Risky claim amount"
-                          : "❌ Economically non-claimable"}
-                      <div className="mt-1 tl-meta-sm opacity-90">
-                        {sendCostEstimate.settlementAssessment.reason} Minimum
-                        suggested send:{" "}
-                        {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(
-                          4,
-                        )}{" "}
-                        {selectedToken.symbol}.
-                      </div>
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="tl-button-secondary rounded-[18px] px-4 py-3.5  font-medium cursor-pointer active:scale-[0.97] transition-transform tl-body-sm"
+                className="shrink-0 text-text-soft hover:text-text transition-colors"
+                aria-label="Close modal"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleConfirmSend()}
-                disabled={confirmSendDisabled}
-                className="rounded-[18px] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] px-4 py-3.5  font-semibold text-[#04110a] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform tl-body-sm text-nowrap"
-              >
-                {busy
-                  ? "Queuing..."
-                  : estimateBusy
-                    ? "Calculating..."
-                    : tinSpendPlan?.fundingMode === "pru_only"
-                      ? "Send from TIN balance"
-                      : tinSpendPlan?.fundingMode === "mixed_pru_and_wallet"
-                        ? "Send with wallet top-up"
-                        : "Co-sign sponsored send"}
+                <X className="h-5 w-5" />
               </button>
             </div>
-          </div>
-        </div>
+
+            {/* ─────────── SCROLLABLE CONTENT AREA ─────────── */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 md:py-5 space-y-3 md:space-y-4">
+              {/* Payment Summary Section */}
+              <div className="space-y-2">
+                {/* Recipient */}
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-[0.78rem] font-medium text-text-soft">
+                    Recipient
+                  </span>
+                  <div className="text-right">
+                    <div className="text-[0.88rem] font-semibold text-text">
+                      {recipientPreview.recipient.displayName}
+                      {"handle" in recipientPreview.recipient &&
+                      recipientPreview.recipient.handle
+                        ? ` (@${recipientPreview.recipient.handle})`
+                        : recipientPreview.status === "whatsapp_only" ||
+                            recipientPreview.status === "manual_invite_required"
+                          ? " (Not on TrustLink)"
+                          : ""}
+                    </div>
+                    {recipientPreview.recipient.whatsappProfileName &&
+                    recipientPreview.recipient.whatsappProfileName !==
+                      recipientPreview.recipient.displayName ? (
+                      <div className="mt-0.5 text-[0.72rem] text-text-soft">
+                        {recipientPreview.recipient.whatsappProfileName}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="h-px bg-[var(--field-border)]" />
+                
+                {/* Phone Number */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[0.78rem] font-medium text-text-soft">
+                    Phone
+                  </span>
+                  <span className="text-[0.88rem] text-text">
+                    {form.receiverPhone}
+                  </span>
+                </div>
+                
+                {/* Divider */}
+                <div className="h-px bg-[var(--field-border)]" />
+                
+                {/* Amount (Strongest visual element) */}
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <span className="text-[0.78rem] font-medium text-text-soft">
+                    Amount
+                  </span>
+                  <span className="text-[1.05rem] font-bold text-text">
+                    {form.amount} {selectedToken.symbol}
+                  </span>
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {estimateBusy ? (
+               <div className="flex items-center gap-3 py-3 px-3 bg-[var(--surface-soft)] rounded-lg">
+                 <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)] shrink-0" />
+                 <div>
+                   <div className="text-[0.82rem] font-semibold text-text">
+                     Calculating fee
+                   </div>
+                   <div className="text-[0.7rem] text-text-soft">
+                     TSN sender fee and Solana network fee
+                   </div>
+                 </div>
+               </div>
+              ) : estimateError ? (
+               <div className="rounded-lg border border-[var(--danger)]/20 bg-[var(--danger)]/8 px-3 py-3">
+                 <div className="flex items-start gap-2">
+                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--danger)]" />
+                   <div className="min-w-0 flex-1">
+                     <div className="text-[0.78rem] font-semibold text-[var(--danger)]">
+                       Quote unavailable
+                     </div>
+                     <div className="mt-0.5 text-[0.7rem] text-[var(--danger)]/85">
+                       {estimateError}
+                     </div>
+                     <button
+                       type="button"
+                       onClick={() => void loadSendCostEstimate()}
+                       className="mt-2 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--danger)]/20 bg-[var(--field)] px-2.5 py-1.5 text-[0.68rem] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--surface-soft)]"
+                     >
+                       <RefreshCw className="h-3 w-3" />
+                       Retry
+                     </button>
+                   </div>
+                 </div>
+               </div>
+              ) : sendCostEstimate ? (
+               <>
+                 {/* Transaction Fees & Details Section */}
+                 <div className="space-y-2">
+                   {/* Sender Fee */}
+                   <div className="flex items-center justify-between gap-3">
+                     <span className="text-[0.78rem] font-medium text-text-soft">
+                       Sender fee
+                     </span>
+                     <div className="text-right">
+                       <div className="text-[0.82rem] font-semibold text-text">
+                         {sendCostEstimate.senderFeeAmountUi.toFixed(6)}{" "}
+                         {selectedToken.symbol}
+                       </div>
+                       {formatUsd(sendCostEstimate.senderFeeAmountUsd) ? (
+                         <div className="text-[0.68rem] text-text-faint">
+                           {formatUsd(sendCostEstimate.senderFeeAmountUsd)}
+                         </div>
+                       ) : null}
+                     </div>
+                   </div>
+                    
+                   {/* Recipient Fee */}
+                   <div className="flex items-center justify-between gap-3">
+                     <span className="text-[0.78rem] font-medium text-text-soft">
+                       Recipient fee
+                     </span>
+                     <div className="text-right">
+                       <div className="text-[0.82rem] font-semibold text-text">
+                         {sendCostEstimate.recipientFeeAmountUi.toFixed(6)}{" "}
+                         {selectedToken.symbol}
+                       </div>
+                       {formatUsd(sendCostEstimate.recipientFeeAmountUsd) ? (
+                         <div className="text-[0.68rem] text-text-faint">
+                           {formatUsd(sendCostEstimate.recipientFeeAmountUsd)}
+                         </div>
+                       ) : null}
+                     </div>
+                   </div>
+                  </div>
+                  
+                 {/* Fee breakdown info */}
+                 <div className="rounded-lg bg-[var(--surface-soft)] px-3 py-2 text-[0.7rem] leading-relaxed text-text-faint border border-[var(--field-border)]">
+                   Recipient TSN fees: 85% LP rewards, 8% operators, 5% protocol, 2% recovery
+                 </div>
+                  
+                 {/* Network & Total Summary */}
+                 <div className="grid grid-cols-2 gap-2">
+                   <div className="rounded-lg bg-[var(--surface-soft)] border border-[var(--field-border)] px-3 py-2.5">
+                     <div className="text-[0.7rem] font-medium text-text-soft">
+                       Network fee
+                     </div>
+                     <div className="mt-0.5 text-[0.82rem] font-semibold text-text">
+                       {sendCostEstimate.networkFeeSol.toFixed(6)} SOL
+                     </div>
+                     {formatUsd(sendCostEstimate.networkFeeUsd) ? (
+                       <div className="mt-0.5 text-[0.65rem] text-text-faint">
+                         {formatUsd(sendCostEstimate.networkFeeUsd)}
+                       </div>
+                     ) : null}
+                   </div>
+                   <div className="rounded-lg bg-[var(--surface-soft)] border border-[var(--field-border)] px-3 py-2.5">
+                     <div className="text-[0.7rem] font-medium text-text-soft">
+                       Total required
+                     </div>
+                     <div className="mt-0.5 text-[0.82rem] font-semibold text-text">
+                       {sendCostEstimate.totalTokenRequiredUi.toFixed(6)}{" "}
+                       {selectedToken.symbol}
+                     </div>
+                   </div>
+                 </div>
+                  
+                 {/* Recipient Payout */}
+                 <div className="rounded-lg bg-[var(--accent-soft)] border border-[var(--accent-border)] px-3 py-2.5">
+                   <div className="text-[0.7rem] font-medium text-text-soft">
+                     Recipient receives
+                   </div>
+                   <div className="mt-0.5 text-[0.88rem] font-bold text-text">
+                     {sendCostEstimate.recipientPayoutAmountUi.toFixed(6)}{" "}
+                     {selectedToken.symbol}
+                   </div>
+                 </div>
+                  
+                  {/* Funding Plan Section */}
+                  {tinSpendPlan ? (
+                   <div className="rounded-lg bg-[var(--surface-soft)] border border-[var(--field-border)] px-3 py-2.5 space-y-2">
+                     <div className="flex items-start justify-between gap-3">
+                       <div>
+                         <div className="text-[0.7rem] font-medium text-text-soft">
+                           Funding plan
+                         </div>
+                         <div className="mt-0.5 text-[0.82rem] font-semibold text-text">
+                           {tinSpendPlan.fundingMode === "pru_only"
+                             ? "TIN balance only"
+                             : tinSpendPlan.fundingMode ===
+                                 "mixed_pru_and_wallet"
+                               ? "TIN + wallet"
+                               : tinSpendPlan.fundingMode === "wallet_only"
+                                 ? "Main wallet"
+                                 : "Insufficient funds"}
+                         </div>
+                       </div>
+                       <span
+                         className={`rounded-full px-2 py-1 text-[0.62rem] font-semibold whitespace-nowrap ${
+                           tinSpendPlan.privacyLevel === "highest"
+                             ? "bg-[var(--accent-soft)] text-accent"
+                             : tinSpendPlan.privacyLevel === "reduced"
+                               ? "bg-[var(--warning)]/10 text-[var(--warning)]"
+                               : tinSpendPlan.privacyLevel === "blocked"
+                                 ? "bg-[var(--danger-soft)] text-[var(--danger)]"
+                                 : "bg-white/[0.04] text-text-soft"
+                         }`}
+                       >
+                         {tinSpendPlan.privacyLevel === "highest"
+                           ? "🔒 Highest"
+                           : tinSpendPlan.privacyLevel === "reduced"
+                             ? "⚠️ Mixed"
+                             : tinSpendPlan.privacyLevel === "blocked"
+                               ? "❌ Blocked"
+                               : "Visible"}
+                       </span>
+                     </div>
+
+                     <div className="border-t border-[var(--field-border)] pt-2 space-y-1.5 text-[0.75rem]">
+                       <div className="flex items-center justify-between gap-2">
+                         <span className="text-text-soft">From TIN</span>
+                         <span className="font-medium text-text">
+                           {formatPlanTokenAmount(
+                             tinSpendPlan.pruSpendBaseUnits,
+                             tinSpendPlan.tokenDecimals,
+                             tinSpendPlan.tokenSymbol,
+                           )}
+                         </span>
+                       </div>
+                       <div className="flex items-center justify-between gap-2">
+                         <span className="text-text-soft">From wallet</span>
+                         <span className="font-medium text-text">
+                           {formatPlanTokenAmount(
+                             tinSpendPlan.walletSpendBaseUnits,
+                             tinSpendPlan.tokenDecimals,
+                             tinSpendPlan.tokenSymbol,
+                           )}
+                         </span>
+                       </div>
+                       {tinSpendPlan.shortfallBaseUnits !== "0" ? (
+                         <div className="flex items-center justify-between gap-2 text-[var(--danger)]">
+                           <span>Shortfall</span>
+                           <span className="font-medium">
+                             {formatPlanTokenAmount(
+                               tinSpendPlan.shortfallBaseUnits,
+                               tinSpendPlan.tokenDecimals,
+                               tinSpendPlan.tokenSymbol,
+                             )}
+                           </span>
+                         </div>
+                       ) : null}
+                     </div>
+
+                     <p className="text-[0.7rem] leading-relaxed text-text-faint border-t border-[var(--field-border)] pt-2">
+                       {tinSpendPlan.requiresPruExecution &&
+                       tinSpendPlan.fundingMode === "pru_only"
+                         ? "TSN Cranker ZK-PRU execution. Your wallet doesn't sign."
+                         : tinSpendPlan.requiresPruExecution
+                           ? "TIN first, then wallet top-up in same TSN settlement."
+                           : tinSpendPlan.userMessage}
+                     </p>
+                   </div>
+                  ) : null}
+                  
+                  {/* Settlement Assessment */}
+                  {sendCostEstimate.settlementAssessment ? (
+                   <div
+                     className={`rounded-lg border px-3 py-2.5 text-[0.75rem] ${
+                       sendCostEstimate.settlementAssessment.likelihood ===
+                       "likely_claimable"
+                         ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-accent"
+                         : sendCostEstimate.settlementAssessment.likelihood ===
+                             "risky_claim_amount"
+                           ? "border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]"
+                           : "border-[var(--danger)]/30 bg-[var(--danger)]/8 text-[var(--danger)]"
+                     }`}
+                   >
+                     <div className="font-semibold">
+                       {sendCostEstimate.settlementAssessment.likelihood ===
+                       "likely_claimable"
+                         ? "✅ Likely claimable"
+                         : sendCostEstimate.settlementAssessment.likelihood ===
+                             "risky_claim_amount"
+                           ? "⚠️ Risky claim"
+                           : "❌ Non-claimable"}
+                     </div>
+                     <div className="mt-1 text-[0.7rem] opacity-90">
+                       {sendCostEstimate.settlementAssessment.reason} Min: {" "}
+                       {sendCostEstimate.settlementAssessment.minimumTransferUi.toFixed(
+                         4,
+                       )}{" "}
+                       {selectedToken.symbol}
+                     </div>
+                   </div>
+                  ) : null}
+                   </>
+              ) : null}
+            </div>
+
+            {/* ─────────── FIXED ACTION FOOTER ─────────── */}
+            <div className="shrink-0 border-t border-[var(--field-border)] px-4 md:px-6 pt-3 md:pt-4 pb-4 md:pb-5 flex gap-2.5">
+                 <button
+                   type="button"
+                   onClick={() => setConfirmOpen(false)}
+                   className="flex-1 rounded-[14px] md:rounded-[16px] px-4 py-2.5 md:py-3 font-medium text-[0.82rem] md:text-[0.87rem] tl-button-secondary cursor-pointer active:scale-[0.97] transition-transform"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => void handleConfirmSend()}
+                   disabled={confirmSendDisabled}
+                   className="flex-1 rounded-[14px] md:rounded-[16px] px-4 py-2.5 md:py-3 font-semibold text-[0.82rem] md:text-[0.87rem] text-[#04110a] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform whitespace-nowrap"
+                 >
+                   {busy
+                     ? "Queuing..."
+                     : estimateBusy
+                   ? "Calculating..."
+                   : tinSpendPlan?.fundingMode === "pru_only"
+                     ? "Send from TIN"
+                     : tinSpendPlan?.fundingMode === "mixed_pru_and_wallet"
+                       ? "Send with top-up"
+                       : "Confirm"}
+                 </button>
+           </div>
+         </div>
+       </div>
       ) : null}
 
       {/* ═══════════ COUNTRY SEARCH MODAL ═══════════ */}
@@ -2595,7 +2725,6 @@ export function SendExperience() {
           </div>
         </div>
       ) : null}
-
     </AppMobileShell>
   );
 }

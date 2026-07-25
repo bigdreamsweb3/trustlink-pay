@@ -72,7 +72,7 @@
     "whatsapp:tunnel": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows/start-whatsapp-tunnel.ps1",
     "// === Mempool Stack ===": "TSN work queue, epoch coordinator, and mempool explorer.",
     "mempool:dev": "node scripts/start-tsn-mempool-stack.mjs",
-    "mempool:backend:dev": "cd tsn-protocol/tsn-mempool-backend && set MEMPOOL_STORE=file&& set PYTHONUNBUFFERED=1&& python -u server.py",
+    "mempool:backend:dev": "cd tsn-protocol/tsn-mempool-backend python -u server.py",
     "mempool:frontend:dev": "cd tsn-protocol/tsn-mempool-frontend && node ../../frontend/node_modules/next/dist/bin/next dev -p 3002",
     "mempool:install": "node scripts/install-tsn-mempool-python.mjs",
     "mempool:status": "node scripts/tsn-mempool-status.mjs",

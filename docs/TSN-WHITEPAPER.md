@@ -135,13 +135,13 @@ The relationship is:
 
 TIP makes blockchain payments more understandable for users, while TSN handles the coordination and execution required to complete private, identity-based stablecoin payments.
 
-## PRUs: Privacy Receiving Units
+## ZK-PRU Protected Receiving Identities
 
-PRUs are the privacy execution endpoints used by TSN for all settlement.
+ZK-PRU protected receiving identities are the purpose-bound authorization endpoints used by TSN settlement.
 
-Every upgraded Transfer Identity has **30 PRUs by default**. Recipient payouts go to PRU routes instead of the owner wallet. The authenticated owner can load public PRU addresses for balance reads, but the frontend never receives PRU private keys or the TIN Master Seed.
+Every upgraded Transfer Identity can have a configured set of ZK-PRU handles. Recipient payouts go to authorized protected routes instead of the owner wallet. The authenticated owner can load public route metadata for balance reads, but the frontend never receives raw ZK-PRU private keys or decrypted master seed material.
 
-A PRU is a token-agnostic receiving unit that can hold any supported token. It is an execution endpoint for TSN settlement, not a user-facing wallet.
+A ZK-PRU handle is a token-agnostic, purpose-bound receiving authorization for supported TSN settlement assets. It is not a user-facing wallet.
 
 Each PRU carries:
 
@@ -151,9 +151,9 @@ Each PRU carries:
 - Encrypted metadata
 - A lifecycle state
 
-### PRU Lifecycle
+### ZK-PRU Lifecycle
 
-A PRU is in one of two states:
+A ZK-PRU handle is in one of two states:
 
 - **ACTIVE:** The PRU is ready to receive funds. Its token account exists on-chain.
 - **SWEPT:** Funds have been consolidated from this PRU back to the main TIN owner route.
@@ -170,19 +170,19 @@ Every TIN balance exists in one of three states:
 
 The displayed TIN balance is AVAILABLE plus SETTLED minus PENDING.
 
-## PRU SpendGuard: Separating Identity From Settlement Destination
+## ZK-PRU SpendGuard: Separating Identity From Settlement Destination
 
 The blockchain remains public. However, TSN separates:
 
 - **Who is paying** (sender identity via TIN)
 - **Who is receiving** (recipient identity via TIN)
-- **Where settlement occurs** (PRU routes)
+- **Where settlement occurs** (ZK-PRU routes)
 
 This creates a privacy-preserving architecture where payment identity and settlement infrastructure are not directly exposed as one public relationship.
 
-The PRU SpendGuard provides isolated spend authority for each PRU. The `spend_auth_hash` binds that PRU to the real TIN owner without storing the owner's wallet address in readable form.
+The ZK-PRU SpendGuard provides isolated spend authority for each ZK-PRU handle. The `spend_auth_hash` binds that handle to the real TIN owner without storing the owner's wallet address in readable form.
 
-The TIN Master Seed has zero mathematical relationship to wallet signatures. A malicious app can collect ordinary wallet signatures forever and still gains no path to the seed or PRU keys.
+The TIN Master Seed has zero mathematical relationship to wallet signatures. A malicious app can collect ordinary wallet signatures forever and still gains no path to the seed or ZK-PRU keys.
 
 ## TSN Settlement Architecture
 
@@ -208,7 +208,7 @@ TSN coordinates payment settlement through these steps:
 2. **Validation:** A Cranker validates the intent (signatures, amount, token, recipient route, nonce, expiry, epoch data)
 3. **Escrow:** Sender-side funds enter the TSN escrow path
 4. **Commitment:** A `PaymentCommitment` is opened and recorded
-5. **Payout:** Recipient payout happens from vault liquidity into the selected PRU route
+5. **Payout:** Recipient payout happens from vault liquidity into the selected ZK-PRU route
 6. **Aggregation:** The commitment is included in the epoch aggregate root
 7. **Settlement:** At epoch settlement, Crankers race to process the challenge
 8. **Recovery:** Valid work updates recovery or reimbursement state
@@ -257,7 +257,7 @@ Crankers can:
 - Execute payouts from liquidity vaults
 - Earn claim or reputation credit
 - Participate in epoch settlement races
-- Monitor PRU sweep signals
+- Monitor ZK-PRU sweep signals
 - Help recover epoch reservoirs
 - Verify and relay Transfer Identity creation/update intents
 
@@ -347,7 +347,7 @@ The system must never claim impossible privacy guarantees.
 
 - Derivation seeds
 - Private keys
-- Full PRU arrays
+- Full ZK-PRU arrays
 - Phone numbers
 - Raw wallet address relationships
 - Individual balance states
@@ -356,13 +356,13 @@ The system must never claim impossible privacy guarantees.
 ### What Is Publicly Visible
 
 - The one-way owner pubkey commitment
-- PRU metadata commitment
+- ZK-PRU metadata commitment
 - Replayable settlement commitments
 - Public mempool views use opaque TIN route identifiers instead of raw TIN numbers
 
 ### Privacy Boundary
 
-The frontend never derives PRUs and never receives the TIN Master Seed. The TrustLink backend does not broker PRU spend execution. The TSN mempool and Cranker network perform route verification and on-chain funding.
+The frontend never derives ZK-PRU handles and never receives the TIN Master Seed. The TrustLink backend does not broker ZK-PRU spend execution. The TSN mempool and Cranker network perform route verification and on-chain funding.
 
 ## Conclusion
 
@@ -383,8 +383,8 @@ The Transfer Settlement Network is designed to become an open settlement layer f
 | Document | Purpose |
 | --- | --- |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | How product, identity, privacy, settlement, and liquidity layers fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIP, TINs, PRUs, route authentication, and identity resolution |
-| [TSN.md](./TSN.md) | TSN payment execution, PRU-funded spending, and fee distribution |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md) | TIP, TINs, ZK-PRU handles, route authentication, and identity resolution |
+| [TSN.md](./TSN.md) | TSN payment execution, ZK-PRU-funded spending, and fee distribution |
 | [CRANKER.md](./CRANKER.md) | Settlement operator network and work types |
 | [LIQUIDITY.md](./LIQUIDITY.md) | Vault liquidity and epoch reservoirs |
 | [SECURITY.md](./SECURITY.md) | Security boundaries, privacy guarantees, and limits |

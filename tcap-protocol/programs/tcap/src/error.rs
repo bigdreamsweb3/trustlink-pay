@@ -40,4 +40,50 @@ pub enum TcapError {
     ReserveVaultUnavailable,
     #[msg("The source token account is not controlled by the depositor")]
     InvalidDepositSource,
+    #[msg("The funding settlement mode is unsupported")]
+    InvalidSettlementMode,
+    #[msg("The funding authorization has expired")]
+    FundingAuthorizationExpired,
+    #[msg("The funding domain separator is invalid")]
+    InvalidFundingDomain,
+    #[msg("The supplied funding commitment does not match the authorized fields")]
+    FundingCommitmentMismatch,
+    #[msg("The funding root relationship is invalid")]
+    InvalidFundingRoot,
+    #[msg("The reserve cannot cover its pending funding liabilities")]
+    InsolventPendingFunding,
+    #[msg("The public funding authorization nonce is stale or skipped")]
+    InvalidFundingAuthorizationNonce,
+    #[msg("The asset approval state does not permit this operation")]
+    AssetNotApproved,
+    #[msg("The asset operational state does not permit this operation")]
+    InvalidAssetOperationalStatus,
+    #[msg("A deprecated asset cannot be reactivated without a governed migration")]
+    DeprecatedAssetImmutable,
+    #[msg("The required reserve state has not been initialized")]
+    ReserveNotInitialized,
+    #[msg("The canonical reserve vault has not been initialized")]
+    VaultNotInitialized,
+    #[msg("The mint contains a Token-2022 extension that TCAP does not support")]
+    UnsupportedTokenExtension,
+    #[msg("The mint extension configuration no longer matches the governed policy")]
+    ExtensionPolicyMismatch,
+    #[msg("The mint decimals do not match the governed asset configuration")]
+    InvalidMintDecimals,
+    #[msg("The current TCAP deployment does not implement settlement for this asset")]
+    SettlementNotImplemented,
+    #[msg("The governed asset policy relationship is invalid")]
+    InvalidAssetPolicy,
+    #[msg("The mint authority does not match the governed configuration")]
+    InvalidMintAuthority,
+    #[msg("The mint freeze authority does not match the governed configuration")]
+    InvalidFreezeAuthority,
+    #[msg("This legacy asset instruction is disabled by the irreversible V2 migration gate")]
+    LegacyInstructionDisabled,
+    #[msg("The requested minimum instruction version is invalid or would move backwards")]
+    InvalidInstructionVersion,
+    #[msg("The token transfer did not produce the exact governed reserve-vault balance change")]
+    UnexpectedTokenBalanceDelta,
+    #[msg("The requested mint profile does not match the governed extension policy")]
+    InvalidMintProfile,
 }

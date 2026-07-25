@@ -2434,7 +2434,7 @@ export function SendExperience() {
                       <p className="mt-3 text-[0.72rem] leading-relaxed text-text-soft">
                         {tinSpendPlan.requiresPruExecution &&
                         tinSpendPlan.fundingMode === "pru_only"
-                          ? "This payment will be funded from TIN balance through TSN Cranker PRU-spend execution. Your owner wallet does not sign the on-chain funding transaction."
+                          ? "This payment will be funded from TIN balance through TSN Cranker ZK-PRU spend execution. Your owner wallet does not sign the on-chain funding transaction."
                           : tinSpendPlan.requiresPruExecution
                             ? "This payment will use TIN balance first, then top up the remaining amount from your main wallet inside the same TSN settlement."
                             : tinSpendPlan.userMessage}

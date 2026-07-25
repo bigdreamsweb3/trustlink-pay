@@ -1,0 +1,22 @@
+[package]
+name = "stable_tcap_faucet"
+version = "0.1.0"
+description = "Devnet-only Stable-TCAP public test-token faucet"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "stable_tcap_faucet"
+
+[features]
+default = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "=0.30.1", features = ["init-if-needed"] }
+anchor-spl = "=0.30.1"
+solana-program = "=1.18.26"

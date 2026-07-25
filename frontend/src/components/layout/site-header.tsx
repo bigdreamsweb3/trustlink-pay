@@ -7,8 +7,9 @@ import { useEffect, useState } from "react";
 import { TrustLinkMark } from "@/src/components/trustlink-mark";
 
 const navItems = [
+  { label: "Protocol", href: "/#blockchain-solution" },
   { label: "Identity", href: "/#identity" },
-  { label: "Verification", href: "/#verification" },
+  { label: "Attestations", href: "/#identity-attestations" },
   { label: "Settlement", href: "/#settlement" },
   { label: "Developers", href: "/#developers" },
 ] as const;

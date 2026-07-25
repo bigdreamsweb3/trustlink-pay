@@ -1,7 +1,7 @@
 [package]
 name = "tcap"
 version = "0.1.0"
-description = "Transfer Confidential Asset Protocol"
+description = "Token Control and Authorization Protocol"
 edition = "2021"
 
 [lib]

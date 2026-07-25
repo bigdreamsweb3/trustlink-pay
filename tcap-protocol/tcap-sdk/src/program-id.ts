@@ -5,6 +5,7 @@ export const TCAP_PDA_SEEDS = Object.freeze({
   globalConfig: "tcap:global-config:v1",
   assetRegistry: "tcap:asset-registry:v1",
   assetEntry: "tcap:asset-entry:v1",
+  assetState: "tcap:asset-state:v1",
   reserveState: "tcap:reserve-state:v1",
   reserveAuthority: "tcap:reserve-authority:v1",
   futureVault: "tcap:future-vault:v1",

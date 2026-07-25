@@ -23,7 +23,7 @@ export default function HomePage() {
     {
       question: "How does TrustLink Pay improve blockchain payments?",
       answer:
-        "TrustLink Pay combines Transfer Identity, PRU-routed balances, stablecoin payments, Cranker execution, and TSN settlement so blockchain payments can feel closer to everyday payment apps while remaining verifiable on Solana.",
+        "TrustLink Pay combines TIN payment identity, ZK-PRU protected receiving authorization, stablecoin payments, Cranker execution, and TSN settlement so blockchain payments can feel closer to everyday payment apps while remaining verifiable on Solana.",
     },
   ]);
 

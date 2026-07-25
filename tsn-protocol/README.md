@@ -17,7 +17,7 @@ flowchart TD
     A[TrustLink Labs<br/>Protocol Research & Infrastructure] --> B[Transfer Settlement Network — TSN]
     B --> C[TrustLink Pay<br/>User-Facing Payment Experience]
     B --> D[TIP<br/>Identity Layer]
-    B --> E[ZK-PRU<br/>Privacy Layer]
+    B --> E[ZK-PRU<br/>Privacy Authorization Layer]
     B --> F[TSN Protocol<br/>Settlement Coordination]
     B --> G[Cranker Network<br/>Settlement Operators]
     G --> H[Solana<br/>Blockchain Settlement Foundation]
@@ -28,7 +28,7 @@ flowchart TD
 | System           | Responsibility                                                                  |
 | ---------------- | ------------------------------------------------------------------------------- |
 | **TIP**          | Human-readable identity abstraction through Transfer Identity Numbers and Names |
-| **ZK-PRU**       | Private, deterministic receiving infrastructure and layered authorization       |
+| **ZK-PRU**       | Privacy authorization and purpose-bound protected receiving identity layer      |
 | **TSN Protocol** | Intent coordination, escrow, payouts, commitments, fees, and epoch accounting   |
 | **Crankers**     | Independent operators that verify and execute authorized TSN work               |
 | **Solana**       | Finality, transparent verification, immutable state, and on-chain programs      |
@@ -40,7 +40,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     I[Identity Layer<br/>TIP · TIN · Identity Registry] --> V[Verification Layer<br/>Intent Validation · Signatures · Authorization · Protocol Rules]
-    V --> P[Privacy Layer<br/>ZK-PRU · PRUs · Layered Authority · Delegated Capabilities]
+    V --> P[Privacy Layer<br/>ZK-PRU · Protected Receiving Routes · Layered Authority · Delegated Capabilities]
     P --> S[Settlement Layer<br/>TSN · Escrow · Vault Payouts · Epoch Accounting]
     S --> O[Operators<br/>Crankers · Trancap-Enabled Vaults · Liquidity Providers]
     O --> SOL[Solana]
@@ -71,7 +71,7 @@ Signed Payment Intent
   ↓
 TSN Verification and Settlement
   ↓
-Recipient PRU Route
+Recipient ZK-PRU Protected Route
 ```
 
 A TIN does not own funds by itself. Ownership remains secured through cryptographic wallet authorization and the ZK-PRU authority model.
@@ -80,15 +80,15 @@ A TIN does not own funds by itself. Ownership remains secured through cryptograp
 
 > People should be discoverable by the identities they choose to share, not by the identities others search for.
 
-TIP separates discoverable identity from settlement infrastructure. It does not need to expose a readable public map between a user's identity, wallet, PRUs, and financial activity.
+TIP separates discoverable identity from settlement infrastructure. It does not need to expose a readable public map between a user's identity, wallet, ZK-PRU handles, and financial activity.
 
 ---
 
-## Privacy Receiving Units (PRUs)
+## ZK-PRU Protected Receiving Identities
 
-**Privacy Receiving Units** are private, deterministic receiving containers used by TSN for identity-first, privacy-aware settlement.
+**ZK-PRU protected receiving identities** are private, deterministic receiving endpoints used by TSN for identity-first, privacy-aware settlement.
 
-Each Transfer Identity can generate multiple PRUs through the ZK-PRU architecture. A PRU is:
+Each Transfer Identity can generate multiple ZK-PRU handles through the ZK-PRU architecture. A ZK-PRU handle is:
 
 - User-owned
 - Token-agnostic
@@ -97,9 +97,9 @@ Each Transfer Identity can generate multiple PRUs through the ZK-PRU architectur
 - Separated from the user's public payment identity
 - Governed through scoped authorization rather than protocol custody
 
-A PRU is not restricted to one token. The same PRU can hold multiple stable assets accepted by the network.
+A ZK-PRU handle is not restricted to one token. The same handle can hold multiple stable assets accepted by the network.
 
-### PRU lifecycle
+### ZK-PRU lifecycle
 
 | State                     | Meaning                                                                           |
 | ------------------------- | --------------------------------------------------------------------------------- |
@@ -107,7 +107,7 @@ A PRU is not restricted to one token. The same PRU can hold multiple stable asse
 | **LOCKED**                | Funds are reserved for a pending operation and cannot be double-spent             |
 | **CONSOLIDATION_PENDING** | Fragmented balances are waiting for optimized reconciliation                      |
 | **SETTLED**               | The operation has completed and accounting is finalized                           |
-| **ARCHIVED**              | The PRU is no longer active but remains part of historical accounting             |
+| **ARCHIVED**              | The ZK-PRU handle is no longer active but remains part of historical accounting    |
 
 ZK-PRU repository: [Trustlink-Labs/ZK-PRU](https://github.com/Trustlink-Labs/ZK-PRU)
 
@@ -117,7 +117,7 @@ ZK-PRU repository: [Trustlink-Labs/ZK-PRU](https://github.com/Trustlink-Labs/ZK-
 
 ```mermaid
 flowchart TD
-    L0[Layer 0 — Master Seed<br/>Root Ownership & Recovery] --> L1[Layer 1 — PRU Authority<br/>Derivation & Ownership Control]
+    L0[Layer 0 — Master Seed<br/>Root Ownership & Recovery] --> L1[Layer 1 — ZK-PRU Authority<br/>Derivation & Ownership Control]
     L1 --> L2[Layer 2 — Delegated Capability Key<br/>Scoped, Limited Operations]
     L2 --> A[Settlement]
     L2 --> B[Consolidation]
@@ -175,7 +175,7 @@ flowchart TD
     A[Sender Authorization] --> B[Cranker Verification]
     B --> C[Sender-Side Escrow]
     C --> D[Payment Commitment]
-    D --> E[Vault Payout to Recipient PRU]
+    D --> E[Vault Payout to Recipient ZK-PRU Handle]
     E --> F[Epoch Aggregation]
     F --> G[Epoch Settlement]
     G --> H[Vault Reimbursement or Recovery]
@@ -189,7 +189,7 @@ A lightweight on-chain Payment Commitment records the minimum public information
 
 Crankers are independent TSN operators that validate signed intents, reject invalid or expired work, claim eligible settlement work, execute payouts through approved vaults, process TIN operations, and participate in epoch settlement and recovery.
 
-Crankers execute protocol work but do not own users' identities, master seeds, PRU keys, or funds.
+Crankers execute protocol work but do not own users' identities, master seeds, ZK-PRU keys, or funds.
 
 ---
 
@@ -226,7 +226,7 @@ flowchart TD
     A[Cranker Vault] --> B[Settlement Execution]
     A --> C[Optional Trancap Liquidity]
     B --> D[Recipient Payout]
-    C --> E[Fragmented PRU Optimization]
+    C --> E[Fragmented ZK-PRU Optimization]
     D --> F[Epoch Reimbursement]
     E --> F
 ```
@@ -318,7 +318,7 @@ The receiver stores requests immediately, Firebase maintains current operational
 
 ## Security Considerations
 
-The architecture must enforce domain-separated signatures, replay protection, expiry and epoch binding, stable-asset allowlists, capability limits, deterministic commitments, PRU double-spend prevention, vault-solvency checks, idempotent execution, and data minimization.
+The architecture must enforce domain-separated signatures, replay protection, expiry and epoch binding, stable-asset allowlists, capability limits, deterministic commitments, ZK-PRU double-spend prevention, vault-solvency checks, idempotent execution, and data minimization.
 
 ---
 

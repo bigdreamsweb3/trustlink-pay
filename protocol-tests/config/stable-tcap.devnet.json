@@ -1,0 +1,42 @@
+{
+  "status": "FAUCET_PROGRAM_DEPLOYED_MINT_NOT_CREATED",
+  "network": "devnet",
+  "name": "Stable-TCAP",
+  "symbol": "STCAP",
+  "decimals": 6,
+  "mint": "5N1ZUFJEnN5yhSwb8yezd8BwQozVNtydppCNroNwLP1E",
+  "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "faucetProgram": "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h",
+  "faucetProgramData": "4zNx8a3sSykoKRRLpi6h1YN1wDZniKp9y856d9qVDUBB",
+  "faucetUpgradeAuthority": "78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX",
+  "faucetDeploymentSlot": 478088497,
+  "faucetArtifactBytes": 329992,
+  "faucetArtifactSha256": "951d453748d64d8c7dbfe8c47e0974538defe6d29e235deda63fc680d71cb1d6",
+  "faucetStateSeed": "stable-tcap:faucet:v1",
+  "faucetMintAuthoritySeed": "stable-tcap:mint-authority:v1",
+  "walletStateSeed": "stable-tcap:wallet:v1",
+  "requestReceiptSeed": "stable-tcap:request:v1",
+  "minimumRequest": "0.01",
+  "maximumRequest": "1000000",
+  "mintProfile": "CONFIDENTIAL_TRANSFER_ENABLED",
+  "mintProfileLabel": "Confidential-transfer-enabled mint",
+  "mintProfileLocked": true,
+  "mintProfileTiming": "INITIALIZE_AT_MINT_CREATION",
+  "requiredMintExtensions": [
+    "ConfidentialTransferMint",
+    "MetadataPointer",
+    "TokenMetadata"
+  ],
+  "allowedMintExtensions": [
+    "ConfidentialTransferMint",
+    "MetadataPointer",
+    "TokenMetadata"
+  ],
+  "expectedMintAuthority": "8wQZDb7fUr1nnNNGx4iSd8f3c6Ne5FmNZvo3nb3WJsRd",
+  "expectedFreezeAuthority": null,
+  "confidentialAccountApprovalPolicy": "AUTO_APPROVE",
+  "confidentialAuditorPolicy": "NO_AUDITOR_KEY",
+  "confidentialTransfers": "REQUIRED_AT_MINT_CREATION_NOT_YET_CREATED",
+  "tcapRegistration": "NOT_REGISTERED",
+  "value": "NONE"
+}

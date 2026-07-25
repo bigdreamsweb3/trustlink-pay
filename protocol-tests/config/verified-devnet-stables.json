@@ -1,0 +1,20 @@
+{
+  "network": "devnet",
+  "tokens": {
+    "9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK": {
+      "symbol": "TLUSD",
+      "name": "TrustLink Test Stable Token",
+      "decimals": 2,
+      "verification": "TRUSTLINK_DEPLOYMENT_RECORD",
+      "verifiedStablecoin": true
+    },
+    "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU": {
+      "symbol": "USDC",
+      "name": "Circle USDC (Devnet)",
+      "decimals": 6,
+      "verification": "CIRCLE_OFFICIAL_DEVNET_ADDRESS",
+      "verificationUrl": "https://developers.circle.com/stablecoins/usdc-contract-addresses",
+      "verifiedStablecoin": true
+    }
+  }
+}

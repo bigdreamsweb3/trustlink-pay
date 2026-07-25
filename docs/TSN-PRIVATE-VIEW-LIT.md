@@ -7,7 +7,7 @@
 
 ## Purpose
 
-TSN Private View is the owner-device display boundary for information that a platform integrating TSN must not receive as ordinary application data. Examples include settlement authority, recovery authority, private transaction references, private receipt details, PRU routing material, and other fields classified as private by the Transfer Identity or settlement protocol.
+TSN Private View is the owner-device display boundary for information that a platform integrating TSN must not receive as ordinary application data. Examples include settlement authority, recovery authority, private transaction references, private receipt details, ZK-PRU routing material, and other fields classified as private by the Transfer Identity or settlement protocol.
 
 TrustLink Pay is one integrating application. It does not own the Private View renderer. The renderer is a portable web component shipped by `@trustlink/tsn-sdk`, so another wallet, payment application, agency product, or protocol interface can mount the same audited boundary without rewriting its authorization, decryption, rendering, or cleanup behavior.
 

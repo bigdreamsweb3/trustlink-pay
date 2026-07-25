@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::ID as SPL_TOKEN_PROGRAM_ID;
+use anchor_spl::token::{Token, ID as SPL_TOKEN_PROGRAM_ID};
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface};
 
+use crate::asset_governance::require_v1_asset_instruction_enabled;
 use crate::authority::*;
 use crate::error::TcapError;
 use crate::events::*;
@@ -165,6 +166,7 @@ pub struct RegisterAssetV1<'info> {
 }
 
 pub fn register_asset_v1(ctx: Context<RegisterAssetV1>, args: RegisterAssetArgsV1) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     require!(args.asset_commitment != [0; 32], TcapError::EmptyCommitment);
     require!(
         args.governance_approval != [0; 32],
@@ -242,6 +244,7 @@ pub fn update_asset_status_v1(
     status: TcapAssetStatusV1,
     risk: TcapRiskStateV1,
 ) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     let entry = &mut ctx.accounts.asset_entry;
     entry.status = status;
     entry.risk_state = risk;
@@ -283,6 +286,7 @@ pub struct InitializeReserveStateV1<'info> {
 }
 
 pub fn initialize_reserve_state_v1(ctx: Context<InitializeReserveStateV1>) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     require_keys_eq!(
         ctx.accounts.asset_entry.reserve_authority,
         ctx.accounts.reserve_authority.key(),
@@ -460,6 +464,7 @@ pub fn register_tsn_authorization_v1(
     ctx: Context<RegisterTsnAuthorizationV1>,
     authorization: TsnSettlementAuthorizationV1,
 ) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     require!(
         authorization.version == TSN_AUTHORIZATION_VERSION_V1,
         TcapError::InvalidPda
@@ -581,6 +586,7 @@ pub struct InitializeReserveVaultV1<'info> {
 }
 
 pub fn initialize_reserve_vault_v1(ctx: Context<InitializeReserveVaultV1>) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     require_keys_eq!(
         ctx.accounts.mint.key(),
         ctx.accounts.asset_entry.asset.mint,
@@ -634,6 +640,7 @@ pub fn set_asset_deposit_policy_v1(
     ctx: Context<SetAssetDepositPolicyV1>,
     enabled: bool,
 ) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     if enabled {
         require!(
             matches!(ctx.accounts.asset_entry.status, TcapAssetStatusV1::Active),
@@ -663,6 +670,7 @@ pub fn set_asset_deposit_policy_v1(
     );
     ctx.accounts.asset_entry.deposits_enabled = enabled;
     ctx.accounts.reserve_state.funding_enabled = enabled;
+    ctx.accounts.reserve_state.paused = !enabled;
     emit!(AssetDepositPolicyUpdatedV1 {
         asset_entry: ctx.accounts.asset_entry.key(),
         enabled
@@ -688,6 +696,7 @@ pub struct DepositAssetV1<'info> {
 }
 
 pub fn deposit_asset_v1(ctx: Context<DepositAssetV1>, amount: u64) -> Result<()> {
+    require_v1_asset_instruction_enabled(&ctx.accounts.config)?;
     require!(amount > 0, TcapError::InvalidDepositAmount);
     require_keys_eq!(
         ctx.accounts.mint.key(),

@@ -48,7 +48,7 @@ const roles = [
   {
     title: "Recipients",
     description:
-      "Receive funds through TIN and PRU-based routing without exposing wallet addresses.",
+      "Receive funds through TIN and ZK-PRU protected routing without exposing wallet addresses.",
     icon: Network,
   },
   {

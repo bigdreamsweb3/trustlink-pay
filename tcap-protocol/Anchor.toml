@@ -7,16 +7,19 @@ skip-lint = false
 
 [programs.localnet]
 tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+stable_tcap_faucet = "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
 
 [programs.devnet]
 tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+stable_tcap_faucet = "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
 
 [provider]
-cluster = "Localnet"
+cluster = "https://devnet.helius-rpc.com/?api-key=bbd5bcd1-ee1b-419e-a226-00455f2e295d"
 wallet = "~/.config/solana/id.json"
 
 [workspace]
-members = ["programs/tcap"]
+members = ["programs/tcap", "programs/stable_tcap_faucet"]
 
-# This development ID has no committed deployment keypair. Generate the TCAP
-# program keypair and synchronize declare_id!/Anchor.toml before any deployment.
+# Deployment keypairs are intentionally untracked. Before `anchor deploy`, put
+# the matching program keypair in `target/deploy/<program>-keypair.json` and
+# verify its public key against the corresponding entry above.

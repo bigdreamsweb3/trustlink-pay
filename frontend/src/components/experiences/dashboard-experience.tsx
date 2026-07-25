@@ -375,7 +375,7 @@ export function DashboardExperience() {
           setTinActivePruCount(result.activePruCount);
           setTinFundedPruCount(result.nonZeroPruCount);
           setTinBalanceStatus(
-            `${result.nonZeroPruCount} funded PRU${result.nonZeroPruCount === 1 ? "" : "s"}`,
+            `${result.nonZeroPruCount} funded ZK-PRU handle${result.nonZeroPruCount === 1 ? "" : "s"}`,
           );
         }
       } catch (error) {
@@ -386,7 +386,7 @@ export function DashboardExperience() {
           setTinBalanceStatus(
             error instanceof Error
               ? error.message
-              : "TIN PRU route unavailable",
+              : "TIN ZK-PRU route unavailable",
           );
         }
       } finally {
@@ -721,8 +721,8 @@ export function DashboardExperience() {
                 </div>
                 <div className="mt-0.5 whitespace-nowrap text-[0.5rem] font-semibold text-[var(--accent)]">
                   {tinTokenLoading
-                    ? "Loading PRUs..."
-                    : `${tinFundedPruCount} funded PRU${tinFundedPruCount === 1 ? "" : "s"}`}
+                    ? "Loading ZK-PRU handles..."
+                    : `${tinFundedPruCount} funded ZK-PRU handle${tinFundedPruCount === 1 ? "" : "s"}`}
                 </div>
               </div>
               {/* */}
@@ -1057,7 +1057,7 @@ export function DashboardExperience() {
                     <div>
                       <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
                         <span>TIN balance</span>
-                        <span>{tinFundedPruCount} funded PRU{tinFundedPruCount === 1 ? "" : "s"}</span>
+                        <span>{tinFundedPruCount} funded ZK-PRU handle{tinFundedPruCount === 1 ? "" : "s"}</span>
                       </div>
                       {tinTokens.slice(0, 5).map((token) => (
                         <div
@@ -1235,8 +1235,8 @@ export function DashboardExperience() {
                   sub:
                     tinBalanceStatus ??
                     (tinTokenLoading
-                      ? "Loading your PRU balances..."
-                      : `${tinFundedPruCount} funded PRU${tinFundedPruCount === 1 ? "" : "s"}`),
+                      ? "Loading your ZK-PRU balances..."
+                      : `${tinFundedPruCount} funded ZK-PRU handle${tinFundedPruCount === 1 ? "" : "s"}`),
                 },
                 {
                   label: "Pending settlement",

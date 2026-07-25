@@ -13,8 +13,8 @@ TrustLink Pay is made of:
 1. **TrustLink Pay app**: user experience, payment records, and identity display
 2. **TIP**: Transfer Identity Protocol for TINs, phone routing, trust context, attestations, and credentials
 3. **TSN**: Transfer Settlement Network for intents, epochs, Crankers, fees, authorization, and receipts
-4. **TCAP**: Transfer Confidential Asset Protocol for confidential asset representation and reserve metadata
-5. **ZK-PRU**: separate zero-knowledge privacy technology under development
+4. **TCAP**: Token Control and Authorization Protocol for confidential asset representation and reserve metadata
+5. **ZK-PRU**: TSN's privacy authorization and purpose-bound protected receiving infrastructure
 
 ## Why This Structure Exists
 
@@ -53,13 +53,13 @@ The Transfer Identity registry can store:
 - encrypted recovery material and route commitments
 - SHA-256 owner pubkey commitments instead of readable owner wallet addresses
 
-### Privacy Layer: PRUs
+### ZK-PRU Privacy Authorization
 
-PRUs are Privacy Receiving Units.
+ZK-PRU handles are purpose-bound protected receiving identities authorized by the user's device.
 
-Every upgraded Transfer Identity has 30 PRUs by default. Recipient payouts go to PRU routes instead of the owner wallet. The authenticated owner can load public PRU addresses for balance reads, but the frontend never receives PRU private keys or the TIN Master Seed.
+Every upgraded Transfer Identity can have a configured set of ZK-PRU handles. Recipient payouts go to authorized protected routes instead of the owner wallet. The authenticated owner can load public route metadata for balance reads, but the frontend never receives raw ZK-PRU private keys or decrypted master seed material.
 
-TIN balance is the sum of supported token balances across those PRUs. In the send flow, TrustLink Pay can use PRU funds first and then add connected-wallet top-up only when the user explicitly authorizes that mixed path.
+TIN balance is the sum of supported token balances across those authorized routes. In the send flow, TrustLink Pay can use ZK-PRU-authorized funds first and then add connected-wallet top-up only when the user explicitly authorizes that mixed path.
 
 ### Settlement Layer: TSN
 
@@ -80,11 +80,28 @@ They:
 
 ### Confidential Asset Layer: TCAP
 
-TCAP is an independent program boundary for confidential asset representation, approved-asset metadata, reserve state, commitments, nullifiers, and confidential ownership roots. Its current implementation is initialization-only; deposits, transfers, redemption, and proof acceptance are not production capabilities.
+TCAP is an independent program boundary for approved-asset metadata, canonical
+reserve state, funding claims, future confidential asset representation,
+commitments, nullifiers, and confidential ownership roots. The currently
+implemented deposit paths are development-only: Phase 1 establishes reserve
+backing, while Phase 2 can create a pending Funding Claim alongside a reserve
+deposit. A Funding Claim is not a Confidential Asset Container and not a TSN
+Payment Intent. It cannot credit ownership, transfer confidential value,
+release the reserve, accept proofs, or complete settlement.
+
+```text
+New tokens: wallet -> TCAP reserve -> Funding Claim -> future container or exit
+Existing confidential value: future container -> TSN intent -> future TCAP
+atomic ownership transition -> future recipient container or public exit
+```
+
+TCAP transfers, proof acceptance, nullifier consumption, confidential
+ownership, public exits, and redemption remain unavailable and not production
+capabilities.
 
 ### ZK-PRU
 
-ZK-PRU is a separate zero-knowledge privacy technology under development. It is not a TCAP submodule and only verified capabilities should be presented as available.
+ZK-PRU is a TSN component, not a separate product or TCAP submodule. It defines device-controlled purpose-bound authorization and protected receiving identity. Source, SDK, and circuit presence must still be distinguished from deployed verifier evidence.
 
 ### Epoch Accounting
 
@@ -94,7 +111,7 @@ Each epoch records accepted intents, eligibility, authorization, fees, and settl
 
 ## Example Flow
 
-1. Recipient has a Transfer Identity with a 10-digit TIN and finalized PRU route.
+1. Recipient has a Transfer Identity with a 10-digit TIN and finalized ZK-PRU route authorization.
 2. Sender enters that TIN.
 3. TrustLink resolves display-safe identity and verification context.
 4. Sender approves a canonical TSN payment message.
@@ -109,7 +126,7 @@ Each epoch records accepted intents, eligibility, authorization, fees, and settl
 
 - Payment identity is a TIN, not a raw wallet address.
 - TIP stores an owner pubkey hash commitment, not a readable owner wallet authority.
-- The frontend never derives PRUs and never receives the TIN Master Seed.
+- The frontend never derives raw ZK-PRU root keys and never receives decrypted master seed material.
 - Public records use commitments and roots where possible.
 - Crankers must validate structure, signatures, routing, and timing before acting.
 - Cranker checks are never consensus security. TCAP atomically enforces the

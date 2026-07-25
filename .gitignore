@@ -97,6 +97,11 @@ tsn-protocol-extraction/
 tcap-protocol/tcap-program-keys/
 **/tcap-program-keypair.json
 
+# Stable-TCAP Devnet faucet deployment keys (local secrets)
+tcap-protocol/stable-tcap-program-keys/
+**/stable-tcap-faucet-keypair.json
+**/stable-tcap-mint-keypair.json
+
 # Windows downloaded-file metadata
 *:Zone.Identifier
 *Zone.Identifier
@@ -123,3 +128,10 @@ tools/
 /tools/build_multipage_blogger_publication.py
 /tools/optimize_blogger_publication.py
 /tools/validate_blogger_publication.py
+
+
+protocol-test-runs/
+protocol-tests/
+
+.env.local
+.env

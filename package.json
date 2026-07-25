@@ -49,6 +49,10 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "trustlink:test:full": "node --env-file-if-exists=.env --env-file-if-exists=.env.local protocol-tests/ui/server.mjs",
+    "trustlink:test:lab": "node --env-file-if-exists=.env --env-file-if-exists=.env.local protocol-tests/ui/server.mjs",
+    "trustlink:test:cli": "node protocol-tests/orchestrator/run-full-protocol.mjs",
+    "trustlink:test:ask": "node protocol-tests/orchestrator/ask-latest.mjs",
     "// === Core Development ===": "Start here. Daily local commands for the main app and TSN stack.",
     "help": "echo \"Common commands:\" && echo \"npm run dev:full              - backend + frontend\" && echo \"npm run dev:all               - backend + frontend + mempool\" && echo \"npm run whatsapp:tunnel       - expose the local WhatsApp webhook\" && echo \"npm run mempool:dev           - TSN mempool API + explorer\" && echo \"npm run rpc:gateway:dev       - start the TSN RPC gateway\" && echo \"npm run rpc:gateway:inspect   - inspect gateway upstream order\" && echo \"npm run tsn:cranker:start     - start real settlement operator\" && echo \"npm run rpc:inspect           - show active RPC order\" && echo \"npm run deploy:doctor         - check deploy toolchain\"",
     "dev:full": "npx concurrently -n backend,frontend -c cyan,green \"npm run backend:dev\" \"npm run frontend:dev\"",
@@ -115,6 +119,10 @@
     "tcap:sdk:build": "npm --prefix tcap-protocol/tcap-sdk run build",
     "tcap:sdk:test": "npm --prefix tcap-protocol/tcap-sdk test",
     "tcap:program:check": "cargo check --manifest-path tcap-protocol/Cargo.toml -p tcap",
+    "tcap:asset-admin": "node tcap-protocol/scripts/tcap-asset-admin.mjs",
+    "stable-tcap:addresses": "node tcap-protocol/scripts/stable-tcap-addresses.mjs",
+    "tcap:deposit:test:devnet": "node --test --test-concurrency=1 tcap-protocol/tests/deposit-phase1-devnet.test.mjs",
+    "tcap:funding:test:devnet": "node tcap-protocol/scripts/devnet-funding-claim.mjs",
     "attacker:validate-case": "npm --prefix attacker run validate-case",
     "attacker:monitor": "npm --prefix attacker run monitor",
     "tip:sdk:build": "npm --prefix transfer-identity-protocol/tip-sdk run build",

@@ -10,6 +10,21 @@ export type AssetAdmissionStatus = "proposed" | "active" | "deposits-paused" | "
 export type TransferFeePolicy = "reject" | "exact-net-received";
 export type AuthorityRisk = "none-declared" | "freeze" | "clawback" | "freeze-and-clawback";
 
+export interface TcapMintBindingV1 {
+  tokenProgram: SolanaAddress;
+  mint: SolanaAddress;
+}
+
+export interface TcapAssetStateV1 {
+  version: 1;
+  config: SolanaAddress;
+  asset: TcapMintBindingV1;
+  reserveState: SolanaAddress;
+  futureVault: SolanaAddress;
+  reserveAuthority: SolanaAddress;
+  decimals: number;
+}
+
 export interface TcapAssetRegistryV1 {
   version: 1;
   authority: SolanaAddress;
@@ -36,7 +51,7 @@ export interface TcapAssetEntryV1 {
 export interface TcapReserveStateV1 {
   version: 1;
   asset: TcapAssetId;
-  assetEntry: SolanaAddress;
+  assetState: SolanaAddress;
   vault: SolanaAddress;
   authority: SolanaAddress;
   actualReserveAssets: bigint;

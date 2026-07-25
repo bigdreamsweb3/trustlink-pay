@@ -101,16 +101,16 @@ TrustLink Pay makes payments invisible.
 - [Cranker](./CRANKER.md)
 - [Liquidity](./LIQUIDITY.md)
 
-## PRU Security Hardening Layer (2026-06-26)
+## ZK-PRU Security Hardening Layer (2026-06-26)
 
 ### Summary
 
-We treat PRU spend authority as a five-layer TrustLink-only control plane. The TIN Master Seed is CSPRNG material generated inside the TSN mempool and Cranker layer, encrypted for storage, and never derived from the main wallet key. PRU signing keys are re-derived inside the SDK only long enough to sign a TSN intent, then their secret bytes are overwritten. Every intent is bound to the real TSN vault domain, scoped to one amount and destination hash, and rejected by Crankers if the TIN, nonce, expiry, active guard, or main-wallet spend proof fails.
+We treat ZK-PRU spend authority as a five-layer TrustLink-only control plane. The TIN Master Seed is CSPRNG material generated inside the TSN mempool and Cranker layer, encrypted for storage, and never derived from the main wallet key. ZK-PRU signing keys are re-derived inside the SDK only long enough to sign a TSN intent, then their secret bytes are overwritten. Every intent is bound to the real TSN vault domain, scoped to one amount and destination hash, and rejected by Crankers if the TIN, nonce, expiry, active guard, or main-wallet spend proof fails.
 
 ### Implementation notes
 
 - TypeScript SDK: `generateTinMasterSeed()` uses `crypto.getRandomValues()` when available and falls back to Node CSPRNG for tests and daemon tooling. `encryptTinMasterSeed()` stores the random seed with AES-256-GCM using `SHA256(main_wallet_signature + PIN)` as wrapping key material; this key encrypts the seed but never creates it.
-- TypeScript SDK: `createScopedPruIntent()` computes `tsn_domain = SHA256("TSN_TRUSTLINK_INTENT_V1" + tsn_vault_pubkey)`, derives a PRU signing key from the random TIN Master Seed for the chosen PRU index, signs the canonical intent message, and wipes `secretKey` immediately in a `finally` block.
+- TypeScript SDK: `createScopedPruIntent()` computes `tsn_domain = SHA256("TSN_TRUSTLINK_INTENT_V1" + tsn_vault_pubkey)`, derives a ZK-PRU signing key from the random TIN Master Seed for the chosen PRU index, signs the canonical intent message, and wipes `secretKey` immediately in a `finally` block.
 - Python / Cranker parity: Cranker daemons must mirror `validatePruSpendForCranker()` order exactly before any TSN settlement execution: domain, main-wallet spend proof, TIN match, intent replay, nonce replay, expiry, active guard.
 - On-chain protocol: `PruSpendGuard` stores `tin`, `pru_index`, `spend_auth_hash`, `nonce_bitmask`, `active`, and `bump` at the PDA seeds `["pru_spend_guard", tin.to_le_bytes(), pru_index.to_le_bytes()]`.
 
@@ -146,12 +146,12 @@ tsn-cranker validate-pru-intent --vault <REAL_TSN_VAULT> --intent <INTENT_JSON> 
 
 ### Security & privacy considerations
 
-- Hidden: TIN Master Seed, PRU private keys, recipient TIN preimage, raw spend key material, and decrypted seed bytes after use.
-- Exposed: the scoped intent fields required for Cranker verification, the TSN vault domain hash, the PRU index, and replay-control metadata.
+- Hidden: TIN Master Seed, ZK-PRU private keys, recipient TIN preimage, raw spend key material, and decrypted seed bytes after use.
+- Exposed: the scoped intent fields required for Cranker verification, the TSN vault domain hash, the ZK-PRU index, and replay-control metadata.
 - Fake dApp intents fail at the first Cranker check because a fake vault computes a different `tsn_domain`.
-- Captured signatures cannot change amount, recipient, TIN, PRU index, nonce, expiry, or intent id because each field is inside the signed canonical message.
-- Runtime key extraction has a narrow window: the SDK does not cache PRU private keys and overwrites the secret key after signing.
+- Captured signatures cannot change amount, recipient, TIN, ZK-PRU index, nonce, expiry, or intent id because each field is inside the signed canonical message.
+- Runtime key extraction has a narrow window: the SDK does not cache ZK-PRU private keys and overwrites the secret key after signing.
 
 ### Testing notes
 
-Run `npm --prefix tsn-protocol/tsn-sdk test` to exercise CSPRNG seed generation, TSN domain binding, main-wallet proof gating, TIN mismatch rejection, intent replay rejection, nonce replay rejection, 60-second expiry, and inactive PRU rejection.
+Run `npm --prefix tsn-protocol/tsn-sdk test` to exercise CSPRNG seed generation, TSN domain binding, main-wallet proof gating, TIN mismatch rejection, intent replay rejection, nonce replay rejection, 60-second expiry, and inactive ZK-PRU rejection.

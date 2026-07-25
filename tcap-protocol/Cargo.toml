@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/tcap"]
+members = ["programs/tcap", "programs/stable_tcap_faucet"]
 resolver = "2"
 
 [profile.release]

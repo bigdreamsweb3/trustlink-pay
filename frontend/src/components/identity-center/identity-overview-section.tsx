@@ -296,7 +296,7 @@ export function IdentityOverviewSection({
                   </p>
                   <p className="mt-1 text-[0.74rem] leading-6 text-[var(--text-soft)]">
                     {resolvedTin.upgradeReason ??
-                      "This TIN still uses the old layout. Upgrade it now so the network can attach the 30-PRU settlement commitment."}
+                      "This TIN still uses the old layout. Upgrade it now so the network can attach the 30-ZK-PRU settlement commitment."}
                   </p>
                   <button
                     type="button"

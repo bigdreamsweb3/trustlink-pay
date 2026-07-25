@@ -38,8 +38,8 @@ const heroStats = [
   {
     icon: Network,
     label: "Privacy Layer",
-    value: "PRU",
-    note: "Privacy Receiving Units for each Transfer Identity",
+    value: "ZK-PRU",
+    note: "Purpose-bound protected receiving identities for each Transfer Identity",
   },
   {
     icon: Clock,
@@ -67,7 +67,7 @@ const transparentFeesRows = [
 ];
 
 const codeLines = [
-  { token: "keyword", text: "const" },
+  { token: "keyword", text: "const " },
   { token: "variable", text: "recipient" },
   { token: "operator", text: " = " },
   { token: "function", text: "await tsn.identity.resolve" },
@@ -83,7 +83,7 @@ const codeLines = [
   { token: "string", text: '"tin"' },
   { token: "punctuation", text: "\n  });" },
   { token: "break", text: "\n\n" },
-  { token: "keyword", text: "const" },
+  { token: "keyword", text: "const " },
   { token: "variable", text: "quote" },
   { token: "operator", text: " = " },
   { token: "function", text: "await tsn.payments.quote" },
@@ -434,7 +434,7 @@ export function LandingPage() {
             <p className="tl-body-lg mt-4 text-text-soft">
               TrustLink Pay is the Web3 payment system users interact with. TSN
               is the settlement protocol that moves payment work through
-              Crankers, PRU routes, and programmable blockchain settlement on
+              Crankers, ZK-PRU routes, and programmable blockchain settlement on
               Solana.
             </p>
           </div>
@@ -447,7 +447,7 @@ export function LandingPage() {
               },
               {
                 title: "Identity-First Blockchain Solution",
-                desc: "The Transfer Identity Protocol connects payment identity, verification context, and PRU route commitments.",
+                desc: "The Transfer Identity Protocol connects payment identity, verification context, and ZK-PRU route commitments.",
               },
               {
                 title: "Private Blockchain Settlement",
@@ -490,8 +490,7 @@ export function LandingPage() {
               Instead of copying complex wallet addresses, users pay a{" "}
               <strong>phone number</strong> or a permanent{" "}
               <strong>Transfer Identity</strong> with a 10-digit TIN. Each
-              upgraded Transfer Identity receives 30 Privacy Receiving Units
-              (PRUs), so received funds land in private payment routes that are
+              upgraded Transfer Identity receives 30 ZK-PRU handles, so received funds land in private payment routes that are
               still controlled by the user's wallet proof.
             </p>
           </div>
@@ -535,8 +534,8 @@ export function LandingPage() {
               },
               {
                 icon: Network,
-                title: "PRU-Routed Balances",
-                desc: "Each upgraded Transfer Identity has 30 Privacy Receiving Units. The app shows them as one TIN balance while TSN routes payments into PRUs instead of a public owner wallet.",
+                title: "ZK-PRU-Routed Balances",
+                desc: "Each upgraded Transfer Identity has 30 ZK-PRU handles. The app shows them as one TIN balance while TSN routes payments into ZK-PRU handles instead of a public owner wallet.",
               },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="tl-panel rounded-[22px] px-4 py-4">
@@ -553,10 +552,10 @@ export function LandingPage() {
         {/* Identity Resolution Flow */}
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           <div className="tl-field rounded-[14px] p-4">
-            <h3 className="tl-h3 mb-4">Identity And PRU Resolution</h3>
+            <h3 className="tl-h3 mb-4">Identity And ZK-PRU Resolution</h3>
             <p className="tl-body text-text-soft">
               The Transfer Identity Protocol maintains a secure mapping between
-              human-readable identifiers, TINs, and PRU settlement routes. When
+              human-readable identifiers, TINs, and ZK-PRU settlement routes. When
               you initiate a payment, the system resolves the recipient's
               identifier without exposing raw wallet addresses.
             </p>
@@ -579,7 +578,7 @@ export function LandingPage() {
                 <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 </div>
-                <span className="text-text-soft">PRU route authentication</span>
+                <span className="text-text-soft">ZK-PRU route authentication</span>
               </div>
             </div>
           </div>

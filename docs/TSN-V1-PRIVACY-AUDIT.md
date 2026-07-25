@@ -575,3 +575,6 @@ export async function getEncryptedReceipt(params: {
 - [TSN.md](./TSN.md)
 - [TSN-COMMITMENT-SETTLEMENT.md](./TSN-COMMITMENT-SETTLEMENT.md)
 - [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)
+# Historical audit note: this document predates the ZK-PRU terminology
+# alignment pass. References to PRU below are preserved only as migration-era
+# terminology and audit evidence.

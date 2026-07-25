@@ -62,7 +62,7 @@ export function getSoftwareApplicationSchema() {
       "Identity-first blockchain payments",
       "Phone number and TIN payments",
       "Transfer Identity resolution",
-      "PRU-routed payment balances",
+      "ZK-PRU protected receiving identities",
       "TSN private settlement",
       "Stablecoin payment support",
       "Developer payment APIs",

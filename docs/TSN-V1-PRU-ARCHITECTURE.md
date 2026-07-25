@@ -1,5 +1,9 @@
 # TSN V1 — Deterministic PRU Privacy Settlement Network
 
+> Historical architecture record. In current terminology, these receiving
+> units are described as ZK-PRU handles. The PRU wording below is retained to
+> preserve the original migration notes and evidence trail.
+
 Version: current TSN V1 architecture
 
 ## Summary

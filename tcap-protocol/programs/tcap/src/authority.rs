@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 pub const TCAP_GLOBAL_CONFIG_SEED: &[u8] = b"tcap:global-config:v1";
 pub const TCAP_ASSET_REGISTRY_SEED: &[u8] = b"tcap:asset-registry:v1";
 pub const TCAP_ASSET_ENTRY_SEED: &[u8] = b"tcap:asset-entry:v1";
+pub const TCAP_ASSET_STATE_SEED: &[u8] = b"tcap:asset-state:v1";
 pub const TCAP_RESERVE_STATE_SEED: &[u8] = b"tcap:reserve-state:v1";
 pub const TCAP_RESERVE_AUTHORITY_SEED: &[u8] = b"tcap:reserve-authority:v1";
 pub const TCAP_FUTURE_VAULT_SEED: &[u8] = b"tcap:future-vault:v1";
@@ -11,21 +12,69 @@ pub const TCAP_NULLIFIER_SHARD_SEED: &[u8] = b"tcap:nullifier-shard:v1";
 pub const TCAP_NULLIFIER_SEED: &[u8] = b"tcap:nullifier:v1";
 pub const TCAP_COMMITMENT_ROOT_SEED: &[u8] = b"tcap:commitment-root:v1";
 pub const TCAP_TSN_AUTH_RECEIPT_SEED: &[u8] = b"tcap:tsn-auth-receipt:v1";
+pub const TCAP_FUNDING_ROOT_SEED: &[u8] = b"tcap:funding-root:v1";
+pub const TCAP_FUNDING_CLAIM_SEED: &[u8] = b"tcap:funding-claim:v1";
+pub const TCAP_FUNDING_NONCE_SEED: &[u8] = b"tcap:funding-nonce:v1";
+pub const TCAP_ASSET_GOVERNANCE_POLICY_SEED: &[u8] = b"tcap:asset-governance:v2";
+pub const TCAP_ASSET_EXTENSION_POLICY_SEED: &[u8] = b"tcap:extension-policy:v2";
 pub const TSN_TCAP_AUTHORITY_SEED: &[u8] = b"tsn:tcap-authorization:v1";
 
-pub fn derive_reserve_authority(asset_entry: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_reserve_authority(asset_state: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[TCAP_RESERVE_AUTHORITY_SEED, asset_entry.as_ref()],
+        &[TCAP_RESERVE_AUTHORITY_SEED, asset_state.as_ref()],
         &crate::ID,
     )
 }
 
-pub fn derive_reserve_state(asset_entry: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[TCAP_RESERVE_STATE_SEED, asset_entry.as_ref()], &crate::ID)
+pub fn derive_reserve_state(asset_state: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_RESERVE_STATE_SEED, asset_state.as_ref()], &crate::ID)
 }
 
-pub fn derive_future_vault(asset_entry: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[TCAP_FUTURE_VAULT_SEED, asset_entry.as_ref()], &crate::ID)
+pub fn derive_future_vault(asset_state: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_FUTURE_VAULT_SEED, asset_state.as_ref()], &crate::ID)
+}
+
+pub fn derive_funding_root(asset_state: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_FUNDING_ROOT_SEED, asset_state.as_ref()], &crate::ID)
+}
+
+pub fn derive_funding_claim(asset_state: &Pubkey, funding_identifier: &[u8; 32]) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            TCAP_FUNDING_CLAIM_SEED,
+            asset_state.as_ref(),
+            funding_identifier,
+        ],
+        &crate::ID,
+    )
+}
+
+pub fn derive_funding_authorization_nonce(
+    asset_state: &Pubkey,
+    depositor: &Pubkey,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            TCAP_FUNDING_NONCE_SEED,
+            asset_state.as_ref(),
+            depositor.as_ref(),
+        ],
+        &crate::ID,
+    )
+}
+
+pub fn derive_asset_governance_policy(asset_state: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[TCAP_ASSET_GOVERNANCE_POLICY_SEED, asset_state.as_ref()],
+        &crate::ID,
+    )
+}
+
+pub fn derive_asset_extension_policy(asset_state: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[TCAP_ASSET_EXTENSION_POLICY_SEED, asset_state.as_ref()],
+        &crate::ID,
+    )
 }
 
 pub fn derive_tsn_authorization_signer(
@@ -63,9 +112,55 @@ mod tests {
         let state = derive_reserve_state(&asset_entry).0;
         let authority = derive_reserve_authority(&asset_entry).0;
         let vault = derive_future_vault(&asset_entry).0;
+        let funding_root = derive_funding_root(&asset_entry).0;
         assert_ne!(state, authority);
         assert_ne!(state, vault);
         assert_ne!(authority, vault);
+        assert_ne!(funding_root, state);
+        assert_ne!(funding_root, authority);
+        assert_ne!(funding_root, vault);
+    }
+
+    #[test]
+    fn funding_claim_and_nonce_domains_are_distinct() {
+        let asset_entry = Pubkey::new_unique();
+        let depositor = Pubkey::new_unique();
+        let value = [9_u8; 32];
+        assert_ne!(
+            derive_funding_claim(&asset_entry, &value).0,
+            derive_funding_authorization_nonce(&asset_entry, &depositor).0
+        );
+    }
+
+    #[test]
+    fn governed_asset_policy_domains_are_distinct() {
+        let asset_entry = Pubkey::new_unique();
+        assert_ne!(
+            derive_asset_governance_policy(&asset_entry).0,
+            derive_asset_extension_policy(&asset_entry).0
+        );
+        assert_ne!(
+            derive_asset_governance_policy(&asset_entry).0,
+            derive_reserve_state(&asset_entry).0
+        );
+    }
+
+    #[test]
+    fn funding_nonce_is_scoped_by_asset_and_depositor() {
+        let asset_a = Pubkey::new_unique();
+        let asset_b = Pubkey::new_unique();
+        let depositor_a = Pubkey::new_unique();
+        let depositor_b = Pubkey::new_unique();
+
+        let nonce_a = derive_funding_authorization_nonce(&asset_a, &depositor_a).0;
+        assert_ne!(
+            nonce_a,
+            derive_funding_authorization_nonce(&asset_a, &depositor_b).0
+        );
+        assert_ne!(
+            nonce_a,
+            derive_funding_authorization_nonce(&asset_b, &depositor_a).0
+        );
     }
 
     #[test]

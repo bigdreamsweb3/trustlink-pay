@@ -6,7 +6,7 @@ The short version: users do not submit registry transactions directly. They sign
 
 ## What This Is
 
-The Transfer Identity registry stores a user's TIN, public-safe profile fields, encrypted identity data, and PRU commitment hashes.
+The Transfer Identity registry stores a user's TIN, public-safe profile fields, encrypted identity data, and ZK-PRU commitment hashes.
 
 TSN is the control plane for Transfer Identity mutations. A TIN creation or update first becomes a TSN mempool operation. Only after verification and fee commitment does a Cranker submit the registry mutation on-chain.
 
@@ -49,7 +49,7 @@ The additional assignment states are reserved for stricter multi-operator schedu
 1. The frontend collects the public form fields the user wants to submit.
 2. The owner wallet signs a plain owner-intent message buffer for the TIN operation. The frontend does not ask the wallet to sign a Solana transaction here.
 3. The frontend posts the signed intent directly to `POST /tin-operations` on the TSN mempool backend.
-4. The TSN mempool backend assembles the encrypted TIN Master Seed payload, private metadata commitment, and fixed 30-PRU configuration commitment.
+4. The TSN mempool backend assembles the encrypted TIN Master Seed payload, private metadata commitment, and fixed 30-ZK-PRU configuration commitment.
 5. Cranker A pulls `/tin-operations/verification-work`.
 6. Cranker A verifies the owner signature, nonce, expiry, and commitment hashes.
 7. The operation becomes `verified`.
@@ -70,11 +70,11 @@ The update payload can change:
 - display name
 - encrypted TIN Master Seed payload
 - encrypted metadata hash
-- PRU configuration hash
+- ZK-PRU configuration hash
 
-The mempool stores only commitments and encrypted payloads. It does not expose raw phone numbers, PRU derivation material, or TIN Master Seed material to the frontend.
+The mempool stores only commitments and encrypted payloads. It does not expose raw phone numbers, ZK-PRU derivation material, or TIN Master Seed material to the frontend.
 
-When a TIN creation or update finalizes, the mempool marks the matching PRU route as finalized. Payment settlement uses only finalized PRU routes. If a route is not finalized, the private payout permit is not issued.
+When a TIN creation or update finalizes, the mempool marks the matching ZK-PRU route as finalized. Payment settlement uses only finalized ZK-PRU routes. If a route is not finalized, the private payout permit is not issued.
 
 ## Fee Commitment
 
@@ -142,7 +142,7 @@ The backend validates:
 - expired intents
 - reused nonce per owner
 - malformed 32-byte metadata hash
-- malformed 32-byte PRU hash
+- malformed 32-byte ZK-PRU hash
 - missing owner signature
 - mismatched owner intent hash
 - creation conflicts in the mempool registry shadow
@@ -165,7 +165,7 @@ It can show:
 - verifier cranker
 - submitter cranker
 - fee amount and split
-- PRU commitment hash
+- ZK-PRU commitment hash
 - on-chain transaction references
 
 It must not show:
@@ -175,7 +175,7 @@ It must not show:
 - raw phone numbers
 - encrypted TIN Master Seed payload contents
 - owner signatures
-- full PRU arrays
+- full ZK-PRU arrays
 - private derivation material
 
 ## Local Checks

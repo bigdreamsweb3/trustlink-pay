@@ -1,0 +1,10 @@
+{
+  "name": "Stable-TCAP",
+  "symbol": "STCAP",
+  "description": "Valueless Devnet-only test asset for TrustLink protocol development. Not USDC and not a production stablecoin.",
+  "network": "solana-devnet",
+  "tokenProgram": "Token-2022",
+  "decimals": 6,
+  "confidentialTransfers": true,
+  "externalValue": false
+}

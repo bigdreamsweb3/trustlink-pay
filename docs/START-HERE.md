@@ -6,7 +6,7 @@ This document explains TrustLink Pay without assuming you already know Solana pa
 
 TrustLink Pay is an identity-first Web3 payment system that lets a person receive stablecoins through a **Transfer Identity**.
 
-A Transfer Identity can contain a 10-digit **TIN** (**Transfer Identity Number**), public-safe identity context, verification fields, and PRU routing commitments. The wallet address stays behind the payment system.
+A Transfer Identity can contain a 10-digit **TIN** (**Transfer Identity Number**), public-safe identity context, verification fields, and ZK-PRU protected receiving commitments. The wallet address stays behind the payment system.
 
 ## Why It Exists
 
@@ -24,23 +24,23 @@ TrustLink Pay tries to bring that kind of experience to stablecoin payments.
 
 ## The Main Parts
 
-### TIP: Transfer Identity Protocol
+### TSN identity component: Transfer Identity Protocol
 
-TIP is the identity layer.
+TIP is TSN's identity component.
 
-It creates and resolves Transfer Identities. A Transfer Identity can have a 10-digit TIN, public identity context, a display name, verified legal-name status, encrypted social links, and PRU commitments.
+It creates and resolves Transfer Identities. A Transfer Identity can have a 10-digit TIN, public identity context, a display name, verified legal-name status, encrypted social links, and ZK-PRU authorization commitments.
 
-### PRUs
+### ZK-PRU protected receiving identities
 
-PRU means **Privacy Receiving Unit**.
+ZK-PRU is TSN's privacy authorization and purpose-bound protected receiving identity protocol.
 
-Every upgraded Transfer Identity has 30 PRUs by default. Recipient payouts land in PRU routes instead of the public owner wallet. The user's TIN balance is the sum of supported token balances across those PRUs.
+Every upgraded Transfer Identity can use purpose-bound ZK-PRU receiving handles. Recipient payouts use protected ZK-PRU routes instead of treating the public owner wallet as the normal payment identity. The user's TIN balance is the sum of supported balances governed by the applicable ZK-PRU and TCAP policies.
 
 ### TSN
 
-TSN is the **Transfer Settlement Network Protocol**.
+TSN is the **Transfer Settlement Network**, the complete payment network.
 
-It handles the payment settlement path. It separates sender funding from recipient payout.
+Its settlement coordination separates sender funding from recipient payout and coordinates TIN, ZK-PRU, TCAP, and Cranker components.
 
 ### Crankers
 

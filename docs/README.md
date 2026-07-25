@@ -1,8 +1,8 @@
 # TrustLink Pay | Transfer Settlement Network (TSN) Documentation
 
-> Identity-first Solana payments using Transfer Identity, PRU-routed balances, and the Transfer Settlement Network.
+> Identity-first Solana payments using TIN payment identity, ZK-PRU protected receiving authorization, and the Transfer Settlement Network.
 
-TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, Transfer Identity, PRU routing, and the Transfer Settlement Network (TSN).
+TrustLink Pay is an identity-first Web3 payment system on Solana. It gives users a familiar payment experience while giving developers a clear [blockchain payment solution](../README.md) for stablecoin payments, TIN identity, ZK-PRU route authorization, and the Transfer Settlement Network (TSN).
 
 See what people are saying about the project: [Community Mentions](./docs/MENTIONS.md).
 
@@ -18,8 +18,8 @@ The documentation defines TrustLink Pay's product model, protocol architecture, 
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [START-HERE.md](./START-HERE.md)                                       | Plain-English onboarding for the whole payment system                             |
 | [ARCHITECTURE.md](./ARCHITECTURE.md)                                   | How the product, identity, privacy, settlement, and liquidity layers fit together |
-| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIP, TINs, PRUs, route authentication, and identity resolution                    |
-| [TSN.md](./TSN.md)                                                     | TSN payment execution, PRU-funded spending, and fee distribution                  |
+| [TRANSFER-IDENTITY.md](./TRANSFER-IDENTITY.md)                         | TIP, TINs, ZK-PRU route authorization, and identity resolution                    |
+| [TSN.md](./TSN.md)                                                     | TSN payment execution, ZK-PRU-authorized spending, and fee distribution           |
 | [TSN-DEVICE-AUTHORIZATION.md](./TSN-DEVICE-AUTHORIZATION.md)             | User-owned device keys, TINS owner verification, sessions, and proof of possession |
 | [TSN-PRIVATE-VIEW-LIT.md](./TSN-PRIVATE-VIEW-LIT.md)                   | SDK-owned Lit renderer, closed Shadow DOM, threat model, and integration contract  |
 | [TSN Private View research paper](https://github.com/Trustlink-Labs/Trustlink-Research/tree/main/papers/TLR-008) | Device-authorized Lit and canvas rendering, security analysis, and conformance requirements |
@@ -35,7 +35,7 @@ The documentation defines TrustLink Pay's product model, protocol architecture, 
 
 TIP is the identity layer.
 
-It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and PRU commitments. The TIN is easier to read than a wallet address and can carry safe public verification context.
+It gives a user a Transfer Identity that can include a 10-digit TIN, public display name, verified fields, encrypted social links, and ZK-PRU authorization commitments. The TIN is easier to read than a wallet address and can carry safe public verification context.
 
 ### TSN: Transfer Settlement Network Protocol
 
@@ -43,11 +43,11 @@ TSN means **Transfer Settlement Network**.
 
 It is the settlement layer that coordinates Payment Intents, Escrow Holds, Cranker execution, and Settlement Proofs so the chain does not show a simple sender-wallet-to-recipient-wallet payment graph.
 
-### PRU: Privacy Receiving Unit
+### ZK-PRU protected receiving identity
 
-A PRU is a privacy receiving route owned by a Transfer Identity.
+ZK-PRU provides purpose-bound protected receiving routes authorized by a Transfer Identity.
 
-Every upgraded Transfer Identity has 30 PRUs by default. A TIN balance is the sum of supported token balances across those PRUs. The app can show one spendable balance to the user while TSN keeps the receiving and spending path routed through PRUs.
+Every upgraded Transfer Identity can have a configured set of ZK-PRU handles. A TIN balance is the sum of supported token balances across authorized routes. The app can show one spendable balance while TSN keeps receiving and spending purpose-bound.
 
 ### Crankers
 
@@ -77,7 +77,7 @@ It proves that a payment or settlement record exists without revealing the full 
 
 1. Read [Start Here](./START-HERE.md) to understand the product model.
 2. Read [Architecture](./ARCHITECTURE.md) to understand layer boundaries.
-3. Read [Transfer Identity](./TRANSFER-IDENTITY.md) before touching TIN, PRU, or route-auth code.
+3. Read [Transfer Identity](./TRANSFER-IDENTITY.md) before touching TIN, ZK-PRU, or route-auth code.
 4. Read [TSN](./TSN.md) before touching payment execution or Cranker work.
 5. Read [Developer Guide](./DEVELOPER.md) before running services locally.
 6. Read [Security](./SECURITY.md) before changing signing, route access, or private payload handling.

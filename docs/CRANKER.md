@@ -42,7 +42,7 @@ A Cranker must verify signatures, amount, token, recipient route, nonce, expiry,
 
 Settlement work moves a valid payment into the escrow and payout process.
 
-The Cranker should only execute work that matches the sender authorization and TSN rules. For private TIN payments, the payout permit identifies a PRU token account selected by the mempool. The Cranker must not substitute the owner wallet as the destination.
+The Cranker should only execute work that matches the sender authorization and TSN rules. For private TIN payments, the payout permit identifies a ZK-PRU-authorized protected token route. The Cranker must not substitute the owner wallet as the destination.
 
 ### Recovery Work
 
@@ -73,7 +73,7 @@ Cranker sees pending intent
 Cranker validates it
 Cranker submits valid settlement work
 Recipient payout becomes available
-Cranker executes payout to the selected PRU token account
+Cranker executes payout to the selected ZK-PRU protected token route
 Commitment enters epoch accounting
 Cranker watches for recovery challenges
 ```

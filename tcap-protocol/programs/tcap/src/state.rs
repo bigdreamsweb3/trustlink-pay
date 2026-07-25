@@ -18,12 +18,10 @@ pub struct TcapGlobalConfigV1 {
     pub minimum_instruction_version: u16,
     pub governance_authority: Pubkey,
     pub emergency_authority: Pubkey,
-    pub registry_authority: Pubkey,
     pub approved_tsn_program: Pubkey,
     pub proof_verifier_program: Pubkey,
     pub proof_verifier_enabled: bool,
     pub paused: bool,
-    pub asset_registry: Pubkey,
     pub commitment_root_state: Pubkey,
     pub domain_version: u16,
     pub migration_state: TcapMigrationStateV1,
@@ -31,7 +29,7 @@ pub struct TcapGlobalConfigV1 {
 }
 
 impl TcapGlobalConfigV1 {
-    pub const SPACE: usize = 8 + 2 + 2 + 2 + (32 * 7) + 1 + 1 + 2 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 2 + 2 + (32 * 5) + 1 + 1 + 32 + 2 + 1 + 1;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -119,11 +117,34 @@ impl TcapAssetEntryV1 {
         + 1;
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub struct TcapMintBindingV1 {
+    pub token_program: Pubkey,
+    pub mint: Pubkey,
+}
+
+#[account]
+pub struct TcapAssetStateV1 {
+    pub version: u16,
+    pub protocol_version: u16,
+    pub config: Pubkey,
+    pub asset: TcapMintBindingV1,
+    pub reserve_state: Pubkey,
+    pub future_vault: Pubkey,
+    pub reserve_authority: Pubkey,
+    pub decimals: u8,
+    pub bump: u8,
+}
+
+impl TcapAssetStateV1 {
+    pub const SPACE: usize = 8 + 2 + 2 + 32 + (32 + 32) + 32 + 32 + 32 + 1 + 1;
+}
+
 #[account]
 pub struct TcapReserveStateV1 {
     pub version: u16,
     pub protocol_version: u16,
-    pub asset_entry: Pubkey,
+    pub asset_state: Pubkey,
     pub future_vault: Pubkey,
     pub reserve_authority: Pubkey,
     pub actual_assets: u64,

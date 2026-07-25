@@ -46,30 +46,30 @@ TSN Mixed Payment
 Amount: 50.00 USDC
 Recipient TIN: 7731029841
 Fee: 0.25 USDC
-PRU Portion: 30.00 USDC
+ZK-PRU Portion: 30.00 USDC
 Wallet Top-Up Portion: 20.25 USDC
 Nonce: c9d2e1f0-a4b5-4c6d-8e9f-0a1b2c3d4e5f
 Expires: 2026-07-05T14:05:00.000Z
 Domain: ...d772e0a4
 ```
 
-Mixed funding is the fallback mode when TIN balance is not enough to cover the full send. TSN uses PRU balance first, then the connected wallet tops up the remainder inside the same settlement. This preserves one send experience while explicitly relaxing wallet privacy for the wallet-funded remainder.
+Mixed funding is the fallback mode when TIN balance is not enough to cover the full send. TSN uses ZK-PRU balance first, then the connected wallet tops up the remainder inside the same settlement. This preserves one send experience while explicitly relaxing wallet privacy for the wallet-funded remainder.
 
-## PRU Spend
+## ZK-PRU Spend
 
 ```text
-TSN PRU Spend
+TSN ZK-PRU Spend
 ---
 Amount: 12.50 USDC
 Recipient TIN: 4821903217
 Fee: 0.05 USDC
-PRU Source: TIN Balance
+ZK-PRU Source: TIN Balance
 Nonce: 8842019a-f3c1-4b2e-9d07-e1a2b3c4d5e6
 Expires: 2026-07-05T14:00:00.000Z
 Domain: ...d772e0a4
 ```
 
-PRU-only spend does not require the owner wallet to co-sign a Solana settlement transaction. The owner authorizes the spend with the canonical PRU Spend message, and the TSN mempool and cranker execute the PRU path from that signed payload plus the private PRU route material.
+ZK-PRU-only spend does not require the owner wallet to co-sign a Solana settlement transaction. The owner authorizes the spend with the canonical ZK-PRU Spend message, and the TSN mempool and cranker execute the ZK-PRU path from that signed payload plus the private ZK-PRU route material.
 
 ## TIN Creation
 
@@ -78,7 +78,7 @@ TSN TIN Creation
 ---
 TIN: 1000000042
 Display Name: Big Dreams Web3
-Privacy: 30 PRUs
+Privacy: 30 ZK-PRU handles
 Nonce: 11223344-5566-7788-99aa-bbccddeeff00
 Expires: 2026-07-05T14:10:00.000Z
 Domain: ...d772e0a4

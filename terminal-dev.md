@@ -117,3 +117,49 @@ Address: 9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK
 Decimals: 2
 
 Signature: 4K1fzTKTpbvypWgJ6Za3tYwk7wdxi8NJBsCQ9ZhtC6URs8tSfdkGNHiJZv5SxbtR8Q3CAxmdGCih6ZmcYLzNZb1L
+
+<!--  -->
+
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol$ cd /mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol
+set -euo pipefail
+
+FAUCET_PROGRAM_ID="E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
+
+test -s target/deploy/stable_tcap_faucet.so
+
+test "$(solana-keygen pubkey \
+  target/deploy/stable_tcap_faucet-keypair.json)" = "$FAUCET_PROGRAM_ID"
+
+stat -c 'artifact_bytes=%s' \
+ target/deploy/stable_tcap_faucet.so
+
+sha256sum \
+ target/deploy/stable_tcap_faucet.so \
+ target/deploy/stable_tcap_faucet-keypair.json.pubkey 2>/dev/null || \
+sha256sum target/deploy/stable_tcap_faucet.so
+
+anchor deploy \
+ --program-name stable_tcap_faucet
+artifact_bytes=329992
+951d453748d64d8c7dbfe8c47e0974538defe6d29e235deda63fc680d71cb1d6 target/deploy/stable_tcap_faucet.so
+951d453748d64d8c7dbfe8c47e0974538defe6d29e235deda63fc680d71cb1d6 target/deploy/stable_tcap_faucet.so
+Deploying cluster: https://devnet.helius-rpc.com/?api-key=<REDACTED>
+Upgrade authority: /home/bigdream/.config/solana/id.json
+Deploying program "stable_tcap_faucet"...
+Program path: /mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/target/deploy/stable_tcap_faucet.so...
+Program Id: E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h
+
+Deploy success
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol$ solana program show \
+ "$FAUCET_PROGRAM_ID" \
+ --url 'https://devnet.helius-rpc.com/?api-key=<REDACTED>'
+
+Program Id: E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h
+Owner: BPFLoaderUpgradeab1e11111111111111111111111
+ProgramData Address: 4zNx8a3sSykoKRRLpi6h1YN1wDZniKp9y856d9qVDUBB
+Authority: 78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX
+Last Deployed In Slot: 478088497
+Data Length: 329992 (0x50908) bytes
+Balance: 2.2979484 SOL
+
+<!--  -->

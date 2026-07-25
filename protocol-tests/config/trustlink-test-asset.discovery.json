@@ -1,0 +1,61 @@
+{
+  "status": "TEST_MINT_AUTHORITY_UNAVAILABLE",
+  "network": "devnet",
+  "verifiedAtSlot": 478071538,
+  "mint": "9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK",
+  "symbol": "UNKNOWN",
+  "decimals": 2,
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "mintAuthorityPublicKey": "78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX",
+  "mintAuthorityAvailable": false,
+  "mintAuthorityAvailabilityNote": "Becomes available only when Daniel explicitly loads the matching legitimate local Devnet authority wallet.",
+  "freezeAuthority": null,
+  "totalSupplyBaseUnits": "100000",
+  "registeredInTcap": true,
+  "assetRegistry": "6oGZV9yt5M6uPH66UZPhJZsGsqfJg2Ec1mtV8VEjQjbE",
+  "assetRecord": "5eCMtSBo9wvtKuBrtqjy14F6GwfdVdDvgzyhto51n7RP",
+  "reserve": "FjE8mUKDRsVg97F3Ny2sWkegYHsgfcCSGerhgjfzKH1a",
+  "canonicalVault": "A9pNUuLcQbiCKBHgfhEoLwV9GmQz1cfH8u1qUDPPZre8",
+  "canonicalVaultBalanceBaseUnits": "10406",
+  "canonicalVaultBalance": "104.06",
+  "depositsEnabled": true,
+  "assetActive": true,
+  "reservePaused": false,
+  "actualAssetsBaseUnits": "10406",
+  "pendingFundingLiabilitiesBaseUnits": "0",
+  "currentSelectedWalletTokenAccount": null,
+  "currentSelectedWalletBalance": null,
+  "ataRequired": null,
+  "manualTestTokenMintingAvailable": false,
+  "evidence": [
+    {
+      "classification": "LOCAL_DEPLOYMENT_RECORD",
+      "source": "terminal-dev.md",
+      "detail": "Mint creation address, decimals, token program, and creation signature 4K1fzTKTpbvypWgJ6Za3tYwk7wdxi8NJBsCQ9ZhtC6URs8tSfdkGNHiJZv5SxbtR8Q3CAxmdGCih6ZmcYLzNZb1L"
+    },
+    {
+      "classification": "LOCAL_VALIDATION_RECORD",
+      "source": "docs/TCAP-DEPOSIT-PHASE.md",
+      "detail": "Asset, reserve, vault, prior source account, and successful deposit signature"
+    },
+    {
+      "classification": "CONFIRMED_DEVNET_ACCOUNT_READ",
+      "slot": 478071487,
+      "accounts": [
+        "9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK"
+      ],
+      "detail": "Mint owner, decimals, authority, freeze authority, and supply"
+    },
+    {
+      "classification": "CONFIRMED_DEVNET_ACCOUNT_READ",
+      "slot": 478071538,
+      "accounts": [
+        "6oGZV9yt5M6uPH66UZPhJZsGsqfJg2Ec1mtV8VEjQjbE",
+        "5eCMtSBo9wvtKuBrtqjy14F6GwfdVdDvgzyhto51n7RP",
+        "FjE8mUKDRsVg97F3Ny2sWkegYHsgfcCSGerhgjfzKH1a",
+        "A9pNUuLcQbiCKBHgfhEoLwV9GmQz1cfH8u1qUDPPZre8"
+      ],
+      "detail": "TCAP ownership and decoded asset, reserve, and canonical vault state"
+    }
+  ]
+}

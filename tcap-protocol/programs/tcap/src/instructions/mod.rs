@@ -2,16 +2,16 @@ mod legacy;
 
 pub use legacy::*;
 
-pub mod deposit_asset_v1;
-pub mod initialize_asset_registry_v1;
+pub mod deposit_asset_v2;
+pub mod deposit_with_funding_commitment_v2;
+pub mod initialize_asset_state_v1;
 pub mod initialize_commitment_root_v1;
 pub mod initialize_nullifier_registry_v1;
-pub mod initialize_reserve_state_v1;
-pub mod initialize_reserve_vault_v1;
 pub mod initialize_tcap_v1;
-pub mod register_asset_v1;
-pub mod set_asset_deposit_policy_v1;
-pub mod update_asset_status_v1;
+
+pub use deposit_asset_v2::*;
+pub use deposit_with_funding_commitment_v2::*;
+pub use initialize_asset_state_v1::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct UpdateAssetStatusArgsV1 {

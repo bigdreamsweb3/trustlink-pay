@@ -2,13 +2,13 @@
 
 > Identity-first stablecoin payments on Solana, powered by Transfer Identity and the Transfer Settlement Network (TSN).
 
-TrustLink Pay lets people send stablecoins to a 10-digit Transfer Identity Number (TIN) instead of sharing wallet addresses. It combines portable payment identity, Privacy Receiving Units (PRUs), and TSN settlement so a normal payment experience does not need to expose a simple sender-wallet-to-recipient-wallet path.
+TrustLink Pay lets people send stablecoins to a 10-digit Transfer Identity Number (TIN) instead of sharing wallet addresses. It combines portable payment identity, ZK-PRU protected receiving authorization, and the Transfer Settlement Network (TSN) so a normal payment experience does not need to expose a simple sender-wallet-to-recipient-wallet path.
 
 ## What it does
 
 - Uses a TIN as the public payment identity rather than a wallet address.
 - Resolves recipient context before a payment is authorized.
-- Routes supported balance through PRUs and TSN settlement workflows.
+- Routes supported balance through ZK-PRU authorization and TSN settlement workflows.
 - Uses TSN Cranker coordination, authorization records, fees, and settlement receipts for payment execution.
 - Keeps the owner's primary wallet out of TIN creation, upgrade, and TSN settlement transactions as an on-chain signer, fee payer, or authority.
 
@@ -21,7 +21,7 @@ TrustLink Pay improves the privacy design of everyday payments. It does not make
 | TIP | TINs, phone routing, identity resolution, optional trust context, attestations, and credentials |
 | TSN | Payment intents, epochs, Crankers, settlement coordination, fees, authorization, and receipts |
 | TCAP | Confidential asset representation, reserve metadata, commitments, nullifiers, and confidential roots |
-| ZK-PRU | Separate zero-knowledge privacy technology under development; not a TCAP submodule |
+| ZK-PRU | TSN privacy authorization and purpose-bound protected receiving identities |
 
 Transfer Identity combines payment identity with optional identity assurance. Every TIN remains payment-capable without an attestation. Legal-name, business-name, and personhood attestations provide additional recipient confidence when available.
 
@@ -33,7 +33,7 @@ Start with the [documentation portal](./docs/README.md).
 
 - [Start Here](./docs/START-HERE.md) — product and protocol overview
 - [Architecture](./docs/ARCHITECTURE.md) — system boundaries and components
-- [Transfer Identity](./docs/TRANSFER-IDENTITY.md) — TINs, PRUs, and route authentication
+- [Transfer Identity](./docs/TRANSFER-IDENTITY.md) — TINs, ZK-PRU authorization, and protected route authentication
 - [TSN](./docs/TSN.md) — payment execution and settlement design
 - [Developer Guide](./docs/DEVELOPER.md) — local development and integration rules
 - [Security](./docs/SECURITY.md) — security boundaries and privacy limits

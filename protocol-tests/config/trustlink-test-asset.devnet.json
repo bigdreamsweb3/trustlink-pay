@@ -1,0 +1,14 @@
+{
+  "network": "devnet",
+  "name": "TrustLink Test Stable Token",
+  "symbol": "UNKNOWN",
+  "mint": "9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK",
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "decimals": 2,
+  "tcapProgram": "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x",
+  "discoveryEvidence": [
+    "terminal-dev.md: spl-token create-token record and creation signature",
+    "docs/TCAP-DEPOSIT-PHASE.md: Devnet registration and deposit evidence",
+    "tcap-protocol/scripts/devnet-funding-claim.mjs: canonical fixture candidate"
+  ]
+}

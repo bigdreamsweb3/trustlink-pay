@@ -4,7 +4,7 @@ This document explains the active TrustLink Pay protocol in plain English.
 
 ## What Is This?
 
-The protocol is the set of rules that connect Transfer Identity, TSN settlement, Cranker work, vault liquidity, and epoch accounting.
+The Transfer Settlement Network is the complete set of rules and infrastructure connecting TIN identity, ZK-PRU authorization, TCAP confidential assets, settlement coordination, Cranker execution, and epoch accounting.
 
 It is designed so apps can offer simple TIN-based payments while the settlement layer avoids exposing a direct sender-to-recipient graph.
 
@@ -23,7 +23,7 @@ The system needs to solve four problems at the same time:
 
 The recipient is identified by a TIN.
 
-The app resolves that TIN and displays public identity information before the sender approves payment.
+The app resolves that TIN and displays public identity information before the sender approves payment. ZK-PRU supplies the purpose-bound protected receiving authorization; it is not a standalone product beside TSN.
 
 ### Authorization
 

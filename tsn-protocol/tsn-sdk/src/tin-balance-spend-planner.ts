@@ -2,9 +2,6 @@ export type TinSpendFundingMode =
   | "zk_pru_only_v2"
   | "mixed_zk_pru_wallet_v2"
   | "wallet_only_v2"
-  | "pru_only"
-  | "mixed_pru_and_wallet"
-  | "wallet_only"
   | "insufficient";
 
 export type TinSpendPlannerInput = {

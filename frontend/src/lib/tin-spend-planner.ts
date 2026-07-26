@@ -110,10 +110,13 @@ function tinBalancesToSelections(
     if (remaining <= 0n) break;
     const available = BigInt(balance.balanceBaseUnits);
     const amount = available >= remaining ? remaining : available;
+    const nonceBytes = new Uint8Array(4);
+    crypto.getRandomValues(nonceBytes);
+    const nonce = nonceBytes[0] | (nonceBytes[1] << 8) | (nonceBytes[2] << 16) | (nonceBytes[3] << 24);
     selections.push({
       pruIndex: balance.pruIndex,
       amountBaseUnits: amount.toString(),
-      nonce: crypto.getRandomValues(new Uint8Array(1))[0],
+      nonce,
     });
     remaining -= amount;
   }

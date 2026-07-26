@@ -1162,6 +1162,11 @@ async function submitIntentOnChainWork(params: {
       ),
       escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
       senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
+      // DEPRECATED: Cranker receiving user PRU private keys.
+      // SECURITY: The Cranker should never have access to user PRU private keys.
+      // The launch architecture uses scoped spend signatures from the user's device.
+      // The Cranker receives only the signatures, not the signing keys.
+      // Remove secretKeyBase64 from work items after local signing is wired.
       selections: permit.selections.map((selection) => ({
         tin: selection.tin,
         pruIndex: selection.pruIndex,
@@ -1239,6 +1244,10 @@ async function submitIntentOnChainWork(params: {
         ),
         escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
         senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
+        // DEPRECATED: Cranker receiving escrow secret keys.
+        // SECURITY: The Cranker should not handle user escrow key material.
+        // The launch architecture uses PDA-derived escrow accounts.
+        // Remove settlementEscrowSecretKeyBase64 after PDA escrow is wired.
         ...(sponsoredSettlement.settlementEscrowSecretKeyBase64
           ? {
               escrowTokenAccount: Keypair.fromSecretKey(
@@ -1251,6 +1260,10 @@ async function submitIntentOnChainWork(params: {
               ),
             }
           : {}),
+        // DEPRECATED: Cranker receiving user PRU private keys.
+        // SECURITY: The Cranker should never have access to user PRU private keys.
+        // The launch architecture uses scoped spend signatures from the user's device.
+        // Remove secretKeyBase64 from work items after local signing is wired.
         selections: permit.selections.map((selection) => ({
           tin: selection.tin,
           pruIndex: selection.pruIndex,

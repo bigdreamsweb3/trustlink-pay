@@ -1842,6 +1842,10 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         "senderAuthorizationExpiresAt": expires_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
     }
 
+# DEPRECATED: Server-side master seed encryption for storage.
+# SECURITY: The server should not hold master seeds, even encrypted.
+# The launch architecture stores encrypted seeds only on the user's device.
+# Remove after frontend-only seed storage is fully wired.
 def _encrypt_tin_master_seed_payload(master_seed_hex: str) -> str:
     secret = TSN_ROUTE_ENCRYPTION_SECRET_KEY.strip()
     if not secret:
@@ -1861,6 +1865,10 @@ def _encrypt_tin_master_seed_payload(master_seed_hex: str) -> str:
         raise HTTPException(503, "TSN route encryption key is invalid") from exc
     return base64.b64encode(ciphertext).decode("ascii")
 
+# DEPRECATED: Server-side master seed decryption.
+# SECURITY: This function decrypts the TIN master seed on the server.
+# The launch architecture requires authorized-device-only local decryption.
+# Remove after frontend SDK local decryption is fully wired.
 def _decrypt_tin_master_seed_payload(encrypted_master_seed: str) -> str:
     secret = TSN_ROUTE_ENCRYPTION_SECRET_KEY.strip()
     if not secret:
@@ -1893,6 +1901,10 @@ def _derive_pru_public_key_hex(*, master_seed_hex: str, tin: str, index: int) ->
     ).digest()
     return SigningKey(seed).verify_key.encode().hex()
 
+# DEPRECATED: Server-side PRU secret key derivation.
+# SECURITY: This function derives PRU private keys on the server.
+# The launch architecture requires local child-key derivation on the user's device.
+# Remove after frontend SDK local derivation is fully wired.
 def _derive_pru_secret_key_base64(*, master_seed_hex: str, tin: str, index: int) -> str:
     seed = hashlib.sha256(
         f"TRUSTLINK_PRU_KEY_V1|{master_seed_hex}|{tin}|{index}".encode("utf-8")

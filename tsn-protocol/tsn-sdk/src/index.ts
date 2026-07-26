@@ -31,9 +31,6 @@ export * from "./zk-pru-receive-accumulator.js";
 
 // TSN V1 Privacy Architecture exports
 
-
-
-
 export * from "./receipts/index.js";
 export * from "./authorization/index.js";
 export * from "./recovery/index.js";

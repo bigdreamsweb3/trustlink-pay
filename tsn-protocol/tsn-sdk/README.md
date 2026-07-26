@@ -57,10 +57,19 @@ The SDK exports `@trustlink/tsn-sdk/pru` and root exports for the TSN V1 PRU mod
 - lazy ATA creation planning with protocol subsidy before activation fees.
 
 ```ts
-import { derivePruSet, allocatePrusDeterministically } from "@trustlink/tsn-sdk/pru";
+import {
+  derivePruSet,
+  allocatePrusDeterministically,
+} from "@trustlink/tsn-sdk/pru";
 
 const pruSet = derivePruSet({ masterSeed, tinId });
-const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pruSet, amount });
+const distribution = allocatePrusDeterministically({
+  txId,
+  tinId,
+  tokenMint,
+  pruSet,
+  amount,
+});
 ```
 
 The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TIP registry state.
@@ -83,4 +92,3 @@ This folder is intentionally isolated from the main TSN payment execution path:
 - `src/recurring` contains mandate serialization and validation helpers.
 - The recurring feature remains disabled by default.
 - No token transfer or delegate approval logic is implemented in this foundation.
-

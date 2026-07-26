@@ -146,17 +146,20 @@ export function applyReceiptRouting(
   plan: ReceiptRoutingPlan,
 ): ZkPruAssetState {
   let updatedState = state;
-
-  // Handle rotation if needed
-  if (plan.rotationRequired) {
+ 
+  // Handle rotation if needed or when routing to a new PRU
+  if (
+    plan.rotationRequired ||
+    (plan.decision !== "accumulate_to_active" && plan.targetPruIndex !== updatedState.activeReceivingPruIndex)
+  ) {
     updatedState = rotateActiveReceivingPru(updatedState, plan.targetPruIndex);
   }
-
+ 
   // Record receipt on target PRU
   if (plan.targetPruIndex === updatedState.activeReceivingPruIndex) {
     updatedState = recordReceipt(updatedState, plan.amountToRoute);
   }
-
+ 
   return updatedState;
 }
 

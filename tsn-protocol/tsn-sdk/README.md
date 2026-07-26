@@ -66,3 +66,21 @@ const distribution = allocatePrusDeterministically({ txId, tinId, tokenMint, pru
 The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TIP registry state.
 
 TIP registry awareness: TIP does not store PRU arrays. Every TIN receives exactly 30 token-agnostic PRUs, and TIP stores the PRU configuration commitment produced by the TSN mempool and cranker layer.
+
+## Recurring Mandates (Planned, Disabled)
+
+The SDK includes a disabled foundation for recurring mandate contracts and verified provider validation.
+
+- Recurring mandates are currently blocked by feature flags and fail closed by default.
+- No production payment path should consume or execute recurring mandates in this repository.
+- TSN_TEST_PROVIDER is only permitted on Devnet and is rejected on mainnet-beta.
+- Recurring mandate state must reference only commitments, not subscriber TINs, wallet addresses, or ZK-PRU secrets.
+- Verified providers must be ACTIVE, recurring enabled, and support the requested token mint.
+- A mock Devnet-only provider fixture exists for tests and development only.
+
+This folder is intentionally isolated from the main TSN payment execution path:
+
+- `src/recurring` contains mandate serialization and validation helpers.
+- The recurring feature remains disabled by default.
+- No token transfer or delegate approval logic is implemented in this foundation.
+

@@ -23,7 +23,7 @@ export function createSenderPaymentAuthorizationMessage(params: {
   nonce?: string;
   issuedAt: string;
   expiresAt?: string;
-  fundingMode?: "pru_only" | "mixed_pru_and_wallet" | "wallet_only";
+  fundingMode?: "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2" | "wallet_only_v2";
   pruPortionBaseUnits?: bigint | number | string;
   walletTopUpPortionBaseUnits?: bigint | number | string;
 }) {
@@ -31,38 +31,47 @@ export function createSenderPaymentAuthorizationMessage(params: {
     params.receiverIdentity.match(/(?:^|\|)tin:(\d+)/)?.[1] ??
     params.receiverIdentity.match(/^tin:(\d+)/)?.[1];
   if (!recipientTin) {
-    throw new Error("recipient TIN is required for canonical TSN payment authorization");
+    throw new Error(
+      "recipient TIN is required for canonical TSN payment authorization",
+    );
   }
   const amountBaseUnits = BigInt(Math.round(params.amount * 1_000_000));
   const feeBaseUnits = BigInt(Math.round(params.senderFeeAmount * 1_000_000));
-  if (params.fundingMode === "mixed_pru_and_wallet") {
+  const usesMixedFunding = params.fundingMode === "mixed_zk_pru_wallet_v2";
+  const usesPruFunding = params.fundingMode === "zk_pru_only_v2";
+  if (usesMixedFunding) {
     return buildMixedPaymentMessage({
       amountBaseUnits,
       recipientTin,
       feeBaseUnits,
       pruPortionBaseUnits: BigInt(params.pruPortionBaseUnits ?? 0),
-      walletTopUpPortionBaseUnits: BigInt(params.walletTopUpPortionBaseUnits ?? 0),
+      walletTopUpPortionBaseUnits: BigInt(
+        params.walletTopUpPortionBaseUnits ?? 0,
+      ),
       nonce: params.nonce ?? "",
-      expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+      expires:
+        params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
     });
   }
-  const usesPruSource = params.senderIdentity.includes("tin:");
-  return usesPruSource
-    ? buildPruSpendMessage({
-        amountBaseUnits,
-        recipientTin,
-        feeBaseUnits,
-        nonce: params.nonce ?? "",
-        expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
-      })
-    : buildPaymentIntentMessage({
-        amountBaseUnits,
-        recipientTin,
-        feeBaseUnits,
-        sender: "Main Wallet",
-        nonce: params.nonce ?? "",
-        expires: params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
-      });
+  if (usesPruFunding) {
+    return buildPruSpendMessage({
+      amountBaseUnits,
+      recipientTin,
+      feeBaseUnits,
+      nonce: params.nonce ?? "",
+      expires:
+        params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+    });
+  }
+  return buildPaymentIntentMessage({
+    amountBaseUnits,
+    recipientTin,
+    feeBaseUnits,
+    sender: "Main Wallet",
+    nonce: params.nonce ?? "",
+    expires:
+      params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
+  });
 }
 
 export function createPaymentAuthorizationNonce() {
@@ -88,7 +97,7 @@ export function createPaymentAuthorization(params: {
   nonce?: string;
   issuedAt?: string;
   expiresAt?: string;
-  fundingMode?: "pru_only" | "mixed_pru_and_wallet" | "wallet_only";
+  fundingMode?: "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2" | "wallet_only_v2";
   pruPortionBaseUnits?: bigint | number | string;
   walletTopUpPortionBaseUnits?: bigint | number | string;
 }) {
@@ -157,7 +166,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
       senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount,
-      senderSignedSettlementTransaction: params.senderSignedSettlementTransaction,
+      senderSignedSettlementTransaction:
+        params.senderSignedSettlementTransaction,
       senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
       senderSettlementMode: params.senderSettlementMode,
       pruSpendTin: params.pruSpendTin,
@@ -183,7 +193,9 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       amount: params.amount,
       source: params.source,
     }),
-    ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),
+    ...(params.recipientAmount == null
+      ? {}
+      : { recipientAmount: params.recipientAmount }),
   };
 }
 
@@ -232,18 +244,22 @@ export async function submitPaymentAuthorizationToMempool(params: {
     baseUrl: params.mempoolUrl,
     fetchImpl: params.fetchImpl,
   });
-  const intent = await client.postIntent<CreateIntentRequest, TsnMempoolIntent>(intentRequest);
-  const claimRequest =
-    params.destinationWallet
-      ? await client.postClaimRequest<RequestClaimRequest, TsnMempoolClaimRequest>({
-          paymentId: params.paymentId,
-          intentId: intent.id,
-          recipientHash: params.recipientHash,
-          destinationWallet: null,
-          autoclaim: params.autoclaim ?? true,
-          source: params.source,
-        })
-      : null;
+  const intent = await client.postIntent<CreateIntentRequest, TsnMempoolIntent>(
+    intentRequest,
+  );
+  const claimRequest = params.destinationWallet
+    ? await client.postClaimRequest<
+        RequestClaimRequest,
+        TsnMempoolClaimRequest
+      >({
+        paymentId: params.paymentId,
+        intentId: intent.id,
+        recipientHash: params.recipientHash,
+        destinationWallet: null,
+        autoclaim: params.autoclaim ?? true,
+        source: params.source,
+      })
+    : null;
 
   return {
     intentRequest,

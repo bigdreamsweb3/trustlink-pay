@@ -165,7 +165,12 @@ export function createZkPruAssetState(input: {
 }
 
 /**
- * Generates a private rotation target with variance
+ * Generates a private rotation target with variance.
+ *
+ * Uses a deterministic HMAC-style construction so that:
+ * - the target is predictable for authorised TSN components that know the seed
+ * - a public observer cannot predict the exact rotation point
+ * - no two users rotate at exactly the same visible threshold
  */
 export function generateRotationTarget(input: {
   baseReceiveTargetUsd: number;
@@ -173,42 +178,35 @@ export function generateRotationTarget(input: {
   assetDecimals: number;
   deterministicSeed: string;
 }): RotationTarget {
-  // Use deterministic seed to generate variance within configured range
   const seedBytes = utf8ToBytes(input.deterministicSeed);
   const hash = sha256(seedBytes);
   const hashValue = parseInt(bytesToHex(hash).substring(0, 8), 16);
 
   // Deterministic variance within ±configured percent
-  const variancePercent =
-    (hashValue % (input.receiveTargetVariancePercent * 2)) -
-    input.receiveTargetVariancePercent;
-  const actualVariancePercent = Number(variancePercent);
+  const varianceRange = input.receiveTargetVariancePercent;
+  const rawVariance = (hashValue % (varianceRange * 2)) - varianceRange;
 
   const targetBaseUnits = BigInt(
-    Math.round(
-      (input.baseReceiveTargetUsd / 1) * Math.pow(10, input.assetDecimals),
-    ),
+    Math.round(input.baseReceiveTargetUsd * Math.pow(10, input.assetDecimals)),
   );
   const varianceAmount =
-    (targetBaseUnits * BigInt(Math.abs(actualVariancePercent))) / 100n;
+    (targetBaseUnits * BigInt(Math.abs(rawVariance))) / 100n;
 
-  let minBaseUnits: bigint;
-  let maxBaseUnits: bigint;
-
-  if (actualVariancePercent >= 0) {
-    minBaseUnits = targetBaseUnits;
-    maxBaseUnits = targetBaseUnits + varianceAmount;
-  } else {
-    minBaseUnits = targetBaseUnits - varianceAmount;
-    maxBaseUnits = targetBaseUnits;
-  }
+  const minBaseUnits =
+    rawVariance >= 0
+      ? targetBaseUnits
+      : targetBaseUnits - varianceAmount;
+  const maxBaseUnits =
+    rawVariance >= 0
+      ? targetBaseUnits + varianceAmount
+      : targetBaseUnits;
 
   return {
     targetBaseUnits,
     minBaseUnits,
     maxBaseUnits,
     generatedAt: new Date().toISOString(),
-    nonce: Math.floor(Date.now() / 1000),
+    nonce: hashValue % 0x7fffffff,
   };
 }
 
@@ -288,11 +286,13 @@ export function rotateActiveReceivingPru(
   newPruIndex: number,
 ): ZkPruAssetState {
   const now = new Date().toISOString();
+  const newSealed = new Set(state.sealedPruIndices);
+  const newFunded = new Set(state.fundedPruIndices);
 
   // Seal the old active PRU if it has balance
   if (state.activeReceivingBalanceBaseUnits > 0n) {
-    state.sealedPruIndices.add(state.activeReceivingPruIndex);
-    state.fundedPruIndices.delete(state.activeReceivingPruIndex);
+    newSealed.add(state.activeReceivingPruIndex);
+    newFunded.delete(state.activeReceivingPruIndex);
   }
 
   return {
@@ -302,7 +302,8 @@ export function rotateActiveReceivingPru(
     receiptCountOnActivePru: 0,
     lastReceiptAtOnActivePru: now,
     lastRotationAt: now,
-    fundedPruIndices: new Set([...state.fundedPruIndices, newPruIndex]),
+    fundedPruIndices: new Set([...newFunded, newPruIndex]),
+    sealedPruIndices: newSealed,
     updatedAt: now,
     version: state.version + 1,
   };
@@ -337,32 +338,31 @@ export function recordSpend(
   spentAmounts: Map<number, bigint>,
 ): ZkPruAssetState {
   const now = new Date().toISOString();
-  let updatedState = { ...state };
+  const updated = { ...state };
 
-  // Update balances for selected PRUs
+  let totalSpent = 0n;
+
   for (const [pruIndex, spent] of spentAmounts.entries()) {
     if (pruIndex === state.activeReceivingPruIndex) {
-      updatedState.activeReceivingBalanceBaseUnits =
+      updated.activeReceivingBalanceBaseUnits =
         state.activeReceivingBalanceBaseUnits - spent;
     }
 
-    // If PRU is now empty or below threshold, may retire it
-    if (
-      spent === state.activeReceivingBalanceBaseUnits &&
-      pruIndex === state.activeReceivingPruIndex
-    ) {
-      // Active PRU is now empty; doesn't retire yet, waits for rotation
+    // Track funded PRU removal
+    if (spent >= (state.fundedPruIndices.has(pruIndex) ? 1n : 0n)) {
+      // If PRU is being spent down, it may need state update
     }
+
+    totalSpent += spent;
   }
 
-  // Increment spend nonce
-  updatedState.spendNonce = state.spendNonce + 1;
-  updatedState.lastSpendAt = now;
-  updatedState.lastSelectedPruIndex = selectedPruIndices[0];
-  updatedState.updatedAt = now;
-  updatedState.version = state.version + 1;
+  updated.spendNonce = state.spendNonce + 1;
+  updated.lastSpendAt = now;
+  updated.lastSelectedPruIndex = selectedPruIndices[0];
+  updated.updatedAt = now;
+  updated.version = state.version + 1;
 
-  return updatedState;
+  return updated;
 }
 
 /**
@@ -383,21 +383,26 @@ export function replenishEmptyReserve(
 }
 
 /**
- * Consumes an empty PRU from reserve
+ * Consumes an empty PRU from reserve.
+ * Returns the consumed PRU index or null if reserve is empty.
  */
 export function consumeEmptyReservePru(
   state: ZkPruAssetState,
-): ZkPruAssetState {
+): { state: ZkPruAssetState; consumedPruIndex: number | null } {
   if (state.emptyReservePruIndices.length === 0) {
-    throw new Error("No empty PRUs available in reserve");
+    return { state, consumedPruIndex: null };
   }
 
-  const updated: typeof state = { ...state };
-  updated.emptyReservePruIndices = state.emptyReservePruIndices.slice(1);
-  updated.updatedAt = new Date().toISOString();
-  updated.version = state.version + 1;
-
-  return updated;
+  const [consumed, ...remaining] = state.emptyReservePruIndices;
+  return {
+    state: {
+      ...state,
+      emptyReservePruIndices: remaining,
+      updatedAt: new Date().toISOString(),
+      version: state.version + 1,
+    },
+    consumedPruIndex: consumed,
+  };
 }
 
 /**
@@ -407,14 +412,20 @@ export function retirePru(
   state: ZkPruAssetState,
   pruIndex: number,
 ): ZkPruAssetState {
-  const updated: typeof state = { ...state };
-  updated.retiredPruIndices.add(pruIndex);
-  updated.fundedPruIndices.delete(pruIndex);
-  updated.sealedPruIndices.delete(pruIndex);
-  updated.updatedAt = new Date().toISOString();
-  updated.version = state.version + 1;
-
-  return updated;
+  const newRetired = new Set(state.retiredPruIndices);
+  const newFunded = new Set(state.fundedPruIndices);
+  const newSealed = new Set(state.sealedPruIndices);
+  newRetired.add(pruIndex);
+  newFunded.delete(pruIndex);
+  newSealed.delete(pruIndex);
+  return {
+    ...state,
+    retiredPruIndices: newRetired,
+    fundedPruIndices: newFunded,
+    sealedPruIndices: newSealed,
+    updatedAt: new Date().toISOString(),
+    version: state.version + 1,
+  };
 }
 
 /**

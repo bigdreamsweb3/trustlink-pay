@@ -1450,7 +1450,6 @@ class PruSpendPermitSelection(BaseModel):
     pruIndex: int
     nonce: int
     publicKey: str
-    secretKeyBase64: str
     spendAuthHash: str
     amountBaseUnits: str
 
@@ -1461,6 +1460,7 @@ class PruSpendPermitResponse(BaseModel):
     escrowAmountBaseUnits: str
     senderFeeAmountBaseUnits: str
     selections: list[PruSpendPermitSelection]
+    executionPlanV2: dict[str, Any]
 
 class RecoveryStatusRequest(BaseModel):
     operatorPubkey: str = Field(...)
@@ -3751,11 +3751,6 @@ async def issue_pru_spend_permit(
             pruIndex=pru_index,
             nonce=nonce,
             publicKey=public_key,
-            secretKeyBase64=_derive_pru_secret_key_base64(
-                master_seed_hex=route_material["masterSeedHex"],
-                tin=tin,
-                index=pru_index,
-            ),
             spendAuthHash=_compute_pru_spend_auth_hash(
                 tin=tin,
                 pru_index=pru_index,
@@ -3766,6 +3761,26 @@ async def issue_pru_spend_permit(
         total_selected += amount
     if total_selected != escrow_amount + sender_fee_amount:
         raise HTTPException(422, "PRU spend selections must equal escrow amount plus sender fee")
+    execution_plan = {
+        "planId": f"intent-{intent_id}",
+        "version": 2,
+        "tinId": tin,
+        "fundingMode": "mixed_zk_pru_wallet_v2" if intent.get("senderSettlementMode") == "mixed_pru_wallet_v1" else "zk_pru_only_v2",
+        "scopedSpendAuthorizations": [
+            {
+                "pruIndex": selection.pruIndex,
+                "amountBaseUnits": selection.amountBaseUnits,
+                "nonce": selection.nonce,
+                "authorizationHash": selection.spendAuthHash,
+                "authorizationMessage": f"{tin}:{selection.pruIndex}:{selection.nonce}",
+                "authorizationSignature": "",
+                "authorityPublicKey": selection.publicKey,
+            }
+            for selection in selections
+        ],
+        "executionPlanSignatureMessage": f"Execution Plan V2\nPlanId: intent-{intent_id}\nFunding: {('mixed_zk_pru_wallet_v2' if intent.get('senderSettlementMode') == 'mixed_pru_wallet_v1' else 'zk_pru_only_v2')}\nSelectedPrus: {','.join(str(selection.pruIndex) for selection in selections)}",
+        "executionPlanSignature": "",
+    }
     intent["assignedCrankerPubkey"] = body.operatorPubkey
     intent["updatedAt"] = datetime.now(timezone.utc).isoformat()
     await r.hset(k_intents(), intent_id, json.dumps(intent))
@@ -3776,6 +3791,7 @@ async def issue_pru_spend_permit(
         escrowAmountBaseUnits=str(escrow_amount),
         senderFeeAmountBaseUnits=str(sender_fee_amount),
         selections=selections,
+        executionPlanV2=execution_plan,
     )
 
 @app.post("/claim-requests", response_model=MempoolClaimRequest)

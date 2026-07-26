@@ -19,6 +19,8 @@ import {
   determineRotationNeeded,
   rotateActiveReceivingPru,
   recordReceipt,
+  consumeEmptyReservePru,
+  replenishEmptyReserve,
 } from "./zk-pru-state-manager.js";
 
 // ============================================================================
@@ -94,20 +96,30 @@ export function decideReceiptRouting(input: {
     Math.round((config.largeReceiptThresholdUsd / 1) * Math.pow(10, config.assetDecimals)),
   );
 
-  // Decision 2: Large receipt - route to separate PRU
+  // Decision 2: Large receipt - route to separate PRU if it would overflow
   if (incomingAmountBaseUnits > largeReceiptThresholdBaseUnits) {
     const projectedBalanceAfterReceipt = state.activeReceivingBalanceBaseUnits + incomingAmountBaseUnits;
 
-    // If adding receipt would exceed target by large margin, use separate PRU
+    // If adding receipt would exceed target max by any amount, use separate PRU
     if (projectedBalanceAfterReceipt > state.receivingRotationTargetMaxBaseUnits) {
       return {
         decision: "route_to_new_pru",
         targetPruIndex: nextAvailablePruIndex,
         amountToRoute: incomingAmountBaseUnits,
-        reasoning: `Large receipt ${incomingAmountBaseUnits} would exceed rotation target max (${state.receivingRotationTargetMaxBaseUnits})`,
+        reasoning: `Large receipt ${incomingAmountBaseUnits} would exceed rotation target max (${state.receivingRotationTargetMaxBaseUnits}), routing to fresh PRU-${nextAvailablePruIndex}`,
         rotationRequired: false,
       };
     }
+
+    // Large receipt but still within bounds: still prefer separate PRU for isolation
+    // This prevents the active PRU from becoming a large single spend target
+    return {
+      decision: "route_to_new_pru",
+      targetPruIndex: nextAvailablePruIndex,
+      amountToRoute: incomingAmountBaseUnits,
+      reasoning: `Large receipt ${incomingAmountBaseUnits} isolated to fresh PRU-${nextAvailablePruIndex}`,
+      rotationRequired: false,
+    };
   }
 
   // Decision 3: Soft rotation region - make nuanced decision
@@ -139,27 +151,36 @@ export function decideReceiptRouting(input: {
 }
 
 /**
- * Applies a receipt routing decision to the state
+ * Applies a receipt routing decision to the state.
+ * When rotating or routing to a new PRU, the old active PRU becomes a funded PRU.
  */
 export function applyReceiptRouting(
   state: ZkPruAssetState,
   plan: ReceiptRoutingPlan,
 ): ZkPruAssetState {
-  let updatedState = state;
- 
-  // Handle rotation if needed or when routing to a new PRU
-  if (
-    plan.rotationRequired ||
-    (plan.decision !== "accumulate_to_active" && plan.targetPruIndex !== updatedState.activeReceivingPruIndex)
-  ) {
+  let updatedState = { ...state };
+
+  const isRoutingToNew =
+    plan.decision !== "accumulate_to_active" &&
+    plan.targetPruIndex !== updatedState.activeReceivingPruIndex;
+
+  // Handle rotation: transition old active to funded if it has balance
+  if (plan.rotationRequired || isRoutingToNew) {
+    // If the current active has balance, it becomes a funded PRU
+    if (updatedState.activeReceivingBalanceBaseUnits > 0n) {
+      updatedState.fundedPruIndices = new Set(updatedState.fundedPruIndices);
+      updatedState.fundedPruIndices.add(updatedState.activeReceivingPruIndex);
+    }
+
+    // Perform rotation
     updatedState = rotateActiveReceivingPru(updatedState, plan.targetPruIndex);
   }
- 
-  // Record receipt on target PRU
+
+  // Record receipt on target PRU (which is now the active receiving PRU)
   if (plan.targetPruIndex === updatedState.activeReceivingPruIndex) {
     updatedState = recordReceipt(updatedState, plan.amountToRoute);
   }
- 
+
   return updatedState;
 }
 
@@ -189,37 +210,59 @@ export interface ProcessedReceipt {
 }
 
 /**
- * Processes a batch of receipts and updates state
+ * Processes a batch of receipts and updates state.
+ * Consumes empty reserves when routing to new PRUs.
  */
 export function processReceiptBatch(input: {
   state: ZkPruAssetState;
   receipts: IncomingReceipt[];
-  nextAvailablePruIndex: number;
   config: ReceiptAccumulationConfig;
 }): {
   updatedState: ZkPruAssetState;
   processedReceipts: ProcessedReceipt[];
+  reservesConsumed: number;
 } {
-  const { state: initialState, receipts, config } = input;
-  let currentState = initialState;
-  let nextPruIndex = input.nextAvailablePruIndex;
+  const { receipts, config } = input;
+  let currentState = { ...input.state };
   const processed: ProcessedReceipt[] = [];
+  let reservesConsumed = 0;
 
   for (const receipt of receipts) {
+    // Consume next available empty reserve if we need one
+    const { state: stateAfterConsume, consumedPruIndex } =
+      consumeEmptyReservePru(currentState);
+
+    if (consumedPruIndex === null) {
+      // No reserves available - accumulate to active or fail
+      processed.push({
+        receiptId: receipt.receiptId,
+        routed: false,
+        targetPruIndex: currentState.activeReceivingPruIndex,
+        decision: "accumulate_to_active",
+        reasoning: "No empty reserves available, accumulating to active PRU",
+      });
+      currentState = recordReceipt(currentState, receipt.amountBaseUnits);
+      continue;
+    }
+
+    currentState = stateAfterConsume;
+
     // Determine routing for this receipt
     const plan = decideReceiptRouting({
       state: currentState,
       incomingAmountBaseUnits: receipt.amountBaseUnits,
-      nextAvailablePruIndex: nextPruIndex,
+      nextAvailablePruIndex: consumedPruIndex,
       config,
     });
 
     // Apply the routing decision
     currentState = applyReceiptRouting(currentState, plan);
 
-    // Increment next PRU if we used a new one
-    if (plan.decision === "route_to_new_pru" || plan.decision === "require_rotation") {
-      nextPruIndex++;
+    // If we consumed a reserve but didn't use it, return it
+    if (consumedPruIndex !== plan.targetPruIndex && !plan.rotationRequired) {
+      currentState = replenishEmptyReserve(currentState, [consumedPruIndex]);
+    } else {
+      reservesConsumed++;
     }
 
     // Record the processing result
@@ -235,6 +278,7 @@ export function processReceiptBatch(input: {
   return {
     updatedState: currentState,
     processedReceipts: processed,
+    reservesConsumed,
   };
 }
 
@@ -303,13 +347,13 @@ export function analyzeFragmentation(input: {
 }
 
 /**
- * Creates a consolidation plan (for development/testing only)
+ * Creates a consolidation plan: sweep all fragmented PRUs to destination.
  */
 export function createConsolidationPlan(input: {
   tinId: string;
   assetMint: string;
   fragmentedPruIndices: number[];
-  totalBalance: bigint;
+  pruBalances: Map<number, bigint>;
   destinationPruIndex: number;
 }): {
   operations: Array<{
@@ -317,18 +361,21 @@ export function createConsolidationPlan(input: {
     destinationPruIndex: number;
     amount: bigint;
   }>;
-  estimatedCost: bigint;
+  estimatedCostLamports: bigint;
 } {
-  const operations = input.fragmentedPruIndices.map((sourcePruIndex) => ({
-    sourcePruIndex,
-    destinationPruIndex: input.destinationPruIndex,
-    amount: input.totalBalance / BigInt(input.fragmentedPruIndices.length),
-  }));
+  const operations = input.fragmentedPruIndices
+    .filter((idx) => idx !== input.destinationPruIndex)
+    .map((sourcePruIndex) => ({
+      sourcePruIndex,
+      destinationPruIndex: input.destinationPruIndex,
+      amount: input.pruBalances.get(sourcePruIndex) ?? 0n,
+    }))
+    .filter((op) => op.amount > 0n);
 
-  // Estimate cost: one sweep transaction per source PRU
-  const estimatedCost = BigInt(input.fragmentedPruIndices.length) * 5_000n; // Fixed cost per tx in lamports
+  // One sweep transaction per source PRU
+  const estimatedCostLamports = BigInt(operations.length) * 5_000n;
 
-  return { operations, estimatedCost };
+  return { operations, estimatedCostLamports };
 }
 
 // ============================================================================

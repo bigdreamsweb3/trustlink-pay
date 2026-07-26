@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildExecutionPlan,
+  buildExecutionPlanV2,
   calculateExecutionFees,
   calculateSpendTranches,
   selectOptimalSpendRoute,
@@ -295,6 +296,39 @@ test("L: Execution plan validation - expired plan", () => {
   assert.equal(validation.valid, false);
 });
 
+test("M: V2 execution plan uses bigint amounts and local scoped authorizations", () => {
+  const input = {
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    paymentAmountBaseUnits: 25n * baseUnitsPerUsdc,
+    recipientIdentity: "recipient:99999",
+    availablePruBalances: [
+      {
+        pruIndex: 0,
+        availableBalance: 40n * baseUnitsPerUsdc,
+        assetMint: "USDC",
+      },
+    ],
+    emptyPruIndices: [1],
+    walletAvailableBaseUnits: 0n,
+    currentSpendNonce: 0,
+    masterSeed: new Uint8Array(32).fill(7),
+    tsnVaultPubkey: "vault-demo",
+  };
+
+  const plan = buildExecutionPlanV2(input, defaultConfig);
+
+  assert.equal(plan.version, 2);
+  assert.equal(plan.fundingMode, "zk_pru_only_v2");
+  assert.ok(plan.routePlanHash.startsWith("sha256:"));
+  assert.ok(plan.scopedSpendAuthorizations.length >= 1);
+  assert.equal(plan.paymentOutput.amount, input.paymentAmountBaseUnits);
+  assert.ok(plan.totalSpendFromPrus >= input.paymentAmountBaseUnits);
+  assert.ok(plan.executionPlanSignatureMessage.includes("Execution Plan V2"));
+});
+
 // ============================================================================
 // State Manager Tests
 // ============================================================================
@@ -390,12 +424,15 @@ test("P: Empty reserve consumption and replenishment", () => {
   });
 
   const initialCount = state.emptyReservePruIndices.length;
-  state = consumeEmptyReservePru(state);
+  const { state: s1, consumedPruIndex: c1 } = consumeEmptyReservePru(state);
+  state = s1;
 
   assert.equal(state.emptyReservePruIndices.length, initialCount - 1);
+  assert.equal(c1, 1);
 
-  state = consumeEmptyReservePru(state);
-  state = consumeEmptyReservePru(state);
+  const { state: s2 } = consumeEmptyReservePru(state);
+  const { state: s3 } = consumeEmptyReservePru(s2);
+  state = s3;
 
   const summary = getPruAllocationSummary(state);
   assert.equal(summary.needsReserveReplenishment, true);
@@ -450,4 +487,295 @@ test("Q: Realistic scenario - 4 small receipts then 5 USDC payment", () => {
   assert.equal(plan.expectedSolanaTransactionCount, 1);
   assert.ok(plan.totalChangeAmount > 0n);
   assert.equal(plan.selectedPrus.length, 1);
+});
+
+// ============================================================================
+// Accumulator Integration Tests
+// ============================================================================
+
+import {
+  decideReceiptRouting,
+  applyReceiptRouting,
+  processReceiptBatch,
+  analyzeFragmentation,
+  createConsolidationPlan,
+  getAccumulationStatistics,
+} from "../dist/zk-pru-receive-accumulator.js";
+
+const defaultAccumConfig = {
+  baseReceiveTargetUsd: 1000,
+  receiveTargetVariancePercent: 20,
+  largeReceiptThresholdUsd: 1000,
+  softRotationThresholdPercent: 70,
+  maxReceiptsPerPruBeforeRotation: 50,
+  maxAgeDaysBeforeRotation: 30,
+  assetDecimals: 6,
+};
+
+test("R: Small receipt accumulates to active PRU", () => {
+  const state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  const plan = decideReceiptRouting({
+    state,
+    incomingAmountBaseUnits: 50n * baseUnitsPerUsdc,
+    nextAvailablePruIndex: 1,
+    config: defaultAccumConfig,
+  });
+
+  assert.equal(plan.decision, "accumulate_to_active");
+  assert.equal(plan.targetPruIndex, 0);
+  assert.equal(plan.rotationRequired, false);
+});
+
+test("S: Large receipt routes to new PRU", () => {
+  const state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  const plan = decideReceiptRouting({
+    state,
+    incomingAmountBaseUnits: 5000n * baseUnitsPerUsdc,
+    nextAvailablePruIndex: 1,
+    config: defaultAccumConfig,
+  });
+
+  assert.equal(plan.decision, "route_to_new_pru");
+  assert.equal(plan.targetPruIndex, 1);
+  assert.equal(plan.rotationRequired, false);
+});
+
+test("T: Rotation required when active PRU at target", () => {
+  const state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  // Fill active PRU to rotation target
+  const filledState = {
+    ...state,
+    activeReceivingBalanceBaseUnits: state.receivingRotationTargetBaseUnits,
+  };
+
+  const plan = decideReceiptRouting({
+    state: filledState,
+    incomingAmountBaseUnits: 10n * baseUnitsPerUsdc,
+    nextAvailablePruIndex: 1,
+    config: defaultAccumConfig,
+  });
+
+  assert.equal(plan.decision, "require_rotation");
+  assert.equal(plan.rotationRequired, true);
+});
+
+test("U: Apply routing transitions old active PRU to sealed on rotation", () => {
+  let state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  // Accumulate some balance on active PRU
+  state = recordReceipt(state, 500n * baseUnitsPerUsdc);
+
+  // Route a large receipt to a new PRU (forces rotation)
+  const plan = decideReceiptRouting({
+    state,
+    incomingAmountBaseUnits: 2000n * baseUnitsPerUsdc,
+    nextAvailablePruIndex: 1,
+    config: defaultAccumConfig,
+  });
+
+  const newState = applyReceiptRouting(state, plan);
+
+  // Old active PRU (0) should be sealed (it received payments and was rotated)
+  assert.ok(newState.sealedPruIndices.has(0));
+  assert.equal(newState.activeReceivingPruIndex, 1);
+  assert.equal(newState.activeReceivingBalanceBaseUnits, 2000n * baseUnitsPerUsdc);
+});
+
+test("V: Batch processing consumes reserves correctly", () => {
+  const state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2, 3],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  const receipts = [
+    { receiptId: "r1", amountBaseUnits: 100n * baseUnitsPerUsdc, txId: "tx1", timestamp: new Date().toISOString() },
+    { receiptId: "r2", amountBaseUnits: 200n * baseUnitsPerUsdc, txId: "tx2", timestamp: new Date().toISOString() },
+    { receiptId: "r3", amountBaseUnits: 5000n * baseUnitsPerUsdc, txId: "tx3", timestamp: new Date().toISOString() },
+  ];
+
+  const result = processReceiptBatch({
+    state,
+    receipts,
+    config: defaultAccumConfig,
+  });
+
+  assert.ok(result.processedReceipts.length === 3);
+  assert.ok(result.reservesConsumed >= 0);
+  assert.ok(result.updatedState.version >= state.version);
+});
+
+test("W: Consolidation plan sweeps fragmented PRUs", () => {
+  const pruBalances = new Map([
+    [0, 100n * baseUnitsPerUsdc],
+    [1, 50n * baseUnitsPerUsdc],
+    [2, 30n * baseUnitsPerUsdc],
+    [3, 0n],
+  ]);
+
+  const plan = createConsolidationPlan({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    fragmentedPruIndices: [0, 1, 2, 3],
+    pruBalances,
+    destinationPruIndex: 0,
+  });
+
+  // Should sweep non-zero, non-destination PRUs
+  assert.equal(plan.operations.length, 2);
+  assert.equal(plan.operations[0].sourcePruIndex, 1);
+  assert.equal(plan.operations[1].sourcePruIndex, 2);
+  assert.equal(plan.operations[0].destinationPruIndex, 0);
+  assert.ok(plan.estimatedCostLamports > 0n);
+});
+
+test("X: Accumulation statistics reflect current state", () => {
+  const state = createZkPruAssetState({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    initialActiveReceivingPruIndex: 0,
+    initialEmptyReservePruIndices: [1, 2, 3],
+    baseReceiveTargetUsd: 1000,
+    receiveTargetVariancePercent: 20,
+    minEmptyReserveCount: 2,
+    targetEmptyReserveCount: 3,
+  });
+
+  const filledState = {
+    ...state,
+    activeReceivingBalanceBaseUnits: 800n * baseUnitsPerUsdc,
+    fundedPruIndices: new Set([4, 5]),
+  };
+
+  const stats = getAccumulationStatistics({ state: filledState });
+
+  assert.equal(stats.activeReceivingPruIndex, 0);
+  assert.equal(stats.activeBalance, 800n * baseUnitsPerUsdc);
+  assert.ok(stats.percentOfTarget > 70);
+  assert.equal(stats.fundedPruCount, 2);
+  assert.equal(stats.emptyReserveCount, 3);
+});
+
+test("Y: Fragmentation analysis identifies problems", () => {
+  const fragmented = new Map([
+    [0, 100n * baseUnitsPerUsdc],
+    [1, 5n * baseUnitsPerUsdc],
+    [2, 200n * baseUnitsPerUsdc],
+    [3, 10n * baseUnitsPerUsdc],
+    [4, 300n * baseUnitsPerUsdc],
+  ]);
+
+  const analysis = analyzeFragmentation({
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    fragmentedPruBalances: fragmented,
+  });
+
+  assert.equal(analysis.pruCount, 5);
+  assert.ok(analysis.fragmentation > 0.3);
+  assert.ok(analysis.recommendations.length > 0);
+});
+
+test("Z: Change output uses consumed empty reserve index (not duplicated)", () => {
+  const input = {
+    tinId: "tin:12345",
+    assetMint: "USDC",
+    assetSymbol: "USDC",
+    assetDecimals: 6,
+    paymentAmountBaseUnits: 50n * baseUnitsPerUsdc,
+    recipientIdentity: "recipient:99999",
+    availablePruBalances: [
+      { pruIndex: 0, availableBalance: 10000n * baseUnitsPerUsdc, assetMint: "USDC" },
+    ],
+    emptyPruIndices: [1, 2, 3],
+    walletAvailableBaseUnits: 0n,
+    currentSpendNonce: 0,
+  };
+
+  const plan = buildExecutionPlan(input, defaultConfig);
+
+  // Change should go to PRU-1 (first empty reserve), not all to same
+  if (plan.changeOutputs.length > 0) {
+    assert.equal(plan.changeOutputs[0].destinationPruIndex, 1);
+    assert.equal(plan.changeOutputs[0].destinationType, "empty_reserve");
+  }
+});
+
+test("AA: Fee model: single PRU fee < multi-PRU fee for same payment", () => {
+  const singleFee = calculateExecutionFees({
+    paymentAmountBaseUnits: 500n * baseUnitsPerUsdc,
+    selectedPruCount: 1,
+    changeOutputCount: 1,
+    walletTopupRequired: false,
+    expectedTransactionCount: 1,
+    config: defaultConfig,
+  });
+
+  const multiFee = calculateExecutionFees({
+    paymentAmountBaseUnits: 500n * baseUnitsPerUsdc,
+    selectedPruCount: 3,
+    changeOutputCount: 2,
+    walletTopupRequired: false,
+    expectedTransactionCount: 2,
+    config: defaultConfig,
+  });
+
+  assert.ok(singleFee.totalFeeBaseUnits < multiFee.totalFeeBaseUnits,
+    `Single (${singleFee.totalFeeBaseUnits}) should cost less than multi (${multiFee.totalFeeBaseUnits})`);
 });

@@ -116,6 +116,7 @@
     "tsn:cranker:help": "npm --prefix tsn-protocol/tsn-cranker-op-daemon run help",
     "// === SDKs ===": "Build and refresh local SDKs after protocol or generated-code changes.",
     "tsn:sdk:build": "npm --prefix tsn-protocol/tsn-sdk run build",
+    "pru:simulate": "npm --prefix tsn-protocol/tsn-sdk run simulate",
     "tcap:sdk:build": "npm --prefix tcap-protocol/tcap-sdk run build",
     "tcap:sdk:test": "npm --prefix tcap-protocol/tcap-sdk test",
     "tcap:program:check": "cargo check --manifest-path tcap-protocol/Cargo.toml -p tcap",

@@ -122,6 +122,10 @@
       "import": "./dist/private-view/public.js",
       "types": "./dist/private-view/public.d.ts"
     },
+    "./zk-pru-simulator": {
+      "import": "./dist/zk-pru-simulator.js",
+      "types": "./dist/zk-pru-simulator.d.ts"
+    },
     "./sessions/server": {
       "import": "./dist/sessions/server/index.js",
       "types": "./dist/sessions/server/index.d.ts"
@@ -130,7 +134,8 @@
   "scripts": {
     "build": "tsc -b",
     "watch": "tsc --watch",
-    "test": "npm run build && node --test tests/*.test.mjs"
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "simulate": "node --input-type=module -e \"import { runAllScenarios, formatSimulationResult } from './dist/zk-pru-simulator.js'; for (const r of runAllScenarios()) console.log(formatSimulationResult(r));\""
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

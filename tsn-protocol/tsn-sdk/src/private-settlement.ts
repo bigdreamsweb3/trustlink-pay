@@ -67,10 +67,29 @@ export type PruSpendPermitSelection = {
   tin: string;
   pruIndex: number;
   nonce: number;
-  publicKey: string;
-  secretKeyBase64: string;
+  publicKey?: string;
   spendAuthHash: string;
   amountBaseUnits: string;
+  authorizationMessage?: string;
+  authorizationSignature?: string;
+};
+
+export type PruSpendExecutionPlanV2 = {
+  planId: string;
+  version: 2;
+  tinId?: string;
+  fundingMode: "wallet_only_v2" | "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2";
+  scopedSpendAuthorizations: Array<{
+    pruIndex: number;
+    amountBaseUnits: string;
+    nonce: number;
+    authorizationHash: string;
+    authorizationMessage: string;
+    authorizationSignature: string;
+    authorityPublicKey: string;
+  }>;
+  executionPlanSignatureMessage: string;
+  executionPlanSignature: string;
 };
 
 export type PruSpendPermit = {
@@ -335,18 +354,84 @@ export function requestPrivateRecoveryPermit(params: {
   });
 }
 
-export function requestPruSpendPermit(params: {
+export async function requestPruSpendPermit(params: {
   mempoolUrl: string;
   apiKey?: string | null;
   intentId: string;
   operator: Keypair;
   fetchImpl?: typeof fetch;
 }) {
-  return requestPrivatePermit<PruSpendPermit>({
-    ...params,
-    action: "pru-spend",
-    workId: params.intentId,
-  });
+  const fetchImpl = (params.fetchImpl ?? globalThis.fetch).bind(
+    globalThis,
+  ) as typeof fetch;
+  const response = await fetchImpl(
+    `${params.mempoolUrl.replace(/\/$/, "")}/intents/${encodeURIComponent(params.intentId)}`,
+    {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        ...(params.apiKey ? { "x-api-key": params.apiKey } : {}),
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(
+      `TSN execution-plan request failed (${response.status}): ${await response.text()}`,
+    );
+  }
+  const payload = (await response.json()) as {
+    paymentId?: string;
+    tokenMintAddress?: string;
+    commitmentHash?: string;
+    amount?: number | string;
+    senderFeeAmount?: number | string;
+    pruSpendAmountBaseUnits?: string | number | null;
+    senderFeeAmountBaseUnits?: string | number | null;
+    executionPlanV2?: PruSpendExecutionPlanV2 | null;
+    intent?: {
+      executionPlanV2?: PruSpendExecutionPlanV2 | null;
+      paymentId?: string;
+      tokenMintAddress?: string;
+      commitmentHash?: string;
+      amount?: number | string;
+      senderFeeAmount?: number | string;
+      pruSpendAmountBaseUnits?: string | number | null;
+      senderFeeAmountBaseUnits?: string | number | null;
+    } | null;
+  };
+  const intentPayload = payload.intent ?? payload;
+  const executionPlan =
+    payload.executionPlanV2 ?? intentPayload.executionPlanV2;
+  if (!executionPlan) {
+    throw new Error(
+      "TSN mempool response does not include an Execution Plan V2",
+    );
+  }
+  const escrowAmountBaseUnits = String(
+    intentPayload.pruSpendAmountBaseUnits ?? intentPayload.amount ?? "0",
+  );
+  const senderFeeAmountBaseUnits = String(
+    intentPayload.senderFeeAmountBaseUnits ??
+      intentPayload.senderFeeAmount ??
+      "0",
+  );
+  return {
+    paymentId: String(intentPayload.paymentId ?? params.intentId),
+    tokenMintAddress: String(intentPayload.tokenMintAddress ?? ""),
+    commitmentHash: String(intentPayload.commitmentHash ?? ""),
+    escrowAmountBaseUnits,
+    senderFeeAmountBaseUnits,
+    selections: executionPlan.scopedSpendAuthorizations.map((selection) => ({
+      tin: executionPlan.tinId ?? params.intentId,
+      pruIndex: selection.pruIndex,
+      nonce: selection.nonce,
+      publicKey: selection.authorityPublicKey,
+      spendAuthHash: selection.authorizationHash,
+      amountBaseUnits: selection.amountBaseUnits,
+      authorizationMessage: selection.authorizationMessage,
+      authorizationSignature: selection.authorizationSignature,
+    })),
+  } satisfies PruSpendPermit;
 }
 
 export function getTsnPruSpendGuardPda(params: {
@@ -389,9 +474,12 @@ type PruSpendSelection = {
   tin: bigint | number | string;
   pruIndex: number;
   nonce: number;
-  pruAuthority: Keypair;
+  pruAuthority?: Keypair | null;
+  pruAuthorityPublicKey?: PublicKey | string | null;
   spendAuthHash: Uint8Array;
   amountBaseUnits: bigint;
+  authorizationMessage?: string;
+  authorizationSignature?: string;
 };
 
 function buildPruSpendInstructions(params: {
@@ -423,53 +511,87 @@ function buildPruSpendInstructions(params: {
     remainingSenderFee -= feeForThisSelection;
     const escrowAmountForThisSelection =
       selection.amountBaseUnits - feeForThisSelection;
+    const pruAuthorityPubkey = selection.pruAuthorityPublicKey
+      ? new PublicKey(selection.pruAuthorityPublicKey)
+      : (selection.pruAuthority?.publicKey ?? params.operator);
     const pruTokenAccount = getAssociatedTokenAddressSync(
       params.tokenMint,
-      selection.pruAuthority.publicKey,
+      pruAuthorityPubkey,
     );
     const pruSpendGuard = getTsnPruSpendGuardPda({
       tin: selection.tin,
       pruIndex: selection.pruIndex,
     });
-    return new TransactionInstruction({
-      programId: PROGRAM_ID,
-      keys: [
-        { pubkey: params.operator, isSigner: true, isWritable: true },
-        {
-          pubkey: selection.pruAuthority.publicKey,
-          isSigner: true,
-          isWritable: false,
-        },
-        { pubkey: motherEscrow, isSigner: false, isWritable: false },
-        { pubkey: cranker, isSigner: false, isWritable: true },
-        { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
-        { pubkey: pruTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: params.tokenMint, isSigner: false, isWritable: false },
-        { pubkey: treasuryPda, isSigner: false, isWritable: false },
-        { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
-        {
-          pubkey: params.escrowTokenAccountPubkey,
-          isSigner: true,
-          isWritable: true,
-        },
-        { pubkey: verifierPda, isSigner: false, isWritable: true },
-        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(
-        concatBytes([
-          instructionDiscriminator("tsn_execute_pru_spend"),
-          encodeU64(BigInt(selection.tin)),
-          encodeU16(selection.pruIndex),
-          Uint8Array.of(selection.nonce),
-          params.commitmentHash,
-          selection.spendAuthHash,
-          encodeU64(escrowAmountForThisSelection),
-          encodeU64(feeForThisSelection),
-        ]),
-      ),
-    });
+    const authorizationMessage = selection.authorizationMessage
+      ? utf8ToBytes(selection.authorizationMessage)
+      : selection.spendAuthHash;
+    const authorizationSignature = selection.authorizationSignature
+      ? Uint8Array.from(Buffer.from(selection.authorizationSignature, "base64"))
+      : null;
+    const verifyInstruction =
+      authorizationSignature && authorizationMessage
+        ? Ed25519Program.createInstructionWithPublicKey({
+            publicKey: pruAuthorityPubkey.toBytes(),
+            message: authorizationMessage,
+            signature: authorizationSignature,
+          })
+        : null;
+    const baseInstructions = [
+      ...(verifyInstruction ? [verifyInstruction] : []),
+      new TransactionInstruction({
+        programId: PROGRAM_ID,
+        keys: [
+          { pubkey: params.operator, isSigner: true, isWritable: true },
+          {
+            pubkey: pruAuthorityPubkey,
+            isSigner: true,
+            isWritable: false,
+          },
+          { pubkey: motherEscrow, isSigner: false, isWritable: false },
+          { pubkey: cranker, isSigner: false, isWritable: true },
+          { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
+          { pubkey: pruTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: params.tokenMint, isSigner: false, isWritable: false },
+          { pubkey: treasuryPda, isSigner: false, isWritable: false },
+          { pubkey: treasuryTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
+          {
+            pubkey: params.escrowTokenAccountPubkey,
+            isSigner: true,
+            isWritable: true,
+          },
+          { pubkey: verifierPda, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+          {
+            pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        data: Buffer.from(
+          concatBytes([
+            instructionDiscriminator("tsn_execute_pru_spend"),
+            encodeU64(BigInt(selection.tin)),
+            encodeU16(selection.pruIndex),
+            Uint8Array.of(selection.nonce),
+            params.commitmentHash,
+            selection.spendAuthHash,
+            encodeU64(escrowAmountForThisSelection),
+            encodeU64(feeForThisSelection),
+            authorizationSignature
+              ? authorizationSignature
+              : new Uint8Array(64),
+            pruAuthorityPubkey.toBytes(),
+          ]),
+        ),
+      }),
+    ];
+    return baseInstructions;
   });
 }
 
@@ -561,13 +683,15 @@ export async function tsnExecutePruSpendOnChainBatched(params: {
     const signers = [
       params.operator,
       escrowTokenAccount,
-      ...batch.selections.map((s) => s.pruAuthority),
+      ...batch.selections.flatMap((selection) =>
+        selection.pruAuthority ? [selection.pruAuthority] : [],
+      ),
     ];
 
     const signature = await sendAndConfirmTransaction(
       connection,
       new Transaction({ feePayer: params.operator.publicKey }).add(
-        ...instructions,
+        ...instructions.flat(),
       ),
       signers,
       { commitment: "confirmed" },
@@ -642,12 +766,14 @@ export async function tsnExecutePruSpendOnChain(params: {
   const signature = await sendAndConfirmTransaction(
     connection,
     new Transaction({ feePayer: params.operator.publicKey }).add(
-      ...instructions,
+      ...instructions.flat(),
     ),
     [
       params.operator,
       escrowTokenAccount,
-      ...params.selections.map((selection) => selection.pruAuthority),
+      ...params.selections.flatMap((selection) =>
+        selection.pruAuthority ? [selection.pruAuthority] : [],
+      ),
     ],
     { commitment: "confirmed" },
   );

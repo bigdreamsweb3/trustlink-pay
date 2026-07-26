@@ -1,4 +1,7 @@
 export type TinSpendFundingMode =
+  | "zk_pru_only_v2"
+  | "mixed_zk_pru_wallet_v2"
+  | "wallet_only_v2"
   | "pru_only"
   | "mixed_pru_and_wallet"
   | "wallet_only"
@@ -28,7 +31,10 @@ export type TinSpendPlan = {
   userMessage: string;
 };
 
-function toNonNegativeBigint(value: bigint | number | string | null | undefined, fieldName: string) {
+function toNonNegativeBigint(
+  value: bigint | number | string | null | undefined,
+  fieldName: string,
+) {
   if (value == null) return 0n;
   const parsed = typeof value === "bigint" ? value : BigInt(String(value));
   if (parsed < 0n) {
@@ -38,17 +44,32 @@ function toNonNegativeBigint(value: bigint | number | string | null | undefined,
 }
 
 export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
-  const requestedAmount = toNonNegativeBigint(input.requestedAmountBaseUnits, "requestedAmountBaseUnits");
-  const feeAmount = toNonNegativeBigint(input.feeAmountBaseUnits, "feeAmountBaseUnits");
-  const pruAvailable = toNonNegativeBigint(input.pruAvailableBaseUnits, "pruAvailableBaseUnits");
-  const walletAvailable = toNonNegativeBigint(input.walletAvailableBaseUnits, "walletAvailableBaseUnits");
+  const requestedAmount = toNonNegativeBigint(
+    input.requestedAmountBaseUnits,
+    "requestedAmountBaseUnits",
+  );
+  const feeAmount = toNonNegativeBigint(
+    input.feeAmountBaseUnits,
+    "feeAmountBaseUnits",
+  );
+  const pruAvailable = toNonNegativeBigint(
+    input.pruAvailableBaseUnits,
+    "pruAvailableBaseUnits",
+  );
+  const walletAvailable = toNonNegativeBigint(
+    input.walletAvailableBaseUnits,
+    "walletAvailableBaseUnits",
+  );
   const totalRequired = requestedAmount + feeAmount;
   const pruSpend = pruAvailable >= totalRequired ? totalRequired : pruAvailable;
   const remainingAfterPru = totalRequired - pruSpend;
-  const walletSpend = walletAvailable >= remainingAfterPru ? remainingAfterPru : walletAvailable;
+  const walletSpend =
+    walletAvailable >= remainingAfterPru ? remainingAfterPru : walletAvailable;
   const shortfall = totalRequired - pruSpend - walletSpend;
-  const pruEscrowAmount = pruSpend >= requestedAmount ? requestedAmount : pruSpend;
-  const pruSenderFeeAmount = pruSpend > requestedAmount ? pruSpend - requestedAmount : 0n;
+  const pruEscrowAmount =
+    pruSpend >= requestedAmount ? requestedAmount : pruSpend;
+  const pruSenderFeeAmount =
+    pruSpend > requestedAmount ? pruSpend - requestedAmount : 0n;
   const walletEscrowAmount = requestedAmount - pruEscrowAmount;
   const walletSenderFeeAmount = feeAmount - pruSenderFeeAmount;
 
@@ -67,13 +88,14 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
       shortfallBaseUnits: shortfall.toString(),
       privacyLevel: "blocked",
       requiresPruExecution: pruSpend > 0n,
-      userMessage: "TIN balance plus main wallet balance is not enough for this payment.",
+      userMessage:
+        "TIN balance plus main wallet balance is not enough for this payment.",
     };
   }
 
   if (pruSpend === totalRequired && totalRequired > 0n) {
     return {
-      fundingMode: "pru_only",
+      fundingMode: "zk_pru_only_v2",
       requestedAmountBaseUnits: requestedAmount.toString(),
       feeAmountBaseUnits: feeAmount.toString(),
       totalRequiredBaseUnits: totalRequired.toString(),
@@ -92,7 +114,7 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
 
   if (pruSpend > 0n && walletSpend > 0n) {
     return {
-      fundingMode: "mixed_pru_and_wallet",
+      fundingMode: "mixed_zk_pru_wallet_v2",
       requestedAmountBaseUnits: requestedAmount.toString(),
       feeAmountBaseUnits: feeAmount.toString(),
       totalRequiredBaseUnits: totalRequired.toString(),
@@ -105,12 +127,13 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
       shortfallBaseUnits: "0",
       privacyLevel: "reduced",
       requiresPruExecution: true,
-      userMessage: "This payment uses TIN balance first and main wallet balance for the remaining amount.",
+      userMessage:
+        "This payment uses TIN balance first and main wallet balance for the remaining amount.",
     };
   }
 
   return {
-    fundingMode: "wallet_only",
+    fundingMode: "wallet_only_v2",
     requestedAmountBaseUnits: requestedAmount.toString(),
     feeAmountBaseUnits: feeAmount.toString(),
     totalRequiredBaseUnits: totalRequired.toString(),
@@ -123,6 +146,7 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
     shortfallBaseUnits: "0",
     privacyLevel: "lowest",
     requiresPruExecution: false,
-    userMessage: "No spendable TIN balance was found for this token, so this payment uses the connected wallet.",
+    userMessage:
+      "No spendable TIN balance was found for this token, so this payment uses the connected wallet.",
   };
 }

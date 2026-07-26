@@ -15,6 +15,8 @@
 import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 
+import { createScopedPruIntent } from "./pru.js";
+
 // ============================================================================
 // Types and Interfaces
 // ============================================================================
@@ -76,6 +78,21 @@ export interface SelectedPruForSpend {
 /**
  * Complete execution plan for a payment
  */
+export type ExecutionPlanFundingMode =
+  | "wallet_only_v2"
+  | "zk_pru_only_v2"
+  | "mixed_zk_pru_wallet_v2";
+
+export interface ScopedSpendAuthorization {
+  pruIndex: number;
+  amountBaseUnits: string;
+  nonce: number;
+  authorizationHash: string;
+  authorizationMessage: string;
+  authorizationSignature: string;
+  authorityPublicKey: string;
+}
+
 export interface ExecutionPlan {
   // Metadata
   planId: string;
@@ -181,6 +198,8 @@ export interface ExecutionPlannerInput {
   emptyPruIndices: number[];
   walletAvailableBaseUnits: bigint;
   currentSpendNonce: number;
+  masterSeed?: Uint8Array | string | null;
+  tsnVaultPubkey?: string | Uint8Array | null;
 }
 
 // ============================================================================
@@ -188,31 +207,61 @@ export interface ExecutionPlannerInput {
 // ============================================================================
 
 /**
- * Evaluates whether a single PRU can fully fund the payment
- * and returns the score if it can.
+ * Evaluates whether a single PRU can fully fund the payment.
+ * Returns a score reflecting practicality of change output and pattern avoidance.
  */
 function evaluateSinglePruFullFund(
   pruBalance: bigint,
   paymentAmount: bigint,
   pruIndex: number,
   lastUsedAt?: string,
+  lastSelectedPruIndex?: number,
 ): { canFund: boolean; score: number } {
   if (pruBalance < paymentAmount) {
     return { canFund: false, score: 0 };
   }
 
-  // Score factors: prefer less-recently-used to avoid patterns
-  const recencyScore = lastUsedAt
-    ? 100 - Math.min(99, Math.floor(Date.now() / 1000) % 100)
-    : 50;
-  const balanceEfficacy = paymentAmount === pruBalance ? 100 : 90; // Exact match is best
-  const score = (recencyScore + balanceEfficacy) / 2;
+  const change = pruBalance - paymentAmount;
+
+  // Score: prefer balances that produce practical change outputs
+  // Exact match (zero change) is optimal for small payments
+  let balanceEfficacy: number;
+  if (change === 0n) {
+    balanceEfficacy = 100; // Perfect exact match
+  } else if (paymentAmount > 0n) {
+    // Prefer change that is a small fraction of the source (clean tranche)
+    const changeRatio = Number(change * 100n / pruBalance);
+    if (changeRatio <= 10) {
+      balanceEfficacy = 95; // Small change, good
+    } else if (changeRatio <= 50) {
+      balanceEfficacy = 85; // Moderate change
+    } else {
+      balanceEfficacy = 70; // Large change, less preferred
+    }
+  } else {
+    balanceEfficacy = 50;
+  }
+
+  // Pattern avoidance: penalize if same PRU was recently selected
+  const patternPenalty =
+    lastSelectedPruIndex === pruIndex ? 15 : 0;
+
+  // Recency: slightly prefer less-recently-used PRUs
+  let recencyScore = 50;
+  if (lastUsedAt) {
+    const ageSeconds = (Date.now() - new Date(lastUsedAt).getTime()) / 1000;
+    if (ageSeconds > 3600) recencyScore = 60;
+    if (ageSeconds > 86400) recencyScore = 70;
+  }
+
+  const score = Math.max(0, (balanceEfficacy + recencyScore) / 2 - patternPenalty);
 
   return { canFund: true, score };
 }
 
 /**
- * Evaluates a multi-PRU selection strategy
+ * Evaluates a multi-PRU selection strategy.
+ * Uses greedy largest-balance-first, but penalises each additional PRU.
  */
 function evaluateMultiPruStrategy(
   balances: PruBalanceInfo[],
@@ -230,13 +279,13 @@ function evaluateMultiPruStrategy(
     change: bigint;
   }> = [];
 
-  // Greedy selection: take largest balances until satisfied
+  // Greedy: take largest balances until satisfied
   const sorted = [...balances].sort((a, b) =>
     Number(b.availableBalance - a.availableBalance),
   );
 
   let accumulated = 0n;
-  let selectedIndices: number[] = [];
+  const selectedIndices: number[] = [];
 
   for (const pru of sorted) {
     if (accumulated >= paymentAmount) break;
@@ -246,10 +295,13 @@ function evaluateMultiPruStrategy(
 
   if (accumulated >= paymentAmount) {
     const change = accumulated - paymentAmount;
-    // Penalize multi-PRU strategies: fewer PRUs is better
-    const pruPenalty =
-      selectedIndices.length > 1 ? (selectedIndices.length - 1) * 10 : 0;
-    const score = Math.max(0, 50 - pruPenalty);
+    // Each additional PRU beyond the first adds transaction cost and pattern risk
+    const pruPenalty = selectedIndices.length > 1
+      ? (selectedIndices.length - 1) * 20
+      : 0;
+    // Penalise excess change (unwanted fragmentation)
+    const changePenalty = change > paymentAmount / 2n ? 10 : 0;
+    const score = Math.max(0, 60 - pruPenalty - changePenalty);
     strategies.push({
       prus: selectedIndices,
       score,
@@ -262,12 +314,17 @@ function evaluateMultiPruStrategy(
 }
 
 /**
- * Main spend selection algorithm
- * Priority:
- * 1. Single PRU that can fully fund
- * 2. Multi-PRU with minimal count
- * 3. Wallet top-up if needed
- * 4. Fail if insufficient
+ * Main spend selection algorithm.
+ *
+ * Priority order:
+ * 1. Select a single ZK-PRU that can fund the complete payment.
+ * 2. Minimise the number of selected ZK-PRUs.
+ * 3. Minimise the number of Solana transactions.
+ * 4. Avoid main-wallet top-up when a ZK-PRU route can fully cover the payment.
+ * 5. Prefer a balance that produces a practical change output.
+ * 6. Preserve protected-routing requirements.
+ * 7. Avoid repeatedly selecting the same visible pattern.
+ * 8. Use multiple ZK-PRUs only when no single ZK-PRU can fund the payment.
  */
 export function selectOptimalSpendRoute(
   pruBalances: PruBalanceInfo[],
@@ -284,31 +341,35 @@ export function selectOptimalSpendRoute(
   reasoning: string;
 } {
   const alternatives: SpendSelectionStrategy[] = [];
-  let selectedPrus: number[] = [];
-  let walletTopup = 0n;
-  let totalSpend = 0n;
 
   // Strategy 1: Find single PRU that can fully fund
+  let bestSingle: { index: number; score: number } | null = null;
   for (const pruBalance of pruBalances) {
     const evaluation = evaluateSinglePruFullFund(
       pruBalance.availableBalance,
       paymentAmount,
       pruBalance.pruIndex,
       pruBalance.lastUsedAt,
+      undefined, // lastSelectedPruIndex not available here
     );
     if (evaluation.canFund) {
-      return {
-        strategy: "single_pru_full_fund",
-        selectedPrus: [pruBalance.pruIndex],
-        walletTopup: 0n,
-        totalSpend: paymentAmount,
-        feasible: true,
-        alternatives,
-        reasoning: `Single PRU-${pruBalance.pruIndex} with ${pruBalance.availableBalance} can fully fund ${paymentAmount}`,
-      };
+      if (!bestSingle || evaluation.score > bestSingle.score) {
+        bestSingle = { index: pruBalance.pruIndex, score: evaluation.score };
+      }
     }
   }
 
+  if (bestSingle) {
+    return {
+      strategy: "single_pru_full_fund",
+      selectedPrus: [bestSingle.index],
+      walletTopup: 0n,
+      totalSpend: paymentAmount,
+      feasible: true,
+      alternatives,
+      reasoning: `Single PRU-${bestSingle.index} can fully fund ${paymentAmount} (score: ${bestSingle.score})`,
+    };
+  }
   alternatives.push("single_pru_full_fund");
 
   // Strategy 2: Minimal multi-PRU set from ZK-PRUs only
@@ -316,7 +377,6 @@ export function selectOptimalSpendRoute(
   if (multiStrategies.length > 0) {
     const best = multiStrategies.sort((a, b) => b.score - a.score)[0];
     if (best && best.prus.length <= 3) {
-      // Max 3 PRUs reasonable; beyond that consider wallet
       return {
         strategy: "minimal_pru_set",
         selectedPrus: best.prus,
@@ -324,41 +384,40 @@ export function selectOptimalSpendRoute(
         totalSpend: paymentAmount,
         feasible: true,
         alternatives,
-        reasoning: `Multi-PRU strategy with ${best.prus.length} PRUs can fund ${paymentAmount}`,
+        reasoning: `Multi-PRU strategy with ${best.prus.length} PRUs funds ${paymentAmount} (score: ${best.score})`,
       };
     }
   }
-
   alternatives.push("minimal_pru_set");
 
-  // Strategy 3: Multi-PRU fragmented or wallet top-up
+  // Strategy 3: Check if wallet top-up can cover the shortfall
   let accumulated = 0n;
-  selectedPrus = [];
+  const selectedPrus: number[] = [];
 
-  for (const pruBalance of pruBalances) {
+  // Sort by largest first for greedy fill
+  const sortedForFill = [...pruBalances].sort((a, b) =>
+    Number(b.availableBalance - a.availableBalance),
+  );
+
+  for (const pruBalance of sortedForFill) {
     if (accumulated >= paymentAmount) break;
     accumulated += pruBalance.availableBalance;
     selectedPrus.push(pruBalance.pruIndex);
   }
 
   if (accumulated < paymentAmount) {
-    // Need wallet top-up
     const needed = paymentAmount - accumulated;
     if (walletBalance >= needed) {
-      walletTopup = needed;
-      totalSpend = accumulated + walletTopup;
       return {
         strategy: "wallet_topup_required",
         selectedPrus,
-        walletTopup,
-        totalSpend,
+        walletTopup: needed,
+        totalSpend: accumulated + needed,
         feasible: true,
         alternatives,
-        reasoning: `Selected ${selectedPrus.length} PRUs (${accumulated} available) + wallet top-up (${needed})`,
+        reasoning: `Selected ${selectedPrus.length} PRUs (${accumulated}) + wallet top-up (${needed})`,
       };
     }
-
-    // Insufficient funds
     alternatives.push("wallet_topup_required");
     return {
       strategy: "multi_pru_fragmented",
@@ -371,7 +430,7 @@ export function selectOptimalSpendRoute(
     };
   }
 
-  // Multi-PRU but sufficient
+  // Multi-PRU sufficient without wallet
   return {
     strategy: "multi_pru_fragmented",
     selectedPrus,
@@ -388,7 +447,18 @@ export function selectOptimalSpendRoute(
 // ============================================================================
 
 /**
- * Calculates execution fees based on plan characteristics
+ * Unified fee calculation.
+ *
+ * TOTAL USER FEE =
+ *   protocolAmountFee (paymentAmount * protocolFeeBps / 10000)
+ * + multiPruSurcharge (if >1 PRU)
+ * + estimatedNetworkCost (txCount * fixedCost + changeAccounts * creationCost)
+ * + crankerReward (totalCostBeforeCranker * crankerRewardBps / 10000)
+ *
+ * Constraints:
+ * - totalFee <= maxAuthorizedFee (user must approve maximum)
+ * - crankerReward >= 0 (Cranker never operates at a loss)
+ * - No additional fragmentation fees when planner itself created avoidable fragmentation
  */
 export function calculateExecutionFees(input: {
   paymentAmountBaseUnits: bigint;
@@ -405,12 +475,12 @@ export function calculateExecutionFees(input: {
 } {
   const { config } = input;
 
-  // Base protocol fee: BPS on payment amount
-  const baseFeeBaseUnits =
+  // 1. Protocol amount-based fee
+  const protocolFeeBaseUnits =
     (input.paymentAmountBaseUnits * BigInt(config.protocolFeeBps)) / 10_000n;
 
-  // Multi-PRU surcharge: additional BPS per additional PRU (on top of base fee)
-  const multiPruSurchargeAmount =
+  // 2. Multi-PRU surcharge: additional BPS per additional PRU
+  const multiPruSurcharge =
     input.selectedPruCount > 1
       ? (BigInt(input.selectedPruCount - 1) *
           BigInt(config.multiPruSurchargeBps) *
@@ -418,36 +488,32 @@ export function calculateExecutionFees(input: {
         10_000n
       : 0n;
 
-  const protocolFeeBaseUnits = baseFeeBaseUnits + multiPruSurchargeAmount;
-
-  // Account creation cost: per new change account (convert lamports to base units)
-  const accountCreationCost =
-    (BigInt(input.changeOutputCount) *
-      BigInt(config.accountCreationCostLamports)) /
-    BigInt(1_000_000); // Assuming 6-decimal conversion
-
-  // Transaction cost
+  // 3. Estimated network execution cost
   const estimatedNetworkFeeLamports =
     input.expectedTransactionCount * config.transactionFixedCostLamports +
     config.accountCreationCostLamports * input.changeOutputCount;
 
-  // Wallet top-up surcharge
+  // Convert network cost to token base units (approximate)
+  const accountCreationCost =
+    (BigInt(input.changeOutputCount) *
+      BigInt(config.accountCreationCostLamports)) /
+    BigInt(1_000_000);
+
+  // 4. Wallet top-up surcharge (additional coordination cost)
   const walletTopupSurcharge = input.walletTopupRequired
     ? (input.paymentAmountBaseUnits * BigInt(config.protocolFeeBps)) / 10_000n
     : 0n;
 
-  // Cranker reward: BPS on total cost
+  // 5. Cranker execution reward
   const totalCostBeforeCranker =
-    protocolFeeBaseUnits +
-    accountCreationCost +
-    walletTopupSurcharge;
+    protocolFeeBaseUnits + multiPruSurcharge + accountCreationCost + walletTopupSurcharge;
   const crankerRewardBaseUnits =
     (totalCostBeforeCranker * BigInt(config.crankerRewardBps)) / 10_000n;
 
   const totalFeeBaseUnits = totalCostBeforeCranker + crankerRewardBaseUnits;
 
   return {
-    protocolFeeBaseUnits,
+    protocolFeeBaseUnits: protocolFeeBaseUnits + multiPruSurcharge + walletTopupSurcharge,
     crankerRewardBaseUnits,
     estimatedNetworkFeeLamports,
     totalFeeBaseUnits,
@@ -459,7 +525,26 @@ export function calculateExecutionFees(input: {
 // ============================================================================
 
 /**
- * Calculates tranches for a selected PRU based on payment amount
+ * Calculates tranches for a selected PRU based on payment amount.
+ *
+ * Three cases:
+ *
+ * CASE 1: pruBalance <= paymentAmount (small balance, full consumption)
+ *   - payment = paymentAmount
+ *   - change = pruBalance - paymentAmount (if > 0)
+ *   - source = RETIRED (entire balance consumed)
+ *
+ * CASE 2: pruBalance > paymentAmount AND paymentAmount >= standardTranche
+ *   - payment = paymentAmount
+ *   - change = pruBalance - paymentAmount
+ *   - source = retained with new balance
+ *
+ * CASE 3: pruBalance > paymentAmount AND paymentAmount < standardTranche
+ *   - Extract tranche from source
+ *   - payment = paymentAmount
+ *   - change = tranche - paymentAmount
+ *   - source = retained with (pruBalance - tranche)
+ *   - change destination = empty reserve PRU
  */
 export function calculateSpendTranches(input: {
   pruBalance: bigint;
@@ -471,7 +556,22 @@ export function calculateSpendTranches(input: {
   const tranches: Array<{ amount: bigint; destination: "payment" | "change" }> =
     [];
 
-  // Calculate tranche in base units
+  if (input.paymentAmount <= 0n) {
+    return tranches;
+  }
+
+  // CASE 1: Source balance is less than or equal to payment amount
+  // Full consumption of the source
+  if (input.pruBalance <= input.paymentAmount) {
+    tranches.push({ amount: input.paymentAmount, destination: "payment" });
+    const change = input.pruBalance - input.paymentAmount;
+    if (change > 0n) {
+      tranches.push({ amount: change, destination: "change" });
+    }
+    return tranches;
+  }
+
+  // Source has more than payment amount
   const trancheBaseUnits = BigInt(
     Math.round(
       (input.standardTrancheUsd / input.tokenUsd) *
@@ -479,38 +579,28 @@ export function calculateSpendTranches(input: {
     ),
   );
 
-  // If PRU balance <= payment amount, no tranche extraction
-  if (input.pruBalance <= input.paymentAmount) {
+  // CASE 2: Payment is large enough (>= standard tranche)
+  // Direct payment + remaining change
+  if (input.paymentAmount >= trancheBaseUnits) {
     tranches.push({ amount: input.paymentAmount, destination: "payment" });
-    if (input.pruBalance > input.paymentAmount) {
-      tranches.push({
-        amount: input.pruBalance - input.paymentAmount,
-        destination: "change",
-      });
+    const change = input.pruBalance - input.paymentAmount;
+    if (change > 0n) {
+      tranches.push({ amount: change, destination: "change" });
     }
     return tranches;
   }
 
-  // PRU has more than payment amount
-  if (input.paymentAmount >= trancheBaseUnits) {
-    // Payment is large enough; no tranche extraction
-    tranches.push({ amount: input.paymentAmount, destination: "payment" });
-    tranches.push({
-      amount: input.pruBalance - input.paymentAmount,
-      destination: "change",
-    });
-  } else {
-    // Payment is small; extract tranche and send change
-    tranches.push({ amount: input.paymentAmount, destination: "payment" });
-    // Change is: tranche - payment, but capped by available balance
-    const maxChangeFromBalance = input.pruBalance - input.paymentAmount;
-    const changeAmount = trancheBaseUnits <= maxChangeFromBalance
-      ? trancheBaseUnits - input.paymentAmount
-      : maxChangeFromBalance;
-    if (changeAmount > 0n) {
-      tranches.push({ amount: changeAmount, destination: "change" });
-    }
-    // Source PRU retains the remainder (stays in source)
+  // CASE 3: Payment is small (< standard tranche)
+  // Extract a tranche, send payment from tranche, change goes to fresh PRU
+  const extractedTranche = trancheBaseUnits <= input.pruBalance
+    ? trancheBaseUnits
+    : input.pruBalance;
+
+  tranches.push({ amount: input.paymentAmount, destination: "payment" });
+
+  const changeFromTranche = extractedTranche - input.paymentAmount;
+  if (changeFromTranche > 0n) {
+    tranches.push({ amount: changeFromTranche, destination: "change" });
   }
 
   return tranches;
@@ -622,6 +712,9 @@ export function buildExecutionPlan(
   let totalChangeAmount = 0n;
   let expectedChangeAccountCount = 0;
 
+  // Available empty reserves to consume (copy so we can pop)
+  const remainingEmptyReserves = [...input.emptyPruIndices];
+
   for (const pruIndex of spendRoute.selectedPrus) {
     const pruBalance = input.availablePruBalances.find(
       (p) => p.pruIndex === pruIndex,
@@ -657,16 +750,19 @@ export function buildExecutionPlan(
 
     // Add change output if needed
     if (changeAmount > 0n) {
-      const destinationType: ChangeDestinationType =
-        input.emptyPruIndices.length > 0 ? "empty_reserve" : "new_account";
+      // Consume next available empty reserve, or create new account
       const destinationPruIndex =
-        input.emptyPruIndices.length > 0 ? input.emptyPruIndices[0] : -1;
+        remainingEmptyReserves.length > 0
+          ? remainingEmptyReserves.shift()!
+          : -1;
+      const destinationType: ChangeDestinationType =
+        destinationPruIndex >= 0 ? "empty_reserve" : "new_account";
 
       changeOutputs.push({
         amount: changeAmount,
         destinationPruIndex,
         destinationType,
-        justification: `Tranche change from PRU-${pruIndex}`,
+        justification: `Tranche change from PRU-${pruIndex} -> ${destinationType === "empty_reserve" ? `PRU-${destinationPruIndex}` : "new account"}`,
       });
 
       totalChangeAmount += changeAmount;
@@ -772,6 +868,122 @@ export function buildExecutionPlan(
 /**
  * Validates that a plan is still valid and hasn't expired
  */
+function resolveFundingMode(
+  selectedPrus: SelectedPruForSpend[],
+  walletTopupAmountBaseUnits: bigint,
+): ExecutionPlanFundingMode {
+  if (selectedPrus.length > 0 && walletTopupAmountBaseUnits > 0n) {
+    return "mixed_zk_pru_wallet_v2";
+  }
+  if (selectedPrus.length > 0) {
+    return "zk_pru_only_v2";
+  }
+  return "wallet_only_v2";
+}
+
+function signExecutionPlanV2(
+  planMessage: string,
+  masterSeed?: Uint8Array | string | null,
+) {
+  const seedBytes =
+    typeof masterSeed === "string"
+      ? utf8ToBytes(masterSeed)
+      : masterSeed instanceof Uint8Array
+        ? masterSeed
+        : new Uint8Array(32).fill(0);
+  const digest = sha256(
+    utf8ToBytes(
+      `TSN_EXECUTION_PLAN_V2|${planMessage}|${bytesToHex(seedBytes)}`,
+    ),
+  );
+  return `sha256:${bytesToHex(digest)}`;
+}
+
+export function buildExecutionPlanV2(
+  input: ExecutionPlannerInput,
+  config: ExecutionPlannerConfig,
+): ExecutionPlan & {
+  version: 2;
+  fundingMode: ExecutionPlanFundingMode;
+  scopedSpendAuthorizations: ScopedSpendAuthorization[];
+  executionPlanSignatureMessage: string;
+  executionPlanSignature: string;
+  deviceAuthorizationState: {
+    seedDecryptedLocally: boolean;
+    derivedAuthorityCount: number;
+  };
+} {
+  const basePlan = buildExecutionPlan(input, config);
+  const fundingMode = resolveFundingMode(
+    basePlan.selectedPrus,
+    basePlan.walletTopupAmountBaseUnits,
+  );
+  const routePlanHash = `sha256:${basePlan.routePlanHash}`;
+  const selectedPrus = basePlan.selectedPrus;
+  const scopedSpendAuthorizations = selectedPrus.map((selectedPru, index) => {
+    const amountBaseUnits = selectedPru.tranches
+      .filter((tranche) => tranche.destination === "payment")
+      .reduce((sum, tranche) => sum + tranche.amount, 0n)
+      .toString();
+    const nonce = input.currentSpendNonce + index + 1;
+    const tsnVaultPubkey = input.tsnVaultPubkey ?? "tsn-vault";
+    const intent = createScopedPruIntent({
+      tinMasterSeed:
+        typeof input.masterSeed === "string"
+          ? utf8ToBytes(input.masterSeed)
+          : input.masterSeed instanceof Uint8Array
+            ? input.masterSeed
+            : new Uint8Array(32).fill(0),
+      tsnVaultPubkey,
+      tin: input.tinId,
+      pruIndex: selectedPru.pruIndex,
+      amount: amountBaseUnits,
+      recipientTin: input.recipientIdentity.replace(/^[^\d]*/, ""),
+      intentId: `plan-${basePlan.planId}-${selectedPru.pruIndex}`,
+      nowUnixSeconds: Math.floor(Date.now() / 1000),
+      nonce,
+    });
+    return {
+      pruIndex: selectedPru.pruIndex,
+      amountBaseUnits,
+      nonce,
+      authorizationHash: bytesToHex(
+        sha256(utf8ToBytes(intent.messageBytes.join(""))),
+      ),
+      authorizationMessage: JSON.stringify(intent.message),
+      authorizationSignature: intent.pruSignature,
+      authorityPublicKey: intent.pruPublicKey,
+    };
+  });
+
+  const executionPlanSignatureMessage = [
+    "Execution Plan V2",
+    `PlanId: ${basePlan.planId}`,
+    `Funding: ${fundingMode}`,
+    `RouteHash: ${routePlanHash}`,
+    `RequestedAmount: ${basePlan.requestedAmountBaseUnits.toString()}`,
+    `WalletTopup: ${basePlan.walletTopupAmountBaseUnits.toString()}`,
+    `SelectedPrus: ${selectedPrus.map((item) => item.pruIndex).join(",")}`,
+  ].join("\n");
+
+  return {
+    ...basePlan,
+    version: 2,
+    fundingMode,
+    routePlanHash,
+    scopedSpendAuthorizations,
+    executionPlanSignatureMessage,
+    executionPlanSignature: signExecutionPlanV2(
+      executionPlanSignatureMessage,
+      input.masterSeed,
+    ),
+    deviceAuthorizationState: {
+      seedDecryptedLocally: Boolean(input.masterSeed),
+      derivedAuthorityCount: scopedSpendAuthorizations.length,
+    },
+  };
+}
+
 export function validateExecutionPlan(plan: ExecutionPlan): {
   valid: boolean;
   reason?: string;

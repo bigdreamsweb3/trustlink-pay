@@ -38,7 +38,7 @@ The canonical documentation is in the repository root:
 - [`../docs/protocol-architecture.md`](../docs/protocol-architecture.md)
 - [`../docs/identity-and-tin.md`](../docs/identity-and-tin.md)
 - [`../docs/zk-pru.md`](../docs/zk-pru.md)
-- [`../docs/execution-plan-v2.md`](../docs/execution-plan-v2.md)
+- [`../docs/execution-plan.md`](../docs/execution-plan.md)
 - [`../docs/network-and-runtime.md`](../docs/network-and-runtime.md)
 - [`../docs/security-model.md`](../docs/security-model.md)
 - [`../docs/operations-and-testing.md`](../docs/operations-and-testing.md)

@@ -8,7 +8,7 @@ Read these documents in order:
    identity, resolution, public fields, and encrypted boundaries.
 3. [ZK-PRU](./zk-pru.md) — protected receiving, spending, device-local
    derivation, scoped authorization, and privacy limits.
-4. [Execution Plan](./execution-plan-v2.md) — canonical route fields,
+4. [Execution plan](./execution-plan.md) — canonical route fields,
    commitments, signatures, fees, state, and replay constraints.
 5. [Network and runtime](./network-and-runtime.md) — TSN Node, Cranker,
    programs, PDAs, escrow, RPC, validators, and clusters.

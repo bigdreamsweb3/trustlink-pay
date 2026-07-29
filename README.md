@@ -61,7 +61,7 @@ The full two-stage lifecycle and diagrams are in
 - [Protocol architecture](./docs/protocol-architecture.md)
 - [Identity and TIN](./docs/identity-and-tin.md)
 - [ZK-PRU](./docs/zk-pru.md)
-- [Execution plan](./docs/execution-plan-v2.md)
+- [Execution plan](./docs/execution-plan.md)
 - [Network and runtime](./docs/network-and-runtime.md)
 - [Security model](./docs/security-model.md)
 - [Operations and testing](./docs/operations-and-testing.md)

@@ -1,29 +1,29 @@
-# Execution Plan
+# Execution plan
 
-The filename is retained for repository compatibility. The plan is the
-canonical signed payment-route representation; this document does not create a
-separate public protocol generation.
+The execution plan is the canonical signed payment-route representation. It
+binds the exact source, destination, amount, fees, change, state, expiry,
+cluster, and program so downstream components can verify rather than replan.
 
 ## Purpose
 
-The TSN SDK builds an immutable plan before the node or Cranker can act. The
-plan binds the exact source, destination, amount, fees, change, state, expiry,
-cluster, and program so downstream components can verify rather than replan.
+The TSN SDK builds an immutable plan before the TSN Node or Cranker can act.
+The plan is an implementation object, not a public protocol-generation label.
 
 ## Funding modes
 
-The currently supported planner modes are:
+The current source uses these internal funding identifiers:
 
 - `wallet_only_v2`: connected wallet funds the route.
 - `zk_pru_only_v2`: selected ZK-PRU sources fund the route.
 - `mixed_zk_pru_wallet_v2`: selected ZK-PRU sources plus wallet top-up.
 
-These names are implementation identifiers only. They are not separate
-architectural generations.
+These are compatibility identifiers in the current code, not separate public
+architecture generations. They should be renamed by the implementation
+migration when the runtime is ready.
 
 ## Canonical fields
 
-The SDK `ExecutionPlan` currently contains:
+The SDK execution plan contains:
 
 | Group | Fields |
 | --- | --- |

@@ -1,100 +1,110 @@
-# ZK-PRU (Zero-Knowledge Protected Receiving Unit)
+# ZK-PRU inside TSN
 
-## Overview
+ZK-PRU is TSN's protected receiving and spending subsystem. It is not a
+separate blockchain, independent settlement network, or server-owned registry.
+It connects a TIN payment identity to device-authorized receiving routes and
+scoped source spending.
 
-ZK-PRUs are privacy-preserving receiving accounts for stablecoin payments. Each TIN (Transfer Identity) can hold multiple ZK-PRUs, each with independent balances and lifecycle states.
+## What “ZK” means here
 
-## Encrypted Master Seed
+The current implementation uses encrypted device-local derivation material,
+commitments, scoped signatures, and protected routing. A commitment can hide
+and bind data, but it is not by itself a formal zero-knowledge proof. Do not
+claim active SNARK/STARK or complete transaction unlinkability unless a proof
+system and verification path are present and tested.
 
-- Master seed is a 32-byte CSPRNG value
-- Encrypted with AES-256-GCM using user's main wallet signature + PIN
-- Stored encrypted on-chain in the TIN account
-- Decrypted **only** on the user's authorized device
+## Authority boundary
 
-## Authorized-Device-Only Decryption
-
+```mermaid
+sequenceDiagram
+    participant W as Root wallet
+    participant T as TIN encrypted storage
+    participant D as Authorized device
+    participant S as TSN SDK
+    participant N as TSN Node
+    participant C as Cranker
+    participant P as TSN Program
+    W->>T: Authorize device and request ciphertext
+    T-->>D: Encrypted ZK-PRU envelope
+    D->>D: Unlock and decrypt locally
+    D->>S: Derive selected child authority
+    S->>S: Sign scoped source authorization
+    S->>N: Plan, public keys, signatures, commitment
+    N->>C: Verified work
+    C->>P: Submit exact authorized batch
 ```
-User Device → SDK decrypts locally → Derives child keys → Signs scoped authorizations
+
+- The main wallet is the root authority.
+- The encrypted master/derivation material is recovery material, not a
+  standalone authorization.
+- The authorized device derives only the selected child authority.
+- The child signature is scoped to source, amount, route commitment, nonce,
+  state version, expiry, cluster, and program.
+- The TSN execution PDA is the restricted token delegate.
+- The node and Cranker never receive plaintext seed material or child private
+  keys.
+
+## Receiving
+
+ZK-PRU receiving is designed to accumulate small receipts instead of creating
+one newly funded route for every payment:
+
+```mermaid
+flowchart LR
+    A[1 USDC] --> P[Active receiving PRU]
+    B[5 USDC] --> P
+    C[3 USDC] --> P
+    D[10 USDC] --> P
+    P --> E[19 USDC accumulated]
 ```
 
-The master seed is never sent to the backend, Cranker, or any server.
+The policy may manage active-receiving, funded, empty-rotation,
+sealed/spend-only, reserved, spent, and retired states where those states are
+implemented. Receiving targets and rotation are adaptive; exactly 1,000 USDC
+is not a protocol rule. State versions and reservations prevent concurrent
+receipts from overwriting one another.
 
-## Local Child-Key Derivation
+## Spending
 
+The planner prefers one sufficient source, minimizes inputs and transactions,
+uses base-unit bigint accounting, calculates dynamic fees, chooses an
+adaptive tranche, and routes authorized change to a fresh empty route.
+
+Illustrative example, not a fixed policy:
+
+```text
+Source PRU:       10,000 USDC
+Payment:              50 USDC
+Adaptive tranche:    837.42 USDC
+Payment funding:      50 USDC
+Fresh change route:   787.42 USDC
 ```
-TRUSTLINK_PRU_KEY_V1 | masterSeedHex | tinId | index → SHA-256 → Ed25519 signing key
-```
 
-Each PRU derives a unique Ed25519 keypair from the master seed, TIN ID, and index.
+Wallet top-up and fragmented-source planning are supported only when the
+resulting plan and signatures bind every selected input, amount, destination,
+fee, and change route.
 
-## Scoped Signatures
+## Token-account and execution model
 
-PRU spend authorizations are bound to:
-- Specific PRU index
-- Exact amount
-- Unique nonce
-- Expiration timestamp
-- Domain-separated intent
+ZK-PRU source accounts use public token-account addresses with authority and
+delegate state enforced by the TSN Program. The user authorizes a restricted
+TSN execution PDA delegate and the program performs the token CPI with
+`invoke_signed`. The Cranker is never the user-token delegate and cannot choose
+or rewrite sources.
 
-## Active Receiving PRU
+## Privacy properties and limits
 
-- One PRU per user/asset is designated as the active receiving PRU
-- All incoming payments accumulate to this PRU
-- When balance reaches the rotation target, a new PRU becomes active
+ZK-PRU can reduce direct exposure of the main wallet, avoid reusing one
+receiving account, and keep signing authority on the user's device. It does
+not automatically hide public SPL token movements, amounts, timing, public
+exits, or all graph-analysis signals. The correct description is **protected
+identity and routing**, not “fully confidential.”
 
-## Receipt Accumulation
+## Failure, recovery, and status
 
-Small payments accumulate to the active receiving PRU:
-- Default target: 1000 USDC
-- Variance: 20% for privacy
-- Automatic rotation when target reached
-
-## Private Receiving Rotation
-
-When the active PRU reaches its target:
-1. Old PRU moves to "sealed" state (has balance, no longer receives)
-2. New PRU from empty reserve becomes active
-3. Empty reserve replenished from available PRU pool
-
-## Large Receipt Routing
-
-Receipts exceeding the large receipt threshold (default: 1000 USDC) are routed to a fresh PRU to prevent the active PRU from becoming a large single-spend target.
-
-## One-Sufficient-PRU Spending
-
-The planner prefers single-PRU payments:
-1. Find one PRU that can fully fund the payment
-2. Use multi-PRU only when no single PRU is sufficient
-3. Wallet top-up as last resort
-
-## Adaptive Tranche Spending
-
-Three cases for spend extraction:
-
-1. **Full consumption**: PRU balance ≤ payment amount → spend entire balance
-2. **Large payment**: Payment ≥ standard tranche → direct payment, change retained
-3. **Small payment**: Payment < standard tranche → extract trance, change to fresh PRU
-
-## Fresh PRU Change Routing
-
-Change outputs go to empty reserve PRUs, not back to the source. This:
-- Prevents balance fragmentation
-- Maintains clean PRU isolation
-- Enables future spend efficiency
-
-## Lifecycle States
-
-| State | Description |
-|-------|-------------|
-| ACTIVE | Currently receiving payments |
-| FUNDED | Has balance, can be spent from |
-| SEALED | Has balance, rotated out of receiving |
-| RETIRED | Zero balance, no longer active |
-| EMPTY | Reserve PRU, available for change routing |
-
-## Privacy Limitations
-
-- Transaction amounts visible on-chain
-- PRU indices visible on-chain
-- Timing of rotations visible
-- Total balance per PRU visible to node operator
+Invalid signatures, stale state versions, replayed nonces, expired plans,
+incorrect delegates, insufficient allowance, and mismatched commitments must
+fail closed. Device revocation prevents new local decryption or child signing;
+root-wallet recovery remains the authority for replacing a device. Exact
+recovery and lifecycle support must follow the deployed program and current
+[implementation status](./implementation-status.md).

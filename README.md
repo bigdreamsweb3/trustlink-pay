@@ -1,72 +1,80 @@
-# TrustLink Pay
+# TrustLink Labs / TrustLink Pay
 
-> Identity-first stablecoin payments on Solana, powered by Transfer Identity and the Transfer Settlement Network (TSN).
+TrustLink Labs is building the **Transfer Settlement Network (TSN)**: an
+identity-aware payment coordination and settlement infrastructure that runs on
+Solana. TrustLink Pay is the application experience built on that network.
 
-TrustLink Pay lets people send stablecoins to a 10-digit Transfer Identity Number (TIN) instead of sharing wallet addresses. It combines portable payment identity, ZK-PRU protected receiving authorization, and the Transfer Settlement Network (TSN) so a normal payment experience does not need to expose a simple sender-wallet-to-recipient-wallet path.
+TSN is not a new blockchain and it is not one smart contract. It combines
+identity, recipient discovery, protected receiving and spending, authorization,
+payment intents, an application-level work queue, transaction execution,
+escrow, settlement, receipts, replay protection, and recovery tracking.
 
-## What it does
+```mermaid
+flowchart LR
+    U[User] --> A[TrustLink Pay]
+    A --> T[TIN identity and route discovery]
+    T --> S[TSN SDK]
+    S --> N[TSN Node]
+    N --> C[Cranker]
+    C --> P[TSN Program on Solana]
+    P --> E[TSN Escrow]
+    E --> R[Recipient route]
+```
 
-- Uses a TIN as the public payment identity rather than a wallet address.
-- Resolves recipient context before a payment is authorized.
-- Routes supported balance through ZK-PRU authorization and TSN settlement workflows.
-- Uses TSN Cranker coordination, authorization records, fees, and settlement receipts for payment execution.
-- Keeps the owner's primary wallet out of TIN creation, upgrade, and TSN settlement transactions as an on-chain signer, fee payer, or authority.
+## Core terms
 
-TrustLink Pay improves the privacy design of everyday payments. It does not make Solana private: transactions and program accounts remain public, and on-chain activity can still be inspected with enough context.
+- **TSN:** the complete payment coordination and settlement network.
+- **TIN:** a 10-digit Transfer Identity Number used to discover an authorized
+  payment route without exchanging a normal wallet address.
+- **ZK-PRU:** TSN's protected receiving and spending subsystem. It uses
+  device-local encrypted derivation material, scoped child authorities, and
+  policy-driven receiving/spending routes.
+- **TSN SDK:** the local planner and authorization layer that creates the
+  immutable payment route.
+- **TSN Node:** the off-chain verification, reservation, work-queue, and status
+  service. The current source directory retains a historical `mempool` name,
+  but the architecture term is TSN Node.
+- **Cranker:** an independent fee-paying executor that submits already
+  authorized transactions. It does not receive user private keys or replan a
+  payment.
+- **TSN Program:** the Solana program that verifies authorization and state and
+  performs the enforced token movement.
+- **TSN Escrow:** a program-controlled vault that temporarily holds funded
+  assets between funding and settlement.
 
-## Architecture
+Solana validators provide transaction execution, ordering, consensus, and
+finality. They are not TSN Nodes or Crankers. TSN uses Solana; it does not
+replace Solana consensus.
 
-| Layer | Responsibility |
-| --- | --- |
-| TIP | TINs, phone routing, identity resolution, optional trust context, attestations, and credentials |
-| TSN | Payment intents, epochs, Crankers, settlement coordination, fees, authorization, and receipts |
-| TCAP | Confidential asset representation, reserve metadata, commitments, nullifiers, and confidential roots |
-| ZK-PRU | TSN privacy authorization and purpose-bound protected receiving identities |
+## Supported routes
 
-Transfer Identity combines payment identity with optional identity assurance. Every TIN remains payment-capable without an attestation. Legal-name, business-name, and personhood attestations provide additional recipient confidence when available.
+1. Native TIN-to-TIN: protected ZK-PRU source to protected ZK-PRU destination.
+2. Wallet-to-TIN: public wallet source to protected TIN destination.
+3. TIN-to-wallet: protected source route to a public wallet exit.
+4. Wallet-to-wallet: public compatibility settlement.
 
-The Solana Attestation Service (SAS) is the designated credential framework for identity assurance. SAS credentials remain outside TSN payment execution and credential contents do not become public on-chain payment records. Credential-provider connectivity follows the SAS provider interface.
+The full two-stage lifecycle and diagrams are in
+[TSN Transaction Explorer](./docs/tsn-transaction-explorer.md).
 
-## Read the documentation
+## Start reading
 
-Start with the [documentation portal](./docs/README.md).
+- [Protocol architecture](./docs/protocol-architecture.md)
+- [Identity and TIN](./docs/identity-and-tin.md)
+- [ZK-PRU](./docs/zk-pru.md)
+- [Execution plan](./docs/execution-plan-v2.md)
+- [Network and runtime](./docs/network-and-runtime.md)
+- [Security model](./docs/security-model.md)
+- [Operations and testing](./docs/operations-and-testing.md)
+- [Implementation status](./docs/implementation-status.md)
+- [TSN Private View Lit architecture](./docs/tsn-private-view-lit.md)
 
-- [Start Here](./docs/START-HERE.md) — product and protocol overview
-- [Architecture](./docs/ARCHITECTURE.md) — system boundaries and components
-- [Transfer Identity](./docs/TRANSFER-IDENTITY.md) — TINs, ZK-PRU authorization, and protected route authentication
-- [TSN](./docs/TSN.md) — payment execution and settlement design
-- [Developer Guide](./docs/DEVELOPER.md) — local development and integration rules
-- [Security](./docs/SECURITY.md) — security boundaries and privacy limits
+## Status boundaries
 
-## Development status
+The TSN Node, SDK, Cranker, TSN Program, and TSN Escrow are the active runtime
+architecture. Recurring payments remain disabled. TCAP is a separate
+experimental confidential-asset direction, not the current settlement actor.
+Formal zero-knowledge proofs are not claimed unless the implementation and
+verification evidence are present.
 
-The repository contains the TrustLink Pay web app, backend, Transfer Identity program and SDK, TSN SDK, mempool services, RPC gateway, and reference Cranker operator. Development and protocol validation are active on Solana devnet.
-
-Current devnet program IDs:
-
-| Program | Address |
-| --- | --- |
-| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-
-## Milestones and ecosystem support
-
-TrustLink Pay has progressed through StableHacks and The Bags Hackathon, and received support through the Superteam Agentic Engineering Grant program for fraud-protection development. The factual project history and acknowledgements are in [Project Journey](./docs/PROJECT-JOURNEY.md).
-
-## Repository map
-
-| Path | Purpose |
-| --- | --- |
-| `frontend/` | TrustLink Pay web application |
-| `backend/` | API, user and payment records, notifications |
-| `transfer-identity-protocol/` | Transfer Identity program and SDK |
-| `tsn-protocol/` | TSN SDK, mempool, RPC gateway, and Cranker tooling |
-| `docs/` | Product, protocol, security, and developer documentation |
-
-## Local development
-
-For the Windows-native development workflow, see [Windows TSN Commands](./docs/WINDOWS-TSN-COMMANDS.md). The default PM2 stack runs the frontend, backend, and RPC gateway; mempool services and the Cranker are explicit opt-in processes.
-
-## License
-
-[MIT](./LICENSE)
+TrustLink Pay is experimental software. Always verify program IDs, cluster,
+wallet authority, and transaction evidence before using Devnet.

@@ -1,95 +1,86 @@
-# Execution Plan V2
+# Execution Plan
 
-## Overview
+The filename is retained for repository compatibility. The plan is the
+canonical signed payment-route representation; this document does not create a
+separate public protocol generation.
 
-Execution Plan V2 is the canonical payment execution specification generated locally by the TSN SDK on the sender's device. It defines exactly what the TSN program and Cranker will execute on-chain.
+## Purpose
 
-## Funding Modes
+The TSN SDK builds an immutable plan before the node or Cranker can act. The
+plan binds the exact source, destination, amount, fees, change, state, expiry,
+cluster, and program so downstream components can verify rather than replan.
 
-### wallet_only_v2
-- Payment funded entirely from connected wallet
-- Wallet signs full commitment
-- TIN balance can be paid first with wallet covering remainder
+## Funding modes
 
-### zk_pru_only_v2
-- Payment funded entirely from ZK-PRU balance
-- PRU spend authorizations signed locally
-- No wallet involvement in funding
+The currently supported planner modes are:
 
-### mixed_zk_pru_wallet_v2
-- Payment uses available ZK-PRU balance first
-- Wallet covers the remainder
-- ZK-PRU spend amounts determined locally before submission
+- `wallet_only_v2`: connected wallet funds the route.
+- `zk_pru_only_v2`: selected ZK-PRU sources fund the route.
+- `mixed_zk_pru_wallet_v2`: selected ZK-PRU sources plus wallet top-up.
 
-## Plan Structure
+These names are implementation identifiers only. They are not separate
+architectural generations.
 
-```typescript
-interface ExecutionPlanV2 {
-  fundingMode: 'wallet_only_v2' | 'zk_pru_only_v2' | 'mixed_zk_pru_wallet_v2';
-  tokenMintAddress: string;
-  commitmentHash: string;
-  escrowAmountBaseUnits: string;
-  senderFeeAmountBaseUnits: string;
-  tinBalancePayments: TinBalancePayment[];
-  pruSpendSelections?: PruSpendSelection[];
-  recipientRoute: RecipientRoute;
-  routing: RoutingData;
-  receipts: ReceiptData[];
-  stateUpdates: StateUpdate[];
-}
+## Canonical fields
+
+The SDK `ExecutionPlan` currently contains:
+
+| Group | Fields |
+| --- | --- |
+| Identity | `planId`, `version`, `tinId`, `assetMint`, `assetSymbol` |
+| Payment | `requestedAmountBaseUnits`, `recipientIdentity` |
+| Selection | `selectionStrategy`, `strategiesEvaluated`, `selectedPrus`, `totalSpendFromPrus`, `walletTopupAmountBaseUnits` |
+| Outputs | `paymentOutput`, `changeOutputs`, `totalChangeAmount` |
+| Fees | `protocolFeeBaseUnits`, estimated network fee, Cranker reward, maximum authorized fee |
+| Execution | expected instruction, transaction, and change-account counts |
+| State | `status`, `spendNonce`, `expiryTimestamp`, `routePlanHash` |
+| Decisions | selection reasoning, change reasoning, and wallet-top-up reasoning |
+| Replay | `inputHash` and canonical route commitment |
+
+All token values use base-unit integers. Display decimals are a UI concern and
+must not replace exact integer authorization.
+
+## Scoped authorizations
+
+Each selected source authorization binds:
+
+- source PRU index and authority public key;
+- exact source amount;
+- source nonce and state version;
+- intent/plan commitment;
+- destination, payment amount, and change route;
+- fee cap, cluster, program ID, and expiry.
+
+The root wallet signs the complete route. The authorized device signs only the
+selected scoped child authorities. The node verifies signatures and reserves
+state; it cannot select a different source or modify the plan.
+
+## Planner policy
+
+The SDK prefers one sufficient source, minimizes input and transaction count,
+supports fragmented sources and wallet top-up, chooses adaptive non-fixed
+tranches, calculates dynamic fees before authorization, and routes change to
+an authorized fresh/empty route. The planner does not use a fixed 1,000-token
+movement policy.
+
+## Lifecycle
+
+```mermaid
+flowchart LR
+    A[Local inputs] --> B[SDK selects sources and fees]
+    B --> C[Canonical serialization and commitment]
+    C --> D[Root + scoped signatures]
+    D --> E[TSN Node verifies and reserves]
+    E --> F[Cranker submits exact batches]
+    F --> G[TSN Program verifies and settles]
 ```
 
-## Spend Selection (8-Priority Algorithm)
+## Rejection rules
 
-1. **Direct single PRU**: One PRU fully covers payment
-2. **Multi-PRU consolidation**: Combine multiple PRUs
-3. **Wallet top-up**: Wallet covers PRU shortfall
-4. **Full consumption**: PRU balance ≤ payment amount
-5. **Large payment**: Payment ≥ standard tranche
-6. **Small payment**: Extract trance, route change
-7. **Empty reserve consumption**: Use empty PRUs for change routing
-8. **Rejection**: Payment impossible
+The node and program must reject changed amounts, sources, recipients, change
+accounts, fees, nonces, state versions, cluster, program ID, expiry, malformed
+signatures, replayed plans, wrong delegates, and insufficient allowances.
 
-## Tranche Model
-
-- **Full consumption**: PRU balance ≤ payment amount → spend entire balance
-- **Large payment**: Payment ≥ standard tranche → direct payment, change to fresh PRU
-- **Small payment**: Payment < standard tranche → extract trance, change to fresh PRU
-
-## Fee Model
-
-- Priority fee: ~0.001 SOL per instruction
-- Program fees: Set by on-chain program
-- Unified fee calculation regardless of source count
-
-## Settlement Flow
-
-```
-Execution Plan V2
-      ↓
-TSN Node (verify + reserve)
-      ↓
-Cranker (pay fees + submit)
-      ↓
-TSN Program (verify + enforce)
-      ↓
-TSN Escrow (hold assets)
-      ↓
-Recipient (receive)
-```
-
-## Authorization Signatures
-
-- **Main wallet signature**: Full route commitment
-- **PRU spend signatures**: Scoped to amount + nonce + intent
-- **Sponsored settlement signature**: Payer authorization
-- **Scoped signatures**: Domain-separated, time-bound
-
-## State Updates
-
-After settlement:
-- PRU balances updated
-- Active receiving PRU rotated if needed
-- Empty reserves replenished
-- Settlement timestamp recorded
-- Balance history committed
+The Cranker receives only public plan data, signatures, and deterministic
+authorized batches. It pays fees and submits; it does not derive keys, decrypt
+envelopes, or replan settlement.

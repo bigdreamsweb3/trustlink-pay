@@ -1407,8 +1407,6 @@ export function SendExperience() {
         pruSpendSelections: tinSpendPlan?.requiresPruExecution
           ? (tinSpendPlan?.pruSpendSelections ?? [])
           : null,
-        settlementEscrowSecretKeyBase64:
-          sponsoredSettlement?.escrowTokenSecretKeyBase64 ?? null,
         privacyVersion: sponsoredSettlement?.privacyVersion ?? 2,
         commitmentRecord: sponsoredSettlement?.commitmentRecord ?? null,
         senderTokenAccount: sponsoredSettlement?.senderTokenAccount ?? null,

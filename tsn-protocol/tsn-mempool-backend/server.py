@@ -1119,7 +1119,6 @@ class CreateIntentRequest(BaseModel):
     walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into private escrow")
     walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
     pruSpendSelections: Optional[list[dict[str, Any]]] = Field(None, description="PRU indexes and amounts selected after authenticated route loading")
-    settlementEscrowSecretKeyBase64: Optional[str] = Field(None, description="Ephemeral escrow token-account signer reused by mixed funding")
     privacyVersion: Optional[int] = Field(None, description="TSN private settlement protocol version")
     commitmentRecord: Optional[str] = Field(None, description="Public commitment-only record PDA")
     senderTokenAccount: Optional[str] = Field(None, description="Sender token account used by the sponsored settlement")
@@ -1821,8 +1820,6 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         wallet_top_up_amount = int(str(req.walletTopUpAmountBaseUnits or "0"))
         if not req.senderSignedSettlementTransaction:
             raise HTTPException(400, "mixed funding requires the sender co-signed settlement transaction")
-        if wallet_top_up_amount > 0 and not req.settlementEscrowSecretKeyBase64:
-            raise HTTPException(400, "mixed funding requires the shared escrow signer artifact")
     if req.senderAuthorizationNonce and req.senderAuthorizationNonce != fields.get("Nonce"):
         raise HTTPException(400, "senderAuthorizationNonce differs from the signed message")
     expires_at = _parse_canonical_expiry(str(fields.get("Expires") or ""))

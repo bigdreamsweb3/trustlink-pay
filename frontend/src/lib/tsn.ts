@@ -142,7 +142,6 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     amountBaseUnits: string;
     nonce: number;
   }> | null;
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -184,7 +183,6 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
     walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
     pruSpendSelections: params.pruSpendSelections,
-    settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64,
     privacyVersion: params.privacyVersion,
     commitmentRecord: params.commitmentRecord,
     senderTokenAccount: params.senderTokenAccount,

@@ -258,8 +258,6 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         wallet_top_up_amount = int(str(req.walletTopUpAmountBaseUnits or "0"))
         if not req.senderSignedSettlementTransaction:
             raise HTTPException(400, "mixed funding requires the sender co-signed settlement transaction")
-        if wallet_top_up_amount > 0 and not req.settlementEscrowSecretKeyBase64:
-            raise HTTPException(400, "mixed funding requires the shared escrow signer artifact")
     if req.senderAuthorizationNonce and req.senderAuthorizationNonce != fields.get("Nonce"):
         raise HTTPException(400, "senderAuthorizationNonce differs from the signed message")
     expires_at = _parse_canonical_expiry(str(fields.get("Expires") or ""))

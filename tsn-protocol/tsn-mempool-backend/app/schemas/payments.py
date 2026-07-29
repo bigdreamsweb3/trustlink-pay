@@ -31,7 +31,6 @@ class CreateIntentRequest(BaseModel):
     walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
     pruSpendSelections: Optional[list[dict]] = None
     encryptedSettlementToken: Optional[dict] = None
-    settlementEscrowSecretKeyBase64: Optional[str] = None
     commitmentHash: Optional[str] = None
     transferId: Optional[str] = None
     privacyVersion: Optional[int] = 1
@@ -160,7 +159,6 @@ class PruSpendPermitSelection(BaseModel):
     pruIndex: int
     nonce: int
     publicKey: str
-    secretKeyBase64: str
     spendAuthHash: str
     amountBaseUnits: str
 

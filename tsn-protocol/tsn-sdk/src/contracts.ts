@@ -170,7 +170,6 @@ export type CreateIntentRequest = {
     amountBaseUnits: string;
     nonce: number;
   }> | null;
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -340,7 +339,6 @@ export function buildCreateIntentRequest(params: {
   walletTopUpAmountBaseUnits?: string | null;
   walletTopUpSenderFeeBaseUnits?: string | null;
   pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -376,7 +374,6 @@ export function buildCreateIntentRequest(params: {
     walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits ?? null,
     walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits ?? null,
     pruSpendSelections: params.pruSpendSelections ?? null,
-    settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64 ?? null,
     privacyVersion: params.privacyVersion ?? null,
     commitmentRecord: params.commitmentRecord ?? null,
     senderTokenAccount: params.senderTokenAccount ?? null,

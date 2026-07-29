@@ -1385,10 +1385,10 @@ export function SendExperience() {
         senderSignedSettlementFeePayer:
           sponsoredSettlement?.crankerFeePayer ?? null,
         senderSettlementMode: usesPruSpendExecution
-          ? "pru_private_commitment_v1"
+          ? "zk_pru_only_v2"
           : usesMixedPruWalletExecution
-            ? "mixed_pru_wallet_v1"
-            : "private_permit_v2",
+            ? "mixed_zk_pru_wallet_v2"
+            : "wallet_only_v2",
         pruSpendTin: tinSpendPlan?.requiresPruExecution
           ? (user.tin ?? null)
           : null,

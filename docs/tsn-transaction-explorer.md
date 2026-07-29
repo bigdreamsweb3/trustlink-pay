@@ -24,14 +24,12 @@ settlement actors.
 ## Two-stage lifecycle
 
 ```mermaid
-stateDiagram-v2
-    [*] --> AUTHORIZED: wallet/device signs exact route
-    AUTHORIZED --> RESERVED: TSN Node verifies and reserves
-    RESERVED --> FUNDED: Cranker submits funding
-    FUNDED --> SETTLED: Program releases exact authorized amount
-    FUNDED --> REFUNDED: valid recovery path
-    SETTLED --> [*]
-    REFUNDED --> [*]
+flowchart LR
+    A[Authorized route] --> B[TSN Node verifies and reserves]
+    B --> C[Cranker submits funding]
+    C --> D[Payment funded in TSN Escrow]
+    D --> E[Program releases exact amount]
+    D --> F[Valid recovery/refund path]
 ```
 
 ### Intent and funding

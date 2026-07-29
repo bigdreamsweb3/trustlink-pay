@@ -75,5 +75,5 @@ fields, but a commitment alone is not a formal zero-knowledge proof.
 - A malicious validator cannot bypass TSN Program constraints without a valid
   Solana consensus/runtime path.
 
-Known limitations and implementation gaps are tracked in
-[implementation status](./implementation-status.md).
+Known limitations must be verified against the deployed program, tests, and
+current operational evidence before being described as guarantees.

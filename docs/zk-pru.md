@@ -106,5 +106,5 @@ Invalid signatures, stale state versions, replayed nonces, expired plans,
 incorrect delegates, insufficient allowance, and mismatched commitments must
 fail closed. Device revocation prevents new local decryption or child signing;
 root-wallet recovery remains the authority for replacing a device. Exact
-recovery and lifecycle support must follow the deployed program and current
-[implementation status](./implementation-status.md).
+recovery and lifecycle support must follow the deployed program, tests, and
+current operational evidence.

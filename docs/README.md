@@ -8,16 +8,15 @@ Read these documents in order:
    identity, resolution, public fields, and encrypted boundaries.
 3. [ZK-PRU](./zk-pru.md) — protected receiving, spending, device-local
    derivation, scoped authorization, and privacy limits.
-4. [Execution plan](./execution-plan.md) — canonical route fields,
-   commitments, signatures, fees, state, and replay constraints.
-5. [Network and runtime](./network-and-runtime.md) — TSN Node, Cranker,
+4. [Network and runtime](./network-and-runtime.md) — TSN Node, Cranker,
    programs, PDAs, escrow, RPC, validators, and clusters.
-6. [Security model](./security-model.md) — authority, secret boundaries,
+5. [Security model](./security-model.md) — authority, secret boundaries,
    delegate checks, replay, revocation, and known limitations.
-7. [Operations and testing](./operations-and-testing.md) — localnet, Devnet,
+6. [Operations and testing](./operations-and-testing.md) — localnet, Devnet,
    evidence, test layers, deployment, and troubleshooting.
-8. [Implementation status](./implementation-status.md) — what is implemented,
-   under migration, disabled, experimental, and not claimed.
+7. [Security](./SECURITY.md) — plain-language security principles.
+8. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data
+   minimization and privacy handling.
 
 Supporting technical reference:
 

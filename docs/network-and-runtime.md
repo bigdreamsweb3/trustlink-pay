@@ -33,6 +33,13 @@ The current source directory `tsn-mempool-backend` is a historical name. Its
 runtime responsibility is the TSN Node: verification, reservation, work
 coordination, replay protection, and status. It is not a Solana validator.
 
+The complete request-to-transaction sequence is documented in
+[Protocol architecture — how an intent becomes a Solana transaction](./protocol-architecture.md#8-how-an-intent-becomes-a-solana-transaction).
+In short, the Node exposes two queues: `/intent-work` for pending funding
+intents and `/work` for claims whose funding is already escrowed. Crankers poll
+those queues, validate the signed public work, submit through Solana RPC, and
+post the resulting proof/status back to the Node.
+
 ## Runtime boundaries
 
 ### User device and frontend

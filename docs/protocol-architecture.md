@@ -134,7 +134,192 @@ The frontend request is authorization and coordination input, not itself the
 final settlement. The four routes are documented in
 [TSN Transaction Explorer](./tsn-transaction-explorer.md).
 
-## 8. Security boundary
+## 8. How an intent becomes a Solana transaction
+
+This is the concrete runtime path implemented by the current repository. The
+application-facing intent and the on-chain transactions are separate records.
+
+### Step 1 — The user authorizes an intent
+
+TrustLink Pay collects the recipient TIN or destination wallet, token, amount,
+source, and fee details. The SDK builds the signed public authorization and
+the sender wallet/device signs it. The frontend helper
+`enqueueTsnPaymentFromFrontend` submits the signed payload to the configured
+TSN Node endpoint:
+
+```text
+POST /intents
+```
+
+The request contains the payment ID, sender authorization message/signature,
+recipient route data, token and amount, and the sender-signed settlement
+transaction when the selected funding path requires one. It must not contain
+plaintext user seed material or child private keys.
+
+### Step 2 — The TSN Node verifies and queues it
+
+The Node's `post_intent` handler:
+
+1. checks idempotency by `paymentId`;
+2. verifies the sender authorization message and signature;
+3. normalizes the signed fields;
+4. creates the intent record with status `pending`;
+5. stores it in the configured mempool store under the intents collection;
+6. returns a public intent/status record.
+
+The current HTTP API exposes the stored records through:
+
+```text
+GET /intents
+PATCH /intents/{intent_id}/status
+```
+
+The application backend may also mirror the intent in its payment database for
+user history. That database record is not the authority for token movement;
+the signed intent, Node state, Solana transaction, and program state are the
+evidence chain.
+
+### Step 3 — A claim request enters the second queue
+
+After an intent exists, the application or SDK posts a claim request:
+
+```text
+POST /claim-requests
+```
+
+The Node checks that the intent exists and is eligible, makes the operation
+idempotent, assigns a claim ID, and stores the claim with status `pending` in a
+separate claims collection. The claim does not execute a transaction. It is a
+request for a Cranker to process the settlement after funding is available.
+
+The claim can be inspected with:
+
+```text
+GET /claim-requests
+PATCH /claim-requests/{claim_id}/status
+```
+
+### Step 4 — The Cranker polls for funding work
+
+Every Cranker runs its operator key, fee-payer configuration, Solana RPC
+connection, and TSN Node client. Its loop polls:
+
+```text
+GET /intent-work?limit=...
+```
+
+`/intent-work` returns only intents whose status is `pending`. The Cranker
+does not receive a random transaction. It receives a deterministic work item
+containing the intent and the sender-authorized transaction/public execution
+data.
+
+Before submission, the Cranker checks the sender signature, sender/fee-payer
+relationship, token mint, amount, recipient route, commitment, expiry, nonce,
+settlement mode, and transaction instruction layout. Invalid work is canceled
+and never submitted.
+
+### Step 5 — The Cranker submits the funding transaction
+
+For the current sponsored path, the Cranker submits the sender-signed
+settlement transaction to Solana using its own fee-payer/operator authority.
+The Cranker does not change the sender's instructions. On success it records:
+
+```text
+PATCH /intents/{intent_id}/status
+status = escrowed
+escrowTxSig = <confirmed or submitted signature>
+assignedCrankerPubkey = <operator public key>
+```
+
+The TSN Program validates the instruction and the TSN Escrow account receives
+the funded amount. The Payment PDA/intent state is now eligible for claim
+settlement. If the blockhash expires or validation fails, the intent is marked
+expired/canceled and a fresh authorization is required.
+
+### Step 6 — The Cranker polls for claimable settlement work
+
+The Cranker then polls:
+
+```text
+GET /work?limit=...
+```
+
+The Node joins pending claims to their intents and returns a work item only
+when the intent is in an escrow-ready state (`escrowed`, `onchain`, or
+`claimed`). This is where the Cranker picks up the settlement request. A
+pending claim whose funding transaction has not succeeded is not returned as
+executable work.
+
+### Step 7 — The Cranker leases and executes the claim
+
+The Cranker evaluates claim economics and acquires the claim's processing lease
+through the claim lease endpoint. It then submits the settlement instructions
+to the TSN Program through Solana RPC. The program verifies the commitment,
+amount, mint, destination, nonce/replay state, escrow state, and fee rules
+before releasing the authorized amount from TSN Escrow.
+
+The current repository still contains a legacy private-payout permit/decryption
+branch in this executor. That branch is an implementation migration boundary,
+not the intended security model: it must be removed before production so the
+Cranker receives only public authorized work and never decrypts user route
+material.
+
+### Step 8 — Proof, status, and user history
+
+After a successful settlement transaction, the Cranker posts a proof:
+
+```text
+POST /proofs
+```
+
+The Node stores the proof, advances the intent to `executed`, and creates any
+required recovery work. The application and frontend read the intent, claim,
+proof, and payment status records to render:
+
+```text
+pending → escrowed → processing → executed
+                     ↘ failed/canceled/reverted
+```
+
+The final source of truth for actual funds is the confirmed Solana signature
+and fetched account state. Node status alone is not proof that tokens moved.
+
+### End-to-end runtime sequence
+
+```mermaid
+sequenceDiagram
+    participant U as User + wallet/device
+    participant F as TrustLink Pay frontend
+    participant N as TSN Node
+    participant Q as Node work queues
+    participant C as Cranker
+    participant R as Solana RPC
+    participant P as TSN Program
+    participant E as TSN Escrow
+    U->>F: Review recipient, asset, amount, and fee
+    F->>F: Build and sign payment intent
+    F->>N: POST /intents
+    N->>N: Verify signature and idempotency
+    N->>Q: Store intent=pending
+    F->>N: POST /claim-requests
+    N->>Q: Store claim=pending
+    C->>N: GET /intent-work
+    N-->>C: Pending funding work item
+    C->>C: Validate signed transaction and route
+    C->>R: Submit funding transaction
+    R->>P: Execute TSN funding instruction
+    P->>E: Lock authorized funds
+    C->>N: PATCH intent=escrowed + escrow signature
+    C->>N: GET /work
+    N-->>C: Claimable escrowed work
+    C->>R: Submit settlement transaction
+    R->>P: Execute settlement instruction
+    P->>E: Release exact authorized amount
+    C->>N: POST /proofs
+    N-->>F: Status, signature, receipt, and account evidence
+```
+
+## 9. Security boundary
 
 Plaintext master/derivation material and child private keys remain on the
 authorized device. The frontend and node receive public plan data and

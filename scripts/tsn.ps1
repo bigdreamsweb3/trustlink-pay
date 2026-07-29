@@ -4,7 +4,7 @@ $root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ecosystem=Join-Path $root "ecosystem.config.cjs"
 $node=(Get-Command node.exe -ErrorAction Stop).Source
 $pm2Cli=Join-Path $root "node_modules\pm2\bin\pm2"
-$core=@("trustlink-mempool","trustlink-backend","trustlink-rpc-gateway")
+$core=@("trustlink-mempool","trustlink-rpc-gateway","trustlink-mempool-ui","trustlink-cranker")
 $managed=@("trustlink-mempool","trustlink-backend","trustlink-rpc-gateway","trustlink-mempool-ui","trustlink-cranker")
 if($Service -and $Service -notin @("backend","rpc-gateway","mempool","mempool-ui","cranker")){throw "Unknown service: $Service"}
 if(!(Test-Path -LiteralPath $pm2Cli)){throw "Local PM2 is missing. Run: npm.cmd install"}

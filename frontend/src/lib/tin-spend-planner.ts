@@ -48,18 +48,27 @@ export async function buildTinSpendPlan(params: {
   }> = [];
 
   if (params.user.tin) {
-    const tinBalances = await loadTinTokenBalances({
-      tin: params.user.tin,
-      walletSession: params.walletSession,
-      supportedTokens: [params.token],
-      signal: params.signal,
-    });
-    const tokenBalance = tinBalances.tokens.find(
-      (token) => token.mintAddress === params.token.mintAddress,
-    );
-    pruBalanceBaseUnits = toBaseUnits(tokenBalance?.balance ?? 0, decimals);
-    pruBalances = tinBalances.pruBalances;
-    routeLoaded = true;
+    try {
+      const tinBalances = await loadTinTokenBalances({
+        tin: params.user.tin,
+        walletSession: params.walletSession,
+        supportedTokens: [params.token],
+        signal: params.signal,
+      });
+      const tokenBalance = tinBalances.tokens.find(
+        (token) => token.mintAddress === params.token.mintAddress,
+      );
+      pruBalanceBaseUnits = toBaseUnits(tokenBalance?.balance ?? 0, decimals);
+      pruBalances = tinBalances.pruBalances;
+      routeLoaded = true;
+    } catch (error) {
+      // A missing finalized route must not block the public-wallet → TIN
+      // compatibility path. The device route is optional for wallet funding;
+      // the SDK will select wallet_only_v2 when no local PRU state is available.
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("404") && !message.includes("not found")) throw error;
+      routeLoaded = false;
+    }
   }
 
   const plan = planTinBalanceSpend({

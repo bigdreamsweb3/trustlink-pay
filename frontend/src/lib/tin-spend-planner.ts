@@ -1,4 +1,4 @@
-import { planTinBalanceSpend, type TinSpendPlan } from "@trustlink/tsn-sdk/tin-balance-spend-planner";
+import { planTinBalanceSpend, selectPruSpendInputs, type TinSpendPlan } from "@trustlink/tsn-sdk/tin-balance-spend-planner";
 
 import { loadTinTokenBalances } from "@/src/lib/tin-balance";
 import type { UserProfile, WalletTokenOption } from "@/src/lib/types";
@@ -68,11 +68,11 @@ export async function buildTinSpendPlan(params: {
     pruAvailableBaseUnits: pruBalanceBaseUnits,
     walletAvailableBaseUnits: walletBalanceBaseUnits,
   });
-  const pruSpendSelections = tinBalancesToSelections(
-    params.token.mintAddress,
-    BigInt(plan.pruSpendBaseUnits),
-    pruBalances,
-  );
+  const pruSpendSelections = selectPruSpendInputs({
+    tokenMintAddress: params.token.mintAddress,
+    spendBaseUnits: plan.pruSpendBaseUnits,
+    balances: pruBalances,
+  });
 
   return {
     ...plan,
@@ -84,41 +84,4 @@ export async function buildTinSpendPlan(params: {
     routeLoaded,
     pruSpendSelections,
   };
-}
-
-function tinBalancesToSelections(
-  tokenMintAddress: string,
-  spendBaseUnits: bigint,
-  balances: Array<{
-    pruIndex: number;
-    tokenMintAddress: string;
-    balanceBaseUnits: string;
-  }>,
-) {
-  const selections = [];
-  let remaining = spendBaseUnits;
-  const spendableBalances = balances
-    .filter((balance) => balance.tokenMintAddress === tokenMintAddress)
-    .filter((balance) => BigInt(balance.balanceBaseUnits) > 0n)
-    .sort((left, right) => {
-      const leftBalance = BigInt(left.balanceBaseUnits);
-      const rightBalance = BigInt(right.balanceBaseUnits);
-      return leftBalance > rightBalance ? -1 : leftBalance < rightBalance ? 1 : 0;
-    });
-
-  for (const balance of spendableBalances) {
-    if (remaining <= 0n) break;
-    const available = BigInt(balance.balanceBaseUnits);
-    const amount = available >= remaining ? remaining : available;
-    const nonceBytes = new Uint8Array(4);
-    crypto.getRandomValues(nonceBytes);
-    const nonce = nonceBytes[0] | (nonceBytes[1] << 8) | (nonceBytes[2] << 16) | (nonceBytes[3] << 24);
-    selections.push({
-      pruIndex: balance.pruIndex,
-      amountBaseUnits: amount.toString(),
-      nonce,
-    });
-    remaining -= amount;
-  }
-  return selections;
 }

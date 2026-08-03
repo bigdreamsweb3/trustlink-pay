@@ -141,7 +141,7 @@
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "git pull origin main",
-    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push --recurse-submodules=on-demand origin main"
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push origin main"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

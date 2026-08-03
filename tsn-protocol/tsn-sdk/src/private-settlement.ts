@@ -63,44 +63,6 @@ export type PrivateRecoveryPermit = {
   expiresAtTs: number;
 };
 
-export type PruSpendPermitSelection = {
-  tin: string;
-  pruIndex: number;
-  nonce: number;
-  publicKey?: string;
-  spendAuthHash: string;
-  amountBaseUnits: string;
-  authorizationMessage?: string;
-  authorizationSignature?: string;
-};
-
-export type PruSpendExecutionPlanV2 = {
-  planId: string;
-  version: 2;
-  tinId?: string;
-  fundingMode: "wallet_only_v2" | "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2";
-  scopedSpendAuthorizations: Array<{
-    pruIndex: number;
-    amountBaseUnits: string;
-    nonce: number;
-    authorizationHash: string;
-    authorizationMessage: string;
-    authorizationSignature: string;
-    authorityPublicKey: string;
-  }>;
-  executionPlanSignatureMessage: string;
-  executionPlanSignature: string;
-};
-
-export type PruSpendPermit = {
-  paymentId: string;
-  tokenMintAddress: string;
-  commitmentHash: string;
-  escrowAmountBaseUnits: string;
-  senderFeeAmountBaseUnits: string;
-  selections: PruSpendPermitSelection[];
-};
-
 function concatBytes(parts: Uint8Array[]) {
   const output = new Uint8Array(
     parts.reduce((total, part) => total + part.length, 0),
@@ -254,186 +216,6 @@ export function signPrivateSettlementPermit(params: {
   return nacl.sign.detached(params.message, params.permitSigner.secretKey);
 }
 
-export function createMempoolLeaseAuthorizationMessage(params: {
-  action: "payout" | "recovery" | "pru-spend";
-  workId: string;
-  operator: PublicKey;
-  requestedAtTs: number;
-}) {
-  if (!Number.isInteger(params.requestedAtTs) || params.requestedAtTs <= 0) {
-    throw new Error("requestedAtTs must be a positive Unix timestamp");
-  }
-  return utf8ToBytes(
-    [
-      MEMPOOL_LEASE_DOMAIN,
-      params.action,
-      params.workId,
-      params.operator.toBase58(),
-      String(params.requestedAtTs),
-    ].join("|"),
-  );
-}
-
-async function requestPrivatePermit<T>(params: {
-  mempoolUrl: string;
-  apiKey?: string | null;
-  action: "payout" | "recovery" | "pru-spend";
-  workId: string;
-  operator: Keypair;
-  fetchImpl?: typeof fetch;
-}) {
-  const requestedAtTs = Math.floor(Date.now() / 1000);
-  const message = createMempoolLeaseAuthorizationMessage({
-    action: params.action,
-    workId: params.workId,
-    operator: params.operator.publicKey,
-    requestedAtTs,
-  });
-  const requestSignature = nacl.sign.detached(
-    message,
-    params.operator.secretKey,
-  );
-  const fetchImpl = (params.fetchImpl ?? globalThis.fetch).bind(
-    globalThis,
-  ) as typeof fetch;
-  const endpoint =
-    params.action === "payout"
-      ? `/work/${encodeURIComponent(params.workId)}/lease-permit`
-      : params.action === "recovery"
-        ? `/recoveries/${encodeURIComponent(params.workId)}/lease-permit`
-        : `/intents/${encodeURIComponent(params.workId)}/pru-spend-permit`;
-  const response = await fetchImpl(
-    `${params.mempoolUrl.replace(/\/$/, "")}${endpoint}`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(params.apiKey ? { "x-api-key": params.apiKey } : {}),
-      },
-      body: JSON.stringify({
-        operatorPubkey: params.operator.publicKey.toBase58(),
-        requestedAtTs,
-        requestSignatureBase64:
-          Buffer.from(requestSignature).toString("base64"),
-      }),
-    },
-  );
-  if (!response.ok) {
-    throw new Error(
-      `TSN permit request failed (${response.status}): ${await response.text()}`,
-    );
-  }
-  return (await response.json()) as T;
-}
-
-export function requestPrivatePayoutPermit(params: {
-  mempoolUrl: string;
-  apiKey?: string | null;
-  claimRequestId: string;
-  operator: Keypair;
-  fetchImpl?: typeof fetch;
-}) {
-  return requestPrivatePermit<PrivatePayoutPermit>({
-    ...params,
-    action: "payout",
-    workId: params.claimRequestId,
-  });
-}
-
-export function requestPrivateRecoveryPermit(params: {
-  mempoolUrl: string;
-  apiKey?: string | null;
-  recoveryId: string;
-  operator: Keypair;
-  fetchImpl?: typeof fetch;
-}) {
-  return requestPrivatePermit<PrivateRecoveryPermit>({
-    ...params,
-    action: "recovery",
-    workId: params.recoveryId,
-  });
-}
-
-export async function requestPruSpendPermit(params: {
-  mempoolUrl: string;
-  apiKey?: string | null;
-  intentId: string;
-  operator: Keypair;
-  fetchImpl?: typeof fetch;
-}) {
-  const fetchImpl = (params.fetchImpl ?? globalThis.fetch).bind(
-    globalThis,
-  ) as typeof fetch;
-  const response = await fetchImpl(
-    `${params.mempoolUrl.replace(/\/$/, "")}/intents/${encodeURIComponent(params.intentId)}`,
-    {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-        ...(params.apiKey ? { "x-api-key": params.apiKey } : {}),
-      },
-    },
-  );
-  if (!response.ok) {
-    throw new Error(
-      `TSN execution-plan request failed (${response.status}): ${await response.text()}`,
-    );
-  }
-  const payload = (await response.json()) as {
-    paymentId?: string;
-    tokenMintAddress?: string;
-    commitmentHash?: string;
-    amount?: number | string;
-    senderFeeAmount?: number | string;
-    pruSpendAmountBaseUnits?: string | number | null;
-    senderFeeAmountBaseUnits?: string | number | null;
-    executionPlanV2?: PruSpendExecutionPlanV2 | null;
-    intent?: {
-      executionPlanV2?: PruSpendExecutionPlanV2 | null;
-      paymentId?: string;
-      tokenMintAddress?: string;
-      commitmentHash?: string;
-      amount?: number | string;
-      senderFeeAmount?: number | string;
-      pruSpendAmountBaseUnits?: string | number | null;
-      senderFeeAmountBaseUnits?: string | number | null;
-    } | null;
-  };
-  const intentPayload = payload.intent ?? payload;
-  const executionPlan =
-    payload.executionPlanV2 ?? intentPayload.executionPlanV2;
-  if (!executionPlan) {
-    throw new Error(
-      "TSN mempool response does not include an Execution Plan V2",
-    );
-  }
-  const escrowAmountBaseUnits = String(
-    intentPayload.pruSpendAmountBaseUnits ?? intentPayload.amount ?? "0",
-  );
-  const senderFeeAmountBaseUnits = String(
-    intentPayload.senderFeeAmountBaseUnits ??
-      intentPayload.senderFeeAmount ??
-      "0",
-  );
-  return {
-    paymentId: String(intentPayload.paymentId ?? params.intentId),
-    tokenMintAddress: String(intentPayload.tokenMintAddress ?? ""),
-    commitmentHash: String(intentPayload.commitmentHash ?? ""),
-    escrowAmountBaseUnits,
-    senderFeeAmountBaseUnits,
-    selections: executionPlan.scopedSpendAuthorizations.map((selection) => ({
-      tin: executionPlan.tinId ?? params.intentId,
-      pruIndex: selection.pruIndex,
-      nonce: selection.nonce,
-      publicKey: selection.authorityPublicKey,
-      spendAuthHash: selection.authorizationHash,
-      amountBaseUnits: selection.amountBaseUnits,
-      authorizationMessage: selection.authorizationMessage,
-      authorizationSignature: selection.authorizationSignature,
-    })),
-  } satisfies PruSpendPermit;
-}
-
 export function getTsnPruSpendGuardPda(params: {
   tin: bigint | number | string;
   pruIndex: number;
@@ -480,7 +262,36 @@ type PruSpendSelection = {
   amountBaseUnits: bigint;
   authorizationMessage?: string;
   authorizationSignature?: string;
+  rootAuthorizationSignature?: string;
+  rootAuthorizationMessage?: Uint8Array | string;
+  mainWalletPublicKey?: PublicKey | string;
 };
+
+const PRU_ROOT_AUTH_DOMAIN = new TextEncoder().encode("TSN_PRU_ROOT_AUTH_V1");
+const PRU_CHILD_AUTH_DOMAIN = new TextEncoder().encode("TSN_PRU_CHILD_AUTH_V1");
+
+function pruAuthorizationMessage(params: {
+  domain: Uint8Array;
+  authority: PublicKey;
+  tin: bigint | number | string;
+  pruIndex: number;
+  nonce: number;
+  commitmentHash: Uint8Array;
+  amount: bigint;
+  senderFeeAmount: bigint;
+}) {
+  return concatBytes([
+    params.domain,
+    PROGRAM_ID.toBytes(),
+    params.authority.toBytes(),
+    encodeU64(BigInt(params.tin)),
+    encodeU16(params.pruIndex),
+    Uint8Array.of(params.nonce),
+    params.commitmentHash,
+    encodeU64(params.amount),
+    encodeU64(params.senderFeeAmount),
+  ]);
+}
 
 function buildPruSpendInstructions(params: {
   operator: PublicKey;
@@ -522,22 +333,52 @@ function buildPruSpendInstructions(params: {
       tin: selection.tin,
       pruIndex: selection.pruIndex,
     });
-    const authorizationMessage = selection.authorizationMessage
-      ? utf8ToBytes(selection.authorizationMessage)
-      : selection.spendAuthHash;
-    const authorizationSignature = selection.authorizationSignature
+    const mainWallet = selection.mainWalletPublicKey
+      ? new PublicKey(selection.mainWalletPublicKey)
+      : null;
+    if (!mainWallet || !selection.rootAuthorizationSignature) {
+      throw new Error("PRU spend requires a main-wallet authorization signature");
+    }
+    const rootSignature = Uint8Array.from(Buffer.from(selection.rootAuthorizationSignature, "base64"));
+    const childSignature = selection.authorizationSignature
       ? Uint8Array.from(Buffer.from(selection.authorizationSignature, "base64"))
       : null;
-    const verifyInstruction =
-      authorizationSignature && authorizationMessage
-        ? Ed25519Program.createInstructionWithPublicKey({
-            publicKey: pruAuthorityPubkey.toBytes(),
-            message: authorizationMessage,
-            signature: authorizationSignature,
-          })
-        : null;
+    if (rootSignature.length !== 64 || !childSignature || childSignature.length !== 64) {
+      throw new Error("PRU spend signatures must each be 64 bytes");
+    }
+    const rootMessage = selection.rootAuthorizationMessage
+      ? typeof selection.rootAuthorizationMessage === "string"
+        ? utf8ToBytes(selection.rootAuthorizationMessage)
+        : selection.rootAuthorizationMessage
+      : pruAuthorizationMessage({
+          domain: PRU_ROOT_AUTH_DOMAIN,
+          authority: mainWallet,
+          tin: selection.tin,
+          pruIndex: selection.pruIndex,
+          nonce: selection.nonce,
+          commitmentHash: params.commitmentHash,
+          amount: escrowAmountForThisSelection,
+          senderFeeAmount: feeForThisSelection,
+        });
+    const childMessage = pruAuthorizationMessage({
+      domain: PRU_CHILD_AUTH_DOMAIN,
+      authority: pruAuthorityPubkey,
+      tin: selection.tin,
+      pruIndex: selection.pruIndex,
+      nonce: selection.nonce,
+      commitmentHash: params.commitmentHash,
+      amount: escrowAmountForThisSelection,
+      senderFeeAmount: feeForThisSelection,
+    });
+    const rootVerifyInstruction = Ed25519Program.createInstructionWithPublicKey({
+      publicKey: mainWallet.toBytes(), message: rootMessage, signature: rootSignature,
+    });
+    const childVerifyInstruction = Ed25519Program.createInstructionWithPublicKey({
+      publicKey: pruAuthorityPubkey.toBytes(), message: childMessage, signature: childSignature,
+    });
     const baseInstructions = [
-      ...(verifyInstruction ? [verifyInstruction] : []),
+      rootVerifyInstruction,
+      childVerifyInstruction,
       new TransactionInstruction({
         programId: PROGRAM_ID,
         keys: [
@@ -547,6 +388,7 @@ function buildPruSpendInstructions(params: {
             isSigner: true,
             isWritable: false,
           },
+          { pubkey: mainWallet, isSigner: false, isWritable: false },
           { pubkey: motherEscrow, isSigner: false, isWritable: false },
           { pubkey: cranker, isSigner: false, isWritable: true },
           { pubkey: pruSpendGuard, isSigner: false, isWritable: true },
@@ -583,9 +425,7 @@ function buildPruSpendInstructions(params: {
             selection.spendAuthHash,
             encodeU64(escrowAmountForThisSelection),
             encodeU64(feeForThisSelection),
-            authorizationSignature
-              ? authorizationSignature
-              : new Uint8Array(64),
+            childSignature,
             pruAuthorityPubkey.toBytes(),
           ]),
         ),

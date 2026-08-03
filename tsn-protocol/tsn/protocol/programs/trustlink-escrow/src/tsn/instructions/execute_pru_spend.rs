@@ -1,26 +1,22 @@
 use anchor_lang::{
     prelude::*,
-    solana_program::{
-        program::invoke_signed,
-        program_pack::Pack,
-        system_instruction,
-    },
+    solana_program::{program::invoke_signed, program_pack::Pack, system_instruction},
     system_program::{self, Transfer as SystemTransfer},
 };
-use anchor_spl::token::{
-    self, InitializeAccount3, Mint, Token, TokenAccount, TransferChecked,
-};
+use anchor_spl::token::{self, InitializeAccount3, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::tsn::{
     constants::{
-        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
-        TSN_PRU_SPEND_GUARD_SEED, TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_TREASURY_SEED,
-        TSN_VERIFIER_SEED,
+        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS, TSN_PRU_SPEND_GUARD_SEED,
+        TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_TREASURY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPruSpendExecuted,
     state::{Cranker, MotherEscrow, PruSpendGuard},
-    utils::compute_cranker_dna,
+    utils::{
+        compute_cranker_dna, pru_child_authorization_message, pru_root_authorization_message,
+        verify_ed25519_message_at,
+    },
 };
 
 #[derive(Accounts)]
@@ -30,6 +26,11 @@ pub struct ExecutePruSpend<'info> {
     pub cranker_operator: Signer<'info>,
 
     pub pru_authority: Signer<'info>,
+
+    /// CHECK: The root wallet is authenticated by the preceding Ed25519
+    /// instruction. It must never be reconstructed or decrypted by the
+    /// Cranker.
+    pub main_wallet: UncheckedAccount<'info>,
 
     pub mother_escrow: Box<Account<'info, MotherEscrow>>,
 
@@ -99,6 +100,11 @@ pub struct ExecutePruSpend<'info> {
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+
+    /// CHECK: Instructions sysvar used for exact root + child signature
+    /// verification.
+    #[account(address = solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
 }
 
 pub fn execute_pru_spend(
@@ -115,6 +121,48 @@ pub fn execute_pru_spend(
         commitment_hash != [0; 32] && (amount > 0 || sender_fee_amount > 0),
         TsnError::InvalidPrivateCommitment
     );
+
+    // A PRU movement is authorized by two independent authorities:
+    // (1) the main wallet (Layer 0) authorizes the exact operation, and
+    // (2) the selected PRU child authority (derived locally from the
+    // encrypted Layer 2 seed) authorizes the same exact bytes. The program
+    // verifies both Ed25519 instructions immediately preceding this call.
+    let current = solana_program::sysvar::instructions::load_current_index_checked(
+        &ctx.accounts.instructions_sysvar.to_account_info(),
+    )? as usize;
+    require!(current >= 2, TsnError::MissingPermitVerification);
+    let root_message = pru_root_authorization_message(
+        ctx.program_id,
+        &ctx.accounts.main_wallet.key(),
+        tin,
+        pru_index,
+        nonce,
+        &commitment_hash,
+        amount,
+        sender_fee_amount,
+    );
+    verify_ed25519_message_at(
+        &ctx.accounts.instructions_sysvar.to_account_info(),
+        current - 2,
+        &ctx.accounts.main_wallet.key(),
+        &root_message,
+    )?;
+    let child_message = pru_child_authorization_message(
+        ctx.program_id,
+        &ctx.accounts.pru_authority.key(),
+        tin,
+        pru_index,
+        nonce,
+        &commitment_hash,
+        amount,
+        sender_fee_amount,
+    );
+    verify_ed25519_message_at(
+        &ctx.accounts.instructions_sysvar.to_account_info(),
+        current - 1,
+        &ctx.accounts.pru_authority.key(),
+        &child_message,
+    )?;
     if !ctx.accounts.pru_spend_guard.active
         && ctx.accounts.pru_spend_guard.spend_auth_hash == [0; 32]
         && ctx.accounts.pru_spend_guard.nonce_bitmask == [0; 32]
@@ -130,7 +178,10 @@ pub fn execute_pru_spend(
             && ctx.accounts.pru_spend_guard.pru_index == pru_index,
         TsnError::InvalidPruSpendAuthority
     );
-    require!(ctx.accounts.pru_spend_guard.active, TsnError::InactivePruSpendGuard);
+    require!(
+        ctx.accounts.pru_spend_guard.active,
+        TsnError::InactivePruSpendGuard
+    );
     require!(
         ctx.accounts.pru_spend_guard.spend_auth_hash == spend_auth_hash,
         TsnError::InvalidPruSpendAuthority
@@ -161,9 +212,13 @@ pub fn execute_pru_spend(
     let reimbursement = TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS;
     let escrow_is_empty = ctx.accounts.escrow_token_account.lamports() == 0
         && ctx.accounts.escrow_token_account.data_is_empty();
-    let required_verifier_lamports = (if escrow_is_empty { token_account_rent } else { 0 })
-        .checked_add(reimbursement)
-        .ok_or(TsnError::FeeSplitOverflow)?;
+    let required_verifier_lamports = (if escrow_is_empty {
+        token_account_rent
+    } else {
+        0
+    })
+    .checked_add(reimbursement)
+    .ok_or(TsnError::FeeSplitOverflow)?;
     require!(
         ctx.accounts.verifier_pda.lamports() >= required_verifier_lamports,
         TsnError::InsufficientVerifierLamports

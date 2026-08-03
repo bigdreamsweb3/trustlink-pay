@@ -3,150 +3,54 @@ import readline from "node:readline";
 import { spawn } from "node:child_process";
 
 const rootDir = process.cwd();
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const backendCommand = process.platform === "win32" ? "python" : "python3";
-const backendArgs = ["-u", "server.py"];
-const frontendNextBin = "../../frontend/node_modules/next/dist/bin/next";
-const frontendArgs = ["dev", "-p", "3002"];
-const mempoolPort = Number(process.env.MEMPOOL_PORT ?? "8000");
-const frontendPort = Number(process.env.MEMPOOL_FRONTEND_PORT ?? "3002");
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const receiverPort = Number(process.env.TSN_RECEIVER_PORT ?? "8010");
+const nodePort = Number(process.env.TSN_NODE_PORT ?? "8000");
+const uiPort = Number(process.env.TSN_MEMPOOL_UI_PORT ?? "3002");
 
 function isPortOpen(port) {
   return new Promise((resolve) => {
     const socket = net.connect(port, "127.0.0.1");
-    const finish = (value) => {
-      socket.removeAllListeners();
-      socket.destroy();
-      resolve(value);
-    };
-
-    socket.once("connect", () => finish(true));
-    socket.once("error", () => finish(false));
-    socket.setTimeout(800, () => finish(false));
+    const done = (value) => { socket.removeAllListeners(); socket.destroy(); resolve(value); };
+    socket.once("connect", () => done(true));
+    socket.once("error", () => done(false));
+    socket.setTimeout(800, () => done(false));
   });
 }
 
-async function inspectMempoolApi(port) {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/openapi.json`, {
-      signal: AbortSignal.timeout(2_000),
-    });
-    if (!response.ok) return { compatible: false, reason: `HTTP ${response.status}` };
-
-    const document = await response.json();
-    const properties =
-      document?.components?.schemas?.CreateIntentRequest?.properties ?? {};
-    const requiredFields = [
-      "privacyVersion",
-      "commitmentRecord",
-      "encryptedSettlementToken",
-    ];
-    const missingFields = requiredFields.filter((field) => !(field in properties));
-    return missingFields.length === 0
-      ? { compatible: true }
-      : {
-          compatible: false,
-          reason: `missing private-settlement fields: ${missingFields.join(", ")}`,
-        };
-  } catch (error) {
-    return {
-      compatible: false,
-      reason: error instanceof Error ? error.message : String(error),
-    };
+function spawnTagged(name, command, args, cwd, env = process.env) {
+  const child = spawn(command, args, { cwd, env, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+  for (const stream of [child.stdout, child.stderr]) {
+    readline.createInterface({ input: stream }).on("line", (line) => console.log(`[${name}] ${line}`));
   }
-}
-
-function spawnTagged(name, command, args, options = {}) {
-  const child = spawn(command, args, {
-    cwd: options.cwd ?? rootDir,
-    env: options.env ?? process.env,
-    shell: false,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  const prefix = `[${name}]`;
-  readline.createInterface({ input: child.stdout }).on("line", (line) => {
-    console.log(`${prefix} ${line}`);
-  });
-  readline.createInterface({ input: child.stderr }).on("line", (line) => {
-    console.log(`${prefix} ${line}`);
-  });
-
-  child.on("exit", (code, signal) => {
-    const exitLabel = signal ? `signal ${signal}` : `code ${code ?? 0}`;
-    console.log(`${prefix} exited with ${exitLabel}`);
-  });
-
+  child.on("exit", (code, signal) => console.log(`[${name}] exited with ${signal ?? `code ${code ?? 0}`}`));
   return child;
 }
 
 const children = [];
-const backendBusy = await isPortOpen(mempoolPort);
-const frontendBusy = await isPortOpen(frontendPort);
+if (!(await isPortOpen(receiverPort))) {
+  children.push(spawnTagged("tsn-receiver", npm, ["run", "dev", "--", "-p", String(receiverPort)],
+    `${rootDir}/tsn-protocol/tsn-receiver`));
+} else console.log(`[tsn-receiver] reusing localhost:${receiverPort}`);
 
-if (backendBusy) {
-  const inspection = await inspectMempoolApi(mempoolPort);
-  if (!inspection.compatible) {
-    throw new Error(
-      [
-        `[mempool-api] port ${mempoolPort} is occupied by an incompatible or unknown service (${inspection.reason}).`,
-        "Stop the existing process and rerun this command so the current TSN mempool API starts.",
-        `Windows: netstat -ano | findstr :${mempoolPort}`,
-        `WSL/Linux: lsof -i :${mempoolPort}`,
-      ].join("\n"),
-    );
-  }
-  console.log(`[mempool-api] port ${mempoolPort} already in use; reusing the compatible API`);
-} else {
-  const backendEnv = {
-    ...process.env,
-    MEMPOOL_STORE: process.env.MEMPOOL_STORE ?? "file",
-    PYTHONUNBUFFERED: "1",
-  };
-  children.push(
-    spawnTagged("mempool-api", backendCommand, backendArgs, {
-      cwd: `${rootDir}/tsn-protocol/tsn-mempool-backend`,
-      env: backendEnv,
-    }),
-  );
+if (!(await isPortOpen(nodePort))) {
+  children.push(spawnTagged("tsn-node", process.platform === "win32" ? "python" : "python3", ["-u", "server.py"],
+    `${rootDir}/tsn-protocol/tsn-node`, {
+      ...process.env,
+      TSN_RECEIVER_URL: process.env.TSN_RECEIVER_URL ?? `http://127.0.0.1:${receiverPort}`,
+      PYTHONUNBUFFERED: "1",
+    }));
+} else console.log(`[tsn-node] reusing localhost:${nodePort}`);
+
+if (process.env.TSN_START_MEMPOOL_UI === "true") {
+  if (!(await isPortOpen(uiPort))) {
+    children.push(spawnTagged("tsn-mempool-ui", npm, ["run", "dev", "--", "-p", String(uiPort)],
+      `${rootDir}/tsn-protocol/tsn-mempool-ui`));
+  } else console.log(`[tsn-mempool-ui] reusing localhost:${uiPort}`);
 }
 
-if (frontendBusy) {
-  console.log(`[mempool-ui] port ${frontendPort} already in use; reusing the existing UI`);
-} else {
-  children.push(
-    spawnTagged("mempool-ui", process.execPath, [frontendNextBin, ...frontendArgs], {
-      cwd: `${rootDir}/tsn-protocol/tsn-mempool-frontend`,
-    }),
-  );
-}
-
-function shutdown() {
-  for (const child of children) {
-    if (!child.killed) {
-      child.kill();
-    }
-  }
-}
-
-process.on("SIGINT", () => {
-  shutdown();
-  process.exit(130);
-});
-
-process.on("SIGTERM", () => {
-  shutdown();
-  process.exit(143);
-});
-
-const exitCodes = await Promise.all(
-  children.map(
-    (child) =>
-      new Promise((resolve) => {
-        child.on("exit", (code, signal) => resolve(signal ? 1 : code ?? 0));
-      }),
-  ),
-);
-
-const failedCode = exitCodes.find((code) => code !== 0);
-process.exit(failedCode ?? 0);
+const shutdown = () => { for (const child of children) if (!child.killed) child.kill(); };
+process.once("SIGINT", () => { shutdown(); process.exit(130); });
+process.once("SIGTERM", () => { shutdown(); process.exit(143); });
+const codes = await Promise.all(children.map((child) => new Promise((resolve) => child.once("exit", (code, signal) => resolve(signal ? 1 : code ?? 0)))));
+process.exit(codes.find((code) => code !== 0) ?? 0);

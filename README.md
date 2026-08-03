@@ -31,9 +31,10 @@ flowchart LR
   policy-driven receiving/spending routes.
 - **TSN SDK:** the local planner and authorization layer that creates the
   immutable payment route.
-- **TSN Node:** the off-chain verification, reservation, work-queue, and status
-  service. The current source directory retains a historical `mempool` name,
-  but the architecture term is TSN Node.
+- **TSN Receiver:** the Firebase-backed ingress, durable work queue, leases,
+  and status-read service.
+- **TSN Node:** the stateless off-chain protocol verifier and processor. It
+  leases received work and returns verified or rejected evidence.
 - **Cranker:** an independent fee-paying executor that submits already
   authorized transactions. It does not receive user private keys or replan a
   payment.

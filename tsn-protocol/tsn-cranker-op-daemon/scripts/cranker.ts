@@ -1,4 +1,5 @@
-import { HttpTsnMempool, JsonFileTsnMempool } from "../../tsn-sdk/src/mempool";
+import { HttpTsnMempool } from "../../tsn-sdk/src/mempool";
+import type { TsnMempool } from "../../tsn-sdk/src/mempool";
 import { evaluateSettlementEconomics } from "../../tsn-sdk/src/settlement-economics";
 import {
   getTsnCrankerPda,
@@ -16,18 +17,9 @@ import {
 import {
   getTsnPrivateReplayRegistryPda,
   getTsnSharedEscrowAuthorityPda,
-  requestPrivatePayoutPermit,
-  requestPruSpendPermit,
-  requestPrivateRecoveryPermit,
-  tsnExecutePruSpendOnChainBatched,
   tsnExecutePrivatePayoutOnChain,
   tsnRecoverPrivateEscrowOnChain,
 } from "../../tsn-sdk/src/worker/private-settlement";
-import {
-  createOneTimeDecryptionToken,
-  decodeSettlementSecret,
-  decryptSettlementToken,
-} from "../../tsn-sdk/src/settlement-token";
 import { verifySenderPaymentAuthorization } from "../../tsn-sdk/src/payment-authorization-server";
 import {
   parseMixedPaymentMessage,
@@ -52,6 +44,7 @@ import {
 } from "@solana/web3.js";
 
 import { createHash } from "node:crypto";
+import nacl from "tweetnacl";
 import { readFileSync } from "node:fs";
 import {
   createOwnerIntentSignatureInstruction,
@@ -160,18 +153,201 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function createMempoolClient() {
-  if (process.env.TSN_MEMPOOL_URL) {
-    return new HttpTsnMempool(process.env.TSN_MEMPOOL_URL);
-  }
+function receiverUrl() {
+  return process.env.TSN_RECEIVER_URL;
+}
 
-  return new JsonFileTsnMempool();
+type ReceiverWork = {
+  id: string;
+  kind: "PAYMENT_INTENT" | "CLAIM" | "TIN_OPERATION" | "RECOVERY";
+  status: string;
+  stateVersion: number;
+  payload: Record<string, unknown>;
+  verification?: { verifiedPayload?: Record<string, unknown> } | null;
+  authorization?: Record<string, unknown> | null;
+};
+
+type OpaqueRouteAuthorization = {
+  version: number;
+  message: string;
+  signatureBase64: string;
+  signerPublicKeyBase64: string;
+  destination: string;
+  routeCommitment: string;
+  expiresAt: string;
+};
+
+function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, unknown>) {
+  const route = payload.routeAuthorization as OpaqueRouteAuthorization | undefined;
+  if (!route || route.version !== 1) throw new Error("Node route authorization is missing");
+  const expectedSigner = process.env.TSN_ROUTE_ATTESTATION_PUBLIC_KEY_BASE64?.trim();
+  if (!expectedSigner || route.signerPublicKeyBase64 !== expectedSigner) {
+    throw new Error("Node route authorization signer is not trusted");
+  }
+  if (Date.parse(route.expiresAt) <= Date.now()) throw new Error("Node route authorization expired");
+  if (route.destination !== payload.recipientWallet) throw new Error("Node route destination mismatch");
+  const fields = new Map(route.message.split("\n").slice(1).map((line) => {
+    const offset = line.indexOf("=");
+    return [line.slice(0, offset), line.slice(offset + 1)];
+  }));
+  if (route.message.split("\n")[0] !== "TSN_ROUTE_AUTHORIZATION" ||
+      fields.get("workId") !== workId || fields.get("destination") !== route.destination ||
+      fields.get("routeCommitment") !== route.routeCommitment ||
+      fields.get("mint") !== payload.tokenMintAddress || fields.get("amount") !== String(payload.amount) ||
+      fields.get("expiry") !== route.expiresAt || fields.get("programId") !== VERIFIED_TSN_PROGRAM_ID) {
+    throw new Error("Node route authorization does not bind the exact settlement");
+  }
+  const valid = nacl.sign.detached.verify(
+    Buffer.from(route.message, "utf8"),
+    Buffer.from(route.signatureBase64, "base64"),
+    Buffer.from(route.signerPublicKeyBase64, "base64"),
+  );
+  if (!valid) throw new Error("Node route authorization signature is invalid");
+}
+
+async function receiverRequest<T>(method: "POST" | "PATCH", body: Record<string, unknown>) {
+  const baseUrl = receiverUrl();
+  const apiKey = process.env.TSN_RECEIVER_CRANKER_API_KEY;
+  if (!baseUrl || !apiKey) throw new Error("TSN Receiver Cranker configuration is incomplete");
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/cranker/work`, {
+    method,
+    headers: { "content-type": "application/json", "x-api-key": apiKey },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`TSN Receiver request failed (${response.status})`);
+  return await response.json() as T;
+}
+
+async function reportReceiverWork(params: {
+  work: ReceiverWork;
+  operator: string;
+  status: "SUBMITTED" | "CONFIRMED" | "FAILED";
+  evidence: Record<string, unknown>;
+}) {
+  return receiverRequest<ReceiverWork>("PATCH", {
+    id: params.work.id,
+    owner: params.operator,
+    expectedVersion: params.work.stateVersion,
+    status: params.status,
+    evidence: params.evidence,
+  });
+}
+
+async function processReceiverPaymentIntent(params: {
+  work: ReceiverWork;
+  operator: Keypair;
+  rpcUrl: string;
+  tokenDecimals: number;
+}) {
+  const verified = params.work.verification?.verifiedPayload;
+  if (!verified) throw new Error("Receiver work has no TSN Node verified payload");
+  verifyOpaqueRouteAuthorization(params.work.id, verified);
+  const intent = {
+    ...verified,
+    id: params.work.id,
+    status: "pending",
+  } as unknown as TsnIntentWorkItem["intent"];
+  const item = { intent } satisfies TsnIntentWorkItem;
+  let submittedEvidence: Record<string, unknown> = {};
+  const receiverMempool = {
+    updateIntentStatus: async (_id: string, _status: unknown, patch?: Record<string, unknown>) => {
+      submittedEvidence = { ...submittedEvidence, ...(patch ?? {}) };
+      return intent;
+    },
+  } as unknown as TsnMempool;
+  const submitted = await tracedSubmitIntentOnChainWork({
+    item,
+    mempool: receiverMempool,
+    operator: params.operator,
+    rpcUrl: params.rpcUrl,
+    tokenDecimals: params.tokenDecimals,
+  });
+  await reportReceiverWork({
+    work: params.work,
+    operator: params.operator.publicKey.toBase58(),
+    status: "CONFIRMED",
+    evidence: {
+      ...submittedEvidence,
+      signature: submitted.signature,
+      onchainIntent: submitted.intent,
+      stage: "INTENT_CONFIRMED",
+    },
+  });
+}
+
+async function processReceiverClaim(params: { work: ReceiverWork; operator: Keypair; rpcUrl: string }) {
+  const authorization = params.work.authorization;
+  if (!authorization || authorization.kind !== "TSN_PAYOUT_AUTHORIZATION") {
+    throw new Error("Receiver claim has no immutable Node settlement authorization");
+  }
+  const expiresAtTs = BigInt(String(authorization.expiresAtTs));
+  if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000))) {
+    throw new Error("Receiver claim settlement authorization expired");
+  }
+  const payout = await tsnExecutePrivatePayoutOnChain({
+    operator: params.operator,
+    permitSigner: new PublicKey(String(authorization.authorizationSigner)),
+    permitSignature: Uint8Array.from(Buffer.from(String(authorization.authorizationSignatureBase64), "base64")),
+    payoutNullifier: hex32(String(authorization.payoutNullifier), "payoutNullifier"),
+    payoutSequence: BigInt(String(authorization.payoutSequence)),
+    tokenMint: new PublicKey(String(authorization.tokenMintAddress)),
+    recipientWallet: new PublicKey(String(authorization.recipientWallet)),
+    payoutAmount: BigInt(String(authorization.payoutAmountBaseUnits)),
+    claimFeeAmount: BigInt(String(authorization.claimFeeAmountBaseUnits)),
+    expiresAtTs,
+    rpcUrl: params.rpcUrl,
+  });
+  await reportReceiverWork({
+    work: params.work,
+    operator: params.operator.publicKey.toBase58(),
+    status: "CONFIRMED",
+    evidence: { stage: "PAYOUT_CONFIRMED", signature: payout.signature, routeCommitment: authorization.routeCommitment },
+  });
+}
+
+async function processReceiverRecovery(params: { work: ReceiverWork; operator: Keypair; rpcUrl: string }) {
+  const authorization = params.work.authorization;
+  if (!authorization || authorization.kind !== "TSN_RECOVERY_AUTHORIZATION") {
+    throw new Error("Receiver recovery has no immutable Node settlement authorization");
+  }
+  const expiresAtTs = BigInt(String(authorization.expiresAtTs));
+  if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000))) throw new Error("Recovery authorization expired");
+  const recovery = await tsnRecoverPrivateEscrowOnChain({
+    operator: params.operator,
+    permitSigner: new PublicKey(String(authorization.authorizationSigner)),
+    permitSignature: Uint8Array.from(Buffer.from(String(authorization.authorizationSignatureBase64), "base64")),
+    recoveryNullifier: hex32(String(authorization.recoveryNullifier), "recoveryNullifier"),
+    recoverySequence: BigInt(String(authorization.recoverySequence)),
+    escrowTokenAccount: new PublicKey(String(authorization.escrowTokenAccount)),
+    settlementCrankerOperator: new PublicKey(String(authorization.settlementCrankerPubkey)),
+    tokenMint: new PublicKey(String(authorization.tokenMintAddress)),
+    recoveryAmount: BigInt(String(authorization.recoveryAmountBaseUnits)),
+    expiresAtTs,
+    rpcUrl: params.rpcUrl,
+  });
+  await reportReceiverWork({
+    work: params.work,
+    operator: params.operator.publicKey.toBase58(),
+    status: "CONFIRMED",
+    evidence: { stage: "RECOVERY_CONFIRMED", signature: recovery.signature },
+  });
+}
+
+function createMempoolClient() {
+  const url = receiverUrl();
+  if (!url) {
+    throw new Error(
+      "TSN_RECEIVER_URL is required; Crankers cannot read a local JSON queue",
+    );
+  }
+  return new HttpTsnMempool(url);
 }
 
 async function fetchMempoolOverview(): Promise<MempoolOverview | null> {
-  if (!process.env.TSN_MEMPOOL_URL) return null;
+  const receiver = receiverUrl();
+  if (!receiver) return null;
 
-  const baseUrl = process.env.TSN_MEMPOOL_URL.replace(/\/$/, "");
+  const baseUrl = receiver.replace(/\/$/, "");
   const fetchJson = async <T>(path: string): Promise<T> => {
     const response = await fetch(`${baseUrl}${path}`, {
       headers: {
@@ -273,10 +449,6 @@ function loadOperatorKeypair() {
   return Keypair.fromSecretKey(Uint8Array.from(parsed));
 }
 
-function loadCrankerEncryptionSecretKey() {
-  const value = process.env.TSN_CRANKER_ENCRYPTION_SECRET_KEY?.trim();
-  return value || null;
-}
 
 function hex32(value: string, label: string) {
   const buffer = Buffer.from(value, "hex");
@@ -420,7 +592,7 @@ function parseAuthorizationMessage(message: string) {
   if (message.startsWith("TSN PRU Spend\n")) {
     const parsed = parsePruSpendMessage(message);
     return {
-      action: "pru_private_commitment_v1",
+      action: "zk_pru_only_v2",
       amountBaseUnits: parsed.amountBaseUnits,
       recipientTin: parsed.recipientTin,
       senderFeeBaseUnits: parsed.feeBaseUnits,
@@ -442,7 +614,7 @@ function parseAuthorizationMessage(message: string) {
   if (message.startsWith("TSN Mixed Payment\n")) {
     const parsed = parseMixedPaymentMessage(message);
     return {
-      action: "mixed_pru_wallet_v1",
+      action: "mixed_zk_pru_wallet_v2",
       amountBaseUnits: parsed.amountBaseUnits,
       recipientTin: parsed.recipientTin,
       senderFeeBaseUnits: parsed.feeBaseUnits,
@@ -488,11 +660,11 @@ function validateSignedSettlementTransaction(params: {
   const senderWallet = new PublicKey(intent.senderWallet ?? "");
   const tokenMint = new PublicKey(params.item.intent.tokenMintAddress);
   const expectedAmount =
-    intent.senderSettlementMode === "mixed_pru_wallet_v1"
+      intent.senderSettlementMode === "mixed_zk_pru_wallet_v2"
       ? BigInt(intent.walletTopUpAmountBaseUnits ?? "0")
       : toBaseUnits(params.item.intent.amount, params.tokenDecimals);
   const expectedSenderFeeAmount =
-    intent.senderSettlementMode === "mixed_pru_wallet_v1"
+      intent.senderSettlementMode === "mixed_zk_pru_wallet_v2"
       ? BigInt(intent.walletTopUpSenderFeeBaseUnits ?? "0")
       : toBaseUnits(
           Number(
@@ -536,7 +708,7 @@ function validateSignedSettlementTransaction(params: {
   }
   const usesPrivateSettlement =
     Number(intent.privacyVersion ?? 1) >= 2 ||
-    intent.senderSettlementMode === "private_permit_v2";
+    intent.senderSettlementMode === "zk_pru_only_v1";
   if (usesPrivateSettlement) {
     const coreInstructions = transaction.instructions.filter(
       (instruction) =>
@@ -895,7 +1067,6 @@ async function validateIntentWork(params: {
       amountBaseUnits: string;
       nonce: number;
     }> | null;
-    settlementEscrowSecretKeyBase64?: string | null;
     senderTokenAccount?: string | null;
     settlementVault?: string | null;
     settlementTokenAccount?: string | null;
@@ -943,17 +1114,13 @@ async function validateIntentWork(params: {
     return "missing sender payment authorization";
   }
   if (
-    intent.senderSettlementMode !== "sponsored_sender_cosigned" &&
-    intent.senderSettlementMode !== "private_permit_v2" &&
-    intent.senderSettlementMode !== "pru_private_commitment_v1" &&
-    intent.senderSettlementMode !== "mixed_pru_wallet_v1"
+    intent.senderSettlementMode !== "wallet_only_v2" &&
+    intent.senderSettlementMode !== "zk_pru_only_v2" &&
+    intent.senderSettlementMode !== "mixed_zk_pru_wallet_v2"
   ) {
     return "unsupported sender settlement mode";
   }
-  if (
-    intent.senderSettlementMode !== "pru_private_commitment_v1" &&
-    !intent.senderSignedSettlementTransaction
-  ) {
+  if (!intent.senderSignedSettlementTransaction) {
     return "missing sender co-signed settlement transaction";
   }
   if (
@@ -975,23 +1142,9 @@ async function validateIntentWork(params: {
   ) {
     return "encrypted settlement token epoch mismatch";
   }
-  if (intent.senderSettlementMode === "pru_private_commitment_v1") {
-    if (
-      !intent.pruSpendTin ||
-      !intent.pruSpendAmountBaseUnits ||
-      !intent.pruSpendSelections?.length
-    ) {
-      return "missing PRU spend route selection";
-    }
-  } else if (intent.senderSettlementMode === "mixed_pru_wallet_v1") {
+  if (intent.senderSettlementMode === "mixed_zk_pru_wallet_v2") {
     if (!intent.pruSpendTin || !intent.pruSpendSelections?.length) {
       return "mixed funding is missing PRU route selection";
-    }
-    if (
-      BigInt(intent.walletTopUpAmountBaseUnits ?? "0") > 0n &&
-      !intent.settlementEscrowSecretKeyBase64
-    ) {
-      return "mixed funding is missing shared escrow signer artifact";
     }
     if (
       BigInt(intent.walletTopUpAmountBaseUnits ?? "0") <= 0n &&
@@ -1002,10 +1155,7 @@ async function validateIntentWork(params: {
   } else if (!intent.senderSignedSettlementFeePayer) {
     return "missing sponsored settlement fee payer";
   }
-  if (
-    intent.senderSettlementMode !== "pru_private_commitment_v1" &&
-    intent.senderSignedSettlementFeePayer !== params.operator.toBase58()
-  ) {
+  if (intent.senderSignedSettlementFeePayer !== params.operator.toBase58()) {
     return "sponsored settlement fee payer does not match this cranker";
   }
   if (!intent.senderAuthorizationNonce) {
@@ -1040,26 +1190,26 @@ async function validateIntentWork(params: {
     return "sender authorization recipient TIN mismatch";
   }
   if (
-    authorization.action === "pru_private_commitment_v1" &&
-    intent.senderSettlementMode !== "pru_private_commitment_v1"
+    authorization.action === "zk_pru_only_v2" &&
+    intent.senderSettlementMode !== "zk_pru_only_v2"
   ) {
     return "sender authorization action does not match settlement mode";
   }
   if (
     authorization.action === "payment_intent" &&
-    intent.senderSettlementMode === "pru_private_commitment_v1"
+    intent.senderSettlementMode === "zk_pru_only_v2"
   ) {
     return "sender authorization action does not match PRU spend mode";
   }
   if (
-    authorization.action === "mixed_pru_wallet_v1" &&
-    intent.senderSettlementMode !== "mixed_pru_wallet_v1"
+    authorization.action === "mixed_zk_pru_wallet_v2" &&
+    intent.senderSettlementMode !== "mixed_zk_pru_wallet_v2"
   ) {
     return "sender authorization action does not match mixed funding mode";
   }
   if (
-    authorization.action !== "mixed_pru_wallet_v1" &&
-    intent.senderSettlementMode === "mixed_pru_wallet_v1"
+    authorization.action !== "mixed_zk_pru_wallet_v2" &&
+    intent.senderSettlementMode === "mixed_zk_pru_wallet_v2"
   ) {
     return "sender authorization action does not match mixed funding mode";
   }
@@ -1080,7 +1230,7 @@ async function validateIntentWork(params: {
   ) {
     return "sender authorization fee mismatch";
   }
-  if (authorization.action === "mixed_pru_wallet_v1") {
+  if (authorization.action === "mixed_zk_pru_wallet_v2") {
     const expectedPruPortion =
       BigInt(intent.pruSpendAmountBaseUnits ?? "0") +
       BigInt(intent.pruSpendSenderFeeBaseUnits ?? "0");
@@ -1114,22 +1264,20 @@ async function validateIntentWork(params: {
   if (!signatureValid) {
     return "sender authorization signature verification failed";
   }
-  if (intent.senderSettlementMode !== "pru_private_commitment_v1") {
-    const transactionInvalidReason = validateSignedSettlementTransaction({
-      item,
-      operator: params.operator,
-      tokenDecimals: params.tokenDecimals,
-    });
-    if (transactionInvalidReason) {
-      return transactionInvalidReason;
-    }
+  const transactionInvalidReason = validateSignedSettlementTransaction({
+    item,
+    operator: params.operator,
+    tokenDecimals: params.tokenDecimals,
+  });
+  if (transactionInvalidReason) {
+    return transactionInvalidReason;
   }
   return null;
 }
 
 async function submitIntentOnChainWork(params: {
   item: TsnIntentWorkItem;
-  mempool: ReturnType<typeof createMempoolClient>;
+  mempool: TsnMempool;
   operator: Keypair;
   rpcUrl: string;
   tokenDecimals: number;
@@ -1140,197 +1288,7 @@ async function submitIntentOnChainWork(params: {
     senderSignedSettlementFeePayer?: string | null;
     senderSettlementMode?: string | null;
     settlementVault?: string | null;
-    settlementEscrowSecretKeyBase64?: string | null;
   };
-  if (
-    sponsoredSettlement.senderSettlementMode === "pru_private_commitment_v1"
-  ) {
-    if (!process.env.TSN_MEMPOOL_URL) {
-      throw new Error("TSN_MEMPOOL_URL is required for PRU spend permits");
-    }
-    const permit = await requestPruSpendPermit({
-      mempoolUrl: process.env.TSN_MEMPOOL_URL,
-      apiKey: process.env.TSN_MEMPOOL_API_KEY,
-      intentId: params.item.intent.id,
-      operator: params.operator,
-    });
-    const batchResults = await tsnExecutePruSpendOnChainBatched({
-      operator: params.operator,
-      tokenMint: new PublicKey(permit.tokenMintAddress),
-      commitmentHash: Uint8Array.from(
-        Buffer.from(permit.commitmentHash, "hex"),
-      ),
-      escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
-      senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
-      // DEPRECATED: Cranker receiving user PRU private keys.
-      // SECURITY: The Cranker should never have access to user PRU private keys.
-      // The launch architecture uses scoped spend signatures from the user's device.
-      // The Cranker receives only the signatures, not the signing keys.
-      // Remove secretKeyBase64 from work items after local signing is wired.
-      selections: permit.selections.map((selection) => ({
-        tin: selection.tin,
-        pruIndex: selection.pruIndex,
-        nonce: selection.nonce,
-        amountBaseUnits: BigInt(selection.amountBaseUnits),
-        spendAuthHash: Uint8Array.from(
-          Buffer.from(selection.spendAuthHash, "hex"),
-        ),
-        pruAuthority: Keypair.fromSecretKey(
-          Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
-        ),
-      })),
-      rpcUrl: params.rpcUrl,
-    });
-    const lastBatch = batchResults[batchResults.length - 1];
-
-    await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
-      source: params.item.intent.source,
-      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-      escrowTxSig: lastBatch.signature,
-      settlementVault: lastBatch.escrowTokenAccount,
-      settlementTokenAccount: lastBatch.escrowTokenAccount,
-      settlementPaymentIntentId: lastBatch.escrowTokenAccount,
-      settlementReason:
-        "Cranker executed PRU-funded private escrow from the authenticated TIN balance route.",
-    } as Partial<TsnIntentWorkItem["intent"]>);
-
-    return {
-      intent: lastBatch.escrowTokenAccount,
-      signature: lastBatch.signature,
-      created: true,
-    };
-  }
-  if (sponsoredSettlement.senderSettlementMode === "mixed_pru_wallet_v1") {
-    if (!process.env.TSN_MEMPOOL_URL) {
-      throw new Error("TSN_MEMPOOL_URL is required for PRU spend permits");
-    }
-    if (!sponsoredSettlement.senderSignedSettlementTransaction) {
-      throw new Error(
-        "Mixed funding requires the sender co-signed settlement transaction",
-      );
-    }
-    const permit = await requestPruSpendPermit({
-      mempoolUrl: process.env.TSN_MEMPOOL_URL,
-      apiKey: process.env.TSN_MEMPOOL_API_KEY,
-      intentId: params.item.intent.id,
-      operator: params.operator,
-    });
-    const walletTopUpAmountBaseUnits = BigInt(
-      (
-        params.item.intent as TsnIntentWorkItem["intent"] & {
-          walletTopUpAmountBaseUnits?: string | null;
-        }
-      ).walletTopUpAmountBaseUnits ?? "0",
-    );
-    const walletSettlement =
-      walletTopUpAmountBaseUnits > 0n ||
-      sponsoredSettlement.settlementEscrowSecretKeyBase64 == null
-        ? await tsnSubmitSenderSignedSettlementTransaction({
-            operator: params.operator,
-            signedTransactionBase64:
-              sponsoredSettlement.senderSignedSettlementTransaction,
-            rpcUrl: params.rpcUrl,
-          })
-        : null;
-    let batchResults: Awaited<
-      ReturnType<typeof tsnExecutePruSpendOnChainBatched>
-    >;
-    try {
-      batchResults = await tsnExecutePruSpendOnChainBatched({
-        operator: params.operator,
-        tokenMint: new PublicKey(permit.tokenMintAddress),
-        commitmentHash: Uint8Array.from(
-          Buffer.from(permit.commitmentHash, "hex"),
-        ),
-        escrowAmountBaseUnits: BigInt(permit.escrowAmountBaseUnits),
-        senderFeeAmountBaseUnits: BigInt(permit.senderFeeAmountBaseUnits),
-        // DEPRECATED: Cranker receiving escrow secret keys.
-        // SECURITY: The Cranker should not handle user escrow key material.
-        // The launch architecture uses PDA-derived escrow accounts.
-        // Remove settlementEscrowSecretKeyBase64 after PDA escrow is wired.
-        ...(sponsoredSettlement.settlementEscrowSecretKeyBase64
-          ? {
-              escrowTokenAccount: Keypair.fromSecretKey(
-                Uint8Array.from(
-                  Buffer.from(
-                    sponsoredSettlement.settlementEscrowSecretKeyBase64,
-                    "base64",
-                  ),
-                ),
-              ),
-            }
-          : {}),
-        // DEPRECATED: Cranker receiving user PRU private keys.
-        // SECURITY: The Cranker should never have access to user PRU private keys.
-        // The launch architecture uses scoped spend signatures from the user's device.
-        // Remove secretKeyBase64 from work items after local signing is wired.
-        selections: permit.selections.map((selection) => ({
-          tin: selection.tin,
-          pruIndex: selection.pruIndex,
-          nonce: selection.nonce,
-          amountBaseUnits: BigInt(selection.amountBaseUnits),
-          spendAuthHash: Uint8Array.from(
-            Buffer.from(selection.spendAuthHash, "hex"),
-          ),
-          pruAuthority: Keypair.fromSecretKey(
-            Uint8Array.from(Buffer.from(selection.secretKeyBase64, "base64")),
-          ),
-        })),
-        rpcUrl: params.rpcUrl,
-      });
-    } catch (error) {
-      if (walletSettlement) {
-        const message = error instanceof Error ? error.message : String(error);
-        const recoveryReason =
-          `Mixed funding wallet top-up landed (${walletSettlement.signature}) ` +
-          `but PRU funding failed before recipient payout. ` +
-          `Funds in the shared escrow require explicit recovery. ` +
-          `Cause: ${message}`;
-        await params.mempool.updateIntentStatus(
-          params.item.intent.id,
-          "failed",
-          {
-            source: params.item.intent.source,
-            assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-            escrowTxSig: walletSettlement.signature,
-            settlementVault: sponsoredSettlement.settlementVault ?? undefined,
-            settlementTokenAccount:
-              sponsoredSettlement.settlementTokenAccount ?? undefined,
-            settlementPaymentIntentId:
-              sponsoredSettlement.settlementPaymentIntentId ?? undefined,
-            transferId: params.item.intent.transferId ?? undefined,
-            commitmentHash: params.item.intent.commitmentHash ?? undefined,
-            settlementEpoch: params.item.intent.settlementEpoch ?? undefined,
-            settlementResolution: "reverted",
-            settlementReason: recoveryReason,
-          } as Partial<TsnIntentWorkItem["intent"]>,
-        );
-        throw new Error(
-          `Mixed funding partial failure after wallet top-up ${walletSettlement.signature}; ` +
-            `recovery job created. Cause: ${message}`,
-        );
-      }
-      throw error;
-    }
-    const lastBatch = batchResults[batchResults.length - 1];
-
-    await params.mempool.updateIntentStatus(params.item.intent.id, "escrowed", {
-      source: params.item.intent.source,
-      assignedCrankerPubkey: params.operator.publicKey.toBase58(),
-      escrowTxSig: lastBatch.signature,
-      settlementVault: lastBatch.escrowTokenAccount,
-      settlementTokenAccount: lastBatch.escrowTokenAccount,
-      settlementReason: walletSettlement
-        ? `Cranker locked the wallet top-up into shared escrow (${walletSettlement.signature}) and completed the PRU top-up into the same TSN settlement (${lastBatch.signature}).`
-        : `Cranker completed the PRU-funded escrow and submitted the wallet-funded sender fee in the same mixed TSN settlement (${lastBatch.signature}).`,
-    } as Partial<TsnIntentWorkItem["intent"]>);
-
-    return {
-      intent: lastBatch.escrowTokenAccount,
-      signature: lastBatch.signature,
-      created: true,
-    };
-  }
   if (!sponsoredSettlement.senderSignedSettlementTransaction) {
     throw new Error(
       "Sponsored settlement transaction is required; public PaymentIntent PDA creation is disabled.",
@@ -1377,7 +1335,9 @@ async function submitIntentOnChainWork(params: {
   }
 }
 
-async function executeClaimWork(params: {
+/* Legacy mempool claim/recovery executors were removed. Receiver work is
+ * authorized by TSN Node and handled by processReceiverClaim/Recovery. */
+/* async function executeClaimWork(params: {
   item: TsnWorkItem;
   mempool: ReturnType<typeof createMempoolClient>;
   operator: Keypair;
@@ -1397,11 +1357,12 @@ async function executeClaimWork(params: {
     settlementTokenAccount?: string | null;
   };
   if (Number(intent.privacyVersion ?? 1) >= 2) {
-    if (!process.env.TSN_MEMPOOL_URL) {
-      throw new Error("TSN_MEMPOOL_URL is required for private payout permits");
+    const receiver = receiverUrl();
+    if (!receiver) {
+      throw new Error("TSN_RECEIVER_URL is required for private payout permits");
     }
-    const permit = await requestPrivatePayoutPermit({
-      mempoolUrl: process.env.TSN_MEMPOOL_URL,
+    const permit = await REMOVED_LEGACY_REQUEST_PAYOUT({
+      mempoolUrl: receiver,
       apiKey: process.env.TSN_MEMPOOL_API_KEY,
       claimRequestId: params.item.claimRequest.id,
       operator: params.operator,
@@ -1510,9 +1471,10 @@ async function executeRecoveryWork(params: {
   tokenDecimals: number;
 }) {
   if (Number(params.item.privacyVersion ?? 1) >= 2) {
-    if (!process.env.TSN_MEMPOOL_URL) {
+    const receiver = receiverUrl();
+    if (!receiver) {
       throw new Error(
-        "TSN_MEMPOOL_URL is required for private recovery permits",
+        "TSN_RECEIVER_URL is required for private recovery permits",
       );
     }
     const recoveryId = params.item.id;
@@ -1526,8 +1488,8 @@ async function executeRecoveryWork(params: {
 
     let permit;
     try {
-      permit = await requestPrivateRecoveryPermit({
-        mempoolUrl: process.env.TSN_MEMPOOL_URL,
+      permit = await REMOVED_LEGACY_REQUEST_RECOVERY({
+        mempoolUrl: receiver,
         apiKey: process.env.TSN_MEMPOOL_API_KEY,
         recoveryId,
         operator: params.operator,
@@ -1609,12 +1571,14 @@ async function executeRecoveryWork(params: {
   });
 }
 
+*/
 async function postHeartbeat(operator: string) {
-  if (!process.env.TSN_MEMPOOL_URL) return;
+  const receiver = receiverUrl();
+  if (!receiver) return;
 
   try {
     const response = await fetch(
-      `${process.env.TSN_MEMPOOL_URL.replace(/\/$/, "")}/crankers/heartbeat`,
+      `${receiver.replace(/\/$/, "")}/crankers/heartbeat`,
       {
         method: "POST",
         headers: {
@@ -1930,6 +1894,23 @@ async function submitTinRegistryMutation(params: {
       : params.operation.newEncryptedMasterSeed,
     "encryptedMasterSeed",
   );
+  const encryptedPublicRouteEnvelope = base64Bytes(
+    params.operation.intentType === "tin_creation"
+      ? params.operation.encryptedPublicRouteEnvelope
+      : params.operation.newEncryptedPublicRouteEnvelope,
+    "encryptedPublicRouteEnvelope",
+  );
+  const routeVersion =
+    params.operation.intentType === "tin_creation"
+      ? params.operation.routeVersion
+      : params.operation.newRouteVersion;
+  const routeNonce = hex32(
+    (params.operation.intentType === "tin_creation"
+      ? params.operation.routeNonce
+      : params.operation.newRouteNonce) ?? "",
+    "routeNonce",
+  );
+  const operationNonce = hex32(params.operation.nonce, "nonce");
   const displayName =
     (params.operation.intentType === "tin_creation"
       ? params.operation.displayName
@@ -1957,6 +1938,10 @@ async function submitTinRegistryMutation(params: {
             params.operation.pruConfigurationHash,
             "pruConfigurationHash",
           ),
+          encryptedPublicRouteEnvelope,
+          routeVersion: routeVersion ?? 0,
+          routeNonce,
+          nonce: operationNonce,
           intentHash,
           expiryTs: params.operation.expiry,
         })
@@ -1974,6 +1959,10 @@ async function submitTinRegistryMutation(params: {
               params.operation.pruConfigurationHash,
             "pruConfigurationHash",
           ),
+          encryptedPublicRouteEnvelope,
+          routeVersion: routeVersion ?? 0,
+          routeNonce,
+          nonce: operationNonce,
           intentHash,
           expiryTs: params.operation.expiry,
         });
@@ -2158,26 +2147,12 @@ const tracedSubmitIntentOnChainWork = traceFunction(submitIntentOnChainWork, {
   includeReturn: false,
 });
 
-const tracedExecuteClaimWork = traceFunction(executeClaimWork, {
-  namespace: "Cranker",
-  name: "executeClaimWork",
-  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
-  level: "info",
-  includeReturn: false,
-});
-
-const tracedExecuteRecoveryWork = traceFunction(executeRecoveryWork, {
-  namespace: "Cranker",
-  name: "executeRecoveryWork",
-  module: "tsn-cranker-op-daemon/scripts/cranker.ts",
-  level: "info",
-  includeReturn: false,
-});
-
 async function main() {
+  if (!receiverUrl()) {
+    throw new Error("TSN_RECEIVER_URL is required; legacy direct mempool settlement is disabled");
+  }
   const mempool = createMempoolClient();
   const operatorKeypair = loadOperatorKeypair();
-  const crankerEncryptionSecretKey = loadCrankerEncryptionSecretKey();
   const operator = operatorKeypair.publicKey.toBase58();
   process.env.TSN_CRANKER_OPERATOR_PUBKEY = operator;
   if (
@@ -2197,7 +2172,7 @@ async function main() {
   installShutdownHandlers();
 
   console.log(`[tsn-cranker] operator=${operator}`);
-  console.log("[tsn-cranker] source=tsn-mempool");
+  console.log("[tsn-cranker] source=tsn-receiver");
   console.log("[tsn-cranker] execution=real-onchain");
 
   const motherEscrowState = await tsnFetchMotherEscrowOnChain(rpcUrl);
@@ -2249,12 +2224,46 @@ async function main() {
       console.warn("[tsn-cranker] mempool.status_failed", error);
     }
   };
-  await logMempoolOverview("startup");
+  // Receiver is the authoritative work source; the legacy mempool overview
+  // endpoints are intentionally not queried.
 
   while (!shuttingDown) {
     try {
-      await postHeartbeat(operator);
-      await logMempoolOverview("changed");
+      if (process.env.TSN_RECEIVER_URL) {
+        const leased = await receiverRequest<{ work: ReceiverWork | null }>("POST", {
+          crankerId: operator,
+          supportedKinds: ["PAYMENT_INTENT", "CLAIM", "RECOVERY"],
+        });
+        if (leased.work) {
+          try {
+            if (leased.work.kind === "PAYMENT_INTENT") {
+              await processReceiverPaymentIntent({ work: leased.work, operator: operatorKeypair, rpcUrl, tokenDecimals });
+            } else if (leased.work.kind === "CLAIM") {
+              await processReceiverClaim({ work: leased.work, operator: operatorKeypair, rpcUrl });
+            } else if (leased.work.kind === "RECOVERY") {
+              await processReceiverRecovery({ work: leased.work, operator: operatorKeypair, rpcUrl });
+            } else {
+              throw new Error(`Unsupported Receiver work kind ${leased.work.kind}`);
+            }
+          } catch (error) {
+            await reportReceiverWork({
+              work: leased.work,
+              operator,
+              status: "FAILED",
+              evidence: {
+                stage: "CRANKER_EXECUTION",
+                reason: error instanceof Error ? error.message : String(error),
+              },
+            }).catch(() => undefined);
+            console.error(`[tsn-cranker] receiver-work-failed id=${leased.work.id}`, error);
+          }
+        }
+        await sleep(Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));
+        continue;
+      }
+      /* Legacy direct-mempool claim/recovery execution is intentionally
+       * removed. Receiver work is the only settlement source. */
+      /* await postHeartbeat(operator);
       await tracedRaceEpochChallenges({
         mempool,
         operator: operatorKeypair,
@@ -2492,6 +2501,7 @@ async function main() {
           );
         }
       }
+      */
     } catch (error) {
       console.error("[tsn-cranker] loop-failed", error);
     }

@@ -198,10 +198,25 @@ pub struct TinAccount {
     pub created_at: i64,
     pub encrypted_metadata_hash: [u8; 32],
     pub pru_configuration_hash: [u8; 32],
+    pub encrypted_public_route_envelope: Vec<u8>,
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
 }
 
 impl TinAccount {
-    pub fn space(display_name: &str, encrypted_master_seed_len: usize) -> usize {
-        8 + (4 + display_name.len()) + 32 + (4 + encrypted_master_seed_len) + 8 + 32 + 32
+    pub fn space(
+        display_name: &str,
+        encrypted_master_seed_len: usize,
+        encrypted_public_route_envelope_len: usize,
+    ) -> usize {
+        8 + (4 + display_name.len())
+            + 32
+            + (4 + encrypted_master_seed_len)
+            + 8
+            + 32
+            + 32
+            + (4 + encrypted_public_route_envelope_len)
+            + 8
+            + 32
     }
 }

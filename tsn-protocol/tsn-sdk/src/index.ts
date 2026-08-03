@@ -14,13 +14,21 @@ export * from "./payment-authorization.js";
 export * from "./payment-authorization-server.js";
 export * from "./payment-jobs.js";
 export * from "./sponsored-settlement.js";
-export * from "./settlement-token.js";
 
 export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
 export * from "./pru.js";
 export * from "./pru-route-auth.js";
+export * from "./tin-envelopes.js";
+export * from "./tin-private-controller.js";
+export * from "./tin-device-access.js";
+export * from "./tin-device-key-envelope.js";
+export * from "./tin-local-master-seed.js";
+export * from "./lit-tin-action-configuration.js";
+export * from "./lit-tin-action-contract.js";
+export * from "./tin-threshold-nonce-receipt.js";
+export * from "./lit-threshold-provider.js";
 export * from "./pru-denomination.js";
 export * from "./tin-balance-spend-planner.js";
 

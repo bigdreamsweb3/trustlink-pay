@@ -8,7 +8,7 @@
 | `backend/` | Application authentication, profile, notifications, and APIs |
 | `transfer-identity-protocol/` | TIN program and client tooling |
 | `tsn-protocol/tsn-sdk/` | Planning, commitments, local authorization, and state policy |
-| `tsn-protocol/tsn-mempool-backend/` | TSN Node implementation; source name retains legacy terminology |
+| `tsn-protocol/tsn-node/` | TSN Node implementation and intent/claim coordination |
 | `tsn-protocol/tsn-cranker-op-daemon/` | Cranker operator and fee-paying submission |
 | `tsn-protocol/tsn/protocol/` | Solana TSN Program and on-chain tests |
 

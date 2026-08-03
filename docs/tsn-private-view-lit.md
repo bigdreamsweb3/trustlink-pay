@@ -1,9 +1,14 @@
-# TSN Private View: Lit Component Architecture
+# TSN Private View: Lit Web-Component Architecture
 
 **Status:** Active SDK architecture; authorization-service extraction remains
 in progress  
 **SDK element:** `<tsn-private-value>`  
 **Owner:** Transfer Settlement Network SDK
+
+> This document describes the Lit web-component library used for private
+> rendering. It is not the Lit Protocol threshold network. Lit Protocol's
+> separate master-seed access duty is documented in
+> [Lit Protocol in TSN](./lit-protocol-in-tsn.md).
 
 ## Purpose
 
@@ -136,9 +141,19 @@ sequenceDiagram
     D->>V: render pixels inside closed root
 ```
 
-For payment authorization, the same device boundary decrypts encrypted ZK-PRU
-derivation material locally, derives only selected child authorities, and signs
-scoped operations. The raw master seed never signs and never leaves the device.
+For payment authorization, the TSN SDK asks the threshold provider to unlock
+the encrypted ZK-PRU derivation material on the user device, derives only the
+selected child authorities, and signs scoped operations. Master-seed
+decryption requires both a verified main-wallet authorization and proof of the
+current non-exportable device session. A captured wallet signature is bound to
+the original device session and cannot authorize another device. The raw
+master seed never signs and never leaves the user device.
+
+The application backend does not issue a private-data capability and does not
+participate in master-seed decryption. Authorizing a new device creates a new
+device session, obtains a fresh wallet authorization, and satisfies the same
+threshold access policy without changing the TIN. See
+[TIN Master-Seed Architecture](./tin-master-seed-architecture.md).
 
 ## What closed Shadow DOM does not prove
 

@@ -4,7 +4,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
-    hash::hash,
+    hash::{hash, hashv},
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program,
@@ -38,6 +38,13 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
         return Err(Error::InvalidInstruction.into());
     }
     validate_name(&params.display_name)?;
+    if params.route_version == 0 || params.encrypted_public_route_envelope.is_empty() {
+        return Err(Error::InvalidInstruction.into());
+    }
+    let expected_intent_hash = compute_owner_intent_hash(&params);
+    if expected_intent_hash != params.intent_hash {
+        return Err(Error::InvalidInstruction.into());
+    }
 
     let mut hasher_input = Vec::new();
     hasher_input.extend_from_slice(params.owner_pubkey.as_ref());
@@ -52,6 +59,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
     let owner_pubkey_hash = hash(params.owner_pubkey.as_ref()).to_bytes();
 
     let existing_account = load_tin_account_for_update(identity)?;
+    if params.route_version <= existing_account.route_version {
+        return Err(Error::InvalidInstruction.into());
+    }
     if identity.key != &expected_identity_pubkey {
         return Err(Error::InvalidPda.into());
     }
@@ -70,9 +80,16 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
         created_at: existing_account.created_at,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
         pru_configuration_hash: params.pru_configuration_hash,
+        encrypted_public_route_envelope: params.encrypted_public_route_envelope,
+        route_version: params.route_version,
+        route_nonce: params.route_nonce,
     };
 
-    let required_space = TinAccount::space(&tin_account.display_name, tin_account.encrypted_master_seed.len());
+    let required_space = TinAccount::space(
+        &tin_account.display_name,
+        tin_account.encrypted_master_seed.len(),
+        tin_account.encrypted_public_route_envelope.len(),
+    );
     if identity.data_len() != required_space {
         let Some(system_program_account) = system_program_account else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -86,10 +103,28 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
     store_borsh(identity, &tin_account)
 }
 
+fn compute_owner_intent_hash(params: &UpdateTinParams) -> [u8; 32] {
+    hashv(&[
+        b"TINS_UPDATE_INTENT_V1",
+        params.owner_pubkey.as_ref(),
+        params.display_name.as_bytes(),
+        &params.encrypted_master_seed,
+        &params.encrypted_metadata_hash,
+        &params.pru_configuration_hash,
+        &params.encrypted_public_route_envelope,
+        &params.route_version.to_le_bytes(),
+        &params.route_nonce,
+        &params.nonce,
+        &params.expiry_ts.to_le_bytes(),
+    ])
+    .to_bytes()
+}
+
 struct ExistingTinAccount {
     tin: u64,
     owner_pubkey_hash: [u8; 32],
     created_at: i64,
+    route_version: u64,
 }
 
 fn load_tin_account_for_update(identity: &AccountInfo) -> Result<ExistingTinAccount, ProgramError> {
@@ -98,6 +133,7 @@ fn load_tin_account_for_update(identity: &AccountInfo) -> Result<ExistingTinAcco
             tin: account.tin,
             owner_pubkey_hash: account.owner_pubkey_hash,
             created_at: account.created_at,
+            route_version: account.route_version,
         });
     }
     load_legacy_tin_account(identity)
@@ -137,6 +173,7 @@ fn load_legacy_tin_account(identity: &AccountInfo) -> Result<ExistingTinAccount,
         tin,
         owner_pubkey_hash,
         created_at,
+        route_version: 0,
     })
 }
 

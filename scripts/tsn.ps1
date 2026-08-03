@@ -4,11 +4,21 @@ $root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ecosystem=Join-Path $root "ecosystem.config.cjs"
 $node=(Get-Command node.exe -ErrorAction Stop).Source
 $pm2Cli=Join-Path $root "node_modules\pm2\bin\pm2"
-$core=@("trustlink-mempool","trustlink-rpc-gateway","trustlink-mempool-ui","trustlink-cranker")
-$managed=@("trustlink-mempool","trustlink-backend","trustlink-rpc-gateway","trustlink-mempool-ui","trustlink-cranker")
-if($Service -and $Service -notin @("backend","rpc-gateway","mempool","mempool-ui","cranker")){throw "Unknown service: $Service"}
+$core=@("tsn-receiver","tsn-node","tsn-rpc-gateway")
+$managed=@("tsn-receiver","tsn-node","trustlink-backend","tsn-rpc-gateway","tsn-mempool-ui","tsn-cranker")
+$serviceMap=@{
+  "receiver"="tsn-receiver"
+  "node"="tsn-node"
+  "mempool"="tsn-node"
+  "rpc-gateway"="tsn-rpc-gateway"
+  "mempool-ui"="tsn-mempool-ui"
+  "mempool-frontend"="tsn-mempool-ui"
+  "cranker"="tsn-cranker"
+  "backend"="trustlink-backend"
+}
+if($Service -and !$serviceMap.ContainsKey($Service)){throw "Unknown service: $Service"}
 if(!(Test-Path -LiteralPath $pm2Cli)){throw "Local PM2 is missing. Run: npm.cmd install"}
-$selected=if($Service){@("trustlink-"+$Service)}else{$core}
+$selected=if($Service){@($serviceMap[$Service])}else{$core}
 function Start-Pm2([string[]]$Arguments){
  $process=Start-Process -FilePath $node -ArgumentList (@($pm2Cli)+$Arguments) -NoNewWindow -Wait -PassThru
  return $process.ExitCode
@@ -24,6 +34,6 @@ switch($Command){
  "restart" { foreach($app in $selected){ Invoke-Pm2 @("restart",$app) } }
  "delete" { Remove-Pm2Apps $(if($Service){$selected}else{$managed}) }
  "status" { Invoke-Pm2 @("status") }
- "logs" { if($Service){Invoke-Pm2 @("logs",("trustlink-"+$Service),"--lines","100")}else{Invoke-Pm2 @("logs","--lines","100")} }
+ "logs" { if($Service){Invoke-Pm2 @("logs",$serviceMap[$Service],"--lines","100")}else{Invoke-Pm2 @("logs","--lines","100")} }
  "doctor" { foreach($tool in @("node","npm","python")){if(Get-Command $tool -ErrorAction SilentlyContinue){Write-Host "[PASS] $tool detected"}else{Write-Host "[FAIL] $tool missing"}} }
 }

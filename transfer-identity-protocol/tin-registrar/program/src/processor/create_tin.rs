@@ -2,7 +2,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
-    hash::hash,
+    hash::{hash, hashv},
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::{
@@ -45,6 +45,13 @@ pub fn process(
     if !identity.data_is_empty() {
         return Err(Error::RegistryAlreadyInitialized.into());
     }
+    if params.route_version == 0 || params.encrypted_public_route_envelope.is_empty() {
+        return Err(Error::InvalidInstruction.into());
+    }
+    let expected_intent_hash = compute_owner_intent_hash(&params);
+    if expected_intent_hash != params.intent_hash {
+        return Err(Error::InvalidInstruction.into());
+    }
 
     // 1. Derive identity seed deterministically
     let mut hasher_input = Vec::new();
@@ -71,7 +78,11 @@ pub fn process(
         &identity_seed,
         &[bump],
     ];
-    let space = TinAccount::space(&params.display_name, params.encrypted_master_seed.len());
+    let space = TinAccount::space(
+        &params.display_name,
+        params.encrypted_master_seed.len(),
+        params.encrypted_public_route_envelope.len(),
+    );
     create_pda_account(
         cranker,
         identity,
@@ -91,6 +102,9 @@ pub fn process(
         created_at: Clock::get()?.unix_timestamp,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
         pru_configuration_hash: params.pru_configuration_hash,
+        encrypted_public_route_envelope: params.encrypted_public_route_envelope,
+        route_version: params.route_version,
+        route_nonce: params.route_nonce,
     };
     store_borsh(identity, &tin_account)?;
 
@@ -130,4 +144,21 @@ fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_messag
     let parsed_message = &data[message_offset..message_offset + message_size];
     parsed_message == expected_message.as_ref()
         || hash(parsed_message).to_bytes() == *expected_message
+}
+
+fn compute_owner_intent_hash(params: &CreateTinParams) -> [u8; 32] {
+    hashv(&[
+        b"TINS_CREATE_INTENT_V1",
+        params.owner_pubkey.as_ref(),
+        params.display_name.as_bytes(),
+        &params.encrypted_master_seed,
+        &params.encrypted_metadata_hash,
+        &params.pru_configuration_hash,
+        &params.encrypted_public_route_envelope,
+        &params.route_version.to_le_bytes(),
+        &params.route_nonce,
+        &params.nonce,
+        &params.expiry_ts.to_le_bytes(),
+    ])
+    .to_bytes()
 }

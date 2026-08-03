@@ -9,7 +9,8 @@ flowchart LR
     S[TSN SDK]
     B[Application backend]
     T[TIN storage/program]
-    N[TSN Node<br/>verification + work queue]
+    M[TSN Receiver<br/>Firebase work queue]
+    N[TSN Node<br/>verification processor]
     C[Cranker<br/>fee payer + submitter]
     R[Solana RPC]
     V[Solana validators]
@@ -21,24 +22,25 @@ flowchart LR
     D --> F --> S
     F --> B
     S --> T
-    S --> N
-    N --> C --> R --> V --> P
+    S --> M
+    M --> N --> M
+    M --> C --> R --> V --> P
     P --> X
     P --> E --> A
-    N --> Q
+    M --> Q
     P --> Q
 ```
 
-The current source directory `tsn-mempool-backend` is a historical name. Its
-runtime responsibility is the TSN Node: verification, reservation, work
-coordination, replay protection, and status. It is not a Solana validator.
+The TSN Node source directory is `tsn-node`. Its
+runtime responsibility is verification and protocol processing. The Receiver
+owns durable Firebase work, atomic leases, replay records, and status. Neither
+service is a Solana validator.
 
 The complete request-to-transaction sequence is documented in
 [Protocol architecture — how an intent becomes a Solana transaction](./protocol-architecture.md#8-how-an-intent-becomes-a-solana-transaction).
-In short, the Node exposes two queues: `/intent-work` for pending funding
-intents and `/work` for claims whose funding is already escrowed. Crankers poll
-those queues, validate the signed public work, submit through Solana RPC, and
-post the resulting proof/status back to the Node.
+In short, the Receiver accepts signed work, the Node leases and verifies it,
+and Crankers lease only Receiver records marked `VERIFIED`. Crankers submit
+through Solana RPC and post signatures and results back to the Receiver.
 
 ## Runtime boundaries
 

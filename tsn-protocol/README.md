@@ -22,7 +22,7 @@ flowchart LR
 
 - The SDK plans, commits, and authorizes locally.
 - The TSN Node verifies, reserves, queues, and tracks public work. The source
-  directory `tsn-mempool-backend` retains a legacy name; the architecture term
+  directory `tsn-node` is the runtime node; the architecture term
   is TSN Node.
 - The Cranker pays Solana fees and submits exact authorized transactions. It
   does not select sources, replan, decrypt envelopes, or sign for users.

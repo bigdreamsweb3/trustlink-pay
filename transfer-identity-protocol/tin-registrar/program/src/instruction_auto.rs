@@ -50,6 +50,10 @@ pub struct CreateTinParams {
     pub encrypted_master_seed: Vec<u8>,
     pub encrypted_metadata_hash: [u8; 32],
     pub pru_configuration_hash: [u8; 32],
+    pub encrypted_public_route_envelope: Vec<u8>,
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub nonce: [u8; 32],
     pub intent_hash: [u8; 32],
     pub expiry_ts: i64,
 }
@@ -61,6 +65,10 @@ pub struct UpdateTinParams {
     pub encrypted_master_seed: Vec<u8>,
     pub encrypted_metadata_hash: [u8; 32],
     pub pru_configuration_hash: [u8; 32],
+    pub encrypted_public_route_envelope: Vec<u8>,
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub nonce: [u8; 32],
     pub intent_hash: [u8; 32],
     pub expiry_ts: i64,
 }

@@ -6,7 +6,7 @@ const logDirectory = path.join(root, ".logs");
 
 function createNpmApplication(name, workingDirectory, command, environment = {}) {
   return {
-    name: `trustlink-${name}`,
+    name: name === "backend" ? "trustlink-backend" : `tsn-${name}`,
     script: "cmd.exe",
     args: `/d /s /c "npm.cmd run ${command}"`,
     cwd: path.join(root, workingDirectory),
@@ -26,31 +26,31 @@ function createNpmApplication(name, workingDirectory, command, environment = {})
   };
 }
 
-const mempoolApplication = {
-  name: "trustlink-mempool",
+const tsnNodeApplication = {
+  name: "tsn-node",
   script: path.join(root, ".venv", "Scripts", "python.exe"),
   args: "-u server.py",
-  cwd: path.join(root, "tsn-protocol", "tsn-mempool-backend"),
+  cwd: path.join(root, "tsn-protocol", "tsn-node"),
   interpreter: "none",
   instances: 1,
   autorestart: true,
   watch: false,
   windowsHide: true,
   kill_timeout: 10000,
-  out_file: path.join(logDirectory, "mempool-out.log"),
-  error_file: path.join(logDirectory, "mempool-error.log"),
+  out_file: path.join(logDirectory, "tsn-node-out.log"),
+  error_file: path.join(logDirectory, "tsn-node-error.log"),
   time: true,
   env: {
     PYTHONUNBUFFERED: "1",
-    MEMPOOL_STORE: "file",
   },
 };
 
 module.exports = {
   apps: [
-    mempoolApplication,
+    createNpmApplication("receiver", "tsn-protocol/tsn-receiver", "dev"),
+    tsnNodeApplication,
     createNpmApplication("backend", "backend", "dev"),
-    createNpmApplication("mempool-ui", "tsn-protocol/tsn-mempool-frontend", "dev"),
+    createNpmApplication("mempool-ui", "tsn-protocol/tsn-mempool-ui", "dev"),
     createNpmApplication("rpc-gateway", "tsn-protocol/tsn-rpc-gateway", "dev"),
     createNpmApplication("cranker", "tsn-protocol/tsn-cranker-op-daemon", "crank:start"),
   ],

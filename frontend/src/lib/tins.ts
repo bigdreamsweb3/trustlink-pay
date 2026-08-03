@@ -5,7 +5,6 @@ import { PublicKey } from "@solana/web3.js";
 import { buildTinWalletBindingMessage } from "@trustlink/tsn-sdk/canonical-message";
 import {
   DEFAULT_TIP_PROGRAM_ID,
-  createTinOwnerIntentMessage,
   createTinOwnerIntentHash,
   decodeTinAccount,
   getTinsGlobalStatePda,
@@ -14,10 +13,19 @@ import {
   resolveTIN,
   type TinResolvedIdentity,
 } from "@trustlink/tsn-sdk/tins";
+import {
+  createTinPrivateIdentity,
+} from "@trustlink/tsn-sdk/tin-private-controller";
+import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
 
-import { signSolanaMessage } from "@/src/lib/wallet";
+import {
+  signSolanaMessage,
+  signTinMasterSeedAuthorizationBytes,
+  signTinOwnerIntentHash,
+} from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
 import { traceFunction } from "@trustlink/observability/tracer";
+import { getBrowserTinMasterSeedProvider } from "@/src/lib/tsn-threshold-provider";
 const TINS_OWNER_INTENT_UPDATE_DOMAIN = "TINS_UPDATE_OWNER_INTENT_V2";
 
 export type BrowserTinRegistration = {
@@ -43,6 +51,12 @@ export type BrowserTinUpgradeIntent = {
   ownerSignature: string;
   nonce: string;
   expiry: number;
+  encryptedMasterSeed: string;
+  encryptedMetadataHash: string;
+  pruConfigurationHash: string;
+  encryptedPublicRouteEnvelope: string;
+  routeVersion: number;
+  routeNonce: string;
 };
 
 function utf8(value: string) {
@@ -64,10 +78,6 @@ function bytesToHex(value: Uint8Array) {
   return Array.from(value)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
-}
-
-function base64ToSignatureBytes(value: string) {
-  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
 }
 
 function base64FromBytes(value: Uint8Array) {
@@ -105,12 +115,6 @@ function getFrontendTinsProgramId() {
       process.env.NEXT_PUBLIC_TINS_PROGRAM_ID ??
       DEFAULT_TIP_PROGRAM_ID,
   );
-}
-
-export function getFrontendTsnMempoolUrl() {
-  const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL?.trim();
-  if (!url) throw new Error("NEXT_PUBLIC_TSN_MEMPOOL_URL is missing");
-  return url.replace(/\/$/, "");
 }
 
 export type TinPruPublicAddress = {
@@ -206,7 +210,7 @@ export async function fetchTinPruPublicAddresses(params: {
   signal?: AbortSignal;
 }): Promise<TinPruRoutePublicResponse> {
   const response = await fetch(
-    `${getFrontendTsnMempoolUrl()}/tin-routes/${encodeURIComponent(params.tin)}/prus`,
+    `/api/tsn/tin-routes/${encodeURIComponent(params.tin)}/prus`,
     {
       headers: {
         "x-owner-pubkey-hash": params.ownerPubkeyHash,
@@ -248,7 +252,7 @@ async function signTinBinding(params: {
 // createTinOwnerUpdateIntentHash removed in favor of SDK createTinOwnerIntentHash
 
 async function postTinOperationIntent(request: BrowserTinUpgradeIntent) {
-  const response = await fetch(`${getFrontendTsnMempoolUrl()}/tin-operations`, {
+  const response = await fetch("/api/tsn/tin-operations", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -265,6 +269,12 @@ async function postTinOperationIntent(request: BrowserTinUpgradeIntent) {
       ownerSignature: request.ownerSignature,
       nonce: request.nonce,
       expiry: request.expiry,
+      newEncryptedMasterSeed: request.encryptedMasterSeed,
+      newEncryptedMetadataHash: request.encryptedMetadataHash,
+      newPruConfigurationHash: request.pruConfigurationHash,
+      newEncryptedPublicRouteEnvelope: request.encryptedPublicRouteEnvelope,
+      newRouteVersion: request.routeVersion,
+      newRouteNonce: request.routeNonce,
     }),
   });
 
@@ -381,32 +391,61 @@ async function upgradeLegacyTinForWalletImpl(params: {
 
   const displayName = normalizeDisplayName(params.displayName || decoded.displayName);
   const nonce = randomBytes(32);
+  const routeNonce = randomBytes(32);
+  const routeVersion = 1;
   const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 900);
+  const routeKeyResponse = await fetch("/api/tsn/tin-route-key", {
+    cache: "no-store",
+  });
+  if (!routeKeyResponse.ok) {
+    throw new Error("The TSN Node routing encryption key is unavailable.");
+  }
+  const routeKey = await routeKeyResponse.json() as {
+    algorithm: string;
+    publicKey: string;
+  };
+  const privateIdentity = await createTinPrivateIdentity({
+    tin: params.tin,
+    routeVersion,
+    routeNonce: bytesToHex(routeNonce),
+    ownerWallet: {
+      publicKey: params.walletAddress,
+      signMessage: (message) => signTinMasterSeedAuthorizationBytes({
+        walletId: params.walletId,
+        address: params.walletAddress,
+        message,
+      }),
+    },
+    authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
+    thresholdProvider: await getBrowserTinMasterSeedProvider(),
+    nodeRoutingPublicKeyBase64: routeKey.publicKey,
+  });
+  const {
+    pruConfigurationHash,
+    encryptedMasterSeed,
+    encryptedPublicRouteEnvelope,
+  } = privateIdentity;
+  const encryptedMetadataHash = sha256(utf8(
+    `TSN_TIN_PRIVATE_METADATA|${params.tin}|${walletPublicKey.toBase58()}|${displayName}|${params.phoneNumber}`,
+  ));
   const intentHash = createTinOwnerIntentHash({
     purpose: "update",
     ownerPubkey: walletPublicKey,
-    tin: params.tin,
     displayName,
-    phoneNumber: params.phoneNumber,
+    encryptedMasterSeed,
+    encryptedMetadataHash,
+    pruConfigurationHash: Buffer.from(pruConfigurationHash, "hex"),
+    encryptedPublicRouteEnvelope,
+    routeVersion,
+    routeNonce,
     nonce,
     expiryTs,
   });
-  const intentMessage = createTinOwnerIntentMessage({
-    purpose: "update",
-    ownerPubkey: walletPublicKey,
-    tin: params.tin,
-    displayName,
-    phoneNumber: params.phoneNumber,
-    nonce,
-    expiryTs,
+  const ownerSignature = await signTinOwnerIntentHash({
+    walletId: params.walletId,
+    address: params.walletAddress,
+    intentHash,
   });
-  const ownerSignature = base64ToSignatureBytes(
-    await signSolanaMessage({
-      walletId: params.walletId,
-      address: params.walletAddress,
-      message: intentMessage,
-    }),
-  );
   const queued = await postTinOperationIntent(
     {
       tin: params.tin,
@@ -414,10 +453,16 @@ async function upgradeLegacyTinForWalletImpl(params: {
       displayName,
       phoneNumber: params.phoneNumber,
       ownerIntentHash: bytesToHex(intentHash),
-      ownerIntentMessage: intentMessage,
+      ownerIntentMessage: "",
       ownerSignature: base64FromBytes(ownerSignature),
       nonce: bytesToHex(nonce),
       expiry: Number(expiryTs),
+      encryptedMasterSeed: base64FromBytes(encryptedMasterSeed),
+      encryptedMetadataHash: bytesToHex(encryptedMetadataHash),
+      pruConfigurationHash,
+      encryptedPublicRouteEnvelope: base64FromBytes(encryptedPublicRouteEnvelope),
+      routeVersion,
+      routeNonce: bytesToHex(routeNonce),
     } satisfies BrowserTinUpgradeIntent,
   );
   return queued;

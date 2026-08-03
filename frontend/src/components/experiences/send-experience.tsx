@@ -71,10 +71,6 @@ import {
   uiAmountToBaseUnits,
 } from "@trustlink/tsn-sdk/sponsored-settlement";
 import {
-  buildSettlementTokenPayload,
-  encryptSettlementToken,
-} from "@trustlink/tsn-sdk/settlement-token";
-import {
   formatUsd,
   hasCompleteCostEstimate,
   normalizeSendCostEstimate,
@@ -1300,15 +1296,6 @@ export function SendExperience() {
           "NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER is required so the SDK can build the sender co-signed sponsored settlement.",
         );
       }
-      const routeEncryptionPublicKey =
-        process.env.NEXT_PUBLIC_TSN_ROUTE_ENCRYPTION_PUBLIC_KEY ??
-        process.env.NEXT_PUBLIC_TSN_CRANKER_ENCRYPTION_PUBLIC_KEY;
-      if (!routeEncryptionPublicKey) {
-        throw new Error(
-          "NEXT_PUBLIC_TSN_ROUTE_ENCRYPTION_PUBLIC_KEY is required for private TSN settlement routing.",
-        );
-      }
-
       const tokenDecimals = selectedToken.decimals ?? 6;
       const settlementEpoch = await fetchTsnSettlementEpoch(
         resolveSolanaRpcUrl({ frontendSafe: true }),
@@ -1319,25 +1306,21 @@ export function SendExperience() {
         Number(
           Math.max(0, Number(form.amount) - recipientFeeAmount).toFixed(6),
         );
-      const settlementTokenPayload = buildSettlementTokenPayload({
-        paymentId: result.paymentId,
-        recipientWallet: destinationWallet,
-        tokenMintAddress: selectedToken.mintAddress,
-        recipientAmountBaseUnits: uiAmountToBaseUnits(
-          recipientPayoutAmount,
-          tokenDecimals,
-        ),
-        claimFeeAmountBaseUnits: uiAmountToBaseUnits(
-          recipientFeeAmount,
-          tokenDecimals,
-        ),
-        epoch: settlementEpoch,
-        expiresAt: senderAuthorization.expiresAt,
-      });
-      const encryptedSettlementToken = encryptSettlementToken({
-        payload: settlementTokenPayload,
-        routeEncryptionPublicKey,
-      });
+      // The TSN settlement contract treats transferId as a 32-byte identifier,
+      // not a UUID string. Keep it canonical hex across the wallet, node, and
+      // on-chain commitment so signing and validation use the same bytes.
+      const transferId = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((value) => value.toString(16).padStart(2, "0"))
+        .join("");
+      const commitmentBytes = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode([
+          "TSN_PAYMENT_COMMITMENT", result.paymentId, transferId,
+          selectedToken.mintAddress, String(form.amount), senderAuthorization.nonce,
+        ].join("|")),
+      );
+      const paymentCommitment = Array.from(new Uint8Array(commitmentBytes))
+        .map((value) => value.toString(16).padStart(2, "0")).join("");
 
       const sponsoredSettlement = usesPruSpendExecution
         ? null
@@ -1356,8 +1339,8 @@ export function SendExperience() {
               : senderFeeAmount,
             tokenDecimals,
             recipientHash,
-            transferId: encryptedSettlementToken.transferId,
-            commitmentHash: encryptedSettlementToken.commitmentHash,
+            transferId,
+            commitmentHash: paymentCommitment,
             rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
           });
       const senderSignedSettlementTransaction = sponsoredSettlement
@@ -1413,10 +1396,10 @@ export function SendExperience() {
         settlementVault: sponsoredSettlement?.paymentVault ?? null,
         settlementTokenAccount: sponsoredSettlement?.escrowTokenAccount ?? null,
         settlementPaymentIntentId: sponsoredSettlement?.paymentIntentId ?? null,
-        transferId: encryptedSettlementToken.transferId,
-        commitmentHash: encryptedSettlementToken.commitmentHash,
+        transferId,
+        commitmentHash: paymentCommitment,
         settlementEpoch,
-        encryptedSettlementToken,
+        encryptedSettlementToken: null,
         autoclaim: true,
         amount: Number(form.amount),
         recipientAmount: recipientPayoutAmount,

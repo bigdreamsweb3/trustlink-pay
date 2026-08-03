@@ -199,6 +199,8 @@ export interface ExecutionPlannerInput {
   walletAvailableBaseUnits: bigint;
   currentSpendNonce: number;
   masterSeed?: Uint8Array | string | null;
+  /** Ed25519 signature produced by the Layer 0 wallet over the plan message. */
+  mainWalletSignature?: string | null;
   tsnVaultPubkey?: string | Uint8Array | null;
 }
 
@@ -883,20 +885,12 @@ function resolveFundingMode(
 
 function signExecutionPlanV2(
   planMessage: string,
-  masterSeed?: Uint8Array | string | null,
+  mainWalletSignature?: string | null,
 ) {
-  const seedBytes =
-    typeof masterSeed === "string"
-      ? utf8ToBytes(masterSeed)
-      : masterSeed instanceof Uint8Array
-        ? masterSeed
-        : new Uint8Array(32).fill(0);
-  const digest = sha256(
-    utf8ToBytes(
-      `TSN_EXECUTION_PLAN_V2|${planMessage}|${bytesToHex(seedBytes)}`,
-    ),
-  );
-  return `sha256:${bytesToHex(digest)}`;
+  // A digest is not a signature. The wallet must sign this exact message on
+  // the authorized device; returning an explicit marker prevents callers
+  // from mistaking a commitment for authorization.
+  return mainWalletSignature?.trim() || "UNSIGNED_MAIN_WALLET_AUTHORIZATION";
 }
 
 export function buildExecutionPlanV2(
@@ -975,7 +969,7 @@ export function buildExecutionPlanV2(
     executionPlanSignatureMessage,
     executionPlanSignature: signExecutionPlanV2(
       executionPlanSignatureMessage,
-      input.masterSeed,
+      input.mainWalletSignature,
     ),
     deviceAuthorizationState: {
       seedDecryptedLocally: Boolean(input.masterSeed),

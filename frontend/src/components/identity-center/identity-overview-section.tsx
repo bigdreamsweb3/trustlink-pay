@@ -292,7 +292,7 @@ export function IdentityOverviewSection({
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[0.8rem] font-semibold text-[var(--text)]">
-                    Legacy TIN upgrade required
+                    Finalized TIN activation required
                   </p>
                   <p className="mt-1 text-[0.74rem] leading-6 text-[var(--text-soft)]">
                     {resolvedTin.upgradeReason ??

@@ -71,6 +71,9 @@ export type TsnTinOperationIntent = {
   encryptedMasterSeedBase64: string;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
+  encryptedPublicRouteEnvelopeBase64: string;
+  routeVersion: number;
+  routeNonce: string;
   pruCount?: 30;
   intentHash: string;
   ownerSignatureBase64: string;
@@ -136,6 +139,9 @@ export type TsnTinOperationRecord = {
   encryptedMasterSeed?: string | null;
   encryptedMetadataHash: string;
   pruConfigurationHash: string;
+  encryptedPublicRouteEnvelope?: string | null;
+  routeVersion?: number | null;
+  routeNonce?: string | null;
   pruCount?: 30;
   creationFeeAmount?: string | null;
   creationFeeMint?: string | null;
@@ -143,6 +149,9 @@ export type TsnTinOperationRecord = {
   newEncryptedMasterSeed?: string | null;
   newEncryptedMetadataHash?: string | null;
   newPruConfigurationHash?: string | null;
+  newEncryptedPublicRouteEnvelope?: string | null;
+  newRouteVersion?: number | null;
+  newRouteNonce?: string | null;
   updateFeeAmount?: string | null;
   updateFeeMint?: string | null;
 };

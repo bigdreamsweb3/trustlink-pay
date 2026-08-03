@@ -264,7 +264,7 @@ function cleanCaches() {
   const caches = [
     path.join(root, "frontend", ".next"),
     path.join(root, "backend", ".next"),
-    path.join(root, "tsn-protocol", "tsn-mempool-frontend", ".next"),
+    path.join(root, "tsn-protocol", "tsn-mempool-ui", ".next"),
   ];
 
   for (const cache of caches) {
@@ -285,7 +285,7 @@ function installConsumers() {
     ["backend", "backend"],
     ["tsn-protocol/tsn", "TSN tools"],
     ["tsn-protocol/tsn-cranker-op-daemon", "Cranker daemon"],
-    ["tsn-protocol/tsn-mempool-frontend", "mempool UI"],
+    ["tsn-protocol/tsn-mempool-ui", "TSN Mempool UI"],
   ];
 
   for (const [directory, name] of consumers) {
@@ -310,7 +310,7 @@ function runTypeChecks() {
   );
   runNpm(
     ["run", "typecheck"],
-    path.join(root, "tsn-protocol", "tsn-mempool-frontend"),
+    path.join(root, "tsn-protocol", "tsn-mempool-ui"),
     "Type-check mempool UI",
   );
 
@@ -348,7 +348,7 @@ function buildApps() {
   for (const [directory, name] of [
     ["backend", "backend"],
     ["frontend", "frontend"],
-    ["tsn-protocol/tsn-mempool-frontend", "mempool UI"],
+    ["tsn-protocol/tsn-mempool-ui", "TSN Mempool UI"],
   ]) {
     runNpm(
       ["run", "build"],

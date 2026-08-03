@@ -1,9 +1,9 @@
-[submodule "tsn-mempool-backend"]
-path = tsn-mempool-backend
+[submodule "tsn-node"]
+path = tsn-protocol/tsn-node
 url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
 branch = main
-[submodule "tsn-mempool-frontend"]
-path = tsn-mempool-frontend
+[submodule "tsn-mempool-ui"]
+path = tsn-protocol/tsn-mempool-ui
 url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
 branch = main
 [submodule "tsn-epoch-records"]

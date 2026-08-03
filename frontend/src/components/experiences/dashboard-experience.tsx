@@ -358,7 +358,7 @@ export function DashboardExperience() {
       setTinBalanceStatus("Preparing your TIN balance...");
       try {
         showToast(
-          "Sign to load your TIN balance. This does not cost any fees and does not send a transaction.",
+          "Authorize this device to decrypt and load your private TIN balance locally. This does not send a transaction.",
         );
         const result = await loadTinTokenBalances({
           tin,

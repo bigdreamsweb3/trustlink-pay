@@ -71,6 +71,7 @@ node_modules/
 
 # Generated outputs anywhere in the workspace
 **/.next/
+**/.next-stale-*/
 **/dist/
 **/build/
 **/coverage/
@@ -114,6 +115,7 @@ research/Trustlink-Research/
 
 # Local Blogger publication workspace (not part of TrustLink Pay repository)
 blogger/
+blogger_tsn/
 tools/
 /tools/add_blogger_updates.py
 /tools/add_blogger_search_pagination.py

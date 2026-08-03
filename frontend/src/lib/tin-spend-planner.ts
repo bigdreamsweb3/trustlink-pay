@@ -1,4 +1,4 @@
-import { planTinBalanceSpend, type TinSpendPlan } from "@trustlink/tsn-sdk/tin-balance-spend-planner";
+import { planTinBalanceSpend, selectPruSpendInputs, type TinSpendPlan } from "@trustlink/tsn-sdk/tin-balance-spend-planner";
 
 import { loadTinTokenBalances } from "@/src/lib/tin-balance";
 import type { UserProfile, WalletTokenOption } from "@/src/lib/types";
@@ -48,18 +48,27 @@ export async function buildTinSpendPlan(params: {
   }> = [];
 
   if (params.user.tin) {
-    const tinBalances = await loadTinTokenBalances({
-      tin: params.user.tin,
-      walletSession: params.walletSession,
-      supportedTokens: [params.token],
-      signal: params.signal,
-    });
-    const tokenBalance = tinBalances.tokens.find(
-      (token) => token.mintAddress === params.token.mintAddress,
-    );
-    pruBalanceBaseUnits = toBaseUnits(tokenBalance?.balance ?? 0, decimals);
-    pruBalances = tinBalances.pruBalances;
-    routeLoaded = true;
+    try {
+      const tinBalances = await loadTinTokenBalances({
+        tin: params.user.tin,
+        walletSession: params.walletSession,
+        supportedTokens: [params.token],
+        signal: params.signal,
+      });
+      const tokenBalance = tinBalances.tokens.find(
+        (token) => token.mintAddress === params.token.mintAddress,
+      );
+      pruBalanceBaseUnits = toBaseUnits(tokenBalance?.balance ?? 0, decimals);
+      pruBalances = tinBalances.pruBalances;
+      routeLoaded = true;
+    } catch (error) {
+      // A missing finalized route must not block the public-wallet → TIN
+      // compatibility path. The device route is optional for wallet funding;
+      // the SDK will select wallet_only_v2 when no local PRU state is available.
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("404") && !message.includes("not found")) throw error;
+      routeLoaded = false;
+    }
   }
 
   const plan = planTinBalanceSpend({
@@ -68,11 +77,11 @@ export async function buildTinSpendPlan(params: {
     pruAvailableBaseUnits: pruBalanceBaseUnits,
     walletAvailableBaseUnits: walletBalanceBaseUnits,
   });
-  const pruSpendSelections = tinBalancesToSelections(
-    params.token.mintAddress,
-    BigInt(plan.pruSpendBaseUnits),
-    pruBalances,
-  );
+  const pruSpendSelections = selectPruSpendInputs({
+    tokenMintAddress: params.token.mintAddress,
+    spendBaseUnits: plan.pruSpendBaseUnits,
+    balances: pruBalances,
+  });
 
   return {
     ...plan,
@@ -84,38 +93,4 @@ export async function buildTinSpendPlan(params: {
     routeLoaded,
     pruSpendSelections,
   };
-}
-
-function tinBalancesToSelections(
-  tokenMintAddress: string,
-  spendBaseUnits: bigint,
-  balances: Array<{
-    pruIndex: number;
-    tokenMintAddress: string;
-    balanceBaseUnits: string;
-  }>,
-) {
-  const selections = [];
-  let remaining = spendBaseUnits;
-  const spendableBalances = balances
-    .filter((balance) => balance.tokenMintAddress === tokenMintAddress)
-    .filter((balance) => BigInt(balance.balanceBaseUnits) > 0n)
-    .sort((left, right) => {
-      const leftBalance = BigInt(left.balanceBaseUnits);
-      const rightBalance = BigInt(right.balanceBaseUnits);
-      return leftBalance > rightBalance ? -1 : leftBalance < rightBalance ? 1 : 0;
-    });
-
-  for (const balance of spendableBalances) {
-    if (remaining <= 0n) break;
-    const available = BigInt(balance.balanceBaseUnits);
-    const amount = available >= remaining ? remaining : available;
-    selections.push({
-      pruIndex: balance.pruIndex,
-      amountBaseUnits: amount.toString(),
-      nonce: crypto.getRandomValues(new Uint8Array(1))[0],
-    });
-    remaining -= amount;
-  }
-  return selections;
 }

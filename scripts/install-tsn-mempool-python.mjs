@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const python = process.platform === "win32" ? "python" : "python3";
-const requirements = resolve(rootDir, "tsn-protocol", "tsn-mempool-backend", "requirements.txt");
+const requirements = resolve(rootDir, "tsn-protocol", "tsn-node", "requirements.txt");
 
 const child = spawn(
   python,

@@ -71,7 +71,7 @@ function measureNextReady(app, script = "dev:turbo") {
 const measure = process.argv.includes("--measure");
 const frontendPkg = readJson("frontend/package.json");
 const backendPkg = readJson("backend/package.json");
-const mempoolPkg = readJson("tsn-protocol/tsn-mempool-frontend/package.json");
+const mempoolPkg = readJson("tsn-protocol/tsn-mempool-ui/package.json");
 
 console.log("TrustLink dev diagnostics");
 console.log(`cwd: ${root}`);
@@ -81,10 +81,10 @@ console.log(`npm: ${await version("npm", ["--version"])}`);
 console.log(`wsl: ${await version("wslinfo", ["--wsl-version"])}`);
 console.log(`frontend next: ${frontendPkg.dependencies.next}`);
 console.log(`backend next: ${backendPkg.dependencies.next}`);
-console.log(`mempool frontend next: ${mempoolPkg.dependencies.next}`);
+console.log(`TSN Mempool UI next: ${mempoolPkg.dependencies.next}`);
 console.log(`frontend files: ${countFiles("frontend")}`);
 console.log(`backend files: ${countFiles("backend")}`);
-console.log(`mempool frontend files: ${countFiles("tsn-protocol/tsn-mempool-frontend")}`);
+console.log(`TSN Mempool UI files: ${countFiles("tsn-protocol/tsn-mempool-ui")}`);
 console.log("dev bundler: Turbopack when using npm run frontend:dev:turbo / backend:dev:turbo / mempool:frontend:dev:turbo");
 
 if (measure) {

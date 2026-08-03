@@ -140,7 +140,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   walletTopUpAmountBaseUnits?: string | null;
   walletTopUpSenderFeeBaseUnits?: string | null;
   pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -176,7 +175,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
       walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
       pruSpendSelections: params.pruSpendSelections,
-      settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64,
       privacyVersion: params.privacyVersion,
       commitmentRecord: params.commitmentRecord,
       senderTokenAccount: params.senderTokenAccount,
@@ -222,7 +220,6 @@ export async function submitPaymentAuthorizationToMempool(params: {
   walletTopUpAmountBaseUnits?: string | null;
   walletTopUpSenderFeeBaseUnits?: string | null;
   pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;

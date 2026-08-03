@@ -145,7 +145,8 @@ async function writeSnapshot(path: string, snapshot: Snapshot) {
   await writeFile(path, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
 }
 
-export class JsonFileTsnMempool implements TsnMempool {
+/** @internal Isolated legacy test fixture. Never exported or used by TSN runtime services. */
+class JsonFileTsnMempool implements TsnMempool {
   private readonly path: string;
 
   constructor(path = process.env.TSN_MEMPOOL_FILE ?? ".tsn/mempool.json") {

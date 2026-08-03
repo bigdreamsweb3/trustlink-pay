@@ -279,6 +279,48 @@ async function signTsnDeviceAuthorizationBytesImpl(params: {
     : Uint8Array.from(signed.signature);
 }
 
+async function signTinOwnerIntentHashImpl(params: {
+  walletId: string;
+  address: string;
+  intentHash: Uint8Array;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) throw new Error("Selected wallet is no longer available in this browser");
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot sign a TIN owner authorization");
+  }
+  if (!(params.intentHash instanceof Uint8Array) || params.intentHash.length !== 32) {
+    throw new Error("TIN owner intent hash must be exactly 32 bytes");
+  }
+  const signed = await wallet.provider.signMessage(params.intentHash);
+  return signed instanceof Uint8Array
+    ? signed
+    : Uint8Array.from(signed.signature);
+}
+
+async function signTinMasterSeedAuthorizationBytesImpl(params: {
+  walletId: string;
+  address: string;
+  message: Uint8Array;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) throw new Error("Selected wallet is no longer available in this browser");
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot authorize TIN private access");
+  }
+  assertSignableBytes(params.message, "TIN master-seed authorization message");
+  const decoded = new TextDecoder().decode(params.message);
+  if (!decoded.includes("TSN_TIN_MASTER_SEED_ACCESS")) {
+    throw new Error("Blocked a non-TSN master-seed authorization payload");
+  }
+  const signed = await wallet.provider.signMessage(params.message, "utf8");
+  return signed instanceof Uint8Array
+    ? signed
+    : Uint8Array.from(signed.signature);
+}
+
 async function signSolanaTransactionImpl(params: {
   walletId: string;
   address: string;
@@ -533,6 +575,25 @@ export const signTsnDeviceAuthorizationBytes = traceFunction(
   {
     namespace: "Wallet",
     name: "signTsnDeviceAuthorizationBytes",
+    module: "frontend/src/lib/wallet.ts",
+    level: "info",
+    includeReturn: false,
+  },
+);
+
+export const signTinOwnerIntentHash = traceFunction(signTinOwnerIntentHashImpl, {
+  namespace: "Wallet",
+  name: "signTinOwnerIntentHash",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signTinMasterSeedAuthorizationBytes = traceFunction(
+  signTinMasterSeedAuthorizationBytesImpl,
+  {
+    namespace: "Wallet",
+    name: "signTinMasterSeedAuthorizationBytes",
     module: "frontend/src/lib/wallet.ts",
     level: "info",
     includeReturn: false,

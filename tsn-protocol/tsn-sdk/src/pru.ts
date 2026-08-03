@@ -241,14 +241,6 @@ export type TsnScopedPruIntent = {
   pruSignature: string;
 };
 
-function getBrowserCrypto() {
-  const subtle = globalThis.crypto?.subtle;
-  if (!globalThis.crypto || !subtle) {
-    throw new Error("WebCrypto is required for TrustLink TIN seed encryption");
-  }
-  return globalThis.crypto;
-}
-
 function randomBytesCsprng(size: number) {
   const bytes = new Uint8Array(size);
   if (globalThis.crypto?.getRandomValues) {
@@ -275,54 +267,10 @@ function wipeBytes(bytes?: Uint8Array | null) {
   if (bytes) bytes.fill(0);
 }
 
-function toArrayBuffer(bytes: Uint8Array) {
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-}
-
 export function generateTinMasterSeed(randomBytesFn: (size: number) => Uint8Array = randomBytesCsprng) {
   const seed = randomBytesFn(TIN_MASTER_SEED_BYTES);
   if (seed.length !== TIN_MASTER_SEED_BYTES) throw new Error("TIN Master Seed must be exactly 32 bytes");
   return seed;
-}
-
-export async function encryptTinMasterSeed(params: {
-  tinMasterSeed: Uint8Array;
-  mainWalletSignature: string | Uint8Array;
-  pin: string;
-}) {
-  if (params.tinMasterSeed.length !== TIN_MASTER_SEED_BYTES) throw new Error("TIN Master Seed must be 32 bytes");
-  const cryptoImpl = getBrowserCrypto();
-  const signatureBytes = typeof params.mainWalletSignature === "string"
-    ? textEncoder.encode(params.mainWalletSignature)
-    : params.mainWalletSignature;
-  const keyMaterial = sha256(new Uint8Array([...signatureBytes, ...textEncoder.encode(params.pin)]));
-  const key = await cryptoImpl.subtle.importKey("raw", toArrayBuffer(keyMaterial), "AES-GCM", false, ["encrypt"]);
-  const iv = randomBytesCsprng(12);
-  const ciphertext = new Uint8Array(await cryptoImpl.subtle.encrypt({ name: "AES-GCM", iv: toArrayBuffer(iv) }, key, toArrayBuffer(params.tinMasterSeed)));
-  return {
-    algorithm: "AES-256-GCM" as const,
-    iv: bytesToHex(iv),
-    ciphertext: bytesToHex(ciphertext),
-  };
-}
-
-export async function decryptTinMasterSeed(params: {
-  ciphertext: string;
-  iv: string;
-  mainWalletSignature: string | Uint8Array;
-  pin: string;
-}) {
-  const cryptoImpl = getBrowserCrypto();
-  const signatureBytes = typeof params.mainWalletSignature === "string"
-    ? textEncoder.encode(params.mainWalletSignature)
-    : params.mainWalletSignature;
-  const keyMaterial = sha256(new Uint8Array([...signatureBytes, ...textEncoder.encode(params.pin)]));
-  const key = await cryptoImpl.subtle.importKey("raw", toArrayBuffer(keyMaterial), "AES-GCM", false, ["decrypt"]);
-  return new Uint8Array(await cryptoImpl.subtle.decrypt(
-    { name: "AES-GCM", iv: toArrayBuffer(Buffer.from(params.iv, "hex")) },
-    key,
-    toArrayBuffer(Buffer.from(params.ciphertext, "hex")),
-  ));
 }
 
 export function computeTsnDomain(tsnVaultPubkey: string | Uint8Array) {

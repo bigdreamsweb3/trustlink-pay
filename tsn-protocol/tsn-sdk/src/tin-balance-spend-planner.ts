@@ -2,9 +2,6 @@ export type TinSpendFundingMode =
   | "zk_pru_only_v2"
   | "mixed_zk_pru_wallet_v2"
   | "wallet_only_v2"
-  | "pru_only"
-  | "mixed_pru_and_wallet"
-  | "wallet_only"
   | "insufficient";
 
 export type TinSpendPlannerInput = {
@@ -30,6 +27,37 @@ export type TinSpendPlan = {
   requiresPruExecution: boolean;
   userMessage: string;
 };
+
+export type TinSpendSelection = {
+  pruIndex: number;
+  amountBaseUnits: string;
+  nonce: number;
+};
+
+/** Selects exact PRU inputs for a previously computed V2 funding plan.
+ * This belongs in the SDK so clients cannot maintain a second selection algorithm.
+ */
+export function selectPruSpendInputs(params: {
+  tokenMintAddress: string;
+  spendBaseUnits: bigint | number | string;
+  balances: Array<{ pruIndex: number; tokenMintAddress: string; balanceBaseUnits: string }>;
+}): TinSpendSelection[] {
+  let remaining = BigInt(params.spendBaseUnits);
+  const selections: TinSpendSelection[] = [];
+  const spendable = params.balances
+    .filter((b) => b.tokenMintAddress === params.tokenMintAddress && BigInt(b.balanceBaseUnits) > 0n)
+    .sort((a, b) => BigInt(b.balanceBaseUnits) > BigInt(a.balanceBaseUnits) ? 1 : -1);
+  for (const balance of spendable) {
+    if (remaining <= 0n) break;
+    const amount = BigInt(balance.balanceBaseUnits) >= remaining ? remaining : BigInt(balance.balanceBaseUnits);
+    const nonceBytes = new Uint8Array(4);
+    crypto.getRandomValues(nonceBytes);
+    const nonce = (nonceBytes[0] | (nonceBytes[1] << 8) | (nonceBytes[2] << 16) | (nonceBytes[3] << 24)) >>> 0;
+    selections.push({ pruIndex: balance.pruIndex, amountBaseUnits: amount.toString(), nonce });
+    remaining -= amount;
+  }
+  return selections;
+}
 
 function toNonNegativeBigint(
   value: bigint | number | string | null | undefined,

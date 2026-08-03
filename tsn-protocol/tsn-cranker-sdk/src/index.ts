@@ -5,7 +5,6 @@ export { TsnClient } from "./tsnClient.js";
 export * from "./tsnPdas.js";
 export {
   HttpTsnMempool,
-  JsonFileTsnMempool,
   evaluateSettlementEconomics,
   tsnGetAllowedSplTokens,
   tsnResolveSplTokenInput,

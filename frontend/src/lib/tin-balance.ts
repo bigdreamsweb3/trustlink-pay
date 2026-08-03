@@ -1,12 +1,18 @@
 "use client";
 
 import { PublicKey } from "@solana/web3.js";
-import { loadPruRoute } from "@trustlink/tsn-sdk/pru-route-auth";
+import { decodeTinAccount } from "@trustlink/tsn-sdk/tins";
+import {
+  loadTinPrivateTokenBalances,
+} from "@trustlink/tsn-sdk/tin-private-controller";
 
 import { createSolanaConnection } from "@/src/lib/rpc";
-import { getFrontendTsnMempoolUrl, type TinPruPublicAddress } from "@/src/lib/tins";
+import { resolveTinFromChain } from "@/src/lib/tins";
 import type { WalletTokenOption } from "@/src/lib/types";
-import { signSolanaBytes, type ConnectedWalletSession } from "@/src/lib/wallet";
+import type { ConnectedWalletSession } from "@/src/lib/wallet";
+import { signTinMasterSeedAuthorizationBytes } from "@/src/lib/wallet";
+import { getBrowserTinMasterSeedProvider } from "@/src/lib/tsn-threshold-provider";
+import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
 
 export type TinTokenBalanceResult = {
   tokens: WalletTokenOption[];
@@ -22,40 +28,6 @@ export type TinTokenBalanceResult = {
   nonZeroPruCount: number;
 };
 
-function toTokenAmount(value: number, decimals: number) {
-  return Number(value.toFixed(Math.min(decimals, 9)));
-}
-
-async function loadPruTokenBalance(params: {
-  pru: TinPruPublicAddress;
-  token: WalletTokenOption;
-}) {
-  const connection = createSolanaConnection({ frontendSafe: true });
-  const accounts = await connection.getParsedTokenAccountsByOwner(
-    new PublicKey(params.pru.publicKey),
-    { mint: new PublicKey(params.token.mintAddress) },
-    "confirmed",
-  );
-  const decimals = params.token.decimals ?? 6;
-  const balanceBaseUnits = accounts.value.reduce((sum, account) => {
-    const parsed = account.account.data as {
-      parsed: {
-        info: {
-          tokenAmount: {
-            amount: string;
-            uiAmount?: number | null;
-          };
-        };
-      };
-    };
-    return sum + BigInt(parsed.parsed.info.tokenAmount.amount);
-  }, 0n);
-  return {
-    balance: Number(balanceBaseUnits) / 10 ** decimals,
-    balanceBaseUnits: balanceBaseUnits.toString(),
-  };
-}
-
 export async function loadTinTokenBalances(params: {
   tin: string;
   walletSession: ConnectedWalletSession;
@@ -63,58 +35,78 @@ export async function loadTinTokenBalances(params: {
   signal?: AbortSignal;
   onProgress?: (message: string) => void;
 }): Promise<TinTokenBalanceResult> {
-  params.onProgress?.("Authorizing private TIN balance view...");
-  const route = await loadPruRoute(params.tin, {
-    publicKey: params.walletSession.address,
-    signMessage: async (message) => {
-      const signature = await signSolanaBytes({
+  params.onProgress?.("Decrypting the TIN route on this authorized device...");
+  const identity = await resolveTinFromChain(params.tin);
+  // Legacy TIN accounts predate the device/threshold architecture. They may
+  // still be resolved and displayed, but must not invoke the new threshold
+  // action or turn its missing configuration into a frontend error.
+  if (identity.accountKind === "legacy") {
+    params.onProgress?.("Legacy TIN detected; private ZK-PRU balances require a TIN upgrade.");
+    return {
+      tokens: params.supportedTokens.map((token) => ({ ...token, balance: 0, balanceUsd: null })),
+      pruBalances: [],
+      pruCount: 0,
+      activePruCount: 0,
+      nonZeroPruCount: 0,
+    };
+  }
+  const connection = createSolanaConnection({ frontendSafe: true });
+  const account = await connection.getAccountInfo(new PublicKey(identity.registry), "confirmed");
+  if (!account) throw new Error("The selected TIN account is unavailable on Devnet.");
+  const decoded = decodeTinAccount(account.data);
+  if (!decoded.pruConfigurationHash || !decoded.encryptedMasterSeed.length) {
+    throw new Error("This legacy TIN must be upgraded before private balances can be loaded.");
+  }
+  const pruConfigurationHash = Buffer.from(decoded.pruConfigurationHash).toString("hex");
+  const balances = await loadTinPrivateTokenBalances({
+    tin: params.tin,
+    pruConfigurationHash,
+    envelope: decoded.encryptedMasterSeed,
+    ownerWallet: {
+      publicKey: params.walletSession.address,
+      signMessage: (message) => signTinMasterSeedAuthorizationBytes({
         walletId: params.walletSession.walletId,
         address: params.walletSession.address,
         message,
-      });
-      return signature;
+      }),
     },
-  }, getFrontendTsnMempoolUrl());
-  if (params.signal?.aborted) {
-    throw new DOMException("Aborted", "AbortError");
-  }
-  const activePrus = route.prus.filter((pru) => pru.state !== "SWEPT");
-  params.onProgress?.(
-    `Found ${activePrus.length} active PRUs. Loading balances...`,
+    authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
+    thresholdProvider: await getBrowserTinMasterSeedProvider(),
+    connection,
+    tokens: params.supportedTokens.map((token) => ({
+      mint: token.mintAddress,
+      decimals: token.decimals ?? 6,
+    })),
+    signal: params.signal,
+    onProgress: params.onProgress,
+  });
+  const tokenTotals = new Map(
+    balances.tokenBalances.map((token) => [token.mint, BigInt(token.balanceBaseUnits)]),
   );
-  const nonZeroPrus = new Set<number>();
-  const pruBalances: TinTokenBalanceResult["pruBalances"] = [];
-  const tokenBalances = await Promise.all(
-    params.supportedTokens.map(async (token) => {
-      let balance = 0;
-      for (const pru of activePrus) {
-        if (params.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-        const pruBalance = await loadPruTokenBalance({ pru, token });
-        if (pruBalance.balance > 0) {
-          nonZeroPrus.add(pru.index);
-          pruBalances.push({
-            pruIndex: pru.index,
-            publicKey: pru.publicKey,
-            tokenMintAddress: token.mintAddress,
-            balance: pruBalance.balance,
-            balanceBaseUnits: pruBalance.balanceBaseUnits,
-          });
-        }
-        balance += pruBalance.balance;
-      }
-      return {
-        ...token,
-        balance: toTokenAmount(balance, token.decimals ?? 6),
-        balanceUsd: token.unitPriceUsd ? balance * token.unitPriceUsd : null,
-      };
-    }),
-  );
-  const tokens = tokenBalances.filter((token) => token.balance > 0);
+  const tokens = params.supportedTokens.map((token) => {
+    const raw = tokenTotals.get(token.mintAddress) ?? 0n;
+    const balance = Number(raw) / 10 ** (token.decimals ?? 6);
+    return {
+      ...token,
+      balance,
+      balanceUsd: token.unitPriceUsd ? balance * token.unitPriceUsd : null,
+    };
+  }).filter((token) => token.balance > 0);
   return {
     tokens,
-    pruBalances,
-    pruCount: route.prus.length,
-    activePruCount: activePrus.length,
-    nonZeroPruCount: nonZeroPrus.size,
+    pruBalances: balances.pruBalances.map((balance) => {
+      const token = params.supportedTokens.find((entry) => entry.mintAddress === balance.mint);
+      const decimals = token?.decimals ?? 6;
+      return {
+        pruIndex: balance.pruIndex,
+        publicKey: balance.publicKey,
+        tokenMintAddress: balance.mint,
+        balance: Number(BigInt(balance.balanceBaseUnits)) / 10 ** decimals,
+        balanceBaseUnits: balance.balanceBaseUnits,
+      };
+    }),
+    pruCount: balances.pruCount,
+    activePruCount: balances.activePruCount,
+    nonZeroPruCount: balances.nonZeroPruCount,
   };
 }

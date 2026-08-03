@@ -54,10 +54,6 @@
       "import": "./dist/sponsored-settlement.js",
       "types": "./dist/sponsored-settlement.d.ts"
     },
-    "./settlement-token": {
-      "import": "./dist/settlement-token.js",
-      "types": "./dist/settlement-token.d.ts"
-    },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"
@@ -69,10 +65,6 @@
     "./program": {
       "import": "./dist/program.js",
       "types": "./dist/program.d.ts"
-    },
-    "./server": {
-      "import": "./dist/server.js",
-      "types": "./dist/server.d.ts"
     },
     "./pru": {
       "import": "./dist/pru.js",
@@ -86,13 +78,45 @@
       "import": "./dist/pru-route-auth.js",
       "types": "./dist/pru-route-auth.d.ts"
     },
+    "./tin-envelopes": {
+      "import": "./dist/tin-envelopes.js",
+      "types": "./dist/tin-envelopes.d.ts"
+    },
+    "./tin-private-controller": {
+      "import": "./dist/tin-private-controller.js",
+      "types": "./dist/tin-private-controller.d.ts"
+    },
+    "./tin-device-access": {
+      "import": "./dist/tin-device-access.js",
+      "types": "./dist/tin-device-access.d.ts"
+    },
+    "./tin-device-key-envelope": {
+      "import": "./dist/tin-device-key-envelope.js",
+      "types": "./dist/tin-device-key-envelope.d.ts"
+    },
+    "./tin-local-master-seed": {
+      "import": "./dist/tin-local-master-seed.js",
+      "types": "./dist/tin-local-master-seed.d.ts"
+    },
+    "./lit-threshold-provider": {
+      "import": "./dist/lit-threshold-provider.js",
+      "types": "./dist/lit-threshold-provider.d.ts"
+    },
+    "./lit-tin-action-configuration": {
+      "import": "./dist/lit-tin-action-configuration.js",
+      "types": "./dist/lit-tin-action-configuration.d.ts"
+    },
+    "./lit-tin-action-contract": {
+      "import": "./dist/lit-tin-action-contract.js",
+      "types": "./dist/lit-tin-action-contract.d.ts"
+    },
+    "./tin-threshold-nonce-receipt": {
+      "import": "./dist/tin-threshold-nonce-receipt.js",
+      "types": "./dist/tin-threshold-nonce-receipt.d.ts"
+    },
     "./tin-balance-spend-planner": {
       "import": "./dist/tin-balance-spend-planner.js",
       "types": "./dist/tin-balance-spend-planner.d.ts"
-    },
-    "./worker/private-settlement": {
-      "import": "./dist/worker/private-settlement.js",
-      "types": "./dist/worker/private-settlement.d.ts"
     },
     "./authorization/server": {
       "import": "./dist/authorization/server/index.js",
@@ -139,11 +163,21 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@lit-protocol/auth-helpers": "7.4.0",
+    "@lit-protocol/constants": "7.4.0",
+    "@lit-protocol/crypto": "7.4.0",
+    "@lit-protocol/encryption": "7.4.0",
+    "@lit-protocol/lit-node-client": "7.4.0",
+    "@lit-protocol/types": "7.4.0",
     "@noble/hashes": "^1.8.0",
+    "@solana/codecs": "^2.0.0-rc.1",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
+    "@walletconnect/modal": "^2.7.0",
+    "bigint-buffer": "^1.1.5",
     "buffer": "^6.0.3",
     "lit": "^3.3.0",
+    "pino-pretty": "^13.1.3",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {

@@ -1,52 +1,49 @@
-# Metadata Use And Compliance
+# Metadata use and compliance
 
-TrustLink Pay should collect and expose only the data needed for safe payments.
+TrustLink Pay uses metadata to make identity-first payments understandable and
+auditable without exposing unnecessary private information.
 
-## What Is Metadata?
+## What metadata means
 
-Metadata is information about a payment or identity that is not the token transfer itself.
+Metadata is information about an identity or payment that is separate from the
+token transfer itself, including:
 
-Examples:
+- TIN;
+- display name;
+- verification status;
+- payment status;
+- notification channel;
+- masked route or commitment reference.
 
-- TIN
-- display name
-- verification status
-- payment status
-- notification channel
-- masked route or commitment reference
+## Data principles
 
-## Why Metadata Exists
+### Minimize public data
 
-Users need confidence.
+Show only the information required to confirm who is being paid, what state the
+payment is in, and whether the result is complete. Do not expose full private
+routes, decrypted ZK-PRU material, device secrets, or unnecessary wallet links.
 
-They need to know who they are paying, whether a payment is pending, and whether a recipient has been paid.
+### Protect identity context
 
-## Data Rules
+Phone numbers, WhatsApp identities, email addresses, social profiles, and legal
+identity attributes are enrichment data, not the protocol identity itself. A
+TIN is the payment identity. Sensitive identity context must be encrypted or
+access-controlled before storage and requires explicit authorization before
+decryption.
 
-### Keep Public Data Minimal
+### Separate status from secrets
 
-Only show what helps the user understand the payment.
+The UI may display safe states such as `PENDING`, `FUNDED`, `SETTLED`, or
+`FAILED`, plus a commitment or masked route reference. It must not display
+plaintext seed material, child private keys, secret-key arrays, recovery
+phrases, or decrypted private balances.
 
-### Encrypt Social Identities
+### Consent and retention
 
-Social identities such as WhatsApp, email, or X should be encrypted before storage when they are linked to a TIN.
+Collect metadata only for a defined payment, identity, notification, support,
+or compliance purpose. Retain it only as long as that purpose requires, and
+honor user-controlled revocation where the product and applicable law require
+it.
 
-### Require Consent For Sensitive Data
-
-Sensitive data should require explicit user authorization before decryption.
-
-### Do Not Expose Payment Graphs
-
-Dashboards and explorers should show commitments, aggregate roots, masked recovery data, and safe status. They should not show full private routes.
-
-## WhatsApp And Phone Numbers
-
-Phone numbers can be used for authentication, notifications, and confidence checks.
-
-They should not be treated as the core protocol identity. The core payment identity is the TIN.
-
-## Important Limits
-
-Compliance requirements vary by country and product launch scope.
-
-This document explains project data principles. It is not legal advice.
+This document describes project data principles, not legal advice. Launches
+must receive jurisdiction-specific review.

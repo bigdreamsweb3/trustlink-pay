@@ -25,8 +25,8 @@ TSN breaks that graph into settlement stages.
 | `protocol/` | Solana program workspace |
 | `tsn-sdk/` | SDK used by apps and services |
 | `tsn-cranker-op-daemon/` | Reference operator daemon |
-| `tsn-mempool-backend/` | Mempool and epoch coordination |
-| `tsn-mempool-frontend/` | Explorer for safe settlement status |
+| `tsn-node/` | TSN Node intent, claim, and epoch coordination |
+| `tsn-mempool-ui/` | TSN Mempool UI for queue and Cranker status |
 
 ## Read More
 

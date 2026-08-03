@@ -4,6 +4,8 @@ import {
   authorizeDevice,
   createTinCommitment,
 } from "@trustlink/tsn-sdk/authorization";
+import type { TinAuthorizedDeviceSigner } from "@trustlink/tsn-sdk/tin-device-access";
+import { unwrapTinThresholdKeyOnDevice } from "@trustlink/tsn-sdk/tin-device-key-envelope";
 import {
   generateNonExportableDeviceCredentials,
   type NonExportableDeviceCredentials,
@@ -22,7 +24,6 @@ import {
   type EncryptedReceiptRecord,
 } from "@trustlink/tsn-sdk/receipts";
 import { configureTsnPrivateValueResolver } from "@trustlink/tsn-sdk/private-view";
-
 import { buildBackendUrl } from "@/src/lib/backend";
 import {
   signTsnDeviceAuthorizationBytes,
@@ -38,8 +39,18 @@ export type StoredTsnDevice = NonExportableDeviceCredentials & {
   authorizedTin: string | null;
   authorizedWallet: string | null;
   authorizedAt: string | null;
+  authorizedPermissions?: string[];
   privateIdentity?: EncryptedReceiptRecord | null;
 };
+
+const PRIVATE_DEVICE_PERMISSIONS = [
+  "private-session:create",
+  "private-receipt:read",
+  "private-history:read",
+  "private-balance:read",
+  "private-settlement:read",
+  "device:revoke",
+] as const;
 
 export type ActiveTsnPrivateSession = {
   sessionId: string;
@@ -121,6 +132,38 @@ export async function getOrCreateTsnDevice(): Promise<StoredTsnDevice> {
   return created;
 }
 
+export async function getTinAuthorizedDeviceSigner(
+  tin?: string,
+): Promise<TinAuthorizedDeviceSigner> {
+  const device = tin
+    ? await getTsnDeviceAuthorization(tin)
+    : await getOrCreateTsnDevice();
+  if (!device) {
+    throw new Error("This device must be authorized by the TIN owner wallet before private access");
+  }
+  return {
+    deviceId: device.deviceId,
+    signingPublicKey: device.signing.publicKey,
+    signingKeyFingerprint: device.signing.fingerprint,
+    encryptionPublicKey: device.encryption.publicKey,
+    encryptionKeyFingerprint: device.encryption.keyId,
+    signMessage: async (message) => {
+      const bytes = new Uint8Array(message);
+      return new Uint8Array(await crypto.subtle.sign(
+        "Ed25519",
+        device.signing.privateKey,
+        bytes.buffer,
+      ));
+    },
+    unwrapThresholdKey: (envelope, proof) =>
+      unwrapTinThresholdKeyOnDevice({
+        envelope,
+        proof,
+        deviceEncryptionPrivateKey: device.encryption.privateKey,
+      }),
+  };
+}
+
 export async function getTsnDeviceAuthorization(tin: string) {
   const device = await readDevice();
   return device?.authorizedTin === tin ? device : null;
@@ -137,14 +180,7 @@ export async function authorizeCurrentTsnDevice(params: {
     deviceId: device.deviceId,
     signingPublicKey: device.signing.publicKey,
     encryptionPublicKey: device.encryption.publicKey,
-    permissions: [
-      "private-session:create",
-      "private-receipt:read",
-      "private-history:read",
-      "private-balance:read",
-      "private-settlement:read",
-      "device:revoke",
-    ],
+    permissions: [...PRIVATE_DEVICE_PERMISSIONS],
     historyRecoveryScope: "all",
     wallet: {
       publicKey: params.walletSession.address,
@@ -161,6 +197,7 @@ export async function authorizeCurrentTsnDevice(params: {
     authorizedTin: params.tin,
     authorizedWallet: params.walletSession.address,
     authorizedAt: new Date().toISOString(),
+    authorizedPermissions: [...PRIVATE_DEVICE_PERMISSIONS],
   };
   await writeDevice(authorized);
   await ensureEncryptedPrivateIdentity(authorized);
@@ -168,7 +205,12 @@ export async function authorizeCurrentTsnDevice(params: {
 }
 
 async function ensureEncryptedPrivateIdentity(device: StoredTsnDevice) {
-  if (device.privateIdentity) return device;
+  if (device.privateIdentity) {
+    if (!device.authorizedWallet) return device;
+    const cleared = { ...device, authorizedWallet: null };
+    await writeDevice(cleared);
+    return cleared;
+  }
   if (!device.authorizedTin || !device.authorizedWallet) {
     throw new Error("The authorized settlement wallet is unavailable for private migration");
   }

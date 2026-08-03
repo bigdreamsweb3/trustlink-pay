@@ -13,6 +13,10 @@
     "seo:generate": "node scripts/seo/generate-public-routes.mjs"
   },
   "dependencies": {
+    "@lit-protocol/auth-helpers": "^7.4.0",
+    "@lit-protocol/constants": "^7.4.0",
+    "@lit-protocol/encryption": "^7.4.0",
+    "@lit-protocol/lit-node-client": "^7.4.0",
     "@noble/curves": "^1.9.7",
     "@reown/appkit": "^1.8.22",
     "@reown/appkit-adapter-solana": "^1.8.22",

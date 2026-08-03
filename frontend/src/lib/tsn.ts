@@ -7,9 +7,9 @@ import { traceFunction } from "@trustlink/observability/tracer";
 type PaymentTsnState = NonNullable<PaymentRecord["tsn"]>;
 
 function getTsnMempoolUrl() {
-  const url = process.env.NEXT_PUBLIC_TSN_MEMPOOL_URL;
-  if (!url) throw new Error("NEXT_PUBLIC_TSN_MEMPOOL_URL is missing");
-  return url.replace(/\/$/, "");
+  // Keep Receiver traffic same-origin. The Next route proxies to the local
+  // Receiver, avoiding browser CORS and keeping its address server-side.
+  return "/api/tsn";
 }
 
 export type TsnMempoolPaymentStatus = {
@@ -142,7 +142,6 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     amountBaseUnits: string;
     nonce: number;
   }> | null;
-  settlementEscrowSecretKeyBase64?: string | null;
   privacyVersion?: number | null;
   commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
@@ -184,7 +183,6 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
     walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
     pruSpendSelections: params.pruSpendSelections,
-    settlementEscrowSecretKeyBase64: params.settlementEscrowSecretKeyBase64,
     privacyVersion: params.privacyVersion,
     commitmentRecord: params.commitmentRecord,
     senderTokenAccount: params.senderTokenAccount,

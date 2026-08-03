@@ -240,6 +240,9 @@ export function createTinOwnerIntentHash(params: {
   encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
+  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+  routeVersion?: bigint | number;
+  routeNonce?: Buffer | Uint8Array;
   nonce: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }): Buffer {
@@ -268,6 +271,16 @@ export function createTinOwnerIntentHash(params: {
     Buffer.from(encryptedMasterSeed),
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
     normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
+    Buffer.from(params.encryptedPublicRouteEnvelope ?? (() => {
+      throw new Error("encryptedPublicRouteEnvelope is required");
+    })()),
+    (() => {
+      const routeVersion = Buffer.alloc(8);
+      routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
+      if (routeVersion.equals(Buffer.alloc(8))) throw new Error("routeVersion must be positive");
+      return routeVersion;
+    })(),
+    requireHash32(params.routeNonce, "routeNonce"),
     requireHash32(params.nonce, "nonce"),
     expiry,
   ])));
@@ -292,6 +305,10 @@ export function serializeTinCreationRegistryParams(params: {
   encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
+  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+  routeVersion?: bigint | number;
+  routeNonce?: Buffer | Uint8Array;
+  nonce?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -304,6 +321,10 @@ export function serializeTinUpdateParams(params: {
   encryptedMasterSeed?: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
   pruConfigurationHash?: Buffer | Uint8Array;
+  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+  routeVersion?: bigint | number;
+  routeNonce?: Buffer | Uint8Array;
+  nonce?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -318,6 +339,10 @@ function serializeTinRegistryMutationParams(
     encryptedMasterSeed?: Buffer | Uint8Array;
     encryptedMetadataHash?: Buffer | Uint8Array;
     pruConfigurationHash?: Buffer | Uint8Array;
+    encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+    routeVersion?: bigint | number;
+    routeNonce?: Buffer | Uint8Array;
+    nonce?: Buffer | Uint8Array;
     intentHash: Buffer | Uint8Array;
     expiryTs: bigint | number;
   },
@@ -329,6 +354,15 @@ function serializeTinRegistryMutationParams(
   appendBytes(parts, encryptedMasterSeed);
   parts.push(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
   parts.push(normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"));
+  appendBytes(parts, params.encryptedPublicRouteEnvelope ?? (() => {
+    throw new Error("encryptedPublicRouteEnvelope is required");
+  })());
+  const routeVersion = Buffer.alloc(8);
+  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
+  if (routeVersion.equals(Buffer.alloc(8))) throw new Error("routeVersion must be positive");
+  parts.push(routeVersion);
+  parts.push(requireHash32(params.routeNonce, "routeNonce"));
+  parts.push(requireHash32(params.nonce, "nonce"));
   parts.push(normalizeHash32(params.intentHash, "intentHash"));
   const expiry = Buffer.alloc(8);
   expiry.writeBigInt64LE(BigInt(params.expiryTs));
@@ -549,6 +583,21 @@ export function decodeTinAccount(data: Uint8Array) {
   const pruConfigurationHash = offset + 32 <= buffer.length
     ? buffer.subarray(offset, offset + 32)
     : null;
+  offset += pruConfigurationHash ? 32 : 0;
+  let encryptedPublicRouteEnvelope: Buffer | null = null;
+  let routeVersion: bigint | null = null;
+  let routeNonce: Buffer | null = null;
+  if (offset + 4 <= buffer.length) {
+    const routeEnvelopeLength = buffer.readUInt32LE(offset);
+    offset += 4;
+    if (routeEnvelopeLength > 0 && offset + routeEnvelopeLength + 8 + 32 <= buffer.length) {
+      encryptedPublicRouteEnvelope = buffer.subarray(offset, offset + routeEnvelopeLength);
+      offset += routeEnvelopeLength;
+      routeVersion = buffer.readBigUInt64LE(offset);
+      offset += 8;
+      routeNonce = buffer.subarray(offset, offset + 32);
+    }
+  }
 
   return {
     tin,
@@ -558,6 +607,9 @@ export function decodeTinAccount(data: Uint8Array) {
     createdAt,
     encryptedMetadataHash,
     pruConfigurationHash,
+    encryptedPublicRouteEnvelope,
+    routeVersion,
+    routeNonce,
   };
 }
 
@@ -871,10 +923,8 @@ export async function resolveTIN(params: {
       ownerPubkeyHash: bytesToHex(legacy.decoded.ownerPubkeyHash),
       registry: legacy.address,
       accountKind: "legacy",
-      upgradeRequired: !legacy.decoded.pruConfigurationHash,
-      upgradeReason: legacy.decoded.pruConfigurationHash
-        ? null
-        : "Legacy TIN account does not yet store PRU commitments. Run the legacy TIN upgrade before PRU settlement features.",
+      upgradeRequired: true,
+      upgradeReason: "Legacy TIN requires a wallet-authorized, device-protected seed envelope before local PRU balance discovery is available.",
       settlementAuthorityVerified: true,
       status: 1,
       createdAt: legacy.decoded.createdAt.toString(),
@@ -893,10 +943,18 @@ export async function resolveTIN(params: {
         ownerPubkeyHash: bytesToHex(tinAccount.ownerPubkeyHash),
         registry: registryPda,
         accountKind: "registry",
-        upgradeRequired: !tinAccount.pruConfigurationHash,
-        upgradeReason: tinAccount.pruConfigurationHash
+        upgradeRequired:
+          !tinAccount.pruConfigurationHash ||
+          !tinAccount.encryptedPublicRouteEnvelope ||
+          !tinAccount.routeVersion ||
+          !tinAccount.routeNonce,
+        upgradeReason:
+          tinAccount.pruConfigurationHash &&
+          tinAccount.encryptedPublicRouteEnvelope &&
+          tinAccount.routeVersion &&
+          tinAccount.routeNonce
           ? null
-          : "TIN account does not yet store PRU commitments. Run the TIN upgrade before PRU settlement features.",
+          : "TIN account does not yet store the wallet-bound seed envelope and Node routing envelope.",
         settlementAuthorityVerified: true,
         status: 1,
         createdAt: tinAccount.createdAt.toString(),

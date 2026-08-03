@@ -50,12 +50,12 @@ echo "Installing Node dependencies from lockfiles..."
 npm install
 npm --prefix frontend install
 npm --prefix backend install
-npm --prefix tsn-protocol/tsn-mempool-frontend install
+npm --prefix tsn-protocol/tsn-mempool-ui install
 
 echo "Creating Python virtual environment..."
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r tsn-protocol/tsn-mempool-backend/requirements.txt
+pip install -r tsn-protocol/tsn-node/requirements.txt
 
 echo "Migration complete."
 echo "Original Windows copy preserved at: $SOURCE"

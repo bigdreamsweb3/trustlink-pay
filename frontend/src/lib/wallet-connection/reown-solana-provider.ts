@@ -26,8 +26,12 @@ export function bindReownSolanaProvider(provider: unknown) {
         : undefined,
     signMessage:
       typeof reownProvider.signMessage === "function"
-        ? (message: Uint8Array, display?: "utf8" | "hex") =>
-            reownProvider.signMessage!.call(reownProvider, message, display)
+        ? (message: Uint8Array) =>
+            // Reown's Solana adapter exposes detached message signing.  Do
+            // not pass a display/transaction argument through this boundary;
+            // some Wallet Standard providers interpret a second argument as
+            // a transaction request and reject the call.
+            reownProvider.signMessage!.call(reownProvider, message)
         : undefined,
     signTransaction:
       typeof reownProvider.signTransaction === "function"

@@ -5,7 +5,7 @@
 The TSN Receiver, TSN Node, and Cranker are separate runtime roles.
 
 ```mermaid
-flowchart LR
+flowchart TD
     U["TSN user or authorized device"] -->|"signed public work"| R["TSN Receiver"]
     R -->|"RECEIVED lease"| N["TSN Node"]
     N -->|"VERIFIED or REJECTED"| R
@@ -97,7 +97,7 @@ recipient TIN from Receiver work, select another receiving unit, or sign for a
 user PRU.
 
 ```mermaid
-flowchart LR
+flowchart TD
   U["Sender device signs payment intent"] --> R["TSN Receiver: Firestore ingress"]
   R --> N["TSN Node: verify intent"]
   T["TIN encrypted public-route envelope"] --> N

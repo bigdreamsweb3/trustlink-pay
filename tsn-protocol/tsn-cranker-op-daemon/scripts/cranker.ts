@@ -51,7 +51,11 @@ import {
   DEFAULT_TIP_PROGRAM_ID,
   getTinsGlobalStatePda,
   getTinsIdentityPda,
+  getTinsMutationStagingPda,
   serializeTinCreationRegistryParams,
+  serializeTinMutationChunkParams,
+  serializeTinMutationStageParams,
+  serializeTinUpdateStagedParams,
   serializeTinUpdateParams,
 } from "../../tsn-sdk/src";
 
@@ -1866,10 +1870,10 @@ function base64Bytes(value: string | null | undefined, label: string) {
   return bytes;
 }
 
-function tinsProgramId() {
+function tinsProgramId(): PublicKey {
   return process.env.TINS_PROGRAM_ID
     ? new PublicKey(process.env.TINS_PROGRAM_ID)
-    : DEFAULT_TIP_PROGRAM_ID;
+    : new PublicKey(DEFAULT_TIP_PROGRAM_ID);
 }
 
 async function submitTinRegistryMutation(params: {
@@ -1924,6 +1928,119 @@ async function submitTinRegistryMutation(params: {
     message: ownerIntentMessage,
     signature: ownerSignature,
   });
+
+  // A Solana legacy transaction is limited to 1,232 bytes.  The encrypted
+  // master-seed and public-route envelopes are intentionally larger than that
+  // when a TIN carries its full PRU map, so updates use a program-owned
+  // staging PDA.  The Cranker only transports opaque ciphertext; the final
+  // owner-authorized instruction commits the exact bytes and closes staging.
+  const sendSingleInstruction = async (instruction: TransactionInstruction) => {
+    const { blockhash } = await params.connection.getLatestBlockhash("confirmed");
+    const transaction = new Transaction().add(instruction);
+    transaction.feePayer = params.operator.publicKey;
+    transaction.recentBlockhash = blockhash;
+    return sendAndConfirmTransaction(
+      params.connection,
+      transaction,
+      [params.operator],
+      { commitment: "confirmed" },
+    );
+  };
+
+  if (params.operation.intentType === "tin_update") {
+    const staging = getTinsMutationStagingPda({
+      ownerPubkey,
+      intentHash,
+      programId,
+    });
+    const encryptedMetadataHash = hex32(
+      params.operation.newEncryptedMetadataHash ??
+        params.operation.encryptedMetadataHash,
+      "encryptedMetadataHash",
+    );
+    const pruConfigurationHash = hex32(
+      params.operation.newPruConfigurationHash ??
+        params.operation.pruConfigurationHash,
+      "pruConfigurationHash",
+    );
+    const stageIx = new TransactionInstruction({
+      programId,
+      keys: [
+        { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+        { pubkey: staging, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: serializeTinMutationStageParams({
+        ownerPubkey,
+        intentHash,
+        displayName,
+        encryptedMetadataHash,
+        pruConfigurationHash,
+        routeVersion: routeVersion ?? 0,
+        routeNonce,
+        nonce: operationNonce,
+        expiryTs: params.operation.expiry,
+        encryptedMasterSeedLength: encryptedMasterSeed.length,
+        encryptedPublicRouteEnvelopeLength: encryptedPublicRouteEnvelope.length,
+      }),
+    });
+    await sendSingleInstruction(stageIx);
+
+    // Keep each write comfortably below the packet limit even after account
+    // metadata and signatures are encoded.  Chunk writes are sequential and
+    // idempotent on-chain, so a retried Cranker can resume safely.
+    const chunkSize = 700;
+    const appendChunks = async (
+      kind: "master_seed" | "public_route",
+      bytes: Buffer,
+    ) => {
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+        const chunkIx = new TransactionInstruction({
+          programId,
+          keys: [
+            { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+            { pubkey: staging, isSigner: false, isWritable: true },
+          ],
+          data: serializeTinMutationChunkParams({
+            kind,
+            offset,
+            bytes: chunk,
+          }),
+        });
+        await sendSingleInstruction(chunkIx);
+      }
+    };
+    await appendChunks("master_seed", encryptedMasterSeed);
+    await appendChunks("public_route", encryptedPublicRouteEnvelope);
+
+    const finalizeIx = new TransactionInstruction({
+      programId,
+      keys: [
+        { pubkey: params.operator.publicKey, isSigner: true, isWritable: true },
+        { pubkey: identity, isSigner: false, isWritable: true },
+        { pubkey: staging, isSigner: false, isWritable: true },
+        {
+          pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+          isSigner: false,
+          isWritable: false,
+        },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: serializeTinUpdateStagedParams({ intentHash }),
+    });
+    const { blockhash } = await params.connection.getLatestBlockhash("confirmed");
+    const transaction = new Transaction().add(ed25519Ix, finalizeIx);
+    transaction.feePayer = params.operator.publicKey;
+    transaction.recentBlockhash = blockhash;
+    return sendAndConfirmTransaction(
+      params.connection,
+      transaction,
+      [params.operator],
+      { commitment: "confirmed" },
+    );
+  }
+
   const mutationData =
     params.operation.intentType === "tin_creation"
       ? serializeTinCreationRegistryParams({
@@ -2257,6 +2374,22 @@ async function main() {
             }).catch(() => undefined);
             console.error(`[tsn-cranker] receiver-work-failed id=${leased.work.id}`, error);
           }
+        }
+        // TIN creation/update intents are still validated and queued by the
+        // TSN Node through the Receiver proxy.  They are not Receiver work
+        // documents because their encrypted on-chain envelopes must never be
+        // copied into the generic public work payload.  Run the dedicated
+        // Node-backed TIN pipeline from the same Receiver-only loop so the
+        // Cranker advances verification, fee commitment, registry submission,
+        // and finalization without falling back to a local queue.
+        try {
+          await tracedProcessTinOperationWork({
+            mempool,
+            operator: operatorKeypair,
+            connection,
+          });
+        } catch (error) {
+          console.error("[tsn-cranker] tin-operation-loop-failed", error);
         }
         await sleep(Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));
         continue;

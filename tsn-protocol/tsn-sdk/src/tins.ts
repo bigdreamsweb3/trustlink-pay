@@ -17,6 +17,7 @@ const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
 const TINS_IDENTITY_SEED = Buffer.from("identity");
 const TINS_REGISTRY_SEED = Buffer.from("registry");
 const TINS_PLATFORM_REGISTRY_SEED = Buffer.from("platform-registry");
+const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -146,6 +147,17 @@ export function getTinsRegistryPda(params: {
 
 export function getTinsPlatformRegistryPda(programId?: PublicKey | string | null): PublicKey {
   return PublicKey.findProgramAddressSync([TINS_PLATFORM_REGISTRY_SEED], getTinsProgramPublicKey(programId))[0];
+}
+
+export function getTinsMutationStagingPda(params: {
+  ownerPubkey: PublicKey;
+  intentHash: Buffer | Uint8Array;
+  programId?: PublicKey | string | null;
+}) {
+  return PublicKey.findProgramAddressSync(
+    [TINS_MUTATION_STAGE_SEED, params.ownerPubkey.toBuffer(), requireHash32(params.intentHash, "intentHash")],
+    getTinsProgramPublicKey(params.programId),
+  )[0];
 }
 
 function appendU8(parts: Buffer[], value: number) {
@@ -286,6 +298,42 @@ export function createTinOwnerIntentHash(params: {
   ])));
 }
 
+function appendU64(parts: Buffer[], value: bigint | number) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64LE(BigInt(value));
+  parts.push(buffer);
+}
+
+function appendI64(parts: Buffer[], value: bigint | number) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigInt64LE(BigInt(value));
+  parts.push(buffer);
+}
+
+/**
+ * Build the wallet-displayable message for a TIN owner intent.
+ *
+ * Solana wallets such as Phantom intentionally reject arbitrary binary
+ * messages that look like a transaction payload.  The owner commitment is
+ * still the exact 32-byte `intentHash`; this wrapper only gives the wallet a
+ * stable UTF-8 representation to display and sign.  Verifiers bind the
+ * signature to the same hash before accepting the operation.
+ */
+export function buildTinOwnerIntentMessage(
+  intentHash: Buffer | Uint8Array,
+): Buffer {
+  const normalized = normalizeHash32(intentHash, "intentHash");
+  return Buffer.from(
+    [
+      "TSN TIN Upgrade",
+      "---",
+      `Intent Hash: ${normalized.toString("hex")}`,
+      "Domain: TSN_TIN_OWNER_INTENT_V1",
+    ].join("\n"),
+    "utf8",
+  );
+}
+
 export function createOwnerIntentSignatureInstruction(params: {
   ownerPubkey: PublicKey;
   intentHash: Buffer | Uint8Array;
@@ -329,6 +377,62 @@ export function serializeTinUpdateParams(params: {
   expiryTs: bigint | number;
 }) {
   return serializeTinRegistryMutationParams(13, params);
+}
+
+/** Stage large encrypted TIN mutation blobs before the final owner-authorized commit. */
+export function serializeTinMutationStageParams(params: {
+  ownerPubkey: PublicKey;
+  intentHash: Buffer | Uint8Array;
+  displayName: string;
+  encryptedMetadataHash: Buffer | Uint8Array;
+  pruConfigurationHash: Buffer | Uint8Array;
+  routeVersion: bigint | number;
+  routeNonce: Buffer | Uint8Array;
+  nonce: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+  encryptedMasterSeedLength: number;
+  encryptedPublicRouteEnvelopeLength: number;
+}) {
+  if (!Number.isSafeInteger(params.encryptedMasterSeedLength) || params.encryptedMasterSeedLength <= 0) {
+    throw new Error("encryptedMasterSeedLength must be a positive safe integer");
+  }
+  if (!Number.isSafeInteger(params.encryptedPublicRouteEnvelopeLength) || params.encryptedPublicRouteEnvelopeLength <= 0) {
+    throw new Error("encryptedPublicRouteEnvelopeLength must be a positive safe integer");
+  }
+  const parts: Buffer[] = [];
+  appendPubkey(parts, params.ownerPubkey);
+  parts.push(requireHash32(params.intentHash, "intentHash"));
+  appendString(parts, params.displayName);
+  parts.push(requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
+  parts.push(requireHash32(params.pruConfigurationHash, "pruConfigurationHash"));
+  appendU64(parts, params.routeVersion);
+  parts.push(requireHash32(params.routeNonce, "routeNonce"));
+  parts.push(requireHash32(params.nonce, "nonce"));
+  appendI64(parts, params.expiryTs);
+  appendU32(parts, params.encryptedMasterSeedLength);
+  appendU32(parts, params.encryptedPublicRouteEnvelopeLength);
+  return encodeInstruction(14, parts);
+}
+
+export function serializeTinMutationChunkParams(params: {
+  kind: "master_seed" | "public_route";
+  offset: number;
+  bytes: Buffer | Uint8Array;
+}) {
+  if (!Number.isSafeInteger(params.offset) || params.offset < 0) {
+    throw new Error("mutation chunk offset must be a non-negative safe integer");
+  }
+  const parts: Buffer[] = [];
+  appendU8(parts, params.kind === "master_seed" ? 0 : 1);
+  appendU32(parts, params.offset);
+  appendBytes(parts, params.bytes);
+  return encodeInstruction(15, parts);
+}
+
+export function serializeTinUpdateStagedParams(params: {
+  intentHash: Buffer | Uint8Array;
+}) {
+  return encodeInstruction(16, [requireHash32(params.intentHash, "intentHash")]);
 }
 
 function serializeTinRegistryMutationParams(

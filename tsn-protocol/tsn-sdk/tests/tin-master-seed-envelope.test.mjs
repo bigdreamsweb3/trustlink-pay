@@ -24,6 +24,24 @@ import {
   unwrapTinThresholdKeyOnDevice,
   wrapTinThresholdKeyForDevice,
 } from "../dist/tin-device-key-envelope.js";
+import { TsnDeviceEnvelopeTinMasterSeedProvider } from "../dist/tin-device-key-provider.js";
+import { buildTinOwnerIntentMessage } from "../dist/tins.js";
+
+test("TIN owner approval uses a deterministic printable detached message", () => {
+  const message = new TextDecoder().decode(
+    buildTinOwnerIntentMessage(new Uint8Array(32).fill(0xab)),
+  );
+  assert.equal(
+    message,
+    [
+      "TSN TIN Upgrade",
+      "---",
+      "Intent Hash: abababababababababababababababababababababababababababababababab",
+      "Domain: TSN_TIN_OWNER_INTENT_V1",
+    ].join("\n"),
+  );
+  assert.equal(new TextEncoder().encode(message).length, message.length);
+});
 
 const networkStore = new Map();
 
@@ -189,6 +207,40 @@ test("SDK creates seed, PRUs, commitments, and both envelopes without exposing s
   assert.equal("plaintext" in envelope, false);
   assert.ok(envelope.seedCiphertext);
   assert.ok(envelope.protectedKey);
+});
+
+test("device-envelope provider unlocks only the device that received the envelope", async () => {
+  const owner = wallet();
+  const device = await authorizedDevice("device-envelope-a");
+  const created = await createTinPrivateIdentity({
+    tin: "1000000008",
+    routeVersion: 1,
+    routeNonce: "6".repeat(64),
+    ownerWallet: owner,
+    authorizedDevice: device,
+    thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-a"),
+    nodeRoutingPublicKeyBase64: routingPublicKey(),
+  });
+  const unlocked = await unlockTinPrivateRoute({
+    tin: "1000000008",
+    pruConfigurationHash: created.pruConfigurationHash,
+    envelope: created.encryptedMasterSeed,
+    ownerWallet: owner,
+    authorizedDevice: device,
+    thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-b"),
+  });
+  assert.deepEqual(unlocked.prus, created.publicRoute.prus);
+  await assert.rejects(
+    unlockTinPrivateRoute({
+      tin: "1000000008",
+      pruConfigurationHash: created.pruConfigurationHash,
+      envelope: created.encryptedMasterSeed,
+      ownerWallet: owner,
+      authorizedDevice: await authorizedDevice("device-envelope-b"),
+      thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-c"),
+    }),
+    /belongs to another authorized device/,
+  );
 });
 
 test("a newly authorized device can unlock after a fresh main-wallet signature", async () => {

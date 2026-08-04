@@ -17,7 +17,7 @@
 ## Authorization boundary
 
 ```mermaid
-flowchart LR
+flowchart TD
     W[Root wallet authorization] --> D[Authorized device unlock]
     D --> K[Selected child authority]
     K --> M[Scoped route commitment]

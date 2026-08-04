@@ -12,7 +12,7 @@ private receiving and authorization technology used by a TIN. TrustLink Pay
 is the application that lets a user operate the system.
 
 ```mermaid
-flowchart LR
+flowchart TD
   W["Main wallet"] --> D["Authorized user device"]
   D --> SDK["TSN SDK"]
   SDK -->|"signed public intent"| R["TSN Receiver / durable ingress"]

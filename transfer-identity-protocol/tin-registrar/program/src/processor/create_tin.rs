@@ -143,7 +143,19 @@ fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_messag
     }
     let parsed_message = &data[message_offset..message_offset + message_size];
     parsed_message == expected_message.as_ref()
+        || parsed_message == canonical_owner_intent_message(expected_message).as_slice()
         || hash(parsed_message).to_bytes() == *expected_message
+}
+
+fn canonical_owner_intent_message(intent_hash: &[u8; 32]) -> Vec<u8> {
+    let mut message = b"TSN TIN Upgrade\n---\nIntent Hash: ".to_vec();
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    for byte in intent_hash {
+        message.push(HEX[(byte >> 4) as usize]);
+        message.push(HEX[(byte & 0x0f) as usize]);
+    }
+    message.extend_from_slice(b"\nDomain: TSN_TIN_OWNER_INTENT_V1");
+    message
 }
 
 fn compute_owner_intent_hash(params: &CreateTinParams) -> [u8; 32] {

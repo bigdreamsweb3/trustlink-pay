@@ -19,25 +19,47 @@ export type TinDeviceKeyEnvelope = {
   nonceBase64Url: string;
   wrappedKeyBase64Url: string;
   aadCommitment: string;
+  /** Stable device binding for long-lived TIN envelopes; omitted by legacy request envelopes. */
+  aadMode?: "request" | "device-envelope";
 };
 
-function accessAad(proof: TinDeviceAccessProof) {
-  return canonicalFields([
-    "TSN_TIN_DEVICE_KEY_RELEASE",
-    proof.operation,
-    proof.tin,
-    proof.ownerPublicKey,
-    String(proof.routeVersion),
-    proof.pruConfigurationHash.toLowerCase(),
-    proof.resourceCommitment.toLowerCase(),
-    proof.deviceSessionBinding,
-    proof.deviceId,
-    proof.deviceSigningKeyFingerprint,
-    proof.deviceEncryptionKeyFingerprint,
-    proof.walletAuthorizationCommitment,
-    proof.requestNonce,
-    proof.expiresAt,
-  ]);
+function accessAad(
+  proof: TinDeviceAccessProof,
+  mode: "request" | "device-envelope" = "request",
+) {
+  // Request proofs contain intentionally short-lived fields (session binding,
+  // wallet signature commitment, nonce and expiry).  They authenticate an
+  // access request, but must not be baked into the long-lived device envelope:
+  // a fresh wallet authorization is required on every unlock.  The envelope
+  // therefore authenticates stable identity and device-key fields only.
+  return mode === "device-envelope"
+    ? canonicalFields([
+        "TSN_TIN_DEVICE_KEY_DEVICE_ENVELOPE",
+        proof.tin,
+        proof.ownerPublicKey,
+        String(proof.routeVersion),
+        proof.pruConfigurationHash.toLowerCase(),
+        proof.resourceCommitment.toLowerCase(),
+        proof.deviceId,
+        proof.deviceSigningKeyFingerprint,
+        proof.deviceEncryptionKeyFingerprint,
+      ])
+    : canonicalFields([
+        "TSN_TIN_DEVICE_KEY_RELEASE",
+        proof.operation,
+        proof.tin,
+        proof.ownerPublicKey,
+        String(proof.routeVersion),
+        proof.pruConfigurationHash.toLowerCase(),
+        proof.resourceCommitment.toLowerCase(),
+        proof.deviceSessionBinding,
+        proof.deviceId,
+        proof.deviceSigningKeyFingerprint,
+        proof.deviceEncryptionKeyFingerprint,
+        proof.walletAuthorizationCommitment,
+        proof.requestNonce,
+        proof.expiresAt,
+      ]);
 }
 
 async function deriveWrappingKey(params: {
@@ -86,6 +108,7 @@ async function deriveWrappingKey(params: {
 export async function wrapTinThresholdKeyForDevice(params: {
   keyMaterial: Uint8Array;
   proof: TinDeviceAccessProof;
+  aadMode?: "request" | "device-envelope";
 }): Promise<TinDeviceKeyEnvelope> {
   if (params.keyMaterial.length !== 32) {
     throw new Error("TIN threshold key material must be exactly 32 bytes");
@@ -103,7 +126,7 @@ export async function wrapTinThresholdKeyForDevice(params: {
     ["deriveBits"],
   ) as CryptoKeyPair;
   const nonce = crypto.getRandomValues(new Uint8Array(12));
-  const aad = accessAad(params.proof);
+  const aad = accessAad(params.proof, params.aadMode);
   const wrappingKey = await deriveWrappingKey({
     privateKey: ephemeral.privateKey,
     publicKey: recipientPublicKey,
@@ -128,6 +151,7 @@ export async function wrapTinThresholdKeyForDevice(params: {
     nonceBase64Url: bytesToBase64Url(nonce),
     wrappedKeyBase64Url: bytesToBase64Url(wrapped),
     aadCommitment: await sha256Hex(aad),
+    aadMode: params.aadMode ?? "request",
   };
 }
 
@@ -135,6 +159,7 @@ export async function unwrapTinThresholdKeyOnDevice(params: {
   envelope: TinDeviceKeyEnvelope;
   proof: TinDeviceAccessProof;
   deviceEncryptionPrivateKey: CryptoKey;
+  aadMode?: "request" | "device-envelope";
 }) {
   if (
     params.envelope.version !== TIN_DEVICE_KEY_ENVELOPE_VERSION ||
@@ -144,7 +169,7 @@ export async function unwrapTinThresholdKeyOnDevice(params: {
   ) {
     throw new Error("TIN device key envelope does not match the authorized device");
   }
-  const aad = accessAad(params.proof);
+  const aad = accessAad(params.proof, params.aadMode ?? params.envelope.aadMode);
   if (await sha256Hex(aad) !== params.envelope.aadCommitment) {
     throw new Error("TIN device key envelope context has been modified");
   }

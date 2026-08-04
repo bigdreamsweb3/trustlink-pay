@@ -19,6 +19,7 @@ pub mod seeds {
     pub const VAULT: &[u8] = b"vault";
     pub const IDENTITY: &[u8] = b"identity";
     pub const PLATFORM_REGISTRY: &[u8] = b"platform-registry";
+    pub const TIN_MUTATION_STAGE: &[u8] = b"tin-mutation-stage";
 }
 
 pub const PROGRAM_SALT: &[u8] = b"TINS_SALT_2026";
@@ -51,4 +52,15 @@ pub fn global_state_pda(program_id: &Pubkey) -> (Pubkey, u8) {
 
 pub fn platform_registry_pda(program_id: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[seeds::PLATFORM_REGISTRY], program_id)
+}
+
+pub fn tin_mutation_staging_pda(
+    program_id: &Pubkey,
+    owner_pubkey: &Pubkey,
+    intent_hash: &[u8; 32],
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[seeds::TIN_MUTATION_STAGE, owner_pubkey.as_ref(), intent_hash],
+        program_id,
+    )
 }

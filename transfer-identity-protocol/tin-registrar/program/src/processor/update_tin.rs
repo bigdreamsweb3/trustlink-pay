@@ -16,8 +16,8 @@ use solana_program::{
 
 use crate::{
     error::Error,
-    instruction_auto::UpdateTinParams,
-    state::TinAccount,
+    instruction_auto::{FinalizeTinUpdateParams, UpdateTinParams},
+    state::{TinAccount, TinMutationStaging},
     utils::{assert_program_owned, load_borsh, store_borsh, top_up_and_realloc, validate_name},
 };
 
@@ -33,6 +33,99 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinP
     }
     if *instructions_sysvar.key != INSTRUCTIONS_ID {
         return Err(ProgramError::InvalidArgument);
+    }
+    apply_update(
+        program_id,
+        cranker,
+        identity,
+        instructions_sysvar,
+        system_program_account,
+        params,
+    )
+}
+
+/// Finalize a staged mutation after the encrypted blobs have been uploaded in
+/// bounded chunks. The owner signature remains in the immediately preceding
+/// Ed25519 instruction, exactly as it is for the single-packet path.
+pub fn process_staged(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    params: FinalizeTinUpdateParams,
+) -> ProgramResult {
+    let accounts_iter = &mut accounts.iter();
+    let cranker = next_account_info(accounts_iter)?;
+    let identity = next_account_info(accounts_iter)?;
+    let staging = next_account_info(accounts_iter)?;
+    let instructions_sysvar = next_account_info(accounts_iter)?;
+    let system_program_account = next_account_info(accounts_iter)?;
+
+    if !cranker.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+    if *instructions_sysvar.key != INSTRUCTIONS_ID {
+        return Err(ProgramError::InvalidArgument);
+    }
+    assert_program_owned(staging, program_id)?;
+    let staged: TinMutationStaging = load_borsh(staging)?;
+    if staged.version != TinMutationStaging::VERSION
+        || staged.intent_hash != params.intent_hash
+        || staged.master_seed_written as usize != staged.encrypted_master_seed.len()
+        || staged.route_written as usize != staged.encrypted_public_route_envelope.len()
+    {
+        return Err(Error::InvalidInstruction.into());
+    }
+    let (expected_staging, _bump) = crate::tin_mutation_staging_pda(
+        program_id,
+        &staged.owner_pubkey,
+        &staged.intent_hash,
+    );
+    if staging.key != &expected_staging {
+        return Err(Error::InvalidPda.into());
+    }
+
+    let update = UpdateTinParams {
+        owner_pubkey: staged.owner_pubkey,
+        display_name: staged.display_name.clone(),
+        encrypted_master_seed: staged.encrypted_master_seed.clone(),
+        encrypted_metadata_hash: staged.encrypted_metadata_hash,
+        pru_configuration_hash: staged.pru_configuration_hash,
+        encrypted_public_route_envelope: staged.encrypted_public_route_envelope.clone(),
+        route_version: staged.route_version,
+        route_nonce: staged.route_nonce,
+        nonce: staged.nonce,
+        intent_hash: staged.intent_hash,
+        expiry_ts: staged.expiry_ts,
+    };
+    apply_update(
+        program_id,
+        cranker,
+        identity,
+        instructions_sysvar,
+        Some(system_program_account),
+        update,
+    )?;
+
+    // The committed TinAccount now owns the copied bytes. Reclaim the
+    // temporary staging rent to the submitting Cranker and close the PDA.
+    let lamports = **staging.lamports.borrow();
+    let cranker_lamports = **cranker.lamports.borrow();
+    **cranker.lamports.borrow_mut() = cranker_lamports
+        .checked_add(lamports)
+        .ok_or(Error::Overflow)?;
+    **staging.lamports.borrow_mut() = 0;
+    staging.realloc(0, false)
+}
+
+fn apply_update<'a>(
+    program_id: &Pubkey,
+    cranker: &AccountInfo<'a>,
+    identity: &AccountInfo<'a>,
+    instructions_sysvar: &AccountInfo<'a>,
+    system_program_account: Option<&AccountInfo<'a>>,
+    params: UpdateTinParams,
+) -> ProgramResult {
+    if !cranker.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
     }
     if Clock::get()?.unix_timestamp > params.expiry_ts {
         return Err(Error::InvalidInstruction.into());
@@ -230,5 +323,17 @@ fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_messag
     }
     let parsed_message = &data[message_offset..message_offset + message_size];
     parsed_message == expected_message.as_ref()
+        || parsed_message == canonical_owner_intent_message(expected_message).as_slice()
         || hash(parsed_message).to_bytes() == *expected_message
+}
+
+fn canonical_owner_intent_message(intent_hash: &[u8; 32]) -> Vec<u8> {
+    let mut message = b"TSN TIN Upgrade\n---\nIntent Hash: ".to_vec();
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    for byte in intent_hash {
+        message.push(HEX[(byte >> 4) as usize]);
+        message.push(HEX[(byte & 0x0f) as usize]);
+    }
+    message.extend_from_slice(b"\nDomain: TSN_TIN_OWNER_INTENT_V1");
+    message
 }

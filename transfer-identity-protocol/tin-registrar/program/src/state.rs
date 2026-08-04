@@ -220,3 +220,35 @@ impl TinAccount {
             + 32
     }
 }
+
+/// Temporary program-owned storage for a TIN mutation whose encrypted
+/// payloads do not fit in one Solana transaction packet. The Cranker uploads
+/// bounded chunks, then the final owner-authorized instruction commits them.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct TinMutationStaging {
+    pub version: u8,
+    pub bump: u8,
+    pub owner_pubkey: Pubkey,
+    pub intent_hash: [u8; 32],
+    pub display_name: String,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub nonce: [u8; 32],
+    pub expiry_ts: i64,
+    pub encrypted_master_seed: Vec<u8>,
+    pub master_seed_written: u32,
+    pub encrypted_public_route_envelope: Vec<u8>,
+    pub route_written: u32,
+}
+
+impl TinMutationStaging {
+    pub const VERSION: u8 = 1;
+    pub const MAX_BLOB_LEN: usize = 16 * 1024;
+
+    pub fn space(display_name_len: usize, master_seed_len: usize, route_len: usize) -> usize {
+        1 + 1 + 32 + 32 + 4 + display_name_len + 32 + 32 + 8 + 32 + 32 + 8
+            + 4 + master_seed_len + 4 + 4 + route_len + 4
+    }
+}

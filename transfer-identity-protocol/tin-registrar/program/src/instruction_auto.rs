@@ -22,6 +22,9 @@ pub enum ProgramInstruction {
     LinkVerifiedSocialIdentity = 11,
     TinCreationRegistry = 12,
     TinUpdate = 13,
+    TinMutationStage = 14,
+    TinMutationChunk = 15,
+    TinUpdateStaged = 16,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -71,6 +74,33 @@ pub struct UpdateTinParams {
     pub nonce: [u8; 32],
     pub intent_hash: [u8; 32],
     pub expiry_ts: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct StageTinMutationParams {
+    pub owner_pubkey: Pubkey,
+    pub intent_hash: [u8; 32],
+    pub display_name: String,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub nonce: [u8; 32],
+    pub expiry_ts: i64,
+    pub encrypted_master_seed_len: u32,
+    pub encrypted_public_route_envelope_len: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct TinMutationChunkParams {
+    pub kind: u8,
+    pub offset: u32,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct FinalizeTinUpdateParams {
+    pub intent_hash: [u8; 32],
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]

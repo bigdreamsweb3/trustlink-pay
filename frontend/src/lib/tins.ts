@@ -6,6 +6,7 @@ import { buildTinWalletBindingMessage } from "@trustlink/tsn-sdk/canonical-messa
 import {
   DEFAULT_TIP_PROGRAM_ID,
   createTinOwnerIntentHash,
+  buildTinOwnerIntentMessage,
   decodeTinAccount,
   getTinsGlobalStatePda,
   getTinsIdentityPda,
@@ -16,12 +17,16 @@ import {
 import {
   createTinPrivateIdentity,
 } from "@trustlink/tsn-sdk/tin-private-controller";
-import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
+import {
+  authorizeCurrentTsnDevice,
+  getTinAuthorizedDeviceSigner,
+  getTsnDeviceAuthorization,
+} from "@/src/lib/tsn-device-authorization";
 
 import {
   signSolanaMessage,
   signTinMasterSeedAuthorizationBytes,
-  signTinOwnerIntentHash,
+  signTinOwnerIntentMessage,
 } from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
 import { traceFunction } from "@trustlink/observability/tracer";
@@ -404,6 +409,20 @@ async function upgradeLegacyTinForWalletImpl(params: {
     algorithm: string;
     publicKey: string;
   };
+  // A legacy TIN has no device binding yet.  The upgrade action is the
+  // explicit owner approval point: authorize this browser device first, then
+  // create the device-bound envelope.  No Solana transaction is requested for
+  // this step; both approvals are detached wallet messages.
+  if (!await getTsnDeviceAuthorization(params.tin)) {
+    await authorizeCurrentTsnDevice({
+      tin: params.tin,
+      walletSession: {
+        walletId: params.walletId,
+        walletName: "Connected wallet",
+        address: params.walletAddress,
+      },
+    });
+  }
   const privateIdentity = await createTinPrivateIdentity({
     tin: params.tin,
     routeVersion,
@@ -441,10 +460,11 @@ async function upgradeLegacyTinForWalletImpl(params: {
     nonce,
     expiryTs,
   });
-  const ownerSignature = await signTinOwnerIntentHash({
+  const ownerIntentMessageBytes = buildTinOwnerIntentMessage(intentHash);
+  const ownerSignature = await signTinOwnerIntentMessage({
     walletId: params.walletId,
     address: params.walletAddress,
-    intentHash,
+    message: ownerIntentMessageBytes,
   });
   const queued = await postTinOperationIntent(
     {
@@ -453,7 +473,7 @@ async function upgradeLegacyTinForWalletImpl(params: {
       displayName,
       phoneNumber: params.phoneNumber,
       ownerIntentHash: bytesToHex(intentHash),
-      ownerIntentMessage: "",
+      ownerIntentMessage: new TextDecoder().decode(ownerIntentMessageBytes),
       ownerSignature: base64FromBytes(ownerSignature),
       nonce: bytesToHex(nonce),
       expiry: Number(expiryTs),

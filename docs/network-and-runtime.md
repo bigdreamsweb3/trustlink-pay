@@ -3,7 +3,7 @@
 ## Topology
 
 ```mermaid
-flowchart LR
+flowchart TD
     D[Authorized user device]
     F[TrustLink Pay frontend]
     S[TSN SDK]

@@ -14,7 +14,7 @@ protected ZK-PRU routes, payment intents, scoped authorization, node
 coordination, Cranker execution, TSN Escrow, settlement state, and receipts.
 
 ```mermaid
-flowchart TB
+flowchart TD
     subgraph Solana[Solana foundation]
         V[Validators and consensus]
         RPC[RPC and cluster]
@@ -246,9 +246,12 @@ GET /work?limit=...
 
 The Node joins pending claims to their intents and returns a work item only
 when the intent is in an escrow-ready state (`escrowed`, `onchain`, or
-`claimed`). This is where the Cranker picks up the settlement request. A
-pending claim whose funding transaction has not succeeded is not returned as
-executable work.
+`claimed`). Before publishing that work, the Node rechecks the linked claim
+and payment intent: funded state, commitment, destination, amount, nonce,
+expiry, and replay status must still match. This is where the Cranker picks up
+the settlement request. A pending claim whose funding transaction has not
+succeeded, or whose second verification fails, is not returned as executable
+work.
 
 ### Step 7 — The Cranker leases and executes the claim
 
@@ -299,24 +302,28 @@ sequenceDiagram
     U->>F: Review recipient, asset, amount, and fee
     F->>F: Build and sign payment intent
     F->>N: POST /intents
-    N->>N: Verify signature and idempotency
-    N->>Q: Store intent=pending
-    F->>N: POST /claim-requests
-    N->>Q: Store claim=pending
+    N->>Q: Receiver stores intent=RECEIVED
+    N->>N: Verify payment intent signature, commitment, route, amount, expiry, nonce, and replay
+    N->>Q: Receiver publishes intent=VERIFIED funding work
+    F->>N: POST /claim-requests linked to intent
+    N->>Q: Receiver stores claim=PENDING
     C->>N: GET /intent-work
-    N-->>C: Pending funding work item
-    C->>C: Validate signed transaction and route
+    N-->>C: VERIFIED payment-intent funding work
+    C->>C: Confirm immutable fields; do not replan
     C->>R: Submit funding transaction
     R->>P: Execute TSN funding instruction
     P->>E: Lock authorized funds
-    C->>N: PATCH intent=escrowed + escrow signature
+    C->>N: POST funding proof; intent=FUNDED
+    N->>N: Verify claim and linked funded intent again
+    N->>Q: Receiver publishes claim=VERIFIED settlement work
     C->>N: GET /work
-    N-->>C: Claimable escrowed work
+    N-->>C: VERIFIED claim settlement work
     C->>R: Submit settlement transaction
     R->>P: Execute settlement instruction
     P->>E: Release exact authorized amount
     C->>N: POST /proofs
-    N-->>F: Status, signature, receipt, and account evidence
+    N->>Q: Receiver records claim=SETTLED and payment evidence
+    N-->>F: Status, signatures, receipt, and account evidence
 ```
 
 ## 9. Security boundary

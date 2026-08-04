@@ -10,7 +10,7 @@ payment intents, an application-level work queue, transaction execution,
 escrow, settlement, receipts, replay protection, and recovery tracking.
 
 ```mermaid
-flowchart LR
+flowchart TD
     U[User] --> A[TrustLink Pay]
     A --> T[TIN identity and route discovery]
     T --> S[TSN SDK]

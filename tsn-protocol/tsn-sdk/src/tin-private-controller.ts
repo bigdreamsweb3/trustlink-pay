@@ -241,7 +241,7 @@ export async function unlockTinPrivateRoute(params: {
     pruConfigurationHash: params.pruConfigurationHash,
   });
   if (envelope.provider !== params.thresholdProvider.id) {
-    throw new Error(`TIN master seed requires the ${envelope.provider} threshold provider`);
+    throw new Error(`TIN master seed requires the ${envelope.provider} provider`);
   }
   const authorization = await authorize(params.ownerWallet, params.thresholdProvider, {
     tin: params.tin,

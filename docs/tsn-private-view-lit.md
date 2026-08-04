@@ -141,13 +141,13 @@ sequenceDiagram
     D->>V: render pixels inside closed root
 ```
 
-For payment authorization, the TSN SDK asks the threshold provider to unlock
-the encrypted ZK-PRU derivation material on the user device, derives only the
-selected child authorities, and signs scoped operations. Master-seed
+For payment authorization, the TSN SDK asks the TSN device-envelope provider
+to unlock the encrypted ZK-PRU derivation material on the user device, derives
+only the selected child authorities, and signs scoped operations. Master-seed
 decryption requires both a verified main-wallet authorization and proof of the
-current non-exportable device session. A captured wallet signature is bound to
-the original device session and cannot authorize another device. The raw
-master seed never signs and never leaves the user device.
+current non-exportable device session. A captured wallet signature cannot
+decrypt an envelope addressed to another device. The raw master seed never
+signs and never leaves the user device.
 
 The application backend does not issue a private-data capability and does not
 participate in master-seed decryption. Authorizing a new device creates a new

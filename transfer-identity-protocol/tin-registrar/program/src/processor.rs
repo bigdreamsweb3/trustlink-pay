@@ -3,6 +3,7 @@ use crate::instruction_auto::{
     CreateTinParams, InitializePlatformRegistryParams, LinkSensitiveFieldParams,
     LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams, ProgramInstruction,
     RemoveVerificationPlatformParams, ResolveTinParams, UpdateTinParams, UpsertVerificationPlatformParams,
+    FinalizeTinUpdateParams, StageTinMutationParams, TinMutationChunkParams,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -20,6 +21,7 @@ pub mod update_tin;
 pub mod identity_links;
 pub mod resolve_tin;
 pub mod platform_registry;
+pub mod tin_mutation_staging;
 
 pub struct Processor;
 
@@ -119,6 +121,24 @@ impl Processor {
                 let params = UpdateTinParams::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 update_tin::process(program_id, accounts, params)
+            }
+            ProgramInstruction::TinMutationStage => {
+                msg!("Instruction: tin_mutation_stage");
+                let params = StageTinMutationParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_mutation_staging::stage(program_id, accounts, params)
+            }
+            ProgramInstruction::TinMutationChunk => {
+                msg!("Instruction: tin_mutation_chunk");
+                let params = TinMutationChunkParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_mutation_staging::append_chunk(program_id, accounts, params)
+            }
+            ProgramInstruction::TinUpdateStaged => {
+                msg!("Instruction: tin_update_staged");
+                let params = FinalizeTinUpdateParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                update_tin::process_staged(program_id, accounts, params)
             }
         }
     }

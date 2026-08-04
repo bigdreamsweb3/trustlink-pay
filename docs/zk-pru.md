@@ -50,7 +50,7 @@ ZK-PRU receiving is designed to accumulate small receipts instead of creating
 one newly funded route for every payment:
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[1 USDC] --> P[Active receiving PRU]
     B[5 USDC] --> P
     C[3 USDC] --> P

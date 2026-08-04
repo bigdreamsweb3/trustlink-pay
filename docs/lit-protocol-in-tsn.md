@@ -135,7 +135,7 @@ session, so the main wallet must authorize a new session.
 The TIN has two distinct encrypted objects:
 
 ```mermaid
-flowchart LR
+flowchart TD
     T["TIN registry"]
     S["Encrypted master-seed envelope"]
     R["Encrypted public-route envelope"]
@@ -163,7 +163,7 @@ The TSN Program verifies both signatures. Lit Protocol neither creates nor
 replaces either on-chain authorization.
 
 ```mermaid
-flowchart LR
+flowchart TD
     W["Main-wallet signature"]
     P["PRU child signature"]
     C["Same plan commitment"]

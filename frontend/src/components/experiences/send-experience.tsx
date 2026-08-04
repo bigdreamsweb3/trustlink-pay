@@ -335,6 +335,9 @@ export function SendExperience() {
   const [previewBusy, setPreviewBusy] = useState(false);
   const [tokenBusy, setTokenBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [approvalStage, setApprovalStage] = useState<
+    "idle" | "message" | "transaction" | "submitting"
+  >("idle");
   const [estimateBusy, setEstimateBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [showReviewDetails, setShowReviewDetails] = useState(false);
@@ -1198,6 +1201,7 @@ export function SendExperience() {
     setBusy(true);
     setError(null);
     setNotice(null);
+    setApprovalStage("message");
 
     try {
       const senderFeeAmount = sendCostEstimate?.senderFeeAmountUi ?? 0;
@@ -1340,9 +1344,10 @@ export function SendExperience() {
             tokenDecimals,
             recipientHash,
             transferId,
-            commitmentHash: paymentCommitment,
-            rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
+              commitmentHash: paymentCommitment,
+              rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
           });
+      setApprovalStage(sponsoredSettlement ? "transaction" : "submitting");
       const senderSignedSettlementTransaction = sponsoredSettlement
         ? await signSolanaTransaction({
             walletId: walletSession.walletId,
@@ -1351,6 +1356,7 @@ export function SendExperience() {
           })
         : null;
 
+      setApprovalStage("submitting");
       const enqueueResult = await enqueueTsnPaymentFromFrontend({
         paymentId: result.paymentId,
         recipientHash,
@@ -1407,6 +1413,7 @@ export function SendExperience() {
 
       if (receiverCountry) rememberCountryUsage(receiverCountry.iso2);
       setNotice(null);
+      setApprovalStage("idle");
       setSendSuccess({
         ...result,
         tsn: undefined,
@@ -1434,6 +1441,7 @@ export function SendExperience() {
             : `Sponsored settlement queued. Awaiting Cranker Verification. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
       );
     } catch (e) {
+      setApprovalStage("idle");
       const msg =
         e instanceof Error ? e.message : "Could not create payment intent";
       setError(msg);
@@ -2278,6 +2286,18 @@ export function SendExperience() {
                 <p className="mt-1 text-[0.82rem] leading-relaxed text-text-soft">
                   Confirm recipient and total before signing.
                 </p>
+                <div className="mt-3 rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2.5 text-[0.74rem] leading-relaxed text-text-soft">
+                  <div className="font-semibold text-text">TSN approval order</div>
+                  <div>1. Sign the TSN authorization message first. This is not a blockchain transaction.</div>
+                  <div>2. If this route needs wallet funding, approve the Solana transaction only after the message is accepted.</div>
+                  {approvalStage === "message" ? (
+                    <div className="mt-1 font-semibold text-text">Waiting for message approval…</div>
+                  ) : approvalStage === "transaction" ? (
+                    <div className="mt-1 font-semibold text-text">Message accepted. Waiting for transaction approval…</div>
+                  ) : approvalStage === "submitting" ? (
+                    <div className="mt-1 font-semibold text-text">Submitting the signed TSN intent…</div>
+                  ) : null}
+                </div>
               </div>
               <button
                 type="button"
@@ -2602,7 +2622,13 @@ export function SendExperience() {
                 className="flex-1 rounded-[14px] md:rounded-[16px] px-4 py-2.5 md:py-3 font-semibold text-[0.82rem] md:text-[0.87rem] text-[#04110a] bg-[linear-gradient(135deg,var(--accent),var(--accent-icon))] shadow-softbox disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer active:scale-[0.97] transition-transform whitespace-nowrap"
               >
                 {busy
-                  ? "Queuing..."
+                  ? approvalStage === "message"
+                    ? "Approve message..."
+                    : approvalStage === "transaction"
+                      ? "Approve transaction..."
+                      : approvalStage === "submitting"
+                        ? "Submitting..."
+                        : "Queuing..."
                   : estimateBusy
                     ? "Calculating..."
                     : tinSpendPlan?.fundingMode === "zk_pru_only_v2"

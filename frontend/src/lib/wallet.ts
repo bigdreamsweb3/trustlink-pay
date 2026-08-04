@@ -224,7 +224,6 @@ async function signSolanaMessageImpl(params: {
   assertCanonicalTsnMessage(params.message);
   const signed = await wallet.provider.signMessage(
     new TextEncoder().encode(params.message),
-    "utf8",
   );
   const signature =
     signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
@@ -249,7 +248,7 @@ async function signSolanaBytesImpl(params: {
   assertSignableBytes(params.message, "message");
   const decoded = new TextDecoder().decode(params.message);
   assertCanonicalTsnMessage(decoded);
-  const signed = await wallet.provider.signMessage(new TextEncoder().encode(decoded), "utf8");
+  const signed = await wallet.provider.signMessage(new TextEncoder().encode(decoded));
   const signature = signed instanceof Uint8Array ? signed : Uint8Array.from(signed.signature);
   return bytesToBase64(signature);
 }
@@ -273,7 +272,7 @@ async function signTsnDeviceAuthorizationBytesImpl(params: {
   ) {
     throw new Error("Blocked a non-TSN device authorization signing payload");
   }
-  const signed = await wallet.provider.signMessage(params.message, "utf8");
+  const signed = await wallet.provider.signMessage(params.message);
   return signed instanceof Uint8Array
     ? signed
     : Uint8Array.from(signed.signature);
@@ -299,6 +298,34 @@ async function signTinOwnerIntentHashImpl(params: {
     : Uint8Array.from(signed.signature);
 }
 
+async function signTinOwnerIntentMessageImpl(params: {
+  walletId: string;
+  address: string;
+  message: Uint8Array;
+}) {
+  const wallet = getWalletById(params.walletId);
+  if (!wallet) throw new Error("Selected wallet is no longer available in this browser");
+  await ensureWalletAuthorization(wallet, params.address);
+  if (!wallet.provider.signMessage) {
+    throw new Error("This wallet cannot sign TIN owner messages from the browser");
+  }
+  assertSignableBytes(params.message, "TIN owner intent message");
+  const decoded = new TextDecoder().decode(params.message);
+  if (
+    !/^TSN TIN Upgrade\n---\nIntent Hash: [a-f0-9]{64}\nDomain: TSN_TIN_OWNER_INTENT_V1$/i.test(
+      decoded,
+    )
+  ) {
+    throw new Error("Blocked a non-canonical TIN owner intent message");
+  }
+  // Pass exactly one Uint8Array argument.  In particular, do not route this
+  // through signTransaction: this is a detached owner authorization.
+  const signed = await wallet.provider.signMessage(params.message);
+  return signed instanceof Uint8Array
+    ? signed
+    : Uint8Array.from(signed.signature);
+}
+
 async function signTinMasterSeedAuthorizationBytesImpl(params: {
   walletId: string;
   address: string;
@@ -315,7 +342,7 @@ async function signTinMasterSeedAuthorizationBytesImpl(params: {
   if (!decoded.includes("TSN_TIN_MASTER_SEED_ACCESS")) {
     throw new Error("Blocked a non-TSN master-seed authorization payload");
   }
-  const signed = await wallet.provider.signMessage(params.message, "utf8");
+  const signed = await wallet.provider.signMessage(params.message);
   return signed instanceof Uint8Array
     ? signed
     : Uint8Array.from(signed.signature);
@@ -584,6 +611,14 @@ export const signTsnDeviceAuthorizationBytes = traceFunction(
 export const signTinOwnerIntentHash = traceFunction(signTinOwnerIntentHashImpl, {
   namespace: "Wallet",
   name: "signTinOwnerIntentHash",
+  module: "frontend/src/lib/wallet.ts",
+  level: "info",
+  includeReturn: false,
+});
+
+export const signTinOwnerIntentMessage = traceFunction(signTinOwnerIntentMessageImpl, {
+  namespace: "Wallet",
+  name: "signTinOwnerIntentMessage",
   module: "frontend/src/lib/wallet.ts",
   level: "info",
   includeReturn: false,

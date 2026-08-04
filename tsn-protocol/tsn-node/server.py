@@ -1327,6 +1327,11 @@ TIN_OWNER_INTENT_CREATE_DOMAIN_V2 = "TINS_CREATE_OWNER_INTENT_V2"
 TIN_OWNER_INTENT_UPDATE_DOMAIN_V2 = "TINS_UPDATE_OWNER_INTENT_V2"
 TIN_PRIVATE_METADATA_DOMAIN_V1 = "TINS_PRIVATE_METADATA_V1"
 TIN_PRU_CONFIGURATION_TAG = "TSN_V1_TOKEN_AGNOSTIC_PRU_CONFIGURATION"
+# Keep the route-envelope identifiers in one place.  These are the canonical
+# identifiers emitted by the TSN SDK; the Node must validate the same wire
+# format rather than an older, suffixed variant.
+TIN_PUBLIC_ROUTE_ENVELOPE_VERSION = "tsn-tin-public-route-envelope"
+TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM = "x25519-xsalsa20-poly1305"
 
 class TinOperationFeeRecord(BaseModel):
     intentId: str
@@ -1680,6 +1685,24 @@ def _decode_hash32(value: Any, label: str) -> bytes:
         raise HTTPException(422, f"{label} must be a 32-byte hex value")
     return decoded
 
+
+def _canonical_tin_owner_intent_message(intent_hash: bytes) -> bytes:
+    """Return the printable owner-approval message used by browser wallets.
+
+    The commitment remains the exact 32-byte ``ownerIntentHash``.  This
+    display-safe wrapper exists because Phantom and some Wallet Standard
+    adapters reject arbitrary binary message payloads even though they
+    support detached message signing.
+    """
+    if len(intent_hash) != 32:
+        raise ValueError("TIN owner intent hash must be exactly 32 bytes")
+    return (
+        "TSN TIN Upgrade\n"
+        "---\n"
+        f"Intent Hash: {intent_hash.hex()}\n"
+        "Domain: TSN_TIN_OWNER_INTENT_V1"
+    ).encode("utf-8")
+
 def _decode_base64_blob(value: Any, label: str) -> bytes:
     try:
         decoded = base64.b64decode(str(value or ""), validate=True)
@@ -1930,9 +1953,9 @@ def _decrypt_public_route_envelope(
     try:
         envelope_bytes = base64.b64decode(encrypted_envelope_base64, validate=True)
         envelope = json.loads(envelope_bytes.decode("utf-8"))
-        if envelope.get("version") != "tsn-tin-public-route-envelope-v1":
+        if envelope.get("version") != TIN_PUBLIC_ROUTE_ENVELOPE_VERSION:
             raise ValueError("unsupported route envelope version")
-        if envelope.get("algorithm") != "x25519-xsalsa20-poly1305-v1":
+        if envelope.get("algorithm") != TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM:
             raise ValueError("unsupported route envelope algorithm")
         ephemeral_public_key = Curve25519PublicKey(
             base64.b64decode(str(envelope["ephemeralPublicKey"]), validate=True)
@@ -2091,8 +2114,6 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     if len(signature_bytes) != 64:
         raise HTTPException(422, "owner_signature must be a 64-byte Ed25519 signature")
     expiry = _expiry_from_input(_field(payload, "expiry", "expiry_ts", "expiryTs"))
-    if owner_intent_message:
-        raise HTTPException(422, "TIN privacy mutation signatures must sign the exact 32-byte owner intent hash")
     encrypted_master_seed_bytes = _decode_base64_blob(
         encrypted_master_seed,
         "encrypted_master_seed",
@@ -2147,8 +2168,17 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     )
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
         raise HTTPException(422, "owner_intent_hash does not match the submitted TIN operation payload")
+    # Browser wallets commonly reject arbitrary binary payloads for
+    # signMessage.  Accept the exact 32-byte commitment for low-level
+    # signers, or the deterministic printable wrapper used by the frontend.
+    # In both cases the signature is still bound to the recomputed hash above.
+    signed_message = intent_hash_bytes
+    if owner_intent_message:
+        signed_message = owner_intent_message.encode("utf-8")
+        if signed_message != _canonical_tin_owner_intent_message(intent_hash_bytes):
+            raise HTTPException(422, "ownerIntentMessage must be the canonical TIN upgrade message")
     try:
-        VerifyKey(owner_bytes).verify(intent_hash_bytes, signature_bytes)
+        VerifyKey(owner_bytes).verify(signed_message, signature_bytes)
     except BadSignatureError as exc:
         raise HTTPException(401, "owner_signature is invalid for owner_intent_hash") from exc
 
@@ -3661,7 +3691,7 @@ async def get_tin_operation(intent_id: str = ApiPath(...)) -> PublicTinOperation
 async def get_tin_route_encryption_key() -> dict[str, str]:
     routing_key = _routing_private_key()
     return {
-        "algorithm": "x25519-xsalsa20-poly1305-v1",
+        "algorithm": TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM,
         "publicKey": base64.b64encode(bytes(routing_key.public_key)).decode("ascii"),
     }
 

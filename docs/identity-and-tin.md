@@ -7,7 +7,7 @@ identity. It lets a sender discover an authorized payment route without
 asking the recipient to exchange a normal wallet address.
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[10-digit TIN] --> B[TIN registry resolution]
     B --> C[Public routing metadata]
     B --> D[Encrypted identity/derivation envelope]

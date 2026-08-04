@@ -13,7 +13,7 @@ The TIN stores:
 
 - the main-wallet authority binding;
 - a locally encrypted master-seed envelope whose independent data key is
-  protected by the threshold layer;
+  wrapped to the authorized device's non-exportable X25519 key;
 - the ZK-PRU configuration commitment;
 - a separately encrypted public-route envelope for the TSN Node;
 - route version and nonce.
@@ -40,17 +40,17 @@ may decrypt only the public-route envelope. The Cranker receives only public
 plans and signatures.
 
 ```mermaid
-flowchart LR
+flowchart TD
     W["Main wallet"]
     D["Authorized browser device session"]
     SDK["TSN SDK"]
-    K["Threshold key network"]
+    K["TSN device-envelope provider"]
     TIN["TIN registry"]
     N["TSN Node routing key"]
 
     W -->|"signs exact device-session authorization"| SDK
     D -->|"ephemeral in-memory session proof"| SDK
-    SDK -->|"protect / release random data key only"| K
+    SDK -->|"wrap / release random data key only"| K
     K -->|"data key encrypted to device X25519 key"| SDK
     SDK -->|"encrypted seed + commitments"| TIN
     SDK -->|"public PRU map encrypted separately"| N
@@ -69,19 +69,19 @@ authorization bound to:
 - PRU configuration commitment;
 - the current device-session public binding.
 
-The SDK asks the threshold authority to create a fresh random 32-byte data key.
-The authority protects that key and returns a second copy encrypted directly
-to the authorized device's X25519 public key. The device unwraps it locally,
-and the SDK encrypts the seed with AES-256-GCM. Neither the master seed nor the
-data key is sent as an action request parameter. Only the local seed
-ciphertext, threshold-protected data key, and public commitments are
+The SDK creates a fresh random 32-byte data key and wraps it directly to the
+authorized device's X25519 public key. The device unwraps it locally, and the
+SDK encrypts the seed with AES-256-GCM. Neither the master seed nor the data
+key is sent to the backend, Node, Cranker, or a remote action. Only the local
+seed ciphertext, opaque device envelope, and public commitments are
 serialized. Plaintext seed and data-key bytes are cleared after use.
 
 ## Authorized-device decryption
 
-The wallet signature is authorization, not an encryption key. The threshold
+The wallet signature is authorization, not an encryption key. The device
 provider also requires proof of the current device session. A copied wallet
-signature is bound to the original session and is invalid on another device.
+signature cannot decrypt the envelope because the key is wrapped to the
+authorized device's non-exportable X25519 key.
 
 The authorized device separately signs the same threshold-access request with
 its non-exportable Ed25519 device key. The main-wallet authorization also
@@ -90,42 +90,40 @@ proof is bound to the exact operation and protected-resource commitment, so
 authorization for one ciphertext cannot unlock another. It has a five-minute
 maximum lifetime and a one-time nonce.
 
-The SDK provides the same verifier contract to the threshold layer. That
-verifier checks both signatures, every identity and resource field, the device
-fingerprint, expiry, and nonce consumption before shares may be released.
-Until a deployed threshold provider enforces this contract and prevents a
-wallet-only direct-decryption bypass, live master-seed access remains
-fail-closed.
+The SDK checks both signatures, every identity and resource field, the device
+fingerprint, expiry, and nonce before the local envelope is released. A
+wallet-only bypass is not accepted.
 
 A device must first be authorized through the existing TSN Private View device
 authorization flow. The main wallet then signs the exact short-lived
-master-seed access request for that device. The threshold layer can release
-the data key only as an envelope encrypted to that device's non-exportable
-X25519 key. The TIN stores no device record, so authorizing a new device does
-not change the TIN and does not require the old device.
+master-seed access request for that device. The device provider releases the
+data key only as an envelope encrypted to that device's non-exportable X25519
+key. The TIN stores no device registry. A new device requires an explicit
+migration/re-wrap from an already authorized device (or a separately
+implemented owner recovery flow); it never receives a copied private key.
 
 ```mermaid
 sequenceDiagram
     participant D as New user device
     participant W as Main wallet
     participant SDK as TSN SDK
-    participant K as Threshold key network
+    participant K as TSN device-envelope provider
     participant T as TIN registry
 
     D->>D: Use existing wallet-authorized device keys
     SDK->>T: Read encrypted seed envelope
     W->>SDK: Sign TIN + commitment + device-session binding
     SDK->>K: Present wallet authorization and device-session proof
-    K->>K: Verify owner and session policy
-    K-->>SDK: Return data key encrypted to device X25519 key
+    K->>K: Verify owner and device-session policy
+    K-->>SDK: Return device envelope for the same X25519 key
     SDK->>SDK: Unwrap key and decrypt seed locally
     SDK->>SDK: Derive public PRUs
     SDK->>SDK: Verify the on-chain PRU commitment
     SDK->>SDK: Clear plaintext seed bytes
 ```
 
-The threshold action never receives the master seed or its ciphertext. It can
-release only the independent data key, and that response is encrypted to the
+The device-envelope provider never receives the master seed or its ciphertext.
+It can release only the independent data key as an envelope encrypted to the
 authorized device. Capturing the wallet authorization, request, or response
 does not give another device usable key material.
 

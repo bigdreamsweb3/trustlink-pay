@@ -94,6 +94,10 @@
       "import": "./dist/tin-device-key-envelope.js",
       "types": "./dist/tin-device-key-envelope.d.ts"
     },
+    "./tin-device-key-provider": {
+      "import": "./dist/tin-device-key-provider.js",
+      "types": "./dist/tin-device-key-provider.d.ts"
+    },
     "./tin-local-master-seed": {
       "import": "./dist/tin-local-master-seed.js",
       "types": "./dist/tin-local-master-seed.d.ts"

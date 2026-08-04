@@ -7,6 +7,7 @@ Thumbs.db
 .agents/
 .logs/
 .codex-target/
+.git/
 
 .env
 .fb_creds/

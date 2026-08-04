@@ -141,7 +141,7 @@
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "git pull origin main",
-    "git:push:current": "git push -u origin HEAD",
+    "git:push:current": "git push -u origin HEAD --force",
     "git:commit:push:all": "git add -A && git commit -m \"Something just got updated!\" && npm run git:push:current"
   },
   "dependencies": {

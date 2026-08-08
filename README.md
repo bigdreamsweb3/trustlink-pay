@@ -4,6 +4,13 @@ TrustLink Labs is building the **Transfer Settlement Network (TSN)**: an
 identity-aware payment coordination and settlement infrastructure that runs on
 Solana. TrustLink Pay is the application experience built on that network.
 
+## TrustLink Labs resources
+
+- [TrustLink Pay live application](https://trustlink-pay.vercel.app/)
+- [TSN Protocol research blog](https://tsn-protocol.blogspot.com/)
+- [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
+- [TrustLink Pay source repository](https://github.com/bigdreamsweb3/trustlink-pay)
+
 TSN is not a new blockchain and it is not one smart contract. It combines
 identity, recipient discovery, protected receiving and spending, authorization,
 payment intents, an application-level work queue, transaction execution,

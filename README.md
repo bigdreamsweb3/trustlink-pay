@@ -9,17 +9,94 @@ identity, recipient discovery, protected receiving and spending, authorization,
 payment intents, an application-level work queue, transaction execution,
 escrow, settlement, receipts, replay protection, and recovery tracking.
 
+## A finalized TSN payment
+
+TSN settlement has two separate on-chain submissions. The first funds a
+program-controlled TSN Escrow and records a payment as `FUNDED`. The second
+releases the already-authorized payment from that escrow and records it as
+`SETTLED`. The Receiver is the durable ingress and work/status surface; the
+TSN Node verifies work; a Cranker pays Solana fees and submits the exact work
+that was verified. Neither the Node nor a Cranker receives a user's private
+keys or decrypted ZK-PRU master material.
+
 ```mermaid
 flowchart TD
-    U[User] --> A[TrustLink Pay]
-    A --> T[TIN identity and route discovery]
-    T --> S[TSN SDK]
-    S --> N[TSN Node]
-    N --> C[Cranker]
-    C --> P[TSN Program on Solana]
-    P --> E[TSN Escrow]
-    E --> R[Recipient route]
+    A["1. Sender enters recipient TIN or public wallet and amount"]
+
+    subgraph DEVICE["Sender's authorized device"]
+        B["2. TrustLink Pay resolves public recipient identity"]
+        C["3. TSN SDK builds the immutable route, amount, fees, expiry and commitment"]
+        D["4. Main wallet signs the payment authorization"]
+        E["5. Where a ZK-PRU source is used: device decrypts locally and creates the scoped PRU authorization"]
+    end
+
+    F["6. Frontend submits the signed immutable payment intent to TSN Receiver"]
+
+    subgraph RECEIVER["TSN Receiver — durable ingress, leases and status"]
+        G["Intent stored as RECEIVED"]
+        H["Verified intent work becomes available to a Cranker"]
+        O["Funded payment creates settlement-claim work"]
+        R["Verified settlement work becomes available to a Cranker"]
+        X["Finalized status, signatures and non-secret evidence are stored"]
+    end
+
+    subgraph NODE["TSN Node — stateless protocol verification"]
+        I["7. Node leases the received intent"]
+        J["8. Verifies signatures, intent/route commitment, expiry, replay state, amounts and source rules"]
+        K["9. Resolves the recipient's public execution route and verifies its commitment"]
+        P["13. Node leases settlement-claim work"]
+        Q["14. Verifies funded state, exact authorized settlement data, expiry and replay state"]
+    end
+
+    subgraph CRANKER["Independent Cranker — fee-paying exact executor"]
+        L["10. Cranker leases verified intent work"]
+        M["11. Cranker submits the funding / intent transaction"]
+        S["15. Cranker leases verified settlement work"]
+        T["16. Cranker submits the settlement transaction"]
+        W["18. Cranker records confirmed transaction evidence"]
+    end
+
+    subgraph SOLANA["Solana — TSN Program and program-controlled state"]
+        N["12. TSN Program verifies the authorization and funds TSN Escrow"]
+        N1["Payment PDA: FUNDED"]
+        N2["TSN Escrow holds the exact authorized asset amount"]
+        U["17. TSN Program verifies settlement, releases escrowed tokens and prevents duplicate release"]
+        V["Payment PDA: SETTLED"]
+        Y["Recipient receives confidential TIN ownership or public wallet tokens; authorized change follows its route"]
+    end
+
+    Z["19. Sender and recipient read finalized status and private/public receipts"]
+
+    A --> B --> C --> D --> E --> F
+    F --> G --> I --> J --> K --> H --> L --> M --> N
+    N --> N1
+    N --> N2
+    N1 --> O
+    N2 --> O
+    O --> P --> Q --> R --> S --> T --> U
+    U --> V
+    U --> Y
+    V --> W
+    Y --> W
+    W --> X --> Z
+
+    classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
+    classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
+    classDef node fill:#e9efed,stroke:#4e6e60,color:#14241c;
+    classDef cranker fill:#f2eee6,stroke:#6b6254,color:#211f1a;
+    classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
+    classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
+    class B,C,D,E device;
+    class G,H,O,R,X receiver;
+    class I,J,K,P,Q node;
+    class L,M,S,T,W cranker;
+    class N,N1,N2,U,V,Y chain;
+    class A,F,Z outcome;
 ```
+
+The first on-chain signature proves that the payment was authorized and
+funded; it is not the recipient settlement. A payment is finalized only after
+the separate settlement transaction succeeds and the Payment PDA is `SETTLED`.
 
 ## Core terms
 

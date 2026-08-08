@@ -1,6 +1,26 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
-export const DEFAULT_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
+export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.wasmer.app";
+
+function normalizeRpcGatewayUrl(value: string | undefined) {
+  const candidate = value?.trim();
+  if (!candidate) return DEFAULT_TSN_RPC_GATEWAY_URL;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return DEFAULT_TSN_RPC_GATEWAY_URL;
+    }
+    if (parsed.pathname !== "/" && parsed.pathname !== "/rpc") {
+      return DEFAULT_TSN_RPC_GATEWAY_URL;
+    }
+    parsed.pathname = parsed.pathname === "/rpc" ? "/rpc" : "";
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return DEFAULT_TSN_RPC_GATEWAY_URL;
+  }
+}
 
 type RpcSelectionOptions = {
   frontendSafe?: boolean;
@@ -11,9 +31,7 @@ export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
 }
 
 export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {
-  return (
-    process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL ?? DEFAULT_TSN_RPC_GATEWAY_URL
-  ).replace(/\/+$/, "");
+  return normalizeRpcGatewayUrl(process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL);
 }
 
 export function createSolanaConnection({

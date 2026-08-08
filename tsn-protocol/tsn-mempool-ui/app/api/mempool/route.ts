@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 const BASE = (
   process.env.TSN_RECEIVER_URL ||
   process.env.MEMPOOL_API_URL ||
-  "http://localhost:8010"
+  "https://tsn-receiver-kappa.vercel.app"
 ).replace(/\/$/, "");
 
 function opaqueId(value: unknown) {

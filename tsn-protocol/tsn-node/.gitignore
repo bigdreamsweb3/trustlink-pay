@@ -6,3 +6,7 @@
 *firebase-adminsdk*.json
 __pycache__/
 *.pyc
+.mempool-store.json
+.tsn-node-test-store.json
+.venv/
+logs/

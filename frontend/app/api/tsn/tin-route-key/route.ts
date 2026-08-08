@@ -4,9 +4,9 @@ export const runtime = "nodejs";
 
 function receiverUrl() {
   const value =
-    process.env.TSN_RECEIVER_URL ??
-    process.env.NEXT_PUBLIC_TSN_RECEIVER_URL ??
-    "http://127.0.0.1:8010";
+    process.env.TSN_RECEIVER_URL ||
+    process.env.NEXT_PUBLIC_TSN_RECEIVER_URL ||
+    "https://tsn-receiver-kappa.vercel.app";
   return value.replace(/\/$/, "");
 }
 

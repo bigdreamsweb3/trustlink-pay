@@ -9,7 +9,7 @@ const nextConfig = {
   transpilePackages: ["trustlink-whatsapp-sdk", "@trustlink/observability"],
   env: {
     NEXT_PUBLIC_TSN_RPC_GATEWAY_URL:
-      process.env.TSN_RPC_GATEWAY_URL ?? "http://127.0.0.1:8787",
+      process.env.TSN_RPC_GATEWAY_URL || "https://tsn-rpc-gateway.wasmer.app",
   },
 
   // 🚀 Move typed routes into the experimental block for Next.js 14

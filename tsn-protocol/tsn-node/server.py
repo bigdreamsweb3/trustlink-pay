@@ -71,7 +71,10 @@ GITHUB_REPO     = "bigdreamsweb3/tsn-epoch-records"
 GITHUB_API      = "https://api.github.com"
 MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "firebase").strip().lower()
 ALLOW_LOCAL_JSON_STORE = os.environ.get("TSN_ALLOW_LOCAL_JSON_STORE", "").strip().lower() == "true"
-TSN_RECEIVER_URL = os.environ.get("TSN_RECEIVER_URL", "").strip()
+TSN_RECEIVER_URL = os.environ.get(
+    "TSN_RECEIVER_URL",
+    "https://tsn-receiver-kappa.vercel.app",
+).strip()
 TSN_RECEIVER_NODE_API_KEY = os.environ.get("TSN_RECEIVER_NODE_API_KEY", "").strip()
 TSN_NODE_ID = os.environ.get("TSN_NODE_ID", "tsn-node-local").strip()
 ALLOW_DIRECT_FIREBASE_STORE = os.environ.get("TSN_ALLOW_DIRECT_FIREBASE_STORE", "").strip().lower() == "true"
@@ -99,6 +102,7 @@ TSN_ROUTE_ATTESTATION_SIGNING_KEY = os.environ.get(
 EPOCH_HOURS     = int(os.environ.get("EPOCH_HOURS", "7"))
 EPOCH_SECS      = EPOCH_HOURS * 60 * 60
 VAULT_LIQUIDITY_REFRESH_SECS = max(60, int(os.environ.get("VAULT_LIQUIDITY_REFRESH_SECS", str(EPOCH_SECS))))
+HOST            = os.environ.get("HOST", "0.0.0.0").strip()
 PORT            = int(os.environ.get("PORT", "8000"))
 MEMPOOL_NS      = "tsn"
 CLAIM_PROCESSING_TIMEOUT_SECS = int(os.environ.get("CLAIM_PROCESSING_TIMEOUT_SECS", "300"))
@@ -125,7 +129,7 @@ def split_rpc_url_list(value: str) -> list[str]:
 
 def resolve_solana_rpc_url() -> str:
     urls = split_rpc_url_list(os.environ.get("TSN_SOLANA_RPC_URLS", ""))
-    return urls[0] if urls else "https://api.devnet.solana.com"
+    return urls[0] if urls else "https://tsn-rpc-gateway.wasmer.app"
 
 
 TSN_SOLANA_RPC_URL = resolve_solana_rpc_url()
@@ -5092,4 +5096,4 @@ app.router.routes = [
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="127.0.0.1", port=PORT, reload=False)
+    uvicorn.run("server:app", host=HOST, port=PORT, reload=False)

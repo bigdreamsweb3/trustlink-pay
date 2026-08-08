@@ -1,9 +1,19 @@
 {
-  "name": "tsn-node",
+  "name": "@trustlink/tsn-node",
   "version": "0.1.0",
   "private": true,
+  "description": "TSN Node by TrustLink Labs — stateless verification and work processing for the Transfer Settlement Network.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bigdreamsweb3/tsn-node.git"
+  },
+  "homepage": "https://github.com/bigdreamsweb3/tsn-node#readme",
+  "bugs": {
+    "url": "https://github.com/bigdreamsweb3/tsn-node/issues"
+  },
   "scripts": {
-    "git:quick:push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
-    "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force"
+    "git:status": "git status --short",
+    "git:pull:all": "git pull origin main --allow-unrelated-histories --no-edit",
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated!\" && git push -u origin main"
   }
 }

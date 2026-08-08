@@ -7,6 +7,8 @@ const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const receiverPort = Number(process.env.TSN_RECEIVER_PORT ?? "8010");
 const nodePort = Number(process.env.TSN_NODE_PORT ?? "8000");
 const uiPort = Number(process.env.TSN_MEMPOOL_UI_PORT ?? "3002");
+const startLocalReceiver = process.env.TSN_START_RECEIVER === "true";
+const liveReceiverUrl = "https://tsn-receiver-kappa.vercel.app";
 
 function isPortOpen(port) {
   return new Promise((resolve) => {
@@ -28,16 +30,17 @@ function spawnTagged(name, command, args, cwd, env = process.env) {
 }
 
 const children = [];
-if (!(await isPortOpen(receiverPort))) {
+if (startLocalReceiver && !(await isPortOpen(receiverPort))) {
   children.push(spawnTagged("tsn-receiver", npm, ["run", "dev", "--", "-p", String(receiverPort)],
     `${rootDir}/tsn-protocol/tsn-receiver`));
-} else console.log(`[tsn-receiver] reusing localhost:${receiverPort}`);
+} else if (startLocalReceiver) console.log(`[tsn-receiver] reusing localhost:${receiverPort}`);
 
 if (!(await isPortOpen(nodePort))) {
   children.push(spawnTagged("tsn-node", process.platform === "win32" ? "python" : "python3", ["-u", "server.py"],
     `${rootDir}/tsn-protocol/tsn-node`, {
       ...process.env,
-      TSN_RECEIVER_URL: process.env.TSN_RECEIVER_URL ?? `http://127.0.0.1:${receiverPort}`,
+      TSN_RECEIVER_URL: process.env.TSN_RECEIVER_URL ||
+        (startLocalReceiver ? `http://127.0.0.1:${receiverPort}` : liveReceiverUrl),
       PYTHONUNBUFFERED: "1",
     }));
 } else console.log(`[tsn-node] reusing localhost:${nodePort}`);

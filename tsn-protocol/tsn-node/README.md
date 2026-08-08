@@ -1,6 +1,7 @@
-# TSN Node
+# TSN Node by TrustLink Labs
 
-Python-based stateless protocol verifier and processor for TSN.
+Python-based stateless protocol verifier and processor for the Transfer
+Settlement Network, operated by TrustLink Labs.
 
 ## What it does
 
@@ -38,8 +39,11 @@ Operator daemon state files such as `operator-state.json` are private per operat
 - `GET /api/mempool` - List pending transactions
 - `GET /api/mempool/<tx_id>` - Get transaction details
 
-## Part of TrustLink
+## Deployment
 
-This is a submodule of [trustlink-pay](https://github.com/bigdreamsweb3/trustlink-pay).
+The Node is a persistent service. Run it behind HTTPS on a VM or container
+host; it is not a Vercel function. The included `Dockerfile` binds to the
+platform-provided `HOST` and `PORT` values.
 
-For the operator view, see the [TSN Mempool UI](https://github.com/bigdreamsweb3/tsn-mempool-frontend).
+The Node stores durable work through the deployed TSN Receiver. It does not
+own Firebase credentials or user private keys.

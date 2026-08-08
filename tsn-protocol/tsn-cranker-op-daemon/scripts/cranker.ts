@@ -158,7 +158,7 @@ function sleep(ms: number) {
 }
 
 function receiverUrl() {
-  return process.env.TSN_RECEIVER_URL;
+  return process.env.TSN_RECEIVER_URL || "https://tsn-receiver-kappa.vercel.app";
 }
 
 type ReceiverWork = {

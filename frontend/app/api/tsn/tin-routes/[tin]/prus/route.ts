@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 function receiverUrl() {
-  return (process.env.TSN_RECEIVER_URL ?? process.env.NEXT_PUBLIC_TSN_RECEIVER_URL ?? "http://127.0.0.1:8010").replace(/\/$/, "");
+  return (process.env.TSN_RECEIVER_URL || process.env.NEXT_PUBLIC_TSN_RECEIVER_URL || "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "");
 }
 
 export async function GET(

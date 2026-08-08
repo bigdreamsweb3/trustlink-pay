@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/src/components/toast-provider";
 import {
   configureTrustLinkAppKit,
+  hasReownProjectId,
   openTrustLinkWalletModal,
 } from "@/src/lib/wallet-connection/reown-appkit";
 import { bindReownSolanaProvider } from "@/src/lib/wallet-connection/reown-solana-provider";
@@ -34,6 +35,21 @@ const WalletContext = createContext<WalletContextValue | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [appKitReady, setAppKitReady] = useState(false);
+
+  // Initialise AppKit as soon as the client mounts. Reown persists the
+  // public wallet session and can therefore rehydrate it after a page reload;
+  // waiting for the connect button discarded that session on every refresh.
+  useEffect(() => {
+    if (!hasReownProjectId()) return;
+    try {
+      configureTrustLinkAppKit();
+      setAppKitReady(true);
+    } catch {
+      // Keep the deferred provider available so the connect button can show
+      // its normal configuration error without breaking the application.
+      setAppKitReady(false);
+    }
+  }, []);
 
   if (!appKitReady) {
     return (

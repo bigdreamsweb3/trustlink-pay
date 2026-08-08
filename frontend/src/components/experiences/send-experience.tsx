@@ -750,7 +750,7 @@ export function SendExperience() {
           "/api/wallet/tokens",
           { walletAddress },
           undefined,
-          { cache: "default", ttlMs: 20_000 },
+          { cache: "default", ttlMs: 20_000, persist: true },
         );
         if (ctrl.signal.aborted) return;
         setSupportedTokens(r.tokens);

@@ -12,6 +12,8 @@ type ApiCacheOptions = {
   cache?: ApiCacheMode;
   ttlMs?: number;
   cacheKey?: string;
+  /** Persist only explicitly approved, non-sensitive reads in this tab. */
+  persist?: boolean;
 };
 
 type ApiCacheEntry = {
@@ -23,6 +25,35 @@ type ApiCacheEntry = {
 const DEFAULT_GET_TTL_MS = 20_000;
 const DEFAULT_POST_READ_TTL_MS = 30_000;
 const apiResponseCache = new Map<string, ApiCacheEntry>();
+const SESSION_CACHE_PREFIX = "trustlink:public-api-cache:";
+
+function readSessionCache<T>(key: string): T | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${key}`);
+    if (!raw) return undefined;
+    const entry = JSON.parse(raw) as { expiresAt?: number; value?: T };
+    if (!entry.expiresAt || entry.expiresAt <= Date.now()) {
+      window.sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${key}`);
+      return undefined;
+    }
+    return entry.value;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSessionCache<T>(key: string, value: T, expiresAt: number) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      `${SESSION_CACHE_PREFIX}${key}`,
+      JSON.stringify({ value, expiresAt }),
+    );
+  } catch {
+    // Storage can be disabled/full; keep the in-memory cache as a fallback.
+  }
+}
 
 function stableStringify(value: unknown): string {
   if (value == null || typeof value !== "object") {
@@ -70,6 +101,7 @@ async function readThroughCache<T>(
   key: string,
   ttlMs: number,
   loader: () => Promise<T>,
+  persist = false,
 ) {
   const now = Date.now();
   const existing = apiResponseCache.get(key);
@@ -84,12 +116,22 @@ async function readThroughCache<T>(
     }
   }
 
+  if (persist) {
+    const persisted = readSessionCache<T>(key);
+    if (persisted !== undefined) {
+      apiResponseCache.set(key, { value: persisted, expiresAt: now + ttlMs });
+      return persisted;
+    }
+  }
+
   const promise = loader()
     .then((value) => {
+      const expiresAt = Date.now() + ttlMs;
       apiResponseCache.set(key, {
         value,
-        expiresAt: Date.now() + ttlMs,
+        expiresAt,
       });
+      if (persist) writeSessionCache(key, value, expiresAt);
       return value;
     })
     .catch((error) => {
@@ -108,6 +150,18 @@ async function readThroughCache<T>(
 export function invalidateApiCache(predicate?: (key: string) => boolean) {
   if (!predicate) {
     apiResponseCache.clear();
+    if (typeof window !== "undefined") {
+      try {
+        for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+          const key = window.sessionStorage.key(index);
+          if (key?.startsWith(SESSION_CACHE_PREFIX)) {
+            window.sessionStorage.removeItem(key);
+          }
+        }
+      } catch {
+        // Ignore storage failures; the in-memory cache was still cleared.
+      }
+    }
     return;
   }
 
@@ -230,7 +284,12 @@ export async function apiPost<T>(
       accessToken,
       cacheKey: options.cacheKey,
     });
-    return readThroughCache(cacheKey, options.ttlMs ?? DEFAULT_POST_READ_TTL_MS, () => load(body));
+    return readThroughCache(
+      cacheKey,
+      options.ttlMs ?? DEFAULT_POST_READ_TTL_MS,
+      () => load(body),
+      options.persist,
+    );
   }
 
   const result = await load(body);

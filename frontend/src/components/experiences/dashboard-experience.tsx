@@ -230,7 +230,10 @@ export function DashboardExperience() {
           "/api/wallet/tokens",
           { walletAddress },
           undefined,
-          { cache: "default", ttlMs: 20_000 },
+          // Wallet token balances are public chain data. Keep a short
+          // session cache so a page reload does not immediately repeat the
+          // same RPC-backed read; payment mutations invalidate this cache.
+          { cache: "default", ttlMs: 20_000, persist: true },
         );
         if (!ctrl.signal.aborted)
           setWalletTokens(r.tokens.filter((t) => t.supported));

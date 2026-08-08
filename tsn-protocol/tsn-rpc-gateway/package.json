@@ -21,7 +21,14 @@
     "dev": "node --env-file-if-exists=.env server.mjs",
     "start": "node --env-file-if-exists=.env server.mjs",
     "inspect": "node --env-file-if-exists=.env inspect.mjs",
-    "check": "node --check config.mjs && node --check provider-pool.mjs && node --check gateway.mjs && node --check server.mjs && node --check worker.mjs && node --check inspect.mjs"
+    "check": "node --check config.mjs && node --check provider-pool.mjs && node --check gateway.mjs && node --check server.mjs && node --check worker.mjs && node --check inspect.mjs",
+    "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
+    "git:status": "git status --short",
+    "git:hygiene": "node scripts/git-hygiene-check.mjs",
+    "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
+    "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
+    "git:pull:all": "git pull origin main",
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push origin main"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

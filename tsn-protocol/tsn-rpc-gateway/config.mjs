@@ -1,5 +1,5 @@
 const FALLBACK_PORT = 8787;
-const FALLBACK_WS_PORT = 8788;
+const DEFAULT_WS_PATH = "/ws";
 const FALLBACK_TIMEOUT_MS = 4_500;
 const FALLBACK_PROBE_INTERVAL_MS = 60_000;
 const FALLBACK_PROBE_TIMEOUT_MS = 2_500;
@@ -70,13 +70,31 @@ function collectWsUrls(source) {
 }
 
 function parsePort(source) {
-  const rawPort = Number(readEnv(source, "TSN_RPC_GATEWAY_PORT"));
+  const rawPort = Number(
+    readEnv(source, "TSN_RPC_GATEWAY_PORT") ?? readEnv(source, "PORT"),
+  );
   return Number.isFinite(rawPort) && rawPort > 0 ? rawPort : FALLBACK_PORT;
 }
 
-function parseWsPort(source) {
-  const rawPort = Number(readEnv(source, "TSN_RPC_GATEWAY_WS_PORT"));
-  return Number.isFinite(rawPort) && rawPort > 0 ? rawPort : FALLBACK_WS_PORT;
+function parseWebSocketPath(source) {
+  const value = String(readEnv(source, "TSN_RPC_GATEWAY_WS_PATH") ?? DEFAULT_WS_PATH).trim();
+  if (!value.startsWith("/") || value.includes("://") || value.includes("..")) {
+    throw new Error("TSN_RPC_GATEWAY_WS_PATH must be an absolute local path");
+  }
+  return value;
+}
+
+function parseAllowedOrigins(source) {
+  return unique(
+    String(readEnv(source, "TSN_RPC_GATEWAY_ALLOWED_ORIGINS") ?? "")
+      .split(/[\s,]+/g)
+      .map((value) => value.trim().replace(/\/+$/, ""))
+      .filter(Boolean),
+  );
+}
+
+function parseBoolean(source, name) {
+  return String(readEnv(source, name) ?? "").trim().toLowerCase() === "true";
 }
 
 function parseTimeoutMs(source) {
@@ -145,7 +163,9 @@ export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
   const urls = upstreamUrls.length > 0 ? upstreamUrls : DEFAULT_SOLANA_RPC_URLS;
   return {
     port: parsePort(source),
-    wsPort: parseWsPort(source),
+    webSocketPath: parseWebSocketPath(source),
+    allowedOrigins: parseAllowedOrigins(source),
+    allowAnyOrigin: parseBoolean(source, "TSN_RPC_GATEWAY_ALLOW_ANY_ORIGIN"),
     timeoutMs: parseTimeoutMs(source),
     probeIntervalMs: parseProbeIntervalMs(source),
     probeTimeoutMs: parseProbeTimeoutMs(source),

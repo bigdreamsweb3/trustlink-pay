@@ -1,14 +1,30 @@
 {
   "name": "@trustlink/tsn-receiver",
   "private": true,
+  "description": "TSN Receiver by TrustLink Labs — durable Firebase-backed ingress, work leasing, and status service for the Transfer Settlement Network.",
   "type": "module",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bigdreamsweb3/tsn-receiver.git"
+  },
+  "homepage": "https://github.com/bigdreamsweb3/tsn-receiver#readme",
+  "bugs": {
+    "url": "https://github.com/bigdreamsweb3/tsn-receiver/issues"
+  },
   "scripts": {
     "dev": "next dev -p 8010",
     "build": "next build",
     "start": "next start -p 8010",
     "typecheck": "tsc --noEmit --pretty false",
-    "test": "npm run typecheck && node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "npm run typecheck && node --experimental-strip-types --test tests/*.test.mjs",
+    "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
+    "git:status": "git status --short",
+    "git:hygiene": "node scripts/git-hygiene-check.mjs",
+    "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
+    "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
+    "git:pull:all": "git pull origin main",
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push origin main"
   },
   "dependencies": {
     "firebase-admin": "^13.4.0",

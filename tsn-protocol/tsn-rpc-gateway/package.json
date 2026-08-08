@@ -3,16 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "TrustLink TSN Solana RPC gateway.",
+  "description": "TSN RPC Gateway by TrustLink Labs — resilient Solana Devnet transport for TrustLink services.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bigdreamsweb3/tsn-rpc-gateway.git"
+  },
+  "homepage": "https://github.com/bigdreamsweb3/tsn-rpc-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/bigdreamsweb3/tsn-rpc-gateway/issues"
+  },
   "exports": {
     ".": {
       "import": "./gateway.mjs"
     }
   },
   "scripts": {
-    "dev": "node --env-file=.env server.mjs",
-    "start": "node --env-file=.env server.mjs",
-    "inspect": "node --env-file=.env inspect.mjs",
+    "dev": "node --env-file-if-exists=.env server.mjs",
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "inspect": "node --env-file-if-exists=.env inspect.mjs",
     "check": "node --check config.mjs && node --check provider-pool.mjs && node --check gateway.mjs && node --check server.mjs && node --check worker.mjs && node --check inspect.mjs"
   },
   "dependencies": {

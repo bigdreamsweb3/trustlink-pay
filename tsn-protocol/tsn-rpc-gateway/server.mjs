@@ -49,17 +49,31 @@ async function responseToNode(response, nodeResponse) {
 const config = getRpcGatewayConfig();
 const app = createRpcGatewayApp(config);
 
-function corsHeaders() {
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  return config.allowAnyOrigin || config.allowedOrigins.includes(origin.replace(/\/+$/, ""));
+}
+
+function corsHeaders(origin) {
+  if (!origin) return {};
   return {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-    "access-control-allow-headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin, solana-client",
+    "access-control-allow-origin": origin,
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "Content-Type, Accept, Origin, solana-client",
     "access-control-max-age": "86400",
+    vary: "Origin",
   };
 }
 
 const server = http.createServer(async (request, response) => {
-  const cors = corsHeaders();
+  const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
+  if (!isAllowedOrigin(origin)) {
+    response.statusCode = 403;
+    response.setHeader("content-type", "application/json; charset=utf-8");
+    response.end(JSON.stringify({ ok: false, error: "RPC gateway origin is not allowed" }));
+    return;
+  }
+  const cors = corsHeaders(origin);
   for (const [key, value] of Object.entries(cors)) {
     response.setHeader(key, value);
   }
@@ -135,38 +149,16 @@ async function connectUpstreamWebSocket() {
   throw lastError ?? new Error("No upstream Solana WebSocket providers are available");
 }
 
-const wsHttpServer = http.createServer((request, response) => {
-  if (request.url === "/health") {
-    response.statusCode = 200;
-    response.setHeader("content-type", "application/json; charset=utf-8");
-    response.end(
-      JSON.stringify(
-        {
-          ok: true,
-          service: "trustlink-rpc-gateway-ws",
-          wsPort: config.wsPort,
-          upstreamCount: config.upstreams.length,
-          upstreams: config.upstreams.map((upstream) => ({
-            id: upstream.id,
-            label: upstream.label,
-            wsUrl: upstream.displayWsUrl,
-          })),
-        },
-        null,
-        2,
-      ),
-    );
-    return;
-  }
-
-  response.statusCode = 426;
-  response.setHeader("content-type", "text/plain; charset=utf-8");
-  response.end("Upgrade Required");
-});
-
 const wsServer = new WebSocketServer({ noServer: true });
 
-wsHttpServer.on("upgrade", async (request, socket, head) => {
+server.on("upgrade", async (request, socket, head) => {
+  const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
+  const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+  if (pathname !== config.webSocketPath || !isAllowedOrigin(origin)) {
+    socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+    socket.destroy();
+    return;
+  }
   try {
     const upstream = await connectUpstreamWebSocket();
     wsServer.handleUpgrade(request, socket, head, (clientSocket) => {
@@ -196,7 +188,10 @@ wsHttpServer.on("upgrade", async (request, socket, head) => {
 server.listen(config.port, "0.0.0.0", () => {
   console.log("TrustLink RPC gateway");
   console.log(`HTTP RPC port: ${config.port}`);
-  console.log(`WebSocket port: ${config.wsPort}`);
+  console.log(`WebSocket path: ${config.webSocketPath}`);
+  console.log(
+    `Browser origins: ${config.allowAnyOrigin ? "any (development override)" : config.allowedOrigins.join(", ") || "none"}`,
+  );
   console.log(`Mode: ${config.mode}`);
   console.log(`Timeout: ${config.timeoutMs}ms`);
   console.log(`Log level: ${config.logLevel}`);
@@ -208,8 +203,6 @@ server.listen(config.port, "0.0.0.0", () => {
   }
 });
 
-wsHttpServer.listen(config.wsPort, "0.0.0.0");
-
 function shutdown(signal) {
   console.log(`Received ${signal}, closing TrustLink RPC gateway...`);
   let remaining = 2;
@@ -218,7 +211,8 @@ function shutdown(signal) {
     if (remaining === 0) process.exit(0);
   };
   server.close(finish);
-  wsHttpServer.close(finish);
+  for (const client of wsServer.clients) client.terminate();
+  wsServer.close(finish);
 }
 
 process.on("SIGINT", () => shutdown("SIGINT"));

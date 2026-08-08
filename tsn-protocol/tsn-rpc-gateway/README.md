@@ -1,8 +1,11 @@
-# TSN RPC Gateway
+# TSN RPC Gateway by TrustLink Labs
 
-This folder contains the shared Solana RPC gateway used by TrustLink Pay.
+This service is the shared Solana RPC gateway used by the Transfer Settlement
+Network (TSN), operated by TrustLink Labs.
 
-It is structured as its own project because it can later move into a separate private repository.
+It is a standalone private service repository. The gateway keeps upstream
+provider credentials server-side and exposes one controlled transport endpoint
+to TSN applications and operators.
 
 ## What it does
 
@@ -18,11 +21,31 @@ The gateway itself reads a comma-separated list from `TSN_SOLANA_RPC_URLS` and a
 
 ## Ports
 
-- `8787` handles HTTP JSON-RPC requests
-- `8788` handles Solana WebSocket connections
+- One listener handles HTTP JSON-RPC requests and Solana WebSocket connections.
+- HTTP JSON-RPC is available at `/` or `/rpc`.
+- WebSocket subscriptions are available at `/ws` on the same host and port.
+- Local fallback port: `8787`. Cloud platforms can provide `PORT` directly.
 
 Use `TSN_RPC_GATEWAY_URL=http://127.0.0.1:8787` for HTTP callers.
-Use `SOLANA_WS_URL=ws://127.0.0.1:8788` for WebSocket subscribers such as the cranker daemon.
+Use `SOLANA_WS_URL=ws://127.0.0.1:8787/ws` for WebSocket subscribers such as the cranker daemon.
+
+## Browser access
+
+Set `TSN_RPC_GATEWAY_ALLOWED_ORIGINS` to a comma-separated allowlist of the
+TrustLink browser origins permitted to call the gateway. Do not deploy with
+`TSN_RPC_GATEWAY_ALLOW_ANY_ORIGIN=true`; that flag exists only for local
+development. Server-to-server callers do not need a browser `Origin` header.
+
+## Railway deployment
+
+This folder includes a `Dockerfile` and `railway.toml`. Create one Railway
+service from this repository with `tsn-protocol/tsn-rpc-gateway` as its root
+directory, then generate a public domain. Railway supplies `PORT`; the gateway
+listens on it automatically. Set the upstream provider URLs and the production
+browser-origin allowlist only in Railway Variables, never in Git.
+
+The generated service URL is the value for `TSN_RPC_GATEWAY_URL`. The matching
+WebSocket URL uses the same host with a `/ws` path.
 
 ## Local commands
 

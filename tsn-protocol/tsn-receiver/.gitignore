@@ -1,0 +1,13 @@
+# Runtime secrets: never export or commit.
+.env
+.env.local
+.env.*.local
+!.env.example
+.fb_creds/
+
+# Local and generated output.
+node_modules/
+.next/
+.next-stale-mixed-runtime/
+tsconfig.tsbuildinfo
+npm-debug.log*

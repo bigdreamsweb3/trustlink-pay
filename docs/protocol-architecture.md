@@ -93,8 +93,12 @@ sequenceDiagram
     C->>P: Submit exact settlement transaction
     P->>P: Verify lease owner, commitment, replay, amount, route, and expiry
     P->>CV: CrankerVault pays recipient and fees
-    P->>V: Escrow reimbursement credits the leased Cranker
-    P-->>R: One-time token marked used and settlement evidence
+    P-->>R: Settlement proof and confirmation evidence
+    N->>N: Verifier decides whether reimbursement is authorized
+    N-->>R: Separate reimbursement work, if approved
+    R-->>C: Reimbursement work for the authorized Cranker
+    C->>P: Submit reimbursement transition
+    P->>V: Execute only the authorized reimbursement
     R-->>U: Signature, balance changes, and receipt evidence
 ```
 
@@ -121,9 +125,12 @@ chain.
 
 The payout is made from the leased Cranker's CrankerVault. The recipient route,
 mint, amount, fee split, lease owner, expiry, and replay state are verified.
-Only after the payout succeeds does the isolated escrow reimburse that same
-Cranker. An expired lease can be recovered or reassigned; an expired or replayed
-commitment cannot settle.
+After the payout succeeds, the Node and verifier services evaluate the
+confirmed proof. If reimbursement is authorized, the Receiver publishes
+separate reimbursement work and the TSN Program executes that transition. The
+settlement transaction does not write the original payment-intent vault as
+`Paid` or `recoverable`. An expired lease can be recovered or reassigned; an
+expired or replayed commitment cannot settle.
 
 ## Commitment-based separation
 

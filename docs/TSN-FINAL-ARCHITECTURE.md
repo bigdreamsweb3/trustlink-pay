@@ -24,7 +24,7 @@ flowchart TD
   R -->|"settlement work"| C
   C -->|"exact leased settlement"| P
   P --> CV["CrankerVault pays recipient"]
-  E -->|"reimbursement after payout"| CV
+  E -->|"separate verifier-approved reimbursement"| CV
   CV --> Z["Recipient ZK-PRU or public wallet"]
 ```
 
@@ -137,8 +137,11 @@ sequenceDiagram
   N->>N: Recheck lease-bound settlement data
   C->>P: Submit exact settlement transaction
   P->>V: Pay selected recipient route
-  P->>E: Reimburse the leased Cranker
-  P-->>R: One-time token marked used and confirmation evidence
+  P-->>R: Settlement proof and confirmation evidence
+  N->>N: Verifier decides reimbursement eligibility
+  R-->>C: Separate authorized reimbursement work
+  C->>P: Submit reimbursement transition
+  P->>E: Execute authorized reimbursement only
 ```
 
 ## Spending from a TIN

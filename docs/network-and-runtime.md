@@ -29,7 +29,8 @@ flowchart TD
     P --> X
     P --> E
     P --> CV --> A
-    E -->|"reimburse successful leased Cranker"| CV
+    N -->|"verifier-approved reimbursement work"| C
+    E -->|"separate authorized reimbursement"| CV
     M --> Q
     P --> Q
 ```
@@ -80,8 +81,9 @@ operator/fee-payer key and public execution data.
 The TSN Program verifies scoped authorization, commitments, lease ownership,
 state, delegates, allowances, nonces, and expiry. The execution PDA performs
 restricted token movement through program signing. The CrankerVault pays the
-recipient route first. TSN Escrow is program-controlled and reimburses only the
-Cranker whose active lease produced the successful payout.
+recipient route first. After the Node and verifier accept the settlement proof,
+a separate TSN Program transition may reimburse the authorized Cranker from
+TSN Escrow.
 
 ## Clusters and deployment
 

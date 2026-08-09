@@ -13,7 +13,7 @@ flowchart TD
     C -->|"exact funding and leased settlement"| S["Solana TSN Program"]
     S --> E["Isolated TSN Escrow"]
     S --> V["CrankerVault pays recipient"]
-    E -->|"reimburse successful leased Cranker"| V
+    E -->|"separate verifier-approved reimbursement"| V
     C -->|"signature and result"| R
     R --> UI["TSN Mempool UI and status readers"]
 ```
@@ -49,8 +49,9 @@ The Node may decrypt only the encrypted public routing envelope needed to select
 The Cranker reads only `VERIFIED` work from the Receiver. It validates that the
 received plan still matches its commitment, claims a short lease, submits the
 exact funding and settlement transactions, pays the network fee, and returns
-confirmed signatures and results. The recipient payout comes from the CrankerVault;
-the isolated escrow reimburses only the Cranker whose lease completed the payout.
+confirmed signatures and results. The recipient payout comes from the
+CrankerVault. A separate verifier-approved TSN transition is required before
+the isolated escrow can reimburse a Cranker.
 It does not select ZK-PRUs, decrypt user secrets, or reconstruct user signing
 authority.
 
@@ -154,7 +155,8 @@ sequenceDiagram
     R-->>C: public work + authorization only
     C->>P: exact authorized payout or recovery transaction
     P->>P: verify lease, commitment, replay, amount, route, and expiry
-    P->>P: CrankerVault pays recipient; escrow reimburses leased Cranker
+    P->>P: CrankerVault pays recipient
+    P->>P: Separate verifier-approved reimbursement, if authorized
     P-->>C: signature and confirmation
     C->>R: CONFIRMED result and evidence
 ```

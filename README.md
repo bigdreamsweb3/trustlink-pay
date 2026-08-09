@@ -21,8 +21,10 @@ protection, and recovery tracking.
 TSN separates payment intent, verification, settlement execution, and any later
 reimbursement decision. The Receiver stores work, the TSN Node and verifier
 services decide whether work is valid, and a short lease gives one Cranker the
-right to submit the exact settlement work. A Cranker cannot mark a payment paid,
-recoverable, or reimbursable.
+right to submit the exact settlement work. The recipient payout comes from the
+leased Cranker's Cranker Vault. The TSN Program verifies authorization and state;
+it is not the liquidity payer. A Cranker cannot unilaterally mark a payment
+paid, recoverable, or reimbursable.
 
 ```mermaid
 flowchart TD
@@ -37,39 +39,44 @@ flowchart TD
     F["5. Frontend submits the signed intent to TSN Receiver"]
 
     subgraph RECEIVER["TSN Receiver — durable ingress, leases, and evidence"]
-        G["Intent stored as RECEIVED"]
-        H["Verified intent work published"]
-        O["Settlement work published only after verification"]
-        R["Confirmed signatures and non-secret evidence stored"]
+        G["6. Payment intent stored as RECEIVED"]
+        H["7. Verified payment and settlement work published"]
+        O["13. Funding confirmed; settlement work available"]
+        R["18. Confirmed signatures, transaction evidence, and receipt state stored"]
     end
 
     subgraph VERIFIER["TSN Node and verifier services — decision authority"]
-        I["6. Lease and verify the payment intent"]
-        J["7. Verify signatures, commitment, source, amount, route, expiry, and replay state"]
-        P["12. Node decrypts recipient route and creates the settlement intent<br/>(inactive until payment intent verification)"]
-        Q["13. Node confirms the payment intent was submitted<br/>and asks the TSN Program to validate settlement state"]
-        P2["14. Settlement intent becomes active and leaseable"]
+        I["8. Node leases and verifies the payment intent"]
+        J["9. Node decrypts the recipient public route and resolves the destination"]
+        P["10. Node verifies signatures, source, amount, route, expiry, commitment, and replay"]
+        Q["11. Node creates the settlement intent in an inactive state"]
+        P2["12. Node confirms payment-intent submission; settlement intent becomes active and leaseable"]
     end
 
     subgraph CRANKER["Cranker — submitter only"]
-        K["8. Cranker leases verified intent work"]
-        L["9. Cranker submits the exact sender-authorized funding transaction"]
-        S["15. Cranker submits the exact leased settlement transaction"]
-        T["17. Cranker submits separate reimbursement work only when authorized"]
+        K["14. Cranker leases the verified payment intent"]
+        L["15. Cranker submits the exact sender-authorized funding transaction"]
+        S["16. Cranker leases the active settlement intent"]
+        T["17. Cranker submits the exact one-time settlement transaction"]
+        T2["Separate reimbursement work is submitted only after protocol authorization"]
     end
 
     subgraph SOLANA["Solana — TSN Program and controlled accounts"]
-        M["10. TSN Program verifies the Node-approved payment intent<br/>and required on-chain accounts"]
-        N["11. On-chain funding state is available for later policy decisions"]
-        U["16. TSN Program verifies lease, one-time commitment, route, amount, expiry, and replay"]
-        V["18. TSN Program executes only the authorized reimbursement decision"]
-        Y["Recipient route receives the payout; private/public receipt follows"]
+        M["TSN Program verifies the Node-approved funding transaction and accounts"]
+        N["Isolated payment vault receives sender funds; settlement leaves it escrowed (not Paid/recoverable)"]
+        U["TSN Program verifies lease, one-time commitment, route, amount, expiry, and replay"]
+        V["TSN Program verifies reimbursement authorization and replay state"]
     end
 
-    A --> B --> C --> D --> F --> G --> I --> J --> P --> Q --> H --> K --> L --> M --> N --> O --> P2 --> S --> U --> Y
-    Q -->|"valid proof"| T --> V --> R
-    Q -->|"invalid or expired"| X["Reject, requeue, or recover according to TSN policy"] --> R
-    U -. "Settlement does not write the intent vault as Paid or recoverable" .-> N
+    subgraph VAULT["Cranker Vault - payout source"]
+        Y["Leased Cranker Vault pays the recipient route and protocol fee accounts"]
+        Z["Authorized reimbursement credits only the Cranker that held the lease"]
+    end
+
+    A --> B --> C --> D --> F --> G --> I --> J --> P
+    P -->|"valid proof"| Q --> P2 --> H --> K --> L --> M --> N --> O --> S --> T --> U --> Y --> R
+    P -->|"invalid or expired"| X["Reject, requeue, or recover according to TSN policy"] --> R
+    T --> T2 --> V --> Z --> R
 
     classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
     classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
@@ -80,15 +87,19 @@ flowchart TD
     class B,C,D device;
     class G,H,O,R receiver;
     class I,J,P,Q,P2 verifier;
-    class K,L,S,T cranker;
-    class M,N,U,V,Y chain;
+    class K,L,S,T,T2 cranker;
+    class M,N,U,V chain;
+    class Y,Z vault;
     class A,F,X outcome;
 ```
 
-The settlement transaction proves and executes the leased payout. It does not
-decide that the original payment-intent vault is `Paid` or `recoverable`. Only
-the TSN Program, after the Node/verifier decision and a valid proof, can execute
-a separate reimbursement or recovery transition.
+The settlement transaction proves the leased authorization and consumes the
+one-time commitment. The recipient is paid from the leased Cranker Vault. The
+TSN Program verifies authorization and enforced account state; it is not the
+liquidity payer. The original payment-intent vault is not written as `Paid` or
+`recoverable` by this settlement flow. Separate reimbursement or recovery work
+is permitted only after the TSN Node/verifier decision and is credited to the
+Cranker that held the valid lease.
 
 ## Core terms
 

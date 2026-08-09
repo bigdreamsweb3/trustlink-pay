@@ -16,7 +16,8 @@ flowchart TD
     V[Solana validators]
     P[TSN Program]
     X[TSN execution PDA]
-    E[TSN Escrow PDA]
+    E[TSN Escrow PDA / reimbursement source]
+    CV[CrankerVault / payout liquidity]
     A[Token accounts]
     Q[Status and receipts]
     D --> F --> S
@@ -26,7 +27,9 @@ flowchart TD
     M --> N --> M
     M --> C --> R --> V --> P
     P --> X
-    P --> E --> A
+    P --> E
+    P --> CV --> A
+    E -->|"reimburse successful leased Cranker"| CV
     M --> Q
     P --> Q
 ```
@@ -74,10 +77,11 @@ operator/fee-payer key and public execution data.
 
 ### Solana program and accounts
 
-The TSN Program verifies scoped authorization, commitments, state, delegates,
-allowances, nonces, and expiry. The execution PDA performs restricted token
-movement through program signing. TSN Escrow is program-controlled and holds
-assets only during the authorized settlement lifecycle.
+The TSN Program verifies scoped authorization, commitments, lease ownership,
+state, delegates, allowances, nonces, and expiry. The execution PDA performs
+restricted token movement through program signing. The CrankerVault pays the
+recipient route first. TSN Escrow is program-controlled and reimburses only the
+Cranker whose active lease produced the successful payout.
 
 ## Clusters and deployment
 

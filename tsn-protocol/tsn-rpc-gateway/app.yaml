@@ -1,0 +1,21 @@
+name: tsn-rpc-gateway
+app_id: da_nBBIbtXU7mLl
+owner: italianloader
+package: .
+kind: wasmer.io/App.v0
+annotations:
+  anybuild.run/config:
+    commands:
+      start: node --env-file-if-exists=.env server.mjs
+    edgejs_enable: true
+    edgejs_precompile: true
+    name: out
+    node_install_inputs:
+    - package.json
+    node_package_manager: npm
+    node_package_name: '@trustlink/tsn-rpc-gateway'
+    node_remove_native_binaries: true
+    node_server: node
+  anybuild.run/provider: node
+  anybuild.run/version: 0.25.0
+  wasmer.io/version: 7.2.1

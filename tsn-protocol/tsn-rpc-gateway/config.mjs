@@ -8,6 +8,12 @@ const DEFAULT_SOLANA_RPC_URLS = [
   "https://api.devnet.solana.com",
   "https://rpc.ankr.com/solana_devnet",
 ];
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://trustlink-pay.vercel.app",
+  "https://trustlink-pay-backend.vercel.app",
+  "http://localhost:3001",
+  "http://localhost:3000",
+];
 
 const ENV_KEYS = [
   "TSN_SOLANA_RPC_UPSTREAM_URLS",
@@ -85,12 +91,13 @@ function parseWebSocketPath(source) {
 }
 
 function parseAllowedOrigins(source) {
-  return unique(
+  const configured = unique(
     String(readEnv(source, "TSN_RPC_GATEWAY_ALLOWED_ORIGINS") ?? "")
       .split(/[\s,]+/g)
       .map((value) => value.trim().replace(/\/+$/, ""))
       .filter(Boolean),
   );
+  return configured.length > 0 ? configured : DEFAULT_ALLOWED_ORIGINS;
 }
 
 function parseBoolean(source, name) {
@@ -160,7 +167,9 @@ export function redactRpcUrlForDisplay(url) {
 export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
   const upstreamUrls = collectUrls(source);
   const upstreamWsUrls = collectWsUrls(source);
-  const urls = upstreamUrls.length > 0 ? upstreamUrls : DEFAULT_SOLANA_RPC_URLS;
+  // Keep public Devnet providers as a bounded fallback when a configured
+  // provider is unavailable or has an expired credential.
+  const urls = unique([...upstreamUrls, ...DEFAULT_SOLANA_RPC_URLS]);
   return {
     port: parsePort(source),
     webSocketPath: parseWebSocketPath(source),

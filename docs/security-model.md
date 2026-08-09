@@ -11,7 +11,8 @@
 | TSN Node | Signed public plans, commitments, reservations | No user signing authority | No direct token authority | Seeds, private keys, route-rewriting authority |
 | Cranker | Verified work and public transaction data | Own operator/fee payer only | Submits; cannot authorize user sources | User private keys and escrow keys |
 | TSN Program | Public instruction data and account state | PDA signing through program rules | Exact validated token movement | Off-chain secrets |
-| TSN Escrow | Funded settlement assets and state | Program-controlled | Releases only valid transitions | Serialized escrow signer keys |
+| TSN Escrow | Isolated reimbursement assets and state | Program-controlled | Credits only the Cranker that completed the active lease | Serialized escrow signer keys |
+| CrankerVault | Cranker liquidity used for recipient payout | Program-controlled | Pays only the exact leased settlement route | User keys or unrestricted payout authority |
 | Solana validator | Public transaction and account data | Validator protocol messages | Executes submitted instructions | TSN user secrets |
 
 ## Authorization boundary
@@ -23,7 +24,8 @@ flowchart TD
     K --> M[Scoped route commitment]
     M --> N[Node verification + reservation]
     N --> P[Program signature/delegate checks]
-    P --> E[TSN Escrow movement]
+    P --> V[CrankerVault pays recipient]
+    V --> E[TSN Escrow reimburses leased Cranker]
 ```
 
 Plaintext derivation material and child private keys remain on the authorized

@@ -1,163 +1,133 @@
 # TSN transaction explorer
 
-TSN coordinates two explicit stages: **intent and funding**, then **claim and
-settlement**. The frontend and TSN SDK create the immutable authorization. The
-TSN Receiver stores and publishes work, the TSN Node verifies it, the Cranker
-submits the exact authorized transactions, and the TSN Program enforces the
-movement through TSN Escrow.
+This page documents the tested TSN settlement path. It has two coordinated
+stages: intent verification and escrow funding, followed by a leased Cranker
+settlement and reimbursement. The Receiver is the durable ingress and work
+surface. The TSN Node verifies and publishes work. The Cranker pays Solana
+fees, pays the recipient from its CrankerVault, and receives reimbursement only
+after the leased settlement succeeds.
 
-## Complete two-stage transaction flow
+## Complete transaction flow
 
 ```mermaid
 flowchart TD
-    START["1. Sender opens TrustLink Pay"]
-    START --> INPUT["2. Select recipient, asset, amount, and source"]
-    INPUT --> ROUTE{"Destination route"}
+    START["1. Sender chooses route, token, amount, and fees"]
+    START --> DEVICE["2. Authorized device + TSN SDK resolve the route<br/>select sources, calculate fees/change,<br/>and create the signed intent commitment"]
+    DEVICE --> SIGN["3. Main wallet and selected ZK-PRU authorities sign<br/>the exact authorization on the device"]
+    SIGN --> INTENT["4. Frontend submits POST /intents"]
 
-    ROUTE --> T2T["Native TIN-to-TIN<br/>TIN source -> confidential TIN ownership"]
-    ROUTE --> W2T["Wallet-to-TIN<br/>public wallet -> confidential TIN ownership"]
-    ROUTE --> T2W["TIN-to-wallet<br/>confidential TIN ownership -> public wallet"]
-    ROUTE --> W2W["Wallet-to-wallet<br/>public compatibility settlement"]
-
-    T2T --> DEVICE
-    W2T --> DEVICE
-    T2W --> DEVICE
-    W2W --> DEVICE
-
-    DEVICE["3. Authorized device + TSN SDK<br/>Resolve route, select inputs,<br/>calculate fees/change, build commitment"]
-    DEVICE --> SIGN["4. User authorization<br/>Main-wallet signature + selected ZK-PRU signatures<br/>Only public plan data and signatures leave device"]
-    SIGN --> INTENT["5. Frontend submits payment intent<br/>POST /intents -> TSN Receiver"]
-
-    subgraph STAGE1["STAGE 1 - PAYMENT INTENT, VERIFICATION, AND FUNDING"]
-        INTENT --> RECEIVED["Receiver: intent = RECEIVED<br/>Store immutable payload, idempotency key,<br/>commitment, and state version"]
-        RECEIVED --> CLAIM_POST["Frontend or SDK posts claim request<br/>linked to the payment intent"]
-        CLAIM_POST --> CLAIM_PENDING["Receiver: claim = PENDING<br/>Claim cannot execute before funding"]
-        RECEIVED --> NODE_INTENT["TSN Node leases payment intent<br/>Verifies sender signature, route, amount,<br/>mint, expiry, nonce, replay, and plan commitment"]
-        NODE_INTENT --> INTENT_RESULT{"Payment intent verification"}
-        INTENT_RESULT -->|Rejected| REJECT["Receiver: intent = REJECTED<br/>No funding transaction submitted"]
-        INTENT_RESULT -->|Verified| VERIFIED_INTENT["Receiver: intent = VERIFIED<br/>Publish immutable funding work"]
-        VERIFIED_INTENT --> FUNDCRANK["Cranker polls Receiver<br/>Leases VERIFIED payment-intent work<br/>Pays Solana fee; does not replan"]
-        FUNDCRANK --> FUNDTX["Cranker submits exact sender-authorized<br/>funding transaction to Solana"]
-        FUNDTX --> PROGRAM1["TSN Program verifies funding<br/>Ed25519 signatures, execution-PDA delegate,<br/>mint, amount, nonce, commitment, replay"]
-        PROGRAM1 --> FUND_RESULT{"Funding confirmation"}
-        FUND_RESULT -->|Failed| FUND_FAIL["Receiver: funding failed or expired<br/>No claim becomes executable"]
-        FUND_RESULT -->|Confirmed| ESCROW["TSN Escrow receives authorized funds<br/>Receiver: intent = FUNDED"]
+    subgraph RECEIVER1["STAGE 1 — Receiver ingress and verification"]
+        INTENT --> RECEIVED["Receiver stores intent = RECEIVED"]
+        RECEIVED --> NODE["TSN Node verifies sender authorization,<br/>route commitment, mint, amount, expiry,<br/>nonce, replay state, and source rules"]
+        NODE --> RESULT{"Intent accepted?"}
+        RESULT -->|No| REJECT["Receiver records rejection<br/>No funding transaction is submitted"]
+        RESULT -->|Yes| VERIFIED["Receiver publishes VERIFIED intent work"]
     end
 
-    ESCROW --> NODE_CLAIM
-    CLAIM_PENDING --> NODE_CLAIM
-
-    subgraph STAGE2["STAGE 2 - CLAIM VERIFICATION, SETTLEMENT, AND RECEIPT"]
-        NODE_CLAIM["TSN Node leases claim + linked intent<br/>Verifies funded state, claim commitment,<br/>destination, amount, nonce, expiry, and replay"]
-        NODE_CLAIM --> CLAIM_RESULT{"Settlement-claim verification"}
-        CLAIM_RESULT -->|Rejected| CLAIM_REJECT["Receiver: claim = REJECTED<br/>Escrow remains protected"]
-        CLAIM_RESULT -->|Verified| CLAIM_WORK["Receiver: claim = VERIFIED<br/>Publish claimable settlement work"]
-        CLAIM_WORK --> SETTLECRANK["Cranker polls Receiver<br/>Leases VERIFIED claim work"]
-        SETTLECRANK --> SETTLE["Cranker submits exact settlement transaction<br/>No source, amount, route, or fee changes"]
-        SETTLE --> PROGRAM2["TSN Program verifies settlement<br/>commitment, signatures, escrow state,<br/>destination, nonce/nullifier, expiry, replay"]
-        PROGRAM2 --> RELEASE["TSN Escrow releases the exact authorized amount"]
-        RELEASE --> DEST["Recipient receives:<br/>confidential TIN ownership or public wallet tokens"]
-        DEST --> PROOF["Cranker posts confirmed signature and result<br/>to the Receiver"]
-        PROOF --> RECEIPT["Receiver: claim = SETTLED<br/>Payment state, private receipt, and evidence published"]
+    subgraph FUNDING["STAGE 1 — Sender funding and isolated escrow"]
+        VERIFIED --> LEASE1["Cranker leases the verified intent work"]
+        LEASE1 --> FUND["Cranker submits the exact sender-authorized funding transaction"]
+        FUND --> PROGRAM1["TSN Program creates the isolated payment vault,<br/>checks the commitment, and verifies the funding transfer"]
+        PROGRAM1 --> ESCROW["Authorized funds are held in the isolated escrow vault"]
+        ESCROW --> CLAIMWORK["Receiver exposes settlement work after funding confirmation"]
     end
+
+    subgraph SETTLEMENT["STAGE 2 — Lease, payout, and reimbursement"]
+        CLAIMWORK --> LEASE2["Cranker obtains a short settlement lease<br/>and a one-time settlement token"]
+        LEASE2 --> NODE2["TSN Node rechecks the settlement data<br/>and publishes only the leased work"]
+        NODE2 --> SETTLE["Cranker submits the exact settlement transaction"]
+        SETTLE --> PROGRAM2["TSN Program verifies lease owner,<br/>one-time commitment, amount, route,<br/>expiry, and replay protection"]
+        PROGRAM2 --> PAY["CrankerVault pays the recipient route<br/>and protocol fees"]
+        PAY --> REIMBURSE["Escrow reimbursement credits only<br/>the Cranker that held the active lease"]
+        REIMBURSE --> CONSUME["One-time settlement token is marked used;<br/>commitment, signatures, balances, and receipts are recorded"]
+    end
+
+    CONSUME --> DONE["Sender and recipient read final evidence"]
+    ESCROW --> EXPIRE{"Lease expires before payout?"}
+    EXPIRE -->|Yes| RECOVER["Recovery or reassignment follows policy;<br/>the original lease cannot settle"]
+    RECOVER --> CLAIMWORK
+
+    classDef user fill:#fbf6e9,stroke:#8b7131,color:#30240d;
+    classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
+    classDef node fill:#e9efed,stroke:#4e6e60,color:#14241c;
+    classDef cranker fill:#f2eee6,stroke:#6b6254,color:#211f1a;
+    classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
+    classDef result fill:#f4e8e4,stroke:#8e4f45,color:#351915;
+    class START,DEVICE,SIGN,INTENT user;
+    class RECEIVED,VERIFIED,CLAIMWORK,CONSUME,DONE receiver;
+    class NODE,NODE2 result;
+    class LEASE1,LEASE2,REIMBURSE,RECOVER cranker;
+    class FUND,PROGRAM1,ESCROW,SETTLE,PROGRAM2,PAY chain;
+    class RESULT,EXPIRE result;
 ```
 
-The Cranker does not create or submit the original payment intent. The
-frontend submits the intent to the Receiver, and the frontend or SDK may post
-the linked claim request. The claim remains `PENDING` while the Node verifies
-the payment intent and while funding is pending. After funding confirms, the
-Node verifies the claim and its linked intent again before the Receiver
-publishes settlement work. The Cranker then submits two on-chain transactions:
-the authorized funding transaction and, after funding is confirmed, the exact
-settlement transaction.
+## What each stage means
 
-## Two-stage lifecycle
+### Stage 1 — intent, verification, and funding
+
+The frontend submits the signed intent to the Receiver. The TSN Node verifies
+the public authorization and route data before the intent becomes Cranker work.
+The Cranker cannot change the amount, source, destination, fees, or commitment.
+
+The sender-authorized funding transaction creates an isolated payment vault and
+moves the authorized amount into it. This vault is not the recipient payout.
+It is the reimbursement source for the Cranker that completes the leased
+settlement.
+
+### Stage 2 — settlement lease, payout, and reimbursement
+
+After funding is confirmed, the Receiver publishes settlement work. A Cranker
+claims a short lease. The TSN Program binds the settlement to that lease and a
+one-time commitment. It rejects a second Cranker, an expired lease, a replayed
+token, a changed amount, or a changed destination.
+
+The recipient is paid from the leased Cranker's protocol vault. Only after the
+recipient payout succeeds does the isolated escrow reimburse that same
+Cranker. This separates the public funding record from the recipient payout
+record and is the tested sender-to-recipient link-separation property.
+
+## Four supported routes
 
 ```mermaid
 flowchart TD
-    A["Authorized route and immutable commitment"]
-    A --> B["TSN Node verifies and reserves state"]
-    B --> C["Receiver publishes VERIFIED funding work"]
-    C --> D["Cranker submits exact funding transaction"]
-    D --> E["TSN Program verifies and funds TSN Escrow"]
-    E --> F["Payment state = FUNDED"]
-    F --> G["Receiver exposes claimable settlement work"]
-    G --> H["Cranker submits exact settlement transaction"]
-    H --> I["TSN Program releases exact amount to destination"]
-    I --> J["Payment state = SETTLED; receipt and evidence returned"]
-    F --> K["Recovery/refund only through a valid authorized path"]
+    SELECT["Select route"]
+    SELECT --> T2T["Native TIN-to-TIN<br/>ZK-PRU source → recipient TIN route"]
+    SELECT --> W2T["Wallet-to-TIN<br/>public wallet → recipient TIN route"]
+    SELECT --> T2W["TIN-to-wallet<br/>ZK-PRU source → public wallet"]
+    SELECT --> W2W["Wallet-to-wallet<br/>public compatibility settlement"]
+    T2T --> COMMON["Common path:<br/>Receiver → Node verification → lease →<br/>Cranker payout → escrow reimbursement"]
+    W2T --> COMMON
+    T2W --> COMMON
+    W2W --> COMMON
 ```
 
-### Stage 1 - intent and funding
+TIN-to-TIN is the native protected route. Wallet-to-TIN uses a public funding
+wallet but resolves the recipient through the TIN route. TIN-to-wallet exposes
+the public destination wallet. Wallet-to-wallet remains a compatibility route.
 
-The user selects identity, asset, amount, source, and destination. The SDK
-resolves the route, selects sources, calculates fees and change, and creates
-the immutable commitment. An authorized device decrypts ZK-PRU material
-locally when required; the root wallet and selected child authorities sign.
-The frontend submits the public payment intent to the Receiver. The Node
-leases and verifies the intent, then the Receiver publishes `VERIFIED` funding
-work. A Cranker leases that work, pays the network fee, and submits the exact
-funding transaction. The TSN execution PDA moves the authorized tranche into
-TSN Escrow, and the Receiver records the Payment state as `FUNDED`.
+## Commitment and privacy boundary
 
-### Stage 2 - claim and settlement
+The commitment is used to verify that the leased Cranker submitted the exact
+authorized settlement. The one-time settlement token is marked used after a
+successful payout. The commitment does not itself reveal the sender's
+private ZK-PRU material. The Receiver, TSN Node, and Cranker exchange only the
+public work and scoped evidence required for execution; user private keys and
+decrypted master-seed material stay on the authorized device.
 
-The frontend or SDK creates a claim request linked to the intent; the Receiver
-holds it as `PENDING` until funding is confirmed. The Node then verifies the
-claim and linked payment data again; only then does the Receiver expose
-claimable settlement work. A Cranker leases that work and submits the exact
-settlement transaction. The Program verifies the
-commitment, signatures, source, mint, amount, recipient, nonce, state version,
-expiry, fee cap, escrow state, and replay state. TSN Escrow releases the exact
-amount, authorized change follows the plan, and the Receiver records the
-Payment state as `SETTLED` with the confirmed signature and receipt evidence.
+Solana observers can still see normal public transaction facts such as program
+accounts and token-account addresses. The tested TSN design avoids publishing a
+single direct sender-to-recipient settlement edge by separating intent,
+Cranker payout, and escrow reimbursement records.
 
-## Four routes
+## Failure and recovery
 
-```mermaid
-flowchart TD
-    SELECT["Select route and amount"]
-    SELECT --> A["1. Native TIN-to-TIN<br/>TIN source -> recipient TIN ownership"]
-    SELECT --> B["2. Wallet-to-TIN<br/>public wallet -> recipient TIN ownership"]
-    SELECT --> C["3. TIN-to-wallet<br/>TIN ownership -> public wallet"]
-    SELECT --> D["4. Wallet-to-wallet<br/>public wallet -> public wallet"]
-    A --> COMMON["Common lifecycle:<br/>intent -> Node verification -> funding -><br/>Cranker settlement -> recipient credit"]
-    B --> COMMON
-    C --> COMMON
-    D --> COMMON
-```
+- Invalid intent: the Receiver rejects it before funding.
+- Funding failure or expired blockhash: the intent remains non-executable and
+  requires a fresh authorization.
+- Active lease: another Cranker cannot settle the same work.
+- Expired lease: the work can be reassigned or recovered according to policy.
+- Replayed commitment or settlement token: the TSN Program rejects it.
+- Failed payout: reimbursement is not released as successful settlement.
 
-1. **Native TIN-to-TIN:** protected identity and routing. The recipient's
-   active ZK-PRU route receives confidential ownership and a private receipt.
-2. **Wallet-to-TIN:** public wallet funds the route and the recipient's
-   protected TIN ownership receives the payment.
-3. **TIN-to-wallet:** a device-authorized TIN source exits to a public wallet;
-   the destination and amount are public output.
-4. **Wallet-to-wallet:** both source and destination are public compatibility
-   endpoints.
-
-## Receiving and spending
-
-Small receipts accumulate in one active receiving route:
-
-```mermaid
-flowchart TD
-    A["1 USDC receipt"] --> P["Active receiving ZK-PRU"]
-    B["5 USDC receipt"] --> P
-    C["3 USDC receipt"] --> P
-    D["10 USDC receipt"] --> P
-    P --> E["19 USDC accumulated balance"]
-```
-
-Receiving rotation is policy-driven, not fixed at 1,000 USDC. Spending
-prefers one sufficient source, uses adaptive tranches, minimizes inputs, and
-sends authorized change to a fresh route. These are protected identity and
-routing properties, not a claim of complete confidentiality.
-
-## Authority boundary
-
-The main wallet is the root authority. Encrypted ZK-PRU derivation material is
-decrypted only on an authorized device. The SDK derives selected child
-authorities and emits public data plus signatures. The Node and Cranker never
-receive user private keys. The Cranker is a fee payer and submitter, not a
-delegate or route planner.
+The confirmed Solana signatures and account balances are the final evidence;
+Receiver status alone is not proof that tokens moved.

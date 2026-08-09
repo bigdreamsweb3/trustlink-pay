@@ -10,9 +10,12 @@ flowchart TD
     R -->|"RECEIVED lease"| N["TSN Node"]
     N -->|"VERIFIED or REJECTED"| R
     R -->|"VERIFIED lease only"| C["Cranker"]
-    C -->|"exact authorized transaction"| S["Solana TSN Program"]
+    C -->|"exact funding and leased settlement"| S["Solana TSN Program"]
+    S --> E["Isolated TSN Escrow"]
+    S --> V["CrankerVault pays recipient"]
+    E -->|"reimburse successful leased Cranker"| V
     C -->|"signature and result"| R
-    R --> V["TSN Mempool UI and status readers"]
+    R --> UI["TSN Mempool UI and status readers"]
 ```
 
 ## TSN Receiver
@@ -43,7 +46,13 @@ The Node may decrypt only the encrypted public routing envelope needed to select
 
 ## Cranker
 
-The Cranker reads only `VERIFIED` work from the Receiver. It validates that the received plan still matches its commitment, submits the exact authorized transaction, pays the network fee, and returns confirmed signatures and results. It does not select ZK-PRUs, decrypt user secrets, or reconstruct user signing authority.
+The Cranker reads only `VERIFIED` work from the Receiver. It validates that the
+received plan still matches its commitment, claims a short lease, submits the
+exact funding and settlement transactions, pays the network fee, and returns
+confirmed signatures and results. The recipient payout comes from the CrankerVault;
+the isolated escrow reimburses only the Cranker whose lease completed the payout.
+It does not select ZK-PRUs, decrypt user secrets, or reconstruct user signing
+authority.
 
 ## Authorized-device threshold access
 
@@ -129,11 +138,9 @@ Cranker-hidden route data:
 
 ## Claim and recovery settlement work
 
-Claim and recovery are Receiver work kinds, not Node permit routes. A claim is
-eligible only after its payment intent has reached `CONFIRMED`; a recovery is
-eligible only when its immutable recovery payload is valid. The Receiver leases
-the work to one Cranker and asks the Node for a fresh, operator-bound
-authorization:
+Claim and recovery are Receiver work kinds. Settlement work is eligible only
+after the funding transaction has confirmed. The Receiver leases the work to
+one Cranker and the Node rechecks the immutable, lease-bound authorization:
 
 ```mermaid
 sequenceDiagram
@@ -146,6 +153,8 @@ sequenceDiagram
     N->>R: signed immutable settlement authorization
     R-->>C: public work + authorization only
     C->>P: exact authorized payout or recovery transaction
+    P->>P: verify lease, commitment, replay, amount, route, and expiry
+    P->>P: CrankerVault pays recipient; escrow reimburses leased Cranker
     P-->>C: signature and confirmation
     C->>R: CONFIRMED result and evidence
 ```

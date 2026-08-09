@@ -25,10 +25,12 @@ Supporting technical references:
 - **TSN** is the network infrastructure.
 - **TIN** is the payment identity and route-discovery system.
 - **ZK-PRU** is the protected receiving and spending subsystem inside TSN.
-- **TSN Receiver** is the Firebase-backed ingress, durable work queue, leases, and status-read service.
+- **TSN Receiver** is the durable ingress, work queue, leases, and status-read service.
 - **TSN Node** is the stateless off-chain protocol verifier and processor.
-- **Cranker** is the fee-paying transaction executor.
-- **TSN Program** and **TSN Escrow** enforce and hold settlement state on Solana.
+- **Cranker** is the fee-paying leased transaction executor and recipient-funding operator.
+- **TSN Program** enforces settlement commitments, leases, replay protection, and token movement on Solana.
+- **TSN Escrow** reimburses the Cranker that completes the active settlement lease.
+- **CrankerVault** pays the recipient before successful escrow reimbursement.
 - **TCAP** is experimental and separate from the current settlement actor.
 
 All diagrams in active documentation use Mermaid. Historical architecture that places user decryption or private-key signing in the Node or Cranker is not normative.

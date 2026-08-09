@@ -15,19 +15,25 @@ is the application that lets a user operate the system.
 flowchart TD
   W["Main wallet"] --> D["Authorized user device"]
   D --> SDK["TSN SDK"]
-  SDK -->|"signed public intent"| R["TSN Receiver / durable ingress"]
+  SDK -->|"signed public intent + commitment"| R["TSN Receiver / durable ingress"]
   R --> N["TSN Node / verification and routing"]
   N -->|"verified immutable work"| R
-  R --> C["Cranker / fee payer"]
-  C --> P["TSN Program"]
-  P --> E["TSN Escrow"]
-  P --> Z["Recipient ZK-PRU or public wallet"]
+  R --> C["Cranker / short lease + fee payer"]
+  C -->|"exact funding transaction"| P["TSN Program"]
+  P --> E["Isolated TSN Escrow"]
+  R -->|"settlement work"| C
+  C -->|"exact leased settlement"| P
+  P --> CV["CrankerVault pays recipient"]
+  E -->|"reimbursement after payout"| CV
+  CV --> Z["Recipient ZK-PRU or public wallet"]
 ```
 
 The Receiver stores durable public work and status in Firestore. The Node is
 stateless and performs protocol verification. The Cranker submits only work
-that the Node has verified. None of these services receives a TIN master seed,
-a PRU private key, or a serialized user signer.
+that the Node has verified. The Cranker is paid from its protocol vault first;
+the isolated escrow reimburses only the Cranker that held the successful lease.
+None of these services receives a TIN master seed, a PRU private key, or a
+serialized user signer.
 
 ## TIN account
 
@@ -115,15 +121,24 @@ sequenceDiagram
   participant N as TSN Node
   participant C as Cranker
   participant P as TSN Program
+  participant E as TSN Escrow
+  participant V as CrankerVault
 
   S->>R: Signed payment intent
-  R->>N: Lease received work
-  N->>N: Decrypt public route envelope
-  N->>N: Verify route commitment and select destination
-  N-->>R: Immutable route authorization
-  R-->>C: Verified public work
-  C->>P: Submit exact authorized transaction
-  P-->>R: Signature and confirmation evidence
+  R->>N: Publish received work
+  N->>N: Verify intent and route commitment
+  N->>N: Decrypt public route envelope and select destination
+  N-->>R: VERIFIED intent work
+  R-->>C: Short intent lease
+  C->>P: Submit exact funding transaction
+  P->>E: Create isolated escrow vault
+  R-->>C: Settlement work after funding confirmation
+  C->>R: Claim short settlement lease
+  N->>N: Recheck lease-bound settlement data
+  C->>P: Submit exact settlement transaction
+  P->>V: Pay selected recipient route
+  P->>E: Reimburse the leased Cranker
+  P-->>R: One-time token marked used and confirmation evidence
 ```
 
 ## Spending from a TIN

@@ -11,99 +11,67 @@ Solana. TrustLink Pay is the application experience built on that network.
 - [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
 - [TrustLink Pay source repository](https://github.com/bigdreamsweb3/trustlink-pay)
 
-TSN is not a new blockchain and it is not one smart contract. It combines
-identity, recipient discovery, protected receiving and spending, authorization,
-payment intents, an application-level work queue, transaction execution,
-escrow, settlement, receipts, replay protection, and recovery tracking.
+TSN combines identity, recipient discovery, protected receiving and spending,
+authorization, payment intents, Receiver work queues, TSN Node verification,
+Cranker execution, commitment checks, escrow, reimbursement, receipts, replay
+protection, and recovery tracking.
 
 ## A finalized TSN payment
 
-TSN settlement has two separate on-chain submissions. The first funds a
-program-controlled TSN Escrow and records a payment as `FUNDED`. The second
-releases the already-authorized payment from that escrow and records it as
-`SETTLED`. The Receiver is the durable ingress and work/status surface; the
-TSN Node verifies work; a Cranker pays Solana fees and submits the exact work
-that was verified. Neither the Node nor a Cranker receives a user's private
-keys or decrypted ZK-PRU master material.
+TSN separates payment intent, verification, settlement execution, and Cranker
+reimbursement. The Receiver stores the intent, the TSN Node verifies it, and a
+short lease gives one Cranker the right to submit the exact settlement work.
+The Cranker pays the recipient from its own protocol vault. The isolated escrow
+then reimburses the Cranker that actually completed the leased settlement.
+
+The one-time commitment and lease are checked by the TSN Program. They prevent
+replay and prevent a different Cranker from claiming the same settlement. The
+intent record, recipient route, and settlement evidence are coordinated through
+the Receiver; the on-chain payout is not a direct public sender-to-recipient
+transfer.
 
 ```mermaid
 flowchart TD
-    A["1. Sender enters recipient TIN or public wallet and amount"]
+    A["Sender selects recipient route, asset, amount, and fees"]
+    B["Authorized device and TSN SDK build the signed intent and one-time commitment"]
+    C["Frontend submits POST /intents to TSN Receiver"]
 
-    subgraph DEVICE["Sender's authorized device"]
-        B["2. TrustLink Pay resolves public recipient identity"]
-        C["3. TSN SDK builds the immutable route, amount, fees, expiry and commitment"]
-        D["4. Main wallet signs the payment authorization"]
-        E["5. Where a ZK-PRU source is used: device decrypts locally and creates the scoped PRU authorization"]
+    subgraph STAGE1["Stage 1 — intent verification and funding"]
+        D["Receiver stores RECEIVED intent"]
+        E["TSN Node verifies signatures, route commitment, amount, expiry, nonce, and replay state"]
+        F["Receiver publishes VERIFIED intent work"]
+        G["Cranker leases the work and submits the exact sender-authorized funding transaction"]
+        H["TSN Program creates the isolated escrow vault and verifies the commitment"]
+        I["Sender funds the isolated escrow vault"]
     end
 
-    F["6. Frontend submits the signed immutable payment intent to TSN Receiver"]
-
-    subgraph RECEIVER["TSN Receiver — durable ingress, leases and status"]
-        G["Intent stored as RECEIVED"]
-        H["Verified intent work becomes available to a Cranker"]
-        O["Funded payment creates settlement-claim work"]
-        R["Verified settlement work becomes available to a Cranker"]
-        X["Finalized status, signatures and non-secret evidence are stored"]
+    subgraph STAGE2["Stage 2 — leased settlement and reimbursement"]
+        J["Receiver exposes settlement work after funding confirmation"]
+        K["Cranker obtains a short settlement lease and one-time settlement token"]
+        L["TSN Program verifies lease owner, commitment, replay state, amount, route, and expiry"]
+        M["CrankerVault pays the recipient route and protocol fees"]
+        N["Escrow reimbursement credits only the leased settlement Cranker"]
+        O["One-time settlement token is marked used;<br/>commitment, evidence, and receipts are recorded"]
     end
 
-    subgraph NODE["TSN Node — stateless protocol verification"]
-        I["7. Node leases the received intent"]
-        J["8. Verifies signatures, intent/route commitment, expiry, replay state, amounts and source rules"]
-        K["9. Resolves the recipient's public execution route and verifies its commitment"]
-        P["13. Node leases settlement-claim work"]
-        Q["14. Verifies funded state, exact authorized settlement data, expiry and replay state"]
-    end
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M --> N --> O
 
-    subgraph CRANKER["Independent Cranker — fee-paying exact executor"]
-        L["10. Cranker leases verified intent work"]
-        M["11. Cranker submits the funding / intent transaction"]
-        S["15. Cranker leases verified settlement work"]
-        T["16. Cranker submits the settlement transaction"]
-        W["18. Cranker records confirmed transaction evidence"]
-    end
-
-    subgraph SOLANA["Solana — TSN Program and program-controlled state"]
-        N["12. TSN Program verifies the authorization and funds TSN Escrow"]
-        N1["Payment PDA: FUNDED"]
-        N2["TSN Escrow holds the exact authorized asset amount"]
-        U["17. TSN Program verifies settlement, releases escrowed tokens and prevents duplicate release"]
-        V["Payment PDA: SETTLED"]
-        Y["Recipient receives confidential TIN ownership or public wallet tokens; authorized change follows its route"]
-    end
-
-    Z["19. Sender and recipient read finalized status and private/public receipts"]
-
-    A --> B --> C --> D --> E --> F
-    F --> G --> I --> J --> K --> H --> L --> M --> N
-    N --> N1
-    N --> N2
-    N1 --> O
-    N2 --> O
-    O --> P --> Q --> R --> S --> T --> U
-    U --> V
-    U --> Y
-    V --> W
-    Y --> W
-    W --> X --> Z
-
-    classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
+    classDef user fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
     classDef node fill:#e9efed,stroke:#4e6e60,color:#14241c;
     classDef cranker fill:#f2eee6,stroke:#6b6254,color:#211f1a;
     classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
-    classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    class B,C,D,E device;
-    class G,H,O,R,X receiver;
-    class I,J,K,P,Q node;
-    class L,M,S,T,W cranker;
-    class N,N1,N2,U,V,Y chain;
-    class A,F,Z outcome;
+    class A,B,C user;
+    class D,F,J,O receiver;
+    class E node;
+    class G,K,N cranker;
+    class H,I,L,M chain;
 ```
 
-The first on-chain signature proves that the payment was authorized and
-funded; it is not the recipient settlement. A payment is finalized only after
-the separate settlement transaction succeeds and the Payment PDA is `SETTLED`.
+The public settlement proof is commitment-based. Observers can see Solana
+transactions and token-account addresses, but the tested route keeps the
+sender intent, recipient route, and Cranker reimbursement as separate protocol
+records rather than exposing a direct sender-to-recipient payment edge.
 
 ## Core terms
 
@@ -114,18 +82,20 @@ the separate settlement transaction succeeds and the Payment PDA is `SETTLED`.
   device-local encrypted derivation material, scoped child authorities, and
   policy-driven receiving/spending routes.
 - **TSN SDK:** the local planner and authorization layer that creates the
-  immutable payment route.
-- **TSN Receiver:** the Firebase-backed ingress, durable work queue, leases,
-  and status-read service.
-- **TSN Node:** the stateless off-chain protocol verifier and processor. It
-  leases received work and returns verified or rejected evidence.
+  immutable payment route and commitment.
+- **TSN Receiver:** the durable ingress, work queue, leases, and status-read
+  service.
+- **TSN Node:** the off-chain protocol verifier and processor. It verifies work,
+  resolves eligible routes, prevents replay, and publishes claimable work.
 - **Cranker:** an independent fee-paying executor that submits already
   authorized transactions. It does not receive user private keys or replan a
   payment.
-- **TSN Program:** the Solana program that verifies authorization and state and
-  performs the enforced token movement.
-- **TSN Escrow:** a program-controlled vault that temporarily holds funded
-  assets between funding and settlement.
+- **TSN Program:** the Solana program that verifies authorization, leases,
+  commitments, replay state, and enforced token movement.
+- **TSN Escrow:** a program-controlled isolated vault used to reimburse the
+  Cranker that completed the active settlement lease.
+- **CrankerVault:** the protocol-controlled liquidity vault from which the
+  leased Cranker pays the recipient and protocol fees.
 
 Solana validators provide transaction execution, ordering, consensus, and
 finality. They are not TSN Nodes or Crankers. TSN uses Solana; it does not
@@ -138,7 +108,7 @@ replace Solana consensus.
 3. TIN-to-wallet: protected source route to a public wallet exit.
 4. Wallet-to-wallet: public compatibility settlement.
 
-The full two-stage lifecycle and diagrams are in
+The complete stage-by-stage flow is in
 [TSN Transaction Explorer](./docs/tsn-transaction-explorer.md).
 
 ## Start reading
@@ -155,10 +125,10 @@ The full two-stage lifecycle and diagrams are in
 
 ## Status boundaries
 
-The TSN Node, SDK, Cranker, TSN Program, and TSN Escrow are the active runtime
-architecture. Recurring payments remain disabled. TCAP is a separate
-experimental confidential-asset direction, not the current settlement actor.
-Formal zero-knowledge proofs are not claimed unless the implementation and
+The TSN Node, SDK, Cranker, TSN Program, Receiver, and TSN Escrow are the
+active runtime architecture. Recurring payments remain disabled. TCAP is a
+separate experimental confidential-asset direction, not the current settlement
+actor. Formal zero-knowledge proofs are not claimed unless implementation and
 verification evidence are present.
 
 TrustLink Pay is experimental software. Always verify program IDs, cluster,

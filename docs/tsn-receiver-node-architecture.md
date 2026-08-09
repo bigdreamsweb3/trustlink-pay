@@ -40,7 +40,13 @@ Firestore transactions enforce leases, idempotency, and state-version changes. L
 
 ## TSN Node
 
-The Node is a stateless protocol processor. It leases `RECEIVED` work from the Receiver, verifies canonical messages, signatures, commitments, expiry, routing relationships, and protocol state, and returns `VERIFIED` or `REJECTED` evidence. Durable reads and writes use the Receiver API; the Node does not own a queue database.
+The Node is a stateless protocol processor. It leases `RECEIVED` work from the
+Receiver, verifies canonical messages, signatures, commitments, expiry, routing
+relationships, and protocol state, and returns `VERIFIED` or `REJECTED`
+evidence. It creates the recipient settlement intent off chain and keeps it
+inactive until payment submission and required on-chain validation succeed.
+Durable reads and writes use the Receiver API; the Node does not own a queue
+database.
 
 The Node may decrypt only the encrypted public routing envelope needed to select a receiving ZK-PRU public key. It never receives or decrypts the TIN master seed and cannot sign as a user ZK-PRU.
 
@@ -113,7 +119,8 @@ flowchart TD
   T["TIN encrypted public-route envelope"] --> N
   N --> C["Recompute PRU commitment"]
   C --> S["Select receiving public key"]
-  S --> A["Sign opaque route authorization"]
+  S --> SI["Create inactive settlement intent"]
+  SI --> A["Activate only after payment submission and on-chain verification"]
   A --> R
   R --> K["Cranker verifies Node signature"]
   K --> P["TSN Program / settlement execution"]

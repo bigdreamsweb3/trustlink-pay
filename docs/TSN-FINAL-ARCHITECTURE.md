@@ -128,6 +128,8 @@ sequenceDiagram
   R->>N: Publish received work
   N->>N: Verify intent and route commitment
   N->>N: Decrypt public route envelope and select destination
+  N->>N: Create inactive settlement intent
+  N->>P: Validate submitted payment intent and required on-chain state
   N-->>R: VERIFIED intent work
   R-->>C: Short intent lease
   C->>P: Submit exact funding transaction

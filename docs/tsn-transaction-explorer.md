@@ -31,7 +31,9 @@ flowchart TD
         RECEIVED --> NODE_INTENT["TSN Node leases and verifies intent<br/>signature, route, amount, mint, expiry,<br/>nonce, commitment, and replay state"]
         NODE_INTENT --> INTENT_RESULT{"Intent verification"}
         INTENT_RESULT -->|Rejected| REJECT["Receiver records rejection<br/>No funding transaction is submitted"]
-        INTENT_RESULT -->|Verified| VERIFIED_INTENT["Receiver: intent = VERIFIED<br/>Publish funding work"]
+        INTENT_RESULT -->|Verified| SETTLEMENT_INTENT["TSN Node decrypts the recipient route<br/>and creates the settlement intent<br/>(inactive until submission is verified)"]
+        SETTLEMENT_INTENT --> VERIFY_SUBMISSION["TSN Node confirms the payment intent<br/>was submitted and asks the TSN Program<br/>to validate required on-chain state"]
+        VERIFY_SUBMISSION --> VERIFIED_INTENT["Receiver: intent = VERIFIED<br/>Publish funding work"]
         VERIFIED_INTENT --> FUNDCRANK["Cranker leases verified intent work<br/>and pays the Solana fee"]
         FUNDCRANK --> FUNDTX["Cranker submits the exact<br/>sender-authorized funding transaction"]
         FUNDTX --> PROGRAM1["TSN Program verifies funding and creates<br/>the payment-intent vault"]
@@ -40,7 +42,7 @@ flowchart TD
 
     subgraph STAGE2["STAGE 2 — SETTLEMENT PROOF, LEASE, AND PAYOUT"]
         ESCROW --> SETTLEMENT_WORK["Receiver publishes settlement work<br/>after funding evidence is confirmed"]
-        SETTLEMENT_WORK --> NODE_SETTLE["TSN Node/verifier checks settlement proof,<br/>route, amount, commitment, expiry, and replay"]
+        SETTLEMENT_WORK --> NODE_SETTLE["TSN Node activates the prepared settlement intent<br/>after verifying settlement proof, route, amount,<br/>commitment, expiry, and replay"]
         NODE_SETTLE --> LEASE_RESULT{"Settlement accepted?"}
         LEASE_RESULT -->|Rejected or expired| REJECT_SETTLE["Reject, requeue, or recover<br/>according to TSN policy"]
         LEASE_RESULT -->|Accepted| LEASE["Short settlement lease granted<br/>to one Cranker"]

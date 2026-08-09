@@ -46,26 +46,27 @@ flowchart TD
     subgraph VERIFIER["TSN Node and verifier services — decision authority"]
         I["6. Lease and verify the payment intent"]
         J["7. Verify signatures, commitment, source, amount, route, expiry, and replay state"]
-        P["12. Verify settlement proof and grant the short settlement lease"]
-        Q["13. Decide whether reimbursement is valid after proof"]
+        P["12. Node decrypts recipient route and creates the settlement intent<br/>(inactive until payment intent verification)"]
+        Q["13. Node confirms the payment intent was submitted<br/>and asks the TSN Program to validate settlement state"]
+        P2["14. Settlement intent becomes active and leaseable"]
     end
 
     subgraph CRANKER["Cranker — submitter only"]
         K["8. Cranker leases verified intent work"]
         L["9. Cranker submits the exact sender-authorized funding transaction"]
-        S["14. Cranker submits the exact leased settlement transaction"]
-        T["16. Cranker submits separate reimbursement work only when authorized"]
+        S["15. Cranker submits the exact leased settlement transaction"]
+        T["17. Cranker submits separate reimbursement work only when authorized"]
     end
 
     subgraph SOLANA["Solana — TSN Program and controlled accounts"]
-        M["10. TSN Program creates the payment-intent vault and verifies funding"]
-        N["11. Isolated vault remains available for a later verified decision"]
-        U["15. TSN Program verifies lease, one-time commitment, route, amount, expiry, and replay"]
-        V["17. TSN Program executes only the authorized reimbursement decision"]
+        M["10. TSN Program verifies the Node-approved payment intent<br/>and required on-chain accounts"]
+        N["11. On-chain funding state is available for later policy decisions"]
+        U["16. TSN Program verifies lease, one-time commitment, route, amount, expiry, and replay"]
+        V["18. TSN Program executes only the authorized reimbursement decision"]
         Y["Recipient route receives the payout; private/public receipt follows"]
     end
 
-    A --> B --> C --> D --> F --> G --> I --> J --> H --> K --> L --> M --> N --> O --> P --> Q --> S --> U --> Y
+    A --> B --> C --> D --> F --> G --> I --> J --> P --> Q --> H --> K --> L --> M --> N --> O --> P2 --> S --> U --> Y
     Q -->|"valid proof"| T --> V --> R
     Q -->|"invalid or expired"| X["Reject, requeue, or recover according to TSN policy"] --> R
     U -. "Settlement does not write the intent vault as Paid or recoverable" .-> N
@@ -78,7 +79,7 @@ flowchart TD
     classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     class B,C,D device;
     class G,H,O,R receiver;
-    class I,J,P,Q verifier;
+    class I,J,P,Q,P2 verifier;
     class K,L,S,T cranker;
     class M,N,U,V,Y chain;
     class A,F,X outcome;

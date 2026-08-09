@@ -83,6 +83,8 @@ sequenceDiagram
     S->>R: POST /intents with public intent and signatures
     R->>N: Publish received intent work
     N->>N: Verify authorization, route, amount, expiry, nonce, and replay
+    N->>N: Decrypt recipient route and create inactive settlement intent
+    N->>P: Validate submitted payment intent and required on-chain state
     N-->>R: VERIFIED intent work
     C->>R: Claim short intent lease
     C->>P: Submit exact sender-authorized funding transaction
@@ -106,7 +108,10 @@ sequenceDiagram
 
 The authorized device and SDK create the intent, route commitment, source
 authorization, fee limits, expiry, and replay nonce. The frontend submits the
-public payload to the Receiver. The Node verifies it before publishing work.
+public payload to the Receiver. The Node verifies it, decrypts the recipient's
+public route, and creates the settlement intent off chain. That settlement
+intent remains inactive until the Node confirms that the payment intent was
+submitted and the required on-chain state is valid.
 
 A Cranker leases the verified intent and submits the exact sender-authorized
 funding transaction. The TSN Program creates the isolated payment vault and

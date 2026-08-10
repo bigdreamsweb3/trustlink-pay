@@ -139,6 +139,59 @@ replace Solana consensus.
 The complete stage-by-stage flow is in
 [TSN Transaction Explorer](./docs/tsn-transaction-explorer.md).
 
+## Devnet evidence: wallet-assisted TIN-to-TIN test
+
+According to the supplied transaction notes, this test used a sender TIN route
+and a recipient TIN route. The sender-side funding combined three ZK-PRU
+sources with a **5 USDC main-wallet top-up** for a
+**10 USDC intent**. The destination was a newly selected receiving ZK-PRU, not
+a public recipient wallet. The final settlement is therefore a wallet-assisted
+TIN-to-TIN route: the wallet supplied part of the sender funding, while the
+recipient received the complete amount through the TIN route.
+
+```mermaid
+flowchart TD
+    A["Sender TIN"]
+    B["Main wallet top-up<br/>5 USDC"]
+    C["ZK-PRU source 1"]
+    D["ZK-PRU source 2"]
+    E["ZK-PRU source 3"]
+    F["Combined sender funding<br/>10 USDC intent commitment"]
+    G["TSN settlement submission"]
+    H["Recipient TIN route"]
+    I["New receiving ZK-PRU<br/>10 USDC"]
+
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    B --> F
+    C --> F
+    D --> F
+    E --> F
+    F --> G --> H --> I
+
+    classDef identity fill:#f6f0df,stroke:#8b7131,color:#30240d;
+    classDef source fill:#edf3ec,stroke:#284c36,color:#17251b;
+    classDef settlement fill:#e7eee9,stroke:#1f5038,color:#10251a;
+    class A,H,I identity;
+    class B,C,D,E,F source;
+    class G settlement;
+```
+
+| Stage | Recorded role | Devnet signature |
+| --- | --- | --- |
+| Wallet funding | 5 USDC main-wallet top-up used in the sender funding set | [5u9HmqD5...](https://solscan.io/tx/5u9HmqD5wNmBmHWfDWmw3vhpMhN42j15YPTmUVgpcMtbuwdGdhqRVqGrZAVF5ic1CiS1ZzuF1D2tMyVaanf4eqye?cluster=devnet) |
+| PRU source batch A | ZK-PRU source movement; part of the three-source spend | [3wgVPZYz...](https://solscan.io/tx/3wgVPZYzEqvht5pkPRetF8tFsXoWmy8obbSSqYYTmxaR1fw6oci2y93P96GhK4xXqu4ttSSD7mMYPyEoDjXVporU?cluster=devnet) |
+| PRU source batch B | ZK-PRU source movement; completes the three-source spend | [2M26JcpS...](https://solscan.io/tx/2M26JcpSVhKAQvB5yC3Pp4L6NYLHiU8UTMFMsrMbJwt2Jj23dd3pqRG8nWTxerYrcXqm7R78Jt4992smK7jh7eWJ?cluster=devnet) |
+| Settlement | 10 USDC settlement into the recipient TIN's new receiving ZK-PRU | [46wGVb9s...](https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet) |
+
+The signatures above were supplied as the project's Devnet evidence. The
+repository does not infer a per-signature token split where explorer data is
+unavailable; reviewers can inspect the linked Devnet transactions directly.
+This demonstrates route separation and receiving through a ZK-PRU, not a claim
+of perfect cryptographic transaction unlinkability from Solana's public ledger.
+
 ## Start reading
 
 - [Protocol architecture](./docs/protocol-architecture.md)

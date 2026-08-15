@@ -214,3 +214,33 @@ verification evidence are present.
 
 TrustLink Pay is experimental software. Always verify program IDs, cluster,
 wallet authority, and transaction evidence before using Devnet.
+
+Current devnet program IDs:
+
+| Program | Address |
+| --- | --- |
+| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+
+## Milestones and ecosystem support
+
+TrustLink Pay has progressed through StableHacks and The Bags Hackathon, and received support through the Superteam Agentic Engineering Grant program for fraud-protection development. The factual project history and acknowledgements are in [Project Journey](./docs/PROJECT-JOURNEY.md).
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `frontend/` | TrustLink Pay web application |
+| `backend/` | API, user and payment records, notifications |
+| `transfer-identity-protocol/` | Transfer Identity program and SDK |
+| `tsn-protocol/` | TSN SDK, mempool, RPC gateway, and Cranker tooling |
+| `docs/` | Product, protocol, security, and developer documentation |
+
+## Local development
+
+For the Windows-native development workflow, see [Windows TSN Commands](./docs/WINDOWS-TSN-COMMANDS.md). The default PM2 stack runs the frontend, backend, and RPC gateway; mempool services and the Cranker are explicit opt-in processes.
+
+## License
+
+[MIT](./LICENSE)
+

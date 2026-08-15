@@ -7,6 +7,14 @@ function cleanUrl(value: string) {
   return value.trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
 }
 
+function errorStatus(error: unknown) {
+  const message = error instanceof Error ? error.message : "ERROR";
+  if (message === "UNAUTHORIZED_SERVICE") return 401;
+  if (message.includes("authorization service is unavailable")) return 503;
+  if (message.includes("TSN Node authorization failed")) return 502;
+  return 409;
+}
+
 export async function POST(request: NextRequest) {
   try {
     requireService(request, "cranker");
@@ -27,7 +35,10 @@ export async function POST(request: NextRequest) {
         if (response.status < 500) break;
       }
       if (!response) throw new Error("TSN Node authorization service is unavailable");
-      if (!response.ok) throw new Error(`TSN Node authorization failed (${response.status})`);
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0, 500);
+        throw new Error(`TSN Node authorization failed (${response.status}): ${detail}`);
+      }
       const authorization = await response.json() as Record<string, unknown>;
       work = await attachCrankerAuthorization({ id: work.id, owner: body.crankerId, expectedVersion: work.stateVersion, authorization });
     }
@@ -35,7 +46,7 @@ export async function POST(request: NextRequest) {
     // the Node. Crankers receive only the Node-verified, privacy-minimized view.
     return NextResponse.json({ work: work ? { ...work, payload: {} } : null });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: 401 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: errorStatus(error) });
   }
 }
 

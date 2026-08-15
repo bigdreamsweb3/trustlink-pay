@@ -39,6 +39,15 @@ function safeJson(value) {
   }
 }
 
+function inspectJsonEnvelope(value) {
+  try {
+    const parsed = JSON.parse(Buffer.from(value).toString("utf8"));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function tryDecodeModernRegistry(data) {
   try {
     const decoded = decodeTinsIdentityRegistry(data);
@@ -89,6 +98,7 @@ function decodeLegacyTinAccount(data) {
   let pruConfigurationHash = null;
   if (offset + 32 <= buffer.length) {
     pruConfigurationHash = buffer.subarray(offset, offset + 32);
+    offset += 32;
   }
 
   return {
@@ -100,6 +110,7 @@ function decodeLegacyTinAccount(data) {
     createdAt,
     encryptedMetadataHash,
     pruConfigurationHash,
+    trailingPayload: buffer.subarray(offset),
   };
 }
 
@@ -110,7 +121,7 @@ function printRawDump(data) {
   printValue("Hex:", toHex(data));
 }
 
-function printModernRegistry(decoded, resolved, data) {
+function printModernRegistry(decoded, resolved, data, showRaw) {
   console.log("\n=== On-Chain TIN Registry ===");
   printValue("Layout:", "current identity registry");
   printValue("TIN Number:", decoded.tin.toString());
@@ -156,12 +167,26 @@ function printModernRegistry(decoded, resolved, data) {
     });
   }
 
-  printRawDump(data);
+  if (showRaw) printRawDump(data);
 }
 
-function printLegacyAccount(decoded, resolved, data) {
+function printLegacyAccount(decoded, resolved, data, showRaw) {
+  const seedEnvelope = inspectJsonEnvelope(decoded.encryptedMasterSeed);
+  const trailing = decoded.trailingPayload ?? Buffer.alloc(0);
+  let routeEnvelopeLength = 0;
+  if (trailing.length >= 4) {
+    const declaredLength = trailing.readUInt32LE(0);
+    if (declaredLength > 0 && declaredLength <= trailing.length - 4) {
+      routeEnvelopeLength = declaredLength;
+    }
+  }
   console.log("\n=== On-Chain TIN Account ===");
-  printValue("Layout:", "legacy tin account");
+  printValue(
+    "Layout:",
+    seedEnvelope?.version === "tsn-tin-master-seed-envelope"
+      ? "legacy TIP storage with current TSN envelopes"
+      : "legacy TIP storage layout",
+  );
   printValue("TIN Number:", decoded.tin.toString());
   printValue("Display Name:", decoded.displayName);
   printValue("Owner Pubkey Hash:", toHex(decoded.ownerPubkeyHash));
@@ -171,23 +196,31 @@ function printLegacyAccount(decoded, resolved, data) {
 
   console.log("\n=== Encrypted Payloads ===");
   printValue("Encrypted Master Seed:", decoded.encryptedMasterSeed.length > 0 ? `${decoded.encryptedMasterSeed.length} bytes` : "unavailable");
-  if (decoded.encryptedMasterSeed.length > 0) {
-    printValue("Encrypted Master Seed (base64):", toBase64(decoded.encryptedMasterSeed));
-    printValue("Encrypted Master Seed (hex):", toHex(decoded.encryptedMasterSeed));
+  if (seedEnvelope) {
+    printValue("Seed Envelope:", String(seedEnvelope.version ?? "unknown"));
+    printValue("Envelope Provider:", String(seedEnvelope.provider ?? "unknown"));
+    printValue("Seed Encryption:", String(seedEnvelope.seedEncryptionAlgorithm ?? "authenticated envelope"));
+    printValue("Envelope TIN:", String(seedEnvelope.tin ?? "unknown"));
+    printValue("Route Version:", String(seedEnvelope.routeVersion ?? "unknown"));
+  } else if (decoded.encryptedMasterSeed.length > 0) {
+    printValue("Seed Envelope:", "opaque encrypted bytes (not decoded)");
   }
+  printValue("Public Route Envelope:", routeEnvelopeLength > 0 ? `${routeEnvelopeLength} encrypted bytes` : "not detected in legacy payload");
 
   console.log("\n=== Resolution Summary ===");
   printValue("Resolved Name:", resolved.name);
   printValue("Owner Pubkey Hash:", resolved.ownerPubkeyHash ?? toHex(decoded.ownerPubkeyHash));
-  printValue("Account Kind:", resolved.accountKind);
+  printValue("Storage Account Kind:", resolved.accountKind);
+  printValue("TSN Route Material:", seedEnvelope && routeEnvelopeLength > 0 ? "current envelope format present" : "not confirmed");
   printValue("Settlement Verified:", String(resolved.settlementAuthorityVerified));
 
-  printRawDump(data);
+  if (showRaw) printRawDump(data);
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const targetTinArg = args.find((value) => !value.startsWith("-"));
+  const showRaw = args.includes("--raw");
   if (!targetTinArg) {
     console.error("Usage: node tins-lookup.mjs <TIN> [--raw]");
     process.exit(1);
@@ -251,7 +284,7 @@ async function main() {
         sensitiveFields: [],
         encryptedSensitiveFields: modern.sensitiveFields,
       };
-      printModernRegistry(modern, modernResolved, data);
+      printModernRegistry(modern, modernResolved, data, showRaw);
     } else {
       const legacy = decodeLegacyTinAccount(data);
       const legacyResolved = resolved ?? {
@@ -268,7 +301,7 @@ async function main() {
         sensitiveFields: [],
         encryptedSensitiveFields: [],
       };
-      printLegacyAccount(legacy, legacyResolved, data);
+      printLegacyAccount(legacy, legacyResolved, data, showRaw);
     }
   }
 }

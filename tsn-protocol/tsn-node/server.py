@@ -55,7 +55,11 @@ from app.services.threshold_access import (
     verify_threshold_access_request,
 )
 from app.receiver_store import ReceiverStore
-from app.services.route_attestation import canonical_route_message, sign_route_message
+from app.services.route_attestation import (
+    canonical_route_amount,
+    canonical_route_message,
+    sign_route_message,
+)
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
@@ -131,16 +135,13 @@ _tin_fee_config_cache: Optional[dict[str, Any]] = None
 _tin_fee_config_cache_expires_at = 0.0
 
 
-def split_rpc_url_list(value: str) -> list[str]:
-    return [clean_env(entry).rstrip("/") for entry in re.split(r"[,\s]+", value) if entry.strip()]
-
-
-def resolve_solana_rpc_url() -> str:
-    urls = split_rpc_url_list(os.environ.get("TSN_SOLANA_RPC_URLS", ""))
-    return urls[0] if urls else "https://tsn-rpc-gateway.wasmer.app"
-
-
-TSN_SOLANA_RPC_URL = resolve_solana_rpc_url()
+TSN_RPC_GATEWAY_URL = clean_env(
+    os.environ.get("TSN_RPC_GATEWAY_URL"),
+    "https://tsn-rpc-gateway.wasmer.app",
+).rstrip("/")
+# All Node on-chain reads, including replay and settlement authorization
+# checks, use the single configured TrustLink RPC gateway.
+TSN_SOLANA_RPC_URL = TSN_RPC_GATEWAY_URL
 
 
 def receiver_endpoints(path: str) -> list[str]:
@@ -905,6 +906,53 @@ def decode_tin_account_header(data: bytes) -> dict[str, Any]:
         "ownerPubkeyHash": owner_pubkey_hash.hex(),
     }
 
+
+def decode_tin_account_route_material(data: bytes) -> dict[str, Any]:
+    """Decode the current route fields from either a legacy TIP account wrapper.
+
+    The account layout is still the TIP ``TinAccount`` layout, but the payload
+    contains the current TSN device-seed and public-route envelopes.  This
+    function never decrypts the master-seed envelope; it only extracts the
+    node-readable public-route envelope and its binding fields.
+    """
+    buffer = bytes(data)
+    offset = 0
+
+    def take(length: int, label: str) -> bytes:
+        nonlocal offset
+        if length < 0 or offset + length > len(buffer):
+            raise ValueError(f"TINS account {label} is truncated")
+        value = buffer[offset:offset + length]
+        offset += length
+        return value
+
+    tin = int.from_bytes(take(8, "TIN"), "little")
+    display_name_length = int.from_bytes(take(4, "display name length"), "little")
+    take(display_name_length, "display name")
+    owner_pubkey_hash = take(32, "owner hash")
+
+    master_seed_length = int.from_bytes(take(4, "master-seed length"), "little")
+    take(master_seed_length, "master-seed envelope")
+    take(8, "created-at")
+    take(32, "encrypted metadata hash")
+    pru_configuration_hash = take(32, "PRU configuration hash")
+
+    route_length = int.from_bytes(take(4, "route-envelope length"), "little")
+    route_envelope = take(route_length, "public-route envelope")
+    route_version = int.from_bytes(take(8, "route version"), "little")
+    route_nonce = take(32, "route nonce")
+    if route_length == 0 or route_version < 1:
+        raise ValueError("TINS account does not contain an active public route envelope")
+
+    return {
+        "tin": str(tin),
+        "ownerPubkeyHash": owner_pubkey_hash.hex(),
+        "pruConfigurationHash": pru_configuration_hash.hex(),
+        "encryptedPublicRouteEnvelope": base64.b64encode(route_envelope).decode("ascii"),
+        "routeVersion": route_version,
+        "routeNonce": route_nonce.hex(),
+    }
+
 async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
     rpc_response = await solana_rpc(
         "getAccountInfo",
@@ -945,6 +993,68 @@ async def find_tins_owner_hash_by_tin(tin: str) -> Optional[str]:
             continue
         if str(decoded.get("tin")) == str(tin):
             return str(decoded.get("ownerPubkeyHash") or "").lower()
+    return None
+
+
+async def read_onchain_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
+    """Recover a finalized route when Receiver lacks the historical operation.
+
+    TIN upgrades can predate the current Receiver deployment.  In that case
+    the on-chain account is authoritative.  Only the encrypted public route
+    envelope is opened here; the device master-seed envelope is never read or
+    decrypted by the Node.
+    """
+    tin_bytes = int(tin).to_bytes(8, "little", signed=False)
+    rpc_response = await solana_rpc(
+        "getProgramAccounts",
+        [
+            TINS_PROGRAM_ID,
+            {
+                "encoding": "base64",
+                "commitment": "confirmed",
+                "filters": [
+                    {"memcmp": {"offset": 0, "bytes": encode_base58(tin_bytes)}}
+                ],
+            },
+        ],
+    )
+    accounts = rpc_response.get("result") or []
+    for account in accounts:
+        encoded = (((account.get("account") or {}).get("data") or [None])[0])
+        if not encoded:
+            continue
+        try:
+            material = decode_tin_account_route_material(base64.b64decode(encoded))
+            if material["tin"] != str(tin):
+                continue
+            snapshot = _decrypt_public_route_envelope(
+                encrypted_envelope_base64=material["encryptedPublicRouteEnvelope"],
+                expected_tin=str(tin),
+                expected_configuration_hash=material["pruConfigurationHash"],
+                expected_route_version=int(material["routeVersion"]),
+                expected_route_nonce=material["routeNonce"],
+            )
+        except HTTPException as exc:
+            if exc.status_code >= 500:
+                raise
+            logger.warning("On-chain TIN route recovery rejected: tin=%s reason=%s", tin, exc)
+            continue
+        except (ValueError, TypeError, binascii.Error) as exc:
+            logger.warning("On-chain TIN route recovery rejected: tin=%s reason=%s", tin, exc)
+            continue
+        identity = str(account.get("pubkey") or "")
+        return {
+            "tin": str(tin),
+            "intentId": f"onchain:{identity}:{material['routeVersion']}",
+            "ownerPubkeyHash": material["ownerPubkeyHash"],
+            "pruConfigurationHash": str(snapshot["pruConfigurationHash"]),
+            "routeVersion": int(snapshot["routeVersion"]),
+            "routeNonce": str(snapshot["routeNonce"]),
+            "prus": snapshot["prus"],
+            "status": "finalized",
+            "source": "onchain_tin_account",
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }
     return None
 
 async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Optional[dict[str, Any]]:
@@ -2472,7 +2582,19 @@ async def read_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
             raw = json.dumps(route)
             break
         else:
-            return None
+            # A TIN may have been upgraded before this Receiver/Node was
+            # deployed, so no historical operation record may exist. Recover
+            # the current route directly from the verified on-chain account.
+            route = await read_onchain_tin_pru_route(str(tin))
+            if not route:
+                return None
+            await r.hset(k_tin_pru_routes(), str(tin), json.dumps(route))
+            logger.info(
+                "Recovered finalized TIN PRU route from on-chain account: tin=%s version=%s",
+                tin,
+                route["routeVersion"],
+            )
+            return route
     try:
         route = json.loads(raw)
     except json.JSONDecodeError:
@@ -2493,7 +2615,20 @@ async def read_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
             None,
         )
         if not finalized_operation:
-            return None
+            # Reconcile pending/stale Receiver state against the current
+            # on-chain route. This is safe because the route envelope is
+            # commitment-bound and is validated before persistence.
+            onchain_route = await read_onchain_tin_pru_route(str(tin))
+            if not onchain_route:
+                return None
+            route = onchain_route
+            await r.hset(k_tin_pru_routes(), str(tin), json.dumps(route))
+            logger.info(
+                "Reconciled TIN PRU route from on-chain account: tin=%s version=%s",
+                tin,
+                route["routeVersion"],
+            )
+            return route
         route["status"] = "finalized"
         route["updatedAt"] = datetime.now(timezone.utc).isoformat()
         await r.hset(k_tin_pru_routes(), str(tin), json.dumps(route))
@@ -3268,7 +3403,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             route_message = canonical_route_message(
                 work_id=str(work["id"]), destination=str(selected["publicKey"]),
                 route_commitment=str(route["pruConfigurationHash"]),
-                mint=str(request.tokenMintAddress), amount=str(request.amount),
+                mint=str(request.tokenMintAddress), amount=canonical_route_amount(request.amount),
                 expiry=expires_at, program_id=TSN_PROGRAM_ID,
             )
             route_signer = SigningKey(decode_secret_key(
@@ -3330,6 +3465,11 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
 
 async def receiver_verification_worker() -> None:
     headers = {"x-api-key": TSN_RECEIVER_NODE_API_KEY, "content-type": "application/json"}
+    idle_delay_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_POLL_SECONDS", "1"))
+    # Keep verification latency below the blockhash lifetime of sender-signed
+    # settlement transactions. Receiver wake notifications can let this grow
+    # later without risking expiry while the worker is asleep.
+    idle_max_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_MAX_SECONDS", "5"))
     async with httpx.AsyncClient(timeout=30) as client:
         while True:
             try:
@@ -3340,8 +3480,10 @@ async def receiver_verification_worker() -> None:
                 claimed.raise_for_status()
                 work = claimed.json().get("work")
                 if not work:
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(idle_delay_seconds)
+                    idle_delay_seconds = min(idle_max_seconds, max(1.0, idle_delay_seconds * 2))
                     continue
+                idle_delay_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_POLL_SECONDS", "1"))
                 try:
                     evidence = await _verify_receiver_work(work)
                     status = "VERIFIED"
@@ -3361,7 +3503,7 @@ async def receiver_verification_worker() -> None:
                 raise
             except Exception:
                 logger.exception("TSN Receiver verification loop failed; retrying")
-                await asyncio.sleep(2)
+                await asyncio.sleep(min(idle_max_seconds, max(2.0, idle_delay_seconds)))
 
 async def _receiver_work_by_id(work_id: str) -> dict[str, Any]:
     if not TSN_RECEIVER_URL or not TSN_RECEIVER_NODE_API_KEY:

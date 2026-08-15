@@ -25,7 +25,15 @@ export async function GET() {
     receivedAt: item.receivedAt,
     updatedAt: item.updatedAt,
     verification: item.verification
-      ? { verificationType: item.verification.verificationType ?? "TSN_NODE" }
+      ? {
+          verificationType: item.verification.verificationType ?? "TSN_NODE",
+          // Rejection diagnostics are deliberately limited to the Node's
+          // bounded reason string. Never expose the verified payload or
+          // signed/encrypted fields through this monitoring endpoint.
+          reason: item.status === "REJECTED" && typeof item.verification.reason === "string"
+            ? item.verification.reason.slice(0, 500)
+            : null,
+        }
       : null,
     result: item.result
       ? {

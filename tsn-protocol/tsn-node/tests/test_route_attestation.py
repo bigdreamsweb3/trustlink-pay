@@ -4,11 +4,18 @@ from nacl.signing import SigningKey
 from nacl.exceptions import BadSignatureError
 
 from app.services.route_attestation import (
-    canonical_route_message, sign_route_message, verify_route_message,
+    canonical_route_amount, canonical_route_message, sign_route_message,
+    verify_route_message,
 )
 
 
 class RouteAttestationTests(unittest.TestCase):
+    def test_amount_uses_json_compatible_spelling(self):
+        self.assertEqual(canonical_route_amount(1.0), "1")
+        self.assertEqual(canonical_route_amount(10.0), "10")
+        self.assertEqual(canonical_route_amount("1.2300"), "1.23")
+        self.assertEqual(canonical_route_amount("1e-7"), "0.0000001")
+
     def test_attestation_exposes_no_tin_or_route_map(self):
         message = canonical_route_message(
             work_id="work-1", destination="Destination111", route_commitment="ab" * 32,

@@ -39,6 +39,39 @@ const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V2");
 const MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1";
 const PRU_SPEND_GUARD_SEED = utf8ToBytes("pru_spend_guard");
 
+async function sendAndConfirmHttp(
+  connection: Connection,
+  transaction: Transaction,
+  signers: Keypair[],
+) {
+  // Do not let web3.js derive/use a provider WebSocket from the HTTP URL.
+  // Cranker settlement is intentionally HTTP-only through the TSN RPC gateway.
+  const signature = await connection.sendTransaction(transaction, signers, {
+    preflightCommitment: "confirmed",
+  });
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    const status = (await connection.getSignatureStatuses([signature], {
+      searchTransactionHistory: true,
+    })).value[0];
+    if (status?.err) {
+      const transactionInfo = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = transactionInfo?.meta?.logMessages?.join(" | ") ?? "";
+      throw new Error(
+        `TSN settlement transaction failed: ${JSON.stringify(status.err)}${logs ? `; logs=${logs}` : ""}`,
+      );
+    }
+    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+      return signature;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  throw new Error(`TSN settlement confirmation timed out; signature=${signature}`);
+}
+
 export type PrivatePayoutPermit = {
   permitSigner: string;
   permitSignatureBase64: string;
@@ -762,11 +795,10 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   const transaction = new Transaction({
     feePayer: params.operator.publicKey,
   }).add(verifyInstruction, payoutInstruction);
-  const signature = await sendAndConfirmTransaction(
+  const signature = await sendAndConfirmHttp(
     connection,
     transaction,
     [params.operator],
-    { commitment: "confirmed" },
   );
   return {
     signature,
@@ -865,14 +897,13 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
       ]),
     ),
   });
-  const signature = await sendAndConfirmTransaction(
+  const signature = await sendAndConfirmHttp(
     connection,
     new Transaction({ feePayer: params.operator.publicKey }).add(
       verifyInstruction,
       recoveryInstruction,
     ),
     [params.operator],
-    { commitment: "confirmed" },
   );
   return {
     signature,

@@ -6,6 +6,20 @@ TrustLink Labs is a research and engineering organization building the Transfer 
 
 TrustLink Labs develops protocols, SDKs, Solana programs, research papers, and reference applications. TrustLink Pay is the application experience; TSN is the network beneath it.
 
+Our mission is:
+
+> Build the protocol stack that makes stablecoin payments as intuitive
+> as modern banking while preserving user ownership, privacy, and open
+> blockchain principles.
+
+## AI-assisted research and engineering
+
+TrustLink Labs uses AI-assisted engineering tools to accelerate protocol
+research, code exploration, implementation, testing, and technical
+documentation. The architecture, security boundaries, deployment decisions,
+and claims made by the project remain human-led and are reviewed against the
+source code, reproducible tests, and available Devnet evidence.
+
 ## The current architecture
 
 ```mermaid
@@ -104,12 +118,12 @@ Native TIN-to-TIN is the privacy-focused route. Wallet-to-TIN, TIN-to-wallet pub
 
 ## Devnet reference identifiers
 
-| Component | Identifier | Status |
-| --- | --- | --- |
-| TSN / TrustLink Escrow program | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | Active Devnet program |
-| TIN registry program | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` | Active Devnet program |
-| TCAP experimental program | `TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x` | Separate experimental Devnet program |
-| Stable-TCAP faucet program | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
+| Component                      | Identifier                                     | Status                               |
+| ------------------------------ | ---------------------------------------------- | ------------------------------------ |
+| TSN / TrustLink Escrow program | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V`  | Active Devnet program                |
+| TIN registry program           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT`  | Active Devnet program                |
+| TCAP experimental program      | `TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x`  | Separate experimental Devnet program |
+| Stable-TCAP faucet program     | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure           |
 
 Identifiers are provided for reproducible Devnet research. They do not imply mainnet readiness or completed TCAP integration.
 

@@ -175,3 +175,95 @@ wallet top Up = https://solscan.io/tx/5u9HmqD5wNmBmHWfDWmw3vhpMhN42j15YPTmUVgpcM
 settlement - 10 usdc
 
 https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet
+
+<!--  -->
+
+onchain receipint tx inspection
+
+PS C:\Users\codepara\Desktop\trust-link\tsn-protocol\tsn-cranker-op-daemon> solana confirm -v n95iWNRuyb2afr9tGmvmEPxoKzU3k7jPWJEfR3mPiAETUKSambMDoqm12ENHjLAqnLavgufYp76Amwm66UPcpqS `
+
+> > --url https://tsn-rpc-gateway.wasmer.app
+> > RPC URL: https://tsn-rpc-gateway.wasmer.app
+> > Default Signer Path: C:\Users\codepara\.config\solana\id.json
+> > Commitment: confirmed
+
+Transaction executed in slot 484225738:
+Block Time: 2026-08-15T21:16:01+01:00
+Version: legacy
+Recent Blockhash: FsgXHGwiNRLKMcBzNtfxEyAVAVgxvUETnmtaVM48wB1f
+Signature 0: n95iWNRuyb2afr9tGmvmEPxoKzU3k7jPWJEfR3mPiAETUKSambMDoqm12ENHjLAqnLavgufYp76Amwm66UPcpqS
+Account 0: srw- FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG (fee payer)
+Account 1: -rw- 12jag2da9dDFo4qbGXdy2GeV31yRd4xPsfTWaf9SZM2h
+Account 2: -rw- 4fGSYNt2RaVkcj2U7vRZkPRGPzofc4Z8x2DDokRFeHWi
+Account 3: -rw- 7UQziHY2KY2Y9pDkWSfk1BLBUKqSZZd4LBtCy1gPdJJZ
+Account 4: -rw- ADwd3kTkycqjTppZrKp59uGRjbEs6gtqaAeAjV4T9DGZ
+Account 5: -rw- DiBEnKqdYiDcaepK86nqWMN8mpRVWM46i4KpXFJv3dp
+Account 6: -rw- HNGP4WuN6KQ5qqsJA662mJtezaTaT6bnA8kPAae9j7S7
+Account 7: -r-- 11111111111111111111111111111111
+Account 8: -r-- 4NivuRZ2WkrPNzgvH1aCjoGgUH1Nxhkxc5bkP6cjb28j
+Account 9: -r-- 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
+Account 10: -r-- 8jn3uvbMcCVMe64fDiipc3917TF9VBQRXUYv2qHc4wW9
+Account 11: -r-- 9QZrnZZp5h77hzx9Ncbiid2UaVp2HDuFbaEd91GZr6ep
+Account 12: -r-- ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+Account 13: -r-x Ed25519SigVerify111111111111111111111111111
+Account 14: -r-- ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR
+Account 15: -r-- Sysvar1nstructions1111111111111111111111111
+Account 16: -r-- TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+Account 17: -r-x TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+Instruction 0
+Program: Ed25519SigVerify111111111111111111111111111 (13)
+Data: [1, 0, 48, 0, 255, 255, 16, 0, 255, 255, 112, 0, 21, 1, 255, 255, 55, 112, 55, 81, 75, 110, 66, 67, 164, 179, 2, 115, 12, 132, 48, 53, 47, 99, 105, 241, 220, 141, 118, 23, 233, 206, 63, 159, 222, 153, 102, 57, 8, 186, 209, 219, 200, 204, 198, 21, 210, 89, 58, 73, 130, 198, 81, 76, 127, 117, 209, 130, 242, 171, 167, 95, 221, 190, 77, 222, 189, 48, 81, 80, 244, 64, 41, 182, 253, 121, 122, 69, 126, 203, 21, 53, 127, 28, 254, 52, 36, 192, 247, 136, 10, 23, 59, 150, 144, 40, 167, 31, 161, 218, 197, 14, 84, 83, 78, 95, 80, 82, 73, 86, 65, 84, 69, 95, 80, 65, 89, 79, 85, 84, 95, 86, 50, 6, 197, 199, 88, 146, 109, 195, 97, 71, 109, 32, 141, 224, 168, 20, 83, 113, 55, 217, 218, 28, 150, 193, 188, 135, 104, 86, 124, 166, 7, 198, 74, 199, 233, 30, 1, 154, 130, 224, 184, 3, 32, 153, 166, 199, 87, 103, 190, 151, 152, 226, 46, 158, 26, 216, 221, 135, 202, 2, 251, 152, 145, 222, 170, 219, 169, 29, 226, 168, 146, 248, 114, 116, 83, 3, 24, 69, 1, 115, 145, 32, 92, 167, 23, 66, 56, 170, 123, 152, 30, 104, 201, 221, 58, 53, 185, 205, 197, 175, 25, 95, 164, 186, 252, 50, 39, 234, 249, 41, 135, 93, 84, 228, 241, 82, 194, 215, 126, 250, 66, 22, 33, 226, 174, 128, 174, 50, 250, 24, 0, 0, 0, 0, 0, 0, 0, 3, 65, 135, 52, 9, 245, 121, 38, 23, 193, 97, 28, 123, 173, 48, 243, 133, 204, 15, 129, 238, 156, 169, 119, 179, 159, 182, 147, 108, 66, 222, 183, 0, 113, 186, 16, 54, 250, 49, 199, 138, 133, 177, 96, 122, 213, 190, 150, 198, 247, 136, 106, 74, 245, 220, 130, 149, 123, 164, 219, 131, 208, 208, 194, 59, 68, 44, 179, 145, 33, 87, 241, 58, 147, 61, 1, 52, 40, 45, 3, 43, 95, 254, 205, 1, 162, 219, 241, 183, 121, 6, 8, 223, 0, 46, 167, 64, 66, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 88, 201, 128, 106, 0, 0, 0, 0]
+Instruction 1
+Program: TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V (17)
+Account 0: FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG (0)
+Account 1: ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR (14)
+Account 2: HNGP4WuN6KQ5qqsJA662mJtezaTaT6bnA8kPAae9j7S7 (6)
+Account 3: 4NivuRZ2WkrPNzgvH1aCjoGgUH1Nxhkxc5bkP6cjb28j (8)
+Account 4: 7UQziHY2KY2Y9pDkWSfk1BLBUKqSZZd4LBtCy1gPdJJZ (3)
+Account 5: DiBEnKqdYiDcaepK86nqWMN8mpRVWM46i4KpXFJv3dp (5)
+Account 6: 8jn3uvbMcCVMe64fDiipc3917TF9VBQRXUYv2qHc4wW9 (10)
+Account 7: ADwd3kTkycqjTppZrKp59uGRjbEs6gtqaAeAjV4T9DGZ (4)
+Account 8: 9QZrnZZp5h77hzx9Ncbiid2UaVp2HDuFbaEd91GZr6ep (11)
+Account 9: 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU (9)
+Account 10: 12jag2da9dDFo4qbGXdy2GeV31yRd4xPsfTWaf9SZM2h (1)
+Account 11: Sysvar1nstructions1111111111111111111111111 (15)
+Account 12: 4fGSYNt2RaVkcj2U7vRZkPRGPzofc4Z8x2DDokRFeHWi (2)
+Account 13: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA (16)
+Account 14: ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL (12)
+Account 15: 11111111111111111111111111111111 (7)
+Data: [122, 5, 27, 202, 86, 43, 139, 31, 205, 197, 175, 25, 95, 164, 186, 252, 50, 39, 234, 249, 41, 135, 93, 84, 228, 241, 82, 194, 215, 126, 250, 66, 22, 33, 226, 174, 128, 174, 50, 250, 24, 0, 0, 0, 0, 0, 0, 0, 64, 66, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 88, 201, 128, 106, 0, 0, 0, 0, 8, 186, 209, 219, 200, 204, 198, 21, 210, 89, 58, 73, 130, 198, 81, 76, 127, 117, 209, 130, 242, 171, 167, 95, 221, 190, 77, 222, 189, 48, 81, 80, 244, 64, 41, 182, 253, 121, 122, 69, 126, 203, 21, 53, 127, 28, 254, 52, 36, 192, 247, 136, 10, 23, 59, 150, 144, 40, 167, 31, 161, 218, 197, 14]
+Status: Ok
+Fee: ◎0.00001
+Account 0 balance: ◎13.89627668
+Account 1 balance: ◎0.00203928
+Account 2 balance: ◎0.33399616 -> ◎0.33398616
+Account 3 balance: ◎0.0012876
+Account 4 balance: ◎0.00203928
+Account 5 balance: ◎0.0020184
+Account 6 balance: ◎0.00199056
+Account 7 balance: ◎0.000000001
+Account 8 balance: ◎0.00162864
+Account 9 balance: ◎413.396035289
+Account 10 balance: ◎0
+Account 11 balance: ◎0
+Account 12 balance: ◎5.93807054
+Account 13 balance: ◎0.000000001
+Account 14 balance: ◎0.00194184
+Account 15 balance: ◎0
+Account 16 balance: ◎15.367267856
+Account 17 balance: ◎0.00114144
+Compute Units Consumed: 39665
+Log Messages:
+Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V invoke [1]
+Program log: Instruction: TsnExecutePrivatePayout
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 76 of 168253 compute units
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+Program 11111111111111111111111111111111 invoke [2]
+Program 11111111111111111111111111111111 success
+Program data: OIR1wiXIAWvNxa8ZX6S6/DIn6vkph11U5PFSwtd++kIWIeKugK4y+hgAAAAAAAAA8y2UFFlxRFzFl8Qlv9nWhs7grT37FnuROsXYD5KQ/Hg7RCyzkSFX8TqTPQE0KC0DK1/+zQGi2/G3eQYI3wAup0BCDwAAAAAA
+Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V consumed 39665 of 203000 compute units
+Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V success
+
+Finalized
+PS C:\Users\codepara\Desktop\trust-link\tsn-protocol\tsn-cranker-op-daemon>

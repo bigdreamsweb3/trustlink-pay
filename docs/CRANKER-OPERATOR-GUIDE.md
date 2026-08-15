@@ -128,9 +128,10 @@ real values only on the private operator machine:
 
 ```dotenv
 SOLANA_MOCK_MODE=false
-TSN_RPC_GATEWAY_URL=https://api.devnet.solana.com
-TSN_SOLANA_RPC_URLS=https://api.devnet.solana.com
-SOLANA_WS_URL=wss://api.devnet.solana.com
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
+TSN_SOLANA_RPC_URLS=https://tsn-rpc-gateway.wasmer.app
+# Optional; use the gateway websocket path only when enabled by the deployment.
+# SOLANA_WS_URL=wss://tsn-rpc-gateway.wasmer.app/ws
 PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
 KEYPAIR_PATH=./keys/cranker-keypair.json
@@ -139,6 +140,7 @@ TSN_CREATE_INTENTS_ONCHAIN=true
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 TSN_RECEIVER_CRANKER_API_KEY=<RECEIVER_CRANKER_API_KEY>
 TSN_CRANKER_POLL_MS=2000
+TSN_CRANKER_IDLE_MAX_MS=60000
 ```
 
 Optional fee and policy settings are documented in `.env.example`. Do not
@@ -306,7 +308,9 @@ TSN Node decision, program logs, and token balances together.
 **Receiver returns 401.** Check that `TSN_RECEIVER_URL` is
 `https://tsn-receiver-kappa.vercel.app` and
 `TSN_RECEIVER_CRANKER_API_KEY` matches the server credential.
-Remove accidental surrounding quotes from Wasmer environment values and restart.
+This is a generated service credential; it must never be a TIN, phone number,
+wallet address, or program ID. Remove accidental surrounding quotes from
+Wasmer environment values and restart.
 
 **Mother Escrow or Cranker PDA is not initialized.** Verify program ID, cluster,
 operator keypair, and seed recipe. Ask the deployment owner to run authorized
@@ -315,6 +319,12 @@ operator keypair, and seed recipe. Ask the deployment owner to run authorized
 **No work is claimed.** Confirm Receiver reachability, TSN Node verification,
 Cranker registration, and an eligible Receiver work state. Do not bypass
 verification by submitting directly from the Cranker.
+
+Idle Crankers use exponential backoff (up to `TSN_CRANKER_IDLE_MAX_MS`) so an
+empty Receiver does not create a continuous high-frequency request stream. A
+local CLI Cranker cannot be directly pinged by a Vercel Receiver unless the
+operator exposes a secure callback endpoint; a future push broker or callback
+can wake it immediately.
 
 **Blockhash or send failures.** Check direct Devnet RPC health, operator SOL,
 token-account rent, compute price, and lease expiry. Retry only through the

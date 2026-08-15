@@ -54,6 +54,32 @@ function getSignedTransactionSignature(tx: Transaction) {
   return anchorUtils.bytes.bs58.encode(signature);
 }
 
+async function confirmSubmittedTransaction(connection: ReturnType<typeof getConnection>, signature: string) {
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    const status = (await connection.getSignatureStatuses([signature], {
+      searchTransactionHistory: true,
+    })).value[0];
+    if (status?.err) {
+      const transaction = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = transaction?.meta?.logMessages?.join(" | ") ?? "";
+      const error = new Error(
+        `TSN settlement transaction failed: ${JSON.stringify(status.err)}${logs ? `; logs=${logs}` : ""}`,
+      ) as Error & { transactionLogs?: string[] };
+      error.transactionLogs = transaction?.meta?.logMessages ?? undefined;
+      throw error;
+    }
+    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  throw new Error(`TSN settlement confirmation timed out; signature=${signature}`);
+}
+
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
 const TSN_INTENT_SEED = Buffer.from("tsn_intent");
 const TSN_VERIFIER_SEED = Buffer.from("verifier");
@@ -292,11 +318,12 @@ export async function tsnSubmitSenderSignedSettlementTransaction(params: {
       signature,
     });
   }
-  await connection.confirmTransaction(signature, "confirmed");
+  await confirmSubmittedTransaction(connection, signature);
 
-  logger.info("tsn.intent.sender_signed_settlement_submitted", {
+  logger.info("tsn.intent.funding_submitted", {
     feePayer: params.operator.publicKey.toBase58(),
     signature,
+    stage: "PAYMENT_INTENT_FUNDING",
   });
 
   return { mode: "devnet" as const, signature };

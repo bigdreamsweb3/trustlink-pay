@@ -80,6 +80,11 @@ type MempoolOverview = {
   line: string;
 };
 
+type ReceiverStatusSummary = {
+  signature: string;
+  line: string;
+};
+
 type EpochRaceCacheEntry = {
   lastSeenSlot: number;
   lastRootHash?: string;
@@ -109,6 +114,10 @@ function isMissingMempoolEndpoint(error: unknown) {
 }
 
 function shouldUseAccountSubscriptions(rpcUrl: string) {
+  // WebSocket monitoring is optional. Require explicit opt-in so a stale
+  // SOLANA_WS_URL inherited by a shell cannot create reconnect storms or
+  // consume provider quota. Receiver polling remains authoritative.
+  if (process.env.TSN_ENABLE_SOLANA_SUBSCRIPTIONS !== "true") return false;
   if (process.env.SOLANA_WS_URL) return true;
   return !/^https?:\/\/(127\.0\.0\.1|localhost):8787\b/.test(rpcUrl);
 }
@@ -161,6 +170,14 @@ function receiverUrl() {
   return process.env.TSN_RECEIVER_URL || "https://tsn-receiver-kappa.vercel.app";
 }
 
+function safeHost(value: string) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "invalid-url";
+  }
+}
+
 type ReceiverWork = {
   id: string;
   kind: "PAYMENT_INTENT" | "CLAIM" | "TIN_OPERATION" | "RECOVERY";
@@ -181,6 +198,33 @@ type OpaqueRouteAuthorization = {
   expiresAt: string;
 };
 
+function canonicalRouteAmount(value: unknown): string {
+  const raw = typeof value === "number" ? value.toString() : String(value ?? "").trim();
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw)) {
+    throw new Error("Node route authorization amount is not numeric");
+  }
+  const sign = raw.startsWith("-") ? "-" : "";
+  const unsigned = raw.replace(/^[+-]/, "");
+  const [coefficient, exponentText] = unsigned.toLowerCase().split("e");
+  const exponent = Number(exponentText ?? 0);
+  const [whole = "0", fraction = ""] = coefficient.split(".");
+  const digits = `${whole}${fraction}`;
+  const decimalPosition = whole.length + exponent;
+  const expanded = decimalPosition <= 0
+    ? `0.${"0".repeat(-decimalPosition)}${digits}`
+    : decimalPosition >= digits.length
+      ? `${digits}${"0".repeat(decimalPosition - digits.length)}`
+      : `${digits.slice(0, decimalPosition)}.${digits.slice(decimalPosition)}`;
+  const [expandedWhole, expandedFraction = ""] = expanded.split(".");
+  const normalizedWhole = expandedWhole.replace(/^0+(?=\d)/, "");
+  const normalizedFraction = expandedFraction.replace(/0+$/, "");
+  const normalized = normalizedFraction
+    ? `${normalizedWhole}.${normalizedFraction}`
+    : normalizedWhole;
+  if (sign || normalized !== "0") return `${sign}${normalized}`;
+  return "0";
+}
+
 function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, unknown>) {
   const route = payload.routeAuthorization as OpaqueRouteAuthorization | undefined;
   if (!route || route.version !== 1) throw new Error("Node route authorization is missing");
@@ -197,7 +241,8 @@ function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, 
   if (route.message.split("\n")[0] !== "TSN_ROUTE_AUTHORIZATION" ||
       fields.get("workId") !== workId || fields.get("destination") !== route.destination ||
       fields.get("routeCommitment") !== route.routeCommitment ||
-      fields.get("mint") !== payload.tokenMintAddress || fields.get("amount") !== String(payload.amount) ||
+      fields.get("mint") !== payload.tokenMintAddress ||
+      canonicalRouteAmount(fields.get("amount")) !== canonicalRouteAmount(payload.amount) ||
       fields.get("expiry") !== route.expiresAt || fields.get("programId") !== VERIFIED_TSN_PROGRAM_ID) {
     throw new Error("Node route authorization does not bind the exact settlement");
   }
@@ -218,8 +263,27 @@ async function receiverRequest<T>(method: "POST" | "PATCH", body: Record<string,
     headers: { "content-type": "application/json", "x-api-key": apiKey },
     body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`TSN Receiver request failed (${response.status})`);
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    throw new Error(`TSN Receiver request failed (${response.status}): ${detail}`);
+  }
   return await response.json() as T;
+}
+
+function assertReceiverCredential(operator: string) {
+  const credential = process.env.TSN_RECEIVER_CRANKER_API_KEY?.trim() ?? "";
+  if (!credential) {
+    throw new Error("TSN_RECEIVER_CRANKER_API_KEY is required for Receiver work leasing");
+  }
+  // A TIN is public identity data, not a Receiver service credential. Catch
+  // the common misconfiguration before the daemon enters a silent retry loop.
+  if (/^\d{10}$/.test(credential)) {
+    throw new Error("TSN_RECEIVER_CRANKER_API_KEY is a TIN, not the Receiver Cranker service credential");
+  }
+  if (credential.length < 32) {
+    throw new Error("TSN_RECEIVER_CRANKER_API_KEY must be a generated service credential (at least 32 characters)");
+  }
+  void operator;
 }
 
 async function reportReceiverWork(params: {
@@ -301,6 +365,10 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
     expiresAtTs,
     rpcUrl: params.rpcUrl,
   });
+  console.log(
+    `[tsn-cranker] claim.payout_submitted claim=${params.work.id} ` +
+      `intent=${String(params.work.payload.intentId ?? "unknown")} tx=${payout.signature}`,
+  );
   await reportReceiverWork({
     work: params.work,
     operator: params.operator.publicKey.toBase58(),
@@ -329,6 +397,10 @@ async function processReceiverRecovery(params: { work: ReceiverWork; operator: K
     expiresAtTs,
     rpcUrl: params.rpcUrl,
   });
+  console.log(
+    `[tsn-cranker] recovery.submitted work=${params.work.id} ` +
+      `payment=${String(params.work.payload.paymentId ?? "unknown")} tx=${recovery.signature}`,
+  );
   await reportReceiverWork({
     work: params.work,
     operator: params.operator.publicKey.toBase58(),
@@ -1876,6 +1948,23 @@ function tinsProgramId(): PublicKey {
     : new PublicKey(DEFAULT_TIP_PROGRAM_ID);
 }
 
+async function fetchReceiverStatusSummary(): Promise<ReceiverStatusSummary | null> {
+  const baseUrl = receiverUrl().replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/api/work`, {
+    headers: { accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`GET /api/work failed (${response.status})`);
+  const work = await response.json() as Array<{ kind?: string; status?: string }>;
+  const counts = work.reduce<Record<string, number>>((result, item) => {
+    const key = `${item.kind ?? "UNKNOWN"}:${item.status ?? "UNKNOWN"}`;
+    result[key] = (result[key] ?? 0) + 1;
+    return result;
+  }, {});
+  const signature = JSON.stringify(counts);
+  return { signature, line: `work=${work.length} ${JSON.stringify(counts)}` };
+}
+
 async function submitTinRegistryMutation(params: {
   operation: TsnTinOperationRecord;
   operator: Keypair;
@@ -2271,6 +2360,7 @@ async function main() {
   const mempool = createMempoolClient();
   const operatorKeypair = loadOperatorKeypair();
   const operator = operatorKeypair.publicKey.toBase58();
+  assertReceiverCredential(operator);
   process.env.TSN_CRANKER_OPERATOR_PUBKEY = operator;
   if (
     process.env.TSN_CRANKER_OPERATOR_PUBKEY &&
@@ -2281,9 +2371,10 @@ async function main() {
     );
   }
   const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
+  const websocketEnabled = process.env.TSN_ENABLE_SOLANA_SUBSCRIPTIONS === "true";
   const connection = new Connection(rpcUrl, {
     commitment: "confirmed",
-    wsEndpoint: process.env.SOLANA_WS_URL,
+    wsEndpoint: websocketEnabled ? process.env.SOLANA_WS_URL : undefined,
   });
   const tokenDecimals = Number(process.env.TSN_CRANKER_TOKEN_DECIMALS ?? 6);
   installShutdownHandlers();
@@ -2291,6 +2382,8 @@ async function main() {
   console.log(`[tsn-cranker] operator=${operator}`);
   console.log("[tsn-cranker] source=tsn-receiver");
   console.log("[tsn-cranker] execution=real-onchain");
+  console.log(`[tsn-cranker] receiver=${safeHost(receiverUrl())}`);
+  console.log(`[tsn-cranker] rpc=${safeHost(rpcUrl)}`);
 
   const motherEscrowState = await tsnFetchMotherEscrowOnChain(rpcUrl);
   if (!motherEscrowState || !motherEscrowState.valid) {
@@ -2325,6 +2418,8 @@ async function main() {
   }
 
   let lastMempoolOverviewSignature = "";
+  let lastReceiverStatusSignature = "";
+  const receiverBasePollMs = Math.max(500, Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));
   const claimRetryAfter = new Map<string, number>();
   const logMempoolOverview = async (reason: string) => {
     try {
@@ -2351,6 +2446,18 @@ async function main() {
           crankerId: operator,
           supportedKinds: ["PAYMENT_INTENT", "CLAIM", "RECOVERY"],
         });
+        if (!leased.work) {
+          try {
+            const status = await fetchReceiverStatusSummary();
+            if (status && status.signature !== lastReceiverStatusSignature) {
+              lastReceiverStatusSignature = status.signature;
+              console.log(`[tsn-cranker] receiver.status ${status.line}`);
+            }
+          } catch (error) {
+            console.warn("[tsn-cranker] receiver.status_failed", error);
+          }
+          console.log("[tsn-cranker] receiver.poll no-eligible-work");
+        }
         if (leased.work) {
           try {
             if (leased.work.kind === "PAYMENT_INTENT") {
@@ -2391,7 +2498,10 @@ async function main() {
         } catch (error) {
           console.error("[tsn-cranker] tin-operation-loop-failed", error);
         }
-        await sleep(Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));
+        // Receiver polling is fixed-interval. Do not exponentially sleep:
+        // work can arrive immediately after an empty lease response and the
+        // sender-signed transaction has a short Solana blockhash lifetime.
+        await sleep(receiverBasePollMs);
         continue;
       }
       /* Legacy direct-mempool claim/recovery execution is intentionally

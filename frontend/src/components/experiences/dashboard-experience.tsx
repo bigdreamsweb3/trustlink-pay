@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppMobileShell } from "@/src/components/layout/app-mobile-shell";
 import { FloatingGuidanceOverlay } from "@/src/components/floating-guidance-overlay";
@@ -196,9 +196,6 @@ export function DashboardExperience() {
   const [tinFundedPruCount, setTinFundedPruCount] = useState(0);
   const [tinBalanceStatus, setTinBalanceStatus] = useState<string | null>(null);
   const [tinBalanceLocked, setTinBalanceLocked] = useState(false);
-  // Private TIN reads require an explicit user gesture so wallets do not
-  // reject a sign-message request that was triggered by page load.
-  const [tinBalanceRequest, setTinBalanceRequest] = useState(0);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
@@ -220,6 +217,7 @@ export function DashboardExperience() {
   const [mainWalletGuidanceDismissed, setMainWalletGuidanceDismissed] =
     useState(false);
   const [tinCopied, setTinCopied] = useState(false);
+  const tinBalanceSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -350,30 +348,28 @@ export function DashboardExperience() {
   }, [activeTin]);
 
   useEffect(() => {
-    setTinBalanceRequest(0);
-  }, [activeTin, walletSession?.address]);
-
-  useEffect(() => {
-    if (!activeTin || !walletSession || walletTokens.length === 0) {
+    if (
+      !activeTin ||
+      !walletSession ||
+      walletTokens.length === 0 ||
+      !accessToken
+    ) {
+      tinBalanceSessionRef.current = null;
       setTinTokens([]);
       setTinPruCount(0);
       setTinActivePruCount(0);
       setTinFundedPruCount(0);
-      setTinBalanceStatus(null);
-      setTinBalanceLocked(false);
-      return;
-    }
-    if (tinBalanceRequest === 0) {
-      setTinTokens([]);
-      setTinPruCount(0);
-      setTinActivePruCount(0);
-      setTinFundedPruCount(0);
-      setTinBalanceLocked(true);
       setTinBalanceStatus(
-        "Click Load TIN balance to authorize this private read.",
+        activeTin
+          ? "Waiting for the active session to unlock your TIN balance..."
+          : null,
       );
+      setTinBalanceLocked(Boolean(activeTin));
       return;
     }
+    const sessionKey = `${accessToken}:${activeTin}:${walletSession.address}`;
+    if (tinBalanceSessionRef.current === sessionKey) return;
+    tinBalanceSessionRef.current = sessionKey;
     const tin = activeTin;
     const session = walletSession;
     const ctrl = new AbortController();
@@ -424,8 +420,8 @@ export function DashboardExperience() {
     void load();
     return () => ctrl.abort();
   }, [
+    accessToken,
     activeTin,
-    tinBalanceRequest,
     walletSession,
     walletTokens,
     showToast,
@@ -1312,17 +1308,6 @@ export function DashboardExperience() {
                 </div>
               ))}
             </div>
-            {activeTin && walletSession && !tinTokenLoading ? (
-              <button
-                type="button"
-                onClick={() => setTinBalanceRequest((request) => request + 1)}
-                className="tl-button-primary mt-4 w-full rounded-[14px] px-4 py-3 text-[0.75rem] font-semibold"
-              >
-                {tinBalanceRequest > 0
-                  ? "Refresh TIN balance"
-                  : "Load TIN balance"}
-              </button>
-            ) : null}
           </div>
         </div>
       ) : null}

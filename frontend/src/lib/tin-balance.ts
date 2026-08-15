@@ -57,6 +57,12 @@ export async function loadTinTokenBalances(params: {
   } catch (error) {
     throw new Error(`TIN account lookup failed: ${describeTinBalanceError(error)}`);
   }
+  if (identity.upgradeRequired) {
+    throw new Error(
+      identity.upgradeReason ??
+        "This TIN must be upgraded before private balances can be loaded.",
+    );
+  }
   const connection = createSolanaConnection({ frontendSafe: true });
   const account = await connection.getAccountInfo(new PublicKey(identity.registry), "confirmed");
   if (!account) throw new Error("The selected TIN account is unavailable on Devnet.");

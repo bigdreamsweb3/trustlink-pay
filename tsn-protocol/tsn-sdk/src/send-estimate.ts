@@ -7,7 +7,7 @@ import {
 
 import { getVerifiedTsnProgramId } from "./program.js";
 import { quoteTransferFeeUiAmount } from "./quote.js";
-import { resolveSolanaRpcUrl } from "./rpc.js";
+import { resolveSolanaRpcUrl, resolveSolanaRpcUrls } from "./rpc.js";
 
 const DEFAULT_TSN_FEE_CONFIG = {
   sendFeeBps: 500,
@@ -165,21 +165,44 @@ export async function estimateTsnSendCostFromChain(params: {
   rpcUrl?: string;
   timeoutMs?: number;
 }) {
-  const connection = new Connection(
-    params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
-    "confirmed",
-  );
   const programId = new PublicKey(getVerifiedTsnProgramId());
   const timeoutMs = params.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS;
-  const [config, networkFeeResult] = await Promise.all([
-    fetchEscrowConfigFromChain(connection, programId, timeoutMs),
-    estimateNetworkFeeLamports(
-      connection,
-      params.senderWallet,
-      timeoutMs,
-    ).catch(() => DEFAULT_NETWORK_FEE_LAMPORTS),
-  ]);
-  const estimatedNetworkFeeLamports = networkFeeResult;
+  const rpcUrls = params.rpcUrl
+    ? [params.rpcUrl]
+    : [
+        ...new Set([
+          ...resolveSolanaRpcUrls({ frontendSafe: false }),
+          "https://api.devnet.solana.com",
+        ]),
+      ];
+  let config: Awaited<ReturnType<typeof fetchEscrowConfigFromChain>> | null = null;
+  let estimatedNetworkFeeLamports = DEFAULT_NETWORK_FEE_LAMPORTS;
+  let selectedRpcUrl = rpcUrls[0] ?? resolveSolanaRpcUrl({ frontendSafe: false });
+  let lastRpcError: unknown;
+  for (const rpcUrl of rpcUrls) {
+    try {
+      const connection = new Connection(rpcUrl, "confirmed");
+      const [candidateConfig, networkFeeResult] = await Promise.all([
+        fetchEscrowConfigFromChain(connection, programId, timeoutMs),
+        estimateNetworkFeeLamports(
+          connection,
+          params.senderWallet,
+          timeoutMs,
+        ).catch(() => DEFAULT_NETWORK_FEE_LAMPORTS),
+      ]);
+      config = candidateConfig;
+      estimatedNetworkFeeLamports = networkFeeResult;
+      selectedRpcUrl = rpcUrl;
+      break;
+    } catch (error) {
+      lastRpcError = error;
+    }
+  }
+  if (!config) {
+    throw lastRpcError instanceof Error
+      ? lastRpcError
+      : new Error("All configured Solana RPC endpoints failed");
+  }
 
   const tokenDecimals = params.tokenDecimals ?? 6;
   if (!params.solUsd || !params.tokenUsd) {
@@ -235,6 +258,7 @@ export async function estimateTsnSendCostFromChain(params: {
       feeSplitLpBps: "feeSplitLpBps" in config ? config.feeSplitLpBps : null,
       feeSplitTreasuryBps: "feeSplitTreasuryBps" in config ? config.feeSplitTreasuryBps : null,
       estimatedNetworkFeeLamports,
+      rpcUrl: selectedRpcUrl,
       solUsd: params.solUsd,
       tokenUsd: params.tokenUsd,
       priceSource: "tsn-config",

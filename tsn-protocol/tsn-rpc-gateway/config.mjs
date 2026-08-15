@@ -6,7 +6,6 @@ const FALLBACK_PROBE_TIMEOUT_MS = 2_500;
 const FALLBACK_DASHBOARD_REFRESH_MS = 5_000;
 const DEFAULT_SOLANA_RPC_URLS = [
   "https://api.devnet.solana.com",
-  "https://rpc.ankr.com/solana_devnet",
 ];
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://trustlink-pay.vercel.app",
@@ -169,8 +168,10 @@ export function redactRpcUrlForDisplay(url) {
 export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
   const upstreamUrls = collectUrls(source);
   const upstreamWsUrls = collectWsUrls(source);
-  // Keep public Devnet providers as a bounded fallback when a configured
-  // provider is unavailable or has an expired credential.
+  // Keep the official public Devnet endpoint as a bounded fallback when a
+  // configured provider is unavailable. Private providers must be explicitly
+  // configured; removing one from the environment must remove it from the
+  // runtime pool as well.
   const urls = unique([...upstreamUrls, ...DEFAULT_SOLANA_RPC_URLS]);
   return {
     port: parsePort(source),

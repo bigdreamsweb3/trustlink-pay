@@ -29,6 +29,10 @@ npm run tsn:cranker:register
 npm run tsn:cranker:start
 ```
 
+For the complete setup sequence, Mother Escrow PDA derivation, vault
+initialization, environment configuration, and troubleshooting, see
+[the Cranker operator guide](../../docs/CRANKER-OPERATOR-GUIDE.md).
+
 ## Security Rules
 
 - Keep operator keys private.
@@ -38,6 +42,6 @@ npm run tsn:cranker:start
 
 ## Related Docs
 
-- `docs/CRANKER.md`
-- `docs/LIQUIDITY.md`
-- `docs/EPOCH-SETTLEMENT.md`
+- [Cranker operator guide](../../docs/CRANKER-OPERATOR-GUIDE.md)
+- [TSN operations and testing](../../docs/operations-and-testing.md)
+- [TSN security model](../../docs/security-model.md)

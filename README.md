@@ -12,6 +12,7 @@ Solana. TrustLink Pay is the application experience built on that network.
 - [TrustLink Pay source repository](https://github.com/bigdreamsweb3/trustlink-pay)
 - [Service hosting and deployment map](docs/SERVICE-HOSTING.md)
 - [Live testing and contributor guide](docs/GETTING-STARTED-LIVE.md)
+- [Cranker operator and deployment guide](docs/CRANKER-OPERATOR-GUIDE.md)
 
 TSN combines identity, recipient discovery, protected receiving and spending,
 authorization, payment intents, Receiver work queues, TSN Node verification,

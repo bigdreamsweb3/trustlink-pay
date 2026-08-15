@@ -52,7 +52,12 @@ export function createSolanaConnection({
   return new Connection(urls[0], {
     commitment,
     fetch: async (input, init) => {
-      const requestUrl = typeof input === "string" ? input : input.url;
+      const requestUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
       const candidates = urls.map((url) =>
         requestUrl.replace(/^https?:\/\/[^/]+/, url),
       );

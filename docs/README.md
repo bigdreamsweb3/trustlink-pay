@@ -11,6 +11,8 @@ Read these documents in order:
 7. [Security](./SECURITY.md) — plain-language security principles.
 8. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
+- [Cranker operator guide](./CRANKER-OPERATOR-GUIDE.md) - operator keypairs, Mother Escrow PDA derivation, registration, vault setup, and runtime.
+
 Supporting technical references:
 
 - [TSN Transaction Explorer](./tsn-transaction-explorer.md)

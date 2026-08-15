@@ -250,6 +250,7 @@ Connect with the builder and follow the work:
 
 - **X:** [@0xbigdream](https://x.com/0xbigdream)
 - **GitHub:** [@bigdreamsweb3](https://github.com/bigdreamsweb3)
+- **LinkedIn:** [Big Dreams Web3](https://www.linkedin.com/in/bigdreamsweb3/)
 - **TrustLink Labs:** [GitHub organization](https://github.com/Trustlink-Labs)
 - **Research blog:** [TSN Protocol](https://tsn-protocol.blogspot.com/)
 - **TrustLink Pay:** [Live application](https://trustlink-pay.vercel.app/)

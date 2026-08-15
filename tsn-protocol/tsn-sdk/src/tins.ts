@@ -1020,6 +1020,12 @@ export async function resolveTIN(params: {
         `TIN ${String(params.tin)} was not found in TIP program ${programId.toBase58()}`,
       );
     }
+    const hasCurrentTsnEnvelopes =
+      legacy.decoded.encryptedMasterSeed.length > 0 &&
+      Boolean(legacy.decoded.pruConfigurationHash?.length === 32) &&
+      Boolean(legacy.decoded.encryptedPublicRouteEnvelope?.length) &&
+      Boolean(legacy.decoded.routeVersion && legacy.decoded.routeVersion > 0n) &&
+      Boolean(legacy.decoded.routeNonce?.length === 32);
     return {
       tin: legacy.decoded.tin.toString(),
       name: legacy.decoded.displayName,
@@ -1027,8 +1033,14 @@ export async function resolveTIN(params: {
       ownerPubkeyHash: bytesToHex(legacy.decoded.ownerPubkeyHash),
       registry: legacy.address,
       accountKind: "legacy",
-      upgradeRequired: true,
-      upgradeReason: "Legacy TIN requires a wallet-authorized, device-protected seed envelope before local PRU balance discovery is available.",
+      // Some Devnet TIN accounts retain the original TIP storage layout while
+      // already carrying the complete TSN envelopes. Storage layout is not a
+      // capability decision: only missing TSN envelope fields require an
+      // upgrade and should block local balance discovery.
+      upgradeRequired: !hasCurrentTsnEnvelopes,
+      upgradeReason: hasCurrentTsnEnvelopes
+        ? null
+        : "Legacy TIN requires a wallet-authorized, device-protected seed envelope before local PRU balance discovery is available.",
       settlementAuthorityVerified: true,
       status: 1,
       createdAt: legacy.decoded.createdAt.toString(),

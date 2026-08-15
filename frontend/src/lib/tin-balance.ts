@@ -37,10 +37,21 @@ export async function loadTinTokenBalances(params: {
 }): Promise<TinTokenBalanceResult> {
   params.onProgress?.("Decrypting the TIN route on this authorized device...");
   const identity = await resolveTinFromChain(params.tin);
-  // Legacy TIN accounts predate the device/threshold architecture. They may
-  // still be resolved and displayed, but must not invoke the new threshold
-  // action or turn its missing configuration into a frontend error.
-  if (identity.accountKind === "legacy") {
+  const connection = createSolanaConnection({ frontendSafe: true });
+  const account = await connection.getAccountInfo(new PublicKey(identity.registry), "confirmed");
+  if (!account) throw new Error("The selected TIN account is unavailable on Devnet.");
+  const decoded = decodeTinAccount(account.data);
+  // A TIN can retain its original TIP account layout while carrying the
+  // complete TSN envelopes. Do not use `accountKind === legacy` (or a stale
+  // resolver flag) as a privacy capability gate; inspect the actual envelope
+  // fields on the account instead.
+  const hasCurrentTsnEnvelopes =
+    decoded.encryptedMasterSeed.length > 0 &&
+    decoded.pruConfigurationHash?.length === 32 &&
+    Boolean(decoded.encryptedPublicRouteEnvelope?.length) &&
+    Boolean(decoded.routeVersion && decoded.routeVersion > 0n) &&
+    decoded.routeNonce?.length === 32;
+  if (!hasCurrentTsnEnvelopes) {
     params.onProgress?.("Legacy TIN detected; private ZK-PRU balances require a TIN upgrade.");
     return {
       tokens: params.supportedTokens.map((token) => ({ ...token, balance: 0, balanceUsd: null })),
@@ -50,10 +61,6 @@ export async function loadTinTokenBalances(params: {
       nonZeroPruCount: 0,
     };
   }
-  const connection = createSolanaConnection({ frontendSafe: true });
-  const account = await connection.getAccountInfo(new PublicKey(identity.registry), "confirmed");
-  if (!account) throw new Error("The selected TIN account is unavailable on Devnet.");
-  const decoded = decodeTinAccount(account.data);
   if (!decoded.pruConfigurationHash || !decoded.encryptedMasterSeed.length) {
     throw new Error("This legacy TIN must be upgraded before private balances can be loaded.");
   }

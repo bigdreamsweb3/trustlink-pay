@@ -188,6 +188,17 @@ type ReceiverWork = {
   authorization?: Record<string, unknown> | null;
 };
 
+type ReceiverWorkEvidence = {
+  id: string;
+  kind: string;
+  status: string;
+  stateVersion?: number;
+  receivedAt?: string;
+  updatedAt?: string;
+  verification?: { reason?: string | null; verificationType?: string | null } | null;
+  result?: { signature?: string | null; stage?: string | null; reason?: string | null } | null;
+};
+
 type OpaqueRouteAuthorization = {
   version: number;
   message: string;
@@ -1955,7 +1966,8 @@ async function fetchReceiverStatusSummary(): Promise<ReceiverStatusSummary | nul
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`GET /api/work failed (${response.status})`);
-  const work = await response.json() as Array<{ kind?: string; status?: string }>;
+  const work = await response.json() as ReceiverWorkEvidence[];
+  logReceiverWorkEvidence(work);
   const counts = work.reduce<Record<string, number>>((result, item) => {
     const key = `${item.kind ?? "UNKNOWN"}:${item.status ?? "UNKNOWN"}`;
     result[key] = (result[key] ?? 0) + 1;
@@ -1963,6 +1975,42 @@ async function fetchReceiverStatusSummary(): Promise<ReceiverStatusSummary | nul
   }, {});
   const signature = JSON.stringify(counts);
   return { signature, line: `work=${work.length} ${JSON.stringify(counts)}` };
+}
+
+// `/api/cranker/work` is deliberately a lease endpoint: it only returns
+// VERIFIED work and never returns an already-confirmed claim. Keep a separate
+// read-only evidence sweep so an operator can still observe work completed by
+// another Cranker, or before this process started. The Receiver endpoint only
+// exposes public status/result metadata; no signed payload or secret material
+// is logged here.
+const seenReceiverEvidence = new Map<string, string>();
+
+function logReceiverWorkEvidence(work: ReceiverWorkEvidence[]) {
+  for (const item of work) {
+    const result = item.result ?? {};
+    const verification = item.verification ?? {};
+    const fingerprint = [
+      item.status,
+      item.stateVersion ?? "",
+      result.signature ?? "",
+      result.stage ?? "",
+      result.reason ?? "",
+      verification.reason ?? "",
+    ].join("|");
+    if (seenReceiverEvidence.get(item.id) === fingerprint) continue;
+    seenReceiverEvidence.set(item.id, fingerprint);
+    const detail = result.signature
+      ? `stage=${result.stage ?? "unknown"} tx=${result.signature}`
+      : result.reason
+        ? `reason=${result.reason}`
+        : verification.reason
+          ? `reason=${verification.reason}`
+          : `stage=${result.stage ?? "none"}`;
+    console.log(
+      `[tsn-cranker] receiver.work id=${item.id} kind=${item.kind} ` +
+      `status=${item.status} ${detail}`,
+    );
+  }
 }
 
 async function submitTinRegistryMutation(params: {
@@ -2459,6 +2507,11 @@ async function main() {
           console.log("[tsn-cranker] receiver.poll no-eligible-work");
         }
         if (leased.work) {
+          console.log(
+            `[tsn-cranker] receiver.work_leased id=${leased.work.id} ` +
+            `kind=${leased.work.kind} status=${leased.work.status} ` +
+            `stateVersion=${leased.work.stateVersion}`,
+          );
           try {
             if (leased.work.kind === "PAYMENT_INTENT") {
               await processReceiverPaymentIntent({ work: leased.work, operator: operatorKeypair, rpcUrl, tokenDecimals });

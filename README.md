@@ -179,12 +179,12 @@ flowchart TD
     class G settlement;
 ```
 
-| Stage | Recorded role | Devnet signature |
-| --- | --- | --- |
-| Wallet funding | 5 USDC main-wallet top-up used in the sender funding set | [5u9HmqD5...](https://solscan.io/tx/5u9HmqD5wNmBmHWfDWmw3vhpMhN42j15YPTmUVgpcMtbuwdGdhqRVqGrZAVF5ic1CiS1ZzuF1D2tMyVaanf4eqye?cluster=devnet) |
-| PRU source batch A | ZK-PRU source movement; part of the three-source spend | [3wgVPZYz...](https://solscan.io/tx/3wgVPZYzEqvht5pkPRetF8tFsXoWmy8obbSSqYYTmxaR1fw6oci2y93P96GhK4xXqu4ttSSD7mMYPyEoDjXVporU?cluster=devnet) |
-| PRU source batch B | ZK-PRU source movement; completes the three-source spend | [2M26JcpS...](https://solscan.io/tx/2M26JcpSVhKAQvB5yC3Pp4L6NYLHiU8UTMFMsrMbJwt2Jj23dd3pqRG8nWTxerYrcXqm7R78Jt4992smK7jh7eWJ?cluster=devnet) |
-| Settlement | 10 USDC settlement into the recipient TIN's new receiving ZK-PRU | [46wGVb9s...](https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet) |
+| Stage              | Recorded role                                                    | Devnet signature                                                                                                                             |
+| ------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wallet funding     | 5 USDC main-wallet top-up used in the sender funding set         | [5u9HmqD5...](https://solscan.io/tx/5u9HmqD5wNmBmHWfDWmw3vhpMhN42j15YPTmUVgpcMtbuwdGdhqRVqGrZAVF5ic1CiS1ZzuF1D2tMyVaanf4eqye?cluster=devnet) |
+| PRU source batch A | ZK-PRU source movement; part of the three-source spend           | [3wgVPZYz...](https://solscan.io/tx/3wgVPZYzEqvht5pkPRetF8tFsXoWmy8obbSSqYYTmxaR1fw6oci2y93P96GhK4xXqu4ttSSD7mMYPyEoDjXVporU?cluster=devnet) |
+| PRU source batch B | ZK-PRU source movement; completes the three-source spend         | [2M26JcpS...](https://solscan.io/tx/2M26JcpSVhKAQvB5yC3Pp4L6NYLHiU8UTMFMsrMbJwt2Jj23dd3pqRG8nWTxerYrcXqm7R78Jt4992smK7jh7eWJ?cluster=devnet) |
+| Settlement         | 10 USDC settlement into the recipient TIN's new receiving ZK-PRU | [46wGVb9s...](https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet) |
 
 The signatures above were supplied as the project's Devnet evidence. The
 repository does not infer a per-signature token split where explorer data is
@@ -217,24 +217,26 @@ wallet authority, and transaction evidence before using Devnet.
 
 Current devnet program IDs:
 
-| Program | Address |
-| --- | --- |
+| Program           | Address                                       |
+| ----------------- | --------------------------------------------- |
 | Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| TSN               | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
 
 ## Milestones and ecosystem support
 
-TrustLink Pay has progressed through StableHacks and The Bags Hackathon, and received support through the Superteam Agentic Engineering Grant program for fraud-protection development. The factual project history and acknowledgements are in [Project Journey](./docs/PROJECT-JOURNEY.md).
+TrustLink Pay has progressed through StableHacks, and received support through the Superteam Agentic Engineering Grant program for fraud-protection development. The factual project history and acknowledgements are in [Project Journey](./docs/PROJECT-JOURNEY.md).
+
+See what people are saying about the project: [Community Mentions](./docs/mentions.md).
 
 ## Repository map
 
-| Path | Purpose |
-| --- | --- |
-| `frontend/` | TrustLink Pay web application |
-| `backend/` | API, user and payment records, notifications |
-| `transfer-identity-protocol/` | Transfer Identity program and SDK |
-| `tsn-protocol/` | TSN SDK, mempool, RPC gateway, and Cranker tooling |
-| `docs/` | Product, protocol, security, and developer documentation |
+| Path                          | Purpose                                                  |
+| ----------------------------- | -------------------------------------------------------- |
+| `frontend/`                   | TrustLink Pay web application                            |
+| `backend/`                    | API, user and payment records, notifications             |
+| `transfer-identity-protocol/` | Transfer Identity program and SDK                        |
+| `tsn-protocol/`               | TSN SDK, mempool, RPC gateway, and Cranker tooling       |
+| `docs/`                       | Product, protocol, security, and developer documentation |
 
 ## Local development
 
@@ -243,4 +245,3 @@ For the Windows-native development workflow, see [Windows TSN Commands](./docs/W
 ## License
 
 [MIT](./LICENSE)
-

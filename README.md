@@ -244,14 +244,19 @@ For the Windows-native development workflow, see [Windows TSN Commands](./docs/W
 
 ## Built with love by TrustLink Labs
 
-TrustLink Pay is currently built and maintained by a one-person team:
+TrustLink Pay is created and led by **Agbaka Matthew Daniel (Big Dreams Web3)**.
 
-| Team member | Contribution |
-| ------------ | ------------ |
-| **Daniel (Big Dreams Web3)** | Founder and lead builder — TSN and TIN architecture, Solana program design, ZK-PRU privacy flows, SDK, TSN Node, Receiver, Cranker tooling, frontend, Devnet testing, and documentation. |
+Connect with the builder and follow the work:
 
-The project is intentionally open to future contributors who want to help build
-privacy-conscious payment infrastructure on Solana.
+- **X:** [@0xbigdream](https://x.com/0xbigdream)
+- **GitHub:** [@bigdreamsweb3](https://github.com/bigdreamsweb3)
+- **TrustLink Labs:** [GitHub organization](https://github.com/Trustlink-Labs)
+- **Research blog:** [TSN Protocol](https://tsn-protocol.blogspot.com/)
+- **TrustLink Pay:** [Live application](https://trustlink-pay.vercel.app/)
+
+
+
+TrustLink Labs is building privacy-conscious payment infrastructure on Solana.
 
 ## License
 

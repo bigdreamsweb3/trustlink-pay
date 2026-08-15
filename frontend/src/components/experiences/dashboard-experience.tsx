@@ -721,12 +721,12 @@ export function DashboardExperience() {
               <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
                 <div className="flex items-center justify-between">
                   <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
-                    TIN balance
+                    TIN bal.
                   </span>
                   <span className="whitespace-nowrap text-[0.45rem] font-semibold text-[var(--accent)]">
                     {tinTokenLoading
                       ? "Loading ZK-PRU handles..."
-                      : `${tinFundedPruCount} funded PRU ${tinFundedPruCount === 1 ? "" : "s"}`}
+                      : `${tinFundedPruCount} / ${tinPruCount} ${tinFundedPruCount === 1 ? "" : "s"}`}
                   </span>
                 </div>
                 <div className="mt-1 flex items-center gap-2">
@@ -741,11 +741,6 @@ export function DashboardExperience() {
                         : "****"}
                   </span>
                 </div>
-                {/* <div className="mt-0.5 whitespace-nowrap text-[0.5rem] font-semibold text-[var(--accent)]">
-                  {tinTokenLoading
-                    ? "Loading ZK-PRU handles..."
-                    : `${tinFundedPruCount} funded ZK-PRU handle${tinFundedPruCount === 1 ? "" : "s"}`}
-                </div> */}
               </div>
               {/* */}
             </div>

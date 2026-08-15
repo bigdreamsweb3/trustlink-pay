@@ -3,6 +3,7 @@ const DEFAULT_WS_PATH = "/ws";
 const FALLBACK_TIMEOUT_MS = 4_500;
 const FALLBACK_PROBE_INTERVAL_MS = 60_000;
 const FALLBACK_PROBE_TIMEOUT_MS = 2_500;
+const FALLBACK_PROBE_MODE = "on-demand";
 const FALLBACK_DASHBOARD_REFRESH_MS = 5_000;
 const DEFAULT_SOLANA_RPC_URLS = [
   "https://api.devnet.solana.com",
@@ -126,6 +127,13 @@ function parseProbeTimeoutMs(source) {
     : FALLBACK_PROBE_TIMEOUT_MS;
 }
 
+function parseProbeMode(source) {
+  const value = String(readEnv(source, "TSN_RPC_GATEWAY_PROBE_MODE") ?? FALLBACK_PROBE_MODE)
+    .trim()
+    .toLowerCase();
+  return value === "scheduled" ? "scheduled" : "on-demand";
+}
+
 function parseDashboardRefreshMs(source) {
   const rawRefresh = Number(readEnv(source, "TSN_RPC_GATEWAY_DASHBOARD_REFRESH_MS"));
   return Number.isFinite(rawRefresh) && rawRefresh >= 1_000
@@ -181,6 +189,7 @@ export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
     timeoutMs: parseTimeoutMs(source),
     probeIntervalMs: parseProbeIntervalMs(source),
     probeTimeoutMs: parseProbeTimeoutMs(source),
+    probeMode: parseProbeMode(source),
     dashboardRefreshMs: parseDashboardRefreshMs(source),
     mode: String(readEnv(source, "TSN_RPC_GATEWAY_MODE") ?? "balanced").toLowerCase(),
     logLevel: String(readEnv(source, "TSN_RPC_GATEWAY_LOG_LEVEL") ?? "info").toLowerCase(),

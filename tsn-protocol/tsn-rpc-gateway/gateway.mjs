@@ -440,7 +440,12 @@ export function createRpcGatewayApp(config = getRpcGatewayConfig()) {
       });
     },
   });
-  pool.startProbing();
+  // Request-driven by default: provider health and latency are learned from
+  // real RPC calls and cached in memory. Scheduled probing remains an explicit
+  // operator opt-in for deployments that require continuous probes.
+  if (config.probeMode === "scheduled") {
+    pool.startProbing();
+  }
 
   async function handleRequest(request) {
     const url = new URL(request.url);
@@ -462,6 +467,7 @@ export function createRpcGatewayApp(config = getRpcGatewayConfig()) {
         timeoutMs: config.timeoutMs,
         probeIntervalMs: config.probeIntervalMs,
         probeTimeoutMs: config.probeTimeoutMs,
+        probeMode: config.probeMode,
         logLevel: config.logLevel,
         upstreamCount: config.upstreams.length,
         leader: status.leader,
@@ -475,6 +481,7 @@ export function createRpcGatewayApp(config = getRpcGatewayConfig()) {
       return jsonResponse({
         ok: true,
         service: "trustlink-rpc-gateway",
+        probeMode: config.probeMode,
         leader: status.leader,
         providers: status.providers,
       });

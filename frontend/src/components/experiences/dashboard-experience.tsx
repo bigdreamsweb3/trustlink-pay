@@ -196,6 +196,9 @@ export function DashboardExperience() {
   const [tinFundedPruCount, setTinFundedPruCount] = useState(0);
   const [tinBalanceStatus, setTinBalanceStatus] = useState<string | null>(null);
   const [tinBalanceLocked, setTinBalanceLocked] = useState(false);
+  // Private TIN reads require an explicit user gesture so wallets do not
+  // reject a sign-message request that was triggered by page load.
+  const [tinBalanceRequest, setTinBalanceRequest] = useState(0);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
@@ -347,12 +350,28 @@ export function DashboardExperience() {
   }, [activeTin]);
 
   useEffect(() => {
+    setTinBalanceRequest(0);
+  }, [activeTin, walletSession?.address]);
+
+  useEffect(() => {
     if (!activeTin || !walletSession || walletTokens.length === 0) {
       setTinTokens([]);
       setTinPruCount(0);
       setTinActivePruCount(0);
+      setTinFundedPruCount(0);
       setTinBalanceStatus(null);
       setTinBalanceLocked(false);
+      return;
+    }
+    if (tinBalanceRequest === 0) {
+      setTinTokens([]);
+      setTinPruCount(0);
+      setTinActivePruCount(0);
+      setTinFundedPruCount(0);
+      setTinBalanceLocked(true);
+      setTinBalanceStatus(
+        "Click Load TIN balance to authorize this private read.",
+      );
       return;
     }
     const tin = activeTin;
@@ -390,14 +409,12 @@ export function DashboardExperience() {
           setTinTokens([]);
           setTinPruCount(0);
           setTinActivePruCount(0);
-          setTinBalanceLocked(
-            error instanceof Error &&
-              /threshold|legacy single-device|locked/i.test(error.message),
-          );
+          // Never present a failed private read as a real zero balance.
+          setTinBalanceLocked(true);
           setTinBalanceStatus(
             error instanceof Error
-              ? error.message
-              : "TIN ZK-PRU route unavailable",
+              ? `TIN balance unavailable: ${error.message}`
+              : "TIN balance unavailable: unexpected error",
           );
         }
       } finally {
@@ -406,7 +423,13 @@ export function DashboardExperience() {
     }
     void load();
     return () => ctrl.abort();
-  }, [activeTin, walletSession, walletTokens, showToast]);
+  }, [
+    activeTin,
+    tinBalanceRequest,
+    walletSession,
+    walletTokens,
+    showToast,
+  ]);
 
   useEffect(() => {
     if (!accessToken || !user || !hasPendingStatus) return;
@@ -1289,6 +1312,17 @@ export function DashboardExperience() {
                 </div>
               ))}
             </div>
+            {activeTin && walletSession && !tinTokenLoading ? (
+              <button
+                type="button"
+                onClick={() => setTinBalanceRequest((request) => request + 1)}
+                className="tl-button-primary mt-4 w-full rounded-[14px] px-4 py-3 text-[0.75rem] font-semibold"
+              >
+                {tinBalanceRequest > 0
+                  ? "Refresh TIN balance"
+                  : "Load TIN balance"}
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

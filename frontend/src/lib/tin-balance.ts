@@ -28,6 +28,12 @@ export type TinTokenBalanceResult = {
   nonZeroPruCount: number;
 };
 
+function describeTinBalanceError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  return "Unexpected error while opening the authorized TIN balance";
+}
+
 export async function loadTinTokenBalances(params: {
   tin: string;
   walletSession: ConnectedWalletSession;
@@ -38,9 +44,19 @@ export async function loadTinTokenBalances(params: {
   // Obtain the authorized-device adapter before querying the chain. This
   // avoids displaying a misleading zero balance when the device is not
   // authorized for the selected TIN.
-  const accessProvider = await getBrowserTinAuthorizedDeviceAccess();
+  let accessProvider: Awaited<ReturnType<typeof getBrowserTinAuthorizedDeviceAccess>>;
+  try {
+    accessProvider = await getBrowserTinAuthorizedDeviceAccess();
+  } catch (error) {
+    throw new Error(`TIN authorized-device access failed: ${describeTinBalanceError(error)}`);
+  }
   params.onProgress?.("Decrypting the TIN route on this authorized device...");
-  const identity = await resolveTinFromChain(params.tin);
+  let identity: Awaited<ReturnType<typeof resolveTinFromChain>>;
+  try {
+    identity = await resolveTinFromChain(params.tin);
+  } catch (error) {
+    throw new Error(`TIN account lookup failed: ${describeTinBalanceError(error)}`);
+  }
   const connection = createSolanaConnection({ frontendSafe: true });
   const account = await connection.getAccountInfo(new PublicKey(identity.registry), "confirmed");
   if (!account) throw new Error("The selected TIN account is unavailable on Devnet.");
@@ -69,28 +85,33 @@ export async function loadTinTokenBalances(params: {
     throw new Error("This legacy TIN must be upgraded before private balances can be loaded.");
   }
   const pruConfigurationHash = Buffer.from(decoded.pruConfigurationHash).toString("hex");
-  const balances = await loadTinPrivateTokenBalances({
-    tin: params.tin,
-    pruConfigurationHash,
-    envelope: decoded.encryptedMasterSeed,
-    ownerWallet: {
-      publicKey: params.walletSession.address,
-      signMessage: (message) => signTinMasterSeedAuthorizationBytes({
-        walletId: params.walletSession.walletId,
-        address: params.walletSession.address,
-        message,
-      }),
-    },
-    authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
-    thresholdProvider: accessProvider,
-    connection,
-    tokens: params.supportedTokens.map((token) => ({
-      mint: token.mintAddress,
-      decimals: token.decimals ?? 6,
-    })),
-    signal: params.signal,
-    onProgress: params.onProgress,
-  });
+  let balances: Awaited<ReturnType<typeof loadTinPrivateTokenBalances>>;
+  try {
+    balances = await loadTinPrivateTokenBalances({
+      tin: params.tin,
+      pruConfigurationHash,
+      envelope: decoded.encryptedMasterSeed,
+      ownerWallet: {
+        publicKey: params.walletSession.address,
+        signMessage: (message) => signTinMasterSeedAuthorizationBytes({
+          walletId: params.walletSession.walletId,
+          address: params.walletSession.address,
+          message,
+        }),
+      },
+      authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
+      thresholdProvider: accessProvider,
+      connection,
+      tokens: params.supportedTokens.map((token) => ({
+        mint: token.mintAddress,
+        decimals: token.decimals ?? 6,
+      })),
+      signal: params.signal,
+      onProgress: params.onProgress,
+    });
+  } catch (error) {
+    throw new Error(`TIN balance unlock failed: ${describeTinBalanceError(error)}`);
+  }
   const tokenTotals = new Map(
     balances.tokenBalances.map((token) => [token.mint, BigInt(token.balanceBaseUnits)]),
   );

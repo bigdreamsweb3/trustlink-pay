@@ -239,7 +239,7 @@ test("device-envelope provider unlocks only the device that received the envelop
       authorizedDevice: await authorizedDevice("device-envelope-b"),
       thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-c"),
     }),
-    /belongs to another authorized device/,
+    /legacy single-device envelope|multi-device TSN threshold key-release provider/,
   );
 });
 

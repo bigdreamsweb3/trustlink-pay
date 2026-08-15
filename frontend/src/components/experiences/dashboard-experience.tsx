@@ -195,6 +195,7 @@ export function DashboardExperience() {
   const [tinActivePruCount, setTinActivePruCount] = useState(0);
   const [tinFundedPruCount, setTinFundedPruCount] = useState(0);
   const [tinBalanceStatus, setTinBalanceStatus] = useState<string | null>(null);
+  const [tinBalanceLocked, setTinBalanceLocked] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [pendingPayments, setPendingPayments] = useState<PaymentRecord[]>([]);
   const [totalPendingUsd, setTotalPendingUsd] = useState<number>(0);
@@ -351,6 +352,7 @@ export function DashboardExperience() {
       setTinPruCount(0);
       setTinActivePruCount(0);
       setTinBalanceStatus(null);
+      setTinBalanceLocked(false);
       return;
     }
     const tin = activeTin;
@@ -358,10 +360,11 @@ export function DashboardExperience() {
     const ctrl = new AbortController();
     async function load() {
       setTinTokenLoading(true);
+      setTinBalanceLocked(false);
       setTinBalanceStatus("Preparing your TIN balance...");
       try {
         showToast(
-          "Authorize this device to decrypt and load your private TIN balance locally. This does not send a transaction.",
+          "Checking authorized-device access for your private TIN balance. No transaction is sent.",
         );
         const result = await loadTinTokenBalances({
           tin,
@@ -377,6 +380,7 @@ export function DashboardExperience() {
           setTinPruCount(result.pruCount);
           setTinActivePruCount(result.activePruCount);
           setTinFundedPruCount(result.nonZeroPruCount);
+          setTinBalanceLocked(false);
           setTinBalanceStatus(
             `${result.nonZeroPruCount} funded ZK-PRU handle${result.nonZeroPruCount === 1 ? "" : "s"}`,
           );
@@ -386,6 +390,9 @@ export function DashboardExperience() {
           setTinTokens([]);
           setTinPruCount(0);
           setTinActivePruCount(0);
+          setTinBalanceLocked(
+            error instanceof Error && /threshold|legacy single-device|locked/i.test(error.message),
+          );
           setTinBalanceStatus(
             error instanceof Error
               ? error.message
@@ -718,7 +725,9 @@ export function DashboardExperience() {
                     {tinTokenLoading
                       ? "\u2014"
                       : balanceVisible
-                        ? formatPaymentUsd(tinBalanceUsd)
+                        ? tinBalanceLocked
+                          ? "Locked"
+                          : formatPaymentUsd(tinBalanceUsd)
                         : "****"}
                   </span>
                 </div>
@@ -866,7 +875,7 @@ export function DashboardExperience() {
               <SectionLoader label="Checking claims..." />
             </div>
           ) : pendingPayments.length > 0 ? (
-            <div className="tl-panel-header rounded-[22px] mb-0 md:mb-4">
+            <div className="mb-0 md:mb-4">
               <Link
                 href="/app/claim"
                 className="group block rounded-[22px] px-4 py-4 transition-colors hover:bg-[var(--surface-soft)] cursor-pointer active:scale-[0.99] bg-[var(--surface)]"
@@ -1234,7 +1243,7 @@ export function DashboardExperience() {
                 },
                 {
                   label: "TIN balance",
-                  value: formatPaymentUsd(tinBalanceUsd),
+                  value: tinBalanceLocked ? "Locked" : formatPaymentUsd(tinBalanceUsd),
                   sub:
                     tinBalanceStatus ??
                     (tinTokenLoading

@@ -89,6 +89,10 @@ TSN_RECEIVER_FALLBACK_URL = clean_env(os.environ.get(
 ))
 TSN_RECEIVER_NODE_API_KEY = clean_env(os.environ.get("TSN_RECEIVER_NODE_API_KEY"))
 TSN_NODE_ID = clean_env(os.environ.get("TSN_NODE_ID", "tsn-node-local"))
+# The Receiver wakes this event after durable work is committed. The Node does
+# not poll while the event is clear; it only drains the authenticated queue
+# after a wake notification (or once at startup for already queued work).
+_receiver_wake_event: asyncio.Event | None = None
 ALLOW_DIRECT_FIREBASE_STORE = os.environ.get("TSN_ALLOW_DIRECT_FIREBASE_STORE", "").strip().lower() == "true"
 MEMPOOL_FILE    = Path(os.environ.get("MEMPOOL_FILE", ".mempool-store.json")).resolve()
 FIREBASE_COLLECTION = os.environ.get("FIREBASE_COLLECTION", "tsn_mempool").strip()
@@ -3465,45 +3469,51 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
 
 async def receiver_verification_worker() -> None:
     headers = {"x-api-key": TSN_RECEIVER_NODE_API_KEY, "content-type": "application/json"}
-    idle_delay_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_POLL_SECONDS", "1"))
-    # Keep verification latency below the blockhash lifetime of sender-signed
-    # settlement transactions. Receiver wake notifications can let this grow
-    # later without risking expiry while the worker is asleep.
-    idle_max_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_MAX_SECONDS", "5"))
+    if _receiver_wake_event is None:
+        raise RuntimeError("TSN Receiver wake event is not initialized")
     async with httpx.AsyncClient(timeout=30) as client:
         while True:
-            try:
-                claimed = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
-                    "nodeId": TSN_NODE_ID,
-                    "supportedKinds": ["PAYMENT_INTENT", "CLAIM", "RECOVERY", "TIN_OPERATION"],
-                })
-                claimed.raise_for_status()
-                work = claimed.json().get("work")
-                if not work:
-                    await asyncio.sleep(idle_delay_seconds)
-                    idle_delay_seconds = min(idle_max_seconds, max(1.0, idle_delay_seconds * 2))
-                    continue
-                idle_delay_seconds = float(os.environ.get("TSN_RECEIVER_IDLE_POLL_SECONDS", "1"))
+            # Sleep without a timer or network request until the Receiver sends
+            # an authenticated wake. This is the important CPU/quota boundary.
+            logger.info("TSN Receiver verifier sleeping; waiting for wake")
+            await _receiver_wake_event.wait()
+            _receiver_wake_event.clear()
+            logger.info("TSN Receiver verifier woke; draining authenticated work")
+            retry_delay = 2.0
+            while True:
                 try:
-                    evidence = await _verify_receiver_work(work)
-                    status = "VERIFIED"
-                except Exception as exc:
-                    logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
-                    evidence = {"reason": str(exc)[:500]}
-                    status = "REJECTED"
-                result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
-                    "id": work["id"],
-                    "owner": TSN_NODE_ID,
-                    "expectedVersion": work["stateVersion"],
-                    "status": status,
-                    "evidence": evidence,
-                })
-                result.raise_for_status()
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                logger.exception("TSN Receiver verification loop failed; retrying")
-                await asyncio.sleep(min(idle_max_seconds, max(2.0, idle_delay_seconds)))
+                    claimed = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
+                        "nodeId": TSN_NODE_ID,
+                        "supportedKinds": ["PAYMENT_INTENT", "CLAIM", "RECOVERY", "TIN_OPERATION"],
+                    })
+                    claimed.raise_for_status()
+                    work = claimed.json().get("work")
+                    if not work:
+                        # Queue drained. Return to the event wait; no polling.
+                        logger.info("TSN Receiver verifier drained queue; sleeping")
+                        break
+                    try:
+                        evidence = await _verify_receiver_work(work)
+                        status = "VERIFIED"
+                    except Exception as exc:
+                        logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
+                        evidence = {"reason": str(exc)[:500]}
+                        status = "REJECTED"
+                    result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
+                        "id": work["id"],
+                        "owner": TSN_NODE_ID,
+                        "expectedVersion": work["stateVersion"],
+                        "status": status,
+                        "evidence": evidence,
+                    })
+                    result.raise_for_status()
+                    retry_delay = 2.0
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.exception("TSN Receiver verification failed; retrying while awake")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay = min(30.0, retry_delay * 2)
 
 async def _receiver_work_by_id(work_id: str) -> dict[str, Any]:
     if not TSN_RECEIVER_URL or not TSN_RECEIVER_NODE_API_KEY:
@@ -3548,6 +3558,10 @@ async def lifespan(app: FastAPI):
             logger.info("Startup epoch close completed: %s", result.message)
         except Exception:
             logger.exception("Startup epoch close failed; live work remains available")
+    global _receiver_wake_event
+    _receiver_wake_event = asyncio.Event()
+    # Process work that arrived while the Node was offline, then sleep again.
+    _receiver_wake_event.set()
     tasks = [asyncio.create_task(epoch_scheduler())]
     if TSN_RECEIVER_URL and TSN_RECEIVER_NODE_API_KEY:
         tasks.append(asyncio.create_task(receiver_verification_worker()))
@@ -3569,6 +3583,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+@app.post("/internal/wake", dependencies=[Depends(require_worker_api_key)])
+async def wake_receiver_verification() -> dict[str, Any]:
+    """Wake the verifier after Receiver commit; carries no work payload."""
+    if _receiver_wake_event is None:
+        raise HTTPException(503, "TSN Node verifier is not ready")
+    _receiver_wake_event.set()
+    logger.info("TSN Receiver wake accepted")
+    return {"ok": True, "status": "awake"}
 
 @app.post("/internal/settlement-authorizations/claim", dependencies=[Depends(require_worker_api_key)])
 async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:

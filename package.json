@@ -104,6 +104,7 @@
     "// === Utilities & Maintenance ===": "IDs, status sync, type checks, and full rebuild/deploy orchestration.",
     "check:types": "npm run tsn:sdk:build && npm run backend:typecheck && npm run frontend:typecheck && cd tsn-protocol/tsn-cranker-op-daemon && npx tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --allowImportingTsExtensions --skipLibCheck scripts/cranker.ts",
     "rpc:inspect": "node scripts/rpc-inspect.mjs",
+    "tsn:privacy:analyze": "node scripts/tsn-privacy-linkability.mjs",
     "rpc:gateway:dev": "npm --prefix tsn-protocol/tsn-rpc-gateway run dev",
     "rpc:gateway:inspect": "npm --prefix tsn-protocol/tsn-rpc-gateway run inspect",
     "tsn:id:update": "node tsn-protocol/tsn/update-program-id-tsn.mjs TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",

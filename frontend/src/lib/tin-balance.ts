@@ -35,6 +35,10 @@ export async function loadTinTokenBalances(params: {
   signal?: AbortSignal;
   onProgress?: (message: string) => void;
 }): Promise<TinTokenBalanceResult> {
+  // Fail before querying the chain when production has no configured
+  // multi-device key-release provider. This avoids displaying a misleading
+  // zero balance and avoids unnecessary RPC calls.
+  const thresholdProvider = await getBrowserTinMasterSeedProvider();
   params.onProgress?.("Decrypting the TIN route on this authorized device...");
   const identity = await resolveTinFromChain(params.tin);
   const connection = createSolanaConnection({ frontendSafe: true });
@@ -78,7 +82,7 @@ export async function loadTinTokenBalances(params: {
       }),
     },
     authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
-    thresholdProvider: await getBrowserTinMasterSeedProvider(),
+    thresholdProvider,
     connection,
     tokens: params.supportedTokens.map((token) => ({
       mint: token.mintAddress,

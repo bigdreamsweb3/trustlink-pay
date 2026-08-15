@@ -86,6 +86,12 @@ Relevant fallback variables are server-side unless they begin with
 - `TSN_RECEIVER_URL` and `TSN_RECEIVER_FALLBACK_URL`
 - `TSN_NODE_URL` and `TSN_NODE_FALLBACK_URL`
 
+The Receiver wakes the Node with an authenticated, payload-free request after
+each durable work commit. The Node drains the queue and then sleeps; it does
+not continuously poll the Receiver while idle. Set `TSN_NODE_URL`,
+`TSN_NODE_FALLBACK_URL`, and the matching `TSN_RECEIVER_NODE_API_KEY` in the
+Receiver deployment so this wake path is active.
+
 Only public HTTPS URLs may be exposed to the browser. API keys, Firebase
 credentials, route-decryption keys, operator keys, and Cranker key material
 must remain in Vercel/Wasmer secret configuration or the Cranker operator

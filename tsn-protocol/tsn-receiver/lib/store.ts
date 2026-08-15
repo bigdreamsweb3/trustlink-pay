@@ -1,24 +1,29 @@
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
 import { createReceivedWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { wakeTsnNode } from "./node-wake";
 
 const now = () => new Date().toISOString();
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
   const work = createReceivedWork(input);
   const ref = workCollection.doc(work.id);
-  return db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(ref);
     if (existing.exists) {
       const current = existing.data() as ReceiverWork;
       if (current.payloadCommitment !== work.payloadCommitment || current.kind !== work.kind) {
         throw new Error("IDEMPOTENCY_CONFLICT");
       }
-      return current;
+      return { work: current, created: false };
     }
     transaction.create(ref, work);
-    return work;
+    return { work, created: true };
   });
+  // Notify only after the Firestore transaction is durable. The notification
+  // contains no payload; the Node re-reads work through its authenticated API.
+  if (result.created) await wakeTsnNode(input.kind);
+  return result.work;
 }
 
 export async function list(status: WorkStatus, limit = 50) {

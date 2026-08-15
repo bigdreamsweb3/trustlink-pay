@@ -122,7 +122,9 @@ export class TsnDeviceEnvelopeTinMasterSeedProvider
       envelope.recipientKeyFingerprint !==
       context.deviceAccessProof.deviceEncryptionKeyFingerprint
     ) {
-      throw new Error("TIN device envelope belongs to another authorized device");
+      throw new Error(
+        "TIN uses a legacy single-device envelope; a multi-device TSN threshold key-release provider is required",
+      );
     }
     const expectedProtectedCommitment = await protectedKeyCommitment(context.protectedKey);
     if (expectedProtectedCommitment !== context.protectedKeyCommitment.toLowerCase()) {

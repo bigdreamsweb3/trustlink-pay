@@ -26,6 +26,12 @@ them.
 The TSN Node and TSN Cranker must be deployed as separate persistent services.
 They communicate with this Receiver through authenticated service endpoints.
 
+The Receiver also sends an authenticated, payload-free `POST /internal/wake`
+notification to the TSN Node after each durable work commit. The Node drains
+the queue and then waits on its wake event; it does not poll Firebase or the
+Receiver while idle. `TSN_NODE_URL`, `TSN_NODE_FALLBACK_URL`, and
+`TSN_RECEIVER_NODE_API_KEY` configure this notification path.
+
 ## Deploy to Vercel
 
 Create a separate Vercel project from this repository. Vercel Root Directory

@@ -13,7 +13,8 @@ The TIN stores:
 
 - the main-wallet authority binding;
 - a locally encrypted master-seed envelope whose independent data key is
-  wrapped to the authorized device's non-exportable X25519 key;
+  released by a multi-device TSN threshold key-release provider and wrapped
+  to the requesting authorized device's non-exportable X25519 key;
 - the ZK-PRU configuration commitment;
 - a separately encrypted public-route envelope for the TSN Node;
 - route version and nonce.
@@ -44,7 +45,7 @@ flowchart TD
     W["Main wallet"]
     D["Authorized browser device session"]
     SDK["TSN SDK"]
-    K["TSN device-envelope provider"]
+    K["TSN threshold key-release provider"]
     TIN["TIN registry"]
     N["TSN Node routing key"]
 
@@ -69,12 +70,12 @@ authorization bound to:
 - PRU configuration commitment;
 - the current device-session public binding.
 
-The SDK creates a fresh random 32-byte data key and wraps it directly to the
-authorized device's X25519 public key. The device unwraps it locally, and the
-SDK encrypts the seed with AES-256-GCM. Neither the master seed nor the data
-key is sent to the backend, Node, Cranker, or a remote action. Only the local
-seed ciphertext, opaque device envelope, and public commitments are
-serialized. Plaintext seed and data-key bytes are cleared after use.
+The SDK requests a fresh random 32-byte data key from the configured TSN
+threshold key-release provider. The provider retains only an opaque,
+threshold-protected handle and returns the data key encrypted to the current
+authorized device. The device unwraps it locally, and the SDK encrypts the seed
+with AES-256-GCM. Neither the master seed nor plaintext data-key bytes are sent
+to the backend, Node, Cranker, or Receiver.
 
 ## Authorized-device decryption
 
@@ -90,9 +91,12 @@ proof is bound to the exact operation and protected-resource commitment, so
 authorization for one ciphertext cannot unlock another. It has a five-minute
 maximum lifetime and a one-time nonce.
 
-The SDK checks both signatures, every identity and resource field, the device
-fingerprint, expiry, and nonce before the local envelope is released. A
-wallet-only bypass is not accepted.
+The provider must check both signatures, every identity and resource field,
+the device fingerprint, expiry, and a one-time nonce before releasing a device
+envelope. A wallet-only bypass is not accepted. The repository's old
+`tsn-device-envelope-v1` provider is migration/test compatibility only and is
+disabled by default in production; it cannot unlock a TIN created on another
+device.
 
 A device must first be authorized through the existing TSN Private View device
 authorization flow. The main wallet then signs the exact short-lived
@@ -107,7 +111,7 @@ sequenceDiagram
     participant D as New user device
     participant W as Main wallet
     participant SDK as TSN SDK
-    participant K as TSN device-envelope provider
+    participant K as TSN threshold key-release provider
     participant T as TIN registry
 
     D->>D: Use existing wallet-authorized device keys
@@ -115,17 +119,19 @@ sequenceDiagram
     W->>SDK: Sign TIN + commitment + device-session binding
     SDK->>K: Present wallet authorization and device-session proof
     K->>K: Verify owner and device-session policy
-    K-->>SDK: Return device envelope for the same X25519 key
+    K-->>SDK: Return device envelope for this authorized device
     SDK->>SDK: Unwrap key and decrypt seed locally
     SDK->>SDK: Derive public PRUs
     SDK->>SDK: Verify the on-chain PRU commitment
     SDK->>SDK: Clear plaintext seed bytes
 ```
 
-The device-envelope provider never receives the master seed or its ciphertext.
-It can release only the independent data key as an envelope encrypted to the
+The threshold provider never receives the master seed or its ciphertext. It
+can release only the independent data key as an envelope encrypted to the
 authorized device. Capturing the wallet authorization, request, or response
-does not give another device usable key material.
+does not give another device usable key material. A live multi-device provider
+must be deployed before existing device-bound envelopes can be migrated
+safely; the SDK fails closed until then.
 
 ## Loading the TIN balance
 

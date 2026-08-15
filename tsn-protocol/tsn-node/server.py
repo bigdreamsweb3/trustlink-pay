@@ -46,7 +46,7 @@ from nacl.exceptions import BadSignatureError, CryptoError
 from nacl.public import Box, PrivateKey, PublicKey as Curve25519PublicKey
 from nacl.signing import SigningKey, VerifyKey
 from pydantic import BaseModel, Field
-from solders.pubkey import Pubkey
+from app.solana_pubkey import Pubkey
 from app.services.threshold_access import (
     ThresholdAccessError,
     create_signed_nonce_receipt,
@@ -58,6 +58,10 @@ from app.receiver_store import ReceiverStore
 from app.services.route_attestation import canonical_route_message, sign_route_message
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
+def clean_env(value: str | None, default: str = "") -> str:
+    return (value if value is not None else default).strip().strip('"').strip("'").strip()
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -71,12 +75,16 @@ GITHUB_REPO     = "bigdreamsweb3/tsn-epoch-records"
 GITHUB_API      = "https://api.github.com"
 MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "firebase").strip().lower()
 ALLOW_LOCAL_JSON_STORE = os.environ.get("TSN_ALLOW_LOCAL_JSON_STORE", "").strip().lower() == "true"
-TSN_RECEIVER_URL = os.environ.get(
+TSN_RECEIVER_URL = clean_env(os.environ.get(
     "TSN_RECEIVER_URL",
     "https://tsn-receiver-kappa.vercel.app",
-).strip()
-TSN_RECEIVER_NODE_API_KEY = os.environ.get("TSN_RECEIVER_NODE_API_KEY", "").strip()
-TSN_NODE_ID = os.environ.get("TSN_NODE_ID", "tsn-node-local").strip()
+))
+TSN_RECEIVER_FALLBACK_URL = clean_env(os.environ.get(
+    "TSN_RECEIVER_FALLBACK_URL",
+    "https://tsn-receiver-kappa.vercel.app",
+))
+TSN_RECEIVER_NODE_API_KEY = clean_env(os.environ.get("TSN_RECEIVER_NODE_API_KEY"))
+TSN_NODE_ID = clean_env(os.environ.get("TSN_NODE_ID", "tsn-node-local"))
 ALLOW_DIRECT_FIREBASE_STORE = os.environ.get("TSN_ALLOW_DIRECT_FIREBASE_STORE", "").strip().lower() == "true"
 MEMPOOL_FILE    = Path(os.environ.get("MEMPOOL_FILE", ".mempool-store.json")).resolve()
 FIREBASE_COLLECTION = os.environ.get("FIREBASE_COLLECTION", "tsn_mempool").strip()
@@ -124,7 +132,7 @@ _tin_fee_config_cache_expires_at = 0.0
 
 
 def split_rpc_url_list(value: str) -> list[str]:
-    return [entry.strip().rstrip("/") for entry in re.split(r"[,\s]+", value) if entry.strip()]
+    return [clean_env(entry).rstrip("/") for entry in re.split(r"[,\s]+", value) if entry.strip()]
 
 
 def resolve_solana_rpc_url() -> str:
@@ -133,6 +141,27 @@ def resolve_solana_rpc_url() -> str:
 
 
 TSN_SOLANA_RPC_URL = resolve_solana_rpc_url()
+
+
+def receiver_endpoints(path: str) -> list[str]:
+    return list(dict.fromkeys(
+        f"{base.rstrip('/')}/{path.lstrip('/')}"
+        for base in (TSN_RECEIVER_URL, TSN_RECEIVER_FALLBACK_URL)
+        if base
+    ))
+
+
+async def receiver_request(client: httpx.AsyncClient, method: str, path: str, **kwargs: Any) -> httpx.Response:
+    last_error: Exception | None = None
+    for endpoint in receiver_endpoints(path):
+        try:
+            response = await client.request(method, endpoint, **kwargs)
+            if response.status_code < 500:
+                return response
+            last_error = RuntimeError(f"TSN Receiver returned {response.status_code}")
+        except httpx.RequestError as error:
+            last_error = error
+    raise RuntimeError("TSN Receiver unavailable on all configured endpoints") from last_error
 
 TOKEN_PROGRAM_ID = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 ASSOCIATED_TOKEN_PROGRAM_ID = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
@@ -723,7 +752,7 @@ async def get_store() -> Any:
     global _store
     if _store is None:
         if TSN_RECEIVER_URL:
-            _store = ReceiverStore(TSN_RECEIVER_URL, TSN_RECEIVER_NODE_API_KEY)
+            _store = ReceiverStore(TSN_RECEIVER_URL, TSN_RECEIVER_NODE_API_KEY, TSN_RECEIVER_FALLBACK_URL)
             logger.info("TSN Node durable state is delegated to Receiver: %s", TSN_RECEIVER_URL)
         elif MEMPOOL_STORE == "firebase" and ALLOW_DIRECT_FIREBASE_STORE:
             _store = FirebaseStore()
@@ -3300,12 +3329,11 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
 
 
 async def receiver_verification_worker() -> None:
-    endpoint = f"{TSN_RECEIVER_URL.rstrip('/')}/api/internal/node/work"
     headers = {"x-api-key": TSN_RECEIVER_NODE_API_KEY, "content-type": "application/json"}
     async with httpx.AsyncClient(timeout=30) as client:
         while True:
             try:
-                claimed = await client.post(endpoint, headers=headers, json={
+                claimed = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
                     "nodeId": TSN_NODE_ID,
                     "supportedKinds": ["PAYMENT_INTENT", "CLAIM", "RECOVERY", "TIN_OPERATION"],
                 })
@@ -3321,7 +3349,7 @@ async def receiver_verification_worker() -> None:
                     logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
                     evidence = {"reason": str(exc)[:500]}
                     status = "REJECTED"
-                result = await client.patch(endpoint, headers=headers, json={
+                result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
                     "id": work["id"],
                     "owner": TSN_NODE_ID,
                     "expectedVersion": work["stateVersion"],
@@ -3339,9 +3367,12 @@ async def _receiver_work_by_id(work_id: str) -> dict[str, Any]:
     if not TSN_RECEIVER_URL or not TSN_RECEIVER_NODE_API_KEY:
         raise HTTPException(503, "TSN Receiver service is not configured")
     async with httpx.AsyncClient(timeout=20) as client:
-        response = await client.get(
-            f"{TSN_RECEIVER_URL.rstrip('/')}/api/internal/node/work",
-            params={"id": work_id}, headers={"x-api-key": TSN_RECEIVER_NODE_API_KEY},
+        response = await receiver_request(
+            client,
+            "GET",
+            "/api/internal/node/work",
+            params={"id": work_id},
+            headers={"x-api-key": TSN_RECEIVER_NODE_API_KEY},
         )
     if response.status_code == 404:
         raise HTTPException(404, "Receiver work was not found")

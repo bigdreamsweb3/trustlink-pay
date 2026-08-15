@@ -119,7 +119,7 @@ const envSchema = z
       .default(5),
     SOLANA_MOCK_MODE: booleanFromEnv.default(true),
     WHATSAPP_MOCK_MODE: booleanFromEnv.default(true),
-    APP_BASE_URL: z.string().url().default("http://localhost:3000"),
+    APP_BASE_URL: z.string().url().default("https://trustlink-pay-backend.vercel.app"),
     SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080),
     TSN_ENABLED: booleanFromEnv.default(false),

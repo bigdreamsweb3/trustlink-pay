@@ -10,6 +10,8 @@ Solana. TrustLink Pay is the application experience built on that network.
 - [TSN Protocol research blog](https://tsn-protocol.blogspot.com/)
 - [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
 - [TrustLink Pay source repository](https://github.com/bigdreamsweb3/trustlink-pay)
+- [Service hosting and deployment map](docs/SERVICE-HOSTING.md)
+- [Live testing and contributor guide](docs/GETTING-STARTED-LIVE.md)
 
 TSN combines identity, recipient discovery, protected receiving and spending,
 authorization, payment intents, Receiver work queues, TSN Node verification,
@@ -254,8 +256,6 @@ Connect with the builder and follow the work:
 - **TrustLink Labs:** [GitHub organization](https://github.com/Trustlink-Labs)
 - **Research blog:** [TSN Protocol](https://tsn-protocol.blogspot.com/)
 - **TrustLink Pay:** [Live application](https://trustlink-pay.vercel.app/)
-
-
 
 TrustLink Labs is building privacy-conscious payment infrastructure on Solana.
 

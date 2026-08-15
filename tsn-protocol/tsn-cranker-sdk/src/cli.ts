@@ -235,7 +235,7 @@ async function main() {
   race-epoch <args>              Submit TSN competitive recovery proof
   
 Environment Variables:
-  TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: http://127.0.0.1:8787)
+  TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: https://tsn-rpc-gateway.wasmer.app)
   PROGRAM_ID                     TSN program ID
   TINS_PROGRAM_ID                TIP registry program ID (defaults to local dev TIP id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);

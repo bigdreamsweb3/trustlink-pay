@@ -1,6 +1,7 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
 export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.wasmer.app";
+const LOCAL_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
 
 function normalizeRpcGatewayUrl(value: string | undefined) {
   const candidate = value?.trim();
@@ -27,11 +28,18 @@ type RpcSelectionOptions = {
 };
 
 export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
-  return [resolveSolanaRpcUrl()];
+  const configured = process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL?.trim();
+  if (configured) {
+    const selected = normalizeRpcGatewayUrl(configured);
+    return selected === DEFAULT_TSN_RPC_GATEWAY_URL && configured !== DEFAULT_TSN_RPC_GATEWAY_URL
+      ? [DEFAULT_TSN_RPC_GATEWAY_URL]
+      : [selected, ...(selected === LOCAL_TSN_RPC_GATEWAY_URL ? [DEFAULT_TSN_RPC_GATEWAY_URL] : [])];
+  }
+  return [LOCAL_TSN_RPC_GATEWAY_URL, DEFAULT_TSN_RPC_GATEWAY_URL];
 }
 
 export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {
-  return normalizeRpcGatewayUrl(process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL);
+  return resolveSolanaRpcUrls(_options)[0];
 }
 
 export function createSolanaConnection({
@@ -40,7 +48,26 @@ export function createSolanaConnection({
   commitment?: Commitment;
   frontendSafe?: boolean;
 } = {}) {
-  return new Connection(resolveSolanaRpcUrl(), commitment);
+  const urls = resolveSolanaRpcUrls();
+  return new Connection(urls[0], {
+    commitment,
+    fetch: async (input, init) => {
+      const requestUrl = typeof input === "string" ? input : input.url;
+      const candidates = urls.map((url) =>
+        requestUrl.replace(/^https?:\/\/[^/]+/, url),
+      );
+      let lastError: unknown;
+      for (const candidate of [...new Set(candidates)]) {
+        try {
+          const response = await fetch(candidate, init);
+          if (response.status < 500) return response;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError instanceof Error ? lastError : new Error("All Solana RPC endpoints failed");
+    },
+  });
 }
 
 export async function withRpcFallback<T>(

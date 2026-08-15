@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const backendUrl =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://trustlink-pay-backend.vercel.app";
 
 export function middleware(request: NextRequest) {
   if (

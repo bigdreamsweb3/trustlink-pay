@@ -1,0 +1,21 @@
+name: tsn-node
+app_id: da_K1EIZtMU7QVx
+owner: italianloader
+package: .
+kind: wasmer.io/App.v0
+annotations:
+  anybuild.run/config:
+    asgi_application: main:app
+    commands:
+      start: uvicorn main:app --host 0.0.0.0 --port $PORT
+    name: out
+    python_cross_platform: wasix_wasm32
+    python_extra_index_url: https://pythonindex.wasix.org/simple
+    python_framework: fastapi
+    python_install_inputs:
+    - requirements.txt
+    python_main_file: main.py
+    python_server: uvicorn
+  anybuild.run/provider: python
+  anybuild.run/version: 0.27.2
+  wasmer.io/version: 7.2.1

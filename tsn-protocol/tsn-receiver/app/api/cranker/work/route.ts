@@ -3,6 +3,10 @@ import { requireService } from "../../../../lib/auth";
 import { attachCrankerAuthorization, leaseForCranker, transition } from "../../../../lib/store";
 export const runtime = "nodejs";
 
+function cleanUrl(value: string) {
+  return value.trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
+}
+
 export async function POST(request: NextRequest) {
   try {
     requireService(request, "cranker");
@@ -10,14 +14,19 @@ export async function POST(request: NextRequest) {
     if (!body.crankerId) throw new Error("crankerId is required");
     let work = await leaseForCranker(body.crankerId, body.supportedKinds);
     if (work && (work.kind === "CLAIM" || work.kind === "RECOVERY")) {
-      const nodeUrl = process.env.TSN_NODE_URL?.replace(/\/$/, "");
+      const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL || "https://tsn-node.wasmer.app"].filter(Boolean).map((value) => cleanUrl(value as string));
       const nodeKey = process.env.TSN_RECEIVER_NODE_API_KEY;
-      if (!nodeUrl || !nodeKey) throw new Error("TSN Node authorization service is not configured");
-      const response = await fetch(`${nodeUrl}/internal/settlement-authorizations/${work.kind.toLowerCase()}`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-api-key": nodeKey },
-        body: JSON.stringify({ workId: work.id, crankerPubkey: body.crankerId }),
-      });
+      if (!nodeKey || nodeUrls.length === 0) throw new Error("TSN Node authorization service is not configured");
+      let response: Response | undefined;
+      for (const nodeUrl of [...new Set(nodeUrls)]) {
+        response = await fetch(`${nodeUrl}/internal/settlement-authorizations/${work.kind.toLowerCase()}`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-api-key": nodeKey },
+          body: JSON.stringify({ workId: work.id, crankerPubkey: body.crankerId }),
+        });
+        if (response.status < 500) break;
+      }
+      if (!response) throw new Error("TSN Node authorization service is unavailable");
       if (!response.ok) throw new Error(`TSN Node authorization failed (${response.status})`);
       const authorization = await response.json() as Record<string, unknown>;
       work = await attachCrankerAuthorization({ id: work.id, owner: body.crankerId, expectedVersion: work.stateVersion, authorization });

@@ -219,6 +219,7 @@ async def get_store() -> Any:
             config._store = ReceiverStore(
                 config.TSN_RECEIVER_URL,
                 config.TSN_RECEIVER_NODE_API_KEY,
+                config.TSN_RECEIVER_FALLBACK_URL,
             )
         elif config.MEMPOOL_STORE == "firebase" and config.ALLOW_DIRECT_FIREBASE_STORE:
             config._store = FirebaseStore()

@@ -1,11 +1,10 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
-const BASE = (
-  process.env.TSN_RECEIVER_URL ||
-  process.env.MEMPOOL_API_URL ||
-  "https://tsn-receiver-kappa.vercel.app"
-).replace(/\/$/, "");
+const BASES = [
+  process.env.TSN_RECEIVER_URL || process.env.MEMPOOL_API_URL,
+  process.env.TSN_RECEIVER_FALLBACK_URL || "https://tsn-receiver-kappa.vercel.app",
+].filter(Boolean).map((value) => value!.replace(/\/$/, ""));
 
 function opaqueId(value: unknown) {
   if (typeof value !== "string" || !value) return null;
@@ -13,12 +12,16 @@ function opaqueId(value: unknown) {
 }
 
 async function get(path: string) {
-  try {
-    const response = await fetch(`${BASE}${path}`, { next: { revalidate: 3 } });
-    return response.ok ? response.json() : null;
-  } catch {
-    return null;
+  for (const base of [...new Set(BASES)]) {
+    try {
+      const response = await fetch(`${base}${path}`, { next: { revalidate: 3 } });
+      if (response.ok) return response.json();
+      if (response.status < 500) return null;
+    } catch {
+      // Try the deployed Receiver when the local service is stopped.
+    }
   }
+  return null;
 }
 
 function publicWork(item: any) {

@@ -9,6 +9,7 @@ const nodePort = Number(process.env.TSN_NODE_PORT ?? "8000");
 const uiPort = Number(process.env.TSN_MEMPOOL_UI_PORT ?? "3002");
 const startLocalReceiver = process.env.TSN_START_RECEIVER === "true";
 const liveReceiverUrl = "https://tsn-receiver-kappa.vercel.app";
+const liveNodeUrl = "https://tsn-node.wasmer.app";
 
 function isPortOpen(port) {
   return new Promise((resolve) => {
@@ -29,6 +30,15 @@ function spawnTagged(name, command, args, cwd, env = process.env) {
   return child;
 }
 
+async function isHttpReachable(url) {
+  try {
+    await fetch(url, { method: "GET", signal: AbortSignal.timeout(2500) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const children = [];
 if (startLocalReceiver && !(await isPortOpen(receiverPort))) {
   children.push(spawnTagged("tsn-receiver", npm, ["run", "dev", "--", "-p", String(receiverPort)],
@@ -36,13 +46,18 @@ if (startLocalReceiver && !(await isPortOpen(receiverPort))) {
 } else if (startLocalReceiver) console.log(`[tsn-receiver] reusing localhost:${receiverPort}`);
 
 if (!(await isPortOpen(nodePort))) {
-  children.push(spawnTagged("tsn-node", process.platform === "win32" ? "python" : "python3", ["-u", "server.py"],
-    `${rootDir}/tsn-protocol/tsn-node`, {
-      ...process.env,
-      TSN_RECEIVER_URL: process.env.TSN_RECEIVER_URL ||
-        (startLocalReceiver ? `http://127.0.0.1:${receiverPort}` : liveReceiverUrl),
-      PYTHONUNBUFFERED: "1",
-    }));
+  if (process.env.TSN_FORCE_LOCAL_NODE !== "true" && await isHttpReachable(liveNodeUrl)) {
+    console.log(`[tsn-node] using live service ${liveNodeUrl}`);
+  } else {
+    children.push(spawnTagged("tsn-node", process.platform === "win32" ? "python" : "python3", ["-u", "server.py"],
+      `${rootDir}/tsn-protocol/tsn-node`, {
+        ...process.env,
+        TSN_RECEIVER_URL: process.env.TSN_RECEIVER_URL ||
+          (startLocalReceiver ? `http://127.0.0.1:${receiverPort}` : liveReceiverUrl),
+        TSN_RECEIVER_FALLBACK_URL: process.env.TSN_RECEIVER_FALLBACK_URL || liveReceiverUrl,
+        PYTHONUNBUFFERED: "1",
+      }));
+  }
 } else console.log(`[tsn-node] reusing localhost:${nodePort}`);
 
 if (process.env.TSN_START_MEMPOOL_UI === "true") {

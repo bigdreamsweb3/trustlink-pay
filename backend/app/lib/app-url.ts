@@ -16,7 +16,7 @@ export function resolveAppBaseUrl(preferredOrigin?: string | null) {
   return (
     normalizeOrigin(preferredOrigin) ??
     normalizeOrigin(env.APP_BASE_URL) ??
-    "http://localhost:3000"
+    "https://trustlink-pay-backend.vercel.app"
   );
 }
 

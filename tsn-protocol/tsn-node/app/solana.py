@@ -9,8 +9,7 @@ from typing import Any, Optional
 import httpx
 from fastapi import HTTPException
 from nacl.signing import SigningKey
-from solders.pubkey import Pubkey
-
+from .solana_pubkey import Pubkey
 from . import config
 from .utils.encoding import decode_base58, decode_secret_key, encode_base58
 

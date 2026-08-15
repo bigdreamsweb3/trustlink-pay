@@ -3,7 +3,7 @@ import {
   clearStoredToken,
   clearStoredUser,
 } from "@/src/lib/storage";
-import { buildBackendUrl } from "@/src/lib/backend";
+import { fetchBackend } from "@/src/lib/backend";
 import { traceFunction } from "@trustlink/observability/tracer";
 
 type ApiCacheMode = "default" | "no-store";
@@ -251,7 +251,7 @@ export async function apiPost<T>(
   options: ApiCacheOptions = {},
 ): Promise<T> {
   const load = traceFunction(async function apiPostLoad(payloadBody: unknown) {
-    const response = await fetch(buildBackendUrl(path), {
+    const response = await fetchBackend(path, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -303,7 +303,7 @@ export async function apiGet<T>(
   options: ApiCacheOptions = {},
 ): Promise<T> {
   const load = traceFunction(async function apiGetLoad() {
-    const response = await fetch(buildBackendUrl(path), {
+    const response = await fetchBackend(path, {
       method: "GET",
       headers: accessToken
         ? { Authorization: `Bearer ${accessToken}` }
@@ -345,7 +345,7 @@ export async function apiPatch<T>(
   accessToken?: string,
 ): Promise<T> {
   const execute = traceFunction(async function apiPatchLoad(payloadBody: unknown) {
-    const response = await fetch(buildBackendUrl(path), {
+    const response = await fetchBackend(path, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -381,7 +381,7 @@ export async function apiDelete<T>(
   accessToken?: string,
 ): Promise<T> {
   const execute = traceFunction(async function apiDeleteLoad() {
-    const response = await fetch(buildBackendUrl(path), {
+    const response = await fetchBackend(path, {
       method: "DELETE",
       headers: accessToken
         ? { Authorization: `Bearer ${accessToken}` }

@@ -1,4 +1,4 @@
-const mempoolUrl = (process.env.TSN_MEMPOOL_URL || "http://localhost:8000").replace(/\/$/, "");
+const mempoolUrl = (process.env.TSN_MEMPOOL_URL || "https://tsn-node.wasmer.app").replace(/\/$/, "");
 
 async function fetchJson(path) {
   const response = await fetch(`${mempoolUrl}${path}`, {

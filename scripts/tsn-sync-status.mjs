@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 const backendUrl = (
   process.argv[2] ||
   process.env.TSN_BACKEND_URL ||
-  "http://localhost:3000"
+  "https://trustlink-pay-backend.vercel.app"
 ).replace(/\/$/, "");
 
 /**

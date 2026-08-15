@@ -8,25 +8,36 @@ import httpx
 class ReceiverStore:
     """Remote durable-state adapter. The TSN Node retains no queue database."""
 
-    def __init__(self, base_url: str, api_key: str):
+    def __init__(self, base_url: str, api_key: str, fallback_url: str | None = None):
         if not base_url or not api_key:
             raise RuntimeError("TSN Receiver URL and Node API key are required")
-        self.endpoint = f"{base_url.rstrip('/')}/api/internal/node/state"
-        self.headers = {"x-api-key": api_key, "content-type": "application/json"}
+        urls = [base_url, fallback_url] if fallback_url else [base_url]
+        urls = [url.strip().strip('"').strip("'").strip() for url in urls if url]
+        self.endpoints = [f"{url.rstrip('/')}/api/internal/node/state" for url in urls if url]
+        self.headers = {"x-api-key": api_key.strip().strip('"').strip("'"), "content-type": "application/json"}
         self.client = httpx.AsyncClient(timeout=20)
 
     async def _call(self, operation: str, **payload: Any) -> dict[str, Any]:
-        response = await self.client.post(
-            self.endpoint,
-            headers=self.headers,
-            json={"operation": operation, **payload},
-        )
-        if response.status_code >= 400:
-            raise RuntimeError(f"TSN Receiver state operation failed ({response.status_code})")
-        value = response.json()
-        if not isinstance(value, dict):
-            raise RuntimeError("TSN Receiver returned an invalid state response")
-        return value
+        last_error: Exception | None = None
+        for endpoint in dict.fromkeys(self.endpoints):
+            try:
+                response = await self.client.post(
+                    endpoint,
+                    headers=self.headers,
+                    json={"operation": operation, **payload},
+                )
+                if response.status_code >= 500:
+                    last_error = RuntimeError(f"TSN Receiver state operation failed ({response.status_code})")
+                    continue
+                if response.status_code >= 400:
+                    raise RuntimeError(f"TSN Receiver state operation failed ({response.status_code})")
+                value = response.json()
+                if not isinstance(value, dict):
+                    raise RuntimeError("TSN Receiver returned an invalid state response")
+                return value
+            except httpx.RequestError as error:
+                last_error = error
+        raise RuntimeError("TSN Receiver state operation failed on all configured endpoints") from last_error
 
     async def get(self, key: str) -> Optional[str]:
         return (await self._call("get", key=key)).get("value")

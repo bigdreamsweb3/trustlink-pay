@@ -2,25 +2,25 @@ const checks = [
   {
     name: "backend",
     method: "GET",
-    url: process.env.FLOW_BACKEND_URL || "http://localhost:3000",
+    url: process.env.FLOW_BACKEND_URL || "https://trustlink-pay-backend.vercel.app",
     okStatuses: [200, 301, 302, 404],
   },
   {
     name: "frontend",
     method: "GET",
-    url: process.env.FLOW_FRONTEND_URL || "http://localhost:3001",
+    url: process.env.FLOW_FRONTEND_URL || "https://trustlink-pay.vercel.app",
     okStatuses: [200],
   },
   {
     name: "mempool-api",
     method: "POST",
-    url: process.env.FLOW_MEMPOOL_API_URL || "http://localhost:8000",
+    url: process.env.FLOW_MEMPOOL_API_URL || "https://tsn-node.wasmer.app",
     okStatuses: [200],
   },
   {
     name: "mempool-work",
     method: "GET",
-    url: `${process.env.FLOW_MEMPOOL_API_URL || "http://localhost:8000"}/work?limit=5`,
+    url: `${process.env.FLOW_MEMPOOL_API_URL || "https://tsn-node.wasmer.app"}/work?limit=5`,
     okStatuses: [200],
   },
   {

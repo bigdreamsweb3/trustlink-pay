@@ -1,5 +1,5 @@
 import { apiPost } from "@/src/lib/api";
-import { buildBackendUrl } from "@/src/lib/backend";
+import { buildBackendUrl, DEFAULT_BACKEND_URL } from "@/src/lib/backend";
 
 export interface SessionVerificationResult {
   success: boolean;
@@ -51,7 +51,7 @@ export class SessionEventManager {
     try {
       // EventSource doesn't work through middleware proxy, use direct backend URL
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || DEFAULT_BACKEND_URL;
       const eventsUrl = `${backendUrl}/api/auth/session/events?sessionId=${this.sessionId}`;
 
       this.eventSource = new EventSource(eventsUrl);

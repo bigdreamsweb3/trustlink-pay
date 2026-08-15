@@ -242,6 +242,17 @@ See what people are saying about the project: [Community Mentions](./docs/mentio
 
 For the Windows-native development workflow, see [Windows TSN Commands](./docs/WINDOWS-TSN-COMMANDS.md). The default PM2 stack runs the frontend, backend, and RPC gateway; mempool services and the Cranker are explicit opt-in processes.
 
+## Built with love by TrustLink Labs
+
+TrustLink Pay is currently built and maintained by a one-person team:
+
+| Team member | Contribution |
+| ------------ | ------------ |
+| **Daniel (Big Dreams Web3)** | Founder and lead builder — TSN and TIN architecture, Solana program design, ZK-PRU privacy flows, SDK, TSN Node, Receiver, Cranker tooling, frontend, Devnet testing, and documentation. |
+
+The project is intentionally open to future contributors who want to help build
+privacy-conscious payment infrastructure on Solana.
+
 ## License
 
 [MIT](./LICENSE)

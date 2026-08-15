@@ -719,7 +719,7 @@ export function DashboardExperience() {
 
               {/* TIN balance chip */}
               <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
-                <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
+                <div className="flex items-center justify-between">
                   <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
                     TIN balance
                   </span>

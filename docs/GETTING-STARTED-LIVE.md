@@ -12,15 +12,20 @@ for production funds, real stablecoins, or private keys that hold value.
 | --- | --- | --- |
 | TrustLink Pay | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/) | Browser wallet and payment experience |
 | TrustLink backend | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | Authentication and application APIs |
-| TSN Receiver | Wasmer deployment URL configured by `TSN_RECEIVER_URL` | Intent ingress, durable work, leases, and evidence |
+| TSN Receiver | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/) | Intent ingress, durable work, leases, and evidence |
 | TSN Node | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/) | Verification and Receiver work processing |
-| TSN RPC Gateway | Vercel deployment URL configured by `TSN_RPC_GATEWAY_URL` | Controlled Solana RPC access |
+| TSN RPC Gateway | [tsn-rpc-gateway.wasmer.app](https://tsn-rpc-gateway.wasmer.app/) | Controlled Solana RPC access |
 | TSN Protocol | Solana Devnet program account | On-chain authorization and settlement |
 
-The current RPC Vercel domain and TSN Receiver Wasmer domain are intentionally
-configuration-driven because they are not recorded in this repository. Set
-`TSN_RPC_GATEWAY_URL` and `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` to the Vercel RPC
-URL, and set `TSN_RECEIVER_URL` to the Wasmer Receiver URL before testing.
+Use these canonical Devnet endpoints:
+
+```text
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
+NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
+TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
+```
+
+The TSN Node and TIN registry are pinned to the deployed program IDs below.
 
 ## What a live payment test does
 
@@ -69,9 +74,16 @@ For a client or test harness, configure the RPC and Receiver URLs without
 embedding secrets:
 
 ```text
-TSN_RPC_GATEWAY_URL=<Vercel RPC Gateway URL>
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 ```
+
+## Deployed Devnet program IDs
+
+| Program | Program ID |
+| --- | --- |
+| TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 The SDK owns canonical plan construction, commitments, source selection,
 route policy, bigint accounting, and local authorization helpers. Applications
@@ -112,7 +124,7 @@ The TSN Node is hosted at Wasmer and the Receiver is hosted at Vercel. Their
 source repositories are separate:
 
 - [TSN Node](https://github.com/bigdreamsweb3/tsn-node)
-- [TSN Receiver](https://github.com/bigdreamsweb3/tsn-receiver) (Wasmer deployment)
+- [TSN Receiver](https://github.com/bigdreamsweb3/tsn-receiver) (Vercel deployment)
 
 The Node requires server-only configuration for its Receiver credential,
 route-verification keys, and RPC settings. The Receiver requires Firebase and

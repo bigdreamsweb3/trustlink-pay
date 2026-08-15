@@ -57,15 +57,15 @@ Before an operator starts a Cranker, the deployment owner must provide:
 4. The current Receiver Cranker API credential. Obtain it from the
    deployment owner; do not invent one.
 5. Direct Solana Devnet RPC and WebSocket access. Crankers submit to Solana
-   directly; `TSN_RPC_GATEWAY_URL` is not a substitute for the executor RPC.
+   directly; the TSN RPC Gateway is used by the browser and application
+   services, not as a replacement for the operator's submission RPC.
 6. A funded operator keypair. Use a dedicated keypair, never the upgrade
    authority, a user wallet, or a TIN/PRU key.
 7. A supported token mint and enough Devnet SOL for fees and account creation.
    If policy requires a funded Cranker Vault, initialize and fund it first.
 
 The public service URLs are deployment configuration, not constants in this
-guide. Set `TSN_RECEIVER_URL` to the current Wasmer Receiver URL supplied by
-the deployment owner. Do not copy an old Vercel URL from an example file.
+guide. Set `TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app`.
 
 ## Deployment boundary
 
@@ -131,12 +131,12 @@ SOLANA_MOCK_MODE=false
 TSN_RPC_GATEWAY_URL=https://api.devnet.solana.com
 TSN_SOLANA_RPC_URLS=https://api.devnet.solana.com
 SOLANA_WS_URL=wss://api.devnet.solana.com
-PROGRAM_ID=<TSN_PROGRAM_ID>
-TINS_PROGRAM_ID=<TIN_PROGRAM_ID>
+PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
 KEYPAIR_PATH=./keys/cranker-keypair.json
 TSN_ENABLED=true
 TSN_CREATE_INTENTS_ONCHAIN=true
-TSN_RECEIVER_URL=<CURRENT_WASMER_RECEIVER_URL>
+TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 TSN_RECEIVER_CRANKER_API_KEY=<RECEIVER_CRANKER_API_KEY>
 TSN_CRANKER_POLL_MS=2000
 ```
@@ -293,7 +293,7 @@ Use the same Devnet RPC and program ID as the operator environment:
 solana address -k tsn-protocol/tsn-cranker-op-daemon/keys/cranker-keypair.json
 solana account <MOTHER_ESCROW_PDA> --url devnet
 solana account <CRANKER_PDA> --url devnet
-solana program show <TSN_PROGRAM_ID> --url devnet
+solana program show TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V --url devnet
 ```
 
 Keep startup output and every submitted transaction signature as operator
@@ -303,8 +303,9 @@ TSN Node decision, program logs, and token balances together.
 
 ## Troubleshooting
 
-**Receiver returns 401.** Check that `TSN_RECEIVER_URL` is the current Wasmer
-deployment and `TSN_RECEIVER_CRANKER_API_KEY` matches the server credential.
+**Receiver returns 401.** Check that `TSN_RECEIVER_URL` is
+`https://tsn-receiver-kappa.vercel.app` and
+`TSN_RECEIVER_CRANKER_API_KEY` matches the server credential.
 Remove accidental surrounding quotes from Wasmer environment values and restart.
 
 **Mother Escrow or Cranker PDA is not initialized.** Verify program ID, cluster,

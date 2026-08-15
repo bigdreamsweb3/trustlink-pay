@@ -391,7 +391,8 @@ export function DashboardExperience() {
           setTinPruCount(0);
           setTinActivePruCount(0);
           setTinBalanceLocked(
-            error instanceof Error && /threshold|legacy single-device|locked/i.test(error.message),
+            error instanceof Error &&
+              /threshold|legacy single-device|locked/i.test(error.message),
           );
           setTinBalanceStatus(
             error instanceof Error
@@ -459,7 +460,9 @@ export function DashboardExperience() {
       );
       setTinInfo(extractTinInfo(result));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load Transfer Identity");
+      setError(
+        e instanceof Error ? e.message : "Could not load Transfer Identity",
+      );
     } finally {
       setIdentityLoading(false);
     }
@@ -647,7 +650,9 @@ export function DashboardExperience() {
                 type="button"
                 onClick={() => void handleCopyTinNumber()}
                 className="group flex shrink-0 flex-col items-end gap-1.5 cursor-pointer transition-transform active:scale-[0.97]"
-                aria-label={activeTin ? `Copy TIN ${activeTin}` : "Link your TIN"}
+                aria-label={
+                  activeTin ? `Copy TIN ${activeTin}` : "Link your TIN"
+                }
               >
                 <div className="flex items-center gap-1">
                   {/* Provider badge */}
@@ -674,9 +679,7 @@ export function DashboardExperience() {
 
                 {/* Micro label */}
                 <span className="whitespace-nowrap text-[0.54rem] font-medium tracking-[0.08em] text-text/24">
-                  {activeTin
-                    ? "Transfer Identity Number"
-                    : "TIN not linked"}
+                  {activeTin ? "Transfer Identity Number" : "TIN not linked"}
                 </span>
               </button>
             </div>
@@ -716,9 +719,16 @@ export function DashboardExperience() {
 
               {/* TIN balance chip */}
               <div className="tl-field rounded-[16px] px-4 pb-1.5 max-w-fit">
-                <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
-                  TIN balance
-                </span>
+                <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
+                  <span className="truncate text-[0.54rem] font-medium uppercase tracking-[0.08em] text-text-faint">
+                    TIN balance
+                  </span>
+                  <span className="whitespace-nowrap text-[0.45rem] font-semibold text-[var(--accent)]">
+                    {tinTokenLoading
+                      ? "Loading ZK-PRU handles..."
+                      : `${tinFundedPruCount} funded PRU ${tinFundedPruCount === 1 ? "" : "s"}`}
+                  </span>
+                </div>
                 <div className="mt-1 flex items-center gap-2">
                   <Landmark className="h-3.5 w-3.5 text-[var(--accent)]" />
                   <span className="text-[1.05rem] font-bold text-[var(--text)]">
@@ -731,11 +741,11 @@ export function DashboardExperience() {
                         : "****"}
                   </span>
                 </div>
-                <div className="mt-0.5 whitespace-nowrap text-[0.5rem] font-semibold text-[var(--accent)]">
+                {/* <div className="mt-0.5 whitespace-nowrap text-[0.5rem] font-semibold text-[var(--accent)]">
                   {tinTokenLoading
                     ? "Loading ZK-PRU handles..."
                     : `${tinFundedPruCount} funded ZK-PRU handle${tinFundedPruCount === 1 ? "" : "s"}`}
-                </div>
+                </div> */}
               </div>
               {/* */}
             </div>
@@ -1069,7 +1079,10 @@ export function DashboardExperience() {
                     <div>
                       <div className="mb-1.5 flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--text-faint)]">
                         <span>TIN balance</span>
-                        <span>{tinFundedPruCount} funded ZK-PRU handle{tinFundedPruCount === 1 ? "" : "s"}</span>
+                        <span>
+                          {tinFundedPruCount} funded ZK-PRU handle
+                          {tinFundedPruCount === 1 ? "" : "s"}
+                        </span>
                       </div>
                       {tinTokens.slice(0, 5).map((token) => (
                         <div
@@ -1216,7 +1229,8 @@ export function DashboardExperience() {
                   Balance details
                 </h2>
                 <p className="tl-text-muted mt-1 tl-body-sm leading-relaxed">
-                  Your main-wallet balance, private TIN balance, and pending settlement.
+                  Your main-wallet balance, private TIN balance, and pending
+                  settlement.
                 </p>
               </div>
               <button
@@ -1243,7 +1257,9 @@ export function DashboardExperience() {
                 },
                 {
                   label: "TIN balance",
-                  value: tinBalanceLocked ? "Locked" : formatPaymentUsd(tinBalanceUsd),
+                  value: tinBalanceLocked
+                    ? "Locked"
+                    : formatPaymentUsd(tinBalanceUsd),
                   sub:
                     tinBalanceStatus ??
                     (tinTokenLoading

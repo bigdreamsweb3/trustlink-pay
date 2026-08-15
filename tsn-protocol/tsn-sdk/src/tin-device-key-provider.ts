@@ -13,16 +13,16 @@ import {
 } from "./receipts/internal/encoding.js";
 
 /**
- * Device-bound provider used by the TSN-native TIN envelope flow.
+ * Authorized-device envelope adapter used by the TSN-native TIN envelope flow.
  *
  * The provider never receives a master seed. It generates a random data key,
  * wraps that key to the current device's non-exportable X25519 key, and stores
  * only the resulting opaque envelope in the TIN. Release is local and fails
  * closed when the envelope is addressed to another device.
  *
- * A new device must be authorized and receive a re-wrapped envelope through a
- * device migration flow; this provider never copies a private key between
- * devices and never uses a server-held decryption secret.
+ * This adapter never copies a private key between devices and never uses a
+ * server-held decryption secret. Cross-device re-wrapping is a separate
+ * owner-authorized migration operation, not a decryption operation.
  */
 export const TSN_DEVICE_ENVELOPE_PROVIDER_ID = "tsn-device-envelope-v1" as const;
 const PROTECTED_KEY_VERSION = "tsn-device-envelope-protected-key-v1" as const;
@@ -123,7 +123,7 @@ export class TsnDeviceEnvelopeTinMasterSeedProvider
       context.deviceAccessProof.deviceEncryptionKeyFingerprint
     ) {
       throw new Error(
-        "TIN uses a legacy single-device envelope; a multi-device TSN threshold key-release provider is required",
+        "TIN envelope belongs to another device; authorize this device and upgrade the TIN before loading its private balance",
       );
     }
     const expectedProtectedCommitment = await protectedKeyCommitment(context.protectedKey);

@@ -11,7 +11,7 @@ import { resolveTinFromChain } from "@/src/lib/tins";
 import type { WalletTokenOption } from "@/src/lib/types";
 import type { ConnectedWalletSession } from "@/src/lib/wallet";
 import { signTinMasterSeedAuthorizationBytes } from "@/src/lib/wallet";
-import { getBrowserTinMasterSeedProvider } from "@/src/lib/tsn-threshold-provider";
+import { getBrowserTinAuthorizedDeviceAccess } from "@/src/lib/tin-authorized-device-access";
 import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
 
 export type TinTokenBalanceResult = {
@@ -35,10 +35,10 @@ export async function loadTinTokenBalances(params: {
   signal?: AbortSignal;
   onProgress?: (message: string) => void;
 }): Promise<TinTokenBalanceResult> {
-  // Fail before querying the chain when production has no configured
-  // multi-device key-release provider. This avoids displaying a misleading
-  // zero balance and avoids unnecessary RPC calls.
-  const thresholdProvider = await getBrowserTinMasterSeedProvider();
+  // Obtain the authorized-device adapter before querying the chain. This
+  // avoids displaying a misleading zero balance when the device is not
+  // authorized for the selected TIN.
+  const accessProvider = await getBrowserTinAuthorizedDeviceAccess();
   params.onProgress?.("Decrypting the TIN route on this authorized device...");
   const identity = await resolveTinFromChain(params.tin);
   const connection = createSolanaConnection({ frontendSafe: true });
@@ -82,7 +82,7 @@ export async function loadTinTokenBalances(params: {
       }),
     },
     authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
-    thresholdProvider,
+    thresholdProvider: accessProvider,
     connection,
     tokens: params.supportedTokens.map((token) => ({
       mint: token.mintAddress,

@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Lit Protocol is the threshold-access layer used to unlock a TIN's encrypted
-ZK-PRU master seed on a wallet-authorized user device.
+Lit Protocol is an optional threshold-access adapter considered for unlocking a
+TIN's encrypted ZK-PRU master seed on a wallet-authorized user device. It is
+not required by the active local balance path.
 
 It exists to satisfy these requirements together:
 
@@ -13,8 +14,10 @@ It exists to satisfy these requirements together:
 - the TIN does not store an authorized-device list or per-device key;
 - a copied wallet signature cannot be reused as a general decryption key.
 
-Lit Protocol is not TSN, TIN, or ZK-PRU. It is an external threshold
-cryptography dependency behind a TSN SDK interface.
+Lit Protocol is not TSN, TIN, or ZK-PRU. If enabled in the future, it is an
+external cryptography dependency behind a TSN SDK interface. The active path
+uses the existing Private View authorized-device credentials and performs seed
+decryption locally.
 
 ## Two different uses of the word Lit
 
@@ -28,7 +31,7 @@ The repository uses two unrelated technologies whose names contain `Lit`:
 The Lit web-component library does not hold threshold keys and does not decide
 who may decrypt a TIN master seed. Lit Protocol does not render private data.
 
-## Exact duty in TSN
+## Exact duty if enabled in TSN
 
 Lit Protocol may:
 
@@ -189,20 +192,21 @@ running with the same privileges after a legitimate unlock.
 
 ## Current implementation
 
-The experimental SDK adapter is:
+The experimental SDK adapter remains isolated and is not used by the active
+balance path:
 
 - `tsn-protocol/tsn-sdk/src/lit-threshold-provider.ts`
 - `tsn-protocol/tsn-sdk/src/tin-private-controller.ts`
 - `tsn-protocol/tsn-sdk/src/tin-envelopes.ts`
 
-The frontend contains only a browser lifecycle adapter:
+The frontend's active browser adapter is:
 
 - `frontend/src/lib/tsn-threshold-provider.ts`
 
-The adapter targets Lit `DatilDev` and Solana Devnet. It creates an in-memory
-Lit session key and disconnects it when the page is hidden or closed. No
-session private key is intentionally written to TIN data, browser storage,
-TSN Node data, or application APIs.
+The adapter used for balances does not create a Lit session or call a Lit
+network. It uses the existing Private View device key only to unwrap the
+short-lived local envelope. No plaintext seed is written to TIN data, TSN Node
+data, or application APIs.
 
 ## Verification status
 

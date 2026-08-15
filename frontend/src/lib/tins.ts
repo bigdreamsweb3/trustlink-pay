@@ -30,7 +30,7 @@ import {
 } from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
 import { traceFunction } from "@trustlink/observability/tracer";
-import { getBrowserTinMasterSeedProvider } from "@/src/lib/tsn-threshold-provider";
+import { getBrowserTinAuthorizedDeviceAccess } from "@/src/lib/tin-authorized-device-access";
 const TINS_OWNER_INTENT_UPDATE_DOMAIN = "TINS_UPDATE_OWNER_INTENT_V2";
 
 export type BrowserTinRegistration = {
@@ -409,10 +409,12 @@ async function upgradeLegacyTinForWalletImpl(params: {
     algorithm: string;
     publicKey: string;
   };
-  // A legacy TIN has no device binding yet.  The upgrade action is the
-  // explicit owner approval point: authorize this browser device first, then
-  // create the device-bound envelope.  No Solana transaction is requested for
-  // this step; both approvals are detached wallet messages.
+  // A legacy TIN has no TSN private envelope yet. The upgrade action is the
+  // explicit owner approval point: authorize this device for this access
+  // request, then create the local device envelope. The long-lived TIN
+  // encryption is independent of the device key, which only unwraps the
+  // response locally. No Solana transaction is requested for this step; both
+  // approvals are detached wallet messages.
   if (!await getTsnDeviceAuthorization(params.tin)) {
     await authorizeCurrentTsnDevice({
       tin: params.tin,
@@ -436,7 +438,7 @@ async function upgradeLegacyTinForWalletImpl(params: {
       }),
     },
     authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
-    thresholdProvider: await getBrowserTinMasterSeedProvider(),
+    thresholdProvider: await getBrowserTinAuthorizedDeviceAccess(),
     nodeRoutingPublicKeyBase64: routeKey.publicKey,
   });
   const {

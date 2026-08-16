@@ -1326,6 +1326,11 @@ export function SendExperience() {
       const paymentCommitment = Array.from(new Uint8Array(commitmentBytes))
         .map((value) => value.toString(16).padStart(2, "0")).join("");
 
+      if (usesMixedPruWalletExecution) {
+        throw new Error(
+          "Mixed TIN funding is temporarily blocked until the sender-signed transaction includes the dual-authorized PRU spend. No wallet funding transaction was signed.",
+        );
+      }
       const sponsoredSettlement = usesPruSpendExecution
         ? null
         : await buildTsnSponsoredSettlementTransaction({

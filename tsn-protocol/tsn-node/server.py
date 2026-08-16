@@ -862,6 +862,31 @@ async def get_token_account_balance_ui(token_account: str) -> tuple[float, int]:
     value = response.json().get("result", {}).get("value", {})
     return float(value.get("uiAmountString") or value.get("uiAmount") or 0), int(value.get("decimals") or 0)
 
+async def get_token_account_amount(token_account: str) -> tuple[int, int, str]:
+    """Read the exact raw SPL balance used as the funding source of truth.
+
+    Payout authorization must never be based only on the Receiver's copied
+    amount field.  The Node reads the funded escrow token account and signs a
+    permit only when its raw amount exactly matches the authorized payment.
+    """
+    try:
+        Pubkey.from_string(token_account)
+    except Exception as exc:
+        raise HTTPException(422, "Settlement escrow token account is invalid") from exc
+    rpc_response = await solana_rpc(
+        "getTokenAccountBalance",
+        [token_account, {"commitment": "confirmed"}],
+    )
+    value = (rpc_response.get("result") or {}).get("value") or {}
+    raw_amount = value.get("amount")
+    decimals = value.get("decimals")
+    if raw_amount is None or decimals is None:
+        raise HTTPException(503, "Solana RPC returned no settlement escrow balance")
+    try:
+        return int(str(raw_amount)), int(decimals), token_account
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(503, "Settlement escrow balance is malformed") from exc
+
 async def solana_rpc(method: str, params: list[Any], timeout: float = 12) -> dict[str, Any]:
     payload = {
         "jsonrpc": "2.0",
@@ -3625,6 +3650,24 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     # Payout fees are deliberately zero until their own signed policy is part
     # of the immutable authorization. A Cranker cannot choose or alter a fee.
     payout_amount = ui_amount_to_base_units(verified.get("amount"), int(token_metadata["decimals"]))
+    escrow_token_account = str(verified.get("settlementTokenAccount") or "").strip()
+    if not escrow_token_account:
+        raise HTTPException(422, "Payment intent has no funded settlement escrow account")
+    escrow_amount, escrow_decimals, _ = await get_token_account_amount(escrow_token_account)
+    if escrow_decimals != int(token_metadata["decimals"]):
+        raise HTTPException(422, "Settlement escrow token decimals do not match the payment mint")
+    if escrow_amount != payout_amount:
+        logger.error(
+            "Refusing payout authorization: escrow amount mismatch intent=%s escrow=%s amount=%s expected=%s",
+            intent_id,
+            escrow_token_account,
+            escrow_amount,
+            payout_amount,
+        )
+        raise HTTPException(
+            409,
+            "Funded settlement escrow amount does not equal the authorized payment amount",
+        )
     operator = Pubkey.from_string(operator_text)
     recipient_token_account = get_associated_token_address(Pubkey.from_string(recipient_wallet), token_mint)
     payout_sequence, _ = await read_private_replay_sequences()

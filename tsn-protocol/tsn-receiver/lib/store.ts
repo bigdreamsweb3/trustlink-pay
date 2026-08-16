@@ -7,6 +7,9 @@ import { publishCrankerWake } from "./cranker-wake";
 const now = () => new Date().toISOString();
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
+  if (input.kind === "CLAIM") {
+    throw new Error("CLAIM work is derived after Node verification and confirmed funding");
+  }
   const work = createReceivedWork(input);
   const ref = workCollection.doc(work.id);
   const result = await db.runTransaction(async (transaction) => {
@@ -167,7 +170,7 @@ export async function transition(params: {
       const currentSignature = String(current.result?.signature ?? "");
       const reportedSignature = String(params.evidence?.signature ?? "");
       if (currentSignature && reportedSignature && currentSignature === reportedSignature) {
-        return current;
+        return { work: current, claimCreated: false };
       }
     }
     const lease = params.actor === "node" ? current.nodeLease : current.crankerLease;
@@ -187,8 +190,40 @@ export async function transition(params: {
         ? { verification: params.evidence ?? {}, nodeLease: null }
         : { result: params.evidence ?? {}, crankerLease: null }),
     };
+    // A CLAIM is a consequence of a verified and funded payment; it is not an
+    // ingress object that a sender or frontend may create. Create it in the
+    // same Firestore transaction as the Cranker CONFIRMED transition so there
+    // can never be a claim without the payment's verified evidence and result.
+    let claimCreated = false;
+    if (params.actor === "cranker" && current.kind === "PAYMENT_INTENT" && params.status === "CONFIRMED") {
+      const verificationType = String(current.verification?.verificationType ?? "").trim();
+      if (!verificationType) throw new Error("PAYMENT_INTENT_NOT_NODE_VERIFIED");
+      const claimId = `claim-${current.id}`;
+      const claimRef = workCollection.doc(claimId);
+      const claimSnapshot = await transaction.get(claimRef);
+      if (!claimSnapshot.exists) {
+        const claimPayload = {
+          paymentId: current.payload.paymentId ?? current.id,
+          intentId: current.id,
+          recipientHash: String(current.payload.recipientHash ?? ""),
+          autoclaim: true,
+          source: "tsn-receiver-after-node-verification",
+        };
+        transaction.create(claimRef, createReceivedWork({
+          id: claimId,
+          kind: "CLAIM",
+          payload: claimPayload,
+        }));
+        claimCreated = true;
+      } else {
+        const existingClaim = claimSnapshot.data() as ReceiverWork;
+        if (existingClaim.kind !== "CLAIM" || String(existingClaim.payload.intentId ?? "") !== current.id) {
+          throw new Error("CLAIM_IDEMPOTENCY_CONFLICT");
+        }
+      }
+    }
     transaction.update(ref, patch);
-    return { ...current, ...patch } as ReceiverWork;
+    return { work: { ...current, ...patch } as ReceiverWork, claimCreated };
   });
   // Node verification is the point at which Cranker work becomes leaseable.
   // Publish a fresh control-only wake after the Firestore transition commits;
@@ -196,5 +231,11 @@ export async function transition(params: {
   if (params.actor === "node" && params.status === "VERIFIED") {
     await publishCrankerWake("VERIFIED");
   }
-  return result;
+  if (result.claimCreated) {
+    // The claim is now durable and leaseable; the Node receives the control
+    // wake first so it can verify/authorize the settlement before a Cranker
+    // attempts to lease it.
+    await Promise.all([wakeTsnNode("CLAIM"), publishCrankerWake("CLAIM")]);
+  }
+  return result.work;
 }

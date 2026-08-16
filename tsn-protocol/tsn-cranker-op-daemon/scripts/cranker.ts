@@ -391,6 +391,41 @@ async function receiverRequest<T>(method: "POST" | "PATCH", body: Record<string,
   return await response.json() as T;
 }
 
+async function logReceiverWorkSummary(reason: string) {
+  try {
+    const response = await fetch(`${receiverUrl().replace(/\/$/, "")}/api/work`, {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) return;
+    const work = await response.json() as Array<{
+      kind?: string;
+      status?: string;
+      result?: { signature?: string | null; stage?: string | null } | null;
+    }>;
+    const counts: Record<string, number> = {};
+    for (const item of work) {
+      const key = `${String(item.kind ?? "UNKNOWN")}:${String(item.status ?? "UNKNOWN")}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    const terminal = work
+      .filter((item) => item.result?.signature)
+      .slice(-10)
+      .map((item) => ({
+        kind: item.kind,
+        status: item.status,
+        stage: item.result?.stage ?? null,
+        signature: item.result?.signature,
+      }));
+    console.log(
+      `[tsn-cranker] receiver.status reason=${reason} work=${work.length} ` +
+        `${JSON.stringify(counts)} results=${JSON.stringify(terminal)}`,
+    );
+  } catch (error) {
+    console.warn("[tsn-cranker] receiver.status_failed", error);
+  }
+}
+
 function assertReceiverCredential(operator: string) {
   const credential = process.env.TSN_RECEIVER_CRANKER_API_KEY?.trim() ?? "";
   if (!credential) {
@@ -523,6 +558,8 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
       `authorizationSigner=${String(authorization.authorizationSigner)} ` +
       `payoutNullifier=${String(authorization.payoutNullifier)} ` +
       `routeCommitment=${String(authorization.routeCommitment ?? "unknown")} ` +
+      `payoutAmountBaseUnits=${String(authorization.payoutAmountBaseUnits)} ` +
+      `claimFeeBaseUnits=${String(authorization.claimFeeAmountBaseUnits)} ` +
       `expiresAtTs=${String(authorization.expiresAtTs)}`,
   );
   const payout = await tsnExecutePrivatePayoutOnChain({
@@ -943,6 +980,14 @@ function validateSignedSettlementTransaction(params: {
           params.tokenDecimals,
         );
   const expectedProgramId = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
+  // A mixed plan is not wallet-only funding.  Until the sender-signed
+  // transaction contains the dual-authorized `tsn_execute_pru_spend`
+  // instruction(s), accepting the wallet top-up alone would create an
+  // underfunded escrow and later allow a payout to be authorized against a
+  // different amount.  Fail closed before broadcasting anything.
+  if (intent.senderSettlementMode === "mixed_zk_pru_wallet_v2") {
+    return "mixed settlement transaction is missing the dual-authorized PRU spend; refusing a wallet-only partial funding";
+  }
   const expectedPaymentIntentId = BigInt(
     intent.settlementPaymentIntentId ?? "0",
   );
@@ -2685,6 +2730,7 @@ async function main() {
     }
   };
   await logPoolState("startup");
+  await logReceiverWorkSummary("startup");
   if (shouldUseAccountSubscriptions(rpcUrl)) {
     await subscribeEpochSettlementAccounts({ connection, motherEscrow });
   } else {
@@ -2780,6 +2826,7 @@ async function main() {
             console.error(`[tsn-cranker] receiver-work-failed id=${leased.work.id}`, error);
           }
           await logPoolState("after-work");
+          await logReceiverWorkSummary("after-work");
         }
         // TIN creation/update intents are still validated and queued by the
         // TSN Node through the Receiver proxy.  They are not Receiver work

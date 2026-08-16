@@ -27,15 +27,24 @@ export async function POST(request: NextRequest) {
       const nodeKey = process.env.TSN_RECEIVER_NODE_API_KEY;
       if (!nodeKey || nodeUrls.length === 0) throw new Error("TSN Node authorization service is not configured");
       let response: Response | undefined;
+      let lastNodeError = "";
       for (const nodeUrl of [...new Set(nodeUrls)]) {
-        response = await fetch(`${nodeUrl}/internal/settlement-authorizations/${work.kind.toLowerCase()}`, {
-          method: "POST",
-          headers: { "content-type": "application/json", "x-api-key": nodeKey },
-          body: JSON.stringify({ workId: work.id, crankerPubkey: body.crankerId }),
-        });
-        if (response.status < 500) break;
+        try {
+          response = await fetch(`${nodeUrl}/internal/settlement-authorizations/${work.kind.toLowerCase()}`, {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-api-key": nodeKey },
+            body: JSON.stringify({ workId: work.id, crankerPubkey: body.crankerId }),
+          });
+          if (response.status < 500) break;
+          lastNodeError = `${nodeUrl} returned ${response.status}`;
+        } catch (error) {
+          // A dead primary Node must not strand a leased claim when a
+          // configured fallback is available. Continue to the next URL.
+          lastNodeError = `${nodeUrl}: ${error instanceof Error ? error.message : "fetch failed"}`;
+          response = undefined;
+        }
       }
-      if (!response) throw new Error("TSN Node authorization service is unavailable");
+      if (!response) throw new Error(`TSN Node authorization service is unavailable (${lastNodeError || "fetch failed"})`);
       if (!response.ok) {
         const detail = (await response.text()).slice(0, 500);
         throw new Error(`TSN Node authorization failed (${response.status}): ${detail}`);

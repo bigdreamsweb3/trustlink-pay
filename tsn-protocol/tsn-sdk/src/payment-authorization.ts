@@ -1,7 +1,6 @@
 import {
   buildCreateIntentRequest,
   type CreateIntentRequest,
-  type RequestClaimRequest,
   type TsnMempoolClaimRequest,
   type TsnMempoolIntent,
 } from "./contracts.js";
@@ -244,19 +243,11 @@ export async function submitPaymentAuthorizationToMempool(params: {
   const intent = await client.postIntent<CreateIntentRequest, TsnMempoolIntent>(
     intentRequest,
   );
-  const claimRequest = params.destinationWallet
-    ? await client.postClaimRequest<
-        RequestClaimRequest,
-        TsnMempoolClaimRequest
-      >({
-        paymentId: params.paymentId,
-        intentId: intent.id,
-        recipientHash: params.recipientHash,
-        destinationWallet: null,
-        autoclaim: params.autoclaim ?? true,
-        source: params.source,
-      })
-    : null;
+  // Claim work is deliberately not created by the sender device.  A claim is
+  // only valid after the TSN Node has verified this payment and a Cranker has
+  // confirmed the immutable funding transaction.  The Receiver creates that
+  // next work item atomically from the CONFIRMED payment transition.
+  const claimRequest: TsnMempoolClaimRequest | null = null;
 
   return {
     intentRequest,

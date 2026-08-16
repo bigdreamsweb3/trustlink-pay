@@ -7,6 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { id?: string; kind?: WorkKind; payload?: Record<string, unknown> };
     if (!body.kind || !body.payload) return NextResponse.json({ error: "kind and payload are required" }, { status: 422 });
+    if (body.kind === "CLAIM") {
+      return NextResponse.json({
+        error: "CLAIM work is derived by the Receiver after TSN Node verification and confirmed funding",
+      }, { status: 409 });
+    }
     return NextResponse.json(await receive({ id: body.id, kind: body.kind, payload: body.payload }), { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "RECEIVER_ERROR";

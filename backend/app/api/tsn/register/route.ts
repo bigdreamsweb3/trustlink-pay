@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-import { createClaimRequest, findLatestActiveClaimRequestByPaymentId, upsertPaymentIntent } from "@/app/db/tsn";
+import { upsertPaymentIntent } from "@/app/db/tsn";
 import { toErrorResponse, ok } from "@/app/lib/http";
 
 export async function POST(request: Request) {
@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     const tokenMintAddress = body?.tokenMintAddress == null ? null : String(body.tokenMintAddress);
     const amount = Number(body?.amount ?? 0);
     const destinationWallet = String(body?.destinationWallet ?? "");
-    const autoclaim = body?.autoclaim == null ? true : Boolean(body.autoclaim);
 
     if (!paymentId || !intentSeedHash || !recipientHash || !tokenMintAddress || !Number.isFinite(amount) || amount <= 0 || !destinationWallet) {
       throw new Error("Invalid TSN register payload");
@@ -27,21 +26,13 @@ export async function POST(request: Request) {
       tokenMintAddress,
       amount,
     });
-    const existingClaimRequest = await findLatestActiveClaimRequestByPaymentId(paymentId);
-    const claimRequest =
-      existingClaimRequest ??
-      (await createClaimRequest({
-        paymentId,
-        intentId: intent.id,
-        recipientHash,
-        destinationWallet,
-        autoclaim,
-      }));
-
     return ok({
       intentId: intent.id,
-      claimRequestId: claimRequest.id,
-      status: "intent_and_claim_registered",
+      // Claim work is created by the Receiver only after TSN Node verification
+      // and a confirmed Cranker funding report.  Returning no claim id here
+      // prevents the API from advertising an unverified settlement.
+      claimRequestId: null,
+      status: "intent_registered_waiting_for_node_verification",
     });
   } catch (error) {
     return toErrorResponse(error);

@@ -46,6 +46,25 @@ function extractTinInfo(
   };
 }
 
+function describeUpgradeError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const value = error as Record<string, unknown>;
+    for (const key of ["detail", "error", "message", "reason"]) {
+      if (typeof value[key] === "string" && value[key].trim()) {
+        return value[key] as string;
+      }
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unknown TIN upgrade failure";
+    }
+  }
+  return "Unknown TIN upgrade failure";
+}
+
 export function IdentityOverviewSection({
   accessToken,
   user,
@@ -231,10 +250,7 @@ export function IdentityOverviewSection({
       });
       showToast(`TIN upgrade intent queued in TSN mempool (${upgraded.intentId}).`);
     } catch (upgradeError) {
-      const message =
-        upgradeError instanceof Error
-          ? upgradeError.message
-          : "Could not upgrade TIN";
+      const message = describeUpgradeError(upgradeError);
       setError(message);
       showToast(message);
     } finally {

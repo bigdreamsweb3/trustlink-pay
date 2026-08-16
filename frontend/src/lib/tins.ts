@@ -292,10 +292,12 @@ async function postTinOperationIntent(request: BrowserTinUpgradeIntent) {
   }
   if (!response.ok) {
     const detail =
-      parsed && typeof parsed === "object" && "detail" in parsed
-        ? String((parsed as { detail: unknown }).detail)
-        : "TSN mempool rejected the TIN upgrade intent.";
-    throw new Error(detail);
+      parsed && typeof parsed === "object"
+        ? (["detail", "error", "message", "reason"] as const)
+            .map((key) => (parsed as Record<string, unknown>)[key])
+            .find((value): value is string => typeof value === "string" && value.trim())
+        : null;
+    throw new Error(detail ?? "TSN Receiver rejected the TIN upgrade intent.");
   }
   if (!parsed || typeof parsed !== "object" || !("intentId" in parsed)) {
     throw new Error("TSN mempool accepted the TIN upgrade intent but returned no intent id.");
@@ -403,7 +405,12 @@ async function upgradeLegacyTinForWalletImpl(params: {
     cache: "no-store",
   });
   if (!routeKeyResponse.ok) {
-    throw new Error("The TSN Node routing encryption key is unavailable.");
+    const detail = await routeKeyResponse.text().catch(() => "");
+    throw new Error(
+      detail.trim()
+        ? `The TSN Node routing encryption key is unavailable: ${detail.slice(0, 240)}`
+        : "The TSN Node routing encryption key is unavailable.",
+    );
   }
   const routeKey = await routeKeyResponse.json() as {
     algorithm: string;

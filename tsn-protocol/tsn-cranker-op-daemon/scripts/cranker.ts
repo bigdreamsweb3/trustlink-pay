@@ -372,6 +372,7 @@ function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, 
     Buffer.from(route.signerPublicKeyBase64, "base64"),
   );
   if (!valid) throw new Error("Node route authorization signature is invalid");
+  return route;
 }
 
 async function receiverRequest<T>(method: "POST" | "PATCH", body: Record<string, unknown>) {
@@ -412,13 +413,38 @@ async function reportReceiverWork(params: {
   status: "SUBMITTED" | "CONFIRMED" | "FAILED";
   evidence: Record<string, unknown>;
 }) {
-  return receiverRequest<ReceiverWork>("PATCH", {
+  const body = {
     id: params.work.id,
     owner: params.operator,
     expectedVersion: params.work.stateVersion,
     status: params.status,
     evidence: params.evidence,
-  });
+  };
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const result = await receiverRequest<ReceiverWork>("PATCH", body);
+      console.log(
+        `[tsn-cranker] receiver.work_reported id=${params.work.id} ` +
+          `status=${params.status} stateVersion=${String(result.stateVersion ?? "unknown")} ` +
+          `tx=${String(params.evidence.signature ?? "none")} ` +
+          `stage=${String(params.evidence.stage ?? "unknown")}`,
+      );
+      return result;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const retryable = /TSN Receiver request failed \((?:409|5\d\d)\):.*(?:fetch failed|unavailable|timeout|ECONNRESET|network)/is.test(message);
+      if (!retryable || attempt === 3) throw error;
+      const retryMs = 500 * 2 ** attempt;
+      console.warn(
+        `[tsn-cranker] receiver.report_retry id=${params.work.id} ` +
+          `attempt=${attempt + 1}/4 retryMs=${retryMs} reason=${message.slice(0, 220)}`,
+      );
+      await sleep(retryMs);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Receiver work report failed");
 }
 
 async function processReceiverPaymentIntent(params: {
@@ -429,7 +455,14 @@ async function processReceiverPaymentIntent(params: {
 }) {
   const verified = params.work.verification?.verifiedPayload;
   if (!verified) throw new Error("Receiver work has no TSN Node verified payload");
-  verifyOpaqueRouteAuthorization(params.work.id, verified);
+  const routeAuthorization = verifyOpaqueRouteAuthorization(params.work.id, verified);
+  console.log(
+    `[tsn-cranker] intent.proof_verified work=${params.work.id} ` +
+      `nodeSigner=${routeAuthorization.signerPublicKeyBase64} ` +
+      `routeCommitment=${routeAuthorization.routeCommitment} ` +
+      `destination=${routeAuthorization.destination} ` +
+      `expiresAt=${routeAuthorization.expiresAt}`,
+  );
   const intent = {
     ...verified,
     id: params.work.id,
@@ -459,8 +492,21 @@ async function processReceiverPaymentIntent(params: {
       signature: submitted.signature,
       onchainIntent: submitted.intent,
       stage: "INTENT_CONFIRMED",
+      proof: {
+        routeCommitment: routeAuthorization.routeCommitment,
+        nodeSigner: routeAuthorization.signerPublicKeyBase64,
+        commitmentHash: String(verified.commitmentHash ?? ""),
+        transferId: String(verified.transferId ?? ""),
+        settlementEpoch: verified.settlementEpoch ?? null,
+      },
     },
   });
+  console.log(
+    `[tsn-cranker] intent.submitted work=${params.work.id} tx=${submitted.signature} ` +
+      `commitmentHash=${String(verified.commitmentHash ?? "unknown")} ` +
+      `transferId=${String(verified.transferId ?? "unknown")} ` +
+      `epoch=${String(verified.settlementEpoch ?? "unknown")}`,
+  );
 }
 
 async function processReceiverClaim(params: { work: ReceiverWork; operator: Keypair; rpcUrl: string }) {
@@ -472,6 +518,13 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
   if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000))) {
     throw new Error("Receiver claim settlement authorization expired");
   }
+  console.log(
+    `[tsn-cranker] claim.proof_verified work=${params.work.id} ` +
+      `authorizationSigner=${String(authorization.authorizationSigner)} ` +
+      `payoutNullifier=${String(authorization.payoutNullifier)} ` +
+      `routeCommitment=${String(authorization.routeCommitment ?? "unknown")} ` +
+      `expiresAtTs=${String(authorization.expiresAtTs)}`,
+  );
   const payout = await tsnExecutePrivatePayoutOnChain({
     operator: params.operator,
     permitSigner: new PublicKey(String(authorization.authorizationSigner)),
@@ -493,7 +546,13 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
     work: params.work,
     operator: params.operator.publicKey.toBase58(),
     status: "CONFIRMED",
-    evidence: { stage: "PAYOUT_CONFIRMED", signature: payout.signature, routeCommitment: authorization.routeCommitment },
+    evidence: {
+      stage: "PAYOUT_CONFIRMED",
+      signature: payout.signature,
+      routeCommitment: authorization.routeCommitment,
+      payoutNullifier: authorization.payoutNullifier,
+      authorizationSigner: authorization.authorizationSigner,
+    },
   });
 }
 
@@ -504,6 +563,12 @@ async function processReceiverRecovery(params: { work: ReceiverWork; operator: K
   }
   const expiresAtTs = BigInt(String(authorization.expiresAtTs));
   if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000))) throw new Error("Recovery authorization expired");
+  console.log(
+    `[tsn-cranker] recovery.proof_verified work=${params.work.id} ` +
+      `authorizationSigner=${String(authorization.authorizationSigner)} ` +
+      `recoveryNullifier=${String(authorization.recoveryNullifier)} ` +
+      `expiresAtTs=${String(authorization.expiresAtTs)}`,
+  );
   const recovery = await tsnRecoverPrivateEscrowOnChain({
     operator: params.operator,
     permitSigner: new PublicKey(String(authorization.authorizationSigner)),
@@ -525,7 +590,12 @@ async function processReceiverRecovery(params: { work: ReceiverWork; operator: K
     work: params.work,
     operator: params.operator.publicKey.toBase58(),
     status: "CONFIRMED",
-    evidence: { stage: "RECOVERY_CONFIRMED", signature: recovery.signature },
+    evidence: {
+      stage: "RECOVERY_CONFIRMED",
+      signature: recovery.signature,
+      recoveryNullifier: authorization.recoveryNullifier,
+      authorizationSigner: authorization.authorizationSigner,
+    },
   });
 }
 
@@ -1851,6 +1921,58 @@ async function assertPrivateReplayRegistryInitialized(rpcUrl: string) {
   );
 }
 
+async function readCrankerPoolState(params: {
+  connection: Connection;
+  crankerPda: PublicKey;
+  rpcUrl: string;
+}) {
+  const [escrow, verifierLamports, crankerLamports] = await Promise.all([
+    tsnFetchMotherEscrowOnChain(params.rpcUrl),
+    params.connection.getBalance(getTsnVerifierPda(), "confirmed"),
+    params.connection.getBalance(params.crankerPda, "confirmed"),
+  ]);
+  if (!escrow) {
+    return {
+      motherEscrow: null,
+      escrowLamports: null,
+      verifierPda: getTsnVerifierPda().toBase58(),
+      verifierLamports,
+      crankerPda: params.crankerPda.toBase58(),
+      crankerLamports,
+      valid: false,
+    };
+  }
+  if (!escrow.valid) {
+    return {
+      motherEscrow: escrow.address,
+      escrowLamports: escrow.lamports,
+      dataLength: escrow.dataLength,
+      invalidReason: escrow.reason,
+      verifierPda: getTsnVerifierPda().toBase58(),
+      verifierLamports,
+      crankerPda: params.crankerPda.toBase58(),
+      crankerLamports,
+      valid: false,
+    };
+  }
+  return {
+    motherEscrow: escrow.address,
+    escrowLamports: escrow.lamports,
+    epochId: String(escrow.epochId),
+    lastEpochSettledTs: String(escrow.lastEpochSettledTs),
+    epochSeconds: String(escrow.epochSeconds),
+    leaseSeconds: String(escrow.leaseSeconds),
+    feeSplitCrankerBps: escrow.feeSplitCrankerBps,
+    feeSplitLpBps: escrow.feeSplitLpBps,
+    feeSplitTreasuryBps: escrow.feeSplitTreasuryBps,
+    verifierPda: getTsnVerifierPda().toBase58(),
+    verifierLamports,
+    crankerPda: params.crankerPda.toBase58(),
+    crankerLamports,
+    valid: true,
+  };
+}
+
 function computeLocalEpochAggregate(
   intents: TsnIntentWorkItem["intent"][],
   epoch: number,
@@ -2544,11 +2666,25 @@ async function main() {
   await logVerifierReservoir(rpcUrl);
   await assertPrivateReplayRegistryInitialized(rpcUrl);
   const motherEscrow = new PublicKey(motherEscrowState.address);
-  await assertCrankerRegistered({
+  const crankerPda = await assertCrankerRegistered({
     operator: operatorKeypair.publicKey,
     motherEscrow,
     rpcUrl,
   });
+  let lastPoolStateSignature = "";
+  const logPoolState = async (reason: string) => {
+    try {
+      const state = await readCrankerPoolState({ connection, crankerPda, rpcUrl });
+      const serialized = JSON.stringify(state);
+      if (reason === "startup" || serialized !== lastPoolStateSignature) {
+        lastPoolStateSignature = serialized;
+        console.log(`[tsn-cranker] pool.state reason=${reason} ${serialized}`);
+      }
+    } catch (error) {
+      console.warn("[tsn-cranker] pool.state_failed", error);
+    }
+  };
+  await logPoolState("startup");
   if (shouldUseAccountSubscriptions(rpcUrl)) {
     await subscribeEpochSettlementAccounts({ connection, motherEscrow });
   } else {
@@ -2617,9 +2753,10 @@ async function main() {
           receiverIdlePollMs = receiverBasePollMs;
           console.log(
             `[tsn-cranker] receiver.work_leased id=${leased.work.id} ` +
-            `kind=${leased.work.kind} status=${leased.work.status} ` +
-            `stateVersion=${leased.work.stateVersion}`,
+              `kind=${leased.work.kind} status=${leased.work.status} ` +
+              `stateVersion=${leased.work.stateVersion}`,
           );
+          await logPoolState("before-work");
           try {
             if (leased.work.kind === "PAYMENT_INTENT") {
               await processReceiverPaymentIntent({ work: leased.work, operator: operatorKeypair, rpcUrl, tokenDecimals });
@@ -2642,6 +2779,7 @@ async function main() {
             }).catch(() => undefined);
             console.error(`[tsn-cranker] receiver-work-failed id=${leased.work.id}`, error);
           }
+          await logPoolState("after-work");
         }
         // TIN creation/update intents are still validated and queued by the
         // TSN Node through the Receiver proxy.  They are not Receiver work

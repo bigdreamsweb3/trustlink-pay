@@ -13,6 +13,10 @@ import type { ConnectedWalletSession } from "@/src/lib/wallet";
 import { signTinMasterSeedAuthorizationBytes } from "@/src/lib/wallet";
 import { getBrowserTinAuthorizedDeviceAccess } from "@/src/lib/tin-authorized-device-access";
 import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
+import {
+  cacheTinBalanceAuthorization,
+  getCachedTinBalanceAuthorization,
+} from "@/src/lib/tin-balance-session";
 
 export type TinTokenBalanceResult = {
   tokens: WalletTokenOption[];
@@ -33,6 +37,19 @@ function describeTinBalanceError(error: unknown) {
   if (typeof error === "string" && error.trim()) return error;
   return "Unexpected error while opening the authorized TIN balance";
 }
+
+function bytesToBase64(value: Uint8Array) {
+  let binary = "";
+  for (const byte of value) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+const walletAuthorizationInFlight = new Map<string, Promise<Uint8Array>>();
 
 export async function loadTinTokenBalances(params: {
   tin: string;
@@ -99,11 +116,27 @@ export async function loadTinTokenBalances(params: {
       envelope: decoded.encryptedMasterSeed,
       ownerWallet: {
         publicKey: params.walletSession.address,
-        signMessage: (message) => signTinMasterSeedAuthorizationBytes({
-          walletId: params.walletSession.walletId,
-          address: params.walletSession.address,
-          message,
-        }),
+        signMessage: async (message) => {
+          const cacheKey = `${params.tin}:${params.walletSession.address}:${bytesToBase64(message)}`;
+          const cached = getCachedTinBalanceAuthorization(cacheKey);
+          if (cached) return base64ToBytes(cached);
+          const pending = walletAuthorizationInFlight.get(cacheKey);
+          if (pending) return new Uint8Array(await pending);
+          const signing = signTinMasterSeedAuthorizationBytes({
+            walletId: params.walletSession.walletId,
+            address: params.walletSession.address,
+            message,
+          }).then((signature) => {
+            cacheTinBalanceAuthorization(cacheKey, bytesToBase64(signature));
+            return signature;
+          });
+          walletAuthorizationInFlight.set(cacheKey, signing);
+          try {
+            return new Uint8Array(await signing);
+          } finally {
+            walletAuthorizationInFlight.delete(cacheKey);
+          }
+        },
       },
       authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
       thresholdProvider: accessProvider,

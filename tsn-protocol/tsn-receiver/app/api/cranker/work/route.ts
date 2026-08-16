@@ -10,6 +10,7 @@ function cleanUrl(value: string) {
 function errorStatus(error: unknown) {
   const message = error instanceof Error ? error.message : "ERROR";
   if (message === "UNAUTHORIZED_SERVICE") return 401;
+  if (/fetch failed|ECONNRESET|network|timeout|temporarily unavailable/i.test(message)) return 503;
   if (message.includes("authorization service is unavailable")) return 503;
   if (message.includes("TSN Node authorization failed")) return 502;
   return 409;
@@ -56,6 +57,6 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json() as Parameters<typeof transition>[0];
     return NextResponse.json(await transition({ ...body, actor: "cranker" }));
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: 409 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: errorStatus(error) });
   }
 }

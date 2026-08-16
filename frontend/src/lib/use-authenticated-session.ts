@@ -19,6 +19,7 @@ import {
 } from "@/src/lib/storage";
 import { apiPost } from "@/src/lib/api";
 import type { AuthResult, PendingAuthSession, UserProfile } from "@/src/lib/types";
+import { clearTinBalanceAuthorizationSession } from "@/src/lib/tin-balance-session";
 
 const PIN_RELOCK_IDLE_MS = 10 * 60 * 1000;
 const PIN_RELOCK_CHECK_INTERVAL_MS = 30 * 1000;
@@ -92,6 +93,7 @@ export function useAuthenticatedSession(redirectPath: string) {
           user: result.user,
           redirectTo: redirectPath,
         } satisfies PendingAuthSession;
+        clearTinBalanceAuthorizationSession();
         setStoredPendingAuth(nextPendingAuth);
         setAccessToken(null);
         setPendingAuth(nextPendingAuth);
@@ -143,6 +145,7 @@ export function useAuthenticatedSession(redirectPath: string) {
           user: result.user,
           redirectTo: redirectPath,
         } satisfies PendingAuthSession;
+        clearTinBalanceAuthorizationSession();
         setStoredPendingAuth(nextPendingAuth);
         setAccessToken(null);
         setPendingAuth(nextPendingAuth);
@@ -192,6 +195,7 @@ export function useAuthenticatedSession(redirectPath: string) {
           user: result.user,
           redirectTo: redirectPath,
         } satisfies PendingAuthSession;
+        clearTinBalanceAuthorizationSession();
         setStoredPendingAuth(nextPendingAuth);
         setAccessToken(null);
         setPendingAuth(nextPendingAuth);
@@ -241,6 +245,7 @@ export function useAuthenticatedSession(redirectPath: string) {
   }
 
   function logout() {
+    clearTinBalanceAuthorizationSession();
     clearStoredPendingAuth();
     clearStoredToken();
     clearStoredUser();

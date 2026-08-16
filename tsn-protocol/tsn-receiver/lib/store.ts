@@ -157,6 +157,19 @@ export async function transition(params: {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
+    // A response can be lost after Firestore commits (for example when a
+    // hosted function briefly loses its upstream connection).  Allow the
+    // Cranker to safely replay the same terminal report instead of turning a
+    // successful on-chain submission into a false failure.  The signature is
+    // the idempotency key for on-chain work; it is never accepted for a
+    // different terminal status.
+    if (params.actor === "cranker" && current.status === params.status) {
+      const currentSignature = String(current.result?.signature ?? "");
+      const reportedSignature = String(params.evidence?.signature ?? "");
+      if (currentSignature && reportedSignature && currentSignature === reportedSignature) {
+        return current;
+      }
+    }
     const lease = params.actor === "node" ? current.nodeLease : current.crankerLease;
     if (!lease || lease.owner !== params.owner || Date.parse(lease.expiresAt) <= Date.now()) {
       throw new Error("LEASE_INVALID");

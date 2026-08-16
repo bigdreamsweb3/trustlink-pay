@@ -1,6 +1,3 @@
-import { PublicKey } from "@solana/web3.js";
-
-import { getAllowedTokenByMint, toBaseUnits } from "@/app/blockchain/solana-core";
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
 import { sql } from "@/app/db/client";
@@ -21,7 +18,6 @@ import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
 import type { PaymentRecord, PaymentTsnState, TsnUiStage, UserRecord } from "@/app/types/payment";
-import { trackTransactionFees } from "../../../utils/observability/fee-tracker";
 import { traceFunction } from "../../../utils/observability/tracer";
 import type {
   ClaimRequestRecord,
@@ -32,13 +28,10 @@ import type {
   TsnMempoolIntent,
 } from "@trustlink/tsn-sdk";
 import {
-  buildCreateIntentRequest,
   buildRequestClaimRequest,
   computeTsnUiStage,
   HttpTsnMempool,
-  prepareTsnPaymentMempoolJobRequests,
   sha256Bytes,
-  type CreateIntentRequest,
   type RequestClaimRequest,
 } from "@trustlink/tsn-sdk";
 
@@ -59,36 +52,6 @@ function getTsnMempoolClient() {
     env.TSN_MEMPOOL_URL,
     env.TSN_MEMPOOL_API_KEY,
   );
-}
-
-function trackPaymentFeeSnapshot(params: {
-  flow: string;
-  payment: PaymentRecord;
-  token: { symbol: string; decimals: number };
-  destinationWallet?: string | null;
-}) {
-  try {
-    trackTransactionFees({
-      flow: params.flow,
-      tokenSymbol: params.token.symbol,
-      userAmountLamports: toBaseUnits(Number(params.payment.amount), params.token.decimals),
-      networkFeeLamports: 0n,
-      senderFeeLamports: toBaseUnits(Number(params.payment.sender_fee_amount ?? 0), params.token.decimals),
-      claimFeeLamports: toBaseUnits(Number(params.payment.claim_fee_amount ?? 0), params.token.decimals),
-      senderWallet: params.payment.sender_wallet,
-      recipientWallet: params.destinationWallet ?? null,
-      paymentId: params.payment.id,
-      metadata: {
-        tokenMintAddress: params.payment.token_mint_address,
-        status: params.payment.status,
-      },
-    });
-  } catch (error) {
-    logger.warn("observability.fee_snapshot_failed", {
-      paymentId: params.payment.id,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
 }
 
 function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
@@ -128,35 +91,6 @@ const STATUS_REFRESH_MAX_COOLDOWN_SECONDS = 300;
 /** After this many seconds since creation, stop querying TSN for non-terminal intents. */
 const STATUS_REFRESH_MAX_AGE_SECONDS = 86_400; // 24 hours
 
-function resolveUnderlyingPaymentPublicKey(payment: PaymentRecord) {
-  const candidate = payment.escrow_vault_address ?? payment.sender_wallet;
-  if (!candidate) throw new Error("Missing sender or escrow public key for TSN intent");
-
-  try {
-    return new PublicKey(candidate).toBase58();
-  } catch {
-    throw new Error("TSN intent requires a real Solana public key for underlying payment");
-  }
-}
-
-const postIntentToTsnMempool = traceFunction(async function postIntentToTsnMempool(request: CreateIntentRequest) {
-  try {
-    return await getTsnMempoolClient().postIntent(request);
-  } catch (error) {
-    logger.error("tsn.mempool.intent_post_failed", {
-      paymentId: request.paymentId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    throw new Error("TSN mempool is unavailable; start the TSN service before creating TSN intents.");
-  }
-}, {
-  namespace: "TSN",
-  name: "postIntentToTsnMempool",
-  module: "backend/app/services/tsn.ts",
-  level: "info",
-  includeReturn: false,
-});
-
 const postClaimRequestToTsnMempool = traceFunction(async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
   try {
     return await getTsnMempoolClient().postClaimRequest(request);
@@ -181,48 +115,13 @@ async function createTsnIntentForPaymentImpl(payment: PaymentRecord) {
     return { enabled: false as const };
   }
 
-  const tokenMint = payment.token_mint_address;
-  if (!tokenMint) throw new Error("Missing token mint for payment");
-
-  const allowed = getAllowedTokenByMint(tokenMint);
-  if (!allowed) throw new Error("Token mint not allowlisted for TSN intent");
-  const recipientAmount = Number(payment.amount);
-  const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
-
-  const intentRequest = {
-    ...buildCreateIntentRequest({
-      paymentId: payment.id,
-      underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
-      recipientHash: payment.receiver_phone_hash,
-      tokenMintAddress: tokenMint,
-      amount: recipientAmount,
-      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : null,
-      source: "trustlink-pay",
-    }),
-    recipientAmount,
-  } as CreateIntentRequest & { recipientAmount: number };
-
-  const mempoolIntent = await postIntentToTsnMempool(intentRequest);
-  trackPaymentFeeSnapshot({
-    flow: "TSN Settlement",
-    payment,
-    token: allowed,
-  });
-  const record = await upsertPaymentIntent({
-    id: intentRequest.paymentId,
-    paymentId: intentRequest.paymentId,
-    intentSeedHash: intentRequest.intentSeedHash,
-    recipientHash: intentRequest.recipientHash,
-    tokenMintAddress: intentRequest.tokenMintAddress,
-    amount: intentRequest.amount,
-  });
-
-  if (!env.TSN_CREATE_INTENTS_ONCHAIN) {
-    logger.info("tsn.intent.mempool_posted", { paymentId: payment.id, intentId: record.id });
-    return { enabled: true as const, record, mempoolIntent, onchain: null as null };
-  }
-  logger.info("tsn.intent.onchain_delegated_to_tsn", { paymentId: payment.id, intentId: record.id });
-  return { enabled: true as const, record, mempoolIntent, onchain: null as null };
+  // The backend has only a payment record and recipient hash. It does not have
+  // the sender's signed recipient-route commitment, route version, or wallet
+  // authorization required by TSN. Never invent those values just to create an
+  // intent: the sender must create a new TSN payment from their wallet.
+  throw new Error(
+    `Payment ${payment.id} predates sender-authorized TSN routing. Ask the sender to create a new TSN payment from their wallet.`,
+  );
 }
 
 async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
@@ -265,62 +164,9 @@ async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
   }
 
   if (!intent) {
-    const tokenMint = payment.token_mint_address;
-    if (!tokenMint) throw new Error("Missing token mint for TSN settlement");
-    const allowed = getAllowedTokenByMint(tokenMint);
-    if (!allowed) throw new Error("Token mint not allowlisted for TSN settlement");
-    trackPaymentFeeSnapshot({
-      flow: "TSN Settlement",
-      payment,
-      token: allowed,
-      destinationWallet: settlementWalletAddress,
-    });
-    const recipientAmount = Number(payment.amount);
-    const senderFeeAmount = Number(payment.sender_fee_amount ?? 0);
-    const jobs = prepareTsnPaymentMempoolJobRequests({
-      paymentId: payment.id,
-      underlyingPayment: resolveUnderlyingPaymentPublicKey(payment),
-      recipientHash: payment.receiver_phone_hash,
-      tokenMintAddress: tokenMint,
-      amount: recipientAmount,
-      senderFeeAmount: Number.isFinite(senderFeeAmount) && senderFeeAmount > 0 ? senderFeeAmount : null,
-      recipientAmount,
-      destinationWallet: settlementWalletAddress,
-      source: "trustlink-pay",
-    });
-    intent = await upsertPaymentIntent({
-      id: jobs.intentRequest.paymentId,
-      paymentId: jobs.intentRequest.paymentId,
-      intentSeedHash: jobs.intentRequest.intentSeedHash,
-      recipientHash: jobs.intentRequest.recipientHash,
-      tokenMintAddress: jobs.intentRequest.tokenMintAddress,
-      amount: jobs.intentRequest.amount,
-    });
-    const claimRequest = await createClaimRequest(jobs.claimRequestPayload);
-    const mempool = getTsnMempoolClient();
-    const mempoolIntent = await mempool.postIntent(jobs.intentRequest);
-    const mempoolClaimRequest = await mempool.postClaimRequest({
-      ...jobs.claimRequestPayload,
-      intentId: mempoolIntent.id,
-    });
-
-    logger.info("tsn.settlement_request.posted", {
-      paymentId: payment.id,
-      intentId: intent.id,
-      claimRequestId: claimRequest.id,
-      receiverUserId: receiver.id,
-    });
-
-    return {
-      enabled: true as const,
-      paymentId: payment.id,
-      intentId: intent.id,
-      claimRequestId: claimRequest.id,
-      mempoolIntent,
-      mempoolClaimRequest,
-      destinationWallet: settlementWalletAddress,
-      status: claimRequest.status,
-    };
+    throw new Error(
+      "This payment has no sender-authorized TSN intent. The sender must create a new TSN payment; the backend cannot create one from recipient data.",
+    );
   }
 
   const claimRequestPayload = buildRequestClaimRequest({

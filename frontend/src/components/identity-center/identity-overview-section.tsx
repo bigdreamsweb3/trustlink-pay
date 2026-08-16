@@ -230,7 +230,7 @@ export function IdentityOverviewSection({
   }
 
   async function handleUpgradeTin() {
-    if (!accessToken || !activeTin || !resolvedTin?.upgradeRequired) return;
+    if (!accessToken || !activeTin || !resolvedTin) return;
     if (!walletAddress || !session) {
       requestWalletConnection();
       showToast("Connect the wallet that owns this TIN before upgrading.");
@@ -302,17 +302,19 @@ export function IdentityOverviewSection({
             ) : null}
           </div>
 
-          {activeTin && resolvedTin?.upgradeRequired ? (
+          {activeTin && resolvedTin ? (
             <div className="mb-4 rounded-[18px] border border-accent-border bg-accent-soft/60 p-4">
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[0.8rem] font-semibold text-[var(--text)]">
-                    Finalized TIN activation required
+                    Upgrade TIN access
                   </p>
                   <p className="mt-1 text-[0.74rem] leading-6 text-[var(--text-soft)]">
-                    {resolvedTin.upgradeReason ??
-                      "This TIN still uses the old layout. Upgrade it now so the network can attach the 30-ZK-PRU settlement commitment."}
+                    {resolvedTin.upgradeRequired
+                      ? (resolvedTin.upgradeReason ??
+                        "This TIN still uses the old layout. Upgrade it now so the network can attach the 30-ZK-PRU settlement commitment.")
+                      : "Move this TIN to the current wallet-owned, any-device access model. Your existing PRUs and balances are preserved."}
                   </p>
                   <button
                     type="button"
@@ -321,7 +323,7 @@ export function IdentityOverviewSection({
                     className="tl-button-primary mt-3 inline-flex items-center justify-center gap-2 rounded-[14px] px-3.5 py-2.5 text-[0.74rem] font-semibold disabled:opacity-50"
                   >
                     <ShieldCheck className="h-4 w-4" />
-                    {upgradeBusy ? "Upgrading TIN..." : "Upgrade TIN now"}
+                    {upgradeBusy ? "Upgrading TIN..." : "Upgrade TIN access"}
                   </button>
                 </div>
               </div>

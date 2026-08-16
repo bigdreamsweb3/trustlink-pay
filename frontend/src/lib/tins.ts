@@ -89,31 +89,6 @@ function base64FromBytes(value: Uint8Array) {
   return btoa(String.fromCharCode(...value));
 }
 
-function decodeLegacyTinUpgradeAccount(data: Uint8Array) {
-  const buffer = Buffer.from(data);
-  let offset = 0;
-  const tin = buffer.readBigUInt64LE(offset);
-  offset += 8;
-  const displayNameLength = buffer.readUInt32LE(offset);
-  offset += 4;
-  const displayName = buffer.subarray(offset, offset + displayNameLength).toString("utf8");
-  offset += displayNameLength;
-  const ownerPubkeyHash = buffer.subarray(offset, offset + 32);
-  offset += 32;
-  let encryptedMasterSeed = Buffer.alloc(0);
-  if (offset + 4 <= buffer.length) {
-    const encryptedMasterSeedLength = buffer.readUInt32LE(offset);
-    offset += 4;
-    encryptedMasterSeed = buffer.subarray(offset, Math.min(offset + encryptedMasterSeedLength, buffer.length));
-    offset += encryptedMasterSeed.length;
-  }
-  let createdAt: bigint | null = null;
-  if (offset + 8 <= buffer.length) {
-    createdAt = buffer.readBigInt64LE(offset);
-  }
-  return { tin, displayName, ownerPubkeyHash, encryptedMasterSeed, createdAt };
-}
-
 function getFrontendTinsProgramId() {
   return new PublicKey(
     process.env.NEXT_PUBLIC_TIP_PROGRAM_ID ??
@@ -388,7 +363,10 @@ async function upgradeLegacyTinForWalletImpl(params: {
     throw new Error("The loaded TIN account is not owned by the configured Transfer Identity program.");
   }
 
-  const decoded = decodeLegacyTinUpgradeAccount(account.data);
+  // A legacy storage discriminator may still contain the current TSN route
+  // envelope. Decode the complete account so repeated upgrades advance the
+  // route version instead of resetting it to one.
+  const decoded = decodeTinAccount(account.data);
   if (decoded.tin.toString() !== params.tin) {
     throw new Error("Loaded TIN account does not match the selected TIN.");
   }
@@ -402,7 +380,13 @@ async function upgradeLegacyTinForWalletImpl(params: {
   const displayName = normalizeDisplayName(params.displayName || decoded.displayName);
   const nonce = randomBytes(32);
   const routeNonce = randomBytes(32);
-  const routeVersion = 1;
+  const existingRouteVersion = decoded.routeVersion && decoded.routeVersion > 0n
+    ? Number(decoded.routeVersion)
+    : 0;
+  if (!Number.isSafeInteger(existingRouteVersion)) {
+    throw new Error("The loaded TIN route version is outside the supported range.");
+  }
+  const routeVersion = existingRouteVersion + 1;
   const expiryTs = BigInt(Math.floor(Date.now() / 1000) + 900);
   const routeKeyResponse = await fetch("/api/tsn/tin-route-key", {
     cache: "no-store",

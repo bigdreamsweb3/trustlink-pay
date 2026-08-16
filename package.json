@@ -45,6 +45,8 @@
     "backend:typecheck": "npm --prefix backend run typecheck",
     "backend:install": "npm --prefix backend install",
     "backend:clean": "node -e \"const fs=require('fs');fs.rmSync('backend/.next',{recursive:true,force:true})\"",
+    "db:init": "npm --prefix backend run db:init",
+    "db:reset": "npm --prefix backend run db:reset",
     "whatsapp:tunnel": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows/start-whatsapp-tunnel.ps1",
     "// === Mempool Stack ===": "TSN work queue, epoch coordinator, and mempool explorer.",
     "tsn:node:dev": "cd tsn-protocol/tsn-node && ..\\..\\.venv\\Scripts\\python.exe -u server.py",

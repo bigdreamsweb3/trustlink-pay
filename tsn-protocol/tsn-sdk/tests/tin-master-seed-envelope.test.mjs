@@ -6,6 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 
 import {
   createTinPrivateIdentity,
+  rewrapTinPrivateIdentityForWalletOwner,
   unlockTinPrivateRoute,
 } from "../dist/tin-private-controller.js";
 import {
@@ -209,16 +210,13 @@ test("SDK creates seed, PRUs, commitments, and both envelopes without exposing s
   assert.ok(envelope.protectedKey);
 });
 
-test("device-envelope provider unlocks only the device that received the envelope", async () => {
+test("wallet-owned envelope unlocks from any device without device credentials", async () => {
   const owner = wallet();
-  const device = await authorizedDevice("device-envelope-a");
   const created = await createTinPrivateIdentity({
     tin: "1000000008",
     routeVersion: 1,
     routeNonce: "6".repeat(64),
     ownerWallet: owner,
-    authorizedDevice: device,
-    thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-a"),
     nodeRoutingPublicKeyBase64: routingPublicKey(),
   });
   const unlocked = await unlockTinPrivateRoute({
@@ -226,32 +224,18 @@ test("device-envelope provider unlocks only the device that received the envelop
     pruConfigurationHash: created.pruConfigurationHash,
     envelope: created.encryptedMasterSeed,
     ownerWallet: owner,
-    authorizedDevice: device,
-    thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-b"),
+    // A normal owner-wallet signature is the only access requirement.
   });
   assert.deepEqual(unlocked.prus, created.publicRoute.prus);
-  await assert.rejects(
-    unlockTinPrivateRoute({
-      tin: "1000000008",
-      pruConfigurationHash: created.pruConfigurationHash,
-      envelope: created.encryptedMasterSeed,
-      ownerWallet: owner,
-      authorizedDevice: await authorizedDevice("device-envelope-b"),
-      thresholdProvider: new TsnDeviceEnvelopeTinMasterSeedProvider("session-c"),
-    }),
-    /belongs to another device|multi-device TSN threshold key-release provider/,
-  );
 });
 
-test("a newly authorized device can unlock after a fresh main-wallet signature", async () => {
+test("wallet-owned envelope remains available on a new device after a fresh wallet signature", async () => {
   const owner = wallet();
   const created = await createTinPrivateIdentity({
     tin: "1000000008",
     routeVersion: 1,
     routeNonce: "4".repeat(64),
     ownerWallet: owner,
-    authorizedDevice: await authorizedDevice("device-a"),
-    thresholdProvider: thresholdProvider("device-session-a"),
     nodeRoutingPublicKeyBase64: routingPublicKey(),
   });
   const unlocked = await unlockTinPrivateRoute({
@@ -259,31 +243,46 @@ test("a newly authorized device can unlock after a fresh main-wallet signature",
     pruConfigurationHash: created.pruConfigurationHash,
     envelope: created.encryptedMasterSeed,
     ownerWallet: owner,
-    authorizedDevice: await authorizedDevice("device-b"),
-    thresholdProvider: thresholdProvider("device-session-b"),
   });
   assert.deepEqual(unlocked.prus, created.publicRoute.prus);
 });
 
-test("a captured authorization from another device session is rejected", async () => {
-  const ownerKeys = nacl.sign.keyPair();
-  const owner = wallet(ownerKeys);
-  let capturedMessage;
-  let capturedSignature;
+test("wallet-owned upgrade rewraps the same seed and preserves every PRU", async () => {
+  const owner = wallet();
+  const original = await createTinPrivateIdentity({
+    tin: "1000000008",
+    routeVersion: 1,
+    routeNonce: "7".repeat(64),
+    ownerWallet: owner,
+    nodeRoutingPublicKeyBase64: routingPublicKey(),
+  });
+  const upgraded = await rewrapTinPrivateIdentityForWalletOwner({
+    tin: "1000000008",
+    pruConfigurationHash: original.pruConfigurationHash,
+    envelope: original.encryptedMasterSeed,
+    ownerWallet: owner,
+    routeVersion: 2,
+    routeNonce: "8".repeat(64),
+    nodeRoutingPublicKeyBase64: routingPublicKey(),
+  });
+  assert.equal(upgraded.pruConfigurationHash, original.pruConfigurationHash);
+  assert.deepEqual(upgraded.publicRoute.prus, original.publicRoute.prus);
+  const unlocked = await unlockTinPrivateRoute({
+    tin: "1000000008",
+    pruConfigurationHash: upgraded.pruConfigurationHash,
+    envelope: upgraded.encryptedMasterSeed,
+    ownerWallet: owner,
+  });
+  assert.deepEqual(unlocked.prus, original.publicRoute.prus);
+});
+
+test("a different wallet cannot unlock a wallet-owned envelope", async () => {
+  const owner = wallet();
   const created = await createTinPrivateIdentity({
     tin: "1000000008",
     routeVersion: 1,
     routeNonce: "5".repeat(64),
-    ownerWallet: {
-      ...owner,
-      signMessage: async (message) => {
-        capturedMessage = message.slice();
-        capturedSignature = nacl.sign.detached(message, ownerKeys.secretKey);
-        return capturedSignature;
-      },
-    },
-    authorizedDevice: await authorizedDevice("device-a"),
-    thresholdProvider: thresholdProvider("device-session-a"),
+    ownerWallet: owner,
     nodeRoutingPublicKeyBase64: routingPublicKey(),
   });
   await assert.rejects(
@@ -291,17 +290,9 @@ test("a captured authorization from another device session is rejected", async (
       tin: "1000000008",
       pruConfigurationHash: created.pruConfigurationHash,
       envelope: created.encryptedMasterSeed,
-      ownerWallet: {
-        publicKey: owner.publicKey,
-        signMessage: async () => {
-          assert.ok(capturedMessage);
-          return capturedSignature;
-        },
-      },
-      authorizedDevice: await authorizedDevice("device-b"),
-      thresholdProvider: thresholdProvider("device-session-b"),
+      ownerWallet: wallet(),
     }),
-    /Main-wallet authorization is invalid/,
+    /identity does not match/,
   );
 });
 

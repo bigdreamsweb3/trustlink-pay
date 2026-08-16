@@ -201,6 +201,8 @@ export type CreateIntentRequest = {
   recipientHash: string;
   tokenMintAddress: string;
   amount: number;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   recipientAmount?: number;
   source?: string;
   recipientTin?: string | null;
@@ -360,6 +362,8 @@ export function buildCreateIntentRequest(params: {
   encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
   recipientHash: string;
   recipientTin?: string | null;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   source?: string;
@@ -396,6 +400,8 @@ export function buildCreateIntentRequest(params: {
     intentSeedHash: sha256Hex(params.paymentId),
     recipientHash: params.recipientHash,
     recipientTin: params.recipientTin ?? null,
+    recipientRouteCommitment: params.recipientRouteCommitment,
+    recipientRouteVersion: params.recipientRouteVersion,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     source: params.source,

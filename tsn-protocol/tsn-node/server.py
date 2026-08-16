@@ -790,12 +790,57 @@ def k_canonical_message_nonces() -> str: return f"{MEMPOOL_NS}:canonical_message
 def k_threshold_access_nonces() -> str: return f"{MEMPOOL_NS}:threshold_access_nonces"
 def k_tin_read_delegations() -> str: return f"{MEMPOOL_NS}:tin_read_delegations"
 def k_platform_read_keys() -> str: return f"{MEMPOOL_NS}:platform_read_keys"
+def k_recipient_route_binding(work_id: str) -> str: return f"{MEMPOOL_NS}:recipient_route_binding:{work_id}"
 
 
 async def hget_all_json(key: str) -> list:
     r = await get_mempool_store()
     raw: dict = await r.hgetall(key)
     return [json.loads(v) for v in raw.values()]
+
+
+async def write_recipient_route_binding(
+    *, work_id: str, tin: str, commitment: str, route_version: int, expires_at: str,
+) -> None:
+    """Persist the recipient reference separately from the sender's intent.
+
+    The payment work document contains only the signed route commitment.  The
+    Node retains this short-lived reference so it can resolve the recipient
+    route later when a funded claim needs a payout authorization.
+    """
+    await (await get_mempool_store()).set(
+        k_recipient_route_binding(work_id),
+        json.dumps({
+            "tin": tin,
+            "commitment": commitment.lower(),
+            "routeVersion": route_version,
+            "expiresAt": expires_at,
+        }),
+    )
+
+
+async def read_recipient_route_binding(work_id: str) -> Optional[dict[str, Any]]:
+    store = await get_mempool_store()
+    key = k_recipient_route_binding(work_id)
+    raw = await store.get(key)
+    if not raw:
+        return None
+    try:
+        binding = json.loads(raw)
+        expires_at = parse_iso(str(binding["expiresAt"]))
+        if expires_at <= datetime.now(timezone.utc):
+            await store.delete(key)
+            return None
+        if (
+            not re.fullmatch(r"\d+", str(binding.get("tin") or ""))
+            or not re.fullmatch(r"[a-f0-9]{64}", str(binding.get("commitment") or "").lower())
+            or int(binding.get("routeVersion") or 0) < 1
+        ):
+            raise ValueError("invalid recipient route binding")
+        return binding
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        await store.delete(key)
+        return None
 
 
 async def read_epoch_state() -> dict:
@@ -1330,6 +1375,8 @@ class CreateIntentRequest(BaseModel):
         None,
         description="Recipient TIN used by private settlement routing. Public responses do not expose it.",
     )
+    recipientRouteCommitment: str = Field(..., description="Finalized recipient PRU route commitment signed by the sender")
+    recipientRouteVersion: int = Field(..., description="Finalized recipient PRU route version signed by the sender")
     tokenMintAddress: str           = Field(..., description="SPL token mint address")
     amount:           float         = Field(..., description="Payment amount")
     recipientAmount:  Optional[float] = Field(None, description="Amount paid to recipient; amount minus this is protocol fee")
@@ -2057,6 +2104,19 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         raise HTTPException(400, "Recipient TIN must be plain digits in the signed message")
     if req.recipientTin and req.recipientTin != recipient_tin:
         raise HTTPException(400, "recipientTin differs from the signed message")
+    recipient_route_commitment = str(fields.get("Recipient Route Commitment") or "").lower()
+    if not re.fullmatch(r"[a-f0-9]{64}", recipient_route_commitment):
+        raise HTTPException(400, "Recipient Route Commitment must be a 32-byte hexadecimal commitment")
+    try:
+        recipient_route_version = int(str(fields.get("Recipient Route Version") or ""))
+    except ValueError as exc:
+        raise HTTPException(400, "Recipient Route Version must be a positive integer") from exc
+    if recipient_route_version < 1:
+        raise HTTPException(400, "Recipient Route Version must be a positive integer")
+    if str(req.recipientRouteCommitment or "").lower() != recipient_route_commitment:
+        raise HTTPException(400, "recipientRouteCommitment differs from the signed message")
+    if int(req.recipientRouteVersion or 0) != recipient_route_version:
+        raise HTTPException(400, "recipientRouteVersion differs from the signed message")
     token_decimals = int(get_supported_token_metadata().get(str(req.tokenMintAddress), {}).get("decimals", 6))
     request_amount_base_units = ui_amount_to_base_units(req.amount, token_decimals)
     if amount_base_units != request_amount_base_units:
@@ -2096,6 +2156,8 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
     )
     return {
         "recipientTin": recipient_tin,
+        "recipientRouteCommitment": recipient_route_commitment,
+        "recipientRouteVersion": recipient_route_version,
         "senderAuthorizationNonce": str(fields["Nonce"]),
         "senderAuthorizationExpiresAt": expires_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
     }
@@ -3390,11 +3452,15 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
     if kind == "PAYMENT_INTENT":
         request = CreateIntentRequest(**payload)
         verified_fields = await _verify_payment_authorization_from_signed_message(request)
-        recipient_tin = str(request.recipientTin or "").strip()
+        recipient_tin = str(verified_fields["recipientTin"] or "").strip()
         if recipient_tin and int(request.privacyVersion or 1) >= 2:
             route = await read_tin_pru_route(recipient_tin)
             if not route:
                 raise ValueError(f"Recipient TIN {recipient_tin} has no finalized PRU route")
+            if str(route.get("pruConfigurationHash") or "").lower() != verified_fields["recipientRouteCommitment"]:
+                raise ValueError("Recipient route commitment no longer matches the sender authorization")
+            if int(route.get("routeVersion") or 0) != int(verified_fields["recipientRouteVersion"]):
+                raise ValueError("Recipient route version no longer matches the sender authorization")
             eligible = [
                 item for item in route["prus"]
                 if str(item.get("state") or "ACTIVE") in {"PLANNED", "ACTIVE"}
@@ -3403,13 +3469,11 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError("Recipient route has no eligible receiving unit")
             # Selection is deterministic over the private Node view. The
             # Cranker receives neither the TIN nor the complete PRU map.
-            selected = min(eligible, key=lambda item: int(item["index"]))
             if not TSN_ROUTE_ATTESTATION_SIGNING_KEY:
                 raise ValueError("TSN Node route-attestation signer is not configured")
             expires_at = str(verified_fields["senderAuthorizationExpiresAt"])
             route_message = canonical_route_message(
-                work_id=str(work["id"]), destination=str(selected["publicKey"]),
-                route_commitment=str(route["pruConfigurationHash"]),
+                work_id=str(work["id"]), route_commitment=str(route["pruConfigurationHash"]),
                 mint=str(request.tokenMintAddress), amount=canonical_route_amount(request.amount),
                 expiry=expires_at, program_id=TSN_PROGRAM_ID,
             )
@@ -3425,17 +3489,32 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
                 "encryptedSettlementToken",
             ):
                 public_payload.pop(private_field, None)
-            public_payload["recipientWallet"] = selected["publicKey"]
+            # Keep the recipient TIN out of the durable payment record. The
+            # short-lived, Node-only route binding below is the only place it
+            # is retained after verification; payout resolution happens only
+            # when a confirmed claim needs its settlement authorization.
+            public_payload.update({
+                "recipientRouteCommitment": verified_fields["recipientRouteCommitment"],
+                "recipientRouteVersion": verified_fields["recipientRouteVersion"],
+                "senderAuthorizationNonce": verified_fields["senderAuthorizationNonce"],
+                "senderAuthorizationExpiresAt": verified_fields["senderAuthorizationExpiresAt"],
+            })
             route_authorization = sign_route_message(route_message, route_signer)
             public_payload["routeAuthorization"] = {
                 "version": 1,
                 "message": route_message,
                 "signatureBase64": route_authorization.signature_base64,
                 "signerPublicKeyBase64": route_authorization.signer_public_key_base64,
-                "destination": selected["publicKey"],
                 "routeCommitment": route["pruConfigurationHash"],
                 "expiresAt": expires_at,
             }
+            await write_recipient_route_binding(
+                work_id=str(work["id"]),
+                tin=recipient_tin,
+                commitment=verified_fields["recipientRouteCommitment"],
+                route_version=int(verified_fields["recipientRouteVersion"]),
+                expires_at=expires_at,
+            )
             return {
                 "verifiedPayload": public_payload,
                 "verificationType": "TSN_OPAQUE_RECIPIENT_ROUTE",
@@ -3636,13 +3715,19 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     verified = (intent_work.get("verification") or {}).get("verifiedPayload")
     if not isinstance(verified, dict):
         raise HTTPException(422, "Payment has no verified route authorization")
-    route_authorization = verified.get("routeAuthorization")
-    if not isinstance(route_authorization, dict):
-        raise HTTPException(422, "Payment has no opaque recipient route authorization")
-    recipient_wallet = str(route_authorization.get("destination") or "")
     token_mint_text = str(verified.get("tokenMintAddress") or "")
-    if not recipient_wallet or not token_mint_text:
+    if not token_mint_text:
         raise HTTPException(422, "Payment route is incomplete")
+    route_binding = await read_recipient_route_binding(intent_id)
+    if not route_binding:
+        raise HTTPException(409, "Recipient route binding is unavailable or expired")
+    if (
+        str(verified.get("recipientRouteCommitment") or "").lower()
+        != str(route_binding["commitment"]).lower()
+        or int(verified.get("recipientRouteVersion") or 0)
+        != int(route_binding["routeVersion"])
+    ):
+        raise HTTPException(422, "Recipient route binding does not match the verified payment")
     token_mint = Pubkey.from_string(token_mint_text)
     token_metadata = get_supported_token_metadata().get(str(token_mint))
     if not token_metadata:
@@ -3668,6 +3753,17 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
             409,
             "Funded settlement escrow amount does not equal the authorized payment amount",
         )
+    route = await read_tin_pru_route(str(route_binding["tin"]))
+    if not route:
+        raise HTTPException(409, "Recipient TIN no longer has a finalized route")
+    if (
+        str(route.get("pruConfigurationHash") or "").lower()
+        != str(route_binding["commitment"]).lower()
+        or int(route.get("routeVersion") or 0) != int(route_binding["routeVersion"])
+    ):
+        raise HTTPException(409, "Recipient route changed after the sender authorization")
+    selected_pru = select_pru_for_payment(route, verified, str(token_mint))
+    recipient_wallet = str(selected_pru["publicKey"])
     operator = Pubkey.from_string(operator_text)
     recipient_token_account = get_associated_token_address(Pubkey.from_string(recipient_wallet), token_mint)
     payout_sequence, _ = await read_private_replay_sequences()
@@ -3688,7 +3784,7 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
         "tokenMintAddress": str(token_mint), "recipientWallet": recipient_wallet,
         "payoutAmountBaseUnits": str(payout_amount), "claimFeeAmountBaseUnits": "0",
         "expiresAtTs": expires_at_ts,
-        "routeCommitment": route_authorization.get("routeCommitment"),
+        "routeCommitment": route_binding["commitment"],
     }
 
 @app.post("/internal/settlement-authorizations/recovery", dependencies=[Depends(require_worker_api_key)])
@@ -4329,6 +4425,10 @@ async def post_intent(req: CreateIntentRequest) -> PublicMempoolIntent:
                 f"Recipient TIN {recipient_tin} has no finalized PRU route; "
                 "the recipient must initialize and finalize a receiving route before payment.",
             )
+        if str(route.get("pruConfigurationHash") or "").lower() != parsed_signed_fields["recipientRouteCommitment"]:
+            raise HTTPException(409, "Recipient route commitment no longer matches the sender authorization")
+        if int(route.get("routeVersion") or 0) != int(parsed_signed_fields["recipientRouteVersion"]):
+            raise HTTPException(409, "Recipient route version no longer matches the sender authorization")
     now = datetime.now(timezone.utc).isoformat()
     data = req.model_dump()
     data.update(parsed_signed_fields)

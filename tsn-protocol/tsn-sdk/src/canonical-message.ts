@@ -74,6 +74,26 @@ function parseTin(value: string, label: string) {
   return value;
 }
 
+function parseHash32(value: string, label: string) {
+  const normalized = value.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(normalized)) {
+    throw new CanonicalMessageError(`${label} must be a 32-byte hexadecimal commitment`);
+  }
+  return normalized;
+}
+
+function parseRouteVersion(value: string | number) {
+  const normalized = String(value).trim();
+  if (!/^[1-9]\d*$/.test(normalized)) {
+    throw new CanonicalMessageError("Recipient Route Version must be a positive integer");
+  }
+  const routeVersion = Number(normalized);
+  if (!Number.isSafeInteger(routeVersion)) {
+    throw new CanonicalMessageError("Recipient Route Version is outside the safe integer range");
+  }
+  return routeVersion;
+}
+
 function parseExpiry(value: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime()) || date.toISOString() !== value) {
@@ -105,6 +125,8 @@ export function isCanonicalTsnMessage(message: string) {
 export function buildPruSpendMessage(params: {
   amountBaseUnits: bigint | string | number;
   recipientTin: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   feeBaseUnits: bigint | string | number;
   pruSource?: "TIN Balance" | string;
   nonce: string;
@@ -113,6 +135,8 @@ export function buildPruSpendMessage(params: {
   return buildMessage("PRU Spend", [
     ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
+    ["Recipient Route Commitment", parseHash32(params.recipientRouteCommitment, "Recipient Route Commitment")],
+    ["Recipient Route Version", parseRouteVersion(params.recipientRouteVersion)],
     ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
     ["PRU Source", params.pruSource ?? "TIN Balance"],
     ["Nonce", params.nonce],
@@ -125,6 +149,8 @@ export function parsePruSpendMessage(message: string) {
   return {
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
+    recipientRouteCommitment: parseHash32(requireField(fields, "Recipient Route Commitment"), "Recipient Route Commitment"),
+    recipientRouteVersion: parseRouteVersion(requireField(fields, "Recipient Route Version")),
     feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
     pruSource: requireField(fields, "PRU Source"),
     nonce: requireField(fields, "Nonce"),
@@ -135,6 +161,8 @@ export function parsePruSpendMessage(message: string) {
 export function buildPaymentIntentMessage(params: {
   amountBaseUnits: bigint | string | number;
   recipientTin: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   feeBaseUnits: bigint | string | number;
   sender: string;
   nonce: string;
@@ -143,6 +171,8 @@ export function buildPaymentIntentMessage(params: {
   return buildMessage("Payment Intent", [
     ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
+    ["Recipient Route Commitment", parseHash32(params.recipientRouteCommitment, "Recipient Route Commitment")],
+    ["Recipient Route Version", parseRouteVersion(params.recipientRouteVersion)],
     ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
     ["Sender", params.sender],
     ["Nonce", params.nonce],
@@ -155,6 +185,8 @@ export function parsePaymentIntentMessage(message: string) {
   return {
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
+    recipientRouteCommitment: parseHash32(requireField(fields, "Recipient Route Commitment"), "Recipient Route Commitment"),
+    recipientRouteVersion: parseRouteVersion(requireField(fields, "Recipient Route Version")),
     feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
     sender: requireField(fields, "Sender"),
     nonce: requireField(fields, "Nonce"),
@@ -165,6 +197,8 @@ export function parsePaymentIntentMessage(message: string) {
 export function buildMixedPaymentMessage(params: {
   amountBaseUnits: bigint | string | number;
   recipientTin: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   feeBaseUnits: bigint | string | number;
   pruPortionBaseUnits: bigint | string | number;
   walletTopUpPortionBaseUnits: bigint | string | number;
@@ -174,6 +208,8 @@ export function buildMixedPaymentMessage(params: {
   return buildMessage("Mixed Payment", [
     ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
+    ["Recipient Route Commitment", parseHash32(params.recipientRouteCommitment, "Recipient Route Commitment")],
+    ["Recipient Route Version", parseRouteVersion(params.recipientRouteVersion)],
     ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
     ["PRU Portion", formatUsdcBaseUnits(BigInt(params.pruPortionBaseUnits))],
     ["Wallet Top-Up Portion", formatUsdcBaseUnits(BigInt(params.walletTopUpPortionBaseUnits))],
@@ -187,6 +223,8 @@ export function parseMixedPaymentMessage(message: string) {
   return {
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
+    recipientRouteCommitment: parseHash32(requireField(fields, "Recipient Route Commitment"), "Recipient Route Commitment"),
+    recipientRouteVersion: parseRouteVersion(requireField(fields, "Recipient Route Version")),
     feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
     pruPortionBaseUnits: parseUsdc(requireField(fields, "PRU Portion"), "PRU Portion"),
     walletTopUpPortionBaseUnits: parseUsdc(

@@ -3,6 +3,10 @@
 Python-based stateless protocol verifier and processor for the Transfer
 Settlement Network, operated by TrustLink Labs.
 
+The plain-language explanation of what the Receiver stores, what the Node
+verifies, and what a Cranker proves is in [TSN Receiver verification and
+Cranker settlement](../../docs/tsn-receiver-verification-settlement.md).
+
 ## What it does
 
 - leases received work from the TSN Receiver;

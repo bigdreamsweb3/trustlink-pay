@@ -16,9 +16,9 @@ class RouteAttestationTests(unittest.TestCase):
         self.assertEqual(canonical_route_amount("1.2300"), "1.23")
         self.assertEqual(canonical_route_amount("1e-7"), "0.0000001")
 
-    def test_attestation_exposes_no_tin_or_route_map(self):
+    def test_attestation_exposes_no_recipient_or_route_map(self):
         message = canonical_route_message(
-            work_id="work-1", destination="Destination111", route_commitment="ab" * 32,
+            work_id="work-1", route_commitment="ab" * 32,
             mint="Mint111", amount="1.25", expiry="2030-01-01T00:00:00Z",
             program_id="Program111",
         )
@@ -26,11 +26,12 @@ class RouteAttestationTests(unittest.TestCase):
         verify_route_message(authorization)
         self.assertNotIn("TIN", authorization.message)
         self.assertNotIn("prus", authorization.message.lower())
+        self.assertNotIn("destination", authorization.message.lower())
 
     def test_tampering_is_rejected(self):
         authorization = sign_route_message(
             canonical_route_message(
-                work_id="work-1", destination="Destination111", route_commitment="ab" * 32,
+                work_id="work-1", route_commitment="ab" * 32,
                 mint="Mint111", amount="1.25", expiry="2030-01-01T00:00:00Z",
                 program_id="Program111",
             ), SigningKey.generate(),

@@ -15,6 +15,8 @@ export function createSenderPaymentAuthorizationMessage(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   senderFeeAmount: number;
@@ -42,6 +44,8 @@ export function createSenderPaymentAuthorizationMessage(params: {
     return buildMixedPaymentMessage({
       amountBaseUnits,
       recipientTin,
+      recipientRouteCommitment: params.recipientRouteCommitment,
+      recipientRouteVersion: params.recipientRouteVersion,
       feeBaseUnits,
       pruPortionBaseUnits: BigInt(params.pruPortionBaseUnits ?? 0),
       walletTopUpPortionBaseUnits: BigInt(
@@ -56,6 +60,8 @@ export function createSenderPaymentAuthorizationMessage(params: {
     return buildPruSpendMessage({
       amountBaseUnits,
       recipientTin,
+      recipientRouteCommitment: params.recipientRouteCommitment,
+      recipientRouteVersion: params.recipientRouteVersion,
       feeBaseUnits,
       nonce: params.nonce ?? "",
       expires:
@@ -65,6 +71,8 @@ export function createSenderPaymentAuthorizationMessage(params: {
   return buildPaymentIntentMessage({
     amountBaseUnits,
     recipientTin,
+    recipientRouteCommitment: params.recipientRouteCommitment,
+    recipientRouteVersion: params.recipientRouteVersion,
     feeBaseUnits,
     sender: "Main Wallet",
     nonce: params.nonce ?? "",
@@ -89,6 +97,8 @@ export function createPaymentAuthorization(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   senderFeeAmount: number;
@@ -122,6 +132,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   paymentId: string;
   recipientHash: string;
   recipientTin?: string | null;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   tokenMintAddress: string;
   senderWallet: string;
   senderAuthorizationMessage: string;
@@ -186,6 +198,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       encryptedSettlementToken: params.encryptedSettlementToken,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
+      recipientRouteCommitment: params.recipientRouteCommitment,
+      recipientRouteVersion: params.recipientRouteVersion,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
       source: params.source,
@@ -202,6 +216,8 @@ export async function submitPaymentAuthorizationToMempool(params: {
   paymentId: string;
   recipientHash: string;
   recipientTin?: string | null;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   tokenMintAddress: string;
   senderWallet: string;
   senderAuthorizationMessage: string;
@@ -232,7 +248,6 @@ export async function submitPaymentAuthorizationToMempool(params: {
   amount: number;
   recipientAmount?: number;
   destinationWallet?: string | null;
-  autoclaim?: boolean;
   source?: string;
 }) {
   const intentRequest = buildPaymentAuthorizationIntentRequest(params);

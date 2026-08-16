@@ -120,6 +120,8 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
   paymentId: string;
   recipientHash: string;
   recipientTin: string;
+  recipientRouteCommitment: string;
+  recipientRouteVersion: number;
   destinationWallet: string;
   tokenMintAddress: string;
   senderWallet: string;
@@ -160,11 +162,10 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     transferId: string;
     epoch: number;
   } | null;
-  autoclaim?: boolean;
   amount: number;
   recipientAmount: number;
 }) {
-  const { intent, intentRequest, claimRequest } = await submitPaymentAuthorizationToMempool({
+  const { intent, intentRequest } = await submitPaymentAuthorizationToMempool({
     mempoolUrl: getTsnMempoolUrl(),
     paymentId: params.paymentId,
     senderWallet: params.senderWallet,
@@ -194,8 +195,9 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     settlementEpoch: params.settlementEpoch,
     encryptedSettlementToken: params.encryptedSettlementToken,
     recipientTin: params.recipientTin,
+    recipientRouteCommitment: params.recipientRouteCommitment,
+    recipientRouteVersion: params.recipientRouteVersion,
     destinationWallet: params.destinationWallet,
-    autoclaim: params.autoclaim ?? true,
     recipientHash: params.recipientHash,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
@@ -216,12 +218,13 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     destinationWallet: params.destinationWallet,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
-    autoclaim: params.autoclaim ?? true,
   });
 
   return {
     ...registered,
-    claimRequestId: claimRequest?.id ?? registered.claimRequestId ?? null,
+    // Receiver creates claim work only after Node verification and confirmed
+    // funding, so there is no sender-created claim record to read here.
+    claimRequestId: registered.claimRequestId ?? null,
   };
 }
 

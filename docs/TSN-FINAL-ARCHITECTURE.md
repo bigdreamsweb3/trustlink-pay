@@ -50,22 +50,21 @@ The TIN does not store an authorized-device list. Device authorization remains
 in the existing Private View device system. Authorizing a new device therefore
 does not require changing the TIN account.
 
-## Master seed and authorized devices
+## Master seed and wallet-owned access
 
 The TSN SDK generates a random master seed on the user device. It is never
 derived from the wallet signature. The wallet signs a canonical authorization
 that binds the TIN, route version, ZK-PRU commitment, resource commitment, and
-the current authorized-device session.
+the fixed any-device wallet-owner access binding.
 
-The seed is encrypted locally. The independent data key is released only as an
-envelope encrypted to the authorized device's non-exportable X25519 key. The
-device unwraps the key and decrypts the seed locally. A copied wallet
-signature is not sufficient on an unauthorized device.
+The seed is encrypted locally. A fresh owner-wallet signature derives the local
+data key, allowing the owner to unlock the same TIN on another device. The
+plaintext seed stays on that device and never reaches a server.
 
 ```mermaid
 sequenceDiagram
   participant W as Main wallet
-  participant D as Authorized device
+  participant D as Current owner-approved device
   participant S as TSN SDK
   participant T as TIN registry
   participant K as Threshold access adapter

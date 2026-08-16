@@ -12,7 +12,7 @@ function opaqueId(value: unknown) {
 }
 
 async function get(path: string) {
-  for (const base of [...new Set(BASES)]) {
+  for (const base of Array.from(new Set(BASES))) {
     try {
       const response = await fetch(`${base}${path}`, { next: { revalidate: 3 } });
       if (response.ok) return response.json();

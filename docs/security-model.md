@@ -4,7 +4,7 @@
 
 | Component | Can see | Can sign | Can move funds | Must never receive |
 | --- | --- | --- | --- | --- |
-| Authorized device | User-unlocked local plaintext and selected private state | Scoped child authorizations | Only through signed program instructions | Nothing beyond its local session |
+| Owner-approved device | User-unlocked local plaintext and selected private state | Scoped child authorizations | Only through signed program instructions | Nothing beyond its local session |
 | Frontend | Public plan, wallet state, and user-approved display data | Requests wallet signatures | No direct authority | Plaintext seed or child private keys in persistent state |
 | TSN SDK | Local inputs and public route data | Root and scoped signatures on the device | No direct program authority | Server-provided private permits |
 | Application backend/TIN service | Authenticated profile, public metadata, ciphertext | No user-PRU signing authority | No user funds | Plaintext seeds and child keys |
@@ -19,7 +19,7 @@
 
 ```mermaid
 flowchart TD
-    W[Root wallet authorization] --> D[Authorized device unlock]
+    W[Root wallet authorization] --> D[Current owner-approved device unlock]
     D --> K[Selected child authority]
     K --> M[Scoped route commitment]
     M --> N[Node verification + reservation]
@@ -28,8 +28,9 @@ flowchart TD
     V --> E[TSN Escrow reimburses leased Cranker]
 ```
 
-Plaintext derivation material and child private keys remain on the authorized
-device. The root wallet signs the complete operation. A child authority signs
+Plaintext derivation material and child private keys remain on the current
+device. The root wallet signs the complete operation and may approve access on
+any device for a new or upgraded TIN. A child authority signs
 only its selected source action. The node and Cranker receive public keys and
 signatures, never the signing material.
 

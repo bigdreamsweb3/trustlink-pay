@@ -12,7 +12,7 @@ flowchart TD
     B --> C[Public routing metadata]
     B --> D[Encrypted identity/derivation envelope]
     C --> E[TSN SDK route plan]
-    D --> F[Authorized device only]
+    D --> F[Owner wallet approval on any device]
 ```
 
 ## TIN versus a wallet address
@@ -36,7 +36,7 @@ record may contain the following classes of data:
 | --- | --- | --- |
 | Public | TIN number, display label, active status, route version | Can be returned for resolution subject to anti-enumeration controls |
 | Integrity metadata | Owner-key commitment, route commitment, state version | Public verification material, not private authority |
-| Encrypted | ZK-PRU derivation envelope, private metadata, recovery material | Ciphertext only outside the authorized device |
+| Encrypted | ZK-PRU derivation envelope, private metadata, recovery material | Ciphertext; unlock requires the owning wallet's fresh approval |
 | Off-chain application data | Optional profile or notification references | Stored by the application under its own access policy |
 
 The exact on-chain layout is implementation-specific; do not infer private
@@ -48,8 +48,8 @@ plaintext from a public account or registry response.
 2. The TIN service or program resolves the active public routing metadata.
 3. The TSN SDK determines whether the route is wallet-only, ZK-PRU, or mixed.
 4. The recipient route is bound into the signed plan commitment.
-5. Encrypted material is delivered only to an authorized device when the
-   sender's or recipient's local action requires it.
+5. When local private derivation is required, the owning wallet gives a fresh
+   approval on that device. A TIN is not tied to one browser or one device.
 
 Resolution must not return plaintext seeds, child private keys, or an
 unrestricted wallet-to-person mapping. Implemented services must apply
@@ -65,12 +65,11 @@ does not become a ZK-PRU private key or token account.
 
 ## Recovery and revocation
 
-The root authority controls device authorization, recovery, and revocation.
-Device credentials and encrypted envelopes are not substitutes for root
-authority. A revoked device must not decrypt new envelopes or sign new scoped
-spend authorizations. Recovery behavior remains subject to the implementation
-status and deployed program support; this document does not claim portability
-or recovery features that are not verified in code.
+The root wallet is the TIN authority. It can approve access from any device;
+the encrypted TIN material is still never sent in plaintext to a backend, Node,
+Receiver, or Cranker. Older device-bound envelopes require a one-time upgrade
+from a device that can already unlock them. New and upgraded TINs use the
+wallet-owned envelope model.
 
 ## API boundary
 

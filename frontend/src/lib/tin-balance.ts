@@ -2,6 +2,7 @@
 
 import { PublicKey } from "@solana/web3.js";
 import { decodeTinAccount } from "@trustlink/tsn-sdk/tins";
+import { decodeTinMasterSeedEnvelope } from "@trustlink/tsn-sdk/tin-envelopes";
 import {
   loadTinPrivateTokenBalances,
 } from "@trustlink/tsn-sdk/tin-private-controller";
@@ -58,16 +59,7 @@ export async function loadTinTokenBalances(params: {
   signal?: AbortSignal;
   onProgress?: (message: string) => void;
 }): Promise<TinTokenBalanceResult> {
-  // Obtain the authorized-device adapter before querying the chain. This
-  // avoids displaying a misleading zero balance when the device is not
-  // authorized for the selected TIN.
-  let accessProvider: Awaited<ReturnType<typeof getBrowserTinAuthorizedDeviceAccess>>;
-  try {
-    accessProvider = await getBrowserTinAuthorizedDeviceAccess();
-  } catch (error) {
-    throw new Error(`TIN authorized-device access failed: ${describeTinBalanceError(error)}`);
-  }
-  params.onProgress?.("Decrypting the TIN route on this authorized device...");
+  params.onProgress?.("Opening the TIN with your wallet authorization...");
   let identity: Awaited<ReturnType<typeof resolveTinFromChain>>;
   try {
     identity = await resolveTinFromChain(params.tin);
@@ -108,6 +100,20 @@ export async function loadTinTokenBalances(params: {
     throw new Error("This legacy TIN must be upgraded before private balances can be loaded.");
   }
   const pruConfigurationHash = Buffer.from(decoded.pruConfigurationHash).toString("hex");
+  const masterSeedEnvelope = decodeTinMasterSeedEnvelope(decoded.encryptedMasterSeed);
+  const requiresLegacyDeviceMigration = masterSeedEnvelope.provider !== "wallet-owner-signature-v1";
+  let accessProvider: Awaited<ReturnType<typeof getBrowserTinAuthorizedDeviceAccess>> | undefined;
+  let authorizedDevice: Awaited<ReturnType<typeof getTinAuthorizedDeviceSigner>> | undefined;
+  if (requiresLegacyDeviceMigration) {
+    try {
+      accessProvider = await getBrowserTinAuthorizedDeviceAccess();
+      authorizedDevice = await getTinAuthorizedDeviceSigner(params.tin);
+    } catch (error) {
+      throw new Error(
+        `This older TIN needs a one-time wallet-authorized migration before it can be opened on any device: ${describeTinBalanceError(error)}`,
+      );
+    }
+  }
   let balances: Awaited<ReturnType<typeof loadTinPrivateTokenBalances>>;
   try {
     balances = await loadTinPrivateTokenBalances({
@@ -138,7 +144,7 @@ export async function loadTinTokenBalances(params: {
           }
         },
       },
-      authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
+      authorizedDevice,
       thresholdProvider: accessProvider,
       connection,
       tokens: params.supportedTokens.map((token) => ({

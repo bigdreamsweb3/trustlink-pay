@@ -101,6 +101,8 @@ export type TinResolvedIdentity = {
     linkedAt: string;
   }>;
   encryptedSensitiveFields: TinEncryptedSensitiveField[];
+  pruConfigurationHash: string | null;
+  routeVersion: number | null;
 };
 
 function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
@@ -1067,6 +1069,12 @@ export async function resolveTIN(params: {
       socialIdentities: [],
       sensitiveFields: [],
       encryptedSensitiveFields: [],
+      pruConfigurationHash: legacy.decoded.pruConfigurationHash
+        ? bytesToHex(legacy.decoded.pruConfigurationHash)
+        : null,
+      routeVersion: legacy.decoded.routeVersion && legacy.decoded.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number(legacy.decoded.routeVersion)
+        : null,
     };
   }
   try {
@@ -1101,6 +1109,12 @@ export async function resolveTIN(params: {
         socialIdentities: [],
         sensitiveFields: [],
         encryptedSensitiveFields: [],
+        pruConfigurationHash: tinAccount.pruConfigurationHash
+          ? bytesToHex(tinAccount.pruConfigurationHash)
+          : null,
+        routeVersion: tinAccount.routeVersion && tinAccount.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
+          ? Number(tinAccount.routeVersion)
+          : null,
       };
     }
   } catch {
@@ -1153,5 +1167,7 @@ export async function resolveTIN(params: {
     socialIdentities,
     sensitiveFields,
     encryptedSensitiveFields: registry.sensitiveFields,
+    pruConfigurationHash: null,
+    routeVersion: null,
   };
 }

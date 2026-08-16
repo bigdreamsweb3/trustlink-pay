@@ -10,6 +10,8 @@ class CreateIntentRequest(BaseModel):
     intentSeedHash: str = Field(..., description="SHA-256 hex of paymentId")
     recipientHash: str = Field(..., description="Hashed recipient")
     recipientTin: Optional[str] = Field(None, description="Recipient TIN used by private settlement routing. Public responses do not expose it.")
+    recipientRouteCommitment: str = Field(..., description="Finalized recipient PRU route commitment signed by the sender")
+    recipientRouteVersion: int = Field(..., description="Finalized recipient PRU route version signed by the sender")
     tokenMintAddress: str = Field(..., description="SPL token mint address")
     amount: float = Field(..., description="Payment amount")
     recipientAmount: Optional[float] = Field(None, description="Amount paid to recipient; amount minus this is protocol fee")

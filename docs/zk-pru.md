@@ -2,12 +2,13 @@
 
 ZK-PRU is TSN's protected receiving and spending subsystem. It is not a
 separate blockchain, independent settlement network, or server-owned registry.
-It connects a TIN payment identity to device-authorized receiving routes and
+It connects a TIN payment identity to wallet-authorized receiving routes and
 scoped source spending.
 
 ## What “ZK” means here
 
-The current implementation uses encrypted device-local derivation material,
+The current implementation uses encrypted local derivation material that the
+owner wallet can unlock on any device, plus
 commitments, scoped signatures, and protected routing. A commitment can hide
 and bind data, but it is not by itself a formal zero-knowledge proof. Do not
 claim active SNARK/STARK or complete transaction unlinkability unless a proof
@@ -19,12 +20,12 @@ system and verification path are present and tested.
 sequenceDiagram
     participant W as Root wallet
     participant T as TIN encrypted storage
-    participant D as Authorized device
+    participant D as Current owner-approved device
     participant S as TSN SDK
     participant N as TSN Node
     participant C as Cranker
     participant P as TSN Program
-    W->>T: Authorize device and request ciphertext
+    W->>T: Approve local TIN access and request ciphertext
     T-->>D: Encrypted ZK-PRU envelope
     D->>D: Unlock and decrypt locally
     D->>S: Derive selected child authority
@@ -37,7 +38,7 @@ sequenceDiagram
 - The main wallet is the root authority.
 - The encrypted master/derivation material is recovery material, not a
   standalone authorization.
-- The authorized device derives only the selected child authority.
+- The current owner-approved device derives only the selected child authority.
 - The child signature is scoped to source, amount, route commitment, nonce,
   state version, expiry, cluster, and program.
 - The TSN execution PDA is the restricted token delegate.

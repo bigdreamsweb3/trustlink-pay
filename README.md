@@ -13,6 +13,7 @@ Solana. TrustLink Pay is the application experience built on that network.
 - [Service hosting and deployment map](docs/SERVICE-HOSTING.md)
 - [Live testing and contributor guide](docs/GETTING-STARTED-LIVE.md)
 - [Cranker operator and deployment guide](docs/CRANKER-OPERATOR-GUIDE.md)
+- [How TSN Receiver verification and Cranker settlement work](docs/tsn-receiver-verification-settlement.md)
 
 TSN combines identity, recipient discovery, protected receiving and spending,
 authorization, payment intents, Receiver work queues, TSN Node verification,
@@ -109,9 +110,9 @@ Cranker that held the valid lease.
 - **TSN:** the complete payment coordination and settlement network.
 - **TIN:** a 10-digit Transfer Identity Number used to discover an authorized
   payment route without exchanging a normal wallet address.
-- **ZK-PRU:** TSN's protected receiving and spending subsystem. It uses
-  device-local encrypted derivation material, scoped child authorities, and
-  policy-driven receiving/spending routes.
+- **ZK-PRU:** TSN's protected receiving and spending subsystem. A wallet-owned
+  encrypted TIN envelope unlocks on any device where the owner approves the
+  wallet signature; it uses scoped child authorities and policy-driven routes.
 - **TSN SDK:** the local planner and authorization layer that creates the
   immutable payment route and commitment.
 - **TSN Receiver:** the durable ingress, work queue, leases, and status-read

@@ -1204,6 +1204,21 @@ export function SendExperience() {
     setApprovalStage("message");
 
     try {
+      const recipientTinForAuthorization = recipientPreview.recipient.tin;
+      if (!recipientTinForAuthorization) {
+        throw new Error("Recipient must have an active TIN route before a TSN payment can be authorized.");
+      }
+      // The sender signs the exact public route commitment, never the
+      // recipient wallet. The Node later resolves that commitment from the
+      // recipient's separate TIN route record.
+      const recipientRoute = await resolveTinFromChain(recipientTinForAuthorization);
+      if (
+        !recipientRoute.active ||
+        !recipientRoute.pruConfigurationHash ||
+        !recipientRoute.routeVersion
+      ) {
+        throw new Error("Recipient TIN does not have a finalized secure receiving route.");
+      }
       const senderFeeAmount = sendCostEstimate?.senderFeeAmountUi ?? 0;
       const totalTokenRequiredUi =
         sendCostEstimate?.totalTokenRequiredUi ??
@@ -1221,6 +1236,8 @@ export function SendExperience() {
         receiverIdentity: recipientPreview.recipient.tin
           ? `tin:${recipientPreview.recipient.tin}|phone:${form.receiverPhone}|name:${recipientName}`
           : `phone:${form.receiverPhone}|name:${recipientName}`,
+        recipientRouteCommitment: recipientRoute.pruConfigurationHash,
+        recipientRouteVersion: recipientRoute.routeVersion,
         tokenMintAddress: selectedToken.mintAddress,
         amount: Number(form.amount),
         senderFeeAmount,
@@ -1366,6 +1383,8 @@ export function SendExperience() {
         paymentId: result.paymentId,
         recipientHash,
         recipientTin,
+        recipientRouteCommitment: recipientRoute.pruConfigurationHash,
+        recipientRouteVersion: recipientRoute.routeVersion,
         destinationWallet,
         tokenMintAddress: selectedToken.mintAddress,
         senderWallet: walletAddress,
@@ -1411,7 +1430,6 @@ export function SendExperience() {
         commitmentHash: paymentCommitment,
         settlementEpoch,
         encryptedSettlementToken: null,
-        autoclaim: true,
         amount: Number(form.amount),
         recipientAmount: recipientPayoutAmount,
       });

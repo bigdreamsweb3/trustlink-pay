@@ -10,6 +10,10 @@ The Receiver is not the TSN Node and is not a Cranker. It does not verify
 cryptographic plans, decrypt TIN data, derive ZK-PRUs, sign transactions, or
 hold protocol authority.
 
+For the exact payment-data retention boundary, Node verification checks, and
+Cranker proof flow, see the repository guide: [TSN Receiver verification and
+Cranker settlement](../../docs/tsn-receiver-verification-settlement.md).
+
 State flow:
 
 `RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED`

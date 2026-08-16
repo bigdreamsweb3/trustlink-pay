@@ -313,7 +313,6 @@ type OpaqueRouteAuthorization = {
   message: string;
   signatureBase64: string;
   signerPublicKeyBase64: string;
-  destination: string;
   routeCommitment: string;
   expiresAt: string;
 };
@@ -353,13 +352,12 @@ function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, 
     throw new Error("Node route authorization signer is not trusted");
   }
   if (Date.parse(route.expiresAt) <= Date.now()) throw new Error("Node route authorization expired");
-  if (route.destination !== payload.recipientWallet) throw new Error("Node route destination mismatch");
   const fields = new Map(route.message.split("\n").slice(1).map((line) => {
     const offset = line.indexOf("=");
     return [line.slice(0, offset), line.slice(offset + 1)];
   }));
   if (route.message.split("\n")[0] !== "TSN_ROUTE_AUTHORIZATION" ||
-      fields.get("workId") !== workId || fields.get("destination") !== route.destination ||
+      fields.get("workId") !== workId ||
       fields.get("routeCommitment") !== route.routeCommitment ||
       fields.get("mint") !== payload.tokenMintAddress ||
       canonicalRouteAmount(fields.get("amount")) !== canonicalRouteAmount(payload.amount) ||
@@ -495,7 +493,6 @@ async function processReceiverPaymentIntent(params: {
     `[tsn-cranker] intent.proof_verified work=${params.work.id} ` +
       `nodeSigner=${routeAuthorization.signerPublicKeyBase64} ` +
       `routeCommitment=${routeAuthorization.routeCommitment} ` +
-      `destination=${routeAuthorization.destination} ` +
       `expiresAt=${routeAuthorization.expiresAt}`,
   );
   const intent = {

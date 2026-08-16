@@ -16,12 +16,9 @@ import {
 } from "@trustlink/tsn-sdk/tins";
 import {
   createTinPrivateIdentity,
+  rewrapTinPrivateIdentityForWalletOwner,
 } from "@trustlink/tsn-sdk/tin-private-controller";
-import {
-  authorizeCurrentTsnDevice,
-  getTinAuthorizedDeviceSigner,
-  getTsnDeviceAuthorization,
-} from "@/src/lib/tsn-device-authorization";
+import { decodeTinMasterSeedEnvelope } from "@trustlink/tsn-sdk/tin-envelopes";
 
 import {
   signSolanaMessage,
@@ -29,8 +26,9 @@ import {
   signTinOwnerIntentMessage,
 } from "@/src/lib/wallet";
 import { createSolanaConnection } from "@/src/lib/rpc";
-import { traceFunction } from "@trustlink/observability/tracer";
 import { getBrowserTinAuthorizedDeviceAccess } from "@/src/lib/tin-authorized-device-access";
+import { getTinAuthorizedDeviceSigner } from "@/src/lib/tsn-device-authorization";
+import { traceFunction } from "@trustlink/observability/tracer";
 const TINS_OWNER_INTENT_UPDATE_DOMAIN = "TINS_UPDATE_OWNER_INTENT_V2";
 
 export type BrowserTinRegistration = {
@@ -125,6 +123,8 @@ export type BrowserResolvedTin = {
   socialIdentities: TinResolvedIdentity["socialIdentities"];
   whatsapp: string | null;
   legalName: string | null;
+  pruConfigurationHash: string | null;
+  routeVersion: number | null;
 };
 
 function metadataRecord(value: unknown) {
@@ -173,6 +173,8 @@ async function resolveTinFromChainImpl(tin: string): Promise<BrowserResolvedTin>
     socialIdentities: identity.socialIdentities,
     whatsapp,
     legalName: resolveLegalName(identity),
+    pruConfigurationHash: identity.pruConfigurationHash,
+    routeVersion: identity.routeVersion,
   };
 }
 
@@ -403,38 +405,53 @@ async function upgradeLegacyTinForWalletImpl(params: {
     algorithm: string;
     publicKey: string;
   };
-  // A legacy TIN has no TSN private envelope yet. The upgrade action is the
-  // explicit owner approval point: authorize this device for this access
-  // request, then create the local device envelope. The long-lived TIN
-  // encryption is independent of the device key, which only unwraps the
-  // response locally. No Solana transaction is requested for this step; both
-  // approvals are detached wallet messages.
-  if (!await getTsnDeviceAuthorization(params.tin)) {
-    await authorizeCurrentTsnDevice({
+  const ownerWallet = {
+    publicKey: params.walletAddress,
+    signMessage: (message: Uint8Array) => signTinMasterSeedAuthorizationBytes({
+      walletId: params.walletId,
+      address: params.walletAddress,
+      message,
+    }),
+  };
+  const hasExistingPrivateIdentity =
+    decoded.encryptedMasterSeed.length > 0 &&
+    decoded.pruConfigurationHash?.length === 32 &&
+    Boolean(decoded.routeVersion && decoded.routeVersion > 0n);
+  let privateIdentity;
+  if (hasExistingPrivateIdentity) {
+    if (!decoded.pruConfigurationHash) {
+      throw new Error("The existing TIN route commitment is unavailable for upgrade.");
+    }
+    const existingCommitment = Buffer.from(decoded.pruConfigurationHash).toString("hex");
+    const envelope = decodeTinMasterSeedEnvelope(decoded.encryptedMasterSeed);
+    let authorizedDevice: Awaited<ReturnType<typeof getTinAuthorizedDeviceSigner>> | undefined;
+    let thresholdProvider: Awaited<ReturnType<typeof getBrowserTinAuthorizedDeviceAccess>> | undefined;
+    if (envelope.provider !== "wallet-owner-signature-v1") {
+      // This is a one-time compatibility step: open the old envelope with the
+      // existing device, then replace it with the normal wallet-owned envelope.
+      authorizedDevice = await getTinAuthorizedDeviceSigner(params.tin);
+      thresholdProvider = await getBrowserTinAuthorizedDeviceAccess();
+    }
+    privateIdentity = await rewrapTinPrivateIdentityForWalletOwner({
       tin: params.tin,
-      walletSession: {
-        walletId: params.walletId,
-        walletName: "Connected wallet",
-        address: params.walletAddress,
-      },
+      pruConfigurationHash: existingCommitment,
+      envelope: decoded.encryptedMasterSeed,
+      ownerWallet,
+      routeVersion,
+      routeNonce: bytesToHex(routeNonce),
+      nodeRoutingPublicKeyBase64: routeKey.publicKey,
+      authorizedDevice,
+      thresholdProvider,
+    });
+  } else {
+    privateIdentity = await createTinPrivateIdentity({
+      tin: params.tin,
+      routeVersion,
+      routeNonce: bytesToHex(routeNonce),
+      ownerWallet,
+      nodeRoutingPublicKeyBase64: routeKey.publicKey,
     });
   }
-  const privateIdentity = await createTinPrivateIdentity({
-    tin: params.tin,
-    routeVersion,
-    routeNonce: bytesToHex(routeNonce),
-    ownerWallet: {
-      publicKey: params.walletAddress,
-      signMessage: (message) => signTinMasterSeedAuthorizationBytes({
-        walletId: params.walletId,
-        address: params.walletAddress,
-        message,
-      }),
-    },
-    authorizedDevice: await getTinAuthorizedDeviceSigner(params.tin),
-    thresholdProvider: await getBrowserTinAuthorizedDeviceAccess(),
-    nodeRoutingPublicKeyBase64: routeKey.publicKey,
-  });
   const {
     pruConfigurationHash,
     encryptedMasterSeed,

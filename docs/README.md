@@ -4,7 +4,8 @@ Read these documents in order:
 
 1. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries, and runtime responsibilities.
 2. [Identity and TIN](./identity-and-tin.md) — the 10-digit payment identity, resolution, public fields, and encrypted boundaries.
-3. [ZK-PRU](./zk-pru.md) — protected receiving, spending, device-local derivation, scoped authorization, and privacy limits.
+3. [ZK-PRU](./zk-pru.md) — protected receiving, spending, wallet-owned derivation access, scoped authorization, and privacy limits.
+4. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — what is stored, verified, redacted, and proven on-chain.
 4. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs, RPC, validators, and clusters.
 5. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation, and known limitations.
 6. [Operations and testing](./operations-and-testing.md) — localnet, Devnet, evidence, deployment, and troubleshooting.

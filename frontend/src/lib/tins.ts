@@ -295,7 +295,10 @@ async function postTinOperationIntent(request: BrowserTinUpgradeIntent) {
       parsed && typeof parsed === "object"
         ? (["detail", "error", "message", "reason"] as const)
             .map((key) => (parsed as Record<string, unknown>)[key])
-            .find((value): value is string => typeof value === "string" && value.trim())
+            .find(
+              (value): value is string =>
+                typeof value === "string" && Boolean(value.trim()),
+            )
         : null;
     throw new Error(detail ?? "TSN Receiver rejected the TIN upgrade intent.");
   }

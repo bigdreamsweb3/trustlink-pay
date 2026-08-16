@@ -4,7 +4,7 @@ const observabilityTracerPath = resolve("../utils/observability/dist/tracer.js")
 
 /** @type {import('next').NextConfig} */
 const useTurbopackDev = process.env.TRUSTLINK_TURBOPACK_DEV === "1";
-const defaultRpcGatewayUrl = "https://tsn-rpc-gateway.wasmer.app";
+const defaultRpcGatewayUrl = "https://tsn-rpc-gateway.vercel.app";
 
 function normalizeRpcGatewayUrl(value) {
   if (!value) return defaultRpcGatewayUrl;
@@ -29,8 +29,8 @@ function normalizeRpcGatewayUrl(value) {
 // override it with a page URL during a Vercel build.
 const publicRpcGatewayUrl = normalizeRpcGatewayUrl(
   process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL ||
-    process.env.TSN_RPC_GATEWAY_URL ||
-    defaultRpcGatewayUrl,
+  process.env.TSN_RPC_GATEWAY_URL ||
+  defaultRpcGatewayUrl,
 );
 
 const nextConfig = {

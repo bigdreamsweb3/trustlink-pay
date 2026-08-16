@@ -6,16 +6,16 @@ mainnet production guarantee.
 
 ## Public service map
 
-| Component | Responsibility | Hosting | Public endpoint | Source |
-| --- | --- | --- | --- | --- |
-| TrustLink Pay frontend | Browser application, wallet connection, local authorization, UI | Vercel | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/) | `trustlink-pay` repository, `frontend/` |
-| TrustLink backend | User authentication, application APIs, non-secret application data | Vercel | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | `trustlink-pay` repository, `backend/` |
-| TSN Receiver | Durable ingress, Firestore-backed work records, leases, transitions, and evidence | Vercel endpoint supplied | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/) | [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver) |
-| TSN RPC Gateway | Controlled Solana RPC access and upstream selection | Wasmer | [tsn-rpc-gateway.wasmer.app](https://tsn-rpc-gateway.wasmer.app/) | [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) |
-| TSN Node | Stateless verification, route resolution, epoch work, and Receiver work processing | Wasmer | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/) | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node) |
-| Cranker operator | Leases verified work and submits the exact authorized Solana transaction | Operator machine | No public service URL | `tsn-protocol/tsn-cranker-op-daemon/` |
-| TSN Program | On-chain authorization, commitments, escrow, replay, and settlement state | Solana Devnet | Program account, not HTTP | `tsn-protocol/tsn/protocol/` |
-| TIN Program | On-chain Transfer Identity Number registry | Solana Devnet | Program account, not HTTP | `transfer-identity-protocol/` |
+| Component              | Responsibility                                                                     | Hosting                  | Public endpoint                                                               | Source                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| TrustLink Pay frontend | Browser application, wallet connection, local authorization, UI                    | Vercel                   | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | `trustlink-pay` repository, `frontend/`                                           |
+| TrustLink backend      | User authentication, application APIs, non-secret application data                 | Vercel                   | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | `trustlink-pay` repository, `backend/`                                            |
+| TSN Receiver           | Durable ingress, Firestore-backed work records, leases, transitions, and evidence  | Vercel endpoint supplied | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver)       |
+| TSN RPC Gateway        | Controlled Solana RPC access and upstream selection                                | Vercel                   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) |
+| TSN Node               | Stateless verification, route resolution, epoch work, and Receiver work processing | Wasmer                   | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node)               |
+| Cranker operator       | Leases verified work and submits the exact authorized Solana transaction           | Operator machine         | No public service URL                                                         | `tsn-protocol/tsn-cranker-op-daemon/`                                             |
+| TSN Program            | On-chain authorization, commitments, escrow, replay, and settlement state          | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/tsn/protocol/`                                                      |
+| TIN Program            | On-chain Transfer Identity Number registry                                         | Solana Devnet            | Program account, not HTTP                                                     | `transfer-identity-protocol/`                                                     |
 
 The Cranker is intentionally not hosted as a public API. An operator runs it
 on a workstation, VM, or private machine with its fee-payer/operator key. The
@@ -29,7 +29,7 @@ flowchart TD
     USER["User browser"] --> FRONTEND["TrustLink Pay frontend\nVercel"]
     FRONTEND --> BACKEND["TrustLink backend\nVercel\nauthentication and app APIs"]
     FRONTEND --> RECEIVER["TSN Receiver\nVercel\ndurable ingress and work state"]
-    FRONTEND --> RPC["TSN RPC Gateway\nWasmer"]
+    FRONTEND --> RPC["TSN RPC Gateway\nVercel"]
 
     RECEIVER --> NODE["TSN Node\nWasmer\nverification and decision services"]
     NODE --> RECEIVER
@@ -70,12 +70,12 @@ settled.
 Local development may use localhost services, but the runtime has live
 fallbacks when a local service is stopped:
 
-| Local component | Local address | Live fallback |
-| --- | --- | --- |
+| Local component        | Local address           | Live fallback                              |
+| ---------------------- | ----------------------- | ------------------------------------------ |
 | Frontend backend proxy | `http://localhost:3000` | `https://trustlink-pay-backend.vercel.app` |
-| RPC Gateway | `http://127.0.0.1:8787` | `https://tsn-rpc-gateway.wasmer.app` |
-| TSN Receiver | `http://127.0.0.1:8010` | `https://tsn-receiver-kappa.vercel.app` |
-| TSN Node | `http://127.0.0.1:8000` | `https://tsn-node.wasmer.app` |
+| RPC Gateway            | `http://127.0.0.1:8787` | `https://tsn-rpc-gateway.vercel.app`       |
+| TSN Receiver           | `http://127.0.0.1:8010` | `https://tsn-receiver-kappa.vercel.app`    |
+| TSN Node               | `http://127.0.0.1:8000` | `https://tsn-node.wasmer.app`              |
 
 Relevant fallback variables are server-side unless they begin with
 `NEXT_PUBLIC_`:
@@ -123,10 +123,10 @@ does not need to be reachable from the public internet.
 - Frontend and backend: deploy through their Vercel projects.
 - TSN Receiver: deploy the standalone `tsn-receiver` repository and set
   `TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app`.
-- TSN RPC Gateway: deploy the standalone Wasmer app from
+- TSN RPC Gateway: deploy the standalone Vercel app from
   `tsn-rpc-gateway` and set
-  `TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app` and
-  `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app`
+  `TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app` and
+  `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app`
   where browser access is required.
 - TSN Node: deploy the standalone Wasmer app from `tsn-node`.
 - Cranker: update the operator machine and restart its supervised process.
@@ -139,12 +139,12 @@ does not by itself prove that a payment settled on-chain.
 
 > **Canonical Devnet endpoints:** the Receiver is
 > `https://tsn-receiver-kappa.vercel.app` and the RPC Gateway is
-> `https://tsn-rpc-gateway.wasmer.app`. Keep these values in deployment
+> `https://tsn-rpc-gateway.vercel.app`. Keep these values in deployment
 > environment configuration and update all aliases together if hosting changes.
 
 ## Deployed Devnet program IDs
 
-| Program | Program ID |
-| --- | --- |
+| Program                | Program ID                                    |
+| ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TIN registry           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |

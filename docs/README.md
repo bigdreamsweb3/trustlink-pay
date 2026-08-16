@@ -12,6 +12,7 @@ Read these documents in order:
 8. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
 - [Cranker operator guide](./CRANKER-OPERATOR-GUIDE.md) - operator keypairs, Mother Escrow PDA derivation, registration, vault setup, and runtime.
+- [Service coordination and quota](./service-coordination-and-quota.md) - wake signals, durable work, leases, idle behavior, and resource-aware operations.
 
 Supporting technical references:
 

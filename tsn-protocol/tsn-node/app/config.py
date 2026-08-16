@@ -26,7 +26,7 @@ TSN_RECEIVER_FALLBACK_URL = clean_env(os.environ.get(
 TSN_RECEIVER_NODE_API_KEY = clean_env(os.environ.get("TSN_RECEIVER_NODE_API_KEY"))
 TSN_RPC_GATEWAY_URL = clean_env(
     os.environ.get("TSN_RPC_GATEWAY_URL"),
-    "https://tsn-rpc-gateway.wasmer.app",
+    "https://tsn-rpc-gateway.vercel.app",
 ).rstrip("/")
 # Compatibility name for internal helpers; it always points to the same
 # single TrustLink RPC gateway and is not independently configurable.

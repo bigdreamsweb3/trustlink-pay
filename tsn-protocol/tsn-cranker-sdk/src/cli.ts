@@ -53,7 +53,10 @@ function authorityKeypair() {
 }
 
 function tinsProgramId() {
-  return new PublicKey(process.env.TINS_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
+  return new PublicKey(
+    process.env.TINS_PROGRAM_ID ??
+      "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+  );
 }
 
 function parseBoolean(value: string | undefined) {
@@ -65,7 +68,9 @@ function parseBoolean(value: string | undefined) {
 async function handleCommand() {
   const command = process.argv[2];
   const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
-  const secretKey = process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY ?? process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY;
+  const secretKey =
+    process.env.SOLANA_ESCROW_AUTHORITY_SECRET_KEY ??
+    process.env.SOLANA_CLAIM_VERIFIER_SECRET_KEY;
 
   if (command === "init-mother") {
     const result = await tsnInitializeMotherEscrowOnChain({
@@ -235,7 +240,7 @@ async function main() {
   race-epoch <args>              Submit TSN competitive recovery proof
   
 Environment Variables:
-  TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: https://tsn-rpc-gateway.wasmer.app)
+  TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: https://tsn-rpc-gateway.vercel.app)
   PROGRAM_ID                     TSN program ID
   TINS_PROGRAM_ID                TIP registry program ID (defaults to local dev TIP id)
   KEYPAIR_PATH                   Path to signer/operator keypair (default: ./cranker-keypair.json)`);

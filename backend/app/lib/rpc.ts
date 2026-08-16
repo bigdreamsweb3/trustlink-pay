@@ -1,6 +1,6 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
-export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.wasmer.app";
+export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
 export const LOCAL_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
 
 type RpcSelectionOptions = {
@@ -15,7 +15,9 @@ export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
       ? [selected, DEFAULT_TSN_RPC_GATEWAY_URL]
       : [selected];
   }
-  return process.env.VERCEL ? [DEFAULT_TSN_RPC_GATEWAY_URL] : [LOCAL_TSN_RPC_GATEWAY_URL, DEFAULT_TSN_RPC_GATEWAY_URL];
+  return process.env.VERCEL
+    ? [DEFAULT_TSN_RPC_GATEWAY_URL]
+    : [LOCAL_TSN_RPC_GATEWAY_URL, DEFAULT_TSN_RPC_GATEWAY_URL];
 }
 
 export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {
@@ -46,7 +48,9 @@ export async function withRpcFallback<T>(
       lastError = error;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("All Solana RPC endpoints failed");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("All Solana RPC endpoints failed");
 }
 
 export function describeRpcSelection(options = {}) {

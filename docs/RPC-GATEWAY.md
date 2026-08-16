@@ -5,7 +5,7 @@ TrustLink Pay uses one shared Solana RPC entry point for the app, backend, SDKs,
 The gateway lives in `tsn-rpc-gateway/` as its own project. That keeps the RPC system separate from the app and makes it easier to move into a private repository later.
 
 The current Devnet gateway endpoint is
-[`https://tsn-rpc-gateway.wasmer.app/`](https://tsn-rpc-gateway.wasmer.app/).
+[`https://tsn-rpc-gateway.vercel.app/`](https://tsn-rpc-gateway.vercel.app/).
 Use the local URL below only when running the gateway locally.
 
 The goal is simple:

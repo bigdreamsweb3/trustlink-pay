@@ -182,8 +182,8 @@ onchain receipint tx inspection
 
 PS C:\Users\codepara\Desktop\trust-link\tsn-protocol\tsn-cranker-op-daemon> solana confirm -v n95iWNRuyb2afr9tGmvmEPxoKzU3k7jPWJEfR3mPiAETUKSambMDoqm12ENHjLAqnLavgufYp76Amwm66UPcpqS `
 
-> > --url https://tsn-rpc-gateway.wasmer.app
-> > RPC URL: https://tsn-rpc-gateway.wasmer.app
+> > --url https://tsn-rpc-gateway.vercel.app
+> > RPC URL: https://tsn-rpc-gateway.vercel.app
 > > Default Signer Path: C:\Users\codepara\.config\solana\id.json
 > > Commitment: confirmed
 

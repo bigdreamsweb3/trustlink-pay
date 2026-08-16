@@ -22,16 +22,19 @@ const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
-const LEGACY_DEVICE_ENVELOPE_PROVIDER = "tsn-device-envelope-v1";
-
-function requiresTinEnvelopeMigration(encryptedMasterSeed: Uint8Array) {
+/**
+ * Envelope-format validation is deliberately separate from provider choice.
+ * `tsn-device-envelope-v1` is the provider currently written by the shipped
+ * upgrade flow; treating that provider name as a legacy marker made every
+ * successfully upgraded TIN appear locked again in the resolver.
+ */
+function hasReadableTinMasterSeedEnvelope(encryptedMasterSeed: Uint8Array) {
   try {
     const envelope = decodeTinMasterSeedEnvelope(encryptedMasterSeed);
-    return envelope.provider === LEGACY_DEVICE_ENVELOPE_PROVIDER;
+    return Boolean(envelope.provider.trim());
   } catch {
-    // An opaque or malformed seed envelope cannot be treated as the current
-    // wallet-authorized format. Keep it upgrade-required and fail closed.
-    return true;
+    // An opaque or malformed seed envelope cannot be treated as current.
+    return false;
   }
 }
 
@@ -1039,9 +1042,9 @@ export async function resolveTIN(params: {
       Boolean(legacy.decoded.encryptedPublicRouteEnvelope?.length) &&
       Boolean(legacy.decoded.routeVersion && legacy.decoded.routeVersion > 0n) &&
       Boolean(legacy.decoded.routeNonce?.length === 32);
-    const requiresEnvelopeMigration =
+    const hasReadableSeedEnvelope =
       hasCurrentTsnEnvelopes &&
-      requiresTinEnvelopeMigration(legacy.decoded.encryptedMasterSeed);
+      hasReadableTinMasterSeedEnvelope(legacy.decoded.encryptedMasterSeed);
     return {
       tin: legacy.decoded.tin.toString(),
       name: legacy.decoded.displayName,
@@ -1049,14 +1052,14 @@ export async function resolveTIN(params: {
       ownerPubkeyHash: bytesToHex(legacy.decoded.ownerPubkeyHash),
       registry: legacy.address,
       accountKind: "legacy",
-      // The old device-envelope provider is not the current TIN format. A
-      // legacy TIP account can therefore have every route field populated and
-      // still require migration before private balances are unlocked.
-      upgradeRequired: !hasCurrentTsnEnvelopes || requiresEnvelopeMigration,
+      // TIP storage may remain legacy while carrying the complete current TSN
+      // envelope set. Provider selection is not a migration gate: the SDK
+      // performs the wallet + authorized-device proof when it unlocks.
+      upgradeRequired: !hasCurrentTsnEnvelopes || !hasReadableSeedEnvelope,
       upgradeReason: !hasCurrentTsnEnvelopes
         ? "Legacy TIN requires the current wallet-authorized seed envelope before local PRU balance discovery is available."
-        : requiresEnvelopeMigration
-          ? "This TIN still uses the old single-device seed envelope. Upgrade it to the current wallet-authorized envelope before loading private balances."
+        : !hasReadableSeedEnvelope
+          ? "TIN master-seed envelope is invalid or incomplete. Upgrade the TIN before loading private balances."
           : null,
       settlementAuthorityVerified: true,
       status: 1,
@@ -1082,14 +1085,14 @@ export async function resolveTIN(params: {
           !tinAccount.encryptedPublicRouteEnvelope ||
           !tinAccount.routeVersion ||
           !tinAccount.routeNonce ||
-          requiresTinEnvelopeMigration(tinAccount.encryptedMasterSeed),
+          !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed),
         upgradeReason:
           tinAccount.pruConfigurationHash &&
           tinAccount.encryptedPublicRouteEnvelope &&
           tinAccount.routeVersion &&
           tinAccount.routeNonce
-          ? requiresTinEnvelopeMigration(tinAccount.encryptedMasterSeed)
-            ? "This TIN still uses the old single-device seed envelope. Upgrade it to the current wallet-authorized envelope before loading private balances."
+          ? !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed)
+            ? "TIN master-seed envelope is invalid or incomplete. Upgrade the TIN before loading private balances."
             : null
           : "TIN account does not yet store the current wallet-authorized seed envelope and Node routing envelope.",
         settlementAuthorityVerified: true,

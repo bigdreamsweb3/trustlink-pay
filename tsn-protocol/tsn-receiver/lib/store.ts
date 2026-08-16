@@ -2,6 +2,7 @@ import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
 import { createReceivedWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
 import { wakeTsnNode } from "./node-wake";
+import { publishCrankerWake } from "./cranker-wake";
 
 const now = () => new Date().toISOString();
 
@@ -22,7 +23,9 @@ export async function receive(input: { id?: string; kind: WorkKind; payload: Rec
   });
   // Notify only after the Firestore transaction is durable. The notification
   // contains no payload; the Node re-reads work through its authenticated API.
-  if (result.created) await wakeTsnNode(input.kind);
+  if (result.created) {
+    await Promise.all([wakeTsnNode(input.kind), publishCrankerWake(input.kind)]);
+  }
   return result.work;
 }
 
@@ -150,7 +153,7 @@ export async function transition(params: {
   evidence?: Record<string, unknown>;
 }) {
   const ref = workCollection.doc(params.id);
-  return db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
@@ -174,4 +177,11 @@ export async function transition(params: {
     transaction.update(ref, patch);
     return { ...current, ...patch } as ReceiverWork;
   });
+  // Node verification is the point at which Cranker work becomes leaseable.
+  // Publish a fresh control-only wake after the Firestore transition commits;
+  // the first ingress wake may have arrived before verification completed.
+  if (params.actor === "node" && params.status === "VERIFIED") {
+    await publishCrankerWake("VERIFIED");
+  }
+  return result;
 }

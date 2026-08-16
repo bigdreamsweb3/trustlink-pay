@@ -25,7 +25,7 @@
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
     "git:status": "git status --short",
     "git:pull:all": "git pull origin main --allow-unrelated-histories --no-edit",
-    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated!\" && git push -u origin main"
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated!\" && git push -u origin main --force"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

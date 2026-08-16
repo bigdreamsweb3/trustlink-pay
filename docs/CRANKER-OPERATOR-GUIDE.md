@@ -128,10 +128,10 @@ real values only on the private operator machine:
 
 ```dotenv
 SOLANA_MOCK_MODE=false
-TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
-TSN_SOLANA_RPC_URLS=https://tsn-rpc-gateway.wasmer.app
-# Optional; use the gateway websocket path only when enabled by the deployment.
-# SOLANA_WS_URL=wss://tsn-rpc-gateway.wasmer.app/ws
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+TSN_SOLANA_RPC_URLS=https://tsn-rpc-gateway.vercel.app
+# Optional; use a direct Solana provider websocket only when subscriptions are enabled.
+# SOLANA_WS_URL=wss://<solana-provider-websocket-endpoint>
 PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 TINS_PROGRAM_ID=TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT
 KEYPAIR_PATH=./keys/cranker-keypair.json

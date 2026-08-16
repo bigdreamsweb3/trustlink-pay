@@ -8,20 +8,20 @@ for production funds, real stablecoins, or private keys that hold value.
 
 ## Live entry points
 
-| Service | Live location | What to use it for |
-| --- | --- | --- |
-| TrustLink Pay | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/) | Browser wallet and payment experience |
-| TrustLink backend | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | Authentication and application APIs |
-| TSN Receiver | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/) | Intent ingress, durable work, leases, and evidence |
-| TSN Node | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/) | Verification and Receiver work processing |
-| TSN RPC Gateway | [tsn-rpc-gateway.wasmer.app](https://tsn-rpc-gateway.wasmer.app/) | Controlled Solana RPC access |
-| TSN Protocol | Solana Devnet program account | On-chain authorization and settlement |
+| Service           | Live location                                                                 | What to use it for                                 |
+| ----------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| TrustLink Pay     | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | Browser wallet and payment experience              |
+| TrustLink backend | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | Authentication and application APIs                |
+| TSN Receiver      | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | Intent ingress, durable work, leases, and evidence |
+| TSN Node          | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | Verification and Receiver work processing          |
+| TSN RPC Gateway   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | Controlled Solana RPC access                       |
+| TSN Protocol      | Solana Devnet program account                                                 | On-chain authorization and settlement              |
 
 Use these canonical Devnet endpoints:
 
 ```text
-TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
-NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 ```
 
@@ -74,16 +74,16 @@ For a client or test harness, configure the RPC and Receiver URLs without
 embedding secrets:
 
 ```text
-TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.wasmer.app
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 ```
 
 ## Deployed Devnet program IDs
 
-| Program | Program ID |
-| --- | --- |
+| Program                | Program ID                                    |
+| ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TIN registry           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 The SDK owns canonical plan construction, commitments, source selection,
 route policy, bigint accounting, and local authorization helpers. Applications

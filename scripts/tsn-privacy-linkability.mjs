@@ -3,7 +3,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import bs58 from "bs58";
 
-const DEFAULT_RPC = "https://tsn-rpc-gateway.wasmer.app";
+const DEFAULT_RPC = "https://tsn-rpc-gateway.vercel.app";
 const KNOWN_PROTOCOL_ACCOUNTS = new Set([
   "11111111111111111111111111111111",
   "Sysvar1nstructions1111111111111111111111111",

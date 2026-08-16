@@ -123,7 +123,7 @@ export class TsnDeviceEnvelopeTinMasterSeedProvider
       context.deviceAccessProof.deviceEncryptionKeyFingerprint
     ) {
       throw new Error(
-        "TIN envelope belongs to another device; authorize this device and upgrade the TIN before loading its private balance",
+        "TIN envelope belongs to another device; this authorized device needs a key re-wrap before loading the private balance",
       );
     }
     const expectedProtectedCommitment = await protectedKeyCommitment(context.protectedKey);

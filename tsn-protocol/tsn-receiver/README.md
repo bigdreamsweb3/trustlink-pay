@@ -32,6 +32,15 @@ the queue and then waits on its wake event; it does not poll Firebase or the
 Receiver while idle. `TSN_NODE_URL`, `TSN_NODE_FALLBACK_URL`, and
 `TSN_RECEIVER_NODE_API_KEY` configure this notification path.
 
+When the optional Realtime Database wake channel is enabled, the Receiver also
+writes a control marker to `tsn/crankerWake`. The marker contains only a nonce,
+work kind, and timestamp. A Cranker opens an outbound authenticated Realtime
+Database stream, receives the marker, then calls `/api/cranker/work` to lease
+verified work from Firestore. Firestore remains authoritative for work,
+leases, idempotency, replay state, and results; the wake marker is never a
+work payload. If the channel is unavailable, Crankers use bounded fallback
+backoff rather than failing a durable submission.
+
 ## Deploy to Vercel
 
 Create a separate Vercel project from this repository. Vercel Root Directory
@@ -44,9 +53,16 @@ Required server-only variables:
 FIREBASE_PROJECT_ID
 FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
+FIREBASE_DATABASE_URL
+FIREBASE_WEB_API_KEY
 TSN_RECEIVER_NODE_API_KEY
 TSN_RECEIVER_CRANKER_API_KEY
 ```
+
+All three Firebase variables are mandatory in the hosted Receiver. The service
+does not fall back to Google application-default credentials, because a Vercel
+function has no implicit Firebase identity. If any value is missing or the
+private key has invalid newline escaping, durable state requests fail closed.
 
 Optional variables:
 
@@ -54,6 +70,13 @@ Optional variables:
 TSN_RECEIVER_COLLECTION=tsn_receiver_work
 TSN_RECEIVER_STATE_COLLECTION=tsn_receiver_state
 TSN_NODE_URL=https://<your-tsn-node-domain>
+```
+
+Deploy the Realtime Database rules from this repository after creating the
+database in the Firebase project:
+
+```bash
+firebase deploy --only database
 ```
 
 After deployment, use the generated HTTPS URL as `TSN_RECEIVER_URL` in the

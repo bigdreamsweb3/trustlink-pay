@@ -141,7 +141,7 @@ _tin_fee_config_cache_expires_at = 0.0
 
 TSN_RPC_GATEWAY_URL = clean_env(
     os.environ.get("TSN_RPC_GATEWAY_URL"),
-    "https://tsn-rpc-gateway.wasmer.app",
+    "https://tsn-rpc-gateway.vercel.app",
 ).rstrip("/")
 # All Node on-chain reads, including replay and settlement authorization
 # checks, use the single configured TrustLink RPC gateway.
@@ -3357,28 +3357,6 @@ async def close_epoch_task() -> EpochCloseResult:
     )
 
 # ── Background scheduler ──────────────────────────────────────────────────────
-async def epoch_scheduler():
-    while True:
-        try:
-            state = await read_epoch_state()
-            next_close = next_close_for_state(state)
-            sleep_for = max(1, int((next_close - datetime.now(timezone.utc)).total_seconds()))
-            await asyncio.sleep(sleep_for)
-            logger.info("Auto epoch close triggered")
-            result = await close_epoch_task()
-            logger.info(
-                "Auto epoch closed: %s; rolled_over=%d/%d",
-                result.github_commit_url,
-                result.intents_rolled_over,
-                result.claims_rolled_over,
-            )
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            logger.exception("Auto epoch close failed; retrying in 60 seconds")
-            await asyncio.sleep(60)
-
-
 async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
     kind = str(work.get("kind") or "")
     payload = work.get("payload")
@@ -3480,6 +3458,7 @@ async def receiver_verification_worker() -> None:
             _receiver_wake_event.clear()
             logger.info("TSN Receiver verifier woke; draining authenticated work")
             retry_delay = 2.0
+            consecutive_failures = 0
             while True:
                 try:
                     claimed = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
@@ -3508,10 +3487,18 @@ async def receiver_verification_worker() -> None:
                     })
                     result.raise_for_status()
                     retry_delay = 2.0
+                    consecutive_failures = 0
                 except asyncio.CancelledError:
                     raise
                 except Exception:
+                    consecutive_failures += 1
                     logger.exception("TSN Receiver verification failed; retrying while awake")
+                    if consecutive_failures >= 6:
+                        logger.error(
+                            "TSN Receiver verifier returning to sleep after %d consecutive failures",
+                            consecutive_failures,
+                        )
+                        break
                     await asyncio.sleep(retry_delay)
                     retry_delay = min(30.0, retry_delay * 2)
 
@@ -3562,7 +3549,10 @@ async def lifespan(app: FastAPI):
     _receiver_wake_event = asyncio.Event()
     # Process work that arrived while the Node was offline, then sleep again.
     _receiver_wake_event.set()
-    tasks = [asyncio.create_task(epoch_scheduler())]
+    # Do not keep a periodic scheduler alive on the hosted Node. Epoch rollover
+    # is checked at startup and on authenticated Receiver wake-ups, so an idle
+    # deployment consumes no timer/polling CPU.
+    tasks: list[asyncio.Task[Any]] = []
     if TSN_RECEIVER_URL and TSN_RECEIVER_NODE_API_KEY:
         tasks.append(asyncio.create_task(receiver_verification_worker()))
     logger.info("TSN Node started on port %d (epoch every %dh)", PORT, EPOCH_HOURS)
@@ -3589,6 +3579,12 @@ async def wake_receiver_verification() -> dict[str, Any]:
     """Wake the verifier after Receiver commit; carries no work payload."""
     if _receiver_wake_event is None:
         raise HTTPException(503, "TSN Node verifier is not ready")
+    if is_epoch_due(await read_epoch_state()):
+        try:
+            result = await close_epoch_task()
+            logger.info("Wake-triggered epoch close completed: %s", result.message)
+        except Exception:
+            logger.exception("Wake-triggered epoch close failed; work remains available")
     _receiver_wake_event.set()
     logger.info("TSN Receiver wake accepted")
     return {"ok": True, "status": "awake"}

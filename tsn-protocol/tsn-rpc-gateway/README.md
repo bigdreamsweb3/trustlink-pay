@@ -44,7 +44,7 @@ development. Server-to-server callers do not need a browser `Origin` header.
 
 The current Devnet deployment is hosted by Wasmer:
 
-[https://tsn-rpc-gateway.wasmer.app/](https://tsn-rpc-gateway.wasmer.app/)
+[https://tsn-rpc-gateway.vercel.app/](https://tsn-rpc-gateway.vercel.app/)
 
 Set the upstream provider URLs and production browser-origin allowlist only in
 Wasmer environment variables, never in Git. The deployed URL is the value for

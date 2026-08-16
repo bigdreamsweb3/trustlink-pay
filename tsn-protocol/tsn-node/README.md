@@ -53,4 +53,6 @@ When no work is available, the verifier is event-sleeping: it makes no timed
 Receiver/Firebase poll. The Receiver sends an authenticated, payload-free
 `POST /internal/wake` after committing new work. The Node then drains the
 queue and sleeps again. A single startup drain handles work that arrived while
-the Node was offline.
+the Node was offline. If the Receiver is unavailable or the service credential
+is invalid, the Node uses bounded exponential backoff and returns to the same
+event wait after six failed attempts instead of burning CPU indefinitely.

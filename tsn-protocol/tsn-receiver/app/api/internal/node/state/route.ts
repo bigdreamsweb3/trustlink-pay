@@ -9,6 +9,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(await executeStateOperation(await request.json()));
   } catch (error) {
     const message = error instanceof Error ? error.message : "STATE_ERROR";
-    return NextResponse.json({ error: message }, { status: message === "UNAUTHORIZED_SERVICE" ? 401 : 400 });
+    if (message === "UNAUTHORIZED_SERVICE") {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
+    if (/^STATE_(KEY_REQUIRED|FIELD_REQUIRED|OPERATION_INVALID)$/.test(message)) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    console.error("TSN Receiver node-state storage failure", error);
+    return NextResponse.json({ error: "STATE_STORAGE_UNAVAILABLE" }, { status: 500 });
   }
 }

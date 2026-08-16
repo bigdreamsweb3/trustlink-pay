@@ -1,6 +1,6 @@
 name: tsn-node
-app_id: da_K1EIZtMU7QVx
-owner: italianloader
+app_id: da_2yGI9trUreXM
+owner: aurionexchange
 package: .
 kind: wasmer.io/App.v0
 annotations:

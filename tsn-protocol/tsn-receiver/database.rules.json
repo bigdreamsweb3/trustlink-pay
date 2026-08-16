@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "tsn": {
+      "crankerWake": {
+        ".read": "auth != null && auth.token.role == 'cranker'",
+        ".write": false
+      }
+    }
+  }
+}

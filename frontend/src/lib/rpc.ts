@@ -1,6 +1,6 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
-export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.wasmer.app";
+export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
 const LOCAL_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
 
 function normalizeRpcGatewayUrl(value: string | undefined) {
@@ -31,9 +31,15 @@ export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
   const configured = process.env.NEXT_PUBLIC_TSN_RPC_GATEWAY_URL?.trim();
   if (configured) {
     const selected = normalizeRpcGatewayUrl(configured);
-    return selected === DEFAULT_TSN_RPC_GATEWAY_URL && configured !== DEFAULT_TSN_RPC_GATEWAY_URL
+    return selected === DEFAULT_TSN_RPC_GATEWAY_URL &&
+      configured !== DEFAULT_TSN_RPC_GATEWAY_URL
       ? [DEFAULT_TSN_RPC_GATEWAY_URL]
-      : [selected, ...(selected === LOCAL_TSN_RPC_GATEWAY_URL ? [DEFAULT_TSN_RPC_GATEWAY_URL] : [])];
+      : [
+          selected,
+          ...(selected === LOCAL_TSN_RPC_GATEWAY_URL
+            ? [DEFAULT_TSN_RPC_GATEWAY_URL]
+            : []),
+        ];
   }
   return [LOCAL_TSN_RPC_GATEWAY_URL, DEFAULT_TSN_RPC_GATEWAY_URL];
 }
@@ -70,7 +76,9 @@ export function createSolanaConnection({
           lastError = error;
         }
       }
-      throw lastError instanceof Error ? lastError : new Error("All Solana RPC endpoints failed");
+      throw lastError instanceof Error
+        ? lastError
+        : new Error("All Solana RPC endpoints failed");
     },
   });
 }

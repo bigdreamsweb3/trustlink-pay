@@ -1,8 +1,7 @@
-name: tsn-rpc-gateway
-app_id: da_nBBIbtXU7mLl
-owner: italianloader
-package: .
 kind: wasmer.io/App.v0
+name: tsn-rpc-gateway
+owner: aurionexchange
+package: .
 annotations:
   anybuild.run/config:
     commands:
@@ -19,3 +18,4 @@ annotations:
   anybuild.run/provider: node
   anybuild.run/version: 0.27.2
   wasmer.io/version: 7.2.1
+app_id: da_KN4IZtyU4JMJ

@@ -27,10 +27,16 @@ class ReceiverStore:
                     json={"operation": operation, **payload},
                 )
                 if response.status_code >= 500:
-                    last_error = RuntimeError(f"TSN Receiver state operation failed ({response.status_code})")
+                    detail = response.text[:300]
+                    last_error = RuntimeError(
+                        f"TSN Receiver state operation failed ({response.status_code}): {detail}"
+                    )
                     continue
                 if response.status_code >= 400:
-                    raise RuntimeError(f"TSN Receiver state operation failed ({response.status_code})")
+                    detail = response.text[:300]
+                    raise RuntimeError(
+                        f"TSN Receiver state operation failed ({response.status_code}): {detail}"
+                    )
                 value = response.json()
                 if not isinstance(value, dict):
                     raise RuntimeError("TSN Receiver returned an invalid state response")

@@ -24,9 +24,10 @@
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "git pull origin main",
-    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push -u origin main"
+    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push -u origin main --force "
   },
   "dependencies": {
+    "@firebase/app": "^0.14.13",
     "firebase-admin": "^13.4.0",
     "next": "^15.5.21",
     "react": "^19.1.1",

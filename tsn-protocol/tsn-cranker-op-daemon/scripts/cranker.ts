@@ -80,11 +80,6 @@ type MempoolOverview = {
   line: string;
 };
 
-type ReceiverStatusSummary = {
-  signature: string;
-  line: string;
-};
-
 type EpochRaceCacheEntry = {
   lastSeenSlot: number;
   lastRootHash?: string;
@@ -164,6 +159,120 @@ function installShutdownHandlers() {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type CrankerWakeListener = {
+  waitForWakeOrTimeout(timeoutMs: number): Promise<boolean>;
+  stop(): void;
+};
+
+function createCrankerWakeListener(crankerId: string): CrankerWakeListener | null {
+  if (process.env.TSN_CRANKER_WAKE_ENABLED !== "true") return null;
+  const databaseUrl = process.env.FIREBASE_DATABASE_URL?.trim().replace(/\/$/, "");
+  const apiKey = process.env.TSN_RECEIVER_CRANKER_API_KEY?.trim();
+  if (!databaseUrl || !apiKey) {
+    console.warn("[tsn-cranker] wake disabled; set FIREBASE_DATABASE_URL and TSN_RECEIVER_CRANKER_API_KEY");
+    return null;
+  }
+
+  const abortController = new AbortController();
+  let stopped = false;
+  let wakePending = false;
+  let waiter: ((woke: boolean) => void) | undefined;
+
+  const notify = () => {
+    wakePending = true;
+    const resolve = waiter;
+    waiter = undefined;
+    resolve?.(true);
+  };
+
+  const waitForWakeOrTimeout = (timeoutMs: number) => {
+    if (wakePending) {
+      wakePending = false;
+      return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        if (waiter) waiter = undefined;
+        resolve(false);
+      }, Math.max(1000, timeoutMs));
+      waiter = (woke) => {
+        clearTimeout(timer);
+        resolve(woke);
+      };
+    });
+  };
+
+  const requestIdToken = async () => {
+    const response = await fetch(`${receiverUrl().replace(/\/$/, "")}/api/cranker/wake-token`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": apiKey },
+      body: JSON.stringify({ crankerId }),
+      signal: abortController.signal,
+    });
+    if (!response.ok) throw new Error(`wake token request failed (${response.status})`);
+    const payload = await response.json() as { idToken?: string };
+    if (!payload.idToken) throw new Error("wake token response was empty");
+    return payload.idToken;
+  };
+
+  const consumeStream = async (idToken: string) => {
+    const response = await fetch(
+      `${databaseUrl}/tsn/crankerWake.json?auth=${encodeURIComponent(idToken)}`,
+      {
+        headers: { accept: "text/event-stream" },
+        signal: abortController.signal,
+      },
+    );
+    if (!response.ok) throw new Error(`wake stream failed (${response.status})`);
+    if (!response.body) throw new Error("wake stream returned no body");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (!stopped) {
+      const chunk = await reader.read();
+      if (chunk.done) return;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary >= 0) {
+        const event = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        if (/^event:\s*(put|patch)\s*$/m.test(event)) notify();
+        boundary = buffer.indexOf("\n\n");
+      }
+    }
+  };
+
+  void (async () => {
+    let retryMs = 1000;
+    while (!stopped) {
+      try {
+        const token = await requestIdToken();
+        await consumeStream(token);
+        retryMs = 1000;
+      } catch (error) {
+        if (stopped) break;
+        console.warn("[tsn-cranker] wake stream unavailable", {
+          error: error instanceof Error ? error.message : "unknown",
+          retryMs,
+        });
+        await sleep(retryMs);
+        retryMs = Math.min(30_000, retryMs * 2);
+      }
+    }
+  })();
+
+  console.log("[tsn-cranker] wake=outbound-realtime-database");
+  return {
+    waitForWakeOrTimeout,
+    stop() {
+      stopped = true;
+      abortController.abort();
+      waiter?.(false);
+      waiter = undefined;
+    },
+  };
 }
 
 function receiverUrl() {
@@ -1959,30 +2068,10 @@ function tinsProgramId(): PublicKey {
     : new PublicKey(DEFAULT_TIP_PROGRAM_ID);
 }
 
-async function fetchReceiverStatusSummary(): Promise<ReceiverStatusSummary | null> {
-  const baseUrl = receiverUrl().replace(/\/$/, "");
-  const response = await fetch(`${baseUrl}/api/work`, {
-    headers: { accept: "application/json" },
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`GET /api/work failed (${response.status})`);
-  const work = await response.json() as ReceiverWorkEvidence[];
-  logReceiverWorkEvidence(work);
-  const counts = work.reduce<Record<string, number>>((result, item) => {
-    const key = `${item.kind ?? "UNKNOWN"}:${item.status ?? "UNKNOWN"}`;
-    result[key] = (result[key] ?? 0) + 1;
-    return result;
-  }, {});
-  const signature = JSON.stringify(counts);
-  return { signature, line: `work=${work.length} ${JSON.stringify(counts)}` };
-}
-
 // `/api/cranker/work` is deliberately a lease endpoint: it only returns
-// VERIFIED work and never returns an already-confirmed claim. Keep a separate
-// read-only evidence sweep so an operator can still observe work completed by
-// another Cranker, or before this process started. The Receiver endpoint only
-// exposes public status/result metadata; no signed payload or secret material
-// is logged here.
+// VERIFIED work and never returns an already-confirmed claim. The Receiver
+// endpoint only exposes public status/result metadata; no signed payload or
+// secret material is logged here.
 const seenReceiverEvidence = new Map<string, string>();
 
 function logReceiverWorkEvidence(work: ReceiverWorkEvidence[]) {
@@ -2426,6 +2515,9 @@ async function main() {
   });
   const tokenDecimals = Number(process.env.TSN_CRANKER_TOKEN_DECIMALS ?? 6);
   installShutdownHandlers();
+  const wakeListener = createCrankerWakeListener(operator);
+  process.once("SIGINT", () => wakeListener?.stop());
+  process.once("SIGTERM", () => wakeListener?.stop());
 
   console.log(`[tsn-cranker] operator=${operator}`);
   console.log("[tsn-cranker] source=tsn-receiver");
@@ -2466,8 +2558,21 @@ async function main() {
   }
 
   let lastMempoolOverviewSignature = "";
-  let lastReceiverStatusSignature = "";
   const receiverBasePollMs = Math.max(500, Number(process.env.TSN_CRANKER_POLL_MS ?? 2000));
+  const receiverMaxIdlePollMs = Math.max(
+    receiverBasePollMs,
+    Number(process.env.TSN_CRANKER_MAX_IDLE_POLL_MS ?? 30000),
+  );
+  const receiverWakeFallbackMs = Math.max(
+    receiverMaxIdlePollMs,
+    Number(process.env.TSN_CRANKER_WAKE_FALLBACK_POLL_MS ?? 300000),
+  );
+  const tinOperationPollMs = Math.max(
+    5000,
+    Number(process.env.TSN_CRANKER_TIN_POLL_MS ?? 30000),
+  );
+  let receiverIdlePollMs = receiverBasePollMs;
+  let nextTinOperationPollAt = 0;
   const claimRetryAfter = new Map<string, number>();
   const logMempoolOverview = async (reason: string) => {
     try {
@@ -2495,18 +2600,21 @@ async function main() {
           supportedKinds: ["PAYMENT_INTENT", "CLAIM", "RECOVERY"],
         });
         if (!leased.work) {
-          try {
-            const status = await fetchReceiverStatusSummary();
-            if (status && status.signature !== lastReceiverStatusSignature) {
-              lastReceiverStatusSignature = status.signature;
-              console.log(`[tsn-cranker] receiver.status ${status.line}`);
-            }
-          } catch (error) {
-            console.warn("[tsn-cranker] receiver.status_failed", error);
-          }
-          console.log("[tsn-cranker] receiver.poll no-eligible-work");
+          console.log(
+            `[tsn-cranker] receiver.poll no-eligible-work; ` +
+              `sleepMs=${Math.min(receiverMaxIdlePollMs, Math.max(receiverBasePollMs, receiverIdlePollMs * 2))}`,
+          );
+          // An empty lease already queried the Receiver work collection. Do
+          // not immediately perform a second full `/api/work` sweep. Backoff
+          // while idle so an always-on Cranker does not consume Firestore
+          // reads when there is nothing to execute.
+          receiverIdlePollMs = Math.min(
+            receiverMaxIdlePollMs,
+            Math.max(receiverBasePollMs, receiverIdlePollMs * 2),
+          );
         }
         if (leased.work) {
+          receiverIdlePollMs = receiverBasePollMs;
           console.log(
             `[tsn-cranker] receiver.work_leased id=${leased.work.id} ` +
             `kind=${leased.work.kind} status=${leased.work.status} ` +
@@ -2542,19 +2650,30 @@ async function main() {
         // Node-backed TIN pipeline from the same Receiver-only loop so the
         // Cranker advances verification, fee commitment, registry submission,
         // and finalization without falling back to a local queue.
-        try {
-          await tracedProcessTinOperationWork({
-            mempool,
-            operator: operatorKeypair,
-            connection,
-          });
-        } catch (error) {
-          console.error("[tsn-cranker] tin-operation-loop-failed", error);
+        if (Date.now() >= nextTinOperationPollAt) {
+          nextTinOperationPollAt = Date.now() + tinOperationPollMs;
+          try {
+            await tracedProcessTinOperationWork({
+              mempool,
+              operator: operatorKeypair,
+              connection,
+            });
+          } catch (error) {
+            console.error("[tsn-cranker] tin-operation-loop-failed", error);
+          }
         }
-        // Receiver polling is fixed-interval. Do not exponentially sleep:
-        // work can arrive immediately after an empty lease response and the
-        // sender-signed transaction has a short Solana blockhash lifetime.
-        await sleep(receiverBasePollMs);
+        if (leased.work) {
+          await sleep(receiverBasePollMs);
+        } else if (wakeListener) {
+          const woke = await wakeListener.waitForWakeOrTimeout(receiverWakeFallbackMs);
+          if (woke) nextTinOperationPollAt = 0;
+          console.log(
+            `[tsn-cranker] receiver.${woke ? "wake-received" : "wake-fallback"} ` +
+              `waitMs=${receiverWakeFallbackMs}`,
+          );
+        } else {
+          await sleep(receiverIdlePollMs);
+        }
         continue;
       }
       /* Legacy direct-mempool claim/recovery execution is intentionally

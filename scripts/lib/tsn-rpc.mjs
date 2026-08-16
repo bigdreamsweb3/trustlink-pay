@@ -1,6 +1,6 @@
 import { Connection } from "@solana/web3.js";
 
-export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.wasmer.app";
+export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
 
 export function resolveSolanaRpcUrls(options = {}) {
   return [resolveSolanaRpcUrl(options)];

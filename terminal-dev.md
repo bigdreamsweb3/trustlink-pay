@@ -176,7 +176,7 @@ settlement - 10 usdc
 
 https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet
 
-<!--  -->
+<!-- OKAY  -->
 
 onchain receipint tx inspection
 

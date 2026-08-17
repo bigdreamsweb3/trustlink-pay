@@ -44,8 +44,8 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
 }
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
-  if (input.kind === "CLAIM") {
-    throw new Error("CLAIM work is derived after Node verification and confirmed funding");
+  if (input.kind === "CLAIM" || input.kind === "RECOVERY") {
+    throw new Error(`${input.kind} work is internal-only and must be derived after confirmed settlement`);
   }
   const work = createReceivedWork(input);
   const ref = workCollection.doc(work.id);
@@ -251,6 +251,7 @@ export async function transition(params: {
     // same Firestore transaction as the Cranker CONFIRMED transition so there
     // can never be a claim without the payment's verified evidence and result.
     let claimCreated = false;
+    let recoveryCreated = false;
     if (params.actor === "cranker" && current.kind === "PAYMENT_INTENT" && params.status === "CONFIRMED") {
       const verificationType = String(current.verification?.verificationType ?? "").trim();
       if (!verificationType) throw new Error("PAYMENT_INTENT_NOT_NODE_VERIFIED");
@@ -277,8 +278,51 @@ export async function transition(params: {
         }
       }
     }
+    // Recovery is never ingress work.  It is created only after the private
+    // payout transaction has confirmed, and carries immutable references to
+    // both the funding and payout legs.  The Node re-checks this lineage before
+    // issuing the on-chain recovery permit.
+    if (params.actor === "cranker" && current.kind === "CLAIM" && params.status === "CONFIRMED") {
+      const intentId = String(current.payload.intentId ?? "").trim();
+      const payoutSignature = String(params.evidence?.signature ?? "").trim();
+      const payoutNullifier = String(params.evidence?.payoutNullifier ?? "").trim();
+      if (!intentId || !payoutSignature || !payoutNullifier) throw new Error("RECOVERY_LINEAGE_INCOMPLETE");
+      const intentRef = workCollection.doc(intentId);
+      const intentSnapshot = await transaction.get(intentRef);
+      if (!intentSnapshot.exists) throw new Error("RECOVERY_PAYMENT_NOT_FOUND");
+      const payment = intentSnapshot.data() as ReceiverWork;
+      const verified = payment.verification?.verifiedPayload;
+      const fundingSignature = String(payment.result?.signature ?? "").trim();
+      const escrowTokenAccount = String(verified?.settlementTokenAccount ?? "").trim();
+      const tokenMintAddress = String(verified?.tokenMintAddress ?? "").trim();
+      const paymentId = String(verified?.paymentId ?? payment.payload.paymentId ?? "").trim();
+      const amount = verified?.amount;
+      if (payment.kind !== "PAYMENT_INTENT" || payment.status !== "CONFIRMED" ||
+          !fundingSignature || !escrowTokenAccount || !tokenMintAddress || !paymentId || amount == null) {
+        throw new Error("RECOVERY_PAYMENT_LINEAGE_INVALID");
+      }
+      const recoveryId = `recovery-${current.id}`;
+      const recoveryRef = workCollection.doc(recoveryId);
+      const recoverySnapshot = await transaction.get(recoveryRef);
+      const recoveryPayload = {
+        paymentId,
+        intentId,
+        claimId: current.id,
+        fundingSignature,
+        payoutSignature,
+        payoutNullifier,
+        escrowTokenAccount,
+        tokenMintAddress,
+        recoveryAmountBaseUnits: String(amount),
+        source: "receiver-confirmed-private-payout-v1",
+      };
+      if (!recoverySnapshot.exists) {
+        transaction.create(recoveryRef, createReceivedWork({ id: recoveryId, kind: "RECOVERY", payload: recoveryPayload }));
+        recoveryCreated = true;
+      }
+    }
     transaction.update(ref, patch);
-    return { work: { ...current, ...patch } as ReceiverWork, claimCreated };
+    return { work: { ...current, ...patch } as ReceiverWork, claimCreated, recoveryCreated };
   });
   // Node verification is the point at which Cranker work becomes leaseable.
   // Publish a fresh control-only wake after the Firestore transition commits;
@@ -291,6 +335,9 @@ export async function transition(params: {
     // wake first so it can verify/authorize the settlement before a Cranker
     // attempts to lease it.
     await Promise.all([wakeTsnNode("CLAIM"), publishCrankerWake("CLAIM")]);
+  }
+  if (result.recoveryCreated) {
+    await Promise.all([wakeTsnNode("RECOVERY"), publishCrankerWake("RECOVERY")]);
   }
   return result.work;
 }

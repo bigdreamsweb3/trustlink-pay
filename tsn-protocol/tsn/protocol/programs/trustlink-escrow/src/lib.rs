@@ -418,8 +418,9 @@ pub mod trustlink_escrow {
         ctx: Context<RegisterPrivateCommitment>,
         commitment_hash: [u8; 32],
         amount: u64,
+        payment_id_hash: [u8; 32],
     ) -> Result<()> {
-        tsn::instructions::register_private_commitment(ctx, commitment_hash, amount)
+        tsn::instructions::register_private_commitment(ctx, commitment_hash, amount, payment_id_hash)
     }
 
     pub fn tsn_execute_pru_spend(
@@ -450,6 +451,9 @@ pub mod trustlink_escrow {
         payout_sequence: u64,
         payout_amount: u64,
         claim_fee_amount: u64,
+        lease_id_hash: [u8; 32],
+        lease_version: u64,
+        lease_expiry_ts: i64,
         expires_at_ts: i64,
         permit_signature: [u8; 64],
     ) -> Result<()> {
@@ -459,6 +463,9 @@ pub mod trustlink_escrow {
             payout_sequence,
             payout_amount,
             claim_fee_amount,
+            lease_id_hash,
+            lease_version,
+            lease_expiry_ts,
             expires_at_ts,
             permit_signature,
         )
@@ -468,7 +475,13 @@ pub mod trustlink_escrow {
         ctx: Context<RecoverPrivateEscrow>,
         recovery_nullifier: [u8; 32],
         recovery_sequence: u64,
+        payment_id_hash: [u8; 32],
+        commitment_hash: [u8; 32],
+        payout_nullifier: [u8; 32],
         recovery_amount: u64,
+        lease_id_hash: [u8; 32],
+        lease_version: u64,
+        lease_expiry_ts: i64,
         expires_at_ts: i64,
         permit_signature: [u8; 64],
     ) -> Result<()> {
@@ -476,7 +489,13 @@ pub mod trustlink_escrow {
             ctx,
             recovery_nullifier,
             recovery_sequence,
+            payment_id_hash,
+            commitment_hash,
+            payout_nullifier,
             recovery_amount,
+            lease_id_hash,
+            lease_version,
+            lease_expiry_ts,
             expires_at_ts,
             permit_signature,
         )

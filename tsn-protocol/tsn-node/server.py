@@ -384,6 +384,9 @@ def lease_authorization_message(
         ]
     ).encode()
 
+def lease_id_hash(work_id: str) -> bytes:
+    return hashlib.sha256(work_id.encode("utf-8")).digest()
+
 def verify_lease_authorization(
     action: Literal["payout", "recovery", "pru-spend"],
     work_id: str,
@@ -503,6 +506,9 @@ def private_payout_permit_message(
     token_mint: Pubkey,
     payout_amount: int,
     claim_fee_amount: int,
+    lease_id_hash_value: bytes,
+    lease_version: int,
+    lease_expiry_ts: int,
     expires_at_ts: int,
 ) -> bytes:
     return b"".join(
@@ -518,6 +524,9 @@ def private_payout_permit_message(
             bytes(token_mint),
             struct.pack("<Q", payout_amount),
             struct.pack("<Q", claim_fee_amount),
+            lease_id_hash_value,
+            struct.pack("<Q", lease_version),
+            struct.pack("<q", lease_expiry_ts),
             struct.pack("<q", expires_at_ts),
         ]
     )
@@ -530,7 +539,13 @@ def private_recovery_permit_message(
     settlement_cranker_vault: Pubkey,
     settlement_vault_token_account: Pubkey,
     token_mint: Pubkey,
+    payment_id_hash: bytes,
+    commitment_hash: bytes,
+    payout_nullifier: bytes,
     recovery_amount: int,
+    lease_id_hash_value: bytes,
+    lease_version: int,
+    lease_expiry_ts: int,
     expires_at_ts: int,
 ) -> bytes:
     return b"".join(
@@ -545,7 +560,13 @@ def private_recovery_permit_message(
             bytes(settlement_cranker_vault),
             bytes(settlement_vault_token_account),
             bytes(token_mint),
+            payment_id_hash,
+            commitment_hash,
+            payout_nullifier,
             struct.pack("<Q", recovery_amount),
+            lease_id_hash_value,
+            struct.pack("<Q", lease_version),
+            struct.pack("<q", lease_expiry_ts),
             struct.pack("<q", expires_at_ts),
         ]
     )
@@ -786,6 +807,7 @@ def k_tin_registry_shadow() -> str: return f"{MEMPOOL_NS}:tin_registry_shadow"
 def k_tin_pru_routes() -> str: return f"{MEMPOOL_NS}:tin_pru_routes"
 def k_tin_pru_route_sessions() -> str: return f"{MEMPOOL_NS}:tin_pru_route_sessions"
 def k_tin_pru_route_nonces() -> str: return f"{MEMPOOL_NS}:tin_pru_route_nonces"
+def k_tin_operation_nonces() -> str: return f"{MEMPOOL_NS}:tin_operation_nonces"
 def k_canonical_message_nonces() -> str: return f"{MEMPOOL_NS}:canonical_message_nonces"
 def k_threshold_access_nonces() -> str: return f"{MEMPOOL_NS}:threshold_access_nonces"
 def k_tin_read_delegations() -> str: return f"{MEMPOOL_NS}:tin_read_delegations"
@@ -1721,6 +1743,9 @@ class PrivatePayoutPermitResponse(BaseModel):
     recipientWallet: str
     payoutAmountBaseUnits: str
     claimFeeAmountBaseUnits: str
+    leaseId: str
+    leaseVersion: int
+    leaseExpiresAt: str
     expiresAtTs: int
 
 class PrivateRecoveryPermitResponse(BaseModel):
@@ -1732,6 +1757,9 @@ class PrivateRecoveryPermitResponse(BaseModel):
     settlementCrankerPubkey: str
     tokenMintAddress: str
     recoveryAmountBaseUnits: str
+    leaseId: str
+    leaseVersion: int
+    leaseExpiresAt: str
     expiresAtTs: int
 
 class PruSpendPermitSelection(BaseModel):
@@ -2076,16 +2104,37 @@ def _parse_canonical_expiry(value: str) -> datetime:
         raise HTTPException(400, "signed message has expired")
     return expires_at
 
-async def _assert_canonical_nonce_unused(*, action: str, nonce: str) -> None:
-    key = hashlib.sha256(f"{action}|{nonce}".encode("utf-8")).hexdigest()
-    r = await get_mempool_store()
-    if await r.hget(k_canonical_message_nonces(), key):
-        raise HTTPException(400, "signed message nonce has already been used")
-    await r.hset(
+async def _assert_canonical_nonce_unused(
+    *, action: str, authorization_domain: str, sender_public_key: str, nonce: str
+) -> None:
+    """Atomically consume a sender authorization nonce.
+
+    The key is deliberately scoped to the signed authorization domain and
+    sender.  ``consume_once`` performs the check and insert in one transaction
+    in the Receiver state store, so concurrent Node workers cannot both accept
+    the same signed authorization.
+    """
+    if not authorization_domain or not sender_public_key or not nonce:
+        raise HTTPException(400, "signed message nonce identity is incomplete")
+    key = hashlib.sha256(
+        f"{authorization_domain}|{action}|{sender_public_key}|{nonce}".encode("utf-8")
+    ).hexdigest()
+    consumed = await (await get_mempool_store()).consume_once(
         k_canonical_message_nonces(),
         key,
-        json.dumps({"action": action, "nonce": nonce, "usedAt": datetime.now(timezone.utc).isoformat()}),
+        json.dumps(
+            {
+                "domain": authorization_domain,
+                "action": action,
+                "senderPublicKey": sender_public_key,
+                "nonce": nonce,
+                "usedAt": datetime.now(timezone.utc).isoformat(),
+            },
+            separators=(",", ":"),
+        ),
     )
+    if not consumed:
+        raise HTTPException(400, "signed message nonce has already been used")
 
 async def _verify_payment_authorization_from_signed_message(req: CreateIntentRequest) -> dict[str, Any]:
     mode = req.senderSettlementMode or ""
@@ -2148,11 +2197,17 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         submitted_expiry = datetime.fromisoformat(req.senderAuthorizationExpiresAt.replace("Z", "+00:00"))
         if submitted_expiry != expires_at:
             raise HTTPException(400, "senderAuthorizationExpiresAt differs from the signed message")
-    await _assert_canonical_nonce_unused(action=action, nonce=str(fields.get("Nonce") or ""))
+    sender_public_key = str(req.senderWallet or "").strip()
     _verify_ed25519_signature(
-        public_key=str(req.senderWallet or ""),
+        public_key=sender_public_key,
         message=(req.senderAuthorizationMessage or "").encode("utf-8"),
         signature_base64=str(req.senderAuthorizationSignature or ""),
+    )
+    await _assert_canonical_nonce_unused(
+        action=action,
+        authorization_domain=str(fields.get("Domain") or "").strip(),
+        sender_public_key=sender_public_key,
+        nonce=str(fields.get("Nonce") or "").strip(),
     )
     return {
         "recipientTin": recipient_tin,
@@ -2932,27 +2987,21 @@ async def _assert_owner_controls_tin(
 async def _assert_pru_route_nonce_unused(*, purpose: str, tin: str, owner_pubkey: str, nonce: str) -> None:
     now = int(time.time())
     nonce_key = hashlib.sha256(f"{purpose}|{tin}|{owner_pubkey}|{nonce}".encode("utf-8")).hexdigest()
-    r = await get_mempool_store()
-    for key, raw in list((await r.hgetall(k_tin_pru_route_nonces())).items()):
-        try:
-            value = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if int(value.get("expiresAt") or 0) <= now:
-            await r.hset(k_tin_pru_route_nonces(), key, json.dumps({"expired": True, "expiresAt": 0}))
-    existing = await r.hget(k_tin_pru_route_nonces(), nonce_key)
-    if existing:
-        try:
-            value = json.loads(existing)
-        except json.JSONDecodeError:
-            value = {}
-        if int(value.get("expiresAt") or 0) > now:
-            raise HTTPException(403, "nonce has already been used")
-    await r.hset(
+    consumed = await (await get_mempool_store()).consume_once(
         k_tin_pru_route_nonces(),
         nonce_key,
-        json.dumps({"tin": tin, "ownerPubkey": owner_pubkey, "purpose": purpose, "expiresAt": now + 300}),
+        json.dumps(
+            {
+                "tin": tin,
+                "ownerPubkey": owner_pubkey,
+                "purpose": purpose,
+                "expiresAt": now + 300,
+            },
+            separators=(",", ":"),
+        ),
     )
+    if not consumed:
+        raise HTTPException(403, "nonce has already been used")
 
 async def _verify_owner_pru_route_proof(
     *,
@@ -3102,6 +3151,29 @@ async def assert_tin_operation_can_enter(operation: dict[str, Any]) -> None:
             and existing.get("status") not in TIN_OPERATION_TERMINAL_STATUSES
         ):
             raise HTTPException(409, "TIN already has an active creation intent")
+
+    # The historical operation scan above preserves compatibility with state
+    # written before atomic nonce storage existed. The consume_once call is the
+    # authoritative guard for concurrent Node workers.
+    nonce_key = hashlib.sha256(
+        f"TSN_TIN_OPERATION|{operation['intentType']}|{operation['ownerPubkey']}|{operation['nonce']}".encode("utf-8")
+    ).hexdigest()
+    consumed = await (await get_mempool_store()).consume_once(
+        k_tin_operation_nonces(),
+        nonce_key,
+        json.dumps(
+            {
+                "domain": "TSN_TIN_OPERATION",
+                "intentType": operation["intentType"],
+                "ownerPubkey": operation["ownerPubkey"],
+                "nonce": operation["nonce"],
+                "consumedAt": datetime.now(timezone.utc).isoformat(),
+            },
+            separators=(",", ":"),
+        ),
+    )
+    if not consumed:
+        raise HTTPException(409, "nonce has already been used by this owner_pubkey")
 
 def recovery_priority(
     item: dict[str, Any],
@@ -3530,12 +3602,26 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             "verificationType": "TSN_CLAIM_SCHEMA",
         }
     if kind == "RECOVERY":
-        required = ("paymentId", "settlementTokenAccount", "settlementCrankerPubkey", "tokenMintAddress", "recoveryAmountBaseUnits")
+        required = ("paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature", "payoutNullifier", "escrowTokenAccount", "tokenMintAddress")
         if any(not str(payload.get(field) or "").strip() for field in required):
             raise ValueError("Recovery work is missing immutable settlement fields")
-        amount = int(str(payload["recoveryAmountBaseUnits"]))
-        if amount <= 0 or amount > 0xFFFF_FFFF_FFFF_FFFF:
-            raise ValueError("Recovery amount is invalid")
+        if payload.get("source") != "receiver-confirmed-private-payout-v1":
+            raise ValueError("Recovery work was not created by the Receiver payout transition")
+        claim = await _receiver_work_by_id(str(payload["claimId"]))
+        intent = await _receiver_work_by_id(str(payload["intentId"]))
+        if (claim.get("kind") != "CLAIM" or claim.get("status") != "CONFIRMED"
+                or str((claim.get("result") or {}).get("signature") or "") != str(payload["payoutSignature"])):
+            raise ValueError("Recovery payout lineage is not confirmed")
+        if str((claim.get("result") or {}).get("payoutNullifier") or "") != str(payload["payoutNullifier"]):
+            raise ValueError("Recovery payout nullifier does not match the confirmed payout")
+        if (intent.get("kind") != "PAYMENT_INTENT" or intent.get("status") != "CONFIRMED"
+                or str((intent.get("result") or {}).get("signature") or "") != str(payload["fundingSignature"])):
+            raise ValueError("Recovery funding lineage is not confirmed")
+        verified = (intent.get("verification") or {}).get("verifiedPayload") or {}
+        if (str(verified.get("paymentId") or intent.get("payload", {}).get("paymentId") or "") != str(payload["paymentId"])
+                or str(verified.get("settlementTokenAccount") or "") != str(payload["escrowTokenAccount"])
+                or str(verified.get("tokenMintAddress") or "") != str(payload["tokenMintAddress"])):
+            raise ValueError("Recovery immutable payment fields do not match the confirmed funding")
         return {"verifiedPayload": dict(payload), "verificationType": "TSN_RECOVERY_SCHEMA"}
     if kind == "TIN_OPERATION":
         normalized = _normalize_tin_operation_input(payload)
@@ -3705,6 +3791,14 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
         raise HTTPException(409, "Claim is not leased for settlement")
     if (claim_work.get("crankerLease") or {}).get("owner") != operator_text:
         raise HTTPException(403, "Claim lease belongs to another Cranker")
+    claim_lease = claim_work.get("crankerLease") or {}
+    lease_expires_at = parse_iso(str(claim_lease.get("expiresAt") or ""))
+    now = datetime.now(timezone.utc)
+    if lease_expires_at <= now:
+        raise HTTPException(409, "Claim lease has expired")
+    lease_version = int(claim_lease.get("version") or claim_work.get("stateVersion") or 0)
+    if lease_version <= 0:
+        raise HTTPException(422, "Claim lease version is missing")
     claim_payload = claim_work.get("payload") or {}
     intent_id = str(claim_payload.get("intentId") or "").strip()
     if not intent_id:
@@ -3771,10 +3865,15 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
         PRIVATE_PAYOUT_DOMAIN + str(verified.get("paymentId") or intent_id).encode()
         + claim_id.encode() + str(verified.get("commitmentHash") or "").encode()
     ).digest()
-    expires_at_ts = int(time.time()) + PERMIT_TTL_SECS
+    lease_expiry_ts = int(lease_expires_at.timestamp())
+    expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
+    if expires_at_ts <= int(time.time()):
+        raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
+    lease_hash = lease_id_hash(claim_id)
     signature = get_settlement_authorization_signing_key().sign(private_payout_permit_message(
         operator, nullifier, payout_sequence, get_cranker_vault_pda(operator, token_mint),
-        recipient_token_account, token_mint, payout_amount, 0, expires_at_ts,
+        recipient_token_account, token_mint, payout_amount, 0, lease_hash, lease_version,
+        lease_expiry_ts, expires_at_ts,
     )).signature
     return {
         "kind": "TSN_PAYOUT_AUTHORIZATION", "authorizationVersion": 1,
@@ -3783,6 +3882,9 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
         "payoutNullifier": nullifier.hex(), "payoutSequence": str(payout_sequence),
         "tokenMintAddress": str(token_mint), "recipientWallet": recipient_wallet,
         "payoutAmountBaseUnits": str(payout_amount), "claimFeeAmountBaseUnits": "0",
+        "escrowTokenAccount": escrow_token_account,
+        "leaseId": claim_id, "leaseVersion": lease_version,
+        "leaseExpiresAt": str(claim_lease.get("expiresAt")),
         "expiresAtTs": expires_at_ts,
         "routeCommitment": route_binding["commitment"],
     }
@@ -3799,27 +3901,89 @@ async def create_recovery_settlement_authorization(body: dict[str, Any]) -> dict
         raise HTTPException(409, "Recovery is not leased for settlement")
     if (work.get("crankerLease") or {}).get("owner") != operator_text:
         raise HTTPException(403, "Recovery lease belongs to another Cranker")
-    payload = work.get("payload") or {}
-    required = ("settlementTokenAccount", "settlementCrankerPubkey", "tokenMintAddress", "recoveryAmountBaseUnits", "paymentId")
+    recovery_lease = work.get("crankerLease") or {}
+    lease_expires_at = parse_iso(str(recovery_lease.get("expiresAt") or ""))
+    now = datetime.now(timezone.utc)
+    if lease_expires_at <= now:
+        raise HTTPException(409, "Recovery lease has expired")
+    lease_version = int(recovery_lease.get("version") or work.get("stateVersion") or 0)
+    if lease_version <= 0:
+        raise HTTPException(422, "Recovery lease version is missing")
+    try:
+        lineage = await _verify_receiver_work("RECOVERY", work.get("payload") or {})
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    payload = lineage["verifiedPayload"]
+    required = ("escrowTokenAccount", "tokenMintAddress", "paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature", "payoutNullifier")
     if any(not str(payload.get(field) or "").strip() for field in required):
         raise HTTPException(422, "Recovery work is missing immutable settlement fields")
     token_mint = Pubkey.from_string(str(payload["tokenMintAddress"]))
     operator = Pubkey.from_string(operator_text)
-    settlement_operator = Pubkey.from_string(str(payload["settlementCrankerPubkey"]))
-    escrow_token_account = Pubkey.from_string(str(payload["settlementTokenAccount"]))
-    recovery_amount = int(str(payload["recoveryAmountBaseUnits"]))
+    escrow_token_account = Pubkey.from_string(str(payload["escrowTokenAccount"]))
+    # The settlement vault is selected from the confirmed payout record, not
+    # from recovery ingress.  The on-chain PrivateEscrowRecord repeats this
+    # binding and rejects any mismatch.
+    payout_claim = await _receiver_work_by_id(str(payload["claimId"]))
+    payout_operator = str((payout_claim.get("result") or {}).get("operator") or "")
+    if not payout_operator:
+        raise HTTPException(422, "Recovery payout operator is unavailable")
+    if str((payout_claim.get("result") or {}).get("payoutNullifier") or "") != str(payload["payoutNullifier"]):
+        raise HTTPException(422, "Recovery payout nullifier does not match confirmed payout")
+    intent = await _receiver_work_by_id(str(payload["intentId"]))
+    verified_intent = (intent.get("verification") or {}).get("verifiedPayload") or {}
+    commitment_text = str(verified_intent.get("commitmentHash") or "")
+    payout_nullifier_text = str(payload["payoutNullifier"])
+    if len(commitment_text) != 64 or len(payout_nullifier_text) != 64:
+        raise HTTPException(422, "Recovery lineage hash is invalid")
+    try:
+        payment_id_hash = hashlib.sha256(str(payload["paymentId"]).encode()).digest()
+        commitment_hash = bytes.fromhex(commitment_text)
+        payout_nullifier = bytes.fromhex(payout_nullifier_text)
+    except ValueError as exc:
+        raise HTTPException(422, "Recovery lineage hash is invalid") from exc
+    settlement_operator = Pubkey.from_string(payout_operator)
+    settlement_vault = get_cranker_vault_pda(settlement_operator, token_mint)
+
+    # The payout instruction atomically returned the escrow and closed this
+    # one-time token account. Keep the mandatory recovery work item as a
+    # durable reconciliation receipt, but do not issue a second transfer.
+    account_info = await solana_rpc(
+        "getAccountInfo",
+        [str(escrow_token_account), {"encoding": "base64", "commitment": "confirmed"}],
+    )
+    if (account_info.get("result") or {}).get("value") is None:
+        return {
+            "kind": "TSN_RECOVERY_ALREADY_REIMBURSED",
+            "authorizationVersion": 1,
+            "escrowTokenAccount": str(escrow_token_account),
+            "settlementCrankerPubkey": str(settlement_operator),
+            "settlementCrankerVault": str(settlement_vault),
+            "tokenMintAddress": str(token_mint),
+            "paymentIdHash": payment_id_hash.hex(),
+            "commitmentHash": commitment_hash.hex(),
+            "payoutNullifier": payout_nullifier.hex(),
+            "payoutSignature": str(payload["payoutSignature"]),
+        }
+
+    recovery_amount, _, _ = await get_token_account_amount(str(escrow_token_account))
     if recovery_amount <= 0 or recovery_amount > 0xFFFF_FFFF_FFFF_FFFF:
-        raise HTTPException(422, "Recovery amount is invalid")
+        raise HTTPException(422, "Recovery escrow amount or mint is invalid")
     _, recovery_sequence = await read_private_replay_sequences()
     nullifier = hashlib.sha256(
         PRIVATE_RECOVERY_DOMAIN + str(payload["paymentId"]).encode() + work_id.encode()
-        + str(payload.get("commitmentHash") or "").encode()
+        + commitment_text.encode()
     ).digest()
     settlement_vault = get_cranker_vault_pda(settlement_operator, token_mint)
-    expires_at_ts = int(time.time()) + PERMIT_TTL_SECS
+    lease_expiry_ts = int(lease_expires_at.timestamp())
+    expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
+    if expires_at_ts <= int(time.time()):
+        raise HTTPException(409, "Recovery lease expires before a usable permit can be issued")
+    lease_hash = lease_id_hash(work_id)
     signature = get_settlement_authorization_signing_key().sign(private_recovery_permit_message(
         operator, nullifier, recovery_sequence, escrow_token_account, settlement_vault,
-        get_cranker_vault_token_pda(settlement_vault), token_mint, recovery_amount, expires_at_ts,
+        get_cranker_vault_token_pda(settlement_vault), token_mint, payment_id_hash,
+        commitment_hash, payout_nullifier, recovery_amount, lease_hash, lease_version,
+        lease_expiry_ts, expires_at_ts,
     )).signature
     return {
         "kind": "TSN_RECOVERY_AUTHORIZATION", "authorizationVersion": 1,
@@ -3829,6 +3993,10 @@ async def create_recovery_settlement_authorization(body: dict[str, Any]) -> dict
         "escrowTokenAccount": str(escrow_token_account),
         "settlementCrankerPubkey": str(settlement_operator),
         "tokenMintAddress": str(token_mint), "recoveryAmountBaseUnits": str(recovery_amount),
+        "paymentIdHash": payment_id_hash.hex(), "commitmentHash": commitment_hash.hex(),
+        "payoutNullifier": payout_nullifier.hex(),
+        "leaseId": work_id, "leaseVersion": lease_version,
+        "leaseExpiresAt": str(recovery_lease.get("expiresAt")),
         "expiresAtTs": expires_at_ts,
     }
 
@@ -5044,7 +5212,15 @@ async def issue_private_payout_permit(
             recipient_wallet,
             token_mint,
         )
-        expires_at_ts = int(time.time()) + PERMIT_TTL_SECS
+        lease_expires_at = parse_iso(str(claim.get("leaseExpiresAt"))) if claim.get("leaseExpiresAt") else datetime.fromtimestamp(now.timestamp() + CLAIM_PROCESSING_TIMEOUT_SECS, tz=timezone.utc)
+        if lease_expires_at <= now:
+            raise HTTPException(409, "Claim lease has expired")
+        lease_version = int(claim.get("leaseVersion") or 1)
+        lease_expiry_ts = int(lease_expires_at.timestamp())
+        expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
+        if expires_at_ts <= int(time.time()):
+            raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
+        legacy_lease_hash = lease_id_hash(claim_id)
         permit_message = private_payout_permit_message(
             operator,
             payout_nullifier,
@@ -5054,6 +5230,9 @@ async def issue_private_payout_permit(
             token_mint,
             payout_amount,
             claim_fee_amount,
+            legacy_lease_hash,
+            lease_version,
+            lease_expiry_ts,
             expires_at_ts,
         )
         permit_signature = get_settlement_authorization_signing_key().sign(permit_message).signature
@@ -5069,6 +5248,7 @@ async def issue_private_payout_permit(
                 "updatedAt": now.isoformat(),
                 "settlementReason": "Private payout lease acquired.",
                 "payoutSequence": str(payout_sequence),
+                "leaseVersion": lease_version,
                 "recipientTinHash": _sha256_hex_utf8("TSN_RECIPIENT_TIN_ROUTE", recipient_tin),
                 "recipientPruIndex": int(selected_pru.get("index") or 0),
                 "recipientPruCommitment": str(route.get("pruConfigurationHash") or ""),
@@ -5085,6 +5265,9 @@ async def issue_private_payout_permit(
             recipientWallet=str(recipient_wallet),
             payoutAmountBaseUnits=str(payout_amount),
             claimFeeAmountBaseUnits=str(claim_fee_amount),
+            leaseId=claim_id,
+            leaseVersion=lease_version,
+            leaseExpiresAt=str(claim.get("leaseExpiresAt")),
             expiresAtTs=expires_at_ts,
         )
 
@@ -5097,6 +5280,9 @@ async def issue_private_recovery_permit(
     recovery_id: str = ApiPath(...),
     body: SignedLeasePermitRequest = ...,
 ) -> PrivateRecoveryPermitResponse:
+    # Superseded by Receiver-created recovery work.  Keeping this route alive
+    # would let the legacy queue bypass the confirmed-payout lineage checks.
+    raise HTTPException(410, "Legacy recovery permits are disabled; use Receiver recovery work")
     operator = verify_lease_authorization(
         "recovery",
         recovery_id,
@@ -5201,7 +5387,15 @@ async def issue_private_recovery_permit(
         settlement_vault_token_account = get_cranker_vault_token_pda(
             settlement_cranker_vault
         )
-        expires_at_ts = int(time.time()) + PERMIT_TTL_SECS
+        lease_expires_at = parse_iso(str(recovery.get("leaseExpiresAt"))) if recovery.get("leaseExpiresAt") else datetime.fromtimestamp(now.timestamp() + RECOVERY_LEASE_SECS, tz=timezone.utc)
+        if lease_expires_at <= now:
+            raise HTTPException(409, "Recovery lease has expired")
+        lease_version = int(recovery.get("leaseVersion") or 1)
+        lease_expiry_ts = int(lease_expires_at.timestamp())
+        expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
+        if expires_at_ts <= int(time.time()):
+            raise HTTPException(409, "Recovery lease expires before a usable permit can be issued")
+        legacy_lease_hash = lease_id_hash(recovery_id)
         permit_message = private_recovery_permit_message(
             operator,
             recovery_nullifier,
@@ -5211,6 +5405,9 @@ async def issue_private_recovery_permit(
             settlement_vault_token_account,
             token_mint,
             recovery_amount,
+            legacy_lease_hash,
+            lease_version,
+            lease_expiry_ts,
             expires_at_ts,
         )
         permit_signature = get_settlement_authorization_signing_key().sign(permit_message).signature
@@ -5239,6 +5436,9 @@ async def issue_private_recovery_permit(
             settlementCrankerPubkey=str(settlement_cranker_operator),
             tokenMintAddress=str(token_mint),
             recoveryAmountBaseUnits=str(recovery_amount),
+            leaseId=recovery_id,
+            leaseVersion=lease_version,
+            leaseExpiresAt=str(recovery.get("leaseExpiresAt")),
             expiresAtTs=expires_at_ts,
         )
 

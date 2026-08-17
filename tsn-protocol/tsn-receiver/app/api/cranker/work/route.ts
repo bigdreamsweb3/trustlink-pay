@@ -16,6 +16,36 @@ function errorStatus(error: unknown) {
   return 409;
 }
 
+const CRANKER_PAYMENT_FIELDS = new Set([
+  "paymentId", "intentSeedHash", "recipientHash", "recipientRouteCommitment", "recipientRouteVersion",
+  "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet",
+  "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
+  "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt", "senderFeeAmount",
+  "senderSignedSettlementTransaction", "senderSignedSettlementFeePayer", "senderSettlementMode",
+  "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
+  "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "commitmentRecord",
+  "senderTokenAccount", "settlementVault", "settlementTokenAccount", "settlementPaymentIntentId",
+  "transferId", "commitmentHash", "settlementEpoch", "encryptedSettlementToken", "routeAuthorization", "source",
+]);
+
+function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
+  if (!work) return null;
+  const verifiedPayload = work.kind === "PAYMENT_INTENT" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
+    ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>).filter(([key]) => CRANKER_PAYMENT_FIELDS.has(key)))
+    : undefined;
+  return {
+    id: work.id, kind: work.kind, status: work.status, stateVersion: work.stateVersion,
+    payload: {},
+    receivedAt: work.receivedAt, updatedAt: work.updatedAt, crankerLease: work.crankerLease ?? null,
+    verification: work.verification ? {
+      verificationType: work.verification.verificationType ?? null,
+      ...(verifiedPayload ? { verifiedPayload } : {}),
+    } : null,
+    authorization: work.authorization ?? null,
+    result: work.result ?? null,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     requireService(request, "cranker");
@@ -54,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
     // The ingress payload may contain private routing identifiers required by
     // the Node. Crankers receive only the Node-verified, privacy-minimized view.
-    return NextResponse.json({ work: work ? { ...work, payload: {} } : null });
+    return NextResponse.json({ work: crankerWorkView(work) });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: errorStatus(error) });
   }

@@ -7,14 +7,14 @@ use anchor_spl::token::{self, CloseAccount, Token, TokenAccount, Transfer};
 
 use crate::tsn::{
     constants::{
-        TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS,
+        TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS, TSN_PRIVATE_ESCROW_RECORD_SEED,
         TSN_PRIVATE_REPLAY_REGISTRY_SEED, TSN_PRIVATE_SETTLEMENT_CONFIG_SEED,
         TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivateEscrowRecovered,
     state::{
-        Cranker, CrankerVault, MotherEscrow, PrivateReplayRegistry,
+        Cranker, CrankerVault, MotherEscrow, PrivateEscrowRecord, PrivateReplayRegistry,
         PrivateSettlementConfig,
     },
     utils::{compute_cranker_dna, private_recovery_message, verify_ed25519_permit},
@@ -66,6 +66,16 @@ pub struct RecoverPrivateEscrow<'info> {
 
     #[account(
         mut,
+        seeds = [TSN_PRIVATE_ESCROW_RECORD_SEED, escrow_token_account.key().as_ref()],
+        bump = private_escrow_record.bump,
+        has_one = mother_escrow,
+        constraint = private_escrow_record.escrow_token_account == escrow_token_account.key(),
+        constraint = private_escrow_record.token_mint == escrow_token_account.mint
+    )]
+    pub private_escrow_record: Box<Account<'info, PrivateEscrowRecord>>,
+
+    #[account(
+        mut,
         has_one = mother_escrow,
         constraint = settlement_cranker_vault.token_mint == escrow_token_account.mint
             @ TsnError::InvalidRecoveryDestination,
@@ -97,7 +107,13 @@ pub fn recover_private_escrow(
     ctx: Context<RecoverPrivateEscrow>,
     recovery_nullifier: [u8; 32],
     recovery_sequence: u64,
+    payment_id_hash: [u8; 32],
+    commitment_hash: [u8; 32],
+    payout_nullifier: [u8; 32],
     recovery_amount: u64,
+    lease_id_hash: [u8; 32],
+    lease_version: u64,
+    lease_expiry_ts: i64,
     expires_at_ts: i64,
     permit_signature: [u8; 64],
 ) -> Result<()> {
@@ -107,8 +123,21 @@ pub fn recover_private_escrow(
     );
     let now = Clock::get()?.unix_timestamp;
     require!(now <= expires_at_ts, TsnError::PermitExpired);
+    require!(now <= lease_expiry_ts && expires_at_ts <= lease_expiry_ts, TsnError::PermitExpired);
     require!(
         recovery_amount > 0 && ctx.accounts.escrow_token_account.amount == recovery_amount,
+        TsnError::InvalidPrivateRecoveryAmount
+    );
+    require!(
+        ctx.accounts.private_escrow_record.paid
+            && !ctx.accounts.private_escrow_record.recovered
+            && ctx.accounts.private_escrow_record.amount == recovery_amount,
+        TsnError::InvalidPrivateRecoveryAmount
+    );
+    require!(
+        ctx.accounts.private_escrow_record.payment_id_hash == payment_id_hash
+            && ctx.accounts.private_escrow_record.commitment_hash == commitment_hash
+            && ctx.accounts.private_escrow_record.payout_nullifier == payout_nullifier,
         TsnError::InvalidPrivateRecoveryAmount
     );
     require!(
@@ -130,6 +159,11 @@ pub fn recover_private_escrow(
         ctx.accounts.recovery_cranker.dna_hash == expected_dna,
         TsnError::CrankerDnaMismatch
     );
+    require_keys_eq!(
+        ctx.accounts.private_escrow_record.settlement_cranker,
+        ctx.accounts.settlement_cranker_vault.cranker,
+        TsnError::InvalidRecoveryDestination
+    );
 
     let message = private_recovery_message(
         ctx.program_id,
@@ -141,7 +175,13 @@ pub fn recover_private_escrow(
         &ctx.accounts.settlement_cranker_vault.key(),
         &ctx.accounts.settlement_vault_token_account.key(),
         &ctx.accounts.escrow_token_account.mint,
+        &payment_id_hash,
+        &commitment_hash,
+        &payout_nullifier,
         recovery_amount,
+        &lease_id_hash,
+        lease_version,
+        lease_expiry_ts,
         expires_at_ts,
     );
     verify_ed25519_permit(
@@ -187,6 +227,7 @@ pub fn recover_private_escrow(
         .checked_add(recovery_amount)
         .ok_or(TsnError::FeeSplitOverflow)?;
     ctx.accounts.recovery_cranker.last_active_ts = now;
+    ctx.accounts.private_escrow_record.recovered = true;
 
     ctx.accounts.private_replay_registry.next_recovery_sequence = recovery_sequence
         .checked_add(1)

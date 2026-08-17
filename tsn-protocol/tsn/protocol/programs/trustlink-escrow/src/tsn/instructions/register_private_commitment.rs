@@ -13,12 +13,12 @@ use anchor_spl::token::{
 
 use crate::tsn::{
     constants::{
-        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS,
+        TSN_CRANKER_SEED, TSN_PAYMENT_INTENT_GAS_REIMBURSEMENT_LAMPORTS, TSN_PRIVATE_ESCROW_RECORD_SEED,
         TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivateCommitmentRegistered,
-    state::{Cranker, MotherEscrow},
+    state::{Cranker, MotherEscrow, PrivateEscrowRecord},
     utils::compute_cranker_dna,
 };
 
@@ -68,6 +68,15 @@ pub struct RegisterPrivateCommitment<'info> {
     #[account(mut)]
     pub escrow_token_account: UncheckedAccount<'info>,
 
+    #[account(
+        init,
+        payer = cranker_operator,
+        space = PrivateEscrowRecord::SPACE,
+        seeds = [TSN_PRIVATE_ESCROW_RECORD_SEED, escrow_token_account.key().as_ref()],
+        bump
+    )]
+    pub private_escrow_record: Box<Account<'info, PrivateEscrowRecord>>,
+
     /// CHECK: Protocol SOL reservoir pays escrow account rent and reimburses gas.
     #[account(mut, seeds = [TSN_VERIFIER_SEED], bump)]
     pub verifier_pda: UncheckedAccount<'info>,
@@ -80,6 +89,7 @@ pub fn register_private_commitment(
     ctx: Context<RegisterPrivateCommitment>,
     commitment_hash: [u8; 32],
     amount: u64,
+    payment_id_hash: [u8; 32],
 ) -> Result<()> {
     require!(
         commitment_hash != [0; 32] && amount > 0,
@@ -177,6 +187,18 @@ pub fn register_private_commitment(
         .checked_add(1)
         .ok_or(TsnError::CrankerClaimCreditOverflow)?;
     ctx.accounts.cranker.last_active_ts = now;
+    let record = &mut ctx.accounts.private_escrow_record;
+    record.mother_escrow = ctx.accounts.mother_escrow.key();
+    record.escrow_token_account = ctx.accounts.escrow_token_account.key();
+    record.token_mint = ctx.accounts.token_mint.key();
+    record.payment_id_hash = payment_id_hash;
+    record.commitment_hash = commitment_hash;
+    record.amount = amount;
+    record.settlement_cranker = Pubkey::default();
+    record.payout_nullifier = [0; 32];
+    record.paid = false;
+    record.recovered = false;
+    record.bump = ctx.bumps.private_escrow_record;
 
     emit!(TsnPrivateCommitmentRegistered {
         commitment_hash,

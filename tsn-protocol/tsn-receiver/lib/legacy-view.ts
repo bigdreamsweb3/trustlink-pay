@@ -1,4 +1,4 @@
-import type { ReceiverWork } from "./work-contract";
+import { publicCoordinationPayload, type ReceiverWork } from "./work-contract";
 
 const status = (work: ReceiverWork) => {
   if (["RECEIVED", "NODE_VERIFYING", "VERIFIED", "CRANKER_LEASED"].includes(work.status)) return "pending";
@@ -8,9 +8,8 @@ const status = (work: ReceiverWork) => {
 };
 
 export function legacyIntent(work: ReceiverWork) {
-  const payload = work.verification?.verifiedPayload ?? work.payload;
   return {
-    ...payload,
+    ...publicCoordinationPayload(work),
     id: work.id,
     status: status(work),
     postedAt: work.receivedAt,

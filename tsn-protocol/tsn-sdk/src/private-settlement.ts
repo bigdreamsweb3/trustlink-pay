@@ -34,6 +34,7 @@ const PROGRAM_ID = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
 const PRIVATE_CONFIG_SEED = utf8ToBytes("tsn_private_config");
 const PRIVATE_REPLAY_REGISTRY_SEED = utf8ToBytes("tsn_private_replay");
 const SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
+const PRIVATE_ESCROW_RECORD_SEED = utf8ToBytes("tsn_private_escrow_record");
 const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_V2");
 const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V2");
 const MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1";
@@ -106,6 +107,13 @@ function concatBytes(parts: Uint8Array[]) {
     offset += part.length;
   }
   return output;
+}
+
+export function getTsnPrivateEscrowRecordPda(escrowTokenAccount: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [PRIVATE_ESCROW_RECORD_SEED, escrowTokenAccount.toBytes()],
+    PROGRAM_ID,
+  )[0];
 }
 
 function encodeU64(value: bigint) {
@@ -195,9 +203,13 @@ export function createPrivatePayoutPermitMessage(params: {
   tokenMint: PublicKey;
   payoutAmount: bigint;
   claimFeeAmount: bigint;
+  leaseIdHash: Uint8Array;
+  leaseVersion: bigint;
+  leaseExpiryTs: bigint;
   expiresAtTs: bigint;
 }) {
   assertBytes32(params.payoutNullifier, "payout nullifier");
+  assertBytes32(params.leaseIdHash, "lease id hash");
   return concatBytes([
     PRIVATE_PAYOUT_DOMAIN,
     PROGRAM_ID.toBytes(),
@@ -210,6 +222,9 @@ export function createPrivatePayoutPermitMessage(params: {
     params.tokenMint.toBytes(),
     encodeU64(params.payoutAmount),
     encodeU64(params.claimFeeAmount),
+    params.leaseIdHash,
+    encodeU64(params.leaseVersion),
+    encodeI64(params.leaseExpiryTs),
     encodeI64(params.expiresAtTs),
   ]);
 }
@@ -222,10 +237,20 @@ export function createPrivateRecoveryPermitMessage(params: {
   settlementCrankerVault: PublicKey;
   settlementVaultTokenAccount: PublicKey;
   tokenMint: PublicKey;
+  paymentIdHash: Uint8Array;
+  commitmentHash: Uint8Array;
+  payoutNullifier: Uint8Array;
   recoveryAmount: bigint;
+  leaseIdHash: Uint8Array;
+  leaseVersion: bigint;
+  leaseExpiryTs: bigint;
   expiresAtTs: bigint;
 }) {
   assertBytes32(params.recoveryNullifier, "recovery nullifier");
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentHash, "commitment hash");
+  assertBytes32(params.payoutNullifier, "payout nullifier");
+  assertBytes32(params.leaseIdHash, "lease id hash");
   return concatBytes([
     PRIVATE_RECOVERY_DOMAIN,
     PROGRAM_ID.toBytes(),
@@ -237,7 +262,13 @@ export function createPrivateRecoveryPermitMessage(params: {
     params.settlementCrankerVault.toBytes(),
     params.settlementVaultTokenAccount.toBytes(),
     params.tokenMint.toBytes(),
+    params.paymentIdHash,
+    params.commitmentHash,
+    params.payoutNullifier,
     encodeU64(params.recoveryAmount),
+    params.leaseIdHash,
+    encodeU64(params.leaseVersion),
+    encodeI64(params.leaseExpiryTs),
     encodeI64(params.expiresAtTs),
   ]);
 }
@@ -706,9 +737,13 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   payoutNullifier: Uint8Array;
   payoutSequence: bigint;
   tokenMint: PublicKey;
+  escrowTokenAccount: PublicKey;
   recipientWallet: PublicKey;
   payoutAmount: bigint;
   claimFeeAmount?: bigint;
+  leaseIdHash: Uint8Array;
+  leaseVersion: bigint;
+  leaseExpiryTs: bigint;
   expiresAtTs: bigint;
   rpcUrl?: string;
 }) {
@@ -736,6 +771,7 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     params.recipientWallet,
   );
   const verifierPda = getTsnVerifierPda();
+  const privateEscrowRecord = getTsnPrivateEscrowRecordPda(params.escrowTokenAccount);
   const message = createPrivatePayoutPermitMessage({
     operator: params.operator.publicKey,
     payoutNullifier: params.payoutNullifier,
@@ -745,6 +781,9 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     tokenMint: params.tokenMint,
     payoutAmount: params.payoutAmount,
     claimFeeAmount: params.claimFeeAmount ?? 0n,
+    leaseIdHash: params.leaseIdHash,
+    leaseVersion: params.leaseVersion,
+    leaseExpiryTs: params.leaseExpiryTs,
     expiresAtTs: params.expiresAtTs,
   });
   const verifyInstruction = Ed25519Program.createInstructionWithPublicKey({
@@ -760,6 +799,9 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       { pubkey: cranker, isSigner: false, isWritable: true },
       { pubkey: config, isSigner: false, isWritable: false },
       { pubkey: replayRegistry, isSigner: false, isWritable: true },
+      { pubkey: privateEscrowRecord, isSigner: false, isWritable: true },
+      { pubkey: getTsnSharedEscrowAuthorityPda(), isSigner: false, isWritable: false },
+      { pubkey: params.escrowTokenAccount, isSigner: false, isWritable: true },
       { pubkey: crankerVault, isSigner: false, isWritable: true },
       { pubkey: vaultAuthority, isSigner: false, isWritable: false },
       { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
@@ -787,6 +829,9 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
         encodeU64(params.payoutSequence),
         encodeU64(params.payoutAmount),
         encodeU64(params.claimFeeAmount ?? 0n),
+        params.leaseIdHash,
+        encodeU64(params.leaseVersion),
+        encodeI64(params.leaseExpiryTs),
         encodeI64(params.expiresAtTs),
         params.permitSignature,
       ]),
@@ -812,14 +857,23 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
   permitSignature: Uint8Array;
   recoveryNullifier: Uint8Array;
   recoverySequence: bigint;
+  paymentIdHash: Uint8Array;
+  commitmentHash: Uint8Array;
+  payoutNullifier: Uint8Array;
   escrowTokenAccount: PublicKey;
   settlementCrankerOperator: PublicKey;
   tokenMint: PublicKey;
   recoveryAmount: bigint;
+  leaseIdHash: Uint8Array;
+  leaseVersion: bigint;
+  leaseExpiryTs: bigint;
   expiresAtTs: bigint;
   rpcUrl?: string;
 }) {
   assertBytes32(params.recoveryNullifier, "recovery nullifier");
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentHash, "commitment hash");
+  assertBytes32(params.payoutNullifier, "payout nullifier");
   assertSignature(params.permitSignature);
   const connection = new Connection(
     params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
@@ -845,6 +899,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
     crankerVault: settlementCrankerVault,
   });
   const verifierPda = getTsnVerifierPda();
+  const privateEscrowRecord = getTsnPrivateEscrowRecordPda(params.escrowTokenAccount);
   const message = createPrivateRecoveryPermitMessage({
     operator: params.operator.publicKey,
     recoveryNullifier: params.recoveryNullifier,
@@ -853,7 +908,13 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
     settlementCrankerVault,
     settlementVaultTokenAccount,
     tokenMint: params.tokenMint,
+    paymentIdHash: params.paymentIdHash,
+    commitmentHash: params.commitmentHash,
+    payoutNullifier: params.payoutNullifier,
     recoveryAmount: params.recoveryAmount,
+    leaseIdHash: params.leaseIdHash,
+    leaseVersion: params.leaseVersion,
+    leaseExpiryTs: params.leaseExpiryTs,
     expiresAtTs: params.expiresAtTs,
   });
   const verifyInstruction = Ed25519Program.createInstructionWithPublicKey({
@@ -871,6 +932,7 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
       { pubkey: replayRegistry, isSigner: false, isWritable: true },
       { pubkey: sharedEscrowAuthority, isSigner: false, isWritable: false },
       { pubkey: params.escrowTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: privateEscrowRecord, isSigner: false, isWritable: true },
       { pubkey: settlementCrankerVault, isSigner: false, isWritable: true },
       {
         pubkey: settlementVaultTokenAccount,
@@ -891,7 +953,13 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
         instructionDiscriminator("tsn_recover_private_escrow"),
         params.recoveryNullifier,
         encodeU64(params.recoverySequence),
+        params.paymentIdHash,
+        params.commitmentHash,
+        params.payoutNullifier,
         encodeU64(params.recoveryAmount),
+        params.leaseIdHash,
+        encodeU64(params.leaseVersion),
+        encodeI64(params.leaseExpiryTs),
         encodeI64(params.expiresAtTs),
         params.permitSignature,
       ]),

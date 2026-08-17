@@ -61,6 +61,7 @@ FIREBASE_DATABASE_URL
 FIREBASE_WEB_API_KEY
 TSN_RECEIVER_NODE_API_KEY
 TSN_RECEIVER_CRANKER_API_KEY
+TSN_RECEIVER_NODE_PAYLOAD_KEY
 ```
 
 All three Firebase variables are mandatory in the hosted Receiver. The service

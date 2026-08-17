@@ -72,6 +72,9 @@ pub fn private_payout_message(
     token_mint: &Pubkey,
     payout_amount: u64,
     claim_fee_amount: u64,
+    lease_id_hash: &[u8; 32],
+    lease_version: u64,
+    lease_expiry_ts: i64,
     expires_at_ts: i64,
 ) -> Vec<u8> {
     [
@@ -86,6 +89,9 @@ pub fn private_payout_message(
         token_mint.as_ref(),
         &payout_amount.to_le_bytes(),
         &claim_fee_amount.to_le_bytes(),
+        lease_id_hash,
+        &lease_version.to_le_bytes(),
+        &lease_expiry_ts.to_le_bytes(),
         &expires_at_ts.to_le_bytes(),
     ]
     .concat()
@@ -101,7 +107,13 @@ pub fn private_recovery_message(
     settlement_cranker_vault: &Pubkey,
     settlement_vault_token_account: &Pubkey,
     token_mint: &Pubkey,
+    payment_id_hash: &[u8; 32],
+    commitment_hash: &[u8; 32],
+    payout_nullifier: &[u8; 32],
     recovery_amount: u64,
+    lease_id_hash: &[u8; 32],
+    lease_version: u64,
+    lease_expiry_ts: i64,
     expires_at_ts: i64,
 ) -> Vec<u8> {
     [
@@ -115,7 +127,13 @@ pub fn private_recovery_message(
         settlement_cranker_vault.as_ref(),
         settlement_vault_token_account.as_ref(),
         token_mint.as_ref(),
+        payment_id_hash,
+        commitment_hash,
+        payout_nullifier,
         &recovery_amount.to_le_bytes(),
+        lease_id_hash,
+        &lease_version.to_le_bytes(),
+        &lease_expiry_ts.to_le_bytes(),
         &expires_at_ts.to_le_bytes(),
     ]
     .concat()

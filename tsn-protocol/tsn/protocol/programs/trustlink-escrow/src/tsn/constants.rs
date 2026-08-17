@@ -12,6 +12,7 @@ pub const TSN_PAYMENT_VAULT_SEED: &[u8] = b"vault";
 pub const TSN_PRIVATE_SETTLEMENT_CONFIG_SEED: &[u8] = b"tsn_private_config";
 pub const TSN_PRIVATE_REPLAY_REGISTRY_SEED: &[u8] = b"tsn_private_replay";
 pub const TSN_SHARED_ESCROW_AUTHORITY_SEED: &[u8] = b"tsn_shared_escrow";
+pub const TSN_PRIVATE_ESCROW_RECORD_SEED: &[u8] = b"tsn_private_escrow_record";
 pub const TSN_PRU_SPEND_GUARD_SEED: &[u8] = b"pru_spend_guard";
 pub const TSN_TRUSTLINK_INTENT_DOMAIN_TAG: &[u8] = b"TSN_TRUSTLINK_INTENT_V1";
 pub const TSN_PRU_SPEND_GUARD_DOMAIN_TAG: &[u8] = b"TRUSTLINK_PRU_SPEND_GUARD_V1";

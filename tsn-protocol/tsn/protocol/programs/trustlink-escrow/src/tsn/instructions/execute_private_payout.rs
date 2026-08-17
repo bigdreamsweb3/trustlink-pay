@@ -5,20 +5,20 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::{self, get_associated_token_address, AssociatedToken},
-    token::{self, Mint, Token, TokenAccount, Transfer},
+    token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer},
 };
 
 use crate::tsn::{
     constants::{
         TSN_CRANKER_VAULT_AUTHORITY_SEED,
         TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS,
-        TSN_PRIVATE_REPLAY_REGISTRY_SEED, TSN_PRIVATE_SETTLEMENT_CONFIG_SEED,
-        TSN_VERIFIER_SEED,
+        TSN_PRIVATE_ESCROW_RECORD_SEED, TSN_PRIVATE_REPLAY_REGISTRY_SEED, TSN_PRIVATE_SETTLEMENT_CONFIG_SEED,
+        TSN_SHARED_ESCROW_AUTHORITY_SEED, TSN_VERIFIER_SEED,
     },
     errors::TsnError,
     events::TsnPrivatePayoutExecuted,
     state::{
-        Cranker, CrankerVault, MotherEscrow, PrivateReplayRegistry,
+        Cranker, CrankerVault, MotherEscrow, PrivateEscrowRecord, PrivateReplayRegistry,
         PrivateSettlementConfig,
     },
     utils::{compute_cranker_dna, private_payout_message, verify_ed25519_permit},
@@ -53,6 +53,31 @@ pub struct ExecutePrivatePayout<'info> {
         has_one = mother_escrow
     )]
     pub private_replay_registry: Box<Account<'info, PrivateReplayRegistry>>,
+
+    #[account(
+        mut,
+        seeds = [TSN_PRIVATE_ESCROW_RECORD_SEED, escrow_token_account.key().as_ref()],
+        bump = private_escrow_record.bump,
+        has_one = mother_escrow,
+        constraint = private_escrow_record.escrow_token_account == escrow_token_account.key(),
+        constraint = private_escrow_record.token_mint == token_mint.key()
+    )]
+    pub private_escrow_record: Box<Account<'info, PrivateEscrowRecord>>,
+
+    /// CHECK: Shared authority for one-time escrow token accounts.
+    #[account(
+        seeds = [TSN_SHARED_ESCROW_AUTHORITY_SEED, mother_escrow.key().as_ref()],
+        bump
+    )]
+    pub shared_escrow_authority: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        constraint = escrow_token_account.owner == shared_escrow_authority.key()
+            @ TsnError::InvalidPrivateEscrowTokenAccount,
+        constraint = escrow_token_account.mint == token_mint.key()
+    )]
+    pub escrow_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -108,6 +133,9 @@ pub fn execute_private_payout(
     payout_sequence: u64,
     payout_amount: u64,
     claim_fee_amount: u64,
+    lease_id_hash: [u8; 32],
+    lease_version: u64,
+    lease_expiry_ts: i64,
     expires_at_ts: i64,
     permit_signature: [u8; 64],
 ) -> Result<()> {
@@ -117,7 +145,14 @@ pub fn execute_private_payout(
     );
     let now = Clock::get()?.unix_timestamp;
     require!(now <= expires_at_ts, TsnError::PermitExpired);
+    require!(now <= lease_expiry_ts && expires_at_ts <= lease_expiry_ts, TsnError::PermitExpired);
     require!(payout_amount > 0, TsnError::InvalidPayoutAmount);
+    require!(!ctx.accounts.private_escrow_record.paid, TsnError::InvalidVaultSettlementState);
+    require!(
+        ctx.accounts.private_escrow_record.amount == payout_amount
+            && ctx.accounts.escrow_token_account.amount == payout_amount,
+        TsnError::InvalidPayoutAmount
+    );
     require!(
         payout_sequence == ctx.accounts.private_replay_registry.next_payout_sequence,
         TsnError::InvalidPrivateReplaySequence
@@ -165,6 +200,9 @@ pub fn execute_private_payout(
         &ctx.accounts.cranker_vault.token_mint,
         payout_amount,
         claim_fee_amount,
+        &lease_id_hash,
+        lease_version,
+        lease_expiry_ts,
         expires_at_ts,
     );
     verify_ed25519_permit(
@@ -233,12 +271,50 @@ pub fn execute_private_payout(
         payout_amount,
     )?;
 
+    // Reimburse the exact funded amount and close the one-time escrow in this
+    // same transaction. A successful payout can therefore never strand sender
+    // liquidity while waiting for an off-chain recovery worker.
+    let mother_escrow_key = ctx.accounts.mother_escrow.key();
+    let shared_authority_bump = ctx.bumps.shared_escrow_authority;
+    let shared_signer_seeds: &[&[&[u8]]] = &[&[
+        TSN_SHARED_ESCROW_AUTHORITY_SEED,
+        mother_escrow_key.as_ref(),
+        &[shared_authority_bump],
+    ]];
+    token::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.escrow_token_account.to_account_info(),
+                to: ctx.accounts.vault_token_account.to_account_info(),
+                authority: ctx.accounts.shared_escrow_authority.to_account_info(),
+            },
+            shared_signer_seeds,
+        ),
+        payout_amount,
+    )?;
+    token::close_account(CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        CloseAccount {
+            account: ctx.accounts.escrow_token_account.to_account_info(),
+            destination: ctx.accounts.verifier_pda.to_account_info(),
+            authority: ctx.accounts.shared_escrow_authority.to_account_info(),
+        },
+        shared_signer_seeds,
+    ))?;
+
     ctx.accounts.cranker_vault.total_liquidity = ctx
         .accounts
         .cranker_vault
         .total_liquidity
         .checked_sub(payout_amount)
         .ok_or(TsnError::InsufficientCrankerVaultLiquidity)?;
+    ctx.accounts.cranker_vault.total_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .total_liquidity
+        .checked_add(payout_amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
     ctx.accounts.cranker_vault.total_rewards_accrued = ctx
         .accounts
         .cranker_vault
@@ -249,6 +325,10 @@ pub fn execute_private_payout(
     ctx.accounts.cranker.total_claims = ctx.accounts.cranker.total_claims.saturating_add(1);
     ctx.accounts.cranker.total_executes = ctx.accounts.cranker.total_executes.saturating_add(1);
     ctx.accounts.cranker.last_active_ts = now;
+    ctx.accounts.private_escrow_record.paid = true;
+    ctx.accounts.private_escrow_record.recovered = true;
+    ctx.accounts.private_escrow_record.settlement_cranker = ctx.accounts.cranker.key();
+    ctx.accounts.private_escrow_record.payout_nullifier = payout_nullifier;
 
     ctx.accounts.private_replay_registry.next_payout_sequence = payout_sequence
         .checked_add(1)

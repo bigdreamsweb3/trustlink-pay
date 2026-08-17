@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireService } from "../../../../../lib/auth";
-import { getWork, leaseForNode, transition } from "../../../../../lib/store";
+import { getWorkForNode, leaseForNode, transition } from "../../../../../lib/store";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     requireService(request, "node");
     const id = request.nextUrl.searchParams.get("id");
     if (!id) throw new Error("id is required");
-    const work = await getWork(id);
+    const work = await getWorkForNode(id);
     return work ? NextResponse.json({ work }) : NextResponse.json({ error: "WORK_NOT_FOUND" }, { status: 404 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "ERROR";

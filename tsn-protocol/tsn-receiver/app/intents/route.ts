@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireService } from "../../lib/auth";
 import { legacyIntent } from "../../lib/legacy-view";
 import { listKind, receive } from "../../lib/store";
+import { assertPaymentIntentIngress } from "../../lib/work-contract";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -9,6 +10,7 @@ export async function POST(request: NextRequest) {
     const payload = await request.json() as Record<string, unknown>;
     const id = String(payload.paymentId ?? "");
     if (!id) return NextResponse.json({ error: "paymentId is required" }, { status: 422 });
+    assertPaymentIntentIngress(payload);
     return NextResponse.json(legacyIntent(await receive({ id, kind: "PAYMENT_INTENT", payload })), { status: 202 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "RECEIVER_ERROR";

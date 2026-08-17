@@ -23,6 +23,7 @@ const TSN_MOTHER_ESCROW_SEED = utf8ToBytes("tsn_mother_escrow");
 const TSN_CRANKER_SEED = utf8ToBytes("tsn_cranker");
 const TSN_TREASURY_SEED = utf8ToBytes("tsn_treasury");
 const TSN_SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
+const TSN_PRIVATE_ESCROW_RECORD_SEED = utf8ToBytes("tsn_private_escrow_record");
 const MOTHER_ESCROW_EPOCH_ID_OFFSET =
   8 + // Anchor account discriminator
   32 + // authority
@@ -244,6 +245,11 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
   const escrowTokenAccount = params.escrowTokenSecretKeyBase64
     ? Keypair.fromSecretKey(Uint8Array.from(Buffer.from(params.escrowTokenSecretKeyBase64, "base64")))
     : Keypair.generate();
+  const privateEscrowRecord = PublicKey.findProgramAddressSync(
+    [TSN_PRIVATE_ESCROW_RECORD_SEED, escrowTokenAccount.publicKey.toBytes()],
+    pdas.programId,
+  )[0];
+  const paymentIdHash = sha256(utf8ToBytes(params.paymentId));
   const registerCommitmentIx =
     amountBaseUnits > 0n
       ? new TransactionInstruction({
@@ -257,6 +263,7 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
             { pubkey: pdas.mint, isSigner: false, isWritable: false },
             { pubkey: pdas.sharedEscrowAuthority, isSigner: false, isWritable: false },
             { pubkey: escrowTokenAccount.publicKey, isSigner: true, isWritable: true },
+            { pubkey: privateEscrowRecord, isSigner: false, isWritable: true },
             { pubkey: pdas.verifierPda, isSigner: false, isWritable: true },
             { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
             { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
@@ -265,6 +272,7 @@ export async function buildTsnSponsoredSettlementTransaction(params: {
             tsnInstructionDiscriminator("tsn_register_private_commitment"),
             commitmentHash,
             encodeU64(amountBaseUnits),
+            paymentIdHash,
           ])),
         })
       : null;

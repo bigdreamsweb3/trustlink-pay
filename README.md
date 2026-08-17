@@ -248,7 +248,7 @@ For the Windows-native development workflow, see [Windows TSN Commands](./docs/W
 
 ## Built with love by TrustLink Labs
 
-TrustLink Pay is created and led by **Agbaka Matthew Daniel (Big Dreams Web3)**.
+TrustLink Pay is created and led by **Agbaka Matthew Daniel U. E. (Big Dreams Web3)**.
 
 Connect with the builder and follow the work:
 

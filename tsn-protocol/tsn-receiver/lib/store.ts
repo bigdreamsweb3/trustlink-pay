@@ -1,16 +1,17 @@
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
-import { createReceivedWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { assertExternalWorkKind, assertPaymentIntentIngress, createReceivedWork, payloadCommitment, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
 import { wakeTsnNode } from "./node-wake";
 import { publishCrankerWake } from "./cranker-wake";
 
 const now = () => new Date().toISOString();
 
 function redactedPaymentPayload(payload: Record<string, unknown>) {
-  // The ingress payload contains the short-lived signature and, for sponsored
-  // transfers, a serialized sender transaction. Once the Node has verified
-  // it, Firebase must retain only the queue reference needed to derive claim
-  // work. Recipient routing stays in the Node's separate, expiring binding.
+  // The complete ingress envelope is encrypted at receipt and is available
+  // only through the authenticated Node projection. Once verification has
+  // completed, Firebase retains only the queue reference needed to derive
+  // claim work. Recipient routing stays in the Node's separate, expiring binding.
   return {
     paymentId: String(payload.paymentId ?? ""),
     recipientHash: String(payload.recipientHash ?? ""),
@@ -44,10 +45,18 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
 }
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
-  if (input.kind === "CLAIM" || input.kind === "RECOVERY") {
-    throw new Error(`${input.kind} work is internal-only and must be derived after confirmed settlement`);
-  }
-  const work = createReceivedWork(input);
+  assertExternalWorkKind(input.kind);
+  if (input.kind === "PAYMENT_INTENT") assertPaymentIntentIngress(input.payload);
+  const durablePayload = input.kind === "PAYMENT_INTENT"
+    ? {
+        paymentId: String(input.payload.paymentId), recipientHash: String(input.payload.recipientHash),
+        privacyVersion: input.payload.privacyVersion ?? null, tokenMintAddress: input.payload.tokenMintAddress ?? null,
+        amount: input.payload.amount ?? null, recipientRouteCommitment: input.payload.recipientRouteCommitment ?? null,
+        recipientRouteVersion: input.payload.recipientRouteVersion ?? null,
+        nodeEncryptedPayload: encryptPayloadForNode(input.payload),
+      }
+    : input.payload;
+  const work = createReceivedWork({ ...input, payload: durablePayload, payloadCommitment: payloadCommitment(input.payload) });
   const ref = workCollection.doc(work.id);
   const result = await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(ref);
@@ -93,6 +102,18 @@ export async function getWork(id: string) {
   return snapshot.exists ? snapshot.data() as ReceiverWork : null;
 }
 
+export async function getWorkForNode(id: string) {
+  const work = await getWork(id);
+  if (!work || work.kind !== "PAYMENT_INTENT") return work;
+  const envelope = work.payload.nodeEncryptedPayload;
+  // VERIFIED/terminal payment records are deliberately redacted after Node
+  // verification. They contain no envelope by design and are safe to return
+  // to the authenticated Node for recovery-lineage checks.
+  if (!envelope) return work;
+  if (typeof envelope !== "object") throw new Error("NODE_PAYLOAD_ENVELOPE_INVALID");
+  return { ...work, payload: decryptPayloadForNode(envelope as Parameters<typeof decryptPayloadForNode>[0]) } as ReceiverWork;
+}
+
 export async function attachCrankerAuthorization(params: {
   id: string;
   owner: string;
@@ -106,6 +127,21 @@ export async function attachCrankerAuthorization(params: {
     const current = snapshot.data() as ReceiverWork;
     if (current.status !== "CRANKER_LEASED" || current.crankerLease?.owner !== params.owner) throw new Error("LEASE_INVALID");
     if (current.stateVersion !== params.expectedVersion) throw new Error("STALE_STATE_VERSION");
+    const lease = current.crankerLease;
+    if (!lease || Date.parse(lease.expiresAt) <= Date.now()) throw new Error("LEASE_EXPIRED");
+    const authorizationLeaseId = String(params.authorization.leaseId ?? "");
+    const authorizationLeaseVersion = Number(params.authorization.leaseVersion ?? 0);
+    const authorizationLeaseExpiry = String(params.authorization.leaseExpiresAt ?? "");
+    const authorizationExpiryTs = Number(params.authorization.expiresAtTs ?? 0);
+    const leaseExpiryTs = Math.floor(Date.parse(lease.expiresAt) / 1000);
+    if (authorizationLeaseId !== (lease.leaseId ?? current.id)
+        || authorizationLeaseVersion !== Number(lease.version ?? current.stateVersion)
+        || authorizationLeaseExpiry !== lease.expiresAt
+        || !Number.isFinite(authorizationExpiryTs)
+        || authorizationExpiryTs <= Math.floor(Date.now() / 1000)
+        || authorizationExpiryTs > leaseExpiryTs) {
+      throw new Error("LEASE_AUTHORIZATION_MISMATCH");
+    }
     const patch = { authorization: params.authorization, stateVersion: current.stateVersion + 1, updatedAt: now() };
     transaction.update(ref, patch);
     return { ...current, ...patch } as ReceiverWork;
@@ -168,8 +204,8 @@ async function lease(
         stateVersion: current.stateVersion + 1,
         updatedAt: now(),
         ...(next === "NODE_VERIFYING"
-          ? { nodeLease: { owner, expiresAt } }
-          : { crankerLease: { owner, expiresAt } }),
+          ? { nodeLease: { owner, expiresAt, leaseId: candidate.id, version: current.stateVersion + 1 } }
+          : { crankerLease: { owner, expiresAt, leaseId: candidate.id, version: current.stateVersion + 1 } }),
       };
       transaction.update(candidate.ref, patch);
       return { ...current, ...patch } as ReceiverWork;
@@ -179,8 +215,13 @@ async function lease(
   return null;
 }
 
-export const leaseForNode = (owner: string, supportedKinds?: WorkKind[]) =>
-  lease("RECEIVED", "NODE_VERIFYING", owner, supportedKinds);
+export const leaseForNode = async (owner: string, supportedKinds?: WorkKind[]) => {
+  const work = await lease("RECEIVED", "NODE_VERIFYING", owner, supportedKinds);
+  if (!work || work.kind !== "PAYMENT_INTENT") return work;
+  const envelope = work.payload.nodeEncryptedPayload;
+  if (!envelope || typeof envelope !== "object") throw new Error("NODE_PAYLOAD_ENVELOPE_MISSING");
+  return { ...work, payload: decryptPayloadForNode(envelope as Parameters<typeof decryptPayloadForNode>[0]) } as ReceiverWork;
+};
 export const leaseForCranker = (owner: string, supportedKinds?: WorkKind[]) =>
   lease("VERIFIED", "CRANKER_LEASED", owner, supportedKinds);
 
@@ -291,7 +332,7 @@ export async function transition(params: {
       const intentSnapshot = await transaction.get(intentRef);
       if (!intentSnapshot.exists) throw new Error("RECOVERY_PAYMENT_NOT_FOUND");
       const payment = intentSnapshot.data() as ReceiverWork;
-      const verified = payment.verification?.verifiedPayload;
+      const verified = (payment.verification?.verifiedPayload ?? {}) as Record<string, unknown>;
       const fundingSignature = String(payment.result?.signature ?? "").trim();
       const escrowTokenAccount = String(verified?.settlementTokenAccount ?? "").trim();
       const tokenMintAddress = String(verified?.tokenMintAddress ?? "").trim();
@@ -311,6 +352,7 @@ export async function transition(params: {
         fundingSignature,
         payoutSignature,
         payoutNullifier,
+        commitmentHash: String(verified?.commitmentHash ?? "").trim(),
         escrowTokenAccount,
         tokenMintAddress,
         recoveryAmountBaseUnits: String(amount),
@@ -319,6 +361,16 @@ export async function transition(params: {
       if (!recoverySnapshot.exists) {
         transaction.create(recoveryRef, createReceivedWork({ id: recoveryId, kind: "RECOVERY", payload: recoveryPayload }));
         recoveryCreated = true;
+      } else {
+        const existingRecovery = recoverySnapshot.data() as ReceiverWork;
+        const immutableRecoveryFields = [
+          "paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature",
+          "payoutNullifier", "commitmentHash", "escrowTokenAccount", "tokenMintAddress",
+        ];
+        if (existingRecovery.kind !== "RECOVERY" || immutableRecoveryFields.some((field) =>
+          String(existingRecovery.payload?.[field] ?? "") !== String(recoveryPayload[field as keyof typeof recoveryPayload] ?? ""))) {
+          throw new Error("RECOVERY_IDEMPOTENCY_CONFLICT");
+        }
       }
     }
     transaction.update(ref, patch);

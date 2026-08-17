@@ -566,9 +566,13 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
     payoutNullifier: hex32(String(authorization.payoutNullifier), "payoutNullifier"),
     payoutSequence: BigInt(String(authorization.payoutSequence)),
     tokenMint: new PublicKey(String(authorization.tokenMintAddress)),
+    escrowTokenAccount: new PublicKey(String(authorization.escrowTokenAccount)),
     recipientWallet: new PublicKey(String(authorization.recipientWallet)),
     payoutAmount: BigInt(String(authorization.payoutAmountBaseUnits)),
     claimFeeAmount: BigInt(String(authorization.claimFeeAmountBaseUnits)),
+    leaseIdHash: createHash("sha256").update(String(authorization.leaseId)).digest(),
+    leaseVersion: BigInt(String(authorization.leaseVersion)),
+    leaseExpiryTs: BigInt(Math.floor(Date.parse(String(authorization.leaseExpiresAt)) / 1000)),
     expiresAtTs,
     rpcUrl: params.rpcUrl,
   });
@@ -583,6 +587,7 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
     evidence: {
       stage: "PAYOUT_CONFIRMED",
       signature: payout.signature,
+      operator: params.operator.publicKey.toBase58(),
       routeCommitment: authorization.routeCommitment,
       payoutNullifier: authorization.payoutNullifier,
       authorizationSigner: authorization.authorizationSigner,
@@ -593,6 +598,20 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
 async function processReceiverRecovery(params: { work: ReceiverWork; operator: Keypair; rpcUrl: string }) {
   const authorization = params.work.authorization;
   if (!authorization || authorization.kind !== "TSN_RECOVERY_AUTHORIZATION") {
+    if (authorization?.kind === "TSN_RECOVERY_ALREADY_REIMBURSED") {
+      await reportReceiverWork({
+        work: params.work,
+        operator: params.operator.publicKey.toBase58(),
+        status: "CONFIRMED",
+        evidence: {
+          stage: "RECOVERY_ALREADY_REIMBURSED",
+          signature: String(authorization.payoutSignature ?? ""),
+          escrowTokenAccount: authorization.escrowTokenAccount,
+          settlementCrankerPubkey: authorization.settlementCrankerPubkey,
+        },
+      });
+      return;
+    }
     throw new Error("Receiver recovery has no immutable Node settlement authorization");
   }
   const expiresAtTs = BigInt(String(authorization.expiresAtTs));
@@ -609,10 +628,16 @@ async function processReceiverRecovery(params: { work: ReceiverWork; operator: K
     permitSignature: Uint8Array.from(Buffer.from(String(authorization.authorizationSignatureBase64), "base64")),
     recoveryNullifier: hex32(String(authorization.recoveryNullifier), "recoveryNullifier"),
     recoverySequence: BigInt(String(authorization.recoverySequence)),
+    paymentIdHash: hex32(String(authorization.paymentIdHash), "paymentIdHash"),
+    commitmentHash: hex32(String(authorization.commitmentHash), "commitmentHash"),
+    payoutNullifier: hex32(String(authorization.payoutNullifier), "payoutNullifier"),
     escrowTokenAccount: new PublicKey(String(authorization.escrowTokenAccount)),
     settlementCrankerOperator: new PublicKey(String(authorization.settlementCrankerPubkey)),
     tokenMint: new PublicKey(String(authorization.tokenMintAddress)),
     recoveryAmount: BigInt(String(authorization.recoveryAmountBaseUnits)),
+    leaseIdHash: createHash("sha256").update(String(authorization.leaseId)).digest(),
+    leaseVersion: BigInt(String(authorization.leaseVersion)),
+    leaseExpiryTs: BigInt(Math.floor(Date.parse(String(authorization.leaseExpiresAt)) / 1000)),
     expiresAtTs,
     rpcUrl: params.rpcUrl,
   });
@@ -1779,6 +1804,7 @@ async function executeRecoveryWork(params: {
   tokenDecimals: number;
 }) {
   if (Number(params.item.privacyVersion ?? 1) >= 2) {
+    throw new Error("Legacy private recovery work is disabled; Receiver-created recovery work is required");
     const receiver = receiverUrl();
     if (!receiver) {
       throw new Error(
@@ -1841,6 +1867,9 @@ async function executeRecoveryWork(params: {
       ),
       recoveryNullifier: hex32(permit.recoveryNullifier, "recoveryNullifier"),
       recoverySequence: BigInt(permit.recoverySequence),
+      paymentIdHash: new Uint8Array(32),
+      commitmentHash: new Uint8Array(32),
+      payoutNullifier: new Uint8Array(32),
       escrowTokenAccount: new PublicKey(permit.escrowTokenAccount),
       settlementCrankerOperator: new PublicKey(permit.settlementCrankerPubkey),
       tokenMint: new PublicKey(permit.tokenMintAddress),

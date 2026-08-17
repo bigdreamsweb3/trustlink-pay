@@ -240,14 +240,33 @@ export function IdentityOverviewSection({
     setUpgradeBusy(true);
     setError(null);
     try {
-      const upgraded = await upgradeLegacyTinForWallet({
+      const upgradeParams = {
         walletId: session.walletId,
         walletAddress,
         tin: activeTin,
         phoneNumber: user.phoneNumber,
         displayName: user.displayName,
         legacyAccountPublicKey: resolvedTin.registry,
-      });
+      };
+      let upgraded;
+      try {
+        upgraded = await upgradeLegacyTinForWallet(upgradeParams);
+      } catch (firstUpgradeError) {
+        const detail = describeUpgradeError(firstUpgradeError).toLowerCase();
+        const inaccessibleLegacyEnvelope =
+          detail.includes("belongs to another device") ||
+          detail.includes("needs its existing device") ||
+          detail.includes("key re-wrap");
+        if (!inaccessibleLegacyEnvelope) throw firstUpgradeError;
+        const approved = window.confirm(
+          "This old TIN envelope cannot be opened from this device. Resetting it creates a new private route and can permanently abandon balances in the old private route. Continue only if you accept that loss.",
+        );
+        if (!approved) return;
+        upgraded = await upgradeLegacyTinForWallet({
+          ...upgradeParams,
+          allowLegacyEnvelopeReset: true,
+        });
+      }
       showToast(`TIN upgrade intent queued in TSN mempool (${upgraded.intentId}).`);
     } catch (upgradeError) {
       const message = describeUpgradeError(upgradeError);

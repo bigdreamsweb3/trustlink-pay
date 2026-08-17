@@ -351,6 +351,8 @@ async function upgradeLegacyTinForWalletImpl(params: {
   phoneNumber: string;
   displayName?: string | null;
   legacyAccountPublicKey: string;
+  /** Explicit last-resort recovery: replaces an inaccessible legacy seed. */
+  allowLegacyEnvelopeReset?: boolean;
 }): Promise<{ intentId: string }> {
   const programId = getFrontendTinsProgramId();
   const connection = createSolanaConnection({ frontendSafe: true });
@@ -426,23 +428,32 @@ async function upgradeLegacyTinForWalletImpl(params: {
     const envelope = decodeTinMasterSeedEnvelope(decoded.encryptedMasterSeed);
     let authorizedDevice: Awaited<ReturnType<typeof getTinAuthorizedDeviceSigner>> | undefined;
     let thresholdProvider: Awaited<ReturnType<typeof getBrowserTinAuthorizedDeviceAccess>> | undefined;
-    if (envelope.provider !== "wallet-owner-signature-v1") {
+    if (envelope.provider !== "wallet-owner-signature-v1" && !params.allowLegacyEnvelopeReset) {
       // This is a one-time compatibility step: open the old envelope with the
       // existing device, then replace it with the normal wallet-owned envelope.
       authorizedDevice = await getTinAuthorizedDeviceSigner(params.tin);
       thresholdProvider = await getBrowserTinAuthorizedDeviceAccess();
     }
-    privateIdentity = await rewrapTinPrivateIdentityForWalletOwner({
-      tin: params.tin,
-      pruConfigurationHash: existingCommitment,
-      envelope: decoded.encryptedMasterSeed,
-      ownerWallet,
-      routeVersion,
-      routeNonce: bytesToHex(routeNonce),
-      nodeRoutingPublicKeyBase64: routeKey.publicKey,
-      authorizedDevice,
-      thresholdProvider,
-    });
+    privateIdentity =
+      envelope.provider !== "wallet-owner-signature-v1" && params.allowLegacyEnvelopeReset
+        ? await createTinPrivateIdentity({
+            tin: params.tin,
+            routeVersion,
+            routeNonce: bytesToHex(routeNonce),
+            ownerWallet,
+            nodeRoutingPublicKeyBase64: routeKey.publicKey,
+          })
+        : await rewrapTinPrivateIdentityForWalletOwner({
+            tin: params.tin,
+            pruConfigurationHash: existingCommitment,
+            envelope: decoded.encryptedMasterSeed,
+            ownerWallet,
+            routeVersion,
+            routeNonce: bytesToHex(routeNonce),
+            nodeRoutingPublicKeyBase64: routeKey.publicKey,
+            authorizedDevice,
+            thresholdProvider,
+          });
   } else {
     privateIdentity = await createTinPrivateIdentity({
       tin: params.tin,

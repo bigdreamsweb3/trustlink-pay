@@ -94,6 +94,10 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
     );
     require!(!intent.proof_submitted, TsnError::ProofAlreadySubmitted);
     require!(payout_amount <= intent.amount, TsnError::InvalidPayoutAmount);
+    require!(
+        ctx.accounts.cranker_vault.reserved_liquidity >= intent.amount,
+        TsnError::InvalidLiquidityReservation
+    );
 
     let fee_amount = intent.amount.saturating_sub(payout_amount);
     let operator_fee_amount = split_fee_floor(fee_amount, mother_escrow.fee_split_cranker_bps)?;
@@ -152,10 +156,21 @@ pub fn submit_proof(ctx: Context<SubmitProof>, payout_tx_sig: [u8; 64], payout_a
         reserve_fee_amount,
     )?;
 
-    ctx.accounts.cranker_vault.total_liquidity =
-        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(
-            payout_amount.saturating_add(external_fee_amount)
-        );
+    let total_debit = payout_amount
+        .checked_add(external_fee_amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
+    ctx.accounts.cranker_vault.total_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .total_liquidity
+        .checked_sub(total_debit)
+        .ok_or(TsnError::InsufficientCrankerVaultLiquidity)?;
+    ctx.accounts.cranker_vault.reserved_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .reserved_liquidity
+        .checked_sub(intent.amount)
+        .ok_or(TsnError::InvalidLiquidityReservation)?;
     ctx.accounts.cranker_vault.total_rewards_accrued = ctx
         .accounts
         .cranker_vault

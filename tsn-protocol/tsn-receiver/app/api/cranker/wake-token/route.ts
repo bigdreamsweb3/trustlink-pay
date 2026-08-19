@@ -1,6 +1,6 @@
 import { getAuth } from "firebase-admin/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { requireService } from "../../../../lib/auth";
+import { authenticateCrankerRequest } from "../../../../lib/cranker-auth";
 import { app } from "../../../../lib/firebase";
 
 export const runtime = "nodejs";
@@ -12,9 +12,10 @@ export const runtime = "nodejs";
  */
 export async function POST(request: NextRequest) {
   try {
-    requireService(request, "cranker");
-    const body = await request.json() as { crankerId?: string };
-    const crankerId = body.crankerId?.trim();
+    const bodyText = await request.text();
+    const crankerId = await authenticateCrankerRequest(request, bodyText, "POST", "/api/cranker/wake-token");
+    const body = JSON.parse(bodyText) as { crankerId?: string };
+    if (body.crankerId && body.crankerId !== crankerId) return NextResponse.json({ error: "operator identity mismatch" }, { status: 403 });
     if (!crankerId || crankerId.length > 128) {
       return NextResponse.json({ error: "crankerId is required" }, { status: 400 });
     }
@@ -53,8 +54,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "ERROR";
     return NextResponse.json(
-      { error: message === "UNAUTHORIZED_SERVICE" ? message : "Realtime Database wake token unavailable" },
-      { status: message === "UNAUTHORIZED_SERVICE" ? 401 : 503 },
+      { error: message.includes("CRANKER") ? message : "Realtime Database wake token unavailable" },
+      { status: message.includes("CRANKER") ? 401 : 503 },
     );
   }
 }

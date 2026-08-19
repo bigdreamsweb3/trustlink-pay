@@ -447,6 +447,10 @@ pub mod trustlink_escrow {
 
     pub fn tsn_execute_private_payout(
         ctx: Context<ExecutePrivatePayout>,
+        payment_id_hash: [u8; 32],
+        commitment_digest: [u8; 32],
+        settlement_commitment: [u8; 32],
+        random_nonce: [u8; 32],
         payout_nullifier: [u8; 32],
         payout_sequence: u64,
         payout_amount: u64,
@@ -459,6 +463,10 @@ pub mod trustlink_escrow {
     ) -> Result<()> {
         tsn::instructions::execute_private_payout(
             ctx,
+            payment_id_hash,
+            commitment_digest,
+            settlement_commitment,
+            random_nonce,
             payout_nullifier,
             payout_sequence,
             payout_amount,
@@ -499,6 +507,14 @@ pub mod trustlink_escrow {
             expires_at_ts,
             permit_signature,
         )
+    }
+
+    pub fn tsn_settle_private_dna_reimbursement(
+        ctx: Context<SettlePrivateDnaReimbursement>,
+        payment_id_hash: [u8; 32],
+        commitment_digest: [u8; 32],
+    ) -> Result<()> {
+        tsn::instructions::settle_private_dna_reimbursement(ctx, payment_id_hash, commitment_digest)
     }
 
     pub fn tsn_claim_vault_settlement(

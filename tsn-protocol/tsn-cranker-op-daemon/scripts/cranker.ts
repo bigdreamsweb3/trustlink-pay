@@ -89,6 +89,7 @@ type EpochRaceCacheEntry = {
 const epochRaceCache = new Map<string, EpochRaceCacheEntry>();
 const shutdownControllers: number[] = [];
 let shuttingDown = false;
+let receiverOperatorKeypair: Keypair | null = null;
 
 function parsePubkeyList(value: string | undefined) {
   return (value ?? "")
@@ -169,9 +170,8 @@ type CrankerWakeListener = {
 function createCrankerWakeListener(crankerId: string): CrankerWakeListener | null {
   if (process.env.TSN_CRANKER_WAKE_ENABLED !== "true") return null;
   const databaseUrl = process.env.FIREBASE_DATABASE_URL?.trim().replace(/\/$/, "");
-  const apiKey = process.env.TSN_RECEIVER_CRANKER_API_KEY?.trim();
-  if (!databaseUrl || !apiKey) {
-    console.warn("[tsn-cranker] wake disabled; set FIREBASE_DATABASE_URL and TSN_RECEIVER_CRANKER_API_KEY");
+  if (!databaseUrl || !receiverOperatorKeypair) {
+    console.warn("[tsn-cranker] wake disabled; set FIREBASE_DATABASE_URL and configure the operator keypair");
     return null;
   }
 
@@ -205,10 +205,30 @@ function createCrankerWakeListener(crankerId: string): CrankerWakeListener | nul
   };
 
   const requestIdToken = async () => {
+    const bodyText = JSON.stringify({ crankerId });
+    const challengeResponse = await fetch(`${receiverUrl().replace(/\/$/, "")}/api/cranker/auth/challenge`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ publicKey: receiverOperatorKeypair!.publicKey.toBase58() }),
+      signal: abortController.signal,
+    });
+    if (!challengeResponse.ok) throw new Error(`wake challenge request failed (${challengeResponse.status})`);
+    const challenge = await challengeResponse.json() as { nonce?: string };
+    if (!challenge.nonce) throw new Error("wake challenge response was empty");
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const bodyHash = createHash("sha256").update(bodyText, "utf8").digest("hex");
+    const signed = `TSN_RECEIVER_CRANKER_V1|POST|/api/cranker/wake-token|${timestamp}|${challenge.nonce}|${bodyHash}`;
+    const signature = Buffer.from(nacl.sign.detached(Buffer.from(signed, "utf8"), receiverOperatorKeypair!.secretKey)).toString("base64");
     const response = await fetch(`${receiverUrl().replace(/\/$/, "")}/api/cranker/wake-token`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": apiKey },
-      body: JSON.stringify({ crankerId }),
+      headers: {
+        "content-type": "application/json",
+        "x-cranker-public-key": receiverOperatorKeypair!.publicKey.toBase58(),
+        "x-cranker-challenge": challenge.nonce,
+        "x-cranker-timestamp": timestamp,
+        "x-cranker-signature": signature,
+      },
+      body: bodyText,
       signal: abortController.signal,
     });
     if (!response.ok) throw new Error(`wake token request failed (${response.status})`);
@@ -375,12 +395,32 @@ function verifyOpaqueRouteAuthorization(workId: string, payload: Record<string, 
 
 async function receiverRequest<T>(method: "POST" | "PATCH", body: Record<string, unknown>) {
   const baseUrl = receiverUrl();
-  const apiKey = process.env.TSN_RECEIVER_CRANKER_API_KEY;
-  if (!baseUrl || !apiKey) throw new Error("TSN Receiver Cranker configuration is incomplete");
+  const keypair = receiverOperatorKeypair;
+  if (!baseUrl || !keypair) throw new Error("TSN Receiver operator authentication is incomplete");
+  const bodyText = JSON.stringify(body);
+  const publicKey = keypair.publicKey.toBase58();
+  const challengeResponse = await fetch(`${baseUrl.replace(/\/$/, "")}/api/cranker/auth/challenge`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ publicKey }),
+  });
+  if (!challengeResponse.ok) throw new Error(`TSN Receiver challenge failed (${challengeResponse.status})`);
+  const challenge = await challengeResponse.json() as { nonce?: string; expiresAt?: string };
+  if (!challenge.nonce || !challenge.expiresAt) throw new Error("TSN Receiver challenge was malformed");
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const bodyHash = createHash("sha256").update(bodyText, "utf8").digest("hex");
+  const signed = `TSN_RECEIVER_CRANKER_V1|${method}|/api/cranker/work|${timestamp}|${challenge.nonce}|${bodyHash}`;
+  const signature = Buffer.from(nacl.sign.detached(Buffer.from(signed, "utf8"), keypair.secretKey)).toString("base64");
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/cranker/work`, {
     method,
-    headers: { "content-type": "application/json", "x-api-key": apiKey },
-    body: JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      "x-cranker-public-key": publicKey,
+      "x-cranker-challenge": challenge.nonce,
+      "x-cranker-timestamp": timestamp,
+      "x-cranker-signature": signature,
+    },
+    body: bodyText,
   });
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 500);
@@ -425,19 +465,7 @@ async function logReceiverWorkSummary(reason: string) {
 }
 
 function assertReceiverCredential(operator: string) {
-  const credential = process.env.TSN_RECEIVER_CRANKER_API_KEY?.trim() ?? "";
-  if (!credential) {
-    throw new Error("TSN_RECEIVER_CRANKER_API_KEY is required for Receiver work leasing");
-  }
-  // A TIN is public identity data, not a Receiver service credential. Catch
-  // the common misconfiguration before the daemon enters a silent retry loop.
-  if (/^\d{10}$/.test(credential)) {
-    throw new Error("TSN_RECEIVER_CRANKER_API_KEY is a TIN, not the Receiver Cranker service credential");
-  }
-  if (credential.length < 32) {
-    throw new Error("TSN_RECEIVER_CRANKER_API_KEY must be a generated service credential (at least 32 characters)");
-  }
-  void operator;
+  if (!operator || operator.length < 32) throw new Error("Cranker operator keypair is invalid");
 }
 
 async function reportReceiverWork(params: {
@@ -563,10 +591,14 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
     operator: params.operator,
     permitSigner: new PublicKey(String(authorization.authorizationSigner)),
     permitSignature: Uint8Array.from(Buffer.from(String(authorization.authorizationSignatureBase64), "base64")),
+    settlementDna: new PublicKey(String(authorization.settlementDna)),
+    settlementCommitment: hex32(String(authorization.settlementCommitment), "settlementCommitment"),
+    randomNonce: hex32(String(authorization.randomNonce), "randomNonce"),
     payoutNullifier: hex32(String(authorization.payoutNullifier), "payoutNullifier"),
     payoutSequence: BigInt(String(authorization.payoutSequence)),
+    paymentIdHash: hex32(String(authorization.paymentIdHash), "paymentIdHash"),
+    commitmentDigest: hex32(String(authorization.commitmentDigest), "commitmentDigest"),
     tokenMint: new PublicKey(String(authorization.tokenMintAddress)),
-    escrowTokenAccount: new PublicKey(String(authorization.escrowTokenAccount)),
     recipientWallet: new PublicKey(String(authorization.recipientWallet)),
     payoutAmount: BigInt(String(authorization.payoutAmountBaseUnits)),
     claimFeeAmount: BigInt(String(authorization.claimFeeAmountBaseUnits)),
@@ -596,6 +628,8 @@ async function processReceiverClaim(params: { work: ReceiverWork; operator: Keyp
 }
 
 async function processReceiverRecovery(params: { work: ReceiverWork; operator: Keypair; rpcUrl: string }) {
+  throw new Error("Legacy escrow recovery is disabled; reimbursement is performed by Mother-authorized epoch DNA settlement");
+  /*
   const authorization = params.work.authorization;
   if (!authorization || authorization.kind !== "TSN_RECOVERY_AUTHORIZATION") {
     if (authorization?.kind === "TSN_RECOVERY_ALREADY_REIMBURSED") {
@@ -656,6 +690,7 @@ async function processReceiverRecovery(params: { work: ReceiverWork; operator: K
       authorizationSigner: authorization.authorizationSigner,
     },
   });
+  */
 }
 
 function createMempoolClient() {
@@ -1709,7 +1744,12 @@ async function submitIntentOnChainWork(params: {
       ),
       payoutNullifier,
       payoutSequence: BigInt(permit.payoutSequence),
+      fundingSignatureHash: hex32(permit.fundingSignatureHash, "fundingSignatureHash"),
+      paymentIdHash: hex32(permit.paymentIdHash, "paymentIdHash"),
+      commitmentHash: hex32(permit.commitmentHash, "commitmentHash"),
+      fundingBindingHash: hex32(permit.fundingBindingHash, "fundingBindingHash"),
       tokenMint: new PublicKey(permit.tokenMintAddress),
+      escrowTokenAccount: new PublicKey(permit.escrowTokenAccount),
       recipientWallet: new PublicKey(permit.recipientWallet),
       payoutAmount: BigInt(permit.payoutAmountBaseUnits),
       claimFeeAmount: BigInt(permit.claimFeeAmountBaseUnits),
@@ -1767,6 +1807,7 @@ async function submitIntentOnChainWork(params: {
   await tsnClaimVaultSettlementOnChain({
     operator: params.operator,
     paymentIntentId,
+    tokenMint,
     otdtHash32: hex32(otdt.hash, "otdtHash"),
     rpcUrl: params.rpcUrl,
   });
@@ -2691,6 +2732,7 @@ async function main() {
   const operatorKeypair = loadOperatorKeypair();
   const operator = operatorKeypair.publicKey.toBase58();
   assertReceiverCredential(operator);
+  receiverOperatorKeypair = operatorKeypair;
   process.env.TSN_CRANKER_OPERATOR_PUBKEY = operator;
   if (
     process.env.TSN_CRANKER_OPERATOR_PUBKEY &&
@@ -2804,7 +2846,6 @@ async function main() {
     try {
       if (process.env.TSN_RECEIVER_URL) {
         const leased = await receiverRequest<{ work: ReceiverWork | null }>("POST", {
-          crankerId: operator,
           supportedKinds: ["PAYMENT_INTENT", "CLAIM", "RECOVERY"],
         });
         if (!leased.work) {

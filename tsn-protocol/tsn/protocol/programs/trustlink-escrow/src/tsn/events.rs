@@ -165,6 +165,9 @@ pub struct TsnPruSpendExecuted {
 
 #[event]
 pub struct TsnPrivatePayoutExecuted {
+    pub settlement_dna: Pubkey,
+    pub settlement_commitment: [u8; 32],
+    pub cranker_vault: Pubkey,
     pub payout_nullifier: [u8; 32],
     pub payout_sequence: u64,
     pub cranker: Pubkey,
@@ -179,6 +182,14 @@ pub struct TsnPrivateEscrowRecovered {
     pub recovery_cranker: Pubkey,
     pub token_mint: Pubkey,
     pub recovered_amount: u64,
+}
+
+#[event]
+pub struct TsnPrivateDnaReimbursed {
+    pub settlement_dna: Pubkey,
+    pub cranker_vault: Pubkey,
+    pub amount: u64,
+    pub cranker: Pubkey,
 }
 
 #[event]

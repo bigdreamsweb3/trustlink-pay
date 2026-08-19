@@ -114,6 +114,11 @@ pub fn execute_vault_payout(
     let total_debit = payout_amount
         .checked_add(external_fee_amount)
         .ok_or(TsnError::FeeSplitOverflow)?;
+    let reserved_amount = ctx.accounts.payment_vault.reserved_amount;
+    require!(
+        reserved_amount >= total_debit,
+        TsnError::InvalidLiquidityReservation
+    );
     require!(
         ctx.accounts.cranker_vault.total_liquidity >= total_debit,
         TsnError::InsufficientCrankerVaultLiquidity
@@ -204,8 +209,18 @@ pub fn execute_vault_payout(
         reserve_fee_amount,
     )?;
 
-    ctx.accounts.cranker_vault.total_liquidity =
-        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(total_debit);
+    ctx.accounts.cranker_vault.total_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .total_liquidity
+        .checked_sub(total_debit)
+        .ok_or(TsnError::InsufficientCrankerVaultLiquidity)?;
+    ctx.accounts.cranker_vault.reserved_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .reserved_liquidity
+        .checked_sub(reserved_amount)
+        .ok_or(TsnError::InvalidLiquidityReservation)?;
     ctx.accounts.cranker_vault.total_rewards_accrued = ctx
         .accounts
         .cranker_vault
@@ -220,6 +235,7 @@ pub fn execute_vault_payout(
     payment_vault.settlement_cranker = ctx.accounts.cranker.key();
     payment_vault.paid_at_ts = now;
     payment_vault.recoverable = true;
+    payment_vault.reserved_amount = 0;
 
     emit!(TsnSettlementCommitted {
         vault: payment_vault.key(),

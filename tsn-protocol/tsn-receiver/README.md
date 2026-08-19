@@ -60,8 +60,8 @@ FIREBASE_PRIVATE_KEY
 FIREBASE_DATABASE_URL
 FIREBASE_WEB_API_KEY
 TSN_RECEIVER_NODE_API_KEY
-TSN_RECEIVER_CRANKER_API_KEY
 TSN_RECEIVER_NODE_PAYLOAD_KEY
+TSN_RECEIVER_CRANKER_OPERATORS
 ```
 
 All three Firebase variables are mandatory in the hosted Receiver. The service
@@ -76,6 +76,20 @@ TSN_RECEIVER_COLLECTION=tsn_receiver_work
 TSN_RECEIVER_STATE_COLLECTION=tsn_receiver_state
 TSN_NODE_URL=https://<your-tsn-node-domain>
 ```
+
+Cranker lease APIs use per-operator Ed25519 challenge-response authentication.
+Set `TSN_RECEIVER_CRANKER_OPERATORS` to a JSON object keyed by the operator's
+base58 public key, for example:
+
+```json
+{"9xOperatorPublicKey":{"active":true,"label":"production-1"}}
+```
+
+An operator signs a short-lived challenge before each lease/report request.
+Set `active` to `false` or add `revokedAt` to revoke one operator; add a new
+public key before removing the old one to rotate without downtime. Legacy
+Cranker API-key authentication is disabled and is not part of the deployment
+configuration.
 
 Deploy the Realtime Database rules from this repository after creating the
 database in the Firebase project:

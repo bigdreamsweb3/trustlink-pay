@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import hashlib
 import os
 from pathlib import Path
 
@@ -31,4 +32,6 @@ TSN_RPC_GATEWAY_URL = clean_env(
 # Compatibility name for internal helpers; it always points to the same
 # single TrustLink RPC gateway and is not independently configurable.
 TSN_SOLANA_RPC_URL = TSN_RPC_GATEWAY_URL
+CRANKER_VAULT_ACCOUNT_SIZE = 178
+CRANKER_VAULT_DISCRIMINATOR = hashlib.sha256(b"account:CrankerVault").digest()[:8]
 _store = None

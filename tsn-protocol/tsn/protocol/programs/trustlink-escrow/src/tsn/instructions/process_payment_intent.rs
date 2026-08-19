@@ -158,6 +158,7 @@ pub fn process_payment_intent(
             otdt_used: false,
             recoverable: false,
             bump: vault_bump,
+            reserved_amount: 0,
         };
         let mut cursor = &mut data[8..];
         AnchorSerialize::serialize(&state, &mut cursor)?;

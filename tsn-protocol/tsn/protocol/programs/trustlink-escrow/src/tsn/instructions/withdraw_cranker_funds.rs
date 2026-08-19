@@ -57,12 +57,33 @@ pub struct WithdrawCrankerFunds<'info> {
 }
 
 pub fn withdraw_cranker_funds(ctx: Context<WithdrawCrankerFunds>, amount: u64) -> Result<()> {
-    let available = ctx
-        .accounts
-        .liquidity_position
-        .principal_amount
-        .saturating_sub(ctx.accounts.liquidity_position.withdrawn_amount);
-    require!(amount <= available, TsnError::InsufficientLiquidityPosition);
+    require!(amount > 0, TsnError::InvalidPayoutAmount);
+    let vault = &ctx.accounts.cranker_vault;
+    require!(
+        ctx.accounts.vault_token_account.amount == vault.total_liquidity,
+        TsnError::InsufficientWithdrawableLiquidity
+    );
+    require!(vault.total_shares > 0, TsnError::InsufficientLiquidityPosition);
+    let withdrawable_liquidity = vault
+        .total_liquidity
+        .checked_sub(vault.reserved_liquidity)
+        .ok_or(TsnError::InsufficientWithdrawableLiquidity)?;
+    let position_shares = ctx.accounts.liquidity_position.principal_amount;
+    let max_withdrawable = ((position_shares as u128)
+        .checked_mul(withdrawable_liquidity as u128)
+        .ok_or(TsnError::FeeSplitOverflow)?
+        / vault.total_shares as u128) as u64;
+    require!(amount <= max_withdrawable, TsnError::InsufficientLiquidityPosition);
+    require!(amount <= withdrawable_liquidity, TsnError::InsufficientWithdrawableLiquidity);
+    // Burn shares at the total-asset price. Reserved assets remain represented
+    // by shares and become withdrawable only when the reservation is released.
+    let shares_to_burn = (((amount as u128)
+        .checked_mul(vault.total_shares as u128)
+        .ok_or(TsnError::FeeSplitOverflow)?
+        + vault.total_liquidity as u128
+        - 1)
+        / vault.total_liquidity as u128) as u64;
+    require!(shares_to_burn <= position_shares, TsnError::InsufficientLiquidityPosition);
 
     let cranker_vault_key = ctx.accounts.cranker_vault.key();
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -85,14 +106,35 @@ pub fn withdraw_cranker_funds(ctx: Context<WithdrawCrankerFunds>, amount: u64) -
     )?;
 
     let now = Clock::get()?.unix_timestamp;
-    ctx.accounts.liquidity_position.withdrawn_amount =
-        ctx.accounts.liquidity_position.withdrawn_amount.saturating_add(amount);
+    ctx.accounts.liquidity_position.principal_amount = position_shares
+        .checked_sub(shares_to_burn)
+        .ok_or(TsnError::InsufficientLiquidityPosition)?;
+    ctx.accounts.liquidity_position.withdrawn_amount = ctx
+        .accounts
+        .liquidity_position
+        .withdrawn_amount
+        .checked_add(amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
     ctx.accounts.liquidity_position.updated_at_ts = now;
 
-    ctx.accounts.cranker_vault.total_liquidity =
-        ctx.accounts.cranker_vault.total_liquidity.saturating_sub(amount);
-    ctx.accounts.cranker_vault.total_withdrawn =
-        ctx.accounts.cranker_vault.total_withdrawn.saturating_add(amount);
+    ctx.accounts.cranker_vault.total_liquidity = ctx
+        .accounts
+        .cranker_vault
+        .total_liquidity
+        .checked_sub(amount)
+        .ok_or(TsnError::InsufficientWithdrawableLiquidity)?;
+    ctx.accounts.cranker_vault.total_shares = ctx
+        .accounts
+        .cranker_vault
+        .total_shares
+        .checked_sub(shares_to_burn)
+        .ok_or(TsnError::InsufficientLiquidityPosition)?;
+    ctx.accounts.cranker_vault.total_withdrawn = ctx
+        .accounts
+        .cranker_vault
+        .total_withdrawn
+        .checked_add(amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
 
     emit!(TsnCrankerFundsWithdrawn {
         cranker: ctx.accounts.cranker.key(),

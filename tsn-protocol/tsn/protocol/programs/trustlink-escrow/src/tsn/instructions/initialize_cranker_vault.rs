@@ -58,6 +58,8 @@ pub fn initialize_cranker_vault(ctx: Context<InitializeCrankerVault>) -> Result<
     cranker_vault.vault_token_account = ctx.accounts.vault_token_account.key();
     cranker_vault.vault_authority_bump = ctx.bumps.vault_authority;
     cranker_vault.total_liquidity = 0;
+    cranker_vault.total_shares = 0;
+    cranker_vault.reserved_liquidity = 0;
     cranker_vault.total_withdrawn = 0;
     cranker_vault.total_rewards_accrued = 0;
     cranker_vault.bump = ctx.bumps.cranker_vault;

@@ -24,8 +24,14 @@ pub enum TsnError {
     CrankerDnaMismatch,
     #[msg("External funding is disabled for this Cranker")]
     ExternalFundingDisabled,
-    #[msg("Withdraw amount exceeds funder's available principal")]
+    #[msg("Withdraw amount exceeds the funder's pro-rata LP claim")]
     InsufficientLiquidityPosition,
+    #[msg("Deposit is too small to mint an LP share")]
+    InvalidLiquidityShareAmount,
+    #[msg("Vault does not have enough unreserved liquidity")]
+    InsufficientWithdrawableLiquidity,
+    #[msg("Settlement reservation is missing or insufficient")]
+    InvalidLiquidityReservation,
     #[msg("Invalid Cranker vault authority")]
     InvalidCrankerVaultAuthority,
     #[msg("Settlement epoch is not ready yet")]

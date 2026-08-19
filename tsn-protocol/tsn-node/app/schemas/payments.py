@@ -153,6 +153,12 @@ class PrivatePayoutPermitResponse(BaseModel):
     recipientWallet: str
     payoutAmountBaseUnits: str
     claimFeeAmountBaseUnits: str
+    escrowTokenAccount: str
+    privateEscrowRecord: str
+    paymentIdHash: str
+    commitmentHash: str
+    fundingBindingHash: str
+    fundingSignatureHash: str
     expiresAtTs: int
 
 

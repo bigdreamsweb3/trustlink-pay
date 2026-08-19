@@ -129,7 +129,6 @@ real values only on the private operator machine:
 ```dotenv
 SOLANA_MOCK_MODE=false
 TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
-TSN_SOLANA_RPC_URLS=https://tsn-rpc-gateway.vercel.app
 # Optional; use a direct Solana provider websocket only when subscriptions are enabled.
 # SOLANA_WS_URL=wss://<solana-provider-websocket-endpoint>
 PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
@@ -138,7 +137,7 @@ KEYPAIR_PATH=./keys/cranker-keypair.json
 TSN_ENABLED=true
 TSN_CREATE_INTENTS_ONCHAIN=true
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
-TSN_RECEIVER_CRANKER_API_KEY=<RECEIVER_CRANKER_API_KEY>
+TSN_CRANKER_OPERATOR_PUBKEY=<registered operator public key>
 TSN_CRANKER_POLL_MS=2000
 TSN_CRANKER_IDLE_MAX_MS=60000
 ```
@@ -306,11 +305,9 @@ TSN Node decision, program logs, and token balances together.
 ## Troubleshooting
 
 **Receiver returns 401.** Check that `TSN_RECEIVER_URL` is
-`https://tsn-receiver-kappa.vercel.app` and
-`TSN_RECEIVER_CRANKER_API_KEY` matches the server credential.
-This is a generated service credential; it must never be a TIN, phone number,
-wallet address, or program ID. Remove accidental surrounding quotes from
-Wasmer environment values and restart.
+`https://tsn-receiver-kappa.vercel.app`, the operator public key is registered
+in `TSN_RECEIVER_CRANKER_OPERATORS`, and the daemon can read its keypair.
+Remove accidental surrounding quotes from environment values and restart.
 
 **Mother Escrow or Cranker PDA is not initialized.** Verify program ID, cluster,
 operator keypair, and seed recipe. Ask the deployment owner to run authorized

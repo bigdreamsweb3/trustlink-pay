@@ -77,9 +77,9 @@ wakes without continuous high-frequency reads.
 | Connection                           | Authentication                    | Allowed data                |
 | ------------------------------------ | --------------------------------- | --------------------------- |
 | Receiver → Node wake                 | `TSN_RECEIVER_NODE_API_KEY`       | reason only                 |
-| Cranker → wake-token endpoint        | `TSN_RECEIVER_CRANKER_API_KEY`    | Cranker public ID           |
+| Cranker → wake-token endpoint        | Signed operator challenge        | Derived operator identity  |
 | Cranker → Realtime Database          | Firebase ID token, `role=cranker` | wake marker only            |
-| Cranker → lease/transition endpoints | `TSN_RECEIVER_CRANKER_API_KEY`    | lease and public evidence   |
+| Cranker → lease/transition endpoints | Signed operator challenge        | lease and public evidence  |
 | Node → Receiver work endpoints       | `TSN_RECEIVER_NODE_API_KEY`       | verification state/evidence |
 
 No wake path carries a master seed, child private key, serialized key,
@@ -106,7 +106,7 @@ FIREBASE_PRIVATE_KEY=...
 FIREBASE_DATABASE_URL=...
 FIREBASE_WEB_API_KEY=...
 TSN_RECEIVER_NODE_API_KEY=...
-TSN_RECEIVER_CRANKER_API_KEY=...
+TSN_RECEIVER_CRANKER_OPERATORS={"<operator-pubkey>":{"active":true}}
 TSN_NODE_URL=...
 ```
 
@@ -114,7 +114,8 @@ Cranker:
 
 ```text
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
-TSN_RECEIVER_CRANKER_API_KEY=...
+TSN_CRANKER_OPERATOR_PUBKEY=<registered-operator-pubkey>
+KEYPAIR_PATH=./keys/cranker-keypair.json
 TSN_CRANKER_WAKE_ENABLED=true
 FIREBASE_DATABASE_URL=...
 TSN_CRANKER_WAKE_FALLBACK_POLL_MS=300000

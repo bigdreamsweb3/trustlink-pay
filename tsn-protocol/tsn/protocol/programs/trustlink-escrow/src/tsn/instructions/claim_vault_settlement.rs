@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::TokenAccount;
 
 use crate::tsn::{
     constants::{TSN_CRANKER_SEED, TSN_PAYMENT_VAULT_SEED},
     errors::TsnError,
     events::TsnSettlementLeaseClaimed,
-    state::{Cranker, MotherEscrow, VaultSettlementStatus, VaultState},
+    state::{Cranker, CrankerVault, MotherEscrow, VaultSettlementStatus, VaultState},
     utils::compute_cranker_dna,
 };
 
@@ -36,6 +37,29 @@ pub struct ClaimVaultSettlement<'info> {
         constraint = payment_vault.payment_intent_id == payment_intent_id
     )]
     pub payment_vault: Account<'info, VaultState>,
+
+    #[account(
+        mut,
+        has_one = mother_escrow,
+        constraint = cranker_vault.cranker == cranker.key(),
+        constraint = cranker_vault.vault_token_account == vault_token_account.key(),
+        constraint = cranker_vault.token_mint == payment_vault_token_account.mint
+    )]
+    pub cranker_vault: Account<'info, CrankerVault>,
+
+    #[account(
+        constraint = payment_vault_token_account.owner == payment_vault.key()
+            @ TsnError::InvalidUniqueTokenAccount,
+        constraint = payment_vault_token_account.amount > 0
+            @ TsnError::InvalidPaymentVaultFunding
+    )]
+    pub payment_vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        constraint = vault_token_account.key() == cranker_vault.vault_token_account,
+        constraint = vault_token_account.mint == cranker_vault.token_mint
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
 }
 
 pub fn claim_vault_settlement(
@@ -56,12 +80,38 @@ pub fn claim_vault_settlement(
     require!(otdt_hash != [0; 32], TsnError::InvalidOneTimeDecryptionToken);
 
     let vault = &mut ctx.accounts.payment_vault;
+    let fresh_lease = vault.status == VaultSettlementStatus::Escrowed;
     require!(!vault.otdt_used, TsnError::OneTimeDecryptionTokenAlreadyUsed);
     require!(
         vault.status == VaultSettlementStatus::Escrowed
             || (vault.status == VaultSettlementStatus::Leased && now > vault.lease_expiry_ts),
         TsnError::InvalidVaultSettlementState
     );
+
+    if fresh_lease {
+        let reserve_amount = ctx.accounts.payment_vault_token_account.amount;
+        require!(vault.reserved_amount == 0, TsnError::InvalidLiquidityReservation);
+        require!(
+            ctx.accounts.vault_token_account.amount == ctx.accounts.cranker_vault.total_liquidity,
+            TsnError::InsufficientCrankerVaultLiquidity
+        );
+        let available = ctx
+            .accounts
+            .cranker_vault
+            .total_liquidity
+            .checked_sub(ctx.accounts.cranker_vault.reserved_liquidity)
+            .ok_or(TsnError::InsufficientWithdrawableLiquidity)?;
+        require!(reserve_amount <= available, TsnError::InsufficientCrankerVaultLiquidity);
+        ctx.accounts.cranker_vault.reserved_liquidity = ctx
+            .accounts
+            .cranker_vault
+            .reserved_liquidity
+            .checked_add(reserve_amount)
+            .ok_or(TsnError::FeeSplitOverflow)?;
+        vault.reserved_amount = reserve_amount;
+    } else {
+        require!(vault.reserved_amount > 0, TsnError::InvalidLiquidityReservation);
+    }
 
     vault.status = VaultSettlementStatus::Leased;
     vault.lease_cranker = cranker.key();

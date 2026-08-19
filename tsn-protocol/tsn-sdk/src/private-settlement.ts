@@ -35,7 +35,9 @@ const PRIVATE_CONFIG_SEED = utf8ToBytes("tsn_private_config");
 const PRIVATE_REPLAY_REGISTRY_SEED = utf8ToBytes("tsn_private_replay");
 const SHARED_ESCROW_AUTHORITY_SEED = utf8ToBytes("tsn_shared_escrow");
 const PRIVATE_ESCROW_RECORD_SEED = utf8ToBytes("tsn_private_escrow_record");
-const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_V2");
+const PRIVATE_SETTLEMENT_DNA_SEED = utf8ToBytes("tsn_private_settlement_dna");
+const PRIVATE_PAYOUT_DOMAIN = utf8ToBytes("TSN_PRIVATE_PAYOUT_DNA_V1");
+const PRIVATE_COMMITMENT_DIGEST_DOMAIN = utf8ToBytes("TSN_PRIVATE_COMMITMENT_DIGEST_V1");
 const PRIVATE_RECOVERY_DOMAIN = utf8ToBytes("TSN_PRIVATE_RECOVERY_V2");
 const MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1";
 const PRU_SPEND_GUARD_SEED = utf8ToBytes("pru_spend_guard");
@@ -82,6 +84,14 @@ export type PrivatePayoutPermit = {
   recipientWallet: string;
   payoutAmountBaseUnits: string;
   claimFeeAmountBaseUnits: string;
+  settlementDna: string;
+  settlementCommitment: string;
+  paymentIdHash: string;
+  commitmentDigest: string;
+  randomNonce: string;
+  leaseId: string;
+  leaseVersion: number;
+  leaseExpiresAt: string;
   expiresAtTs: number;
 };
 
@@ -114,6 +124,49 @@ export function getTsnPrivateEscrowRecordPda(escrowTokenAccount: PublicKey) {
     [PRIVATE_ESCROW_RECORD_SEED, escrowTokenAccount.toBytes()],
     PROGRAM_ID,
   )[0];
+}
+
+export function getTsnPrivateSettlementDnaPda(paymentIdHash: Uint8Array, commitmentDigest: Uint8Array) {
+  assertBytes32(paymentIdHash, "payment id hash");
+  assertBytes32(commitmentDigest, "commitment digest");
+  return PublicKey.findProgramAddressSync(
+    [PRIVATE_SETTLEMENT_DNA_SEED, paymentIdHash, commitmentDigest],
+    PROGRAM_ID,
+  )[0];
+}
+
+export function createPrivateCommitmentDigest(commitmentHash: Uint8Array) {
+  assertBytes32(commitmentHash, "commitment hash");
+  return sha256(concatBytes([PRIVATE_COMMITMENT_DIGEST_DOMAIN, commitmentHash]));
+}
+
+export function createSettlementCommitment(params: {
+  settlementDna: PublicKey;
+  paymentIdHash: Uint8Array;
+  commitmentDigest: Uint8Array;
+  randomNonce: Uint8Array;
+  crankerVault: PublicKey;
+  recipientWallet: PublicKey;
+  tokenMint: PublicKey;
+  payoutAmount: bigint;
+  payoutNullifier: Uint8Array;
+  leaseIdHash: Uint8Array;
+  leaseVersion: bigint;
+  leaseExpiryTs: bigint;
+  expiresAtTs: bigint;
+}) {
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentDigest, "commitment digest");
+  assertBytes32(params.randomNonce, "random nonce");
+  assertBytes32(params.payoutNullifier, "payout nullifier");
+  assertBytes32(params.leaseIdHash, "lease id hash");
+  return sha256(concatBytes([
+    utf8ToBytes("TSN_SETTLEMENT_COMMITMENT_V1"), params.settlementDna.toBytes(),
+    params.paymentIdHash, params.commitmentDigest, params.randomNonce,
+    params.crankerVault.toBytes(), params.recipientWallet.toBytes(), params.tokenMint.toBytes(),
+    encodeU64(params.payoutAmount), params.payoutNullifier, params.leaseIdHash,
+    encodeU64(params.leaseVersion), encodeI64(params.leaseExpiryTs), encodeI64(params.expiresAtTs),
+  ]));
 }
 
 function encodeU64(value: bigint) {
@@ -196,10 +249,15 @@ export function createPrivateSettlementNullifier(params: {
 
 export function createPrivatePayoutPermitMessage(params: {
   operator: PublicKey;
+  settlementDna: PublicKey;
   payoutNullifier: Uint8Array;
   payoutSequence: bigint;
+  paymentIdHash: Uint8Array;
+  commitmentDigest: Uint8Array;
+  randomNonce: Uint8Array;
+  settlementCommitment: Uint8Array;
   crankerVault: PublicKey;
-  recipientTokenAccount: PublicKey;
+  recipientWallet: PublicKey;
   tokenMint: PublicKey;
   payoutAmount: bigint;
   claimFeeAmount: bigint;
@@ -209,16 +267,25 @@ export function createPrivatePayoutPermitMessage(params: {
   expiresAtTs: bigint;
 }) {
   assertBytes32(params.payoutNullifier, "payout nullifier");
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentDigest, "commitment digest");
+  assertBytes32(params.randomNonce, "random nonce");
+  assertBytes32(params.settlementCommitment, "settlement commitment");
   assertBytes32(params.leaseIdHash, "lease id hash");
   return concatBytes([
     PRIVATE_PAYOUT_DOMAIN,
     PROGRAM_ID.toBytes(),
     getTsnMotherEscrowPda().toBytes(),
     params.operator.toBytes(),
+    params.settlementDna.toBytes(),
     params.payoutNullifier,
     encodeU64(params.payoutSequence),
+    params.paymentIdHash,
+    params.commitmentDigest,
+    params.randomNonce,
+    params.settlementCommitment,
     params.crankerVault.toBytes(),
-    params.recipientTokenAccount.toBytes(),
+    params.recipientWallet.toBytes(),
     params.tokenMint.toBytes(),
     encodeU64(params.payoutAmount),
     encodeU64(params.claimFeeAmount),
@@ -734,10 +801,14 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   operator: Keypair;
   permitSigner: PublicKey;
   permitSignature: Uint8Array;
+  settlementDna: PublicKey;
+  settlementCommitment: Uint8Array;
+  randomNonce: Uint8Array;
   payoutNullifier: Uint8Array;
   payoutSequence: bigint;
+  paymentIdHash: Uint8Array;
+  commitmentDigest: Uint8Array;
   tokenMint: PublicKey;
-  escrowTokenAccount: PublicKey;
   recipientWallet: PublicKey;
   payoutAmount: bigint;
   claimFeeAmount?: bigint;
@@ -748,6 +819,10 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   rpcUrl?: string;
 }) {
   assertBytes32(params.payoutNullifier, "payout nullifier");
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentDigest, "commitment digest");
+  assertBytes32(params.randomNonce, "random nonce");
+  assertBytes32(params.settlementCommitment, "settlement commitment");
   assertSignature(params.permitSignature);
   const connection = new Connection(
     params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }),
@@ -759,7 +834,6 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     operator: params.operator.publicKey,
   });
   const config = getTsnPrivateSettlementConfigPda();
-  const replayRegistry = getTsnPrivateReplayRegistryPda();
   const crankerVault = getTsnCrankerVaultPda({
     cranker,
     tokenMint: params.tokenMint,
@@ -771,13 +845,21 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     params.recipientWallet,
   );
   const verifierPda = getTsnVerifierPda();
-  const privateEscrowRecord = getTsnPrivateEscrowRecordPda(params.escrowTokenAccount);
+  const expectedDna = getTsnPrivateSettlementDnaPda(params.paymentIdHash, params.commitmentDigest);
+  if (!expectedDna.equals(params.settlementDna)) {
+    throw new Error("settlement DNA does not match payment/commitment digest");
+  }
   const message = createPrivatePayoutPermitMessage({
     operator: params.operator.publicKey,
+    settlementDna: params.settlementDna,
     payoutNullifier: params.payoutNullifier,
     payoutSequence: params.payoutSequence,
+    paymentIdHash: params.paymentIdHash,
+    commitmentDigest: params.commitmentDigest,
+    randomNonce: params.randomNonce,
+    settlementCommitment: params.settlementCommitment,
     crankerVault,
-    recipientTokenAccount,
+    recipientWallet: params.recipientWallet,
     tokenMint: params.tokenMint,
     payoutAmount: params.payoutAmount,
     claimFeeAmount: params.claimFeeAmount ?? 0n,
@@ -798,10 +880,7 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: cranker, isSigner: false, isWritable: true },
       { pubkey: config, isSigner: false, isWritable: false },
-      { pubkey: replayRegistry, isSigner: false, isWritable: true },
-      { pubkey: privateEscrowRecord, isSigner: false, isWritable: true },
-      { pubkey: getTsnSharedEscrowAuthorityPda(), isSigner: false, isWritable: false },
-      { pubkey: params.escrowTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: params.settlementDna, isSigner: false, isWritable: true },
       { pubkey: crankerVault, isSigner: false, isWritable: true },
       { pubkey: vaultAuthority, isSigner: false, isWritable: false },
       { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
@@ -825,6 +904,10 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
     data: Buffer.from(
       concatBytes([
         instructionDiscriminator("tsn_execute_private_payout"),
+        params.paymentIdHash,
+        params.commitmentDigest,
+        params.settlementCommitment,
+        params.randomNonce,
         params.payoutNullifier,
         encodeU64(params.payoutSequence),
         encodeU64(params.payoutAmount),
@@ -851,6 +934,47 @@ export async function tsnExecutePrivatePayoutOnChain(params: {
   };
 }
 
+/** Mother-authorized epoch reimbursement for a consumed DNA voucher. */
+export async function tsnSettlePrivateDnaReimbursementOnChain(params: {
+  authority: Keypair;
+  tokenMint: PublicKey;
+  treasuryTokenAccount: PublicKey;
+  crankerVault: PublicKey;
+  paymentIdHash: Uint8Array;
+  commitmentDigest: Uint8Array;
+  rpcUrl?: string;
+}) {
+  assertBytes32(params.paymentIdHash, "payment id hash");
+  assertBytes32(params.commitmentDigest, "commitment digest");
+  const connection = new Connection(params.rpcUrl ?? resolveSolanaRpcUrl({ frontendSafe: false }), "confirmed");
+  const motherEscrow = getTsnMotherEscrowPda();
+  const treasuryPda = getTsnTreasuryPda();
+  const settlementDna = getTsnPrivateSettlementDnaPda(params.paymentIdHash, params.commitmentDigest);
+  const vaultAuthority = getTsnCrankerVaultAuthorityPda({ crankerVault: params.crankerVault });
+  const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault: params.crankerVault });
+  const instruction = new TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: params.authority.publicKey, isSigner: true, isWritable: false },
+      { pubkey: motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: treasuryPda, isSigner: false, isWritable: false },
+      { pubkey: settlementDna, isSigner: false, isWritable: true },
+      { pubkey: params.crankerVault, isSigner: false, isWritable: true },
+      { pubkey: vaultAuthority, isSigner: false, isWritable: false },
+      { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: params.treasuryTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: params.tokenMint, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.from(concatBytes([
+      instructionDiscriminator("tsn_settle_private_dna_reimbursement"),
+      params.paymentIdHash, params.commitmentDigest,
+    ])),
+  });
+  const signature = await sendAndConfirmTransaction(connection, new Transaction({ feePayer: params.authority.publicKey }).add(instruction), [params.authority]);
+  return { signature, settlementDna: settlementDna.toBase58(), crankerVault: params.crankerVault.toBase58() };
+}
+
 export async function tsnRecoverPrivateEscrowOnChain(params: {
   operator: Keypair;
   permitSigner: PublicKey;
@@ -870,6 +994,9 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
   expiresAtTs: bigint;
   rpcUrl?: string;
 }) {
+  throw new Error("Legacy private escrow recovery is disabled; use Mother-authorized DNA epoch reimbursement");
+  /* legacy ABI retained below only for source compatibility */
+  /*
   assertBytes32(params.recoveryNullifier, "recovery nullifier");
   assertBytes32(params.paymentIdHash, "payment id hash");
   assertBytes32(params.commitmentHash, "commitment hash");
@@ -977,4 +1104,5 @@ export async function tsnRecoverPrivateEscrowOnChain(params: {
     signature,
     recoveryNullifier: Buffer.from(params.recoveryNullifier).toString("hex"),
   };
+  */
 }

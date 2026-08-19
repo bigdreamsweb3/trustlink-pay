@@ -127,7 +127,7 @@ RECOVERY_REWARD_LAMPORTS = int(os.environ.get("RECOVERY_REWARD_LAMPORTS", "10000
 RECOVERY_LOW_LIQUIDITY_UI = float(os.environ.get("RECOVERY_LOW_LIQUIDITY_UI", "0"))
 CRANKER_HEARTBEAT_TTL_SECS = int(os.environ.get("CRANKER_HEARTBEAT_TTL_SECS", "30"))
 DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
-CRANKER_VAULT_ACCOUNT_SIZE = 162
+CRANKER_VAULT_ACCOUNT_SIZE = 178
 CRANKER_VAULT_DISCRIMINATOR = hashlib.sha256(b"account:CrankerVault").digest()[:8]
 BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 _vault_liquidity_cache: Optional[dict[str, Any]] = None
@@ -170,7 +170,7 @@ async def receiver_request(client: httpx.AsyncClient, method: str, path: str, **
 
 TOKEN_PROGRAM_ID = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 ASSOCIATED_TOKEN_PROGRAM_ID = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
-PRIVATE_PAYOUT_DOMAIN = b"TSN_PRIVATE_PAYOUT_V2"
+PRIVATE_PAYOUT_DOMAIN = b"TSN_PRIVATE_PAYOUT_DNA_V1"
 PRIVATE_RECOVERY_DOMAIN = b"TSN_PRIVATE_RECOVERY_V2"
 PRIVATE_REPLAY_REGISTRY_DISCRIMINATOR = hashlib.sha256(
     b"account:PrivateReplayRegistry"
@@ -499,10 +499,15 @@ def decrypt_settlement_token(encrypted: dict[str, Any]) -> dict[str, Any]:
 
 def private_payout_permit_message(
     operator: Pubkey,
+    settlement_dna: Pubkey,
     payout_nullifier: bytes,
     payout_sequence: int,
+    payment_id_hash: bytes,
+    commitment_digest: bytes,
+    random_nonce: bytes,
+    settlement_commitment: bytes,
     cranker_vault: Pubkey,
-    recipient_token_account: Pubkey,
+    recipient_wallet: Pubkey,
     token_mint: Pubkey,
     payout_amount: int,
     claim_fee_amount: int,
@@ -517,10 +522,15 @@ def private_payout_permit_message(
             bytes(get_program_pubkey()),
             bytes(get_mother_escrow_pda()),
             bytes(operator),
+            bytes(settlement_dna),
             payout_nullifier,
             struct.pack("<Q", payout_sequence),
+            payment_id_hash,
+            commitment_digest,
+            random_nonce,
+            settlement_commitment,
             bytes(cranker_vault),
-            bytes(recipient_token_account),
+            bytes(recipient_wallet),
             bytes(token_mint),
             struct.pack("<Q", payout_amount),
             struct.pack("<Q", claim_fee_amount),
@@ -840,6 +850,47 @@ async def write_recipient_route_binding(
         }),
     )
 
+def private_settlement_commitment(
+    settlement_dna: Pubkey, payment_id_hash: bytes, commitment_digest: bytes,
+    random_nonce: bytes, cranker_vault: Pubkey, recipient_wallet: Pubkey,
+    token_mint: Pubkey, payout_amount: int, payout_nullifier: bytes,
+    lease_id_hash_value: bytes, lease_version: int, lease_expiry_ts: int,
+    expires_at_ts: int,
+) -> bytes:
+    return hashlib.sha256(b"TSN_SETTLEMENT_COMMITMENT_V1" + bytes(settlement_dna)
+        + payment_id_hash + commitment_digest + random_nonce + bytes(cranker_vault)
+        + bytes(recipient_wallet) + bytes(token_mint) + struct.pack("<Q", payout_amount)
+        + payout_nullifier + lease_id_hash_value + struct.pack("<Q", lease_version)
+        + struct.pack("<q", lease_expiry_ts) + struct.pack("<q", expires_at_ts)).digest()
+
+def get_private_escrow_record_pda(escrow_token_account: Pubkey) -> Pubkey:
+    return find_tsn_pda(
+        b"tsn_private_escrow_record",
+        bytes(escrow_token_account),
+    )
+
+PRIVATE_FUNDING_BINDING_DOMAIN = b"TSN_PRIVATE_FUNDING_BINDING_V1"
+
+def private_funding_binding_hash(
+    private_escrow_record: Pubkey,
+    escrow_token_account: Pubkey,
+    token_mint: Pubkey,
+    payment_id_hash: bytes,
+    commitment_hash: bytes,
+    amount: int,
+) -> bytes:
+    return hashlib.sha256(b"".join([
+        PRIVATE_FUNDING_BINDING_DOMAIN,
+        bytes(get_program_pubkey()),
+        bytes(get_mother_escrow_pda()),
+        bytes(private_escrow_record),
+        bytes(escrow_token_account),
+        bytes(token_mint),
+        payment_id_hash,
+        commitment_hash,
+        struct.pack("<Q", amount),
+    ])).digest()
+
 
 async def read_recipient_route_binding(work_id: str) -> Optional[dict[str, Any]]:
     store = await get_mempool_store()
@@ -953,6 +1004,53 @@ async def get_token_account_amount(token_account: str) -> tuple[int, int, str]:
         return int(str(raw_amount)), int(decimals), token_account
     except (TypeError, ValueError) as exc:
         raise HTTPException(503, "Settlement escrow balance is malformed") from exc
+
+async def read_private_escrow_record(record_address: Pubkey, escrow_token_account: Pubkey) -> dict[str, Any]:
+    """Decode and validate the on-chain PrivateEscrowRecord before signing."""
+    response = await solana_rpc(
+        "getAccountInfo",
+        [str(record_address), {"encoding": "base64", "commitment": "confirmed"}],
+    )
+    value = (response.get("result") or {}).get("value")
+    if not isinstance(value, dict) or value.get("owner") != str(get_program_pubkey()):
+        raise HTTPException(409, "Private escrow record is missing or owned by another program")
+    data = value.get("data")
+    if not isinstance(data, list) or len(data) < 2 or data[1] != "base64":
+        raise HTTPException(503, "Private escrow record encoding is invalid")
+    try:
+        raw = base64.b64decode(str(data[0]), validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise HTTPException(503, "Private escrow record data is malformed") from exc
+    if len(raw) < 243:
+        raise HTTPException(409, "Private escrow record has an invalid size")
+    expected_discriminator = hashlib.sha256(b"account:PrivateEscrowRecord").digest()[:8]
+    if raw[:8] != expected_discriminator:
+        raise HTTPException(409, "Private escrow record discriminator is invalid")
+    offset = 8
+    mother = Pubkey(raw[offset:offset + 32]); offset += 32
+    escrow = Pubkey(raw[offset:offset + 32]); offset += 32
+    mint = Pubkey(raw[offset:offset + 32]); offset += 32
+    payment_id_hash = raw[offset:offset + 32]; offset += 32
+    commitment_hash = raw[offset:offset + 32]; offset += 32
+    amount = int.from_bytes(raw[offset:offset + 8], "little"); offset += 8
+    settlement_cranker = Pubkey(raw[offset:offset + 32]); offset += 32
+    payout_nullifier = raw[offset:offset + 32]; offset += 32
+    paid = raw[offset] != 0; offset += 1
+    recovered = raw[offset] != 0
+    if mother != get_mother_escrow_pda() or escrow != escrow_token_account:
+        raise HTTPException(409, "Private escrow record is bound to a different escrow")
+    if paid or recovered:
+        raise HTTPException(409, "Private escrow record is already settled")
+    return {
+        "motherEscrow": mother,
+        "escrowTokenAccount": escrow,
+        "tokenMint": mint,
+        "paymentIdHash": payment_id_hash,
+        "commitmentHash": commitment_hash,
+        "amount": amount,
+        "settlementCranker": settlement_cranker,
+        "payoutNullifier": payout_nullifier,
+    }
 
 async def solana_rpc(method: str, params: list[Any], timeout: float = 12) -> dict[str, Any]:
     payload = {
@@ -1312,8 +1410,10 @@ async def read_onchain_cranker_vaults() -> list[dict[str, Any]]:
         if supported_mints and mint not in supported_mints:
             continue
         total_liquidity_base_units = int.from_bytes(data[137:145], "little")
-        total_withdrawn_base_units = int.from_bytes(data[145:153], "little")
-        total_rewards_base_units = int.from_bytes(data[153:161], "little")
+        total_shares = int.from_bytes(data[145:153], "little")
+        reserved_liquidity_base_units = int.from_bytes(data[153:161], "little")
+        total_withdrawn_base_units = int.from_bytes(data[161:169], "little")
+        total_rewards_base_units = int.from_bytes(data[169:177], "little")
         metadata = supported_metadata.get(mint, {})
         results.append({
             "cranker_vault": account.get("pubkey"),
@@ -1325,6 +1425,11 @@ async def read_onchain_cranker_vaults() -> list[dict[str, Any]]:
             "unit_price_usd": metadata.get("unit_price_usd"),
             "vault_token_account": token_account,
             "program_total_liquidity_base_units": total_liquidity_base_units,
+            "program_total_shares": total_shares,
+            "program_reserved_liquidity_base_units": reserved_liquidity_base_units,
+            "program_withdrawable_liquidity_base_units": max(
+                0, total_liquidity_base_units - reserved_liquidity_base_units
+            ),
             "program_total_withdrawn_base_units": total_withdrawn_base_units,
             "program_total_rewards_base_units": total_rewards_base_units,
         })
@@ -1344,6 +1449,18 @@ async def read_public_vault_liquidity() -> list[dict[str, Any]]:
             **vault,
             "total_liquidity": balance_ui,
             "total_liquidity_usd": balance_ui * float(vault.get("unit_price_usd") or 0),
+            "withdrawable_liquidity": max(
+                0.0,
+                balance_ui
+                - float(vault.get("program_reserved_liquidity_base_units") or 0)
+                / (10 ** decimals),
+            ),
+            "withdrawable_liquidity_usd": max(
+                0.0,
+                balance_ui
+                - float(vault.get("program_reserved_liquidity_base_units") or 0)
+                / (10 ** decimals),
+            ) * float(vault.get("unit_price_usd") or 0),
             "decimals": decimals,
         })
     return results
@@ -1743,6 +1860,11 @@ class PrivatePayoutPermitResponse(BaseModel):
     recipientWallet: str
     payoutAmountBaseUnits: str
     claimFeeAmountBaseUnits: str
+    settlementDna: str
+    settlementCommitment: str
+    paymentIdHash: str
+    commitmentDigest: str
+    randomNonce: str
     leaseId: str
     leaseVersion: int
     leaseExpiresAt: str
@@ -3232,7 +3354,7 @@ async def settlement_operator_liquidity() -> dict[str, float]:
             continue
         liquidity_by_cranker[str(cranker)] = (
             liquidity_by_cranker.get(str(cranker), 0.0)
-            + max(0.0, float(vault.get("total_liquidity") or 0))
+            + max(0.0, float(vault.get("withdrawable_liquidity") or 0))
         )
 
     return {
@@ -3781,7 +3903,7 @@ async def wake_receiver_verification() -> dict[str, Any]:
 
 @app.post("/internal/settlement-authorizations/claim", dependencies=[Depends(require_worker_api_key)])
 async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
-    """Return one immutable, operator-bound payout authorization for leased work."""
+    """Create a one-time DNA authorization without exposing sender escrow data."""
     claim_id = str(body.get("workId") or "").strip()
     operator_text = str(body.get("crankerPubkey") or "").strip()
     if not claim_id or not operator_text:
@@ -3829,24 +3951,20 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     # Payout fees are deliberately zero until their own signed policy is part
     # of the immutable authorization. A Cranker cannot choose or alter a fee.
     payout_amount = ui_amount_to_base_units(verified.get("amount"), int(token_metadata["decimals"]))
-    escrow_token_account = str(verified.get("settlementTokenAccount") or "").strip()
-    if not escrow_token_account:
-        raise HTTPException(422, "Payment intent has no funded settlement escrow account")
-    escrow_amount, escrow_decimals, _ = await get_token_account_amount(escrow_token_account)
-    if escrow_decimals != int(token_metadata["decimals"]):
-        raise HTTPException(422, "Settlement escrow token decimals do not match the payment mint")
-    if escrow_amount != payout_amount:
-        logger.error(
-            "Refusing payout authorization: escrow amount mismatch intent=%s escrow=%s amount=%s expected=%s",
-            intent_id,
-            escrow_token_account,
-            escrow_amount,
-            payout_amount,
-        )
-        raise HTTPException(
-            409,
-            "Funded settlement escrow amount does not equal the authorized payment amount",
-        )
+    payment_id = str(verified.get("paymentId") or intent_id)
+    commitment_text = str(verified.get("commitmentHash") or "").strip().lower()
+    if len(commitment_text) != 64:
+        raise HTTPException(422, "Payment intent commitment hash is invalid")
+    try:
+        payment_id_hash = hashlib.sha256(payment_id.encode()).digest()
+        commitment_hash = bytes.fromhex(commitment_text)
+    except ValueError as exc:
+        raise HTTPException(422, "Payment intent commitment hash is invalid") from exc
+    # The raw commitment remains Node/Receiver material.  Only its second
+    # digest crosses the settlement boundary and is used as the DNA seed.
+    commitment_digest = hashlib.sha256(
+        b"TSN_PRIVATE_COMMITMENT_DIGEST_V1" + commitment_hash
+    ).digest()
     route = await read_tin_pru_route(str(route_binding["tin"]))
     if not route:
         raise HTTPException(409, "Recipient TIN no longer has a finalized route")
@@ -3859,8 +3977,14 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     selected_pru = select_pru_for_payment(route, verified, str(token_mint))
     recipient_wallet = str(selected_pru["publicKey"])
     operator = Pubkey.from_string(operator_text)
-    recipient_token_account = get_associated_token_address(Pubkey.from_string(recipient_wallet), token_mint)
-    payout_sequence, _ = await read_private_replay_sequences()
+    cranker_vault = get_cranker_vault_pda(operator, token_mint)
+    settlement_dna = find_tsn_pda(
+        b"tsn_private_settlement_dna", payment_id_hash, commitment_digest
+    )
+    # Sequence is signed audit metadata only; DNA/nullifier is the on-chain
+    # replay guard. A random value avoids a shared read-then-write sequence
+    # bottleneck under concurrent Node workers.
+    payout_sequence = secrets.randbits(64)
     nullifier = hashlib.sha256(
         PRIVATE_PAYOUT_DOMAIN + str(verified.get("paymentId") or intent_id).encode()
         + claim_id.encode() + str(verified.get("commitmentHash") or "").encode()
@@ -3870,19 +3994,39 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     if expires_at_ts <= int(time.time()):
         raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
     lease_hash = lease_id_hash(claim_id)
+    random_nonce = secrets.token_bytes(32)
+    settlement_commitment = private_settlement_commitment(
+        settlement_dna, payment_id_hash, commitment_digest, random_nonce,
+        cranker_vault, Pubkey.from_string(recipient_wallet), token_mint,
+        payout_amount, nullifier, lease_hash, lease_version, lease_expiry_ts,
+        expires_at_ts,
+    )
+    permit_key = f"settlement-dna:{operator}:{payment_id_hash.hex()}:{commitment_digest.hex()}"
+    store = await get_mempool_store()
+    consumed = await store.consume_once(
+        k_canonical_message_nonces(), permit_key,
+        json.dumps({"claimId": claim_id, "operator": str(operator)}),
+    )
+    if not consumed:
+        raise HTTPException(409, "Settlement commitment has already been authorized")
     signature = get_settlement_authorization_signing_key().sign(private_payout_permit_message(
-        operator, nullifier, payout_sequence, get_cranker_vault_pda(operator, token_mint),
-        recipient_token_account, token_mint, payout_amount, 0, lease_hash, lease_version,
-        lease_expiry_ts, expires_at_ts,
+        operator, settlement_dna, nullifier, payout_sequence, payment_id_hash,
+        commitment_digest, random_nonce, settlement_commitment, cranker_vault,
+        Pubkey.from_string(recipient_wallet), token_mint, payout_amount, 0,
+        lease_hash, lease_version, lease_expiry_ts, expires_at_ts,
     )).signature
     return {
-        "kind": "TSN_PAYOUT_AUTHORIZATION", "authorizationVersion": 1,
+        "kind": "TSN_PAYOUT_AUTHORIZATION", "authorizationVersion": 2,
         "authorizationSigner": settlement_authorization_signer_pubkey(),
         "authorizationSignatureBase64": base64.b64encode(signature).decode("ascii"),
         "payoutNullifier": nullifier.hex(), "payoutSequence": str(payout_sequence),
         "tokenMintAddress": str(token_mint), "recipientWallet": recipient_wallet,
         "payoutAmountBaseUnits": str(payout_amount), "claimFeeAmountBaseUnits": "0",
-        "escrowTokenAccount": escrow_token_account,
+        "settlementDna": str(settlement_dna),
+        "settlementCommitment": settlement_commitment.hex(),
+        "paymentIdHash": payment_id_hash.hex(),
+        "commitmentDigest": commitment_digest.hex(),
+        "randomNonce": random_nonce.hex(),
         "leaseId": claim_id, "leaseVersion": lease_version,
         "leaseExpiresAt": str(claim_lease.get("expiresAt")),
         "expiresAtTs": expires_at_ts,
@@ -3891,7 +4035,8 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
 
 @app.post("/internal/settlement-authorizations/recovery", dependencies=[Depends(require_worker_api_key)])
 async def create_recovery_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
-    """Create one immutable recovery authorization from Receiver-held public work."""
+    """Legacy recovery is disabled; DNA reimbursement is epoch-authorized."""
+    raise HTTPException(410, "Legacy private escrow recovery is disabled; settle consumed DNA at epoch")
     work_id = str(body.get("workId") or "").strip()
     operator_text = str(body.get("crankerPubkey") or "").strip()
     if not work_id or not operator_text:
@@ -5108,6 +5253,7 @@ async def issue_private_payout_permit(
     claim_id: str = ApiPath(...),
     body: SignedLeasePermitRequest = ...,
 ) -> PrivatePayoutPermitResponse:
+    raise HTTPException(410, "Legacy payout permits are disabled; use Receiver-leased settlement authorization")
     operator = verify_lease_authorization(
         "payout",
         claim_id,

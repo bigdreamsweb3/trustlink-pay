@@ -714,11 +714,14 @@ export async function tsnWithdrawCrankerFundsOnChain(params: {
 export async function tsnClaimIntentOnChain(params: {
   operator: Keypair;
   intent: PublicKey;
+  tokenMint: PublicKey;
   rpcUrl?: string;
 }) {
   const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
+  const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
+  const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
 
   const ix = new TransactionInstruction({
     programId: getVerifiedTsnProgramId(),
@@ -727,6 +730,8 @@ export async function tsnClaimIntentOnChain(params: {
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: params.intent, isSigner: false, isWritable: true },
       { pubkey: cranker, isSigner: false, isWritable: true },
+      { pubkey: crankerVault, isSigner: false, isWritable: true },
+      { pubkey: vaultTokenAccount, isSigner: false, isWritable: false },
     ],
     data: instructionDiscriminator("tsn_claim_intent"),
   });
@@ -744,10 +749,14 @@ export async function tsnClaimIntentOnChain(params: {
 export async function tsnReassignIntentOnChain(params: {
   authority: Keypair;
   intent: PublicKey;
+  operator: PublicKey;
+  tokenMint: PublicKey;
   rpcUrl?: string;
 }) {
   const connection = getConnection(params.rpcUrl);
   const motherEscrow = getTsnMotherEscrowPda();
+  const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator });
+  const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
 
   const ix = new TransactionInstruction({
     programId: getVerifiedTsnProgramId(),
@@ -755,6 +764,7 @@ export async function tsnReassignIntentOnChain(params: {
       { pubkey: params.authority.publicKey, isSigner: true, isWritable: true },
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: params.intent, isSigner: false, isWritable: true },
+      { pubkey: crankerVault, isSigner: false, isWritable: true },
     ],
     data: instructionDiscriminator("tsn_reassign_intent"),
   });
@@ -868,6 +878,7 @@ export async function tsnSubmitProofOnChain(params: {
 export async function tsnClaimVaultSettlementOnChain(params: {
   operator: Keypair;
   paymentIntentId: bigint;
+  tokenMint: PublicKey;
   otdtHash32: Uint8Array;
   rpcUrl?: string;
 }) {
@@ -878,6 +889,9 @@ export async function tsnClaimVaultSettlementOnChain(params: {
   const motherEscrow = getTsnMotherEscrowPda();
   const cranker = getTsnCrankerPda({ motherEscrow, operator: params.operator.publicKey });
   const paymentVault = getTsnPaymentVaultPda(params.paymentIntentId);
+  const crankerVault = getTsnCrankerVaultPda({ cranker, tokenMint: params.tokenMint });
+  const vaultTokenAccount = getTsnCrankerVaultTokenPda({ crankerVault });
+  const paymentVaultTokenAccount = getAssociatedTokenAddressSync(params.tokenMint, paymentVault, true);
   const ix = new TransactionInstruction({
     programId: getVerifiedTsnProgramId(),
     keys: [
@@ -885,6 +899,9 @@ export async function tsnClaimVaultSettlementOnChain(params: {
       { pubkey: motherEscrow, isSigner: false, isWritable: false },
       { pubkey: cranker, isSigner: false, isWritable: true },
       { pubkey: paymentVault, isSigner: false, isWritable: true },
+      { pubkey: crankerVault, isSigner: false, isWritable: true },
+      { pubkey: paymentVaultTokenAccount, isSigner: false, isWritable: false },
+      { pubkey: vaultTokenAccount, isSigner: false, isWritable: false },
     ],
     data: Buffer.concat([
       instructionDiscriminator("tsn_claim_vault_settlement"),

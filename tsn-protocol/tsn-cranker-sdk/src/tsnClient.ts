@@ -1,7 +1,7 @@
 import type { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 
-import { crankerPda, epochAccountPda, intentPda, motherEscrowPda, paymentCommitmentPda, peaPda, privacyReceivePda } from "./tsnPdas.js";
+import { crankerPda, crankerVaultPda, crankerVaultTokenPda, epochAccountPda, intentPda, motherEscrowPda, paymentCommitmentPda, peaPda, privacyReceivePda } from "./tsnPdas.js";
 import {
   assertVerifiedTsnProgramId,
   VERIFIED_TSN_PROGRAM_ID,
@@ -62,19 +62,29 @@ export class TsnClient {
     motherEscrow: PublicKey,
     operator: PublicKey,
     intent: PublicKey,
+    tokenMint: PublicKey,
   ) {
     const [cranker] = this.crankerPda(motherEscrow, operator);
+    const [crankerVault] = crankerVaultPda(cranker, tokenMint, this.programId);
+    const [vaultTokenAccount] = crankerVaultTokenPda(crankerVault, this.programId);
     // @ts-ignore IDL types not wired yet
     return this.program.methods
       .tsnClaimIntent()
-      .accounts({ operator, motherEscrow, intent, cranker });
+      .accounts({ operator, motherEscrow, intent, cranker, crankerVault, vaultTokenAccount });
   }
 
-  reassignIntentIx(motherEscrow: PublicKey, intent: PublicKey) {
+  reassignIntentIx(
+    motherEscrow: PublicKey,
+    intent: PublicKey,
+    operator: PublicKey,
+    tokenMint: PublicKey,
+  ) {
+    const [cranker] = this.crankerPda(motherEscrow, operator);
+    const [crankerVault] = crankerVaultPda(cranker, tokenMint, this.programId);
     // @ts-ignore IDL types not wired yet
     return this.program.methods
       .tsnReassignIntent()
-      .accounts({ motherEscrow, intent });
+      .accounts({ motherEscrow, intent, crankerVault });
   }
 
   submitProofIx(

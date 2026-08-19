@@ -83,11 +83,36 @@ pub fn fund_cranker(ctx: Context<FundCranker>, amount: u64) -> Result<()> {
         position.bump = ctx.bumps.liquidity_position;
     }
 
-    position.principal_amount = position.principal_amount.saturating_add(amount);
+    // Deposits mint LP shares at the current asset/share price. Existing
+    // deposits therefore participate pro-rata in both gains and losses.
+    let cranker_vault = &mut ctx.accounts.cranker_vault;
+    let minted_shares = if cranker_vault.total_shares == 0 {
+        require!(cranker_vault.total_liquidity == 0, TsnError::InvalidLiquidityShareAmount);
+        amount
+    } else if cranker_vault.total_liquidity == 0 {
+        return Err(TsnError::InvalidLiquidityShareAmount.into());
+    } else {
+        ((amount as u128)
+            .checked_mul(cranker_vault.total_shares as u128)
+            .ok_or(TsnError::FeeSplitOverflow)?
+            / cranker_vault.total_liquidity as u128) as u64
+    };
+    require!(minted_shares > 0, TsnError::InvalidLiquidityShareAmount);
+
+    position.principal_amount = position
+        .principal_amount
+        .checked_add(minted_shares)
+        .ok_or(TsnError::FeeSplitOverflow)?;
     position.updated_at_ts = now;
 
-    let cranker_vault = &mut ctx.accounts.cranker_vault;
-    cranker_vault.total_liquidity = cranker_vault.total_liquidity.saturating_add(amount);
+    cranker_vault.total_liquidity = cranker_vault
+        .total_liquidity
+        .checked_add(amount)
+        .ok_or(TsnError::FeeSplitOverflow)?;
+    cranker_vault.total_shares = cranker_vault
+        .total_shares
+        .checked_add(minted_shares)
+        .ok_or(TsnError::FeeSplitOverflow)?;
 
     emit!(TsnCrankerFunded {
         cranker: ctx.accounts.cranker.key(),

@@ -117,6 +117,14 @@ pub fn recover_private_escrow(
     expires_at_ts: i64,
     permit_signature: [u8; 64],
 ) -> Result<()> {
+    // The legacy escrow-account recovery ABI is permanently disabled in the
+    // DNA model. Reimbursement is a Mother-authorized epoch operation against
+    // the consumed DNA and exact CrankerVault; no caller may submit an escrow
+    // account to this program anymore.
+    return err!(TsnError::PrivateSettlementDisabled);
+
+    #[allow(unreachable_code)]
+    {
     require!(
         ctx.accounts.private_settlement_config.enabled,
         TsnError::PrivateSettlementDisabled
@@ -259,4 +267,5 @@ pub fn recover_private_escrow(
         recovered_amount: recovery_amount,
     });
     Ok(())
+    }
 }

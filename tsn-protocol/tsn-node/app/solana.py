@@ -267,8 +267,10 @@ async def read_onchain_cranker_vaults() -> list[dict[str, Any]]:
             "unit_price_usd": metadata.get("unit_price_usd"),
             "vault_token_account": encode_base58(data[104:136]),
             "program_total_liquidity_base_units": int.from_bytes(data[137:145], "little"),
-            "program_total_withdrawn_base_units": int.from_bytes(data[145:153], "little"),
-            "program_total_rewards_base_units": int.from_bytes(data[153:161], "little"),
+            "program_total_shares": int.from_bytes(data[145:153], "little"),
+            "program_reserved_liquidity_base_units": int.from_bytes(data[153:161], "little"),
+            "program_total_withdrawn_base_units": int.from_bytes(data[161:169], "little"),
+            "program_total_rewards_base_units": int.from_bytes(data[169:177], "little"),
         })
     return results
 
@@ -286,6 +288,12 @@ async def read_public_vault_liquidity() -> list[dict[str, Any]]:
             **vault,
             "total_liquidity": balance_ui,
             "total_liquidity_usd": balance_ui * float(vault.get("unit_price_usd") or 0),
+            "withdrawable_liquidity": max(
+                0.0,
+                balance_ui
+                - float(vault.get("program_reserved_liquidity_base_units") or 0)
+                / (10 ** decimals),
+            ),
             "decimals": decimals,
         })
     return results

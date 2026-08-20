@@ -1,6 +1,6 @@
 import { createHash, createPublicKey, randomUUID, verify as verifySignature } from "node:crypto";
 
-export type WorkKind = "PAYMENT_INTENT" | "CLAIM" | "TIN_OPERATION" | "RECOVERY";
+export type WorkKind = "PAYMENT_INTENT" | "SETTLEMENT" | "TIN_OPERATION";
 export type WorkStatus =
   | "RECEIVED"
   | "NODE_VERIFYING"
@@ -29,9 +29,7 @@ export type ReceiverWork = {
 
 /** Work kinds that may be accepted from an untrusted HTTP caller. */
 export function assertExternalWorkKind(kind: WorkKind): void {
-  if (kind === "CLAIM" || kind === "RECOVERY") {
-    throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
-  }
+  if (kind === "SETTLEMENT") throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
 }
 
 const PAYMENT_INTENT_KEYS = new Set([
@@ -40,14 +38,13 @@ const PAYMENT_INTENT_KEYS = new Set([
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
   "senderFeeAmount", "senderSignedSettlementTransaction", "senderSignedSettlementFeePayer", "senderSettlementMode",
   "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
-  "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "commitmentRecord", "senderTokenAccount",
-  "settlementVault", "settlementTokenAccount", "settlementPaymentIntentId", "transferId", "commitmentHash",
+  "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "senderTokenAccount",
+  "transferId", "commitmentHash",
   "settlementEpoch", "encryptedSettlementToken", "source",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   PAYMENT_INTENT: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
-  CLAIM: new Set(["paymentId", "intentId", "recipientHash", "source"]),
-  RECOVERY: new Set(["paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature", "payoutNullifier", "commitmentHash", "escrowTokenAccount", "tokenMintAddress", "recoveryAmountBaseUnits", "source"]),
+  SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source"]),
   TIN_OPERATION: new Set(["operationId", "intentType", "ownerPubkey", "tin", "nonce", "payload", "source"]),
 };
 

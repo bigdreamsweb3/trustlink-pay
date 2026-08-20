@@ -110,7 +110,7 @@ TSN Operator Guided Setup
 3. Initialize vault
 4. Fund cranker vault
 5. Withdraw cranker funds
-6. Force-settle epoch
+6. Show epoch-close policy
 7. Show raw CLI help
 8. Exit
 `);
@@ -291,7 +291,7 @@ async function main() {
     }
 
     if (choice === "6") {
-      await runCli(["settle-epoch", "--force"]);
+      output.write("[guided-setup] Epoch close is authorized by the Node after all opaque slots settle or refund.\n");
       return;
     }
 

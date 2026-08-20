@@ -32,7 +32,7 @@ const stages = [
       "Independent operators called Crankers validate eligible intents, submit settlement work, and earn protocol-defined rewards.",
   },
   {
-    title: "Settlement Proof",
+    title: "Opaque Slot Settlement",
     description:
       "TSN records authorization and settlement receipts so completed work can be audited and verified.",
   },
@@ -79,7 +79,7 @@ export default function TsnPage() {
           <p className="max-w-3xl text-lg leading-8 text-[var(--text-soft)]">
             TrustLink Pay is built on the Transfer Settlement Network — a
             decentralized payment execution layer for Solana where Payment
-            Intents, Escrow Holds, Cranker execution, and Settlement Proofs
+            Intents, epoch treasury funding, Cranker execution, and opaque settlement slots
             coordinate private and verifiable payments.
           </p>
           <div className="flex flex-wrap gap-3">

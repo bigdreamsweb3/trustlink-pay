@@ -32,7 +32,7 @@ export function toErrorResponse(error: unknown) {
         "amount",
         "token",
         "tokenMintAddress",
-        "escrowVaultAddress",
+        "fundingSignature",
         "senderWallet",
         "senderPhoneNumber",
         "purpose",

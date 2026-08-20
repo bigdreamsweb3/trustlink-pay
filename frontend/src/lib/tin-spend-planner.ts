@@ -5,6 +5,8 @@ import type { UserProfile, WalletTokenOption } from "@/src/lib/types";
 import type { ConnectedWalletSession } from "@/src/lib/wallet";
 
 export type TinSpendPlanResult = TinSpendPlan & {
+  pruFundingAmountBaseUnits: string;
+  walletFundingAmountBaseUnits: string;
   tin: string | null;
   tokenSymbol: string;
   tokenDecimals: number;
@@ -85,6 +87,8 @@ export async function buildTinSpendPlan(params: {
 
   return {
     ...plan,
+    pruFundingAmountBaseUnits: String((plan as unknown as Record<string, unknown>).pruFundingAmountBaseUnits ?? "0"),
+    walletFundingAmountBaseUnits: String((plan as unknown as Record<string, unknown>).walletFundingAmountBaseUnits ?? "0"),
     tin: params.user.tin ?? null,
     tokenSymbol: params.token.symbol,
     tokenDecimals: decimals,

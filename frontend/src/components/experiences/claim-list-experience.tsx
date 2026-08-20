@@ -32,39 +32,16 @@ function formatUsd(value: number) {
 }
 
 function claimStatusLabel(payment: PaymentRecord) {
-  if (
-    payment.tsn?.claimRequestStatus === "failed" ||
-    payment.tsn?.claimRequestStatus === "canceled"
-  ) {
-    return "Claim retry";
-  }
-  if (
-    payment.tsn?.claimRequestStatus === "pending" ||
-    payment.tsn?.claimRequestStatus === "processing"
-  ) {
-    return "Claiming";
-  }
-  if (
-    payment.tsn?.intentStatus === "escrowed" ||
-    payment.tsn?.intentStatus === "onchain" ||
-    payment.tsn?.intentStatus === "claimed"
-  ) {
-    return "Escrowed";
-  }
-  return "Claimable";
+  if (payment.tsn?.intentStatus === "failed" || payment.tsn?.intentStatus === "canceled") return "Settlement retry";
+  if (payment.tsn?.intentStatus === "onchain") return "Settlement pending";
+  return "Settlement available";
 }
 
 function claimStatusTone(payment: PaymentRecord) {
-  if (
-    payment.tsn?.claimRequestStatus === "failed" ||
-    payment.tsn?.claimRequestStatus === "canceled"
-  ) {
+  if (payment.tsn?.intentStatus === "failed" || payment.tsn?.intentStatus === "canceled") {
     return "border-[#f3c96b]/20 bg-[#f3c96b]/10 text-[#f3c96b]";
   }
-  if (
-    payment.tsn?.claimRequestStatus === "pending" ||
-    payment.tsn?.claimRequestStatus === "processing"
-  ) {
+  if (payment.tsn?.intentStatus === "onchain") {
     return "border-[#4ae8d0]/16 bg-[#4ae8d0]/10 text-[#4ae8d0]";
   }
   return "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]";
@@ -119,7 +96,7 @@ export function ClaimListExperience() {
     <AppMobileShell
       currentTab="claim"
       title="Claim"
-      subtitle="Review incoming payments waiting in escrow."
+      subtitle="Review incoming payments waiting for settlement authorization."
       user={user}
       showBackButton
       backHref="/app"

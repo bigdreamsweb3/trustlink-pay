@@ -1,70 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
-
-
-class RecoveryWorkItem(BaseModel):
-    id: str
-    paymentId: str
-    transferId: str
-    paymentIntentId: str
-    settlementVault: str
-    settlementTokenAccount: str
-    tokenMintAddress: str
-    settlementCrankerPubkey: str
-    privacyVersion: Optional[int] = None
-    amount: float
-    epoch: int
-    rewardLamports: int
-    priorityScore: float
-    status: Literal["pending", "leased", "completed", "failed", "canceled"] = "pending"
-    assignedCrankerPubkey: Optional[str] = None
-    leaseExpiresAt: Optional[str] = None
-    recoveryTxSig: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt: str
-    updatedAt: str
-    recoverySequence: Optional[str] = None
-
-
-class PublicRecoveryWorkItem(BaseModel):
-    id: str
-    tokenMintAddress: str
-    privacyVersion: Optional[int] = None
-    amount: float
-    epoch: int
-    rewardLamports: int
-    priorityScore: float
-    status: str
-    recoveryTxSig: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt: str
-    updatedAt: str
-
-
-class RecoveryLeaseRequest(BaseModel):
-    operatorPubkey: str
-
-
-class PrivateRecoveryPermitResponse(BaseModel):
-    permitSigner: str
-    permitSignatureBase64: str
-    recoveryNullifier: str
-    recoverySequence: str
-    escrowTokenAccount: str
-    settlementCrankerPubkey: str
-    tokenMintAddress: str
-    recoveryAmountBaseUnits: str
-    expiresAtTs: int
-
-
-class RecoveryStatusRequest(BaseModel):
-    status: str
-    operatorPubkey: Optional[str] = None
-    recoveryTxSig: Optional[str] = None
-    settlementReason: Optional[str] = None
 
 
 class CrankerHeartbeatRequest(BaseModel):
@@ -85,24 +23,16 @@ class EpochStatus(BaseModel):
     epoch_started_at: str
     next_close_at: str
     intent_count: int
-    claim_count: int
-    proof_count: int
-    recovery_count: int = 0
+    settlement_count: int
 
 
 class EpochCloseResult(BaseModel):
     epoch_number: int
     intents_archived: int
-    claims_archived: int
-    proofs_archived: int
-    recoveries_archived: int = 0
+    settlements_archived: int
     intents_rolled_over: int = 0
-    claims_rolled_over: int = 0
     intents_pruned: int = 0
-    claims_pruned: int = 0
-    proofs_pruned: int = 0
-    recoveries_rolled_over: int = 0
-    recoveries_pruned: int = 0
+    settlements_pruned: int = 0
     github_commit_url: str
     new_epoch_number: int
     message: str
@@ -117,7 +47,7 @@ class MempoolStatusResponse(BaseModel):
     epoch: EpochStatus
 
 
-class IntentToClaimMetrics(BaseModel):
+class IntentToSettlementMetrics(BaseModel):
     sample_count: int
     average_ms: float
     min_ms: float
@@ -133,7 +63,7 @@ class UptimeMetrics(BaseModel):
 
 
 class MetricsResponse(BaseModel):
-    intent_to_claim: IntentToClaimMetrics
+    intent_to_settlement: IntentToSettlementMetrics
     uptime: UptimeMetrics
     active_crankers_last_epoch: int
 

@@ -27,9 +27,9 @@ class CreateIntentRequest(BaseModel):
     senderSignedSettlementFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast the settlement")
     senderSettlementMode: Optional[str] = Field(None, description="Settlement authority model")
     pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
-    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the private escrow")
+    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the epoch treasury")
     pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
-    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into private escrow")
+    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the epoch treasury")
     walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
     pruSpendSelections: Optional[list[dict]] = None
     encryptedSettlementToken: Optional[dict] = None
@@ -37,9 +37,6 @@ class CreateIntentRequest(BaseModel):
     transferId: Optional[str] = None
     privacyVersion: Optional[int] = 1
     settlementEpoch: Optional[int] = None
-    settlementVault: Optional[str] = None
-    settlementTokenAccount: Optional[str] = None
-    settlementPaymentIntentId: Optional[str] = None
     settlementResolution: Optional[str] = None
     settlementReason: Optional[str] = None
     source: Optional[str] = None
@@ -49,9 +46,8 @@ class MempoolIntent(CreateIntentRequest):
     id: str
     status: str
     assignedCrankerPubkey: Optional[str] = None
-    escrowTxSig: Optional[str] = None
-    claimTxSig: Optional[str] = None
-    proofTxSig: Optional[str] = None
+    fundingTxSig: Optional[str] = None
+    settlementTxSig: Optional[str] = None
     settlementResolution: Optional[str] = None
     settlementReason: Optional[str] = None
     postedAt: str
@@ -70,55 +66,12 @@ class PublicMempoolIntent(BaseModel):
     source: Optional[str] = None
     status: str
     assignedCrankerPubkey: Optional[str] = None
-    escrowTxSig: Optional[str] = None
-    claimTxSig: Optional[str] = None
-    proofTxSig: Optional[str] = None
+    fundingTxSig: Optional[str] = None
+    settlementTxSig: Optional[str] = None
     settlementResolution: Optional[str] = None
     settlementReason: Optional[str] = None
     postedAt: str
     updatedAt: str
-
-
-class PostClaimRequest(BaseModel):
-    paymentId: str = Field(...)
-    intentId: str = Field(...)
-    recipientHash: str = Field(...)
-    destinationWallet: Optional[str] = Field(None, description="Legacy field. New private settlement routes remain inside the encrypted settlement token.")
-    autoclaim: bool = Field(False)
-    source: Optional[str] = Field(None)
-
-
-class MempoolClaimRequest(PostClaimRequest):
-    id: str
-    status: str = "pending"
-    assignedCrankerPubkey: Optional[str] = None
-    leaseExpiresAt: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt: str
-    updatedAt: str
-
-
-class ProofOfPayment(BaseModel):
-    intent_id: str = Field(...)
-    timestamp: str = Field(...)
-    cranker_pubkey: str = Field(...)
-    proof_tx: str = Field(...)
-    encrypted_payload: Optional[str] = Field(None)
-    transfer_id: Optional[str] = Field(None)
-    commitment_hash: Optional[str] = Field(None)
-    otdt_hash: Optional[str] = Field(None)
-
-
-class PublicProofOfPayment(BaseModel):
-    intent_id: str
-    timestamp: str
-    proof_tx: str
-    cranker_pubkey: Optional[str] = None
-
-
-class WorkItem(BaseModel):
-    intent: MempoolIntent | PublicMempoolIntent
-    claimRequest: MempoolClaimRequest
 
 
 class IntentWorkItem(BaseModel):
@@ -128,12 +81,8 @@ class IntentWorkItem(BaseModel):
 class UpdateStatusRequest(BaseModel):
     status: str = Field(...)
     assignedCrankerPubkey: Optional[str] = Field(None)
-    escrowTxSig: Optional[str] = Field(None)
-    claimTxSig: Optional[str] = Field(None)
-    proofTxSig: Optional[str] = Field(None)
-    settlementVault: Optional[str] = Field(None)
-    settlementTokenAccount: Optional[str] = Field(None)
-    settlementPaymentIntentId: Optional[str] = Field(None)
+    fundingTxSig: Optional[str] = Field(None)
+    settlementTxSig: Optional[str] = Field(None)
     settlementResolution: Optional[str] = Field(None)
     settlementReason: Optional[str] = Field(None)
 
@@ -148,17 +97,21 @@ class PrivatePayoutPermitResponse(BaseModel):
     permitSigner: str
     permitSignatureBase64: str
     payoutNullifier: str
-    payoutSequence: str
     tokenMintAddress: str
     recipientWallet: str
     payoutAmountBaseUnits: str
     claimFeeAmountBaseUnits: str
-    escrowTokenAccount: str
-    privateEscrowRecord: str
-    paymentIdHash: str
     commitmentHash: str
-    fundingBindingHash: str
-    fundingSignatureHash: str
+    epochTreasury: str
+    epochLedger: str
+    claimSlot: str
+    settlementDna: str
+    commitmentDigest: str
+    randomNonce: str
+    settlementCommitment: str
+    leaseId: str
+    leaseVersion: int
+    leaseExpiresAt: str
     expiresAtTs: int
 
 
@@ -175,6 +128,6 @@ class PruSpendPermitResponse(BaseModel):
     paymentId: str
     tokenMintAddress: str
     commitmentHash: str
-    escrowAmountBaseUnits: str
+    fundingAmountBaseUnits: str
     senderFeeAmountBaseUnits: str
     selections: list[PruSpendPermitSelection]

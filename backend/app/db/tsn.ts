@@ -1,14 +1,13 @@
 import { sql } from "@/app/db/client";
-import type { ClaimRequestRecord, ClaimRequestStatus, PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
+import type { PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
 let paymentIntentSchemaReady: Promise<void> | null = null;
 
 async function ensurePaymentIntentTraceColumns() {
   if (!paymentIntentSchemaReady) {
     paymentIntentSchemaReady = (async () => {
-      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128)`;
-      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128)`;
-      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS proof_tx_sig VARCHAR(128)`;
+      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS funding_tx_sig VARCHAR(128)`;
+      await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS settlement_tx_sig VARCHAR(128)`;
       await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS last_status_checked_at TIMESTAMPTZ`;
       await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS status_finalized_at TIMESTAMPTZ`;
       await sql`ALTER TABLE payment_intents ADD COLUMN IF NOT EXISTS status_check_count INTEGER NOT NULL DEFAULT 0`;
@@ -21,9 +20,7 @@ async function ensurePaymentIntentTraceColumns() {
         ADD CONSTRAINT payment_intents_status_check
         CHECK (status IN (
           'pending',
-          'escrowed',
           'onchain',
-          'claimed',
           'executed',
           'settled',
           'expired',
@@ -47,7 +44,7 @@ export async function findPaymentIntentByPaymentId(paymentId: string): Promise<P
   const rows = (await sql`
     SELECT
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, funding_tx_sig, settlement_tx_sig, created_at
     FROM payment_intents
     WHERE payment_id = ${paymentId}
     LIMIT 1
@@ -63,7 +60,7 @@ export async function listPaymentIntentsByPaymentIds(paymentIds: string[]): Prom
   return (await sql`
     SELECT
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, funding_tx_sig, settlement_tx_sig, created_at
     FROM payment_intents
     WHERE payment_id = ANY(${paymentIds}::uuid[])
   `) as PaymentIntentRecord[];
@@ -76,9 +73,9 @@ export async function listActivePaymentIntents(limit = 100): Promise<PaymentInte
   return (await sql`
     SELECT
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, funding_tx_sig, settlement_tx_sig, created_at
     FROM payment_intents
-    WHERE status IN ('pending', 'escrowed', 'onchain', 'claimed')
+    WHERE status IN ('pending', 'onchain')
     ORDER BY created_at ASC
     LIMIT ${safeLimit}
   `) as PaymentIntentRecord[];
@@ -110,7 +107,7 @@ export async function upsertPaymentIntent(params: {
           amount = EXCLUDED.amount
     RETURNING
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, funding_tx_sig, settlement_tx_sig, created_at
   `) as PaymentIntentRecord[];
 
   return rows[0];
@@ -121,9 +118,8 @@ export async function updatePaymentIntentStatus(params: {
   status: PaymentIntentStatus;
   assignedCrankerPubkey?: string | null;
   leaseExpiryAt?: string | null;
-  escrowTxSig?: string | null;
-  claimTxSig?: string | null;
-  proofTxSig?: string | null;
+  fundingTxSig?: string | null;
+  settlementTxSig?: string | null;
 }): Promise<PaymentIntentRecord | null> {
   await ensurePaymentIntentTraceColumns();
 
@@ -133,82 +129,14 @@ export async function updatePaymentIntentStatus(params: {
       status = ${params.status},
       assigned_cranker_pubkey = COALESCE(${params.assignedCrankerPubkey ?? null}, assigned_cranker_pubkey),
       lease_expiry_at = COALESCE(${params.leaseExpiryAt ?? null}, lease_expiry_at),
-      escrow_tx_sig = COALESCE(${params.escrowTxSig ?? null}, escrow_tx_sig),
-      claim_tx_sig = COALESCE(${params.claimTxSig ?? null}, claim_tx_sig),
-      proof_tx_sig = COALESCE(${params.proofTxSig ?? null}, proof_tx_sig)
+      funding_tx_sig = COALESCE(${params.fundingTxSig ?? null}, funding_tx_sig),
+      settlement_tx_sig = COALESCE(${params.settlementTxSig ?? null}, settlement_tx_sig)
     WHERE id = ${params.id}
     RETURNING
       id, payment_id, intent_seed_hash, recipient_hash, token_mint_address, amount,
-      status, assigned_cranker_pubkey, lease_expiry_at, escrow_tx_sig, claim_tx_sig, proof_tx_sig, created_at
+      status, assigned_cranker_pubkey, lease_expiry_at, funding_tx_sig, settlement_tx_sig, created_at
   `) as PaymentIntentRecord[];
 
   return rows[0] ?? null;
 }
 
-export async function findLatestActiveClaimRequestByPaymentId(paymentId: string): Promise<ClaimRequestRecord | null> {
-  const rows = (await sql`
-    SELECT
-      id, payment_id, intent_id, recipient_hash, destination_wallet, autoclaim,
-      status, requested_at, updated_at
-    FROM claim_requests
-    WHERE payment_id = ${paymentId}
-      AND status IN ('pending', 'processing', 'completed')
-    ORDER BY requested_at DESC
-    LIMIT 1
-  `) as ClaimRequestRecord[];
-
-  return rows[0] ?? null;
-}
-
-export async function listLatestClaimRequestsByPaymentIds(paymentIds: string[]): Promise<ClaimRequestRecord[]> {
-  if (paymentIds.length === 0) return [];
-
-  return (await sql`
-    SELECT DISTINCT ON (payment_id)
-      id, payment_id, intent_id, recipient_hash, destination_wallet, autoclaim,
-      status, requested_at, updated_at
-    FROM claim_requests
-    WHERE payment_id = ANY(${paymentIds}::uuid[])
-    ORDER BY payment_id, requested_at DESC
-  `) as ClaimRequestRecord[];
-}
-
-export async function createClaimRequest(params: {
-  paymentId: string;
-  intentId: string;
-  recipientHash: string;
-  destinationWallet?: string | null;
-  autoclaim: boolean;
-}): Promise<ClaimRequestRecord> {
-  const rows = (await sql`
-    INSERT INTO claim_requests (
-      payment_id, intent_id, recipient_hash, destination_wallet, autoclaim, status
-    )
-    VALUES (
-      ${params.paymentId}, ${params.intentId}, ${params.recipientHash},
-      ${params.destinationWallet ?? null}, ${params.autoclaim}, 'pending'
-    )
-    RETURNING
-      id, payment_id, intent_id, recipient_hash, destination_wallet, autoclaim,
-      status, requested_at, updated_at
-  `) as ClaimRequestRecord[];
-
-  return rows[0];
-}
-
-export async function updateClaimRequestStatus(params: {
-  id: string;
-  status: ClaimRequestStatus;
-}): Promise<ClaimRequestRecord | null> {
-  const rows = (await sql`
-    UPDATE claim_requests
-    SET status = ${params.status},
-        updated_at = NOW()
-    WHERE id = ${params.id}
-    RETURNING
-      id, payment_id, intent_id, recipient_hash, destination_wallet, autoclaim,
-      status, requested_at, updated_at
-  `) as ClaimRequestRecord[];
-
-  return rows[0] ?? null;
-}

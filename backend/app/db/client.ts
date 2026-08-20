@@ -118,3 +118,7 @@ export const sql = (async (...args: any[]) => {
     }
   }
 }) as SqlFunction;
+
+export function rawSql(fragment: string) {
+  return (getSql() as unknown as { unsafe: (value: string) => unknown }).unsafe(fragment);
+}

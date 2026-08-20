@@ -58,10 +58,8 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     payment.status === "claimed" ||
       (tsnState && (tsnState.stage === "cranker_paid" || tsnState.stage === "epoch_settled")),
   );
-  const isTsnEscrowed = Boolean(
-    tsnState && ["escrowed", "lease_claimed", "cranker_paid", "epoch_settled"].includes(tsnState.stage),
-  );
-  const isTsnClaiming = Boolean(
+  const isTsnFunded = Boolean(tsnState && ["funded", "lease_claimed", "cranker_paid", "epoch_settled"].includes(tsnState.stage));
+  const isTsnLeased = Boolean(
     tsnState && ["lease_claimed", "cranker_paid", "epoch_settled"].includes(tsnState.stage),
   );
 
@@ -69,7 +67,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     {
       id: "created",
       label: "Payment created",
-      description: "TrustLink created the escrow payment and issued the reference.",
+      description: "TrustLink created the payment intent and issued the reference.",
       occurredAt: payment.created_at,
       complete: true
     },
@@ -77,7 +75,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: manualInviteRequired ? "invite_needed" : "sent",
       label: manualInviteRequired ? "Sender invite needed" : "WhatsApp sent",
       description: manualInviteRequired
-        ? "This recipient is not yet onboarded for TrustLink secure claiming, so the payment stays in invite escrow until onboarding completes or the sender later starts a refund."
+        ? "This recipient is not yet onboarded, so the payment remains pending in the epoch liability ledger until settlement or refund."
         : "TrustLink pushed the payment notice through its shared verified WhatsApp channel.",
       occurredAt: manualInviteRequired ? payment.created_at : payment.notification_sent_at,
       complete: manualInviteRequired || payment.notification_status !== "queued"
@@ -86,7 +84,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "delivered",
       label: manualInviteRequired ? "Recipient onboarded" : "WhatsApp delivered",
       description: manualInviteRequired
-        ? "Once the recipient joins TrustLink and completes secure setup, the same escrowed payment becomes claimable inside the app."
+        ? "Once the recipient joins TrustLink and completes secure setup, the Node can issue a settlement authorization."
         : "The recipient device received the TrustLink payment message.",
       occurredAt: manualInviteRequired ? null : payment.notification_delivered_at,
       complete: manualInviteRequired ? false : payment.notification_status === "delivered" || payment.notification_status === "read"
@@ -104,8 +102,8 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "claimed",
       label: isTsnPaid ? "Settled" : "Claim completed",
       description: isTsnPaid
-        ? "A Cranker paid the recipient and the payment is no longer claimable from escrow."
-        : "TrustLink released the escrow after claim verification succeeded.",
+        ? "A Cranker paid the recipient and the opaque settlement slot is permanently settled."
+        : "TrustLink finalized the settlement after authorization verification succeeded.",
       occurredAt: payment.release_signature ? payment.created_at : null,
       complete: payment.status === "claimed" || isTsnPaid
     }
@@ -113,7 +111,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
 
   if (env.TSN_ENABLED && tsnState) {
     timeline.splice(4, 0, {
-      id: "tsn_claim_requested",
+      id: "tsn_authorization",
       label: "Awaiting Cranker",
       description: "TrustLink TSN has queued this payment for Cranker verification and sponsored settlement.",
       occurredAt: null,
@@ -121,25 +119,25 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
     });
 
     timeline.splice(5, 0, {
-      id: "tsn_escrowed",
-      label: "Escrowed",
-      description: "A Cranker verified the payment intent and locked the sender-authorized funds into TSN escrow.",
+      id: "tsn_funded",
+      label: "Epoch funded",
+      description: "Funding increased aggregate epoch liability; no payment-specific account was created.",
       occurredAt: null,
-      complete: isTsnEscrowed,
+      complete: isTsnFunded,
     });
 
     timeline.splice(6, 0, {
-      id: "tsn_claiming",
-      label: "Claiming",
+      id: "tsn_leased",
+      label: "Cranker leased",
       description: "A Cranker lease is active so only one operator can complete this recipient payout path.",
       occurredAt: null,
-      complete: isTsnClaiming,
+      complete: isTsnLeased,
     });
 
     timeline.splice(7, 0, {
       id: "tsn_cranker_paid",
       label: "Recipient paid",
-      description: "A Cranker paid the recipient from TSN vault liquidity and posted proof on Solana Devnet.",
+      description: "A Cranker paid the recipient from vault liquidity and consumed the Mother-rooted DNA slot.",
       occurredAt: null,
       complete: isTsnPaid,
     });
@@ -150,7 +148,7 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
       id: "refund_requested",
       label: "Refund waiting period",
       description:
-        "The sender requested a refund. TrustLink gives the recipient a final response window before the sender can claim the refund escrow back.",
+        "The sender requested a refund. TrustLink gives the recipient a final response window before the Node can authorize a refund from epoch treasury liquidity.",
       occurredAt: payment.refund_requested_at ?? payment.expiry_at ?? null,
       complete: true,
     });
@@ -159,9 +157,9 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
   if (payment.status === "expired") {
     timeline.push({
       id: "expired",
-      label: "Escrow expired",
+      label: "Intent expired",
       description:
-        "The claim window elapsed, but the funds remain in the original program vault. The recipient can still late-claim, or the sender can reclaim the escrow back on-chain.",
+        "The intent window elapsed; the Node may issue a refund authorization if the opaque slot remains pending.",
       occurredAt: payment.expiry_at ?? null,
       complete: true,
     });
@@ -170,9 +168,9 @@ function buildTimeline(payment: PaymentRecord, manualInviteRequired: boolean) {
   if (payment.status === "refunded") {
     timeline.push({
       id: "refunded",
-      label: "Refund claimed",
+      label: "Refunded",
       description:
-        "The sender completed the refund flow and claimed the expired invite payment back into their wallet.",
+        "The Node consumed the opaque slot as REFUNDED and returned the exact amount from the epoch treasury.",
       occurredAt: payment.refund_claimed_at ?? payment.refund_requested_at ?? payment.expiry_at ?? null,
       complete: true,
     });
@@ -258,14 +256,8 @@ export async function getPaymentDetailForViewer(
   const releaseExplorerUrl = safePayment.release_signature
     ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.release_signature })
     : null;
-  const tsnEscrowExplorerUrl = safePayment.tsn?.escrowTxSig
-    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.escrowTxSig })
-    : null;
-  const tsnClaimExplorerUrl = viewerRole === "receiver" && safePayment.tsn?.claimTxSig
-    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.claimTxSig })
-    : null;
-  const tsnProofExplorerUrl = viewerRole === "receiver" && safePayment.tsn?.proofTxSig
-    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.proofTxSig })
+  const tsnSettlementExplorerUrl = viewerRole === "receiver" && safePayment.tsn?.settlementTxSig
+    ? getTransactionExplorerUrl({ chain: "solana", signature: safePayment.tsn.settlementTxSig })
     : null;
   return {
     payment: safePayment,
@@ -293,17 +285,12 @@ export async function getPaymentDetailForViewer(
     },
     trace: {
       paymentId: payment.id,
-      escrowAccount: payment.escrow_account,
       depositSignature: safePayment.deposit_signature,
       depositExplorerUrl,
       releaseSignature: payment.release_signature,
       releaseExplorerUrl,
-      tsnEscrowSignature: safePayment.tsn?.escrowTxSig ?? null,
-      tsnEscrowExplorerUrl,
-      tsnClaimSignature: viewerRole === "receiver" ? safePayment.tsn?.claimTxSig ?? null : null,
-      tsnClaimExplorerUrl,
-      tsnProofSignature: viewerRole === "receiver" ? safePayment.tsn?.proofTxSig ?? null : null,
-      tsnProofExplorerUrl,
+      tsnSettlementSignature: viewerRole === "receiver" ? safePayment.tsn?.settlementTxSig ?? null : null,
+      tsnSettlementExplorerUrl,
       claimed: payment.status === "claimed",
     },
     privacy: {

@@ -72,34 +72,30 @@ function statusTone(
 type TsnStage = NonNullable<PaymentDetailResponse["payment"]["tsn"]>["stage"];
 type TsnState = NonNullable<PaymentDetailResponse["payment"]["tsn"]>;
 
-function isSenderEscrowed(detail: PaymentDetailResponse | null | undefined) {
+function isSenderFunded(detail: PaymentDetailResponse | null | undefined) {
   const tsn = detail?.payment.tsn;
   return (
     detail?.viewerRole === "sender" &&
-    (tsn?.intentStatus === "escrowed" ||
-      tsn?.intentStatus === "onchain" ||
-      tsn?.intentStatus === "claimed")
+    tsn?.intentStatus === "onchain"
   );
 }
 
 function isUnpublishedTsn(tsn: TsnState) {
   return (
     tsn.stage === "reverted" &&
-    !tsn.escrowTxSig &&
+    !tsn.fundingTxSig &&
     (tsn.intentStatus === "failed" || tsn.intentStatus === "canceled")
   );
 }
 
 function effectiveTsnStage(detail: PaymentDetailResponse): TsnStage {
-  return isSenderEscrowed(detail) ? "escrowed" : detail.payment.tsn!.stage;
+  return isSenderFunded(detail) ? "funded" : detail.payment.tsn!.stage;
 }
 
 function tsnTone(stage: TsnStage) {
   switch (stage) {
     case "intent_pending":
-    case "claim_requested":
-      return "bg-[#f3c96b]/12 text-[#f3c96b]";
-    case "escrowed":
+    case "funded":
     case "lease_claimed":
       return "bg-[#58f2b1]/12 text-accent-deep";
     case "cranker_paid":
@@ -116,21 +112,17 @@ function tsnLabel(
 ) {
   if (
     viewerRole === "sender" &&
-    (tsn.intentStatus === "escrowed" ||
-      tsn.intentStatus === "onchain" ||
-      tsn.intentStatus === "claimed")
+    tsn.intentStatus === "onchain"
   ) {
-    return "Escrowed";
+    return "Funded";
   }
   if (isUnpublishedTsn(tsn)) return "Not published";
 
   switch (tsn.stage) {
     case "intent_pending":
       return "Awaiting Cranker";
-    case "claim_requested":
-      return "Claim queued";
-    case "escrowed":
-      return "Escrowed";
+    case "funded":
+      return "Funded";
     case "lease_claimed":
       return "Claiming";
     case "cranker_paid":
@@ -140,8 +132,6 @@ function tsnLabel(
     case "reverted":
       if (tsn.intentStatus === "canceled") return "Canceled";
       if (tsn.intentStatus === "failed") return "Failed";
-      if (tsn.claimRequestStatus === "failed")
-        return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
       return "Not processed";
   }
 }
@@ -232,8 +222,7 @@ function buildTsnProgress(detail: PaymentDetailResponse) {
   const stage = effectiveTsnStage(detail);
   const currentIndex = {
     intent_pending: 0,
-    claim_requested: 0,
-    escrowed: 1,
+    funded: 1,
     lease_claimed: 2,
     cranker_paid: 3,
     epoch_settled: 3,
@@ -262,10 +251,10 @@ function buildTsnProgress(detail: PaymentDetailResponse) {
         description: "Sender co-signed the sponsored TSN payment.",
       },
       {
-        id: "escrowed",
-        label: "Escrowed",
+        id: "funded",
+        label: "Epoch funded",
         description:
-          "Cranker verified the intent and locked funds into TSN escrow.",
+          "Funding increased the epoch liability; no payment-specific account was created.",
       },
       {
         id: "claiming",
@@ -276,7 +265,7 @@ function buildTsnProgress(detail: PaymentDetailResponse) {
       {
         id: "settled",
         label: "Settled",
-        description: "Recipient payout and TSN proof are complete.",
+        description: "Recipient payout and opaque slot consumption are complete.",
       },
     ].map((step, index) => ({
       ...step,
@@ -822,8 +811,8 @@ export function TransactionDetailExperience({
                         value: formatDateTime(detail.payment.created_at),
                       },
                       {
-                        label: "Escrow",
-                        value: shortenValue(detail.trace.escrowAccount),
+                        label: "Settlement slot",
+                        value: shortenValue(detail.trace.tsnSettlementSignature),
                       },
                       ...(viewerFeeLabel && viewerFeeAmount
                         ? [
@@ -855,39 +844,14 @@ export function TransactionDetailExperience({
                         url: detail.trace.depositExplorerUrl,
                       },
                       {
-                        label: "TSN escrow tx",
-                        sig:
-                          effectiveViewerRole === "sender"
-                            ? detail.trace.tsnEscrowSignature
-                            : null,
-                        url:
-                          effectiveViewerRole === "sender"
-                            ? detail.trace.tsnEscrowExplorerUrl
-                            : null,
+                        label: "Funding tx",
+                        sig: detail.trace.depositSignature,
+                        url: detail.trace.depositExplorerUrl,
                       },
                       {
-                        label:
-                          effectiveViewerRole === "receiver"
-                            ? "Receiver payout tx"
-                            : "Claim tx",
+                        label: "Settlement tx",
                         sig: detail.trace.releaseSignature,
                         url: detail.trace.releaseExplorerUrl,
-                      },
-                      {
-                        label:
-                          effectiveViewerRole === "receiver"
-                            ? "TSN payout lease"
-                            : "TSN lease claim",
-                        sig: detail.trace.tsnClaimSignature,
-                        url: detail.trace.tsnClaimExplorerUrl,
-                      },
-                      {
-                        label:
-                          effectiveViewerRole === "receiver"
-                            ? "TSN settlement proof"
-                            : "TSN proof",
-                        sig: detail.trace.tsnProofSignature,
-                        url: detail.trace.tsnProofExplorerUrl,
                       },
                       {
                         label: "Expiry tx",

@@ -14,14 +14,14 @@ TSN separates sender funding from recipient payout. Crankers keep that separated
 
 ## Responsibilities
 
-- Lease verified payment intents, claims, and recovery work from the TSN Receiver.
+- Lease verified payment-intent work from the TSN Receiver.
 - Re-check Node route attestations, immutable payout authorizations, signatures,
   commitments, epochs, amounts, and expiry before signing or submitting.
 - Submit the sender-authorized funding transaction, then report its signature
   and bounded proof metadata to the Receiver.
 - Lease the resulting claim only after the Receiver records the payment as
   `CONFIRMED`; execute the Cranker-vault payout and report that transaction.
-- Execute authorized recovery work when the Node publishes a recovery proof.
+- Submit only the Node/Mother-attested epoch-slot settlement transaction; refunds are Node/Mother-only operations.
 - Back off while idle and wake from the Receiver's payload-free notification.
 
 ## Processing and evidence
@@ -33,8 +33,8 @@ Receiver: VERIFIED work
     -> Cranker submits the authorized Solana transaction
     -> Cranker reports signature + commitment/nullifier metadata
     -> Receiver: CONFIRMED
-    -> next CLAIM becomes leaseable
-    -> Cranker pays from its settlement vault
+    -> Node/Mother DNA authorization is attached
+    -> Cranker pays from its CrankerVault and consumes the opaque epoch slot
     -> Cranker reports payout signature + proof metadata
 ```
 

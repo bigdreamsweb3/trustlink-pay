@@ -14,7 +14,7 @@ A user should understand:
 
 - who they are paying
 - whether the payment is pending
-- whether funds are escrowed
+- whether the epoch liability is funded
 - whether the recipient has been paid
 - whether an identity is verified or missing verification
 

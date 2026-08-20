@@ -14,10 +14,9 @@ import { SuccessIcon } from "@/src/components/success-icon";
 import { useToast } from "@/src/components/toast-provider";
 import { shortenAddress } from "@/src/lib/address";
 import { apiGet, apiPost } from "@/src/lib/api";
-import { assertClaimTransactionIntegrity } from "@/src/lib/escrow-validation";
 import { formatTokenAmount } from "@/src/lib/formatters";
 import { derivePaymentReceiverPublicKey, deriveReceiverPrivateKey, getOrCreatePrivacyKeyBundle, signClaimProof } from "@/src/lib/privacy-keys";
-import type { IdentitySecurityState, PaymentRecord, TsnClaimRequestResult } from "@/src/lib/types";
+import type { IdentitySecurityState, PaymentRecord, TsnSettlementResult } from "@/src/lib/types";
 import { signAndSendSerializedSolanaTransaction } from "@/src/lib/wallet";
 import { useAuthenticatedSession } from "@/src/lib/use-authenticated-session";
 import { useWallet } from "@/src/lib/wallet-provider";
@@ -31,7 +30,7 @@ type ClaimSuccess = {
   netAmount: number | null;
   tokenSymbol: string | null;
   settlementMode?: "direct" | "tsn";
-  tsn?: TsnClaimRequestResult;
+  tsn?: TsnSettlementResult;
 };
 type ClaimFeeEstimate = { feeAmountUi: number; feeAmountUsd: number | null; estimatedNetworkFeeSol: number; estimatedNetworkFeeUsd: number | null; markupAmountUi: number; receiverAmountUi: number; totalAmountUi: number };
 type BackupFlowStep = "intro" | "connect" | "success";
@@ -39,7 +38,7 @@ type BackupFlowStep = "intro" | "connect" | "success";
 function toNumericAmount(v: string | number | null | undefined) { const n = typeof v === "number" ? v : Number(v ?? 0); return Number.isFinite(n) ? n : 0; }
 function looksLikeWalletAddress(v: string) { return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v.trim()); }
 
-/* ── BackupWalletFlow modal (unchanged logic, polished interactions) ── */
+/* â”€â”€ BackupWalletFlow modal (unchanged logic, polished interactions) â”€â”€ */
 function BackupWalletFlow({ open, step, connectedWallet, mainWallet, backupWalletInput, busy, onClose, onSkip, onContinue, onWalletInputChange, onSave, onUseConnectedWallet, onConnectWallet }: { open: boolean; step: BackupFlowStep; connectedWallet: string | null; mainWallet: string | null; backupWalletInput: string; busy: boolean; onClose: () => void; onSkip: () => void; onContinue: () => void; onWalletInputChange: (v: string) => void; onSave: () => void; onUseConnectedWallet: () => void; onConnectWallet: () => void }) {
   const canBeBackup = Boolean(connectedWallet && mainWallet && connectedWallet !== mainWallet);
   const needsApproval = Boolean(mainWallet && connectedWallet && connectedWallet !== mainWallet);
@@ -104,7 +103,7 @@ function BackupWalletFlow({ open, step, connectedWallet, mainWallet, backupWalle
   );
 }
 
-/* ═══════════ CLAIM EXPERIENCE ═══════════ */
+/* â•â•â•â•â•â•â•â•â•â•â• CLAIM EXPERIENCE â•â•â•â•â•â•â•â•â•â•â• */
 export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const { hydrated, accessToken, user, pendingAuth, completePendingAuth, logout } = useAuthenticatedSession(`/claim/${paymentId}`);
   const { session, walletAddress, requestWalletConnection } = useWallet();
@@ -124,7 +123,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   const lastSubmittedPinRef = useRef<string | null>(null);
   const activeWalletAddress = walletAddress ?? null;
 
-  /* ── All effects & handlers identical to original ── */
+  /* â”€â”€ All effects & handlers identical to original â”€â”€ */
   useEffect(() => { if (!accessToken || !activeWalletAddress || identitySecurity || !user) return; void apiPost("/api/identity/keys", { ...getOrCreatePrivacyKeyBundle(), settlementWalletPublicKey: activeWalletAddress }, accessToken).catch(() => undefined); }, [accessToken, activeWalletAddress, identitySecurity, user]);
   useEffect(() => { if (!accessToken || !user) return; void loadClaimData(accessToken); }, [accessToken, user, paymentId]);
 
@@ -141,7 +140,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
   async function loadClaimData(token: string) { setLoading(true); try { const [pr, ir] = await Promise.all([apiGet<PaymentDetailsResponse>(`/api/payment/${paymentId}`, token), apiGet<{ identity: IdentitySecurityState | null }>("/api/identity", token)]); setPayment(pr); setIdentitySecurity(ir.identity); setError(null); } catch (e) { setError(e instanceof Error ? e.message : "Could not load payment"); } finally { setLoading(false); } }
   function handleOpenPinConfirmation() { if (!activeWalletAddress) { setError("Connect your wallet first."); requestWalletConnection(); return; } if (boundMainWallet && activeWalletAddress !== boundMainWallet) { setError(`Connect ${shortenAddress(boundMainWallet)} to continue.`); requestWalletConnection(); return; } setError(null); setStatus(null); setPin(""); lastSubmittedPinRef.current = null; setPinModalOpen(true); }
 
-  async function handleClaim() { if (!accessToken || !activeWalletAddress || !payment) { setError("Connect wallet first."); return; } setClaimBusy(true); setError(null); try { const isSecurePayment = payment.payment.payment_mode !== "invite"; const bundle = getOrCreatePrivacyKeyBundle(); let phoneIdentityPublicKey: string | null = null; let derivedPaymentReceiver: string | undefined; let privacySpendSignature: string | undefined; let receiverPrivateKey: string | undefined; if (isSecurePayment) { if (!payment.payment.phone_identity_pubkey || !payment.payment.payment_receiver_pubkey || !payment.payment.ephemeral_pubkey) throw new Error("Privacy routing data missing"); phoneIdentityPublicKey = payment.payment.phone_identity_pubkey; const paymentReceiverPublicKey = payment.payment.payment_receiver_pubkey; const ephemeralPublicKey = payment.payment.ephemeral_pubkey; if (bundle.phoneIdentityPublicKey !== payment.payment.phone_identity_pubkey) throw new Error("Wrong device privacy keys"); derivedPaymentReceiver = await derivePaymentReceiverPublicKey({ privacyViewPrivateKey: bundle.privacyViewPrivateKey, privacySpendPublicKey: bundle.privacySpendPublicKey, ephemeralPublicKey }); if (derivedPaymentReceiver !== paymentReceiverPublicKey) throw new Error("Routing verification failed"); privacySpendSignature = signClaimProof({ privacySpendPrivateKey: bundle.privacySpendPrivateKey, paymentId, phoneIdentityPublicKey, paymentReceiverPublicKey, ephemeralPublicKey, settlementWalletPublicKey: activeWalletAddress }); receiverPrivateKey = await deriveReceiverPrivateKey({ privacyViewPrivateKey: bundle.privacyViewPrivateKey, privacySpendPrivateKey: bundle.privacySpendPrivateKey, ephemeralPublicKey }); } const prepared = await apiPost<{ serializedTransaction: string | null; rpcUrl: string | null; programId: string | null; preview: { escrowAccount: string; escrowVaultAddress: string; settlementWallet: string; settlementTokenAccount: string; paymentReceiverPublicKey: string | null; amount: number; tokenMintAddress: string } | null; claimFeeAmount: string | null; requiresClientSignature: boolean; blockchainMode?: "mock" | "devnet" | "tsn"; blockchainSignature?: string | null; referenceCode?: string; walletAddress?: string; netAmount?: number | null; tokenSymbol?: string | null; tsn?: TsnClaimRequestResult }>("/api/payment/accept", { paymentId, pin, walletAddress: activeWalletAddress, autoclaim: true, ...(derivedPaymentReceiver ? { derivedPaymentReceiverPublicKey: derivedPaymentReceiver } : {}), ...(privacySpendSignature ? { privacySpendSignature } : {}) }, accessToken); if (prepared.blockchainMode === "tsn" && prepared.tsn) { setStatus(`Reference ${prepared.referenceCode ?? payment.sender.referenceCode} queued for Cranker settlement.`); setClaimSuccess({ referenceCode: prepared.referenceCode ?? payment.sender.referenceCode, walletAddress: prepared.walletAddress ?? activeWalletAddress, blockchainSignature: null, claimFeeAmount: 0, netAmount: prepared.netAmount ?? grossAmount, tokenSymbol: prepared.tokenSymbol ?? payment.payment.token_symbol, settlementMode: "tsn", tsn: prepared.tsn }); setPinModalOpen(false); showToast("Claim request queued."); return; } if (!prepared.serializedTransaction || !prepared.rpcUrl || !prepared.programId || !prepared.preview || !session) throw new Error("Transaction could not be prepared"); const expectedProgramId = prepared.programId; const blockchainSignature = await signAndSendSerializedSolanaTransaction({ walletId: session.walletId, rpcUrl: prepared.rpcUrl, serializedTransaction: prepared.serializedTransaction, ...(receiverPrivateKey ? { partialSignerSecretKeys: [receiverPrivateKey] } : {}), inspectTransaction: isSecurePayment && phoneIdentityPublicKey && derivedPaymentReceiver ? async (transaction) => { await assertClaimTransactionIntegrity({ rpcUrl: prepared.rpcUrl!, transaction, paymentId, escrowAccount: payment.payment.escrow_account ?? prepared.preview!.escrowAccount, escrowVaultAddress: payment.payment.escrow_vault_address ?? prepared.preview!.escrowVaultAddress, settlementWallet: activeWalletAddress, settlementTokenAccount: prepared.preview!.settlementTokenAccount, phoneIdentityPublicKey, paymentReceiverPublicKey: derivedPaymentReceiver, tokenMintAddress: payment.payment.token_mint_address ?? prepared.preview!.tokenMintAddress, expectedProgramId, expectedAmountUi: grossAmount }); } : undefined }); const result = await apiPost<{ referenceCode: string; walletAddress: string; claimFeeAmount: string | null; netAmount: number | null; tokenSymbol: string | null; blockchainSignature: string | null }>("/api/payment/accept", { paymentId, pin, walletAddress: activeWalletAddress, ...(derivedPaymentReceiver ? { derivedPaymentReceiverPublicKey: derivedPaymentReceiver } : {}), ...(privacySpendSignature ? { privacySpendSignature } : {}), blockchainSignature }, accessToken); setStatus(`Reference ${result.referenceCode} received.`); setClaimSuccess({ ...result, settlementMode: "direct", claimFeeAmount: result.claimFeeAmount != null ? Number(result.claimFeeAmount) : null }); setPinModalOpen(false); showToast("Payment received."); } catch (e) { setError(e instanceof Error ? e.message : "Could not receive payment"); } finally { setClaimBusy(false); } }
+  async function handleClaim() { if (!accessToken || !activeWalletAddress || !payment) { setError("Connect wallet first."); return; } setClaimBusy(true); setError(null); try { const isSecurePayment = payment.payment.payment_mode !== "invite"; const bundle = getOrCreatePrivacyKeyBundle(); let phoneIdentityPublicKey: string | null = null; let derivedPaymentReceiver: string | undefined; let privacySpendSignature: string | undefined; if (isSecurePayment) { if (!payment.payment.phone_identity_pubkey || !payment.payment.payment_receiver_pubkey || !payment.payment.ephemeral_pubkey) throw new Error("Privacy routing data missing"); phoneIdentityPublicKey = payment.payment.phone_identity_pubkey; const paymentReceiverPublicKey = payment.payment.payment_receiver_pubkey; const ephemeralPublicKey = payment.payment.ephemeral_pubkey; if (bundle.phoneIdentityPublicKey !== payment.payment.phone_identity_pubkey) throw new Error("Wrong device privacy keys"); derivedPaymentReceiver = await derivePaymentReceiverPublicKey({ privacyViewPrivateKey: bundle.privacyViewPrivateKey, privacySpendPublicKey: bundle.privacySpendPublicKey, ephemeralPublicKey }); if (derivedPaymentReceiver !== paymentReceiverPublicKey) throw new Error("Routing verification failed"); privacySpendSignature = signClaimProof({ privacySpendPrivateKey: bundle.privacySpendPrivateKey, paymentId, phoneIdentityPublicKey, paymentReceiverPublicKey, ephemeralPublicKey, settlementWalletPublicKey: activeWalletAddress }); } const prepared = await apiPost<{ serializedTransaction: string | null; rpcUrl: string | null; programId: string | null; preview: null; claimFeeAmount: string | null; requiresClientSignature: boolean; blockchainMode?: "mock" | "devnet" | "tsn"; blockchainSignature?: string | null; referenceCode?: string; walletAddress?: string; netAmount?: number | null; tokenSymbol?: string | null; tsn?: TsnSettlementResult }>("/api/payment/accept", { paymentId, pin, walletAddress: activeWalletAddress, autoclaim: true, ...(derivedPaymentReceiver ? { derivedPaymentReceiverPublicKey: derivedPaymentReceiver } : {}), ...(privacySpendSignature ? { privacySpendSignature } : {}) }, accessToken); if (prepared.blockchainMode === "tsn" && prepared.tsn) { setStatus(`Reference ${prepared.referenceCode ?? payment.sender.referenceCode} queued for Cranker settlement.`); setClaimSuccess({ referenceCode: prepared.referenceCode ?? payment.sender.referenceCode, walletAddress: prepared.walletAddress ?? activeWalletAddress, blockchainSignature: null, claimFeeAmount: 0, netAmount: prepared.netAmount ?? grossAmount, tokenSymbol: prepared.tokenSymbol ?? payment.payment.token_symbol, settlementMode: "tsn", tsn: prepared.tsn }); setPinModalOpen(false); showToast("Settlement authorization queued."); return; } throw new Error("Direct settlement is disabled; TSN settlement must be confirmed by the Cranker."); } catch (e) { setError(e instanceof Error ? e.message : "Could not receive payment"); } finally { setClaimBusy(false); } }
 
   if (!hydrated || !user) return null;
 
@@ -156,11 +155,11 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
         {loading ? (
           <div className="tl-field rounded-[22px] px-5 py-8"><SectionLoader size="md" label="Loading payment..." /></div>
         ) : claimSuccess && payment ? (
-          /* ═══ SUCCESS ═══ */
+          /* â•â•â• SUCCESS â•â•â• */
           <div className="space-y-5">
             <div className="text-center py-2">
               <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.34, ease: "easeOut" }} className="flex justify-center"><SuccessIcon className="h-14 w-14" /></motion.div>
-              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">{claimSuccess.settlementMode === "tsn" ? "Claim request queued" : "Payment received"}</div>
+              <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">{claimSuccess.settlementMode === "tsn" ? "Settlement authorization queued" : "Payment received"}</div>
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-[var(--text)]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</h2>
               <p className="mt-2 text-[0.78rem] leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">{claimSuccess.settlementMode === "tsn" ? "A Cranker will claim the lease, pay your wallet, and submit proof on-chain." : "Funds secured to your wallet. Add a backup wallet for protection."}</p>
             </div>
@@ -171,7 +170,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
                 { label: claimSuccess.settlementMode === "tsn" ? "Queued amount" : "Received", value: `${formatTokenAmount(netAmount)} ${payment.payment.token_symbol}`, accent: true },
                 { label: "Fee", value: claimSuccess.settlementMode === "tsn" ? `0 ${payment.payment.token_symbol}` : `${formatTokenAmount(feeAmount)} ${payment.payment.token_symbol}` },
                 { label: "Wallet", value: shortenAddress(claimSuccess.walletAddress) },
-                ...(claimSuccess.tsn ? [{ label: "Cranker request", value: shortenAddress(claimSuccess.tsn.claimRequestId) }] : []),
+                ...(claimSuccess.tsn ? [{ label: "Settlement authorization", value: shortenAddress(claimSuccess.tsn.settlementReference ?? "pending") }] : []),
                 ...(claimSuccess.blockchainSignature ? [{ label: "Transaction", value: shortenAddress(claimSuccess.blockchainSignature) }] : []),
               ].map((row) => (
                 <div key={row.label} className="tl-field flex items-center justify-between rounded-[18px] px-4 py-3">
@@ -188,7 +187,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
             </div>
           </div>
         ) : payment ? (
-          /* ═══ CLAIM FORM ═══ */
+          /* â•â•â• CLAIM FORM â•â•â• */
           <div className="space-y-5">
             {/* Amount hero */}
             <div className="text-center py-1">

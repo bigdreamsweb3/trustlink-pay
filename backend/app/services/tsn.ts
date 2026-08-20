@@ -1,706 +1,78 @@
 import { findPaymentById } from "@/app/db/payments";
 import { findReceiverWalletById } from "@/app/db/receiver-wallets";
-import { sql } from "@/app/db/client";
-import {
-  createClaimRequest,
-  findLatestActiveClaimRequestByPaymentId,
-  findPaymentIntentByPaymentId,
-  listLatestClaimRequestsByPaymentIds,
-  listPaymentIntentsByPaymentIds,
-  updateClaimRequestStatus,
-  updatePaymentIntentStatus,
-  upsertPaymentIntent,
-} from "@/app/db/tsn";
+import { findPaymentIntentByPaymentId, listPaymentIntentsByPaymentIds, updatePaymentIntentStatus } from "@/app/db/tsn";
 import { findUserByPhoneNumber } from "@/app/db/users";
 import { env } from "@/app/lib/env";
-import { logger } from "@/app/lib/logger";
 import { verifyClaimProof } from "@/app/lib/privacy-keys";
 import { verifyUserActionPin } from "@/app/services/auth";
 import type { AuthenticatedUser } from "@/app/types/auth";
-import type { PaymentRecord, PaymentTsnState, TsnUiStage, UserRecord } from "@/app/types/payment";
+import type { PaymentRecord, PaymentTsnState, UserRecord } from "@/app/types/payment";
 import { traceFunction } from "../../../utils/observability/tracer";
-import type {
-  ClaimRequestRecord,
-  ClaimRequestStatus,
-  PaymentIntentRecord,
-  PaymentIntentStatus,
-  TsnMempoolClaimRequest,
-  TsnMempoolIntent,
-} from "@trustlink/tsn-sdk";
-import {
-  buildRequestClaimRequest,
-  computeTsnUiStage,
-  HttpTsnMempool,
-  sha256Bytes,
-  type RequestClaimRequest,
-} from "@trustlink/tsn-sdk";
+import type { PaymentIntentRecord, PaymentIntentStatus } from "@trustlink/tsn-sdk";
+import { HttpTsnMempool } from "@trustlink/tsn-sdk";
 
-function paymentCanStillBeClaimed(status: string) {
-  return status === "locked" || status === "expired";
-}
-
-function intentIsEscrowed(intent: PaymentIntentRecord | null) {
-  return intent?.status === "escrowed" || intent?.status === "onchain" || intent?.status === "claimed";
-}
-
-function resolveClaimMode(payment: { payment_mode?: string | null }) {
-  return payment.payment_mode === "invite" ? "invite" : "secure";
-}
-
-function getTsnMempoolClient() {
-  return new HttpTsnMempool(
-    env.TSN_MEMPOOL_URL,
-    env.TSN_MEMPOOL_API_KEY,
-  );
-}
-
-function withMempoolTimeout<T>(promise: Promise<T>): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error("TSN mempool status request timed out")),
-      env.TSN_MEMPOOL_TIMEOUT_MS,
-    );
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
-}
-
-function isTerminalIntentStatus(status: PaymentIntentStatus) {
-  return (
-    status === "executed" ||
-    status === "settled" ||
-    status === "expired" ||
-    status === "failed" ||
-    status === "canceled" ||
-    status === "reverted"
-  );
-}
-
-/** Minimum seconds between TSN status queries for the same transaction. */
-const STATUS_REFRESH_COOLDOWN_SECONDS = 2;
-/** Maximum seconds to wait before allowing another TSN query for a non-terminal intent. */
-const STATUS_REFRESH_MAX_COOLDOWN_SECONDS = 300;
-/** After this many seconds since creation, stop querying TSN for non-terminal intents. */
-const STATUS_REFRESH_MAX_AGE_SECONDS = 86_400; // 24 hours
-
-const postClaimRequestToTsnMempool = traceFunction(async function postClaimRequestToTsnMempool(request: RequestClaimRequest) {
-  try {
-    return await getTsnMempoolClient().postClaimRequest(request);
-  } catch (error) {
-    logger.error("tsn.mempool.claim_post_failed", {
-      paymentId: request.paymentId,
-      intentId: request.intentId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    throw new Error("TSN mempool is unavailable; start the TSN service before requesting TSN claims.");
-  }
-}, {
-  namespace: "TSN",
-  name: "postClaimRequestToTsnMempool",
-  module: "backend/app/services/tsn.ts",
-  level: "info",
-  includeReturn: false,
-});
+function mempool() { return new HttpTsnMempool(env.TSN_MEMPOOL_URL, env.TSN_MEMPOOL_API_KEY); }
+function timeout<T>(promise: Promise<T>) { return new Promise<T>((resolve, reject) => { const timer = setTimeout(() => reject(new Error("TSN mempool request timed out")), env.TSN_MEMPOOL_TIMEOUT_MS); promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); }); }); }
+function terminal(status: PaymentIntentStatus) { return ["executed", "settled", "expired", "failed", "canceled", "reverted"].includes(status); }
+function stage(status: PaymentIntentStatus): PaymentTsnState["stage"] { if (status === "settled" || status === "executed") return "epoch_settled"; if (status === "onchain") return "cranker_paid"; if (status === "pending") return "intent_pending"; return "reverted"; }
 
 async function createTsnIntentForPaymentImpl(payment: PaymentRecord) {
-  if (!env.TSN_ENABLED) {
-    return { enabled: false as const };
-  }
-
-  // The backend has only a payment record and recipient hash. It does not have
-  // the sender's signed recipient-route commitment, route version, or wallet
-  // authorization required by TSN. Never invent those values just to create an
-  // intent: the sender must create a new TSN payment from their wallet.
-  throw new Error(
-    `Payment ${payment.id} predates sender-authorized TSN routing. Ask the sender to create a new TSN payment from their wallet.`,
-  );
+  if (!env.TSN_ENABLED) return { enabled: false as const };
+  throw new Error(`Payment ${payment.id} predates sender-authorized TSN routing. Ask the sender to create a new TSN payment from their wallet.`);
 }
 
-async function requestOnboardedRecipientSettlementViaTsnImpl(params: {
-  payment: PaymentRecord;
-  receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "wallet_address">;
-}) {
-  if (!env.TSN_ENABLED) {
-    return { enabled: false as const };
-  }
-
-  const payment = params.payment;
-  const receiver = params.receiver;
-  if (!receiver.tin) {
-    throw new Error("Recipient must create a TIN before receiving TSN payments.");
-  }
-  const settlementWalletAddress = receiver.wallet_address ?? undefined;
-  if (!settlementWalletAddress) {
-    throw new Error("Recipient TIN does not have a settlement wallet.");
-  }
-
-  let intent = await findPaymentIntentByPaymentId(payment.id);
-
-  const existingClaim = await findLatestActiveClaimRequestByPaymentId(payment.id);
-  if (existingClaim && existingClaim.status !== "failed" && existingClaim.status !== "canceled") {
-    if (!intent) throw new Error("TSN intent not available for onboarded recipient settlement");
-    logger.info("tsn.settlement_request.already_exists", {
-      paymentId: payment.id,
-      intentId: intent.id,
-      claimRequestId: existingClaim.id,
-      receiverUserId: receiver.id,
-    });
-    return {
-      enabled: true as const,
-      paymentId: payment.id,
-      intentId: intent.id,
-      claimRequestId: existingClaim.id,
-      destinationWallet: existingClaim.destination_wallet ?? settlementWalletAddress,
-      status: existingClaim.status,
-    };
-  }
-
-  if (!intent) {
-    throw new Error(
-      "This payment has no sender-authorized TSN intent. The sender must create a new TSN payment; the backend cannot create one from recipient data.",
-    );
-  }
-
-  const claimRequestPayload = buildRequestClaimRequest({
-    paymentId: payment.id,
-    intentId: intent.id,
-    recipientHash: payment.receiver_phone_hash,
-    destinationWallet: settlementWalletAddress,
-    // Legacy schema field only: onboarded recipients do not manually claim.
-    autoclaim: false,
-    source: "trustlink-pay",
-  });
-  const mempoolClaimRequest = await postClaimRequestToTsnMempool(claimRequestPayload);
-  const claimRequest = await createClaimRequest(claimRequestPayload);
-
-  logger.info("tsn.settlement_request.posted", {
-    paymentId: payment.id,
-    intentId: intent.id,
-    claimRequestId: claimRequest.id,
-    receiverUserId: receiver.id,
-  });
-
-  return {
-    enabled: true as const,
-    paymentId: payment.id,
-    intentId: intent.id,
-    claimRequestId: claimRequest.id,
-    mempoolClaimRequest,
-    destinationWallet: settlementWalletAddress,
-    status: claimRequest.status,
-  };
+async function requestOnboardedRecipientSettlementViaTsnImpl(params: { payment: PaymentRecord; receiver: Pick<UserRecord, "id" | "phone_number" | "tin" | "wallet_address"> }) {
+  if (!env.TSN_ENABLED) return { enabled: false as const };
+  if (!params.receiver.tin) throw new Error("Recipient must create a TIN before receiving TSN payments.");
+  if (!params.receiver.wallet_address) throw new Error("Recipient TIN does not have a settlement wallet.");
+  const intent = await findPaymentIntentByPaymentId(params.payment.id);
+  if (!intent) throw new Error("This payment has no sender-authorized TSN intent. The sender must create a new TSN payment.");
+  return { enabled: true as const, paymentId: params.payment.id, intentId: intent.id, destinationWallet: params.receiver.wallet_address, status: "internal_pending" as const };
 }
 
-async function requestPaymentClaimViaTsnImpl(params: {
-  authUser: AuthenticatedUser;
-  paymentId: string;
-  pin: string;
-  walletAddress?: string;
-  receiverWalletId?: string;
-  derivedPaymentReceiverPublicKey?: string;
-  privacySpendSignature?: string;
-  autoclaim: boolean;
-}) {
+async function requestRecipientSettlementViaTsnImpl(params: { authUser: AuthenticatedUser; paymentId: string; pin: string; walletAddress?: string; receiverWalletId?: string; derivedPaymentReceiverPublicKey?: string; privacySpendSignature?: string; autoclaim: boolean }) {
   if (!env.TSN_ENABLED) throw new Error("TSN is not enabled");
-
-  const payment = await findPaymentById(params.paymentId);
-  if (!payment) throw new Error("Payment not found");
-  const existingIntent = await findPaymentIntentByPaymentId(payment.id);
-  if (!paymentCanStillBeClaimed(payment.status) && !intentIsEscrowed(existingIntent)) {
-    throw new Error(`Payment is already ${payment.status}`);
-  }
-  if (payment.receiver_phone !== params.authUser.phoneNumber) {
-    throw new Error("Signed-in account does not match payment receiver");
-  }
-
+  const payment = await findPaymentById(params.paymentId); if (!payment) throw new Error("Payment not found");
+  if (payment.receiver_phone !== params.authUser.phoneNumber) throw new Error("Signed-in account does not match payment receiver");
   await verifyUserActionPin(params.authUser, params.pin);
-
-  const existingUser = await findUserByPhoneNumber(params.authUser.phoneNumber);
-  if (!existingUser || existingUser.id !== params.authUser.id) {
-    throw new Error("Receiver must register a TrustLink identity before requesting claim");
+  const user = await findUserByPhoneNumber(params.authUser.phoneNumber); if (!user || user.id !== params.authUser.id) throw new Error("Receiver must register a TrustLink identity before receiving TSN payments");
+  if (!user.tin) throw new Error("Receiver must create a TIN before receiving TSN settlement");
+  const destinationWallet = params.receiverWalletId != null ? (await findReceiverWalletById(params.receiverWalletId, user.id))?.wallet_address : params.walletAddress ?? user.wallet_address ?? undefined;
+  if (!destinationWallet) throw new Error("Receiver wallet not found");
+  if (payment.payment_receiver_pubkey) {
+    if (!user.privacy_spend_pubkey || !payment.phone_identity_pubkey || !payment.ephemeral_pubkey) throw new Error("Privacy routing data is incomplete");
+    if (params.derivedPaymentReceiverPublicKey !== payment.payment_receiver_pubkey || !params.privacySpendSignature) throw new Error("Privacy ownership proof is invalid");
+    if (!verifyClaimProof({ privacySpendPublicKey: user.privacy_spend_pubkey, privacySpendSignature: params.privacySpendSignature, paymentId: payment.id, phoneIdentityPublicKey: payment.phone_identity_pubkey, paymentReceiverPublicKey: payment.payment_receiver_pubkey, ephemeralPublicKey: payment.ephemeral_pubkey, settlementWalletPublicKey: destinationWallet })) throw new Error("Privacy ownership proof is invalid");
   }
-  if (!existingUser.tin) {
-    throw new Error("Receiver must create a TIN before requesting TSN settlement");
-  }
-
-  const requestedSettlementWalletAddress =
-    params.receiverWalletId != null
-      ? (await findReceiverWalletById(params.receiverWalletId, existingUser.id))?.wallet_address
-      : params.walletAddress ?? existingUser.wallet_address ?? undefined;
-
-  const paymentPhoneIdentityPublicKey = payment.phone_identity_pubkey ?? existingUser.phone_identity_pubkey;
-  const settlementWalletAddress = requestedSettlementWalletAddress;
-  if (!settlementWalletAddress) throw new Error("Receiver wallet not found");
-
-  if (resolveClaimMode(payment) === "secure" && payment.payment_receiver_pubkey) {
-    if (!existingUser.privacy_spend_pubkey) {
-      throw new Error("Receiver must register secure privacy spend keys before requesting this legacy secure claim");
-    }
-    if (!paymentPhoneIdentityPublicKey || !payment.ephemeral_pubkey) {
-      throw new Error("Legacy secure claim is missing privacy routing data");
-    }
-    if (params.derivedPaymentReceiverPublicKey !== payment.payment_receiver_pubkey) {
-      throw new Error("Derived receiver key mismatch detected");
-    }
-    if (!params.privacySpendSignature) throw new Error("Missing privacy ownership proof");
-    const proofValid = verifyClaimProof({
-      privacySpendPublicKey: existingUser.privacy_spend_pubkey,
-      privacySpendSignature: params.privacySpendSignature,
-      paymentId: payment.id,
-      phoneIdentityPublicKey: paymentPhoneIdentityPublicKey,
-      paymentReceiverPublicKey: payment.payment_receiver_pubkey!,
-      ephemeralPublicKey: payment.ephemeral_pubkey!,
-      settlementWalletPublicKey: settlementWalletAddress,
-    });
-    if (!proofValid) throw new Error("Privacy ownership proof is invalid");
-  }
-
-  const created = existingIntent ? null : await createTsnIntentForPayment(payment);
-  const intent = existingIntent ?? ("record" in (created ?? {}) ? (created as any).record : null);
-  if (!intent) throw new Error("TSN intent not available for payment");
-
-  const existingClaim = await findLatestActiveClaimRequestByPaymentId(payment.id);
-  if (existingClaim && existingClaim.status !== "failed" && existingClaim.status !== "canceled") {
-    return {
-      paymentId: payment.id,
-      intentId: intent.id,
-      claimRequestId: existingClaim.id,
-      destinationWallet: existingClaim.destination_wallet ?? settlementWalletAddress,
-      autoclaim: existingClaim.autoclaim,
-      status: existingClaim.status,
-    };
-  }
-
-  const claimRequestPayload = buildRequestClaimRequest({
-    paymentId: payment.id,
-    intentId: intent.id,
-    recipientHash: payment.receiver_phone_hash,
-    destinationWallet: settlementWalletAddress,
-    autoclaim: params.autoclaim,
-    source: "trustlink-pay",
-  });
-  const mempoolClaimRequest = await postClaimRequestToTsnMempool(claimRequestPayload);
-  const claimRequest = await createClaimRequest(claimRequestPayload);
-
-  return {
-    paymentId: payment.id,
-    intentId: intent.id,
-    claimRequestId: claimRequest.id,
-    mempoolClaimRequest,
-    destinationWallet: settlementWalletAddress,
-    autoclaim: claimRequest.autoclaim,
-    status: claimRequest.status,
-  };
-}
-
-function computeStage(intent: PaymentIntentRecord, claimRequest: ClaimRequestRecord | null): TsnUiStage {
-  return computeTsnUiStage(intent, claimRequest);
-}
-
-function paymentLooksLikeFrontendTsnAuthorization(payment: PaymentRecord) {
-  return payment.escrow_account?.startsWith("tsn:") || payment.escrow_vault_address === payment.sender_wallet;
-}
-
-function buildUnpublishedTsnState(): PaymentTsnState {
-  return {
-    stage: "reverted",
-    intentStatus: "failed",
-    claimRequestStatus: null,
-    destinationWallet: null,
-    assignedCrankerPubkey: null,
-    escrowTxSig: null,
-    claimTxSig: null,
-    proofTxSig: null,
-    settlementReason: "TSN authorization was signed, but the payment intent was not published to the TSN mempool. No escrow transaction was created.",
-  };
+  const intent = await findPaymentIntentByPaymentId(payment.id); if (!intent) throw new Error("Payment has no sender-authorized TSN intent");
+  return { paymentId: payment.id, intentId: intent.id, destinationWallet, autoclaim: params.autoclaim, status: "internal_pending" as const, settlementReference: intent.id };
 }
 
 async function syncPaymentIntentTraceFromMempoolImpl(paymentId: string) {
-  const intent = await findPaymentIntentByPaymentId(paymentId);
-  if (!intent) return false;
-
-  try {
-    const mempool = getTsnMempoolClient();
-    const mempoolIntents = await withMempoolTimeout(mempool.listIntents());
-    const foundIntent = Array.isArray(mempoolIntents)
-      ? mempoolIntents.find((candidate) => candidate.id === intent.id)
-      : null;
-
-    if (!foundIntent) return false;
-
-    const normalizedIntentStatus = normalizePaymentIntentStatus(foundIntent.status);
-    const hasNewTrace =
-      Boolean(foundIntent.escrowTxSig && !intent.escrow_tx_sig) ||
-      Boolean(foundIntent.claimTxSig && !intent.claim_tx_sig) ||
-      Boolean(foundIntent.proofTxSig && !intent.proof_tx_sig);
-    const statusChanged = Boolean(
-      normalizedIntentStatus && normalizedIntentStatus !== intent.status,
-    );
-
-    if (!hasNewTrace && !statusChanged) return false;
-
-    await updatePaymentIntentStatus({
-      id: intent.id,
-      status: normalizedIntentStatus ?? intent.status,
-      assignedCrankerPubkey: foundIntent.assignedCrankerPubkey ?? null,
-      escrowTxSig: foundIntent.escrowTxSig ?? null,
-      claimTxSig: foundIntent.claimTxSig ?? null,
-      proofTxSig: foundIntent.proofTxSig ?? null,
-    });
-
-    return true;
-  } catch (error) {
-    logger.warn("tsn.intent.trace_sync_failed", {
-      paymentId,
-      intentId: intent.id,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-
-    return false;
-  }
+  const intent = await findPaymentIntentByPaymentId(paymentId); if (!intent) return false;
+  try { const found = (await timeout(mempool().listIntents())).find((candidate) => candidate.id === intent.id); if (!found) return false; const foundAny = found as typeof found & { fundingTxSig?: string | null; settlementTxSig?: string | null }; const intentAny = intent as typeof intent & { funding_tx_sig?: string | null; settlement_tx_sig?: string | null }; const status = normalizePaymentIntentStatus(found.status); const changed = Boolean(status && (status !== intent.status || foundAny.fundingTxSig !== intentAny.funding_tx_sig || foundAny.settlementTxSig !== intentAny.settlement_tx_sig)); if (!changed) return false; await updatePaymentIntentStatus({ id: intent.id, status: status ?? intent.status, assignedCrankerPubkey: found.assignedCrankerPubkey ?? null, fundingTxSig: foundAny.fundingTxSig ?? null, settlementTxSig: foundAny.settlementTxSig ?? null }); return true; } catch { return false; }
 }
 
-/**
- * Compute the cooldown delay (in ms) before the next TSN status query is allowed.
- * Uses exponential backoff: starts at 15s, doubles each check, capped at 5 minutes.
- */
-function computeRefreshCooldownMs(checkCount: number): number {
-  const base = STATUS_REFRESH_COOLDOWN_SECONDS * 1000;
-  const backoff = base * Math.pow(2, Math.min(checkCount, 5));
-  return Math.min(backoff, STATUS_REFRESH_MAX_COOLDOWN_SECONDS * 1000);
+async function refreshSinglePaymentIntentStatusImpl(paymentId: string) {
+  const intent = await findPaymentIntentByPaymentId(paymentId); if (!intent) return { refreshed: false, reason: "No TSN intent found for payment", tsnQueried: false, dbUpdated: false, finalized: false, nextRefreshAfterMs: null };
+  if (terminal(intent.status)) return { refreshed: false, reason: `Intent already finalized with status: ${intent.status}`, previousIntentStatus: intent.status, latestIntentStatus: intent.status, tsnQueried: false, dbUpdated: false, finalized: true, nextRefreshAfterMs: null };
+  const refreshed = await syncPaymentIntentTraceFromMempoolImpl(paymentId); const latest = await findPaymentIntentByPaymentId(paymentId);
+  return { refreshed, previousIntentStatus: intent.status, latestIntentStatus: latest?.status ?? intent.status, tsnQueried: refreshed, dbUpdated: refreshed, finalized: latest ? terminal(latest.status) : false, nextRefreshAfterMs: refreshed ? 30_000 : 5_000 };
 }
 
-/**
- * Refresh the status of a single payment intent by querying the TSN mempool.
- * - Skips if the intent is already finalized (terminal status).
- * - Skips if the intent was checked within the cooldown window.
- * - Skips if the intent is older than MAX_AGE_SECONDS.
- * - Updates `last_status_checked_at`, `status_finalized_at`, and `status_check_count` in DB.
- */
-async function refreshSinglePaymentIntentStatusImpl(paymentId: string): Promise<{
-  refreshed: boolean;
-  reason?: string;
-  previousIntentStatus?: PaymentIntentStatus | null;
-  latestIntentStatus?: PaymentIntentStatus | null;
-  previousClaimStatus?: ClaimRequestStatus | null;
-  latestClaimStatus?: ClaimRequestStatus | null;
-  tsnQueried: boolean;
-  dbUpdated: boolean;
-  finalized: boolean;
-  nextRefreshAfterMs: number | null;
-}> {
-  const payment = await findPaymentById(paymentId);
-  if (!payment) {
-    return { refreshed: false, reason: "Payment not found", tsnQueried: false, dbUpdated: false, finalized: false, nextRefreshAfterMs: null };
-  }
-
-  const intent = await findPaymentIntentByPaymentId(paymentId);
-  if (!intent) {
-    return { refreshed: false, reason: "No TSN intent found for payment", tsnQueried: false, dbUpdated: false, finalized: false, nextRefreshAfterMs: null };
-  }
-
-  const previousIntentStatus = intent.status;
-  const previousClaimStatus = (await findLatestActiveClaimRequestByPaymentId(paymentId))?.status ?? null;
-
-  // 1. Finalized check: if already terminal, never query TSN again
-  if (isTerminalIntentStatus(intent.status)) {
-    return {
-      refreshed: false,
-      reason: `Intent already finalized with status: ${intent.status}`,
-      previousIntentStatus,
-      latestIntentStatus: intent.status,
-      previousClaimStatus,
-      latestClaimStatus: previousClaimStatus,
-      tsnQueried: false,
-      dbUpdated: false,
-      finalized: true,
-      nextRefreshAfterMs: null,
-    };
-  }
-
-  // 2. Age check: if too old, stop querying
-  const ageSeconds = (Date.now() - new Date(intent.created_at).getTime()) / 1000;
-  if (ageSeconds > STATUS_REFRESH_MAX_AGE_SECONDS) {
-    return {
-      refreshed: false,
-      reason: `Intent exceeds max age of ${STATUS_REFRESH_MAX_AGE_SECONDS}s for status refresh`,
-      previousIntentStatus,
-      latestIntentStatus: intent.status,
-      previousClaimStatus,
-      latestClaimStatus: previousClaimStatus,
-      tsnQueried: false,
-      dbUpdated: false,
-      finalized: false,
-      nextRefreshAfterMs: null,
-    };
-  }
-
-  const lastCheckedAt = (intent as any).last_status_checked_at
-    ? new Date((intent as any).last_status_checked_at).getTime()
-    : 0;
-  const checkCount = (intent as any).status_check_count ?? 0;
-  const cooldownMs = computeRefreshCooldownMs(checkCount);
-  const now = Date.now();
-
-  // 3. Cooldown check
-  if (lastCheckedAt > 0 && now - lastCheckedAt < cooldownMs) {
-    const remainingMs = cooldownMs - (now - lastCheckedAt);
-    return {
-      refreshed: false,
-      reason: `Within cooldown window (${Math.ceil(remainingMs / 1000)}s remaining)`,
-      previousIntentStatus,
-      latestIntentStatus: intent.status,
-      previousClaimStatus,
-      latestClaimStatus: previousClaimStatus,
-      tsnQueried: false,
-      dbUpdated: false,
-      finalized: false,
-      nextRefreshAfterMs: remainingMs,
-    };
-  }
-
-  // 4. Query TSN mempool for this specific intent
-  let tsnQueried = false;
-  let dbUpdated = false;
-  let latestIntentStatus: PaymentIntentStatus = intent.status;
-  let latestClaimStatus = previousClaimStatus;
-
-  try {
-    const mempool = getTsnMempoolClient();
-    const mempoolIntents = await withMempoolTimeout(mempool.listIntents());
-    tsnQueried = true;
-
-    const foundIntent = Array.isArray(mempoolIntents) ? mempoolIntents.find(i => i.id === intent.id) : null;
-
-    if (foundIntent) {
-      const normalizedIntentStatus = normalizePaymentIntentStatus(foundIntent.status);
-      const hasNewTrace =
-        Boolean(foundIntent.escrowTxSig && !intent.escrow_tx_sig) ||
-        Boolean(foundIntent.claimTxSig && !intent.claim_tx_sig) ||
-        Boolean(foundIntent.proofTxSig && !intent.proof_tx_sig);
-
-      if (
-        normalizedIntentStatus &&
-        (normalizedIntentStatus !== intent.status || hasNewTrace)
-      ) {
-        await updatePaymentIntentStatus({
-          id: intent.id,
-          status: normalizedIntentStatus,
-          assignedCrankerPubkey: foundIntent.assignedCrankerPubkey ?? null,
-          escrowTxSig: foundIntent.escrowTxSig ?? null,
-          claimTxSig: foundIntent.claimTxSig ?? null,
-          proofTxSig: foundIntent.proofTxSig ?? null,
-        });
-        latestIntentStatus = normalizedIntentStatus;
-        dbUpdated = true;
-      }
-
-      // Also sync claim request if present
-      if (foundIntent.paymentId) {
-        const mempoolClaims = await withMempoolTimeout(mempool.listClaimRequests({ intentId: intent.id }));
-        const foundClaim = Array.isArray(mempoolClaims) ? mempoolClaims[0] : null;
-        if (foundClaim) {
-          const normalizedClaimStatus = normalizeClaimRequestStatus(foundClaim.status);
-          if (normalizedClaimStatus) {
-            const localClaim = await findLatestActiveClaimRequestByPaymentId(paymentId);
-            if (localClaim && normalizedClaimStatus !== localClaim.status) {
-              await updateClaimRequestStatus({ id: localClaim.id, status: normalizedClaimStatus });
-              latestClaimStatus = normalizedClaimStatus;
-              dbUpdated = true;
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    logger.warn("tsn.intent.refresh_query_failed", {
-      paymentId,
-      intentId: intent.id,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-
-    // TSN query failed — don't advance cooldown so the next attempt retries quickly
-    return {
-      refreshed: false,
-      reason: "TSN query failed",
-      previousIntentStatus,
-      latestIntentStatus: intent.status,
-      previousClaimStatus,
-      latestClaimStatus: previousClaimStatus,
-      tsnQueried: false,
-      dbUpdated: false,
-      finalized: false,
-      nextRefreshAfterMs: 5_000,
-    };
-  }
-
-  // 5. Update tracking fields (only reached when TSN was queried successfully)
-  const isFinalized = isTerminalIntentStatus(latestIntentStatus);
-  await sql`
-    UPDATE payment_intents
-    SET
-      last_status_checked_at = NOW(),
-      status_check_count = status_check_count + 1,
-      status_finalized_at = CASE
-        WHEN ${isFinalized} AND status_finalized_at IS NULL THEN NOW()
-        ELSE status_finalized_at
-      END
-    WHERE id = ${intent.id}
-  `;
-
-  const nextCooldownMs = computeRefreshCooldownMs(checkCount + 1);
-
-  return {
-    refreshed: tsnQueried || dbUpdated,
-    previousIntentStatus,
-    latestIntentStatus,
-    previousClaimStatus,
-    latestClaimStatus,
-    tsnQueried,
-    dbUpdated,
-    finalized: isFinalized,
-    nextRefreshAfterMs: isFinalized ? null : nextCooldownMs,
-  };
-}
-
-function normalizePaymentIntentStatus(status: string): PaymentIntentStatus | null {
-  if (
-    status === "pending" ||
-    status === "escrowed" ||
-    status === "onchain" ||
-    status === "claimed" ||
-    status === "executed" ||
-    status === "settled" ||
-    status === "expired" ||
-    status === "failed" ||
-    status === "canceled" ||
-    status === "reverted"
-  ) {
-    return status;
-  }
-  return null;
-}
-
-function normalizeClaimRequestStatus(status: string): ClaimRequestStatus | null {
-  if (
-    status === "pending" ||
-    status === "processing" ||
-    status === "completed" ||
-    status === "canceled" ||
-    status === "failed"
-  ) {
-    return status;
-  }
-  return null;
-}
+function normalizePaymentIntentStatus(status: string): PaymentIntentStatus | null { return ["pending", "onchain", "executed", "settled", "expired", "failed", "canceled", "reverted"].includes(status) ? status as PaymentIntentStatus : null; }
 
 async function enrichPaymentsWithTsnStateImpl(payments: PaymentRecord[]): Promise<Array<PaymentRecord & { tsn?: PaymentTsnState }>> {
-  if (!env.TSN_ENABLED || payments.length === 0) {
-    return payments as Array<PaymentRecord & { tsn?: PaymentTsnState }>;
-  }
-
-  const paymentIds = payments.map((payment) => payment.id);
-  const [intents, claimRequests] = await Promise.all([
-    listPaymentIntentsByPaymentIds(paymentIds),
-    listLatestClaimRequestsByPaymentIds(paymentIds),
-  ]);
-
-  const intentByPaymentId = new Map<string, PaymentIntentRecord>(intents.map((intent) => [intent.payment_id, intent]));
-  const claimByPaymentId = new Map<string, ClaimRequestRecord>(claimRequests.map((claimRequest) => [claimRequest.payment_id, claimRequest]));
-
-  return payments.map((payment) => {
-    const intent = intentByPaymentId.get(payment.id);
-    if (!intent) {
-      if (payment.status === "created" && paymentLooksLikeFrontendTsnAuthorization(payment)) {
-        return { ...payment, tsn: buildUnpublishedTsnState() };
-      }
-
-      return payment;
-    }
-
-    const claimRequest = claimByPaymentId.get(payment.id) ?? null;
-    const stage = computeStage(intent, claimRequest);
-    const tsn: PaymentTsnState = {
-      stage,
-      intentStatus: intent.status,
-      claimRequestStatus: claimRequest?.status ?? null,
-      destinationWallet: claimRequest?.destination_wallet ?? null,
-      assignedCrankerPubkey: intent.assigned_cranker_pubkey,
-      escrowTxSig: intent.escrow_tx_sig ?? null,
-      claimTxSig: intent.claim_tx_sig ?? null,
-      proofTxSig: intent.proof_tx_sig,
-      settlementReason:
-        stage === "reverted" && intent.status === "canceled"
-          ? "TSN intent is no longer active in the mempool. No escrow transaction was created."
-          : null,
-    };
-
-    return { ...payment, tsn };
-  });
+  if (!env.TSN_ENABLED || payments.length === 0) return payments as Array<PaymentRecord & { tsn?: PaymentTsnState }>;
+  const intents = await listPaymentIntentsByPaymentIds(payments.map((payment) => payment.id));
+  const byPayment = new Map<string, PaymentIntentRecord>(intents.map((intent) => [intent.payment_id, intent]));
+  return payments.map((payment) => { const intent = byPayment.get(payment.id); if (!intent) return payment; const intentAny = intent as typeof intent & { funding_tx_sig?: string | null; settlement_tx_sig?: string | null }; const tsn: PaymentTsnState = { stage: stage(intent.status), intentStatus: intent.status, destinationWallet: payment.receiver_wallet ?? null, assignedCrankerPubkey: intent.assigned_cranker_pubkey, fundingTxSig: intentAny.funding_tx_sig ?? null, settlementTxSig: intentAny.settlement_tx_sig ?? null, settlementReason: null }; return { ...payment, tsn }; });
 }
 
-export function isTsnSettled(payment: { tsn?: PaymentTsnState }) {
-  return payment.tsn?.stage === "cranker_paid" || payment.tsn?.stage === "epoch_settled";
-}
-
-export const syncPaymentIntentTraceFromMempool = traceFunction(syncPaymentIntentTraceFromMempoolImpl, {
-  namespace: "TSN",
-  name: "syncPaymentIntentTraceFromMempool",
-  module: "backend/app/services/tsn.ts",
-  level: "debug",
-  includeReturn: false,
-});
-
-export const createTsnIntentForPayment = traceFunction(createTsnIntentForPaymentImpl, {
-  namespace: "TSN",
-  name: "createTsnIntentForPayment",
-  module: "backend/app/services/tsn.ts",
-  level: "info",
-  includeReturn: false,
-});
-
-export const requestOnboardedRecipientSettlementViaTsn = traceFunction(
-  requestOnboardedRecipientSettlementViaTsnImpl,
-  {
-    namespace: "TSN",
-    name: "requestOnboardedRecipientSettlementViaTsn",
-    module: "backend/app/services/tsn.ts",
-    level: "info",
-    includeReturn: false,
-  },
-);
-
-export const requestPaymentClaimViaTsn = traceFunction(requestPaymentClaimViaTsnImpl, {
-  namespace: "TSN",
-  name: "requestPaymentClaimViaTsn",
-  module: "backend/app/services/tsn.ts",
-  level: "info",
-  includeReturn: false,
-});
-
-export const refreshSinglePaymentIntentStatus = traceFunction(
-  refreshSinglePaymentIntentStatusImpl,
-  {
-    namespace: "TSN",
-    name: "refreshSinglePaymentIntentStatus",
-    module: "backend/app/services/tsn.ts",
-    level: "debug",
-    includeReturn: false,
-  },
-);
-
-export const enrichPaymentsWithTsnState = traceFunction(enrichPaymentsWithTsnStateImpl, {
-  namespace: "TSN",
-  name: "enrichPaymentsWithTsnState",
-  module: "backend/app/services/tsn.ts",
-  level: "debug",
-  includeReturn: false,
-});
+export function isTsnSettled(payment: { tsn?: PaymentTsnState }) { return payment.tsn?.stage === "cranker_paid" || payment.tsn?.stage === "epoch_settled"; }
+export const syncPaymentIntentTraceFromMempool = traceFunction(syncPaymentIntentTraceFromMempoolImpl, { namespace: "TSN", name: "syncPaymentIntentTraceFromMempool", module: "backend/app/services/tsn.ts", level: "debug", includeReturn: false });
+export const createTsnIntentForPayment = traceFunction(createTsnIntentForPaymentImpl, { namespace: "TSN", name: "createTsnIntentForPayment", module: "backend/app/services/tsn.ts", level: "info", includeReturn: false });
+export const requestOnboardedRecipientSettlementViaTsn = traceFunction(requestOnboardedRecipientSettlementViaTsnImpl, { namespace: "TSN", name: "requestOnboardedRecipientSettlementViaTsn", module: "backend/app/services/tsn.ts", level: "info", includeReturn: false });
+export const requestRecipientSettlementViaTsn = traceFunction(requestRecipientSettlementViaTsnImpl, { namespace: "TSN", name: "requestRecipientSettlementViaTsn", module: "backend/app/services/tsn.ts", level: "info", includeReturn: false });
+export const refreshSinglePaymentIntentStatus = traceFunction(refreshSinglePaymentIntentStatusImpl, { namespace: "TSN", name: "refreshSinglePaymentIntentStatus", module: "backend/app/services/tsn.ts", level: "debug", includeReturn: false });
+export const enrichPaymentsWithTsnState = traceFunction(enrichPaymentsWithTsnStateImpl, { namespace: "TSN", name: "enrichPaymentsWithTsnState", module: "backend/app/services/tsn.ts", level: "debug", includeReturn: false });

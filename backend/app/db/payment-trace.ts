@@ -16,7 +16,6 @@ export async function ensurePaymentTraceColumns() {
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS token_mint_address VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS sender_fee_amount NUMERIC(20, 9)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS claim_fee_amount NUMERIC(20, 9)`;
-      await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS expiry_at TIMESTAMPTZ`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS sender_phone_identity_pubkey VARCHAR(64)`;
       await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(16) DEFAULT 'secure'`;

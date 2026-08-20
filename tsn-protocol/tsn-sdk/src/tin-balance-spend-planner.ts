@@ -17,10 +17,10 @@ export type TinSpendPlan = {
   feeAmountBaseUnits: string;
   totalRequiredBaseUnits: string;
   pruSpendBaseUnits: string;
-  pruEscrowAmountBaseUnits: string;
+  pruFundingAmountBaseUnits: string;
   pruSenderFeeBaseUnits: string;
   walletSpendBaseUnits: string;
-  walletEscrowAmountBaseUnits: string;
+  walletFundingAmountBaseUnits: string;
   walletSenderFeeBaseUnits: string;
   shortfallBaseUnits: string;
   privacyLevel: "highest" | "reduced" | "lowest" | "blocked";
@@ -94,11 +94,11 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
   const walletSpend =
     walletAvailable >= remainingAfterPru ? remainingAfterPru : walletAvailable;
   const shortfall = totalRequired - pruSpend - walletSpend;
-  const pruEscrowAmount =
+  const pruFundingAmount =
     pruSpend >= requestedAmount ? requestedAmount : pruSpend;
   const pruSenderFeeAmount =
     pruSpend > requestedAmount ? pruSpend - requestedAmount : 0n;
-  const walletEscrowAmount = requestedAmount - pruEscrowAmount;
+  const walletFundingAmount = requestedAmount - pruFundingAmount;
   const walletSenderFeeAmount = feeAmount - pruSenderFeeAmount;
 
   if (shortfall > 0n) {
@@ -108,10 +108,10 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
       feeAmountBaseUnits: feeAmount.toString(),
       totalRequiredBaseUnits: totalRequired.toString(),
       pruSpendBaseUnits: pruSpend.toString(),
-      pruEscrowAmountBaseUnits: pruEscrowAmount.toString(),
+      pruFundingAmountBaseUnits: pruFundingAmount.toString(),
       pruSenderFeeBaseUnits: pruSenderFeeAmount.toString(),
       walletSpendBaseUnits: walletSpend.toString(),
-      walletEscrowAmountBaseUnits: walletEscrowAmount.toString(),
+      walletFundingAmountBaseUnits: walletFundingAmount.toString(),
       walletSenderFeeBaseUnits: walletSenderFeeAmount.toString(),
       shortfallBaseUnits: shortfall.toString(),
       privacyLevel: "blocked",
@@ -128,10 +128,10 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
       feeAmountBaseUnits: feeAmount.toString(),
       totalRequiredBaseUnits: totalRequired.toString(),
       pruSpendBaseUnits: pruSpend.toString(),
-      pruEscrowAmountBaseUnits: pruEscrowAmount.toString(),
+      pruFundingAmountBaseUnits: pruFundingAmount.toString(),
       pruSenderFeeBaseUnits: pruSenderFeeAmount.toString(),
       walletSpendBaseUnits: "0",
-      walletEscrowAmountBaseUnits: "0",
+      walletFundingAmountBaseUnits: "0",
       walletSenderFeeBaseUnits: "0",
       shortfallBaseUnits: "0",
       privacyLevel: "highest",
@@ -147,10 +147,10 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
       feeAmountBaseUnits: feeAmount.toString(),
       totalRequiredBaseUnits: totalRequired.toString(),
       pruSpendBaseUnits: pruSpend.toString(),
-      pruEscrowAmountBaseUnits: pruEscrowAmount.toString(),
+      pruFundingAmountBaseUnits: pruFundingAmount.toString(),
       pruSenderFeeBaseUnits: pruSenderFeeAmount.toString(),
       walletSpendBaseUnits: walletSpend.toString(),
-      walletEscrowAmountBaseUnits: walletEscrowAmount.toString(),
+      walletFundingAmountBaseUnits: walletFundingAmount.toString(),
       walletSenderFeeBaseUnits: walletSenderFeeAmount.toString(),
       shortfallBaseUnits: "0",
       privacyLevel: "reduced",
@@ -166,10 +166,10 @@ export function planTinBalanceSpend(input: TinSpendPlannerInput): TinSpendPlan {
     feeAmountBaseUnits: feeAmount.toString(),
     totalRequiredBaseUnits: totalRequired.toString(),
     pruSpendBaseUnits: "0",
-    pruEscrowAmountBaseUnits: "0",
+    pruFundingAmountBaseUnits: "0",
     pruSenderFeeBaseUnits: "0",
     walletSpendBaseUnits: totalRequired.toString(),
-    walletEscrowAmountBaseUnits: requestedAmount.toString(),
+    walletFundingAmountBaseUnits: requestedAmount.toString(),
     walletSenderFeeBaseUnits: feeAmount.toString(),
     shortfallBaseUnits: "0",
     privacyLevel: "lowest",

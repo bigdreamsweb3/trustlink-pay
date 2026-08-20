@@ -56,8 +56,6 @@
     "tsn:receiver:build": "npm --prefix tsn-protocol/tsn-receiver run build",
     "tsn:mempool-ui:dev": "cd tsn-protocol/tsn-mempool-ui && node ../../frontend/node_modules/next/dist/bin/next dev -p 3002",
     "mempool:install": "node scripts/install-tsn-mempool-python.mjs",
-    "mempool:status": "node scripts/tsn-mempool-status.mjs",
-    "mempool:cancel": "node scripts/tsn-cancel-mempool-work.mjs",
     "// === TSN Program ===": "Transfer Settlement Network on-chain program and private settlement setup.",
     "deploy:doctor": "node scripts/solana-deploy-doctor.mjs",
     "deploy:lockfiles:stabilize": "node scripts/solana-lockfile-stabilize.mjs",

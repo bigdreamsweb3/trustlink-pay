@@ -106,7 +106,7 @@ function paymentStatusLabel(status: PaymentRecord["status"]) {
 type LivePaymentStage = {
   key:
     | "awaiting_cranker"
-    | "escrowed"
+    | "funded"
     | "claiming"
     | "recipient_paid"
     | "stopped";
@@ -144,7 +144,7 @@ function getLivePaymentStage(
       terminal: true,
     };
   }
-  if (stage === "claim_requested" || stage === "lease_claimed") {
+  if (stage === "lease_claimed") {
     return {
       key: "claiming",
       label: "Claiming",
@@ -153,10 +153,10 @@ function getLivePaymentStage(
       terminal: false,
     };
   }
-  if (stage === "escrowed" || payment.status === "locked") {
+  if (stage === "funded" || payment.status === "locked") {
     return {
-      key: "escrowed",
-      label: "Escrowed",
+      key: "funded",
+      label: "Epoch funded",
       description: "Funds are secured and awaiting recipient settlement.",
       step: 2,
       terminal: false,
@@ -362,10 +362,8 @@ export function SendExperience() {
     referenceCode: string;
     senderDisplayName: string;
     senderHandle: string;
-    escrowAccount: string | null;
     blockchainSignature: string;
     blockchainMode: "tsn" | "mock" | "devnet";
-    depositAddress: string | null;
     notificationRetrying: boolean;
     notificationAttemptCount: number;
     manualInviteRequired: boolean;
@@ -956,9 +954,7 @@ export function SendExperience() {
                 observedStatus.intentStatus === "executed" ||
                 observedStatus.intentStatus === "settled"
                   ? "claimed"
-                  : observedStatus.intentStatus === "escrowed" ||
-                      observedStatus.intentStatus === "onchain" ||
-                      observedStatus.intentStatus === "claimed"
+                  : observedStatus.intentStatus === "onchain"
                     ? "locked"
                     : current.status,
             };
@@ -1265,10 +1261,8 @@ export function SendExperience() {
         referenceCode: string;
         senderDisplayName: string;
         senderHandle: string;
-        escrowAccount: string | null;
         blockchainSignature: string | null;
         blockchainMode: "tsn" | "mock" | "devnet";
-        depositAddress: string | null;
         tokenSymbol: string | null;
         notificationRetrying: boolean;
         notificationAttemptCount: number;
@@ -1351,23 +1345,15 @@ export function SendExperience() {
       const sponsoredSettlement = usesPruSpendExecution
         ? null
         : await buildTsnSponsoredSettlementTransaction({
-            paymentId: result.paymentId,
             crankerFeePayer: crankerFeePayer as string,
             senderWallet: walletAddress,
             tokenMintAddress: selectedToken.mintAddress,
             amountUi: usesMixedPruWalletExecution
-              ? Number(tinSpendPlan?.walletEscrowAmountBaseUnits ?? "0") /
+              ? Number(tinSpendPlan?.walletFundingAmountBaseUnits ?? "0") /
                 10 ** tokenDecimals
               : Number(form.amount),
-            senderFeeAmountUi: usesMixedPruWalletExecution
-              ? Number(tinSpendPlan?.walletSenderFeeBaseUnits ?? "0") /
-                10 ** tokenDecimals
-              : senderFeeAmount,
             tokenDecimals,
-            recipientHash,
-            transferId,
-              commitmentHash: paymentCommitment,
-              rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
+            rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
           });
       setApprovalStage(sponsoredSettlement ? "transaction" : "submitting");
       const senderSignedSettlementTransaction = sponsoredSettlement
@@ -1396,7 +1382,7 @@ export function SendExperience() {
         senderFeeAmount,
         senderSignedSettlementTransaction,
         senderSignedSettlementFeePayer:
-          sponsoredSettlement?.crankerFeePayer ?? null,
+          crankerFeePayer ?? null,
         senderSettlementMode: usesPruSpendExecution
           ? "zk_pru_only_v2"
           : usesMixedPruWalletExecution
@@ -1406,13 +1392,13 @@ export function SendExperience() {
           ? (user.tin ?? null)
           : null,
         pruSpendAmountBaseUnits: tinSpendPlan?.requiresPruExecution
-          ? String(tinSpendPlan?.pruEscrowAmountBaseUnits ?? "0")
+          ? String(tinSpendPlan?.pruFundingAmountBaseUnits ?? "0")
           : null,
         pruSpendSenderFeeBaseUnits: tinSpendPlan?.requiresPruExecution
           ? String(tinSpendPlan?.pruSenderFeeBaseUnits ?? "0")
           : null,
         walletTopUpAmountBaseUnits: usesMixedPruWalletExecution
-          ? String(tinSpendPlan?.walletEscrowAmountBaseUnits ?? "0")
+          ? String(tinSpendPlan?.walletFundingAmountBaseUnits ?? "0")
           : null,
         walletTopUpSenderFeeBaseUnits: usesMixedPruWalletExecution
           ? String(tinSpendPlan?.walletSenderFeeBaseUnits ?? "0")
@@ -1420,12 +1406,7 @@ export function SendExperience() {
         pruSpendSelections: tinSpendPlan?.requiresPruExecution
           ? (tinSpendPlan?.pruSpendSelections ?? [])
           : null,
-        privacyVersion: sponsoredSettlement?.privacyVersion ?? 2,
-        commitmentRecord: sponsoredSettlement?.commitmentRecord ?? null,
         senderTokenAccount: sponsoredSettlement?.senderTokenAccount ?? null,
-        settlementVault: sponsoredSettlement?.paymentVault ?? null,
-        settlementTokenAccount: sponsoredSettlement?.escrowTokenAccount ?? null,
-        settlementPaymentIntentId: sponsoredSettlement?.paymentIntentId ?? null,
         transferId,
         commitmentHash: paymentCommitment,
         settlementEpoch,
@@ -1461,7 +1442,7 @@ export function SendExperience() {
           ? `Payment secured. Share invite manually. Ref ${result.referenceCode}.`
           : result.notificationRetrying
             ? `Payment secured. WhatsApp retrying. Ref ${result.referenceCode}.`
-            : `Sponsored settlement queued. Awaiting Cranker Verification. Ref ${result.referenceCode}.${enqueueResult.claimRequestId ? ` Claim ${enqueueResult.claimRequestId}.` : ""}`,
+            : `Sponsored settlement queued. Awaiting Cranker Verification. Ref ${result.referenceCode}.`,
       );
     } catch (e) {
       setApprovalStage("idle");
@@ -1568,7 +1549,7 @@ export function SendExperience() {
           <div className="space-y-5">
             <div className="text-center py-2">
               {livePaymentStage?.key === "recipient_paid" ||
-              livePaymentStage?.key === "escrowed" ? (
+          livePaymentStage?.key === "funded" ? (
                 <SuccessIcon className="mx-auto h-14 w-14" />
               ) : livePaymentStage?.key === "stopped" ? (
                 <AlertCircle className="mx-auto h-14 w-14 text-[var(--danger)]" />
@@ -1613,8 +1594,8 @@ export function SendExperience() {
                 <div className="grid grid-cols-4 gap-1">
                   {[
                     { label: "Cranker", step: 1 },
-                    { label: "Escrowed", step: 2 },
-                    { label: "Claiming", step: 3 },
+                    { label: "Epoch funded", step: 2 },
+                    { label: "Cranker leased", step: 3 },
                     { label: "Paid", step: 4 },
                   ].map((item) => {
                     const reached =

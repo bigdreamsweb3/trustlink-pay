@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
 import { assertExternalWorkKind, assertPaymentIntentIngress, createReceivedWork, payloadCommitment, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
@@ -11,7 +12,7 @@ function redactedPaymentPayload(payload: Record<string, unknown>) {
   // The complete ingress envelope is encrypted at receipt and is available
   // only through the authenticated Node projection. Once verification has
   // completed, Firebase retains only the queue reference needed to derive
-  // claim work. Recipient routing stays in the Node's separate, expiring binding.
+  // settlement work. Recipient routing stays in the Node's separate, expiring binding.
   return {
     paymentId: String(payload.paymentId ?? ""),
     recipientHash: String(payload.recipientHash ?? ""),
@@ -27,9 +28,6 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
     "tokenMintAddress",
     "amount",
     "privacyVersion",
-    "settlementTokenAccount",
-    "settlementPaymentIntentId",
-    "settlementVault",
     "transferId",
     "commitmentHash",
     "settlementEpoch",
@@ -156,7 +154,7 @@ async function lease(
 ) {
   // Requeue abandoned leases before selecting fresh work. This prevents a
   // Node authorization failure or Cranker crash from permanently stranding
-  // claim/recovery work in an intermediate state.
+  // settlement work in an intermediate state.
   const stale = await workCollection.where("status", "==", next).limit(50).get();
   for (const candidate of stale.docs) {
     const data = candidate.data() as ReceiverWork;
@@ -187,9 +185,8 @@ async function lease(
     if (supportedKinds?.length && !supportedKinds.includes(candidate.get("kind") as WorkKind)) continue;
     if (next === "CRANKER_LEASED") {
       const kind = candidate.get("kind") as WorkKind;
-      if (kind === "RECOVERY") continue;
       const payload = candidate.get("payload") as Record<string, unknown>;
-      const paymentId = kind === "CLAIM" ? payload.intentId : null;
+      const paymentId = kind === "SETTLEMENT" ? payload.intentId : null;
       if (paymentId) {
         const payment = await workCollection.doc(String(paymentId)).get();
         if (!payment.exists || payment.get("kind") !== "PAYMENT_INTENT" || payment.get("status") !== "CONFIRMED") continue;
@@ -249,7 +246,7 @@ export async function transition(params: {
       const currentSignature = String(current.result?.signature ?? "");
       const reportedSignature = String(params.evidence?.signature ?? "");
       if (currentSignature && reportedSignature && currentSignature === reportedSignature) {
-        return { work: current, claimCreated: false };
+        return { work: current, settlementCreated: false };
       }
     }
     const lease = params.actor === "node" ? current.nodeLease : current.crankerLease;
@@ -282,45 +279,45 @@ export async function transition(params: {
               ? { verification: paymentReceiptVerification(current.verification) }
               : {}),
             // A payout authorization contains the recipient wallet and is
-            // short-lived work material, not a permanent claim record.
-            ...(params.status === "CONFIRMED" && current.kind === "CLAIM"
+            // short-lived work material, not a permanent settlement record.
+            ...(params.status === "CONFIRMED" && current.kind === "SETTLEMENT"
               ? { authorization: null }
               : {}),
           }),
     };
-    // A CLAIM is a consequence of a verified and funded payment; it is not an
+    // A SETTLEMENT is a consequence of a verified and funded payment; it is not an
     // ingress object that a sender or frontend may create. Create it in the
     // same Firestore transaction as the Cranker CONFIRMED transition so there
-    // can never be a claim without the payment's verified evidence and result.
-    let claimCreated = false;
+    // can never be a settlement without the payment's verified evidence and result.
+    let settlementCreated = false;
     if (params.actor === "cranker" && current.kind === "PAYMENT_INTENT" && params.status === "CONFIRMED") {
       const verificationType = String(current.verification?.verificationType ?? "").trim();
       if (!verificationType) throw new Error("PAYMENT_INTENT_NOT_NODE_VERIFIED");
-      const claimId = `claim-${current.id}`;
-      const claimRef = workCollection.doc(claimId);
-      const claimSnapshot = await transaction.get(claimRef);
-      if (!claimSnapshot.exists) {
-        const claimPayload = {
+      const settlementId = `settlement-${createHash("sha256").update(`${current.id}:${current.payloadCommitment}`).digest("hex").slice(0, 32)}`;
+      const settlementRef = workCollection.doc(settlementId);
+      const settlementSnapshot = await transaction.get(settlementRef);
+      if (!settlementSnapshot.exists) {
+        const settlementPayload = {
           paymentId: current.payload.paymentId ?? current.id,
           intentId: current.id,
           recipientHash: String(current.payload.recipientHash ?? ""),
           source: "tsn-receiver-after-node-verification",
         };
-        transaction.create(claimRef, createReceivedWork({
-          id: claimId,
-          kind: "CLAIM",
-          payload: claimPayload,
+        transaction.create(settlementRef, createReceivedWork({
+          id: settlementId,
+          kind: "SETTLEMENT",
+          payload: settlementPayload,
         }));
-        claimCreated = true;
+        settlementCreated = true;
       } else {
-        const existingClaim = claimSnapshot.data() as ReceiverWork;
-        if (existingClaim.kind !== "CLAIM" || String(existingClaim.payload.intentId ?? "") !== current.id) {
-          throw new Error("CLAIM_IDEMPOTENCY_CONFLICT");
+        const existingSettlement = settlementSnapshot.data() as ReceiverWork;
+        if (existingSettlement.kind !== "SETTLEMENT" || String(existingSettlement.payload.intentId ?? "") !== current.id) {
+          throw new Error("SETTLEMENT_IDEMPOTENCY_CONFLICT");
         }
       }
     }
     transaction.update(ref, patch);
-    return { work: { ...current, ...patch } as ReceiverWork, claimCreated };
+    return { work: { ...current, ...patch } as ReceiverWork, settlementCreated };
   });
   // Node verification is the point at which Cranker work becomes leaseable.
   // Publish a fresh control-only wake after the Firestore transition commits;
@@ -328,11 +325,11 @@ export async function transition(params: {
   if (params.actor === "node" && params.status === "VERIFIED") {
     await publishCrankerWake("VERIFIED");
   }
-  if (result.claimCreated) {
-    // The claim is now durable and leaseable; the Node receives the control
+  if (result.settlementCreated) {
+    // The settlement is now durable and leaseable; the Node receives the control
     // wake first so it can verify/authorize the settlement before a Cranker
     // attempts to lease it.
-    await Promise.all([wakeTsnNode("CLAIM"), publishCrankerWake("CLAIM")]);
+    await Promise.all([wakeTsnNode("SETTLEMENT"), publishCrankerWake("SETTLEMENT")]);
   }
   return result.work;
 }

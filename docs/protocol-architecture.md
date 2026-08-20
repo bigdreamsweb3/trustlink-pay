@@ -1,195 +1,22 @@
 # TSN protocol architecture
 
-TrustLink Labs' Transfer Settlement Network (TSN) is a Solana-based payment
-coordination and settlement network. TrustLink Pay is the application layer.
-TIN provides payment identity, ZK-PRU provides protected receiving and source
-authorization, the Receiver stores durable work, the TSN Node verifies work,
-and Crankers execute leased settlement work.
-
-## Solana foundation
-
-- **Wallet:** a user-controlled signing authority.
-- **Token account:** an account holding one SPL token for an owner or delegate.
-- **Program:** executable Solana logic that validates accounts and instructions.
-- **PDA:** a deterministic program-controlled address without a private key.
-- **Validator:** a Solana participant that processes and confirms transactions.
-- **Cluster:** a separate Solana environment such as localnet, Devnet, or
-  mainnet-beta.
-
-TSN Nodes and Crankers are application services, not Solana validators. TSN's
-Receiver is an application work queue, not Solana's validator transaction
-pipeline. Cluster identity is part of the authorized data so a plan for one
-environment cannot be replayed on another.
-
-## Identity and authority
-
-A TIN is a TSN payment identity. It is not a wallet, token account, or private
-key. The main wallet owns the identity and retains authorization and recovery
-authority.
-
-The authority boundary is:
-
-1. the main wallet authorizes the operation;
-2. the authorized device decrypts the encrypted ZK-PRU material locally;
-3. the SDK derives only selected child authorities and signs the scoped source
-   authorization;
-4. the TSN Program enforces the signed constraints and lease;
-5. the Cranker uses only its own operator and fee-payer authority.
-
-The Receiver, Node, and Cranker never receive plaintext seeds or user child
-private keys.
-
-## ZK-PRU inside TSN
-
-ZK-PRU is TSN's protected receiving and spending technology. The TIN identifies
-the payment route, the authorized device derives selected source authorities,
-the SDK plans and signs, the Node verifies, and the Cranker submits the exact
-leased work. ZK-PRU improves protected identity and route separation; it does
-not claim that every public Solana amount, timing signal, or exit is hidden.
-
 ## Components
 
 | Component | Responsibility |
 | --- | --- |
-| TrustLink Pay | Authenticates the user, collects route choices, requests signatures, and displays evidence. |
-| TSN SDK | Resolves routes, selects inputs, calculates fees/change, builds commitments, and signs locally. |
-| TSN Receiver | Stores intents, claims, leases, work, proofs, and status in the durable service. |
-| TSN Node | Verifies signed work, route commitments, replay state, lease state, and eligibility. |
-| Cranker | Pays Solana fees, claims short leases, pays recipients from its CrankerVault, and reports signatures. |
-| TSN Program | Enforces commitment, lease, replay, amount, route, and token-account rules on Solana. |
-| TSN Escrow | Isolated program-controlled reimbursement source for the Cranker that completes settlement. |
-| CrankerVault | Protocol-controlled liquidity vault used for the recipient payout and protocol fees. |
-| Solana validators | Execute and confirm the submitted transactions. |
+| Device/SDK | Signs the sender authorization and the epoch-treasury funding transaction. It never exports private keys or Node encryption keys. |
+| Receiver | Authenticated ingress and opaque work leases. It stores only an allowlisted public coordination record. It has no public settlement or refund ingress. |
+| Node/Mother | Verifies funding and recipient authorization, stores the encrypted binding, derives the keyed slot, and signs short-lived DNA permits. |
+| Cranker | Uses the permit to submit the TSN settlement transaction. It cannot choose a source account, payment record, recipient binding, amount, or reimbursement destination. |
+| TSN program | Owns epoch treasury/ledger state, validates Mother-rooted permits, consumes slots/nullifiers, pays recipients, reimburses the exact vault, and processes refunds. |
 
-No backend, Receiver, Node, or Cranker receives a user's plaintext master seed,
-ZK-PRU child private key, or serialized user signer.
+## Lifecycle
 
-## End-to-end settlement
+1. Sender signs a canonical payment authorization. The SDK builds a `fund_epoch_treasury` transaction; no payment-specific account is included.
+2. Node verifies the funding signature and stores the full binding encrypted off chain.
+3. Node/Mother derives a keyed opaque slot and leases a Mother-rooted DNA to one operator. The Cranker receives only the opaque commitment and permit.
+4. The first valid settlement transaction initializes and consumes the slot as `SETTLED`, pays the recipient from the bound CrankerVault, and reimburses that same vault from epoch treasury in the same instruction.
+5. If the intent expires without settlement, Node/Mother signs a refund. The first valid refund initializes and consumes the same slot as `REFUNDED` and pays the authorized refund destination from epoch treasury.
+6. Epoch close is permitted only after pending liability is zero and all slots are resolved.
 
-```mermaid
-sequenceDiagram
-    participant U as User device
-    participant S as TSN SDK
-    participant R as TSN Receiver
-    participant N as TSN Node
-    participant C as Cranker
-    participant P as TSN Program
-    participant V as TSN Escrow
-    participant CV as CrankerVault
-
-    U->>S: Select route, amount, asset, and fees
-    S->>S: Resolve TIN route and build one-time commitment
-    U->>S: Main-wallet and selected ZK-PRU signatures
-    S->>R: POST /intents with public intent and signatures
-    R->>N: Publish received intent work
-    N->>N: Verify authorization, route, amount, expiry, nonce, and replay
-    N->>N: Decrypt recipient route and create inactive settlement intent
-    N->>P: Validate submitted payment intent and required on-chain state
-    N-->>R: VERIFIED intent work
-    C->>R: Claim short intent lease
-    C->>P: Submit exact sender-authorized funding transaction
-    P->>V: Create isolated escrow vault and verify funding commitment
-    R-->>C: Settlement work after funding confirmation
-    C->>R: Claim short settlement lease
-    N->>N: Recheck lease-bound settlement data
-    C->>P: Submit exact settlement transaction
-    P->>P: Verify lease owner, commitment, replay, amount, route, and expiry
-    P->>CV: CrankerVault pays recipient and fees
-    P-->>R: Settlement proof and confirmation evidence
-    N->>N: Verifier decides whether reimbursement is authorized
-    N-->>R: Separate reimbursement work, if approved
-    R-->>C: Reimbursement work for the authorized Cranker
-    C->>P: Submit reimbursement transition
-    P->>V: Execute only the authorized reimbursement
-    R-->>U: Signature, balance changes, and receipt evidence
-```
-
-## Stage 1: intent and isolated funding
-
-The authorized device and SDK create the intent, route commitment, source
-authorization, fee limits, expiry, and replay nonce. The frontend submits the
-public payload to the Receiver. The Node verifies it, decrypts the recipient's
-public route, and creates the settlement intent off chain. That settlement
-intent remains inactive until the Node confirms that the payment intent was
-submitted and the required on-chain state is valid.
-
-A Cranker leases the verified intent and submits the exact sender-authorized
-funding transaction. The TSN Program creates the isolated payment vault and
-holds the authorized amount. The vault is not the recipient payout account; it
-is the reimbursement source for the Cranker that completes settlement.
-
-The funding transaction does not authorize the Cranker to change the route,
-amount, recipient, fees, or commitment.
-
-## Stage 2: lease, payout, and reimbursement
-
-After funding confirmation, settlement work becomes available. A Cranker claims
-a short lease and receives a one-time settlement token/commitment binding. The
-TSN Node rechecks the work, and the TSN Program enforces the same binding on
-chain.
-
-The payout is made from the leased Cranker's CrankerVault. The recipient route,
-mint, amount, fee split, lease owner, expiry, and replay state are verified.
-After the payout succeeds, the Node and verifier services evaluate the
-confirmed proof. If reimbursement is authorized, the Receiver publishes
-separate reimbursement work and the TSN Program executes that transition. The
-settlement transaction does not write the original payment-intent vault as
-`Paid` or `recoverable`. An expired lease can be recovered or reassigned; an
-expired or replayed commitment cannot settle.
-
-## Commitment-based separation
-
-The intent, the Cranker payout, and the escrow reimbursement are separate
-records. The commitment proves that the leased Cranker executed the exact
-authorized settlement without requiring a public direct sender-to-recipient
-transfer edge. Public Solana facts remain visible, including program accounts
-and token-account addresses, but the tested flow does not publish the sender's
-private ZK-PRU material or a direct settlement link between the two identities.
-
-This is commitment-based verification, not a claim that every Solana fact is
-hidden or that the system provides formal transaction unlinkability proofs.
-
-## Four settlement routes
-
-1. Native TIN-to-TIN: protected source route to a protected recipient route.
-2. Wallet-to-TIN: public wallet funding to a protected TIN route.
-3. TIN-to-wallet: protected source route to a public wallet destination.
-4. Wallet-to-wallet: public compatibility settlement.
-
-All four routes use the same Receiver, Node, lease, CrankerVault payout, and
-escrow-reimbursement lifecycle.
-
-## TIN and ZK-PRU boundary
-
-TIN stores public identity and route commitments plus encrypted route material.
-The authorized device decrypts the master seed locally, derives selected
-ZK-PRU authorities, and signs the exact scoped source authorization. The Node
-may resolve the public receiving route, but it cannot derive or sign with user
-private keys. The Cranker receives only verified public work and signatures.
-
-## Runtime APIs
-
-The main work surfaces are:
-
-```text
-POST /intents
-GET  /intent-work
-POST /claim-requests
-GET  /work
-POST /proofs
-```
-
-Receiver status is coordination evidence. Confirmed Solana signatures and
-account balances are the final proof that token movement occurred.
-
-## Failure and recovery
-
-- invalid intent: reject before funding;
-- funding failure or expired blockhash: keep settlement non-executable;
-- active lease: reject a competing Cranker;
-- expired lease: requeue or recover according to policy;
-- replayed commitment or settlement token: reject on chain;
-- failed payout: do not release reimbursement as successful settlement.
-
-Recurring payments remain disabled. TCAP remains a separate experimental
-confidential-asset direction and is not the current settlement actor.
+The slot is not present in the funding transaction. No payment id, sender, recipient TIN, encrypted binding, or payment-specific PDA is written to the epoch ledger.

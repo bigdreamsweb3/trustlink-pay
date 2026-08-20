@@ -1,21 +1,19 @@
-import type { ClaimRequestStatus, PaymentIntentStatus } from "@trustlink/tsn-sdk";
+import type { PaymentIntentStatus } from "@trustlink/tsn-sdk";
 
 export type PaymentStatus = "created" | "locked" | "expired" | "claimed" | "refund_requested" | "refunded";
 export type PaymentNotificationStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type PaymentViewerRole = "sender" | "receiver";
 export type PaymentMode = "secure" | "invite";
 
-export type TsnUiStage = "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
+export type TsnUiStage = "intent_pending" | "funded" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
 
 export interface PaymentTsnState {
   stage: TsnUiStage;
   intentStatus: PaymentIntentStatus;
-  claimRequestStatus: ClaimRequestStatus | null;
   destinationWallet: string | null;
   assignedCrankerPubkey: string | null;
-  escrowTxSig: string | null;
-  claimTxSig: string | null;
-  proofTxSig: string | null;
+  fundingTxSig: string | null;
+  settlementTxSig: string | null;
   settlementReason?: string | null;
 }
 
@@ -80,8 +78,6 @@ export interface PaymentRecord {
   amount: string;
   sender_fee_amount: string | null;
   claim_fee_amount: string | null;
-  escrow_account: string | null;
-  escrow_vault_address: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
   refund_release_signature?: string | null;

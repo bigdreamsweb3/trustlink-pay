@@ -1,7 +1,6 @@
 import {
   buildCreateIntentRequest,
   type CreateIntentRequest,
-  type TsnMempoolClaimRequest,
   type TsnMempoolIntent,
 } from "./contracts.js";
 import {
@@ -152,11 +151,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   walletTopUpSenderFeeBaseUnits?: string | null;
   pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
   privacyVersion?: number | null;
-  commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
-  settlementVault?: string | null;
-  settlementTokenAccount?: string | null;
-  settlementPaymentIntentId?: string | null;
   transferId?: string | null;
   commitmentHash?: string | null;
   settlementEpoch?: number | null;
@@ -187,11 +182,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
       pruSpendSelections: params.pruSpendSelections,
       privacyVersion: params.privacyVersion,
-      commitmentRecord: params.commitmentRecord,
       senderTokenAccount: params.senderTokenAccount,
-      settlementVault: params.settlementVault,
-      settlementTokenAccount: params.settlementTokenAccount,
-      settlementPaymentIntentId: params.settlementPaymentIntentId,
       transferId: params.transferId,
       commitmentHash: params.commitmentHash,
       settlementEpoch: params.settlementEpoch,
@@ -236,11 +227,7 @@ export async function submitPaymentAuthorizationToMempool(params: {
   walletTopUpSenderFeeBaseUnits?: string | null;
   pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
   privacyVersion?: number | null;
-  commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
-  settlementVault?: string | null;
-  settlementTokenAccount?: string | null;
-  settlementPaymentIntentId?: string | null;
   transferId?: string | null;
   commitmentHash?: string | null;
   settlementEpoch?: number | null;
@@ -262,11 +249,8 @@ export async function submitPaymentAuthorizationToMempool(params: {
   // only valid after the TSN Node has verified this payment and a Cranker has
   // confirmed the immutable funding transaction.  The Receiver creates that
   // next work item atomically from the CONFIRMED payment transition.
-  const claimRequest: TsnMempoolClaimRequest | null = null;
-
   return {
     intentRequest,
     intent,
-    claimRequest,
   };
 }

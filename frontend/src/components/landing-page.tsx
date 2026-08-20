@@ -318,7 +318,7 @@ export function LandingPage() {
               TrustLink Pay is built on the Transfer Settlement Network — a
               decentralized settlement layer for Solana that turns payment
               intents into private, cryptographically verifiable execution
-              through Escrow Hold, Cranker execution, and Settlement Proof. Pay
+              through epoch funding, Cranker execution, and opaque slot settlement. Pay
               anyone using a phone number or 10-digit TIN instead of a wallet
               address, with private settlement and optional identity trust
               context.
@@ -822,7 +822,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-text">
-                    Settlement Proof
+                    Opaque Slot Settlement
                   </p>
                   <p className="text-xs text-text-faint">
                     Verifiable off-chain evidence recorded

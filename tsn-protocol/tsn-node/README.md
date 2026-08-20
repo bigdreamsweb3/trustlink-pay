@@ -29,7 +29,7 @@ Copy `.env.example` to `.env` and configure:
 - `TSN_RECEIVER_URL` - Receiver base URL
 - `TSN_RECEIVER_NODE_API_KEY` - Node-to-Receiver service credential
 - `TSN_NODE_WAKE_TIMEOUT_MS` - Receiver wake request timeout (default `2500`)
-- `TSN_PROGRAM_ID` - TSN escrow program id scanned for `CrankerVault` accounts
+- `TSN_PROGRAM_ID` - TSN settlement program id scanned for epoch treasury and `CrankerVault` accounts
 - `TSN_RPC_GATEWAY_URL` - The single TrustLink RPC gateway used for every on-chain read and settlement authorization check
 - `EPOCH_HOURS` - epoch duration, default `7`
 

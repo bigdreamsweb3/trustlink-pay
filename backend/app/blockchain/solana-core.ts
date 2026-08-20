@@ -1129,11 +1129,9 @@ export async function getWalletSupportedTokenBalance(params: {
   };
 }
 
-// Placeholder for estimateClaimFee - TSN handles this
+// TSN handles settlement fee estimation; this shape contains no payment account.
 export type EstimateClaimFeeParams = {
   paymentId: string;
-  escrowAccount: string;
-  escrowVaultAddress: string;
   receiverWallet: string;
   paymentPhoneIdentityPublicKey: string;
   bindingPhoneIdentityPublicKey: string;

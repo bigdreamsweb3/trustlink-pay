@@ -60,6 +60,8 @@ pub enum TsnError {
     CrankerClaimCreditOverflow,
     #[msg("Cranker vault has insufficient liquidity")]
     InsufficientCrankerVaultLiquidity,
+    #[msg("Epoch treasury cannot reimburse this settlement")]
+    InsufficientEpochTreasuryLiquidity,
     #[msg("Settlement commitment does not match the encrypted token secret")]
     InvalidSettlementCommitment,
     #[msg("One-time decryption token does not match the active lease")]
@@ -70,12 +72,6 @@ pub enum TsnError {
     InvalidVaultSettlementState,
     #[msg("Settlement vault is not recoverable")]
     VaultNotRecoverable,
-    #[msg("Recovery must return principal to the Cranker vault that funded settlement")]
-    InvalidRecoveryDestination,
-    #[msg("Recovery lease is still active")]
-    RecoveryLeaseStillActive,
-    #[msg("Recovery vault token account is invalid")]
-    InvalidRecoveryVaultTokenAccount,
     #[msg("Payment vault has not received the authorized token amount")]
     InvalidPaymentVaultFunding,
     #[msg("Private settlement permits are disabled")]
@@ -88,24 +84,14 @@ pub enum TsnError {
     MissingPermitVerification,
     #[msg("Ed25519 permit verification instruction does not match this action")]
     InvalidPermitVerification,
-    #[msg("Shared private escrow token account is invalid")]
-    InvalidPrivateEscrowTokenAccount,
+    #[msg("Epoch treasury token account is invalid")]
+    InvalidEpochTreasuryTokenAccount,
+    #[msg("Settlement destination token account is invalid")]
+    InvalidSettlementDestination,
+    #[msg("Settlement destination token account is invalid")]
+    InvalidRecoveryDestination,
     #[msg("Private settlement commitment is invalid")]
     InvalidPrivateCommitment,
-    #[msg("Private recovery amount does not match escrow liquidity")]
-    InvalidPrivateRecoveryAmount,
-    #[msg("Private settlement replay sequence is invalid or already consumed")]
-    InvalidPrivateReplaySequence,
-    #[msg("Private settlement replay sequence overflowed")]
-    PrivateReplaySequenceOverflow,
-    #[msg("Epoch root does not match the committed challenge")]
-    InvalidEpochRoot,
-    #[msg("Epoch reimbursement math does not match aggregate challenge totals")]
-    InvalidEpochMath,
-    #[msg("Epoch recovery race has already been won")]
-    EpochRecoveryAlreadyProcessed,
-    #[msg("Epoch residuals have already been swept")]
-    EpochResidualAlreadySwept,
     #[msg("PRU spend guard is inactive")]
     InactivePruSpendGuard,
     #[msg("PRU spend nonce was already used")]

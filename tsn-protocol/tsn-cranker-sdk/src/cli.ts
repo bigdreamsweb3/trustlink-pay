@@ -15,8 +15,6 @@ import {
   tsnInitializeCrankerVaultOnChain,
   tsnFundCrankerOnChain,
   tsnWithdrawCrankerFundsOnChain,
-  tsnSettleEpochOnChain,
-  tsnProcessBatchReimbursementOnChain,
 } from "@trustlink/tsn-sdk/blockchain/solana-tsn";
 
 loadDotenv();
@@ -172,34 +170,6 @@ async function handleCommand() {
     return;
   }
 
-  if (command === "settle-epoch") {
-    console.log(
-      await tsnSettleEpochOnChain({
-        authority: authorityKeypair(),
-        force: process.argv[3] === "--force",
-        rpcUrl,
-        secretKey,
-      }),
-    );
-    return;
-  }
-
-  if (command === "race-epoch") {
-    const operator = operatorKeypair();
-    console.log(
-      await tsnProcessBatchReimbursementOnChain({
-        operator,
-        epochId: BigInt(process.argv[3]),
-        recomputedRootHash: process.argv[4],
-        totalToDistribute: BigInt(process.argv[5]),
-        crankerCreditSumMod: BigInt(process.argv[6]),
-        rpcUrl,
-        secretKey,
-      }),
-    );
-    return;
-  }
-
   console.error(`Unknown command: ${command ?? "(missing)"}`);
   console.error(`Usage:
   npm start -- init-mother
@@ -209,8 +179,7 @@ async function handleCommand() {
   npm start -- init-vault <TOKEN_MINT>
   npm start -- fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
   npm start -- withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR_PATH> <FUNDER_TOKEN_ACCOUNT> <AMOUNT_BASE_UNITS>
-  npm start -- settle-epoch [--force]
-  npm start -- race-epoch <EPOCH_ID> <ROOT_HASH_HEX> <TOTAL_TO_DISTRIBUTE> <CRANKER_CREDIT_SUM_MOD>`);
+  `);
   process.exit(1);
 }
 
@@ -236,9 +205,6 @@ async function main() {
   init-vault <TOKEN_MINT>        Initialize cranker vault
   fund-cranker <TOKEN_MINT> <FUNDER_KEYPAIR> <FUNDER_TOKEN_ACCT> <AMOUNT>
   withdraw-cranker <TOKEN_MINT> <FUNDER_KEYPAIR> <FUNDER_TOKEN_ACCT> <AMOUNT>
-  settle-epoch [--force]         Settle current epoch
-  race-epoch <args>              Submit TSN competitive recovery proof
-  
 Environment Variables:
   TSN_RPC_GATEWAY_URL            Solana RPC gateway server URL (default: https://tsn-rpc-gateway.vercel.app)
   PROGRAM_ID                     TSN program ID

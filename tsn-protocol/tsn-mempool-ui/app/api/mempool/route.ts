@@ -51,13 +51,10 @@ export async function GET() {
   ]);
   const work = Array.isArray(receiverWork) ? receiverWork.map(publicWork) : [];
   const intents = work.filter((item) => item.kind === "PAYMENT_INTENT");
-  const claims = work.filter((item) => item.kind === "CLAIM");
   const tinOperations = work.filter((item) => item.kind === "TIN_OPERATION");
   return NextResponse.json({
     epoch: null,
     intents,
-    claims,
-    proofs: [],
     work,
     metrics: {
       total: work.length,

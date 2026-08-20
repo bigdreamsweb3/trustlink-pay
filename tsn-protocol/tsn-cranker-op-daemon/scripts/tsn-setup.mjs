@@ -276,14 +276,6 @@ async function updateOperatorState(args, tokenContext = null) {
     });
   }
 
-  if (command === "settle-epoch") {
-    state.lastSettlement = {
-      at: now,
-      force: args[1] === "--force",
-    };
-    pushHistory(state, { at: now, command, force: args[1] === "--force" });
-  }
-
   writeState(state);
   console.log(`[operator-state] updated ${statePath}`);
 }

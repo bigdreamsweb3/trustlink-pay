@@ -1,8 +1,6 @@
 import {
   buildCreateIntentRequest,
-  buildRequestClaimRequest,
   type CreateIntentRequest,
-  type RequestClaimRequest,
 } from "./contracts.js";
 import type { TsnMempool } from "./mempool.js";
 import {
@@ -97,19 +95,9 @@ export async function createTsnPaymentMempoolJobs(params: {
 }) {
   const requests = prepareTsnPaymentMempoolJobRequests(params);
   const intent = await params.mempool.postIntent(requests.intentRequest);
-  const claimRequest = await params.mempool.postClaimRequest({
-    ...requests.claimRequestPayload,
-    intentId: intent.id,
-  });
-
   return {
     ...requests,
-    claimRequestPayload: {
-      ...requests.claimRequestPayload,
-      intentId: intent.id,
-    },
     intent,
-    claimRequest,
   };
 }
 
@@ -143,17 +131,5 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
     ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),
   } as CreateIntentRequest;
 
-  const claimRequestPayload = buildRequestClaimRequest({
-    paymentId: params.paymentId,
-    intentId: intentRequest.paymentId,
-    recipientHash: params.recipientHash,
-    destinationWallet: params.destinationWallet,
-    autoclaim: false,
-    source: params.source,
-  });
-
-  return {
-    intentRequest,
-    claimRequestPayload: claimRequestPayload as RequestClaimRequest,
-  };
+  return { intentRequest };
 }

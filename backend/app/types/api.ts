@@ -10,8 +10,7 @@ export interface CreatePaymentRequest {
   amount: number;
   tokenMintAddress: string;
   senderWallet: string;
-  escrowVaultAddress?: string;
-  depositSignature?: string;
+  fundingSignature?: string;
 }
 
 export interface AcceptPaymentRequest {
@@ -24,13 +23,13 @@ export interface AcceptPaymentRequest {
 
 export interface SendOtpRequest {
   phoneNumber: string;
-  purpose?: "generic" | "register" | "login" | "claim";
+  purpose?: "generic" | "register" | "login";
 }
 
 export interface VerifyOtpRequest {
   phoneNumber: string;
   otp: string;
-  purpose?: "generic" | "register" | "login" | "claim";
+  purpose?: "generic" | "register" | "login";
 }
 
 export interface RegisterRequest {
@@ -44,11 +43,6 @@ export interface RegisterRequest {
 export interface LoginRequest {
   phoneNumber: string;
   otp: string;
-}
-
-export interface StartClaimRequest {
-  paymentId: string;
-  phoneNumber: string;
 }
 
 export interface AddReceiverWalletRequest {

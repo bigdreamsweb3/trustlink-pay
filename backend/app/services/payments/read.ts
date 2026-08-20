@@ -7,11 +7,11 @@ import { enrichPaymentInviteState } from "./invite";
 import { retryOutstandingNotifications } from "./notifications";
 import { enrichPaymentsWithTsnState, isTsnSettled } from "@/app/services/tsn";
 
-function isTsnEscrowClaimable(payment: { tsn?: { intentStatus: string } }) {
-  return payment.tsn?.intentStatus === "escrowed" || payment.tsn?.intentStatus === "onchain" || payment.tsn?.intentStatus === "claimed";
+function isTsnSettlementPending(payment: { tsn?: { intentStatus: string } }) {
+  return payment.tsn?.intentStatus === "pending" || payment.tsn?.intentStatus === "onchain";
 }
 
-function isLegacyClaimable(payment: { status: string }) {
+function isPendingPayment(payment: { status: string }) {
   return payment.status === "locked" || payment.status === "expired";
 }
 
@@ -60,12 +60,11 @@ export async function listLockedPaymentsForUser(phoneNumber: string) {
   const enriched = await Promise.all(withReceiverIdentity.map(enrichPaymentInviteState));
   const withTsn = await enrichPaymentsWithTsnState(enriched);
 
-  // Receiver semantics: every escrowed TSN payment stays visible as a claim until payout/proof is settled.
-  // Claim failures remain retryable for the recipient, but sender activity should still read as escrowed.
+  // Receiver semantics: every funded TSN intent stays visible until its opaque slot settles or refunds.
   return withTsn.filter((payment) => {
     if (isTsnSettled(payment)) return false;
-    if (isTsnEscrowClaimable(payment)) return true;
-    return isLegacyClaimable(payment);
+    if (isTsnSettlementPending(payment)) return true;
+    return isPendingPayment(payment);
   });
 }
 

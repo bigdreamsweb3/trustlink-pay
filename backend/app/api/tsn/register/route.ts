@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       // Claim work is created by the Receiver only after TSN Node verification
       // and a confirmed Cranker funding report.  Returning no claim id here
       // prevents the API from advertising an unverified settlement.
-      claimRequestId: null,
+      settlementReference: null,
       status: "intent_registered_waiting_for_node_verification",
     });
   } catch (error) {

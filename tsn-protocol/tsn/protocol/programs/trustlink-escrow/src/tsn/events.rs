@@ -38,17 +38,6 @@ pub struct TsnLeaseExpired {
 }
 
 #[event]
-pub struct TsnProofSubmitted {
-    pub intent: Pubkey,
-    pub cranker: Pubkey,
-    pub payout_amount: u64,
-    pub fee_amount: u64,
-    pub operator_fee_amount: u64,
-    pub lp_fee_amount: u64,
-    pub treasury_fee_amount: u64,
-}
-
-#[event]
 pub struct TsnEpochSettled {
     pub mother_escrow: Pubkey,
     pub epoch_id: u64,
@@ -103,52 +92,10 @@ pub struct TsnPaymentIntentValidated {
 }
 
 #[event]
-pub struct TsnSettlementLeaseClaimed {
-    pub vault: Pubkey,
-    pub cranker: Pubkey,
-    pub otdt_hash: [u8; 32],
-    pub lease_expiry_ts: i64,
-}
-
-#[event]
-pub struct TsnSettlementCommitted {
-    pub vault: Pubkey,
-    pub transfer_id: [u8; 32],
-    pub settlement_cranker: Pubkey,
-    pub commitment_hash: [u8; 32],
-    pub paid_at_ts: i64,
-    pub recoverable: bool,
-}
-
-#[event]
-pub struct TsnRecoveryLeaseClaimed {
-    pub vault: Pubkey,
-    pub recovery_cranker: Pubkey,
-    pub lease_expiry_ts: i64,
-}
-
-#[event]
-pub struct TsnVaultRecovered {
-    pub vault: Pubkey,
-    pub settlement_cranker: Pubkey,
-    pub recovery_cranker: Pubkey,
-    pub recovered_amount: u64,
-    pub recovered_at_ts: i64,
-}
-
-#[event]
 pub struct TsnPrivateSettlementConfigured {
     pub mother_escrow: Pubkey,
     pub permit_signer: Pubkey,
     pub enabled: bool,
-}
-
-#[event]
-pub struct TsnPrivateCommitmentRegistered {
-    pub commitment_hash: [u8; 32],
-    pub token_mint: Pubkey,
-    pub amount: u64,
-    pub epoch_id: u64,
 }
 
 #[event]
@@ -165,31 +112,21 @@ pub struct TsnPruSpendExecuted {
 
 #[event]
 pub struct TsnPrivatePayoutExecuted {
-    pub settlement_dna: Pubkey,
+    pub epoch_treasury: Pubkey,
+    pub claim_slot: Pubkey,
     pub settlement_commitment: [u8; 32],
     pub cranker_vault: Pubkey,
     pub payout_nullifier: [u8; 32],
-    pub payout_sequence: u64,
     pub cranker: Pubkey,
     pub token_mint: Pubkey,
     pub payout_amount: u64,
 }
 
 #[event]
-pub struct TsnPrivateEscrowRecovered {
-    pub recovery_nullifier: [u8; 32],
-    pub recovery_sequence: u64,
-    pub recovery_cranker: Pubkey,
-    pub token_mint: Pubkey,
-    pub recovered_amount: u64,
-}
-
-#[event]
-pub struct TsnPrivateDnaReimbursed {
-    pub settlement_dna: Pubkey,
-    pub cranker_vault: Pubkey,
+pub struct TsnEpochClaimRefunded {
+    pub epoch_treasury: Pubkey,
+    pub claim_slot: Pubkey,
     pub amount: u64,
-    pub cranker: Pubkey,
 }
 
 #[event]

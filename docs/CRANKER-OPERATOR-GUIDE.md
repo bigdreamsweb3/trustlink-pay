@@ -38,7 +38,7 @@ The Cranker must not:
 
 - decrypt a user's master seed or reconstruct a user's PRU private key;
 - choose a different source, recipient, amount, tranche, fee, or change route;
-- sign as a user, a user PRU, or the TSN Escrow;
+- sign as a user, a user PRU, or any Mother-controlled settlement authority;
 - mark an intent paid, recoverable, or reimbursable by itself;
 - expose Receiver API keys, operator secret keys, or private route material.
 

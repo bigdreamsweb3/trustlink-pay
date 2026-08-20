@@ -23,6 +23,7 @@ import base64
 import binascii
 import glob
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -121,10 +122,6 @@ VAULT_LIQUIDITY_REFRESH_SECS = max(60, int(os.environ.get("VAULT_LIQUIDITY_REFRE
 HOST            = os.environ.get("HOST", "0.0.0.0").strip()
 PORT            = int(os.environ.get("PORT", "8000"))
 MEMPOOL_NS      = "tsn"
-CLAIM_PROCESSING_TIMEOUT_SECS = int(os.environ.get("CLAIM_PROCESSING_TIMEOUT_SECS", "300"))
-RECOVERY_LEASE_SECS = int(os.environ.get("RECOVERY_LEASE_SECS", "300"))
-RECOVERY_REWARD_LAMPORTS = int(os.environ.get("RECOVERY_REWARD_LAMPORTS", "10000"))
-RECOVERY_LOW_LIQUIDITY_UI = float(os.environ.get("RECOVERY_LOW_LIQUIDITY_UI", "0"))
 CRANKER_HEARTBEAT_TTL_SECS = int(os.environ.get("CRANKER_HEARTBEAT_TTL_SECS", "30"))
 DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 CRANKER_VAULT_ACCOUNT_SIZE = 178
@@ -132,8 +129,6 @@ CRANKER_VAULT_DISCRIMINATOR = hashlib.sha256(b"account:CrankerVault").digest()[:
 BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 _vault_liquidity_cache: Optional[dict[str, Any]] = None
 _vault_liquidity_lock = asyncio.Lock()
-_claim_queue_lock = asyncio.Lock()
-_recovery_queue_lock = asyncio.Lock()
 _tin_operation_lock = asyncio.Lock()
 _tin_fee_config_cache: Optional[dict[str, Any]] = None
 _tin_fee_config_cache_expires_at = 0.0
@@ -170,13 +165,11 @@ async def receiver_request(client: httpx.AsyncClient, method: str, path: str, **
 
 TOKEN_PROGRAM_ID = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 ASSOCIATED_TOKEN_PROGRAM_ID = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
-PRIVATE_PAYOUT_DOMAIN = b"TSN_PRIVATE_PAYOUT_DNA_V1"
-PRIVATE_RECOVERY_DOMAIN = b"TSN_PRIVATE_RECOVERY_V2"
-PRIVATE_REPLAY_REGISTRY_DISCRIMINATOR = hashlib.sha256(
-    b"account:PrivateReplayRegistry"
-).digest()[:8]
+PRIVATE_PAYOUT_DOMAIN = b"TSN_PRIVATE_SLOT_SETTLEMENT_V1"
+PRIVATE_REFUND_DOMAIN = b"TSN_PRIVATE_SLOT_REFUND_V1"
 MEMPOOL_LEASE_DOMAIN = "TSN_MEMPOOL_LEASE_V1"
 PERMIT_TTL_SECS = max(15, int(os.environ.get("TSN_PRIVATE_PERMIT_TTL_SECS", "90")))
+TSN_NODE_CLAIM_SLOT_HMAC_SECRET = os.environ.get("TSN_NODE_CLAIM_SLOT_HMAC_SECRET", "").strip()
 LEASE_AUTH_MAX_AGE_SECS = max(15, int(os.environ.get("TSN_LEASE_AUTH_MAX_AGE_SECS", "60")))
 
 TERMINAL_INTENT_STATUSES = {
@@ -189,14 +182,6 @@ TERMINAL_INTENT_STATUSES = {
     "expired",
     "reverted",
 }
-TERMINAL_CLAIM_STATUSES = {
-    "completed",
-    "failed",
-    "canceled",
-    "cancelled",
-    "expired",
-}
-
 def get_supported_token_mints() -> set[str]:
     raw = os.environ.get("SOLANA_ALLOWED_SPL_TOKENS", "").strip()
     if not raw:
@@ -325,11 +310,32 @@ def find_tsn_pda(*seeds: bytes) -> Pubkey:
 def get_mother_escrow_pda() -> Pubkey:
     return find_tsn_pda(b"tsn_mother_escrow")
 
-def get_private_replay_registry_pda() -> Pubkey:
+def get_epoch_treasury_pda(epoch_id: int, token_mint: Pubkey) -> Pubkey:
+    return find_tsn_pda(b"tsn_epoch_treasury", bytes(get_mother_escrow_pda()), struct.pack("<Q", epoch_id), bytes(token_mint))
+
+def get_epoch_ledger_pda(epoch_treasury: Pubkey) -> Pubkey:
+    return find_tsn_pda(b"tsn_epoch_ledger", bytes(epoch_treasury))
+
+def get_epoch_claim_slot_pda(epoch_treasury: Pubkey, slot: bytes) -> Pubkey:
+    return find_tsn_pda(b"tsn_epoch_claim_slot", bytes(epoch_treasury), slot)
+
+def get_settlement_dna_pda(slot: bytes, lease_version: int) -> Pubkey:
+    """Derive the Mother-rooted, one-time settlement DNA account.
+
+    The Node only distributes this opaque address; the Mother authority must
+    materialize it with ``tsn_create_settlement_dna`` before settlement.
+    """
     return find_tsn_pda(
-        b"tsn_private_replay",
+        b"tsn_settlement_dna",
         bytes(get_mother_escrow_pda()),
+        slot,
+        struct.pack("<Q", lease_version),
     )
+
+def derive_claim_slot(payment_id_hash: bytes, amount: int, token_mint: Pubkey, epoch_id: int, commitment_digest: bytes) -> bytes:
+    if not TSN_NODE_CLAIM_SLOT_HMAC_SECRET:
+        raise RuntimeError("TSN_NODE_CLAIM_SLOT_HMAC_SECRET is required")
+    return hmac.new(TSN_NODE_CLAIM_SLOT_HMAC_SECRET.encode("utf-8"), b"TSN_EPOCH_CLAIM_SLOT_V1" + payment_id_hash + struct.pack("<Q", amount) + bytes(token_mint) + struct.pack("<Q", epoch_id) + commitment_digest, hashlib.sha256).digest()
 
 def get_cranker_pda(operator: Pubkey) -> Pubkey:
     return find_tsn_pda(b"tsn_cranker", bytes(get_mother_escrow_pda()), bytes(operator))
@@ -499,10 +505,11 @@ def decrypt_settlement_token(encrypted: dict[str, Any]) -> dict[str, Any]:
 
 def private_payout_permit_message(
     operator: Pubkey,
-    settlement_dna: Pubkey,
+    epoch_treasury: Pubkey,
+    epoch_ledger: Pubkey,
+    claim_slot: Pubkey,
+    slot: bytes,
     payout_nullifier: bytes,
-    payout_sequence: int,
-    payment_id_hash: bytes,
     commitment_digest: bytes,
     random_nonce: bytes,
     settlement_commitment: bytes,
@@ -522,58 +529,16 @@ def private_payout_permit_message(
             bytes(get_program_pubkey()),
             bytes(get_mother_escrow_pda()),
             bytes(operator),
-            bytes(settlement_dna),
-            payout_nullifier,
-            struct.pack("<Q", payout_sequence),
-            payment_id_hash,
+            bytes(epoch_treasury), bytes(epoch_ledger), bytes(claim_slot), slot,
+            settlement_commitment,
             commitment_digest,
             random_nonce,
-            settlement_commitment,
+            payout_nullifier,
             bytes(cranker_vault),
             bytes(recipient_wallet),
             bytes(token_mint),
             struct.pack("<Q", payout_amount),
             struct.pack("<Q", claim_fee_amount),
-            lease_id_hash_value,
-            struct.pack("<Q", lease_version),
-            struct.pack("<q", lease_expiry_ts),
-            struct.pack("<q", expires_at_ts),
-        ]
-    )
-
-def private_recovery_permit_message(
-    operator: Pubkey,
-    recovery_nullifier: bytes,
-    recovery_sequence: int,
-    escrow_token_account: Pubkey,
-    settlement_cranker_vault: Pubkey,
-    settlement_vault_token_account: Pubkey,
-    token_mint: Pubkey,
-    payment_id_hash: bytes,
-    commitment_hash: bytes,
-    payout_nullifier: bytes,
-    recovery_amount: int,
-    lease_id_hash_value: bytes,
-    lease_version: int,
-    lease_expiry_ts: int,
-    expires_at_ts: int,
-) -> bytes:
-    return b"".join(
-        [
-            PRIVATE_RECOVERY_DOMAIN,
-            bytes(get_program_pubkey()),
-            bytes(get_mother_escrow_pda()),
-            bytes(operator),
-            recovery_nullifier,
-            struct.pack("<Q", recovery_sequence),
-            bytes(escrow_token_account),
-            bytes(settlement_cranker_vault),
-            bytes(settlement_vault_token_account),
-            bytes(token_mint),
-            payment_id_hash,
-            commitment_hash,
-            payout_nullifier,
-            struct.pack("<Q", recovery_amount),
             lease_id_hash_value,
             struct.pack("<Q", lease_version),
             struct.pack("<q", lease_expiry_ts),
@@ -806,9 +771,6 @@ async def get_mempool_store() -> Any:
     return await get_store()
 
 def k_intents() -> str: return f"{MEMPOOL_NS}:intents"
-def k_claims()  -> str: return f"{MEMPOOL_NS}:claims"
-def k_proofs()  -> str: return f"{MEMPOOL_NS}:proofs"
-def k_recoveries() -> str: return f"{MEMPOOL_NS}:recoveries"
 def k_epoch()   -> str: return f"{MEMPOOL_NS}:epoch"
 def k_crankers() -> str: return f"{MEMPOOL_NS}:crankers"
 def k_tin_operations() -> str: return f"{MEMPOOL_NS}:tin_operations"
@@ -838,7 +800,7 @@ async def write_recipient_route_binding(
 
     The payment work document contains only the signed route commitment.  The
     Node retains this short-lived reference so it can resolve the recipient
-    route later when a funded claim needs a payout authorization.
+    route later when a funded settlement needs authorization.
     """
     await (await get_mempool_store()).set(
         k_recipient_route_binding(work_id),
@@ -851,45 +813,17 @@ async def write_recipient_route_binding(
     )
 
 def private_settlement_commitment(
-    settlement_dna: Pubkey, payment_id_hash: bytes, commitment_digest: bytes,
+    epoch_treasury: Pubkey, epoch_ledger: Pubkey, slot: bytes, commitment_digest: bytes,
     random_nonce: bytes, cranker_vault: Pubkey, recipient_wallet: Pubkey,
     token_mint: Pubkey, payout_amount: int, payout_nullifier: bytes,
     lease_id_hash_value: bytes, lease_version: int, lease_expiry_ts: int,
     expires_at_ts: int,
 ) -> bytes:
-    return hashlib.sha256(b"TSN_SETTLEMENT_COMMITMENT_V1" + bytes(settlement_dna)
-        + payment_id_hash + commitment_digest + random_nonce + bytes(cranker_vault)
+    return hashlib.sha256(b"TSN_SETTLEMENT_COMMITMENT_V2" + bytes(epoch_treasury)
+        + bytes(epoch_ledger) + slot + commitment_digest + random_nonce + payout_nullifier + bytes(cranker_vault)
         + bytes(recipient_wallet) + bytes(token_mint) + struct.pack("<Q", payout_amount)
-        + payout_nullifier + lease_id_hash_value + struct.pack("<Q", lease_version)
+        + struct.pack("<Q", 0) + lease_id_hash_value + struct.pack("<Q", lease_version)
         + struct.pack("<q", lease_expiry_ts) + struct.pack("<q", expires_at_ts)).digest()
-
-def get_private_escrow_record_pda(escrow_token_account: Pubkey) -> Pubkey:
-    return find_tsn_pda(
-        b"tsn_private_escrow_record",
-        bytes(escrow_token_account),
-    )
-
-PRIVATE_FUNDING_BINDING_DOMAIN = b"TSN_PRIVATE_FUNDING_BINDING_V1"
-
-def private_funding_binding_hash(
-    private_escrow_record: Pubkey,
-    escrow_token_account: Pubkey,
-    token_mint: Pubkey,
-    payment_id_hash: bytes,
-    commitment_hash: bytes,
-    amount: int,
-) -> bytes:
-    return hashlib.sha256(b"".join([
-        PRIVATE_FUNDING_BINDING_DOMAIN,
-        bytes(get_program_pubkey()),
-        bytes(get_mother_escrow_pda()),
-        bytes(private_escrow_record),
-        bytes(escrow_token_account),
-        bytes(token_mint),
-        payment_id_hash,
-        commitment_hash,
-        struct.pack("<Q", amount),
-    ])).digest()
 
 
 async def read_recipient_route_binding(work_id: str) -> Optional[dict[str, Any]]:
@@ -940,31 +874,19 @@ def is_epoch_due(state: dict) -> bool:
     return datetime.now(timezone.utc) >= next_close_for_state(state)
 
 
-def is_processing_stale(claim: dict, now: datetime) -> bool:
-    if claim.get("status") != "processing":
-        return False
-    updated_at = claim.get("updatedAt") or claim.get("postedAt")
-    if not updated_at:
-        return True
-    return (now - parse_iso(str(updated_at))).total_seconds() >= CLAIM_PROCESSING_TIMEOUT_SECS
-
 
 async def build_epoch_status() -> EpochStatus:
     r = await get_mempool_store()
     state        = await read_epoch_state()
     intent_count = await r.hlen(k_intents())
-    claim_count  = await r.hlen(k_claims())
-    proof_count  = await r.hlen(k_proofs())
-    recovery_count = await r.hlen(k_recoveries())
+    settlement_count = sum(1 for intent in await hget_all_json(k_intents()) if intent.get("status") in {"executed", "settled"})
     next_close   = next_close_for_state(state)
     return EpochStatus(
         epoch_number    = state["epoch_number"],
         epoch_started_at= state["started_at"],
         next_close_at   = next_close.isoformat(),
         intent_count    = int(intent_count),
-        claim_count     = int(claim_count),
-        proof_count     = int(proof_count),
-        recovery_count  = int(recovery_count),
+        settlement_count = settlement_count,
     )
 
 async def get_token_account_balance_ui(token_account: str) -> tuple[float, int]:
@@ -979,78 +901,6 @@ async def get_token_account_balance_ui(token_account: str) -> tuple[float, int]:
     response.raise_for_status()
     value = response.json().get("result", {}).get("value", {})
     return float(value.get("uiAmountString") or value.get("uiAmount") or 0), int(value.get("decimals") or 0)
-
-async def get_token_account_amount(token_account: str) -> tuple[int, int, str]:
-    """Read the exact raw SPL balance used as the funding source of truth.
-
-    Payout authorization must never be based only on the Receiver's copied
-    amount field.  The Node reads the funded escrow token account and signs a
-    permit only when its raw amount exactly matches the authorized payment.
-    """
-    try:
-        Pubkey.from_string(token_account)
-    except Exception as exc:
-        raise HTTPException(422, "Settlement escrow token account is invalid") from exc
-    rpc_response = await solana_rpc(
-        "getTokenAccountBalance",
-        [token_account, {"commitment": "confirmed"}],
-    )
-    value = (rpc_response.get("result") or {}).get("value") or {}
-    raw_amount = value.get("amount")
-    decimals = value.get("decimals")
-    if raw_amount is None or decimals is None:
-        raise HTTPException(503, "Solana RPC returned no settlement escrow balance")
-    try:
-        return int(str(raw_amount)), int(decimals), token_account
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(503, "Settlement escrow balance is malformed") from exc
-
-async def read_private_escrow_record(record_address: Pubkey, escrow_token_account: Pubkey) -> dict[str, Any]:
-    """Decode and validate the on-chain PrivateEscrowRecord before signing."""
-    response = await solana_rpc(
-        "getAccountInfo",
-        [str(record_address), {"encoding": "base64", "commitment": "confirmed"}],
-    )
-    value = (response.get("result") or {}).get("value")
-    if not isinstance(value, dict) or value.get("owner") != str(get_program_pubkey()):
-        raise HTTPException(409, "Private escrow record is missing or owned by another program")
-    data = value.get("data")
-    if not isinstance(data, list) or len(data) < 2 or data[1] != "base64":
-        raise HTTPException(503, "Private escrow record encoding is invalid")
-    try:
-        raw = base64.b64decode(str(data[0]), validate=True)
-    except (ValueError, binascii.Error) as exc:
-        raise HTTPException(503, "Private escrow record data is malformed") from exc
-    if len(raw) < 243:
-        raise HTTPException(409, "Private escrow record has an invalid size")
-    expected_discriminator = hashlib.sha256(b"account:PrivateEscrowRecord").digest()[:8]
-    if raw[:8] != expected_discriminator:
-        raise HTTPException(409, "Private escrow record discriminator is invalid")
-    offset = 8
-    mother = Pubkey(raw[offset:offset + 32]); offset += 32
-    escrow = Pubkey(raw[offset:offset + 32]); offset += 32
-    mint = Pubkey(raw[offset:offset + 32]); offset += 32
-    payment_id_hash = raw[offset:offset + 32]; offset += 32
-    commitment_hash = raw[offset:offset + 32]; offset += 32
-    amount = int.from_bytes(raw[offset:offset + 8], "little"); offset += 8
-    settlement_cranker = Pubkey(raw[offset:offset + 32]); offset += 32
-    payout_nullifier = raw[offset:offset + 32]; offset += 32
-    paid = raw[offset] != 0; offset += 1
-    recovered = raw[offset] != 0
-    if mother != get_mother_escrow_pda() or escrow != escrow_token_account:
-        raise HTTPException(409, "Private escrow record is bound to a different escrow")
-    if paid or recovered:
-        raise HTTPException(409, "Private escrow record is already settled")
-    return {
-        "motherEscrow": mother,
-        "escrowTokenAccount": escrow,
-        "tokenMint": mint,
-        "paymentIdHash": payment_id_hash,
-        "commitmentHash": commitment_hash,
-        "amount": amount,
-        "settlementCranker": settlement_cranker,
-        "payoutNullifier": payout_nullifier,
-    }
 
 async def solana_rpc(method: str, params: list[Any], timeout: float = 12) -> dict[str, Any]:
     payload = {
@@ -1279,52 +1129,6 @@ async def verify_onchain_tin_for_shadow_import(operation: dict[str, Any]) -> Opt
         "settlementAuthorityVerified": False,
     }
 
-async def read_private_replay_sequences() -> tuple[int, int]:
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "getAccountInfo",
-        "params": [
-            str(get_private_replay_registry_pda()),
-            {"encoding": "base64", "commitment": "confirmed"},
-        ],
-    }
-    try:
-        async with httpx.AsyncClient(timeout=12) as client:
-            response = await client.post(TSN_SOLANA_RPC_URL, json=payload)
-        response.raise_for_status()
-        rpc_response = response.json()
-    except (httpx.HTTPError, ValueError) as exc:
-        logger.warning("Private replay registry RPC unavailable: %s", exc)
-        raise HTTPException(
-            503,
-            "Solana RPC is unavailable while reading the TSN replay registry",
-        ) from exc
-    if rpc_response.get("error"):
-        logger.warning(
-            "Private replay registry RPC error: %s",
-            rpc_response["error"],
-        )
-        raise HTTPException(
-            503,
-            f"Solana RPC rejected replay-registry lookup: {rpc_response['error'].get('message', 'unknown error')}",
-        )
-    value = rpc_response.get("result", {}).get("value")
-    if not value:
-        raise HTTPException(
-            503,
-            "TSN private replay registry is not initialized; rerun tsn:private:configure",
-        )
-    encoded = ((value.get("data") or [None])[0])
-    if not encoded:
-        raise HTTPException(503, "TSN private replay registry data is unavailable")
-    data = base64.b64decode(encoded)
-    if len(data) < 57 or data[:8] != PRIVATE_REPLAY_REGISTRY_DISCRIMINATOR:
-        raise HTTPException(503, "TSN private replay registry layout is invalid")
-    return (
-        int.from_bytes(data[40:48], "little"),
-        int.from_bytes(data[48:56], "little"),
-    )
 
 async def read_tin_fee_config() -> dict[str, int]:
     global _tin_fee_config_cache, _tin_fee_config_cache_expires_at
@@ -1531,17 +1335,13 @@ class CreateIntentRequest(BaseModel):
     senderSignedSettlementFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast the settlement")
     senderSettlementMode: Optional[str] = Field(None, description="Settlement authority model")
     pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
-    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the private escrow")
+    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the epoch treasury")
     pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
-    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into private escrow")
+    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the epoch treasury")
     walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
     pruSpendSelections: Optional[list[dict[str, Any]]] = Field(None, description="PRU indexes and amounts selected after authenticated route loading")
     privacyVersion: Optional[int] = Field(None, description="TSN private settlement protocol version")
-    commitmentRecord: Optional[str] = Field(None, description="Public commitment-only record PDA")
     senderTokenAccount: Optional[str] = Field(None, description="Sender token account used by the sponsored settlement")
-    settlementVault: Optional[str] = Field(None, description="Per-payment vault PDA")
-    settlementTokenAccount: Optional[str] = Field(None, description="Per-payment vault token account")
-    settlementPaymentIntentId: Optional[str] = Field(None, description="u64 payment intent id used by the TSN vault instruction")
     transferId: Optional[str] = Field(None, description="Public transfer identifier committed by the payment vault")
     commitmentHash: Optional[str] = Field(None, description="SHA-256 commitment to the encrypted settlement secret")
     settlementEpoch: Optional[int] = Field(None, description="Epoch in which this authorization may be settled")
@@ -1555,9 +1355,8 @@ class MempoolIntent(CreateIntentRequest):
     id:                   str
     status:               str           = "pending"
     assignedCrankerPubkey: Optional[str] = None
-    escrowTxSig:          Optional[str] = None
-    claimTxSig:           Optional[str] = None
-    proofTxSig:           Optional[str] = None
+    fundingTxSig:         Optional[str] = None
+    settlementTxSig:      Optional[str] = None
     settlementResolution: Optional[str] = None
     settlementReason:     Optional[str] = None
     postedAt:             str
@@ -1575,82 +1374,9 @@ class PublicMempoolIntent(BaseModel):
     source: Optional[str] = None
     status: str
     assignedCrankerPubkey: Optional[str] = None
-    escrowTxSig: Optional[str] = None
-    claimTxSig: Optional[str] = None
-    proofTxSig: Optional[str] = None
+    fundingTxSig: Optional[str] = None
+    settlementTxSig: Optional[str] = None
     settlementResolution: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt: str
-    updatedAt: str
-
-class PostClaimRequest(BaseModel):
-    paymentId:         str           = Field(...)
-    intentId:          str           = Field(...)
-    recipientHash:     str           = Field(...)
-    destinationWallet: Optional[str] = Field(
-        None,
-        description="Legacy field. New private settlement routes remain inside the encrypted settlement token.",
-    )
-    autoclaim:         bool          = Field(False)
-    source:            Optional[str] = Field(None)
-
-class MempoolClaimRequest(PostClaimRequest):
-    id:               str
-    status:           str           = "pending"
-    assignedCrankerPubkey: Optional[str] = None
-    leaseExpiresAt: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt:         str
-    updatedAt:        str
-
-class ProofOfPayment(BaseModel):
-    intent_id:         str           = Field(...)
-    timestamp:         str           = Field(...)
-    cranker_pubkey:    str           = Field(...)
-    proof_tx:          str           = Field(...)
-    encrypted_payload: Optional[str] = Field(None)
-    transfer_id:       Optional[str] = Field(None)
-    commitment_hash:   Optional[str] = Field(None)
-    otdt_hash:         Optional[str] = Field(None)
-
-class PublicProofOfPayment(BaseModel):
-    intent_id: str
-    timestamp: str
-    proof_tx: str
-    cranker_pubkey: Optional[str] = None
-
-class RecoveryWorkItem(BaseModel):
-    id: str
-    paymentId: str
-    transferId: str
-    paymentIntentId: str
-    settlementVault: str
-    settlementTokenAccount: str
-    tokenMintAddress: str
-    settlementCrankerPubkey: str
-    privacyVersion: Optional[int] = None
-    amount: float
-    epoch: int
-    rewardLamports: int = RECOVERY_REWARD_LAMPORTS
-    priorityScore: float
-    status: Literal["pending", "leased", "completed", "failed", "canceled"] = "pending"
-    assignedCrankerPubkey: Optional[str] = None
-    leaseExpiresAt: Optional[str] = None
-    recoveryTxSig: Optional[str] = None
-    settlementReason: Optional[str] = None
-    postedAt: str
-    updatedAt: str
-
-class PublicRecoveryWorkItem(BaseModel):
-    id: str
-    tokenMintAddress: str
-    privacyVersion: Optional[int] = None
-    amount: float
-    epoch: int
-    rewardLamports: int
-    priorityScore: float
-    status: str
-    recoveryTxSig: Optional[str] = None
     settlementReason: Optional[str] = None
     postedAt: str
     updatedAt: str
@@ -1843,9 +1569,6 @@ class TinOperationStageRequest(BaseModel):
     failureReason: Optional[str] = None
     reason: Optional[str] = None
 
-class RecoveryLeaseRequest(BaseModel):
-    operatorPubkey: str = Field(...)
-
 class SignedLeasePermitRequest(BaseModel):
     operatorPubkey: str
     requestedAtTs: int
@@ -1855,30 +1578,17 @@ class PrivatePayoutPermitResponse(BaseModel):
     permitSigner: str
     permitSignatureBase64: str
     payoutNullifier: str
-    payoutSequence: str
     tokenMintAddress: str
     recipientWallet: str
     payoutAmountBaseUnits: str
     claimFeeAmountBaseUnits: str
     settlementDna: str
     settlementCommitment: str
-    paymentIdHash: str
+    epochTreasury: str
+    epochLedger: str
+    claimSlot: str
     commitmentDigest: str
     randomNonce: str
-    leaseId: str
-    leaseVersion: int
-    leaseExpiresAt: str
-    expiresAtTs: int
-
-class PrivateRecoveryPermitResponse(BaseModel):
-    permitSigner: str
-    permitSignatureBase64: str
-    recoveryNullifier: str
-    recoverySequence: str
-    escrowTokenAccount: str
-    settlementCrankerPubkey: str
-    tokenMintAddress: str
-    recoveryAmountBaseUnits: str
     leaseId: str
     leaseVersion: int
     leaseExpiresAt: str
@@ -1896,20 +1606,10 @@ class PruSpendPermitResponse(BaseModel):
     paymentId: str
     tokenMintAddress: str
     commitmentHash: str
-    escrowAmountBaseUnits: str
+    fundingAmountBaseUnits: str
     senderFeeAmountBaseUnits: str
     selections: list[PruSpendPermitSelection]
     executionPlanV2: dict[str, Any]
-
-class RecoveryStatusRequest(BaseModel):
-    operatorPubkey: str = Field(...)
-    status: Literal["pending", "completed", "failed", "canceled"]
-    recoveryTxSig: Optional[str] = None
-    settlementReason: Optional[str] = None
-
-class WorkItem(BaseModel):
-    intent:       MempoolIntent | PublicMempoolIntent
-    claimRequest: MempoolClaimRequest
 
 class IntentWorkItem(BaseModel):
     intent: MempoolIntent
@@ -1917,12 +1617,8 @@ class IntentWorkItem(BaseModel):
 class UpdateStatusRequest(BaseModel):
     status:               str           = Field(...)
     assignedCrankerPubkey: Optional[str] = Field(None)
-    escrowTxSig:          Optional[str] = Field(None)
-    claimTxSig:           Optional[str] = Field(None)
-    proofTxSig:           Optional[str] = Field(None)
-    settlementVault:      Optional[str] = Field(None)
-    settlementTokenAccount: Optional[str] = Field(None)
-    settlementPaymentIntentId: Optional[str] = Field(None)
+    fundingTxSig:         Optional[str] = Field(None)
+    settlementTxSig:      Optional[str] = Field(None)
     settlementResolution: Optional[str] = Field(None)
     settlementReason:     Optional[str] = Field(None)
 
@@ -1942,23 +1638,15 @@ class EpochStatus(BaseModel):
     epoch_started_at: str
     next_close_at:   str
     intent_count:    int
-    claim_count:     int
-    proof_count:     int
-    recovery_count:  int = 0
+    settlement_count: int
 
 class EpochCloseResult(BaseModel):
     epoch_number:     int
     intents_archived: int
-    claims_archived:  int
-    proofs_archived:  int
-    recoveries_archived: int = 0
+    settlements_archived: int
     intents_rolled_over: int = 0
-    claims_rolled_over:  int = 0
     intents_pruned:      int = 0
-    claims_pruned:       int = 0
-    proofs_pruned:       int = 0
-    recoveries_rolled_over: int = 0
-    recoveries_pruned: int = 0
+    settlements_pruned: int = 0
     github_commit_url: str
     new_epoch_number:  int
     message:           str
@@ -1970,7 +1658,7 @@ class MempoolStatusResponse(BaseModel):
     status: str = "ok"
     epoch:  EpochStatus
 
-class IntentToClaimMetrics(BaseModel):
+class IntentToSettlementMetrics(BaseModel):
     sample_count: int
     average_ms: float
     min_ms: float
@@ -1985,7 +1673,7 @@ class UptimeMetrics(BaseModel):
     downtime_events: int = 0
 
 class MetricsResponse(BaseModel):
-    intent_to_claim: IntentToClaimMetrics
+    intent_to_settlement: IntentToSettlementMetrics
     uptime: UptimeMetrics
     active_crankers_last_epoch: int
 
@@ -3297,144 +2985,11 @@ async def assert_tin_operation_can_enter(operation: dict[str, Any]) -> None:
     if not consumed:
         raise HTTPException(409, "nonce has already been used by this owner_pubkey")
 
-def recovery_priority(
-    item: dict[str, Any],
-    now: Optional[datetime] = None,
-    settlement_liquidity_ui: Optional[float] = None,
-) -> float:
-    current = now or datetime.now(timezone.utc)
-    posted_at = parse_iso(str(item["postedAt"]))
-    age_hours = max(0.0, (current - posted_at).total_seconds() / 3600)
-    amount = max(0.0, float(item.get("amount") or 0))
-    liquidity_boost = 0.0
-    if settlement_liquidity_ui is not None:
-        deficit = max(0.0, RECOVERY_LOW_LIQUIDITY_UI - settlement_liquidity_ui)
-        liquidity_boost = (deficit * 100.0) + (
-            500.0 if settlement_liquidity_ui < RECOVERY_LOW_LIQUIDITY_UI else 0.0
-        )
-    return round(
-        (amount * 10.0) + age_hours + liquidity_boost,
-        6,
-    )
-
-def recovery_is_eligible(
-    item: dict[str, Any],
-    current_epoch: int,
-    settlement_liquidity_ui: Optional[float],
-) -> bool:
-    if int(item.get("epoch") or 0) < current_epoch:
-        return True
-    return (
-        RECOVERY_LOW_LIQUIDITY_UI > 0
-        and
-        settlement_liquidity_ui is not None
-        and settlement_liquidity_ui < RECOVERY_LOW_LIQUIDITY_UI
-    )
-
-async def settlement_operator_liquidity() -> dict[str, float]:
-    """Map operator wallets to live Cranker-vault liquidity without making recovery depend on RPC."""
-    try:
-        heartbeats, vaults = await asyncio.gather(
-            hget_all_json(k_crankers()),
-            read_public_vault_liquidity_cached(),
-        )
-    except Exception as exc:
-        logger.warning("Recovery liquidity snapshot unavailable: %s", exc)
-        return {}
-
-    cranker_by_operator = {
-        str(record["operator_pubkey"]): str(record["cranker_pubkey"])
-        for record in heartbeats
-        if record.get("operator_pubkey") and record.get("cranker_pubkey")
-    }
-    liquidity_by_cranker: dict[str, float] = {}
-    for vault in vaults:
-        cranker = vault.get("cranker")
-        if not cranker:
-            continue
-        liquidity_by_cranker[str(cranker)] = (
-            liquidity_by_cranker.get(str(cranker), 0.0)
-            + max(0.0, float(vault.get("withdrawable_liquidity") or 0))
-        )
-
-    return {
-        operator: liquidity_by_cranker.get(cranker, 0.0)
-        for operator, cranker in cranker_by_operator.items()
-    }
-
-async def create_recovery_work_from_proof(
-    intent: dict[str, Any],
-    proof: ProofOfPayment,
-) -> Optional[RecoveryWorkItem]:
-    required = {
-        "transferId": intent.get("transferId"),
-        "settlementPaymentIntentId": intent.get("settlementPaymentIntentId"),
-        "settlementVault": intent.get("settlementVault"),
-        "settlementTokenAccount": intent.get("settlementTokenAccount"),
-        "tokenMintAddress": intent.get("tokenMintAddress"),
-    }
-    missing = [name for name, value in required.items() if value in (None, "")]
-    if missing:
-        logger.warning(
-            "Recovery work not created for intent=%s; missing=%s",
-            intent.get("id"),
-            ",".join(missing),
-        )
-        return None
-
-    r = await get_mempool_store()
-    for existing in await hget_all_json(k_recoveries()):
-        if existing.get("paymentId") == intent.get("paymentId"):
-            return RecoveryWorkItem(**existing)
-
-    state = await read_epoch_state()
-    now_iso = datetime.now(timezone.utc).isoformat()
-    raw = {
-        "id": (
-            str(uuid4())
-            if int(intent.get("privacyVersion") or 1) >= 2
-            else str(intent["id"])
-        ),
-        "paymentId": str(intent["paymentId"]),
-        "transferId": str(required["transferId"]),
-        "paymentIntentId": str(required["settlementPaymentIntentId"]),
-        "settlementVault": str(required["settlementVault"]),
-        "settlementTokenAccount": str(required["settlementTokenAccount"]),
-        "tokenMintAddress": str(required["tokenMintAddress"]),
-        "settlementCrankerPubkey": proof.cranker_pubkey,
-        "privacyVersion": int(intent.get("privacyVersion") or 1),
-        "amount": float(intent.get("amount") or 0),
-        "epoch": int(intent.get("settlementEpoch") or state["epoch_number"]),
-        "rewardLamports": RECOVERY_REWARD_LAMPORTS,
-        "priorityScore": 0.0,
-        "status": "pending",
-        "assignedCrankerPubkey": None,
-        "leaseExpiresAt": None,
-        "recoveryTxSig": None,
-        "settlementReason": (
-            "Settlement paid; recovery waits for epoch close unless smart "
-            "recovery detects low settlement liquidity."
-        ),
-        "postedAt": now_iso,
-        "updatedAt": now_iso,
-    }
-    raw["priorityScore"] = recovery_priority(raw)
-    work = RecoveryWorkItem(**raw)
-    await r.hset(k_recoveries(), work.id, json.dumps(work.model_dump()))
-    logger.info(
-        "Recovery queued: intent=%s transfer=%s settlement_cranker=%s",
-        work.id,
-        work.transferId,
-        work.settlementCrankerPubkey,
-    )
-    return work
 
 # ── GitHub archive ────────────────────────────────────────────────────────────
-async def commit_epoch_to_github(
-    epoch_number: int,
-    intents: list, claims: list, proofs: list, recoveries: list,
-    closed_at: str,
-) -> str:
+
+# GitHub archive contains aggregate status only; no payment identifiers or recovery records.
+async def commit_epoch_to_github(epoch_number: int, intents: list, closed_at: str) -> str:
     token = os.environ["GITHUB_TOKEN"]
     def count_statuses(items: list[dict[str, Any]]) -> dict[str, int]:
         counts: dict[str, int] = {}
@@ -3442,200 +2997,35 @@ async def commit_epoch_to_github(
             status = str(item.get("status") or "recorded")
             counts[status] = counts.get(status, 0) + 1
         return counts
-
     token_totals: dict[str, dict[str, float | int]] = {}
     for intent in intents:
         mint = str(intent.get("tokenMintAddress") or "unknown")
-        row = token_totals.setdefault(
-            mint,
-            {"intent_count": 0, "total_amount": 0.0},
-        )
+        row = token_totals.setdefault(mint, {"intent_count": 0, "total_amount": 0.0})
         row["intent_count"] = int(row["intent_count"]) + 1
-        row["total_amount"] = float(row["total_amount"]) + float(
-            intent.get("amount") or 0
-        )
-
-    record = {
-        "epoch_number": epoch_number,
-        "closed_at":    closed_at,
-        "privacy_model": "aggregate-only-v2",
-        "summary": {
-            "intent_count": len(intents),
-            "claim_count":  len(claims),
-            "proof_count":  len(proofs),
-            "recovery_count": len(recoveries),
-        },
-        "intent_statuses": count_statuses(intents),
-        "claim_statuses": count_statuses(claims),
-        "recovery_statuses": count_statuses(recoveries),
-        "token_totals": token_totals,
-    }
-    content_b64 = base64.b64encode(
-        (json.dumps(record, indent=2) + "\n").encode()
-    ).decode()
-    date_str  = closed_at[:10]
-    file_path = f"epochs/epoch-{epoch_number}-{date_str}.json"
-    commit_msg = (
-        f"epoch {epoch_number} closed at {closed_at} -- "
-        f"{len(intents)} intents, {len(claims)} claims, {len(proofs)} proofs, "
-        f"{len(recoveries)} recoveries"
-    )
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
+        row["total_amount"] = float(row["total_amount"]) + float(intent.get("amount") or 0)
+    record = {"epoch_number": epoch_number, "closed_at": closed_at, "privacy_model": "epoch-treasury-opaque-slot-v1", "summary": {"intent_count": len(intents), "settled_count": sum(1 for item in intents if item.get("status") in {"executed", "settled"})}, "intent_statuses": count_statuses(intents), "token_totals": token_totals}
+    content_b64 = base64.b64encode((json.dumps(record, indent=2) + "\n").encode()).decode()
+    file_path = f"epochs/epoch-{epoch_number}-{closed_at[:10]}.json"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
     async with httpx.AsyncClient(timeout=30) as client:
-        check = await client.get(
-            f"{GITHUB_API}/repos/{GITHUB_REPO}/contents/{file_path}",
-            headers=headers,
-        )
-        payload: dict[str, Any] = {"message": commit_msg, "content": content_b64}
-        if check.status_code == 200:
-            payload["sha"] = check.json().get("sha")
-        resp = await client.put(
-            f"{GITHUB_API}/repos/{GITHUB_REPO}/contents/{file_path}",
-            json=payload, headers=headers,
-        )
-        if resp.status_code not in (200, 201):
-            raise RuntimeError(f"GitHub commit failed ({resp.status_code}): {resp.text[:400]}")
+        check = await client.get(f"{GITHUB_API}/repos/{GITHUB_REPO}/contents/{file_path}", headers=headers)
+        payload: dict[str, Any] = {"message": f"epoch {epoch_number} closed at {closed_at}", "content": content_b64}
+        if check.status_code == 200: payload["sha"] = check.json().get("sha")
+        resp = await client.put(f"{GITHUB_API}/repos/{GITHUB_REPO}/contents/{file_path}", json=payload, headers=headers)
+        if resp.status_code not in (200, 201): raise RuntimeError(f"GitHub commit failed ({resp.status_code}): {resp.text[:400]}")
         return resp.json()["content"]["html_url"]
-
 
 async def close_epoch_task() -> EpochCloseResult:
     r = await get_mempool_store()
     intents = await hget_all_json(k_intents())
-    claims  = await hget_all_json(k_claims())
-    proofs  = await hget_all_json(k_proofs())
-    recoveries = await hget_all_json(k_recoveries())
-    state   = await read_epoch_state()
-    epoch_number = state["epoch_number"]
-    closed_at    = datetime.now(timezone.utc).isoformat()
-
-    logger.info(
-        "Closing epoch %d: %d intents, %d claims, %d proofs, %d recoveries",
-        epoch_number,
-        len(intents),
-        len(claims),
-        len(proofs),
-        len(recoveries),
-    )
-
-    commit_url = await commit_epoch_to_github(
-        epoch_number, intents, claims, proofs, recoveries, closed_at
-    )
-
-    now = datetime.now(timezone.utc)
-    proof_intent_ids = {proof["intent_id"] for proof in proofs}
-    terminal_claim_intent_ids = {
-        claim["intentId"]
-        for claim in claims
-        if claim.get("status") in TERMINAL_CLAIM_STATUSES
-    }
-    active_recovery_payment_ids = {
-        str(recovery.get("paymentId") or "")
-        for recovery in recoveries
-        if recovery.get("status") not in ("completed", "canceled")
-    }
-
-    rollover_intents = []
-    pruned_intents = []
-    for intent in intents:
-        status = str(intent.get("status", "pending"))
-        retained_for_recovery = str(intent.get("paymentId") or intent["id"]) in active_recovery_payment_ids
-        should_prune = not retained_for_recovery and (
-            status in TERMINAL_INTENT_STATUSES
-            or intent["id"] in proof_intent_ids
-            or intent["id"] in terminal_claim_intent_ids
-        )
-        if should_prune:
-            pruned_intents.append(intent)
-        else:
-            rollover_intents.append(intent)
-
-    rollover_intent_ids = {intent["id"] for intent in rollover_intents}
-    rollover_claims = []
-    pruned_claims = []
-    for claim in claims:
-        status = str(claim.get("status", "pending"))
-        if status in TERMINAL_CLAIM_STATUSES or claim.get("intentId") not in rollover_intent_ids:
-            pruned_claims.append(claim)
-            continue
-
-        if is_processing_stale(claim, now):
-            claim = {
-                **claim,
-                "status": "pending",
-                "settlementReason": "Rolled over after stale processing lease.",
-                "updatedAt": closed_at,
-            }
-        rollover_claims.append(claim)
-
-    rollover_recoveries = []
-    pruned_recoveries = []
-    for recovery in recoveries:
-        status = str(recovery.get("status", "pending"))
-        if status in ("completed", "canceled"):
-            pruned_recoveries.append(recovery)
-            continue
-        if status == "leased":
-            recovery = {
-                **recovery,
-                "status": "pending",
-                "assignedCrankerPubkey": None,
-                "leaseExpiresAt": None,
-                "settlementReason": "Recovery lease released during epoch rollover.",
-                "updatedAt": closed_at,
-            }
-        rollover_recoveries.append(recovery)
-
+    state = await read_epoch_state(); epoch_number = int(state["epoch_number"]); closed_at = datetime.now(timezone.utc).isoformat()
+    commit_url = await commit_epoch_to_github(epoch_number, intents, closed_at)
+    rollover_intents = [i for i in intents if str(i.get("status")) not in TERMINAL_INTENT_STATUSES]
     await r.delete(k_intents())
-    await r.delete(k_claims())
-    await r.delete(k_proofs())
-    await r.delete(k_recoveries())
-    if rollover_intents:
-        await r.hset(
-            k_intents(),
-            mapping={intent["id"]: json.dumps(intent) for intent in rollover_intents},
-        )
-    if rollover_claims:
-        await r.hset(
-            k_claims(),
-            mapping={claim["id"]: json.dumps(claim) for claim in rollover_claims},
-        )
-    if rollover_recoveries:
-        await r.hset(
-            k_recoveries(),
-            mapping={
-                recovery["id"]: json.dumps(recovery)
-                for recovery in rollover_recoveries
-            },
-        )
-
-    new_epoch = epoch_number + 1
-    await r.set(k_epoch(), json.dumps({
-        "epoch_number": new_epoch, "started_at": closed_at,
-    }))
-    return EpochCloseResult(
-        epoch_number=epoch_number,
-        intents_archived=len(intents), claims_archived=len(claims),
-        proofs_archived=len(proofs),
-        recoveries_archived=len(recoveries),
-        intents_rolled_over=len(rollover_intents),
-        claims_rolled_over=len(rollover_claims),
-        intents_pruned=len(pruned_intents),
-        claims_pruned=len(pruned_claims),
-        proofs_pruned=len(proofs),
-        recoveries_rolled_over=len(rollover_recoveries),
-        recoveries_pruned=len(pruned_recoveries),
-        github_commit_url=commit_url,
-        new_epoch_number=new_epoch,
-        message=(
-            f"Epoch {epoch_number} archived. Epoch {new_epoch} started. "
-            f"Rolled over {len(rollover_intents)} intents, {len(rollover_claims)} claims, "
-            f"and {len(rollover_recoveries)} recoveries."
-        ),
-    )
+    if rollover_intents: await r.hset(k_intents(), mapping={i["id"]: json.dumps(i) for i in rollover_intents})
+    new_epoch = epoch_number + 1; await r.set(k_epoch(), json.dumps({"epoch_number": new_epoch, "started_at": closed_at}))
+    settled_count = sum(1 for item in intents if item.get("status") in {"executed", "settled"})
+    return EpochCloseResult(epoch_number=epoch_number, intents_archived=len(intents), settlements_archived=settled_count, intents_rolled_over=len(rollover_intents), intents_pruned=len(intents)-len(rollover_intents), settlements_pruned=settled_count, github_commit_url=commit_url, new_epoch_number=new_epoch, message=f"Epoch {epoch_number} archived; epoch {new_epoch} started.")
 
 # ── Background scheduler ──────────────────────────────────────────────────────
 async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
@@ -3679,14 +3069,14 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             public_payload = request.model_dump()
             for private_field in (
                 "recipientTin", "senderAuthorizationMessage",
-                "senderAuthorizationSignature", "commitmentRecord",
+                "senderAuthorizationSignature",
                 "encryptedSettlementToken",
             ):
                 public_payload.pop(private_field, None)
             # Keep the recipient TIN out of the durable payment record. The
             # short-lived, Node-only route binding below is the only place it
             # is retained after verification; payout resolution happens only
-            # when a confirmed claim needs its settlement authorization.
+            # when a confirmed settlement needs its authorization.
             public_payload.update({
                 "recipientRouteCommitment": verified_fields["recipientRouteCommitment"],
                 "recipientRouteVersion": verified_fields["recipientRouteVersion"],
@@ -3717,34 +3107,6 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             "verifiedPayload": {**request.model_dump(), **verified_fields},
             "verificationType": "TSN_PAYMENT_INTENT",
         }
-    if kind == "CLAIM":
-        claim = PostClaimRequest(**payload)
-        return {
-            "verifiedPayload": claim.model_dump(),
-            "verificationType": "TSN_CLAIM_SCHEMA",
-        }
-    if kind == "RECOVERY":
-        required = ("paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature", "payoutNullifier", "escrowTokenAccount", "tokenMintAddress")
-        if any(not str(payload.get(field) or "").strip() for field in required):
-            raise ValueError("Recovery work is missing immutable settlement fields")
-        if payload.get("source") != "receiver-confirmed-private-payout-v1":
-            raise ValueError("Recovery work was not created by the Receiver payout transition")
-        claim = await _receiver_work_by_id(str(payload["claimId"]))
-        intent = await _receiver_work_by_id(str(payload["intentId"]))
-        if (claim.get("kind") != "CLAIM" or claim.get("status") != "CONFIRMED"
-                or str((claim.get("result") or {}).get("signature") or "") != str(payload["payoutSignature"])):
-            raise ValueError("Recovery payout lineage is not confirmed")
-        if str((claim.get("result") or {}).get("payoutNullifier") or "") != str(payload["payoutNullifier"]):
-            raise ValueError("Recovery payout nullifier does not match the confirmed payout")
-        if (intent.get("kind") != "PAYMENT_INTENT" or intent.get("status") != "CONFIRMED"
-                or str((intent.get("result") or {}).get("signature") or "") != str(payload["fundingSignature"])):
-            raise ValueError("Recovery funding lineage is not confirmed")
-        verified = (intent.get("verification") or {}).get("verifiedPayload") or {}
-        if (str(verified.get("paymentId") or intent.get("payload", {}).get("paymentId") or "") != str(payload["paymentId"])
-                or str(verified.get("settlementTokenAccount") or "") != str(payload["escrowTokenAccount"])
-                or str(verified.get("tokenMintAddress") or "") != str(payload["tokenMintAddress"])):
-            raise ValueError("Recovery immutable payment fields do not match the confirmed funding")
-        return {"verifiedPayload": dict(payload), "verificationType": "TSN_RECOVERY_SCHEMA"}
     if kind == "TIN_OPERATION":
         normalized = _normalize_tin_operation_input(payload)
         route = normalized.pop("_pruRoute", None)
@@ -3773,12 +3135,12 @@ async def receiver_verification_worker() -> None:
             consecutive_failures = 0
             while True:
                 try:
-                    claimed = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
+                    leased_work = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
                         "nodeId": TSN_NODE_ID,
-                        "supportedKinds": ["PAYMENT_INTENT", "CLAIM", "RECOVERY", "TIN_OPERATION"],
+                        "supportedKinds": ["PAYMENT_INTENT", "TIN_OPERATION"],
                     })
-                    claimed.raise_for_status()
-                    work = claimed.json().get("work")
+                    leased_work.raise_for_status()
+                    work = leased_work.json().get("work")
                     if not work:
                         # Queue drained. Return to the event wait; no polling.
                         logger.info("TSN Receiver verifier drained queue; sleeping")
@@ -3901,30 +3263,30 @@ async def wake_receiver_verification() -> dict[str, Any]:
     logger.info("TSN Receiver wake accepted")
     return {"ok": True, "status": "awake"}
 
-@app.post("/internal/settlement-authorizations/claim", dependencies=[Depends(require_worker_api_key)])
-async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
+@app.post("/internal/settlement-authorizations/settlement", dependencies=[Depends(require_worker_api_key)])
+async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
     """Create a one-time DNA authorization without exposing sender escrow data."""
-    claim_id = str(body.get("workId") or "").strip()
+    settlement_id = str(body.get("workId") or "").strip()
     operator_text = str(body.get("crankerPubkey") or "").strip()
-    if not claim_id or not operator_text:
+    if not settlement_id or not operator_text:
         raise HTTPException(422, "workId and crankerPubkey are required")
-    claim_work = await _receiver_work_by_id(claim_id)
-    if claim_work.get("kind") != "CLAIM" or claim_work.get("status") != "CRANKER_LEASED":
-        raise HTTPException(409, "Claim is not leased for settlement")
-    if (claim_work.get("crankerLease") or {}).get("owner") != operator_text:
-        raise HTTPException(403, "Claim lease belongs to another Cranker")
-    claim_lease = claim_work.get("crankerLease") or {}
-    lease_expires_at = parse_iso(str(claim_lease.get("expiresAt") or ""))
+    settlement_work = await _receiver_work_by_id(settlement_id)
+    if settlement_work.get("kind") != "SETTLEMENT" or settlement_work.get("status") != "CRANKER_LEASED":
+        raise HTTPException(409, "Settlement is not leased")
+    if (settlement_work.get("crankerLease") or {}).get("owner") != operator_text:
+        raise HTTPException(403, "Settlement lease belongs to another Cranker")
+    settlement_lease = settlement_work.get("crankerLease") or {}
+    lease_expires_at = parse_iso(str(settlement_lease.get("expiresAt") or ""))
     now = datetime.now(timezone.utc)
     if lease_expires_at <= now:
-        raise HTTPException(409, "Claim lease has expired")
-    lease_version = int(claim_lease.get("version") or claim_work.get("stateVersion") or 0)
+        raise HTTPException(409, "Settlement lease has expired")
+    lease_version = int(settlement_lease.get("version") or settlement_work.get("stateVersion") or 0)
     if lease_version <= 0:
-        raise HTTPException(422, "Claim lease version is missing")
-    claim_payload = claim_work.get("payload") or {}
-    intent_id = str(claim_payload.get("intentId") or "").strip()
+        raise HTTPException(422, "Settlement lease version is missing")
+    settlement_payload = settlement_work.get("payload") or {}
+    intent_id = str(settlement_payload.get("intentId") or "").strip()
     if not intent_id:
-        raise HTTPException(422, "Claim does not reference a payment intent")
+        raise HTTPException(422, "Settlement does not reference a payment intent")
     intent_work = await _receiver_work_by_id(intent_id)
     if intent_work.get("kind") != "PAYMENT_INTENT" or intent_work.get("status") != "CONFIRMED":
         raise HTTPException(409, "Payment intent is not confirmed for payout")
@@ -3978,39 +3340,39 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
     recipient_wallet = str(selected_pru["publicKey"])
     operator = Pubkey.from_string(operator_text)
     cranker_vault = get_cranker_vault_pda(operator, token_mint)
-    settlement_dna = find_tsn_pda(
-        b"tsn_private_settlement_dna", payment_id_hash, commitment_digest
-    )
-    # Sequence is signed audit metadata only; DNA/nullifier is the on-chain
-    # replay guard. A random value avoids a shared read-then-write sequence
-    # bottleneck under concurrent Node workers.
-    payout_sequence = secrets.randbits(64)
+    epoch_state = await read_epoch_state()
+    epoch_id = int(epoch_state["epoch_number"])
+    epoch_treasury = get_epoch_treasury_pda(epoch_id, token_mint)
+    epoch_ledger = get_epoch_ledger_pda(epoch_treasury)
+    slot = derive_claim_slot(payment_id_hash, payout_amount, token_mint, epoch_id, commitment_digest)
+    claim_slot = get_epoch_claim_slot_pda(epoch_treasury, slot)
     nullifier = hashlib.sha256(
         PRIVATE_PAYOUT_DOMAIN + str(verified.get("paymentId") or intent_id).encode()
-        + claim_id.encode() + str(verified.get("commitmentHash") or "").encode()
+        + settlement_id.encode() + str(verified.get("commitmentHash") or "").encode()
     ).digest()
     lease_expiry_ts = int(lease_expires_at.timestamp())
     expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
     if expires_at_ts <= int(time.time()):
         raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
-    lease_hash = lease_id_hash(claim_id)
+    lease_hash = lease_id_hash(settlement_id)
+    settlement_dna = get_settlement_dna_pda(slot, lease_version)
     random_nonce = secrets.token_bytes(32)
     settlement_commitment = private_settlement_commitment(
-        settlement_dna, payment_id_hash, commitment_digest, random_nonce,
+        epoch_treasury, epoch_ledger, slot, commitment_digest, random_nonce,
         cranker_vault, Pubkey.from_string(recipient_wallet), token_mint,
         payout_amount, nullifier, lease_hash, lease_version, lease_expiry_ts,
         expires_at_ts,
     )
-    permit_key = f"settlement-dna:{operator}:{payment_id_hash.hex()}:{commitment_digest.hex()}"
+    permit_key = f"settlement-slot:{operator}:{slot.hex()}"
     store = await get_mempool_store()
     consumed = await store.consume_once(
         k_canonical_message_nonces(), permit_key,
-        json.dumps({"claimId": claim_id, "operator": str(operator)}),
+        json.dumps({"settlementId": settlement_id, "operator": str(operator)}),
     )
     if not consumed:
         raise HTTPException(409, "Settlement commitment has already been authorized")
     signature = get_settlement_authorization_signing_key().sign(private_payout_permit_message(
-        operator, settlement_dna, nullifier, payout_sequence, payment_id_hash,
+        operator, epoch_treasury, epoch_ledger, claim_slot, slot, nullifier,
         commitment_digest, random_nonce, settlement_commitment, cranker_vault,
         Pubkey.from_string(recipient_wallet), token_mint, payout_amount, 0,
         lease_hash, lease_version, lease_expiry_ts, expires_at_ts,
@@ -4019,131 +3381,21 @@ async def create_claim_settlement_authorization(body: dict[str, Any]) -> dict[st
         "kind": "TSN_PAYOUT_AUTHORIZATION", "authorizationVersion": 2,
         "authorizationSigner": settlement_authorization_signer_pubkey(),
         "authorizationSignatureBase64": base64.b64encode(signature).decode("ascii"),
-        "payoutNullifier": nullifier.hex(), "payoutSequence": str(payout_sequence),
+        "payoutNullifier": nullifier.hex(),
         "tokenMintAddress": str(token_mint), "recipientWallet": recipient_wallet,
         "payoutAmountBaseUnits": str(payout_amount), "claimFeeAmountBaseUnits": "0",
         "settlementDna": str(settlement_dna),
+        "epochTreasury": str(epoch_treasury), "epochLedger": str(epoch_ledger),
+        "claimSlot": slot.hex(),
         "settlementCommitment": settlement_commitment.hex(),
-        "paymentIdHash": payment_id_hash.hex(),
         "commitmentDigest": commitment_digest.hex(),
         "randomNonce": random_nonce.hex(),
-        "leaseId": claim_id, "leaseVersion": lease_version,
-        "leaseExpiresAt": str(claim_lease.get("expiresAt")),
+        "leaseId": settlement_id, "leaseVersion": lease_version,
+        "leaseExpiresAt": str(settlement_lease.get("expiresAt")),
         "expiresAtTs": expires_at_ts,
         "routeCommitment": route_binding["commitment"],
     }
 
-@app.post("/internal/settlement-authorizations/recovery", dependencies=[Depends(require_worker_api_key)])
-async def create_recovery_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
-    """Legacy recovery is disabled; DNA reimbursement is epoch-authorized."""
-    raise HTTPException(410, "Legacy private escrow recovery is disabled; settle consumed DNA at epoch")
-    work_id = str(body.get("workId") or "").strip()
-    operator_text = str(body.get("crankerPubkey") or "").strip()
-    if not work_id or not operator_text:
-        raise HTTPException(422, "workId and crankerPubkey are required")
-    work = await _receiver_work_by_id(work_id)
-    if work.get("kind") != "RECOVERY" or work.get("status") != "CRANKER_LEASED":
-        raise HTTPException(409, "Recovery is not leased for settlement")
-    if (work.get("crankerLease") or {}).get("owner") != operator_text:
-        raise HTTPException(403, "Recovery lease belongs to another Cranker")
-    recovery_lease = work.get("crankerLease") or {}
-    lease_expires_at = parse_iso(str(recovery_lease.get("expiresAt") or ""))
-    now = datetime.now(timezone.utc)
-    if lease_expires_at <= now:
-        raise HTTPException(409, "Recovery lease has expired")
-    lease_version = int(recovery_lease.get("version") or work.get("stateVersion") or 0)
-    if lease_version <= 0:
-        raise HTTPException(422, "Recovery lease version is missing")
-    try:
-        lineage = await _verify_receiver_work("RECOVERY", work.get("payload") or {})
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-    payload = lineage["verifiedPayload"]
-    required = ("escrowTokenAccount", "tokenMintAddress", "paymentId", "intentId", "claimId", "fundingSignature", "payoutSignature", "payoutNullifier")
-    if any(not str(payload.get(field) or "").strip() for field in required):
-        raise HTTPException(422, "Recovery work is missing immutable settlement fields")
-    token_mint = Pubkey.from_string(str(payload["tokenMintAddress"]))
-    operator = Pubkey.from_string(operator_text)
-    escrow_token_account = Pubkey.from_string(str(payload["escrowTokenAccount"]))
-    # The settlement vault is selected from the confirmed payout record, not
-    # from recovery ingress.  The on-chain PrivateEscrowRecord repeats this
-    # binding and rejects any mismatch.
-    payout_claim = await _receiver_work_by_id(str(payload["claimId"]))
-    payout_operator = str((payout_claim.get("result") or {}).get("operator") or "")
-    if not payout_operator:
-        raise HTTPException(422, "Recovery payout operator is unavailable")
-    if str((payout_claim.get("result") or {}).get("payoutNullifier") or "") != str(payload["payoutNullifier"]):
-        raise HTTPException(422, "Recovery payout nullifier does not match confirmed payout")
-    intent = await _receiver_work_by_id(str(payload["intentId"]))
-    verified_intent = (intent.get("verification") or {}).get("verifiedPayload") or {}
-    commitment_text = str(verified_intent.get("commitmentHash") or "")
-    payout_nullifier_text = str(payload["payoutNullifier"])
-    if len(commitment_text) != 64 or len(payout_nullifier_text) != 64:
-        raise HTTPException(422, "Recovery lineage hash is invalid")
-    try:
-        payment_id_hash = hashlib.sha256(str(payload["paymentId"]).encode()).digest()
-        commitment_hash = bytes.fromhex(commitment_text)
-        payout_nullifier = bytes.fromhex(payout_nullifier_text)
-    except ValueError as exc:
-        raise HTTPException(422, "Recovery lineage hash is invalid") from exc
-    settlement_operator = Pubkey.from_string(payout_operator)
-    settlement_vault = get_cranker_vault_pda(settlement_operator, token_mint)
-
-    # The payout instruction atomically returned the escrow and closed this
-    # one-time token account. Keep the mandatory recovery work item as a
-    # durable reconciliation receipt, but do not issue a second transfer.
-    account_info = await solana_rpc(
-        "getAccountInfo",
-        [str(escrow_token_account), {"encoding": "base64", "commitment": "confirmed"}],
-    )
-    if (account_info.get("result") or {}).get("value") is None:
-        return {
-            "kind": "TSN_RECOVERY_ALREADY_REIMBURSED",
-            "authorizationVersion": 1,
-            "escrowTokenAccount": str(escrow_token_account),
-            "settlementCrankerPubkey": str(settlement_operator),
-            "settlementCrankerVault": str(settlement_vault),
-            "tokenMintAddress": str(token_mint),
-            "paymentIdHash": payment_id_hash.hex(),
-            "commitmentHash": commitment_hash.hex(),
-            "payoutNullifier": payout_nullifier.hex(),
-            "payoutSignature": str(payload["payoutSignature"]),
-        }
-
-    recovery_amount, _, _ = await get_token_account_amount(str(escrow_token_account))
-    if recovery_amount <= 0 or recovery_amount > 0xFFFF_FFFF_FFFF_FFFF:
-        raise HTTPException(422, "Recovery escrow amount or mint is invalid")
-    _, recovery_sequence = await read_private_replay_sequences()
-    nullifier = hashlib.sha256(
-        PRIVATE_RECOVERY_DOMAIN + str(payload["paymentId"]).encode() + work_id.encode()
-        + commitment_text.encode()
-    ).digest()
-    settlement_vault = get_cranker_vault_pda(settlement_operator, token_mint)
-    lease_expiry_ts = int(lease_expires_at.timestamp())
-    expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
-    if expires_at_ts <= int(time.time()):
-        raise HTTPException(409, "Recovery lease expires before a usable permit can be issued")
-    lease_hash = lease_id_hash(work_id)
-    signature = get_settlement_authorization_signing_key().sign(private_recovery_permit_message(
-        operator, nullifier, recovery_sequence, escrow_token_account, settlement_vault,
-        get_cranker_vault_token_pda(settlement_vault), token_mint, payment_id_hash,
-        commitment_hash, payout_nullifier, recovery_amount, lease_hash, lease_version,
-        lease_expiry_ts, expires_at_ts,
-    )).signature
-    return {
-        "kind": "TSN_RECOVERY_AUTHORIZATION", "authorizationVersion": 1,
-        "authorizationSigner": settlement_authorization_signer_pubkey(),
-        "authorizationSignatureBase64": base64.b64encode(signature).decode("ascii"),
-        "recoveryNullifier": nullifier.hex(), "recoverySequence": str(recovery_sequence),
-        "escrowTokenAccount": str(escrow_token_account),
-        "settlementCrankerPubkey": str(settlement_operator),
-        "tokenMintAddress": str(token_mint), "recoveryAmountBaseUnits": str(recovery_amount),
-        "paymentIdHash": payment_id_hash.hex(), "commitmentHash": commitment_hash.hex(),
-        "payoutNullifier": payout_nullifier.hex(),
-        "leaseId": work_id, "leaseVersion": lease_version,
-        "leaseExpiresAt": str(recovery_lease.get("expiresAt")),
-        "expiresAtTs": expires_at_ts,
-    }
 
 # Allow frontend to call this API from any origin
 app.add_middleware(
@@ -4779,18 +4031,10 @@ async def update_intent_status(
     data.update({"status": body.status, "updatedAt": datetime.now(timezone.utc).isoformat()})
     if body.assignedCrankerPubkey is not None:
         data["assignedCrankerPubkey"] = body.assignedCrankerPubkey
-    if body.escrowTxSig is not None:
-        data["escrowTxSig"] = body.escrowTxSig
-    if body.claimTxSig is not None:
-        data["claimTxSig"] = body.claimTxSig
-    if body.proofTxSig is not None:
-        data["proofTxSig"] = body.proofTxSig
-    if body.settlementVault is not None:
-        data["settlementVault"] = body.settlementVault
-    if body.settlementTokenAccount is not None:
-        data["settlementTokenAccount"] = body.settlementTokenAccount
-    if body.settlementPaymentIntentId is not None:
-        data["settlementPaymentIntentId"] = body.settlementPaymentIntentId
+    if body.fundingTxSig is not None:
+        data["fundingTxSig"] = body.fundingTxSig
+    if body.settlementTxSig is not None:
+        data["settlementTxSig"] = body.settlementTxSig
     if body.settlementResolution is not None:
         data["settlementResolution"] = body.settlementResolution
     if body.settlementReason is not None:
@@ -4798,7 +4042,6 @@ async def update_intent_status(
     await r.hset(k_intents(), intent_id, json.dumps(data))
     return MempoolIntent(**data)
 
-# ── Claim Requests ────────────────────────────────────────────────────────────
 @app.post(
     "/intents/{intent_id}/pru-spend-permit",
     response_model=PruSpendPermitResponse,
@@ -4850,17 +4093,17 @@ async def issue_pru_spend_permit(
     token_metadata = get_supported_token_metadata().get(str(intent.get("tokenMintAddress") or ""))
     if not token_metadata:
         raise HTTPException(422, "PRU spend token mint is not supported")
-    escrow_amount = int(str(intent.get("pruSpendAmountBaseUnits") or "0"))
+    pru_funding_amount = int(str(intent.get("pruSpendAmountBaseUnits") or "0"))
     sender_fee_amount = int(str(intent.get("pruSpendSenderFeeBaseUnits") or "0"))
     full_payment_amount = ui_amount_to_base_units(intent.get("amount"), int(token_metadata["decimals"]))
     wallet_top_up_amount = int(str(intent.get("walletTopUpAmountBaseUnits") or "0"))
-    expected_escrow_amount = (
+    expected_pru_funding_amount = (
         max(0, full_payment_amount - wallet_top_up_amount)
         if intent.get("senderSettlementMode") == "mixed_pru_wallet_v1"
         else full_payment_amount
     )
-    if escrow_amount != expected_escrow_amount:
-        raise HTTPException(422, "PRU spend escrow amount does not match the payment amount")
+    if pru_funding_amount != expected_pru_funding_amount:
+        raise HTTPException(422, "PRU funding amount does not match the payment amount")
     selections_raw = intent.get("pruSpendSelections")
     if not isinstance(selections_raw, list) or not selections_raw:
         raise HTTPException(422, "PRU spend intent has no selected PRUs")
@@ -4903,8 +4146,8 @@ async def issue_pru_spend_permit(
             amountBaseUnits=str(amount),
         ))
         total_selected += amount
-    if total_selected != escrow_amount + sender_fee_amount:
-        raise HTTPException(422, "PRU spend selections must equal escrow amount plus sender fee")
+    if total_selected != pru_funding_amount + sender_fee_amount:
+        raise HTTPException(422, "PRU funding selections must equal funding amount plus sender fee")
     execution_plan = {
         "planId": f"intent-{intent_id}",
         "version": 2,
@@ -4932,265 +4175,11 @@ async def issue_pru_spend_permit(
         paymentId=str(intent["paymentId"]),
         tokenMintAddress=str(intent["tokenMintAddress"]),
         commitmentHash=str(intent.get("commitmentHash") or ""),
-        escrowAmountBaseUnits=str(escrow_amount),
+        fundingAmountBaseUnits=str(pru_funding_amount),
         senderFeeAmountBaseUnits=str(sender_fee_amount),
         selections=selections,
         executionPlanV2=execution_plan,
     )
-
-@app.post("/claim-requests", response_model=MempoolClaimRequest)
-async def post_claim_request(req: PostClaimRequest) -> MempoolClaimRequest:
-    """Post a claim request. Idempotent — returns existing active claim for intent."""
-    r = await get_mempool_store()
-    intent_raw = await r.hget(k_intents(), req.intentId)
-    if not intent_raw:
-        raise HTTPException(409, f"Intent {req.intentId} must exist before a claim request can be posted")
-    intent = json.loads(intent_raw)
-    if intent.get("status") not in ("pending", "escrowed", "onchain", "claimed", "processing"):
-        raise HTTPException(409, f"Intent {req.intentId} is not claimable")
-    for c in await hget_all_json(k_claims()):
-        if c["intentId"] == req.intentId and c["status"] not in ("failed", "canceled"):
-            return MempoolClaimRequest(**c)
-    now = datetime.now(timezone.utc).isoformat()
-    claim = MempoolClaimRequest(**req.model_dump(), id=str(uuid4()),
-                                status="pending", postedAt=now, updatedAt=now)
-    await r.hset(k_claims(), claim.id, json.dumps(claim.model_dump()))
-    logger.info("Claim posted: %s for intent %s", claim.id, req.intentId)
-    return claim
-
-@app.get(
-    "/claim-requests",
-    response_model=list[MempoolClaimRequest],
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def list_claim_requests(
-    intent_id: Optional[str] = Query(None),
-    status:    Optional[str] = Query(None),
-) -> list[MempoolClaimRequest]:
-    intent_ids = {intent["id"] for intent in await hget_all_json(k_intents())}
-    items = [MempoolClaimRequest(**c) for c in await hget_all_json(k_claims())]
-    items = [c for c in items if c.intentId in intent_ids]
-    if intent_id: items = [c for c in items if c.intentId == intent_id]
-    if status:    items = [c for c in items if c.status   == status]
-    return sorted(items, key=lambda c: c.postedAt)
-
-@app.patch(
-    "/claim-requests/{claim_id}/status",
-    response_model=MempoolClaimRequest,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def update_claim_status(
-    claim_id: str = ApiPath(...),
-    body: UpdateStatusRequest = ...,
-) -> MempoolClaimRequest:
-    r = await get_mempool_store()
-    raw = await r.hget(k_claims(), claim_id)
-    if not raw:
-        raise HTTPException(404, f"Claim {claim_id} not found")
-    data = json.loads(raw)
-    data.update({"status": body.status, "updatedAt": datetime.now(timezone.utc).isoformat()})
-    if body.settlementReason is not None:
-        data["settlementReason"] = body.settlementReason
-    await r.hset(k_claims(), claim_id, json.dumps(data))
-    return MempoolClaimRequest(**data)
-
-# ── Proofs of Payment ─────────────────────────────────────────────────────────
-@app.post(
-    "/proofs",
-    response_model=ProofOfPayment,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def post_proof(proof: ProofOfPayment) -> ProofOfPayment:
-    """Cranker submits Proof of Payment. Auto-advances intent to 'executed'."""
-    r = await get_mempool_store()
-    await r.hset(k_proofs(), proof.intent_id, json.dumps(proof.model_dump()))
-    # Auto-advance intent: claimed → executed
-    raw = await r.hget(k_intents(), proof.intent_id)
-    if raw:
-        data = json.loads(raw)
-        if data.get("status") in ("escrowed", "onchain", "claimed"):
-            data["status"]    = "executed"
-            data["proofTxSig"] = proof.proof_tx
-            data["updatedAt"] = datetime.now(timezone.utc).isoformat()
-            await r.hset(k_intents(), proof.intent_id, json.dumps(data))
-            await create_recovery_work_from_proof(data, proof)
-    logger.info("Proof posted: intent=%s cranker=%s", proof.intent_id, proof.cranker_pubkey)
-    return proof
-
-@app.get(
-    "/proofs",
-    response_model=list[PublicProofOfPayment],
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def list_proofs(
-    intent_id:     Optional[str] = Query(None),
-    cranker_pubkey: Optional[str] = Query(None),
-) -> list[PublicProofOfPayment]:
-    items = [ProofOfPayment(**p) for p in await hget_all_json(k_proofs())]
-    if intent_id:     items = [p for p in items if p.intent_id     == intent_id]
-    if cranker_pubkey: items = [p for p in items if p.cranker_pubkey == cranker_pubkey]
-    return [
-        PublicProofOfPayment(
-            intent_id=item.intent_id,
-            timestamp=item.timestamp,
-            proof_tx=item.proof_tx,
-        )
-        for item in sorted(items, key=lambda p: p.timestamp)
-    ]
-
-# ── Recovery queue ────────────────────────────────────────────────────────────
-@app.get(
-    "/recoveries",
-    response_model=list[PublicRecoveryWorkItem],
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def list_recoveries(
-    status: Optional[str] = Query(None),
-) -> list[PublicRecoveryWorkItem]:
-    items = [RecoveryWorkItem(**item) for item in await hget_all_json(k_recoveries())]
-    if status:
-        items = [item for item in items if item.status == status]
-    return [
-        PublicRecoveryWorkItem(**item.model_dump())
-        for item in sorted(items, key=lambda item: (-item.priorityScore, item.postedAt))
-    ]
-
-@app.get(
-    "/recovery-work",
-    response_model=list[RecoveryWorkItem | PublicRecoveryWorkItem],
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def list_recovery_work(
-    operator_pubkey: str = Query(...),
-    limit: int = Query(20, ge=1, le=100),
-) -> list[RecoveryWorkItem | PublicRecoveryWorkItem]:
-    now = datetime.now(timezone.utc)
-    epoch_state = await read_epoch_state()
-    current_epoch = int(epoch_state["epoch_number"])
-    liquidity_by_operator = await settlement_operator_liquidity()
-    available: list[RecoveryWorkItem] = []
-    for raw in await hget_all_json(k_recoveries()):
-        status = str(raw.get("status") or "pending")
-        lease_expired = (
-            status == "leased"
-            and raw.get("leaseExpiresAt")
-            and parse_iso(str(raw["leaseExpiresAt"])) <= now
-        )
-        assigned_to_operator = (
-            status == "leased"
-            and raw.get("assignedCrankerPubkey") == operator_pubkey
-            and not lease_expired
-        )
-        if status != "pending" and not lease_expired and not assigned_to_operator:
-            continue
-        settlement_operator = str(raw.get("settlementCrankerPubkey") or "")
-        settlement_liquidity = liquidity_by_operator.get(settlement_operator)
-        if not recovery_is_eligible(raw, current_epoch, settlement_liquidity):
-            continue
-        raw["priorityScore"] = recovery_priority(
-            raw,
-            now,
-            settlement_liquidity,
-        )
-        available.append(RecoveryWorkItem(**raw))
-    return [
-        (
-            PublicRecoveryWorkItem(**item.model_dump())
-            if int(item.privacyVersion or 1) >= 2
-            else item
-        )
-        for item in sorted(
-            available,
-            key=lambda item: (-item.priorityScore, item.postedAt),
-        )[:limit]
-    ]
-
-@app.post(
-    "/recoveries/{recovery_id}/lease",
-    response_model=RecoveryWorkItem,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def claim_recovery_lease(
-    recovery_id: str = ApiPath(...),
-    body: RecoveryLeaseRequest = ...,
-) -> RecoveryWorkItem:
-    async with _recovery_queue_lock:
-        r = await get_mempool_store()
-        raw = await r.hget(k_recoveries(), recovery_id)
-        if not raw:
-            raise HTTPException(404, f"Recovery {recovery_id} not found")
-        data = json.loads(raw)
-        now = datetime.now(timezone.utc)
-        current_epoch = int((await read_epoch_state())["epoch_number"])
-        liquidity = (
-            await settlement_operator_liquidity()
-        ).get(str(data.get("settlementCrankerPubkey") or ""))
-        if not recovery_is_eligible(data, current_epoch, liquidity):
-            raise HTTPException(
-                409,
-                "Recovery is queued until epoch close unless smart recovery detects low liquidity",
-            )
-        current_status = str(data.get("status") or "pending")
-        lease_expired = (
-            current_status == "leased"
-            and data.get("leaseExpiresAt")
-            and parse_iso(str(data["leaseExpiresAt"])) <= now
-        )
-        if (
-            current_status == "leased"
-            and not lease_expired
-            and data.get("assignedCrankerPubkey") != body.operatorPubkey
-        ):
-            raise HTTPException(409, "Recovery lease is held by another Cranker")
-        if current_status in ("completed", "canceled"):
-            raise HTTPException(409, f"Recovery {recovery_id} is already {current_status}")
-
-        data.update({
-            "status": "leased",
-            "assignedCrankerPubkey": body.operatorPubkey,
-            "leaseExpiresAt": datetime.fromtimestamp(
-                now.timestamp() + RECOVERY_LEASE_SECS,
-                tz=timezone.utc,
-            ).isoformat(),
-            "updatedAt": now.isoformat(),
-            "settlementReason": "Recovery lease acquired.",
-        })
-        await r.hset(k_recoveries(), recovery_id, json.dumps(data))
-        return RecoveryWorkItem(**data)
-
-@app.patch(
-    "/recoveries/{recovery_id}/status",
-    response_model=RecoveryWorkItem,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def update_recovery_status(
-    recovery_id: str = ApiPath(...),
-    body: RecoveryStatusRequest = ...,
-) -> RecoveryWorkItem:
-    async with _recovery_queue_lock:
-        r = await get_mempool_store()
-        raw = await r.hget(k_recoveries(), recovery_id)
-        if not raw:
-            raise HTTPException(404, f"Recovery {recovery_id} not found")
-        data = json.loads(raw)
-        assigned = data.get("assignedCrankerPubkey")
-        if assigned and assigned != body.operatorPubkey:
-            raise HTTPException(409, "Only the leased Cranker can update this recovery")
-        now_iso = datetime.now(timezone.utc).isoformat()
-        data.update({
-            "status": body.status,
-            "updatedAt": now_iso,
-            "leaseExpiresAt": None if body.status != "pending" else data.get("leaseExpiresAt"),
-        })
-        if body.status == "pending":
-            data["assignedCrankerPubkey"] = None
-            data["leaseExpiresAt"] = None
-        if body.recoveryTxSig is not None:
-            data["recoveryTxSig"] = body.recoveryTxSig
-        if body.settlementReason is not None:
-            data["settlementReason"] = body.settlementReason
-        await r.hset(k_recoveries(), recovery_id, json.dumps(data))
-        return RecoveryWorkItem(**data)
 
 # ── Work queue ────────────────────────────────────────────────────────────────
 @app.get(
@@ -5212,409 +4201,17 @@ async def list_pending_intent_work(
     )[:limit]
     return [IntentWorkItem(intent=intent_submission_work(intent)) for intent in intents]
 
-@app.get(
-    "/work",
-    response_model=list[WorkItem],
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def list_pending_work(
-    limit: int = Query(50, ge=1, le=500)
-) -> list[WorkItem]:
-    """Claim execution work. Intents must already be escrowed by a cranker-sponsored transaction."""
-    intents = await hget_all_json(k_intents())
-    claims  = await hget_all_json(k_claims())
-    intent_map = {i["id"]: i for i in intents}
-    pending = sorted(
-        [c for c in claims if c["status"] == "pending"],
-        key=lambda c: c["postedAt"],
-    )[:limit]
-    result = []
-    for c in pending:
-        intent = intent_map.get(c["intentId"])
-        if intent and intent["status"] in ("escrowed", "onchain", "claimed"):
-            result.append(WorkItem(
-                intent=(
-                    public_intent(intent)
-                    if int(intent.get("privacyVersion") or 1) >= 2
-                    else MempoolIntent(**intent)
-                ),
-                claimRequest=MempoolClaimRequest(**c),
-            ))
-    return result
-
 # ── Epoch management ──────────────────────────────────────────────────────────
-
-@app.post(
-    "/work/{claim_id}/lease-permit",
-    response_model=PrivatePayoutPermitResponse,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def issue_private_payout_permit(
-    claim_id: str = ApiPath(...),
-    body: SignedLeasePermitRequest = ...,
-) -> PrivatePayoutPermitResponse:
-    raise HTTPException(410, "Legacy payout permits are disabled; use Receiver-leased settlement authorization")
-    operator = verify_lease_authorization(
-        "payout",
-        claim_id,
-        body.operatorPubkey,
-        body.requestedAtTs,
-        body.requestSignatureBase64,
-    )
-    async with _claim_queue_lock:
-        r = await get_mempool_store()
-        claim_raw = await r.hget(k_claims(), claim_id)
-        if not claim_raw:
-            raise HTTPException(404, f"Claim {claim_id} not found")
-        claim = json.loads(claim_raw)
-        intent_raw = await r.hget(k_intents(), str(claim.get("intentId") or ""))
-        if not intent_raw:
-            raise HTTPException(404, "Claim intent was not found")
-        intent = json.loads(intent_raw)
-        if int(intent.get("privacyVersion") or 1) < 2:
-            raise HTTPException(409, "Legacy settlement does not use private permits")
-        if intent.get("status") not in ("escrowed", "onchain", "claimed"):
-            raise HTTPException(409, "Intent is not ready for private payout")
-
-        now = datetime.now(timezone.utc)
-        lease_expiry = claim.get("leaseExpiresAt")
-        lease_active = (
-            claim.get("status") == "processing"
-            and lease_expiry
-            and parse_iso(str(lease_expiry)) > now
-        )
-        if lease_active and claim.get("assignedCrankerPubkey") != body.operatorPubkey:
-            raise HTTPException(409, "Claim lease is held by another Cranker")
-        if claim.get("status") in TERMINAL_CLAIM_STATUSES:
-            raise HTTPException(409, f"Claim is already {claim.get('status')}")
-
-        payload = decrypt_settlement_token(intent.get("encryptedSettlementToken") or {})
-        if payload.get("paymentId") != intent.get("paymentId"):
-            raise HTTPException(422, "Settlement route payment id mismatch")
-        if payload.get("tokenMintAddress") != intent.get("tokenMintAddress"):
-            raise HTTPException(422, "Settlement route token mint mismatch")
-        if payload.get("transferId") != intent.get("transferId"):
-            raise HTTPException(422, "Settlement route transfer id mismatch")
-
-        token_mint = Pubkey.from_string(str(payload["tokenMintAddress"]))
-        token_metadata = get_supported_token_metadata().get(str(token_mint))
-        if not token_metadata:
-            raise HTTPException(422, "Settlement token mint is not supported")
-        expected_escrow_amount = ui_amount_to_base_units(
-            intent.get("amount"),
-            int(token_metadata["decimals"]),
-        )
-        declared_payout_amount = int(payload["recipientAmountBaseUnits"])
-        claim_fee_amount = int(payload.get("claimFeeAmountBaseUnits") or 0)
-        payout_amount = expected_escrow_amount - claim_fee_amount
-        if payout_amount <= 0:
-            raise HTTPException(422, "Settlement route payout amount must be positive after recipient fee")
-        if declared_payout_amount != payout_amount:
-            raise HTTPException(
-                422,
-                "Settlement route payout amount must equal escrowed amount minus recipient fee",
-            )
-        if payout_amount + claim_fee_amount != expected_escrow_amount:
-            raise HTTPException(
-                422,
-                "Settlement route payout and claim fee do not equal the escrowed amount",
-            )
-        recipient_tin = str(intent.get("recipientTin") or "").strip()
-        if not recipient_tin:
-            raise HTTPException(422, "Private settlement requires recipientTin for PRU routing")
-        route = await read_tin_pru_route(recipient_tin)
-        if not route:
-            raise HTTPException(409, "Recipient TIN has no finalized PRU route")
-        if str(route.get("pruConfigurationHash") or "").lower() == "":
-            raise HTTPException(409, "Recipient TIN PRU route is missing its commitment")
-        selected_pru = select_pru_for_payment(route, intent, str(token_mint))
-        recipient_wallet = Pubkey.from_string(str(selected_pru["publicKey"]))
-        try:
-            decryption_secret = base64.b64decode(
-                str(payload["decryptionSecret"]),
-                validate=True,
-            )
-        except (KeyError, binascii.Error) as exc:
-            raise HTTPException(422, "Payout route secret is invalid") from exc
-        payout_nullifier = hashlib.sha256(
-            PRIVATE_PAYOUT_DOMAIN + decryption_secret
-        ).digest()
-        payout_sequence, _ = await read_private_replay_sequences()
-        for existing_claim in await hget_all_json(k_claims()):
-            if existing_claim.get("id") == claim_id:
-                continue
-            if (
-                existing_claim.get("status") == "processing"
-                and str(existing_claim.get("payoutSequence") or "") == str(payout_sequence)
-                and existing_claim.get("leaseExpiresAt")
-                and parse_iso(str(existing_claim["leaseExpiresAt"])) > now
-            ):
-                raise HTTPException(
-                    409,
-                    "The current private payout sequence is reserved by another active lease",
-                )
-        cranker_vault = get_cranker_vault_pda(operator, token_mint)
-        recipient_token_account = get_associated_token_address(
-            recipient_wallet,
-            token_mint,
-        )
-        lease_expires_at = parse_iso(str(claim.get("leaseExpiresAt"))) if claim.get("leaseExpiresAt") else datetime.fromtimestamp(now.timestamp() + CLAIM_PROCESSING_TIMEOUT_SECS, tz=timezone.utc)
-        if lease_expires_at <= now:
-            raise HTTPException(409, "Claim lease has expired")
-        lease_version = int(claim.get("leaseVersion") or 1)
-        lease_expiry_ts = int(lease_expires_at.timestamp())
-        expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
-        if expires_at_ts <= int(time.time()):
-            raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
-        legacy_lease_hash = lease_id_hash(claim_id)
-        permit_message = private_payout_permit_message(
-            operator,
-            payout_nullifier,
-            payout_sequence,
-            cranker_vault,
-            recipient_token_account,
-            token_mint,
-            payout_amount,
-            claim_fee_amount,
-            legacy_lease_hash,
-            lease_version,
-            lease_expiry_ts,
-            expires_at_ts,
-        )
-        permit_signature = get_settlement_authorization_signing_key().sign(permit_message).signature
-
-        claim.update(
-            {
-                "status": "processing",
-                "assignedCrankerPubkey": body.operatorPubkey,
-                "leaseExpiresAt": datetime.fromtimestamp(
-                    now.timestamp() + CLAIM_PROCESSING_TIMEOUT_SECS,
-                    tz=timezone.utc,
-                ).isoformat(),
-                "updatedAt": now.isoformat(),
-                "settlementReason": "Private payout lease acquired.",
-                "payoutSequence": str(payout_sequence),
-                "leaseVersion": lease_version,
-                "recipientTinHash": _sha256_hex_utf8("TSN_RECIPIENT_TIN_ROUTE", recipient_tin),
-                "recipientPruIndex": int(selected_pru.get("index") or 0),
-                "recipientPruCommitment": str(route.get("pruConfigurationHash") or ""),
-            }
-        )
-        await r.hset(k_claims(), claim_id, json.dumps(claim))
-
-        return PrivatePayoutPermitResponse(
-            permitSigner=settlement_authorization_signer_pubkey(),
-            permitSignatureBase64=base64.b64encode(permit_signature).decode(),
-            payoutNullifier=payout_nullifier.hex(),
-            payoutSequence=str(payout_sequence),
-            tokenMintAddress=str(token_mint),
-            recipientWallet=str(recipient_wallet),
-            payoutAmountBaseUnits=str(payout_amount),
-            claimFeeAmountBaseUnits=str(claim_fee_amount),
-            leaseId=claim_id,
-            leaseVersion=lease_version,
-            leaseExpiresAt=str(claim.get("leaseExpiresAt")),
-            expiresAtTs=expires_at_ts,
-        )
-
-@app.post(
-    "/recoveries/{recovery_id}/lease-permit",
-    response_model=PrivateRecoveryPermitResponse,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def issue_private_recovery_permit(
-    recovery_id: str = ApiPath(...),
-    body: SignedLeasePermitRequest = ...,
-) -> PrivateRecoveryPermitResponse:
-    # Superseded by Receiver-created recovery work.  Keeping this route alive
-    # would let the legacy queue bypass the confirmed-payout lineage checks.
-    raise HTTPException(410, "Legacy recovery permits are disabled; use Receiver recovery work")
-    operator = verify_lease_authorization(
-        "recovery",
-        recovery_id,
-        body.operatorPubkey,
-        body.requestedAtTs,
-        body.requestSignatureBase64,
-    )
-    async with _recovery_queue_lock:
-        r = await get_mempool_store()
-        recovery_raw = await r.hget(k_recoveries(), recovery_id)
-        if not recovery_raw:
-            raise HTTPException(404, f"Recovery {recovery_id} not found")
-        recovery = json.loads(recovery_raw)
-        if int(recovery.get("privacyVersion") or 1) < 2:
-            raise HTTPException(409, "Legacy recovery does not use private permits")
-        intent_raw = await r.hget(
-            k_intents(),
-            str(recovery.get("paymentId") or ""),
-        )
-        if not intent_raw:
-            raise HTTPException(404, "Recovery intent was not found")
-        intent = json.loads(intent_raw)
-
-        now = datetime.now(timezone.utc)
-        current_epoch = int((await read_epoch_state())["epoch_number"])
-        liquidity = (
-            await settlement_operator_liquidity()
-        ).get(str(recovery.get("settlementCrankerPubkey") or ""))
-        if not recovery_is_eligible(recovery, current_epoch, liquidity):
-            raise HTTPException(
-                409,
-                "Recovery is queued until epoch close unless smart recovery detects low liquidity",
-            )
-        lease_expiry = recovery.get("leaseExpiresAt")
-        lease_active = (
-            recovery.get("status") == "leased"
-            and lease_expiry
-            and parse_iso(str(lease_expiry)) > now
-        )
-        if lease_active and recovery.get("assignedCrankerPubkey") != body.operatorPubkey:
-            raise HTTPException(409, "Recovery lease is held by another Cranker")
-        if recovery.get("status") in ("completed", "canceled", "failed"):
-            raise HTTPException(409, f"Recovery is already {recovery.get('status')}")
-
-        payload = decrypt_settlement_token(intent.get("encryptedSettlementToken") or {})
-        if payload.get("transferId") != recovery.get("transferId"):
-            raise HTTPException(422, "Recovery route transfer id mismatch")
-        if payload.get("tokenMintAddress") != recovery.get("tokenMintAddress"):
-            raise HTTPException(422, "Recovery route token mint mismatch")
-
-        token_mint = Pubkey.from_string(str(payload["tokenMintAddress"]))
-        escrow_token_account = Pubkey.from_string(
-            str(recovery["settlementTokenAccount"])
-        )
-        settlement_cranker_operator = Pubkey.from_string(
-            str(recovery["settlementCrankerPubkey"])
-        )
-        recovery_amount = int(payload["recipientAmountBaseUnits"]) + int(
-            payload.get("claimFeeAmountBaseUnits") or 0
-        )
-        if recovery_amount > 0xFFFF_FFFF_FFFF_FFFF:
-            raise HTTPException(422, "Recovery amount is outside the u64 range")
-        token_metadata = get_supported_token_metadata().get(str(token_mint))
-        if not token_metadata:
-            raise HTTPException(422, "Recovery token mint is not supported")
-        if recovery_amount != ui_amount_to_base_units(
-            intent.get("amount"),
-            int(token_metadata["decimals"]),
-        ):
-            raise HTTPException(
-                422,
-                "Recovery amount does not equal the escrowed amount",
-            )
-        try:
-            decryption_secret = base64.b64decode(
-                str(payload["decryptionSecret"]),
-                validate=True,
-            )
-        except (KeyError, binascii.Error) as exc:
-            raise HTTPException(422, "Recovery route secret is invalid") from exc
-        recovery_nullifier = hashlib.sha256(
-            PRIVATE_RECOVERY_DOMAIN + decryption_secret
-        ).digest()
-        _, recovery_sequence = await read_private_replay_sequences()
-        for existing_recovery in await hget_all_json(k_recoveries()):
-            if existing_recovery.get("id") == recovery_id:
-                continue
-            if (
-                existing_recovery.get("status") == "leased"
-                and str(existing_recovery.get("recoverySequence") or "") == str(recovery_sequence)
-                and existing_recovery.get("leaseExpiresAt")
-                and parse_iso(str(existing_recovery["leaseExpiresAt"])) > now
-            ):
-                raise HTTPException(
-                    409,
-                    "The current private recovery sequence is reserved by another active lease",
-                )
-        settlement_cranker_vault = get_cranker_vault_pda(
-            settlement_cranker_operator,
-            token_mint,
-        )
-        settlement_vault_token_account = get_cranker_vault_token_pda(
-            settlement_cranker_vault
-        )
-        lease_expires_at = parse_iso(str(recovery.get("leaseExpiresAt"))) if recovery.get("leaseExpiresAt") else datetime.fromtimestamp(now.timestamp() + RECOVERY_LEASE_SECS, tz=timezone.utc)
-        if lease_expires_at <= now:
-            raise HTTPException(409, "Recovery lease has expired")
-        lease_version = int(recovery.get("leaseVersion") or 1)
-        lease_expiry_ts = int(lease_expires_at.timestamp())
-        expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, lease_expiry_ts)
-        if expires_at_ts <= int(time.time()):
-            raise HTTPException(409, "Recovery lease expires before a usable permit can be issued")
-        legacy_lease_hash = lease_id_hash(recovery_id)
-        permit_message = private_recovery_permit_message(
-            operator,
-            recovery_nullifier,
-            recovery_sequence,
-            escrow_token_account,
-            settlement_cranker_vault,
-            settlement_vault_token_account,
-            token_mint,
-            recovery_amount,
-            legacy_lease_hash,
-            lease_version,
-            lease_expiry_ts,
-            expires_at_ts,
-        )
-        permit_signature = get_settlement_authorization_signing_key().sign(permit_message).signature
-
-        recovery.update(
-            {
-                "status": "leased",
-                "assignedCrankerPubkey": body.operatorPubkey,
-                "leaseExpiresAt": datetime.fromtimestamp(
-                    now.timestamp() + RECOVERY_LEASE_SECS,
-                    tz=timezone.utc,
-                ).isoformat(),
-                "updatedAt": now.isoformat(),
-                "settlementReason": "Private recovery lease acquired.",
-                "recoverySequence": str(recovery_sequence),
-            }
-        )
-        await r.hset(k_recoveries(), recovery_id, json.dumps(recovery))
-
-        return PrivateRecoveryPermitResponse(
-            permitSigner=settlement_authorization_signer_pubkey(),
-            permitSignatureBase64=base64.b64encode(permit_signature).decode(),
-            recoveryNullifier=recovery_nullifier.hex(),
-            recoverySequence=str(recovery_sequence),
-            escrowTokenAccount=str(escrow_token_account),
-            settlementCrankerPubkey=str(settlement_cranker_operator),
-            tokenMintAddress=str(token_mint),
-            recoveryAmountBaseUnits=str(recovery_amount),
-            leaseId=recovery_id,
-            leaseVersion=lease_version,
-            leaseExpiresAt=str(recovery.get("leaseExpiresAt")),
-            expiresAtTs=expires_at_ts,
-        )
 
 @app.get("/metrics", response_model=MetricsResponse)
 async def get_metrics() -> MetricsResponse:
     intents = await hget_all_json(k_intents())
-    claims = await hget_all_json(k_claims())
-    claims_by_payment = {claim["paymentId"]: claim for claim in claims if claim.get("paymentId")}
     samples: list[float] = []
     latest: Optional[str] = None
-    for intent in intents:
-        claim = claims_by_payment.get(intent.get("paymentId"))
-        if not claim:
-            continue
-        try:
-            intent_time = parse_iso(intent["postedAt"])
-            claim_time = parse_iso(claim["postedAt"])
-        except (KeyError, ValueError):
-            continue
-        samples.append(max(0, (claim_time - intent_time).total_seconds() * 1000))
-        latest = claim.get("postedAt") or latest
-
     uptime_seconds = int((datetime.now(timezone.utc) - SERVICE_STARTED_AT).total_seconds())
-    crankers = {
-        proof["cranker_pubkey"]
-        for proof in await hget_all_json(k_proofs())
-        if proof.get("cranker_pubkey")
-    }
+    crankers = {intent.get("assignedCrankerPubkey") for intent in intents if intent.get("assignedCrankerPubkey")}
     return MetricsResponse(
-        intent_to_claim=IntentToClaimMetrics(
+        intent_to_settlement=IntentToSettlementMetrics(
             sample_count=len(samples),
             average_ms=sum(samples) / len(samples) if samples else 0,
             min_ms=min(samples) if samples else 0,
@@ -5661,12 +4258,6 @@ async def get_network_overview() -> NetworkOverviewResponse:
         intent for intent in await hget_all_json(k_intents())
         if intent.get("tokenMintAddress") in supported_mints
     ]
-    proofs = await hget_all_json(k_proofs())
-    proof_crankers = {
-        proof["cranker_pubkey"]
-        for proof in proofs
-        if proof.get("cranker_pubkey")
-    }
     heartbeat_records = await hget_all_json(k_crankers())
     now = datetime.now(timezone.utc)
     online_crankers = set()
@@ -5680,11 +4271,11 @@ async def get_network_overview() -> NetworkOverviewResponse:
                 online_crankers.add(operator_pubkey)
         except ValueError:
             logger.warning("Ignoring cranker heartbeat with invalid last_seen_at=%s", last_seen_at)
-    total_seen = proof_crankers.union({
+    total_seen = {
         record.get("operator_pubkey")
         for record in heartbeat_records
         if record.get("operator_pubkey")
-    })
+    }.union({intent.get("assignedCrankerPubkey") for intent in intents if intent.get("assignedCrankerPubkey")})
 
     by_mint: dict[str, dict[str, float]] = {}
     for intent in intents:
@@ -5697,7 +4288,7 @@ async def get_network_overview() -> NetworkOverviewResponse:
         bucket["total"] += amount
         if status in ("executed", "settled", "completed"):
             bucket["executed"] += amount
-        elif status in ("pending", "claimed", "processing"):
+        elif status == "pending":
             bucket["pending"] += amount
 
     vaults = await read_public_vault_liquidity_cached()
@@ -5761,19 +4352,6 @@ async def close_epoch() -> EpochCloseResult:
     """Manually close the current epoch, archive it, and roll unresolved work forward."""
     logger.info("Manual epoch close triggered")
     return await close_epoch_task()
-
-# Removed production APIs. These historical handlers remain temporarily as
-# migration-only implementation detail but are not registered with FastAPI and
-# cannot be called. Receiver verified-work replaces every permit lease.
-_REMOVED_SECRET_BEARING_PATHS = {
-    "/intents/{intent_id}/pru-spend-permit",
-    "/work/{claim_id}/lease-permit",
-    "/recoveries/{recovery_id}/lease-permit",
-}
-app.router.routes = [
-    route for route in app.router.routes
-    if getattr(route, "path", None) not in _REMOVED_SECRET_BEARING_PATHS
-]
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":

@@ -41,9 +41,7 @@ export function shouldPollTsnPayment(payment: Pick<PaymentRecord, "tsn">) {
   const status = payment.tsn?.intentStatus;
   return (
     status === "pending" ||
-    status === "escrowed" ||
-    status === "onchain" ||
-    status === "claimed"
+    status === "onchain"
   );
 }
 

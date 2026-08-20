@@ -1,5 +1,4 @@
 export const runtime = "nodejs";
-import { randomUUID } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
 import { resolveTIN, getTinsIdentityPda, decodeTinAccount } from "@trustlink/tsn-sdk/tins";
 
@@ -50,10 +49,8 @@ async function postPaymentCreate(request: Request) {
         referenceCode: existingPayment.reference_code,
         senderDisplayName: existingPayment.sender_display_name_snapshot,
         senderHandle: existingPayment.sender_handle_snapshot,
-        escrowAccount: existingPayment.escrow_account,
         blockchainSignature: null,
         blockchainMode: "tsn",
-        depositAddress: existingPayment.escrow_vault_address,
         tokenSymbol: existingPayment.token_symbol,
         notificationRetrying: existingPayment.notification_status === "queued" || existingPayment.notification_status === "failed",
         notificationAttemptCount: existingPayment.notification_attempt_count ?? 0,
@@ -214,8 +211,6 @@ async function postPaymentCreate(request: Request) {
       tokenMintAddress,
       amount: paymentAmount,
       senderFeeAmount: Math.max(0, totalTokenRequiredUi - paymentAmount),
-      escrowAccount: `tsn:${randomUUID()}`,
-      escrowVaultAddress: senderWallet,
       senderAutoclaimEnabled: receiverAutoclaimEnabled,
     });
 
@@ -231,7 +226,6 @@ async function postPaymentCreate(request: Request) {
       referenceCode: payment.reference_code,
       senderDisplayName: payment.sender_display_name_snapshot,
       senderHandle: payment.sender_handle_snapshot,
-      escrowAccount: payment.escrow_account,
       tokenSymbol: payment.token_symbol,
       notificationStatus: payment.notification_status,
       notificationSentAt: payment.notification_sent_at,
@@ -242,7 +236,6 @@ async function postPaymentCreate(request: Request) {
       notificationAttemptCount: payment.notification_attempt_count ?? 0,
       manualInviteRequired: false,
       inviteShare: null,
-      tsnClaimRequestId: null,
       tsn: {
         recipientHash: payment.receiver_phone_hash,
         recipientTin: receiverTin,

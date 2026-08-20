@@ -36,8 +36,7 @@ export const createPaymentSchema = z.object({
   amount: z.number().positive(),
   tokenMintAddress: walletAddressSchema,
   senderWallet: walletAddressSchema,
-  escrowVaultAddress: walletAddressSchema.optional(),
-  depositSignature: z.string().trim().min(32).max(128).optional(),
+  fundingSignature: z.string().trim().min(32).max(128).optional(),
   preparedPhoneIdentityPublicKey: walletAddressSchema.optional(),
   preparedPaymentReceiverPublicKey: walletAddressSchema.optional(),
   preparedEphemeralPublicKey: walletAddressSchema.optional().nullable(),
@@ -62,16 +61,6 @@ export const acceptPaymentSchema = z
     privacySpendSignature: z.string().trim().min(64).optional(),
     blockchainSignature: z.string().trim().min(32).max(128).optional(),
   });
-
-export const createClaimRequestSchema = z.object({
-  paymentId: z.string().uuid(),
-  pin: pinSchema,
-  walletAddress: walletAddressSchema.optional(),
-  receiverWalletId: z.string().uuid().optional(),
-  derivedPaymentReceiverPublicKey: walletAddressSchema.optional(),
-  privacySpendSignature: z.string().trim().min(64).optional(),
-  autoclaim: z.boolean().default(false),
-});
 
 export const otpPurposeSchema = z.enum(["generic", "register", "login", "claim", "auth", "pin_change", "wallet_add"]);
 

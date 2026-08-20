@@ -239,9 +239,6 @@ async def get_mempool_store() -> Any:
 
 
 def k_intents() -> str: return f"{config.MEMPOOL_NS}:intents"
-def k_claims() -> str: return f"{config.MEMPOOL_NS}:claims"
-def k_proofs() -> str: return f"{config.MEMPOOL_NS}:proofs"
-def k_recoveries() -> str: return f"{config.MEMPOOL_NS}:recoveries"
 def k_epoch() -> str: return f"{config.MEMPOOL_NS}:epoch"
 def k_crankers() -> str: return f"{config.MEMPOOL_NS}:crankers"
 def k_tin_operations() -> str: return f"{config.MEMPOOL_NS}:tin_operations"

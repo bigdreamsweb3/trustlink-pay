@@ -67,13 +67,6 @@ export class TsnHttpClient {
     return this.post("/intents", body);
   }
 
-  postClaimRequest<TRequest, TResponse>(body: TRequest): Promise<TResponse> {
-    return this.post("/claim-requests", body);
-  }
-
-  listPendingWork<TResponse>(limit = 50): Promise<TResponse> {
-    return this.get(`/work?limit=${limit}`);
-  }
 
   listPendingIntentWork<TResponse>(limit = 50): Promise<TResponse> {
     return this.get(`/intent-work?limit=${limit}`);
@@ -83,25 +76,5 @@ export class TsnHttpClient {
     return this.patch(`/intents/${encodeURIComponent(id)}/status`, body);
   }
 
-  updateClaimRequestStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
-    return this.patch(`/claim-requests/${encodeURIComponent(id)}/status`, body);
-  }
 
-  postProof<TRequest, TResponse>(body: TRequest): Promise<TResponse> {
-    return this.post("/proofs", body);
-  }
-
-  listRecoveryWork<TResponse>(operatorPubkey: string, limit = 20): Promise<TResponse> {
-    return this.get(
-      `/recovery-work?operator_pubkey=${encodeURIComponent(operatorPubkey)}&limit=${limit}`,
-    );
-  }
-
-  claimRecoveryLease<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
-    return this.post(`/recoveries/${encodeURIComponent(id)}/lease`, body);
-  }
-
-  updateRecoveryStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse> {
-    return this.patch(`/recoveries/${encodeURIComponent(id)}/status`, body);
-  }
 }

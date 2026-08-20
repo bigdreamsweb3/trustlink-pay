@@ -14,11 +14,9 @@ function getTsnMempoolUrl() {
 
 export type TsnMempoolPaymentStatus = {
   intentStatus: PaymentTsnState["intentStatus"];
-  claimRequestStatus: PaymentTsnState["claimRequestStatus"];
   assignedCrankerPubkey: string | null;
-  escrowTxSig: string | null;
-  claimTxSig: string | null;
-  proofTxSig: string | null;
+  fundingTxSig: string | null;
+  settlementTxSig: string | null;
   settlementReason: string | null;
 };
 
@@ -27,27 +25,20 @@ function deriveTsnStage(status: TsnMempoolPaymentStatus): PaymentTsnState["stage
     status.intentStatus === "failed" ||
     status.intentStatus === "canceled" ||
     status.intentStatus === "expired" ||
-    status.intentStatus === "reverted" ||
-    status.claimRequestStatus === "failed" ||
-    status.claimRequestStatus === "canceled"
+    status.intentStatus === "reverted"
   ) {
     return "reverted";
   }
   if (
     status.intentStatus === "executed" ||
-    status.intentStatus === "settled" ||
-    status.claimRequestStatus === "completed"
+    status.intentStatus === "settled"
   ) {
     return "cranker_paid";
   }
-  if (status.claimRequestStatus === "processing") return "lease_claimed";
-  if (status.claimRequestStatus === "pending") return "claim_requested";
   if (
-    status.intentStatus === "escrowed" ||
-    status.intentStatus === "onchain" ||
-    status.intentStatus === "claimed"
+    status.intentStatus === "onchain"
   ) {
-    return "escrowed";
+    return "funded";
   }
   return "intent_pending";
 }
@@ -58,26 +49,19 @@ export async function fetchTsnMempoolPaymentStatus(params: {
   signal?: AbortSignal;
 }): Promise<TsnMempoolPaymentStatus | null> {
   const baseUrl = getTsnMempoolUrl();
-  const [intentsResponse, claimsResponse] = await Promise.all([
-    fetch(`${baseUrl}/intents`, { headers: { accept: "application/json" }, signal: params.signal }),
-    fetch(`${baseUrl}/claim-requests`, { headers: { accept: "application/json" }, signal: params.signal }),
-  ]);
-  if (!intentsResponse.ok || !claimsResponse.ok) return null;
+  const intentsResponse = await fetch(`${baseUrl}/intents`, { headers: { accept: "application/json" }, signal: params.signal });
+  if (!intentsResponse.ok) return null;
   const intents = (await intentsResponse.json()) as Array<Record<string, unknown>>;
-  const claims = (await claimsResponse.json()) as Array<Record<string, unknown>>;
   const intent = intents.find((item) =>
     String(item.id ?? "") === String(params.intentId ?? "") ||
     String(item.paymentId ?? "") === params.paymentId,
   );
   if (!intent) return null;
-  const claim = claims.find((item) => String(item.intentId ?? "") === String(intent.id ?? ""));
   const status = {
     intentStatus: String(intent.status ?? "pending") as PaymentTsnState["intentStatus"],
-    claimRequestStatus: claim ? String(claim.status ?? "pending") as PaymentTsnState["claimRequestStatus"] : null,
     assignedCrankerPubkey: typeof intent.assignedCrankerPubkey === "string" ? intent.assignedCrankerPubkey : null,
-    escrowTxSig: typeof intent.escrowTxSig === "string" ? intent.escrowTxSig : null,
-    claimTxSig: typeof intent.claimTxSig === "string" ? intent.claimTxSig : null,
-    proofTxSig: typeof intent.proofTxSig === "string" ? intent.proofTxSig : null,
+    fundingTxSig: typeof intent.fundingTxSig === "string" ? intent.fundingTxSig : null,
+    settlementTxSig: typeof intent.settlementTxSig === "string" ? intent.settlementTxSig : null,
     settlementReason: typeof intent.settlementReason === "string" ? intent.settlementReason : null,
   };
   return status;
@@ -90,12 +74,10 @@ export function toPaymentTsnState(
   return {
     stage: deriveTsnStage(status),
     intentStatus: status.intentStatus,
-    claimRequestStatus: status.claimRequestStatus,
     destinationWallet,
     assignedCrankerPubkey: status.assignedCrankerPubkey,
-    escrowTxSig: status.escrowTxSig,
-    claimTxSig: status.claimTxSig,
-    proofTxSig: status.proofTxSig,
+    fundingTxSig: status.fundingTxSig,
+    settlementTxSig: status.settlementTxSig,
     settlementReason: status.settlementReason,
   };
 }
@@ -145,11 +127,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     nonce: number;
   }> | null;
   privacyVersion?: number | null;
-  commitmentRecord?: string | null;
   senderTokenAccount?: string | null;
-  settlementVault?: string | null;
-  settlementTokenAccount?: string | null;
-  settlementPaymentIntentId?: string | null;
   transferId?: string | null;
   commitmentHash?: string | null;
   settlementEpoch?: number | null;
@@ -185,11 +163,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
     walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
     pruSpendSelections: params.pruSpendSelections,
     privacyVersion: params.privacyVersion,
-    commitmentRecord: params.commitmentRecord,
     senderTokenAccount: params.senderTokenAccount,
-    settlementVault: params.settlementVault,
-    settlementTokenAccount: params.settlementTokenAccount,
-    settlementPaymentIntentId: params.settlementPaymentIntentId,
     transferId: params.transferId,
     commitmentHash: params.commitmentHash,
     settlementEpoch: params.settlementEpoch,
@@ -207,7 +181,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
 
   const registered = await apiPost<{
     intentId: string;
-    claimRequestId?: string | null;
+    settlementReference?: string | null;
     status?: string;
   }>("/api/tsn/register", {
     paymentId: params.paymentId,
@@ -222,9 +196,7 @@ async function enqueueTsnPaymentFromFrontendImpl(params: {
 
   return {
     ...registered,
-    // Receiver creates claim work only after Node verification and confirmed
-    // funding, so there is no sender-created claim record to read here.
-    claimRequestId: registered.claimRequestId ?? null,
+    settlementReference: registered.settlementReference ?? null,
   };
 }
 

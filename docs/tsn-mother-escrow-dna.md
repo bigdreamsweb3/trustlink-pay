@@ -1,33 +1,17 @@
-# TSN escrow DNA settlement
+# TSN private settlement: Mother-authorized DNA and opaque epoch slots
 
-Private settlement uses an escrow-specific, opaque DNA voucher. The Node and
-Mother Escrow witnesses verify the payment privately, then derive one DNA PDA
-from `payment_id_hash` and a second hash of the private commitment. The raw
-commitment, sender intent PDA, escrow token account, and `PrivateEscrowRecord`
-never enter the Cranker authorization or the payout transaction.
+Funding sends SPL tokens directly to the current epoch's treasury token account.  The funding transaction creates no payment escrow, commitment PDA, payment vault, or claim slot.  It only increases the epoch's aggregate pending liability.
 
-The authorization contains only the DNA PDA, the commitment digest, a random
-nonce, recipient/vault/mint/amount coordinates, a payout nullifier, and the
-short lease binding. The Node atomically consumes its authorization key before
-signing, so concurrent requests cannot create two live authorizations for the
-same payment. The signed permit is verified by the TSN program and commits all
-of those fields. The program also recomputes the settlement commitment from
-the DNA PDA and public coordinates.
+The Node/Mother stores the full payment binding as an encrypted off-chain record.  It includes the payment identifier, funding lineage, sender refund destination, recipient route binding, amount, mint, and epoch.  Its encryption key never leaves Node/Mother.  The Cranker never receives this record, a private escrow address, a record PDA, or a funding-account secret.
 
-The first successful `tsn_execute_private_payout` call creates/updates the
-DNA account, verifies the Node/Mother permit, transfers tokens only from the
-authorized CrankerVault to the canonical recipient ATA, and marks the DNA
-consumed forever. A second call, a wrong vault, changed recipient or amount,
-an expired lease, or a mismatched digest fails before token movement. The
-consumed DNA records the exact CrankerVault, Cranker, amount, and nullifier.
+For a confirmed intent, Node derives an opaque deterministic slot with HMAC-SHA256 over the payment binding using `TSN_NODE_CLAIM_SLOT_HMAC_SECRET`.  The slot is deliberately absent from funding.  Node then signs a short-lived Mother-authorized DNA permit binding the slot, commitment digest, nullifier, selected Cranker vault, recipient, mint, amount, and lease ID/version/expiry.
 
-Epoch settlement invokes `tsn_settle_private_dna_reimbursement`. Only Mother
-Escrow authority may call it; it transfers the recorded amount from the TSN
-treasury token account back to the exact vault and marks the DNA reimbursed.
-This is the permanent reimbursement/claim record for the Cranker that fronted
-the payout.
+Mother authority materializes the one-time `SettlementDna` PDA at the derived slot plus lease version.  The PDA is the on-chain voucher; it is not a payment escrow and contains no sender/payment identifier.  Only the Mother authority can create it, and the TSN program consumes it on the first valid settlement or refund.
 
-This is Node/Mother-attested capability authorization, not zero-knowledge. The
-on-chain privacy property is that observers see only a commitment digest and
-settlement coordinates; the underlying sender escrow lineage remains off-chain
-and is not an account meta of the payout instruction.
+The Cranker receives only the opaque slot/DNA, Node permit, nullifier, recipient coordinates, mint, amount, its vault, and lease data.  Its settlement transaction calls TSN with those values.  TSN verifies the Ed25519 permit and lease, derives the slot account from the epoch treasury and opaque slot, and creates that account only if it does not already exist.  It then transfers the payout from the Cranker vault, marks the slot `SETTLED`, and permanently records the settling Cranker/vault as the reimbursement owner.
+
+If a valid settlement never occurs, Mother/Node issues a refund permit for the same opaque slot.  The refund transaction creates the same slot account and marks it `REFUNDED` while returning the exact amount from the epoch treasury to the sender's ATA.  The account creation/write lock makes settlement and refund mutually exclusive: the first valid transaction wins atomically and the other fails before any transfer.
+
+Settlement reimburses the recorded Cranker vault from the epoch treasury in the same atomic payout instruction.  The reimbursement is bound to the exact slot, settlement commitment, amount, mint, vault, and settling Cranker; there is no aggregate or caller-selected reimbursement instruction.  The epoch treasury closes only after pending liability is zero, every resolved amount is accounted as settled or refunded, and all settled reimbursements have completed.
+
+This is an attested capability design, not a ZK proof system.  Privacy comes from keeping the payment binding encrypted off-chain and ensuring the opaque slot first appears only at settlement or refund, never at funding.

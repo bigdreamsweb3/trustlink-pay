@@ -29,32 +29,27 @@ function statusTone(status: PaymentRecord["status"]) {
 type TsnState = NonNullable<PaymentRecord["tsn"]>;
 type ActivityViewerRole = "sender" | "receiver";
 
-function isEscrowedForSender(tsn: TsnState) {
-  return (
-    tsn.intentStatus === "escrowed" ||
-    tsn.intentStatus === "onchain" ||
-    tsn.intentStatus === "claimed"
-  );
+function isFundedForSender(tsn: TsnState) {
+  return tsn.intentStatus === "onchain";
 }
 
 function isUnpublishedTsn(tsn: TsnState) {
   return (
     tsn.stage === "reverted" &&
-    !tsn.escrowTxSig &&
+    !tsn.fundingTxSig &&
     (tsn.intentStatus === "failed" || tsn.intentStatus === "canceled")
   );
 }
 
 function tsnTone(tsn: TsnState, viewerRole: ActivityViewerRole) {
-  if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
+  if (viewerRole === "sender" && isFundedForSender(tsn)) {
     return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
   }
 
   switch (tsn.stage) {
     case "intent_pending":
       return "bg-[rgba(232,168,64,0.06)] text-[var(--warning)] border border-[rgba(232,168,64,0.10)]";
-    case "claim_requested":
-    case "escrowed":
+    case "funded":
     case "lease_claimed":
       return "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]";
     case "cranker_paid":
@@ -66,18 +61,16 @@ function tsnTone(tsn: TsnState, viewerRole: ActivityViewerRole) {
 }
 
 function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
-  if (viewerRole === "sender" && isEscrowedForSender(tsn)) {
-    return "Escrowed";
+  if (viewerRole === "sender" && isFundedForSender(tsn)) {
+    return "Funded";
   }
   if (isUnpublishedTsn(tsn)) return "Not published";
 
   switch (tsn.stage) {
     case "intent_pending":
       return "Awaiting Cranker";
-    case "claim_requested":
-      return "Claim queued";
-    case "escrowed":
-      return "Escrowed";
+    case "funded":
+      return "Epoch funded";
     case "lease_claimed":
       return "Claiming";
     case "cranker_paid":
@@ -87,8 +80,6 @@ function tsnLabel(tsn: TsnState, viewerRole: ActivityViewerRole) {
     case "reverted":
       if (tsn.intentStatus === "canceled") return "Canceled";
       if (tsn.intentStatus === "failed") return "Failed";
-      if (tsn.claimRequestStatus === "failed")
-        return viewerRole === "receiver" ? "Claim retry" : "Escrowed";
       return "Not processed";
   }
 }

@@ -38,7 +38,7 @@ export function ActivityExperience() {
       if (filter === "claims") {
         if (!isReceive) return false;
         const stage = p.tsn?.stage;
-        if (stage) return stage === "intent_pending" || stage === "claim_requested" || stage === "lease_claimed";
+        if (stage) return stage === "intent_pending" || stage === "funded" || stage === "lease_claimed";
         return p.status === "locked";
       }
       if (filter === "releases") {

@@ -12,7 +12,7 @@ async function forward(request: NextRequest, method: "GET" | "POST") {
     const response = await fetch(url, {
       method,
       cache: "no-store",
-      headers: { accept: "application/json", ...(method === "POST" ? { "content-type": "application/json" } : {}) },
+      headers: { accept: "application/json", "x-api-key": process.env.TSN_RECEIVER_NODE_API_KEY || process.env.TSN_MEMPOOL_API_KEY || "", ...(method === "POST" ? { "content-type": "application/json" } : {}) },
       body: method === "POST" ? await request.text() : undefined,
     });
     const body = await response.text();

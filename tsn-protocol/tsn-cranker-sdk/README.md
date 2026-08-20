@@ -17,7 +17,7 @@ Operators should not manually rebuild every TSN instruction or guess which PDA i
 - Provide operator CLI helpers.
 - Derive Cranker and TSN PDAs.
 - Submit setup transactions.
-- Support epoch challenge and recovery workflows.
+- Support epoch treasury and opaque-slot settlement workflows.
 - Share common code with the reference daemon.
 
 ## Development

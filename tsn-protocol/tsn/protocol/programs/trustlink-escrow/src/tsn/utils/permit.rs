@@ -9,42 +9,30 @@ use anchor_lang::{
 use crate::tsn::errors::TsnError;
 use solana_program::hash::hashv;
 
-pub const PRIVATE_PAYOUT_DOMAIN: &[u8] = b"TSN_PRIVATE_PAYOUT_DNA_V1";
-pub const PRIVATE_RECOVERY_DOMAIN: &[u8] = b"TSN_PRIVATE_RECOVERY_V2";
 pub const PRU_ROOT_AUTH_DOMAIN: &[u8] = b"TSN_PRU_ROOT_AUTH_V1";
 pub const PRU_CHILD_AUTH_DOMAIN: &[u8] = b"TSN_PRU_CHILD_AUTH_V1";
-pub const PRIVATE_FUNDING_BINDING_DOMAIN: &[u8] = b"TSN_PRIVATE_FUNDING_BINDING_V1";
-pub const PRIVATE_COMMITMENT_DIGEST_DOMAIN: &[u8] = b"TSN_PRIVATE_COMMITMENT_DIGEST_V1";
+pub const PRIVATE_SLOT_SETTLEMENT_DOMAIN: &[u8] = b"TSN_PRIVATE_SLOT_SETTLEMENT_V1";
+pub const PRIVATE_SLOT_REFUND_DOMAIN: &[u8] = b"TSN_PRIVATE_SLOT_REFUND_V1";
 
-/// Hash the private commitment before it crosses the settlement boundary.
-/// The raw commitment is intentionally absent from the on-chain ABI.
-pub fn private_commitment_digest(commitment: &[u8; 32]) -> [u8; 32] {
-    hashv(&[PRIVATE_COMMITMENT_DIGEST_DOMAIN, commitment]).to_bytes()
+pub fn slot_settlement_message(
+    program_id: &Pubkey, mother: &Pubkey, operator: &Pubkey, epoch_treasury: &Pubkey,
+    epoch_ledger: &Pubkey, claim_slot: &Pubkey, slot: &[u8; 32], settlement_commitment: &[u8; 32],
+    commitment_digest: &[u8; 32], random_nonce: &[u8; 32], nullifier: &[u8; 32], vault: &Pubkey,
+    recipient: &Pubkey, mint: &Pubkey, amount: u64, fee: u64, lease_id: &[u8; 32], lease_version: u64,
+    lease_expiry: i64, expires: i64,
+) -> Vec<u8> {
+    [PRIVATE_SLOT_SETTLEMENT_DOMAIN, program_id.as_ref(), mother.as_ref(), operator.as_ref(), epoch_treasury.as_ref(), epoch_ledger.as_ref(), claim_slot.as_ref(), slot, settlement_commitment, commitment_digest, random_nonce, nullifier, vault.as_ref(), recipient.as_ref(), mint.as_ref(), &amount.to_le_bytes(), &fee.to_le_bytes(), lease_id, &lease_version.to_le_bytes(), &lease_expiry.to_le_bytes(), &expires.to_le_bytes()].concat()
 }
 
-pub fn private_funding_binding_hash(
-    program_id: &Pubkey,
-    mother_escrow: &Pubkey,
-    private_escrow_record: &Pubkey,
-    escrow_token_account: &Pubkey,
-    token_mint: &Pubkey,
-    payment_id_hash: &[u8; 32],
-    commitment_hash: &[u8; 32],
-    amount: u64,
-) -> [u8; 32] {
-    hashv(&[
-        PRIVATE_FUNDING_BINDING_DOMAIN,
-        program_id.as_ref(),
-        mother_escrow.as_ref(),
-        private_escrow_record.as_ref(),
-        escrow_token_account.as_ref(),
-        token_mint.as_ref(),
-        payment_id_hash,
-        commitment_hash,
-        &amount.to_le_bytes(),
-    ])
-    .to_bytes()
+pub fn slot_refund_message(
+    program_id: &Pubkey, mother: &Pubkey, operator: &Pubkey, epoch_treasury: &Pubkey,
+    epoch_ledger: &Pubkey, claim_slot: &Pubkey, slot: &[u8; 32], lease_version: u64,
+    commitment_digest: &[u8; 32], sender: &Pubkey, mint: &Pubkey, amount: u64,
+    nullifier: &[u8; 32], expires: i64,
+) -> Vec<u8> {
+    [PRIVATE_SLOT_REFUND_DOMAIN, program_id.as_ref(), mother.as_ref(), operator.as_ref(), epoch_treasury.as_ref(), epoch_ledger.as_ref(), claim_slot.as_ref(), slot, &lease_version.to_le_bytes(), commitment_digest, sender.as_ref(), mint.as_ref(), &amount.to_le_bytes(), nullifier, &expires.to_le_bytes()].concat()
 }
+
 
 pub fn pru_root_authorization_message(
     program_id: &Pubkey,
@@ -90,94 +78,6 @@ pub fn pru_child_authorization_message(
         commitment_hash,
         &amount.to_le_bytes(),
         &sender_fee_amount.to_le_bytes(),
-    ]
-    .concat()
-}
-
-pub fn private_payout_message(
-    program_id: &Pubkey,
-    mother_escrow: &Pubkey,
-    operator: &Pubkey,
-    settlement_dna: &Pubkey,
-    payout_nullifier: &[u8; 32],
-    payout_sequence: u64,
-    payment_id_hash: &[u8; 32],
-    commitment_digest: &[u8; 32],
-    random_nonce: &[u8; 32],
-    settlement_commitment: &[u8; 32],
-    cranker_vault: &Pubkey,
-    recipient_wallet: &Pubkey,
-    token_mint: &Pubkey,
-    payout_amount: u64,
-    claim_fee_amount: u64,
-    lease_id_hash: &[u8; 32],
-    lease_version: u64,
-    lease_expiry_ts: i64,
-    expires_at_ts: i64,
-) -> Vec<u8> {
-    [
-        PRIVATE_PAYOUT_DOMAIN,
-        program_id.as_ref(),
-        mother_escrow.as_ref(),
-        operator.as_ref(),
-        settlement_dna.as_ref(),
-        payout_nullifier,
-        &payout_sequence.to_le_bytes(),
-        payment_id_hash,
-        commitment_digest,
-        random_nonce,
-        settlement_commitment,
-        cranker_vault.as_ref(),
-        recipient_wallet.as_ref(),
-        token_mint.as_ref(),
-        &payout_amount.to_le_bytes(),
-        &claim_fee_amount.to_le_bytes(),
-        lease_id_hash,
-        &lease_version.to_le_bytes(),
-        &lease_expiry_ts.to_le_bytes(),
-        &expires_at_ts.to_le_bytes(),
-    ]
-    .concat()
-}
-
-pub fn private_recovery_message(
-    program_id: &Pubkey,
-    mother_escrow: &Pubkey,
-    operator: &Pubkey,
-    recovery_nullifier: &[u8; 32],
-    recovery_sequence: u64,
-    escrow_token_account: &Pubkey,
-    settlement_cranker_vault: &Pubkey,
-    settlement_vault_token_account: &Pubkey,
-    token_mint: &Pubkey,
-    payment_id_hash: &[u8; 32],
-    commitment_hash: &[u8; 32],
-    payout_nullifier: &[u8; 32],
-    recovery_amount: u64,
-    lease_id_hash: &[u8; 32],
-    lease_version: u64,
-    lease_expiry_ts: i64,
-    expires_at_ts: i64,
-) -> Vec<u8> {
-    [
-        PRIVATE_RECOVERY_DOMAIN,
-        program_id.as_ref(),
-        mother_escrow.as_ref(),
-        operator.as_ref(),
-        recovery_nullifier,
-        &recovery_sequence.to_le_bytes(),
-        escrow_token_account.as_ref(),
-        settlement_cranker_vault.as_ref(),
-        settlement_vault_token_account.as_ref(),
-        token_mint.as_ref(),
-        payment_id_hash,
-        commitment_hash,
-        payout_nullifier,
-        &recovery_amount.to_le_bytes(),
-        lease_id_hash,
-        &lease_version.to_le_bytes(),
-        &lease_expiry_ts.to_le_bytes(),
-        &expires_at_ts.to_le_bytes(),
     ]
     .concat()
 }

@@ -4,22 +4,18 @@ import { withAuthenticatedRoute } from "@/app/controllers/authenticated-route";
 import { fail, ok } from "@/app/lib/http";
 import { findPaymentById } from "@/app/db/payments";
 import {
-  findLatestActiveClaimRequestByPaymentId,
   findPaymentIntentByPaymentId,
-  updateClaimRequestStatus,
   updatePaymentIntentStatus,
 } from "@/app/db/tsn";
 import { refreshSinglePaymentIntentStatus, isTsnSettled } from "@/app/services/tsn";
 import { enrichPaymentsWithTsnState } from "@/app/services/tsn";
-import type { PaymentIntentStatus, ClaimRequestStatus } from "@trustlink/tsn-sdk";
+import type { PaymentIntentStatus } from "@trustlink/tsn-sdk";
 import { traceApiHandler } from "../../../../../../utils/observability/tracer";
 
 export type RefreshStatusResponse = {
   paymentId: string;
   previousIntentStatus: PaymentIntentStatus | null | undefined;
   latestIntentStatus: PaymentIntentStatus | null | undefined;
-  previousClaimStatus: ClaimRequestStatus | null | undefined;
-  latestClaimStatus: ClaimRequestStatus | null | undefined;
   tsnQueried: boolean;
   dbUpdated: boolean;
   finalized: boolean;
@@ -36,11 +32,9 @@ async function postPaymentRefreshStatus(
     const body = await request.json().catch(() => ({})) as {
       observedTsnStatus?: {
         intentStatus?: PaymentIntentStatus;
-        claimRequestStatus?: ClaimRequestStatus | null;
         assignedCrankerPubkey?: string | null;
-        escrowTxSig?: string | null;
-        claimTxSig?: string | null;
-        proofTxSig?: string | null;
+        fundingTxSig?: string | null;
+        settlementTxSig?: string | null;
       };
     };
 
@@ -60,8 +54,6 @@ async function postPaymentRefreshStatus(
         paymentId,
         previousIntentStatus: null,
         latestIntentStatus: null,
-        previousClaimStatus: null,
-        latestClaimStatus: null,
         tsnQueried: false,
         dbUpdated: false,
         finalized: false,
@@ -71,28 +63,18 @@ async function postPaymentRefreshStatus(
     }
 
     if (body.observedTsnStatus?.intentStatus) {
-      const claim = await findLatestActiveClaimRequestByPaymentId(paymentId);
       await updatePaymentIntentStatus({
         id: intent.id,
         status: body.observedTsnStatus.intentStatus,
         assignedCrankerPubkey: body.observedTsnStatus.assignedCrankerPubkey ?? null,
-        escrowTxSig: body.observedTsnStatus.escrowTxSig ?? null,
-        claimTxSig: body.observedTsnStatus.claimTxSig ?? null,
-        proofTxSig: body.observedTsnStatus.proofTxSig ?? null,
+        fundingTxSig: body.observedTsnStatus.fundingTxSig ?? null,
+        settlementTxSig: body.observedTsnStatus.settlementTxSig ?? null,
       });
-      if (claim && body.observedTsnStatus.claimRequestStatus) {
-        await updateClaimRequestStatus({
-          id: claim.id,
-          status: body.observedTsnStatus.claimRequestStatus,
-        });
-      }
       const enriched = await enrichPaymentsWithTsnState([payment]);
       return ok({
         paymentId,
         previousIntentStatus: intent.status,
         latestIntentStatus: body.observedTsnStatus.intentStatus,
-        previousClaimStatus: claim?.status ?? null,
-        latestClaimStatus: body.observedTsnStatus.claimRequestStatus ?? claim?.status ?? null,
         tsnQueried: false,
         dbUpdated: true,
         finalized:
@@ -117,8 +99,6 @@ async function postPaymentRefreshStatus(
       paymentId,
       previousIntentStatus: result.previousIntentStatus,
       latestIntentStatus: result.latestIntentStatus,
-      previousClaimStatus: result.previousClaimStatus,
-      latestClaimStatus: result.latestClaimStatus,
       tsnQueried: result.tsnQueried,
       dbUpdated: result.dbUpdated,
       finalized: result.finalized,

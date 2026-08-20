@@ -99,8 +99,6 @@ export interface PaymentRecord {
   amount: string;
   sender_fee_amount?: string | null;
   claim_fee_amount?: string | null;
-  escrow_account: string | null;
-  escrow_vault_address?: string | null;
   deposit_signature: string | null;
   release_signature: string | null;
   refund_release_signature?: string | null;
@@ -125,14 +123,12 @@ export interface PaymentRecord {
   notification_last_attempt_at?: string | null;
   status: "created" | "locked" | "claimed" | "refund_requested" | "refunded";
   tsn?: {
-    stage: "intent_pending" | "claim_requested" | "escrowed" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
-    intentStatus: "pending" | "escrowed" | "onchain" | "claimed" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
-    claimRequestStatus: "pending" | "processing" | "completed" | "canceled" | "failed" | null;
+    stage: "intent_pending" | "funded" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
+    intentStatus: "pending" | "onchain" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
     destinationWallet: string | null;
     assignedCrankerPubkey: string | null;
-    escrowTxSig: string | null;
-    claimTxSig: string | null;
-    proofTxSig: string | null;
+    fundingTxSig: string | null;
+    settlementTxSig: string | null;
     settlementReason?: string | null;
   };
   unit_price_usd?: number | null;
@@ -147,10 +143,10 @@ export interface PaymentRecord {
   recipient_onboarded?: boolean;
 }
 
-export interface TsnClaimRequestResult {
+export interface TsnSettlementResult {
   paymentId: string;
   intentId: string;
-  claimRequestId: string;
+  settlementReference: string | null;
   destinationWallet: string;
   status: "pending" | "processing" | "completed" | "canceled" | "failed";
 }
@@ -202,17 +198,12 @@ export interface PaymentDetailResponse {
   };
   trace: {
     paymentId: string;
-    escrowAccount: string | null;
     depositSignature: string | null;
     depositExplorerUrl: string | null;
     releaseSignature: string | null;
     releaseExplorerUrl: string | null;
-    tsnEscrowSignature?: string | null;
-    tsnEscrowExplorerUrl?: string | null;
-    tsnClaimSignature?: string | null;
-    tsnClaimExplorerUrl?: string | null;
-    tsnProofSignature?: string | null;
-    tsnProofExplorerUrl?: string | null;
+    tsnSettlementSignature?: string | null;
+    tsnSettlementExplorerUrl?: string | null;
     expirySignature?: string | null;
     expiryExplorerUrl?: string | null;
     acceptedAt: string | null;

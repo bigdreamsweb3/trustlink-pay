@@ -29,14 +29,14 @@ test("receiver rejects fields outside the durable allowlist, regardless of their
     payload: { paymentId: "p", totallyDifferentSecret: "unsafe" },
   }), /UNSUPPORTED_PAYLOAD_FIELD/);
   assert.throws(() => createReceivedWork({
-    kind: "CLAIM",
+    kind: "SETTLEMENT",
     payload: { master_seed: "unsafe" },
   }), /UNSUPPORTED_PAYLOAD_FIELD/);
 });
 
 test("canonical commitment is independent of object insertion order", () => {
-  const first = createReceivedWork({ kind: "CLAIM", payload: { paymentId: "p", intentId: "i", recipientHash: "h", source: "test" } });
-  const second = createReceivedWork({ kind: "CLAIM", payload: { source: "test", recipientHash: "h", intentId: "i", paymentId: "p" } });
+  const first = createReceivedWork({ kind: "SETTLEMENT", payload: { paymentId: "p", intentId: "i", recipientHash: "h", source: "test" } });
+  const second = createReceivedWork({ kind: "SETTLEMENT", payload: { source: "test", recipientHash: "h", intentId: "i", paymentId: "p" } });
   assert.equal(first.payloadCommitment, second.payloadCommitment);
 });
 
@@ -55,8 +55,7 @@ test("payment ingress requires a valid sender Ed25519 authorization", () => {
   assert.throws(() => assertPaymentIntentIngress({ ...payload, senderAuthorizationSignature: Buffer.alloc(64).toString("base64") }), /INVALID_SENDER_SIGNATURE/);
 });
 
-test("public Receiver ingress cannot create claim or recovery work", () => {
-  assert.throws(() => assertExternalWorkKind("CLAIM"), /CLAIM_WORK_INTERNAL_ONLY/);
-  assert.throws(() => assertExternalWorkKind("RECOVERY"), /RECOVERY_WORK_INTERNAL_ONLY/);
+test("public Receiver ingress cannot create settlement or recovery work", () => {
+  assert.throws(() => assertExternalWorkKind("SETTLEMENT"), /SETTLEMENT_WORK_INTERNAL_ONLY/);
   assert.doesNotThrow(() => assertExternalWorkKind("PAYMENT_INTENT"));
 });

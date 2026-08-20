@@ -19,15 +19,9 @@ function errorStatus(error: unknown) {
 }
 
 const CRANKER_PAYMENT_FIELDS = new Set([
-  "paymentId", "intentSeedHash", "recipientHash", "recipientRouteCommitment", "recipientRouteVersion",
-  "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet",
-  "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
-  "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt", "senderFeeAmount",
-  "senderSignedSettlementTransaction", "senderSignedSettlementFeePayer", "senderSettlementMode",
-  "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
-  "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "commitmentRecord",
-  "senderTokenAccount", "settlementVault", "settlementTokenAccount", "settlementPaymentIntentId",
-  "transferId", "commitmentHash", "settlementEpoch", "encryptedSettlementToken", "routeAuthorization", "source",
+  "paymentId", "recipientHash", "recipientRouteCommitment", "recipientRouteVersion",
+  "tokenMintAddress", "amount", "recipientAmount", "privacyVersion",
+  "transferId", "commitmentHash", "settlementEpoch", "source",
 ]);
 
 function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
@@ -55,7 +49,7 @@ export async function POST(request: NextRequest) {
     await enforceCrankerLeaseRateLimit(operator);
     const body = JSON.parse(bodyText) as { supportedKinds?: Parameters<typeof leaseForCranker>[1] };
     let work = await leaseForCranker(operator, body.supportedKinds);
-    if (work && work.kind === "CLAIM") {
+    if (work && work.kind === "SETTLEMENT") {
       const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL || "https://tsn-node.wasmer.app"].filter(Boolean).map((value) => cleanUrl(value as string));
       const nodeKey = process.env.TSN_RECEIVER_NODE_API_KEY;
       if (!nodeKey || nodeUrls.length === 0) throw new Error("TSN Node authorization service is not configured");
@@ -63,7 +57,7 @@ export async function POST(request: NextRequest) {
       let lastNodeError = "";
       for (const nodeUrl of [...new Set(nodeUrls)]) {
         try {
-          response = await fetch(`${nodeUrl}/internal/settlement-authorizations/${work.kind.toLowerCase()}`, {
+          response = await fetch(`${nodeUrl}/internal/settlement-authorizations/settlement`, {
             method: "POST",
             headers: { "content-type": "application/json", "x-api-key": nodeKey },
             body: JSON.stringify({ workId: work.id, crankerPubkey: operator }),
@@ -71,7 +65,7 @@ export async function POST(request: NextRequest) {
           if (response.status < 500) break;
           lastNodeError = `${nodeUrl} returned ${response.status}`;
         } catch (error) {
-          // A dead primary Node must not strand a leased claim when a
+          // A dead primary Node must not strand a leased settlement when a
           // configured fallback is available. Continue to the next URL.
           lastNodeError = `${nodeUrl}: ${error instanceof Error ? error.message : "fetch failed"}`;
           response = undefined;

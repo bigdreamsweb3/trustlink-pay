@@ -59,8 +59,6 @@ CREATE TABLE IF NOT EXISTS payments (
   amount NUMERIC(20, 9) NOT NULL,
   sender_fee_amount NUMERIC(20, 9),
   claim_fee_amount NUMERIC(20, 9),
-  escrow_account VARCHAR(64),
-  escrow_vault_address VARCHAR(64),
   deposit_signature VARCHAR(128),
   release_signature VARCHAR(128),
   refund_release_signature VARCHAR(128),
@@ -150,12 +148,11 @@ CREATE TABLE IF NOT EXISTS payment_intents (
   recipient_hash VARCHAR(64) NOT NULL,
   token_mint_address VARCHAR(64),
   amount NUMERIC(20, 9) NOT NULL,
-    status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'escrowed', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted')),
+    status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'onchain', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted')),
   assigned_cranker_pubkey VARCHAR(64),
   lease_expiry_at TIMESTAMPTZ,
-  escrow_tx_sig VARCHAR(128),
-  claim_tx_sig VARCHAR(128),
-  proof_tx_sig VARCHAR(128),
+  funding_tx_sig VARCHAR(128),
+  settlement_tx_sig VARCHAR(128),
   last_status_checked_at TIMESTAMPTZ,
   status_finalized_at TIMESTAMPTZ,
   status_check_count INTEGER NOT NULL DEFAULT 0,
@@ -167,26 +164,6 @@ CREATE INDEX IF NOT EXISTS idx_payment_intents_status ON payment_intents (status
 CREATE INDEX IF NOT EXISTS idx_payment_intents_recipient_hash ON payment_intents (recipient_hash);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_tin ON users (tin) WHERE tin IS NOT NULL;
 
-ALTER TABLE payment_intents
-  ADD COLUMN IF NOT EXISTS escrow_tx_sig VARCHAR(128);
-
-ALTER TABLE payment_intents
-  ADD COLUMN IF NOT EXISTS claim_tx_sig VARCHAR(128);
-
-CREATE TABLE IF NOT EXISTS claim_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payment_id UUID NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
-  intent_id UUID NOT NULL REFERENCES payment_intents(id) ON DELETE CASCADE,
-  recipient_hash VARCHAR(64) NOT NULL,
-  destination_wallet VARCHAR(64),
-  autoclaim BOOLEAN NOT NULL DEFAULT false,
-  status VARCHAR(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'canceled', 'failed')),
-  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_claim_requests_intent_status ON claim_requests (intent_id, status);
-CREATE INDEX IF NOT EXISTS idx_claim_requests_payment_id ON claim_requests (payment_id);
 
 DO $$
 BEGIN
@@ -195,7 +172,7 @@ BEGIN
 
   ALTER TABLE payment_intents
     ADD CONSTRAINT payment_intents_status_check
-    CHECK (status IN ('pending', 'escrowed', 'onchain', 'claimed', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted'));
+    CHECK (status IN ('pending', 'onchain', 'executed', 'settled', 'expired', 'failed', 'canceled', 'reverted'));
 END $$;
 
 ALTER TABLE payments
@@ -204,8 +181,6 @@ ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS sender_fee_amount NUMERIC(20, 9);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS claim_fee_amount NUMERIC(20, 9);
-ALTER TABLE payments
-  ADD COLUMN IF NOT EXISTS escrow_vault_address VARCHAR(64);
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS notification_message_id VARCHAR(128);
 ALTER TABLE payments

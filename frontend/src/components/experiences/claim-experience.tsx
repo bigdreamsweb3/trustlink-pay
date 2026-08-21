@@ -161,7 +161,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.34, ease: "easeOut" }} className="flex justify-center"><SuccessIcon className="h-14 w-14" /></motion.div>
               <div className="mt-4 tl-text-muted text-[0.62rem] uppercase tracking-[0.2em]">{claimSuccess.settlementMode === "tsn" ? "Settlement authorization queued" : "Payment received"}</div>
               <h2 className="mt-2 text-[1.6rem] font-bold tracking-tight text-[var(--text)]">{formatTokenAmount(netAmount)} {payment.payment.token_symbol}</h2>
-              <p className="mt-2 text-[0.78rem] leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">{claimSuccess.settlementMode === "tsn" ? "A Cranker will claim the lease, pay your wallet, and submit proof on-chain." : "Funds secured to your wallet. Add a backup wallet for protection."}</p>
+              <p className="mt-2 text-[0.78rem] leading-relaxed text-[var(--text-soft)] max-w-[300px] mx-auto">{claimSuccess.settlementMode === "tsn" ? "A Cranker will lease the authorization, pay your wallet, and consume the opaque settlement slot on-chain." : "Funds secured to your wallet. Add a backup wallet for protection."}</p>
             </div>
             <div className="space-y-2">
               {[
@@ -225,7 +225,7 @@ export function ClaimExperience({ paymentId }: { paymentId: string }) {
               <AnimatePresence>
                 {feeInfoOpen ? (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: "easeOut" }} className="mt-2 rounded-[14px] border border-[#58f2b1]/14 bg-[#58f2b1]/8 px-4 py-3 text-[0.74rem] leading-relaxed text-text/68">
-                    Recipient-side TSN fees support gasless settlement and split as 85% LP vault rewards, 8% cranker operators, 5% protocol treasury, and 2% recovery bonus pool.
+                    Recipient-side TSN fees support gasless settlement and split as 85% LP vault rewards, 8% cranker operators, and 7% protocol treasury.
                   </motion.div>
                 ) : null}
               </AnimatePresence>

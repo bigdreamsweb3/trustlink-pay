@@ -5,7 +5,7 @@ operator, and Solana program workspace.
 
 TSN is the payment infrastructure behind TrustLink Pay. It coordinates TIN
 identity, protected ZK-PRU routes, signed payment plans, off-chain verification
-and reservation, Cranker submission, TSN Program enforcement, TSN Escrow, and
+and reservation, Mother DNA authorization, Cranker submission, TSN Program enforcement, epoch treasury reimbursement, and
 receipts on Solana.
 
 ```mermaid
@@ -14,7 +14,7 @@ flowchart LR
     S --> N[TSN Node]
     N --> C[Cranker]
     C --> P[TSN Program]
-    P --> E[TSN Escrow]
+    P --> E[Epoch Treasury]
     E --> R[Recipient ZK-PRU or wallet]
 ```
 
@@ -26,8 +26,8 @@ flowchart LR
   is TSN Node.
 - The Cranker pays Solana fees and submits exact authorized transactions. It
   does not select sources, replan, decrypt envelopes, or sign for users.
-- The TSN Program enforces signatures, commitments, replay, state, delegates,
-  and escrow transitions.
+- The TSN Program enforces signatures, Mother DNA commitments, replay, state,
+  delegates, opaque slot transitions, and exact vault reimbursement.
 - Solana validators provide execution, ordering, consensus, and finality. They
   are not TSN Nodes or Crankers.
 

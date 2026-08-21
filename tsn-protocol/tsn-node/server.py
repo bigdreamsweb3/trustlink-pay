@@ -319,7 +319,7 @@ def get_epoch_ledger_pda(epoch_treasury: Pubkey) -> Pubkey:
 def get_epoch_claim_slot_pda(epoch_treasury: Pubkey, slot: bytes) -> Pubkey:
     return find_tsn_pda(b"tsn_epoch_claim_slot", bytes(epoch_treasury), slot)
 
-def get_settlement_dna_pda(slot: bytes, lease_version: int) -> Pubkey:
+def get_settlement_dna_pda(slot: bytes) -> Pubkey:
     """Derive the Mother-rooted, one-time settlement DNA account.
 
     The Node only distributes this opaque address; the Mother authority must
@@ -329,7 +329,6 @@ def get_settlement_dna_pda(slot: bytes, lease_version: int) -> Pubkey:
         b"tsn_settlement_dna",
         bytes(get_mother_escrow_pda()),
         slot,
-        struct.pack("<Q", lease_version),
     )
 
 def derive_claim_slot(payment_id_hash: bytes, amount: int, token_mint: Pubkey, epoch_id: int, commitment_digest: bytes) -> bytes:
@@ -1331,9 +1330,9 @@ class CreateIntentRequest(BaseModel):
     senderAuthorizationIssuedAt: Optional[str] = Field(None, description="Authorization issue timestamp")
     senderAuthorizationExpiresAt: Optional[str] = Field(None, description="Authorization expiry timestamp")
     senderFeeAmount: Optional[float] = Field(None, description="Sender-side protocol fee routed to treasury")
-    senderSignedSettlementTransaction: Optional[str] = Field(None, description="Sender co-signed settlement transaction for cranker sponsorship")
-    senderSignedSettlementFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast the settlement")
-    senderSettlementMode: Optional[str] = Field(None, description="Settlement authority model")
+    senderSignedFundingTransaction: Optional[str] = Field(None, description="Sender-signed epoch funding transaction for Cranker sponsorship")
+    senderSignedFundingFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast funding")
+    senderFundingMode: Optional[str] = Field(None, description="Funding authority model")
     pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
     pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the epoch treasury")
     pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
@@ -1947,7 +1946,7 @@ async def _assert_canonical_nonce_unused(
         raise HTTPException(400, "signed message nonce has already been used")
 
 async def _verify_payment_authorization_from_signed_message(req: CreateIntentRequest) -> dict[str, Any]:
-    mode = req.senderSettlementMode or ""
+    mode = req.senderFundingMode or ""
     action = (
         "PRU Spend"
         if mode == "zk_pru_only_v2"
@@ -1998,8 +1997,8 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         if wallet_portion_base_units != submitted_wallet_portion:
             raise HTTPException(400, "wallet top-up portion differs from the signed message")
         wallet_top_up_amount = int(str(req.walletTopUpAmountBaseUnits or "0"))
-        if not req.senderSignedSettlementTransaction:
-            raise HTTPException(400, "mixed funding requires the sender co-signed settlement transaction")
+        if not req.senderSignedFundingTransaction:
+            raise HTTPException(400, "mixed funding requires the sender-signed epoch funding transaction")
     if req.senderAuthorizationNonce and req.senderAuthorizationNonce != fields.get("Nonce"):
         raise HTTPException(400, "senderAuthorizationNonce differs from the signed message")
     expires_at = _parse_canonical_expiry(str(fields.get("Expires") or ""))
@@ -3033,7 +3032,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
     payload = work.get("payload")
     if not isinstance(payload, dict):
         raise ValueError("Receiver work payload must be an object")
-    if kind == "PAYMENT_INTENT":
+    if kind == "AUTHORIZED_FUNDING":
         request = CreateIntentRequest(**payload)
         verified_fields = await _verify_payment_authorization_from_signed_message(request)
         recipient_tin = str(verified_fields["recipientTin"] or "").strip()
@@ -3105,7 +3104,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             }
         return {
             "verifiedPayload": {**request.model_dump(), **verified_fields},
-            "verificationType": "TSN_PAYMENT_INTENT",
+            "verificationType": "TSN_AUTHORIZED_FUNDING",
         }
     if kind == "TIN_OPERATION":
         normalized = _normalize_tin_operation_input(payload)
@@ -3137,7 +3136,7 @@ async def receiver_verification_worker() -> None:
                 try:
                     leased_work = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
                         "nodeId": TSN_NODE_ID,
-                        "supportedKinds": ["PAYMENT_INTENT", "TIN_OPERATION"],
+                        "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION"],
                     })
                     leased_work.raise_for_status()
                     work = leased_work.json().get("work")
@@ -3288,7 +3287,7 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     if not intent_id:
         raise HTTPException(422, "Settlement does not reference a payment intent")
     intent_work = await _receiver_work_by_id(intent_id)
-    if intent_work.get("kind") != "PAYMENT_INTENT" or intent_work.get("status") != "CONFIRMED":
+    if intent_work.get("kind") != "AUTHORIZED_FUNDING" or intent_work.get("status") != "CONFIRMED":
         raise HTTPException(409, "Payment intent is not confirmed for payout")
     verified = (intent_work.get("verification") or {}).get("verifiedPayload")
     if not isinstance(verified, dict):
@@ -3355,7 +3354,7 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     if expires_at_ts <= int(time.time()):
         raise HTTPException(409, "Claim lease expires before a usable permit can be issued")
     lease_hash = lease_id_hash(settlement_id)
-    settlement_dna = get_settlement_dna_pda(slot, lease_version)
+    settlement_dna = get_settlement_dna_pda(slot)
     random_nonce = secrets.token_bytes(32)
     settlement_commitment = private_settlement_commitment(
         epoch_treasury, epoch_ledger, slot, commitment_digest, random_nonce,
@@ -3393,7 +3392,6 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
         "leaseId": settlement_id, "leaseVersion": lease_version,
         "leaseExpiresAt": str(settlement_lease.get("expiresAt")),
         "expiresAtTs": expires_at_ts,
-        "routeCommitment": route_binding["commitment"],
     }
 
 
@@ -4065,7 +4063,7 @@ async def issue_pru_spend_permit(
     intent = json.loads(raw)
     if intent.get("status") != "pending":
         raise HTTPException(409, "PRU spend intent is not pending")
-    if intent.get("senderSettlementMode") not in {"pru_private_commitment_v1", "mixed_pru_wallet_v1"}:
+    if intent.get("senderFundingMode") not in {"pru_private_commitment_v1", "mixed_pru_wallet_v1"}:
         raise HTTPException(409, "Intent is not a PRU spend intent")
     auth_message = str(intent.get("senderAuthorizationMessage") or "")
     if auth_message.startswith("TSN PRU Spend\n---\n"):
@@ -4099,7 +4097,7 @@ async def issue_pru_spend_permit(
     wallet_top_up_amount = int(str(intent.get("walletTopUpAmountBaseUnits") or "0"))
     expected_pru_funding_amount = (
         max(0, full_payment_amount - wallet_top_up_amount)
-        if intent.get("senderSettlementMode") == "mixed_pru_wallet_v1"
+        if intent.get("senderFundingMode") == "mixed_pru_wallet_v1"
         else full_payment_amount
     )
     if pru_funding_amount != expected_pru_funding_amount:
@@ -4152,7 +4150,7 @@ async def issue_pru_spend_permit(
         "planId": f"intent-{intent_id}",
         "version": 2,
         "tinId": tin,
-        "fundingMode": "mixed_zk_pru_wallet_v2" if intent.get("senderSettlementMode") == "mixed_pru_wallet_v1" else "zk_pru_only_v2",
+        "fundingMode": "mixed_zk_pru_wallet_v2" if intent.get("senderFundingMode") == "mixed_pru_wallet_v1" else "zk_pru_only_v2",
         "scopedSpendAuthorizations": [
             {
                 "pruIndex": selection.pruIndex,
@@ -4165,7 +4163,7 @@ async def issue_pru_spend_permit(
             }
             for selection in selections
         ],
-        "executionPlanSignatureMessage": f"Execution Plan V2\nPlanId: intent-{intent_id}\nFunding: {('mixed_zk_pru_wallet_v2' if intent.get('senderSettlementMode') == 'mixed_pru_wallet_v1' else 'zk_pru_only_v2')}\nSelectedPrus: {','.join(str(selection.pruIndex) for selection in selections)}",
+        "executionPlanSignatureMessage": f"Execution Plan V2\nPlanId: intent-{intent_id}\nFunding: {('mixed_zk_pru_wallet_v2' if intent.get('senderFundingMode') == 'mixed_pru_wallet_v1' else 'zk_pru_only_v2')}\nSelectedPrus: {','.join(str(selection.pruIndex) for selection in selections)}",
         "executionPlanSignature": "",
     }
     intent["assignedCrankerPubkey"] = body.operatorPubkey

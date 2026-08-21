@@ -33,8 +33,9 @@ Supporting technical references:
 - **TSN Node** is the stateless off-chain protocol verifier and processor.
 - **Cranker** is the fee-paying leased transaction executor and recipient-funding operator.
 - **TSN Program** enforces settlement commitments, leases, replay protection, and token movement on Solana.
-- **TSN Escrow** reimburses the Cranker that completes the active settlement lease.
-- **CrankerVault** pays the recipient before successful escrow reimbursement.
+- **Mother DNA** is the one-time Mother-vouched settlement capability; it is consumed on the first valid settlement or refund.
+- **Epoch treasury** holds aggregate funding and reimburses the exact settled CrankerVault atomically with payout.
+- **CrankerVault** pays the recipient before exact claim-bound treasury reimbursement.
 - **TCAP** is experimental and separate from the current settlement actor.
 
 All diagrams in active documentation use Mermaid. Historical architecture that places user decryption or private-key signing in the Node or Cranker is not normative.

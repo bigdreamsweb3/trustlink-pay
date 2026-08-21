@@ -13,7 +13,7 @@ pub struct CreateSettlementDna<'info> {
 
 pub fn create_settlement_dna(ctx: Context<CreateSettlementDna>, slot: [u8; 32], lease_version: u64, commitment_digest: [u8; 32], settlement_commitment: [u8; 32], payout_nullifier: [u8; 32], random_nonce: [u8; 32], cranker: Pubkey, cranker_vault: Pubkey, recipient: Pubkey, token_mint: Pubkey, amount: u64, lease_id_hash: [u8; 32], lease_expiry_ts: i64, authorization_expiry_ts: i64) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
-    require!(slot != [0; 32] && commitment_digest != [0; 32] && settlement_commitment != [0; 32] && payout_nullifier != [0; 32] && amount > 0, TsnError::InvalidPrivateCommitment);
+    require!(slot != [0; 32] && commitment_digest != [0; 32] && settlement_commitment != [0; 32] && payout_nullifier != [0; 32] && random_nonce != [0; 32] && lease_id_hash != [0; 32] && cranker != Pubkey::default() && cranker_vault != Pubkey::default() && recipient != Pubkey::default() && token_mint != Pubkey::default() && amount > 0, TsnError::InvalidPrivateCommitment);
     require!(authorization_expiry_ts > now && authorization_expiry_ts <= lease_expiry_ts, TsnError::PermitExpired);
     let dna = &mut ctx.accounts.settlement_dna;
     let fresh = dna.mother_escrow == Pubkey::default();

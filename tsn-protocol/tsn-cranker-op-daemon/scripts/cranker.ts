@@ -4,12 +4,12 @@ import nacl from "tweetnacl";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { tsnExecutePrivatePayoutOnChain } from "../../tsn-sdk/src/worker/private-settlement";
+import { getTsnSettlementDnaPda, tsnExecutePrivatePayoutOnChain } from "../../tsn-sdk/src/worker/private-settlement";
 import { tsnSubmitEpochFundingTransaction, tsnFetchMotherEscrowOnChain, getTsnCrankerPda } from "../../tsn-sdk/src/blockchain/solana-tsn";
 import { resolveSolanaRpcUrl } from "../../tsn-sdk/src/rpc";
 
 type Work = {
-  id: string; kind: "PAYMENT_INTENT" | "CLAIM"; stateVersion: number; status: string;
+  id: string; kind: "AUTHORIZED_FUNDING" | "SETTLEMENT"; stateVersion: number; status: string;
   verification?: { verifiedPayload?: Record<string, unknown> } | null;
   authorization?: Record<string, unknown> | null;
 };
@@ -39,7 +39,7 @@ async function receiverRequest<T>(signer: Keypair, method: "POST" | "PATCH", bod
 }
 
 async function lease(signer: Keypair): Promise<Work | null> {
-  const response = await receiverRequest<{ work: Work | null }>(signer, "POST", { supportedKinds: ["PAYMENT_INTENT", "CLAIM"] });
+  const response = await receiverRequest<{ work: Work | null }>(signer, "POST", { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT"] });
   return response.work;
 }
 
@@ -47,32 +47,35 @@ async function report(signer: Keypair, work: Work, status: "CONFIRMED" | "FAILED
   await receiverRequest(signer, "PATCH", { id: work.id, owner: signer.publicKey.toBase58(), expectedVersion: work.stateVersion, status, evidence });
 }
 
-async function processPaymentIntent(signer: Keypair, work: Work, rpcUrl: string) {
+async function processAuthorizedFunding(signer: Keypair, work: Work, rpcUrl: string) {
   const payload = work.verification?.verifiedPayload;
-  const encoded = payload?.senderSignedSettlementTransaction;
-  if (typeof encoded !== "string" || !encoded) throw new Error("Node did not provide the sender-signed epoch funding transaction");
+  const encoded = payload?.senderSignedFundingTransaction;
+  if (typeof encoded !== "string" || !encoded) throw new Error("Node did not provide the sender-authorized epoch funding transaction");
   const result = await tsnSubmitEpochFundingTransaction({ operator: signer, signedTransactionBase64: encoded, rpcUrl });
-  await report(signer, work, "CONFIRMED", { signature: result.signature, stage: "EPOCH_TREASURY_FUNDED", reason: "Funding uses only the epoch treasury; no payment account was created." });
+  await report(signer, work, "CONFIRMED", { signature: result.signature, stage: "EPOCH_TREASURY_FUNDED", reason: "Authorized funding uses only the epoch treasury; no payment account was created." });
 }
 
-async function processClaim(signer: Keypair, work: Work, rpcUrl: string) {
+async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const auth = work.authorization;
-  if (!auth || auth.kind !== "TSN_PAYOUT_AUTHORIZATION") throw new Error("Claim has no Node payout authorization");
+  if (!auth || auth.kind !== "TSN_PAYOUT_AUTHORIZATION") throw new Error("Settlement has no Node payout authorization");
   const expiresAtTs = BigInt(String(auth.expiresAtTs));
   if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000))) throw new Error("Payout authorization expired");
   const leaseId = String(auth.leaseId ?? work.id);
+  const claimSlot = hex32(auth.claimSlot, "claimSlot");
+  const expectedDna = getTsnSettlementDnaPda(claimSlot).toBase58();
+  if (String(auth.settlementDna ?? "") !== expectedDna) throw new Error("Settlement DNA does not match the opaque slot");
   const result = await tsnExecutePrivatePayoutOnChain({
     operator: signer,
     permitSigner: new PublicKey(String(auth.authorizationSigner)),
     permitSignature: Uint8Array.from(Buffer.from(String(auth.authorizationSignatureBase64), "base64")),
     epochTreasury: new PublicKey(String(auth.epochTreasury)), epochLedger: new PublicKey(String(auth.epochLedger)),
-    claimSlot: hex32(auth.claimSlot, "claimSlot"), settlementCommitment: hex32(auth.settlementCommitment, "settlementCommitment"),
+    claimSlot, settlementCommitment: hex32(auth.settlementCommitment, "settlementCommitment"),
     randomNonce: hex32(auth.randomNonce, "randomNonce"), payoutNullifier: hex32(auth.payoutNullifier, "payoutNullifier"), commitmentDigest: hex32(auth.commitmentDigest, "commitmentDigest"),
     tokenMint: new PublicKey(String(auth.tokenMintAddress)), recipientWallet: new PublicKey(String(auth.recipientWallet)),
     payoutAmount: BigInt(String(auth.payoutAmountBaseUnits)), claimFeeAmount: BigInt(String(auth.claimFeeAmountBaseUnits ?? "0")),
     leaseIdHash: hash(leaseId), leaseVersion: BigInt(String(auth.leaseVersion ?? 0)), leaseExpiryTs: BigInt(String(Date.parse(String(auth.leaseExpiresAt)) / 1000)), expiresAtTs, rpcUrl,
   });
-  await report(signer, work, "CONFIRMED", { signature: result.signature, stage: "CLAIM_SETTLED", claimSlot: String(auth.claimSlot) });
+  await report(signer, work, "CONFIRMED", { signature: result.signature, stage: "SETTLEMENT_SETTLED", claimSlot: String(auth.claimSlot) });
 }
 
 async function main() {
@@ -86,7 +89,7 @@ async function main() {
     try {
       const work = await lease(signer);
       if (!work) { await new Promise((resolve) => setTimeout(resolve, Number(process.env.TSN_CRANKER_POLL_MS ?? 2000))); continue; }
-      try { if (work.kind === "PAYMENT_INTENT") await processPaymentIntent(signer, work, rpcUrl); else await processClaim(signer, work, rpcUrl); }
+      try { if (work.kind === "AUTHORIZED_FUNDING") await processAuthorizedFunding(signer, work, rpcUrl); else await processSettlement(signer, work, rpcUrl); }
       catch (error) { await report(signer, work, "FAILED", { reason: error instanceof Error ? error.message : String(error) }).catch(() => undefined); console.error(error); }
     } catch (error) { console.error(`[tsn-cranker] poll failed: ${error instanceof Error ? error.message : String(error)}`); await new Promise((resolve) => setTimeout(resolve, 3000)); }
   }

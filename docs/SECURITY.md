@@ -14,7 +14,7 @@ invisibility.
    signed route.
 5. Prevent replay, duplicate settlement, and unauthorized delegates.
 6. Make Cranker execution observable and accountable.
-7. Keep TSN Escrow program-controlled.
+7. Keep epoch treasury liabilities and one-time Mother DNA program-controlled.
 
 ## Component boundaries
 
@@ -25,7 +25,7 @@ invisibility.
 - The Cranker pays fees and submits exact authorized transactions; it does not
   hold user keys or replan.
 - The TSN Program verifies signatures, commitments, state, delegates, replay,
-  and escrow transitions.
+  opaque slot transitions, and exact vault reimbursement.
 - Solana validators execute and confirm public Solana transactions.
 
 ## Privacy limits

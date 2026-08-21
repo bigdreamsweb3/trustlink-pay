@@ -73,7 +73,7 @@ uses its temporary route reference only after funding has been confirmed. It
 re-resolves the recipient TIN, checks the same commitment and route version
 again, and selects an eligible receiving account using the verified route.
 
-Only then does the Node create a short-lived claim settlement authorization.
+Only after the Cranker confirms sender-authorized epoch funding does the Node create a short-lived DNA settlement authorization.
 That authorization gives the leased Cranker the destination needed to submit
 that one payout. It does not reveal the recipient TIN or the complete route
 map in the original payment work.

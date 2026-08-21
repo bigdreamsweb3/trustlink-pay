@@ -118,14 +118,14 @@ Cranker that held the valid lease.
 - **TSN Receiver:** the durable ingress, work queue, leases, and status-read
   service.
 - **TSN Node:** the off-chain protocol verifier and processor. It verifies work,
-  resolves eligible routes, prevents replay, and publishes claimable work.
+  resolves eligible routes, prevents replay, and publishes settlement work.
 - **Cranker:** an independent fee-paying executor that submits already
   authorized transactions. It does not receive user private keys or replan a
   payment.
 - **TSN Program:** the Solana program that verifies authorization, leases,
   commitments, replay state, and enforced token movement.
-- **TSN Escrow:** a program-controlled isolated vault that can fund a separate
-  verifier-approved reimbursement transition.
+- **Epoch treasury + opaque slots:** epoch-scoped program accounts hold aggregate
+  liabilities; a keyed slot is first created only by settlement or refund.
 - **CrankerVault:** the protocol-controlled liquidity vault from which the
   leased Cranker pays the recipient and protocol fees.
 
@@ -210,8 +210,8 @@ of perfect cryptographic transaction unlinkability from Solana's public ledger.
 
 ## Status boundaries
 
-The TSN Node, SDK, Cranker, TSN Program, Receiver, and TSN Escrow are the
-active runtime architecture. Recurring payments remain disabled. TCAP is a
+The TSN Node, SDK, Cranker, TSN Program, Receiver, epoch treasury, and Mother
+DNA are the active runtime architecture. Recurring payments remain disabled. TCAP is a
 separate experimental confidential-asset direction, not the current settlement
 actor. Formal zero-knowledge proofs are not claimed unless implementation and
 verification evidence are present.

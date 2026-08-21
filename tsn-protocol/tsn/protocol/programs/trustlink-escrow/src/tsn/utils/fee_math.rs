@@ -2,7 +2,6 @@ use crate::tsn::constants::{
     BPS_DENOMINATOR,
     TSN_SPLIT_BPS_CRANKER,
     TSN_SPLIT_BPS_LP,
-    TSN_SPLIT_BPS_RECOVERY_BONUS,
     TSN_SPLIT_BPS_TREASURY,
     TSN_TIN_FEE_SPLIT_BPS_RESERVE_POOL,
     TSN_TIN_FEE_SPLIT_BPS_SUBMIT_CRANKER,
@@ -18,7 +17,7 @@ pub fn is_valid_split(cranker_bps: u16, lp_bps: u16, treasury_bps: u16) -> bool 
     let total = cranker_bps as u64
         + lp_bps as u64
         + treasury_bps as u64
-        + TSN_SPLIT_BPS_RECOVERY_BONUS as u64;
+        ;
     if total != BPS_DENOMINATOR {
         return false;
     }

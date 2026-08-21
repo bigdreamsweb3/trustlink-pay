@@ -18,16 +18,14 @@ function errorStatus(error: unknown) {
   return 409;
 }
 
-const CRANKER_PAYMENT_FIELDS = new Set([
-  "paymentId", "recipientHash", "recipientRouteCommitment", "recipientRouteVersion",
-  "tokenMintAddress", "amount", "recipientAmount", "privacyVersion",
-  "transferId", "commitmentHash", "settlementEpoch", "source",
-]);
-
 function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
   if (!work) return null;
-  const verifiedPayload = work.kind === "PAYMENT_INTENT" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
-    ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>).filter(([key]) => CRANKER_PAYMENT_FIELDS.has(key)))
+  // Funding work exposes only the already sender-signed transaction envelope
+  // required for sponsorship. It never exposes the private Node payload,
+  // recipient TIN, route map, commitment plaintext, or payment record fields.
+  const fundingPayload = work.kind === "AUTHORIZED_FUNDING" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
+    ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>)
+      .filter(([key]) => ["senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode"].includes(key)))
     : undefined;
   return {
     id: work.id, kind: work.kind, status: work.status, stateVersion: work.stateVersion,
@@ -35,7 +33,7 @@ function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
     receivedAt: work.receivedAt, updatedAt: work.updatedAt, crankerLease: work.crankerLease ?? null,
     verification: work.verification ? {
       verificationType: work.verification.verificationType ?? null,
-      ...(verifiedPayload ? { verifiedPayload } : {}),
+      ...(fundingPayload && Object.keys(fundingPayload).length ? { verifiedPayload: fundingPayload } : {}),
     } : null,
     authorization: work.authorization ?? null,
     result: work.result ?? null,

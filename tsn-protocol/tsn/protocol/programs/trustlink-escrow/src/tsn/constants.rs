@@ -16,9 +16,6 @@ pub const TSN_PRU_SPEND_GUARD_SEED: &[u8] = b"pru_spend_guard";
 pub const TSN_TRUSTLINK_INTENT_DOMAIN_TAG: &[u8] = b"TSN_TRUSTLINK_INTENT_V1";
 pub const TSN_PRU_SPEND_GUARD_DOMAIN_TAG: &[u8] = b"TRUSTLINK_PRU_SPEND_GUARD_V1";
 
-/// Domain for non-spendable TSN -> TCAP authorization records.
-pub const TSN_TCAP_AUTHORIZATION_SEED: &[u8] = b"tsn:tcap-authorization:v1";
-
 pub const TSN_DEFAULT_LEASE_SECONDS: i64 = 30;
 pub const TSN_DEFAULT_EPOCH_SECONDS: i64 = 7 * 60 * 60; // 7 hours
 pub const TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS: u64 = 10_000;
@@ -31,7 +28,7 @@ pub const TSN_PRIVATE_ACTION_GAS_REIMBURSEMENT_LAMPORTS: u64 = 10_000;
 // - Treasury: 5%
 pub const TSN_SPLIT_BPS_CRANKER: u16 = 800;
 pub const TSN_SPLIT_BPS_LP: u16 = 8_500;
-pub const TSN_SPLIT_BPS_TREASURY: u16 = 500;
+pub const TSN_SPLIT_BPS_TREASURY: u16 = 700;
 
 pub const TSN_TIN_FEE_SPLIT_BPS_VERIFY_CRANKER: u16 = 3_000;
 pub const TSN_TIN_FEE_SPLIT_BPS_SUBMIT_CRANKER: u16 = 4_000;

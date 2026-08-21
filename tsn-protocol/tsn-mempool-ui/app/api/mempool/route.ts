@@ -50,7 +50,7 @@ export async function GET() {
     get("/network/overview"),
   ]);
   const work = Array.isArray(receiverWork) ? receiverWork.map(publicWork) : [];
-  const intents = work.filter((item) => item.kind === "PAYMENT_INTENT");
+  const intents = work.filter((item) => item.kind === "AUTHORIZED_FUNDING");
   const tinOperations = work.filter((item) => item.kind === "TIN_OPERATION");
   return NextResponse.json({
     epoch: null,

@@ -149,9 +149,9 @@ export type CreateIntentRequest = {
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
-  senderSignedSettlementTransaction?: string | null;
-  senderSignedSettlementFeePayer?: string | null;
-  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderSignedFundingTransaction?: string | null;
+  senderSignedFundingFeePayer?: string | null;
+  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
   pruSpendTin?: string | null;
   pruSpendAmountBaseUnits?: string | null;
   pruSpendSenderFeeBaseUnits?: string | null;
@@ -255,9 +255,9 @@ export function buildCreateIntentRequest(params: {
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
-  senderSignedSettlementTransaction?: string | null;
-  senderSignedSettlementFeePayer?: string | null;
-  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderSignedFundingTransaction?: string | null;
+  senderSignedFundingFeePayer?: string | null;
+  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
   pruSpendTin?: string | null;
   pruSpendAmountBaseUnits?: string | null;
   pruSpendSenderFeeBaseUnits?: string | null;
@@ -288,9 +288,9 @@ export function buildCreateIntentRequest(params: {
     senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt ?? null,
     senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt ?? null,
     senderFeeAmount: params.senderFeeAmount ?? null,
-    senderSignedSettlementTransaction: params.senderSignedSettlementTransaction ?? null,
-    senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer ?? null,
-    senderSettlementMode: params.senderSettlementMode ?? null,
+    senderSignedFundingTransaction: params.senderSignedFundingTransaction ?? null,
+    senderSignedFundingFeePayer: params.senderSignedFundingFeePayer ?? null,
+    senderFundingMode: params.senderFundingMode ?? null,
     pruSpendTin: params.pruSpendTin ?? null,
     pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits ?? null,
     pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits ?? null,

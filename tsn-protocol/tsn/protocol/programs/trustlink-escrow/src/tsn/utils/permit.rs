@@ -7,7 +7,6 @@ use anchor_lang::{
 };
 
 use crate::tsn::errors::TsnError;
-use solana_program::hash::hashv;
 
 pub const PRU_ROOT_AUTH_DOMAIN: &[u8] = b"TSN_PRU_ROOT_AUTH_V1";
 pub const PRU_CHILD_AUTH_DOMAIN: &[u8] = b"TSN_PRU_CHILD_AUTH_V1";

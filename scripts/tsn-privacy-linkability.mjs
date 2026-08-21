@@ -284,7 +284,7 @@ try {
   const settlement = summarize(settlementRaw, settlementSignature);
   const report = {
     rpc,
-    payment: { label: "PAYMENT_INTENT_OR_FUNDING", data: { ...payment, raw: paymentRaw } },
+    payment: { label: "AUTHORIZED_FUNDING", data: { ...payment, raw: paymentRaw } },
     settlement: { label: "SETTLEMENT_OR_PAYOUT", data: { ...settlement, raw: settlementRaw } },
   };
   report.analysis = analyze(report.payment.data, report.settlement.data);

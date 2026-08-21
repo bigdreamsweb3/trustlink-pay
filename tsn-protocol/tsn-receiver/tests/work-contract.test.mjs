@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
 import { test } from "node:test";
-import { assertExternalWorkKind, assertPaymentIntentIngress, createReceivedWork, publicCoordinationPayload } from "../lib/work-contract.ts";
+import { assertExternalWorkKind, assertAuthorizedFundingIngress, createReceivedWork, publicCoordinationPayload } from "../lib/work-contract.ts";
 
 function base58(bytes) {
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -15,7 +15,7 @@ function base58(bytes) {
 test("receiver accepts only public work and creates monotonic initial state", () => {
   const work = createReceivedWork({
     id: "intent-1",
-    kind: "PAYMENT_INTENT",
+    kind: "AUTHORIZED_FUNDING",
     payload: { paymentId: "p", recipientHash: "h", privacyVersion: 2 },
   });
   assert.equal(work.status, "RECEIVED");
@@ -25,7 +25,7 @@ test("receiver accepts only public work and creates monotonic initial state", ()
 
 test("receiver rejects fields outside the durable allowlist, regardless of their name", () => {
   assert.throws(() => createReceivedWork({
-    kind: "PAYMENT_INTENT",
+    kind: "AUTHORIZED_FUNDING",
     payload: { paymentId: "p", totallyDifferentSecret: "unsafe" },
   }), /UNSUPPORTED_PAYLOAD_FIELD/);
   assert.throws(() => createReceivedWork({
@@ -41,7 +41,7 @@ test("canonical commitment is independent of object insertion order", () => {
 });
 
 test("coordination views never include the encrypted envelope", () => {
-  const work = createReceivedWork({ kind: "PAYMENT_INTENT", payload: { paymentId: "p", recipientHash: "h", nodeEncryptedPayload: { version: 1, iv: "i", ciphertext: "c", tag: "t" } } });
+  const work = createReceivedWork({ kind: "AUTHORIZED_FUNDING", payload: { paymentId: "p", recipientHash: "h", nodeEncryptedPayload: { version: 1, iv: "i", ciphertext: "c", tag: "t" } } });
   assert.deepEqual(publicCoordinationPayload(work), { paymentId: "p", recipientHash: "h" });
 });
 
@@ -51,11 +51,11 @@ test("payment ingress requires a valid sender Ed25519 authorization", () => {
   const wallet = base58(der.subarray(-32));
   const message = "TSN payment authorization";
   const payload = { paymentId: "p", recipientHash: "h", recipientRouteCommitment: "c", recipientRouteVersion: 1, tokenMintAddress: "m", amount: 1, senderWallet: wallet, senderAuthorizationMessage: message, senderAuthorizationSignature: sign(null, Buffer.from(message), privateKey).toString("base64"), senderAuthorizationNonce: "n" };
-  assert.doesNotThrow(() => assertPaymentIntentIngress(payload));
-  assert.throws(() => assertPaymentIntentIngress({ ...payload, senderAuthorizationSignature: Buffer.alloc(64).toString("base64") }), /INVALID_SENDER_SIGNATURE/);
+  assert.doesNotThrow(() => assertAuthorizedFundingIngress(payload));
+  assert.throws(() => assertAuthorizedFundingIngress({ ...payload, senderAuthorizationSignature: Buffer.alloc(64).toString("base64") }), /INVALID_SENDER_SIGNATURE/);
 });
 
 test("public Receiver ingress cannot create settlement or recovery work", () => {
   assert.throws(() => assertExternalWorkKind("SETTLEMENT"), /SETTLEMENT_WORK_INTERNAL_ONLY/);
-  assert.doesNotThrow(() => assertExternalWorkKind("PAYMENT_INTENT"));
+  assert.doesNotThrow(() => assertExternalWorkKind("AUTHORIZED_FUNDING"));
 });

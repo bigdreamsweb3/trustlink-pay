@@ -154,6 +154,10 @@ export async function tsnSubmitEpochFundingTransaction(params: {
   signedTransactionBase64: string;
   rpcUrl?: string;
 }) {
+  // The user signature covers the immutable funding message before the Cranker
+  // sees it. The Cranker may add only its required fee-payer signature and
+  // submit the exact serialized transaction; any amount, mint, destination,
+  // or commitment edit invalidates that sender signature.
   const connection = getConnection(params.rpcUrl);
   const tx = Transaction.from(Buffer.from(params.signedTransactionBase64, "base64"));
   if (!tx.feePayer?.equals(params.operator.publicKey)) {

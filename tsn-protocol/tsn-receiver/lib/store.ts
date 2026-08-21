@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
-import { assertExternalWorkKind, assertPaymentIntentIngress, createReceivedWork, payloadCommitment, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { assertExternalWorkKind, assertAuthorizedFundingIngress, createReceivedWork, payloadCommitment, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
 import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
 import { wakeTsnNode } from "./node-wake";
 import { publishCrankerWake } from "./cranker-wake";
@@ -35,7 +35,7 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
     "recipientRouteVersion",
   ];
   return {
-    verificationType: verification?.verificationType ?? "TSN_PAYMENT_INTENT",
+    verificationType: verification?.verificationType ?? "TSN_AUTHORIZED_FUNDING",
     verifiedPayload: Object.fromEntries(
       keep.filter((key) => verified[key] !== undefined).map((key) => [key, verified[key]]),
     ),
@@ -44,8 +44,8 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
   assertExternalWorkKind(input.kind);
-  if (input.kind === "PAYMENT_INTENT") assertPaymentIntentIngress(input.payload);
-  const durablePayload = input.kind === "PAYMENT_INTENT"
+  if (input.kind === "AUTHORIZED_FUNDING") assertAuthorizedFundingIngress(input.payload);
+  const durablePayload = input.kind === "AUTHORIZED_FUNDING"
     ? {
         paymentId: String(input.payload.paymentId), recipientHash: String(input.payload.recipientHash),
         privacyVersion: input.payload.privacyVersion ?? null, tokenMintAddress: input.payload.tokenMintAddress ?? null,
@@ -102,7 +102,7 @@ export async function getWork(id: string) {
 
 export async function getWorkForNode(id: string) {
   const work = await getWork(id);
-  if (!work || work.kind !== "PAYMENT_INTENT") return work;
+  if (!work || work.kind !== "AUTHORIZED_FUNDING") return work;
   const envelope = work.payload.nodeEncryptedPayload;
   // VERIFIED/terminal payment records are deliberately redacted after Node
   // verification. They contain no envelope by design and are safe to return
@@ -189,7 +189,7 @@ async function lease(
       const paymentId = kind === "SETTLEMENT" ? payload.intentId : null;
       if (paymentId) {
         const payment = await workCollection.doc(String(paymentId)).get();
-        if (!payment.exists || payment.get("kind") !== "PAYMENT_INTENT" || payment.get("status") !== "CONFIRMED") continue;
+        if (!payment.exists || payment.get("kind") !== "AUTHORIZED_FUNDING" || payment.get("status") !== "CONFIRMED") continue;
       }
     }
     const leased = await db.runTransaction(async (transaction) => {
@@ -215,7 +215,7 @@ async function lease(
 
 export const leaseForNode = async (owner: string, supportedKinds?: WorkKind[]) => {
   const work = await lease("RECEIVED", "NODE_VERIFYING", owner, supportedKinds);
-  if (!work || work.kind !== "PAYMENT_INTENT") return work;
+  if (!work || work.kind !== "AUTHORIZED_FUNDING") return work;
   const envelope = work.payload.nodeEncryptedPayload;
   if (!envelope || typeof envelope !== "object") throw new Error("NODE_PAYLOAD_ENVELOPE_MISSING");
   return { ...work, payload: decryptPayloadForNode(envelope as Parameters<typeof decryptPayloadForNode>[0]) } as ReceiverWork;
@@ -266,7 +266,7 @@ export async function transition(params: {
         ? {
             verification: params.evidence ?? {},
             nodeLease: null,
-            ...(current.kind === "PAYMENT_INTENT"
+            ...(current.kind === "AUTHORIZED_FUNDING"
               ? { payload: redactedPaymentPayload(current.payload) }
               : {}),
           }
@@ -275,7 +275,7 @@ export async function transition(params: {
             crankerLease: null,
             // The signed handoff transaction is needed only until funding has
             // confirmed. Keep a compact receipt context thereafter.
-            ...(params.status === "CONFIRMED" && current.kind === "PAYMENT_INTENT"
+            ...(params.status === "CONFIRMED" && current.kind === "AUTHORIZED_FUNDING"
               ? { verification: paymentReceiptVerification(current.verification) }
               : {}),
             // A payout authorization contains the recipient wallet and is
@@ -290,9 +290,9 @@ export async function transition(params: {
     // same Firestore transaction as the Cranker CONFIRMED transition so there
     // can never be a settlement without the payment's verified evidence and result.
     let settlementCreated = false;
-    if (params.actor === "cranker" && current.kind === "PAYMENT_INTENT" && params.status === "CONFIRMED") {
+    if (params.actor === "cranker" && current.kind === "AUTHORIZED_FUNDING" && params.status === "CONFIRMED") {
       const verificationType = String(current.verification?.verificationType ?? "").trim();
-      if (!verificationType) throw new Error("PAYMENT_INTENT_NOT_NODE_VERIFIED");
+      if (!verificationType) throw new Error("AUTHORIZED_FUNDING_NOT_NODE_VERIFIED");
       const settlementId = `settlement-${createHash("sha256").update(`${current.id}:${current.payloadCommitment}`).digest("hex").slice(0, 32)}`;
       const settlementRef = workCollection.doc(settlementId);
       const settlementSnapshot = await transaction.get(settlementRef);

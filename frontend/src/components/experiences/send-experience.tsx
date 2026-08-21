@@ -1356,7 +1356,7 @@ export function SendExperience() {
             rpcUrl: resolveSolanaRpcUrl({ frontendSafe: true }),
           });
       setApprovalStage(sponsoredSettlement ? "transaction" : "submitting");
-      const senderSignedSettlementTransaction = sponsoredSettlement
+      const senderSignedFundingTransaction = sponsoredSettlement
         ? await signSolanaTransaction({
             walletId: walletSession.walletId,
             address: walletAddress,
@@ -1380,10 +1380,10 @@ export function SendExperience() {
         senderAuthorizationIssuedAt: senderAuthorization.issuedAt,
         senderAuthorizationExpiresAt: senderAuthorization.expiresAt,
         senderFeeAmount,
-        senderSignedSettlementTransaction,
-        senderSignedSettlementFeePayer:
+        senderSignedFundingTransaction,
+        senderSignedFundingFeePayer:
           crankerFeePayer ?? null,
-        senderSettlementMode: usesPruSpendExecution
+        senderFundingMode: usesPruSpendExecution
           ? "zk_pru_only_v2"
           : usesMixedPruWalletExecution
             ? "mixed_zk_pru_wallet_v2"
@@ -2448,8 +2448,8 @@ export function SendExperience() {
 
                   {/* Fee breakdown info */}
                   <div className="rounded-lg bg-[var(--surface-soft)] px-3 py-2 text-[0.7rem] leading-relaxed text-text-faint border border-[var(--field-border)]">
-                    Recipient TSN fees: 85% LP rewards, 8% operators, 5%
-                    protocol, 2% recovery
+                    Recipient TSN fees: 85% LP rewards, 8% operators, 7%
+                    protocol treasury
                   </div>
 
                   {/* Network & Total Summary */}

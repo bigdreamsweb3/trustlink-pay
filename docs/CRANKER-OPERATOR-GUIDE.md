@@ -27,12 +27,14 @@ flowchart TD
 
 The Cranker may:
 
-- claim or lease work that is already eligible;
-- submit the immutable funding or settlement transaction supplied by the
-  protocol;
+- lease Node-verified `AUTHORIZED_FUNDING` work and internally-created DNA
+  `SETTLEMENT` work that is already eligible;
+- submit the exact sender-signed epoch-treasury funding transaction, then the
+  exact Mother-DNA settlement transaction supplied by the protocol;
 - pay Solana fees from its operator wallet;
 - report transaction signatures and retry safe failures;
-- participate in explicitly authorized recovery or reimbursement work.
+- submit only explicitly authorized funding or settlement work; refunds are a
+  Node/Mother operation.
 
 The Cranker must not:
 
@@ -148,15 +150,28 @@ commit `.env`, `.env.local`, keypair JSON, Receiver credentials, or
 
 ## Mother Escrow “DNA”
 
-“Mother Escrow DNA” means the public PDA derivation recipe. It is not a
-private key or a secret credential. The address is determined by the deployed
-TSN Program ID and this fixed seed:
+“Mother Escrow DNA” is a one-time, Mother-authorized settlement voucher. Its
+PDA derivation is public, but its fields are accepted only after Mother
+authority materializes the account and the TSN Program verifies the permit.
+It is not a private key or a secret credential. The Mother address is
+determined by the deployed TSN Program ID and this fixed seed:
 
 ```text
 motherEscrow = PDA(["tsn_mother_escrow"], TSN_PROGRAM_ID)
 ```
 
-The operator-specific Cranker PDA is derived from the Mother Escrow and the
+The one-time settlement DNA PDA is derived from the Mother Escrow and opaque
+claim slot:
+
+```text
+settlementDna = PDA(
+  ["tsn_settlement_dna", motherEscrow, opaqueSlot],
+  TSN_PROGRAM_ID
+)
+```
+
+The lease version is stored inside that PDA and is signed in the permit. The
+operator-specific Cranker PDA is derived from the Mother Escrow and the
 operator public key:
 
 ```text
@@ -263,8 +278,8 @@ npm run crank:start
 
 Healthy startup logs identify the operator, Receiver source, execution mode,
 Mother Escrow, and Cranker PDA. A healthy process may be idle when the
-Receiver has no verified claimable work; idle polling is not a failed
-deployment.
+Receiver has no verified funding or settlement work; idle polling is not a
+failed deployment.
 
 The normal lifecycle is:
 
@@ -274,12 +289,16 @@ sequenceDiagram
     participant N as TSN Node
     participant C as Cranker
     participant S as TSN Program
-    R->>N: verified work is available
-    N-->>R: publish eligible work and lease data
-    C->>R: claim one short lease
-    C->>S: submit exact authorized transaction
+    R->>N: sender-signed funding intent is available
+    N-->>R: verify and publish AUTHORIZED_FUNDING
+    C->>R: lease funding work
+    C->>S: submit exact sender-authorized epoch-treasury funding transaction
+    C->>R: report funding confirmation
+    R->>N: create internal SETTLEMENT work
+    C->>R: lease DNA-authorized settlement
+    C->>S: submit exact DNA-bound payout
     S-->>C: signature or deterministic rejection
-    C->>R: report signature, retry state, or failure
+    C->>R: report settlement signature, retry state, or failure
 ```
 
 The Cranker does not replan work between the Receiver and Solana. If a lease
@@ -313,7 +332,7 @@ Remove accidental surrounding quotes from environment values and restart.
 operator keypair, and seed recipe. Ask the deployment owner to run authorized
 `mother:init` or migration, then run registration.
 
-**No work is claimed.** Confirm Receiver reachability, TSN Node verification,
+**No settlement is leased.** Confirm Receiver reachability, TSN Node verification,
 Cranker registration, and an eligible Receiver work state. Do not bypass
 verification by submitting directly from the Cranker.
 
@@ -354,7 +373,7 @@ For each Devnet run, retain:
 - source, vault, and recipient balances before and after;
 - daemon version/commit and configuration template used.
 
-Do not claim a live payment, TCAP settlement, or production readiness without
+Do not represent a live settlement or production readiness without
 the corresponding on-chain and Receiver evidence.
 
 ## Related documentation

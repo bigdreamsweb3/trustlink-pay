@@ -4,45 +4,42 @@ The Cranker daemon is the reference settlement operator for TSN.
 
 ## What Is This?
 
-It is a Receiver-driven settlement operator. The Receiver is the durable work
-source; the Cranker leases only TSN Node-verified work and then submits the
+It is a Receiver-driven execution operator. The Receiver is the durable work
+source; the Cranker leases TSN Node-verified work and submits the exact
 authorized on-chain transaction.
 
 ## Why It Exists
 
-TSN separates sender funding from recipient payout. Crankers keep that separated settlement flow moving.
+TSN separates sender-authorized epoch funding from DNA-bound recipient payout.
+Crankers submit both stages while paying their own Solana fees.
 
 ## Responsibilities
 
-- Lease verified payment-intent work from the TSN Receiver.
-- Re-check Node route attestations, immutable payout authorizations, signatures,
-  commitments, epochs, amounts, and expiry before signing or submitting.
-- Submit the sender-authorized funding transaction, then report its signature
-  and bounded proof metadata to the Receiver.
-- Lease the resulting claim only after the Receiver records the payment as
-  `CONFIRMED`; execute the Cranker-vault payout and report that transaction.
-- Submit only the Node/Mother-attested epoch-slot settlement transaction; refunds are Node/Mother-only operations.
+- Lease Node-verified `AUTHORIZED_FUNDING` work and internally-created
+  `SETTLEMENT` work from the TSN Receiver.
+- For `AUTHORIZED_FUNDING`, submit only the sender-signed, Node-verified
+  epoch-treasury transaction and pay its Solana fee. It creates no
+  payment-specific escrow account.
+- For `SETTLEMENT`, re-check Node/Mother DNA authorization, signatures, opaque
+  slot commitment, epoch, amount, vault, recipient, and expiry before
+  submitting the DNA-bound payout. Refunds remain Node/Mother-only operations.
 - Back off while idle and wake from the Receiver's payload-free notification.
 
 ## Processing and evidence
 
 ```text
-Receiver: VERIFIED work
-    -> Cranker leases it
-    -> Cranker verifies Node proof and exact binding
-    -> Cranker submits the authorized Solana transaction
-    -> Cranker reports signature + commitment/nullifier metadata
+User device signs funding authorization off-chain
+    -> Receiver/Node verify `AUTHORIZED_FUNDING`
+    -> Cranker leases and submits the exact sender-signed epoch-treasury funding transaction
+    -> Receiver: CONFIRMED; it creates internal `SETTLEMENT` work
+    -> Receiver attaches Node/Mother DNA authorization to the leased settlement
+    -> Cranker verifies exact binding and expiry, pays from its CrankerVault, and consumes the opaque epoch slot
+    -> Cranker reports the settlement signature and slot metadata
     -> Receiver: CONFIRMED
-    -> Node/Mother DNA authorization is attached
-    -> Cranker pays from its CrankerVault and consumes the opaque epoch slot
-    -> Cranker reports payout signature + proof metadata
 ```
 
-The daemon logs `pool.state` at startup and around leased work (Mother Escrow
-epoch/lease policy, escrow/verifier/Cranker lamports and fee splits),
-`*.proof_verified` for the bounded proof metadata, `*.submitted` for the
-transaction signature, and `receiver.work_reported` for the final Receiver
-state. It never logs private keys, master seeds, decrypted PRU routes, or raw
+The daemon logs pool state, settlement submission, and the final Receiver state.
+It never logs private keys, master seeds, decrypted PRU routes, or raw
 authorization payloads.
 
 ## Local Operation

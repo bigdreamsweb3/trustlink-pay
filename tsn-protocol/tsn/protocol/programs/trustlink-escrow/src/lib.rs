@@ -123,11 +123,4 @@ pub mod trustlink_escrow {
         tsn::instructions::commit_tin_action_fee(ctx)
     }
 
-    /// Creates a non-spendable authorization record for a future TCAP CPI.
-    pub fn tsn_prepare_tcap_authorization(
-        ctx: Context<PrepareTcapAuthorization>,
-        args: PrepareTcapAuthorizationArgsV1,
-    ) -> Result<()> {
-        prepare_tcap_authorization(ctx, args)
-    }
 }

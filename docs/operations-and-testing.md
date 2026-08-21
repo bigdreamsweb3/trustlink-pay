@@ -48,11 +48,11 @@ proven by simulation/submission logs, signatures, and fetched account state.
 - **Frontend:** route review, wallet/device approval, no-secret persistence,
   status polling, cancellation, and evidence display.
 - **TSN Node:** signature verification, immutable plans, reservation
-  concurrency, replay, expiry, and claimable work.
+  concurrency, replay, expiry, and settlement work.
 - **Cranker:** public-plan-only operation, deterministic batches, retries,
   fee payment, and no-user-key tests.
 - **Rust/Anchor:** Ed25519 parsing, delegate/allowance checks, PDA authority,
-  escrow transitions, replay, and state-version rejection.
+  opaque slot transitions, replay, and state-version rejection.
 - **Integration:** four routes, receiving accumulation, adaptive spending,
   change routing, wallet top-up, tampering, stale state, wrong signer, wrong
   delegate, expiry, and recovery.

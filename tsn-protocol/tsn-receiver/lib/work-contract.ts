@@ -1,6 +1,7 @@
 import { createHash, createPublicKey, randomUUID, verify as verifySignature } from "node:crypto";
 
-export type WorkKind = "PAYMENT_INTENT" | "SETTLEMENT" | "TIN_OPERATION";
+/** Sender-signed, Node-verified epoch-treasury funding work. */
+export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION";
 export type WorkStatus =
   | "RECEIVED"
   | "NODE_VERIFYING"
@@ -32,18 +33,18 @@ export function assertExternalWorkKind(kind: WorkKind): void {
   if (kind === "SETTLEMENT") throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
 }
 
-const PAYMENT_INTENT_KEYS = new Set([
+const AUTHORIZED_FUNDING_KEYS = new Set([
   "paymentId", "intentSeedHash", "recipientHash", "recipientTin", "recipientRouteCommitment", "recipientRouteVersion",
   "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet", "senderAuthorizationMessage",
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
-  "senderFeeAmount", "senderSignedSettlementTransaction", "senderSignedSettlementFeePayer", "senderSettlementMode",
+  "senderFeeAmount", "senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode",
   "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
   "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "senderTokenAccount",
   "transferId", "commitmentHash",
   "settlementEpoch", "encryptedSettlementToken", "source",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
-  PAYMENT_INTENT: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
+  AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source"]),
   TIN_OPERATION: new Set(["operationId", "intentType", "ownerPubkey", "tin", "nonce", "payload", "source"]),
 };
@@ -68,8 +69,8 @@ function decodeBase58(value: string): Buffer {
   return result;
 }
 
-export function assertPaymentIntentIngress(payload: Record<string, unknown>): void {
-  assertAllowlisted(payload, PAYMENT_INTENT_KEYS, "paymentIntent");
+export function assertAuthorizedFundingIngress(payload: Record<string, unknown>): void {
+  assertAllowlisted(payload, AUTHORIZED_FUNDING_KEYS, "authorizedFunding");
   for (const key of ["paymentId", "recipientHash", "recipientRouteCommitment", "tokenMintAddress", "senderWallet", "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce"]) {
     if (typeof payload[key] !== "string" || !String(payload[key]).trim()) throw new Error(`PAYMENT_AUTH_FIELD_REQUIRED:${key}`);
   }

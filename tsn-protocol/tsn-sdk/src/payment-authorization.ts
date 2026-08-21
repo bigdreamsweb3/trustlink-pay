@@ -141,9 +141,9 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderAuthorizationIssuedAt: string;
   senderAuthorizationExpiresAt: string;
   senderFeeAmount?: number | null;
-  senderSignedSettlementTransaction?: string | null;
-  senderSignedSettlementFeePayer?: string | null;
-  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderSignedFundingTransaction?: string | null;
+  senderSignedFundingFeePayer?: string | null;
+  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
   pruSpendTin?: string | null;
   pruSpendAmountBaseUnits?: string | null;
   pruSpendSenderFeeBaseUnits?: string | null;
@@ -171,10 +171,10 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
       senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount,
-      senderSignedSettlementTransaction:
-        params.senderSignedSettlementTransaction,
-      senderSignedSettlementFeePayer: params.senderSignedSettlementFeePayer,
-      senderSettlementMode: params.senderSettlementMode,
+      senderSignedFundingTransaction:
+        params.senderSignedFundingTransaction,
+      senderSignedFundingFeePayer: params.senderSignedFundingFeePayer,
+      senderFundingMode: params.senderFundingMode,
       pruSpendTin: params.pruSpendTin,
       pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits,
       pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits,
@@ -217,9 +217,9 @@ export async function submitPaymentAuthorizationToMempool(params: {
   senderAuthorizationIssuedAt: string;
   senderAuthorizationExpiresAt: string;
   senderFeeAmount?: number | null;
-  senderSignedSettlementTransaction?: string | null;
-  senderSignedSettlementFeePayer?: string | null;
-  senderSettlementMode?: "sponsored_sender_cosigned" | string | null;
+  senderSignedFundingTransaction?: string | null;
+  senderSignedFundingFeePayer?: string | null;
+  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
   pruSpendTin?: string | null;
   pruSpendAmountBaseUnits?: string | null;
   pruSpendSenderFeeBaseUnits?: string | null;

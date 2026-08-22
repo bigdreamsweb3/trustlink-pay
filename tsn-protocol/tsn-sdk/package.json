@@ -157,6 +157,10 @@
     "./sessions/server": {
       "import": "./dist/sessions/server/index.js",
       "types": "./dist/sessions/server/index.d.ts"
+    },
+    "./gpru": {
+      "import": "./dist/gpru.js",
+      "types": "./dist/gpru.d.ts"
     }
   },
   "scripts": {

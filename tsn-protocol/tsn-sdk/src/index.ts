@@ -19,6 +19,7 @@ export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
 export * from "./pru.js";
+export * from "./gpru.js";
 export * from "./pru-route-auth.js";
 export * from "./tin-envelopes.js";
 export * from "./tin-private-controller.js";

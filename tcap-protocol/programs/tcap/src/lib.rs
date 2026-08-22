@@ -31,6 +31,13 @@ pub mod tcap {
         instructions::initialize_tcap_v1(ctx, args)
     }
 
+    pub fn initialize_tcap_tin_tip_v1(
+        ctx: Context<InitializeTcapTinTipV1>,
+        args: InitializeTcapTinTipV1Args,
+    ) -> Result<()> {
+        instructions::initialize_tcap_tin_tip_v1(ctx, args)
+    }
+
     pub fn initialize_asset_state_v1(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
         instructions::initialize_asset_state_v1::handler(ctx)
     }

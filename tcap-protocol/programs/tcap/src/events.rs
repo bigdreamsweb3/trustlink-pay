@@ -10,6 +10,13 @@ pub struct TcapInitializedV1 {
     pub protocol_version: u16,
 }
 
+/// Announces only that a private TINS tip state was initialized. Commitments,
+/// TINS material, payer identity, and policy are intentionally omitted.
+#[event]
+pub struct TcapTinTipInitializedV1 {
+    pub tin_tip: Pubkey,
+}
+
 #[event]
 pub struct AssetRegistryInitializedV1 {
     pub registry: Pubkey,

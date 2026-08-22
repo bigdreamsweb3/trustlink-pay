@@ -4,6 +4,25 @@ pub const TCAP_STATE_VERSION_V1: u16 = 1;
 pub const TCAP_INSTRUCTION_VERSION_V1: u16 = 1;
 pub const TSN_AUTHORIZATION_VERSION_V1: u16 = 1;
 
+/// Version-one TCAP state for a private TINS tip relationship.
+///
+/// This account deliberately contains only transition commitments and control
+/// bits. It must not be extended with public balances, raw TINs, addresses,
+/// keys, token accounts, or encrypted snapshot material.
+#[account]
+pub struct TCapTinTipV1 {
+    pub current_commitment: [u8; 32],
+    pub sequence: u64,
+    pub policy_commitment: [u8; 32],
+    pub last_transition_nullifier: [u8; 32],
+    pub frozen: bool,
+    pub bump: u8,
+}
+
+impl TCapTinTipV1 {
+    pub const SPACE: usize = 8 + 32 + 8 + 32 + 32 + 1 + 1;
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum TcapMigrationStateV1 {
     Development,

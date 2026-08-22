@@ -11,6 +11,8 @@ pub const TCAP_NULLIFIER_REGISTRY_SEED: &[u8] = b"tcap:nullifier-registry:v1";
 pub const TCAP_NULLIFIER_SHARD_SEED: &[u8] = b"tcap:nullifier-shard:v1";
 pub const TCAP_NULLIFIER_SEED: &[u8] = b"tcap:nullifier:v1";
 pub const TCAP_COMMITMENT_ROOT_SEED: &[u8] = b"tcap:commitment-root:v1";
+/// Domain-separated seed for the privacy-preserving TINS tip state PDA.
+pub const TCAP_TIN_TIP_V1_SEED: &[u8] = b"tcap:tin-tip:v1";
 pub const TCAP_TSN_AUTH_RECEIPT_SEED: &[u8] = b"tcap:tsn-auth-receipt:v1";
 pub const TCAP_FUNDING_ROOT_SEED: &[u8] = b"tcap:funding-root:v1";
 pub const TCAP_FUNDING_CLAIM_SEED: &[u8] = b"tcap:funding-claim:v1";
@@ -36,6 +38,21 @@ pub fn derive_future_vault(asset_state: &Pubkey) -> (Pubkey, u8) {
 
 pub fn derive_funding_root(asset_state: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[TCAP_FUNDING_ROOT_SEED, asset_state.as_ref()], &crate::ID)
+}
+
+/// Derives the TCAP tip-state PDA from a blinded TINS privacy-receiving-root
+/// commitment. The underlying TINS identity and receiving root never appear in
+/// the PDA seeds or account state.
+pub fn derive_tcap_tin_tip_v1(
+    blinded_tins_privacy_receiving_root_commitment: &[u8; 32],
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            TCAP_TIN_TIP_V1_SEED,
+            blinded_tins_privacy_receiving_root_commitment,
+        ],
+        &crate::ID,
+    )
 }
 
 pub fn derive_funding_claim(asset_state: &Pubkey, funding_identifier: &[u8; 32]) -> (Pubkey, u8) {
@@ -129,6 +146,18 @@ mod tests {
         assert_ne!(
             derive_funding_claim(&asset_entry, &value).0,
             derive_funding_authorization_nonce(&asset_entry, &depositor).0
+        );
+    }
+
+    #[test]
+    fn tin_tip_pda_is_root_scoped_and_domain_separated() {
+        let root_a = [1_u8; 32];
+        let root_b = [2_u8; 32];
+        let tip_a = derive_tcap_tin_tip_v1(&root_a).0;
+        assert_ne!(tip_a, derive_tcap_tin_tip_v1(&root_b).0);
+        assert_ne!(
+            tip_a,
+            derive_funding_root(&Pubkey::new_from_array(root_a)).0
         );
     }
 

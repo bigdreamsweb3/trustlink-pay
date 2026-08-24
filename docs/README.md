@@ -15,6 +15,8 @@ Read these documents in order:
 
 Supporting references:
 
+- [TCAP values explained](./TCAP-VALUES-EXPLAINED.md) — plain-language meanings and privacy boundaries for credit values.
+
 - [Cranker operator guide](./CRANKER-OPERATOR-GUIDE.md)
 - [Service coordination and quota](./service-coordination-and-quota.md)
 - [TSN Transaction Explorer](./tsn-transaction-explorer.md)

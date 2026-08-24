@@ -17,6 +17,14 @@ export {
   createAuthorizationCommitment,
   createOwnerIdentityCommitment,
   createTinCommitment,
+  derivePrivacyReceivingRootCommitment,
+  deriveDevnetTestPrivacyReceivingRootCommitment,
+  TSN_PRIVACY_RECEIVING_ROOT_COMMITMENT_DOMAIN,
+  TSN_DEVNET_TEST_PRIVACY_ROOT_MATERIAL_DOMAIN,
+  deriveDevnetTestPolicyCommitment,
+  deriveDevnetTestTcapGenesisCommitment,
+  TSN_DEVNET_TEST_POLICY_COMMITMENT_DOMAIN,
+  TSN_DEVNET_TEST_TCAP_GENESIS_COMMITMENT_DOMAIN,
 } from "./identity-commitments.js";
 
 export {

@@ -18,11 +18,8 @@ export * from "./sponsored-settlement.js";
 export * from "./tins.js";
 export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
-export * from "./pru.js";
 export * from "./gpru.js";
-export * from "./pru-route-auth.js";
 export * from "./tin-envelopes.js";
-export * from "./tin-private-controller.js";
 export * from "./tin-device-access.js";
 export * from "./tin-device-key-envelope.js";
 export * from "./tin-device-key-provider.js";
@@ -31,14 +28,6 @@ export * from "./lit-tin-action-configuration.js";
 export * from "./lit-tin-action-contract.js";
 export * from "./tin-threshold-nonce-receipt.js";
 export * from "./lit-threshold-provider.js";
-export * from "./pru-denomination.js";
-export * from "./tin-balance-spend-planner.js";
-
-// ZK-PRU Redesign: Adaptive accumulation with tranche-based spending
-export * from "./zk-pru-execution-planner.js";
-export * from "./zk-pru-state-manager.js";
-export * from "./zk-pru-receive-accumulator.js";
-
 // TSN V1 Privacy Architecture exports
 
 export * from "./receipts/index.js";

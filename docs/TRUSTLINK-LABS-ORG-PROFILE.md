@@ -28,25 +28,25 @@ flowchart TD
   PAY[TrustLink Pay<br/>application experience]
   TSN[TSN<br/>Transfer Settlement Network]
   TIN[TIN<br/>10-digit payment identity]
-  ZK[ZK-PRU<br/>protected receiving and spending inside TSN]
+  G[GPRU<br/>authorization and routing]
   R[TSN Receiver<br/>durable ingress and work]
   N[TSN Node<br/>verification and route decisions]
   C[Cranker<br/>leased transaction submission]
   P[TSN Program<br/>Solana enforcement]
-  TCAP[TCAP<br/>Token Control and Authorization Protocol]
+  TCAP[TCAP<br/>Transfer Confidential Asset Protocol]
   SOL[Solana<br/>programs and accounts]
   LAB --> PAY
   LAB --> TSN
   LAB --> TCAP
   PAY --> TSN
   TSN --> TIN
-  TSN --> ZK
+  TSN --> G
   TSN --> R
   TSN --> N
   TSN --> C
   TSN --> P
   R --> N --> C --> P
-  TCAP -. separate experimental asset infrastructure .-> SOL
+  TCAP -. TCAP asset infrastructure .-> SOL
   TSN --> SOL
 ```
 
@@ -61,27 +61,23 @@ TSN coordinates the payment lifecycle:
 - commitment, replay, expiry, and authorization checks;
 - Solana program enforcement and settlement evidence.
 
-TSN is the complete network. TIN, ZK‑PRU, and TCAP are protocol components with distinct responsibilities; they are not separate products added together as a marketing stack.
+TSN is the complete network. TIN, GPRU, and TCAP are protocol components with distinct responsibilities; they are not separate products added together as a marketing stack.
 
 ### TIN — payment identity
 
-A Transfer Identity Number (TIN) is a human-facing 10-digit payment identity. It separates the identity a user shares from the wallet or protected receiving route used for settlement.
+A Transfer Identity Number (TIN), issued and resolved by the Transfer Identity Protocol (TIP), is a human-facing 10-digit payment identity. It separates the identity a user shares from the wallet or protected receiving route used for settlement.
 
 TIN can bind identity metadata, owner authority, route commitments, encrypted envelopes, and versioned integrity state. It does not turn a wallet address into a user's permanent public identity.
 
-### ZK‑PRU — protected receiving and spending inside TSN
+### GPRU and TCAP - live private balance architecture
 
-ZK‑PRU is TSN's protected receiving and spending subsystem. It manages ZK‑PRU receiving units (PRUs), route commitments, local child-authority derivation, receiving accumulation, adaptive spending, and change routing.
+GPRU is authorization/routing only. TCAP owns credit-only tip transitions and owner-encrypted balance snapshots. Confidential debits/exits are not live.
 
-The authorized user device decrypts private seed material and derives selected authorities locally. TSN services receive public keys, signatures, commitments, and non-secret execution data—not the master seed or user private keys.
+### TCAP — Transfer Confidential Asset Protocol
 
-ZK‑PRU is not a claim of formal zero-knowledge proofs or perfect transaction unlinkability. Commitments and architectural separation reduce unnecessary disclosure while preserving on-chain verification.
+TCAP is the live credit-only private balance protocol for governed token control, asset registration, mint binding, tip transitions, and encrypted snapshots.
 
-### TCAP — Token Control and Authorization Protocol
-
-TCAP is TrustLink Labs' separate experimental protocol for governed token control, asset registration, mint and token-program binding, reserve relationships, authorization, and confidential-asset research.
-
-TCAP is not the current TSN settlement actor. Current Devnet TSN payments use the TSN Program, controlled settlement accounts, and Cranker execution. TCAP may be integrated later after its asset and confidential-transfer controls are independently verified.
+TCAP credit authorization is integrated through the TSN CPI path; debits/exits remain out of scope.
 
 Stable-TCAP is a Devnet-only, valueless test asset. It is not USDC and is not a production stablecoin.
 
@@ -122,10 +118,10 @@ Native TIN-to-TIN is the privacy-focused route. Wallet-to-TIN, TIN-to-wallet pub
 | ------------------------------ | ---------------------------------------------- | ------------------------------------ |
 | TSN / TrustLink Escrow program | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V`  | Active Devnet program                |
 | TIN registry program           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT`  | Active Devnet program                |
-| TCAP experimental program      | `TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x`  | Separate experimental Devnet program |
+| TCAP program      | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V`  | Credit-only Devnet program |
 | Stable-TCAP faucet program     | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure           |
 
-Identifiers are provided for reproducible Devnet research. They do not imply mainnet readiness or completed TCAP integration.
+Identifiers are provided for reproducible Devnet research. They do not imply mainnet readiness beyond the documented credit path.
 
 ## Engineering principles
 
@@ -147,9 +143,9 @@ Identity, protected receiving, settlement coordination, asset control, SDKs, and
 
 ## Current scope
 
-TrustLink Labs is actively developing and testing TSN, TIN, ZK‑PRU, TCAP, Token-2022 asset tooling, commitment-based settlement, authorized-device private views, and developer infrastructure on Solana Devnet.
+TrustLink Labs is actively developing and testing TSN, TIN, GPRU, TCAP, Token-2022 asset tooling, commitment-based settlement, authorized-device private views, and developer infrastructure on Solana Devnet.
 
-Recurring payments and subscription-provider execution are not presented as active production capabilities. Mainnet readiness, formal cryptographic audits, perfect unlinkability, and full TCAP confidential settlement remain separate milestones.
+Recurring payments and subscription-provider execution are not presented as active production capabilities. Mainnet readiness, formal cryptographic audits, perfect unlinkability, and confidential debits/exits remain separate milestones.
 
 ## Join the work
 

@@ -18,7 +18,7 @@ export const scenarios = [
   future("funding_claim_to_confidential_owner", ["TCAP settle_funding_to_confidential_owner_v1"], "ConfidentialAssetContainerV1", "TCAP settlement phase", ["tcap"]),
   future("funding_claim_to_public_exit", ["TCAP settle_funding_to_public_exit_v1"], "PublicExitAuthorizationV1", "TCAP exit phase", ["tcap"]),
   future("replayed_tsn_intent", ["TSN create_payment_intent_v1"], "TsnPaymentIntentV1", "TSN integration phase", ["tsn"]),
-  { name: "funding_entry_success", requiredPrograms: ["tcap"], requiredInstructions: ["deposit_with_funding_commitment_v1"], status: "EXECUTOR_AVAILABLE" },
+  { name: "tcap_credit_tip_snapshot", requiredPrograms: ["tsn", "tcap"], requiredInstructions: ["register_tsn_authorization_v1", "credit_tcap_tin_tip_v1"], status: "EXECUTOR_AVAILABLE", livePath: "GPRU/TCap credit tip plus encrypted snapshot" },
   { name: "stale_funding_nonce", requiredPrograms: ["tcap"], requiredInstructions: ["deposit_with_funding_commitment_v1"], status: "NOT_IMPLEMENTED", blockingPhase: "scenario executor phase" },
   future("stale_confidential_spend_nonce", ["TCAP settle_confidential_transfer_v1"], "ConfidentialSpendNonceV1", "TCAP ownership phase", ["tcap"]),
   future("expired_tsn_intent", ["TSN create_payment_intent_v1"], "TsnPaymentIntentV1", "TSN integration phase", ["tsn"]),

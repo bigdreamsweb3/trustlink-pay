@@ -38,6 +38,27 @@ pub mod tcap {
         instructions::initialize_tcap_tin_tip_v1(ctx, args)
     }
 
+    pub fn credit_tcap_tin_tip_v1(
+        ctx: Context<CreditTcapTinTipV1>,
+        args: CreditTcapTinTipV1Args,
+    ) -> Result<()> {
+        instructions::credit_tcap_tin_tip_v1::handler(ctx, args)
+    }
+
+    pub fn debit_tcap_balance_v1(
+        ctx: Context<DebitTcapBalanceV1>,
+        args: DebitTcapBalanceV1Args,
+    ) -> Result<()> {
+        instructions::debit_tcap_balance_v1::handler(ctx, args)
+    }
+
+    pub fn exit_tcap_liquidity_v1(
+        ctx: Context<ExitTcapLiquidityV1>,
+        args: ExitTcapLiquidityV1Args,
+    ) -> Result<()> {
+        instructions::exit_tcap_liquidity_v1::handler(ctx, args)
+    }
+
     pub fn initialize_asset_state_v1(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
         instructions::initialize_asset_state_v1::handler(ctx)
     }

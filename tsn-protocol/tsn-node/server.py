@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-TSN Shared Mempool — self-hosted version.
+TSN Shared Mempool â€” self-hosted version.
 
 Requirements:
     npm run tsn:mempool:install
@@ -68,14 +68,14 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 def clean_env(value: str | None, default: str = "") -> str:
     return (value if value is not None else default).strip().strip('"').strip("'").strip()
 
-# ── Logging ──────────────────────────────────────────────────────────────────
+# â”€â”€ Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("tsn-mempool")
 
-# ── Config ───────────────────────────────────────────────────────────────────
+# â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 GITHUB_REPO     = "bigdreamsweb3/tsn-epoch-records"
 GITHUB_API      = "https://api.github.com"
 MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "firebase").strip().lower()
@@ -374,7 +374,7 @@ def require_worker_api_key(
         raise HTTPException(401, "Invalid TSN Node service credential")
 
 def lease_authorization_message(
-    action: Literal["payout", "recovery", "pru-spend"],
+    action: Literal["payout", "recovery", "funding", "settlement"],
     work_id: str,
     operator_pubkey: str,
     requested_at_ts: int,
@@ -393,7 +393,7 @@ def lease_id_hash(work_id: str) -> bytes:
     return hashlib.sha256(work_id.encode("utf-8")).digest()
 
 def verify_lease_authorization(
-    action: Literal["payout", "recovery", "pru-spend"],
+    action: Literal["payout", "recovery", "funding", "settlement"],
     work_id: str,
     operator_pubkey: str,
     requested_at_ts: int,
@@ -545,7 +545,7 @@ def private_payout_permit_message(
         ]
     )
 
-# ── Store helpers ─────────────────────────────────────────────────────────────
+# â”€â”€ Store helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class FirebaseStore:
     """Firestore-backed store with the hash-like methods used by this API."""
 
@@ -1308,7 +1308,7 @@ async def read_public_vault_liquidity_cached() -> list[dict[str, Any]]:
         )
         return list(vaults)
 
-# ── Models ────────────────────────────────────────────────────────────────────
+# â”€â”€ Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class CreateIntentRequest(BaseModel):
     paymentId:        str           = Field(..., description="Unique payment ID")
     intentSeedHash:   str           = Field(..., description="SHA-256 hex of paymentId")
@@ -1333,12 +1333,6 @@ class CreateIntentRequest(BaseModel):
     senderSignedFundingTransaction: Optional[str] = Field(None, description="Sender-signed epoch funding transaction for Cranker sponsorship")
     senderSignedFundingFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast funding")
     senderFundingMode: Optional[str] = Field(None, description="Funding authority model")
-    pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
-    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the epoch treasury")
-    pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
-    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the epoch treasury")
-    walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
-    pruSpendSelections: Optional[list[dict[str, Any]]] = Field(None, description="PRU indexes and amounts selected after authenticated route loading")
     privacyVersion: Optional[int] = Field(None, description="TSN private settlement protocol version")
     senderTokenAccount: Optional[str] = Field(None, description="Sender token account used by the sponsored settlement")
     transferId: Optional[str] = Field(None, description="Public transfer identifier committed by the payment vault")
@@ -1947,13 +1941,9 @@ async def _assert_canonical_nonce_unused(
 
 async def _verify_payment_authorization_from_signed_message(req: CreateIntentRequest) -> dict[str, Any]:
     mode = req.senderFundingMode or ""
-    action = (
-        "PRU Spend"
-        if mode == "zk_pru_only_v2"
-        else "Mixed Payment"
-        if mode == "mixed_zk_pru_wallet_v2"
-        else "Payment Intent"
-    )
+    if mode not in {"", "wallet_only_v2", "epoch_treasury_v1", "sponsored_sender_cosigned"}:
+        raise HTTPException(400, "ZK-PRU funding modes are retired; use epoch-treasury funding")
+    action = "Payment Intent"
     fields = _parse_canonical_message(req.senderAuthorizationMessage or "", action)
     amount_base_units = _parse_usdc_base_units(str(fields.get("Amount") or ""), "Amount")
     fee_base_units = _parse_usdc_base_units(str(fields.get("Fee") or ""), "Fee")
@@ -1982,23 +1972,6 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
     request_fee_base_units = ui_amount_to_base_units(req.senderFeeAmount or 0, token_decimals)
     if fee_base_units != request_fee_base_units:
         raise HTTPException(400, "senderFeeAmount differs from the signed message")
-    if mode == "mixed_zk_pru_wallet_v2":
-        pru_portion_base_units = _parse_usdc_base_units(str(fields.get("PRU Portion") or ""), "PRU Portion")
-        wallet_portion_base_units = _parse_usdc_base_units(
-            str(fields.get("Wallet Top-Up Portion") or ""),
-            "Wallet Top-Up Portion",
-        )
-        if pru_portion_base_units + wallet_portion_base_units != amount_base_units + fee_base_units:
-            raise HTTPException(400, "mixed funding portions do not equal amount plus fee")
-        submitted_pru_portion = int(str(req.pruSpendAmountBaseUnits or "0")) + int(str(req.pruSpendSenderFeeBaseUnits or "0"))
-        submitted_wallet_portion = int(str(req.walletTopUpAmountBaseUnits or "0")) + int(str(req.walletTopUpSenderFeeBaseUnits or "0"))
-        if pru_portion_base_units != submitted_pru_portion:
-            raise HTTPException(400, "PRU funding portion differs from the signed message")
-        if wallet_portion_base_units != submitted_wallet_portion:
-            raise HTTPException(400, "wallet top-up portion differs from the signed message")
-        wallet_top_up_amount = int(str(req.walletTopUpAmountBaseUnits or "0"))
-        if not req.senderSignedFundingTransaction:
-            raise HTTPException(400, "mixed funding requires the sender-signed epoch funding transaction")
     if req.senderAuthorizationNonce and req.senderAuthorizationNonce != fields.get("Nonce"):
         raise HTTPException(400, "senderAuthorizationNonce differs from the signed message")
     expires_at = _parse_canonical_expiry(str(fields.get("Expires") or ""))
@@ -2985,7 +2958,7 @@ async def assert_tin_operation_can_enter(operation: dict[str, Any]) -> None:
         raise HTTPException(409, "nonce has already been used by this owner_pubkey")
 
 
-# ── GitHub archive ────────────────────────────────────────────────────────────
+# â”€â”€ GitHub archive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 # GitHub archive contains aggregate status only; no payment identifiers or recovery records.
 async def commit_epoch_to_github(epoch_number: int, intents: list, closed_at: str) -> str:
@@ -3026,7 +2999,7 @@ async def close_epoch_task() -> EpochCloseResult:
     settled_count = sum(1 for item in intents if item.get("status") in {"executed", "settled"})
     return EpochCloseResult(epoch_number=epoch_number, intents_archived=len(intents), settlements_archived=settled_count, intents_rolled_over=len(rollover_intents), intents_pruned=len(intents)-len(rollover_intents), settlements_pruned=settled_count, github_commit_url=commit_url, new_epoch_number=new_epoch, message=f"Epoch {epoch_number} archived; epoch {new_epoch} started.")
 
-# ── Background scheduler ──────────────────────────────────────────────────────
+# â”€â”€ Background scheduler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
     kind = str(work.get("kind") or "")
     payload = work.get("payload")
@@ -3236,12 +3209,12 @@ async def lifespan(app: FastAPI):
     if _store:
         await _store.aclose()
 
-# ── FastAPI app ───────────────────────────────────────────────────────────────
+# â”€â”€ FastAPI app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app = FastAPI(
     title="TSN Mempool",
     description=(
         "Shared off-chain settlement queue for the Transfer Settlement Network. "
-        f"Epoch every {EPOCH_HOURS}h — archives to GitHub (bigdreamsweb3/tsn-epoch-records)."
+        f"Epoch every {EPOCH_HOURS}h â€” archives to GitHub (bigdreamsweb3/tsn-epoch-records)."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -3410,7 +3383,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Root ──────────────────────────────────────────────────────────────────────
+# â”€â”€ Root â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.post("/", response_model=MempoolStatusResponse)
 async def mempool_status(request: MempoolStatusRequest) -> MempoolStatusResponse:
     """Mempool health check and current epoch info."""
@@ -3476,7 +3449,7 @@ async def consume_threshold_access_nonce(request: dict[str, Any]) -> dict[str, A
         return existing["receipt"]
     return receipt
 
-# ── Intents ───────────────────────────────────────────────────────────────────
+# â”€â”€ Intents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def expire_stale_tin_operations() -> None:
     r = await get_mempool_store()
     now_ts = int(time.time())
@@ -3584,207 +3557,6 @@ async def get_tin_operation(intent_id: str = ApiPath(...)) -> PublicTinOperation
     if not raw:
         raise HTTPException(404, f"TIN operation {intent_id} not found")
     return public_tin_operation(json.loads(raw))
-
-@app.get("/tin-routes/encryption-key")
-async def get_tin_route_encryption_key() -> dict[str, str]:
-    routing_key = _routing_private_key()
-    return {
-        "algorithm": TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM,
-        "publicKey": base64.b64encode(bytes(routing_key.public_key)).decode("ascii"),
-    }
-
-
-@app.post("/tin-routes/session", response_model=TinPruRouteSessionResponse)
-async def create_tin_pru_route_session(body: TinPruRouteSessionRequest) -> TinPruRouteSessionResponse:
-    route = await read_tin_pru_route(str(body.tin))
-    if not route:
-        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
-    expected_hash = _route_owner_pubkey_hash(route)
-    try:
-        owner_hash = await _verify_owner_pru_route_proof(
-            tin=str(body.tin),
-            owner_pubkey=body.owner_pubkey,
-            signature=body.signature,
-            nonce=body.nonce,
-            timestamp=body.timestamp,
-            purpose="pru_route_lookup",
-            accepted_owner_hash=expected_hash,
-            signed_message_base64=body.signed_message_base64,
-        )
-        if expected_hash and expected_hash != owner_hash:
-            raise HTTPException(403, "owner proof does not match the finalized PRU route")
-        return await _create_pru_route_session(tin=str(body.tin), owner_hash=owner_hash)
-    except HTTPException as exc:
-        if exc.status_code == 403:
-            logger.warning(
-                "PRU route session rejected: tin=%s owner=%s nonce=%s timestamp=%s detail=%s",
-                body.tin,
-                f"{str(body.owner_pubkey)[:4]}...{str(body.owner_pubkey)[-4:]}",
-                body.nonce,
-                body.timestamp,
-                exc.detail,
-            )
-        raise
-
-@app.post("/platform/register-read-key", response_model=PlatformReadKeyRegistrationResponse)
-async def register_platform_read_key(body: PlatformReadKeyRegistrationRequest) -> PlatformReadKeyRegistrationResponse:
-    try:
-        decode_base58(body.platform_read_key)
-    except ValueError as exc:
-        raise HTTPException(422, "platform_read_key is not valid base58") from exc
-    contact = body.contact.strip()
-    if not contact:
-        raise HTTPException(422, "contact is required")
-    await (await get_mempool_store()).hset(
-        k_platform_read_keys(),
-        body.platform_read_key,
-        json.dumps(
-            {
-                "platformReadKey": body.platform_read_key,
-                "contact": contact,
-                "registeredAt": datetime.now(timezone.utc).isoformat(),
-            }
-        ),
-    )
-    return PlatformReadKeyRegistrationResponse(
-        platformReadKey=body.platform_read_key,
-        contact=contact,
-        status="registered",
-    )
-
-@app.post("/tin-routes/delegate", response_model=TinDelegatedReadResponse)
-async def grant_tin_delegated_read_access(body: TinDelegatedReadRequest) -> TinDelegatedReadResponse:
-    platform_raw = await (await get_mempool_store()).hget(k_platform_read_keys(), body.platform_read_key)
-    if not platform_raw:
-        raise HTTPException(403, "platform read key is not registered")
-    expires_at = int(body.expiry or (int(time.time()) + 30 * 24 * 60 * 60))
-    if expires_at <= int(time.time()):
-        raise HTTPException(422, "delegation expiry must be in the future")
-    route = await read_tin_pru_route(str(body.tin))
-    if not route:
-        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
-    await _verify_owner_pru_route_proof(
-        tin=str(body.tin),
-        owner_pubkey=body.owner_pubkey,
-        signature=body.signature,
-        nonce=body.nonce,
-        timestamp=body.timestamp,
-        purpose="delegate_read_access",
-        platform_read_key=body.platform_read_key,
-        expiry=expires_at,
-        accepted_owner_hash=_route_owner_pubkey_hash(route),
-        signed_message_base64=body.signed_message_base64,
-    )
-    await (await get_mempool_store()).hset(
-        k_tin_read_delegations(),
-        _delegation_key(str(body.tin), body.platform_read_key),
-        json.dumps(
-            {
-                "tin": str(body.tin),
-                "platformReadKey": body.platform_read_key,
-                "expiresAt": expires_at,
-                "createdAt": datetime.now(timezone.utc).isoformat(),
-            }
-        ),
-    )
-    return TinDelegatedReadResponse(
-        tin=str(body.tin),
-        platformReadKey=body.platform_read_key,
-        expiresAt=expires_at,
-        status="active",
-    )
-
-@app.delete("/tin-routes/delegate", response_model=TinDelegatedReadResponse)
-async def revoke_tin_delegated_read_access(body: TinDelegatedReadRequest) -> TinDelegatedReadResponse:
-    route = await read_tin_pru_route(str(body.tin))
-    if not route:
-        raise HTTPException(404, f"Finalized PRU route for TIN {body.tin} not found")
-    await _verify_owner_pru_route_proof(
-        tin=str(body.tin),
-        owner_pubkey=body.owner_pubkey,
-        signature=body.signature,
-        nonce=body.nonce,
-        timestamp=body.timestamp,
-        purpose="revoke_read_access",
-        platform_read_key=body.platform_read_key,
-        accepted_owner_hash=_route_owner_pubkey_hash(route),
-        signed_message_base64=body.signed_message_base64,
-    )
-    await (await get_mempool_store()).hset(
-        k_tin_read_delegations(),
-        _delegation_key(str(body.tin), body.platform_read_key),
-        json.dumps(
-            {
-                "tin": str(body.tin),
-                "platformReadKey": body.platform_read_key,
-                "expiresAt": 0,
-                "revokedAt": datetime.now(timezone.utc).isoformat(),
-            }
-        ),
-    )
-    return TinDelegatedReadResponse(
-        tin=str(body.tin),
-        platformReadKey=body.platform_read_key,
-        status="revoked",
-    )
-
-@app.get("/tin-routes/{tin}/delegations", response_model=list[TinDelegatedPlatformRecord])
-async def list_tin_delegated_read_access(
-    tin: str = ApiPath(...),
-    authorization: Optional[str] = Header(None),
-) -> list[TinDelegatedPlatformRecord]:
-    token = _bearer_token(authorization)
-    session = await _read_pru_route_session(token or "")
-    if not session or str(session.get("tin")) != str(tin):
-        raise HTTPException(403, "valid PRU route session is required")
-    platform_records = await (await get_mempool_store()).hgetall(k_platform_read_keys())
-    rows: list[TinDelegatedPlatformRecord] = []
-    now = int(time.time())
-    for raw in (await (await get_mempool_store()).hgetall(k_tin_read_delegations())).values():
-        try:
-            delegation = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if str(delegation.get("tin")) != str(tin):
-            continue
-        expires_at = int(delegation.get("expiresAt") or 0)
-        if expires_at <= now:
-            continue
-        platform_key = str(delegation.get("platformReadKey") or "")
-        platform_contact = None
-        if platform_key in platform_records:
-            try:
-                platform_contact = json.loads(platform_records[platform_key]).get("contact")
-            except json.JSONDecodeError:
-                platform_contact = None
-        rows.append(TinDelegatedPlatformRecord(platformReadKey=platform_key, contact=platform_contact, expiresAt=expires_at))
-    return rows
-
-@app.get("/tin-routes/{tin}/prus", response_model=TinPruRoutePublicResponse)
-async def get_tin_pru_public_addresses(
-    tin: str = ApiPath(...),
-    authorization: Optional[str] = Header(None),
-    platform_read_key: Optional[str] = Header(None, alias="x-platform-key"),
-    platform_signature: Optional[str] = Header(None, alias="x-platform-signature"),
-) -> TinPruRoutePublicResponse:
-    route = await read_tin_pru_route(tin)
-    if not route:
-        raise HTTPException(404, f"Finalized PRU route for TIN {tin} not found")
-    token = _bearer_token(authorization)
-    session = await _read_pru_route_session(token or "")
-    if session and str(session.get("tin")) == str(tin):
-        return public_tin_pru_route(route)
-    if platform_read_key and platform_signature:
-        delegation = await _read_active_delegation(tin=str(tin), platform_read_key=platform_read_key)
-        if not delegation:
-            raise HTTPException(403, "platform read key has no active delegation for this TIN")
-        _verify_ed25519_signature(
-            public_key=platform_read_key,
-            message=_build_platform_pru_route_request_message(tin=str(tin), platform_read_key=platform_read_key),
-            signature_base64=platform_signature,
-        )
-        return public_tin_pru_route(route)
-    raise HTTPException(403, "valid PRU route session or delegated platform signature is required")
 
 async def patch_tin_operation(intent_id: str, patch: dict[str, Any], allowed_statuses: set[str]) -> TinOperationRecord:
     r = await get_mempool_store()
@@ -4040,146 +3812,7 @@ async def update_intent_status(
     await r.hset(k_intents(), intent_id, json.dumps(data))
     return MempoolIntent(**data)
 
-@app.post(
-    "/intents/{intent_id}/pru-spend-permit",
-    response_model=PruSpendPermitResponse,
-    dependencies=[Depends(require_worker_api_key)],
-)
-async def issue_pru_spend_permit(
-    intent_id: str = ApiPath(...),
-    body: SignedLeasePermitRequest = ...,
-) -> PruSpendPermitResponse:
-    verify_lease_authorization(
-        "pru-spend",
-        intent_id,
-        body.operatorPubkey,
-        body.requestedAtTs,
-        body.requestSignatureBase64,
-    )
-    r = await get_mempool_store()
-    raw = await r.hget(k_intents(), intent_id)
-    if not raw:
-        raise HTTPException(404, f"Intent {intent_id} not found")
-    intent = json.loads(raw)
-    if intent.get("status") != "pending":
-        raise HTTPException(409, "PRU spend intent is not pending")
-    if intent.get("senderFundingMode") not in {"pru_private_commitment_v1", "mixed_pru_wallet_v1"}:
-        raise HTTPException(409, "Intent is not a PRU spend intent")
-    auth_message = str(intent.get("senderAuthorizationMessage") or "")
-    if auth_message.startswith("TSN PRU Spend\n---\n"):
-        _parse_canonical_message(auth_message, "PRU Spend")
-    elif auth_message.startswith("TSN Mixed Payment\n---\n"):
-        _parse_canonical_message(auth_message, "Mixed Payment")
-    else:
-        raise HTTPException(422, "PRU spend intent is missing canonical signed PRU funding authorization")
-    tin = str(intent.get("pruSpendTin") or "").strip()
-    if not tin:
-        raise HTTPException(422, "PRU spend intent is missing pruSpendTin")
-    route = await read_tin_pru_route(tin)
-    if not route:
-        raise HTTPException(409, "Sender TIN has no finalized PRU route")
-    owner_pubkey = str(intent.get("senderWallet") or "").strip()
-    if not owner_pubkey:
-        raise HTTPException(422, "PRU spend intent is missing its main-wallet authority")
-    expected_owner_hash = _route_owner_pubkey_hash(route)
-    try:
-        submitted_owner_hash = hashlib.sha256(decode_base58(owner_pubkey)).hexdigest()
-    except ValueError as exc:
-        raise HTTPException(422, "PRU spend main-wallet authority is invalid") from exc
-    if expected_owner_hash and not secrets.compare_digest(expected_owner_hash, submitted_owner_hash):
-        raise HTTPException(403, "PRU spend main-wallet authority does not own this TIN route")
-    token_metadata = get_supported_token_metadata().get(str(intent.get("tokenMintAddress") or ""))
-    if not token_metadata:
-        raise HTTPException(422, "PRU spend token mint is not supported")
-    pru_funding_amount = int(str(intent.get("pruSpendAmountBaseUnits") or "0"))
-    sender_fee_amount = int(str(intent.get("pruSpendSenderFeeBaseUnits") or "0"))
-    full_payment_amount = ui_amount_to_base_units(intent.get("amount"), int(token_metadata["decimals"]))
-    wallet_top_up_amount = int(str(intent.get("walletTopUpAmountBaseUnits") or "0"))
-    expected_pru_funding_amount = (
-        max(0, full_payment_amount - wallet_top_up_amount)
-        if intent.get("senderFundingMode") == "mixed_pru_wallet_v1"
-        else full_payment_amount
-    )
-    if pru_funding_amount != expected_pru_funding_amount:
-        raise HTTPException(422, "PRU funding amount does not match the payment amount")
-    selections_raw = intent.get("pruSpendSelections")
-    if not isinstance(selections_raw, list) or not selections_raw:
-        raise HTTPException(422, "PRU spend intent has no selected PRUs")
-    route_prus = {
-        int(pru.get("index")): str(pru.get("publicKey") or "")
-        for pru in route.get("prus", [])
-        if isinstance(pru, dict) and str(pru.get("publicKey") or "")
-    }
-    selections: list[PruSpendPermitSelection] = []
-    total_selected = 0
-    seen_nonces: set[tuple[int, int]] = set()
-    for raw_selection in selections_raw:
-        if not isinstance(raw_selection, dict):
-            raise HTTPException(422, "PRU spend selection must be an object")
-        pru_index = int(raw_selection.get("pruIndex"))
-        nonce = int(raw_selection.get("nonce"))
-        amount = int(str(raw_selection.get("amountBaseUnits") or "0"))
-        if pru_index < 0 or pru_index >= TIN_DEFAULT_PRU_COUNT:
-            raise HTTPException(422, "PRU spend selection index is out of range")
-        if nonce < 0 or nonce > 255:
-            raise HTTPException(422, "PRU spend nonce must fit in one byte")
-        if amount <= 0:
-            raise HTTPException(422, "PRU spend amount must be positive")
-        if (pru_index, nonce) in seen_nonces:
-            raise HTTPException(422, "PRU spend selection nonce is duplicated")
-        seen_nonces.add((pru_index, nonce))
-        public_key = route_prus.get(pru_index)
-        if not public_key:
-            raise HTTPException(422, "Selected PRU is not part of the finalized route")
-        selections.append(PruSpendPermitSelection(
-            tin=tin,
-            pruIndex=pru_index,
-            nonce=nonce,
-            publicKey=public_key,
-            spendAuthHash=_compute_pru_spend_auth_hash(
-                tin=tin,
-                pru_index=pru_index,
-                owner_pubkey=owner_pubkey,
-            ),
-            amountBaseUnits=str(amount),
-        ))
-        total_selected += amount
-    if total_selected != pru_funding_amount + sender_fee_amount:
-        raise HTTPException(422, "PRU funding selections must equal funding amount plus sender fee")
-    execution_plan = {
-        "planId": f"intent-{intent_id}",
-        "version": 2,
-        "tinId": tin,
-        "fundingMode": "mixed_zk_pru_wallet_v2" if intent.get("senderFundingMode") == "mixed_pru_wallet_v1" else "zk_pru_only_v2",
-        "scopedSpendAuthorizations": [
-            {
-                "pruIndex": selection.pruIndex,
-                "amountBaseUnits": selection.amountBaseUnits,
-                "nonce": selection.nonce,
-                "authorizationHash": selection.spendAuthHash,
-                "authorizationMessage": f"{tin}:{selection.pruIndex}:{selection.nonce}",
-                "authorizationSignature": "",
-                "authorityPublicKey": selection.publicKey,
-            }
-            for selection in selections
-        ],
-        "executionPlanSignatureMessage": f"Execution Plan V2\nPlanId: intent-{intent_id}\nFunding: {('mixed_zk_pru_wallet_v2' if intent.get('senderFundingMode') == 'mixed_pru_wallet_v1' else 'zk_pru_only_v2')}\nSelectedPrus: {','.join(str(selection.pruIndex) for selection in selections)}",
-        "executionPlanSignature": "",
-    }
-    intent["assignedCrankerPubkey"] = body.operatorPubkey
-    intent["updatedAt"] = datetime.now(timezone.utc).isoformat()
-    await r.hset(k_intents(), intent_id, json.dumps(intent))
-    return PruSpendPermitResponse(
-        paymentId=str(intent["paymentId"]),
-        tokenMintAddress=str(intent["tokenMintAddress"]),
-        commitmentHash=str(intent.get("commitmentHash") or ""),
-        fundingAmountBaseUnits=str(pru_funding_amount),
-        senderFeeAmountBaseUnits=str(sender_fee_amount),
-        selections=selections,
-        executionPlanV2=execution_plan,
-    )
-
-# ── Work queue ────────────────────────────────────────────────────────────────
+# â”€â”€ Work queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get(
     "/intent-work",
     response_model=list[IntentWorkItem],
@@ -4199,7 +3832,7 @@ async def list_pending_intent_work(
     )[:limit]
     return [IntentWorkItem(intent=intent_submission_work(intent)) for intent in intents]
 
-# ── Epoch management ──────────────────────────────────────────────────────────
+# â”€â”€ Epoch management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.get("/metrics", response_model=MetricsResponse)
 async def get_metrics() -> MetricsResponse:
@@ -4351,6 +3984,6 @@ async def close_epoch() -> EpochCloseResult:
     logger.info("Manual epoch close triggered")
     return await close_epoch_task()
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# â”€â”€ Entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if __name__ == "__main__":
     uvicorn.run("server:app", host=HOST, port=PORT, reload=False)

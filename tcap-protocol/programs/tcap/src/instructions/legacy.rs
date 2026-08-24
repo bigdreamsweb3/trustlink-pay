@@ -478,12 +478,26 @@ pub fn register_tsn_authorization_v1(
         authorization.authorization_digest != [0; 32] && authorization.replay_nonce != [0; 32],
         TcapError::EmptyCommitment
     );
+    // This receipt is intentionally restricted to the credit-only transition.
+    // AuthorizationOnly is an internal/preflight mode and must never mint a
+    // receipt consumable by `credit_tcap_tin_tip_v1`.
     require!(
         matches!(
             authorization.transition_type,
-            TcapTransitionTypeV1::AuthorizationOnly
+            TcapTransitionTypeV1::ConfidentialSettlement
         ),
-        TcapError::ProofVerifierDisabled
+        TcapError::InvalidSettlementMode
+    );
+    require!(
+        authorization.tin_tip != Pubkey::default()
+            && authorization.previous_commitment != [0; 32]
+            && authorization.new_commitment != [0; 32]
+            && authorization.policy_commitment != [0; 32]
+            && authorization.gpru_scope_commitment != [0; 32]
+            && authorization.nullifier != [0; 32]
+            && authorization.sequence > 0
+            && authorization.token_id > 0,
+        TcapError::InvalidTipAuthorization
     );
     require!(
         !ctx.accounts.asset_entry.paused && !ctx.accounts.asset_entry.deprecated,
@@ -536,8 +550,28 @@ pub fn register_tsn_authorization_v1(
     );
 
     let receipt = &mut ctx.accounts.authorization_receipt;
+    write_confidential_credit_receipt(
+        receipt,
+        ctx.accounts.config.key(),
+        authorization,
+        ctx.bumps.authorization_receipt,
+    );
+    emit!(TsnProgramAuthorizedV1 {
+        receipt: receipt.key(),
+        epoch_id: receipt.epoch_id,
+        authorization_digest: receipt.authorization_digest
+    });
+    Ok(())
+}
+
+fn write_confidential_credit_receipt(
+    receipt: &mut TsnAuthorizationReceiptV1,
+    config: Pubkey,
+    authorization: TsnSettlementAuthorizationV1,
+    bump: u8,
+) {
     receipt.version = TCAP_STATE_VERSION_V1;
-    receipt.config = ctx.accounts.config.key();
+    receipt.config = config;
     receipt.tsn_program_id = authorization.tsn_program_id;
     receipt.epoch_id = authorization.epoch_id;
     receipt.accepted_intent_root = authorization.accepted_intent_root;
@@ -545,15 +579,127 @@ pub fn register_tsn_authorization_v1(
     receipt.asset_commitment = authorization.asset_commitment;
     receipt.authorization_digest = authorization.authorization_digest;
     receipt.replay_nonce = authorization.replay_nonce;
+    receipt.tin_tip = authorization.tin_tip;
+    receipt.previous_commitment = authorization.previous_commitment;
+    receipt.new_commitment = authorization.new_commitment;
+    receipt.sequence = authorization.sequence;
+    receipt.token_id = authorization.token_id;
+    receipt.policy_commitment = authorization.policy_commitment;
+    receipt.gpru_scope_commitment = authorization.gpru_scope_commitment;
+    receipt.nullifier = authorization.nullifier;
+    receipt.transition_type = authorization.transition_type;
+    receipt.valid_after_slot = authorization.valid_after_slot;
+    receipt.expires_at_slot = authorization.expires_at_slot;
     receipt.non_spendable = true;
     receipt.consumed = false;
-    receipt.bump = ctx.bumps.authorization_receipt;
-    emit!(TsnProgramAuthorizedV1 {
-        receipt: receipt.key(),
-        epoch_id: receipt.epoch_id,
-        authorization_digest: receipt.authorization_digest
-    });
-    Ok(())
+    receipt.bump = bump;
+}
+
+#[cfg(test)]
+mod confidential_settlement_receipt_tests {
+    use super::*;
+
+    fn confidential_authorization() -> TsnSettlementAuthorizationV1 {
+        TsnSettlementAuthorizationV1 {
+            version: TSN_AUTHORIZATION_VERSION_V1,
+            tsn_program_id: Pubkey::new_unique(),
+            epoch_id: 7,
+            accepted_intent_root: [1; 32],
+            previous_tcap_root: [2; 32],
+            transition_type: TcapTransitionTypeV1::ConfidentialSettlement,
+            asset_commitment: [3; 32],
+            authorization_digest: [4; 32],
+            verifier_domain_version: 1,
+            valid_after_slot: 10,
+            expires_at_slot: 20,
+            replay_nonce: [5; 32],
+            tin_tip: Pubkey::new_unique(),
+            previous_commitment: [6; 32],
+            new_commitment: [7; 32],
+            sequence: 1,
+            token_id: 1,
+            policy_commitment: [8; 32],
+            gpru_scope_commitment: [9; 32],
+            nullifier: [10; 32],
+        }
+    }
+
+    #[test]
+    fn confidential_settlement_abi_has_credit_fields() {
+        let authorization = confidential_authorization();
+        assert!(matches!(
+            authorization.transition_type,
+            TcapTransitionTypeV1::ConfidentialSettlement
+        ));
+        assert_ne!(authorization.tin_tip, Pubkey::default());
+        assert_ne!(authorization.previous_commitment, [0; 32]);
+        assert_ne!(authorization.new_commitment, [0; 32]);
+        assert_ne!(authorization.policy_commitment, [0; 32]);
+        assert_ne!(authorization.gpru_scope_commitment, [0; 32]);
+        assert_ne!(authorization.nullifier, [0; 32]);
+        assert!(authorization.sequence > 0 && authorization.token_id > 0);
+    }
+
+    #[test]
+    fn authorization_only_is_not_a_credit_transition() {
+        let mut authorization = confidential_authorization();
+        authorization.transition_type = TcapTransitionTypeV1::AuthorizationOnly;
+        assert!(!matches!(
+            authorization.transition_type,
+            TcapTransitionTypeV1::ConfidentialSettlement
+        ));
+    }
+
+    #[test]
+    fn receipt_copy_preserves_every_credit_field() {
+        let authorization = confidential_authorization();
+        let mut receipt = TsnAuthorizationReceiptV1 {
+            version: 0,
+            config: Pubkey::default(),
+            tsn_program_id: Pubkey::default(),
+            epoch_id: 0,
+            accepted_intent_root: [0; 32],
+            previous_tcap_root: [0; 32],
+            asset_commitment: [0; 32],
+            authorization_digest: [0; 32],
+            replay_nonce: [0; 32],
+            tin_tip: Pubkey::default(),
+            previous_commitment: [0; 32],
+            new_commitment: [0; 32],
+            sequence: 0,
+            token_id: 0,
+            policy_commitment: [0; 32],
+            gpru_scope_commitment: [0; 32],
+            nullifier: [0; 32],
+            transition_type: TcapTransitionTypeV1::AuthorizationOnly,
+            valid_after_slot: 0,
+            expires_at_slot: 0,
+            non_spendable: false,
+            consumed: false,
+            bump: 0,
+        };
+        write_confidential_credit_receipt(&mut receipt, Pubkey::new_unique(), authorization, 9);
+        assert_eq!(receipt.tin_tip, authorization.tin_tip);
+        assert_eq!(
+            receipt.previous_commitment,
+            authorization.previous_commitment
+        );
+        assert_eq!(receipt.new_commitment, authorization.new_commitment);
+        assert_eq!(receipt.sequence, authorization.sequence);
+        assert_eq!(receipt.token_id, authorization.token_id);
+        assert_eq!(receipt.policy_commitment, authorization.policy_commitment);
+        assert_eq!(
+            receipt.gpru_scope_commitment,
+            authorization.gpru_scope_commitment
+        );
+        assert_eq!(receipt.nullifier, authorization.nullifier);
+        assert_eq!(receipt.valid_after_slot, authorization.valid_after_slot);
+        assert_eq!(receipt.expires_at_slot, authorization.expires_at_slot);
+        assert!(matches!(
+            receipt.transition_type,
+            TcapTransitionTypeV1::ConfidentialSettlement
+        ));
+    }
 }
 
 #[derive(Accounts)]

@@ -73,3 +73,30 @@ export function verifyGpruAuthorizationSignature(params: GpruAuthorization & {
     fixed(params.authorizationPublicKey, "GPRU authorization public key"),
   );
 }
+
+/**
+ * Owner-authorized O(1) private balance read hook for the live GPRU/TCap
+ * route.  GPRU itself never stores balances: the caller supplies the TCap tip
+ * reader, opaque snapshot store, and local decrypt/verify function.  The
+ * commitment from the tip is used as the only lookup key, so no PRU list or
+ * token-account enumeration is required.
+ */
+export async function readGpruPrivateBalance<TTip extends {
+  current_commitment: Uint8Array | string;
+  sequence: bigint | number;
+}, TSnapshot>(params: {
+  fetchTip: () => Promise<TTip>;
+  loadEncryptedSnapshot: (commitmentHex: string) => Promise<unknown | null>;
+  decryptAndVerify: (envelope: unknown, tip: TTip) => Promise<TSnapshot>;
+}): Promise<TSnapshot> {
+  const tip = await params.fetchTip();
+  const commitment = typeof tip.current_commitment === "string"
+    ? tip.current_commitment.toLowerCase()
+    : bytesToHex(tip.current_commitment);
+  if (!/^[0-9a-f]{64}$/.test(commitment)) {
+    throw new Error("TCap tip commitment must be exactly 32 bytes");
+  }
+  const envelope = await params.loadEncryptedSnapshot(commitment);
+  if (!envelope) throw new Error("private snapshot not found");
+  return params.decryptAndVerify(envelope, tip);
+}

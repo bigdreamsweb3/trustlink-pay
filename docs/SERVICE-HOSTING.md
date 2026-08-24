@@ -15,7 +15,7 @@ mainnet production guarantee.
 | TSN Node               | Stateless verification, route resolution, epoch work, and Receiver work processing | Wasmer                   | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node)               |
 | Cranker operator       | Leases verified work and submits the exact authorized Solana transaction           | Operator machine         | No public service URL                                                         | `tsn-protocol/tsn-cranker-op-daemon/`                                             |
 | TSN Program            | On-chain authorization, commitments, escrow, replay, and settlement state          | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/tsn/protocol/`                                                      |
-| TIN Program            | On-chain Transfer Identity Number registry                                         | Solana Devnet            | Program account, not HTTP                                                     | `transfer-identity-protocol/`                                                     |
+| TIP / TIN registrar    | On-chain Transfer Identity Number registry                                         | Solana Devnet            | Program account, not HTTP                                                     | `transfer-identity-protocol/`                                                     |
 
 The Cranker is intentionally not hosted as a public API. An operator runs it
 on a workstation, VM, or private machine with its fee-payer/operator key. The
@@ -147,4 +147,5 @@ does not by itself prove that a payment settled on-chain.
 | Program                | Program ID                                    |
 | ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TIN registry           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TCAP                    | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` |
+| TIP / TIN registrar     | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |

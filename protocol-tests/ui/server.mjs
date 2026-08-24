@@ -41,9 +41,10 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === "/" || url.pathname.startsWith("/runs/")) {
     const html = await fs.readFile(path.join(root, "protocol-tests/ui/public/index.html"), "utf8");
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(html.replace("</body>", '<script src="/wallet-controller.js"></script></body>')); return;
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(html.replace("</body>", '<script src="/wallet-controller.js"></script><script src="/bridge-controller.js"></script></body>')); return;
   }
   if (url.pathname === "/wallet-controller.js") { const js = await fs.readFile(path.join(root, "protocol-tests/ui/public/wallet-controller.js"), "utf8"); res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" }); res.end(js); return; }
+  if (url.pathname === "/bridge-controller.js") { const js = await fs.readFile(path.join(root, "protocol-tests/ui/public/bridge-controller.js"), "utf8"); res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" }); res.end(js); return; }
   res.writeHead(404); res.end("Not found");
 });
 
@@ -81,6 +82,16 @@ async function handleApi(req, res, url) {
     try { const body = await readJson(req); const publicKey = new PublicKey(body.publicKey); session.signer = null; session.wallet = { type: "BROWSER_WALLET", publicKey: publicKey.toBase58(), source: "Browser wallet", signerLoaded: false }; return json(res, 200, await safeWallet(session, true)); } catch { return json(res, 400, { error: "INVALID_BROWSER_WALLET" }); }
   }
   if (req.method === "GET" && url.pathname === "/api/session/wallet") return json(res, 200, await safeWallet(session));
+  if (req.method === "POST" && url.pathname === "/api/tcap/credit/preflight") {
+    if (!session.wallet?.publicKey) return json(res, 409, { status: "BLOCKED_TEST_WALLET_NOT_LOADED", error: "TEST_WALLET_NOT_LOADED" });
+    return json(res, 200, {
+      status: "PREFLIGHT_OK", rpcConfigured: Boolean(rpc), rpc,
+      walletPublicKey: session.wallet.publicKey, walletType: session.wallet.type,
+      instruction: "register_tsn_authorization_v1 + credit_tcap_tin_tip_v1",
+      liveSubmission: false,
+      message: "Bridge preflight passed. Live submission remains disabled until bridge account fields are configured and reviewed."
+    });
+  }
   if (req.method === "DELETE" && url.pathname === "/api/session/wallet") { session.signer = null; session.wallet = null; session.simulation = null; session.pendingTransaction = null; return json(res, 200, { removed: true }); }
   if (req.method === "GET" && url.pathname === "/api/diagnostics/config") return json(res, 200, diagnosticConfig());
   if (req.method === "GET" && url.pathname === "/api/diagnostics") return json(res, 200, { records: await loadDiagnosticRecords(root, session.id), config: diagnosticConfig() });

@@ -6,7 +6,12 @@ TrustLink Pay is being built as identity-first stablecoin payment infrastructure
 
 The project began with a practical question: why should normal users need to exchange wallet addresses for everyday crypto payments?
 
-TrustLink Pay developed from a familiar payment experience toward a protocol design built around Transfer Identity Numbers, ZK-PRU protected receiving authorization, and TSN settlement. Phone and WhatsApp signals can help users assess recipients, but the TIN is the public payment identity. TSN exists because identity resolution alone does not prevent a simple public wallet-to-wallet payment graph.
+TrustLink Pay developed from a familiar payment experience toward a protocol
+design built around the Transfer Identity Protocol (TIP), Transfer Identity
+Numbers, a privacy-receiving root, GPRU authorization, TCAP private accounting
+and TSN settlement. ZK-PRU was an
+earlier experiment and is documented as retired. Phone and WhatsApp signals can
+help users assess recipients, but the TIN is the payment identity.
 
 ## Milestones
 
@@ -18,12 +23,13 @@ TrustLink Pay participated in StableHacks 2026 in the Programmable Stablecoin Pa
 
 TrustLink Pay participated in The Bags Hackathon in the Payments track. This stage extended the identity-first payment model toward SPL asset transfers and wallet-address-free recipient experiences.
 
-### Transfer Identity and TSN
+### TIP (Transfer Identity Protocol) and TSN
 
 The project evolved toward two protocol-level answers:
 
-- Transfer Identity provides a portable 10-digit TIN for payments and identity resolution.
-- TSN provides the settlement workflow for payment intents, ZK-PRU route authorization, Cranker execution, proof records, and epoch-aware accounting.
+- TIP provides a portable 10-digit TIN for payments and identity resolution.
+- TSN provides the settlement workflow for payment intents, GPRU authorization,
+  Cranker execution, proof records, and Epoch Treasury accounting.
 
 ## Ecosystem support
 

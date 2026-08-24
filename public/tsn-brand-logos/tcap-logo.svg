@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tcapLock" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22C7E0"/>
+      <stop offset="100%" stop-color="#2E9E63"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0A0A0A"/>
+  <g transform="translate(256,256)">
+    <polygon points="0,-160 138.6,-80 138.6,80 0,160 -138.6,80 -138.6,-80"
+      fill="none" stroke="#2A2A2A" stroke-width="10"/>
+    <!-- lock body representing encrypted private balance -->
+    <path d="M -46,-10 v -26 a 46,46 0 0 1 92,0 v 26" fill="none" stroke="url(#tcapLock)" stroke-width="12" stroke-linecap="round"/>
+    <rect x="-62" y="-10" width="124" height="96" rx="16" fill="#12203E" stroke="url(#tcapLock)" stroke-width="8"/>
+    <circle cx="0" cy="34" r="12" fill="#22C7E0"/>
+    <rect x="-5" y="34" width="10" height="26" fill="#22C7E0"/>
+  </g>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="800" fill="#F4EBE0" letter-spacing="4">TCAP</text>
+</svg>

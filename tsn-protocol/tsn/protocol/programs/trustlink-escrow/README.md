@@ -27,7 +27,7 @@ Use the root deploy guard before deploying:
 
 ```bash
 npm run deploy:doctor
-npm run tsn:program:deploy:checked
+npm run tsn:program:deploy:devnet
 ```
 
 See `docs/DEPLOYMENT.md` for the current toolchain requirements.

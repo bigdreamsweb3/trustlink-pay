@@ -39,7 +39,7 @@ User device signs funding authorization off-chain
 ```
 
 The daemon logs pool state, settlement submission, and the final Receiver state.
-It never logs private keys, master seeds, decrypted PRU routes, or raw
+It never logs private keys, master seeds, decrypted commitments, or raw
 authorization payloads.
 
 ## Local Operation

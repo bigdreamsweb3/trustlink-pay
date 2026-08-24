@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
@@ -8,6 +9,7 @@ import { writeRunReport } from "./report-writer.mjs";
 import { reviewEvidence } from "./ai-reviewer.mjs";
 import { classifyFundingEvidence } from "./privacy-classifier.mjs";
 import { runSecurityStub, securityScenarios } from "../scenarios/security-stubs.mjs";
+import { runTcapCreditSmoke } from "../scenarios/tcap-credit-smoke.mjs";
 
 // The npm script starts plain Node, so .env files are not loaded automatically.
 // Load only local project files; never print their contents.
@@ -23,7 +25,7 @@ const uiServer = spawn(process.execPath, [path.join(root, "protocol-tests", "ui"
 uiServer.unref();
 await fs.writeFile(path.join(runDir, "live-events.jsonl"), "", "utf8");
 
-const rpc = process.env.TCAP_RPC_URL ?? "https://api.devnet.solana.com";
+const rpc = process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const connection = new Connection(rpc, "confirmed");
 const timeline = [];
 const errors = [];
@@ -59,15 +61,15 @@ if (!testWallet) {
 await persistPipeline();
 
 const funding = tcapReady && testWallet
-  ? await runNode(path.join(root, "tcap-protocol", "scripts", "devnet-funding-claim.mjs"), { TCAP_RPC_URL: rpc, SOLANA_WALLET: testWallet.path })
-  : { exitCode: 1, stdout: "", stderr: "BLOCKED_NOT_DEPLOYED: deposit_with_funding_commitment_v1" };
-if (testWallet) { stage("6/10", "Simulate deposit_with_funding_commitment_v1", tcapReady ? "Invoke the deployed TCAP discriminator against Devnet" : "Block because the Devnet program account is unavailable"); markStep("simulate_funding_instruction", "RUNNING"); }
+  ? await runTcapCreditSmoke({ root })
+  : { exitCode: 1, stdout: "", stderr: "BLOCKED_NOT_DEPLOYED: credit_tcap_tin_tip_v1" };
+if (testWallet) { stage("6/10", "Run GPRU/TCap credit tip smoke", tcapReady ? "Invoke the TSN authorization wrapper and TCap credit path" : "Block because the Devnet program account is unavailable"); markStep("simulate_funding_instruction", "RUNNING"); }
 const fundingResult = parseStrictJson(funding.stdout);
 const fundingStatus = !testWallet ? "BLOCKED_TEST_WALLET_NOT_CONFIGURED" : (funding.exitCode === 0 && fundingResult ? "PASSED" : (tcapReady ? "FAILED" : "BLOCKED_NOT_DEPLOYED"));
 if (testWallet) { stageResult("6/10", fundingStatus, fundingResult?.signature ?? "no confirmed signature"); markStep("simulate_funding_instruction", fundingStatus, fundingStatus === "FAILED" ? { error: funding.stderr } : {}); }
-scenariosReport.funding_entry_success.status = fundingStatus;
-timeline.push({ step: "deposit_with_funding_commitment_v1", status: fundingStatus, evidence: fundingResult ?? { stdout: redact(funding.stdout), stderr: redact(funding.stderr) }, classification: "PUBLIC_ON_CHAIN" });
-if (fundingStatus === "FAILED") errors.push({ step: "deposit_with_funding_commitment_v1", stderr: redact(funding.stderr), stdout: redact(funding.stdout) });
+scenariosReport.tcap_credit_tip_snapshot.status = fundingStatus;
+timeline.push({ step: "tcap_credit_tip_snapshot", status: fundingStatus, evidence: fundingResult ?? { stdout: redact(funding.stdout), stderr: redact(funding.stderr) }, classification: "PUBLIC_ON_CHAIN" });
+if (fundingStatus === "FAILED") errors.push({ step: "tcap_credit_tip_snapshot", stderr: redact(funding.stderr), stdout: redact(funding.stdout) });
 
 if (fundingStatus === "PASSED") {
   markStep("verify_funding_state", "PASSED");
@@ -89,7 +91,7 @@ const fixtureStatus = "REUSED_DEVNET_STATE";
 diagnostic("Evaluate component boundaries", "Separate TCAP funding evidence from TIP/TIN, TSN, and settlement readiness");
 const componentResults = { tcapFundingEntry: fundingStatus, tipTinRouting: "NOT_IMPLEMENTED", tsnIntent: "NOT_IMPLEMENTED", tcapSettlement: "NOT_IMPLEMENTED" };
 const overallStatus = fundingStatus === "FAILED" ? "PIPELINE_FAILED" : (["BLOCKED_NOT_DEPLOYED", "BLOCKED_TEST_WALLET_NOT_CONFIGURED"].includes(fundingStatus) ? "PIPELINE_BLOCKED" : "PIPELINE_PASSED");
-const invariantResults = fundingResult ? [{ name: "actual_assets_equals_vault", result: fundingResult.after?.reserve?.actualAssets === fundingResult.after?.vault }, { name: "assets_cover_pending_liabilities", result: BigInt(fundingResult.after?.reserve?.actualAssets ?? 0) >= BigInt(fundingResult.after?.reserve?.pendingLiabilities ?? 0) }] : [];
+const invariantResults = [];
 const sanitizedEvidence = { status: overallStatus, programVerification, timeline, scenarios: scenariosReport, invariants: invariantResults, errors };
 let aiResult;
 diagnostic("Run Claude Protocol Observer", process.env.TCAP_ENABLE_AI_REVIEW === "1" ? "Review sanitized evidence advisory-only" : "Skip because AI review is disabled");
@@ -109,7 +111,7 @@ const report = {
   sanitizedEvidence: aiResult.sanitizedEvidence,
   aiReviewJson: aiResult.json,
   aiConversation: aiResult.conversation,
-  deploymentInstructionMatrix: { source: ["deposit_with_funding_commitment_v1"], deployed: "PROVEN_ONLY_BY_DEVNET_SIMULATION_LOG", tip: "UPGRADE_REQUIRED", tsn: "UPGRADE_REQUIRED", componentResults },
+  deploymentInstructionMatrix: { source: ["register_tsn_authorization_v1", "credit_tcap_tin_tip_v1"], deployed: "PROVEN_ONLY_BY_DEVNET_SMOKE_LOG", tip: "REQUIRED", tsn: "REQUIRED", componentResults },
   errors,
   pipelineState,
   aiReview: aiResult.markdown,
@@ -140,8 +142,7 @@ async function verifyPrograms(rpcConnection) {
 }
 
 async function resolveTestWallet(rpcConnection) {
-  const configured = process.env.TRUSTLINK_TEST_WALLET_KEYPAIR;
-  if (!configured) return null;
+  const configured = process.env.TRUSTLINK_TEST_WALLET_KEYPAIR ?? process.env.SOLANA_WALLET ?? path.join(os.homedir(), ".config", "solana", "id.json");
   try {
     const walletPath = path.resolve(configured);
     const secret = JSON.parse(await fs.readFile(walletPath, "utf8"));
@@ -186,7 +187,7 @@ function stage(step, action, reason) {
 function stageResult(step, status, detail) {
   console.log(`  RESULT: ${status}`);
   console.log(`  EVIDENCE: ${detail}`);
-  appendEvent({ type: status === "PASSED" ? "STEP_PASSED" : "STEP_FAILED", runId, sceneId: step, title: step === "1/6" ? "Verify deployed TCAP program and instruction" : "Execute deposit_with_funding_commitment_v1", status, evidence: detail, timestamp: new Date().toISOString() });
+  appendEvent({ type: status === "PASSED" ? "STEP_PASSED" : "STEP_FAILED", runId, sceneId: step, title: step === "1/6" ? "Verify deployed TCAP program and instruction" : "Execute GPRU/TCap credit tip smoke", status, evidence: detail, timestamp: new Date().toISOString() });
 }
 
 function diagnostic(action, detail) {

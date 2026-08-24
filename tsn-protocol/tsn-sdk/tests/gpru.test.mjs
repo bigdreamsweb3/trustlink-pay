@@ -6,6 +6,7 @@ import {
   deriveGpruIdentity,
   verifyGpruAuthorizationBinding,
   verifyGpruAuthorizationSignature,
+  readGpruPrivateBalance,
 } from "../dist/gpru.js";
 
 const input = {
@@ -29,4 +30,19 @@ test("canonical GPRU authorization message verifies only its bound identity and 
   const signature = nacl.sign.detached(createCanonicalGpruAuthorizationMessage(authorization), signer.secretKey);
   assert.equal(verifyGpruAuthorizationSignature({ ...authorization, signature, authorizationPublicKey: signer.publicKey }), true);
   assert.equal(verifyGpruAuthorizationSignature({ ...authorization, signature, authorizationPublicKey: signer.publicKey, epochContext: new Uint8Array([9]) }), false);
+});
+
+test("GPRU private balance lookup is commitment-keyed and O(1)", async () => {
+  const calls = [];
+  const expected = "ab".repeat(32);
+  const result = await readGpruPrivateBalance({
+    fetchTip: async () => ({ current_commitment: expected, sequence: 7n }),
+    loadEncryptedSnapshot: async (commitment) => {
+      calls.push(commitment);
+      return { ciphertext: new Uint8Array([1]), nonce: new Uint8Array(12) };
+    },
+    decryptAndVerify: async (envelope, tip) => ({ envelope, tip }),
+  });
+  assert.deepEqual(calls, [expected]);
+  assert.equal(result.tip.sequence, 7n);
 });

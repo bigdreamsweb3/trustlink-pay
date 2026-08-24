@@ -38,9 +38,9 @@ The Cranker may:
 
 The Cranker must not:
 
-- decrypt a user's master seed or reconstruct a user's PRU private key;
+- decrypt a user's master seed or reconstruct a user's private commitment key;
 - choose a different source, recipient, amount, tranche, fee, or change route;
-- sign as a user, a user PRU, or any Mother-controlled settlement authority;
+- sign as a user, a user authorization, or any Mother-controlled settlement authority;
 - mark an intent paid, recoverable, or reimbursable by itself;
 - expose Receiver API keys, operator secret keys, or private route material.
 
@@ -62,7 +62,7 @@ Before an operator starts a Cranker, the deployment owner must provide:
    directly; the TSN RPC Gateway is used by the browser and application
    services, not as a replacement for the operator's submission RPC.
 6. A funded operator keypair. Use a dedicated keypair, never the upgrade
-   authority, a user wallet, or a TIN/PRU key.
+   authority, a user wallet, or a TIN commitment key.
 7. A supported token mint and enough Devnet SOL for fees and account creation.
    If policy requires a funded Cranker Vault, initialize and fund it first.
 
@@ -77,7 +77,7 @@ deployment owner should build or upgrade the on-chain program:
 
 ```bash
 npm run tsn:program:build
-npm run tsn:program:deploy
+npm run tsn:program:deploy:devnet
 ```
 
 Run those commands from the project's supported Solana/Anchor environment,
@@ -348,7 +348,7 @@ daemon's deterministic retry path.
 
 **Vault has insufficient funds.** Fund the configured Cranker Vault through the
 reviewed setup path. Do not load a user private key or make the Cranker a user
-PRU authority.
+private commitment authority.
 
 ## Security checklist
 

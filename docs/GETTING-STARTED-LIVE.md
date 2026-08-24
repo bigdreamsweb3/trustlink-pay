@@ -57,7 +57,7 @@ account state is fetched from Solana.
 6. Verify the signature on Solana Explorer using the Devnet cluster.
 
 The browser must never receive service API keys, Firebase credentials, Cranker
-keys, route-decryption keys, or private PRU material.
+keys, snapshot-decryption keys, or private commitment material.
 
 ## SDK user
 
@@ -83,7 +83,8 @@ TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 | Program                | Program ID                                    |
 | ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TIN registry           | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
+| TCAP                   | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` |
+| TIP / TIN registrar    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 The SDK owns canonical plan construction, commitments, source selection,
 route policy, bigint accounting, and local authorization helpers. Applications
@@ -149,8 +150,8 @@ The operator configures:
 - direct Solana Devnet RPC and WebSocket endpoints;
 - the deployed TSN and TIN program IDs.
 
-Crankers must not receive user private keys, master seeds, serialized PRU
-authorities, or browser secrets. They lease verified work and submit the exact
+Crankers must not receive user private keys, master seeds, serialized private
+commitments, or browser secrets. They lease verified work and submit the exact
 authorized transaction; they do not replan it.
 
 ## Evidence checklist

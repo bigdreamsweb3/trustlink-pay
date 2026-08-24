@@ -151,17 +151,7 @@ export type CreateIntentRequest = {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
-  pruSpendTin?: string | null;
-  pruSpendAmountBaseUnits?: string | null;
-  pruSpendSenderFeeBaseUnits?: string | null;
-  walletTopUpAmountBaseUnits?: string | null;
-  walletTopUpSenderFeeBaseUnits?: string | null;
-  pruSpendSelections?: Array<{
-    pruIndex: number;
-    amountBaseUnits: string;
-    nonce: number;
-  }> | null;
+  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -185,20 +175,6 @@ export type CreateIntentRequest = {
   recipientAmount?: number;
   source?: string;
   recipientTin?: string | null;
-  recipientPruIndex?: number | null;
-  recipientPruCommitment?: string | null;
-};
-
-export type PruLifecycleMutation = {
-  tinId: string;
-  tokenMint: string;
-  pruIndex: number;
-  transition: "receive" | "spend" | "sweep";
-  txId: string;
-  amount?: string | number | null;
-  ataCreated?: boolean;
-  ataRentSubsidized?: boolean;
-  activationFeeDeducted?: string | number | null;
 };
 
 export type TsnMempoolIntent = CreateIntentRequest & {
@@ -211,7 +187,6 @@ export type TsnMempoolIntent = CreateIntentRequest & {
   settlementReason?: string | null;
   postedAt: string;
   updatedAt: string;
-  pruLifecycle?: PruLifecycleMutation[];
 };
 
 export type TsnIntentWorkItem = {
@@ -257,13 +232,7 @@ export function buildCreateIntentRequest(params: {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
-  pruSpendTin?: string | null;
-  pruSpendAmountBaseUnits?: string | null;
-  pruSpendSenderFeeBaseUnits?: string | null;
-  walletTopUpAmountBaseUnits?: string | null;
-  walletTopUpSenderFeeBaseUnits?: string | null;
-  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -291,12 +260,6 @@ export function buildCreateIntentRequest(params: {
     senderSignedFundingTransaction: params.senderSignedFundingTransaction ?? null,
     senderSignedFundingFeePayer: params.senderSignedFundingFeePayer ?? null,
     senderFundingMode: params.senderFundingMode ?? null,
-    pruSpendTin: params.pruSpendTin ?? null,
-    pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits ?? null,
-    pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits ?? null,
-    walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits ?? null,
-    walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits ?? null,
-    pruSpendSelections: params.pruSpendSelections ?? null,
     privacyVersion: params.privacyVersion ?? null,
     senderTokenAccount: params.senderTokenAccount ?? null,
     transferId: params.transferId ?? null,

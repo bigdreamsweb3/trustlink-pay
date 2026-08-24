@@ -275,6 +275,12 @@ pub fn register_governed_asset_v2(
     entry.version = TCAP_STATE_VERSION_V1;
     entry.protocol_version = ctx.accounts.config.protocol_version;
     entry.registry = ctx.accounts.registry.key();
+    entry.token_id = ctx
+        .accounts
+        .registry
+        .entry_count
+        .checked_add(1)
+        .ok_or(TcapError::ArithmeticOverflow)?;
     entry.asset = TcapAssetIdV1 {
         token_program: ctx.accounts.token_program.key(),
         mint: ctx.accounts.mint.key(),

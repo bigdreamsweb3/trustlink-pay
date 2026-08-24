@@ -6,7 +6,9 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::{
-        instructions::{load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID},
+        instructions::{
+            load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID,
+        },
         Sysvar,
     },
 };
@@ -15,7 +17,7 @@ use crate::{
     cpi::create_pda_account,
     error::Error,
     instruction_auto::CreateTinParams,
-    state::{TinAccount, GlobalState},
+    state::{validate_tcap_route, GlobalState, TinAccount, TCAP_ROUTE_VERSION_NONE},
     utils::{assert_pda, assert_program_owned, load_borsh, next_tin, store_borsh, validate_name},
 };
 
@@ -45,7 +47,7 @@ pub fn process(
     if !identity.data_is_empty() {
         return Err(Error::RegistryAlreadyInitialized.into());
     }
-    if params.route_version == 0 || params.encrypted_public_route_envelope.is_empty() {
+    if !valid_route(&params) {
         return Err(Error::InvalidInstruction.into());
     }
     let expected_intent_hash = compute_owner_intent_hash(&params);
@@ -63,7 +65,11 @@ pub fn process(
     let (expected_identity_pubkey, bump) = crate::identity_pda(program_id, &identity_seed);
     assert_pda(identity, &expected_identity_pubkey)?;
 
-    if !verify_owner_intent(instructions_sysvar, &params.owner_pubkey, &params.intent_hash)? {
+    if !verify_owner_intent(
+        instructions_sysvar,
+        &params.owner_pubkey,
+        &params.intent_hash,
+    )? {
         return Err(Error::SignatureVerificationFailed.into());
     }
     let owner_pubkey_hash = hash(params.owner_pubkey.as_ref()).to_bytes();
@@ -73,11 +79,7 @@ pub fn process(
     let tin = next_tin(&global)?;
 
     // 4. Create PDA account
-    let signer_seeds: [&[u8]; 3] = [
-        crate::seeds::IDENTITY,
-        &identity_seed,
-        &[bump],
-    ];
+    let signer_seeds: [&[u8]; 3] = [crate::seeds::IDENTITY, &identity_seed, &[bump]];
     let space = TinAccount::space(
         &params.display_name,
         params.encrypted_master_seed.len(),
@@ -105,22 +107,29 @@ pub fn process(
         encrypted_public_route_envelope: params.encrypted_public_route_envelope,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
+        tcap_route_version: params.tcap_route_version,
+        tcap_relationship_commitment: params.tcap_relationship_commitment,
+        tcap_relationship_reference: params.tcap_relationship_reference,
+        tcap_policy_commitment: params.tcap_policy_commitment,
     };
     store_borsh(identity, &tin_account)?;
 
     // 6. Update global state sequence
-    global.next_sequence = global
-        .next_sequence
-        .checked_add(1)
-        .ok_or(Error::Overflow)?;
+    global.next_sequence = global.next_sequence.checked_add(1).ok_or(Error::Overflow)?;
     store_borsh(global_state, &global)
 }
 
-fn verify_owner_intent(instructions_sysvar: &AccountInfo, owner: &Pubkey, intent_hash: &[u8; 32]) -> Result<bool, ProgramError> {
+fn verify_owner_intent(
+    instructions_sysvar: &AccountInfo,
+    owner: &Pubkey,
+    intent_hash: &[u8; 32],
+) -> Result<bool, ProgramError> {
     let current_index = load_current_index_checked(instructions_sysvar)? as usize;
     for i in 0..current_index {
         if let Ok(ix) = load_instruction_at_checked(i, instructions_sysvar) {
-            if ix.program_id == solana_program::ed25519_program::ID && verify_ed25519_ix_data(&ix.data, owner, intent_hash) {
+            if ix.program_id == solana_program::ed25519_program::ID
+                && verify_ed25519_ix_data(&ix.data, owner, intent_hash)
+            {
                 return Ok(true);
             }
         }
@@ -128,7 +137,11 @@ fn verify_owner_intent(instructions_sysvar: &AccountInfo, owner: &Pubkey, intent
     Ok(false)
 }
 
-fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_message: &[u8; 32]) -> bool {
+fn verify_ed25519_ix_data(
+    data: &[u8],
+    expected_pubkey: &Pubkey,
+    expected_message: &[u8; 32],
+) -> bool {
     if data.len() < 112 || data[0] != 1 {
         return false;
     }
@@ -169,8 +182,28 @@ fn compute_owner_intent_hash(params: &CreateTinParams) -> [u8; 32] {
         &params.encrypted_public_route_envelope,
         &params.route_version.to_le_bytes(),
         &params.route_nonce,
+        &[params.tcap_route_version],
+        &params.tcap_relationship_commitment,
+        &params.tcap_relationship_reference,
+        &params.tcap_policy_commitment,
         &params.nonce,
         &params.expiry_ts.to_le_bytes(),
     ])
     .to_bytes()
+}
+
+fn valid_route(params: &CreateTinParams) -> bool {
+    if params.tcap_route_version == TCAP_ROUTE_VERSION_NONE
+        && (params.route_version == 0 || params.encrypted_public_route_envelope.is_empty())
+    {
+        return false;
+    }
+    validate_tcap_route(
+        params.tcap_route_version,
+        &params.pru_configuration_hash,
+        &params.encrypted_public_route_envelope,
+        &params.tcap_relationship_commitment,
+        &params.tcap_relationship_reference,
+        &params.tcap_policy_commitment,
+    )
 }

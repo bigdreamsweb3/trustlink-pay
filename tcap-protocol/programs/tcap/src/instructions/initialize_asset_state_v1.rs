@@ -85,6 +85,7 @@ pub fn handler(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
     reserve.version = TCAP_STATE_VERSION_V1;
     reserve.protocol_version = ctx.accounts.config.protocol_version;
     reserve.asset_state = state.key();
+    reserve.asset_entry = state.key();
     reserve.future_vault = state.future_vault;
     reserve.reserve_authority = state.reserve_authority;
     reserve.actual_assets = 0;
@@ -105,7 +106,7 @@ pub fn handler(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
         mint: state.asset.mint,
         token_program: state.asset.token_program,
     });
-    
+
     emit!(ReserveVaultInitializedV1 {
         version: TCAP_INSTRUCTION_VERSION_V1,
         asset_entry: state.key(), // emitted as asset_entry to not break existing clients

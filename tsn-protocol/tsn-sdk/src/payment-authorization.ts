@@ -4,9 +4,7 @@ import {
   type TsnMempoolIntent,
 } from "./contracts.js";
 import {
-  buildMixedPaymentMessage,
   buildPaymentIntentMessage,
-  buildPruSpendMessage,
 } from "./canonical-message.js";
 import { TsnHttpClient } from "./client.js";
 
@@ -23,9 +21,7 @@ export function createSenderPaymentAuthorizationMessage(params: {
   nonce?: string;
   issuedAt: string;
   expiresAt?: string;
-  fundingMode?: "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2" | "wallet_only_v2";
-  pruPortionBaseUnits?: bigint | number | string;
-  walletTopUpPortionBaseUnits?: bigint | number | string;
+  fundingMode?: "wallet_only_v2" | "epoch_treasury_v1";
 }) {
   const recipientTin =
     params.receiverIdentity.match(/(?:^|\|)tin:(\d+)/)?.[1] ??
@@ -37,36 +33,6 @@ export function createSenderPaymentAuthorizationMessage(params: {
   }
   const amountBaseUnits = BigInt(Math.round(params.amount * 1_000_000));
   const feeBaseUnits = BigInt(Math.round(params.senderFeeAmount * 1_000_000));
-  const usesMixedFunding = params.fundingMode === "mixed_zk_pru_wallet_v2";
-  const usesPruFunding = params.fundingMode === "zk_pru_only_v2";
-  if (usesMixedFunding) {
-    return buildMixedPaymentMessage({
-      amountBaseUnits,
-      recipientTin,
-      recipientRouteCommitment: params.recipientRouteCommitment,
-      recipientRouteVersion: params.recipientRouteVersion,
-      feeBaseUnits,
-      pruPortionBaseUnits: BigInt(params.pruPortionBaseUnits ?? 0),
-      walletTopUpPortionBaseUnits: BigInt(
-        params.walletTopUpPortionBaseUnits ?? 0,
-      ),
-      nonce: params.nonce ?? "",
-      expires:
-        params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
-    });
-  }
-  if (usesPruFunding) {
-    return buildPruSpendMessage({
-      amountBaseUnits,
-      recipientTin,
-      recipientRouteCommitment: params.recipientRouteCommitment,
-      recipientRouteVersion: params.recipientRouteVersion,
-      feeBaseUnits,
-      nonce: params.nonce ?? "",
-      expires:
-        params.expiresAt ?? new Date(Date.now() + 5 * 60_000).toISOString(),
-    });
-  }
   return buildPaymentIntentMessage({
     amountBaseUnits,
     recipientTin,
@@ -105,9 +71,7 @@ export function createPaymentAuthorization(params: {
   nonce?: string;
   issuedAt?: string;
   expiresAt?: string;
-  fundingMode?: "zk_pru_only_v2" | "mixed_zk_pru_wallet_v2" | "wallet_only_v2";
-  pruPortionBaseUnits?: bigint | number | string;
-  walletTopUpPortionBaseUnits?: bigint | number | string;
+  fundingMode?: "wallet_only_v2" | "epoch_treasury_v1";
 }) {
   const nonce = params.nonce ?? createPaymentAuthorizationNonce();
   const issuedAt = params.issuedAt ?? new Date().toISOString();
@@ -143,13 +107,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
-  pruSpendTin?: string | null;
-  pruSpendAmountBaseUnits?: string | null;
-  pruSpendSenderFeeBaseUnits?: string | null;
-  walletTopUpAmountBaseUnits?: string | null;
-  walletTopUpSenderFeeBaseUnits?: string | null;
-  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -175,12 +133,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
         params.senderSignedFundingTransaction,
       senderSignedFundingFeePayer: params.senderSignedFundingFeePayer,
       senderFundingMode: params.senderFundingMode,
-      pruSpendTin: params.pruSpendTin,
-      pruSpendAmountBaseUnits: params.pruSpendAmountBaseUnits,
-      pruSpendSenderFeeBaseUnits: params.pruSpendSenderFeeBaseUnits,
-      walletTopUpAmountBaseUnits: params.walletTopUpAmountBaseUnits,
-      walletTopUpSenderFeeBaseUnits: params.walletTopUpSenderFeeBaseUnits,
-      pruSpendSelections: params.pruSpendSelections,
       privacyVersion: params.privacyVersion,
       senderTokenAccount: params.senderTokenAccount,
       transferId: params.transferId,
@@ -219,13 +171,7 @@ export async function submitPaymentAuthorizationToMempool(params: {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "sponsored_sender_cosigned" | string | null;
-  pruSpendTin?: string | null;
-  pruSpendAmountBaseUnits?: string | null;
-  pruSpendSenderFeeBaseUnits?: string | null;
-  walletTopUpAmountBaseUnits?: string | null;
-  walletTopUpSenderFeeBaseUnits?: string | null;
-  pruSpendSelections?: CreateIntentRequest["pruSpendSelections"];
+  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;

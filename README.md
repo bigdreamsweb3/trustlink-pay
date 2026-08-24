@@ -37,7 +37,7 @@ flowchart TD
     subgraph DEVICE["Authorized sender device"]
         B["2. TSN SDK resolves the route and selects sources"]
         C["3. SDK builds the signed intent, route commitment, nonce, and expiry"]
-        D["4. Main wallet and selected ZK-PRU authorities sign locally"]
+        D["4. Authorized device signs the GPRU scope locally"]
     end
 
     F["5. Frontend submits the signed intent to TSN Receiver"]
@@ -105,14 +105,23 @@ liquidity payer. The original payment-intent vault is not written as `Paid` or
 is permitted only after the TSN Node/verifier decision and is credited to the
 Cranker that held the valid lease.
 
+## Canonical names
+
+- **TSN:** Transfer Settlement Network, the payment coordination and settlement network.
+- **TIN:** Transfer Identity Number, the 10-digit identity used to discover an authorized route.
+- **TIP:** Transfer Identity Protocol (the Transfer Identity stack that issues and resolves TINs).
+- **TCAP (Transfer Confidential Asset Protocol):** private balance accounting for commitment-backed tip credits and encrypted owner snapshots.
+- **GPRU:** non-custodial authorization and routing; it never holds funds or balances.
+
 ## Core terms
 
 - **TSN:** the complete payment coordination and settlement network.
-- **TIN:** a 10-digit Transfer Identity Number used to discover an authorized
+- **TIN:** a 10-digit Transfer Identity Number (TIP identity) used to discover an authorized
   payment route without exchanging a normal wallet address.
-- **ZK-PRU:** TSN's protected receiving and spending subsystem. A wallet-owned
-  encrypted TIN envelope unlocks on any device where the owner approves the
-  wallet signature; it uses scoped child authorities and policy-driven routes.
+- **GPRU:** TSN's non-custodial authorization and routing layer. It carries
+  scoped permissions and commitments but never holds funds or balances.
+- **TCAP:** the private balance accounting layer. ConfidentialSettlement
+  credits advance a tip and persist an encrypted owner snapshot.
 - **TSN SDK:** the local planner and authorization layer that creates the
   immutable payment route and commitment.
 - **TSN Receiver:** the durable ingress, work queue, leases, and status-read
@@ -124,10 +133,8 @@ Cranker that held the valid lease.
   payment.
 - **TSN Program:** the Solana program that verifies authorization, leases,
   commitments, replay state, and enforced token movement.
-- **Epoch treasury + opaque slots:** epoch-scoped program accounts hold aggregate
-  liabilities; a keyed slot is first created only by settlement or refund.
-- **CrankerVault:** the protocol-controlled liquidity vault from which the
-  leased Cranker pays the recipient and protocol fees.
+- **Epoch Treasury:** epoch-scoped program accounts coordinate aggregate funding
+  and settlement liability for the live credit path.
 
 Solana validators provide transaction execution, ordering, consensus, and
 finality. They are not TSN Nodes or Crankers. TSN uses Solana; it does not
@@ -135,9 +142,9 @@ replace Solana consensus.
 
 ## Supported routes
 
-1. Native TIN-to-TIN: protected ZK-PRU source to protected ZK-PRU destination.
-2. Wallet-to-TIN: public wallet source to protected TIN destination.
-3. TIN-to-wallet: protected source route to a public wallet exit.
+1. TIN-to-TIN: TIN identity and privacy-receiving-root route to a TCAP credit.
+2. Wallet-to-TIN: public source authorization to a private TIN credit.
+3. TIN-to-wallet: a future proof-gated exit interface; live exits are disabled.
 4. Wallet-to-wallet: public compatibility settlement.
 
 The complete stage-by-stage flow is in
@@ -190,17 +197,22 @@ flowchart TD
 | PRU source batch B | ZK-PRU source movement; completes the three-source spend         | [2M26JcpS...](https://solscan.io/tx/2M26JcpSVhKAQvB5yC3Pp4L6NYLHiU8UTMFMsrMbJwt2Jj23dd3pqRG8nWTxerYrcXqm7R78Jt4992smK7jh7eWJ?cluster=devnet) |
 | Settlement         | 10 USDC settlement into the recipient TIN's new receiving ZK-PRU | [46wGVb9s...](https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet) |
 
+The following is historical Devnet evidence from the retired route model. It is
+preserved for auditability and is not the current receiving architecture.
+
 The signatures above were supplied as the project's Devnet evidence. The
 repository does not infer a per-signature token split where explorer data is
 unavailable; reviewers can inspect the linked Devnet transactions directly.
-This demonstrates route separation and receiving through a ZK-PRU, not a claim
-of perfect cryptographic transaction unlinkability from Solana's public ledger.
+This records a superseded ZK-PRU experiment, not the current TIN/GPRU/TCAP
+credit path and not a claim of perfect cryptographic transaction unlinkability
+from Solana's public ledger.
 
 ## Start reading
 
+- [Current architecture](./docs/CURRENT-ARCHITECTURE.md)
 - [Protocol architecture](./docs/protocol-architecture.md)
 - [Identity and TIN](./docs/identity-and-tin.md)
-- [ZK-PRU](./docs/zk-pru.md)
+- [ZK-PRU retired](./docs/ZK-PRU-RETIRED.md)
 - [Network and runtime](./docs/network-and-runtime.md)
 - [Security model](./docs/security-model.md)
 - [Operations and testing](./docs/operations-and-testing.md)
@@ -210,21 +222,22 @@ of perfect cryptographic transaction unlinkability from Solana's public ledger.
 
 ## Status boundaries
 
-The TSN Node, SDK, Cranker, TSN Program, Receiver, epoch treasury, and Mother
-DNA are the active runtime architecture. Recurring payments remain disabled. TCAP is a
-separate experimental confidential-asset direction, not the current settlement
-actor. Formal zero-knowledge proofs are not claimed unless implementation and
-verification evidence are present.
+The TIN, GPRU, TSN Node, Receiver, Epoch Treasury, Mother, Cranker, TSN
+Program, TCAP credit path and encrypted snapshots are the current architecture.
+Live confidential debits and exits remain proof-gated and disabled. Recurring
+payments remain disabled.
 
-TrustLink Pay is experimental software. Always verify program IDs, cluster,
-wallet authority, and transaction evidence before using Devnet.
+TrustLink Pay documents the live credit architecture and its Devnet deployment
+surface. Always verify program IDs, cluster, wallet authority, and transaction
+evidence before using Devnet.
 
 Current devnet program IDs:
 
-| Program           | Address                                       |
-| ----------------- | --------------------------------------------- |
-| Transfer Identity | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
-| TSN               | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| Program | Address |
+| --- | --- |
+| TSN / `trustlink_escrow` | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
+| TCAP / `tcap` | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` |
+| TIP / Transfer Identity / TIN registrar | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 ## Milestones and ecosystem support
 

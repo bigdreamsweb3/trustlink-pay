@@ -20,6 +20,8 @@ pub const TCAP_FUNDING_NONCE_SEED: &[u8] = b"tcap:funding-nonce:v1";
 pub const TCAP_ASSET_GOVERNANCE_POLICY_SEED: &[u8] = b"tcap:asset-governance:v2";
 pub const TCAP_ASSET_EXTENSION_POLICY_SEED: &[u8] = b"tcap:extension-policy:v2";
 pub const TSN_TCAP_AUTHORITY_SEED: &[u8] = b"tsn:tcap-authorization:v1";
+pub const TCAP_LIQUIDITY_POOL_SEED: &[u8] = b"tcap:liquidity-pool:v1";
+pub const TCAP_EXIT_RECEIPT_SEED: &[u8] = b"tcap:exit-receipt:v1";
 
 pub fn derive_reserve_authority(asset_state: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(

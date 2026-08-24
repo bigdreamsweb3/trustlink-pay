@@ -24,67 +24,14 @@ class TinOperationFeeRecord(BaseModel):
     updatedAt: str
 
 
-class TinPruPublicAddress(BaseModel):
-    index: int
-    publicKey: str
-    state: str
-
-
-class TinPruRoutePublicResponse(BaseModel):
+class TinTcapRouteResponse(BaseModel):
+    """Minimal TCap relationship metadata; no PRU inventory is exposed."""
     tin: str
-    pruConfigurationHash: str
+    relationshipCommitment: str
+    relationshipReference: str
+    policyCommitment: str
+    routeVersion: int
     status: Literal["finalized"]
-    prus: list[TinPruPublicAddress]
-
-
-class TinPruRouteSessionRequest(BaseModel):
-    tin: str
-    owner_pubkey: str
-    signature: str
-    nonce: str
-    timestamp: int
-    signed_message_base64: Optional[str] = None
-
-
-class TinPruRouteSessionResponse(BaseModel):
-    token: str
-    expiresAt: int
-    tin: str
-
-
-class TinDelegatedReadRequest(BaseModel):
-    tin: str
-    owner_pubkey: str
-    platform_read_key: str
-    signature: str
-    nonce: str
-    timestamp: int
-    expiry: Optional[int] = None
-    signed_message_base64: Optional[str] = None
-
-
-class TinDelegatedReadResponse(BaseModel):
-    tin: str
-    platformReadKey: str
-    expiresAt: Optional[int] = None
-    status: Literal["active", "revoked"]
-
-
-class TinDelegatedPlatformRecord(BaseModel):
-    platformReadKey: str
-    contact: Optional[str] = None
-    expiresAt: int
-
-
-class PlatformReadKeyRegistrationRequest(BaseModel):
-    platform_read_key: str
-    contact: str
-
-
-class PlatformReadKeyRegistrationResponse(BaseModel):
-    platformReadKey: str
-    contact: str
-    status: Literal["registered"]
 
 
 class TinOperationRecord(BaseModel):

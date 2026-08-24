@@ -72,7 +72,7 @@ Run:
 ```bash
 npm run deploy:lockfiles:stabilize
 npm run deploy:doctor
-npm run tip:deploy:checked
+npm run tip:deploy
 ```
 
 Do not deploy with Solana/SBF 3.x or standalone `cargo-build-sbf 4.x` until the target cluster supports that sBPF bytecode.

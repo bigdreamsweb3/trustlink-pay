@@ -4,7 +4,8 @@ This folder contains the TSN SDK, TSN Node services, RPC gateway, Cranker
 operator, and Solana program workspace.
 
 TSN is the payment infrastructure behind TrustLink Pay. It coordinates TIN
-identity, protected ZK-PRU routes, signed payment plans, off-chain verification
+identity, GPRU authorization/routing, signed payment plans, off-chain verification,
+and TCap encrypted private balance snapshots
 and reservation, Mother DNA authorization, Cranker submission, TSN Program enforcement, epoch treasury reimbursement, and
 receipts on Solana.
 
@@ -15,7 +16,7 @@ flowchart LR
     N --> C[Cranker]
     C --> P[TSN Program]
     P --> E[Epoch Treasury]
-    E --> R[Recipient ZK-PRU or wallet]
+    E --> R[Recipient via TCap encrypted snapshot]
 ```
 
 ## Boundaries
@@ -37,11 +38,11 @@ The canonical documentation is in the repository root:
 
 - [`../docs/protocol-architecture.md`](../docs/protocol-architecture.md)
 - [`../docs/identity-and-tin.md`](../docs/identity-and-tin.md)
-- [`../docs/zk-pru.md`](../docs/zk-pru.md)
+- [`../docs/CURRENT-ARCHITECTURE.md`](../docs/CURRENT-ARCHITECTURE.md)
 - [`../docs/execution-plan.md`](../docs/execution-plan.md)
 - [`../docs/network-and-runtime.md`](../docs/network-and-runtime.md)
 - [`../docs/security-model.md`](../docs/security-model.md)
 - [`../docs/operations-and-testing.md`](../docs/operations-and-testing.md)
 
-TCAP remains a separate experimental confidential-asset direction. It is not
-the active TSN settlement actor described by this workspace.
+TCap is the live private balance path for credit-only tip transitions and
+owner-encrypted snapshots. Confidential debits/exits are not implemented.

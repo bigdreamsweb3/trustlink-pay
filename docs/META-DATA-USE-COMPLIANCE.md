@@ -21,7 +21,8 @@ token transfer itself, including:
 
 Show only the information required to confirm who is being paid, what state the
 payment is in, and whether the result is complete. Do not expose full private
-routes, decrypted ZK-PRU material, device secrets, or unnecessary wallet links.
+routes, decrypted privacy-receiving-root or TCAP snapshot material, device
+secrets, or unnecessary wallet links.
 
 ### Protect identity context
 

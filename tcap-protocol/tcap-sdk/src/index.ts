@@ -5,3 +5,5 @@ export * from "./proofs.js";
 export * from "./roots.js";
 export * from "./validation.js";
 export * from "./program-id.js";
+export * from "./snapshots.js";
+export * from "./tip-rpc.js";

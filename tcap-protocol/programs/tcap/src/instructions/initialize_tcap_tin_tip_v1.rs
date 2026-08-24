@@ -51,6 +51,7 @@ pub fn initialize_tcap_tin_tip_v1(
     );
 
     let tin_tip = &mut ctx.accounts.tin_tip;
+    tin_tip.version = crate::TCAP_STATE_VERSION_V1;
     tin_tip.current_commitment = args.current_commitment;
     tin_tip.sequence = 0;
     tin_tip.policy_commitment = args.policy_commitment;
@@ -71,6 +72,7 @@ mod tests {
     #[test]
     fn tin_tip_state_serialization_fits_the_allocated_space() {
         let tip = TCapTinTipV1 {
+            version: crate::TCAP_STATE_VERSION_V1,
             current_commitment: [1; 32],
             sequence: 0,
             policy_commitment: [2; 32],

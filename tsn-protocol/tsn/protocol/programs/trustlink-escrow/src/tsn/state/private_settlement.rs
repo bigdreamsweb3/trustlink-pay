@@ -1,5 +1,23 @@
 use anchor_lang::prelude::*;
 
+/// Canonical TSN header consumed by TCap when it validates a confidential
+/// settlement authorization. Keep the first four fields ABI-compatible with
+/// TCap's `TsnEpochCommitmentHeaderV1` reader.
+#[account]
+pub struct EpochCommitmentStateV1 {
+    pub version: u16,
+    pub epoch_id: u64,
+    pub accepted_intent_root: [u8; 32],
+    pub previous_tcap_state_root: [u8; 32],
+    pub mother_escrow: Pubkey,
+    pub bump: u8,
+}
+
+impl EpochCommitmentStateV1 {
+    pub const VERSION: u16 = 1;
+    pub const SPACE: usize = 8 + 2 + 8 + 32 + 32 + 32 + 1;
+}
+
 #[account]
 pub struct PrivateSettlementConfig {
     pub mother_escrow: Pubkey,

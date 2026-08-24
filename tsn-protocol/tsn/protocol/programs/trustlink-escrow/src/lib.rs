@@ -11,6 +11,10 @@ declare_id!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 pub mod trustlink_escrow {
     use super::*;
 
+    pub fn tsn_accept_intent(ctx: Context<AcceptIntent>, args: AcceptIntentArgs) -> Result<()> {
+        tsn::instructions::accept_intent::handler(ctx, args)
+    }
+
     // --- TSN (Milestone 4) settlement layer ---
     pub fn tsn_initialize_mother_escrow(
         ctx: Context<InitializeMotherEscrow>,

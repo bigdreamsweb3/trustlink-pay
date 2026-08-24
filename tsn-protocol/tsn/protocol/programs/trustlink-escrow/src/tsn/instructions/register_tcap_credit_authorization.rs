@@ -7,7 +7,7 @@ use anchor_lang::solana_program::{
 use crate::tsn::{
     constants::{TSN_EPOCH_COMMITMENT_V1_SEED, TSN_MOTHER_ESCROW_SEED, TSN_TCAP_AUTHORITY_SEED},
     errors::TsnError,
-    state::{EpochCommitmentStateV1, MotherEscrow},
+    state::{AcceptedIntentStatus, AcceptedIntentV1, EpochCommitmentStateV1, MotherEscrow},
 };
 
 pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
@@ -17,6 +17,9 @@ pub struct RegisterTcapCreditAuthorizationArgs {
     pub version: u16,
     pub tsn_program_id: Pubkey,
     pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
     pub accepted_intent_root: [u8; 32],
     pub previous_tcap_root: [u8; 32],
     pub transition_type: u8,
@@ -69,6 +72,12 @@ pub struct RegisterTcapCreditAuthorization<'info> {
     /// CHECK: PDA created by TCap.
     #[account(mut)]
     pub tcap_authorization_receipt: UncheckedAccount<'info>,
+    #[account(
+        seeds = [crate::tsn::instructions::accept_intent::ACCEPTED_INTENT_SEED,
+            mother_escrow.key().as_ref(), &args.epoch_id.to_le_bytes(), args.intent_commitment.as_ref()],
+        bump = accepted_intent.bump,
+    )]
+    pub accepted_intent: Account<'info, AcceptedIntentV1>,
     /// CHECK: TSN-owned PDA signer for the TCap authorization.
     pub tcap_authorization_signer: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
@@ -88,6 +97,25 @@ pub fn register_tcap_credit_authorization(
         args.authorization_digest != [0; 32] && args.replay_nonce != [0; 32],
         TsnError::Unauthorized
     );
+    require!(ctx.accounts.accepted_intent.epoch_id == args.epoch_id
+        && ctx.accounts.accepted_intent.intent_commitment == args.intent_commitment
+        && ctx.accounts.accepted_intent.amount == args.amount
+        && ctx.accounts.accepted_intent.settlement_commitment == args.settlement_commitment
+        && ctx.accounts.accepted_intent.token_id == args.token_id
+        && Pubkey::find_program_address(
+            &[b"tcap:tin-tip:v1", &ctx.accounts.accepted_intent.tip_root_commitment],
+            &TCAP_PROGRAM_ID,
+        ).0 == args.tin_tip
+        && ctx.accounts.accepted_intent.asset_commitment == args.asset_commitment
+        && ctx.accounts.accepted_intent.policy_commitment == args.policy_commitment
+        && ctx.accounts.accepted_intent.gpru_scope_commitment == args.gpru_scope_commitment
+        && ctx.accounts.accepted_intent.replay_nonce == args.replay_nonce
+        && ctx.accounts.accepted_intent.nullifier == args.nullifier
+        && ctx.accounts.accepted_intent.valid_after_slot == args.valid_after_slot
+        && ctx.accounts.accepted_intent.expires_at_slot == args.expires_at_slot
+        && ctx.accounts.accepted_intent.accepted_intent_root == args.accepted_intent_root
+        && ctx.accounts.accepted_intent.mother_escrow == ctx.accounts.mother_escrow.key()
+        && matches!(ctx.accounts.accepted_intent.status, AcceptedIntentStatus::Accepted), TsnError::Unauthorized);
     require!(
         args.tin_tip != Pubkey::default() && args.new_commitment != [0; 32],
         TsnError::Unauthorized
@@ -144,6 +172,7 @@ pub fn register_tcap_credit_authorization(
             AccountMeta::new_readonly(crate::ID, false),
             AccountMeta::new_readonly(ctx.accounts.tsn_epoch_commitment.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tcap_authorization_signer.key(), true),
+            AccountMeta::new_readonly(ctx.accounts.accepted_intent.key(), false),
             AccountMeta::new(ctx.accounts.tcap_authorization_receipt.key(), false),
             AccountMeta::new_readonly(anchor_lang::solana_program::system_program::ID, false),
         ],
@@ -160,6 +189,7 @@ pub fn register_tcap_credit_authorization(
             ctx.accounts.tcap_program.to_account_info(),
             ctx.accounts.tsn_epoch_commitment.to_account_info(),
             ctx.accounts.tcap_authorization_signer.to_account_info(),
+            ctx.accounts.accepted_intent.to_account_info(),
             ctx.accounts.tcap_authorization_receipt.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
@@ -169,6 +199,7 @@ pub fn register_tcap_credit_authorization(
             &[signer_bump],
         ]],
     )?;
+    ctx.accounts.accepted_intent.status = AcceptedIntentStatus::Consumed;
     Ok(())
 }
 
@@ -182,6 +213,9 @@ mod tests {
             version: 1,
             tsn_program_id: crate::ID,
             epoch_id: 9,
+            intent_commitment: [11; 32],
+            amount: 100,
+            settlement_commitment: [12; 32],
             accepted_intent_root: [1; 32],
             previous_tcap_root: [2; 32],
             transition_type: CONFIDENTIAL_SETTLEMENT_V1,

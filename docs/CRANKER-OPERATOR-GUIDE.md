@@ -20,7 +20,7 @@ flowchart TD
     N["TSN Node - verification and lease eligibility"]
     C["Cranker - lease and submit exact work"]
     S["Solana Devnet - TSN Program and controlled accounts"]
-    V["Cranker Vault - current payout source"]
+    V["Legacy payout component - not used by TCAP credit"]
     R --> N --> C --> S
     C --> V --> S
 ```
@@ -44,7 +44,7 @@ The Cranker must not:
 - mark an intent paid, recoverable, or reimbursable by itself;
 - expose Receiver API keys, operator secret keys, or private route material.
 
-The current Devnet implementation uses a registered Cranker Vault as the
+The historical TSN payout implementation uses a registered Cranker Vault as the
 payout source. This is an implementation detail of the current TSN runtime;
 it is not a claim that TCAP has replaced the vault or that mainnet liquidity
 policy is finalized.

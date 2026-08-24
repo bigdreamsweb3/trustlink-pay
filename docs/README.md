@@ -16,6 +16,8 @@ Read these documents in order:
 Supporting references:
 
 - [TCAP values explained](./TCAP-VALUES-EXPLAINED.md) — plain-language meanings and privacy boundaries for credit values.
+- [Devnet build and deploy](./DEVNET-BUILD-DEPLOY.md) — reproducible WSL/Ubuntu build, deployment and verification procedure.
+- [Devnet TCAP credit smoke](./tcap-devnet-credit-smoke.md) — account gates, bootstrap, simulation and evidence requirements.
 
 - [Cranker operator guide](./CRANKER-OPERATOR-GUIDE.md)
 - [Service coordination and quota](./service-coordination-and-quota.md)
@@ -43,3 +45,11 @@ spending route.
 
 All diagrams in active documentation use Mermaid. Historical material is
 labelled explicitly and is not normative for new implementations.
+
+## Review standard
+
+When reviewing a claim, classify it as code evidence, build evidence, Devnet
+transaction evidence, or production-readiness evidence. A checked-in helper or
+successful simulation is not proof of an on-chain deployment. For any program
+change, record the Devnet program ID, upgrade authority, deployment slot,
+transaction signature and relevant account state before calling the path live.

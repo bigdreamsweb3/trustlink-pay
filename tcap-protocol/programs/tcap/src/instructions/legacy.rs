@@ -449,6 +449,8 @@ pub struct RegisterTsnAuthorizationV1<'info> {
     /// CHECK: Owner and discriminator are validated before its epoch roots are read.
     pub tsn_epoch_commitment: UncheckedAccount<'info>,
     pub tsn_authorization_signer: Signer<'info>,
+    /// CHECK: TSN validates the AcceptedIntent record before invoking TCAP.
+    pub accepted_intent: UncheckedAccount<'info>,
     #[account(
         init,
         payer = payer,
@@ -499,6 +501,26 @@ pub fn register_tsn_authorization_v1(
             && authorization.token_id > 0,
         TcapError::InvalidTipAuthorization
     );
+    let intent_data = ctx.accounts.accepted_intent.try_borrow_data()?;
+    require_keys_eq!(*ctx.accounts.accepted_intent.owner, authorization.tsn_program_id, TcapError::InvalidTsnProgram);
+    // AcceptedIntentV1 serialized layout: discriminator(8), version(2),
+    // epoch(8), intent(32), amount(8), token(4), tip(32), seven bindings,
+    // validity window, root(32), status, mother escrow and bump.
+    require!(intent_data.len() >= 400, TcapError::InvalidTipAuthorization);
+    let expected_intent_discriminator =
+        anchor_lang::solana_program::hash::hash(b"account:AcceptedIntentV1").to_bytes();
+    require!(intent_data[..8] == expected_intent_discriminator[..8], TcapError::InvalidTipAuthorization);
+    let (expected_tip, _) = Pubkey::find_program_address(
+        &[b"tcap:tin-tip:v1", &intent_data[62..94]],
+        &crate::ID,
+    );
+    require!(intent_data[18..50] == authorization.intent_commitment
+        && intent_data[50..58] == authorization.amount.to_le_bytes()
+        && intent_data[94..126] == authorization.settlement_commitment
+        && expected_tip == authorization.tin_tip
+        && intent_data[302..334] == authorization.accepted_intent_root,
+        TcapError::InvalidTipAuthorization);
+    require!(intent_data[334] == 0, TcapError::InvalidTipAuthorization);
     require!(
         !ctx.accounts.asset_entry.paused && !ctx.accounts.asset_entry.deprecated,
         TcapError::AssetUnavailable
@@ -574,6 +596,9 @@ fn write_confidential_credit_receipt(
     receipt.config = config;
     receipt.tsn_program_id = authorization.tsn_program_id;
     receipt.epoch_id = authorization.epoch_id;
+    receipt.intent_commitment = authorization.intent_commitment;
+    receipt.amount = authorization.amount;
+    receipt.settlement_commitment = authorization.settlement_commitment;
     receipt.accepted_intent_root = authorization.accepted_intent_root;
     receipt.previous_tcap_root = authorization.previous_tcap_root;
     receipt.asset_commitment = authorization.asset_commitment;
@@ -604,6 +629,9 @@ mod confidential_settlement_receipt_tests {
             version: TSN_AUTHORIZATION_VERSION_V1,
             tsn_program_id: Pubkey::new_unique(),
             epoch_id: 7,
+            intent_commitment: [11; 32],
+            amount: 100,
+            settlement_commitment: [12; 32],
             accepted_intent_root: [1; 32],
             previous_tcap_root: [2; 32],
             transition_type: TcapTransitionTypeV1::ConfidentialSettlement,
@@ -658,6 +686,9 @@ mod confidential_settlement_receipt_tests {
             config: Pubkey::default(),
             tsn_program_id: Pubkey::default(),
             epoch_id: 0,
+            intent_commitment: [0; 32],
+            amount: 0,
+            settlement_commitment: [0; 32],
             accepted_intent_root: [0; 32],
             previous_tcap_root: [0; 32],
             asset_commitment: [0; 32],
@@ -680,6 +711,9 @@ mod confidential_settlement_receipt_tests {
         };
         write_confidential_credit_receipt(&mut receipt, Pubkey::new_unique(), authorization, 9);
         assert_eq!(receipt.tin_tip, authorization.tin_tip);
+        assert_eq!(receipt.intent_commitment, authorization.intent_commitment);
+        assert_eq!(receipt.amount, authorization.amount);
+        assert_eq!(receipt.settlement_commitment, authorization.settlement_commitment);
         assert_eq!(
             receipt.previous_commitment,
             authorization.previous_commitment

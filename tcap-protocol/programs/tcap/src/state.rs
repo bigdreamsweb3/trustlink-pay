@@ -353,6 +353,9 @@ pub struct TsnSettlementAuthorizationV1 {
     pub version: u16,
     pub tsn_program_id: Pubkey,
     pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
     pub accepted_intent_root: [u8; 32],
     pub previous_tcap_root: [u8; 32],
     pub transition_type: TcapTransitionTypeV1,
@@ -378,6 +381,9 @@ pub struct TsnAuthorizationReceiptV1 {
     pub config: Pubkey,
     pub tsn_program_id: Pubkey,
     pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
     pub accepted_intent_root: [u8; 32],
     pub previous_tcap_root: [u8; 32],
     pub asset_commitment: [u8; 32],
@@ -400,5 +406,5 @@ pub struct TsnAuthorizationReceiptV1 {
 }
 
 impl TsnAuthorizationReceiptV1 {
-    pub const SPACE: usize = 8 + 2 + 32 + 32 + 8 + (32 * 11) + 8 + 4 + 1 + 8 + 8 + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 32 + 32 + 8 + 32 + 32 + 8 + (32 * 11) + 8 + 4 + 1 + 8 + 8 + 1 + 1 + 1;
 }

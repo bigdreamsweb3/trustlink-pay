@@ -72,6 +72,23 @@ sequenceDiagram
   device verifies the tip commitment and sequence before decrypting a single
   commitment-keyed snapshot.
 
+## Verified authorization contract
+
+TSN and TCAP share one `ConfidentialSettlement` ABI. Its required fields are:
+`epoch_id`, `intent_commitment`, `amount`, `settlement_commitment`,
+`accepted_intent_root`, `previous_tcap_root`, `transition_type`,
+`asset_commitment`, `authorization_digest`, `verifier_domain_version`,
+`valid_after_slot`, `expires_at_slot`, `replay_nonce`, `tin_tip`,
+`previous_commitment`, `new_commitment`, `sequence`, `token_id`,
+`policy_commitment`, `gpru_scope_commitment`, and `nullifier`.
+
+TSN creates an `AcceptedIntentV1` PDA and derives the root from the canonical
+field sequence documented in the accept-intent instruction. The wrapper
+requires that PDA, checks every bound field and consumes the intent after the
+TCAP CPI succeeds. TCAP stores the same fields in its receipt and requires a
+`ConfidentialSettlement` transition before credit can consume it. A caller
+cannot supply an unrelated root or use a GPRU signature alone.
+
 ## What is visible and what is private
 
 The chain stores program accounts, commitments, sequence values, token IDs,

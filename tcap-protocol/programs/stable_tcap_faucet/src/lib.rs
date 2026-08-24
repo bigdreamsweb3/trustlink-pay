@@ -207,11 +207,11 @@ pub struct InitializeFaucetV1<'info> {
         seeds = [FAUCET_STATE_SEED],
         bump
     )]
-    pub faucet: Account<'info, FaucetStateV1>,
+    pub faucet: Box<Account<'info, FaucetStateV1>>,
     #[account(
         constraint = *mint.to_account_info().owner == token_program.key() @ FaucetError::InvalidTokenProgram
     )]
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
     /// CHECK: PDA checked by seeds and used only as Token-2022 mint authority.
     #[account(seeds = [MINT_AUTHORITY_SEED], bump)]
     pub mint_authority: UncheckedAccount<'info>,
@@ -239,7 +239,7 @@ pub struct RequestTokensV1<'info> {
         seeds = [WALLET_STATE_SEED, requester.key().as_ref()],
         bump
     )]
-    pub wallet_state: Account<'info, FaucetWalletStateV1>,
+    pub wallet_state: Box<Account<'info, FaucetWalletStateV1>>,
     #[account(
         init,
         payer = requester,
@@ -247,7 +247,7 @@ pub struct RequestTokensV1<'info> {
         seeds = [REQUEST_RECEIPT_SEED, requester.key().as_ref(), request_id.as_ref()],
         bump
     )]
-    pub receipt: Account<'info, FaucetRequestReceiptV1>,
+    pub receipt: Box<Account<'info, FaucetRequestReceiptV1>>,
     #[account(mut, address = faucet.mint @ FaucetError::InvalidMint)]
     pub mint: InterfaceAccount<'info, Mint>,
     #[account(
@@ -257,7 +257,7 @@ pub struct RequestTokensV1<'info> {
         associated_token::authority = requester,
         associated_token::token_program = token_program
     )]
-    pub recipient_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub recipient_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
     /// CHECK: PDA checked by seeds and used only to sign the Token-2022 CPI.
     #[account(seeds = [MINT_AUTHORITY_SEED], bump = faucet.mint_authority_bump)]
     pub mint_authority: UncheckedAccount<'info>,

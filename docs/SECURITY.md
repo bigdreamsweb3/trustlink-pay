@@ -19,8 +19,8 @@ invisibility.
 ## Component boundaries
 
 - The root wallet authorizes the payment and device capability.
-- The authorized device decrypts encrypted ZK-PRU material locally and derives
-  only the selected child authority.
+- The authorized device unlocks privacy-receiving-root and snapshot material
+  locally; no GPRU route credential becomes a spend key.
 - The TSN Node verifies, reserves, queues, and tracks public work.
 - The Cranker pays fees and submits exact authorized transactions; it does not
   hold user keys or replan.
@@ -30,7 +30,7 @@ invisibility.
 
 ## Privacy limits
 
-TINs, ZK-PRU routes, commitments, and separated settlement can reduce direct
+TINs, GPRU routes, commitments, and separated settlement can reduce direct
 wallet linkage. They do not automatically hide all SPL amounts, token-account
 movements, timing, public exits, or graph-analysis signals. TrustLink Pay does
 not promise complete anonymity.

@@ -721,6 +721,15 @@ export function decodeTinAccount(data: Uint8Array) {
     }
   }
 
+  const hasTcapRouteVersion = offset + 1 <= buffer.length;
+  const tcapRouteVersion = hasTcapRouteVersion ? buffer.readUInt8(offset) : 0;
+  offset += hasTcapRouteVersion ? 1 : 0;
+  const tcapRelationshipCommitment = offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
+  offset += tcapRelationshipCommitment ? 32 : 0;
+  const tcapRelationshipReference = offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
+  offset += tcapRelationshipReference ? 32 : 0;
+  const tcapPolicyCommitment = offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
+
   return {
     tin,
     displayName,
@@ -732,6 +741,10 @@ export function decodeTinAccount(data: Uint8Array) {
     encryptedPublicRouteEnvelope,
     routeVersion,
     routeNonce,
+    tcapRouteVersion,
+    tcapRelationshipCommitment,
+    tcapRelationshipReference,
+    tcapPolicyCommitment,
   };
 }
 

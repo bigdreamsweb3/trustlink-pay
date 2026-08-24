@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gpruArrow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B3FE8"/>
+      <stop offset="100%" stop-color="#3E7BFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0A0A0A"/>
+  <g transform="translate(256,256)">
+    <polygon points="0,-160 138.6,-80 138.6,80 0,160 -138.6,80 -138.6,-80"
+      fill="none" stroke="#2A2A2A" stroke-width="10"/>
+    <!-- three routing arrows converging to center, representing authorized routing -->
+    <g stroke="url(#gpruArrow)" stroke-width="12" stroke-linecap="round" fill="none">
+      <path d="M -110,-64 L -18,-11"/>
+      <path d="M 110,-64 L 18,-11"/>
+      <path d="M 0,128 L 0,22"/>
+    </g>
+    <g fill="url(#gpruArrow)">
+      <polygon points="-18,-11 -34,-16 -26,-1"/>
+      <polygon points="18,-11 34,-16 26,-1"/>
+      <polygon points="0,22 -8,6 8,6"/>
+    </g>
+    <circle cx="0" cy="0" r="34" fill="#12203E" stroke="#3E7BFF" stroke-width="5"/>
+    <circle cx="0" cy="0" r="10" fill="#8B3FE8"/>
+  </g>
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="800" fill="#F4EBE0" letter-spacing="4">GPRU</text>
+</svg>

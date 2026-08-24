@@ -86,4 +86,22 @@ pub enum TcapError {
     UnexpectedTokenBalanceDelta,
     #[msg("The requested mint profile does not match the governed extension policy")]
     InvalidMintProfile,
+    #[msg("The tip transition sequence is invalid")]
+    InvalidTipSequence,
+    #[msg("The tip commitment does not match the authorized transition")]
+    TipCommitmentMismatch,
+    #[msg("The tip is frozen")]
+    TipFrozen,
+    #[msg("The transition nullifier has already been consumed")]
+    NullifierAlreadyConsumed,
+    #[msg("The transition authorization is not scoped to this tip")]
+    InvalidTipAuthorization,
+    #[msg("The GPRU authorization scope is empty or mismatched")]
+    InvalidGpruScope,
+    #[msg("A proof payload is required for confidential debit or exit")]
+    ProofPayloadRequired,
+    #[msg("Confidential debit/exit proof system not enabled")]
+    ProofSystemNotEnabled,
+    #[msg("The registered conversion rate is invalid")]
+    InvalidRateVersion,
 }

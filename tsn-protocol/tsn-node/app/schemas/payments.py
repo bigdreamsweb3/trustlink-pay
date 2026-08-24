@@ -26,12 +26,6 @@ class CreateIntentRequest(BaseModel):
     senderSignedFundingTransaction: Optional[str] = Field(None, description="Sender-signed epoch funding transaction for Cranker sponsorship")
     senderSignedFundingFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast funding")
     senderFundingMode: Optional[str] = Field(None, description="Funding authority model")
-    pruSpendTin: Optional[str] = Field(None, description="TIN whose PRUs fund this intent")
-    pruSpendAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the epoch treasury")
-    pruSpendSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from PRUs into the TSN treasury")
-    walletTopUpAmountBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the epoch treasury")
-    walletTopUpSenderFeeBaseUnits: Optional[str] = Field(None, description="Token units moved from the sender wallet into the TSN treasury")
-    pruSpendSelections: Optional[list[dict]] = None
     encryptedSettlementToken: Optional[dict] = None
     commitmentHash: Optional[str] = None
     transferId: Optional[str] = None

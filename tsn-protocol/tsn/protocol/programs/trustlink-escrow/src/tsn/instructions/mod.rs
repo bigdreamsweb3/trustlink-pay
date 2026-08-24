@@ -13,6 +13,8 @@ pub mod set_cranker_funding_policy;
 pub mod withdraw_cranker_funds;
 pub mod withdraw_verifier_lamports;
 pub mod tin_action_fee;
+pub mod register_tcap_credit_authorization;
+pub mod accept_intent;
 
 pub use configure_private_settlement::*;
 pub use create_settlement_dna::*;
@@ -29,3 +31,5 @@ pub use set_cranker_funding_policy::*;
 pub use withdraw_cranker_funds::*;
 pub use withdraw_verifier_lamports::*;
 pub use tin_action_fee::*;
+pub use register_tcap_credit_authorization::*;
+pub use accept_intent::*;

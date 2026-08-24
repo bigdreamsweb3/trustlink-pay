@@ -11,9 +11,12 @@ use crate::{
     cpi::create_pda_account,
     error::Error,
     instruction_auto::{StageTinMutationParams, TinMutationChunkParams},
-    state::TinMutationStaging,
+    state::{validate_tcap_route, TinMutationStaging, TCAP_ROUTE_VERSION_NONE},
     tin_mutation_staging_pda,
-    utils::{assert_pda, assert_program_owned, load_borsh, store_borsh, top_up_and_realloc, validate_name},
+    utils::{
+        assert_pda, assert_program_owned, load_borsh, store_borsh, top_up_and_realloc,
+        validate_name,
+    },
 };
 
 pub fn stage(
@@ -30,24 +33,21 @@ pub fn stage(
         return Err(ProgramError::MissingRequiredSignature);
     }
     validate_name(&params.display_name)?;
-    if params.route_version == 0 || params.expiry_ts <= Clock::get()?.unix_timestamp {
+    if params.expiry_ts <= Clock::get()?.unix_timestamp || !valid_route(&params) {
         return Err(Error::InvalidInstruction.into());
     }
     let master_len = params.encrypted_master_seed_len as usize;
     let route_len = params.encrypted_public_route_envelope_len as usize;
     if master_len == 0
-        || route_len == 0
+        || (params.tcap_route_version == TCAP_ROUTE_VERSION_NONE && route_len == 0)
         || master_len > TinMutationStaging::MAX_BLOB_LEN
         || route_len > TinMutationStaging::MAX_BLOB_LEN
     {
         return Err(Error::InvalidInstruction.into());
     }
 
-    let (expected_staging, bump) = tin_mutation_staging_pda(
-        program_id,
-        &params.owner_pubkey,
-        &params.intent_hash,
-    );
+    let (expected_staging, bump) =
+        tin_mutation_staging_pda(program_id, &params.owner_pubkey, &params.intent_hash);
     assert_pda(staging, &expected_staging)?;
 
     if !staging.data_is_empty() {
@@ -61,6 +61,10 @@ pub fn stage(
             || existing.pru_configuration_hash != params.pru_configuration_hash
             || existing.route_version != params.route_version
             || existing.route_nonce != params.route_nonce
+            || existing.tcap_route_version != params.tcap_route_version
+            || existing.tcap_relationship_commitment != params.tcap_relationship_commitment
+            || existing.tcap_relationship_reference != params.tcap_relationship_reference
+            || existing.tcap_policy_commitment != params.tcap_policy_commitment
             || existing.nonce != params.nonce
             || existing.expiry_ts != params.expiry_ts
             || existing.encrypted_master_seed.len() != master_len
@@ -81,6 +85,10 @@ pub fn stage(
         pru_configuration_hash: params.pru_configuration_hash,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
+        tcap_route_version: params.tcap_route_version,
+        tcap_relationship_commitment: params.tcap_relationship_commitment,
+        tcap_relationship_reference: params.tcap_relationship_reference,
+        tcap_policy_commitment: params.tcap_policy_commitment,
         nonce: params.nonce,
         expiry_ts: params.expiry_ts,
         encrypted_master_seed: vec![0; master_len],
@@ -95,7 +103,12 @@ pub fn stage(
         program_id,
         TinMutationStaging::space(state.display_name.len(), master_len, route_len),
         0,
-        &[crate::seeds::TIN_MUTATION_STAGE, params.owner_pubkey.as_ref(), &params.intent_hash, &[bump]],
+        &[
+            crate::seeds::TIN_MUTATION_STAGE,
+            params.owner_pubkey.as_ref(),
+            &params.intent_hash,
+            &[bump],
+        ],
     )?;
     store_borsh(staging, &state)
 }
@@ -118,7 +131,10 @@ pub fn append_chunk(
     }
     let (written, target_len) = match params.kind {
         0 => (state.master_seed_written, state.encrypted_master_seed.len()),
-        1 => (state.route_written, state.encrypted_public_route_envelope.len()),
+        1 => (
+            state.route_written,
+            state.encrypted_public_route_envelope.len(),
+        ),
         _ => return Err(Error::InvalidInstruction.into()),
     };
     let offset = params.offset as usize;
@@ -164,4 +180,19 @@ pub fn append_chunk(
         top_up_and_realloc(cranker, staging, system_program, required_space)?;
     }
     store_borsh(staging, &state)
+}
+
+fn valid_route(params: &StageTinMutationParams) -> bool {
+    if params.tcap_route_version == TCAP_ROUTE_VERSION_NONE && params.route_version == 0 {
+        return false;
+    }
+    // Staging contains zero-filled route bytes before chunk upload. TCap V1 has no route blob.
+    validate_tcap_route(
+        params.tcap_route_version,
+        &params.pru_configuration_hash,
+        &[],
+        &params.tcap_relationship_commitment,
+        &params.tcap_relationship_reference,
+        &params.tcap_policy_commitment,
+    )
 }

@@ -134,7 +134,14 @@ tools/
 
 
 protocol-test-runs/
-protocol-tests/
+protocol-tests/*
+!protocol-tests/scenarios/
+protocol-tests/scenarios/*
+!protocol-tests/scenarios/tcap-credit-bootstrap.mjs
+!protocol-tests/lib/
+protocol-tests/lib/*
+!protocol-tests/lib/privacy-root-commitment.mjs
+protocol-tests/tcap-credit-devnet.env
 
 .env.local
 .env

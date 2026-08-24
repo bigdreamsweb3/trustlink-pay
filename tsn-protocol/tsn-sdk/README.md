@@ -45,36 +45,18 @@ npm --prefix tsn-sdk run build
 - `docs/INTEGRATION.md`
 - `docs/CRANKER.md`
 
-## TSN V1 PRU deterministic settlement helpers
+## Live GPRU/TCap balance path
 
-The SDK exports `@trustlink/tsn-sdk/pru` and root exports for the TSN V1 PRU model:
+The SDK exports GPRU derivation and authorization helpers only. GPRU never
+holds funds. TCap owns the credit tip and the owner-encrypted snapshot; a
+private read fetches the current commitment once, loads one encrypted envelope,
+and verifies the sequence/hash locally. No PRU enumeration or balance planner
+is part of the public SDK.
 
-- token-agnostic PRU derivation from `master_seed + TIN + index`;
-- every TIN receives 30 PRUs by default, regardless of token;
-- replayable deterministic receive allocation per token;
-- unified 3-state TIN balance: `AVAILABLE + SETTLED - PENDING`;
-- randomized spend signing plus deterministic spend/sweep planning;
-- lazy ATA creation planning with protocol subsidy before activation fees.
-
-```ts
-import {
-  derivePruSet,
-  allocatePrusDeterministically,
-} from "@trustlink/tsn-sdk/pru";
-
-const pruSet = derivePruSet({ masterSeed, tinId });
-const distribution = allocatePrusDeterministically({
-  txId,
-  tinId,
-  tokenMint,
-  pruSet,
-  amount,
-});
-```
-
-The SDK is a validation and construction layer, not the sole authority of truth. Outputs are replayed against TSN on-chain commitments and TIP registry state.
-
-TIP registry awareness: TIP does not store PRU arrays. Every TIN receives exactly 30 token-agnostic PRUs, and TIP stores the PRU configuration commitment produced by the TSN mempool and cranker layer.
+TIP/TIN registry awareness: the live route stores only privacy-root,
+relationship, and policy commitments. GPRU is authorization/routing only;
+TCap encrypted snapshots are the private balance record. No PRU array or
+receiving-wallet inventory is created for the live route.
 
 ## Recurring Mandates (Planned, Disabled)
 

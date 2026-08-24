@@ -9,7 +9,9 @@ use solana_program::{
     pubkey::Pubkey,
     system_program,
     sysvar::{
-        instructions::{load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID},
+        instructions::{
+            load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID,
+        },
         Sysvar,
     },
 };
@@ -17,11 +19,15 @@ use solana_program::{
 use crate::{
     error::Error,
     instruction_auto::{FinalizeTinUpdateParams, UpdateTinParams},
-    state::{TinAccount, TinMutationStaging},
+    state::{validate_tcap_route, TinAccount, TinMutationStaging, TCAP_ROUTE_VERSION_NONE},
     utils::{assert_program_owned, load_borsh, store_borsh, top_up_and_realloc, validate_name},
 };
 
-pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: UpdateTinParams) -> ProgramResult {
+pub fn process(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    params: UpdateTinParams,
+) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
     let cranker = next_account_info(accounts_iter)?;
     let identity = next_account_info(accounts_iter)?;
@@ -74,11 +80,8 @@ pub fn process_staged(
     {
         return Err(Error::InvalidInstruction.into());
     }
-    let (expected_staging, _bump) = crate::tin_mutation_staging_pda(
-        program_id,
-        &staged.owner_pubkey,
-        &staged.intent_hash,
-    );
+    let (expected_staging, _bump) =
+        crate::tin_mutation_staging_pda(program_id, &staged.owner_pubkey, &staged.intent_hash);
     if staging.key != &expected_staging {
         return Err(Error::InvalidPda.into());
     }
@@ -92,6 +95,10 @@ pub fn process_staged(
         encrypted_public_route_envelope: staged.encrypted_public_route_envelope.clone(),
         route_version: staged.route_version,
         route_nonce: staged.route_nonce,
+        tcap_route_version: staged.tcap_route_version,
+        tcap_relationship_commitment: staged.tcap_relationship_commitment,
+        tcap_relationship_reference: staged.tcap_relationship_reference,
+        tcap_policy_commitment: staged.tcap_policy_commitment,
         nonce: staged.nonce,
         intent_hash: staged.intent_hash,
         expiry_ts: staged.expiry_ts,
@@ -131,7 +138,7 @@ fn apply_update<'a>(
         return Err(Error::InvalidInstruction.into());
     }
     validate_name(&params.display_name)?;
-    if params.route_version == 0 || params.encrypted_public_route_envelope.is_empty() {
+    if !valid_route(&params) {
         return Err(Error::InvalidInstruction.into());
     }
     let expected_intent_hash = compute_owner_intent_hash(&params);
@@ -146,7 +153,11 @@ fn apply_update<'a>(
     let (expected_identity_pubkey, _bump) = crate::identity_pda(program_id, &identity_seed);
     assert_program_owned(identity, program_id)?;
 
-    if !verify_owner_intent(instructions_sysvar, &params.owner_pubkey, &params.intent_hash)? {
+    if !verify_owner_intent(
+        instructions_sysvar,
+        &params.owner_pubkey,
+        &params.intent_hash,
+    )? {
         return Err(Error::SignatureVerificationFailed.into());
     }
     let owner_pubkey_hash = hash(params.owner_pubkey.as_ref()).to_bytes();
@@ -176,6 +187,10 @@ fn apply_update<'a>(
         encrypted_public_route_envelope: params.encrypted_public_route_envelope,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
+        tcap_route_version: params.tcap_route_version,
+        tcap_relationship_commitment: params.tcap_relationship_commitment,
+        tcap_relationship_reference: params.tcap_relationship_reference,
+        tcap_policy_commitment: params.tcap_policy_commitment,
     };
 
     let required_space = TinAccount::space(
@@ -207,6 +222,10 @@ fn compute_owner_intent_hash(params: &UpdateTinParams) -> [u8; 32] {
         &params.encrypted_public_route_envelope,
         &params.route_version.to_le_bytes(),
         &params.route_nonce,
+        &[params.tcap_route_version],
+        &params.tcap_relationship_commitment,
+        &params.tcap_relationship_reference,
+        &params.tcap_policy_commitment,
         &params.nonce,
         &params.expiry_ts.to_le_bytes(),
     ])
@@ -296,11 +315,17 @@ fn read_u64(data: &[u8], offset: &mut usize) -> Result<u64, ProgramError> {
     Ok(value)
 }
 
-fn verify_owner_intent(instructions_sysvar: &AccountInfo, owner: &Pubkey, intent_hash: &[u8; 32]) -> Result<bool, ProgramError> {
+fn verify_owner_intent(
+    instructions_sysvar: &AccountInfo,
+    owner: &Pubkey,
+    intent_hash: &[u8; 32],
+) -> Result<bool, ProgramError> {
     let current_index = load_current_index_checked(instructions_sysvar)? as usize;
     for i in 0..current_index {
         if let Ok(ix) = load_instruction_at_checked(i, instructions_sysvar) {
-            if ix.program_id == solana_program::ed25519_program::ID && verify_ed25519_ix_data(&ix.data, owner, intent_hash) {
+            if ix.program_id == solana_program::ed25519_program::ID
+                && verify_ed25519_ix_data(&ix.data, owner, intent_hash)
+            {
                 return Ok(true);
             }
         }
@@ -308,7 +333,11 @@ fn verify_owner_intent(instructions_sysvar: &AccountInfo, owner: &Pubkey, intent
     Ok(false)
 }
 
-fn verify_ed25519_ix_data(data: &[u8], expected_pubkey: &Pubkey, expected_message: &[u8; 32]) -> bool {
+fn verify_ed25519_ix_data(
+    data: &[u8],
+    expected_pubkey: &Pubkey,
+    expected_message: &[u8; 32],
+) -> bool {
     if data.len() < 112 || data[0] != 1 {
         return false;
     }
@@ -336,4 +365,20 @@ fn canonical_owner_intent_message(intent_hash: &[u8; 32]) -> Vec<u8> {
     }
     message.extend_from_slice(b"\nDomain: TSN_TIN_OWNER_INTENT_V1");
     message
+}
+
+fn valid_route(params: &UpdateTinParams) -> bool {
+    if params.tcap_route_version == TCAP_ROUTE_VERSION_NONE
+        && (params.route_version == 0 || params.encrypted_public_route_envelope.is_empty())
+    {
+        return false;
+    }
+    validate_tcap_route(
+        params.tcap_route_version,
+        &params.pru_configuration_hash,
+        &params.encrypted_public_route_envelope,
+        &params.tcap_relationship_commitment,
+        &params.tcap_relationship_reference,
+        &params.tcap_policy_commitment,
+    )
 }

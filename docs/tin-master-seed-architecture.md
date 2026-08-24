@@ -1,4 +1,8 @@
-# TIN master-seed architecture
+# TIN master-seed architecture (historical ZK-PRU note)
+
+The live architecture no longer derives or publishes funded PRU receiving
+units. Use the GPRU authorization scope and owner-encrypted TCAP snapshot path
+described in [CURRENT-ARCHITECTURE.md](./CURRENT-ARCHITECTURE.md).
 
 ## Purpose
 

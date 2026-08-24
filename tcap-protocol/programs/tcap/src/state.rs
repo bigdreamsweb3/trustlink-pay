@@ -11,6 +11,7 @@ pub const TSN_AUTHORIZATION_VERSION_V1: u16 = 1;
 /// keys, token accounts, or encrypted snapshot material.
 #[account]
 pub struct TCapTinTipV1 {
+    pub version: u16,
     pub current_commitment: [u8; 32],
     pub sequence: u64,
     pub policy_commitment: [u8; 32],
@@ -20,7 +21,7 @@ pub struct TCapTinTipV1 {
 }
 
 impl TCapTinTipV1 {
-    pub const SPACE: usize = 8 + 32 + 8 + 32 + 32 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 32 + 8 + 32 + 32 + 1 + 1;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +37,8 @@ pub struct TcapGlobalConfigV1 {
     pub protocol_version: u16,
     pub minimum_instruction_version: u16,
     pub governance_authority: Pubkey,
+    pub registry_authority: Pubkey,
+    pub asset_registry: Pubkey,
     pub emergency_authority: Pubkey,
     pub approved_tsn_program: Pubkey,
     pub proof_verifier_program: Pubkey,
@@ -48,7 +51,7 @@ pub struct TcapGlobalConfigV1 {
 }
 
 impl TcapGlobalConfigV1 {
-    pub const SPACE: usize = 8 + 2 + 2 + 2 + (32 * 5) + 1 + 1 + 32 + 2 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 2 + 2 + (32 * 7) + 1 + 1 + 32 + 2 + 1 + 1;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -97,6 +100,7 @@ pub struct TcapAssetEntryV1 {
     pub version: u16,
     pub protocol_version: u16,
     pub registry: Pubkey,
+    pub token_id: u32,
     pub asset: TcapAssetIdV1,
     pub reserve_state: Pubkey,
     pub future_vault: Pubkey,
@@ -120,6 +124,7 @@ impl TcapAssetEntryV1 {
         + 2
         + 2
         + 32
+        + 4
         + (32 + 32 + 4 + 32)
         + (32 * 3)
         + 1
@@ -164,6 +169,7 @@ pub struct TcapReserveStateV1 {
     pub version: u16,
     pub protocol_version: u16,
     pub asset_state: Pubkey,
+    pub asset_entry: Pubkey,
     pub future_vault: Pubkey,
     pub reserve_authority: Pubkey,
     pub actual_assets: u64,
@@ -180,13 +186,50 @@ pub struct TcapReserveStateV1 {
 }
 
 impl TcapReserveStateV1 {
-    pub const SPACE: usize = 8 + 2 + 2 + (32 * 3) + (8 * 6) + 1 + 1 + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 2 + (32 * 4) + (8 * 6) + 1 + 1 + 1 + 1 + 1;
     pub fn total_liabilities(&self) -> Option<u64> {
         self.pending_liabilities
             .checked_add(self.settled_confidential_liabilities)?
             .checked_add(self.authorized_withdrawal_liabilities)?
             .checked_add(self.reserved_refund_liabilities)
     }
+}
+
+/// Protocol-owned liquidity accounting skeleton for future exits. It is not
+/// wired to any token transfer while proof verification is disabled.
+#[account]
+pub struct TcapLiquidityPoolV1 {
+    pub version: u16,
+    pub config: Pubkey,
+    pub token_id: u32,
+    pub asset_entry: Pubkey,
+    pub governance_authority: Pubkey,
+    pub actual_assets: u64,
+    pub reserved_liabilities: u64,
+    pub pending_exits: u64,
+    pub paused: bool,
+    pub bump: u8,
+}
+
+impl TcapLiquidityPoolV1 {
+    pub const SPACE: usize = 8 + 2 + (32 * 3) + 4 + (8 * 3) + 1 + 1;
+}
+
+#[account]
+pub struct TcapExitReceiptV1 {
+    pub version: u16,
+    pub config: Pubkey,
+    pub token_id: u32,
+    pub nullifier: [u8; 32],
+    pub destination: Pubkey,
+    pub destination_binding: [u8; 32],
+    pub amount: u64,
+    pub consumed: bool,
+    pub bump: u8,
+}
+
+impl TcapExitReceiptV1 {
+    pub const SPACE: usize = 8 + 2 + 32 + 4 + 32 + 32 + 32 + 8 + 1 + 1;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -310,6 +353,9 @@ pub struct TsnSettlementAuthorizationV1 {
     pub version: u16,
     pub tsn_program_id: Pubkey,
     pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
     pub accepted_intent_root: [u8; 32],
     pub previous_tcap_root: [u8; 32],
     pub transition_type: TcapTransitionTypeV1,
@@ -319,6 +365,14 @@ pub struct TsnSettlementAuthorizationV1 {
     pub valid_after_slot: u64,
     pub expires_at_slot: u64,
     pub replay_nonce: [u8; 32],
+    pub tin_tip: Pubkey,
+    pub previous_commitment: [u8; 32],
+    pub new_commitment: [u8; 32],
+    pub sequence: u64,
+    pub token_id: u32,
+    pub policy_commitment: [u8; 32],
+    pub gpru_scope_commitment: [u8; 32],
+    pub nullifier: [u8; 32],
 }
 
 #[account]
@@ -327,16 +381,30 @@ pub struct TsnAuthorizationReceiptV1 {
     pub config: Pubkey,
     pub tsn_program_id: Pubkey,
     pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
     pub accepted_intent_root: [u8; 32],
     pub previous_tcap_root: [u8; 32],
     pub asset_commitment: [u8; 32],
     pub authorization_digest: [u8; 32],
     pub replay_nonce: [u8; 32],
+    pub tin_tip: Pubkey,
+    pub previous_commitment: [u8; 32],
+    pub new_commitment: [u8; 32],
+    pub sequence: u64,
+    pub token_id: u32,
+    pub policy_commitment: [u8; 32],
+    pub gpru_scope_commitment: [u8; 32],
+    pub nullifier: [u8; 32],
+    pub transition_type: TcapTransitionTypeV1,
+    pub valid_after_slot: u64,
+    pub expires_at_slot: u64,
     pub non_spendable: bool,
     pub consumed: bool,
     pub bump: u8,
 }
 
 impl TsnAuthorizationReceiptV1 {
-    pub const SPACE: usize = 8 + 2 + 32 + 32 + 8 + (32 * 5) + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 32 + 32 + 8 + 32 + 32 + 8 + (32 * 11) + 8 + 4 + 1 + 8 + 8 + 1 + 1 + 1;
 }

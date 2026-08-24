@@ -15,7 +15,7 @@
 1. Sender signs a canonical payment authorization. The SDK builds a `fund_epoch_treasury` transaction; no payment-specific account is included.
 2. Node verifies the funding signature and stores the full binding encrypted off chain.
 3. Node/Mother derives a keyed opaque slot and leases a Mother-rooted DNA to one operator. The Cranker receives only the opaque commitment and permit.
-4. The first valid settlement transaction initializes and consumes the slot as `SETTLED`, pays the recipient from the bound CrankerVault, and reimburses that same vault from epoch treasury in the same instruction.
+4. In the current TCAP credit path, the first valid ConfidentialSettlement authorization creates/consumes the receipt and advances the recipient tip. It does not invoke CrankerVault payout logic. Any CrankerVault settlement language elsewhere in this document is historical TSN payout architecture and is not normative for TCAP credit.
 5. If the intent expires without settlement, Node/Mother signs a refund. The first valid refund initializes and consumes the same slot as `REFUNDED` and pays the authorized refund destination from epoch treasury.
 6. Epoch close is permitted only after pending liability is zero and all slots are resolved.
 

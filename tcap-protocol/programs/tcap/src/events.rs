@@ -17,10 +17,28 @@ pub struct TcapTinTipInitializedV1 {
     pub tin_tip: Pubkey,
 }
 
+/// Opaque credit transition. No amount, recipient, TIN, wallet, or token
+/// account is emitted; token_id is only a registry index.
+#[event]
+pub struct TcapTinTipCreditedV1 {
+    pub tin_tip: Pubkey,
+    pub sequence: u64,
+    pub token_id: u32,
+    pub transition_digest: [u8; 32],
+}
+
 #[event]
 pub struct AssetRegistryInitializedV1 {
     pub registry: Pubkey,
     pub registry_version: u32,
+}
+
+#[event]
+pub struct AssetStateInitializedV1 {
+    pub asset_state: Pubkey,
+    pub reserve_state: Pubkey,
+    pub mint: Pubkey,
+    pub token_program: Pubkey,
 }
 
 #[event]

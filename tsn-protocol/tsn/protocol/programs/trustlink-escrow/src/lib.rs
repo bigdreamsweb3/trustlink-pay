@@ -11,6 +11,10 @@ declare_id!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 pub mod trustlink_escrow {
     use super::*;
 
+    pub fn tsn_accept_intent(ctx: Context<AcceptIntent>, args: AcceptIntentArgs) -> Result<()> {
+        tsn::instructions::accept_intent::handler(ctx, args)
+    }
+
     // --- TSN (Milestone 4) settlement layer ---
     pub fn tsn_initialize_mother_escrow(
         ctx: Context<InitializeMotherEscrow>,
@@ -121,6 +125,13 @@ pub mod trustlink_escrow {
         ctx: Context<CommitTinActionFee>,
     ) -> Result<()> {
         tsn::instructions::commit_tin_action_fee(ctx)
+    }
+
+    pub fn tsn_register_tcap_credit_authorization(
+        ctx: Context<RegisterTcapCreditAuthorization>,
+        args: RegisterTcapCreditAuthorizationArgs,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_credit_authorization(ctx, args)
     }
 
 }

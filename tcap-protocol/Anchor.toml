@@ -18,7 +18,7 @@ cluster = "https://devnet.helius-rpc.com/?api-key=bbd5bcd1-ee1b-419e-a226-00455f
 wallet = "~/.config/solana/id.json"
 
 [workspace]
-members = ["programs/tcap", "programs/stable_tcap_faucet"]
+members = ["programs/tcap"]
 
 # Deployment keypairs are intentionally untracked. Before `anchor deploy`, put
 # the matching program keypair in `target/deploy/<program>-keypair.json` and

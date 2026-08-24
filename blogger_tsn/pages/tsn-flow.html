@@ -1,0 +1,103 @@
+<article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
+  <meta itemprop="author" content="TrustLink Labs Research">
+  <meta itemprop="headline" content="TSN payment architecture: from TIN intent to TCAP private credit">
+  <meta itemprop="description" content="A plain-language technical guide to the live TrustLink TSN route: TIN, privacy-receiving root, GPRU authorization, Epoch Treasury, ConfidentialSettlement, TCAP tip credit and encrypted private balance snapshots.">
+  <meta itemprop="about" content="Transfer Settlement Network architecture">
+
+  <div class="up-kicker">TSN protocol &middot; architecture</div>
+  <h1 itemprop="name">How a TrustLink payment is authorized, settled and credited</h1>
+  <p class="dek" itemprop="description">TSN separates identity, authorization, settlement coordination and private balance accounting. The public chain verifies the rules it must enforce; the owner device retains the private material required to read a balance.</p>
+
+  <div class="definition">
+    <strong>The live route</strong>
+    <p>TIN identity &rarr; privacy-receiving root &rarr; GPRU authorization and routing &rarr; TSN Epoch Treasury &rarr; Mother/TSN <code>ConfidentialSettlement</code> authorization &rarr; TCAP tip credit &rarr; encrypted private snapshot &rarr; owner-device balance read.</p>
+  </div>
+
+  <h2 id="what-tsn-does">What TSN does</h2>
+  <p>TSN is the <strong>Transfer Settlement Network</strong>. It coordinates a payment from signed intent through verifiable settlement work. TSN is not a replacement for Solana consensus and it is not a user wallet. Its job is to make authorization, ordering, leases, liability and one-time execution explicit.</p>
+  <p><strong>TCAP</strong> means <strong>Transfer Confidential Asset Protocol</strong>. TCAP is the private balance accounting layer: it advances a commitment-backed tip and anchors the owner&rsquo;s encrypted snapshot. GPRU never holds funds.</p>
+
+  <h2 id="system-map">System map</h2>
+  <figure class="process">
+    <ol>
+      <li><span>01</span><div><strong>Identity</strong><small>TIN identifies the recipient relationship without publishing a human-facing wallet address.</small></div></li>
+      <li><span>02</span><div><strong>Authorization</strong><small>The owner device signs the intent, privacy-receiving-root relationship and GPRU scope.</small></div></li>
+      <li><span>03</span><div><strong>Verification</strong><small>Receiver stores redacted work; the TSN Node verifies signatures, policy, commitments, sequence and expiry.</small></div></li>
+      <li><span>04</span><div><strong>Settlement liability</strong><small>Mother and the Epoch Treasury bind the authorized transition to protocol-controlled accounting.</small></div></li>
+      <li><span>05</span><div><strong>TCAP credit</strong><small>The TSN CPI wrapper presents a complete ConfidentialSettlement receipt; TCAP consumes it and advances the tip.</small></div></li>
+      <li><span>06</span><div><strong>Private read</strong><small>The owner device verifies and decrypts the matching encrypted snapshot locally.</small></div></li>
+    </ol>
+    <figcaption>The route is deliberately split into public enforcement state and owner-controlled private state.</figcaption>
+  </figure>
+
+  <h2 id="stages">The payment, stage by stage</h2>
+
+  <h3>1. Device authorization</h3>
+  <p>The authorized device resolves the recipient TIN and privacy-receiving-root relationship. Private roots, master seeds, snapshot keys and plaintext balances remain on the device. A TIN is not a private key, token account or permission to spend.</p>
+
+  <h3>2. SDK intent construction</h3>
+  <p>The SDK constructs an immutable intent containing the payment commitment, amount and asset binding, recipient tip relationship, policy reference, GPRU scope, replay material and validity window. The authorized device signs the intent and the scoped authorization. A signature authenticates an already-bound plan; it does not authorize a Cranker to invent a new one.</p>
+
+  <h3>3. Receiver ingress</h3>
+  <p>The Receiver accepts authenticated work, stores a redacted coordination record and manages lease/status transitions. It is not a custody layer. It must not receive plaintext roots, seed phrases, spend keys, snapshot plaintext or private balances.</p>
+
+  <h3>4. Node verification</h3>
+  <p>The TSN Node verifies the signed fields and policy before work becomes executable. It checks commitment relationships, sequence, expiry, replay material, account bindings and the applicable lease. Invalid or stale work fails closed.</p>
+
+  <h3>5. AcceptedIntent and root binding</h3>
+  <p>For a ConfidentialSettlement credit, TSN records the accepted payment as an <code>AcceptedIntentV1</code> PDA. Its canonical root is domain-separated and derived over the epoch, payment commitment, amount, token binding, recipient tip root, settlement bindings, policy, GPRU scope, replay/nullifier material and validity window. The wrapper receives that PDA and verifies the supplied fields against it; a caller cannot substitute an unrelated root.</p>
+
+  <h3>6. Epoch Treasury and Mother authorization</h3>
+  <p>The Epoch Treasury records aggregate funding and liability for the epoch. Mother/TSN creates the one-time <code>ConfidentialSettlement</code> authorization. This is an authorization boundary, not a plaintext balance ledger.</p>
+
+  <h3>7. Cranker submission</h3>
+  <p>A Cranker pays transaction fees and submits the exact authorized transaction. It cannot change the amount, token, recipient tip, commitment, sequence, policy, GPRU scope, nullifier or expiry. Cranker infrastructure is a submitter boundary; the TCAP credit path does not depend on CrankerVault payout liquidity.</p>
+
+  <h3>8. TCAP receipt and tip credit</h3>
+  <p>TCAP registers the complete receipt, requiring <code>ConfidentialSettlement</code>, the approved TSN program, the AcceptedIntent binding, the correct epoch root and all credit fields. <code>credit_tcap_tin_tip_v1</code> checks the receipt, previous commitment, new commitment, sequence, token ID, policy commitment, GPRU scope, nullifier and validity window. It consumes the receipt/nullifier and advances the tip atomically.</p>
+
+  <h3>9. Encrypted snapshot and owner read</h3>
+  <p>The resulting commitment is persisted with an encrypted private snapshot. The snapshot store does not need to expose the plaintext balance to Receiver, Node or Cranker. The owner device fetches the matching ciphertext, verifies its commitment and decrypts it with owner-held snapshot material.</p>
+
+  <h2 id="public-private">What is public and what is private?</h2>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Boundary</th><th>Visible for enforcement</th><th>Retained privately</th></tr></thead>
+      <tbody>
+        <tr><td>Identity</td><td>TIN relationship references and fixed commitments required by policy</td><td>Plaintext privacy-receiving root and identity metadata</td></tr>
+        <tr><td>Authorization</td><td>Commitments, token ID, policy, scope, sequence, nullifier and validity window</td><td>Signing seeds and device authorization material</td></tr>
+        <tr><td>TCAP credit</td><td>Tip PDA, receipt state, commitment transition and replay state</td><td>Private balance snapshot and snapshot key</td></tr>
+        <tr><td>Operations</td><td>Lease/status evidence and submitted transaction signatures</td><td>Service credentials, deployment secrets and private logs</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>A TIN is not written into the TCAP tip as a public identity label. The tip is addressed by a blinded tip-root commitment and stores transition state, not a plaintext TIN or private balance. This reduces direct identity linkage; it does not promise that all timing, token or public-account signals disappear from Solana.</p>
+
+  <h2 id="authority-model">Who may change what?</h2>
+  <ul>
+    <li><strong>Owner device:</strong> authorizes the identity relationship, intent, scope and private snapshot read.</li>
+    <li><strong>Receiver:</strong> stores redacted ingress work and lease state; it cannot authorize value.</li>
+    <li><strong>TSN Node/Mother:</strong> verifies and authorizes the settlement transition within protocol policy.</li>
+    <li><strong>Cranker:</strong> submits exact authorized work and pays fees; it cannot rewrite the receipt.</li>
+    <li><strong>TSN program:</strong> enforces epoch, authorization, lease and one-time state.</li>
+    <li><strong>TCAP program:</strong> enforces receipt, tip, commitment, sequence, policy and nullifier rules.</li>
+  </ul>
+
+  <h2 id="proof-boundaries">Debit and exit boundaries</h2>
+  <p>Credit is the active private-balance direction. Debit and exit interfaces may exist for future proof integration, but live confidential debit and exit remain proof-gated. A GPRU signature, hash-only payload or placeholder proof cannot spend a balance or drain a liquidity pool.</p>
+
+  <h2 id="review-and-evidence">How to review the implementation</h2>
+  <p>Reviewers should separate:</p>
+  <ol>
+    <li><strong>Code evidence:</strong> account constraints, instruction logic and tests in the repository.</li>
+    <li><strong>Build evidence:</strong> successful SBF build with the stated Anchor/Rust toolchain.</li>
+    <li><strong>Devnet evidence:</strong> program ID, deployment slot, transaction signature and post-transaction account state.</li>
+    <li><strong>Production readiness:</strong> independent security review, governance controls, operational monitoring and an audited proof system for spend.</li>
+  </ol>
+  <p>Program-dependent testing is Devnet-only. After any program or ABI change, build, deploy and verify the updated Devnet bytecode before interpreting a simulation or transaction result.</p>
+
+  <h2 id="history">Architecture history</h2>
+  <p>ZK-PRU was an earlier receiving and spending experiment. It was superseded by the privacy-receiving-root, GPRU and TCAP model. It is retained only as historical audit material and must not be targeted by new integrations.</p>
+
+  <p><a href="/p/identity-and-tin.html">TIN identity</a> &middot; <a href="/p/gpru.html">GPRU authorization</a> &middot; <a href="/p/tcap.html">TCAP private accounting</a> &middot; <a href="/p/updates.html">Research updates</a></p>
+</article>

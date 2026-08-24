@@ -83,6 +83,12 @@ pub mod tcap {
         instructions::initialize_commitment_root_v1(ctx, empty_tree_root)
     }
 
+    pub fn migrate_tcap_config_layout_v1(
+        ctx: Context<MigrateTcapConfigLayoutV1>,
+    ) -> Result<()> {
+        instructions::migrate_tcap_config_layout_v1::handler(ctx)
+    }
+
     pub fn register_tsn_authorization_v1(
         ctx: Context<RegisterTsnAuthorizationV1>,
         authorization: TsnSettlementAuthorizationV1,

@@ -66,6 +66,7 @@
     "tsn:program:deploy:devnet": "node scripts/devnet-program-deploy.mjs deploy tsn",
     "tcap:program:build:devnet": "node scripts/devnet-program-deploy.mjs build tcap",
     "tcap:program:deploy:devnet": "node scripts/devnet-program-deploy.mjs deploy tcap",
+    "tcap:credit:bootstrap:devnet": "node protocol-tests/scenarios/tcap-credit-bootstrap.mjs",
     "programs:devnet:deploy": "node scripts/devnet-program-deploy.mjs deploy all",
     "tsn:program:test": "node scripts/run-anchor.mjs tsn-protocol/tsn/protocol test",
     "tsn:private:configure": "node scripts/tsn-private-settlement-config.mjs",

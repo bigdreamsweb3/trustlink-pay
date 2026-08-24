@@ -70,6 +70,24 @@ TSN  TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 TCAP TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
 ```
 
+### Required upgrade gate before credit bootstrap
+
+Run the TCAP deploy command after any change to the on-chain account layout or
+instruction ABI. In particular, `migrate_tcap_config_layout_v1` is required to
+convert the older Devnet config account. Running the bootstrap before this
+upgrade produces `InstructionFallbackNotFound`; that means the old bytecode is
+still deployed and no migration occurred.
+
+Verify the deployed program after the upgrade and record the new `Last Deployed
+In Slot` value before continuing:
+
+```bash
+solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x \
+  --url "$ANCHOR_PROVIDER_URL"
+```
+
+Only after the slot changes should you run the config migration/bootstrap.
+
 The deploy helper uses RPC submission, `confirmed` commitment, and 20 signing
 attempts by default because large SBF upgrades can exceed a single blockhash
 window. Set `TRUSTLINK_DEPLOY_TRANSPORT=quic` to try QUIC instead of RPC; use

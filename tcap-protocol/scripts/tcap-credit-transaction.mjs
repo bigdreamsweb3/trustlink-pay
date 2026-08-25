@@ -27,6 +27,94 @@ const u32 = (value) => { const b = Buffer.alloc(4); b.writeUInt32LE(value); retu
 const u64 = (value) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(value)); return b; };
 const concat = (...parts) => Buffer.concat(parts);
 
+const TSN_EPOCH_TREASURY_SEED = seed("tsn:epoch-treasury:v1");
+const TSN_EPOCH_LEDGER_SEED = seed("tsn:epoch-ledger:v1");
+const TSN_EPOCH_TREASURY_AUTHORITY_SEED = seed("tsn:epoch-treasury-authority:v1");
+const TSN_MOTHER_ESCROW_SEED = seed("tsn_mother_escrow");
+const TSN_ACCEPTED_INTENT_SEED = seed("tsn:accepted-intent:v1");
+
+export function deriveTsnFundingPdas({ motherEscrow, epochId, tokenMint }) {
+  const mother = pubkey(motherEscrow);
+  const mint = pubkey(tokenMint);
+  const epochTreasury = PublicKey.findProgramAddressSync([
+    TSN_EPOCH_TREASURY_SEED, mother.toBuffer(), u64(epochId), mint.toBuffer(),
+  ], TSN_PROGRAM_ID)[0];
+  const epochLedger = PublicKey.findProgramAddressSync([
+    TSN_EPOCH_LEDGER_SEED, epochTreasury.toBuffer(),
+  ], TSN_PROGRAM_ID)[0];
+  const treasuryAuthority = PublicKey.findProgramAddressSync([
+    TSN_EPOCH_TREASURY_AUTHORITY_SEED, epochTreasury.toBuffer(),
+  ], TSN_PROGRAM_ID)[0];
+  return { epochTreasury, epochLedger, treasuryAuthority };
+}
+
+export function deriveAcceptedIntentPda({ motherEscrow, epochId, intentCommitment }) {
+  return PublicKey.findProgramAddressSync([
+    TSN_ACCEPTED_INTENT_SEED, pubkey(motherEscrow).toBuffer(), u64(epochId),
+    bytes32(intentCommitment, "intentCommitment"),
+  ], TSN_PROGRAM_ID)[0];
+}
+
+/** Funding and acceptance use the same payer and are intended to be added to one Transaction. */
+export function buildFundEpochTreasuryInstruction(fields) {
+  if (BigInt(fields.amount) <= 0n) throw new Error("funding amount must be positive");
+  const payer = pubkey(fields.payer ?? fields.funder);
+  const funder = pubkey(fields.funder ?? fields.payer);
+  if (!payer.equals(funder)) throw new Error("funding and acceptance must use one fee payer/funder");
+  const pdas = deriveTsnFundingPdas(fields);
+  return new TransactionInstruction({
+    programId: TSN_PROGRAM_ID,
+    keys: [
+      { pubkey: funder, isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.funderTokenAccount), isSigner: false, isWritable: true },
+      { pubkey: pubkey(fields.tokenMint), isSigner: false, isWritable: false },
+      { pubkey: pdas.epochTreasury, isSigner: false, isWritable: true },
+      { pubkey: pdas.epochLedger, isSigner: false, isWritable: true },
+      { pubkey: pdas.treasuryAuthority, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.treasuryTokenAccount), isSigner: false, isWritable: true },
+      { pubkey: pubkey(fields.associatedTokenProgram ?? "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.tokenProgram ?? "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data: concat(discriminator("tsn_fund_epoch_treasury"), u64(fields.epochId), u64(fields.amount)),
+  });
+}
+
+export function buildAcceptIntentInstruction(fields) {
+  const payer = pubkey(fields.payer ?? fields.authority);
+  const authority = pubkey(fields.authority ?? fields.payer);
+  if (!payer.equals(authority)) throw new Error("funding and acceptance must use one fee payer/authority");
+  const acceptedIntent = fields.acceptedIntent
+    ? pubkey(fields.acceptedIntent)
+    : deriveAcceptedIntentPda(fields);
+  const data = concat(
+    discriminator("tsn_accept_intent"), u64(fields.epochId),
+    bytes32(fields.intentCommitment, "intentCommitment"), u64(fields.amount), u32(fields.tokenId),
+    bytes32(fields.tipRootCommitment, "tipRootCommitment"), bytes32(fields.settlementCommitment, "settlementCommitment"),
+    bytes32(fields.assetCommitment, "assetCommitment"), bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.replayNonce, "replayNonce"),
+    bytes32(fields.nullifier, "nullifier"), u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+  );
+  return new TransactionInstruction({
+    programId: TSN_PROGRAM_ID,
+    keys: [
+      { pubkey: authority, isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+      { pubkey: acceptedIntent, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+/** Returns one atomic transaction: funding first, then intent acceptance. */
+export function buildFundAndAcceptIntentTransaction(fields) {
+  const fund = buildFundEpochTreasuryInstruction(fields);
+  const accept = buildAcceptIntentInstruction(fields);
+  return new Transaction().add(fund, accept);
+}
+
 export function deriveTcapPdas({ tipRootCommitment, authorizationDigest, nullifier }) {
   const root = bytes32(tipRootCommitment, "tipRootCommitment");
   const auth = bytes32(authorizationDigest, "authorizationDigest");

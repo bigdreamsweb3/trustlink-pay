@@ -1,5 +1,6 @@
 import http from "node:http";
 import fs from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -11,13 +12,39 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const runsRoot = path.join(root, "protocol-test-runs");
 const port = Number(process.env.TRUSTLINK_UI_PORT || 4317);
 const clients = new Set();
+function readEnvDefaults(file) {
+  const values = {};
+  return fs.readFile(file, "utf8").then((text) => {
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+      if (match) values[match[1]] = match[2].trim().replace(/^(['"])(.*)\1$/, "$2");
+    }
+    return values;
+  }).catch(() => values);
+}
+const CREDIT_DEFAULTS = await readEnvDefaults(path.join(root, "protocol-tests/tcap-credit-devnet.defaults.env"));
+function configuredAnchorRpc() {
+  for (const file of ["tcap-protocol/Anchor.toml", "tsn-protocol/tsn/protocol/Anchor.toml"]) {
+    try {
+      const text = readFileSync(path.join(root, file), "utf8");
+      const match = text.match(/^cluster\s*=\s*"([^"]+)"/m);
+      if (match?.[1] && /^https?:\/\//i.test(match[1])) return match[1];
+    } catch { /* try the next repo convention */ }
+  }
+  return undefined;
+}
 const rpc = process.env.TCAP_RPC_URL
   ?? process.env.HELIUS_DEVNET_RPC_URL
   ?? process.env.DEVNET_RPC_URL
   ?? process.env.SOLANA_RPC_URL
   ?? process.env.ANCHOR_PROVIDER_URL
+  ?? configuredAnchorRpc()
   ?? "https://api.devnet.solana.com";
 const connection = new Connection(rpc, "confirmed");
+function redactedRpc(value) {
+  try { return `${new URL(value).protocol}//${new URL(value).host}`; } catch { return "configured-devnet-rpc"; }
+}
 const sessions = new Map();
 let testMintAuthoritySigner = null;
 const SESSION_TTL = 30 * 60 * 1000;
@@ -28,12 +55,13 @@ const ASSOCIATED_TOKEN_PROGRAM = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25
 const TEST_ASSET_CONFIG = JSON.parse(await fs.readFile(path.join(root, "protocol-tests/config/trustlink-test-asset.devnet.json"), "utf8"));
 const STABLE_TCAP_CONFIG = JSON.parse(await fs.readFile(path.join(root, "protocol-tests/config/stable-tcap.devnet.json"), "utf8"));
 const VERIFIED_DEVNET_STABLES = JSON.parse(await fs.readFile(path.join(root, "protocol-tests/config/verified-devnet-stables.json"), "utf8"));
-const TCAP_PROGRAM = new PublicKey(TEST_ASSET_CONFIG.tcapProgram);
+const TCAP_PROGRAM = new PublicKey(CREDIT_DEFAULTS.TCAP_PROGRAM_ID ?? TEST_ASSET_CONFIG.tcapProgram);
+const TSN_PROGRAM = new PublicKey(CREDIT_DEFAULTS.TSN_PROGRAM_ID ?? "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 const METADATA_PROGRAM = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname === "/api/health") return json(res, 200, { service: "trustlink-test-lab", status: "READY", port });
+  if (url.pathname === "/api/health") return json(res, 200, { service: "trustlink-test-lab", status: "READY", uiVersion: "credit-bridge-preflight-v2", port });
   if (url.pathname.startsWith("/api/")) return handleApi(req, res, url);
   if (url.pathname === "/events") {
     res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
@@ -78,18 +106,61 @@ async function handleApi(req, res, url) {
       return json(res, 200, await safeWallet(session, true));
     } catch { return json(res, 400, { error: "INVALID_WALLET_FILE" }); }
   }
+  if (req.method === "POST" && url.pathname === "/api/session/wallet/fixture") {
+    try {
+      const fixturePath = path.join(root, "protocol-tests/tcap-devnet-test-wallet.json");
+      const secret = JSON.parse(await fs.readFile(fixturePath, "utf8"));
+      const signer = Keypair.fromSecretKey(Uint8Array.from(secret));
+      session.signer = signer;
+      session.wallet = { type: "LOCAL_DEVNET_FIXTURE", publicKey: signer.publicKey.toBase58(), source: "Checked-in Devnet fixture", signerLoaded: true };
+      return json(res, 200, await safeWallet(session, true));
+    } catch { return json(res, 404, { error: "DEVNET_FIXTURE_WALLET_NOT_AVAILABLE" }); }
+  }
   if (req.method === "POST" && url.pathname === "/api/session/wallet/browser") {
     try { const body = await readJson(req); const publicKey = new PublicKey(body.publicKey); session.signer = null; session.wallet = { type: "BROWSER_WALLET", publicKey: publicKey.toBase58(), source: "Browser wallet", signerLoaded: false }; return json(res, 200, await safeWallet(session, true)); } catch { return json(res, 400, { error: "INVALID_BROWSER_WALLET" }); }
   }
   if (req.method === "GET" && url.pathname === "/api/session/wallet") return json(res, 200, await safeWallet(session));
   if (req.method === "POST" && url.pathname === "/api/tcap/credit/preflight") {
     if (!session.wallet?.publicKey) return json(res, 409, { status: "BLOCKED_TEST_WALLET_NOT_LOADED", error: "TEST_WALLET_NOT_LOADED" });
+    const accountChecks = [];
+    const read = async (label, address, owner) => {
+      const info = await connection.getAccountInfo(address, "confirmed");
+      const exists = Boolean(info);
+      const owned = Boolean(info?.owner.equals(owner));
+      accountChecks.push({ label, address: address.toBase58(), exists, owned });
+      return info;
+    };
+    const pda = (seed, ...rest) => PublicKey.findProgramAddressSync([Buffer.from(seed), ...rest], TCAP_PROGRAM)[0];
+    const tsnPda = (seed, ...rest) => PublicKey.findProgramAddressSync([Buffer.from(seed), ...rest], TSN_PROGRAM)[0];
+    const mother = new PublicKey(CREDIT_DEFAULTS.TSN_MOTHER_ESCROW);
+    const config = new PublicKey(CREDIT_DEFAULTS.TCAP_CONFIG);
+    const registry = new PublicKey(CREDIT_DEFAULTS.TCAP_ASSET_REGISTRY);
+    const commitmentRoot = new PublicKey(CREDIT_DEFAULTS.TCAP_COMMITMENT_ROOT);
+    const mint = new PublicKey(CREDIT_DEFAULTS.TCAP_MINT);
+    const tokenProgram = new PublicKey(CREDIT_DEFAULTS.TCAP_TOKEN_PROGRAM);
+    await read("TSN Mother Escrow", mother, TSN_PROGRAM);
+    await read("TCAP config", config, TCAP_PROGRAM);
+    await read("TCAP asset registry", registry, TCAP_PROGRAM);
+    await read("TCAP commitment root", commitmentRoot, TCAP_PROGRAM);
+    const mintInfo = await read("TCAP mint", mint, tokenProgram);
+    const assetEntry = pda("tcap:asset-entry:v1", registry.toBuffer(), tokenProgram.toBuffer(), mint.toBuffer());
+    const reserve = pda("tcap:reserve-state:v1", assetEntry.toBuffer());
+    await read("TCAP asset entry", assetEntry, TCAP_PROGRAM);
+    await read("TCAP reserve state", reserve, TCAP_PROGRAM);
+    const missingFields = ["TCAP_AUTHORIZATION_DIGEST", "TCAP_REPLAY_NONCE", "TCAP_GPRU_SCOPE_COMMITMENT", "TCAP_TSN_SETTLEMENT_COMMITMENT", "TCAP_NULLIFIER"]
+      .filter((name) => !process.env[name]?.trim());
+    const accountReady = accountChecks.every((check) => check.exists && check.owned);
+    const mintDecimals = mintInfo?.data?.length > 44 ? mintInfo.data[44] : null;
+    const decimalsMatch = mintDecimals === Number(CREDIT_DEFAULTS.TCAP_MINT_DECIMALS ?? 2);
+    const status = accountReady && decimalsMatch && missingFields.length === 0 ? "PREFLIGHT_OK" : "PREFLIGHT_BLOCKED";
     return json(res, 200, {
-      status: "PREFLIGHT_OK", rpcConfigured: Boolean(rpc), rpc,
+      status, rpcConfigured: Boolean(rpc), rpc: redactedRpc(rpc),
       walletPublicKey: session.wallet.publicKey, walletType: session.wallet.type,
-      instruction: "register_tsn_authorization_v1 + credit_tcap_tin_tip_v1",
-      liveSubmission: false,
-      message: "Bridge preflight passed. Live submission remains disabled until bridge account fields are configured and reviewed."
+      instruction: "tsn_fund_epoch_treasury + tsn_accept_intent (atomic), then register_tsn_authorization_v1 + credit_tcap_tin_tip_v1",
+      liveSubmission: false, accountChecks, mintDecimals, decimalsMatch, missingFields,
+      message: status === "PREFLIGHT_OK"
+        ? "Devnet bridge accounts and authorization inputs are present. Live submission remains disabled in the UI."
+        : "Devnet bridge preflight is blocked; inspect account checks and provide real TSN-authorized fields. No transaction was submitted."
     });
   }
   if (req.method === "DELETE" && url.pathname === "/api/session/wallet") { session.signer = null; session.wallet = null; session.simulation = null; session.pendingTransaction = null; return json(res, 200, { removed: true }); }

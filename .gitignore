@@ -138,6 +138,15 @@ protocol-tests/*
 !protocol-tests/scenarios/
 protocol-tests/scenarios/*
 !protocol-tests/scenarios/tcap-credit-bootstrap.mjs
+!protocol-tests/tcap-credit-devnet.defaults.env
+!protocol-tests/ui/
+protocol-tests/ui/*
+!protocol-tests/ui/server.mjs
+!protocol-tests/ui/public/
+protocol-tests/ui/public/*
+!protocol-tests/ui/public/bridge-controller.js
+!protocol-tests/ui/public/index.html
+!protocol-tests/ui/public/wallet-controller.js
 !protocol-tests/lib/
 protocol-tests/lib/*
 !protocol-tests/lib/privacy-root-commitment.mjs

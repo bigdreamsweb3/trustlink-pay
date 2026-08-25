@@ -32,6 +32,19 @@ test("canonical GPRU authorization message verifies only its bound identity and 
   assert.equal(verifyGpruAuthorizationSignature({ ...authorization, signature, authorizationPublicKey: signer.publicKey, epochContext: new Uint8Array([9]) }), false);
 });
 
+test("GPRU authorization cannot be rebound to another privacy root", () => {
+  const identity = deriveGpruIdentity(input);
+  assert.equal(verifyGpruAuthorizationBinding({ ...input, gpruIdentity: identity }), true);
+  assert.equal(
+    verifyGpruAuthorizationBinding({
+      ...input,
+      tinPrivacyReceivingRoot: new Uint8Array(32).fill(9),
+      gpruIdentity: identity,
+    }),
+    false,
+  );
+});
+
 test("GPRU private balance lookup is commitment-keyed and O(1)", async () => {
   const calls = [];
   const expected = "ab".repeat(32);

@@ -187,14 +187,15 @@ function deploy(plan) {
   if (bufferSigner) console.log(`buffer signer: ${bufferSigner}`);
   const currentShow = runProgram("solana", ["program", "show", "--url", rpc, programId], join(root, plan.workspace), `Inspect ${plan.label} ProgramData capacity`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet }, true);
   const currentLength = Number.parseInt(currentShow.match(/Data Length:\s*([\d,]+)/)?.[1]?.replaceAll(",", "") ?? "0", 10);
-  if (currentLength > 0 && currentLength < maxLen) {
+  const requiredLength = Math.ceil(artifactBytes / 1024) * 1024;
+  if (currentLength > 0 && currentLength < requiredLength) {
     const extension = maxLen - currentLength;
     console.log(`extending ProgramData by ${extension} bytes (${currentLength} -> ${maxLen})`);
-    runProgram("solana", ["program", "extend", programId, String(extension), transportFlag, "--url", rpc], join(root, plan.workspace), `Extend ${plan.label} ProgramData`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+    runProgram("solana", ["program", "extend", programId, String(extension), "--keypair", wallet, transportFlag, "--url", rpc], join(root, plan.workspace), `Extend ${plan.label} ProgramData`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
   } else {
     console.log(`ProgramData capacity: ${currentLength || "unknown"}; target: ${maxLen}`);
   }
-  runProgram("solana", ["program", "deploy", plan.artifactRelative, "--program-id", plan.keypair, "--max-len", String(maxLen), "--max-sign-attempts", String(maxSignAttempts), ...bufferArgs, transportFlag, "--commitment", "confirmed", "--url", rpc], join(root, plan.workspace), `Deploy ${plan.label} SBF artifact to Devnet`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  runProgram("solana", ["program", "deploy", plan.artifactRelative, "--program-id", plan.keypair, "--keypair", wallet, "--max-len", String(maxLen), "--max-sign-attempts", String(maxSignAttempts), ...bufferArgs, transportFlag, "--commitment", "confirmed", "--url", rpc], join(root, plan.workspace), `Deploy ${plan.label} SBF artifact to Devnet`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
   console.log(`=== ${plan.label} post-deploy program show ===`);
   runProgram("solana", ["program", "show", "--url", rpc, programId], join(root, plan.workspace), `${plan.label} post-deploy program show`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
 }

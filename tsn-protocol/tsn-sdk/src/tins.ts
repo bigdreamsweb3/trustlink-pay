@@ -22,6 +22,35 @@ const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
+
+/**
+ * Validate the public portion of a TCap-backed TIN relationship. The
+ * privacy-receiving root, snapshot key, and any spend authority remain on the
+ * owner device; only these commitments are safe to pass through coordination
+ * services.
+ */
+export function validateTinTcapRelationship(params: {
+  tcapRouteVersion: number;
+  pruConfigurationHash?: Uint8Array | null;
+  encryptedPublicRouteEnvelope?: Uint8Array | null;
+  tcapRelationshipCommitment?: Uint8Array | null;
+  tcapRelationshipReference?: Uint8Array | null;
+  tcapPolicyCommitment?: Uint8Array | null;
+}): boolean {
+  const zero = (value?: Uint8Array | null) => !value || value.every((byte) => byte === 0);
+  const nonZero32 = (value?: Uint8Array | null) => Boolean(value && value.length === 32 && !zero(value));
+  if (params.tcapRouteVersion === 0) {
+    return zero(params.tcapRelationshipCommitment) &&
+      zero(params.tcapRelationshipReference) &&
+      zero(params.tcapPolicyCommitment);
+  }
+  if (params.tcapRouteVersion !== 1) return false;
+  return zero(params.pruConfigurationHash) &&
+    (!params.encryptedPublicRouteEnvelope || params.encryptedPublicRouteEnvelope.length === 0) &&
+    nonZero32(params.tcapRelationshipCommitment) &&
+    nonZero32(params.tcapRelationshipReference) &&
+    nonZero32(params.tcapPolicyCommitment);
+}
 /**
  * Envelope-format validation is deliberately separate from provider choice.
  * `tsn-device-envelope-v1` is the provider currently written by the shipped
@@ -103,6 +132,10 @@ export type TinResolvedIdentity = {
   encryptedSensitiveFields: TinEncryptedSensitiveField[];
   pruConfigurationHash: string | null;
   routeVersion: number | null;
+  tcapRouteVersion: number | null;
+  tcapRelationshipCommitment: string | null;
+  tcapRelationshipReference: string | null;
+  tcapPolicyCommitment: string | null;
 };
 
 function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
@@ -374,6 +407,10 @@ export function serializeTinCreationRegistryParams(params: {
   encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
   routeVersion?: bigint | number;
   routeNonce?: Buffer | Uint8Array;
+  tcapRouteVersion?: number;
+  tcapRelationshipCommitment?: Buffer | Uint8Array;
+  tcapRelationshipReference?: Buffer | Uint8Array;
+  tcapPolicyCommitment?: Buffer | Uint8Array;
   nonce?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
@@ -390,6 +427,10 @@ export function serializeTinUpdateParams(params: {
   encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
   routeVersion?: bigint | number;
   routeNonce?: Buffer | Uint8Array;
+  tcapRouteVersion?: number;
+  tcapRelationshipCommitment?: Buffer | Uint8Array;
+  tcapRelationshipReference?: Buffer | Uint8Array;
+  tcapPolicyCommitment?: Buffer | Uint8Array;
   nonce?: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
@@ -464,11 +505,18 @@ function serializeTinRegistryMutationParams(
     encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
     routeVersion?: bigint | number;
     routeNonce?: Buffer | Uint8Array;
+    tcapRouteVersion?: number;
+    tcapRelationshipCommitment?: Buffer | Uint8Array;
+    tcapRelationshipReference?: Buffer | Uint8Array;
+    tcapPolicyCommitment?: Buffer | Uint8Array;
     nonce?: Buffer | Uint8Array;
     intentHash: Buffer | Uint8Array;
     expiryTs: bigint | number;
   },
 ) {
+  if (params.tcapRouteVersion === 1) {
+    return serializeTinTcapRegistryMutationParams(tag, params);
+  }
   const parts: Buffer[] = [];
   const encryptedMasterSeed = resolveEncryptedMasterSeed(params);
   appendPubkey(parts, params.ownerPubkey);
@@ -489,6 +537,58 @@ function serializeTinRegistryMutationParams(
   const expiry = Buffer.alloc(8);
   expiry.writeBigInt64LE(BigInt(params.expiryTs));
   parts.push(expiry);
+  return encodeInstruction(tag, parts);
+}
+
+/** Complete Borsh layout for the active TCap-backed TIN mutation. */
+function serializeTinTcapRegistryMutationParams(
+  tag: 12 | 13,
+  params: {
+    ownerPubkey: PublicKey;
+    displayName: string;
+    encryptedMasterSeed?: Buffer | Uint8Array;
+    encryptedMetadataHash?: Buffer | Uint8Array;
+    pruConfigurationHash?: Buffer | Uint8Array;
+    encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+    routeVersion?: bigint | number;
+    routeNonce?: Buffer | Uint8Array;
+    tcapRouteVersion?: number;
+    tcapRelationshipCommitment?: Buffer | Uint8Array;
+    tcapRelationshipReference?: Buffer | Uint8Array;
+    tcapPolicyCommitment?: Buffer | Uint8Array;
+    nonce?: Buffer | Uint8Array;
+    intentHash: Buffer | Uint8Array;
+    expiryTs: bigint | number;
+  },
+) {
+  if (params.tcapRouteVersion !== 1) throw new Error("TCap registry mutations require tcapRouteVersion=1");
+  const configurationHash = normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash");
+  if (!configurationHash.equals(ZERO_HASH_32)) throw new Error("TCap registry mutations cannot include pruConfigurationHash");
+  if ((params.encryptedPublicRouteEnvelope?.length ?? 0) !== 0) {
+    throw new Error("TCap registry mutations cannot include encryptedPublicRouteEnvelope");
+  }
+  const relationshipCommitment = requireHash32(params.tcapRelationshipCommitment, "tcapRelationshipCommitment");
+  const relationshipReference = requireHash32(params.tcapRelationshipReference, "tcapRelationshipReference");
+  const policyCommitment = requireHash32(params.tcapPolicyCommitment, "tcapPolicyCommitment");
+  if (relationshipCommitment.equals(ZERO_HASH_32) || relationshipReference.equals(ZERO_HASH_32) || policyCommitment.equals(ZERO_HASH_32)) {
+    throw new Error("TCap relationship and policy commitments must be non-zero");
+  }
+  const routeVersion = Buffer.alloc(8);
+  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
+  const parts: Buffer[] = [];
+  appendPubkey(parts, params.ownerPubkey);
+  appendString(parts, params.displayName);
+  appendBytes(parts, resolveEncryptedMasterSeed(params));
+  parts.push(normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
+  parts.push(configurationHash);
+  appendU32(parts, 0);
+  parts.push(routeVersion);
+  parts.push(normalizeHash32(params.routeNonce, "routeNonce"));
+  appendU8(parts, 1);
+  parts.push(relationshipCommitment, relationshipReference, policyCommitment);
+  parts.push(requireHash32(params.nonce, "nonce"));
+  parts.push(requireHash32(params.intentHash, "intentHash"));
+  appendI64(parts, params.expiryTs);
   return encodeInstruction(tag, parts);
 }
 
@@ -712,12 +812,15 @@ export function decodeTinAccount(data: Uint8Array) {
   if (offset + 4 <= buffer.length) {
     const routeEnvelopeLength = buffer.readUInt32LE(offset);
     offset += 4;
-    if (routeEnvelopeLength > 0 && offset + routeEnvelopeLength + 8 + 32 <= buffer.length) {
+    if (offset + routeEnvelopeLength + 8 + 32 <= buffer.length) {
+      if (routeEnvelopeLength > 0) {
       encryptedPublicRouteEnvelope = buffer.subarray(offset, offset + routeEnvelopeLength);
+      }
       offset += routeEnvelopeLength;
       routeVersion = buffer.readBigUInt64LE(offset);
       offset += 8;
       routeNonce = buffer.subarray(offset, offset + 32);
+      offset += 32;
     }
   }
 
@@ -1088,6 +1191,16 @@ export async function resolveTIN(params: {
       routeVersion: legacy.decoded.routeVersion && legacy.decoded.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
         ? Number(legacy.decoded.routeVersion)
         : null,
+      tcapRouteVersion: legacy.decoded.tcapRouteVersion ?? null,
+      tcapRelationshipCommitment: legacy.decoded.tcapRelationshipCommitment
+        ? bytesToHex(legacy.decoded.tcapRelationshipCommitment)
+        : null,
+      tcapRelationshipReference: legacy.decoded.tcapRelationshipReference
+        ? bytesToHex(legacy.decoded.tcapRelationshipReference)
+        : null,
+      tcapPolicyCommitment: legacy.decoded.tcapPolicyCommitment
+        ? bytesToHex(legacy.decoded.tcapPolicyCommitment)
+        : null,
     };
   }
   try {
@@ -1101,17 +1214,27 @@ export async function resolveTIN(params: {
         registry: registryPda,
         accountKind: "registry",
         upgradeRequired:
-          !tinAccount.pruConfigurationHash ||
           !tinAccount.encryptedMasterSeed.length ||
-          !tinAccount.encryptedPublicRouteEnvelope ||
           !tinAccount.routeVersion ||
           !tinAccount.routeNonce ||
+          (tinAccount.tcapRouteVersion === 1
+            ? !tinAccount.tcapRelationshipCommitment ||
+              !tinAccount.tcapRelationshipReference ||
+              !tinAccount.tcapPolicyCommitment
+            : !tinAccount.pruConfigurationHash ||
+              !tinAccount.encryptedPublicRouteEnvelope) ||
           !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed),
         upgradeReason:
-          tinAccount.pruConfigurationHash &&
-          tinAccount.encryptedPublicRouteEnvelope &&
-          tinAccount.routeVersion &&
-          tinAccount.routeNonce
+          Boolean(tinAccount.tcapRouteVersion === 1
+            ? tinAccount.tcapRelationshipCommitment &&
+              tinAccount.tcapRelationshipReference &&
+              tinAccount.tcapPolicyCommitment &&
+              tinAccount.routeVersion &&
+              tinAccount.routeNonce
+            : tinAccount.pruConfigurationHash &&
+              tinAccount.encryptedPublicRouteEnvelope &&
+              tinAccount.routeVersion &&
+              tinAccount.routeNonce)
           ? !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed)
             ? "TIN master-seed envelope is invalid or incomplete. Upgrade the TIN before loading private balances."
             : null
@@ -1127,6 +1250,16 @@ export async function resolveTIN(params: {
           : null,
         routeVersion: tinAccount.routeVersion && tinAccount.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
           ? Number(tinAccount.routeVersion)
+          : null,
+        tcapRouteVersion: tinAccount.tcapRouteVersion ?? null,
+        tcapRelationshipCommitment: tinAccount.tcapRelationshipCommitment
+          ? bytesToHex(tinAccount.tcapRelationshipCommitment)
+          : null,
+        tcapRelationshipReference: tinAccount.tcapRelationshipReference
+          ? bytesToHex(tinAccount.tcapRelationshipReference)
+          : null,
+        tcapPolicyCommitment: tinAccount.tcapPolicyCommitment
+          ? bytesToHex(tinAccount.tcapPolicyCommitment)
           : null,
       };
     }
@@ -1182,5 +1315,9 @@ export async function resolveTIN(params: {
     encryptedSensitiveFields: registry.sensitiveFields,
     pruConfigurationHash: null,
     routeVersion: null,
+    tcapRouteVersion: null,
+    tcapRelationshipCommitment: null,
+    tcapRelationshipReference: null,
+    tcapPolicyCommitment: null,
   };
 }

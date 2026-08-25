@@ -984,7 +984,37 @@ def decode_tin_account_route_material(data: bytes) -> dict[str, Any]:
     route_envelope = take(route_length, "public-route envelope")
     route_version = int.from_bytes(take(8, "route version"), "little")
     route_nonce = take(32, "route nonce")
-    if route_length == 0 or route_version < 1:
+    # Older finalized TINs predate the TCap relationship suffix. Keep their
+    # parser isolated for migration reads; they are never treated as TCap.
+    if offset == len(buffer):
+        if route_length == 0 or route_version < 1:
+            raise ValueError("TINS account does not contain an active public route envelope")
+        return {
+            "tin": str(tin),
+            "ownerPubkeyHash": owner_pubkey_hash.hex(),
+            "pruConfigurationHash": pru_configuration_hash.hex(),
+            "encryptedPublicRouteEnvelope": base64.b64encode(route_envelope).decode("ascii"),
+            "routeVersion": route_version,
+            "routeNonce": route_nonce.hex(),
+            "tcapRouteVersion": 0,
+            "tcapRelationshipCommitment": (bytes(32)).hex(),
+            "tcapRelationshipReference": (bytes(32)).hex(),
+            "tcapPolicyCommitment": (bytes(32)).hex(),
+        }
+
+    # Current TCap-backed TINs intentionally carry an empty legacy route
+    # envelope. Their public binding is the relationship/policy commitments;
+    # no PRU inventory is present or recoverable by infrastructure.
+    tcap_route_version = int.from_bytes(take(1, "TCap route version"), "little")
+    tcap_relationship_commitment = take(32, "TCap relationship commitment")
+    tcap_relationship_reference = take(32, "TCap relationship reference")
+    tcap_policy_commitment = take(32, "TCap policy commitment")
+    if tcap_route_version == 1:
+        if route_length != 0 or pru_configuration_hash != bytes(32):
+            raise ValueError("TCap TIN contains legacy PRU route material")
+        if any(value == bytes(32) for value in (tcap_relationship_commitment, tcap_relationship_reference, tcap_policy_commitment)):
+            raise ValueError("TCap TIN relationship commitments are incomplete")
+    elif route_length == 0 or route_version < 1:
         raise ValueError("TINS account does not contain an active public route envelope")
 
     return {
@@ -994,6 +1024,10 @@ def decode_tin_account_route_material(data: bytes) -> dict[str, Any]:
         "encryptedPublicRouteEnvelope": base64.b64encode(route_envelope).decode("ascii"),
         "routeVersion": route_version,
         "routeNonce": route_nonce.hex(),
+        "tcapRouteVersion": tcap_route_version,
+        "tcapRelationshipCommitment": tcap_relationship_commitment.hex(),
+        "tcapRelationshipReference": tcap_relationship_reference.hex(),
+        "tcapPolicyCommitment": tcap_policy_commitment.hex(),
     }
 
 async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
@@ -1070,6 +1104,10 @@ async def read_onchain_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
             material = decode_tin_account_route_material(base64.b64decode(encoded))
             if material["tin"] != str(tin):
                 continue
+            if int(material.get("tcapRouteVersion") or 0) == 1:
+                # A TCap relationship is commitment-only. Never turn it into
+                # a PRU inventory or a Cranker payout route.
+                raise ValueError("Active TCap TIN has no PRU route; use the ConfidentialSettlement relationship path")
             snapshot = _decrypt_public_route_envelope(
                 encrypted_envelope_base64=material["encryptedPublicRouteEnvelope"],
                 expected_tin=str(tin),
@@ -1097,6 +1135,47 @@ async def read_onchain_tin_pru_route(tin: str) -> Optional[dict[str, Any]]:
             "status": "finalized",
             "source": "onchain_tin_account",
             "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+    return None
+
+
+async def read_onchain_tin_tcap_relationship(tin: str) -> Optional[dict[str, Any]]:
+    """Read only the public TCap relationship commitments for a TIN.
+
+    This is the active TIN integration boundary. It never opens the device
+    seed envelope, never reads a PRU inventory, and never returns a spendable
+    route. The returned commitments are bindings for GPRU/TSN authorization;
+    the privacy-receiving root and snapshot key remain device-only.
+    """
+    tin_bytes = int(tin).to_bytes(8, "little", signed=False)
+    rpc_response = await solana_rpc(
+        "getProgramAccounts",
+        [
+            TINS_PROGRAM_ID,
+            {
+                "encoding": "base64",
+                "commitment": "confirmed",
+                "filters": [{"memcmp": {"offset": 0, "bytes": encode_base58(tin_bytes)}}],
+            },
+        ],
+    )
+    for account in rpc_response.get("result") or []:
+        encoded = (((account.get("account") or {}).get("data") or [None])[0])
+        if not encoded:
+            continue
+        try:
+            material = decode_tin_account_route_material(base64.b64decode(encoded))
+        except (ValueError, TypeError, binascii.Error):
+            continue
+        if material.get("tin") != str(tin) or int(material.get("tcapRouteVersion") or 0) != 1:
+            continue
+        return {
+            "tin": str(tin),
+            "ownerPubkeyHash": material["ownerPubkeyHash"],
+            "tcapRouteVersion": 1,
+            "tcapRelationshipCommitment": material["tcapRelationshipCommitment"],
+            "tcapRelationshipReference": material["tcapRelationshipReference"],
+            "tcapPolicyCommitment": material["tcapPolicyCommitment"],
         }
     return None
 
@@ -3010,6 +3089,12 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         verified_fields = await _verify_payment_authorization_from_signed_message(request)
         recipient_tin = str(verified_fields["recipientTin"] or "").strip()
         if recipient_tin and int(request.privacyVersion or 1) >= 2:
+            tcap_relationship = await read_onchain_tin_tcap_relationship(recipient_tin)
+            if tcap_relationship:
+                raise ValueError(
+                    "Recipient TIN uses the active TCap relationship; legacy PRU route selection is disabled. "
+                    "Submit a ConfidentialSettlement authorization bound to the TCap relationship instead."
+                )
             route = await read_tin_pru_route(recipient_tin)
             if not route:
                 raise ValueError(f"Recipient TIN {recipient_tin} has no finalized PRU route")
@@ -3299,6 +3384,11 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     commitment_digest = hashlib.sha256(
         b"TSN_PRIVATE_COMMITMENT_DIGEST_V1" + commitment_hash
     ).digest()
+    if await read_onchain_tin_tcap_relationship(str(route_binding["tin"])):
+        raise HTTPException(
+            409,
+            "TCap TIN settlement cannot use CrankerVault/PRU payout; require a ConfidentialSettlement authorization",
+        )
     route = await read_tin_pru_route(str(route_binding["tin"]))
     if not route:
         raise HTTPException(409, "Recipient TIN no longer has a finalized route")
@@ -3753,6 +3843,12 @@ async def post_intent(req: CreateIntentRequest) -> PublicMempoolIntent:
     # settle.  Wallet-to-wallet intents do not require a PRU route.
     recipient_tin = str(req.recipientTin or "").strip()
     if recipient_tin and int(req.privacyVersion or 1) >= 2:
+        if await read_onchain_tin_tcap_relationship(recipient_tin):
+            raise HTTPException(
+                409,
+                "Recipient TIN uses the active TCap relationship; legacy PRU route selection is disabled. "
+                "Build a ConfidentialSettlement authorization for the TCap credit path.",
+            )
         route = await read_tin_pru_route(recipient_tin)
         if not route:
             raise HTTPException(

@@ -38,48 +38,64 @@ TIN identity
 
 ```mermaid
 flowchart TD
-    A["Device: resolve recipient TIN and build the payment intent"]
+    A["1. Sender chooses recipient TIN, asset, amount and policy"]
 
-    subgraph DEVICE["Authorized device"]
-        B["Sign intent, route commitment, GPRU scope, nonce and expiry locally"]
-        C["Private roots, signing authority and snapshot key remain on device"]
+    subgraph DEVICE["Authorized sender device"]
+        B["2. TSN SDK resolves the TIN and privacy-receiving-root relationship"]
+        C["3. SDK builds the signed payment intent, route commitment, nonce and expiry"]
+        D["4. Owner signs locally; private roots, GPRU scope and snapshot key remain on device"]
     end
 
-    subgraph RECEIVER["Receiver ingress"]
-        D["Store authenticated, redacted work and lease state"]
+    F["5. Frontend submits the signed intent to the TSN Receiver"]
+
+    subgraph RECEIVER["TSN Receiver — durable ingress, leases and evidence"]
+        G["6. Payment intent stored as RECEIVED"]
+        H["7. Verified payment and settlement work published"]
+        O["18. Funding confirmed; settlement work becomes available"]
+        R["28. Confirmed signatures, transaction evidence and receipt state stored"]
     end
 
-    subgraph NODE["TSN Node"]
-        E["Verify signatures, amount, token, recipient binding, policy, commitments, expiry and replay"]
-        F["Publish the exact authorized funding + acceptance work"]
+    subgraph VERIFIER["TSN Node and verifier services — decision authority"]
+        I["8. Node leases and verifies the payment intent"]
+        J["9. Node resolves the redacted recipient binding and destination constraints"]
+        P["10. Node verifies signatures, source, amount, token, policy, expiry, commitment and replay"]
+        Q["11. Node prepares the exact authorized funding + acceptance work"]
+        P2["12. Node confirms the work is valid and leaseable"]
     end
 
     subgraph ATOMIC["One atomic Solana transaction — one payer and one fee"]
-        G["Cranker submits exactly two instructions"]
-        H["1. tsn_fund_epoch_treasury<br/>2. tsn_accept_intent"]
-        I["Both carry the same bound amount, token, intent commitment and epoch"]
+        K["13. Cranker leases the verified payment intent"]
+        L["14. Cranker submits one transaction with two instructions"]
+        L2["tsn_fund_epoch_treasury<br/>then tsn_accept_intent"]
+        L3["Same payer, amount, token, intent commitment and epoch; failure of either reverts both"]
     end
 
-    subgraph ONCHAIN["TSN on-chain state"]
-        J["Epoch Treasury records the funded liability"]
-        K["AcceptedIntentV1 stores the canonical accepted_intent_root"]
+    subgraph SOLANA["Solana — TSN, Epoch Treasury and TCAP programs"]
+        AA["15. Mother/TSN authorization and account checks pass"]
+        M["16. TSN verifies the funding transaction and controlled accounts"]
+        N["17. Epoch Treasury records the funded liability"]
+        U["19. AcceptedIntentV1 stores the canonical accepted_intent_root"]
+        V["22. TSN verifies the active settlement lease and one-time bindings"]
+        W["23. TSN CPI registers the complete ConfidentialSettlement receipt"]
+        X["24. TCAP validates policy, sequence, scope, commitments and nullifier"]
+        X2["25. credit_tcap_tin_tip_v1 advances the tip and consumes replay state"]
     end
 
     subgraph SETTLEMENT["Later settlement and credit work"]
-        L["Node/Mother authorize ConfidentialSettlement"]
-        M["Cranker submits only the exact authorized settlement transaction"]
-        N["TSN CPI registers the complete TCAP authorization receipt"]
-        O["credit_tcap_tin_tip_v1 validates and advances the TCAP tip"]
+        S["20. Cranker leases the active settlement work"]
+        T["21. Cranker submits the exact one-time settlement transaction"]
+        T2["Cranker cannot change amount, token, recipient, commitments, sequence, policy or nullifier"]
     end
 
     subgraph PRIVATE["Owner-private balance state"]
-        P["Owner encrypts and persists the new balance snapshot"]
-        Q["Owner reads and decrypts the matching snapshot locally"]
+        Y["26. Owner encrypts and persists the new balance snapshot"]
+        Z["27. Owner reads and decrypts the matching snapshot locally"]
     end
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M --> N --> O --> P --> Q
-    E -->|"invalid or expired"| REJECT["Reject, requeue or refund according to policy"]
-    H -. "failure in either instruction reverts the whole transaction" .-> REJECT
+    A --> B --> C --> D --> F --> G --> I --> J --> P
+    P -->|"valid"| Q --> P2 --> AA --> H --> K --> L --> L2 --> L3 --> M --> N --> U --> O --> S --> T --> V --> W --> X --> X2 --> Y --> Z --> R
+    P -->|"invalid or expired"| REJECT["Reject, requeue or refund according to TSN policy"] --> R
+    T --> T2 --> R
 
     classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
     classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
@@ -88,19 +104,20 @@ flowchart TD
     classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
     classDef private fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    class A,B,C device;
-    class D receiver;
-    class E,F verifier;
-    class G,H,I cranker;
-    class J,K,L,M,N,O chain;
-    class P,Q private;
+    class A,B,C,D device;
+    class F,G,H,O,R receiver;
+    class I,J,P,Q,P2 verifier;
+    class K,L,L2,L3,S,T,T2 cranker;
+    class AA,M,N,U,V,W,X,X2 chain;
+    class Y,Z private;
     class REJECT outcome;
 ```
 
 The device signs the payment intent locally and retains the privacy-receiving
 root, GPRU authorization material and snapshot key. The Receiver stores only
 authenticated, redacted work, and the Node verifies it before publishing the
-exact authorized funding and acceptance work. Funding and AcceptedIntent are
+exact authorized funding and acceptance work; the Node does not create an
+AcceptedIntent off-chain. Funding and AcceptedIntent are
 submitted in a single atomic transaction to avoid a second fee and partial
 funding without acceptance: `tsn_fund_epoch_treasury` executes first and
 `tsn_accept_intent` executes second, with one payer and the same bound fields.

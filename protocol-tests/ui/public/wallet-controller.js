@@ -25,7 +25,7 @@
     return body;
   }
 
-  async function ensureSession() { if (!session) session = await api("/api/session", { method: "POST", body: "{}" }); return session; }
+  async function ensureSession() { if (!session) session = window.trustlinkLabSession ?? await api("/api/session", { method: "POST", body: "{}" }); window.trustlinkLabSession = session; return session; }
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -48,6 +48,7 @@
 
   function walletPanel(wallet) {
     currentWallet = wallet;
+    window.trustlinkLabWallet = wallet;
     const info = document.querySelector("#info"); if (!info) return;
     if (!wallet || wallet.status === "NOT_CONFIGURED") {
       info.innerHTML = `<div class="card"><h3>Test wallet</h3><b class="warn">NOT CONFIGURED</b><p class="small">Choose a local Devnet fixture or connect a browser wallet. Browser wallets reconnect through their extension. A local fixture remains attached to this secure local-server session across page refreshes.</p><input id="localWalletFile" type="file" accept="application/json" autocomplete="off"><button id="loadLocal">Select Local Devnet Wallet</button><button id="connectBrowser">Connect Browser Wallet</button><p>Private key: HIDDEN<br>Seed phrase: NEVER DISPLAYED</p></div>`;
@@ -115,7 +116,7 @@
       catch { input.value = ""; alert("Invalid wallet file."); }
     };
     document.querySelector("#connectBrowser").onclick = async () => {
-      try { const provider = window.solana; if (!provider) throw new Error(); const connected = await provider.connect(); walletPanel(await api("/api/session/wallet/browser", { method: "POST", body: JSON.stringify({ publicKey: connected.publicKey.toString() }) })); }
+      try { const provider = window.solana ?? window.phantom?.solana ?? window.backpack?.solana; if (!provider) throw new Error(); const connected = await provider.connect(); walletPanel(await api("/api/session/wallet/browser", { method: "POST", body: JSON.stringify({ publicKey: connected.publicKey.toString() }) })); }
       catch { alert("A compatible Solana browser wallet is required."); }
     };
   }

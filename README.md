@@ -37,38 +37,88 @@ TIN identity
 ```
 
 ```mermaid
-flowchart LR
-    A["Authorized owner device<br/>TIN + privacy-receiving root"]
-    B["TIP / TIN<br/>identity resolution"]
-    C["GPRU<br/>scoped authorization only"]
-    D["Receiver<br/>redacted ingress + lease"]
-    E["TSN Node<br/>verify policy, commitments, replay"]
-    F["AcceptedIntentV1<br/>canonical root"]
-    G["Epoch Treasury + Mother<br/>ConfidentialSettlement"]
-    H["Cranker<br/>exact transaction submission"]
-    I["TCAP<br/>receipt + tip + nullifier"]
-    J["Encrypted snapshot<br/>owner-private balance read"]
+flowchart TD
+    A["1. Sender chooses recipient TIN, asset, amount and policy"]
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+    subgraph DEVICE["Authorized sender device"]
+        B["2. TSN SDK resolves the TIN and privacy-receiving-root relationship"]
+        C["3. SDK builds the signed payment intent, route commitment, nonce and expiry"]
+        D["4. Owner signs locally; private roots, GPRU authorization and snapshot key remain on device"]
+    end
+
+    F["5. Frontend submits the signed intent to the TSN Receiver"]
+
+    subgraph RECEIVER["TSN Receiver — durable ingress, leases and evidence"]
+        G["6. Payment intent stored as RECEIVED"]
+        H["7. Verified payment and settlement work published"]
+        O["18. Funding confirmed; settlement work becomes available"]
+        R["27. Confirmed signatures, transaction evidence and receipt state stored"]
+    end
+
+    subgraph VERIFIER["TSN Node and verifier services — decision authority"]
+        I["8. Node leases and verifies the payment intent"]
+        J["9. Node resolves the redacted recipient binding and destination constraints"]
+        P["10. Node verifies signatures, source, amount, token, policy, expiry, commitment and replay"]
+        Q["11. Node creates AcceptedIntentV1 and canonical accepted_intent_root"]
+        P2["12. Node confirms payment-intent submission; settlement work becomes active and leaseable"]
+    end
+
+    subgraph CRANKER["Cranker — exact submitter only"]
+        K["14. Cranker leases the verified payment intent"]
+        L["15. Cranker submits the exact sender-authorized funding transaction"]
+        S["19. Cranker leases the active ConfidentialSettlement work"]
+        T["20. Cranker submits the exact one-time settlement transaction"]
+        T2["Residual reimbursement work is separate and cannot create a TCAP credit"]
+    end
+
+    subgraph SOLANA["Solana — TSN, Epoch Treasury and TCAP programs"]
+        AA["13. Mother and TSN authorize the one-time ConfidentialSettlement transition"]
+        M["16. TSN verifies the Node-approved funding transaction, lease and controlled accounts"]
+        N["17. Epoch Treasury records liability; funds remain governed and are not Cranker custody"]
+        U["21. TSN verifies settlement lease, AcceptedIntent root, amount, token, expiry and replay state"]
+        V["22. TSN CPI registers the complete ConfidentialSettlement receipt in TCAP"]
+        W["23. TCAP verifies receipt fields, policy, GPRU scope, sequence and nullifier"]
+        X["24. credit_tcap_tin_tip_v1 advances the tip and consumes the receipt/nullifier"]
+    end
+
+    subgraph PRIVATE["Owner-private balance state"]
+        Y["25. Owner device encrypts and persists the new balance snapshot"]
+        Z["26. Owner reads and decrypts the matching snapshot locally"]
+    end
+
+    A --> B --> C --> D --> F --> G --> I --> J --> P
+    P -->|"valid"| Q --> P2 --> AA --> H --> K --> L --> M --> N --> O --> S --> T --> U --> V --> W --> X --> Y --> Z --> R
+    P -->|"invalid or expired"| REJECT["Reject, requeue or refund according to TSN policy"] --> R
+    T --> T2 --> R
 
     classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
-    classDef identity fill:#f6f0df,stroke:#8b7131,color:#30240d;
-    classDef service fill:#e9efed,stroke:#4e6e60,color:#14241c;
+    classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
+    classDef verifier fill:#e9efed,stroke:#4e6e60,color:#14241c;
+    classDef cranker fill:#f2eee6,stroke:#6b6254,color:#211f1a;
     classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
     classDef private fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    class A,C,J device;
-    class B identity;
-    class D,E,H service;
-    class F,G,I chain;
+    classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
+    class A,B,C,D device;
+    class F,G,H,O,R receiver;
+    class I,J,P,Q,P2 verifier;
+    class K,L,S,T,T2 cranker;
+    class AA,M,N,U,V,W,X chain;
+    class Y,Z private;
+    class REJECT outcome;
 ```
 
 The device authorizes the intent and retains private roots and snapshot keys.
-The Receiver and Node coordinate only the redacted work required for
-verification. TSN creates and checks the AcceptedIntent record, Mother binds
-the one-time settlement authorization, and a Cranker submits the exact
-transaction. TCAP validates the receipt and atomically consumes the receipt and
-nullifier while advancing the tip. The owner device then verifies and decrypts
-the matching snapshot.
+The Receiver and Node handle only the redacted coordination data required for
+verification. TSN persists the accepted intent and its canonical root, the Epoch
+Treasury and Mother bind the one-time ConfidentialSettlement authorization, and
+the Cranker leases the verified payment intent, submits the exact authorized
+funding transaction, then submits the activated one-time settlement transaction.
+TCAP validates the
+complete receipt, advances the tip and consumes the replay protection state. If
+settlement is not successfully verified, the transaction fails and the sender
+funds revert or are refunded according to the governing path; the recipient is
+not credited by a partial result. The owner device then encrypts and reads the
+matching private snapshot.
 
 ## Core terms and authority boundaries
 
@@ -144,6 +194,49 @@ Program-dependent testing is Devnet-only. After any on-chain code or ABI change,
 build the SBF artifact, deploy it to Devnet, verify the deployment slot and only
 then run simulation or live transactions. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md) and the [TCAP credit smoke procedure](docs/tcap-devnet-credit-smoke.md).
 
+## Historical Devnet evidence: first wallet-assisted TIN-to-TIN test
+
+The project&#8217;s first recorded Devnet payment test used the earlier ZK-PRU
+receiving path. It is preserved here as historical transaction evidence only;
+it is not the current TSN receiving or TCAP credit architecture. The test used a
+sender TIN route and recipient TIN route, combined a 5 USDC main-wallet top-up
+with the sender-side sources for a 10 USDC intent, and settled into a new
+private receiving route.
+
+```mermaid
+flowchart TD
+    A["Sender TIN"]
+    B["Main wallet top-up<br/>5 USDC"]
+    C["Earlier protected source 1"]
+    D["Earlier protected source 2"]
+    E["Earlier protected source 3"]
+    F["Combined sender funding<br/>10 USDC intent commitment"]
+    G["TSN settlement submission"]
+    H["Recipient TIN route"]
+    I["Earlier private receiving route<br/>10 USDC"]
+
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    B --> F
+    C --> F
+    D --> F
+    E --> F
+    F --> G --> H --> I
+```
+
+| Stage | Recorded role | Devnet signature |
+| --- | --- | --- |
+| Wallet funding | 5 USDC main-wallet top-up used in the sender funding set | [5u9HmqD5...](https://solscan.io/tx/5u9HmqD5wNmBmHWfDWmw3vhpMhN42j15YPTmUVgpcMtbuwdGdhqRVqGrZAVF5ic1CiS1ZzuF1D2tMyVaanf4eqye?cluster=devnet) |
+| Protected source batch A | Earlier protected source movement; part of the sender funding set | [3wgVPZYz...](https://solscan.io/tx/3wgVPZYzEqvht5pkPRetF8tFsXoWmy8obbSSqYYTmxaR1fw6oci2y93P96GhK4xXqu4ttSSD7mMYPyEoDjXVporU?cluster=devnet) |
+| Protected source batch B | Earlier protected source movement; completed the recorded source set | [2M26JcpS...](https://solscan.io/tx/2M26JcpSVhKAQvB5yC3Pp4L6NYLHiU8UTMFMsrMbJwt2Jj23dd3pqRG8nWTxerYrcXqm7R78Jt4992smK7jh7eWJ?cluster=devnet) |
+| Settlement | 10 USDC settlement into the recipient TIN&#8217;s recorded private receiving route | [46wGVb9s...](https://solscan.io/tx/46wGVb9sfBqWWonk3CQ14xZCc6Qzf2ksYyZMpG4TDhqzhh49pRS59CjhCgq9oPVnfEVhSKdJyb3Rib7HM99A8TfU?cluster=devnet) |
+
+These signatures are preserved as supplied Devnet evidence. They document the
+earlier route and must not be used as evidence that the current GPRU, TSN Epoch
+Treasury and TCAP credit path has been deployed or validated.
+
 Current Devnet program IDs:
 
 | Program | Address |
@@ -166,7 +259,12 @@ Current Devnet program IDs:
 
 ## Milestones and ecosystem support
 
-The factual project history and acknowledgements are documented in [Project Journey](docs/PROJECT-JOURNEY%20(1).md). Community references are collected in [Community Mentions](docs/mentions.md).
+TrustLink Pay has progressed through StableHacks, and received support through
+the Superteam Agentic Engineering Grant program for fraud-protection
+development. The factual project history and acknowledgements are in [Project
+Journey](https://github.com/bigdreamsweb3/trustlink-pay/blob/bb833d563f283bc9690963faa5a3c2c16b9e1d5f/docs/PROJECT-JOURNEY.md).
+
+See what people are saying about the project: [Community Mentions](https://github.com/bigdreamsweb3/trustlink-pay/blob/bb833d563f283bc9690963faa5a3c2c16b9e1d5f/docs/mentions.md).
 
 ## Maintainer
 

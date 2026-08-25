@@ -18,16 +18,72 @@
   <p><strong>TCAP</strong> means <strong>Transfer Confidential Asset Protocol</strong>. TCAP is the private balance accounting layer: it advances a commitment-backed tip and anchors the owner&rsquo;s encrypted snapshot. GPRU never holds funds.</p>
 
   <h2 id="system-map">System map</h2>
-  <figure class="process">
-    <ol>
-      <li><span>01</span><div><strong>Identity</strong><small>TIN identifies the recipient relationship without publishing a human-facing wallet address.</small></div></li>
-      <li><span>02</span><div><strong>Authorization</strong><small>The owner device signs the intent, privacy-receiving-root relationship and GPRU scope.</small></div></li>
-      <li><span>03</span><div><strong>Verification</strong><small>Receiver stores redacted work; the TSN Node verifies signatures, policy, commitments, sequence and expiry.</small></div></li>
-      <li><span>04</span><div><strong>Settlement liability</strong><small>Mother and the Epoch Treasury bind the authorized transition to protocol-controlled accounting.</small></div></li>
-      <li><span>05</span><div><strong>TCAP credit</strong><small>The TSN CPI wrapper presents a complete ConfidentialSettlement receipt; TCAP consumes it and advances the tip.</small></div></li>
-      <li><span>06</span><div><strong>Private read</strong><small>The owner device verifies and decrypts the matching encrypted snapshot locally.</small></div></li>
-    </ol>
-    <figcaption>The route is deliberately split into public enforcement state and owner-controlled private state.</figcaption>
+  <figure class="tsn-architecture-map">
+    <svg viewBox="0 0 1200 560" role="img" aria-labelledby="tsn-map-title tsn-map-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="tsn-map-title">TrustLink TSN to TCAP credit architecture</title>
+      <desc id="tsn-map-desc">A left-to-right flow from the owner device through TIN and GPRU, Receiver and Node verification, TSN Epoch Treasury and Mother authorization, TCAP tip credit, and the encrypted snapshot read on the owner device.</desc>
+      <defs>
+        <marker id="tsn-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#194b34"/>
+        </marker>
+        <filter id="tsn-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#191814" flood-opacity=".12"/>
+        </filter>
+      </defs>
+      <rect x="1" y="1" width="1198" height="558" rx="18" fill="#fffdf8" stroke="#c9c1b2"/>
+      <text x="48" y="48" fill="#194b34" font-family="Arial, sans-serif" font-size="14" font-weight="800" letter-spacing="2">ONE CREDIT PATH · PUBLIC ENFORCEMENT + PRIVATE OWNER STATE</text>
+      <line x1="48" y1="70" x2="1152" y2="70" stroke="#c9c1b2"/>
+
+      <rect x="32" y="92" width="1136" height="116" rx="14" fill="#f3eee4"/>
+      <text x="54" y="119" fill="#67635a" font-family="Arial, sans-serif" font-size="12" font-weight="800" letter-spacing="1.4">OWNER DEVICE</text>
+      <rect x="54" y="137" width="190" height="52" rx="10" fill="#191814" filter="url(#tsn-shadow)"/>
+      <text x="149" y="160" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">TIN + root</text>
+      <text x="149" y="179" text-anchor="middle" fill="#d8d1c5" font-family="Arial, sans-serif" font-size="11">signs intent locally</text>
+      <line x1="244" y1="163" x2="292" y2="163" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="300" y="137" width="190" height="52" rx="10" fill="#194b34" filter="url(#tsn-shadow)"/>
+      <text x="395" y="160" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">GPRU scope</text>
+      <text x="395" y="179" text-anchor="middle" fill="#d8e6dc" font-family="Arial, sans-serif" font-size="11">authorization only</text>
+      <line x1="490" y1="163" x2="538" y2="163" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="546" y="137" width="190" height="52" rx="10" fill="#8f6b26" filter="url(#tsn-shadow)"/>
+      <text x="641" y="160" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">Signed intent</text>
+      <text x="641" y="179" text-anchor="middle" fill="#f6eddc" font-family="Arial, sans-serif" font-size="11">amount + asset + expiry</text>
+      <line x1="736" y1="163" x2="784" y2="163" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="792" y="137" width="320" height="52" rx="10" fill="#fffdf8" stroke="#8f6b26" stroke-width="2"/>
+      <text x="952" y="160" text-anchor="middle" fill="#191814" font-family="Arial, sans-serif" font-size="15" font-weight="800">Encrypted snapshot key stays here</text>
+      <text x="952" y="179" text-anchor="middle" fill="#67635a" font-family="Arial, sans-serif" font-size="11">plaintext balance never enters services</text>
+
+      <rect x="32" y="232" width="1136" height="116" rx="14" fill="#e8eee9"/>
+      <text x="54" y="259" fill="#67635a" font-family="Arial, sans-serif" font-size="12" font-weight="800" letter-spacing="1.4">OFF-CHAIN COORDINATION</text>
+      <rect x="74" y="277" width="250" height="52" rx="10" fill="#fffdf8" stroke="#194b34" stroke-width="2"/>
+      <text x="199" y="299" text-anchor="middle" fill="#191814" font-family="Arial, sans-serif" font-size="15" font-weight="800">Receiver</text>
+      <text x="199" y="318" text-anchor="middle" fill="#67635a" font-family="Arial, sans-serif" font-size="11">redacted work + leases</text>
+      <line x1="324" y1="303" x2="420" y2="303" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="428" y="277" width="250" height="52" rx="10" fill="#fffdf8" stroke="#194b34" stroke-width="2"/>
+      <text x="553" y="299" text-anchor="middle" fill="#191814" font-family="Arial, sans-serif" font-size="15" font-weight="800">TSN Node</text>
+      <text x="553" y="318" text-anchor="middle" fill="#67635a" font-family="Arial, sans-serif" font-size="11">verify fields + policy + replay</text>
+      <line x1="678" y1="303" x2="774" y2="303" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="782" y="277" width="330" height="52" rx="10" fill="#fffdf8" stroke="#194b34" stroke-width="2"/>
+      <text x="947" y="299" text-anchor="middle" fill="#191814" font-family="Arial, sans-serif" font-size="15" font-weight="800">AcceptedIntentV1</text>
+      <text x="947" y="318" text-anchor="middle" fill="#67635a" font-family="Arial, sans-serif" font-size="11">canonical root · consumed once</text>
+
+      <rect x="32" y="372" width="1136" height="116" rx="14" fill="#e6eee9"/>
+      <text x="54" y="399" fill="#67635a" font-family="Arial, sans-serif" font-size="12" font-weight="800" letter-spacing="1.4">ON-CHAIN ENFORCEMENT</text>
+      <rect x="74" y="417" width="250" height="52" rx="10" fill="#194b34" filter="url(#tsn-shadow)"/>
+      <text x="199" y="439" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">Epoch Treasury</text>
+      <text x="199" y="458" text-anchor="middle" fill="#d8e6dc" font-family="Arial, sans-serif" font-size="11">liability + epoch state</text>
+      <line x1="324" y1="443" x2="420" y2="443" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="428" y="417" width="250" height="52" rx="10" fill="#194b34" filter="url(#tsn-shadow)"/>
+      <text x="553" y="439" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">Mother / TSN CPI</text>
+      <text x="553" y="458" text-anchor="middle" fill="#d8e6dc" font-family="Arial, sans-serif" font-size="11">ConfidentialSettlement receipt</text>
+      <line x1="678" y1="443" x2="774" y2="443" stroke="#194b34" stroke-width="3" marker-end="url(#tsn-arrow)"/>
+      <rect x="782" y="417" width="330" height="52" rx="10" fill="#8f6b26" filter="url(#tsn-shadow)"/>
+      <text x="947" y="439" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="15" font-weight="800">TCAP tip credit</text>
+      <text x="947" y="458" text-anchor="middle" fill="#f6eddc" font-family="Arial, sans-serif" font-size="11">receipt + nullifier → new commitment</text>
+
+      <path d="M947 488 V522 H149 V189" fill="none" stroke="#8f6b26" stroke-width="2" stroke-dasharray="7 7" marker-end="url(#tsn-arrow)"/>
+      <text x="548" y="544" text-anchor="middle" fill="#67635a" font-family="Arial, sans-serif" font-size="11">owner device verifies the resulting commitment, then decrypts the matching snapshot</text>
+    </svg>
+    <figcaption>TSN coordinates authorization and settlement. TCAP advances private accounting. The owner device retains the private read capability.</figcaption>
   </figure>
 
   <h2 id="stages">The payment, stage by stage</h2>

@@ -38,58 +38,48 @@ TIN identity
 
 ```mermaid
 flowchart TD
-    A["1. Sender chooses recipient TIN, asset, amount and policy"]
+    A["Device: resolve recipient TIN and build the payment intent"]
 
-    subgraph DEVICE["Authorized sender device"]
-        B["2. TSN SDK resolves the TIN and privacy-receiving-root relationship"]
-        C["3. SDK builds the signed payment intent, route commitment, nonce and expiry"]
-        D["4. Owner signs locally; private roots, GPRU authorization and snapshot key remain on device"]
+    subgraph DEVICE["Authorized device"]
+        B["Sign intent, route commitment, GPRU scope, nonce and expiry locally"]
+        C["Private roots, signing authority and snapshot key remain on device"]
     end
 
-    F["5. Frontend submits the signed intent to the TSN Receiver"]
-
-    subgraph RECEIVER["TSN Receiver — durable ingress, leases and evidence"]
-        G["6. Payment intent stored as RECEIVED"]
-        H["7. Verified payment and settlement work published"]
-        O["18. Funding confirmed; settlement work becomes available"]
-        R["27. Confirmed signatures, transaction evidence and receipt state stored"]
+    subgraph RECEIVER["Receiver ingress"]
+        D["Store authenticated, redacted work and lease state"]
     end
 
-    subgraph VERIFIER["TSN Node and verifier services — decision authority"]
-        I["8. Node leases and verifies the payment intent"]
-        J["9. Node resolves the redacted recipient binding and destination constraints"]
-        P["10. Node verifies signatures, source, amount, token, policy, expiry, commitment and replay"]
-        Q["11. Node creates AcceptedIntentV1 and canonical accepted_intent_root"]
-        P2["12. Node confirms payment-intent submission; settlement work becomes active and leaseable"]
+    subgraph NODE["TSN Node"]
+        E["Verify signatures, amount, token, recipient binding, policy, commitments, expiry and replay"]
+        F["Publish the exact authorized funding + acceptance work"]
     end
 
-    subgraph CRANKER["Cranker — exact submitter only"]
-        K["14. Cranker leases the verified payment intent"]
-        L["15. Cranker submits the exact sender-authorized funding transaction"]
-        S["19. Cranker leases the active ConfidentialSettlement work"]
-        T["20. Cranker submits the exact one-time settlement transaction"]
-        T2["Residual reimbursement work is separate and cannot create a TCAP credit"]
+    subgraph ATOMIC["One atomic Solana transaction — one payer and one fee"]
+        G["Cranker submits exactly two instructions"]
+        H["1. tsn_fund_epoch_treasury<br/>2. tsn_accept_intent"]
+        I["Both carry the same bound amount, token, intent commitment and epoch"]
     end
 
-    subgraph SOLANA["Solana — TSN, Epoch Treasury and TCAP programs"]
-        AA["13. Mother and TSN authorize the one-time ConfidentialSettlement transition"]
-        M["16. TSN verifies the Node-approved funding transaction, lease and controlled accounts"]
-        N["17. Epoch Treasury records liability; funds remain governed and are not Cranker custody"]
-        U["21. TSN verifies settlement lease, AcceptedIntent root, amount, token, expiry and replay state"]
-        V["22. TSN CPI registers the complete ConfidentialSettlement receipt in TCAP"]
-        W["23. TCAP verifies receipt fields, policy, GPRU scope, sequence and nullifier"]
-        X["24. credit_tcap_tin_tip_v1 advances the tip and consumes the receipt/nullifier"]
+    subgraph ONCHAIN["TSN on-chain state"]
+        J["Epoch Treasury records the funded liability"]
+        K["AcceptedIntentV1 stores the canonical accepted_intent_root"]
+    end
+
+    subgraph SETTLEMENT["Later settlement and credit work"]
+        L["Node/Mother authorize ConfidentialSettlement"]
+        M["Cranker submits only the exact authorized settlement transaction"]
+        N["TSN CPI registers the complete TCAP authorization receipt"]
+        O["credit_tcap_tin_tip_v1 validates and advances the TCAP tip"]
     end
 
     subgraph PRIVATE["Owner-private balance state"]
-        Y["25. Owner device encrypts and persists the new balance snapshot"]
-        Z["26. Owner reads and decrypts the matching snapshot locally"]
+        P["Owner encrypts and persists the new balance snapshot"]
+        Q["Owner reads and decrypts the matching snapshot locally"]
     end
 
-    A --> B --> C --> D --> F --> G --> I --> J --> P
-    P -->|"valid"| Q --> P2 --> AA --> H --> K --> L --> M --> N --> O --> S --> T --> U --> V --> W --> X --> Y --> Z --> R
-    P -->|"invalid or expired"| REJECT["Reject, requeue or refund according to TSN policy"] --> R
-    T --> T2 --> R
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M --> N --> O --> P --> Q
+    E -->|"invalid or expired"| REJECT["Reject, requeue or refund according to policy"]
+    H -. "failure in either instruction reverts the whole transaction" .-> REJECT
 
     classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
     classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
@@ -98,27 +88,31 @@ flowchart TD
     classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
     classDef private fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    class A,B,C,D device;
-    class F,G,H,O,R receiver;
-    class I,J,P,Q,P2 verifier;
-    class K,L,S,T,T2 cranker;
-    class AA,M,N,U,V,W,X chain;
-    class Y,Z private;
+    class A,B,C device;
+    class D receiver;
+    class E,F verifier;
+    class G,H,I cranker;
+    class J,K,L,M,N,O chain;
+    class P,Q private;
     class REJECT outcome;
 ```
 
-The device authorizes the intent and retains private roots and snapshot keys.
-The Receiver and Node handle only the redacted coordination data required for
-verification. TSN persists the accepted intent and its canonical root, the Epoch
-Treasury and Mother bind the one-time ConfidentialSettlement authorization, and
-the Cranker leases the verified payment intent, submits the exact authorized
-funding transaction, then submits the activated one-time settlement transaction.
-TCAP validates the
-complete receipt, advances the tip and consumes the replay protection state. If
-settlement is not successfully verified, the transaction fails and the sender
-funds revert or are refunded according to the governing path; the recipient is
-not credited by a partial result. The owner device then encrypts and reads the
-matching private snapshot.
+The device signs the payment intent locally and retains the privacy-receiving
+root, GPRU authorization material and snapshot key. The Receiver stores only
+authenticated, redacted work, and the Node verifies it before publishing the
+exact authorized funding and acceptance work. Funding and AcceptedIntent are
+submitted in a single atomic transaction to avoid a second fee and partial
+funding without acceptance: `tsn_fund_epoch_treasury` executes first and
+`tsn_accept_intent` executes second, with one payer and the same bound fields.
+If either instruction fails, the whole transaction reverts.
+
+The Epoch Treasury liability and `AcceptedIntentV1` root are then present
+on-chain for the later settlement path. Mother/TSN authorize the
+`ConfidentialSettlement`, the Cranker submits only the exact authorized
+settlement transaction, and TCAP consumes the complete receipt through
+`credit_tcap_tin_tip_v1` before the owner device persists and reads its
+encrypted private snapshot. This diagram describes the protocol path; it does
+not claim that Devnet credit has already been proven.
 
 ## Core terms and authority boundaries
 

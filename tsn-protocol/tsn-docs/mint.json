@@ -1,0 +1,81 @@
+{
+  "name": "TSN",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0F766E",
+    "light": "#0F766E",
+    "dark": "#14B8A6"
+  },
+  "topbarLinks": [
+    {
+      "name": "Whitepaper",
+      "url": "whitepaper"
+    },
+    {
+      "name": "GitHub",
+      "url": "https://github.com/bigdreamsweb3/trustlink-pay"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "overview/introduction"
+  },
+  "topAnchor": {
+    "name": "Whitepaper",
+    "icon": "book-open",
+    "url": "whitepaper"
+  },
+  "navigation": [
+    {
+      "group": "Overview",
+      "pages": [
+        "overview/introduction",
+        "overview/how-it-works"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/trust-model",
+        "architecture/cross-chain",
+        "architecture/settlement-domains"
+      ]
+    },
+    {
+      "group": "Privacy",
+      "pages": [
+        "privacy/current-model",
+        "privacy/mpc-settlement",
+        "privacy/roadmap"
+      ]
+    },
+    {
+      "group": "Security",
+      "pages": [
+        "security/threat-model",
+        "security/invariants"
+      ]
+    },
+    {
+      "group": "Developers",
+      "pages": [
+        "developers/getting-started",
+        "developers/settlement-flow"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/cross-chain-settlement"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://x.com/0xbigdream",
+    "github": "https://github.com/bigdreamsweb3/trustlink-pay"
+  }
+}

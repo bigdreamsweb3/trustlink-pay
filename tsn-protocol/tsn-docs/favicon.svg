@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">TSN</title>
+  <rect width="256" height="256" rx="56" fill="#0F766E"/>
+  <g fill="none" stroke="#CCFBF1" stroke-width="16" stroke-linecap="round">
+    <path d="M48 128h72M84 76v104M120 128l42-42M120 128l42 42"/>
+  </g>
+  <circle cx="48" cy="128" r="18" fill="#FFFFFF"/>
+  <circle cx="120" cy="128" r="18" fill="#FFFFFF"/>
+  <text x="128" y="222" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="4">TSN</text>
+</svg>

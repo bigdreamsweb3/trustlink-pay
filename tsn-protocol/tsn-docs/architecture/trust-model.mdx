@@ -1,0 +1,43 @@
+---
+title: "TSN Trust Model: Authorization vs. Transport Boundaries"
+sidebarTitle: "Trust Model"
+description: "Learn how TSN splits authorization (sender intent and Mother-rooted receipts) from transport (Receiver, Node, Cranker) and what each role can and cannot do."
+---
+
+TSN enforces strict capability boundaries between who can authorize a payment and who can transport it. Authorization stays with the sender device and the Mother-rooted ConfidentialSettlement receipt. Transport is handled by the Receiver, Node, and Cranker, each with a narrow, non-overlapping scope.
+
+## Authorization versus transport
+
+**Authorization** is proof that a payment may happen. The sender device signs an intent that binds amount, mint, fee limits, expiry, nonce, sender authorization, and a recipient route commitment. After verification, the Node and Mother produce a short-lived, signed ConfidentialSettlement receipt. No transport role can forge this receipt.
+
+**Transport** is the mechanical work of holding, verifying, and submitting. The Receiver stores work. The Node verifies signatures and policy. The Cranker pays network fees and submits the already-authorized transaction. Transport roles never decide who gets paid or how much.
+
+## What each role can and cannot do
+
+| Role | Can do | Cannot do |
+| --- | --- | --- |
+| Sender device | Sign payment intent and epoch funding transaction | Export private keys or Node encryption keys |
+| Receiver | Accept inbound work, store leases, return status, emit compact receipts | Verify a plan, choose a recipient, or sign a Solana transaction |
+| Node | Verify canonical signatures, expiry, nonce/replay, amount, mint, commitments, recipient route commitment/version; sign short-lived permits | Spend user funds, learn a TIN master seed, or alter the payment plan |
+| Mother | Materialize the one-time SettlementDna PDA; create ConfidentialSettlement authorization receipts | Act as a payment escrow, hold user balances, or choose an alternate recipient |
+| Cranker | Lease verified work, submit the exact authorized transaction, return confirmation evidence | Change amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry |
+| TSN program | Enforce permit, lease, slot state, nullifier, and treasury liability; consume the DNA on first valid settlement or refund | Hold a user's wallet key or decrypt private binding |
+
+## Cranker is strictly bound
+
+The Cranker cannot change any material field of the transaction it submits. It receives only the opaque slot, commitment digest, nullifier, public recipient coordinates, mint, amount, vault, and signed permit. It learns the payout destination only inside the short-lived claim authorization. If the Cranker tries to alter the plan, the TSN program rejects the transaction before any token movement.
+
+## Privacy boundaries
+
+The Node stores the full payment binding as an encrypted off-chain record. The encryption key never leaves Node/Mother. The Cranker never receives the encrypted record, a private escrow address, a record PDA, or a funding-account secret. The slot is deliberately absent from the funding transaction.
+
+## On-chain enforcement
+
+The TSN program is the final enforcement point. It repeats every authorization check on chain: permit signature, lease validity, slot state, nullifier consumption, and treasury liability. The first valid settlement or refund wins atomically; a later operation against the same slot fails before any transfer.
+
+## Related pages
+
+- [Separation of concerns](/overview/separation-of-concerns) for how TSN, TIN, GPRU, and TCAP divide responsibility
+- [Mother authority](/architecture/mother-authority) for how Mother materializes the SettlementDna PDA
+- [Node, Receiver, Cranker](/architecture/node-receiver-cranker) for the operational flow
+- [Security invariants](/security/invariants) for formal checks the program enforces

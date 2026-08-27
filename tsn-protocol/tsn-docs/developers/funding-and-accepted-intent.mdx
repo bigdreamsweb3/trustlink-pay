@@ -1,0 +1,89 @@
+---
+title: "TSN Epoch Treasury Funding and Accepted Intent Flow"
+sidebarTitle: "Funding & Acceptance"
+description: "Learn how TSN epoch treasury funding works, how the AcceptedIntent PDA binds fields, and how opaque slots settle or refund atomically on Solana."
+---
+
+This page explains the funding and acceptance phase of a TSN payment. You will learn how the SDK builds a treasury funding transaction, how the Node verifies it, how the Mother authority materializes settlement state, and how the AcceptedIntent PDA ensures that every bound field is checked before TCAP credit advances.
+
+## Funding a payment
+
+The SDK builds a `fund_epoch_treasury` transaction that sends SPL tokens directly to the current epoch's treasury token account. The funding transaction creates no payment-specific account, escrow PDA, commitment account, or claim slot.
+
+```ts title="Build funding transaction"
+const fundTx = await tsnSdk.buildFundEpochTreasury({
+  epochId,
+  amount,
+  tokenMint,
+  senderTokenAccount,
+});
+```
+
+The Node verifies the funding signature and stores the full binding encrypted off chain. The encrypted record includes the payment identifier, funding lineage, sender refund destination, recipient route binding, amount, mint, and epoch. The encryption key and plaintext never leave Node/Mother.
+
+## Opaque epoch slots
+
+After the intent is verified, Node/Mother derives a keyed opaque slot with HMAC-SHA256 using `TSN_NODE_CLAIM_SLOT_HMAC_SECRET`. The slot is deliberately absent from the funding transaction.
+
+Mother authority materializes the one-time `SettlementDna` PDA at the derived opaque slot. The PDA is the on-chain voucher: it is not a payment escrow and contains no sender or payment identifier. Only Mother authority can create it, and the TSN program consumes it on the first valid settlement or refund.
+
+The `EpochClaimSlot` PDA is derived from epoch treasury \+ opaque slot. Its states are:
+
+| State | Meaning |
+| --- | --- |
+| `SETTLED` | Tokens credited to the recipient tip; slot consumed |
+| `REFUNDED` | Tokens returned to sender ATA; slot consumed |
+
+Settlement and refund are mutually exclusive. The first valid transaction initializes the slot and wins atomically. A later operation against the same slot fails before any token movement.
+
+## Node permit
+
+Node signs a short-lived permit binding:
+
+- Opaque slot
+- Commitment digest
+- Random nonce
+- Nullifier
+- Mother-rooted epoch treasury and ledger
+- Recipient
+- Mint
+- Amount
+- Lease ID, version, and expiry
+- Authorization expiry
+
+The permit expires no later than the Receiver lease. The Cranker receives only the opaque commitment, nullifier, lease data, public recipient coordinates, amount, mint, and signed permit.
+
+## AcceptedIntent PDA
+
+TSN creates the `AcceptedIntentV1` PDA and derives the root from a canonical field sequence documented in the accept-intent instruction. The TSN CPI wrapper requires that PDA, checks every bound field, and consumes the intent after the TCAP CPI succeeds.
+
+TCAP stores the same fields in its receipt and requires a `ConfidentialSettlement` transition before credit can consume it. A GPRU signature alone cannot substitute for this authorized CPI path.
+
+## Refund path
+
+If a valid settlement never occurs, Node/Mother signs a refund permit for the same opaque slot. The refund transaction creates the same slot account and marks it `REFUNDED` while returning the exact amount from the epoch treasury to the sender's ATA.
+
+## Epoch close
+
+An epoch can close only when:
+
+1. Pending liability is zero
+2. Every opaque slot is resolved (either `SETTLED` or `REFUNDED`)
+3. All settled reimbursements are complete
+
+## Intent state to treasury effect
+
+| Intent state | Treasury effect |
+| --- | --- |
+| `RECEIVED` | None; funding not yet verified |
+| `VERIFIED` | Aggregate pending liability incremented |
+| `SUBMITTED` | Liability remains pending until confirmation |
+| `CONFIRMED` | Liability decremented; slot resolved as `SETTLED` |
+| `REJECTED` | No liability created if funding never verified |
+| Expired without settlement | Refund permit issued; slot resolved as `REFUNDED` |
+
+## Related pages
+
+- [Epoch Treasury](/architecture/epoch-treasury) for protocol accounting details
+- [Mother Authority](/architecture/mother-authority) for the settlement authorization boundary
+- [Payment Intent Lifecycle](/developers/payment-intent-lifecycle) for the full state machine

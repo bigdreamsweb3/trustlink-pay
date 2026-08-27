@@ -1,3 +1,0 @@
-# Trust Model
-
-<!-- TODO -->

@@ -42,6 +42,7 @@ pub struct RegisterTcapCreditAuthorizationArgs {
 /// Wire ABI shared with TCap's `TsnSettlementAuthorizationV1`.  The enum is
 /// encoded as one byte by Anchor/Borsh; value 1 is ConfidentialSettlement.
 const CONFIDENTIAL_SETTLEMENT_V1: u8 = 1;
+const AUTHORIZATION_DIGEST_DOMAIN: &[u8] = b"TSN_CONFIDENTIAL_SETTLEMENT_AUTHORIZATION_V1";
 
 #[derive(Accounts)]
 #[instruction(args: RegisterTcapCreditAuthorizationArgs)]
@@ -97,6 +98,7 @@ pub fn register_tcap_credit_authorization(
         args.authorization_digest != [0; 32] && args.replay_nonce != [0; 32],
         TsnError::Unauthorized
     );
+    require!(args.authorization_digest == derive_authorization_digest(&args), TsnError::Unauthorized);
     require!(ctx.accounts.accepted_intent.epoch_id == args.epoch_id
         && ctx.accounts.accepted_intent.intent_commitment == args.intent_commitment
         && ctx.accounts.accepted_intent.amount == args.amount
@@ -201,6 +203,36 @@ pub fn register_tcap_credit_authorization(
     )?;
     ctx.accounts.accepted_intent.status = AcceptedIntentStatus::Consumed;
     Ok(())
+}
+
+/// Canonical digest for the TSN→TCAP receipt. Every value that TCAP validates
+/// is included so a receipt cannot be rebound to another tip, amount or asset.
+pub fn derive_authorization_digest(args: &RegisterTcapCreditAuthorizationArgs) -> [u8; 32] {
+    anchor_lang::solana_program::hash::hashv(&[
+        AUTHORIZATION_DIGEST_DOMAIN,
+        &args.version.to_le_bytes(),
+        args.tsn_program_id.as_ref(),
+        &args.epoch_id.to_le_bytes(),
+        &args.intent_commitment,
+        &args.amount.to_le_bytes(),
+        &args.settlement_commitment,
+        &args.accepted_intent_root,
+        &args.previous_tcap_root,
+        &[args.transition_type],
+        &args.asset_commitment,
+        &args.verifier_domain_version.to_le_bytes(),
+        &args.valid_after_slot.to_le_bytes(),
+        &args.expires_at_slot.to_le_bytes(),
+        &args.replay_nonce,
+        args.tin_tip.as_ref(),
+        &args.previous_commitment,
+        &args.new_commitment,
+        &args.sequence.to_le_bytes(),
+        &args.token_id.to_le_bytes(),
+        &args.policy_commitment,
+        &args.gpru_scope_commitment,
+        &args.nullifier,
+    ]).to_bytes()
 }
 
 #[cfg(test)]

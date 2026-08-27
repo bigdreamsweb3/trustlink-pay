@@ -1,0 +1,41 @@
+---
+title: "Mother Authority and Opaque Epoch Slots"
+sidebarTitle: "Mother Authority"
+description: "Learn how Mother Escrow coordinates epochs, materializes the one-time SettlementDna PDA, and enforces atomic settlement or refund through opaque slots."
+---
+
+Mother Escrow is the TSN authority boundary for epoch coordination and ConfidentialSettlement authorization. It does not hold user balances or act as a payment escrow. Instead, it materializes a one-time SettlementDna PDA at a derived opaque slot, and the TSN program consumes that PDA on the first valid settlement or refund.
+
+## Off-chain binding and opaque slots
+
+The Node/Mother stores the full payment binding as an encrypted off-chain record. This includes the payment identifier, funding lineage, sender refund destination, recipient route binding, amount, mint, and epoch. The encryption key never leaves Node/Mother.
+
+For a confirmed intent, the Node derives an opaque deterministic slot with HMAC-SHA256 over the payment binding using `TSN_NODE_CLAIM_SLOT_HMAC_SECRET`. This value is a secret handled by Node/Mother, not a public template. The slot is deliberately absent from the funding transaction.
+
+## SettlementDna PDA
+
+Mother authority materializes the one-time `SettlementDna` PDA at the derived opaque slot. The lease version is stored inside the PDA and in every permit, so there can be only one live DNA for a slot at a time. An active DNA can be replaced only after its lease expires. A consumed DNA can never be replaced.
+
+The PDA is an on-chain voucher. It is not a payment escrow and contains no sender or payment identifier. Only the Mother authority can create it, and the TSN program consumes it on the first valid settlement or refund.
+
+## Node permit and lease
+
+The Node signs a short-lived Ed25519 permit binding: opaque slot, commitment digest, random nonce, nullifier, Mother-rooted epoch treasury and ledger, CrankerVault, recipient, mint, amount, lease ID/version/expiry, and authorization expiry. The permit expires no later than the Receiver lease.
+
+## First valid operation wins
+
+The TSN program creates the `EpochClaimSlot` PDA from the epoch treasury and opaque slot only if it does not already exist. If a valid settlement arrives first, the slot is marked `SETTLED`. If a valid refund arrives first, the slot is marked `REFUNDED`. The account creation and write lock make settlement and refund mutually exclusive: the first valid transaction wins atomically and the other fails before any transfer.
+
+## CrankerVault is not the live TCAP path
+
+<Warning>
+  CrankerVault payout logic is historical TSN payout architecture. The live TCAP credit path uses ConfidentialSettlement authorization plus the AcceptedIntentV1 PDA. Do not implement TCAP credit using CrankerVault references.
+</Warning>
+
+In the historical TSN payout path, settlement transferred from the Cranker vault and reimbursed it from the epoch treasury. In the live TCAP path, the TSN CPI wrapper creates the TCAP receipt, TCAP validates and consumes it, and the tip advances without entering CrankerVault logic.
+
+## Related pages
+
+- [Epoch Treasury](/architecture/epoch-treasury) for protocol-controlled aggregate liability accounting
+- [TCAP](/architecture/tcap) for the credit-only tip transition layer
+- [Security authority and keys](/security/authority-and-keys) for how Mother and Node keys are managed

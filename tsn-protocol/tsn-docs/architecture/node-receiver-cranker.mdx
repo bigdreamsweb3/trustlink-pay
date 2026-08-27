@@ -1,0 +1,55 @@
+---
+title: "Receiver, Node, and Cranker: Separation of Transport"
+sidebarTitle: "Node, Receiver, Cranker"
+description: "Learn how the Receiver, Node, and Cranker divide durable ingress, stateless verification, and exact transaction submission without sharing secrets or altering plans."
+---
+
+TSN splits transport into three non-overlapping roles: the Receiver accepts and stores work, the Node verifies it, and the Cranker submits the exact authorized transaction. None of them holds a user private key, and none can alter the payment plan after it is signed.
+
+## Receiver: durable ingress and work storage
+
+The Receiver is authenticated ingress for payment intents. It uses Firestore for accepted work, state transitions, idempotency, short leases, and compact confirmation receipts. When a sender submits a signed intent, the Receiver stores it and marks it `RECEIVED`.
+
+The Receiver does not verify the plan, choose a recipient, or sign a Solana transaction. It also never receives plaintext roots or private snapshots. Its job is to hold work briefly and hand it off to the Node for verification.
+
+## Node: stateless verification and route decisions
+
+The Node takes a short lease on received work and performs verification before any Cranker can act. It checks:
+
+1. Canonical signatures are valid.
+2. The request exactly matches the signed message.
+3. The nonce has not been used and the authorization has not expired.
+4. The recipient TIN's current route matches the signed commitment and route version.
+5. The amount, mint, sources, and transaction commitment match the authorized plan.
+
+If all checks pass, the Node returns the work as `VERIFIED` with the recipient identity redacted from the durable record. The Node keeps a separate, short-lived Node-only route reference keyed by work ID that contains the recipient TIN, signed route commitment, route version, and expiry. This reference expires and is deleted; it is never mixed into the sender's payment work.
+
+## Cranker: exact submission only
+
+The Cranker leases only verified work. It is an executor, not a decision-maker. For payment funding, it submits the exact sender-authorized epoch-treasury transaction. For a claim payout, it submits the exact Node-authorized, lease-bound settlement transaction.
+
+After submission, the Cranker returns the Solana transaction signature and confirmation result. It cannot change the amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry. The current implementation is a Python daemon.
+
+## Work lifecycle
+
+Every payment moves through the following states:
+
+```text
+RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED
+```
+
+`REJECTED` is terminal for invalid work. A lease expiration may return eligible work to the queue, but it does not grant the Cranker authority to alter the plan. The Cranker must re-lease the exact same work if the lease expires and the work is still valid.
+
+## Summary of boundaries
+
+| Role | Responsibility | What it never touches |
+| --- | --- | --- |
+| Receiver | Durable ingress, state storage, leases, receipts | Verification, recipient selection, transaction signing, plaintext roots |
+| Node | Signature and policy verification, redacted records, short route references | User funds, TIN master seeds, durable recipient identity in payment records |
+| Cranker | Submit exact authorized transactions, return confirmation evidence | Alter amount, token, recipient, commitments, sequence, policy, nullifier, expiry |
+
+## Related pages
+
+- [Trust model](/architecture/trust-model) for the authorization-versus-transport split
+- [Security operator boundaries](/security/operator-boundaries) for what each runtime role is forbidden from doing
+- [Payment intent lifecycle](/developers/payment-intent-lifecycle) for the developer view of the same flow

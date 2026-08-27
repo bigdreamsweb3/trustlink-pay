@@ -1,0 +1,60 @@
+---
+title: "Replay Protection and Safe Retry Patterns in TSN"
+sidebarTitle: "Replay & Retries"
+description: "Understand how TSN prevents double spending using replay nonces, nullifiers, slot windows, and sequence monotonicity. Learn safe retry patterns for settlement failures."
+---
+
+This page explains the replay protection mechanisms in TSN and how to retry safely when a settlement transaction fails. TSN uses multiple overlapping defenses: a replay nonce in the authorization receipt, a one-time nullifier, a Solana slot validity window, and strict sequence monotonicity per TIN tip. Any single defense defeats replay; together they provide defense in depth.
+
+## Mechanisms
+
+### Replay nonce
+
+The `replay_nonce` is a one-time value included in the `ConfidentialSettlement` receipt. The TSN program records consumed nonces and rejects any reuse. The nonce is bound to the signed authorization, so tampering invalidates the signature.
+
+### Nullifier
+
+The `nullifier` is a one-time transition identifier. TCAP records it in a nullifier PDA and rejects any consumed value. This protects against double application of the same credit transition. The nullifier is consumed atomically with the tip advance.
+
+### Validity window
+
+`valid_after_slot` and `expires_at_slot` define a validity window in Solana slots, not Unix timestamps. The TSN program rejects any transaction outside this window. This limits the time an authorization can be replayed even if a nonce or nullifier check were somehow bypassed.
+
+### Sequence monotonicity
+
+The `sequence` number in the TIN tip is strictly increasing. TCAP requires the next sequence for every credit. A stale transition with an old sequence is rejected even if all other fields are valid. This prevents replay of previously valid but now outdated authorizations.
+
+### Signed-field binding
+
+Every field in the authorization is signed as a unit. Any tamper, including to amount, token, recipient, commitment, or expiry, invalidates the signature. The Node and on-chain program verify the complete binding before acceptance.
+
+## Defense summary
+
+| Mechanism | What it defeats | Checked by |
+| --- | --- | --- |
+| `replay_nonce` | Reuse of the same authorization receipt | TSN program on chain |
+| `nullifier` | Double application of the same transition | TCAP program atomically |
+| Slot window (`valid_after_slot` / `expires_at_slot`) | Time-shifted replay | TSN program on chain |
+| `sequence` monotonicity | Stale transition replay | TCAP program on chain |
+| Signed-field binding | Tampered authorization | Node Ed25519 verify, TSN program on chain |
+
+## Safe retry guidance
+
+If a Cranker submission fails, retries are safe under these conditions:
+
+- Retry within the validity window defined by `valid_after_slot` and `expires_at_slot`
+- Use the same signed intent, same nonce, and same nullifier
+- Do not modify amount, token, recipient binding, commitments, or expiry
+
+If two Crankers race to submit the same verified work, the Solana program rejects the second attempt because the nullifier is already consumed. Re-execution is impossible even in a race.
+
+If the validity window expires, the work is no longer submittable. A new intent with a fresh nonce, nullifier, and slot window must be signed by the sender.
+
+<Info>
+  A rejected retry does not indicate a bug. It indicates that the work was already consumed or the window closed. Check the on-chain nullifier state and the tip sequence before retrying.
+</Info>
+
+## Related pages
+
+- [Replay Protection](/security/replay-protection) for the security model perspective
+- [Payment Intent Lifecycle](/developers/payment-intent-lifecycle) for the full state machine and transition checks

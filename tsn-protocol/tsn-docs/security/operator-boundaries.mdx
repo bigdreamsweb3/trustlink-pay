@@ -1,0 +1,102 @@
+---
+title: "TSN Operator Boundaries: Data Visibility Per Role"
+sidebarTitle: "Operator Boundaries"
+description: "What each TSN operator can see, send, and modify. Covers sender, Receiver, Node, Mother, Cranker, and Solana program boundaries with a worked attack example."
+---
+
+TSN separates payment work across distinct operators so that no single role can reconstruct the full payment picture or mutate an authorized transaction. This page maps the data that crosses each boundary and what happens when an operator tries to exceed it.
+
+## Boundary definitions
+
+### Sender to Node
+
+The sender sends only:
+
+- Sender-signed authorization envelope.
+- Funding signature.
+- Public routing coordinates (recipient route commitment and route version).
+
+The sender never sends private keys, master seeds, snapshot decryption keys, or the plaintext privacy-receiving root.
+
+### Receiver to Cranker
+
+The Receiver sends only:
+
+- Opaque intent work (redacted).
+- Lease data.
+- Public coordination fields (work ID, state, expiry).
+
+The Receiver never sends:
+
+- Recipient TIN.
+- Sender authorization message or signature.
+- Serialized funding transaction.
+- Encrypted binding material.
+
+### Node/Mother to Cranker
+
+Node/Mother sends only:
+
+- Opaque slot and commitment digest.
+- Nullifier.
+- Public payout coordinates.
+- Short-lived signed permit.
+
+Node/Mother never sends:
+
+- Payment identifier.
+- Encrypted record or plaintext binding.
+- Refund secret.
+- Payment-specific account.
+
+### Cranker to TSN program
+
+The Cranker sends only:
+
+- Node-signed permit.
+- Public accounts required by the bound instruction.
+
+The Cranker never sends:
+
+- Caller-selected source.
+- Payment record or alternate vault.
+- Alternate amount or recipient.
+
+## Worked example: compromised Cranker redirects a payment
+
+Suppose an attacker compromises a Cranker and tries to redirect a settlement to their own wallet. The attacker can submit a transaction, but they must supply the exact Node-signed permit bound to the original recipient, amount, mint, commitments, sequence, policy, nullifier, and expiry.
+
+The Solana program re-checks every bound field:
+
+1. Verifies the Node permit signature.
+2. Derives the `EpochClaimSlot` from the epoch treasury and opaque slot.
+3. Checks that the slot is not already consumed.
+4. Checks that the lease is still valid.
+5. Checks that the route commitment matches the authorized recipient.
+6. Checks that the amount and mint match the bound values.
+7. Checks that the nullifier is unused.
+
+If the attacker changes the recipient wallet address, the route commitment check fails. If they change the amount or mint, the permit binding fails. If they reuse an old nullifier, the nullifier check fails. The instruction aborts before any token movement.
+
+| Attempted attack | Outcome |
+| --- | --- |
+| Redirect payment to attacker's wallet | Program rejects; route commitment mismatch |
+| Change amount or mint | Program rejects; permit binding mismatch |
+| Reuse old permit on same slot | Program rejects; slot already consumed or nullifier reused |
+| Submit after lease expiry | Program rejects; expiry window passed |
+| Submit with forged permit | Program rejects; Ed25519 signature invalid |
+
+## Summary table
+
+| Boundary | Allowed | Forbidden |
+| --- | --- | --- |
+| Sender to Node | Signed authorization, funding signature, public routing coordinates | Private keys, master seeds, snapshot keys |
+| Receiver to Cranker | Opaque intent work, lease, public coordination fields | Recipient TIN, sender authorization, serialized funding tx, encrypted binding |
+| Node/Mother to Cranker | Opaque slot/commitment, nullifier, public payout coordinates, signed permit | Payment ID, encrypted record, refund secret, payment-specific account |
+| Cranker to TSN program | Permit and public accounts required by bound instruction | Caller-selected source, payment record, alternate vault, alternate amount/recipient |
+
+## Related topics
+
+- [Node, Receiver, and Cranker](/architecture/node-receiver-cranker) explains the roles and lifecycle.
+- [Threat model](/security/threat-model) maps adversary capabilities.
+- [Security invariants](/security/invariants) lists the rules enforced at each boundary.

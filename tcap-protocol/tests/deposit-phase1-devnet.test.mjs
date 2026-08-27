@@ -144,7 +144,7 @@ async function reserveSnapshot() {
   return {
     source: BigInt(sourceBalance.value.amount),
     vault: BigInt(vaultBalance.value.amount),
-    actualAssets: reserveInfo.data.readBigUInt64LE(108),
+    actualAssets: reserveInfo.data.readBigUInt64LE(140),
   };
 }
 

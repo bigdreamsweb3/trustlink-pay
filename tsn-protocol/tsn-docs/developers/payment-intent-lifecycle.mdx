@@ -1,0 +1,98 @@
+---
+title: "Payment Intent Lifecycle from Signature to On-Chain Settlement"
+sidebarTitle: "Intent Lifecycle"
+description: "Follow a TSN payment intent through every state from signed canonical message to Solana confirmation. Understand redaction, verification checks, and what each role sees."
+---
+
+A payment intent in TSN is a sender-signed canonical message that binds amount, token mint, fee limits, expiry, one-time nonce, sender authorization, transaction evidence, recipient route commitment, and route version. This page traces the intent from local signing through every state transition to final Solana confirmation. Understanding the lifecycle helps you build reliable integrations, debug rejections, and handle retries safely.
+
+## Intent structure
+
+The sender constructs and signs the payment message locally on the authorized device. The intent is immutable once signed: any tamper invalidates the signature.
+
+```json title="Illustrative intent shape"
+{
+  "amount": "1000000",
+  "tokenMint": "So11111111111111111111111111111111111111112",
+  "feeLimit": "5000",
+  "expiresAtSlot": 320000000,
+  "nonce": "a1b2c3d4e5f6789012345678...",
+  "senderAuthorization": "base64-ed25519-signed-canonical-message...",
+  "transactionCommitment": "sha256-commitment-digest...",
+  "recipientRouteCommitment": "route-commitment-digest...",
+  "routeVersion": 1
+}
+```
+
+The commitment is a tamper-evident fingerprint of the recipient's active route. It lets the Node prove the sender approved this route version without placing the recipient's full route map in ordinary payment work.
+
+## Work state diagram
+
+```text
+RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED
+                                              |
+                                              v
+                                         REJECTED (terminal)
+```
+
+`REJECTED` is terminal. A lease expiration may return eligible work to the queue but does not grant a Cranker authority to alter the plan.
+
+## State transitions
+
+### RECEIVED
+
+The TSN Receiver accepts the signed intent and stores the submitted evidence briefly so the Node can verify the exact sender signature. The Receiver marks the work `RECEIVED`. It does not decide that the payment is valid.
+
+### NODE\_VERIFYING
+
+The Node takes a short lease and verifies all of the following before returning `VERIFIED`:
+
+1. The canonical message and signatures are valid.
+2. The request exactly matches the signed message.
+3. The nonce has not been used and the authorization has not expired.
+4. The recipient TIN's current route has the same signed commitment and route version.
+5. The amount, mint, sources, transaction commitment, and program constraints match the authorized plan.
+
+If any check fails, the Receiver records `REJECTED`. A Cranker can never lease rejected or merely received work.
+
+### VERIFIED
+
+After successful verification, the Node redacts the recipient identity from the durable verified payment record. The record keeps only payment/work IDs, the sender-approved amount and mint, the route commitment and version, bounded expiry/replay evidence, state, and later transaction receipts.
+
+It does **not** keep the recipient TIN, the full recipient route, a recipient wallet address, the raw sender authorization message/signature, or the original serialized transaction.
+
+The Node keeps a separate, short-lived recipient-route reference keyed by the work ID. It contains only the recipient TIN, signed route commitment, route version, and expiry. It expires and is deleted when no longer valid.
+
+### CRANKER\_LEASED
+
+A Cranker requests a short lease on verified work. The Receiver grants a time-bound lease that binds the exact work ID, amount, mint, and permitted transaction bytes. The Cranker cannot change the plan.
+
+### SUBMITTED
+
+The Cranker submits the exact authorized transaction to the Solana TSN program. The program enforces the lease holder, commitment, amount, mint, expiry, and one-time/replay state. A valid signature alone is not enough if any rule does not match.
+
+### CONFIRMED
+
+The Receiver records the confirmed signature and compact receipt information. Treat the confirmed Solana transaction and account state as the final evidence that the work completed.
+
+## What each role sees
+
+| Role | Sees | Never sees |
+| --- | --- | --- |
+| Receiver | Opaque intent work, lease, public coordination fields | Recipient TIN, sender authorization, serialized funding transaction, encrypted binding |
+| Node | Signed intent, route commitment, nonce, expiry | Plaintext roots, private snapshots, wallet keys |
+| Cranker | Opaque slot/commitment, nullifier, public payout coordinates, short-lived signed permit | Payment ID, encrypted record, refund secret, payment-specific account |
+
+## Retention and redaction
+
+After a confirmed payment, the durable Receiver record excludes the recipient TIN, full route map, recipient wallet, raw sender authorization, and original serialized transaction. Once the Cranker has confirmed payment work, the Receiver keeps a compact receipt context instead of the original authorization data. The Node's short-lived route reference expires and is deleted.
+
+<Info>
+  The recipient is not chosen from an unsigned request at payout time. The Node re-resolves the recipient TIN, checks the same commitment and route version again, and selects an eligible receiving account using the verified route. If the route changed, expired, or no longer matches the sender-signed commitment, the payout authorization is refused.
+</Info>
+
+## Related pages
+
+- [Node, Receiver, and Cranker](/architecture/node-receiver-cranker) for the architecture boundary
+- [Replay Protection](/security/replay-protection) for nonce, nullifier, and sequence mechanics
+- [Replay and Retries](/developers/replay-and-retries) for safe retry guidance

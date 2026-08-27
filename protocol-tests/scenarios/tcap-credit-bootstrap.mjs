@@ -1,10 +1,9 @@
 /* Devnet-only bootstrap for the TSN -> TCAP credit smoke path.
  *
- * This script deliberately does not invent authorization material. Public
- * PDAs are derived from deployed programs and existing accounts are reused.
- * Owner/TSN signed commitments, nullifiers and settlement digests must be
- * supplied by the caller. The generated env is therefore a real, auditable
- * fixture and never a synthetic green-test fixture.
+ * This script derives the ConfidentialSettlement fields with the same
+ * domain-separated formulas enforced by TSN. Public PDAs are derived from
+ * deployed programs and existing accounts are reused; no random placeholder
+ * roots, nullifiers or settlement digests are accepted.
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -20,7 +19,13 @@ import {
   deriveDevnetTestPolicyCommitment,
   deriveDevnetTestTcapGenesisCommitment,
 } from "../lib/privacy-root-commitment.mjs";
-import { buildFundAndAcceptIntentTransaction, deriveTsnFundingPdas } from "../../tcap-protocol/scripts/tcap-credit-transaction.mjs";
+import {
+  buildFundAndAcceptIntentTransaction,
+  deriveTsnFundingPdas,
+  deriveConfidentialReplayNonce,
+  deriveConfidentialSettlementFields,
+  deriveConfidentialAuthorizationDigest,
+} from "../../tcap-protocol/scripts/tcap-credit-transaction.mjs";
 
 const DEFAULTS_FILE = path.resolve(process.env.TCAP_DEVNET_DEFAULTS_FILE ?? "protocol-tests/tcap-credit-devnet.defaults.env");
 function loadDefaults(file) {
@@ -59,17 +64,16 @@ const [mother] = PublicKey.findProgramAddressSync([seed("tsn_mother_escrow")], T
 const ACCEPTED_INTENT_SEED = seed("tsn:accepted-intent:v1");
 const ACCEPTED_INTENT_ROOT_DOMAIN = seed("TSN_ACCEPTED_INTENT_ROOT_V1");
 const PAYMENT_INTENT_DOMAIN = seed("TSN_PAYMENT_INTENT_COMMITMENT_V1");
-// Canonical controlled-payment commitment order:
+// Canonical controlled-payment intent commitment order:
 // domain || epoch_id || amount || token_id || token_mint || tip_root || policy
-// || replay_nonce || valid_after_slot || expires_at_slot || settlement || asset
-// || GPRU scope. This binds the payment intent to the exact atomic funding and
-// acceptance fields; it is not a substitute for owner/TSN authorization.
+// || replay_nonce || valid_after_slot || expires_at_slot || asset. Derived
+// settlement/GPRU/nullifier fields bind to this immutable intent commitment in
+// their own domain-separated records, avoiding a circular hash dependency.
 const derivePaymentIntentCommitment = ({ epochId, amount, tokenId, tokenMint, tipRoot, policyCommitment, replayNonce, validAfterSlot, expiresAtSlot, settlementCommitment, assetCommitment, gpruScopeCommitment }) => createHash("sha256").update(Buffer.concat([
   PAYMENT_INTENT_DOMAIN, u64(epochId), u64(amount), u32(tokenId), tokenMint.toBuffer(),
   b32(tipRoot, "TCAP_TIP_ROOT_COMMITMENT"), b32(policyCommitment, "TCAP_POLICY_COMMITMENT"),
   b32(replayNonce, "TCAP_REPLAY_NONCE"), u64(validAfterSlot), u64(expiresAtSlot),
-  b32(settlementCommitment, "TCAP_TSN_SETTLEMENT_COMMITMENT"), b32(assetCommitment, "TCAP_ASSET_COMMITMENT"),
-  b32(gpruScopeCommitment, "TCAP_GPRU_SCOPE_COMMITMENT"),
+  b32(assetCommitment, "TCAP_ASSET_COMMITMENT"),
 ])).digest().toString("hex");
 const deriveAcceptedIntentRoot = ({ epochId, intentCommitment, amount, tokenId, tipRoot, settlementCommitment, assetCommitment, policyCommitment, gpruScopeCommitment, replayNonce, nullifier, validAfterSlot, expiresAtSlot }) => createHash("sha256").update(Buffer.concat([
   ACCEPTED_INTENT_ROOT_DOMAIN, u64(epochId), b32(intentCommitment, "TCAP_INTENT_COMMITMENT"), u64(amount), u32(tokenId),
@@ -96,8 +100,13 @@ function walletPath() {
   return process.env.TRUSTLINK_TEST_WALLET_KEYPAIR ?? process.env.SOLANA_WALLET
     ?? path.resolve("protocol-tests/tcap-devnet-test-wallet.json");
 }
-function governanceWalletPath() { return process.env.TCAP_GOVERNANCE_WALLET ?? process.env.SOLANA_WALLET ?? `${os.homedir()}/.config/solana/id.json`; }
+function expandHome(value) { return value?.startsWith("~/") ? path.join(os.homedir(), value.slice(2)) : value; }
+function governanceWalletPath() { return expandHome(process.env.TCAP_GOVERNANCE_WALLET ?? process.env.TCAP_GOVERNANCE_KEYPAIR ?? process.env.SOLANA_WALLET ?? `${os.homedir()}/.config/solana/id.json`); }
 function loadWallet(file) { return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(file, "utf8")))); }
+function optionalWallet(file) {
+  if (!file || !fs.existsSync(file)) return null;
+  try { return loadWallet(file); } catch { return null; }
+}
 function show(label, address, exists) { console.log(`${label}: ${address.toBase58()} (${exists ? "reused" : "missing"})`); }
 function required(name) { const v = process.env[name]; if (!v?.trim()) throw new Error(`MISSING_DEPENDENCY ${name}: provide owner/TSN-authorized value; refusing to fabricate it`); return v.trim(); }
 function verifyConfiguredPda(name, derived) {
@@ -107,10 +116,27 @@ function verifyConfiguredPda(name, derived) {
   }
 }
 async function requireOwnedAccount(connection, address, owner, label) {
-  const account = await connection.getAccountInfo(address);
+  const account = await getAccountInfoWithRetry(connection, address, label);
   if (!account) throw new Error(`MISSING_DEPENDENCY ${label}: ${address.toBase58()} is not present on Devnet`);
   if (!account.owner.equals(owner)) throw new Error(`DEVNET_ACCOUNT_OWNER_MISMATCH ${label}: ${address.toBase58()} is owned by ${account.owner.toBase58()}, expected ${owner.toBase58()}`);
   return account;
+}
+
+async function getAccountInfoWithRetry(connection, address, label = "account") {
+  const attempts = Math.max(1, Number(process.env.TCAP_RPC_READ_RETRIES ?? "4"));
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await connection.getAccountInfo(address);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+      const delayMs = Math.min(2000, 250 * (2 ** (attempt - 1)));
+      console.warn(`RPC read retry ${attempt}/${attempts - 1} for ${label} ${address.toBase58()} after ${error?.message ?? "unknown error"}; waiting ${delayMs}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error(`RPC_READ_FAILED: ${label} ${address.toBase58()} after ${attempts} attempts: ${lastError?.message ?? "unknown error"}`);
 }
 
 async function main() {
@@ -134,7 +160,7 @@ async function main() {
   verifyConfiguredPda("TCAP_ASSET_REGISTRY", registry);
   verifyConfiguredPda("TCAP_COMMITMENT_ROOT", commitmentRoot);
 
-  const info = async (address) => Boolean(await connection.getAccountInfo(address));
+  const info = async (address, label = "account") => Boolean(await getAccountInfoWithRetry(connection, address, label));
   const motherExists = await info(mother); show("TSN Mother Escrow", mother, motherExists);
   if (!motherExists) {
     const protocolSeed = required("TSN_PROTOCOL_SEED_HEX");
@@ -148,11 +174,31 @@ async function main() {
     console.log(`Created TSN Mother Escrow: ${mother.toBase58()} tx=${sig}`);
   }
 
+  // AcceptedIntent is authorized by Mother Escrow's on-chain authority. The
+  // fixture wallet may fund the treasury, but it must not be substituted for
+  // Mother. Resolve a real signer and fail closed if its key is unavailable.
+  const motherAccountData = await getAccountInfoWithRetry(connection, mother, "TSN Mother Escrow");
+  if (!motherAccountData || motherAccountData.data.length < 40) throw new Error("MISSING_DEPENDENCY TSN_MOTHER_ESCROW_LAYOUT: cannot read Mother authority");
+  const motherAuthority = new PublicKey(motherAccountData.data.subarray(8, 40));
+  const signerCandidates = [
+    ["fixture wallet", payer],
+    ["governance wallet", governancePayer],
+    ["TSN_MOTHER_AUTHORITY_WALLET", optionalWallet(process.env.TSN_MOTHER_AUTHORITY_WALLET)],
+    ["ANCHOR_WALLET", optionalWallet(process.env.ANCHOR_WALLET)],
+  ];
+  const motherSignerEntry = signerCandidates.find(([, signer]) => signer?.publicKey.equals(motherAuthority));
+  if (!motherSignerEntry) {
+    const candidates = signerCandidates.filter(([, signer]) => signer).map(([label, signer]) => `${label}=${signer.publicKey.toBase58()}`).join(", ");
+    throw new Error(`MISSING_DEPENDENCY TSN_MOTHER_AUTHORITY: required signer ${motherAuthority.toBase58()} is not available. Set TSN_MOTHER_AUTHORITY_WALLET to its keypair; available candidates: ${candidates || "none"}`);
+  }
+  const motherSigner = motherSignerEntry[1];
+  console.log(`TSN Mother authority: ${motherAuthority.toBase58()} (${motherSignerEntry[0]} signer)`);
+
   for (const [label, address] of [["TCAP config", config], ["TCAP asset registry", registry], ["TCAP commitment root", commitmentRoot]]) show(label, address, await info(address));
   if (!(await info(config))) throw new Error("MISSING_DEPENDENCY TCAP_CONFIG: run npm/bootstrap existing devnet-initialize.mjs with the governance wallet");
   await requireOwnedAccount(connection, config, TCAP, "TCAP_CONFIG");
   await requireOwnedAccount(connection, registry, TCAP, "TCAP_ASSET_REGISTRY");
-  let configAccount = await connection.getAccountInfo(config);
+  let configAccount = await getAccountInfoWithRetry(connection, config, "TCAP config");
   // The checked-in TCAP program expects proof-verifier/paused flags before the
   // commitment-root field. Detect the older 244-byte layout before submitting
   // any root transaction; Anchor otherwise reports only AccountDidNotDeserialize.
@@ -164,7 +210,7 @@ async function main() {
     ], data: disc("migrate_tcap_config_layout_v1") });
     const migrationSig = await sendAndConfirmTransaction(connection, new Transaction().add(migration), [governancePayer], { commitment: "confirmed" });
     console.log(`TCAP config migration tx: ${migrationSig}`);
-    configAccount = await connection.getAccountInfo(config);
+    configAccount = await getAccountInfoWithRetry(connection, config, "TCAP config after migration");
   }
   if (!(await info(commitmentRoot))) {
     const empty = (process.env.TCAP_EMPTY_TREE_ROOT_HEX ?? DEVNET_EMPTY_TREE_ROOT_HEX).trim();
@@ -182,7 +228,7 @@ async function main() {
   const mint = required("TCAP_MINT");
   const tokenProgram = pk(process.env.TCAP_TOKEN_PROGRAM ?? "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", "TCAP_TOKEN_PROGRAM");
   const mintKey = pk(mint, "TCAP_MINT");
-  const mintInfo = await connection.getAccountInfo(mintKey);
+  const mintInfo = await getAccountInfoWithRetry(connection, mintKey, "TCAP mint");
   if (!mintInfo) throw new Error(`MISSING_DEPENDENCY TCAP_MINT: ${mintKey.toBase58()} is not present on Devnet`);
   if (!mintInfo.owner.equals(tokenProgram)) throw new Error(`DEVNET_MINT_OWNER_MISMATCH: ${mintKey.toBase58()} is owned by ${mintInfo.owner.toBase58()}, expected ${tokenProgram.toBase58()}`);
   const expectedDecimals = Number(process.env.TCAP_MINT_DECIMALS ?? "6");
@@ -191,14 +237,24 @@ async function main() {
   console.log(`TCAP mint: ${mintKey.toBase58()} (${actualDecimals} decimals; ${process.env.TCAP_AMOUNT ?? "unset"} base units)`);
   const [assetEntry] = PublicKey.findProgramAddressSync([seed("tcap:asset-entry:v1"), registry.toBuffer(), tokenProgram.toBuffer(), mintKey.toBuffer()], TCAP);
   const [reserve] = PublicKey.findProgramAddressSync([seed("tcap:reserve-state:v1"), assetEntry.toBuffer()], TCAP);
+  const [governancePolicy] = PublicKey.findProgramAddressSync([seed("tcap:asset-governance:v2"), assetEntry.toBuffer()], TCAP);
+  const [extensionPolicy] = PublicKey.findProgramAddressSync([seed("tcap:extension-policy:v2"), assetEntry.toBuffer()], TCAP);
   show("TCAP asset entry", assetEntry, await info(assetEntry));
   show("TCAP reserve state", reserve, await info(reserve));
   if (!(await info(assetEntry))) throw new Error(`MISSING_DEPENDENCY TCAP_ASSET_ENTRY: register the governed mint ${mintKey.toBase58()} using the repository asset-governance flow`);
   if (!(await info(reserve))) throw new Error("MISSING_DEPENDENCY TCAP_RESERVE_STATE: initialize and govern the reserve before credit");
+  if (!(await info(governancePolicy))) throw new Error("MISSING_DEPENDENCY TCAP_GOVERNANCE_POLICY: initialize the current V2 asset governance policy before credit");
+  if (!(await info(extensionPolicy))) throw new Error("MISSING_DEPENDENCY TCAP_EXTENSION_POLICY: initialize the current V2 asset extension policy before credit");
   const assetEntryInfo = await requireOwnedAccount(connection, assetEntry, TCAP, "TCAP_ASSET_ENTRY");
   await requireOwnedAccount(connection, reserve, TCAP, "TCAP_RESERVE_STATE");
-  if (assetEntryInfo.data.length < 144) throw new Error("DEVNET_ASSET_ENTRY_LAYOUT_INVALID");
-  const onchainAssetCommitment = assetEntryInfo.data.subarray(112, 144).toString("hex");
+  const assetEntryDiscriminator = createHash("sha256").update("account:TcapAssetEntryV1").digest().subarray(0, 8);
+  if (assetEntryInfo.data.length < 287 || !assetEntryInfo.data.subarray(0, 8).equals(assetEntryDiscriminator)) {
+    throw new Error(`DEVNET_ASSET_ENTRY_LEGACY_OR_TRUNCATED: refusing credit against ${assetEntry}; expected current TcapAssetEntryV1 (>=287 bytes)`);
+  }
+  if (!assetEntryInfo.data.subarray(80, 112).equals(mintKey.toBuffer()) || !assetEntryInfo.data.subarray(48, 80).equals(tokenProgram.toBuffer())) {
+    throw new Error("DEVNET_ASSET_ENTRY_BINDING_MISMATCH: asset entry is not bound to the configured mint and token program");
+  }
+  const onchainAssetCommitment = assetEntryInfo.data.subarray(116, 148).toString("hex");
   if (/^0+$/.test(onchainAssetCommitment)) throw new Error("MISSING_DEPENDENCY TCAP_ASSET_COMMITMENT: governed asset entry contains an empty commitment");
   const assetCommitment = (process.env.TCAP_ASSET_COMMITMENT ?? onchainAssetCommitment).toLowerCase();
   if (assetCommitment !== onchainAssetCommitment) throw new Error(`TCAP_ASSET_COMMITMENT_MISMATCH: supplied ${assetCommitment}, on-chain asset entry has ${onchainAssetCommitment}`);
@@ -219,7 +275,7 @@ async function main() {
   let previous = process.env.TCAP_INITIAL_COMMITMENT?.trim();
   let sequence = BigInt(process.env.TCAP_SEQUENCE ?? "1");
   const [tip] = PublicKey.findProgramAddressSync([seed("tcap:tin-tip:v1"), b32(root, "TCAP_TIP_ROOT_COMMITMENT")], TCAP);
-  const tipInfo = await connection.getAccountInfo(tip);
+  const tipInfo = await getAccountInfoWithRetry(connection, tip, "TCAP tip");
   if (tipInfo) {
     previous = tipInfo.data.subarray(10, 42).toString("hex");
     const onchainSequence = tipInfo.data.readBigUInt64LE(42);
@@ -235,7 +291,7 @@ async function main() {
     const sig = await sendAndConfirmTransaction(connection, new Transaction().add(init), [payer], { commitment: "confirmed" });
     console.log(`Created TCAP tip: ${tip.toBase58()} tx=${sig}`);
   }
-  const motherData = (await connection.getAccountInfo(mother)).data;
+  const motherData = (await getAccountInfoWithRetry(connection, mother, "TSN Mother Escrow epoch")).data;
   const derivedEpochId = motherData.readBigUInt64LE(134).toString();
   const epochId = process.env.TCAP_EPOCH_ID?.trim() ?? derivedEpochId;
   if (!process.env.TCAP_EPOCH_ID) console.log(`Derived current TSN epoch from Mother Escrow: ${epochId}`);
@@ -243,64 +299,77 @@ async function main() {
   show("TSN epoch commitment", epoch, await info(epoch));
   console.log("TSN epoch commitment is canonical and will be created/reused by tsn_register_tcap_credit_authorization; it is not an opaque account.");
 
-  const authorizationInputs = ["TCAP_AMOUNT", "TCAP_AUTHORIZATION_DIGEST", "TCAP_REPLAY_NONCE", "TCAP_GPRU_SCOPE_COMMITMENT", "TCAP_TSN_SETTLEMENT_COMMITMENT", "TCAP_NULLIFIER"];
-  const missingAuthorizationInputs = authorizationInputs.filter((name) => !process.env[name]?.trim());
-  if (missingAuthorizationInputs.length) throw new Error(`MISSING_DEPENDENCIES ${missingAuthorizationInputs.join(", ")}: provide the real owner/TSN-authorized ConfidentialSettlement fields; refusing to fabricate them`);
-  const amount = BigInt(process.env.TCAP_AMOUNT);
+  const amount = BigInt(required("TCAP_AMOUNT"));
   const tokenId = Number(process.env.TCAP_TOKEN_ID ?? onchainTokenId);
   if (process.env.TCAP_TOKEN_ID && tokenId !== onchainTokenId) throw new Error(`TCAP_TOKEN_ID_MISMATCH: supplied ${tokenId}, on-chain asset entry has ${onchainTokenId}`);
   if (amount <= 0n || tokenId <= 0) throw new Error("TCAP_AMOUNT_AND_TOKEN_ID_MUST_BE_POSITIVE");
   const validAfter = process.env.TCAP_VALID_AFTER_SLOT ?? String(await connection.getSlot("confirmed"));
   const expires = process.env.TCAP_EXPIRES_AT_SLOT ?? String(Number(validAfter) + Number(process.env.TCAP_VALIDITY_WINDOW_SLOTS ?? 150));
+  const replayNonce = process.env.TCAP_REPLAY_NONCE?.trim()
+    ? b32(process.env.TCAP_REPLAY_NONCE, "TCAP_REPLAY_NONCE")
+    : deriveConfidentialReplayNonce({ epochId, amount, tokenId, tokenMint: mintKey, tipRootCommitment: root, policyCommitment: policy, validAfterSlot: validAfter, expiresAtSlot: expires });
+  if (!process.env.TCAP_REPLAY_NONCE) console.log(`Derived canonical replay nonce from the controlled signed-intent fields: ${replayNonce.toString("hex")}`);
   const intentCommitment = b32(process.env.TCAP_INTENT_COMMITMENT ?? derivePaymentIntentCommitment({
     epochId, amount, tokenId, tokenMint: mintKey, tipRoot: root, policyCommitment: policy,
-    replayNonce: process.env.TCAP_REPLAY_NONCE, validAfterSlot: validAfter, expiresAtSlot: expires,
-    settlementCommitment: process.env.TCAP_TSN_SETTLEMENT_COMMITMENT,
+    replayNonce: replayNonce.toString("hex"), validAfterSlot: validAfter, expiresAtSlot: expires,
     assetCommitment,
-    gpruScopeCommitment: process.env.TCAP_GPRU_SCOPE_COMMITMENT,
   }), "TCAP_INTENT_COMMITMENT");
   if (!process.env.TCAP_INTENT_COMMITMENT) console.log(`Derived canonical Devnet payment intent commitment: ${intentCommitment.toString("hex")}`);
+  const derivedSettlement = deriveConfidentialSettlementFields({
+    epochId, intentCommitment, amount, tokenId, tipRootCommitment: root,
+    assetCommitment, policyCommitment: policy, replayNonce,
+    validAfterSlot: validAfter, expiresAtSlot: expires,
+  });
+  const gpruScopeCommitment = process.env.TCAP_GPRU_SCOPE_COMMITMENT?.trim()
+    ? b32(process.env.TCAP_GPRU_SCOPE_COMMITMENT, "TCAP_GPRU_SCOPE_COMMITMENT") : derivedSettlement.gpruScopeCommitment;
+  const settlementCommitment = process.env.TCAP_TSN_SETTLEMENT_COMMITMENT?.trim()
+    ? b32(process.env.TCAP_TSN_SETTLEMENT_COMMITMENT, "TCAP_TSN_SETTLEMENT_COMMITMENT") : derivedSettlement.settlementCommitment;
+  const nullifier = process.env.TCAP_NULLIFIER?.trim()
+    ? b32(process.env.TCAP_NULLIFIER, "TCAP_NULLIFIER") : derivedSettlement.nullifier;
+  if (!process.env.TCAP_GPRU_SCOPE_COMMITMENT) console.log(`Derived canonical GPRU scope commitment: ${gpruScopeCommitment.toString("hex")}`);
+  if (!process.env.TCAP_TSN_SETTLEMENT_COMMITMENT) console.log(`Derived canonical TSN settlement commitment: ${settlementCommitment.toString("hex")}`);
+  if (!process.env.TCAP_NULLIFIER) console.log(`Derived canonical settlement nullifier: ${nullifier.toString("hex")}`);
+  if (gpruScopeCommitment.toString("hex") !== derivedSettlement.gpruScopeCommitment.toString("hex") || settlementCommitment.toString("hex") !== derivedSettlement.settlementCommitment.toString("hex") || nullifier.toString("hex") !== derivedSettlement.nullifier.toString("hex")) {
+    throw new Error("TSN_CONFIDENTIAL_FIELD_MISMATCH: supplied settlement fields do not match canonical derivation");
+  }
   const acceptedIntentRoot = deriveAcceptedIntentRoot({
     epochId, intentCommitment: intentCommitment.toString("hex"), amount, tokenId,
-    tipRoot: root, settlementCommitment: process.env.TCAP_TSN_SETTLEMENT_COMMITMENT,
+    tipRoot: root, settlementCommitment: settlementCommitment.toString("hex"),
     assetCommitment, policyCommitment: policy,
-    gpruScopeCommitment: process.env.TCAP_GPRU_SCOPE_COMMITMENT,
-    replayNonce: process.env.TCAP_REPLAY_NONCE, nullifier: process.env.TCAP_NULLIFIER,
+    gpruScopeCommitment: gpruScopeCommitment.toString("hex"),
+    replayNonce: replayNonce.toString("hex"), nullifier: nullifier.toString("hex"),
     validAfterSlot: validAfter, expiresAtSlot: expires,
   });
   const [acceptedIntent] = PublicKey.findProgramAddressSync([
     ACCEPTED_INTENT_SEED, mother.toBuffer(), u64(epochId), intentCommitment,
   ], TSN);
-  const acceptedInfo = await connection.getAccountInfo(acceptedIntent);
+  const acceptedInfo = await getAccountInfoWithRetry(connection, acceptedIntent, "TSN accepted intent");
   if (!acceptedInfo) {
-    const motherData = await connection.getAccountInfo(mother);
-    const motherAuthority = new PublicKey(motherData.data.subarray(8, 40));
-    if (!motherAuthority.equals(payer.publicKey)) throw new Error(`MISSING_DEPENDENCY TSN_MOTHER_AUTHORITY: AcceptedIntent creation requires ${motherAuthority.toBase58()}, but fixture wallet is ${payer.publicKey.toBase58()}`);
     const funding = deriveTsnFundingPdas({ motherEscrow: mother, epochId, tokenMint: mintKey });
     const associated = (owner, mint) => PublicKey.findProgramAddressSync([owner.toBuffer(), new PublicKey(process.env.TCAP_TOKEN_PROGRAM).toBuffer(), mint.toBuffer()], ATA_PROGRAM)[0];
     const funderTokenAccount = pk(process.env.TCAP_FUNDER_TOKEN_ACCOUNT ?? associated(payer.publicKey, mintKey), "TCAP_FUNDER_TOKEN_ACCOUNT");
     const treasuryTokenAccount = pk(process.env.TCAP_TREASURY_TOKEN_ACCOUNT ?? associated(funding.treasuryAuthority, mintKey), "TCAP_TREASURY_TOKEN_ACCOUNT");
-    const funderInfo = await connection.getAccountInfo(funderTokenAccount);
+    const funderInfo = await getAccountInfoWithRetry(connection, funderTokenAccount, "funder token account");
     if (!funderInfo) throw new Error(`MISSING_DEPENDENCY TCAP_FUNDER_TOKEN_ACCOUNT: ${funderTokenAccount.toBase58()} is not present; fund the fixture wallet with the governed mint first`);
     const balance = await connection.getTokenAccountBalance(funderTokenAccount, "confirmed");
     if (BigInt(balance.value.amount) < amount) throw new Error(`MISSING_DEPENDENCY TCAP_FUNDER_TOKEN_BALANCE: ${balance.value.amount} < requested ${amount}`);
     const atomic = buildFundAndAcceptIntentTransaction({
-      payer: payer.publicKey, funder: payer.publicKey, authority: payer.publicKey, motherEscrow: mother,
+      payer: payer.publicKey, funder: payer.publicKey, authority: motherAuthority, motherEscrow: mother,
       epochId, amount, tokenMint: mintKey, funderTokenAccount, treasuryTokenAccount, acceptedIntent,
-      intentCommitment, tokenId, tipRootCommitment: root, settlementCommitment: process.env.TCAP_TSN_SETTLEMENT_COMMITMENT,
+      intentCommitment, tokenId, tipRootCommitment: root, settlementCommitment,
       assetCommitment, policyCommitment: policy,
-      gpruScopeCommitment: process.env.TCAP_GPRU_SCOPE_COMMITMENT, replayNonce: process.env.TCAP_REPLAY_NONCE,
-      nullifier: process.env.TCAP_NULLIFIER, validAfterSlot: validAfter, expiresAtSlot: expires,
+      gpruScopeCommitment, replayNonce, nullifier, validAfterSlot: validAfter, expiresAtSlot: expires,
     });
     atomic.feePayer = payer.publicKey;
-    const sig = await sendAndConfirmTransaction(connection, atomic, [payer], { commitment: "confirmed" });
+    const signers = [payer, motherSigner].filter((signer, index, all) => all.findIndex((other) => other.publicKey.equals(signer.publicKey)) === index);
+    const sig = await sendAndConfirmTransaction(connection, atomic, signers, { commitment: "confirmed" });
     console.log(`Created TSN AcceptedIntentV1 atomically with funding: ${acceptedIntent.toBase58()} tx=${sig}`);
     console.log(`Atomic instructions: tsn_fund_epoch_treasury + tsn_accept_intent; funder token account=${funderTokenAccount.toBase58()}`);
   } else {
     if (!acceptedInfo.owner.equals(TSN) || acceptedInfo.data.length < 334 || acceptedInfo.data.subarray(302, 334).toString("hex") !== acceptedIntentRoot) throw new Error("MISSING_DEPENDENCY TSN_ACCEPTED_INTENT_MISMATCH: existing record is not the canonical intent for this credit");
     console.log(`TSN AcceptedIntentV1: ${acceptedIntent.toBase58()} (reused)`);
   }
-  const rootData = (await connection.getAccountInfo(commitmentRoot)).data;
+  const rootData = (await getAccountInfoWithRetry(connection, commitmentRoot, "TCAP commitment root")).data;
   const currentTcapRoot = rootData.subarray(12, 44).toString("hex");
   const previousTcapRoot = process.env.TCAP_PREVIOUS_TCAP_ROOT?.trim() ?? currentTcapRoot;
   if (!process.env.TCAP_PREVIOUS_TCAP_ROOT) console.log(`Derived TCAP previous root from commitment root account: ${previousTcapRoot}`);
@@ -309,15 +378,33 @@ async function main() {
   let balances; try { balances = JSON.parse(balancesText); } catch { throw new Error("TCAP_TOKEN_BALANCES_JSON_invalid_json"); }
   if (!Array.isArray(balances) || !balances.length) throw new Error("TCAP_TOKEN_BALANCES_JSON must contain real owner balances; refusing an empty synthetic snapshot");
   const key = randomBytes(32);
-  const snapshot = { version: 1, sequence, previous_commitment: previous.toLowerCase(), token_balances: balances.map((x) => ({ token_id: Number(x.token_id), native_amount: BigInt(x.native_amount), stable_units: BigInt(x.stable_units), stable_rate_version: Number(x.stable_rate_version) })), policy_commitment: policy.toLowerCase(), transition_nullifier: required("TCAP_NULLIFIER").toLowerCase(), tsn_settlement_commitment: process.env.TCAP_TSN_SETTLEMENT_COMMITMENT.toLowerCase(), created_at: BigInt(Math.floor(Date.now() / 1000)), encrypted_record_locator: `devnet:${payer.publicKey.toBase58()}:${Date.now()}` };
+  // The SDK validator requires new_commitment even though the commitment
+  // preimage intentionally excludes it. Use a zero placeholder while
+  // computing the digest; the returned digest is the real new commitment.
+  const snapshot = { version: 1, sequence, previous_commitment: previous.toLowerCase(), new_commitment: "0".repeat(64), token_balances: balances.map((x) => ({ token_id: Number(x.token_id), native_amount: BigInt(x.native_amount), stable_units: BigInt(x.stable_units), stable_rate_version: Number(x.stable_rate_version) })), policy_commitment: policy.toLowerCase(), transition_nullifier: nullifier.toString("hex"), tsn_settlement_commitment: settlementCommitment.toString("hex"), created_at: BigInt(Math.floor(Date.now() / 1000)), encrypted_record_locator: `devnet:${payer.publicKey.toBase58()}:${Date.now()}` };
   const next = await computeTcapBalanceSnapshotCommitment(snapshot);
+  const derivedAuthorizationDigest = deriveConfidentialAuthorizationDigest({
+      version: 1, tsnProgramId: TSN, epochId, intentCommitment, amount,
+      settlementCommitment, acceptedIntentRoot, previousTcapRoot, assetCommitment,
+      verifierDomainVersion: 1, validAfterSlot: validAfter, expiresAtSlot: expires,
+      replayNonce, tip, previousCommitment: previous, newCommitment: next,
+      sequence, tokenId, policyCommitment: policy, gpruScopeCommitment, nullifier,
+    });
+  const authorizationDigest = process.env.TCAP_AUTHORIZATION_DIGEST?.trim()
+    ? b32(process.env.TCAP_AUTHORIZATION_DIGEST, "TCAP_AUTHORIZATION_DIGEST")
+    : derivedAuthorizationDigest;
+  if (!authorizationDigest.equals(derivedAuthorizationDigest)) {
+    throw new Error("TSN_CONFIDENTIAL_AUTHORIZATION_DIGEST_MISMATCH: supplied digest does not match canonical receipt fields");
+  }
+  if (!process.env.TCAP_AUTHORIZATION_DIGEST) console.log(`Derived canonical ConfidentialSettlement authorization digest: ${authorizationDigest.toString("hex")}`);
   const env = [
     `TCAP_PROGRAM_ID=${TCAP.toBase58()}`, `TSN_PROGRAM_ID=${TSN.toBase58()}`, `TCAP_EMPTY_TREE_ROOT_HEX=${(process.env.TCAP_EMPTY_TREE_ROOT_HEX ?? DEVNET_EMPTY_TREE_ROOT_HEX).toLowerCase()}`, `TSN_MOTHER_ESCROW=${mother.toBase58()}`, `TSN_EPOCH_COMMITMENT=${epoch.toBase58()}`,
+    `TSN_MOTHER_AUTHORITY_WALLET=${process.env.TSN_MOTHER_AUTHORITY_WALLET ?? ""}`,
     `TCAP_CONFIG=${config.toBase58()}`, `TCAP_ASSET_REGISTRY=${registry.toBase58()}`, `TCAP_COMMITMENT_ROOT=${commitmentRoot.toBase58()}`, `TCAP_ASSET_ENTRY=${assetEntry.toBase58()}`, `TCAP_RESERVE_STATE=${reserve.toBase58()}`, `TCAP_TIP_ROOT_COMMITMENT=${root.toLowerCase()}`, `TCAP_TIP=${tip.toBase58()}`,
     `TCAP_ACCEPTED_INTENT=${acceptedIntent.toBase58()}`, `TCAP_ACCEPTED_INTENT_ROOT=${acceptedIntentRoot}`, `TCAP_INTENT_COMMITMENT=${intentCommitment.toString("hex")}`, `TCAP_AMOUNT=${amount}`, `TCAP_EPOCH_ID=${epochId}`,
     `TCAP_INITIAL_COMMITMENT=${previous.toLowerCase()}`, `TCAP_NEW_COMMITMENT=${next}`, `TCAP_POLICY_COMMITMENT=${policy.toLowerCase()}`, `TCAP_VALID_AFTER_SLOT=${validAfter}`, `TCAP_EXPIRES_AT_SLOT=${expires}`, `TCAP_SEQUENCE=${sequence}`,
     `TCAP_PREVIOUS_TCAP_ROOT=${previousTcapRoot.toLowerCase()}`,
-    `TCAP_ASSET_COMMITMENT=${assetCommitment}`, `TCAP_AUTHORIZATION_DIGEST=${process.env.TCAP_AUTHORIZATION_DIGEST}`, `TCAP_NULLIFIER=${process.env.TCAP_NULLIFIER}`, `TCAP_REPLAY_NONCE=${process.env.TCAP_REPLAY_NONCE}`, `TCAP_GPRU_SCOPE_COMMITMENT=${process.env.TCAP_GPRU_SCOPE_COMMITMENT}`, `TCAP_TSN_SETTLEMENT_COMMITMENT=${process.env.TCAP_TSN_SETTLEMENT_COMMITMENT}`, `TCAP_TOKEN_ID=${tokenId}`,
+    `TCAP_ASSET_COMMITMENT=${assetCommitment}`, `TCAP_AUTHORIZATION_DIGEST=${authorizationDigest.toString("hex")}`, `TCAP_NULLIFIER=${nullifier.toString("hex")}`, `TCAP_REPLAY_NONCE=${replayNonce.toString("hex")}`, `TCAP_GPRU_SCOPE_COMMITMENT=${gpruScopeCommitment.toString("hex")}`, `TCAP_TSN_SETTLEMENT_COMMITMENT=${settlementCommitment.toString("hex")}`, `TCAP_TOKEN_ID=${tokenId}`,
     `TCAP_SNAPSHOT_KEY_HEX=${key.toString("hex")}`, `TCAP_PRIVATE_SNAPSHOT_JSON=${JSON.stringify({ token_balances: balances, created_at: snapshot.created_at.toString(), encrypted_record_locator: snapshot.encrypted_record_locator })}`,
   ];
   const out = path.resolve("protocol-tests/tcap-credit-devnet.env"); fs.writeFileSync(out, `${env.join("\n")}\n`, { mode: 0o600 });

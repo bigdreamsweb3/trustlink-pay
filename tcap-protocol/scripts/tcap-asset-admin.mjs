@@ -136,54 +136,55 @@ function enumName(values, value) {
 }
 
 export function decodeAssetEntry(data) {
-  assertLength(data, 283, "TcapAssetEntryV1");
+  assertLength(data, 287, "TcapAssetEntryV1");
   if (!hasDiscriminator(data, DISCRIMINATORS.asset)) throw new Error("Not a TcapAssetEntryV1 account");
   return {
     version: data.readUInt16LE(8),
     protocolVersion: data.readUInt16LE(10),
     registry: pubkey(data, 12),
-    tokenProgram: pubkey(data, 44),
-    mint: pubkey(data, 76),
-    registryVersion: data.readUInt32LE(108),
-    assetCommitment: hex(data, 112, 32),
-    reserve: pubkey(data, 144),
-    canonicalVault: pubkey(data, 176),
-    reserveAuthority: pubkey(data, 208),
-    decimals: data.readUInt8(240),
-    depositsEnabled: data.readUInt8(241) !== 0,
-    withdrawalsEnabled: data.readUInt8(242) !== 0,
-    paused: data.readUInt8(243) !== 0,
-    transferFeePolicy: data.readUInt8(244),
-    freezeAuthorityPolicy: data.readUInt8(245),
-    issuerControlPolicy: data.readUInt8(246),
-    governanceApproval: hex(data, 247, 32),
-    operationalStatusV1: enumName(STATUS_V1, data.readUInt8(279)),
-    riskStatusV1: enumName(RISK_V1, data.readUInt8(280)),
-    deprecated: data.readUInt8(281) !== 0,
-    bump: data.readUInt8(282),
+    tokenProgram: pubkey(data, 48),
+    mint: pubkey(data, 80),
+    registryVersion: data.readUInt32LE(112),
+    assetCommitment: hex(data, 116, 32),
+    reserve: pubkey(data, 148),
+    canonicalVault: pubkey(data, 180),
+    reserveAuthority: pubkey(data, 212),
+    decimals: data.readUInt8(244),
+    depositsEnabled: data.readUInt8(245) !== 0,
+    withdrawalsEnabled: data.readUInt8(246) !== 0,
+    paused: data.readUInt8(247) !== 0,
+    transferFeePolicy: data.readUInt8(248),
+    freezeAuthorityPolicy: data.readUInt8(249),
+    issuerControlPolicy: data.readUInt8(250),
+    governanceApproval: hex(data, 251, 32),
+    operationalStatusV1: enumName(STATUS_V1, data.readUInt8(283)),
+    riskStatusV1: enumName(RISK_V1, data.readUInt8(284)),
+    deprecated: data.readUInt8(285) !== 0,
+    bump: data.readUInt8(286),
   };
 }
 
 export function decodeReserve(data) {
-  assertLength(data, 161, "TcapReserveStateV1");
+  assertLength(data, 193, "TcapReserveStateV1");
   if (!hasDiscriminator(data, DISCRIMINATORS.reserve)) throw new Error("Not a TcapReserveStateV1 account");
   const result = {
     version: data.readUInt16LE(8),
     protocolVersion: data.readUInt16LE(10),
-    assetEntry: pubkey(data, 12),
-    canonicalVault: pubkey(data, 44),
-    reserveAuthority: pubkey(data, 76),
-    actualAssets: u64(data, 108),
-    pendingFundingLiabilities: u64(data, 116),
-    settledConfidentialLiabilities: u64(data, 124),
-    authorizedWithdrawalLiabilities: u64(data, 132),
-    reservedRefundLiabilities: u64(data, 140),
-    accountingEpoch: u64(data, 148),
-    fundingEnabled: data.readUInt8(156) !== 0,
-    paused: data.readUInt8(157) !== 0,
-    bump: data.readUInt8(158),
-    reserveAuthorityBump: data.readUInt8(159),
-    canonicalVaultBump: data.readUInt8(160),
+    assetState: pubkey(data, 12),
+    assetEntry: pubkey(data, 44),
+    canonicalVault: pubkey(data, 76),
+    reserveAuthority: pubkey(data, 108),
+    actualAssets: u64(data, 140),
+    pendingFundingLiabilities: u64(data, 148),
+    settledConfidentialLiabilities: u64(data, 156),
+    authorizedWithdrawalLiabilities: u64(data, 164),
+    reservedRefundLiabilities: u64(data, 172),
+    accountingEpoch: u64(data, 180),
+    fundingEnabled: data.readUInt8(188) !== 0,
+    paused: data.readUInt8(189) !== 0,
+    bump: data.readUInt8(190),
+    reserveAuthorityBump: data.readUInt8(191),
+    canonicalVaultBump: data.readUInt8(192),
   };
   result.totalLiabilities = (
     BigInt(result.pendingFundingLiabilities)
@@ -276,13 +277,13 @@ export function decodeGlobalConfig(data) {
     protocolVersion: data.readUInt16LE(10),
     minimumInstructionVersion: data.readUInt16LE(12),
     governanceAuthority: pubkey(data, 14),
-    emergencyAuthority: pubkey(data, 46),
-    registryAuthority: pubkey(data, 78),
-    approvedTsnProgram: pubkey(data, 110),
-    proofVerifierProgram: pubkey(data, 142),
-    proofVerifierEnabled: data.readUInt8(174) !== 0,
-    paused: data.readUInt8(175) !== 0,
-    assetRegistry: pubkey(data, 176),
+    registryAuthority: pubkey(data, 46),
+    assetRegistry: pubkey(data, 78),
+    emergencyAuthority: pubkey(data, 110),
+    approvedTsnProgram: pubkey(data, 142),
+    proofVerifierProgram: pubkey(data, 174),
+    proofVerifierEnabled: data.readUInt8(206) !== 0,
+    paused: data.readUInt8(207) !== 0,
     commitmentRootState: pubkey(data, 208),
     domainVersion: data.readUInt16LE(240),
     migrationState: data.readUInt8(242),
@@ -459,7 +460,10 @@ export async function inspectAsset(connection, mintValue, tokenProgramValue = nu
   }
   if (configInfo?.owner.equals(TCAP_PROGRAM_ID)) Object.assign(result.config, decodeGlobalConfig(configInfo.data));
   if (registryInfo?.owner.equals(TCAP_PROGRAM_ID)) Object.assign(result.registry, decodeRegistry(registryInfo.data));
-  if (entryInfo?.owner.equals(TCAP_PROGRAM_ID)) Object.assign(result.assetEntry, decodeAssetEntry(entryInfo.data));
+  if (entryInfo?.owner.equals(TCAP_PROGRAM_ID)) {
+    try { Object.assign(result.assetEntry, decodeAssetEntry(entryInfo.data)); }
+    catch { result.assetEntry.layout = "LEGACY_OR_TRUNCATED"; }
+  }
   if (governanceInfo?.owner.equals(TCAP_PROGRAM_ID)) {
     Object.assign(result.governancePolicy, decodeGovernancePolicy(governanceInfo.data));
   }
@@ -633,12 +637,9 @@ function resolveRpc(options) {
 }
 
 async function listAssets(connection) {
-  const accounts = await connection.getProgramAccounts(TCAP_PROGRAM_ID, {
-    commitment: "confirmed",
-    filters: [{ dataSize: 283 }],
-  });
+  const accounts = await connection.getProgramAccounts(TCAP_PROGRAM_ID, { commitment: "confirmed" });
   const entries = accounts
-    .filter(({ account }) => hasDiscriminator(account.data, DISCRIMINATORS.asset))
+    .filter(({ account }) => account.data.length >= 287 && hasDiscriminator(account.data, DISCRIMINATORS.asset))
     .map(({ pubkey: address, account }) => ({ address: address.toBase58(), ...decodeAssetEntry(account.data) }));
   const assets = await Promise.all(entries.map((entry) => inspectAsset(connection, entry.mint, entry.tokenProgram)));
   return {
@@ -933,6 +934,9 @@ export function validateMutationPrerequisites(commandValue, snapshot) {
   if (command === "sync-infrastructure" && (!snapshot.reserve?.exists || !snapshot.canonicalVault?.exists)) {
     return "SYNC_REQUIRES_EXISTING_RESERVE_AND_VAULT";
   }
+  if (snapshot.reserve?.exists && !reserveBindingsCanonical(snapshot)) {
+    return "RESERVE_BINDINGS_INVALID_REFUSING_TO_INVENT_OR_REBIND_SENSITIVE_PDA";
+  }
   const needsInfrastructure = [
     "activate",
     "resume",
@@ -1182,11 +1186,21 @@ export function buildGovernanceInstruction(commandValue, signerValue, snapshot, 
 }
 
 function resolveKeypairPath(options) {
-  const configured = options["governance-keypair"] ?? process.env.TCAP_GOVERNANCE_KEYPAIR;
+  const configured = options["governance-keypair"]
+    ?? process.env.TCAP_GOVERNANCE_KEYPAIR
+    ?? process.env.TCAP_GOVERNANCE_WALLET;
   if (!configured) {
     throw new Error(
-      "Governance signer is not configured. Pass --governance-keypair <path> or set TCAP_GOVERNANCE_KEYPAIR",
+      "Governance signer is not configured. Pass --governance-keypair <path> or set TCAP_GOVERNANCE_KEYPAIR/TCAP_GOVERNANCE_WALLET to a keypair path",
     );
+  }
+  try {
+    new PublicKey(configured);
+    throw new Error(
+      "TCAP_GOVERNANCE_WALLET is a public address only; provide the matching secret keypair through TCAP_GOVERNANCE_KEYPAIR or --governance-keypair",
+    );
+  } catch (error) {
+    if (String(error?.message).startsWith("TCAP_GOVERNANCE_WALLET is a public address")) throw error;
   }
   return configured.startsWith("~/")
     ? path.join(os.homedir(), configured.slice(2))
@@ -1213,13 +1227,40 @@ function loadGovernanceSigner(options) {
     secret.fill(0);
     throw new Error("Governance keypair file does not contain a valid Solana keypair");
   }
-  // web3.js may retain the supplied byte array. It is cleared in the
-  // mutation controller only after simulation/submission has completed.
-  if (signer.secretKey !== secret) secret.fill(0);
+  // Keep the secret material alive until the mutation controller has signed
+  // and serialized the transaction. Keypair.fromSecretKey may retain the
+  // supplied backing array; clearing it here produces invalid signatures.
+  const walletIdentity = process.env.TCAP_GOVERNANCE_WALLET;
+  if (walletIdentity) {
+    try {
+      const expectedWallet = new PublicKey(walletIdentity).toBase58();
+      if (expectedWallet !== signer.publicKey.toBase58()) {
+        signer.secretKey.fill(0);
+        throw new Error(`TCAP_GOVERNANCE_WALLET_MISMATCH: address ${expectedWallet} does not match supplied keypair ${signer.publicKey.toBase58()}`);
+      }
+    } catch (error) {
+      if (String(error?.message).startsWith("TCAP_GOVERNANCE_WALLET_MISMATCH:")) throw error;
+      // A non-public-key value is treated as a wallet/keypair path by the
+      // resolver above; the keypair itself remains the source of identity.
+    }
+  }
   return {
     signer,
     sourceLabel: path.basename(keypairPath),
   };
+}
+
+function reserveBindingsCanonical(snapshot) {
+  const reserve = snapshot?.reserve;
+  const addresses = snapshot?.addresses;
+  if (!addresses || !reserve || !["assetEntry", "canonicalVault", "reserveAuthority"].every((field) => field in reserve)) return true;
+  return Boolean(
+    reserve?.exists
+    && addresses
+    && reserve.assetEntry === addresses.assetEntry
+    && reserve.canonicalVault === addresses.canonicalVault
+    && reserve.reserveAuthority === addresses.reserveAuthority
+  );
 }
 
 async function loadRootSnapshot(connection) {
@@ -1238,11 +1279,12 @@ async function loadRootSnapshot(connection) {
 }
 
 function verifySignerAuthority(command, signer, snapshot) {
-  const expected = command === "register"
-    ? snapshot.config.registryAuthority
-    : snapshot.config.governanceAuthority;
+  const expected = snapshot.config.governanceAuthority;
   if (signer.publicKey.toBase58() !== expected) {
-    throw new Error(`Configured signer public key is not the required ${command === "register" ? "registry" : "governance"} authority`);
+    throw new Error(`GOVERNANCE_AUTHORITY_MISMATCH: Config.governanceAuthority requires ${expected}; supplied ${signer.publicKey.toBase58()}`);
+  }
+  if (snapshot.config.registryAuthority !== expected) {
+    throw new Error(`REGISTRY_AUTHORITY_MISMATCH: register requires Config.governanceAuthority ${expected}, but Config.registryAuthority is ${snapshot.config.registryAuthority}`);
   }
   return expected;
 }
@@ -1313,6 +1355,11 @@ export function verifyMutationPostcondition(commandValue, state) {
     expect(`governance deposits flag is ${enabled}`, state.governancePolicy?.depositsEnabled === enabled, state.governancePolicy?.depositsEnabled ?? null);
     expect(`asset-entry deposits flag is ${enabled}`, state.assetEntry?.depositsEnabled === enabled, state.assetEntry?.depositsEnabled ?? null);
     expect(`reserve funding flag is ${enabled}`, state.reserve?.fundingEnabled === enabled, state.reserve?.fundingEnabled ?? null);
+    if (state.addresses && state.reserve && ["assetEntry", "canonicalVault", "reserveAuthority"].every((field) => field in state.reserve)) {
+      expect("reserve binds canonical asset entry", state.reserve?.assetEntry === state.addresses.assetEntry, state.addresses.assetEntry, state.reserve?.assetEntry ?? null);
+      expect("reserve binds canonical vault", state.reserve?.canonicalVault === state.addresses.canonicalVault, state.addresses.canonicalVault, state.reserve?.canonicalVault ?? null);
+      expect("reserve binds canonical authority", state.reserve?.reserveAuthority === state.addresses.reserveAuthority, state.addresses.reserveAuthority, state.reserve?.reserveAuthority ?? null);
+    }
   } else if (command === "disable-settlements") {
     expect("settlements disabled", state.governancePolicy?.settlementsEnabled === false, state.governancePolicy?.settlementsEnabled ?? null);
     expect("public exit disabled", state.governancePolicy?.publicExitEnabled === false, state.governancePolicy?.publicExitEnabled ?? null);
@@ -1401,7 +1448,6 @@ async function mutationController(commandValue, connection, options, positional)
       feePayer: signer.publicKey,
       recentBlockhash: latest.blockhash,
     }).add(built.instruction);
-    transaction.sign(signer);
     const fee = await connection.getFeeForMessage(transaction.compileMessage(), "confirmed");
     const preview = {
       programId: TCAP_PROGRAM_ID.toBase58(),
@@ -1454,7 +1500,18 @@ async function mutationController(commandValue, connection, options, positional)
 
     let signature;
     try {
-      signature = await connection.sendRawTransaction(transaction.serialize(), {
+      // Sign only after the final simulation. This prevents any mutation of
+      // the transaction between signing and submission from producing a
+      // remote "Invalid signature" error.
+      transaction.sign(signer);
+      if (!transaction.verifySignatures()) {
+        throw new Error("LOCAL_SIGNATURE_VERIFICATION_FAILED");
+      }
+      const rawTransaction = transaction.serialize({
+        requireAllSignatures: true,
+        verifySignatures: true,
+      });
+      signature = await connection.sendRawTransaction(rawTransaction, {
         skipPreflight: false,
         maxRetries: 3,
       });
@@ -1536,7 +1593,7 @@ function usage() {
     },
     governedMutationCommands: [...MUTATION_COMMANDS],
     mutationSafety: "Every mutation loads live Devnet state, applies idempotency guards, builds a preview, simulates, and writes sanitized evidence. Submission occurs only with an explicit governance keypair and --confirm.",
-    governanceSigner: "Pass --governance-keypair <path> or set TCAP_GOVERNANCE_KEYPAIR. Secret bytes are never printed or serialized.",
+    governanceSigner: "Pass --governance-keypair <path>, set TCAP_GOVERNANCE_KEYPAIR, or set TCAP_GOVERNANCE_WALLET to a keypair path plus optional public address identity. Secret bytes are never printed or serialized.",
     settlementSafety: "Settlement enabling and account closure remain deliberately unavailable.",
     workflow: {
       previewAndSimulate: "Run a mutation without --confirm. Review the preview, simulation logs, and saved evidence path.",

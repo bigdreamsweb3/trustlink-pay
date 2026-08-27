@@ -1,0 +1,105 @@
+---
+title: "TSN Confidential Settlement via TCAP Credit Path"
+sidebarTitle: "Confidential Settlement"
+description: "Understand the live TSN to TCAP credit path, the ConfidentialSettlement ABI fields, and how the TSN CPI wrapper ensures authorized commitment transitions."
+---
+
+This page describes the live settlement path from TSN to TCAP. The current implementation is credit-only: TCAP advances the tip commitment after verifying a TSN ConfidentialSettlement authorization receipt. Confidential debits and exits are not live and remain proof-gated. The CrankerVault payout path is historical TSN architecture and is not part of the live TCAP credit flow.
+
+## Credit-only path overview
+
+After funding is confirmed, the Node constructs the TCAP credit authorization. The TSN authorization signer marks the transition as `ConfidentialSettlement`. The transaction sequence is:
+
+```text
+TSN funding confirmed
+  -> Node/Mother signs TCAP credit authorization
+  -> register_tsn_authorization_v1 creates the TCAP receipt
+  -> credit_tcap_tin_tip_v1 verifies and consumes receipt + nullifier
+  -> owner-authorized Node/Mother stores encrypted snapshot by new_commitment
+  -> private reader fetches tip, decrypts locally, verifies hash/sequence
+```
+
+TCAP owns the tip and credit transition. TSN remains responsible for epoch treasury, lease, and settlement coordination.
+
+## ConfidentialSettlement ABI
+
+TSN and TCAP share one authorization contract. The required fields are:
+
+```json title="ConfidentialSettlement required fields"
+{
+  "epoch_id": "string",
+  "intent_commitment": "string",
+  "amount": "string",
+  "settlement_commitment": "string",
+  "accepted_intent_root": "string",
+  "previous_tcap_root": "string",
+  "transition_type": "ConfidentialSettlement",
+  "asset_commitment": "string",
+  "authorization_digest": "string",
+  "verifier_domain_version": "string",
+  "valid_after_slot": "number",
+  "expires_at_slot": "number",
+  "replay_nonce": "string",
+  "tin_tip": "string",
+  "previous_commitment": "string",
+  "new_commitment": "string",
+  "sequence": "number",
+  "token_id": "string",
+  "policy_commitment": "string",
+  "gpru_scope_commitment": "string",
+  "nullifier": "string"
+}
+```
+
+## TcapCreditAuthorizationV1 handoff
+
+The Node constructs the additive handoff with exactly these fields:
+
+```text
+tip,
+previous_commitment,
+new_commitment,
+sequence,
+token_id,
+policy_commitment,
+gpru_scope_commitment,
+nullifier,
+valid_after_slot,
+expires_at_slot,
+tsn_settlement_commitment,
+epoch_id
+```
+
+This handoff never enters CrankerVault payout logic. It contains no token account, escrow account, public amount, debit, or exit instruction.
+
+## TSN CPI wrapper
+
+The TSN CPI wrapper creates the `AcceptedIntentV1` PDA, derives the root from a canonical field sequence, checks every bound field, and consumes the intent after the TCAP CPI succeeds. TCAP stores the same fields in its receipt and requires a `ConfidentialSettlement` transition before credit can consume it.
+
+A caller cannot supply an unrelated root or use a GPRU signature alone. The authorization is Mother-rooted and checked on chain.
+
+## Snapshot binding
+
+After `credit_tcap_tin_tip_v1` succeeds, the owner-authorized Node/Mother path stores an encrypted snapshot envelope under the opaque `new_commitment`. The private reader fetches the public tip, loads that envelope, decrypts locally, verifies the envelope bindings and commitment hash, and only then returns balances.
+
+The commitment binding is deliberately one-way:
+
+```text
+tip.current_commitment == snapshot.new_commitment
+snapshot.new_commitment = SHA256(canonical snapshot record excluding new_commitment)
+tip.sequence == snapshot.sequence
+```
+
+## What is visible and what is private
+
+The chain stores program accounts, commitments, sequence values, token IDs, policy commitments, scoped authorization commitments, nullifiers, and validity windows needed for enforcement. It does not store plaintext receiving roots, private balance values, master seeds, or snapshot plaintext.
+
+<Warning>
+  Earlier drafts incorrectly referenced `TSN_PRIVATE_SLOT_SETTLEMENT_V1` as a template name. The correct authorization is a `ConfidentialSettlement` receipt with the fields listed above. Do not use the retired template name in any integration.
+</Warning>
+
+## Related pages
+
+- [TCAP Architecture](/architecture/tcap) for the private balance layer
+- [Mother Authority](/architecture/mother-authority) for the settlement authorization boundary
+- [TCAP Credits](/developers/tcap-tip-credits) for the tip PDA and credit mechanics

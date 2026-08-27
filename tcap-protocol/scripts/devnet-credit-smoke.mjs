@@ -1,8 +1,10 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import {
   Connection,
+  Keypair,
   PublicKey,
   SystemProgram,
   Transaction,
@@ -45,6 +47,12 @@ const hex32 = (value, label) => {
 };
 const bytes32 = (value, label) => Buffer.from(hex32(value, label), "hex");
 const publicKey = (value, label) => { try { return new PublicKey(value); } catch { fail(`${label}_invalid`); } };
+function loadKeypair(value, label) {
+  const file = value?.startsWith("~/") ? path.join(os.homedir(), value.slice(2)) : value;
+  if (!file) fail(`${label}_missing`);
+  try { return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(file, "utf8")))); }
+  catch { fail(`${label}_unreadable_or_invalid`); }
+}
 const discriminator = (name) => createHash("sha256").update(`global:${name}`).digest().subarray(0, 8);
 const seed = (value) => Buffer.from(value, "utf8");
 
@@ -96,6 +104,12 @@ const newCommitment = hex32(process.env.TCAP_NEW_COMMITMENT, "TCAP_NEW_COMMITMEN
 const authorizationDigest = hex32(process.env.TCAP_AUTHORIZATION_DIGEST, "TCAP_AUTHORIZATION_DIGEST");
 const nullifier = hex32(process.env.TCAP_NULLIFIER, "TCAP_NULLIFIER");
 const pdas = deriveTcapPdas({ tipRootCommitment: rootCommitment, authorizationDigest, nullifier });
+const motherEscrow = publicKey(process.env.TSN_MOTHER_ESCROW, "TSN_MOTHER_ESCROW");
+const motherInfo = await connection.getAccountInfo(motherEscrow, "confirmed");
+if (!motherInfo || motherInfo.data.length < 40) fail("TSN_MOTHER_ESCROW_authority_unreadable");
+const motherAuthority = new PublicKey(motherInfo.data.subarray(8, 40));
+const motherSigner = loadKeypair(process.env.TSN_MOTHER_AUTHORITY_WALLET, "TSN_MOTHER_AUTHORITY_WALLET");
+if (!motherSigner.publicKey.equals(motherAuthority)) fail(`TSN_MOTHER_AUTHORITY_MISMATCH: configured signer ${motherSigner.publicKey.toBase58()} does not match Mother authority ${motherAuthority.toBase58()}`);
 for (const [label, value] of [
   ["TSN_MOTHER_ESCROW", process.env.TSN_MOTHER_ESCROW],
   ["TCAP_ASSET_ENTRY", process.env.TCAP_ASSET_ENTRY],
@@ -112,7 +126,7 @@ if (!existingTip) {
 
 const fields = {
   payer: wallet.publicKey,
-  motherEscrow: publicKey(process.env.TSN_MOTHER_ESCROW, "TSN_MOTHER_ESCROW"),
+  motherEscrow,
   assetEntry: publicKey(process.env.TCAP_ASSET_ENTRY, "TCAP_ASSET_ENTRY"),
   reserveState: publicKey(process.env.TCAP_RESERVE_STATE, "TCAP_RESERVE_STATE"),
   tip: pdas.tip,
@@ -124,6 +138,7 @@ const fields = {
   acceptedIntentRoot: hex32(process.env.TCAP_ACCEPTED_INTENT_ROOT, "TCAP_ACCEPTED_INTENT_ROOT"),
   previousTcapRoot: hex32(process.env.TCAP_PREVIOUS_TCAP_ROOT, "TCAP_PREVIOUS_TCAP_ROOT"),
   assetCommitment: hex32(process.env.TCAP_ASSET_COMMITMENT, "TCAP_ASSET_COMMITMENT"),
+  settlementCommitment: hex32(process.env.TCAP_TSN_SETTLEMENT_COMMITMENT, "TCAP_TSN_SETTLEMENT_COMMITMENT"),
   authorizationDigest,
   verifierDomainVersion: 1,
   validAfterSlot: BigInt(process.env.TCAP_VALID_AFTER_SLOT ?? "0"),
@@ -138,9 +153,17 @@ const fields = {
   nullifier,
   tsnSettlementCommitment: hex32(process.env.TCAP_TSN_SETTLEMENT_COMMITMENT, "TCAP_TSN_SETTLEMENT_COMMITMENT"),
 };
-const register = buildTsnRegisterTcapCreditAuthorizationInstruction(fields);
 const credit = buildCreditTcapTinTipInstruction(fields);
-await sendAndConfirmTransaction(connection, new Transaction().add(register, credit), [wallet], { commitment: "confirmed" });
+// The two instructions do not fit in one legacy Solana transaction. Register
+// the TSN authorization first, then submit the dependent TCAP credit.
+const registerTransaction = new Transaction().add(buildTsnRegisterTcapCreditAuthorizationInstruction({ ...fields, payer: motherSigner.publicKey }));
+registerTransaction.feePayer = wallet.publicKey;
+const registerSignature = await sendAndConfirmTransaction(connection, registerTransaction, [wallet, motherSigner], { commitment: "confirmed" });
+console.log(`Registered TSN TCAP credit authorization: ${registerSignature}`);
+const creditTransaction = new Transaction().add(credit);
+creditTransaction.feePayer = wallet.publicKey;
+const creditSignature = await sendAndConfirmTransaction(connection, creditTransaction, [wallet], { commitment: "confirmed" });
+console.log(`Submitted TCAP credit: ${creditSignature}`);
 
 const snapshotInput = JSON.parse(process.env.TCAP_PRIVATE_SNAPSHOT_JSON ?? "{}");
 const snapshot = {

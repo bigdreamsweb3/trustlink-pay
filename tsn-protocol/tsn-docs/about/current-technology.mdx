@@ -1,0 +1,45 @@
+---
+title: "Current TrustLink Technology on Solana Devnet"
+sidebarTitle: "Current Technology"
+description: "What is live on Solana Devnet today: TSN intents, TIN registry, GPRU routing, Mother Escrow, Node verification, Cranker submission, Epoch Treasury, TCAP credit-only transitions, and encrypted snapshots."
+---
+
+TrustLink Labs develops and tests its protocol stack on Solana Devnet. The current implementation covers the full payment path from intent to encrypted snapshot, with explicit boundaries for what is included and what remains future work.
+
+## What is on Devnet today
+
+- **TSN payment intents** — Sender-signed intents binding amount, mint, fee limits, expiry, nonce, and recipient route commitment.
+- **TIN registry** — 10-digit Transfer Identity Numbers issued and resolved by TIP, with route commitments and encrypted identity envelopes.
+- **GPRU authorization and routing** — Non-custodial authorization identity derived from the TIN privacy-receiving root for scoped settlement permissions.
+- **Mother Escrow authority** — Epoch coordination and `ConfidentialSettlement` authorization through the one-time `SettlementDna` PDA.
+- **TSN Node verification** — Stateless signature verification, route commitment matching, nonce/replay checks, and short-lived permit signing.
+- **Cranker submission** — Leased execution of the exact authorized transaction without mutation of bound fields.
+- **Epoch Treasury** — Protocol-controlled accounting for aggregate funding and settlement liability; no per-payment escrow or vault.
+- **TCAP credit-only transitions** — `credit_tcap_tin_tip_v1` advances the tip commitment and consumes the TSN authorization receipt and nullifier atomically.
+- **Encrypted owner snapshots** — AES-GCM encrypted balance state stored off-chain; owner device decrypts locally after verifying commitment and sequence.
+
+## Devnet program identifiers
+
+| Component | Program ID | Status |
+| --- | --- | --- |
+| TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | Active Devnet |
+| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` | Active Devnet |
+| TCAP | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` | Credit-only Devnet |
+| Stable-TCAP faucet | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
+
+These identifiers are provided for reproducible Devnet research. They do not imply mainnet readiness beyond the documented credit path.
+
+## Explicitly out of scope
+
+The following are separate milestones and are not presented as active production capabilities:
+
+- Recurring payments and subscription-provider execution.
+- Confidential debits and exits (proof-gated and disabled).
+- Mainnet deployment.
+- Formal cryptographic audits.
+- Perfect unlinkability.
+
+## Related topics
+
+- [Getting started](/developers/getting-started)
+- [Security invariants](/security/invariants)

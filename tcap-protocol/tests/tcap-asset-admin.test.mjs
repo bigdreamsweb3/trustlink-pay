@@ -34,26 +34,26 @@ test("derives stable canonical asset and policy PDAs", () => {
 });
 
 test("decodes V1 asset and reserve liabilities without unsafe numbers", () => {
-  const entry = Buffer.alloc(283);
+  const entry = Buffer.alloc(287);
   discriminator("TcapAssetEntryV1").copy(entry);
   key(1).toBuffer().copy(entry, 12);
-  SPL_TOKEN_PROGRAM_ID.toBuffer().copy(entry, 44);
-  key(2).toBuffer().copy(entry, 76);
-  key(3).toBuffer().copy(entry, 144);
-  key(4).toBuffer().copy(entry, 176);
-  key(5).toBuffer().copy(entry, 208);
-  entry.writeUInt8(6, 240);
-  entry.writeUInt8(1, 241);
-  entry.writeUInt8(1, 279);
-  entry.writeUInt8(1, 280);
+  SPL_TOKEN_PROGRAM_ID.toBuffer().copy(entry, 48);
+  key(2).toBuffer().copy(entry, 80);
+  key(3).toBuffer().copy(entry, 148);
+  key(4).toBuffer().copy(entry, 180);
+  key(5).toBuffer().copy(entry, 212);
+  entry.writeUInt8(6, 244);
+  entry.writeUInt8(1, 245);
+  entry.writeUInt8(1, 283);
+  entry.writeUInt8(1, 284);
   assert.equal(decodeAssetEntry(entry).depositsEnabled, true);
   assert.equal(decodeAssetEntry(entry).operationalStatusV1, "ACTIVE");
 
-  const reserve = Buffer.alloc(161);
+  const reserve = Buffer.alloc(193);
   discriminator("TcapReserveStateV1").copy(reserve);
-  reserve.writeBigUInt64LE(10_000_000_000_000_000n, 108);
-  reserve.writeBigUInt64LE(9_000_000_000_000_000n, 116);
-  reserve.writeBigUInt64LE(1_000_000_000_000_000n, 124);
+  reserve.writeBigUInt64LE(10_000_000_000_000_000n, 140);
+  reserve.writeBigUInt64LE(9_000_000_000_000_000n, 148);
+  reserve.writeBigUInt64LE(1_000_000_000_000_000n, 156);
   assert.equal(decodeReserve(reserve).actualAssets, "10000000000000000");
   assert.equal(decodeReserve(reserve).totalLiabilities, "10000000000000000");
 });

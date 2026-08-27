@@ -1,0 +1,10 @@
+import { PublicKey } from "@solana/web3.js";
+import { connection, parseOptions, inspect, requireCurrentAsset, writeDefaults, envValue, TCAP, seed } from "./common.mjs";
+const options = parseOptions(process.argv.slice(2));
+const mint = options.mint ?? process.env.npm_config_mint ?? envValue("TCAP_MINT");
+if (!mint) throw new Error("Usage: npm run network:set-defaults -- --mint=<devnet mint>");
+const asset = await inspect(connection(), mint); requireCurrentAsset(asset);
+const a = asset.addresses; const entry = asset.assetEntry; const [root] = PublicKey.findProgramAddressSync([seed("tcap:commitment-root:v1")], TCAP);
+writeDefaults({ TCAP_PROGRAM_ID: asset.program.address, TSN_PROGRAM_ID: "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V", TCAP_MINT: mint, TCAP_MINT_DECIMALS: entry.decimals, TCAP_TOKEN_PROGRAM: asset.mint.tokenProgram, TCAP_CONFIG: a.config, TCAP_ASSET_REGISTRY: a.registry, TCAP_COMMITMENT_ROOT: envValue("TCAP_COMMITMENT_ROOT", root.toBase58()), TCAP_ASSET_ENTRY: a.assetEntry, TCAP_RESERVE_STATE: a.reserve, TCAP_GOVERNANCE_POLICY: a.governancePolicy, TCAP_EXTENSION_POLICY: a.extensionPolicy, TCAP_AMOUNT: envValue("TCAP_AMOUNT", "1") });
+console.log(`Updated ${process.env.TCAP_DEVNET_DEFAULTS_FILE ?? "protocol-tests/tcap-credit-devnet.defaults.env"} from confirmed Devnet accounts.`);
+console.log(`mint=${mint}\nassetEntry=${a.assetEntry}\nreserve=${a.reserve}\ngovernancePolicy=${a.governancePolicy}\nextensionPolicy=${a.extensionPolicy}`);

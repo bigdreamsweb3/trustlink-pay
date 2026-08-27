@@ -1,0 +1,49 @@
+---
+title: "TSN Replay Protection: Nullifiers, Sequence, and Slot Windows"
+sidebarTitle: "Replay Protection"
+description: "How TSN prevents replay attacks using nullifiers, strictly increasing sequence, Solana slot windows, signed-field binding, and first-valid-wins epoch slots."
+---
+
+TSN uses multiple overlapping mechanisms to prevent replay at every layer of the payment path. A replay attempt must simultaneously bypass a one-time nullifier, a strictly increasing sequence, a bounded slot window, and a signed-field binding. Any single failure rejects the transaction before token movement.
+
+## Mechanisms
+
+### Nullifier (one-time atomic consume)
+
+Every TCAP transition carries a one-time nullifier. The TCAP program records the nullifier in a nullifier PDA and atomically rejects any instruction that supplies an already-consumed value. Nullifier consumption happens in the same transaction as tip advancement and receipt consumption. There is no path to un-consume a nullifier.
+
+### Sequence (strictly increasing per tip)
+
+The `TCapTinTipV1` state stores a transition sequence initialized at zero. Each credit must supply the exact next sequence. TCAP checks that the supplied sequence equals `tip.sequence + 1`. A stale or repeated sequence fails immediately.
+
+### valid\_after\_slot and expires\_at\_slot
+
+The `ConfidentialSettlement` receipt includes `valid_after_slot` and `expires_at_slot` bounds. The Solana program checks the current slot against this window. A transaction submitted too early or too late fails before any state change. This binds the authorization to a specific time interval on the Solana ledger.
+
+### replay\_nonce in the ConfidentialSettlement receipt
+
+The receipt includes a `replay_nonce` that is part of the signed authorization. Reuse of the same nonce with the same authorization scope fails because the nullifier and sequence checks have already advanced. A different nonce requires a new signed authorization from the sender and Node.
+
+### Signed-field binding
+
+The sender signs a canonical message that binds amount, mint, recipient route commitment, route version, expiry, and nonce. The Node signs a permit that binds the opaque slot, commitment digest, nullifier, lease, amount, mint, recipient, and expiry. Any mutation of a bound field invalidates the signature, causing the Solana program to reject the instruction.
+
+## EpochClaimSlot first-valid-wins
+
+Settlement and refund share the same `EpochClaimSlot` PDA. The first valid transaction initializes the slot to either `SETTLED` or `REFUNDED`. The account creation and write lock make these operations mutually exclusive. Any later operation against the resolved slot fails before token movement. This applies even if an attacker holds a valid permit for the same slot: once the slot is consumed, the permit is worthless.
+
+## Attack table
+
+| Attack | Mechanism that stops it |
+| --- | --- |
+| Replay same credit transaction | Nullifier already consumed; sequence already advanced |
+| Replay with old permit after lease expiry | `expires_at_slot` window passed; lease no longer valid |
+| Replay with mutated amount or recipient | Signed-field binding invalidates Node permit and sender signature |
+| Steal a permit and submit early | `valid_after_slot` rejects before slot window opens |
+| Submit settlement and refund for same slot | `EpochClaimSlot` first-valid-wins; second fails before transfer |
+| Skip a sequence to fast-forward state | Sequence must be exactly `tip.sequence + 1`; arbitrary jumps fail |
+
+## Related topics
+
+- [Replay and retries](/developers/replay-and-retries) covers developer handling of nonce, sequence, and retry logic.
+- [Security invariants](/security/invariants) lists the canonical rules that include nullifier and sequence constraints.

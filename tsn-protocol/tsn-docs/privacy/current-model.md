@@ -1,3 +1,0 @@
-# Current Privacy Model
-
-<!-- TODO -->

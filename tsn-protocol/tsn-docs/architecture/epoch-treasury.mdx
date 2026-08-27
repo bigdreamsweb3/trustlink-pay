@@ -1,0 +1,38 @@
+---
+title: "Epoch Treasury: Protocol Liability Accounting"
+sidebarTitle: "Epoch Treasury"
+description: "Learn how the Epoch Treasury records aggregate funding and settlement liability using opaque slots and why it is protocol-controlled accounting, not a user balance."
+---
+
+The Epoch Treasury is protocol-controlled accounting for aggregate funding and settlement liability. It is not a user balance container. Funding sends SPL tokens directly to the epoch's treasury token account, and the treasury only tracks the aggregate pending liability. No individual payment escrow, commitment PDA, payment vault, or claim slot is created during funding.
+
+## How funding works
+
+When a sender funds an epoch, the signed transaction sends tokens directly to the epoch treasury token account. The funding transaction deliberately excludes the opaque slot. The treasury increments its aggregate pending liability to reflect the incoming funds.
+
+| State | Operation | Effect |
+| --- | --- | --- |
+| Open epoch | Funding | SPL tokens deposited to epoch treasury token account; pending liability incremented |
+| Open epoch | Settlement | Slot marked `SETTLED`; liability decremented; reimbursement completed for historical TSN payout |
+| Open epoch | Refund | Slot marked `REFUNDED`; exact amount returned from treasury to sender ATA; liability decremented |
+| Closing | Epoch close request | Gated by zero pending liability and complete opaque-slot resolution |
+| Closed | Epoch closed | No further settlement or refund accepted |
+
+## Opaque slots and the treasury
+
+The opaque slot is derived by Node/Mother with HMAC-SHA256 using `TSN_NODE_CLAIM_SLOT_HMAC_SECRET`. It is deliberately absent from the funding transaction. The `EpochClaimSlot` PDA is derived from the epoch treasury and opaque slot, and the TSN program initializes it on the first valid settlement or refund. This means the slot does not appear on chain until settlement or refund occurs.
+
+The first valid operation wins atomically. A slot marked `SETTLED` or `REFUNDED` can never be reused.
+
+## Operational visibility
+
+Operational dashboards may show aggregate counts, transaction signatures, and slot resolution status. They never decrypt or persist the private payment binding. The binding is encrypted off-chain by Node/Mother, and the encryption key never leaves Node/Mother.
+
+## Epoch close gate
+
+An epoch can close only after pending liability reaches zero and every opaque slot is resolved as `SETTLED` or `REFUNDED`. This is enforced by the TSN program, not just by Node attestation.
+
+## Related pages
+
+- [Mother authority](/architecture/mother-authority) for how the SettlementDna PDA and opaque slots are managed
+- [Funding and accepted intent](/developers/funding-and-accepted-intent) for the developer flow from funding to intent acceptance

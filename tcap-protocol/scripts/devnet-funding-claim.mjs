@@ -61,11 +61,11 @@ function decodeAsset(data) {
 
 function decodeReserve(data) {
   return {
-    actualAssets: data.readBigUInt64LE(108),
-    pendingLiabilities: data.readBigUInt64LE(116),
-    confidentialLiabilities: data.readBigUInt64LE(124),
-    authorizedWithdrawalLiabilities: data.readBigUInt64LE(132),
-    reservedRefundLiabilities: data.readBigUInt64LE(140),
+    actualAssets: data.readBigUInt64LE(140),
+    pendingLiabilities: data.readBigUInt64LE(148),
+    confidentialLiabilities: data.readBigUInt64LE(156),
+    authorizedWithdrawalLiabilities: data.readBigUInt64LE(164),
+    reservedRefundLiabilities: data.readBigUInt64LE(172),
   };
 }
 

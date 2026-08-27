@@ -1,0 +1,166 @@
+---
+title: "TSN: Identity-First Settlement for Stablecoins on Solana"
+sidebarTitle: "Introduction"
+description: "TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by TrustLink Labs."
+---
+
+**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [TrustLink Labs](/about/trustlink-labs). Senders authorize payments against a portable identity, not a raw public key. Operators route and submit those payments without the power to change what the sender signed.
+
+<CardGroup cols={3}>
+  <Card title="Identity-first" icon="fingerprint">
+    Payments are bound to a Transfer Identity Number (TIN) and authorized through GPRU scopes. Route metadata stays off-chain; the chain sees only commitments.
+  </Card>
+
+  <Card title="Intent-based" icon="signature">
+    The sender signs an intent that fixes recipient, amount, mint, nonce, and validity window. Every downstream role verifies against that intent byte-for-byte.
+  </Card>
+
+  <Card title="Privacy-preserving" icon="lock">
+    TCAP records balance transitions as commitments and owner-decryptable snapshots. The public ledger reveals movement, not amounts or parties.
+  </Card>
+</CardGroup>
+
+## The core idea
+
+Most payment networks collapse three responsibilities into one operator: authorization, routing, and submission. TSN separates them.
+
+<Note>
+  Transport does not authorize, and authorization does not require transport to be honest. Nodes, Receivers, and Crankers move traffic through TSN, but they cannot forge a Mother signature, rewrite sender-signed fields, or replay a settlement.
+</Note>
+
+That separation is enforced by cryptography and on-chain checks, not by trust in any operator. See [Separation of concerns](/overview/separation-of-concerns) for the full boundary.
+
+## The five roles
+
+| Role | Owns | Cannot do |
+| --- | --- | --- |
+| **Sender \+ TIN** | Signs the payment intent under a portable identity | — |
+| **GPRU routing** | Resolves route metadata privately, off-chain | Change intent fields |
+| **Mother authority** | Governs settlement authorization on-chain | Rewrite sender-signed terms |
+| **Node** | Verifies signatures, sequence, expiry, and policy | Sign as Mother or submit transactions |
+| **Receiver \+ Cranker** | Stores verified work; pays fees; submits to Solana | Change recipient, mint, amount, nonce, nullifier, or DNA |
+
+Every role fails closed. A Node that cannot verify rejects. A Cranker that submits a mutated transaction is rejected by the on-chain program. A replayed settlement hits a spent nullifier.
+
+## Follow a payment through TSN
+
+<Steps>
+  <Step title="Sender signs a payment intent">
+    An off-chain intent binds recipient, amount, mint, nonce, and validity window to the sender's TIN. It is never public and never re-signed downstream.
+  </Step>
+  <Step title="Node verifies">
+    A stateless Node checks signatures, TIN and GPRU bindings, sequence, expiry, and policy. The Node holds no signing authority and can only accept or reject.
+  </Step>
+  <Step title="Receiver stores and leases the work">
+    The Receiver is durable infrastructure for verified work. It moves the job through `RECEIVED → NODE_VERIFYING → VERIFIED → CRANKER_LEASED → SUBMITTED → CONFIRMED` under short leases and strict state versions.
+  </Step>
+  <Step title="Cranker submits atomically on Solana">
+    The Cranker pays fees and submits `tsn_fund_epoch_treasury` and `tsn_accept_intent` in one transaction. The on-chain program re-checks stored state, signed fields, sequence, and nullifiers before it commits.
+  </Step>
+  <Step title="Epoch Treasury settles; TCAP records the delta">
+    The Epoch Treasury moves funds and tracks liability. TCAP writes a commitment and an owner-decryptable snapshot so the recipient can reconcile a private balance without exposing amounts on-chain.
+  </Step>
+</Steps>
+
+Read the full 28-step trace in [How TSN works](/overview/how-it-works).
+
+## What a payment intent looks like
+
+<CodeGroup>
+
+```ts intent.ts
+import { signPaymentIntent } from "@trustlink/tsn-sdk";
+
+const intent = await signPaymentIntent({
+  tin: "1029384756",              // sender's Transfer Identity Number
+  recipientTin: "5647382910",     // recipient TIN, resolved via GPRU
+  mint: "EPjFWdd5AufqSSqeM2q...", // SPL mint
+  amount: 2_500_000n,             // base units
+  nonce: crypto.randomUUID(),
+  validAfterSlot: currentSlot,
+  expiresAtSlot: currentSlot + 300n,
+});
+
+await tsn.submit(intent); // Node -> Receiver -> Cranker -> Solana
+```
+
+```rust program.rs
+// On-chain: the ConfidentialSettlement authorization the program verifies
+pub struct ConfidentialSettlement {
+    pub epoch_id: u64,
+    pub intent_commitment: [u8; 32],
+    pub amount: u64,
+    pub settlement_commitment: [u8; 32],
+    pub accepted_intent_root: [u8; 32],
+    pub previous_tcap_root: [u8; 32],
+    pub transition_type: TransitionType,
+    pub asset_commitment: [u8; 32],
+    pub authorization_digest: [u8; 32],
+    pub verifier_domain_version: u16,
+    pub valid_after_slot: u64,
+    pub expires_at_slot: u64,
+    pub replay_nonce: [u8; 32],
+    pub tin_tip: Pubkey,
+    pub previous_commitment: [u8; 32],
+    pub new_commitment: [u8; 32],
+    pub sequence: u64,
+    pub token_id: u32,
+    pub policy_commitment: [u8; 32],
+    pub gpru_scope_commitment: [u8; 32],
+    pub nullifier: [u8; 32],
+}
+```
+
+</CodeGroup>
+
+The intent above is what the sender approves. The `ConfidentialSettlement` struct is what the Solana program re-verifies at submit time. Nothing between the two can change a field without invalidating both.
+
+## Core primitives
+
+<AccordionGroup>
+  <Accordion title="TIN and GPRU: identity and routing" icon="id-card">
+    A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the **Transfer Identity Protocol (TIP)**. The encrypted master seed is sealed to the owner wallet via a `wallet-owner-signature-v1` envelope and authorizes derivation of **GPRU** scopes, a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. See [Identity and routing](/architecture/identity-and-routing).
+  </Accordion>
+
+  <Accordion title="Mother authority" icon="shield-halved">
+    Mother is the root TSN authority and epoch controller: a Program-Derived Address whose stored `authority` is a governed external keypair. Mother materializes one-time `SettlementDna` PDAs at an HMAC-SHA256 slot and authorizes settlement. See [Mother authority](/architecture/mother-authority).
+  </Accordion>
+
+  <Accordion title="Settlement DNA, nullifiers, and sequence" icon="dna">
+    Settlement DNA binds payout parameters to a one-time slot. Nullifiers, `AcceptedIntentV1` PDAs, sequence checks, and validity windows enforce single-use consumption. See [Replay protection](/security/replay-protection).
+  </Accordion>
+
+  <Accordion title="Epoch Treasury" icon="vault">
+    The Epoch Treasury holds epoch-level liquidity and tracks liability against Mother. Funds and pending obligations are separated so operators cannot spend against unaccepted intents. See [Epoch Treasury](/architecture/epoch-treasury).
+  </Accordion>
+
+  <Accordion title="TCAP: confidential balance accounting" icon="lock">
+    The **Transfer Confidential Asset Protocol (TCAP)** records balance transitions as commitments and encrypted snapshots pinned to a `TCapTinTipV1` PDA. The live path is credit-only through `credit_tcap_tin_tip_v1`; debits and exits are proof-gated. See [TCAP](/architecture/tcap).
+  </Accordion>
+</AccordionGroup>
+
+## Built by TrustLink Labs
+
+TSN is developed and maintained by [TrustLink Labs](/about/trustlink-labs), a research and engineering organization building open infrastructure for identity-aware, privacy-conscious blockchain payments. TSN is the network. TrustLink Pay is the reference application on top of it.
+
+Follow the work on [GitHub](https://github.com/Trustlink-Labs) and [X](https://x.com/TrustLinkLabs).
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="How TSN works" icon="diagram-project" href="/overview/how-it-works">
+    Trace a payment intent from signature to on-chain settlement across all five roles, step by step.
+  </Card>
+
+  <Card title="Architecture" icon="cubes" href="/overview/architecture">
+    See identity, authorization, verification, transport, settlement, and TCAP as one system on Solana.
+  </Card>
+
+  <Card title="Getting started" icon="code" href="/developers/getting-started">
+    Set up devnet, resolve a TIN, and submit your first authorized payment intent through TSN.
+  </Card>
+
+  <Card title="Security invariants" icon="shield" href="/security/invariants">
+    The guarantees TSN enforces at every boundary, and what no operator can rewrite.
+  </Card>
+</CardGroup>

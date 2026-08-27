@@ -1,0 +1,73 @@
+---
+title: "What TrustLink Labs Is Building: Protocols and Products"
+sidebarTitle: "What We're Building"
+description: "Concrete artifacts from TrustLink Labs: TSN protocol, TIN registry, GPRU authorization, TCAP credit-only transitions, TrustLink Pay reference app, and TSN SDK."
+---
+
+TrustLink Labs builds open infrastructure for stablecoin payments. The current stack includes protocol programs, network services, a reference application, and SDKs. Everything is developed on Solana and designed to separate identity, authorization, settlement, and private balance accounting into independent layers.
+
+## Concrete artifacts
+
+### TSN protocol
+
+The Transfer Settlement Network is the coordination layer for payments. It includes:
+
+- Solana programs for intent acceptance, epoch treasury, and settlement enforcement.
+- TSN Receiver for durable ingress, work storage, and short leases.
+- TSN Node for stateless verification, route decisions, and permit signing.
+- TSN RPC Gateway for controlled Solana RPC transport.
+
+### TIN registry
+
+The Transfer Identity Protocol issues and resolves 10-digit Transfer Identity Numbers. A TIN separates the identity a user shares from the wallet or protected receiving route used for settlement.
+
+### GPRU authorization and routing
+
+GPRU is a TSN-derived settlement identity for authorization and routing only. It is non-custodial: it never holds funds, balances, or custody keys. It is derived from a TIN privacy-receiving root, settlement commitment, epoch context, and authorization scope.
+
+### TCAP
+
+The Transfer Confidential Asset Protocol manages credit-only tip transitions and encrypted owner snapshots. TCAP stores commitments, sequence, policy, and nullifiers on chain. Private balance values remain in AES-GCM encrypted snapshots that the owner device decrypts locally.
+
+### TrustLink Pay
+
+TrustLink Pay is the reference application on top of TSN. It demonstrates native TIN-to-TIN payments, wallet-to-TIN routes, TIN-to-wallet public exits, and wallet-to-wallet compatibility flows. All routes use the same intent, verification, lease, commitment, and settlement boundaries.
+
+### TSN SDK
+
+The `@trustlink/tsn-sdk` package provides TypeScript interfaces for intent construction, route resolution, permit validation, and snapshot encryption.
+
+<CardGroup cols={2}>
+  <Card title="Architecture overview" icon="building" href="/overview/architecture">
+    How TSN, TIN, GPRU, and TCAP fit together.
+  </Card>
+
+  <Card title="TCAP deep dive" icon="lock" href="/architecture/tcap">
+    Credit-only transitions, commitments, and encrypted snapshots.
+  </Card>
+
+  <Card title="Developer quickstart" icon="code" href="/developers/getting-started">
+    Build your first TSN payment intent.
+  </Card>
+
+  <Card title="TrustLink Pay" icon="external-link" href="https://trustlink-pay.vercel.app">
+    Try the reference application.
+  </Card>
+</CardGroup>
+
+## Scope statement
+
+The following are separate milestones and are not presented as active production capabilities:
+
+- Recurring payments and subscription-provider execution.
+- Mainnet deployment.
+- Formal cryptographic audits.
+- Perfect unlinkability.
+- Confidential debits and exits (these remain proof-gated and disabled).
+
+## Related topics
+
+- [About TrustLink Labs](/about/trustlink-labs)
+- [Engineering principles](/about/engineering-principles)
+- [Current technology](/about/current-technology)
+- [Contribute](/about/contribute)

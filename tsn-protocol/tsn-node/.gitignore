@@ -10,3 +10,4 @@ __pycache__/
 .tsn-node-test-store.json
 .venv/
 logs/
+keys/

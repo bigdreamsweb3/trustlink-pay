@@ -26,10 +26,16 @@ const u16 = (value) => { const b = Buffer.alloc(2); b.writeUInt16LE(value); retu
 const u32 = (value) => { const b = Buffer.alloc(4); b.writeUInt32LE(value); return b; };
 const u64 = (value) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(value)); return b; };
 const concat = (...parts) => Buffer.concat(parts);
+const REPLAY_NONCE_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_REPLAY_NONCE_V1");
+const GPRU_SCOPE_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_GPRU_SCOPE_V1");
+const SETTLEMENT_COMMITMENT_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_COMMITMENT_V1");
+const NULLIFIER_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_NULLIFIER_V1");
+const AUTHORIZATION_DIGEST_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_AUTHORIZATION_V1");
 
-const TSN_EPOCH_TREASURY_SEED = seed("tsn:epoch-treasury:v1");
-const TSN_EPOCH_LEDGER_SEED = seed("tsn:epoch-ledger:v1");
-const TSN_EPOCH_TREASURY_AUTHORITY_SEED = seed("tsn:epoch-treasury-authority:v1");
+// These seeds must match the deployed TSN Rust constants exactly.
+const TSN_EPOCH_TREASURY_SEED = seed("tsn_epoch_treasury");
+const TSN_EPOCH_LEDGER_SEED = seed("tsn_epoch_ledger");
+const TSN_EPOCH_TREASURY_AUTHORITY_SEED = seed("tsn_epoch_treasury_authority");
 const TSN_MOTHER_ESCROW_SEED = seed("tsn_mother_escrow");
 const TSN_ACCEPTED_INTENT_SEED = seed("tsn:accepted-intent:v1");
 
@@ -55,12 +61,52 @@ export function deriveAcceptedIntentPda({ motherEscrow, epochId, intentCommitmen
   ], TSN_PROGRAM_ID)[0];
 }
 
-/** Funding and acceptance use the same payer and are intended to be added to one Transaction. */
+export function deriveConfidentialSettlementFields(fields) {
+  const intent = bytes32(fields.intentCommitment, "intentCommitment");
+  const tipRoot = bytes32(fields.tipRootCommitment, "tipRootCommitment");
+  const policy = bytes32(fields.policyCommitment, "policyCommitment");
+  const replay = bytes32(fields.replayNonce, "replayNonce");
+  const gpruScope = digest(concat(
+    GPRU_SCOPE_DOMAIN, u64(fields.epochId), intent, u64(fields.amount), u32(fields.tokenId),
+    tipRoot, policy, replay, u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+  ));
+  const nullifier = digest(concat(NULLIFIER_DOMAIN, u64(fields.epochId), intent, tipRoot, replay));
+  const settlement = digest(concat(
+    SETTLEMENT_COMMITMENT_DOMAIN, u64(fields.epochId), intent, u64(fields.amount), u32(fields.tokenId),
+    tipRoot, bytes32(fields.assetCommitment, "assetCommitment"), policy, gpruScope, replay, nullifier,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+  ));
+  return { gpruScopeCommitment: gpruScope, nullifier, settlementCommitment: settlement };
+}
+
+export function deriveConfidentialReplayNonce(fields) {
+  return digest(concat(
+    REPLAY_NONCE_DOMAIN, u64(fields.epochId), u64(fields.amount), u32(fields.tokenId),
+    pubkey(fields.tokenMint).toBuffer(), bytes32(fields.tipRootCommitment, "tipRootCommitment"),
+    bytes32(fields.policyCommitment, "policyCommitment"), u64(fields.validAfterSlot),
+    u64(fields.expiresAtSlot),
+  ));
+}
+
+export function deriveConfidentialAuthorizationDigest(fields) {
+  return digest(concat(
+    AUTHORIZATION_DIGEST_DOMAIN, u16(fields.version ?? 1), pubkey(fields.tsnProgramId ?? TSN_PROGRAM_ID).toBuffer(),
+    u64(fields.epochId), bytes32(fields.intentCommitment, "intentCommitment"), u64(fields.amount),
+    bytes32(fields.settlementCommitment, "settlementCommitment"), bytes32(fields.acceptedIntentRoot, "acceptedIntentRoot"),
+    bytes32(fields.previousTcapRoot, "previousTcapRoot"), Buffer.from([1]), bytes32(fields.assetCommitment, "assetCommitment"),
+    u16(fields.verifierDomainVersion ?? 1), u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.replayNonce, "replayNonce"), pubkey(fields.tip).toBuffer(),
+    bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"),
+    u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"),
+  ));
+}
+
+/** Funding and acceptance are added to one atomic Transaction. Funder and
+ * Mother authority may be different signers; the caller must sign with both. */
 export function buildFundEpochTreasuryInstruction(fields) {
   if (BigInt(fields.amount) <= 0n) throw new Error("funding amount must be positive");
-  const payer = pubkey(fields.payer ?? fields.funder);
   const funder = pubkey(fields.funder ?? fields.payer);
-  if (!payer.equals(funder)) throw new Error("funding and acceptance must use one fee payer/funder");
   const pdas = deriveTsnFundingPdas(fields);
   return new TransactionInstruction({
     programId: TSN_PROGRAM_ID,
@@ -82,9 +128,7 @@ export function buildFundEpochTreasuryInstruction(fields) {
 }
 
 export function buildAcceptIntentInstruction(fields) {
-  const payer = pubkey(fields.payer ?? fields.authority);
   const authority = pubkey(fields.authority ?? fields.payer);
-  if (!payer.equals(authority)) throw new Error("funding and acceptance must use one fee payer/authority");
   const acceptedIntent = fields.acceptedIntent
     ? pubkey(fields.acceptedIntent)
     : deriveAcceptedIntentPda(fields);

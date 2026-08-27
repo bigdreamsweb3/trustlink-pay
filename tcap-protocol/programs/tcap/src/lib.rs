@@ -69,6 +69,79 @@ pub mod tcap {
         asset_governance::raise_minimum_instruction_version_v2(ctx)
     }
 
+    pub fn register_governed_asset_v2(
+        ctx: Context<RegisterGovernedAssetV2>,
+        args: RegisterGovernedAssetArgsV2,
+    ) -> Result<()> {
+        asset_governance::register_governed_asset_v2(ctx, args)
+    }
+
+    pub fn migrate_legacy_asset_policy_v2(
+        ctx: Context<MigrateLegacyAssetPolicyV2>,
+        args: MigrateLegacyAssetPolicyArgsV2,
+    ) -> Result<()> {
+        asset_governance::migrate_legacy_asset_policy_v2(ctx, args)
+    }
+
+    pub fn set_asset_approval_v2(
+        ctx: Context<GovernAssetV2>,
+        new_status: TcapAssetApprovalStatusV2,
+    ) -> Result<()> {
+        asset_governance::set_asset_approval_v2(ctx, new_status)
+    }
+
+    pub fn set_asset_settlement_policy_v2(
+        ctx: Context<GovernAssetV2>,
+        settlements_enabled: bool,
+        public_exit_enabled: bool,
+        confidential_settlement_enabled: bool,
+    ) -> Result<()> {
+        asset_governance::set_asset_settlement_policy_v2(
+            ctx,
+            settlements_enabled,
+            public_exit_enabled,
+            confidential_settlement_enabled,
+        )
+    }
+
+    pub fn initialize_governed_reserve_v2(
+        ctx: Context<InitializeGovernedReserveV2>,
+    ) -> Result<()> {
+        asset_governance::initialize_governed_reserve_v2(ctx)
+    }
+
+    pub fn initialize_governed_vault_v2(
+        ctx: Context<InitializeGovernedVaultV2>,
+    ) -> Result<()> {
+        asset_governance::initialize_governed_vault_v2(ctx)
+    }
+
+    pub fn sync_governed_asset_infrastructure_v2(
+        ctx: Context<SyncGovernedAssetInfrastructureV2>,
+    ) -> Result<()> {
+        asset_governance::sync_governed_asset_infrastructure_v2(ctx)
+    }
+
+    pub fn set_governed_deposit_policy_v2(
+        ctx: Context<SetGovernedDepositPolicyV2>,
+        enabled: bool,
+    ) -> Result<()> {
+        asset_governance::set_governed_deposit_policy_v2(ctx, enabled)
+    }
+
+    pub fn set_asset_operational_status_v2(
+        ctx: Context<ManageOperationalAssetV2>,
+        new_status: TcapAssetOperationalStatusV2,
+    ) -> Result<()> {
+        asset_governance::set_asset_operational_status_v2(ctx, new_status)
+    }
+
+    pub fn revoke_asset_approval_v2(
+        ctx: Context<ManageOperationalAssetV2>,
+    ) -> Result<()> {
+        asset_governance::revoke_asset_approval_v2(ctx)
+    }
+
     pub fn initialize_nullifier_registry_v1(
         ctx: Context<InitializeNullifierRegistryV1>,
         domain_separator: [u8; 32],

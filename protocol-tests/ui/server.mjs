@@ -865,18 +865,20 @@ function decodeAssetEntry(data) {
   };
 }
 function decodeReserveState(data) {
-  if (!hasDiscriminator(data, "TcapReserveStateV1") || data.length < 161) return null;
+  if (!hasDiscriminator(data, "TcapReserveStateV1") || data.length < 193) return null;
   return {
-    assetEntry: new PublicKey(data.subarray(12, 44)).toBase58(),
-    futureVault: new PublicKey(data.subarray(44, 76)).toBase58(),
-    reserveAuthority: new PublicKey(data.subarray(76, 108)).toBase58(),
-    actualAssets: data.readBigUInt64LE(108).toString(),
-    pendingLiabilities: data.readBigUInt64LE(116).toString(),
-    settledConfidentialLiabilities: data.readBigUInt64LE(124).toString(),
-    authorizedWithdrawalLiabilities: data.readBigUInt64LE(132).toString(),
-    reservedRefundLiabilities: data.readBigUInt64LE(140).toString(),
-    fundingEnabled: data[156] === 1,
-    paused: data[157] === 1
+    assetState: new PublicKey(data.subarray(12, 44)).toBase58(),
+    assetEntry: new PublicKey(data.subarray(44, 76)).toBase58(),
+    futureVault: new PublicKey(data.subarray(76, 108)).toBase58(),
+    reserveAuthority: new PublicKey(data.subarray(108, 140)).toBase58(),
+    actualAssets: data.readBigUInt64LE(140).toString(),
+    pendingLiabilities: data.readBigUInt64LE(148).toString(),
+    settledConfidentialLiabilities: data.readBigUInt64LE(156).toString(),
+    authorizedWithdrawalLiabilities: data.readBigUInt64LE(164).toString(),
+    reservedRefundLiabilities: data.readBigUInt64LE(172).toString(),
+    accountingEpoch: data.readBigUInt64LE(180).toString(),
+    fundingEnabled: data[188] === 1,
+    paused: data[189] === 1
   };
 }
 

@@ -1,0 +1,59 @@
+---
+title: "TSN Authority and Key Material: Who Holds What"
+sidebarTitle: "Authority & Keys"
+description: "Every key and credential in TSN: sender wallet, TIN owner commitment, Node permit, Mother authority, encrypted binding, and owner snapshot key. Includes owner, authorization scope, and rotation model."
+---
+
+TSN uses distinct key material for each role. No single key dominates the protocol, and no operator receives plaintext secrets belonging to another boundary. This page enumerates the key types, their owners, what they authorize, and how they rotate.
+
+## Key material table
+
+| Key | Owner | What it authorizes | Rotation model |
+| --- | --- | --- | --- |
+| Sender/owner root wallet \+ `wallet-owner-signature-v1` envelope | Authorized user device | Canonical TIN-access authorization, local data key derivation, GPRU authority for the exact scope | Wallet rotation creates a new owner binding; old TIN requires re-authorization |
+| TIN owner-key commitment | TIN registry (public) | Verification material for route integrity and ownership claims | Bound to the current wallet owner; changes with wallet rotation |
+| Mother authority key | Mother / TSN program | Creation of the one-time `SettlementDna` PDA at the derived opaque slot | Program-governed; rotated via program upgrade or governance instruction |
+| Node-signed Ed25519 permit key | TSN Node | Short-lived permit binding opaque slot, commitment, nullifier, lease, amount, mint, recipient, expiry | Per-lease generation; expires no later than the Receiver lease |
+| Node/Mother encrypted-binding encryption key | Node/Mother only | Encryption of full payment binding off-chain | Never leaves Node/Mother; rotated via key ceremony or service migration |
+| Node-only route reference key | TSN Node | Short-lived recipient-route reference keyed by work ID | Expires and is deleted automatically; not persisted in durable records |
+| Cranker Solana fee-payer key | Cranker operator | Transaction submission fees | Standard Solana key rotation; no authorization semantics |
+| Owner-held TCAP snapshot key | Authorized user device | AES-GCM decryption of private balance snapshot | Owner-controlled; derived from wallet authorization or local secure storage |
+
+## Key boundaries
+
+### Sender/owner wallet
+
+The root wallet signs the `wallet-owner-signature-v1` envelope. This authorizes access to the TIN, derives the local data key on the current device, decrypts the seed locally, and derives the GPRU authority scoped to the exact authorization context. The plaintext seed and derived child keys never leave the device.
+
+### TIN owner-key commitment
+
+This is public verification material, not private authority. It lets the Node verify that a route commitment matches the current owner without revealing the owner’s private keys or the TIN’s encrypted material.
+
+### Mother authority
+
+Only Mother authority can materialize the `SettlementDna` PDA. This is program-enforced. There is no permit signer beyond the Node-signed permit and the Mother-rooted authorization.
+
+### Node permit
+
+The Node signs a short-lived Ed25519 permit per lease. The permit binds every field required for settlement and expires no later than the Receiver lease. The Solana program re-verifies the permit signature and every bound field on chain.
+
+### Encrypted binding key
+
+Node/Mother encrypt the full payment binding with a key that never leaves their trust boundary. The Cranker never receives this key, the ciphertext, or the plaintext binding.
+
+### Node-only route reference
+
+After verification, the Node keeps a separate, short-lived route reference keyed by work ID. It contains the recipient TIN, signed route commitment, route version, and expiry. It is not mixed into the sender's durable payment record and is deleted when it expires.
+
+### Cranker fee-payer
+
+The Cranker pays Solana transaction fees. The fee-payer key has no authorization over amount, mint, recipient, commitments, or policy. Changing any bound field causes the on-chain instruction to fail regardless of who pays the fee.
+
+### Owner snapshot key
+
+The owner device holds a snapshot key for AES-GCM decryption of `EncryptedTCapBalanceSnapshotV1`. The key and plaintext never leave the device. The owner fetches the public tip commitment, locates the matching ciphertext, decrypts locally, and verifies envelope bindings and commitment hash before trusting the balance.
+
+## Related topics
+
+- [Mother authority](/architecture/mother-authority) explains the epoch escrow and DNA model.
+- [Security invariants](/security/invariants) lists the canonical rules enforced by these keys.

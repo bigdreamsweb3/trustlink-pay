@@ -1,0 +1,65 @@
+---
+title: "TSN Fail-Closed Design: Reject Before Any Token Moves"
+sidebarTitle: "Fail-Closed"
+description: "TSN fails closed: any failed check rejects the operation with no partial settlement. Learn the ordered checks from Receiver ingress through Solana program enforcement."
+---
+
+TSN is designed to fail closed. Every check in the payment path is ordered so that a failure at any stage aborts the operation before tokens move. There are no fallback paths, no partial credits, and no trusted off-chain attestation that bypasses on-chain rules.
+
+## Check order
+
+### 1. Receiver ingress
+
+The Receiver accepts the signed intent and route commitment from the sender. It validates the format, binds the work ID, and records the state as `RECEIVED`. The Receiver does not verify signatures or authorize settlement. If the payload is malformed or the lease cannot be created, the work is rejected immediately.
+
+### 2. Node verification
+
+The Node takes a short lease and performs the following checks in order:
+
+1. Canonical message and signatures are valid.
+2. The request exactly matches the signed message.
+3. The nonce has not been used and the authorization has not expired.
+4. The recipient TIN's current route matches the signed route commitment and route version.
+5. The amount, mint, transaction commitment, and program constraints match the authorized plan.
+
+If any check fails, the Receiver records `REJECTED`. A Cranker can never lease rejected or merely received work.
+
+### 3. Cranker lease validation
+
+The Cranker requests a lease on verified work. The Receiver checks that the work is in `VERIFIED` state, that the lease window is still open, and that no other Cranker holds an active lease. If the lease is expired or already held, the Cranker cannot proceed.
+
+### 4. Solana program enforcement
+
+The Cranker submits the exact authorized transaction. The TSN program re-checks every bound field on chain:
+
+- Lease holder identity
+- Route commitment
+- Mint
+- Amount
+- Expiry
+- One-time/replay state (nullifier and slot)
+- Node permit signature and bound fields
+
+A valid transaction signature alone is not enough. If any bound field differs, the instruction fails before any token movement.
+
+<Warning>
+  Node attestations are off-chain evidence and are not authorization by themselves. The Solana program always re-checks permit, lease, expiry, nullifier, and commitment fields on chain. A compromised Node cannot convince the program to skip these checks.
+</Warning>
+
+## Failure outcomes
+
+| Failure | Outcome | Retry possibility |
+| --- | --- | --- |
+| Malformed intent at Receiver | Rejected; no work ID assigned | Sender may resubmit a corrected intent |
+| Signature mismatch at Node | `REJECTED`; no Cranker lease possible | Sender must re-sign with the correct canonical message |
+| Expired nonce or authorization | `REJECTED` | Sender must create a new intent with a fresh nonce and expiry |
+| Route commitment/version mismatch | `REJECTED` | Sender must resolve the current route and re-commit |
+| Lease expired before Cranker submits | Work returns to `VERIFIED`; another Cranker may lease | Original Cranker may re-lease if still valid |
+| On-chain field mismatch | Transaction fails with program error | Cranker must submit the exact authorized values |
+| Nullifier already consumed | Transaction fails before token movement | No retry; this is a replay attempt |
+| Slot already SETTLED or REFUNDED | Transaction fails before token movement | No retry; first valid transaction already won |
+
+## Related topics
+
+- [Security invariants](/security/invariants) lists the canonical rules enforced at each check.
+- [Replay and retries](/developers/replay-and-retries) provides developer guidance on handling failure and retry.

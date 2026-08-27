@@ -1,0 +1,155 @@
+---
+title: "Get Started with TSN: Sign, Submit, and Settle on Devnet"
+sidebarTitle: "Getting Started"
+description: "Set up Solana tooling, register a TIN, sign a payment intent, and submit it to the TSN Receiver on Devnet. Follow the complete path from SDK installation to on-chain confirmation."
+---
+
+This guide walks you through your first payment on the Transfer Settlement Network (TSN). You will install the tooling, register a Transfer Identity Number (TIN), construct a signed payment intent locally, submit it to the TSN Receiver, and observe the full work lifecycle through to Solana confirmation. TSN is a Solana-first settlement coordination layer. The live path uses credit-only TCAP tips, not public payout accounts.
+
+## Prerequisites
+
+Before you start, make sure you have:
+
+- Solana CLI installed and configured for Devnet
+- A Solana wallet with Devnet SOL
+- An authorized user device with the TrustLink SDK
+- Access to a TSN Node endpoint you operate or trust
+
+TSN Receiver, Node, and Cranker are operator-run services. As an integrator, you use the `@trustlink/tsn-sdk` or point at a TSN Node endpoint you trust.
+
+## Step-by-step
+
+<Steps>
+  <Step title="Install tooling and set environment variables">
+    Install the SDK and configure the Devnet endpoints:
+
+    ```bash title="Install SDK"
+    npm install @trustlink/tsn-sdk @trustlink/tcap-sdk
+    ```
+
+    Set the required environment variables:
+
+    ```bash title="Environment variables"
+    export TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+    export TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
+    export SOLANA_CLUSTER=devnet
+    ```
+  </Step>
+  <Step title="Obtain or register a TIN">
+    A TIN is a portable 10-digit identity issued by the Transfer Identity Protocol (TIP). Register or resolve one through the TIN registry program on Devnet.
+
+    ```ts title="Resolve a TIN"
+    import { resolveTin } from "@trustlink/tsn-sdk/tin";
+    
+    const tinRecord = await resolveTin({
+      tin: "1234567890",
+      registryProgram: "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+    });
+    ```
+
+    The registry returns the active route commitment, route version, and policy commitment. Your device never shares the privacy-receiving root with the registry or the Node.
+  </Step>
+  <Step title="Construct and sign a payment intent locally">
+    Build the canonical payment message on your authorized device. The intent binds amount, mint, fee limits, expiry, a one-time nonce, sender authorization, transaction commitment, recipient route commitment, and route version.
+
+    ```json title="Illustrative intent shape"
+    {
+      "amount": "1000000",
+      "tokenMint": "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h",
+      "feeLimit": "5000",
+      "expiresAtSlot": 320000000,
+      "nonce": "a1b2c3d4e5f6...",
+      "senderAuthorization": "signed-canonical-message...",
+      "transactionCommitment": "commitment-digest...",
+      "recipientRouteCommitment": "route-commitment-digest...",
+      "routeVersion": 1
+    }
+    ```
+
+    Use the GPRU helpers to derive the authorization scope:
+
+    ```ts title="Derive GPRU identity"
+    import { deriveGpruIdentity, createCanonicalGpruAuthorizationMessage } from "@trustlink/tsn-sdk/gpru";
+    
+    const gpruIdentity = deriveGpruIdentity({
+      tinPrivacyReceivingRoot,
+      settlementCommitment,
+      epochContext,
+      authorizationScope,
+    });
+    
+    const authMessage = createCanonicalGpruAuthorizationMessage({
+      tinPrivacyReceivingRoot,
+      settlementCommitment,
+      epochContext,
+      authorizationScope,
+      gpruIdentity,
+    });
+    ```
+  </Step>
+  <Step title="Submit to the TSN Receiver">
+    Send the signed intent to the Receiver endpoint:
+
+    ```ts title="Submit intent"
+    const response = await fetch(`${TSN_RECEIVER_URL}/v1/intent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(signedIntent),
+    });
+    const { workId } = await response.json();
+    ```
+
+    The Receiver records the work as `RECEIVED` and leases it to the Node for verification.
+  </Step>
+  <Step title="Observe the work lifecycle">
+    Poll the Receiver for status transitions:
+
+    ```text
+    RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED
+    ```
+
+    `REJECTED` is terminal. A lease expiration may return eligible work to the queue.
+  </Step>
+  <Step title="Confirm on Solana">
+    Once the status reaches `CONFIRMED`, fetch the transaction signature from the Receiver and verify it on Solana Explorer (Devnet cluster):
+
+    ```bash
+    solana confirm -ud <transaction_signature>
+    ```
+
+    The on-chain program enforces the commitment, lease, nullifier, and expiry.
+  </Step>
+</Steps>
+
+## Devnet program IDs
+
+| Program | Program ID | Status |
+| --- | --- | --- |
+| TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | Active Devnet |
+| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` | Active Devnet |
+| TCAP | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` | Credit-only Devnet |
+| Stable-TCAP faucet | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
+
+<Info>
+  The Stable-TCAP faucet is Devnet-only and valueless. It is not USDC or any production stablecoin.
+</Info>
+
+## Next steps
+
+<CardGroup>
+  <Card title="Intent Lifecycle" icon="code-branch" href="/developers/payment-intent-lifecycle">
+    Understand how intents move from signed message to on-chain settlement.
+  </Card>
+
+  <Card title="Funding & Acceptance" icon="coins" href="/developers/funding-and-accepted-intent">
+    Learn how epoch treasury funding and the AcceptedIntent PDA work.
+  </Card>
+
+  <Card title="Confidential Settlement" icon="lock" href="/developers/confidential-settlement">
+    Explore the TCAP credit-only settlement path and the ConfidentialSettlement ABI.
+  </Card>
+
+  <Card title="Security Invariants" icon="shield" href="/security/invariants">
+    Review the safety properties enforced by the TSN protocol.
+  </Card>
+</CardGroup>

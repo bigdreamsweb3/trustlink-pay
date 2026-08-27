@@ -1,0 +1,85 @@
+---
+title: "TCAP Tip Credits and Commitment Transitions"
+sidebarTitle: "TCAP Credits"
+description: "Learn how TCAP tip state PDAs track private balance commitments, how credit-only transitions work, and how encrypted snapshots bind to the on-chain sequence."
+---
+
+The TCAP tip state PDA (`TCapTinTipV1`) stores the current balance commitment frontier for a TIN relationship. A TCAP "tip" is not a gratuity. It is the versioned account that advances from one commitment to the next as credits arrive. This page explains the tip fields, the credit-only transition, and how encrypted snapshots bind to on-chain state.
+
+## Tip PDA fields
+
+The `TCapTinTipV1` account stores:
+
+| Field | Purpose |
+| --- | --- |
+| `current_commitment` | The active balance commitment after the most recent transition |
+| `transition_sequence` | Strictly increasing transition number |
+| `policy_commitment` | The policy binding accepted transitions |
+| `last_transition_nullifier` | The most recently consumed nullifier |
+| `frozen` | Whether the tip is frozen |
+| `version` | State version for migration |
+| `bump` | PDA bump seed |
+
+The tip does **not** store a TIN, privacy-receiving root, seed, plaintext balance, snapshot key, or token account.
+
+## Deriving the tip PDA
+
+```ts title="Derive tip PDA"
+const [tipPda] = PublicKey.findProgramAddressSync(
+  [Buffer.from("tcap:tin-tip:v1"), blindedRootCommitment],
+  tcapProgramId
+);
+```
+
+Initialization rejects zero blinded-root, current, and policy commitments. It stores the state version, initializes sequence to zero, and nullifier to zero. The emitted event includes only the new account public key.
+
+## Initialize a tip
+
+```ts title="Initialize TCAP TIN tip"
+await tcap.initializeTcapTinTipV1({
+  blindedTinsPrivacyReceivingRootCommitment: blindedRootCommitment,
+  currentCommitment,
+  policyCommitment,
+});
+```
+
+## Credit a tip
+
+`credit_tcap_tin_tip_v1` is the phase-one credit-only transition. It accepts **only** a `ConfidentialSettlement` TSN authorization receipt. The instruction checks:
+
+- The receipt's exact tip matches the target PDA
+- `previous_commitment` matches the tip's current commitment
+- `new_commitment` is the authorized successor
+- `sequence` is exactly one greater than the tip's sequence
+- `token_id` matches the asset registry
+- `policy_commitment` matches the tip
+- `gpru_scope_commitment` matches the receipt
+- `nullifier` has not been consumed
+- `valid_after_slot` and `expires_at_slot` are within the current slot window
+
+The asset entry must be active, approved, and unpaused. The transition atomically consumes the nullifier and receipt while advancing the tip.
+
+The emitted event contains **only** the tip PDA, sequence, compact token ID, and an opaque transition digest. It never emits commitments, raw TIN values, receiving roots, payer identity, balances, token accounts, or encrypted snapshots.
+
+## Encrypted snapshot binding
+
+After a successful credit, the owner-authorized Node/Mother path stores an encrypted snapshot. The owner device fetches the tip commitment, locates the matching ciphertext, decrypts locally, and verifies envelope bindings and commitment hash.
+
+The binding rules are:
+
+```text
+tip.current_commitment == snapshot.new_commitment
+snapshot.new_commitment = SHA256(canonical snapshot record excluding new_commitment)
+tip.sequence == snapshot.sequence
+```
+
+The snapshot key and plaintext never leave the owner device.
+
+## Credit-only boundary
+
+The live path is credit-only. Confidential debits and exits are not live and remain proof-gated. The CrankerVault payout path is historical TSN architecture and is not part of the live TCAP credit flow.
+
+## Related pages
+
+- [TCAP Architecture](/architecture/tcap) for the private balance protocol design
+- [Confidential Settlement](/developers/confidential-settlement) for the TSN authorization ABI

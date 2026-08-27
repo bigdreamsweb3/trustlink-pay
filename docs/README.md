@@ -3,15 +3,16 @@
 Read these documents in order:
 
 1. [Current architecture](./CURRENT-ARCHITECTURE.md) — canonical TIN, privacy-receiving root, GPRU, TSN Epoch Treasury, Mother, TCAP (Transfer Confidential Asset Protocol) and encrypted snapshots.
-2. [Identity and TIN](./identity-and-tin.md) — the payment identity, privacy-receiving root, resolution and encrypted boundaries.
-3. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
-4. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
-5. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
-6. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
-7. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
-8. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
-9. [Security](./SECURITY.md) — plain-language security principles.
-10. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
+2. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
+3. [Identity and TIN](./identity-and-tin.md) — the payment identity, privacy-receiving root, resolution and encrypted boundaries.
+4. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
+5. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+6. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
+7. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
+8. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
+9. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
+10. [Security](./SECURITY.md) — plain-language security principles.
+11. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
 Supporting references:
 

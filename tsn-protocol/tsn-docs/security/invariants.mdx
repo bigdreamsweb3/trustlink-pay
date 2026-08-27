@@ -1,0 +1,62 @@
+---
+title: "TSN Protocol Invariants: What Must Always Hold"
+sidebarTitle: "Invariants"
+description: "The 11 protocol invariants TSN and TCAP enforce on Solana: signed field binding, single-consume slots and nullifiers, sequence monotonicity, and commitment binding."
+---
+
+TSN's security rests on a small set of invariants that the sender device, Node, Mother authority, and Solana programs jointly enforce. If any invariant fails, the operation is rejected before any token movement. This page lists the invariants a compliant integration must respect.
+
+## Authorization invariants
+
+**(a) Signed field binding.** Recipient, mint, amount, expiry, and one-time nonce are bound by the sender's canonical signature and, at settlement time, by the Node-signed permit. Any mutation invalidates the signature.
+
+**(b) Opaque slot absence at funding.** The opaque epoch slot is deliberately absent from the funding transaction. It first appears on chain only at settlement or refund. Funding therefore cannot be correlated to a specific slot from public state alone.
+
+**(c) Single-consume EpochClaimSlot.** The `EpochClaimSlot` PDA has two mutually exclusive terminal states: `SETTLED` or `REFUNDED`. First valid transaction wins atomically; a later operation on a resolved slot fails before token movement.
+
+**(d) Mother-only DNA materialization.** Only the Mother authority can materialize the one-time `SettlementDna` PDA at a derived slot. The TSN program rejects any attempt to create the PDA under a different signer.
+
+**(e) DNA consumption on first valid operation.** The TSN program consumes the DNA on the first valid settlement or refund. A consumed DNA can never be replaced. An active DNA can be replaced only after its lease expires.
+
+## Credit invariants
+
+**(f) ConfidentialSettlement required for credit.** TCAP credit accepts only a `ConfidentialSettlement` TSN authorization receipt. A GPRU signature, hash-only payload, or placeholder proof cannot substitute.
+
+**(g) Single-consume nullifier.** The `nullifier` is consumed atomically alongside the receipt. Any later attempt to reuse it fails.
+
+**(h) Strictly increasing sequence.** The tip PDA's `sequence` is strictly increasing. TCAP requires the next expected value; any other value is rejected.
+
+**(i) Commitment binding.**
+
+```text
+tip.current_commitment == snapshot.new_commitment
+tip.sequence == snapshot.sequence
+```
+
+Any owner snapshot that does not match the on-chain tip is not a valid successor.
+
+## Confidentiality invariants
+
+**(j) Plaintext secrecy.** Plaintext receiving root, private balance values, TIN master seeds, and snapshot plaintext never touch the chain and are never sent to a Receiver, Node, Cranker, or application backend.
+
+**(k) Epoch closure.** An epoch can only close when pending liability is zero and every opaque slot in the epoch is resolved (`SETTLED` or `REFUNDED`).
+
+## Related pages
+
+<CardGroup cols={2}>
+  <Card title="Threat Model" icon="shield-halved" href="/security/threat-model">
+    Adversary classes and what each can achieve.
+  </Card>
+
+  <Card title="Replay Protection" icon="rotate-left" href="/security/replay-protection">
+    Mechanisms that defeat replay and double-spend.
+  </Card>
+
+  <Card title="Fail-Closed" icon="lock" href="/security/fail-closed">
+    Ordered check flow from ingress to on-chain enforcement.
+  </Card>
+
+  <Card title="Operator Boundaries" icon="split" href="/security/operator-boundaries">
+    Data visibility per operator role.
+  </Card>
+</CardGroup>

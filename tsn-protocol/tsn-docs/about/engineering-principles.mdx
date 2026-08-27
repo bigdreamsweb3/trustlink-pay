@@ -1,0 +1,56 @@
+---
+title: "TrustLink Labs Engineering Principles"
+sidebarTitle: "Engineering Principles"
+description: "Four principles guide TrustLink Labs: privacy by architecture, user ownership, verifiable execution, and modular open infrastructure."
+---
+
+TrustLink Labs follows four engineering principles that shape protocol design, implementation priorities, and integration boundaries.
+
+## Privacy by architecture
+
+Privacy begins by limiting unnecessary relationships and disclosures before a transaction reaches the ledger. Cryptographic commitments and confidential-asset research complement that architecture; they do not replace careful system boundaries.
+
+In practice, this means:
+
+- The Receiver stores redacted work and never receives plaintext roots or private snapshots.
+- The Node verifies and redacts recipient identity from durable records.
+- The opaque slot is deliberately absent from funding and first appears only at settlement or refund.
+- TCAP stores only commitments, sequence, and nullifiers on chain; private balances live in owner-encrypted snapshots.
+
+## User ownership
+
+Users control their identity authorities, device authorization, keys, and assets. Infrastructure coordinates execution without receiving user private keys.
+
+In practice, this means:
+
+- The owner wallet signs the TIN access authorization.
+- The owner device derives the GPRU scope and decrypts the snapshot locally.
+- No operator (Receiver, Node, Cranker) receives the plaintext TIN master seed or private child keys.
+- The Mother authority creates settlement vouchers but cannot spend user funds.
+
+## Verifiable execution
+
+Receiver records, Node decisions, Cranker leases, canonical commitments, and Solana program checks provide an auditable path from intent to settlement.
+
+In practice, this means:
+
+- Every state change is recorded: `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, `REJECTED`.
+- The Node signs a permit binding every canonical field; the program re-checks each field on chain.
+- The owner can verify the tip commitment, sequence, and snapshot binding independently.
+- No step relies on unverifiable off-chain trust.
+
+## Modular open infrastructure
+
+Identity, protected receiving, settlement coordination, asset control, SDKs, and applications have distinct interfaces so researchers and developers can review or build on the part they need.
+
+In practice, this means:
+
+- TIN, GPRU, and TCAP are separate protocol components with narrow responsibilities.
+- The TSN SDK exposes independent modules for identity, routing, intent, and snapshot handling.
+- Researchers can audit the Solana programs without running the full application stack.
+- Developers can integrate TIN resolution or TCAP credit without adopting the full TrustLink Pay UI.
+
+## Related topics
+
+- [Security invariants](/security/invariants)
+- [Trust model](/architecture/trust-model)

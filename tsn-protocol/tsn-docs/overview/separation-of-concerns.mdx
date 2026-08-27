@@ -1,0 +1,40 @@
+---
+title: "Why TSN Separates Authorization from Transaction Submission"
+sidebarTitle: "Separation of Concerns"
+description: "Learn how TSN splits authorization, verification, and submission across distinct roles for safer, more resilient payments."
+---
+
+TSN is built on a core design principle: the party that authorizes a payment is never the same party that submits it to the chain. The sender signs the intent. The Mother authority authorizes acceptance and produces Settlement DNA. The Node verifies. The Receiver leases work. The Cranker submits the transaction and pays the fee. No single role can both approve and execute a payment, which limits the blast radius of any single compromise.
+
+This separation yields four concrete benefits.
+
+## Censorship resistance at the transport layer
+
+Because the Cranker cannot change the payment terms, Crankers compete on liveness and fee coverage, not on filtering or censoring recipients. If one Cranker refuses to submit, another can pick up the same authorized transaction and submit it. The authorization is the scarce resource; submission is a commodity serviceBecause the Cranker cannot change the payment terms, Crankers compete on liveness and fee coverage, not on filtering or censoring recipients. If one Cranker refuses to submit, another can pick up the same authorized transaction and submit it. The authorization is the scarce resource; submission is a commodity service.
+
+## Safe operation under compromised transportSafe operation under compromised transport
+
+If a Node, Receiver, or Cranker is compromised, the attacker cannot redirect funds, change amounts, or alter the mint. The worst case is a liveness failure or a failed submission, both of which are recoverable. The private keys that matter for fund movement never reside in the transport layerIf a Node, Receiver, or Cranker is compromised, the attacker cannot redirect funds, change amounts, or alter the mint. The worst case is a liveness failure or a failed submission, both of which are recoverable. The private keys that matter for fund movement never reside in the transport layer.
+
+## Clear operational responsibilitiesClear operational responsibilities
+
+Each role has a narrow, well-defined job. A Node operator knows they verify signatures and structure, nothing more. A Cranker operator knows they pay fees and submit exactly the authorized payload. A Receiver operator knows they store state and lease work. This clarity makes it easier to run infrastructure, onboard operators, and reason about incidentsEach role has a narrow, well-defined job. A Node operator knows they verify signatures and structure, nothing more. A Cranker operator knows they pay fees and submit exactly the authorized payload. A Receiver operator knows they store state and lease work. This clarity makes it easier to run infrastructure, onboard operators, and reason about incidents.
+
+## Reproducible reasoning for security reviewReproducible reasoning for security review
+
+When you audit a TSN deployment, you can inspect each layer independently. The authorization layer checks signatures and DNA against the Mother. The transport layer checks that the submitted transaction matches the authorized one exactly. The settlement layer checks the permit template, nullifier, and commitment on-chain. There is no hidden coupling between layers.
+
+When you audit a TSN deployment, you can inspect each layer independently. The authorization layer checks signatures and DNA against the Mother. The transport layer checks that the submitted transaction matches the authorized one exactly. The settlement layer checks the permit template, nullifier, and commitment on-chain. There is no hidden coupling between layers.
+
+## Role authority table
+
+| Role | Can it change the payment terms? |
+| --- | --- |
+| Sender | No, the intent is signed and binding once created |
+| Mother authority | No, it authorizes acceptance and produces DNA against the signed intent, it cannot invent new terms |
+| Permit signer | No, it signs only domain-separated templates that bind the exact terms already authorized |
+| Node | No, verification only; no signing authority |
+| Receiver | No, stores and leases work; does not create authorization |
+| Cranker | No, submits the exact authorized transaction; cannot change any field |
+
+For the full trust model, see [Trust Model](/architecture/trust-model). For operational boundaries and how to run each role, see [Operator Boundaries](/security/operator-boundaries). For the transport architecture, see [Node, Receiver, and Cranker](/architecture/node-receiver-cranker).

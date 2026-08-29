@@ -267,3 +267,91 @@ Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V success
 
 Finalized
 PS C:\Users\codepara\Desktop\trust-link\tsn-protocol\tsn-cranker-op-daemon>
+
+<!--  -->
+
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ npm run tcap:credit:devnet
+
+> trustlink-pay@1.0.0 tcap:credit:devnet
+> node scripts/tcap-credit-devnet.mjs
+
+[devnet] Bootstrap governed TSN/TCAP accounts
+RPC: devnet.helius-rpc.com
+Wallet: /mnt/c/Users/codepara/Desktop/trust-link/protocol-tests/tcap-devnet-test-wallet.json (7vjGCdLddCx7W33q8fkjppWnhXZKkqZn9WcApsD6dLeb)
+Governance wallet: /home/bigdream/.config/solana/id.json (78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX)
+TSN: TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+TCAP: TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
+Defaults: /mnt/c/Users/codepara/Desktop/trust-link/protocol-tests/tcap-credit-devnet.defaults.env (loaded; environment overrides win)
+(node:17899) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+TSN Mother Escrow: ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR (reused)
+TSN Mother authority: FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG (TSN_MOTHER_AUTHORITY_WALLET signer)
+TCAP config: 2Q48b1TAhJECiGtLwMirvyNerFSBUBcpQvCPPemQryVY (reused)
+TCAP asset registry: 6oGZV9yt5M6uPH66UZPhJZsGsqfJg2Ec1mtV8VEjQjbE (reused)
+TCAP commitment root: DG41e3M1hvmw1cgo8cEK2w9UDcCjkrUXdyghhWZJfwbd (reused)
+TCAP mint: 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU (6 decimals; 1000000 base units)
+TCAP asset entry: GzZboGDkJTDpRredv6N5GSwF1Gb9BD6KHeHyprczsFbW (reused)
+TCAP reserve state: GVnNCckbpoXTMLQCdVmMiXvnjhVg2vMzDU2zfNUGRj3N (reused)
+Derived controlled Devnet tip root (test identity only): 9fd26b1250199d824daabae987161cdeda3861511413181704a9d424b09c5840
+Derived controlled Devnet policy commitment (test identity only): 9e1971b325ab1a60ef033846b78fcaabfd2dac075968929f1a9ab2564501d1dd
+TCAP tip: FcBZh6NQXkmp1npUuq82iWcseyX2jq4LaUcoy2CgkaXB (reused; previous commitment read from chain)
+Derived current TSN epoch from Mother Escrow: 0
+TSN epoch commitment: EVTBhSGfQvZ5DLGZmyfMPo6cnPB1BFvpbCgtsbVsuUew (missing)
+TSN epoch commitment is canonical and will be created/reused by tsn_register_tcap_credit_authorization; it is not an opaque account.
+Derived canonical replay nonce from the controlled signed-intent fields: c7beb56c0321254094d6f4356b036ed8f89381507e2ce7dc9a1ed695a961c992
+Derived canonical Devnet payment intent commitment: 5b06ba475bb3e04e7e6b2c6da7830a02a15d91940057f25bab2fa038f78ce604
+Derived canonical GPRU scope commitment: 77294b3ecfb01e56691cc7e6dc4f3e94e064dcf44c2debd77a59265c22927a63
+Derived canonical TSN settlement commitment: 7dc803ea6a9010677d7531b67d09cb114a1ccf3507163771b442e73e9dd5509c
+Derived canonical settlement nullifier: 58e52c98d800f8c7008f8af0c1cb21d9463d89b165c43d4b039b3b1d87b29875
+Created TSN AcceptedIntentV1 atomically with funding: Fco5qXpBcYfyqwBQKzUCJgj9JE7qZpD9z7qJvvDtvMAv tx=2ovwim24gv9cgAmMo8AoukrNquFTRVeyHRiDVNaP7WEZXdsQ7PMn7fP95AiUsCVqZeVFhNvezeGrS5yRy2D6rrG2
+Atomic instructions: tsn_fund_epoch_treasury + tsn_accept_intent; funder token account=5YVTyjG9YxxdFJKRpmyTWi3HLkwgj5dyUcVgE9KPhsqJ
+Derived TCAP previous root from commitment root account: 47f64a304f10f65277568d1a061f669389cca93a55cac74712d7c1d99dddedff
+Derived canonical ConfidentialSettlement authorization digest: 472cc26d24461aa3f22802e727c8a5a836fcdb1e1788140aa300ec41c3d00f58
+Wrote real Devnet credit env: /mnt/c/Users/codepara/Desktop/trust-link/protocol-tests/tcap-credit-devnet.env
+No transaction was submitted for credit; register + credit remains the next explicit smoke step.
+[devnet] Run TCAP credit smoke
+(node:17911) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Registered TSN TCAP credit authorization: whPPVQxGXHuvFK3gSR1UCPzUCXib5j2msqVGjs7ewiefbduDiPWPm2dbNZnDRvLiNz2h9CwdccgJqr23SAvaVjy
+Submitted TCAP credit: R4G3fwBLvEgCDKD8mmqBtekkLtVa2RjA3rxpwa2ubDhMtLbVnxgiCr34ryhcKEjL8gTUhXovEJHsUs9YvDat6gx
+file:///mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/tcap-sdk/dist/tip-rpc.js:3
+throw new Error(message);
+^
+
+Error: tip_account_version_unsupported
+at fail (file:///mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/tcap-sdk/dist/tip-rpc.js:3:11)
+at decodeTcapTinTipV1Account (file:///mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/tcap-sdk/dist/tip-rpc.js:43:9)
+at fetchTcapTinTipV1 (file:///mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/tcap-sdk/dist/tip-rpc.js:79:12) at async file:///mnt/c/Users/codepara/Desktop/trust-link/tcap-protocol/scripts/devnet-credit-smoke.mjs:193:13
+
+Node.js v22.22.2
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ export TCAP_RPC_URL=https://api.devnet.solana.com
+
+node --input-type=module -e '
+import fs from "node:fs";
+import { fetchTcapTinTipV1 } from "./tcap-protocol/tcap-sdk/dist/tip-rpc.js";
+const env = Object.fromEntries(
+fs.readFileSync("protocol-tests/tcap-credit-devnet.env","utf8")
+.split(/\r?\n/)
+.filter(x => x && !x.startsWith("#"))
+.map(x => x.split("="))
+);
+const tip = await fetchTcapTinTipV1({
+rpcUrl: process.env.TCAP_RPC_URL,
+address: env.TCAP_TIP,
+expectedProgramId: env.TCAP_PROGRAM_ID
+});
+console.log(tip);
+'
+{
+address: 'FcBZh6NQXkmp1npUuq82iWcseyX2jq4LaUcoy2CgkaXB',
+owner: 'TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x',
+lamports: 1698240,
+version: 1,
+current_commitment: '192717d50173df1ddc7aafc295ec91d73aff26daae3e98b0e4796c16163940cd',
+sequence: 1n,
+policy_commitment: '9e1971b325ab1a60ef033846b78fcaabfd2dac075968929f1a9ab2564501d1dd',
+last_transition_nullifier: '58e52c98d800f8c7008f8af0c1cb21d9463d89b165c43d4b039b3b1d87b29875',
+frozen: false,
+bump: 252
+}
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$

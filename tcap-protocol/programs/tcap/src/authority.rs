@@ -22,6 +22,7 @@ pub const TCAP_ASSET_EXTENSION_POLICY_SEED: &[u8] = b"tcap:extension-policy:v2";
 pub const TSN_TCAP_AUTHORITY_SEED: &[u8] = b"tsn:tcap-authorization:v1";
 pub const TCAP_LIQUIDITY_POOL_SEED: &[u8] = b"tcap:liquidity-pool:v1";
 pub const TCAP_EXIT_RECEIPT_SEED: &[u8] = b"tcap:exit-receipt:v1";
+pub const TCAP_TIP_LIABILITY_V2_SEED: &[u8] = b"tcap:tip-liability:v2";
 
 pub fn derive_reserve_authority(asset_state: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
@@ -103,6 +104,13 @@ pub fn derive_tsn_authorization_signer(
     Pubkey::find_program_address(
         &[TSN_TCAP_AUTHORITY_SEED, authorization_digest],
         approved_tsn_program,
+    )
+}
+
+pub fn derive_tcap_tip_liability_v2(tin_tip: &Pubkey, asset_entry: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[TCAP_TIP_LIABILITY_V2_SEED, tin_tip.as_ref(), asset_entry.as_ref()],
+        &crate::ID,
     )
 }
 

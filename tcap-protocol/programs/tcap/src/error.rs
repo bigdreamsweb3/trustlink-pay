@@ -104,4 +104,10 @@ pub enum TcapError {
     ProofSystemNotEnabled,
     #[msg("The registered conversion rate is invalid")]
     InvalidRateVersion,
+    #[msg("The V2 tip liability account is not canonical")]
+    InvalidTipLiability,
+    #[msg("The confidential tip balance is insufficient")]
+    InsufficientConfidentialBalance,
+    #[msg("The reserve liability invariant is invalid")]
+    InvalidReserveLiability,
 }

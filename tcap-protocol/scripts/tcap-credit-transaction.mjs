@@ -31,6 +31,8 @@ const GPRU_SCOPE_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_GPRU_SCOPE_V1");
 const SETTLEMENT_COMMITMENT_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_COMMITMENT_V1");
 const NULLIFIER_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_NULLIFIER_V1");
 const AUTHORIZATION_DIGEST_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_AUTHORIZATION_V1");
+const AUTHORIZATION_V2_DOMAIN = seed("TSN_GPRU_TCAP_CREDIT_V2");
+const DEBIT_AUTHORIZATION_V2_DOMAIN = seed("TSN_GPRU_TCAP_DEBIT_V2");
 
 // These seeds must match the deployed TSN Rust constants exactly.
 const TSN_EPOCH_TREASURY_SEED = seed("tsn_epoch_treasury");
@@ -100,6 +102,113 @@ export function deriveConfidentialAuthorizationDigest(fields) {
     u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"),
     bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"),
   ));
+}
+
+/** Digest for the privacy-safe GPRU/TCAP transition. It deliberately excludes
+ * payment intent, amount, settlement, epoch, and per-transfer receipt data. */
+export function deriveGpruTcapCreditAuthorizationDigest(fields) {
+  return digest(concat(
+    AUTHORIZATION_V2_DOMAIN,
+    pubkey(fields.tip).toBuffer(),
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.previousCommitment, "previousCommitment"),
+    bytes32(fields.newCommitment, "newCommitment"),
+    u64(fields.sequence), u32(fields.tokenId),
+    bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.nullifier, "nullifier"),
+  ));
+}
+
+export function deriveGpruTcapDebitAuthorizationDigest(fields) {
+  return digest(concat(DEBIT_AUTHORIZATION_V2_DOMAIN, pubkey(fields.tip).toBuffer(), u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"), u64(fields.debitAmount)));
+}
+
+export function deriveTcapTipLiabilityV2({ tip, assetEntry }) {
+  return PublicKey.findProgramAddressSync([seed("tcap:tip-liability:v2"), pubkey(tip).toBuffer(), pubkey(assetEntry).toBuffer()], TCAP_PROGRAM_ID)[0];
+}
+
+export function buildTsnRegisterTcapDebitAuthorizationV2Instruction(fields) {
+  const pdas = deriveTcapPdas({ tipRootCommitment: fields.tipRootCommitment, authorizationDigest: fields.authorizationDigest, nullifier: fields.nullifier });
+  const liability = deriveTcapTipLiabilityV2({ tip: pdas.tip, assetEntry: fields.assetEntry });
+  const data = concat(discriminator("tsn_register_tcap_debit_authorization_v2"), bytes32(fields.authorizationDigest, "authorizationDigest"), u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"), u64(fields.debitAmount));
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pdas.config, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: pdas.tipRoot, isSigner: false, isWritable: false },
+    { pubkey: pdas.tip, isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: liability, isSigner: false, isWritable: true },
+    { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ], data });
+}
+
+/** Build the privacy-safe TCAP tip credit. No intent, epoch, receipt, or
+ * per-transfer nullifier account is included in this instruction. */
+export function buildCreditTcapTinTipV2Instruction(fields) {
+  const pdas = deriveTcapPdas({ tipRootCommitment: fields.tipRootCommitment, authorizationDigest: fields.authorizationDigest, nullifier: fields.nullifier });
+  const data = concat(
+    discriminator("credit_tcap_tin_tip_v2"),
+    bytes32(fields.authorizationDigest, "authorizationDigest"),
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.previousCommitment, "previousCommitment"),
+    bytes32(fields.newCommitment, "newCommitment"),
+    u64(fields.sequence), u32(fields.tokenId),
+    bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.nullifier, "nullifier"),
+  );
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pdas.config, isSigner: false, isWritable: false },
+      { pubkey: pdas.tip, isSigner: false, isWritable: true },
+      { pubkey: pdas.tipRoot, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: pdas.tsnAuthorizationSigner, isSigner: true, isWritable: false },
+    ],
+    data,
+  });
+}
+
+/** TSN CPI wrapper for V2. The wrapper carries only opaque tip-transition
+ * material and never passes AcceptedIntent, epoch, receipt, or nullifier PDAs. */
+export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
+  const pdas = deriveTcapPdas({ tipRootCommitment: fields.tipRootCommitment, authorizationDigest: fields.authorizationDigest, nullifier: fields.nullifier });
+  const data = concat(
+    discriminator("tsn_register_tcap_credit_authorization_v2"),
+    bytes32(fields.authorizationDigest, "authorizationDigest"),
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.previousCommitment, "previousCommitment"),
+    bytes32(fields.newCommitment, "newCommitment"),
+    u64(fields.sequence), u32(fields.tokenId),
+    bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.nullifier, "nullifier"),
+  );
+  return new TransactionInstruction({
+    programId: TSN_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+      { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: pdas.config, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+      { pubkey: pdas.tipRoot, isSigner: false, isWritable: false },
+      { pubkey: pdas.tip, isSigner: false, isWritable: true },
+      { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
 }
 
 /** Funding and acceptance are added to one atomic Transaction. Funder and
@@ -210,6 +319,9 @@ function authorizationBytes(fields) {
 
 /** Direct TCap instruction. The signer PDA can only be supplied by the TSN CPI wrapper. */
 export function buildRegisterTsnAuthorizationInstruction(fields) {
+  // Legacy V1 compatibility only. New transfers must use the V2 builder below;
+  // V1 publishes intent/epoch/receipt bindings that are intentionally excluded
+  // from the link-breaking GPRU/TCAP path.
   const pdas = deriveTcapPdas(fields);
   const data = concat(discriminator("register_tsn_authorization_v1"), authorizationBytes(fields));
   return new TransactionInstruction({
@@ -233,6 +345,7 @@ export function buildRegisterTsnAuthorizationInstruction(fields) {
 
 /** TSN-owned CPI wrapper instruction; this is the executable Devnet path. */
 export function buildTsnRegisterTcapCreditAuthorizationInstruction(fields) {
+  // Legacy V1 compatibility only. Do not use for new transfers.
   const pdas = deriveTcapPdas(fields);
   const tsnEpochCommitment = deriveTsnEpochCommitmentPda({
     motherEscrow: fields.motherEscrow,
@@ -248,6 +361,7 @@ export function buildTsnRegisterTcapCreditAuthorizationInstruction(fields) {
       { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
       { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
       { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: pdas.config, isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: false },
@@ -291,7 +405,16 @@ export function buildCreditTcapTinTipInstruction(fields) {
 }
 
 export function resolveExistingRepoRpc() {
-  const rpc = process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL;
+  const configuredAnchorRpc = () => {
+    for (const file of ["tcap-protocol/Anchor.toml", "tsn-protocol/tsn/protocol/Anchor.toml"]) {
+      try {
+        const match = fs.readFileSync(file, "utf8").match(/^cluster\s*=\s*"([^"]+)"/m);
+        if (match?.[1] && /^https?:\/\//i.test(match[1])) return match[1];
+      } catch { /* try the next repository configuration */ }
+    }
+    return undefined;
+  };
+  const rpc = process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL ?? configuredAnchorRpc();
   if (!rpc) throw new Error("Set TCAP_RPC_URL or ANCHOR_PROVIDER_URL from the repository's existing cluster configuration");
   return rpc;
 }

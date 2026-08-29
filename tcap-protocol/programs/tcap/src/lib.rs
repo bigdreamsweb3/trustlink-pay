@@ -169,6 +169,35 @@ pub mod tcap {
         instructions::register_tsn_authorization_v1(ctx, authorization)
     }
 
+    /// Version 2 privacy-preserving GPRU credit. Unlike the legacy V1 path,
+    /// this instruction has no intent, epoch, receipt, or per-transfer PDA.
+    pub fn credit_tcap_tin_tip_v2(
+        ctx: Context<CreditTcapTinTipV2>,
+        args: CreditTcapTinTipV2Args,
+    ) -> Result<()> {
+        instructions::credit_tcap_tin_tip_v2::handler(ctx, args)
+    }
+
+    pub fn initialize_tcap_tip_liability_v2(
+        ctx: Context<InitializeTcapTipLiabilityV2>,
+        args: InitializeTcapTipLiabilityV2Args,
+    ) -> Result<()> {
+        instructions::initialize_tcap_tip_liability_v2::handler(ctx, args)
+    }
+
+    pub fn migrate_asset_entry_custody_graph_v2(
+        ctx: Context<MigrateAssetEntryCustodyGraphV2>,
+    ) -> Result<()> {
+        instructions::migrate_asset_entry_custody_graph_v2::handler(ctx)
+    }
+
+    pub fn debit_tcap_gpru_tip_v2(
+        ctx: Context<DebitTcapGpruTipV2>,
+        args: DebitTcapGpruTipV2Args,
+    ) -> Result<()> {
+        instructions::debit_tcap_gpru_tip_v2::handler(ctx, args)
+    }
+
     pub fn deposit_asset_v2(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()> {
         instructions::deposit_asset_v2::handler(ctx, amount)
     }

@@ -43,11 +43,11 @@ function hex(bytes: Uint8Array): Hex32 {
 }
 
 function readU16(bytes: Uint8Array, offset: number): number {
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, false);
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, true);
 }
 
 function readU64(bytes: Uint8Array, offset: number): bigint {
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getBigUint64(0, false);
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getBigUint64(0, true);
 }
 
 async function accountDiscriminator(): Promise<Uint8Array> {

@@ -3,6 +3,10 @@ mod legacy;
 pub use legacy::*;
 
 pub mod credit_tcap_tin_tip_v1;
+pub mod credit_tcap_tin_tip_v2;
+pub mod debit_tcap_gpru_tip_v2;
+pub mod initialize_tcap_tip_liability_v2;
+pub mod migrate_asset_entry_custody_graph_v2;
 pub mod debit_tcap_balance_v1;
 pub mod deposit_asset_v2;
 pub mod deposit_with_funding_commitment_v2;
@@ -15,6 +19,10 @@ pub mod migrate_tcap_config_layout_v1;
 pub mod initialize_tcap_v1;
 
 pub use credit_tcap_tin_tip_v1::*;
+pub use credit_tcap_tin_tip_v2::*;
+pub use debit_tcap_gpru_tip_v2::*;
+pub use initialize_tcap_tip_liability_v2::*;
+pub use migrate_asset_entry_custody_graph_v2::*;
 pub use debit_tcap_balance_v1::*;
 pub use exit_tcap_liquidity_v1::*;
 

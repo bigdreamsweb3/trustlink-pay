@@ -31,59 +31,69 @@
     "url": "about/trustlink-labs"
   },
   "navigation": {
-    "groups": [
-    {
-      "group": "Overview",
-      "pages": [
-        "overview/introduction",
-        "overview/how-it-works",
-        "overview/architecture",
-        "overview/separation-of-concerns"
-      ]
-    },
-    {
-      "group": "Architecture",
-      "pages": [
-        "architecture/trust-model",
-        "architecture/identity-and-routing",
-        "architecture/mother-authority",
-        "architecture/node-receiver-cranker",
-        "architecture/epoch-treasury",
-        "architecture/tcap"
-      ]
-    },
-    {
-      "group": "Developers",
-      "pages": [
-        "developers/getting-started",
-        "developers/payment-intent-lifecycle",
-        "developers/funding-and-accepted-intent",
-        "developers/confidential-settlement",
-        "developers/tcap-tip-credits",
-        "developers/replay-and-retries"
-      ]
-    },
-    {
-      "group": "Security",
-      "pages": [
-        "security/invariants",
-        "security/threat-model",
-        "security/authority-and-keys",
-        "security/fail-closed",
-        "security/replay-protection",
-        "security/operator-boundaries"
-      ]
-    },
-    {
-      "group": "TrustLink Labs",
-      "pages": [
-        "about/trustlink-labs",
-        "about/what-were-building",
-        "about/engineering-principles",
-        "about/current-technology",
-        "about/contribute"
-      ]
-    }
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "overview/introduction",
+              "developers/getting-started",
+              "overview/how-it-works"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "overview/architecture",
+              "overview/separation-of-concerns",
+              "architecture/trust-model",
+              "architecture/identity-and-routing",
+              "architecture/mother-authority",
+              "architecture/node-receiver-cranker",
+              "architecture/epoch-treasury",
+              "architecture/tcap"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "developers/payment-intent-lifecycle",
+              "developers/funding-and-accepted-intent",
+              "developers/confidential-settlement",
+              "developers/tcap-tip-credits",
+              "developers/replay-and-retries"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "security/invariants",
+              "security/threat-model",
+              "security/authority-and-keys",
+              "security/fail-closed",
+              "security/replay-protection",
+              "security/operator-boundaries"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "About",
+        "groups": [
+          {
+            "group": "TrustLink Labs",
+            "pages": [
+              "about/trustlink-labs",
+              "about/what-were-building",
+              "about/engineering-principles",
+              "about/current-technology",
+              "about/contribute"
+            ]
+          }
+        ]
+      }
     ]
   },
   "footerSocials": {

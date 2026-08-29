@@ -23,6 +23,16 @@ pub struct DepositAssetV2<'info> {
     )]
     pub asset_state: Box<Account<'info, TcapAssetStateV1>>,
     #[account(
+        seeds = [TCAP_ASSET_ENTRY_SEED, asset_entry.registry.as_ref(), asset_entry.asset.token_program.as_ref(), asset_entry.asset.mint.as_ref()],
+        bump = asset_entry.bump,
+        constraint = asset_entry.asset.token_program == token_program.key() @ TcapError::InvalidTokenProgram,
+        constraint = asset_entry.asset.mint == mint.key() @ TcapError::WrongAsset,
+        constraint = asset_entry.reserve_state == asset_state.reserve_state @ TcapError::InvalidReserve,
+        constraint = asset_entry.future_vault == asset_state.future_vault @ TcapError::InvalidReserve,
+        constraint = asset_entry.reserve_authority == asset_state.reserve_authority @ TcapError::InvalidReserve,
+    )]
+    pub asset_entry: Box<Account<'info, TcapAssetEntryV1>>,
+    #[account(
         mut,
         address = asset_state.reserve_state @ TcapError::InvalidReserve,
         constraint = reserve_state.asset_state == asset_state.key() @ TcapError::InvalidReserve,

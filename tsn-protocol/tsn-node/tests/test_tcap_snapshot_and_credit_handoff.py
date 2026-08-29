@@ -41,13 +41,10 @@ def test_credit_handoff_contains_exact_credit_fields():
         nullifier="55" * 32,
         valid_after_slot=10,
         expires_at_slot=20,
-        tsn_settlement_commitment="66" * 32,
-        epoch_id=3,
+        authorization_digest="66" * 32,
     )
-    fields = auth.receipt_fields()
-    assert fields["transition_type"] == "ConfidentialSettlement"
+    fields = auth.instruction_fields()
     assert fields["tip"] == "Tip111"
     assert fields["token_id"] == 7
     assert "vault" not in fields
     assert "amount" not in fields
-

@@ -24,6 +24,10 @@ import {
   readPrivateTcapBalance,
 } from "../tcap-sdk/dist/index.js";
 
+if (process.env.TCAP_ALLOW_LEGACY_V1 !== "1") {
+  throw new Error("Legacy TCAP V1 credit smoke is disabled. Deploy and use the privacy-safe V2 GPRU credit path instead.");
+}
+
 const fail = (message) => { throw new Error(message); };
 const TCAP_PROGRAM_ID = process.env.TCAP_PROGRAM_ID ?? "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x";
 const REQUIRED_ENV = [

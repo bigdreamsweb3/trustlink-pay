@@ -12,7 +12,7 @@ The current settlement domain is Solana. This paper also specifies the planned e
 
 A payment is a state transition authorized by the sender, not an instruction assembled by a relay. The owner device resolves a recipient TIN, binds the privacy-receiving relationship and policy, and signs an intent containing the asset, amount, validity window, replay material, and settlement commitments. Every later transition is bound to those signed values.
 
-The current route is:
+The intended privacy-safe route is:
 
 ```text
 TIN → privacy-receiving root → GPRU → TSN Epoch Treasury
@@ -20,7 +20,11 @@ TIN → privacy-receiving root → GPRU → TSN Epoch Treasury
     → encrypted private balance snapshot → owner private read
 ```
 
-TIN is a payment identity. GPRU is scoped, non-custodial authorization and routing; it never holds a balance. TSN coordinates settlement liability. TCAP (Transfer Confidential Asset Protocol) records private balance transitions as commitments and encrypted snapshots.
+TIN is a payment identity. GPRU is scoped, non-custodial authorization and
+routing; it never holds a balance. TSN coordinates settlement liability and
+Cranker reimbursement. TCAP (Transfer Confidential Asset Protocol) holds
+governed custody and records opaque private balance transitions. The legacy
+AcceptedIntent and per-transfer receipt path is not used for new transfers.
 
 ## 2. Participants and authority
 
@@ -34,18 +38,25 @@ The current domain executes these transitions:
 
 1. The device resolves the recipient TIN and signs the canonical payment intent.
 2. The Receiver stores authenticated redacted work; the Node verifies it.
-3. The Cranker submits one transaction containing `tsn_fund_epoch_treasury` and `tsn_accept_intent`.
-4. Solana records the Epoch Treasury liability and the canonical `AcceptedIntent` root atomically.
-5. Mother/TSN authorizes a complete `ConfidentialSettlement` receipt.
-6. The Cranker submits the exact `credit_tcap_tin_tip_v1` transaction.
-7. TCAP checks the receipt, predecessor commitment, successor commitment, sequence, policy, scope, validity window and one-time nullifier.
-8. The resulting commitment addresses an encrypted snapshot that the owner device verifies and decrypts locally.
+3. The Cranker submits the exact governed funding transaction.
+4. TSN verifies the funding accounts and records aggregate custody liability.
+5. The Node activates the settlement intent only after funding verification.
+6. The Cranker pays the selected destination from its vault.
+7. TSN verifies the lease and proof, then reimburses only that Cranker.
+8. TCAP advances the opaque GPRU tip commitment without a per-transfer receipt.
+9. The resulting commitment addresses an encrypted snapshot that the owner device verifies and decrypts locally.
 
-Funding and AcceptedIntent acceptance are atomic: if either instruction fails, the transaction reverts. Settlement authorization and TCAP credit are separate later transitions and must consume the same accepted-intent bindings.
+The legacy `AcceptedIntentV1` and `ConfidentialSettlement` receipt path is not
+the privacy-safe V2 path. It remains in source only for migration and audit
+history and must not be used for new transfers.
 
 ## 4. State and commitments
 
-An AcceptedIntent binds the epoch, payment commitment, amount, token, recipient tip root, policy, settlement commitments, replay nonce and validity window. Its canonical root is the identifier used by later authorization; a caller cannot replace it with an unrelated root.
+The legacy V1 `AcceptedIntent` bound the epoch, payment commitment, amount,
+token, recipient tip root, policy, settlement commitments, replay nonce and
+validity window. That public cross-reference is not part of the privacy-safe
+V2 authorization; V2 binds only the opaque GPRU tip transition and its
+predecessor/sequence continuity.
 
 A TCAP tip stores a predecessor commitment and sequence, not a plaintext TIN, private balance or device secret. A credit advances one predecessor to one successor:
 

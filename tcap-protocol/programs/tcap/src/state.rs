@@ -24,6 +24,24 @@ impl TCapTinTipV1 {
     pub const SPACE: usize = 8 + 2 + 32 + 8 + 32 + 32 + 1 + 1;
 }
 
+/// Spendable confidential liability for one opaque GPRU tip and governed asset.
+/// This is separate from the commitment-only tip account so existing deployed
+/// tip accounts do not change layout. It contains no TIN, route, wallet, or
+/// per-transfer identifier.
+#[account]
+pub struct TcapTipLiabilityV2 {
+    pub version: u16,
+    pub tip: Pubkey,
+    pub asset_entry: Pubkey,
+    pub available: u64,
+    pub spent: u64,
+    pub bump: u8,
+}
+
+impl TcapTipLiabilityV2 {
+    pub const SPACE: usize = 8 + 2 + 32 + 32 + 8 + 8 + 1;
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum TcapMigrationStateV1 {
     Development,

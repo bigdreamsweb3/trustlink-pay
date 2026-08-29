@@ -1,4 +1,8 @@
-/* Devnet-only bootstrap for the TSN -> TCAP credit smoke path.
+if (process.env.TCAP_ALLOW_LEGACY_V1 !== "1") {
+  throw new Error("Legacy TSN AcceptedIntent/TCAP receipt bootstrap is disabled. Use the privacy-safe V2 GPRU path.");
+}
+
+/* Devnet-only bootstrap for the legacy TSN -> TCAP credit smoke path.
  *
  * This script derives the ConfidentialSettlement fields with the same
  * domain-separated formulas enforced by TSN. Public PDAs are derived from

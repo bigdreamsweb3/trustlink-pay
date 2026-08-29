@@ -88,20 +88,47 @@ solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x \
 
 Only after the slot changes should you run the config migration/bootstrap.
 
+## Current V2 credit and settlement gate
+
+The V2 TSN CPI wrapper and TCAP tip-credit instruction are present in source
+and compile. They are not a live transfer path until the upgraded binaries are
+deployed. The existing `tcap:credit:bootstrap:devnet` and
+`tcap:credit:devnet` commands are legacy V1 receipt smoke tests; they now fail
+closed unless `TCAP_ALLOW_LEGACY_V1=1` is explicitly set. Do not set that flag
+for a new transfer.
+
+The current source also has no completed runtime bridge that binds a verified
+TSN Node funding/settlement proof to the V2 tip credit, and TCAP's confidential
+settlement instruction remains disabled. Therefore a real funding plus TCAP
+settlement transaction is **blocked**, even after the two programs build and
+deploy. The deployment commands below prove only compilation and program
+upload; they do not prove an end-to-end payment.
+
 The deploy helper uses RPC submission, `confirmed` commitment, and 20 signing
 attempts by default because large SBF upgrades can exceed a single blockhash
 window. It only pre-extends an existing ProgramData account when the artifact
 does not fit; an artifact that already fits skips the extension transaction.
-Set `TRUSTLINK_DEPLOY_TRANSPORT=quic` to try QUIC instead of RPC; use only one
-transport. `TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS` can override the default retry
-count when Devnet is congested.
+Set `TRUSTLINK_DEPLOY_TRANSPORT=quic` to try QUIC first; the helper automatically
+falls back to RPC and retries both transports up to three rounds when upload or
+blockhash errors occur. `TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS` can override the
+per-upload signing retry count, and `TRUSTLINK_DEPLOY_RECOVERY_ROUNDS` can set
+the transport recovery rounds from 1 to 5.
+
+Before uploading, the helper creates or reuses a protected persistent buffer
+signer in the system temporary directory. This prevents an interrupted upload
+from losing the buffer recovery keypair. A successful deployment removes an
+automatically created signer; after all recovery attempts fail, the signer is
+left in place and its path is printed so the next invocation can resume it.
+Set `TRUSTLINK_DEPLOY_BUFFER_SIGNER` to take ownership of a specific signer
+path. Never publish the signer file or its seed phrase.
 
 Do not run these commands against localnet. After deployment, run only Devnet
 preflight, simulation and explicitly approved Devnet transactions.
 
 ## TCAP credit bootstrap defaults
 
-`npm run tcap:credit:bootstrap:devnet` automatically loads the checked-in
+`npm run tcap:credit:bootstrap:devnet` is retained only as a legacy migration
+diagnostic and is fail-closed by default. It automatically loads the checked-in
 non-secret record directory at
 `protocol-tests/tcap-credit-devnet.defaults.env`. It contains the current
 Devnet program IDs, governed Stable-TCAP mint and stable PDA addresses so the

@@ -54,6 +54,9 @@ pub struct RegisterTcapCreditAuthorization<'info> {
     /// CHECK: constrained to the deployed TCap program below.
     #[account(executable, address = TCAP_PROGRAM_ID)]
     pub tcap_program: UncheckedAccount<'info>,
+    /// CHECK: supplied to TCap so it can verify the approved TSN program.
+    #[account(executable, address = crate::ID)]
+    pub tsn_program: UncheckedAccount<'info>,
     /// CHECK: validated by the TCap program.
     pub tcap_config: UncheckedAccount<'info>,
     /// CHECK: validated by the TCap program.
@@ -149,6 +152,12 @@ pub fn register_tcap_credit_authorization(
             && epoch.previous_tcap_state_root == args.previous_tcap_root,
         TsnError::Unauthorized
     );
+
+    // Anchor normally serializes account changes when the outer instruction
+    // exits. TCAP reads this record during the CPI below, so persist the
+    // discriminator and header before invoking the downstream program.
+    ctx.accounts.tsn_epoch_commitment.exit(ctx.program_id)?;
+
     let (expected_signer, signer_bump) = Pubkey::find_program_address(
         &[TSN_TCAP_AUTHORITY_SEED, &args.authorization_digest],
         &crate::ID,
@@ -189,6 +198,7 @@ pub fn register_tcap_credit_authorization(
             ctx.accounts.tcap_reserve_state.to_account_info(),
             ctx.accounts.tcap_commitment_root.to_account_info(),
             ctx.accounts.tcap_program.to_account_info(),
+            ctx.accounts.tsn_program.to_account_info(),
             ctx.accounts.tsn_epoch_commitment.to_account_info(),
             ctx.accounts.tcap_authorization_signer.to_account_info(),
             ctx.accounts.accepted_intent.to_account_info(),

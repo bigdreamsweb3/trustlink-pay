@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import process from "node:process";
 
 const root = resolve(process.cwd());
@@ -161,13 +162,57 @@ function build(plan) {
   return { rpc, wallet, programId, artifact };
 }
 
+function ensureBufferSigner(plan, workspace) {
+  const configured = process.env.TRUSTLINK_DEPLOY_BUFFER_SIGNER;
+  const path = configured ?? join(tmpdir(), `trustlink-${plan.program}-buffer-signer.json`);
+  const generated = !configured;
+  if (!existsSync(path)) {
+    console.log(`creating persistent deploy buffer signer: ${path}`);
+    runProgram("solana-keygen", ["new", "--no-bip39-passphrase", "--silent", "-o", path], workspace, `Create ${plan.label} deploy buffer signer`);
+    runProgram("chmod", ["600", path], workspace, `Protect ${plan.label} deploy buffer signer`);
+  } else {
+    console.log(`reusing deploy buffer signer: ${path}`);
+  }
+  return { path, generated };
+}
+
+function deployWithRecovery(plan, deployArgs, workspace, env, preferredTransport, bufferSigner) {
+  const transports = preferredTransport === "quic" ? ["quic", "rpc"] : ["rpc", "quic"];
+  const rounds = Number.parseInt(process.env.TRUSTLINK_DEPLOY_RECOVERY_ROUNDS ?? "3", 10);
+  if (!Number.isInteger(rounds) || rounds < 1 || rounds > 5) {
+    throw new Error("TRUSTLINK_DEPLOY_RECOVERY_ROUNDS must be an integer from 1 to 5.");
+  }
+
+  let lastError;
+  for (let round = 1; round <= rounds; round += 1) {
+    for (const transport of transports) {
+      const transportFlag = transport === "quic" ? "--use-quic" : "--use-rpc";
+      console.log(`\n[devnet] Upload recovery attempt ${round}/${rounds} via ${transport.toUpperCase()} (same buffer signer)`);
+      try {
+        runProgram("solana", [...deployArgs, "--buffer", bufferSigner, transportFlag], workspace, `Deploy ${plan.label} SBF artifact via ${transport.toUpperCase()}`, env);
+        return;
+      } catch (error) {
+        lastError = error;
+        console.warn(`[devnet] ${transport.toUpperCase()} upload failed; trying the next recovery path.`);
+      }
+    }
+  }
+
+  throw new Error(
+    `${plan.label} deployment exhausted ${rounds * transports.length} upload attempts. ` +
+    `The existing program was not replaced. Resume with TRUSTLINK_DEPLOY_BUFFER_SIGNER=${bufferSigner}.`,
+    { cause: lastError },
+  );
+}
+
 function deploy(plan) {
   const { rpc, wallet, programId, artifact } = build(plan);
-  // Leave room for future instruction growth when upgrading an existing
-  // ProgramData account. Without an explicit max length, the loader can
-  // reject a larger replacement artifact with "account data too small".
+  // Leave room for future instruction growth only when the existing
+  // ProgramData account must be extended. Reusing that headroom on every
+  // upgrade needlessly increases the temporary buffer rent requirement.
   const artifactBytes = statSync(artifact).size;
-  const maxLen = Math.ceil(artifactBytes / 1024) * 1024 + 64 * 1024;
+  const requiredLength = Math.ceil(artifactBytes / 1024) * 1024;
+  const growthHeadroom = 64 * 1024;
   const transport = (process.env.TRUSTLINK_DEPLOY_TRANSPORT ?? "rpc").toLowerCase();
   if (!["rpc", "quic"].includes(transport)) {
     throw new Error("TRUSTLINK_DEPLOY_TRANSPORT must be rpc or quic.");
@@ -177,25 +222,39 @@ function deploy(plan) {
     throw new Error("TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS must be an integer >= 5.");
   }
   console.log(`artifact bytes: ${artifactBytes}`);
-  console.log(`program data max length: ${maxLen}`);
   console.log(`deploy transport: ${transport}`);
   console.log(`max sign attempts: ${maxSignAttempts}`);
   console.log("Deploying SBF artifact to Devnet...");
-  const transportFlag = transport === "quic" ? "--use-quic" : "--use-rpc";
-  const bufferSigner = process.env.TRUSTLINK_DEPLOY_BUFFER_SIGNER;
-  const bufferArgs = bufferSigner ? ["--buffer", bufferSigner] : [];
-  if (bufferSigner) console.log(`buffer signer: ${bufferSigner}`);
-  const currentShow = runProgram("solana", ["program", "show", "--url", rpc, programId], join(root, plan.workspace), `Inspect ${plan.label} ProgramData capacity`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet }, true);
+  const workspace = join(root, plan.workspace);
+  const buffer = ensureBufferSigner(plan, workspace);
+  const bufferSigner = buffer.path;
+  console.log(`buffer signer: ${bufferSigner}`);
+  const currentShow = runProgram("solana", ["program", "show", "--url", rpc, programId], workspace, `Inspect ${plan.label} ProgramData capacity`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet }, true);
   const currentLength = Number.parseInt(currentShow.match(/Data Length:\s*([\d,]+)/)?.[1]?.replaceAll(",", "") ?? "0", 10);
-  const requiredLength = Math.ceil(artifactBytes / 1024) * 1024;
+  const maxLen = currentLength >= requiredLength
+    ? requiredLength
+    : requiredLength + growthHeadroom;
+  console.log(`program data max length: ${maxLen}`);
   if (currentLength > 0 && currentLength < requiredLength) {
     const extension = maxLen - currentLength;
     console.log(`extending ProgramData by ${extension} bytes (${currentLength} -> ${maxLen})`);
-    runProgram("solana", ["program", "extend", programId, String(extension), "--keypair", wallet, transportFlag, "--url", rpc], join(root, plan.workspace), `Extend ${plan.label} ProgramData`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+    // `program extend` does not accept the transport flags used by
+    // `program deploy` in older Solana CLIs. The URL already selects RPC.
+    runProgram("solana", ["program", "extend", programId, String(extension), "--keypair", wallet, "--url", rpc], workspace, `Extend ${plan.label} ProgramData`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
   } else {
     console.log(`ProgramData capacity: ${currentLength || "unknown"}; target: ${maxLen}`);
   }
-  runProgram("solana", ["program", "deploy", plan.artifactRelative, "--program-id", plan.keypair, "--keypair", wallet, "--max-len", String(maxLen), "--max-sign-attempts", String(maxSignAttempts), ...bufferArgs, transportFlag, "--commitment", "confirmed", "--url", rpc], join(root, plan.workspace), `Deploy ${plan.label} SBF artifact to Devnet`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  deployWithRecovery(
+    plan,
+    ["program", "deploy", plan.artifactRelative, "--program-id", plan.keypair, "--keypair", wallet, "--max-len", String(maxLen), "--max-sign-attempts", String(maxSignAttempts), "--commitment", "confirmed", "--url", rpc],
+    workspace,
+    { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet },
+    transport,
+    bufferSigner,
+  );
+  if (buffer.generated) {
+    runProgram("rm", ["-f", bufferSigner], workspace, `Remove ${plan.label} deploy buffer signer`);
+  }
   console.log(`=== ${plan.label} post-deploy program show ===`);
   runProgram("solana", ["program", "show", "--url", rpc, programId], join(root, plan.workspace), `${plan.label} post-deploy program show`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
 }

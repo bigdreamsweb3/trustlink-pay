@@ -1,7 +1,8 @@
 # Current TrustLink architecture: TCAP (Transfer Confidential Asset Protocol)
 
-This is the canonical description of the live TrustLink Pay receiving and
-credit architecture. The production path is:
+This is the canonical description of the intended TrustLink Pay receiving and
+credit architecture. The V1 receipt path remains legacy compatibility; the
+privacy-safe V2 path must be deployed before it is used in production.
 
 ```text
 TIN identity
@@ -13,6 +14,11 @@ TIN identity
   → encrypted private balance snapshot
   → owner private balance read
 ```
+
+The arrow summary above is retained as a historical V1 shorthand. For the
+privacy-safe route, funding and the GPRU/TCAP transition are separate opaque
+objects; there is no public AcceptedIntent or TCAP receipt joining them. See
+[GPRU ownership and TCAP custody](./GPRU-TCAP-LINK-BREAKING.md).
 
 ## End-to-end credit path
 
@@ -33,11 +39,13 @@ sequenceDiagram
     D->>R: Submit signed intent
     R->>N: Store redacted work and lease state
     N->>N: Verify signatures, policy, commitments, sequence and expiry
-    N->>M: Prepare Mother-rooted ConfidentialSettlement authorization
-    C->>E: Submit the exact authorized epoch funding work
-    M->>P: Authorize the complete TCAP receipt through the TSN CPI
-    C->>P: Submit the exact authorized credit transaction
-    P->>P: Consume receipt and nullifier; advance the TCAP tip
+    N->>M: Create settlement intent; inactive until funding is verified
+    C->>E: Submit exact authorized funding work
+    E->>N: Funding proof becomes available
+    N->>C: Activate settlement after exact proof checks
+    C->>C: Pay selected destination from Cranker vault
+    N->>M: Approve reimbursement only for leased Cranker
+    M->>P: Advance opaque GPRU tip through V2 CPI
     P->>S: Bind the resulting commitment to encrypted snapshot persistence
     D->>S: Fetch, verify and decrypt the matching snapshot locally
 ```
@@ -60,41 +68,35 @@ sequenceDiagram
   authorization boundary.
 - **Epoch Treasury** records aggregate funding and settlement liability. It is
   protocol-controlled accounting, not a user balance container.
-- **Mother/TSN** creates the one-time `ConfidentialSettlement` authorization.
-  The TSN CPI wrapper supplies every field required by TCAP and cannot be
-  replaced by a GPRU signature alone.
+- **Mother/TSN** authorizes the bounded settlement and reimbursement decision.
+  The V2 CPI wrapper supplies only opaque tip-transition fields; a GPRU
+  signature alone cannot move custody.
 - **Cranker** leases and submits the exact authorized transaction. It can pay
   fees and submit work, but cannot change amount, token, recipient binding,
   commitments, sequence, policy, nullifier or expiry.
-- **TCAP** owns the tip, sequence, receipt and nullifier checks. A successful
-  credit advances the tip from `previous_commitment` to `new_commitment`.
+- **TCAP** owns the tip and sequence checks. A successful V2 credit advances the
+  tip from `previous_commitment` to `new_commitment` without a per-transfer
+  receipt or nullifier account.
 - **Encrypted snapshots** hold private balance state off-chain. The owner
   device verifies the tip commitment and sequence before decrypting a single
   commitment-keyed snapshot.
 
 ## Verified authorization contract
 
-TSN and TCAP share one `ConfidentialSettlement` ABI. Its required fields are:
-`epoch_id`, `intent_commitment`, `amount`, `settlement_commitment`,
-`accepted_intent_root`, `previous_tcap_root`, `transition_type`,
-`asset_commitment`, `authorization_digest`, `verifier_domain_version`,
-`valid_after_slot`, `expires_at_slot`, `replay_nonce`, `tin_tip`,
-`previous_commitment`, `new_commitment`, `sequence`, `token_id`,
-`policy_commitment`, `gpru_scope_commitment`, and `nullifier`.
-
-TSN creates an `AcceptedIntentV1` PDA and derives the root from the canonical
-field sequence documented in the accept-intent instruction. The wrapper
-requires that PDA, checks every bound field and consumes the intent after the
-TCAP CPI succeeds. TCAP stores the same fields in its receipt and requires a
-`ConfidentialSettlement` transition before credit can consume it. A caller
-cannot supply an unrelated root or use a GPRU signature alone.
+The privacy-safe V2 ABI contains the opaque authorization digest, validity
+window, predecessor and successor commitments, sequence, token policy, GPRU
+scope commitment, and one-time nullifier. It intentionally excludes payment
+intent identifiers, recipient TINs, settlement commitments, epoch roots,
+`AcceptedIntentV1`, and TCAP authorization receipts. The predecessor and
+sequence checks prevent replay without creating an account for every transfer.
 
 ## What is visible and what is private
 
-The chain stores program accounts, commitments, sequence values, token IDs,
-policy commitments, scoped authorization commitments, nullifiers and validity
-windows needed for enforcement. It does not store plaintext receiving roots,
-private balance values, master seeds or snapshot plaintext.
+The chain stores governed program accounts, opaque commitments, sequence values,
+token IDs, scoped authorization commitments, and validity windows needed for
+enforcement. It does not store plaintext receiving roots, private balance
+values, master seeds, snapshot plaintext, payment intent IDs, or recipient TINs
+inside the TCAP transition.
 
 Receiver, Node and Cranker APIs expose only the redacted work and public
 evidence required for coordination. The owner device retains private roots,

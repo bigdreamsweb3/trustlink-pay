@@ -14,6 +14,8 @@ pub mod withdraw_cranker_funds;
 pub mod withdraw_verifier_lamports;
 pub mod tin_action_fee;
 pub mod register_tcap_credit_authorization;
+pub mod register_tcap_credit_authorization_v2;
+pub mod register_tcap_debit_authorization_v2;
 pub mod accept_intent;
 
 pub use configure_private_settlement::*;
@@ -32,4 +34,6 @@ pub use withdraw_cranker_funds::*;
 pub use withdraw_verifier_lamports::*;
 pub use tin_action_fee::*;
 pub use register_tcap_credit_authorization::*;
+pub use register_tcap_credit_authorization_v2::*;
+pub use register_tcap_debit_authorization_v2::*;
 pub use accept_intent::*;

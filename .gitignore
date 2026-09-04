@@ -117,6 +117,8 @@ research/Trustlink-Research/
 # Local Blogger publication workspace (not part of TrustLink Pay repository)
 blogger/
 blogger_tsn/
+data-guard/
+resume/
 tools/
 /tools/add_blogger_updates.py
 /tools/add_blogger_search_pagination.py
@@ -139,6 +141,7 @@ protocol-tests/*
 protocol-tests/scenarios/*
 !protocol-tests/scenarios/tcap-credit-bootstrap.mjs
 !protocol-tests/scenarios/tcap-credit-v2.mjs
+!protocol-tests/scenarios/tcap-one-time-credit.mjs
 !protocol-tests/scenarios/tcap-asset-state-v2-init.mjs
 !protocol-tests/tcap-credit-devnet.defaults.env
 !protocol-tests/ui/

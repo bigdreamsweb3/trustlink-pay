@@ -101,6 +101,12 @@ pub fn handler(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()> {
         TcapError::UnexpectedTokenBalanceDelta
     );
     ctx.accounts.reserve_state.actual_assets = ctx.accounts.vault.amount;
+    ctx.accounts.reserve_state.pending_liabilities = ctx
+        .accounts
+        .reserve_state
+        .pending_liabilities
+        .checked_add(amount)
+        .ok_or(TcapError::ArithmeticOverflow)?;
 
     emit!(AssetDepositAcceptedV2 {
         version: crate::TCAP_INSTRUCTION_VERSION_V1,

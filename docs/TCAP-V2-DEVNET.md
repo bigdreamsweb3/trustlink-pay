@@ -75,3 +75,29 @@ not substitutes for an on-chain presence check:
 | Reserve authority | `GA9tyfeGYQWa7bcAhY8qQEKvYkjxDze9vSWqvVcueLs7` |
 | Governed vault | `2R76WD9xbzt3yMHtXEBLoxEbi2bkXYN9Hpk8nQoxsAnh` |
 
+## Run the V2 debit-only test
+
+Debit requires the custody graph to be unified, a V2 tip liability to exist,
+and the owner-encrypted snapshot for the live tip commitment to be available.
+The runner reads the tip commitment, sequence, policy, and snapshot from the
+Devnet fixture, decrypts and verifies that snapshot locally, subtracts the
+requested amount, and derives the successor commitment, GPRU scope, and fresh
+domain-separated nullifier. It refuses to accept caller-supplied transition
+material or to continue on a snapshot/tip or custody-graph mismatch:
+
+```bash
+export TCAP_SOURCE_TIP_ROOT=9fd26b1250199d824daabae987161cdeda3861511413181704a9d424b09c5840
+export TCAP_DEBIT_AMOUNT=1000000
+
+npm run tcap:debit:v2:devnet
+```
+
+`TCAP_SNAPSHOT_KEY_HEX` and `TCAP_SNAPSHOT_STORE_DIR` must point to the same
+owner-authorized encrypted snapshot store produced by the credit fixture. The
+new encrypted snapshot is written only after the on-chain debit is confirmed.
+
+The transaction is `tsn_register_tcap_debit_authorization_v2`, which CPI-calls
+`debit_tcap_gpru_tip_v2`. The runner refuses split entry/state graphs and
+checks the liability's available and spent amounts before and after. It also
+rejects accounts outside the opaque V2 allowlist; wallet exit, V1 receipts,
+epoch accounts, TIN/route accounts, and ZK-PRU accounts are not used.

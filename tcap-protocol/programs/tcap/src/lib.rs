@@ -38,6 +38,72 @@ pub mod tcap {
         instructions::initialize_tcap_tin_tip_v1(ctx, args)
     }
 
+    pub fn initialize_one_time_tip(
+        ctx: Context<InitializeOneTimeTip>,
+        args: InitializeOneTimeTipArgs,
+    ) -> Result<()> {
+        instructions::one_time_tip::initialize(ctx, args)
+    }
+
+    pub fn store_encrypted_snapshot(
+        ctx: Context<StoreEncryptedSnapshot>,
+        args: StoreEncryptedSnapshotArgs,
+    ) -> Result<()> {
+        instructions::encrypted_snapshot::store(ctx, args)
+    }
+
+    pub fn consume_one_time_tip(
+        ctx: Context<ConsumeOneTimeTip>,
+        args: ConsumeOneTimeTipArgs,
+    ) -> Result<()> {
+        instructions::one_time_tip::consume_authorized(ctx, args)
+    }
+
+    pub fn credit_one_time_tip(
+        ctx: Context<CreditOneTimeTip>,
+        authorization_digest: [u8; 32],
+        previous_commitment: [u8; 32],
+        new_commitment: [u8; 32],
+        policy_commitment: [u8; 32],
+        nonce: [u8; 32],
+        sequence: u64,
+        token_id: u32,
+        amount: u64,
+        valid_after_slot: u64,
+        expires_at_slot: u64,
+    ) -> Result<()> {
+        instructions::credit_one_time_tip::handler(
+            ctx,
+            authorization_digest,
+            previous_commitment,
+            new_commitment,
+            policy_commitment,
+            nonce,
+            sequence,
+            token_id,
+            amount,
+            valid_after_slot,
+            expires_at_slot,
+        )
+    }
+
+    /// Private TIP-to-TIP credit. It never consumes public funding pending;
+    /// the matching source debit has already reduced the reserve liability.
+    pub fn credit_one_time_tip_transfer(
+        ctx: Context<CreditOneTimeTipTransfer>,
+        args: CreditOneTimeTipTransferArgs,
+    ) -> Result<()> {
+        instructions::credit_one_time_tip_transfer::handler(ctx, args)
+    }
+
+    pub fn initialize_one_time_tip_liability(
+        ctx: Context<InitializeOneTimeTipLiability>,
+        args: InitializeOneTimeTipLiabilityArgs,
+    ) -> Result<()> {
+        instructions::initialize_one_time_tip_liability::handler(ctx, args)
+    }
+
+
     pub fn credit_tcap_tin_tip_v1(
         ctx: Context<CreditTcapTinTipV1>,
         args: CreditTcapTinTipV1Args,
@@ -52,6 +118,13 @@ pub mod tcap {
         instructions::debit_tcap_balance_v1::handler(ctx, args)
     }
 
+    pub fn exit_tcap_tip_v1(
+        ctx: Context<ExitTcapTipV1>,
+        args: ExitTcapTipV1Args,
+    ) -> Result<()> {
+        instructions::exit_tcap_tip_v1::handler(ctx, args)
+    }
+
     pub fn exit_tcap_liquidity_v1(
         ctx: Context<ExitTcapLiquidityV1>,
         args: ExitTcapLiquidityV1Args,
@@ -61,6 +134,12 @@ pub mod tcap {
 
     pub fn initialize_asset_state_v1(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
         instructions::initialize_asset_state_v1::handler(ctx)
+    }
+
+    pub fn migrate_reserve_transfer_pending_v1(
+        ctx: Context<MigrateReserveTransferPendingV1>,
+    ) -> Result<()> {
+        instructions::migrate_reserve_transfer_pending_v1::handler(ctx)
     }
 
     pub fn raise_minimum_instruction_version_v2(

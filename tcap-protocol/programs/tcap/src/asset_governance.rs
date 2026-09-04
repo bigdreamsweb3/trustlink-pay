@@ -836,6 +836,7 @@ pub fn initialize_governed_reserve_v2(ctx: Context<InitializeGovernedReserveV2>)
     reserve.bump = ctx.bumps.reserve_state;
     reserve.reserve_authority_bump = ctx.bumps.reserve_authority;
     reserve.future_vault_bump = ctx.bumps.future_vault;
+    reserve.transfer_pending = 0;
     ctx.accounts.governance_policy.reserve_initialized = true;
     ctx.accounts.governance_policy.last_updated_slot = Clock::get()?.slot;
     emit!(ReserveStateInitializedV1 {

@@ -110,4 +110,6 @@ pub enum TcapError {
     InsufficientConfidentialBalance,
     #[msg("The reserve liability invariant is invalid")]
     InvalidReserveLiability,
+    #[msg("The reserve has no pending private transfer liability for this credit")]
+    InvalidTransferLiability,
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{instruction::{AccountMeta, Instruction}, program::invoke_signed};
+use anchor_lang::InstructionData;
+use tcap::instruction::DebitTcapBalanceV1;
 use crate::tsn::{constants::{TSN_MOTHER_ESCROW_SEED, TSN_TCAP_AUTHORITY_SEED}, errors::TsnError, state::MotherEscrow};
 
 const TCAP_DEBIT_PROGRAM_ID: Pubkey = pubkey!("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
@@ -27,8 +29,6 @@ pub struct RegisterTcapDebitAuthorizationV2<'info> {
     pub tcap_config: UncheckedAccount<'info>,
     /// CHECK: validated by TCAP.
     pub tcap_asset_entry: UncheckedAccount<'info>,
-    /// CHECK: blinded tip root.
-    pub tip_root: UncheckedAccount<'info>,
     /// CHECK: canonical TCAP tip.
     pub tin_tip: UncheckedAccount<'info>,
     /// CHECK: canonical reserve state.
@@ -47,17 +47,30 @@ pub fn handler(ctx: Context<RegisterTcapDebitAuthorizationV2>, args: RegisterTca
     require!(args.authorization_digest == derive_debit_authorization_digest_v2(&args, &ctx.accounts.tin_tip.key()), TsnError::Unauthorized);
     let (expected_signer, bump) = Pubkey::find_program_address(&[TSN_TCAP_AUTHORITY_SEED, &args.authorization_digest], &crate::ID);
     require_keys_eq!(expected_signer, ctx.accounts.tcap_authorization_signer.key(), TsnError::Unauthorized);
-    let mut data = anchor_lang::solana_program::hash::hash(b"global:debit_tcap_gpru_tip_v2").to_bytes()[..8].to_vec();
-    data.extend_from_slice(&args.try_to_vec()?);
+    let data = DebitTcapBalanceV1::data(&tcap::instruction::DebitTcapBalanceV1 {
+      args: tcap::instructions::debit_tcap_balance_v1::DebitTcapBalanceV1Args {
+        authorization_digest: args.authorization_digest,
+        valid_after_slot: args.valid_after_slot,
+        expires_at_slot: args.expires_at_slot,
+        previous_commitment: args.previous_commitment,
+        new_commitment: args.new_commitment,
+        sequence: args.sequence,
+        token_id: args.token_id,
+        policy_commitment: args.policy_commitment,
+        gpru_scope_commitment: args.gpru_scope_commitment,
+        nullifier: args.nullifier,
+        debit_amount: args.debit_amount,
+      },
+    });
     let ix = Instruction { program_id: TCAP_DEBIT_PROGRAM_ID, accounts: vec![
         AccountMeta::new(ctx.accounts.authority.key(), true), AccountMeta::new_readonly(ctx.accounts.tcap_config.key(), false),
-        AccountMeta::new(ctx.accounts.tin_tip.key(), false), AccountMeta::new_readonly(ctx.accounts.tip_root.key(), false),
+        AccountMeta::new(ctx.accounts.tin_tip.key(), false),
         AccountMeta::new_readonly(ctx.accounts.tcap_asset_entry.key(), false), AccountMeta::new(ctx.accounts.reserve_state.key(), false),
         AccountMeta::new(ctx.accounts.liability.key(), false), AccountMeta::new_readonly(ctx.accounts.tcap_authorization_signer.key(), true),
     ], data };
     invoke_signed(&ix, &[
         ctx.accounts.authority.to_account_info(), ctx.accounts.tcap_config.to_account_info(), ctx.accounts.tin_tip.to_account_info(),
-        ctx.accounts.tip_root.to_account_info(), ctx.accounts.tcap_asset_entry.to_account_info(), ctx.accounts.reserve_state.to_account_info(),
+        ctx.accounts.tcap_asset_entry.to_account_info(), ctx.accounts.reserve_state.to_account_info(),
         ctx.accounts.liability.to_account_info(), ctx.accounts.tcap_authorization_signer.to_account_info(), ctx.accounts.tcap_program.to_account_info(),
     ], &[&[TSN_TCAP_AUTHORITY_SEED, &args.authorization_digest, &[bump]]])?;
     Ok(())

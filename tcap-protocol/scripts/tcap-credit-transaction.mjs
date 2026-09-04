@@ -33,6 +33,9 @@ const NULLIFIER_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_NULLIFIER_V1");
 const AUTHORIZATION_DIGEST_DOMAIN = seed("TSN_CONFIDENTIAL_SETTLEMENT_AUTHORIZATION_V1");
 const AUTHORIZATION_V2_DOMAIN = seed("TSN_GPRU_TCAP_CREDIT_V2");
 const DEBIT_AUTHORIZATION_V2_DOMAIN = seed("TSN_GPRU_TCAP_DEBIT_V2");
+const DEBIT_SCOPE_V2_DOMAIN = seed("TSN_GPRU_TCAP_DEBIT_SCOPE_V2");
+const DEBIT_NULLIFIER_V2_DOMAIN = seed("TSN_GPRU_TCAP_DEBIT_NULLIFIER_V2");
+const DEBIT_SETTLEMENT_V2_DOMAIN = seed("TSN_GPRU_TCAP_DEBIT_SETTLEMENT_V2");
 
 // These seeds must match the deployed TSN Rust constants exactly.
 const TSN_EPOCH_TREASURY_SEED = seed("tsn_epoch_treasury");
@@ -120,8 +123,45 @@ export function deriveGpruTcapCreditAuthorizationDigest(fields) {
   ));
 }
 
+/** Exact permit message checked by TCap's in-place one-time credit. */
+export function deriveOneTimeCreditPermitDigest(fields) {
+  return digest(concat(
+    seed("TCAP_ONE_TIME_CREDIT_PERMIT_V1"),
+    pubkey(fields.destTip ?? fields.tip).toBuffer(),
+    u64(fields.amount),
+    u32(fields.tokenId),
+    pubkey(fields.mint).toBuffer(),
+    bytes32(fields.nonce ?? fields.nullifier, "nonce"),
+    u64(fields.sequence),
+    bytes32(fields.previousCommitment, "previousCommitment"),
+  ));
+}
+
+export function deriveOneTimeTransferCreditPermitDigest(fields) {
+  return digest(concat(
+    seed("TCAP_ONE_TIME_TRANSFER_CREDIT_PERMIT_V1"),
+    pubkey(fields.destTip ?? fields.tip).toBuffer(),
+    u64(fields.amount), u32(fields.tokenId), pubkey(fields.mint).toBuffer(),
+    bytes32(fields.nonce ?? fields.nullifier, "nonce"), u64(fields.sequence),
+    bytes32(fields.previousCommitment, "previousCommitment"),
+  ));
+}
+
 export function deriveGpruTcapDebitAuthorizationDigest(fields) {
   return digest(concat(DEBIT_AUTHORIZATION_V2_DOMAIN, pubkey(fields.tip).toBuffer(), u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"), u64(fields.debitAmount)));
+}
+
+/** Deterministic, domain-separated V2 transition material. These helpers bind
+ * the private snapshot successor to the live tip transition without exposing
+ * funding, TIN, route, or legacy receipt identifiers. */
+export function deriveGpruTcapDebitTransitionFields(fields) {
+  const common = concat(pubkey(fields.tip).toBuffer(), bytes32(fields.previousCommitment, "previousCommitment"), u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"), u64(fields.debitAmount));
+  // Nullifier derivation is independent of the successor hash, avoiding a
+  // circular preimage while still binding the live tip, sequence and amount.
+  const nullifier = digest(concat(DEBIT_NULLIFIER_V2_DOMAIN, common));
+  const gpruScopeCommitment = digest(concat(DEBIT_SCOPE_V2_DOMAIN, common, bytes32(nullifier, "nullifier")));
+  const settlementCommitment = digest(concat(DEBIT_SETTLEMENT_V2_DOMAIN, common, bytes32(gpruScopeCommitment, "gpruScopeCommitment"), bytes32(nullifier, "nullifier")));
+  return { gpruScopeCommitment, nullifier, settlementCommitment };
 }
 
 export function deriveTcapTipLiabilityV2({ tip, assetEntry }) {
@@ -145,6 +185,37 @@ export function buildTsnRegisterTcapDebitAuthorizationV2Instruction(fields) {
     { pubkey: liability, isSigner: false, isWritable: true },
     { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
     { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ], data });
+}
+
+/** Debit a one-time TIP in place. The TSN wrapper invokes debit_tcap_balance_v1;
+ * no destination TIP, ATA, vault, or funding account is included. */
+export function buildTsnRegisterTcapBalanceDebitAuthorizationInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const tip = pubkey(fields.currentTip ?? fields.tip);
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(discriminator("tsn_register_tcap_debit_authorization_v2"), auth,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"),
+    bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId),
+    bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.nullifier, "nullifier"), u64(fields.debitAmount));
+  // Keep this list byte-for-byte aligned with RegisterTcapDebitAuthorizationV2:
+  // authority, mother_escrow, tcap_program, tsn_program, tcap_config,
+  // tcap_asset_entry, tin_tip, reserve_state, liability,
+  // tcap_authorization_signer, system_program.
+  const systemProgram = SystemProgram.programId;
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: tip, isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.liability), isSigner: false, isWritable: true },
+    { pubkey: signer, isSigner: false, isWritable: false },
+    { pubkey: systemProgram, isSigner: false, isWritable: false },
   ], data });
 }
 
@@ -279,6 +350,253 @@ export function deriveTcapPdas({ tipRootCommitment, authorizationDigest, nullifi
   const [nullifierRecord] = PublicKey.findProgramAddressSync([seed("tcap:nullifier:v1"), nf], TCAP_PROGRAM_ID);
   const [tsnAuthorizationSigner] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
   return { config, commitmentRoot, tip, receipt, nullifierRecord, tsnAuthorizationSigner, tipRoot: new PublicKey(root) };
+}
+
+export function deriveOneTimeTipPda(blindedSettlementCommitment) {
+  return PublicKey.findProgramAddressSync([
+    seed("tcap:one-time-tip:v1"),
+    bytes32(blindedSettlementCommitment, "blindedSettlementCommitment"),
+  ], TCAP_PROGRAM_ID)[0];
+}
+
+export function buildInitializeOneTimeTipInstruction(fields) {
+  const commitment = bytes32(fields.blindedSettlementCommitment, "blindedSettlementCommitment");
+  const policy = bytes32(fields.policyCommitment, "policyCommitment");
+  const tip = fields.oneTimeTip ? pubkey(fields.oneTimeTip) : deriveOneTimeTipPda(commitment);
+  const data = concat(discriminator("initialize_one_time_tip"), commitment, policy, u32(fields.tokenId));
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: tip, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+export function buildTsnRegisterOneTimeTipAuthorizationInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const tip = pubkey(fields.oneTimeTip);
+  const nextTip = fields.nextTip ? pubkey(fields.nextTip) : deriveOneTimeTipPda(fields.nextCommitment);
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(
+    discriminator("tsn_register_tcap_one_time_tip_authorization"), auth,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.nextCommitment, "nextCommitment"), bytes32(fields.nullifier, "nullifier"),
+    u64(fields.sequence), u64(fields.amount), bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+  );
+  return new TransactionInstruction({
+    programId: TSN_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.authority ?? fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+      { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+      { pubkey: tip, isSigner: false, isWritable: true },
+      { pubkey: nextTip, isSigner: false, isWritable: true },
+      { pubkey: signer, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+export function buildTsnRegisterOneTimeCreditInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(discriminator("tsn_register_tcap_one_time_credit"), auth, u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.nextCommitment, "nextCommitment"), bytes32(fields.nonce ?? fields.nullifier, "nonce"), u64(fields.sequence), u32(fields.tokenId), u64(fields.amount), bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.previousCommitment ?? fields.currentCommitment, "previousCommitment"));
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.authority ?? fields.payer), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.currentTip), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.liability), isSigner: false, isWritable: true },
+    // The TSN wrapper signs this PDA during CPI; it is not an outer
+    // transaction signer supplied by the caller.
+    { pubkey: signer, isSigner: false, isWritable: false },
+  ], data });
+}
+
+export function buildTsnRegisterOneTimeTransferCreditInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(discriminator("tsn_register_tcap_one_time_transfer_credit"), auth,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.nextCommitment, "nextCommitment"),
+    bytes32(fields.nonce ?? fields.nullifier, "nonce"), u64(fields.sequence), u32(fields.tokenId), u64(fields.amount),
+    bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.previousCommitment, "previousCommitment"));
+  // RegisterTcapOneTimeTransferCredit has no system_program account.  Do not
+  // append one here: its Anchor order ends at tcap_authorization_signer.
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.authority ?? fields.payer), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.currentTip), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.liability), isSigner: false, isWritable: true },
+    { pubkey: signer, isSigner: false, isWritable: false },
+  ], data });
+}
+
+/** TSN wrapper for the public-wallet exit. The destination is present only in
+ * this exit transaction; no funding, source TIP, or receipt PDA is included. */
+export function buildTsnRegisterTcapExitAuthorizationV1Instruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(discriminator("tsn_register_tcap_exit_authorization_v1"), auth,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"),
+    bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId),
+    bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.nullifier, "nullifier"), u64(fields.exitAmount));
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.currentTip), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.liability), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.reserveAuthority), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.vault), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.destination), isSigner: false, isWritable: true },
+    { pubkey: pubkey(fields.destinationOwner), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.mint), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tokenProgram ?? "TokenkegQfeZyiNwAJbbNbGKPFXCWuBvf9Ss623VQ5DA"), isSigner: false, isWritable: false },
+    { pubkey: signer, isSigner: false, isWritable: false },
+  ], data });
+}
+
+export function deriveTcapExitAuthorizationDigest(fields) {
+  return digest(concat(seed("TSN_TCAP_EXIT_V1"), pubkey(fields.tip).toBuffer(), pubkey(fields.destinationOwner).toBuffer(), u64(fields.validAfterSlot), u64(fields.expiresAtSlot), bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"), u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"), bytes32(fields.nullifier, "nullifier"), u64(fields.exitAmount)));
+}
+
+export function buildDepositAssetV2Instruction(fields) {
+  const mint = pubkey(fields.mint);
+  const tokenProgram = pubkey(fields.tokenProgram ?? "TokenkegQfeZyiNwAJbbNbGKPFXCWuBvf9Ss623VQ5DA");
+  const data = concat(discriminator("deposit_asset_v2"), u64(fields.amount));
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.depositor), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.config), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.assetState), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+      { pubkey: pubkey(fields.source), isSigner: false, isWritable: true },
+      { pubkey: pubkey(fields.vault), isSigner: false, isWritable: true },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: tokenProgram, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+export function deriveOneTimeTipLiabilityPda({ oneTimeTip, assetEntry }) {
+  return PublicKey.findProgramAddressSync([
+    seed("tcap:tip-liability:v2"), pubkey(oneTimeTip).toBuffer(), pubkey(assetEntry).toBuffer(),
+  ], TCAP_PROGRAM_ID)[0];
+}
+
+export function buildInitializeOneTimeTipLiabilityInstruction(fields) {
+  const tip = pubkey(fields.oneTimeTip);
+  const liability = fields.liability ? pubkey(fields.liability) : deriveOneTimeTipLiabilityPda({ oneTimeTip: tip, assetEntry: fields.assetEntry });
+  return new TransactionInstruction({ programId: TCAP_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.authority), isSigner: true, isWritable: true },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+    { pubkey: tip, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+    { pubkey: liability, isSigner: false, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ], data: concat(discriminator("initialize_one_time_tip_liability"), u64(fields.initialAvailable ?? 0)) });
+}
+
+export function buildConsumeOneTimeTipInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const tip = pubkey(fields.oneTimeTip);
+  const nextTip = fields.nextTip ? pubkey(fields.nextTip) : deriveOneTimeTipPda(fields.nextCommitment);
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const data = concat(
+    discriminator("consume_one_time_tip"), auth,
+    u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
+    bytes32(fields.nextCommitment, "nextCommitment"), bytes32(fields.nullifier, "nullifier"),
+    u64(fields.sequence), u64(fields.amount), bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+  );
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+      { pubkey: tip, isSigner: false, isWritable: true },
+      { pubkey: nextTip, isSigner: false, isWritable: true },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: signer, isSigner: true, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+export function deriveEncryptedSnapshotPda({ oneTimeTip, commitment }) {
+  return PublicKey.findProgramAddressSync([
+    seed("tcap:encrypted-snapshot"), pubkey(oneTimeTip).toBuffer(),
+    bytes32(commitment, "commitment"),
+  ], TCAP_PROGRAM_ID)[0];
+}
+
+export function buildStoreEncryptedSnapshotInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const tip = pubkey(fields.oneTimeTip);
+  const snapshot = fields.snapshot ? pubkey(fields.snapshot) : deriveEncryptedSnapshotPda({ oneTimeTip: tip, commitment: fields.commitment });
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const ciphertext = Buffer.isBuffer(fields.ciphertext) ? fields.ciphertext : Buffer.from(fields.ciphertext, "base64");
+  const data = concat(
+    discriminator("store_encrypted_snapshot"), auth,
+    bytes32(fields.commitment, "commitment"), bytes32(fields.ownerBinding, "ownerBinding"),
+    u64(fields.sequence), Buffer.from(fields.nonce), bytes32(fields.ciphertextCommitment, "ciphertextCommitment"),
+    u32(ciphertext.length), ciphertext,
+  );
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
+      { pubkey: tip, isSigner: false, isWritable: true },
+      { pubkey: snapshot, isSigner: false, isWritable: true },
+      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: signer, isSigner: true, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
+export function buildTsnStoreEncryptedSnapshotInstruction(fields) {
+  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const tip = pubkey(fields.oneTimeTip);
+  const snapshot = fields.snapshot ? pubkey(fields.snapshot) : deriveEncryptedSnapshotPda({ oneTimeTip: tip, commitment: fields.commitment });
+  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
+  const ciphertext = Buffer.isBuffer(fields.ciphertext) ? fields.ciphertext : Buffer.from(fields.ciphertext, "base64");
+  const data = concat(discriminator("tsn_store_tcap_encrypted_snapshot"), auth, bytes32(fields.commitment, "commitment"), bytes32(fields.ownerBinding, "ownerBinding"), u64(fields.sequence), Buffer.from(fields.nonce), bytes32(fields.ciphertextCommitment, "ciphertextCommitment"), u32(ciphertext.length), ciphertext);
+  return new TransactionInstruction({ programId: TSN_PROGRAM_ID, keys: [
+    { pubkey: pubkey(fields.authority ?? fields.payer), isSigner: true, isWritable: true }, { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
+    { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false }, { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false }, { pubkey: tip, isSigner: false, isWritable: true },
+    { pubkey: snapshot, isSigner: false, isWritable: true }, { pubkey: signer, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ], data });
 }
 
 export function deriveTsnEpochCommitmentPda({ motherEscrow, epochId }) {

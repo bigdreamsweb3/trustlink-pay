@@ -314,6 +314,7 @@ pub fn initialize_reserve_state_v1(ctx: Context<InitializeReserveStateV1>) -> Re
     reserve.bump = ctx.bumps.reserve_state;
     reserve.reserve_authority_bump = ctx.bumps.reserve_authority;
     reserve.future_vault_bump = ctx.bumps.future_vault;
+    reserve.transfer_pending = 0;
     emit!(ReserveStateInitializedV1 {
         reserve_state: reserve.key(),
         asset_entry: reserve.asset_entry,

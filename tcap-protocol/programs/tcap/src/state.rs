@@ -20,6 +20,48 @@ pub struct TCapTinTipV1 {
     pub bump: u8,
 }
 
+/// Canonical blinded-root TIP state. The PDA is initialized once and its
+/// commitment/nullifier/sequence are updated in place for each authorization;
+/// no successor TIP account is created by a credit.
+#[account]
+pub struct TcapOneTimeTip {
+    pub commitment: [u8; 32],
+    pub sequence: u64,
+    /// Authenticated AES-GCM ciphertext (32-byte plaintext + 16-byte tag).
+    pub sealed: [u8; 48],
+    /// Commitment to the sealed balance transition.
+    pub seal_commitment: [u8; 32],
+    pub policy_commitment: [u8; 32],
+    pub transition_nullifier: [u8; 32],
+    pub token_id: u32,
+    pub consumed: bool,
+    pub bump: u8,
+}
+
+/// Encrypted owner snapshot. The account contains ciphertext and commitments
+/// only; plaintext balances and decryption keys never reach the chain.
+#[account]
+pub struct TcapEncryptedSnapshot {
+    pub tip: Pubkey,
+    pub commitment: [u8; 32],
+    pub owner_binding: [u8; 32],
+    pub sequence: u64,
+    pub nonce: [u8; 12],
+    pub ciphertext_commitment: [u8; 32],
+    pub ciphertext: Vec<u8>,
+    pub bump: u8,
+}
+
+impl TcapEncryptedSnapshot {
+    pub fn space(ciphertext_len: usize) -> usize {
+        8 + 32 + 32 + 32 + 8 + 12 + 32 + 4 + ciphertext_len + 1
+    }
+}
+
+impl TcapOneTimeTip {
+    pub const SPACE: usize = 8 + 32 + 8 + 48 + 32 + 32 + 32 + 4 + 1 + 1;
+}
+
 impl TCapTinTipV1 {
     pub const SPACE: usize = 8 + 2 + 32 + 8 + 32 + 32 + 1 + 1;
 }
@@ -201,13 +243,26 @@ pub struct TcapReserveStateV1 {
     pub bump: u8,
     pub reserve_authority_bump: u8,
     pub future_vault_bump: u8,
+    /// Private TIP-to-TIP transfer liability, kept separate from public on-ramp pending.
+    pub transfer_pending: u64,
 }
 
 impl TcapReserveStateV1 {
-    pub const SPACE: usize = 8 + 2 + 2 + (32 * 4) + (8 * 6) + 1 + 1 + 1 + 1 + 1;
+    pub const SPACE: usize = 8 + 2 + 2 + (32 * 4) + (8 * 7) + 1 + 1 + 1 + 1 + 1;
     pub fn total_liabilities(&self) -> Option<u64> {
         self.pending_liabilities
             .checked_add(self.settled_confidential_liabilities)?
+            .checked_add(self.transfer_pending)?
+            .checked_add(self.authorized_withdrawal_liabilities)?
+            .checked_add(self.reserved_refund_liabilities)
+    }
+
+    /// Liability view for private TIP-to-TIP transfers. It intentionally
+    /// excludes public on-ramp pending_liabilities so the two paths cannot
+    /// consume or constrain one another.
+    pub fn transfer_liabilities(&self) -> Option<u64> {
+        self.settled_confidential_liabilities
+            .checked_add(self.transfer_pending)?
             .checked_add(self.authorized_withdrawal_liabilities)?
             .checked_add(self.reserved_refund_liabilities)
     }

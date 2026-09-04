@@ -2327,6 +2327,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tcap"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-program",
+]
+
+[[package]]
 name = "termcolor"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2446,6 +2455,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "solana-program",
+ "tcap",
 ]
 
 [[package]]

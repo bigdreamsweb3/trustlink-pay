@@ -148,4 +148,39 @@ pub mod trustlink_escrow {
         tsn::instructions::register_tcap_debit_authorization_v2::handler(ctx, args)
     }
 
+    pub fn tsn_register_tcap_exit_authorization_v1(
+        ctx: Context<RegisterTcapExitAuthorizationV1>,
+        args: RegisterTcapExitAuthorizationV1Args,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_exit_authorization_v1::handler(ctx, args)
+    }
+
+    pub fn tsn_register_tcap_one_time_tip_authorization(
+        ctx: Context<RegisterTcapOneTimeTipAuthorization>,
+        args: RegisterTcapOneTimeTipAuthorizationArgs,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_one_time_tip_authorization::handler(ctx, args)
+    }
+
+    pub fn tsn_store_tcap_encrypted_snapshot(
+        ctx: Context<StoreTcapEncryptedSnapshot>,
+        args: StoreTcapEncryptedSnapshotArgs,
+    ) -> Result<()> {
+        tsn::instructions::store_tcap_encrypted_snapshot::handler(ctx, args)
+    }
+
+    pub fn tsn_register_tcap_one_time_credit(
+        ctx: Context<RegisterTcapOneTimeCredit>,
+        args: RegisterTcapOneTimeCreditArgs,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_one_time_credit::handler(ctx, args)
+    }
+
+    pub fn tsn_register_tcap_one_time_transfer_credit(
+        ctx: Context<RegisterTcapOneTimeTransferCredit>,
+        args: RegisterTcapOneTimeTransferCreditArgs,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_one_time_transfer_credit::handler(ctx, args)
+    }
+
 }

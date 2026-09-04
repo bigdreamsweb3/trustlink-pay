@@ -19,7 +19,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomBytes } from "node:crypto";
 import bs58 from "bs58";
-import { deriveDevnetTestPrivacyReceivingRootCommitment } from "../lib/privacy-root-commitment.mjs";
 import {
   Connection,
   Keypair,
@@ -35,6 +34,11 @@ import {
   buildTsnRegisterTcapCreditAuthorizationV2Instruction,
   deriveGpruTcapCreditAuthorizationDigest,
 } from "../../tcap-protocol/scripts/tcap-credit-transaction.mjs";
+import {
+  computeTcapBalanceSnapshotCommitment,
+  encryptTcapBalanceSnapshotV1,
+  importTcapSnapshotKey,
+} from "../../tcap-protocol/tcap-sdk/dist/index.js";
 
 const SPL_TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
@@ -93,10 +97,12 @@ function loadOptionalEnv(file) {
 loadOptionalEnv(path.join(REPO_ROOT, ".env"));
 loadOptionalEnv(path.join(REPO_ROOT, ".env.local"));
 loadOptionalEnv(path.join(REPO_ROOT, "protocol-tests", "tcap-credit-devnet.defaults.env"));
+// Identity fixtures are loaded from users/<A|B>; no legacy env fixture is used.
 
 function fail(message) {
   throw new Error(`[tcap-credit-v2] ${message}`);
 }
+const jsonReplacer = (_key, value) => typeof value === "bigint" ? value.toString() : value;
 
 function sanitizedError(error) {
   return String(error?.message ?? error).replace(/https?:\/\/[^\s"']+/gi, "<rpc-endpoint>");
@@ -114,7 +120,62 @@ function configuredValue(name) {
   return value;
 }
 
-function resolveTipRootCommitment(payerKey) {
+const FIXTURE_DIR = path.join(REPO_ROOT, "protocol-tests", "tcap-v2-fixture");
+function selectedFixtureId() {
+  const index = process.argv.indexOf("--user");
+  const value = index >= 0 ? process.argv[index + 1] : "A";
+  if (!/^[AB]$/.test(value ?? "")) fail("--user must be A or B");
+  return value;
+}
+function fixturePaths(id) {
+  const dir = path.join(FIXTURE_DIR, "users", id);
+  return { dir, user: path.join(dir, "tin.json"), root: path.join(dir, "privacy-root.json"), gpru: path.join(dir, "gpru.json"), latest: path.join(dir, "latest.json"), snapshotKey: path.join(dir, "snapshot-key.json") };
+}
+const fixtureHash = (...parts) => createHash("sha256").update(Buffer.concat(parts.map((part) => Buffer.isBuffer(part) ? part : Buffer.from(String(part)) ))).digest();
+function fixtureUser(id) { const p = fixturePaths(id); if (!fs.existsSync(p.user) || !fs.existsSync(p.root) || !fs.existsSync(p.gpru) || !fs.existsSync(p.snapshotKey)) fail(`fixture user ${id} is missing; run npm run tcap:fixture:users`); return { id, tin: JSON.parse(fs.readFileSync(p.user)).tin, privacyRoot: JSON.parse(fs.readFileSync(p.root)).root, gpru: JSON.parse(fs.readFileSync(p.gpru)).scopeCommitment, snapshotKeyHex: JSON.parse(fs.readFileSync(p.snapshotKey)).keyHex, latest: fs.existsSync(p.latest) ? JSON.parse(fs.readFileSync(p.latest)) : null, paths: p }; }
+function deriveFixtureTransition({ tip, previousCommitment, sequence, tokenId, policyCommitment, amount }) {
+  const common = Buffer.concat([tip.toBuffer(), previousCommitment, Buffer.from(Uint8Array.from(new BigUint64Array([sequence]).buffer)), Buffer.from(Uint8Array.of(tokenId & 255, (tokenId >>> 8) & 255, (tokenId >>> 16) & 255, (tokenId >>> 24) & 255)), policyCommitment, Buffer.from(Uint8Array.from(new BigUint64Array([amount]).buffer))]);
+  const nullifier = fixtureHash("TSN_GPRU_TCAP_CREDIT_NULLIFIER_V2", common);
+  const gpruScopeCommitment = fixtureHash("TSN_GPRU_TCAP_CREDIT_SCOPE_V2", common, nullifier);
+  const settlementCommitment = fixtureHash("TSN_GPRU_TCAP_CREDIT_SETTLEMENT_V2", common, gpruScopeCommitment, nullifier);
+  return { nullifier, gpruScopeCommitment, settlementCommitment };
+}
+
+async function persistConfirmedSnapshot({ sequence, previousCommitment, newCommitment, policyCommitment, nullifier, tip, amount, write = true }) {
+  const keyHex = configuredValue("TCAP_SNAPSHOT_KEY_HEX");
+  const payload = configuredValue("TCAP_PRIVATE_SNAPSHOT_JSON");
+  if (!keyHex || !payload) fail("confirmed credit requires TCAP_SNAPSHOT_KEY_HEX and TCAP_PRIVATE_SNAPSHOT_JSON so the new tip has an owner-encrypted snapshot");
+  let input; try { input = JSON.parse(payload); } catch { fail("TCAP_PRIVATE_SNAPSHOT_JSON is not valid JSON"); }
+  if (!Array.isArray(input.token_balances) || input.token_balances.length === 0) fail("TCAP_PRIVATE_SNAPSHOT_JSON must contain non-empty token_balances");
+  const transitionNullifier = configuredValue("TCAP_CREDIT_NULLIFIER") ?? configuredValue("TCAP_NULLIFIER");
+  const settlementCommitment = configuredValue("TCAP_TSN_SETTLEMENT_COMMITMENT") ?? configuredValue("TCAP_SETTLEMENT_COMMITMENT");
+  if (!transitionNullifier || !settlementCommitment) fail("confirmed credit requires TCAP_CREDIT_NULLIFIER/TCAP_NULLIFIER and TCAP_TSN_SETTLEMENT_COMMITMENT");
+  const snapshot = {
+    version: 1,
+    sequence,
+    previous_commitment: previousCommitment.toString("hex"),
+    new_commitment: newCommitment.toString("hex"),
+    token_balances: input.token_balances.map((balance) => ({ token_id: Number(balance.token_id), native_amount: BigInt(balance.native_amount), stable_units: BigInt(balance.stable_units), stable_rate_version: Number(balance.stable_rate_version) })),
+    policy_commitment: policyCommitment.toString("hex"),
+    transition_nullifier: transitionNullifier.toLowerCase(),
+    tsn_settlement_commitment: settlementCommitment.toLowerCase(),
+    created_at: BigInt(input.created_at ?? Math.floor(Date.now() / 1000)),
+    encrypted_record_locator: String(input.encrypted_record_locator ?? `devnet:${tip.toBase58()}:credit:${sequence}`),
+  };
+  const computed = await computeTcapBalanceSnapshotCommitment(snapshot);
+  if (computed !== snapshot.new_commitment) fail(`snapshot commitment ${computed} does not match confirmed tip commitment ${snapshot.new_commitment}`);
+  const key = await importTcapSnapshotKey(Buffer.from(keyHex, "hex"));
+  const envelope = await encryptTcapBalanceSnapshotV1(snapshot, key);
+  const dir = path.resolve(REPO_ROOT, configuredValue("TCAP_SNAPSHOT_STORE_DIR") ?? ".tcap-snapshots");
+  const outputPath = path.join(dir, `${snapshot.new_commitment}.json`);
+  if (write) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(outputPath, JSON.stringify({ ...envelope, sequence: envelope.sequence.toString(), created_at: envelope.created_at.toString(), nonce: Buffer.from(envelope.nonce).toString("base64"), ciphertext: Buffer.from(envelope.ciphertext).toString("base64") }) + "\n", { mode: 0o600 });
+  }
+  return { path: outputPath, amount };
+}
+
+function resolveTipRootCommitment(fixture) {
   const explicitName = ["TCAP_TIP_ROOT_COMMITMENT", "TCAP_TIP_ROOT_HEX", "TCAP_TIP_ROOT"]
     .find((name) => configuredValue(name));
   const value = explicitName ? configuredValue(explicitName) : undefined;
@@ -124,9 +185,7 @@ function resolveTipRootCommitment(payerKey) {
     }
     return hex32(value, explicitName);
   }
-  const identityLabel = configuredValue("TCAP_DEVNET_TEST_IDENTITY_LABEL") ?? "fixture-wallet-v1";
-  const derived = deriveDevnetTestPrivacyReceivingRootCommitment(payerKey.toBase58(), identityLabel);
-  return hex32(derived, "derived TCAP_TIP_ROOT_COMMITMENT");
+  return hex32(fixture.privacyRoot, "fixture privacy receiving root");
 }
 
 function publicKey(value, label) {
@@ -208,6 +267,18 @@ function readTip(info, tip) {
     lastTransitionNullifier: data.subarray(82, 114),
     frozen: data[114] !== 0,
   };
+}
+
+function buildInitializeTipInstruction({ payer, tipRoot, tip, initialCommitment, policyCommitment }) {
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: tip, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.concat([discriminator("global", "initialize_tcap_tin_tip_v1"), tipRoot, initialCommitment, policyCommitment]),
+  });
 }
 
 function readAssetEntry(info, assetEntry) {
@@ -450,13 +521,15 @@ async function main() {
   const payer = loadWallet(walletPath(), "TCAP funding");
   const motherPayer = loadWallet(motherAuthorityWalletPath(), "TSN Mother authority");
   const payerKey = payer.publicKey;
+  const fixture = fixtureUser(selectedFixtureId());
+  process.env.TCAP_SNAPSHOT_STORE_DIR = path.join(fixture.paths.dir, "snapshots");
   const motherKey = motherPayer.publicKey;
   const mint = publicKey(required("TCAP_MINT"), "TCAP_MINT");
   const tokenProgram = publicKey(process.env.TCAP_TOKEN_PROGRAM ?? SPL_TOKEN_PROGRAM_ID.toBase58(), "TCAP_TOKEN_PROGRAM");
   const derivedSource = associatedTokenAddress(payerKey, mint, tokenProgram);
   const sourceOverride = configuredValue("TCAP_SOURCE_TOKEN_ACCOUNT");
   const source = publicKey(sourceOverride ?? derivedSource.toBase58(), "TCAP_SOURCE_TOKEN_ACCOUNT");
-  const tipRootCommitment = resolveTipRootCommitment(payerKey);
+  const tipRootCommitment = resolveTipRootCommitment(fixture);
   const depositAmount = (configuredValue("TCAP_DEPOSIT_AMOUNT") ?? configuredValue("TCAP_AMOUNT"));
   if (!depositAmount) fail("TCAP_DEPOSIT_AMOUNT (or the default-file alias TCAP_AMOUNT) is required");
   if (BigInt(depositAmount) <= 0n) fail("TCAP_DEPOSIT_AMOUNT must be positive");
@@ -469,8 +542,9 @@ async function main() {
   const assetEntry = publicKey(process.env.TCAP_ASSET_ENTRY ?? pda(TCAP_PROGRAM_ID, SEEDS.tcapAssetEntry, registry.toBuffer(), tokenProgram.toBuffer(), mint.toBuffer()).toBase58(), "TCAP_ASSET_ENTRY");
   const tipRoot = new PublicKey(tipRootCommitment);
   const tip = pda(TCAP_PROGRAM_ID, SEEDS.tcapTinTip, tipRootCommitment);
+  console.log(JSON.stringify({ identity: { user: fixture.id, tin: fixture.tin, privacyPubkey: (() => { try { return JSON.parse(fs.readFileSync(path.join(fixture.paths.dir, "privacy-pubkey.json"))).publicKeyHex.slice(0, 8); } catch { return null; } })(), gpru: fixture.gpru.slice(0, 8), tip: tip.toBase58(), available: String(fixture.latest?.availableBaseUnits ?? "0") } }, jsonReplacer));
 
-  const [motherInfo, sourceInfo, vaultInfo, assetStateInfo, reserveInfo, assetEntryInfo, tipInfo, configInfo] = await Promise.all([
+  let [motherInfo, sourceInfo, vaultInfo, assetStateInfo, reserveInfo, assetEntryInfo, tipInfo, configInfo] = await Promise.all([
     connection.getAccountInfo(motherEscrow, "confirmed"),
     connection.getAccountInfo(source, "confirmed"),
     connection.getAccountInfo(vault, "confirmed"),
@@ -519,6 +593,13 @@ async function main() {
   const tcapConfig = readConfig(configInfo, config);
   if (!tcapConfig.approvedTsnProgram.equals(TSN_PROGRAM_ID)) fail("TCAP config does not approve the pinned TSN program");
   if (tcapConfig.paused) fail("TCAP global config is paused");
+  if (!tipInfo) {
+    const initialCommitment = fixtureHash("TSN_DEVNET_FIXTURE_TIP_GENESIS_V2", fixture.privacyRoot);
+    const policyCommitment = fixtureHash("TSN_DEVNET_FIXTURE_TIP_POLICY_V2", fixture.privacyRoot);
+    const initIx = buildInitializeTipInstruction({ payer: motherKey, tipRoot: tipRootCommitment, tip, initialCommitment, policyCommitment });
+    await sendAndConfirmTransaction(connection, new Transaction().add(initIx), [motherPayer], { commitment: "confirmed" });
+    tipInfo = await connection.getAccountInfo(tip, "confirmed");
+  }
   const tipBefore = readTip(tipInfo, tip);
   if (tipBefore.frozen) fail("TCAP tip is frozen");
   if (tipBefore.previousCommitment.equals(Buffer.alloc(32))) fail("TCAP tip has an empty current commitment");
@@ -543,12 +624,30 @@ async function main() {
   const slotWindow = Number(process.env.TCAP_CREDIT_SLOT_WINDOW ?? "150");
   if (!Number.isSafeInteger(slotWindow) || slotWindow < 1) fail("TCAP_CREDIT_SLOT_WINDOW must be a positive safe integer");
   const expiresAtSlot = validAfterSlot + slotWindow;
-  const newCommitment = bytes32(process.env.TCAP_NEW_COMMITMENT, "TCAP_NEW_COMMITMENT");
-  const gpruScopeCommitment = bytes32(process.env.TCAP_GPRU_SCOPE_COMMITMENT, "TCAP_GPRU_SCOPE_COMMITMENT");
-  const nullifier = bytes32(process.env.TCAP_CREDIT_NULLIFIER, "TCAP_CREDIT_NULLIFIER");
-  if (newCommitment.equals(tipBefore.previousCommitment)) fail("TCAP_NEW_COMMITMENT must differ from the current tip commitment");
-  if (nullifier.equals(tipBefore.lastTransitionNullifier ?? Buffer.alloc(0))) fail("TCAP_CREDIT_NULLIFIER must differ from the tip's last transition nullifier");
   const sequence = tipBefore.sequence + 1n;
+  const latest = fixture.latest;
+  const declaredAvailable = latest && Number(latest.token_id) === asset.tokenId ? BigInt(latest.availableBaseUnits ?? 0) : 0n;
+  const postCreditAmount = declaredAvailable + BigInt(depositAmount);
+  const transition = deriveFixtureTransition({ tip, previousCommitment: tipBefore.previousCommitment, sequence, tokenId: asset.tokenId, policyCommitment: tipBefore.policyCommitment, amount: BigInt(depositAmount) });
+  const snapshotRecord = {
+    version: 1, sequence, previous_commitment: tipBefore.previousCommitment.toString("hex"), new_commitment: "0".repeat(64),
+    token_balances: [{ token_id: asset.tokenId, native_amount: postCreditAmount, stable_units: postCreditAmount / 1000000n, stable_rate_version: 1 }],
+    policy_commitment: tipBefore.policyCommitment.toString("hex"), transition_nullifier: transition.nullifier.toString("hex"), tsn_settlement_commitment: transition.settlementCommitment.toString("hex"),
+    created_at: BigInt(Math.floor(Date.now() / 1000)), encrypted_record_locator: `devnet:${payerKey.toBase58()}:tcap-v2-fixture:${sequence}`,
+  };
+  const newCommitment = bytes32(await computeTcapBalanceSnapshotCommitment(snapshotRecord), "derived new commitment");
+  const gpruScopeCommitment = transition.gpruScopeCommitment;
+  const nullifier = transition.nullifier;
+  process.env.TCAP_SNAPSHOT_KEY_HEX = fixture.snapshotKeyHex;
+  process.env.TCAP_PRIVATE_SNAPSHOT_JSON = JSON.stringify({
+    token_balances: snapshotRecord.token_balances.map((balance) => ({ ...balance, native_amount: balance.native_amount.toString(), stable_units: balance.stable_units.toString() })),
+    created_at: snapshotRecord.created_at.toString(),
+    encrypted_record_locator: snapshotRecord.encrypted_record_locator,
+  });
+  process.env.TCAP_CREDIT_NULLIFIER = nullifier.toString("hex");
+  process.env.TCAP_TSN_SETTLEMENT_COMMITMENT = transition.settlementCommitment.toString("hex");
+  if (newCommitment.equals(tipBefore.previousCommitment)) fail("derived successor commitment equals current tip commitment");
+  if (nullifier.equals(tipBefore.lastTransitionNullifier ?? Buffer.alloc(0))) fail("derived credit nullifier repeats the tip's last transition nullifier");
   const authorizationDigest = deriveGpruTcapCreditAuthorizationDigest({
     tip,
     validAfterSlot,
@@ -577,11 +676,16 @@ async function main() {
     expiresAtSlot,
     assetEntry,
   });
+  // Validate and encrypt the successor before sending anything. The envelope
+  // is persisted only after the confirmed on-chain credit below.
+  await persistConfirmedSnapshot({ sequence, previousCommitment: tipBefore.previousCommitment, newCommitment, policyCommitment: tipBefore.policyCommitment, nullifier, tip, amount: depositAmount, write: false });
   const authSigner = pda(TSN_PROGRAM_ID, SEEDS.tcapAuth, authorizationDigest);
   const creditAllowedAccounts = [motherKey, motherEscrow, TCAP_PROGRAM_ID, TSN_PROGRAM_ID, config, assetEntry, tipRoot, tip, authSigner, SystemProgram.programId];
   const fundingAccounts = new Set([source.toBase58(), assetState.toBase58(), reserveState.toBase58(), vault.toBase58(), mint.toBase58(), tokenProgram.toBase58(), registry.toBase58()]);
   const creditSignature = await sendAndConfirmTransaction(connection, new Transaction().add(creditIx), [motherPayer], { commitment: "confirmed" });
   const creditEvidence = await inspectCreditTransaction(connection, creditSignature, { allowedAccounts: creditAllowedAccounts, forbiddenAddresses: new Set([tcapConfig.commitmentRoot.toBase58()]), fundingAccounts, tip, sequence, newCommitment });
+  const snapshotEvidence = await persistConfirmedSnapshot({ sequence, previousCommitment: tipBefore.previousCommitment, newCommitment, policyCommitment: tipBefore.policyCommitment, nullifier, tip, amount: depositAmount });
+  fs.writeFileSync(fixture.paths.latest, `${JSON.stringify({ user: fixture.id, tin: fixture.tin, tip: tip.toBase58(), commitment: newCommitment.toString("hex"), sequence: sequence.toString(), token_id: asset.tokenId, availableBaseUnits: (declaredAvailable + BigInt(depositAmount)).toString() }, null, 2)}\n`, { mode: 0o600 });
   console.log(JSON.stringify({
     status: "PASSED",
     scenario: "TCAP V2 funding + GPRU credit",
@@ -607,6 +711,8 @@ async function main() {
       authorizationDigest: authorizationDigest.toString("hex"),
       accountKeys: creditEvidence.accountKeys,
       v2Instructions: creditEvidence.v2Instructions,
+      encryptedSnapshot: snapshotEvidence.path,
+      identity: { user: fixture.id, tin: fixture.tin, privacyRoot: fixture.privacyRoot.slice(0, 8), gpru: fixture.gpru.slice(0, 8) },
     },
     unlinkability: {
       status: "PASSED",
@@ -615,10 +721,10 @@ async function main() {
       fundingAccountsInCredit: creditEvidence.fundingAccountsInCredit,
       note: "Credit transaction contains only opaque GPRU tip-transition accounts; funding bookkeeping and token accounts are absent.",
     },
-  }, null, 2));
+  }, jsonReplacer, 2));
 }
 
 main().catch((error) => {
-  console.error(JSON.stringify({ status: "FAILED", scenario: "TCAP V2 funding + GPRU credit", error: sanitizedError(error) }, null, 2));
+  console.error(JSON.stringify({ status: "FAILED", scenario: "TCAP V2 funding + GPRU credit", error: sanitizedError(error) }, jsonReplacer, 2));
   process.exitCode = 1;
 });

@@ -7,3 +7,4 @@ export * from "./validation.js";
 export * from "./program-id.js";
 export * from "./snapshots.js";
 export * from "./tip-rpc.js";
+export * from "./tip-seal.js";

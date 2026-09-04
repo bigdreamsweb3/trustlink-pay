@@ -99,6 +99,7 @@ pub fn handler(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
     reserve.bump = ctx.bumps.reserve_state;
     reserve.reserve_authority_bump = ctx.bumps.reserve_authority;
     reserve.future_vault_bump = ctx.bumps.vault;
+    reserve.transfer_pending = 0;
 
     emit!(AssetStateInitializedV1 {
         asset_state: state.key(),

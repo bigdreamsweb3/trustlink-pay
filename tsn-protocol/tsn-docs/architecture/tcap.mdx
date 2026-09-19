@@ -1,20 +1,16 @@
 ---
-title: "TCAP: Transfer Confidential Asset Protocol"
-sidebarTitle: "TCAP"
-description: "TCAP provides private GPRU balance transitions on Solana using blinded tip PDAs and owner-encrypted balance snapshots."
+title: "TCap: Transfer Confidential Asset Protocol"
+sidebarTitle: "TCap"
+description: "TCap provides private GPRU balance transitions on Solana using blinded tip PDAs and owner-encrypted balance snapshots."
 ---
 
-TCAP is the **Transfer Confidential Asset Protocol**. It provides private
-balance accounting for governed assets on Solana. TCAP owns the blinded tip and
-sequence checks. A successful V2 credit advances the tip from one commitment to
-the next, and the owner maintains private balance state through locally
-encrypted snapshots.
+TCap is the **Transfer Confidential Asset Protocol**. It provides private balance accounting for governed assets on Solana. TCap owns the blinded tip and sequence checks. A successful credit advances the tip from one commitment to the next, and the owner maintains private balance state through locally encrypted snapshots.
 
 <Warning>
-  The live TCAP path is credit-only. Confidential debits and exits are not live and remain proof-gated. Do not attempt to spend or exit from a TCAP tip using the current Devnet release.
+  The live TCap path is credit-only. Confidential debits and exits are not live and remain proof-gated. Do not attempt to spend or exit from a TCap tip using the current Devnet release.
 </Warning>
 
-## TCAP TIN Tip PDA
+## TCap TIN Tip PDA
 
 The `TCapTinTipV1` PDA is derived from `['tcap:tin-tip:v1', blindedRootCommitment]`. The account stores:
 
@@ -30,25 +26,34 @@ The `TCapTinTipV1` PDA is derived from `['tcap:tin-tip:v1', blindedRootCommitmen
 
 The tip does NOT store: TIN, privacy-receiving root, seed, plaintext balance, snapshot key, or token account.
 
-## Privacy-safe transition: credit\_tcap\_tin\_tip\_v2
+## Privacy-safe transition: credit_tcap_tin_tip_v1
 
-The `credit_tcap_tin_tip_v2` instruction accepts only a TSN PDA authorization
-and opaque tip-transition fields. It performs the following checks:
+The `credit_tcap_tin_tip_v1` instruction accepts only a TSN PDA authorization and opaque tip-transition fields. It takes `CreditTcapTinTipV1Args`:
+
+```rust
+pub struct CreditTcapTinTipV1Args {
+    pub previous_commitment: [u8; 32],
+    pub new_commitment: [u8; 32],
+    pub sequence: u64,
+    pub token_id: u32,
+    pub policy_commitment: [u8; 32],
+    pub gpru_scope_commitment: [u8; 32],
+    pub nullifier: [u8; 32],
+}
+```
+
+It performs the following checks:
 
 - `previous_commitment` and `new_commitment` match the expected sequence.
 - `sequence` is the next expected value.
 - Token registry ID matches the asset entry.
 - `policy_commitment` matches the tip.
 - `gpru_scope_commitment` matches the TSN PDA authorization.
-- The nullifier differs from the tip's last transition nullifier.
+- The nullifier differs from the tip's last transition nullifier, and a nullifier PDA at `[TCAP_NULLIFIER_SEED, nullifier]` under `NullifierDomainV1::FundedIntentSettlement` is initialized to prevent replay.
 - Slot window is valid.
 - Asset entry is active, approved, and unpaused.
 
-If all checks pass, TCAP atomically advances the tip. The emitted event contains
-only the tip PDA, sequence, compact token ID, and an opaque transition digest.
-It never exposes payment intent IDs, raw TIN values, balances, or token
-accounts. The legacy V1 receipt instruction is retained only for migration and
-must not be used for new transfers.
+If all checks pass, TCap atomically advances the tip. The emitted event contains only the tip PDA, sequence, compact token ID, and an opaque transition digest. It never exposes payment intent IDs, raw TIN values, balances, or token accounts. The tip advances without a per-transfer receipt PDA.
 
 ## Encrypted balance snapshots
 
@@ -63,7 +68,7 @@ To read a private balance, the owner device:
 
 ## Commitment binding rules
 
-TCAP enforces a strict binding between the on-chain tip and the off-chain snapshot:
+TCap enforces a strict binding between the on-chain tip and the off-chain snapshot:
 
 ```text
 tip.current_commitment == snapshot.new_commitment
@@ -73,36 +78,19 @@ tip.sequence == snapshot.sequence
 
 This ensures the private snapshot is an exact successor of the on-chain tip state.
 
-## TCAP route V2 and TSN CPI
+## TSN CPI
 
-The V2 TSN CPI wrapper passes only the opaque authorization digest, validity
-window, predecessor/successor commitments, policy, GPRU scope and nullifier.
-It does not pass an `AcceptedIntentV1`, epoch commitment, settlement
-commitment, or TCAP authorization receipt. A GPRU signature alone cannot move
-custody; the approved TSN program must sign the CPI-derived authorization PDA.
-
-## Devnet reference
-
-The TCAP program ID on Devnet is:
-
-```text
-TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
-```
-
-This is the current TCAP program identity. The V2 instruction source has not
-been proven on Devnet until the upgraded binary is deployed and the V2
-authorization proof gate is exercised. Stable-TCAP is Devnet-only, valueless,
-and not USDC.
+The TSN CPI wrapper passes only the opaque authorization digest, validity window, predecessor/successor commitments, policy, GPRU scope, and nullifier. It does not pass an `AcceptedIntentV1`, epoch commitment, settlement commitment, or TCap authorization receipt. A GPRU signature alone cannot move custody; the approved TSN program must sign the CPI-derived authorization PDA.
 
 ## Related pages
 
 <CardGroup cols={2}>
-  <Card title="TCAP Credits" icon="coins" href="/developers/tcap-tip-credits">
+  <Card title="TCap Credits" icon="coins" href="/developers/tcap-tip-credits">
     Developer integration with tip states and credit transitions.
   </Card>
 
   <Card title="Confidential Settlement" icon="lock" href="/developers/confidential-settlement">
-    Full TSN to TCAP authorization flow and ABI.
+    Full TSN to TCap authorization flow and ABI.
   </Card>
 
   <Card title="Epoch Treasury" icon="vault" href="/architecture/epoch-treasury">

@@ -13,7 +13,7 @@ When a sender funds an epoch, the signed transaction sends tokens directly to th
 | State | Operation | Effect |
 | --- | --- | --- |
 | Open epoch | Funding | SPL tokens deposited to epoch treasury token account; pending liability incremented |
-| Open epoch | Settlement | Slot marked `SETTLED`; liability decremented; reimbursement completed for historical TSN payout |
+| Open epoch | Settlement | Slot marked `SETTLED`; liability decremented; CrankerVault reimbursed atomically from the epoch treasury for the exact amount |
 | Open epoch | Refund | Slot marked `REFUNDED`; exact amount returned from treasury to sender ATA; liability decremented |
 | Closing | Epoch close request | Gated by zero pending liability and complete opaque-slot resolution |
 | Closed | Epoch closed | No further settlement or refund accepted |

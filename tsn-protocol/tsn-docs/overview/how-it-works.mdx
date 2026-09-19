@@ -1,7 +1,7 @@
 ---
 title: "How a TSN Payment Feels: One Action, Many Checks"
 sidebarTitle: "How It Works"
-description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCAP cooperate. This page shows both views side by side."
+description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCap cooperate. This page shows both views side by side."
 ---
 
 **In plain English:** From the user's side, a TSN payment is one action: enter a 10-digit TIN, review the amount, and approve. The protocol then resolves the route, verifies the authorization, coordinates settlement, and records a private credit. Timing depends on wallet approval, service leases, Solana confirmation, and the current settlement path.
@@ -21,34 +21,40 @@ That is the intended product surface. No wallet address to copy and no settlemen
 ```mermaid
 sequenceDiagram
     autonumber
-    participant U as User
+    participant U as User + wallet
     participant TIN as TIN
-    participant GPRU as GPRU
-    participant TSN as TSN
-    participant TCAP as TCAP
+    participant Node as Mother Node
+    participant Rcv as Receiver
+    participant Cnk as Cranker
+    participant TSN as TSN program
+    participant TCap as TCap program
 
-    U->>TIN: Resolve 10-digit TIN to a route
-    TIN-->>U: Route commitment + policy
-    U->>GPRU: Sign intent bound to route
-    GPRU->>TSN: Sender authorization and route commitment
-    TSN->>TSN: Node verifies and submits authorized work to Receiver
-    TSN->>TSN: Cranker leases and submits the exact authorized transaction
-    TSN->>TSN: Verify Mother-rooted DNA permit
-    TSN->>TCAP: Advance opaque tip commitment (CPI)
-    TCAP-->>U: Encrypted snapshot updated
+    U->>TIN: Resolve 10-digit TIN via GPRU to a route commitment
+    TIN-->>U: Route commitment and policy
+    U->>U: Sign the payment intent bound to the route
+    U->>Node: Submit signed intent
+    Node->>Node: Verify signatures, sequence, expiry, policy
+    Node->>Rcv: Store verified work and lease state
+    Node->>Cnk: Issue short-lived Ed25519 permit for exact leased operation
+    Cnk->>TSN: Submit tsn_execute_private_payout with permit
+    TSN->>TSN: Re-verify SettlementDna, lease, treasury liability
+    TSN-->>Cnk: Payout from epoch treasury; cranker vault reimbursed
+    Cnk->>TCap: Submit credit_tcap_tin_tip_v1
+    TCap-->>U: Encrypted snapshot updated
     U-->>U: Payment status becomes pending or confirmed
 ```
 
-Four layers, one payment action. Each layer stays inside its boundary, so no layer needs to know more than it should.
+Multiple roles, one payment action. Each role stays inside its boundary, so no role needs more information than it should have.
 
 ## Layer-by-layer, in one line each
 
-| Step           | Layer    | What it does                                                                  | What it never sees                                           |
-| -------------- | -------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Look up        | **TIN**  | Resolves the 10-digit number to a route                                       | Sender's balance                                             |
-| Authorize      | **GPRU** | Signs a scoped authorization                                                  | Custody of funds                                             |
-| Move value     | **TSN**  | Coordinates authorized funding, acceptance, leases, and settlement submission | Recipient's private route material inside the tip transition |
-| Update balance | **TCAP** | Advances the commitment tip and encrypted snapshot                            | Plaintext balance                                            |
+| Step | Layer | What it does | What it never sees |
+| --- | --- | --- | --- |
+| Look up | **TIN + GPRU** | Resolves the 10-digit number to a scoped route | Sender's balance |
+| Authorize | **Sender wallet** | Signs a payment intent bound to the route | Cranker or Receiver keys |
+| Verify | **Mother Node** | Verifies signatures and signs a permit for the exact operation | Recipient's plaintext balance |
+| Submit | **Cranker Node** | Pays Solana fees and submits the exact authorized transaction | The right to change any field |
+| Update balance | **TCap** | Advances the commitment tip and encrypted snapshot | Plaintext amount |
 
 Any single layer, on its own, is incomplete. Together, they form a payment path.
 

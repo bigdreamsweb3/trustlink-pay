@@ -26,13 +26,15 @@ The Node signs a short-lived Ed25519 permit binding: opaque slot, commitment dig
 
 The TSN program creates the `EpochClaimSlot` PDA from the epoch treasury and opaque slot only if it does not already exist. If a valid settlement arrives first, the slot is marked `SETTLED`. If a valid refund arrives first, the slot is marked `REFUNDED`. The account creation and write lock make settlement and refund mutually exclusive: the first valid transaction wins atomically and the other fails before any transfer.
 
-## CrankerVault is not the live TCAP path
+## TSN settlement path vs TCap credit path
 
-<Warning>
-  CrankerVault payout logic is historical TSN payout architecture. The live TCAP credit path uses ConfidentialSettlement authorization plus the AcceptedIntentV1 PDA. Do not implement TCAP credit using CrankerVault references.
-</Warning>
+TSN and TCap are separate on-chain paths, and they run in that order.
 
-In the historical TSN payout path, settlement transferred from the Cranker vault and reimbursed it from the epoch treasury. In the live TCAP path, the TSN CPI wrapper creates the TCAP receipt, TCAP validates and consumes it, and the tip advances without entering CrankerVault logic.
+The TSN settlement path is the live payout. The Cranker submits `tsn_execute_private_payout`, which re-verifies the Mother-issued `SettlementDna`, checks the Node's Ed25519 permit and lease, transfers the payout from the CrankerVault to the recipient, and reimburses the CrankerVault from the epoch treasury, atomically or not at all. This path does not touch a TCap tip.
+
+The TCap credit path runs after the TSN payout. The Cranker submits `credit_tcap_tin_tip_v1` with `CreditTcapTinTipV1Args`, which advances the `TCapTinTipV1` PDA from `previous_commitment` to `new_commitment` under a scoped GPRU authorization. This path does not touch the CrankerVault, `SettlementDna`, or the epoch treasury; the tip advance is authorized by a PDA-signed CPI from the approved TSN program.
+
+Neither path uses an `AcceptedIntentV1` PDA. That instruction exists but is not on the live privacy-safe credit path.
 
 ## Related pages
 

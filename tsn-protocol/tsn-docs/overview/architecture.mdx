@@ -4,52 +4,52 @@ sidebarTitle: "Architecture"
 description: "Explore TSN's five-layer identity-first architecture on Solana, from identity and routing through intent-based, privacy-preserving settlement."
 ---
 
-TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, running on Solana. Its architecture is organized into five layers that take a transfer from identity resolution through to privacy-preserving on-chain settlement. Each layer has a narrow responsibility, and data moves between layers through well-defined commitments and signatures rather than plaintext on-chain records.
+TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**: an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers on Solana. Its architecture is organized into five layers that take a transfer from identity resolution through to privacy-preserving on-chain settlement. Each layer has a narrow responsibility, and data moves between layers through commitments, signatures, and PDAs rather than plaintext on-chain records.
 
 ```text
 Identity      TIN, TIP, GPRU
    |
 Intent        signed payment intents (off-chain)
    |
-Authorization Mother Escrow, permit signer, Settlement DNA
+Authorization Mother Escrow, Settlement DNA, permit signer
    |
-Transport     Node, Receiver, Cranker
+Transport     Mother Node, Receiver, Cranker Node
    |
-Settlement    Epoch Treasury, TCAP
+Settlement    Epoch Treasury, TCap
 ```
 
 ## Identity layer
 
-The identity layer resolves human-meaningful payment identities without exposing them on-chain in plaintext. A Transfer Identity Number (TIN) maps to routing metadata through a GPRU (Geographic/Private Routing Unit), keeping the actual identity and routing details off-chain. Only commitments and derived PDAs reach the Solana ledger.
+The identity layer resolves human-meaningful payment identities without exposing them on-chain in plaintext. A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the Transfer Identity Protocol (TIP). Routing is resolved off-chain through a **GPRU** scope, a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. Only commitments and derived PDAs reach the Solana ledger.
 
 ## Intent layer
 
-Payment intents are signed off-chain. Each intent binds recipient, amount, mint, nonce, and a validity window to the sender's TIN. Because the intent lives off-chain until authorization, sensitive terms are not visible on-chain until settlement. Intents are the atomic unit of payment agreement in TSN.
+Payment intents are signed off-chain by the sender's wallet. Each intent binds recipient, amount, mint, nonce, and a validity window to the sender's TIN. Because the intent lives off-chain until authorization, sensitive terms are never exposed on-chain. Intents are the atomic unit of payment agreement in TSN.
 
 ## Authorization layer
 
-The Mother Escrow is the root TSN authority and epoch controller. It is a PDA whose stored authority is a governed external keypair. The Mother authorizes intent acceptance and produces Settlement DNA, which binds payout parameters (recipient, amount, mint, nonce, digest, expiry) to an opaque slot. A permit signer then authorizes the actual private-settlement payout using domain-separated Ed25519 templates. The permit signer is governance-rotatable and signs only these templates.
+The **Mother Escrow** is the root TSN authority and epoch controller: a PDA whose stored `authority` is a governed external keypair. Mother authorizes settlement and produces **Settlement DNA**, a one-time `SettlementDna` PDA materialized at an HMAC-SHA256 slot that binds payout parameters (settlement commitment, digest, nullifier, cranker vault, recipient, mint, amount, lease) to that opaque slot. A separate **permit signer** authorizes the actual private-settlement payout using domain-separated Ed25519 templates; it is governance-rotatable and signs only those templates.
 
 ## Transport layer
 
-The transport layer is split across three roles with no single point of signing authority:
+The transport layer is split across three roles, none of which can rewrite the sender's authorization:
 
-- **Node**: a stateless off-chain verifier that checks canonical route messages, route/device/wallet signatures, device key fingerprints, expiration, nonces, and commitment field structure. Nodes have no signing authority. Their attestations are off-chain evidence.
-- **Receiver**: durable infrastructure for verified work state. It stores and leases work, authenticates Crankers, enforces state versions, and provides wake notifications. It does not create authorization.
-- **Cranker**: transports the exact authorized transaction and pays fees. It cannot change recipient, mint, amount, settlement commitment, nonce, nullifier, or Settlement DNA. It is trusted only for liveness and correct submission.
+- **Mother Node**: verifies canonical route messages, wallet and device signatures, sequence, expiry, policy, and commitment structure. On success it signs a short-lived Ed25519 permit binding the exact leased operation (slot, commitments, nullifier, cranker vault, recipient, mint, amount, lease). The Node cannot sign as Mother, mutate the intent, decrypt user envelopes, or submit transactions.
+- **Receiver**: durable infrastructure for verified work. It stores and leases work, authenticates Crankers, enforces state versions, and provides wake notifications. It does not create authorization.
+- **Cranker Node**: pays Solana fees and submits the exact authorized transaction via `tsn_execute_private_payout`. It cannot change recipient, mint, amount, settlement commitment, nonce, nullifier, or Settlement DNA. Crankers do not select sources, replan, decrypt envelopes, or sign for users.
 
 ## Settlement layer
 
-The Epoch Treasury holds epoch-level source liquidity and liabilities. Treasury and vault accounting keep settled funds separate from pending obligations. TCAP (Transfer Confidential Accounting Protocol) records private balance transitions using commitments and encrypted snapshots. Owners can decrypt their own snapshots, giving TSN confidential balance accounting and tip credits.
+The **Epoch Treasury** holds epoch-level source liquidity and tracks pending liability. Treasury and vault accounting keep settled funds separate from pending obligations, so operators cannot spend against unauthorized payouts. **TCap (Transfer Confidential Asset Protocol)** records private balance transitions as commitments pinned to a `TCapTinTipV1` PDA and owner-encrypted snapshots stored off-chain. The live path is credit-only via `credit_tcap_tin_tip_v1`; confidential debits and exits remain proof-gated and are not yet enabled.
 
 ## Layer summary
 
 | Layer | Key components | Responsibility |
 | --- | --- | --- |
-| Identity | TIN, GPRU | Resolve human-meaningful identities privately; keep routing metadata off-chain |
+| Identity | TIN, TIP, GPRU | Resolve portable identities privately; keep routing metadata off-chain |
 | Intent | Signed payment intents | Bind sender, recipient, amount, mint, nonce, expiry off-chain |
-| Authorization | Mother Escrow, permit signer, Settlement DNA | Accept intents and authorize payouts through governed, template-bound signatures |
-| Transport | Node, Receiver, Cranker | Verify, lease, and submit transactions without changing payment terms |
-| Settlement | Epoch Treasury, TCAP | Hold liquidity, separate obligations, and record confidential balance transitions |
+| Authorization | Mother Escrow, Settlement DNA, permit signer | Authorize payouts through governed, template-bound signatures |
+| Transport | Mother Node, Receiver, Cranker | Verify, lease, and submit transactions without changing payment terms |
+| Settlement | Epoch Treasury, TCap | Hold liquidity, separate obligations, record confidential balance transitions |
 
-For more on how trust is distributed across these layers, see the [Trust Model](/architecture/trust-model). To understand why authorization and transport are separated, read [Separation of Concerns](/overview/separation-of-concerns). For details on confidential accounting, see [TCAP](/architecture/tcap).
+For more on how trust is distributed across these layers, see the [Trust Model](/architecture/trust-model). To understand why authorization and transport are separated, read [Separation of Concerns](/overview/separation-of-concerns). For details on confidential accounting, see [TCap](/architecture/tcap).

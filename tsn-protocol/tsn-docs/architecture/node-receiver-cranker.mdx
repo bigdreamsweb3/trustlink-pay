@@ -28,7 +28,7 @@ If all checks pass, the Node returns the work as `VERIFIED` with the recipient i
 
 Any admitted Cranker Node can lease verified work. It is an executor, not a decision-maker. For payment funding, it submits the exact sender-authorized epoch-treasury transaction. For a claim payout, it submits the exact Mother-Node-authorized, lease-bound settlement transaction. The Mother-DNA admission boundary identifies the participant; it is not an IP-based presence system.
 
-After submission, the Cranker returns the Solana transaction signature and confirmation result. It cannot change the amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry. The current implementation is a Python daemon.
+After submission, the Cranker returns the Solana transaction signature and confirmation result. It cannot change the amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry. The current implementation is a TypeScript daemon in `services/tsn-cranker-op-daemon`.
 
 ## Work lifecycle
 

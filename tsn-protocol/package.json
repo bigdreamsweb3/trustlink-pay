@@ -12,11 +12,12 @@
   "scripts": {
     "test:attacks": "node tests/attack-simulations/run-attacks.mjs",
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
-    "git:status": "git status --short",
+    "git:status": "git status --short --branch",
     "git:hygiene": "node scripts/git-hygiene-check.mjs",
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
-    "git:pull:all": "git pull origin main",
-    "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push -u origin main --force "
+    "git:pull:all": "git pull --ff-only origin main",
+    "git:push:all": "git remote set-url origin https://github.com/Trustlink-Labs/TSN-Protocol.git && git push -u origin HEAD:main --force-with-lease",
+    "git:commit:push:all": "node -e \"const { spawnSync } = require('child_process'); const run = (cmd, args) => { const r = spawnSync(cmd, args, { stdio: 'inherit' }); if (r.status !== 0) process.exit(r.status || 1); }; run('git', ['remote', 'set-url', 'origin', 'https://github.com/Trustlink-Labs/TSN-Protocol.git']); run('git', ['add', '-A']); const diff = spawnSync('git', ['diff', '--cached', '--name-only']); const hasChanges = (diff.stdout || '').toString().trim().length > 0; if (!hasChanges) { console.log('No changes to commit; pushing current HEAD to TSN remote.'); } else { run('git', ['commit', '-m', 'Something just got updated!']); } run('git', ['push', '-u', 'origin', 'HEAD:main', '--force-with-lease']);\""
   }
 }

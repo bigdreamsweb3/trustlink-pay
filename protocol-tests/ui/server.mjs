@@ -77,11 +77,33 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const displayName = String(body.displayName ?? "").trim();
     if (!displayName) return json(res, 422, { error: "DISPLAY_NAME_REQUIRED" });
+    if (!body.encryptedMasterSeed) {
+      const ownerEncryptionNonce = randomBytes(32);
+      const ownerEncryptionMessage = tsnSdk.buildProgramAssignedTinOwnerEncryptionMessage({
+        ownerPublicKey: session.wallet,
+        displayName,
+        nonce: ownerEncryptionNonce,
+      });
+      session.pendingTinEncryption = { displayName, ownerEncryptionNonce };
+      return json(res, 200, {
+        status: "OWNER_ENCRYPTION_SIGNATURE_REQUIRED",
+        ownerEncryptionMessage: Buffer.from(ownerEncryptionMessage).toString("utf8"),
+        ownerEncryptionNonce: ownerEncryptionNonce.toString("hex"),
+        sdk: "@trustlink/tsn-sdk.buildProgramAssignedTinOwnerEncryptionMessage",
+      });
+    }
+    if (!session.pendingTinEncryption || session.pendingTinEncryption.displayName !== displayName) {
+      return json(res, 409, { error: "OWNER_ENCRYPTION_MUST_BE_PREPARED_FIRST" });
+    }
+    const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? ""), "base64");
+    if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
     const built = tsnSdk.buildProgramAssignedTinCreation({
       ownerPubkey: new PublicKey(session.wallet),
       displayName,
+      encryptedMasterSeed,
     });
     session.preparedTin = { built, displayName };
+    session.pendingTinEncryption = null;
     const b64 = (value) => Buffer.from(value).toString("base64");
     const hex = (value) => Buffer.from(value).toString("hex");
     return json(res, 200, {
@@ -90,6 +112,7 @@ async function handleApi(req, res, url) {
       ownerPubkey: session.wallet,
       displayName,
       ownerIntentHash: hex(built.intentHash),
+      ownerIntentMessage: Buffer.from(tsnSdk.buildTinOwnerIntentMessage(built.intentHash)).toString("utf8"),
       nonce: hex(built.nonce),
       expiry: Number(built.expiryTs),
       encryptedMasterSeed: b64(built.encryptedMasterSeed),

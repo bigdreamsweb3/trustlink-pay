@@ -28,6 +28,7 @@ export * from "./tin-device-access.js";
 export * from "./tin-device-key-envelope.js";
 export * from "./tin-device-key-provider.js";
 export * from "./tin-local-master-seed.js";
+export * from "./tin-private-controller.js";
 export * from "./lit-tin-action-configuration.js";
 export * from "./lit-tin-action-contract.js";
 export * from "./tin-threshold-nonce-receipt.js";

@@ -30,11 +30,97 @@ import { sha256Hex, toArrayBuffer } from "./receipts/internal/encoding.js";
 
 const WALLET_OWNER_ENVELOPE_PROVIDER = "wallet-owner-signature-v1";
 const WALLET_OWNER_SESSION_BINDING = "wallet-owner-any-device-v1";
+const PROGRAM_ASSIGNED_TIN_MARKER = "program-assigned";
 
 export type TinOwnerWallet = {
   publicKey: string;
   signMessage(message: Uint8Array): Promise<Uint8Array>;
 };
+
+export function buildProgramAssignedTinOwnerEncryptionMessage(params: {
+  ownerPublicKey: string;
+  displayName: string;
+  nonce: Uint8Array;
+}) {
+  if (!params.displayName.trim()) throw new Error("displayName is required");
+  if (params.nonce.length !== 32) throw new Error("nonce must be 32 bytes");
+  return new TextEncoder().encode(
+    [
+      "TrustLink TIN security approval",
+      "",
+      "You are authorizing private protection for a new TIN identity.",
+      "",
+      "APPROVAL DETAILS",
+      `Owner wallet: ${params.ownerPublicKey}`,
+      "",
+      `Display name: ${params.displayName.trim()}`,
+      "",
+      "Version: 1",
+      "",
+      `Request reference: ${Buffer.from(params.nonce).toString("hex")}`,
+      "",
+      "NEXT STEP",
+      "Your encrypted identity request will be submitted to TSN.",
+      "",
+      "No funds are transferred by this approval.",
+    ].join("\n"),
+  );
+}
+
+export async function createProgramAssignedTinOwnerEncryption(params: {
+  ownerPublicKey: string;
+  displayName: string;
+  nonce: Uint8Array;
+  ownerSignature: Uint8Array;
+}) {
+  const message = buildProgramAssignedTinOwnerEncryptionMessage(params);
+  if (
+    params.ownerSignature.length !== nacl.sign.signatureLength ||
+    !nacl.sign.detached.verify(
+      message,
+      params.ownerSignature,
+      new PublicKey(params.ownerPublicKey).toBytes(),
+    )
+  ) {
+    throw new Error("Main-wallet authorization is invalid");
+  }
+  const dataKey = await walletOwnerDataKey(params.ownerSignature);
+  const masterSeed = generateTinMasterSeed();
+  const pruConfigurationHash = "00".repeat(32);
+  const resourceCommitment = await sha256Hex(
+    crypto.getRandomValues(new Uint8Array(32)),
+  );
+  try {
+    const localSeed = await encryptTinMasterSeedLocally({
+      masterSeed,
+      dataKey,
+      context: {
+        tin: PROGRAM_ASSIGNED_TIN_MARKER,
+        ownerPublicKey: params.ownerPublicKey,
+        routeVersion: 1,
+        pruConfigurationHash,
+      },
+    });
+    const envelope = await createTinMasterSeedEnvelope({
+      provider: WALLET_OWNER_ENVELOPE_PROVIDER,
+      tin: PROGRAM_ASSIGNED_TIN_MARKER,
+      ownerPublicKey: params.ownerPublicKey,
+      routeVersion: 1,
+      pruConfigurationHash,
+      resourceCommitment,
+      ...localSeed,
+      protectedKey: "wallet-owner-signature-derived",
+      protectedKeyCommitment: await sha256Hex(
+        new TextEncoder().encode("wallet-owner-signature-derived"),
+      ),
+      accessControlHash: await sha256Hex(message),
+    });
+    return encodeTinEnvelope(envelope);
+  } finally {
+    dataKey.fill(0);
+    masterSeed.fill(0);
+  }
+}
 
 export type TinMasterSeedAccessContext = {
   tin: string;
@@ -62,11 +148,13 @@ export interface TinMasterSeedThresholdProvider {
     accessControlHash: string;
     deviceKeyEnvelope: TinDeviceKeyEnvelope;
   }>;
-  releaseKey(params: TinMasterSeedAccessContext & {
-    protectedKey: string;
-    protectedKeyCommitment: string;
-    accessControlHash: string;
-  }): Promise<TinDeviceKeyEnvelope>;
+  releaseKey(
+    params: TinMasterSeedAccessContext & {
+      protectedKey: string;
+      protectedKeyCommitment: string;
+      accessControlHash: string;
+    },
+  ): Promise<TinDeviceKeyEnvelope>;
 }
 
 let configuredThresholdProvider: TinMasterSeedThresholdProvider | null = null;
@@ -111,8 +199,10 @@ async function authorize(
   },
   device: TinAuthorizedDeviceSigner,
 ) {
-  const thresholdSessionBinding = await thresholdProvider.getDeviceSessionBinding();
-  if (!thresholdSessionBinding) throw new Error("Authorized-device session binding is unavailable");
+  const thresholdSessionBinding =
+    await thresholdProvider.getDeviceSessionBinding();
+  if (!thresholdSessionBinding)
+    throw new Error("Authorized-device session binding is unavailable");
   const deviceSessionBinding =
     `${thresholdSessionBinding}:device:${device.signingKeyFingerprint}` +
     `:encryption:${device.encryptionKeyFingerprint}`;
@@ -148,7 +238,9 @@ async function authorizeWalletOwner(
 }
 
 async function walletOwnerDataKey(signature: Uint8Array) {
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", toArrayBuffer(signature)));
+  return new Uint8Array(
+    await crypto.subtle.digest("SHA-256", toArrayBuffer(signature)),
+  );
 }
 
 export async function createTinPrivateIdentity(params: {
@@ -200,7 +292,9 @@ export async function createTinPrivateIdentity(params: {
       resourceCommitment,
       ...localSeed,
       protectedKey: "wallet-owner-signature-derived",
-      protectedKeyCommitment: await sha256Hex(new TextEncoder().encode("wallet-owner-signature-derived")),
+      protectedKeyCommitment: await sha256Hex(
+        new TextEncoder().encode("wallet-owner-signature-derived"),
+      ),
       accessControlHash: await sha256Hex(authorization.message),
     });
     const publicRouteEnvelope = encryptTinPublicRoutePayload({
@@ -264,17 +358,26 @@ export async function rewrapTinPrivateIdentityForWalletOwner(params: {
     dataKey = await walletOwnerDataKey(authorization.signature);
   } else {
     if (!params.thresholdProvider || !params.authorizedDevice) {
-      throw new Error("This legacy TIN needs its existing device for a one-time any-device upgrade");
+      throw new Error(
+        "This legacy TIN needs its existing device for a one-time any-device upgrade",
+      );
     }
     if (envelope.provider !== params.thresholdProvider.id) {
-      throw new Error(`TIN master seed requires the ${envelope.provider} provider`);
+      throw new Error(
+        `TIN master seed requires the ${envelope.provider} provider`,
+      );
     }
-    const authorization = await authorize(params.ownerWallet, params.thresholdProvider, {
-      tin: params.tin,
-      routeVersion: envelope.routeVersion,
-      pruConfigurationHash: envelope.pruConfigurationHash,
-      resourceCommitment: envelope.resourceCommitment,
-    }, params.authorizedDevice);
+    const authorization = await authorize(
+      params.ownerWallet,
+      params.thresholdProvider,
+      {
+        tin: params.tin,
+        routeVersion: envelope.routeVersion,
+        pruConfigurationHash: envelope.pruConfigurationHash,
+        resourceCommitment: envelope.resourceCommitment,
+      },
+      params.authorizedDevice,
+    );
     const deviceAccessProof = await createTinDeviceAccessProof({
       operation: "RELEASE_KEY",
       tin: params.tin,
@@ -319,13 +422,19 @@ export async function rewrapTinPrivateIdentityForWalletOwner(params: {
         pruConfigurationHash: envelope.pruConfigurationHash,
       },
     });
-    const commitment = computePruConfigurationHash(derivePruSet({
-      masterSeed,
-      tinId: params.tin,
-      initialState: "ACTIVE",
-    }));
-    if (commitment.toLowerCase() !== params.pruConfigurationHash.toLowerCase()) {
-      throw new Error("The existing TIN seed does not match its registered PRU route");
+    const commitment = computePruConfigurationHash(
+      derivePruSet({
+        masterSeed,
+        tinId: params.tin,
+        initialState: "ACTIVE",
+      }),
+    );
+    if (
+      commitment.toLowerCase() !== params.pruConfigurationHash.toLowerCase()
+    ) {
+      throw new Error(
+        "The existing TIN seed does not match its registered PRU route",
+      );
     }
     return await createTinPrivateIdentity({
       tin: params.tin,
@@ -366,17 +475,26 @@ export async function unlockTinPrivateRoute(params: {
     dataKey = await walletOwnerDataKey(authorization.signature);
   } else {
     if (!params.thresholdProvider || !params.authorizedDevice) {
-      throw new Error("This legacy TIN needs a one-time wallet-authorized migration before it can be opened on any device");
+      throw new Error(
+        "This legacy TIN needs a one-time wallet-authorized migration before it can be opened on any device",
+      );
     }
     if (envelope.provider !== params.thresholdProvider.id) {
-      throw new Error(`TIN master seed requires the ${envelope.provider} provider`);
+      throw new Error(
+        `TIN master seed requires the ${envelope.provider} provider`,
+      );
     }
-    const authorization = await authorize(params.ownerWallet, params.thresholdProvider, {
-      tin: params.tin,
-      routeVersion: envelope.routeVersion,
-      pruConfigurationHash: envelope.pruConfigurationHash,
-      resourceCommitment: envelope.resourceCommitment,
-    }, params.authorizedDevice);
+    const authorization = await authorize(
+      params.ownerWallet,
+      params.thresholdProvider,
+      {
+        tin: params.tin,
+        routeVersion: envelope.routeVersion,
+        pruConfigurationHash: envelope.pruConfigurationHash,
+        resourceCommitment: envelope.resourceCommitment,
+      },
+      params.authorizedDevice,
+    );
     const deviceAccessProof = await createTinDeviceAccessProof({
       operation: "RELEASE_KEY",
       tin: params.tin,
@@ -427,8 +545,12 @@ export async function unlockTinPrivateRoute(params: {
       initialState: "ACTIVE",
     });
     const commitment = computePruConfigurationHash(prus);
-    if (commitment.toLowerCase() !== params.pruConfigurationHash.toLowerCase()) {
-      throw new Error("Locally derived PRUs do not match the TIN PRU configuration commitment");
+    if (
+      commitment.toLowerCase() !== params.pruConfigurationHash.toLowerCase()
+    ) {
+      throw new Error(
+        "Locally derived PRUs do not match the TIN PRU configuration commitment",
+      );
     }
     return {
       prus: createTinPublicRoutePayload({
@@ -462,10 +584,14 @@ export async function loadTinPrivateTokenBalances(params: {
   signal?: AbortSignal;
   onProgress?: (message: string) => void;
 }) {
-  params.onProgress?.("Unlocking the TIN route with your wallet authorization...");
+  params.onProgress?.(
+    "Unlocking the TIN route with your wallet authorization...",
+  );
   const route = await unlockTinPrivateRoute(params);
   const activePrus = route.prus.filter((pru) => pru.state !== "SWEPT");
-  params.onProgress?.(`Found ${activePrus.length} active PRUs. Loading balances...`);
+  params.onProgress?.(
+    `Found ${activePrus.length} active PRUs. Loading balances...`,
+  );
   const nonZeroPruIndexes = new Set<number>();
   const pruBalances: Array<{
     pruIndex: number;
@@ -482,7 +608,8 @@ export async function loadTinPrivateTokenBalances(params: {
   for (const token of params.tokens) {
     let tokenTotal = 0n;
     for (const pru of activePrus) {
-      if (params.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      if (params.signal?.aborted)
+        throw new DOMException("Aborted", "AbortError");
       const accounts = await params.connection.getParsedTokenAccountsByOwner(
         new PublicKey(pru.publicKey),
         { mint: new PublicKey(token.mint) },

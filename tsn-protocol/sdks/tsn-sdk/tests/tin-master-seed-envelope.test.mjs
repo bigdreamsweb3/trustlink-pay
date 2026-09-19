@@ -10,6 +10,10 @@ import {
   unlockTinPrivateRoute,
 } from "../dist/tin-private-controller.js";
 import {
+  buildProgramAssignedTinOwnerEncryptionMessage,
+  createProgramAssignedTinOwnerEncryption,
+} from "../dist/tin-private-controller.js";
+import {
   decodeTinMasterSeedEnvelope,
   serializeTinMasterSeedWalletAuthorization,
 } from "../dist/tin-envelopes.js";
@@ -35,10 +39,21 @@ test("TIN owner approval uses a deterministic printable detached message", () =>
   assert.equal(
     message,
     [
-      "TSN TIN Upgrade",
-      "---",
-      "Intent Hash: abababababababababababababababababababababababababababababababab",
-      "Domain: TSN_TIN_OWNER_INTENT_V1",
+      "TrustLink TIN creation approval",
+      "",
+      "You are approving the encrypted creation request for your TIN.",
+      "",
+      "REQUEST DETAILS",
+      "Intent reference: abababababababababababababababababababababababababababababababab",
+      "",
+      "Protocol: Transfer Identity Network",
+      "",
+      "Version: 1",
+      "",
+      "NEXT STEP",
+      "TSN will verify this approval before submission to Solana.",
+      "",
+      "No funds are transferred by this approval.",
     ].join("\n"),
   );
   assert.equal(new TextEncoder().encode(message).length, message.length);
@@ -227,6 +242,25 @@ test("wallet-owned envelope unlocks from any device without device credentials",
     // A normal owner-wallet signature is the only access requirement.
   });
   assert.deepEqual(unlocked.prus, created.publicRoute.prus);
+});
+
+test("program-assigned creation builds owner encryption material from the wallet signature", async () => {
+  const owner = wallet();
+  const nonce = new Uint8Array(32).fill(7);
+  const message = buildProgramAssignedTinOwnerEncryptionMessage({
+    ownerPublicKey: owner.publicKey,
+    displayName: "Program assigned",
+    nonce,
+  });
+  const signature = await owner.signMessage(message);
+  const envelope = await createProgramAssignedTinOwnerEncryption({
+    ownerPublicKey: owner.publicKey,
+    displayName: "Program assigned",
+    nonce,
+    ownerSignature: signature,
+  });
+  assert.ok(envelope.length > 0);
+  assert.notEqual(new TextDecoder().decode(envelope).includes(Buffer.from(signature).toString("base64")), true);
 });
 
 test("wallet-owned envelope remains available on a new device after a fresh wallet signature", async () => {

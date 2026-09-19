@@ -126,6 +126,68 @@
     return btoa(String.fromCharCode(...signed.signature));
   }
 
+  function bytesToHex(bytes) {
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  function bytesToBase64Url(bytes) {
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function canonicalFields(fields) {
+    return new TextEncoder().encode(fields.map((field) => `${field.length}:${field}`).join("|"));
+  }
+
+  async function sha256Hex(bytes) {
+    return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
+  }
+
+  async function createProgramAssignedOwnerEnvelope({ ownerPublicKey, nonce, signature, encryptionMessage }) {
+    const dataKey = new Uint8Array(await crypto.subtle.digest("SHA-256", signature));
+    const masterSeed = crypto.getRandomValues(new Uint8Array(32));
+    const marker = "program-assigned";
+    const zeroHash = "0".repeat(64);
+    const resourceCommitment = await sha256Hex(crypto.getRandomValues(new Uint8Array(32)));
+    const aad = canonicalFields(["TSN_TIN_LOCAL_MASTER_SEED", marker, ownerPublicKey, "1", zeroHash]);
+    const seedNonce = crypto.getRandomValues(new Uint8Array(12));
+    const seedCiphertext = new Uint8Array(await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: seedNonce, additionalData: aad, tagLength: 128 },
+      await crypto.subtle.importKey("raw", dataKey, { name: "AES-GCM" }, false, ["encrypt"]),
+      masterSeed,
+    ));
+    const seedCiphertextBase64 = bytesToBase64Url(seedCiphertext);
+    const seedNonceBase64 = bytesToBase64Url(seedNonce);
+    const seedCiphertextCommitment = await sha256Hex(canonicalFields([
+      "TSN_TIN_LOCAL_MASTER_SEED_CIPHERTEXT", marker, ownerPublicKey, "1", zeroHash,
+      seedNonceBase64, seedCiphertextBase64,
+    ]));
+    const accessControlHash = await sha256Hex(new TextEncoder().encode(encryptionMessage));
+    const envelope = {
+      version: "tsn-tin-master-seed-envelope",
+      provider: "wallet-owner-signature-v1",
+      tin: marker,
+      ownerPublicKey,
+      routeVersion: 1,
+      pruConfigurationHash: zeroHash,
+      resourceCommitment,
+      seedEncryptionAlgorithm: "aes-256-gcm-local-master-seed",
+      seedCiphertext: seedCiphertextBase64,
+      seedNonce: seedNonceBase64,
+      seedCiphertextCommitment,
+      protectedKey: "wallet-owner-signature-derived",
+      protectedKeyCommitment: await sha256Hex(new TextEncoder().encode("wallet-owner-signature-derived")),
+      accessControlHash,
+    };
+    envelope.integrityCommitment = await sha256Hex(canonicalFields([
+      envelope.version, envelope.provider, envelope.tin, envelope.ownerPublicKey,
+      String(envelope.routeVersion), envelope.pruConfigurationHash, envelope.resourceCommitment,
+      envelope.seedEncryptionAlgorithm, envelope.seedCiphertext, envelope.seedNonce,
+      envelope.seedCiphertextCommitment, envelope.protectedKey, envelope.protectedKeyCommitment,
+      envelope.accessControlHash,
+    ]));
+    return new TextEncoder().encode(JSON.stringify(envelope));
+  }
+
   function requireWallet() {
     if (!session || !activeWallet) throw new Error("Connect Solflare or another browser wallet first.");
   }
@@ -148,10 +210,25 @@
       if (!activeWallet) throw new Error("Connect a browser wallet first.");
       if (!displayName) throw new Error("Enter a display name.");
       log("TIN CREATION INPUTS VALID", `Wallet ${activeWallet.publicKey.toBase58()} / display name ${displayName}`);
-      const prepared = await api("/api/tsn/sdk/prepare-tin", { method: "POST", body: JSON.stringify({ displayName }) });
-      const intentBytes = Uint8Array.from(prepared.ownerIntentHash.match(/.{2}/g), (pair) => parseInt(pair, 16));
-      const ownerSignature = await signBytes(intentBytes);
-      const submitted = await api("/api/tsn/sdk/submit-tin", { method: "POST", body: JSON.stringify({ ...prepared, ownerSignature }) });
+      let prepared = await api("/api/tsn/sdk/prepare-tin", { method: "POST", body: JSON.stringify({ displayName }) });
+      if (prepared.status === "OWNER_ENCRYPTION_SIGNATURE_REQUIRED") {
+        const encryptionBytes = new TextEncoder().encode(prepared.ownerEncryptionMessage);
+        const ownerEncryptionSignatureBase64 = await signBytes(encryptionBytes);
+        const ownerEncryptionSignature = Uint8Array.from(atob(ownerEncryptionSignatureBase64), (character) => character.charCodeAt(0));
+        const encryptedMasterSeed = await createProgramAssignedOwnerEnvelope({
+          ownerPublicKey: activeWallet.publicKey.toBase58(),
+          nonce: Uint8Array.from(prepared.ownerEncryptionNonce.match(/.{2}/g), (pair) => parseInt(pair, 16)),
+          signature: ownerEncryptionSignature,
+          encryptionMessage: prepared.ownerEncryptionMessage,
+        });
+        prepared = await api("/api/tsn/sdk/prepare-tin", {
+          method: "POST",
+          body: JSON.stringify({ displayName, encryptedMasterSeed: btoa(String.fromCharCode(...encryptedMasterSeed)) }),
+        });
+      }
+      const ownerIntentMessage = prepared.ownerIntentMessage;
+      const ownerSignature = await sign(ownerIntentMessage);
+      const submitted = await api("/api/tsn/sdk/submit-tin", { method: "POST", body: JSON.stringify({ ...prepared, ownerSignature, ownerIntentMessage }) });
       log("SDK createTin", submitted.intentId ?? "TIN creation intent submitted");
       log("TIN CREATION SUBMITTED", "The Node accepted the owner-authorized creation intent. The Cranker will submit CreateTin and the program will assign the TIN on Solana.");
     } catch (error) { log("TIN IDENTITY BLOCKED", error.message); }

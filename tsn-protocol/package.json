@@ -7,6 +7,6 @@
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "git pull tsn-protocol main",
-    "git:commit:push:all": "git -C .. add -- tsn-protocol && git -C .. commit -m \"docs: add TSN API reference and privacy guidance\" && git -C .. subtree push --prefix=tsn-protocol tsn-protocol main --force"
+    "git:commit:push:all": "git -C .. add -- tsn-protocol && (git -C .. diff --cached --quiet || git -C .. commit -m \"docs: add TSN API reference and privacy guidance\") && git -C .. subtree push --prefix=tsn-protocol tsn-protocol +main"
   }
 }

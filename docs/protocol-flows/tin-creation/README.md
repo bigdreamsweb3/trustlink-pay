@@ -69,10 +69,10 @@ TIN assigned on-chain: no
 Do not move the operation to the next stage until the current stage has
 explicit evidence. In particular, Node acceptance is not on-chain creation.
 
-## Required Next Documents
+## Stage Documents
 
-- `01-receiver-ingress.md`: Receiver-first submission and durable work creation;
-- `02-node-verification.md`: Node lease, normalization, and rejection rules;
-- `03-cranker-lease.md`: Receiver lease and Cranker work view;
-- `04-onchain-finalization.md`: instruction bytes, accounts, proof, and PDA;
-- `05-evidence.md`: commands, signatures, decoded result, and acceptance gate.
+- [01 Receiver ingress](01-receiver-ingress.md): Receiver-first submission and durable work creation;
+- [02 Node verification](02-node-verification.md): Node lease, normalization, and rejection rules;
+- `03-cranker-lease.md`: pending Receiver lease and Cranker work view;
+- `04-onchain-finalization.md`: pending instruction bytes, accounts, proof, and PDA;
+- `05-evidence.md`: pending commands, signatures, decoded result, and acceptance gate.

@@ -34,13 +34,13 @@ confirmed and the resulting Solana account is decoded.
 
 ### TIN Creation
 
-| Stage                              | Document                                               | Completion evidence                          |
-| ---------------------------------- | ------------------------------------------------------ | -------------------------------------------- |
-| Browser -> SDK -> Receiver ingress | To be added: `tin-creation/01-receiver-ingress.md`     | Receiver stores `RECEIVED` work              |
-| Receiver -> Node verification      | To be added: `tin-creation/02-node-verification.md`    | Node returns verified work to Receiver       |
-| Receiver -> Cranker lease          | To be added: `tin-creation/03-cranker-lease.md`        | Cranker owns a valid lease                   |
-| Cranker -> Solana                  | To be added: `tin-creation/04-onchain-finalization.md` | Confirmed transaction and identity PDA       |
-| Final state and evidence           | To be added: `tin-creation/05-evidence.md`             | Assigned 10-digit TIN and explorer signature |
+| Stage                              | Document                                                       | Completion evidence                          |
+| ---------------------------------- | -------------------------------------------------------------- | -------------------------------------------- |
+| Browser -> SDK -> Receiver ingress | [01 Receiver ingress](tin-creation/01-receiver-ingress.md)    | Receiver stores `RECEIVED` work              |
+| Receiver -> Node verification      | [02 Node verification](tin-creation/02-node-verification.md)  | Node returns verified work to Receiver       |
+| Receiver -> Cranker lease          | Pending: `tin-creation/03-cranker-lease.md`                   | Cranker owns a valid lease                   |
+| Cranker -> Solana                  | Pending: `tin-creation/04-onchain-finalization.md`            | Confirmed transaction and identity PDA       |
+| Final state and evidence           | Pending: `tin-creation/05-evidence.md`                        | Assigned 10-digit TIN and explorer signature |
 
 The current handoff document contains the complete browser-to-Node contract and
 identifies the remaining owner-proof compatibility decision before Cranker
@@ -72,12 +72,11 @@ service:
 protocol-flows/
   README.md
   tin-creation/
-    01-browser-sdk.md
-    02-node-ingestion.md
-    03-verification-and-storage.md
-    04-cranker-lease.md
-    05-onchain-finalization.md
-    06-evidence.md
+    01-receiver-ingress.md
+    02-node-verification.md
+    03-cranker-lease.md
+    04-onchain-finalization.md
+    05-evidence.md
   tin-payment/
   settlement/
 ```

@@ -11,6 +11,8 @@ and TCap encrypted private balance snapshots
 and reservation, Mother DNA authorization, Cranker submission, TSN Program enforcement, epoch treasury reimbursement, and
 receipts on Solana.
 
+<!--  -->
+
 ```mermaid
 flowchart LR
     T[TIN] --> S[TSN SDK]

@@ -981,6 +981,7 @@ export async function submitProgramAssignedTinCreation(params: {
   ownerPubkey: PublicKey | string;
   ownerSignature: Uint8Array | string;
   displayName: string;
+  ownerIntentMessage?: string;
 }) {
   const hex = (value: Uint8Array) => Buffer.from(value).toString("hex");
   const base64 = (value: Uint8Array) => Buffer.from(value).toString("base64");
@@ -1004,6 +1005,9 @@ export async function submitProgramAssignedTinCreation(params: {
         ownerPubkey,
         ownerSignature,
         displayName: params.displayName,
+        ...(params.ownerIntentMessage
+          ? { ownerIntentMessage: params.ownerIntentMessage }
+          : {}),
         ownerIntentHash: hex(prepared.intentHash),
         nonce: hex(prepared.nonce),
         expiry: Number(prepared.expiryTs),

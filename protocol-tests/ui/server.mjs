@@ -141,6 +141,7 @@ async function handleApi(req, res, url) {
       ownerPubkey: session.wallet,
       ownerSignature: signature,
       displayName: session.preparedTin.displayName,
+      ownerIntentMessage: String(body.ownerIntentMessage ?? ""),
     });
     session.preparedTin = null;
     return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.submitProgramAssignedTinCreation" });

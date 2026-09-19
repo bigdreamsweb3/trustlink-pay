@@ -1,0 +1,31 @@
+# Local-only TSN Node configuration.
+HOST=127.0.0.1
+PORT=8000
+
+# Use the isolated JSON adapter for local startup when no Receiver service is running.
+MEMPOOL_STORE=file
+MEMPOOL_FILE=.mempool-store.json
+TSN_ALLOW_LOCAL_JSON_STORE=true
+
+# Firebase project metadata; local storage remains active until credentials exist.
+FIREBASE_PROJECT_ID=tsn-epoch-record
+FIREBASE_COLLECTION=tsn_mempool
+# Enable one credential source only when switching MEMPOOL_STORE=firebase:
+# FIREBASE_CREDENTIALS=.fb_creds/your-firebase-adminsdk.json
+# FIREBASE_CLIENT_EMAIL=firebase-adminsdk-your-service-account@tsn-epoch-record.iam.gserviceaccount.com
+# FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+TSN_RECEIVER_URL=
+TSN_RECEIVER_FALLBACK_URL=
+
+TSN_NODE_ID=tsn-node-local
+TSN_NODE_ALLOWED_ORIGINS=http://127.0.0.1:3002,http://localhost:3002
+TSN_PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
+TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+TSN_CREDITCOIN_RPC_URL=https://rpc.cc3-testnet.creditcoin.network
+TSN_DESTINATION_ROUTES_JSON=[]
+TSN_RECEIVER_NODE_API_KEY='local-tsn-node-receiver-key'
+# MEMPOOL_API_KEY=local-tsn-node-mempool-key
+# TSN_NODE_CLAIM_SLOT_HMAC_SECRET=local-tsn-node-claim-slot-secret
+TSN_ALLOW_SINGLE_CRANKER_TINS=false
+TSN_ALLOW_DIRECT_FIREBASE_STORE=false
+TSN_CROSSCHAIN_RUNNER=npx.cmd

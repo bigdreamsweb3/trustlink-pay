@@ -1967,10 +1967,21 @@ def _canonical_tin_owner_intent_message(intent_hash: bytes) -> bytes:
     if len(intent_hash) != 32:
         raise ValueError("TIN owner intent hash must be exactly 32 bytes")
     return (
-        "TSN TIN Upgrade\n"
-        "---\n"
-        f"Intent Hash: {intent_hash.hex()}\n"
-        "Domain: TSN_TIN_OWNER_INTENT_V1"
+        "TrustLink TIN creation approval\n"
+        "\n"
+        "You are approving the encrypted creation request for your TIN.\n"
+        "\n"
+        "REQUEST DETAILS\n"
+        f"Intent reference: {intent_hash.hex()}\n"
+        "\n"
+        "Protocol: Transfer Identity Network\n"
+        "\n"
+        "Version: 1\n"
+        "\n"
+        "NEXT STEP\n"
+        "TSN will verify this approval before submission to Solana.\n"
+        "\n"
+        "No funds are transferred by this approval."
     ).encode("utf-8")
 
 def _decode_base64_blob(value: Any, label: str) -> bytes:

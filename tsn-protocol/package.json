@@ -16,13 +16,6 @@
     "git:hygiene": "node scripts/git-hygiene-check.mjs",
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
-    "git:sync:tsn": "git -C .. fetch tsn-protocol main && git -C .. rebase tsn-protocol/main",
-    "git:pull:all": "npm run git:sync:tsn",
-    "git:commit:push:all": "npm run git:sync:tsn && git -C .. add -- tsn-protocol && (git -C .. diff --cached --quiet || git -C .. commit -m \"docs: add TSN API reference and privacy guidance\") && git -C .. push tsn-protocol HEAD:main",
-    "git:status": "git status --short",
-    "git:hygiene": "node scripts/git-hygiene-check.mjs",
-    "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
-    "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "git pull origin main",
     "git:commit:push:all": "git add -A && git commit -m \"Something just got updated! \" && git push -u origin main --force "
   }

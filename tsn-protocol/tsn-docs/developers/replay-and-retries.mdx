@@ -26,7 +26,7 @@ The `sequence` number in the TIN tip is strictly increasing. TCAP requires the n
 
 ### Signed-field binding
 
-Every field in the authorization is signed as a unit. Any tamper, including to amount, token, recipient, commitment, or expiry, invalidates the signature. The Node and on-chain program verify the complete binding before acceptance.
+Every field in the authorization is signed as a unit. Any tampering, including to amount, token, recipient, commitment, or expiry, invalidates the signature. The Node and on-chain program verify the complete binding before acceptance.
 
 ## Defense summary
 
@@ -48,7 +48,7 @@ If a Cranker submission fails, retries are safe under these conditions:
 
 If two Crankers race to submit the same verified work, the Solana program rejects the second attempt because the nullifier is already consumed. Re-execution is impossible even in a race.
 
-If the validity window expires, the work is no longer submittable. A new intent with a fresh nonce, nullifier, and slot window must be signed by the sender.
+If the validity window expires, the work is no longer submittable. The sender must sign a new intent with a fresh nonce, nullifier, and slot window.
 
 <Info>
   A rejected retry does not indicate a bug. It indicates that the work was already consumed or the window closed. Check the on-chain nullifier state and the tip sequence before retrying.

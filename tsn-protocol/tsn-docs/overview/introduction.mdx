@@ -4,7 +4,7 @@ sidebarTitle: "Introduction"
 description: "TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by TrustLink Labs."
 ---
 
-**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [TrustLink Labs](/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**: the Mother Node verifies and reserves work, the TSN Program enforces Mother DNA commitments and vault reimbursement on-chain, and independent Cranker Nodes pay Solana fees and submit exact authorized transactions. Senders authorize payments against a portable identity, not a raw public key. No operator between the sender and Solana can change what the sender signed.
+**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [TrustLink Labs](/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. The Mother Node verifies and reserves work, and the TSN Program enforces Mother DNA commitments and vault reimbursement on-chain. Independent Cranker Nodes pay Solana fees and submit exact authorized transactions. Senders authorize payments against a portable identity, not a raw public key. No operator between the sender and Solana can change what the sender signed.
 
 <CardGroup cols={3}>
   <Card title="Identity-first" icon="fingerprint">
@@ -18,7 +18,7 @@ description: "TSN is an identity-first, intent-based, privacy-preserving settlem
 </Card>
 
   <Card title="Privacy-preserving" icon="lock">
-    TCap records balance transitions as commitments and owner-decryptable snapshots. The public ledger reveals movement, not amounts or parties.
+    TCAP records balance transitions as commitments and owner-decryptable snapshots. The public ledger reveals movement, not amounts or parties.
   </Card>
 </CardGroup>
 
@@ -56,18 +56,18 @@ Every role fails closed. A Node that cannot verify rejects. A Cranker that submi
     downstream.
   </Step>
   <Step title="Node verifies and signs a permit">
-    A Node checks signatures, TIN and GPRU bindings, sequence, expiry, and policy, then signs a short-lived Ed25519 permit binding the settlement slot, commitments, nullifier, selected Cranker vault, recipient, mint, amount, and lease. A Node cannot sign as Mother, mutate the intent, or submit the transaction itself, so it can only authorize an exact leased operation or reject.
+    A Node checks signatures, TIN and GPRU bindings, sequence, expiry, and policy. It then signs a short-lived Ed25519 permit binding the settlement slot, commitments, nullifier, selected Cranker vault, recipient, mint, amount, and lease. A Node cannot sign as Mother, mutate the intent, or submit the transaction itself, so it can only authorize an exact leased operation or reject.
   </Step>
   <Step title="Receiver stores and leases the work">
     The Receiver is durable infrastructure for verified work. It moves the job through `RECEIVED → NODE_VERIFYING → VERIFIED → CRANKER_LEASED → SUBMITTED → CONFIRMED` under short leases and strict state versions.
   </Step>
   <Step title="Mother materializes a one-time settlement slot">
-    Mother submits `tsn_create_settlement_dna`, which writes a `SettlementDna` PDA at an opaque HMAC-SHA256 slot binding the settlement commitment, digest, nullifier, cranker vault, recipient, mint, amount, and lease. No payment id, sender, or route metadata is written on-chain.
+    Mother submits `tsn_create_settlement_dna`, which writes a `SettlementDna` PDA at an opaque HMAC-SHA256 slot. The slot binds the settlement commitment, digest, nullifier, cranker vault, recipient, mint, amount, and lease. No payment id, sender, or route metadata is written on-chain.
   </Step>
   <Step title="Cranker submits the payout atomically">
-    The Cranker pays Solana fees and submits `tsn_execute_private_payout` with the Node's Ed25519 permit. The TSN Program re-checks the stored `SettlementDna`, the permit, the lease, and the treasury liability, then transfers from the epoch treasury and reimburses the cranker vault, atomically or not at all. The `EpochClaimSlot` PDA is created on this first settlement or refund attempt: first-writer-wins.
+    The Cranker pays Solana fees and submits `tsn_execute_private_payout` with the Node's Ed25519 permit. The TSN Program re-checks the stored `SettlementDna`, the permit, the lease, and the treasury liability. It then transfers from the epoch treasury and reimburses the cranker vault, atomically or not at all. The `EpochClaimSlot` PDA is created on this first settlement or refund attempt: first-writer-wins.
   </Step>
-  <Step title="TCap records the private balance transition">
+  <Step title="TCAP records the private balance transition">
     The recipient's Cranker submits `credit_tcap_tin_tip_v1`, which advances the `TCapTinTipV1` commitment and stores an owner-encrypted snapshot. The recipient reconciles a private balance without exposing amounts on-chain.
   </Step>
 </Steps>
@@ -120,7 +120,7 @@ pub struct SettlementDna {
     pub bump: u8,
 }
 
-// TCap tip-credit transition args, submitted by the Cranker via
+// TCAP tip-credit transition args, submitted by the Cranker via
 // `credit_tcap_tin_tip_v1` to advance the recipient's private balance.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct CreditTcapTinTipV1Args {
@@ -136,13 +136,13 @@ pub struct CreditTcapTinTipV1Args {
 
 </CodeGroup>
 
-The intent above is what the sender approves. `SettlementDna` is what the TSN program re-verifies at payout time, and `CreditTcapTinTipV1Args` is what TCap re-verifies at credit time. Nothing between the two can change a field without invalidating both.
+The intent above is what the sender approves. `SettlementDna` is what the TSN program re-verifies at payout time, and `CreditTcapTinTipV1Args` is what TCAP re-verifies at credit time. Nothing between the two can change a field without invalidating both.
 
 ## Core primitives
 
 <AccordionGroup>
   <Accordion title="TIN and GPRU: identity and routing" icon="id-card">
-    A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the **Transfer Identity Protocol (TIP)**. The encrypted master seed is sealed to the owner wallet via a `wallet-owner-signature-v1` envelope and authorizes derivation of **GPRU** scopes, a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. See [Identity and routing](/architecture/identity-and-routing).
+    A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the **Transfer Identity Protocol (TIP)**. The encrypted master seed is sealed to the owner wallet via a `wallet-owner-signature-v1` envelope and authorizes derivation of **GPRU** scopes. A GPRU scope is a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. See [Identity and routing](/architecture/identity-and-routing).
   </Accordion>
 
 <Accordion title="Mother authority" icon="shield-halved">
@@ -163,8 +163,8 @@ The intent above is what the sender approves. `SettlementDna` is what the TSN pr
   Treasury](/architecture/epoch-treasury).
 </Accordion>
 
-  <Accordion title="TCap: confidential balance accounting" icon="lock">
-    The **Transfer Confidential Asset Protocol (TCap)** records balance transitions as commitments and encrypted snapshots pinned to a `TCapTinTipV1` PDA. The live path is credit-only through `credit_tcap_tin_tip_v1`; confidential debits and exits are proof-gated and not yet enabled. See [TCap](/architecture/tcap).
+  <Accordion title="TCAP: confidential balance accounting" icon="lock">
+    The **Transfer Confidential Asset Protocol (TCAP)** records balance transitions as commitments and encrypted snapshots pinned to a `TCapTinTipV1` PDA. The live path is credit-only through `credit_tcap_tin_tip_v1`; confidential debits and exits are proof-gated and not yet enabled. See [TCAP](/architecture/tcap).
   </Accordion>
 </AccordionGroup>
 
@@ -182,7 +182,7 @@ Follow the work on [GitHub](https://github.com/Trustlink-Labs) and [X](https://x
   </Card>
 
 <Card title="Architecture" icon="cubes" href="/overview/architecture">
-  See identity, authorization, verification, transport, settlement, and TCap as one system on Solana.
+  See identity, authorization, verification, transport, settlement, and TCAP as one system on Solana.
 </Card>
 
 <Card title="Getting started" icon="code" href="/developers/getting-started">

@@ -33,14 +33,14 @@ console.log(status.selected);
 
 The selected RPC URL is the RPC endpoint the application should pass to the
 SDK transaction and route helpers. In the prototype UI, the live gateway is
-`https://tsn-rpc-gateway.vercel.app`; it is used only after the local RPC
+`https://tsn-rpc-gateway.vercel.app`. It is used only after the local RPC
 probe fails, so status checks and transaction preparation use the same source.
 
 The result reports the selected source for each service, route count, and the
 number of online Crankers reported by the Node. A Cranker is a worker rather
 than a public HTTP service, so the SDK reads its liveness from the Node's
 heartbeat-backed status response. Cranker liveness is operational information,
-not a client-side authorization gate: a signed intent can be accepted before a
+not a client-side authorization gate. A signed intent can be accepted before a
 Cranker claims it, and a Cranker becomes observable when it accepts or
 processes authorized work. If the Node has no recent worker observation, the
 SDK returns `onlineCrankers: null`; applications should display this as

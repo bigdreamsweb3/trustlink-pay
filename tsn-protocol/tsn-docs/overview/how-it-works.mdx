@@ -1,7 +1,7 @@
 ---
 title: "How a TSN Payment Feels: One Action, Many Checks"
 sidebarTitle: "How It Works"
-description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCap cooperate. This page shows both views side by side."
+description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCAP cooperate. This page shows both views side by side."
 ---
 
 **In plain English:** From the user's side, a TSN payment is one action: enter a 10-digit TIN, review the amount, and approve. The protocol then resolves the route, verifies the authorization, coordinates settlement, and records a private credit. Timing depends on wallet approval, service leases, Solana confirmation, and the current settlement path.
@@ -27,7 +27,7 @@ sequenceDiagram
     participant Rcv as Receiver
     participant Cnk as Cranker
     participant TSN as TSN program
-    participant TCap as TCap program
+    participant TCap as TCAP program
 
     U->>TIN: Resolve 10-digit TIN via GPRU to a route commitment
     TIN-->>U: Route commitment and policy
@@ -54,7 +54,7 @@ Multiple roles, one payment action. Each role stays inside its boundary, so no r
 | Authorize | **Sender wallet** | Signs a payment intent bound to the route | Cranker or Receiver keys |
 | Verify | **Mother Node** | Verifies signatures and signs a permit for the exact operation | Recipient's plaintext balance |
 | Submit | **Cranker Node** | Pays Solana fees and submits the exact authorized transaction | The right to change any field |
-| Update balance | **TCap** | Advances the commitment tip and encrypted snapshot | Plaintext amount |
+| Update balance | **TCAP** | Advances the commitment tip and encrypted snapshot | Plaintext amount |
 
 Any single layer, on its own, is incomplete. Together, they form a payment path.
 

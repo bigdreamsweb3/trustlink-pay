@@ -8,7 +8,7 @@ A payment intent in TSN is a sender-signed authorization that binds amount, toke
 
 ## Intent structure
 
-The sender constructs and signs the authorization locally on the authorized device. The authorization is immutable once signed: any tamper invalidates the signature. The exact HTTP payload is integration-specific; the Receiver validates the required funding fields and sender signature before the Node performs protocol verification.
+The sender constructs and signs the authorization locally on the authorized device. The authorization is immutable once signed: any tampering invalidates the signature. The exact HTTP payload is integration-specific; the Receiver validates the required funding fields and sender signature before the Node performs protocol verification.
 
 ```json title="Illustrative intent shape"
 {

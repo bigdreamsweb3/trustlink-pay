@@ -79,7 +79,7 @@ const operator = () => {
   const path = resolve(
     process.env.TSN_CRANKER_KEYPAIR_PATH ||
       process.env.KEYPAIR_PATH ||
-      "./cranker-keypair.json",
+      "./keys/cranker-keypair.json",
   );
   return Keypair.fromSecretKey(
     Uint8Array.from(JSON.parse(readFileSync(path, "utf8")) as number[]),
@@ -285,60 +285,94 @@ async function processTinOperation(
   );
   const owner = new PublicKey(String(payload.ownerPubkey));
   const programAssigned = Boolean(payload.programAssigned);
-  const lookupCommitment = programAssigned ? Buffer.alloc(32) : hex32(payload.lookupCommitment, "lookupCommitment");
+  const lookupCommitment = programAssigned
+    ? Buffer.alloc(32)
+    : hex32(payload.lookupCommitment, "lookupCommitment");
   const registry = programAssigned
     ? getTinsIdentityPda({ walletPubkey: owner, programId })
-    : PublicKey.findProgramAddressSync([Buffer.from("tin-v1"), lookupCommitment], programId)[0];
+    : PublicKey.findProgramAddressSync(
+        [Buffer.from("tin-v1"), lookupCommitment],
+        programId,
+      )[0];
   const instructionData = programAssigned
     ? serializeTinCreationRegistryParams({
-      ownerPubkey: owner,
-      displayName: String(payload.displayName),
-      encryptedMasterSeed: base64Bytes(payload.encryptedMasterSeed, "encryptedMasterSeed"),
-      encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
-      pruConfigurationHash: new Uint8Array(32),
-      encryptedPublicRouteEnvelope: new Uint8Array(0),
-      routeVersion: BigInt(String(payload.routeVersion)),
-      routeNonce: hex32(payload.routeNonce, "routeNonce"),
-      tcapRouteVersion: 1,
-      tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
-      tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
-      tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
-      nonce: hex32(payload.nonce, "nonce"),
-      intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
-      expiryTs: BigInt(String(payload.expiry)),
-    })
+        ownerPubkey: owner,
+        displayName: String(payload.displayName),
+        encryptedMasterSeed: base64Bytes(
+          payload.encryptedMasterSeed,
+          "encryptedMasterSeed",
+        ),
+        encryptedMetadataHash: hex32(
+          payload.encryptedMetadataHash,
+          "encryptedMetadataHash",
+        ),
+        pruConfigurationHash: new Uint8Array(32),
+        encryptedPublicRouteEnvelope: new Uint8Array(0),
+        routeVersion: BigInt(String(payload.routeVersion)),
+        routeNonce: hex32(payload.routeNonce, "routeNonce"),
+        tcapRouteVersion: 1,
+        tcapRelationshipCommitment: hex32(
+          payload.tcapRelationshipCommitment,
+          "tcapRelationshipCommitment",
+        ),
+        tcapRelationshipReference: hex32(
+          payload.tcapRelationshipReference,
+          "tcapRelationshipReference",
+        ),
+        tcapPolicyCommitment: hex32(
+          payload.tcapPolicyCommitment,
+          "tcapPolicyCommitment",
+        ),
+        nonce: hex32(payload.nonce, "nonce"),
+        intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
+        expiryTs: BigInt(String(payload.expiry)),
+      })
     : serializeTinV1CreationParams({
-    ownerPubkey: owner,
-    lookupCommitment,
-    encryptedIdentityEnvelope: base64Bytes(
-      payload.encryptedIdentityEnvelope,
-      "encryptedIdentityEnvelope",
-    ),
-    encryptedMasterSeed: base64Bytes(
-      payload.encryptedMasterSeed,
-      "encryptedMasterSeed",
-    ),
-    encryptedMetadataHash: hex32(
-      payload.encryptedMetadataHash,
-      "encryptedMetadataHash",
-    ),
-    pruConfigurationHash: hex32(
-      payload.pruConfigurationHash,
-      "pruConfigurationHash",
-    ),
-    encryptedPublicRouteEnvelope: base64Bytes(
-      payload.encryptedPublicRouteEnvelope,
-      "encryptedPublicRouteEnvelope",
-    ),
-    routeVersion: BigInt(String(payload.routeVersion)),
-    routeNonce: hex32(payload.routeNonce, "routeNonce"),
-    tcapRouteVersion: Number(payload.tcapRouteVersion ?? (programAssigned ? 1 : 0)),
-    tcapRelationshipCommitment: programAssigned ? hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment") : new Uint8Array(32),
-    tcapRelationshipReference: programAssigned ? hex32(payload.tcapRelationshipReference, "tcapRelationshipReference") : new Uint8Array(32),
-    tcapPolicyCommitment: programAssigned ? hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment") : new Uint8Array(32),
-    intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
-    expiryTs: BigInt(String(payload.expiry)),
-    });
+        ownerPubkey: owner,
+        lookupCommitment,
+        encryptedIdentityEnvelope: base64Bytes(
+          payload.encryptedIdentityEnvelope,
+          "encryptedIdentityEnvelope",
+        ),
+        encryptedMasterSeed: base64Bytes(
+          payload.encryptedMasterSeed,
+          "encryptedMasterSeed",
+        ),
+        encryptedMetadataHash: hex32(
+          payload.encryptedMetadataHash,
+          "encryptedMetadataHash",
+        ),
+        pruConfigurationHash: hex32(
+          payload.pruConfigurationHash,
+          "pruConfigurationHash",
+        ),
+        encryptedPublicRouteEnvelope: base64Bytes(
+          payload.encryptedPublicRouteEnvelope,
+          "encryptedPublicRouteEnvelope",
+        ),
+        routeVersion: BigInt(String(payload.routeVersion)),
+        routeNonce: hex32(payload.routeNonce, "routeNonce"),
+        tcapRouteVersion: Number(
+          payload.tcapRouteVersion ?? (programAssigned ? 1 : 0),
+        ),
+        tcapRelationshipCommitment: programAssigned
+          ? hex32(
+              payload.tcapRelationshipCommitment,
+              "tcapRelationshipCommitment",
+            )
+          : new Uint8Array(32),
+        tcapRelationshipReference: programAssigned
+          ? hex32(
+              payload.tcapRelationshipReference,
+              "tcapRelationshipReference",
+            )
+          : new Uint8Array(32),
+        tcapPolicyCommitment: programAssigned
+          ? hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment")
+          : new Uint8Array(32),
+        intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
+        expiryTs: BigInt(String(payload.expiry)),
+      });
   const connection = new Connection(rpcUrl, "confirmed");
   const ownerSignature = base64Bytes(payload.ownerSignature, "ownerSignature");
   const ownerProof = Ed25519Program.createInstructionWithPublicKey({
@@ -372,8 +406,14 @@ async function processTinOperation(
   await connection.confirmTransaction(signature, "confirmed");
   let createdTin: string | undefined;
   if (programAssigned) {
-    const createdAccount = await connection.getAccountInfo(registry, "confirmed");
-    if (!createdAccount) throw new Error("CreateTin confirmed but the identity account was not found");
+    const createdAccount = await connection.getAccountInfo(
+      registry,
+      "confirmed",
+    );
+    if (!createdAccount)
+      throw new Error(
+        "CreateTin confirmed but the identity account was not found",
+      );
     createdTin = decodeTinAccount(createdAccount.data).tin.toString();
   }
   await report(signer, work, "CONFIRMED", {

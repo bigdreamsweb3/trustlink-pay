@@ -4,7 +4,7 @@ sidebarTitle: "Architecture"
 description: "The canonical Transfer Settlement Network architecture: TIN identity, GPRU authorization, TSN epoch treasury with Mother-rooted DNA permits, and TCAP tip credits."
 ---
 
-**In plain English:** This is the canonical description of the current Transfer Settlement Network. A payment moves from a signed authorization on the sender's device through TIN identity, GPRU authorization, TSN epoch treasury coordination, a Mother-rooted DNA permit, and a TCAP tip credit against an encrypted snapshot. There is no public accepted-intent record, no per-payment PDA, and no receipt joining funding to credit.
+**In plain English:** This is the canonical description of the current Transfer Settlement Network. A payment starts as a signed authorization on the sender's device. It then moves through TIN identity, GPRU authorization, TSN epoch treasury coordination, a Mother-rooted DNA permit, and a TCAP tip credit against an encrypted snapshot. There is no public accepted-intent record, no per-payment PDA, and no receipt joining funding to credit.
 
 ## The credit path
 
@@ -66,7 +66,7 @@ sequenceDiagram
 
 TSN uses an epoch treasury and opaque, keyed settlement slots. Funding sends tokens only to the epoch treasury token account and increments aggregate pending liability. **Funding creates no payment account, escrow account, commitment PDA, or public payment identifier.**
 
-The Node/Mother keeps the payment binding (recipient route, sender refund destination, funding lineage, amount, mint, epoch, payment hash) in encrypted storage. The encryption key and plaintext never leave Node/Mother. A keyed slot is derived by authorized Node/Mother with HMAC-SHA256 and is withheld until settlement or refund.
+The Node/Mother keeps the payment binding (recipient route, sender refund destination, funding lineage, amount, mint, epoch, payment hash) in encrypted storage. The encryption key and plaintext never leave Node/Mother. Authorized Node/Mother derives a keyed slot with HMAC-SHA256 and withholds it until settlement or refund.
 
 For a lease, Node signs a permit binding:
 
@@ -79,7 +79,7 @@ For a lease, Node signs a permit binding:
 
 The `EpochClaimSlot` PDA is derived from the epoch treasury and opaque slot. It is initialized by the first valid settlement or refund, so the slot first appears on-chain at that operation. It stores no payment id, sender, or recipient identity beyond the public payout coordinate.
 
-**First successful operation wins.** Settlement atomically checks the Node permit, lease, slot state, nullifier, and treasury liability; pays the recipient from the CrankerVault; reimburses that exact CrankerVault for the exact amount; marks the slot `SETTLED`; records the successful Cranker. Refund uses the same slot and marks it `REFUNDED`, returning the exact amount from epoch treasury to the Node-authorized refund destination. A later operation against the same slot fails before token movement.
+**First successful operation wins.** Settlement runs atomically. It checks the Node permit, lease, slot state, nullifier, and treasury liability. It then pays the recipient from the CrankerVault, reimburses that exact CrankerVault for the exact amount, marks the slot `SETTLED`, and records the successful Cranker. Refund uses the same slot and marks it `REFUNDED`, returning the exact amount from epoch treasury to the Node-authorized refund destination. A later operation against the same slot fails before token movement.
 
 ## Authorization contract
 

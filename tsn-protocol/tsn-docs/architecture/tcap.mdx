@@ -1,16 +1,16 @@
 ---
-title: "TCap: Transfer Confidential Asset Protocol"
-sidebarTitle: "TCap"
-description: "TCap provides private GPRU balance transitions on Solana using blinded tip PDAs and owner-encrypted balance snapshots."
+title: "TCAP: Transfer Confidential Asset Protocol"
+sidebarTitle: "TCAP"
+description: "TCAP provides private GPRU balance transitions on Solana using blinded tip PDAs and owner-encrypted balance snapshots."
 ---
 
-TCap is the **Transfer Confidential Asset Protocol**. It provides private balance accounting for governed assets on Solana. TCap owns the blinded tip and sequence checks. A successful credit advances the tip from one commitment to the next, and the owner maintains private balance state through locally encrypted snapshots.
+TCAP is the **Transfer Confidential Asset Protocol**. It provides private balance accounting for governed assets on Solana. TCAP owns the blinded tip and sequence checks. A successful credit advances the tip from one commitment to the next, and the owner maintains private balance state through locally encrypted snapshots.
 
 <Warning>
-  The live TCap path is credit-only. Confidential debits and exits are not live and remain proof-gated. Do not attempt to spend or exit from a TCap tip using the current Devnet release.
+  The live TCAP path is credit-only. Confidential debits and exits are not live and remain proof-gated. Do not attempt to spend or exit from a TCAP tip using the current Devnet release.
 </Warning>
 
-## TCap TIN Tip PDA
+## TCAP TIN Tip PDA
 
 The `TCapTinTipV1` PDA is derived from `['tcap:tin-tip:v1', blindedRootCommitment]`. The account stores:
 
@@ -53,7 +53,7 @@ It performs the following checks:
 - Slot window is valid.
 - Asset entry is active, approved, and unpaused.
 
-If all checks pass, TCap atomically advances the tip. The emitted event contains only the tip PDA, sequence, compact token ID, and an opaque transition digest. It never exposes payment intent IDs, raw TIN values, balances, or token accounts. The tip advances without a per-transfer receipt PDA.
+If all checks pass, TCAP atomically advances the tip. The emitted event contains only the tip PDA, sequence, compact token ID, and an opaque transition digest. It never exposes payment intent IDs, raw TIN values, balances, or token accounts. The tip advances without a per-transfer receipt PDA.
 
 ## Encrypted balance snapshots
 
@@ -68,7 +68,7 @@ To read a private balance, the owner device:
 
 ## Commitment binding rules
 
-TCap enforces a strict binding between the on-chain tip and the off-chain snapshot:
+TCAP enforces a strict binding between the on-chain tip and the off-chain snapshot:
 
 ```text
 tip.current_commitment == snapshot.new_commitment
@@ -80,17 +80,17 @@ This ensures the private snapshot is an exact successor of the on-chain tip stat
 
 ## TSN CPI
 
-The TSN CPI wrapper passes only the opaque authorization digest, validity window, predecessor/successor commitments, policy, GPRU scope, and nullifier. It does not pass an `AcceptedIntentV1`, epoch commitment, settlement commitment, or TCap authorization receipt. A GPRU signature alone cannot move custody; the approved TSN program must sign the CPI-derived authorization PDA.
+The TSN CPI wrapper passes only the opaque authorization digest, validity window, predecessor/successor commitments, policy, GPRU scope, and nullifier. It does not pass an `AcceptedIntentV1`, epoch commitment, settlement commitment, or TCAP authorization receipt. A GPRU signature alone cannot move custody; the approved TSN program must sign the CPI-derived authorization PDA.
 
 ## Related pages
 
 <CardGroup cols={2}>
-  <Card title="TCap Credits" icon="coins" href="/developers/tcap-tip-credits">
+  <Card title="TCAP Credits" icon="coins" href="/developers/tcap-tip-credits">
     Developer integration with tip states and credit transitions.
   </Card>
 
   <Card title="Confidential Settlement" icon="lock" href="/developers/confidential-settlement">
-    Full TSN to TCap authorization flow and ABI.
+    Full TSN to TCAP authorization flow and ABI.
   </Card>
 
   <Card title="Epoch Treasury" icon="vault" href="/architecture/epoch-treasury">

@@ -8,7 +8,7 @@ description: "Decodes the serialized legacy TIN account bytes into its stored id
 
 `decodeTinAccount` is a pure SDK decoder for the serialized TIN account layout.
 It reads the numeric TIN, display name, owner commitment, encrypted seed,
-metadata, route envelope, and optional TCap relationship commitments from the
+metadata, route envelope, and optional TCAP relationship commitments from the
 provided account bytes. It does not call Solana or change state.
 
 ## How the flow works
@@ -24,7 +24,7 @@ provided account bytes. It does not call Solana or change state.
   </Step>
   <Step title="Main work">
     It decodes the TIN and display name, copies encrypted byte fields, reads
-    the route version and nonce, and reads TCap fields when those bytes exist.
+    the route version and nonce, and reads TCAP fields when those bytes exist.
   </Step>
   <Step title="Result">
     It returns a plain object containing decoded values as `bigint`, strings,

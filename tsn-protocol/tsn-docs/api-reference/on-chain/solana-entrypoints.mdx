@@ -18,7 +18,7 @@ The TIN registrar source contains public instruction builders for TIN creation a
 
 ## TSN settlement program
 
-The TSN program exposes instruction entrypoints for Mother escrow, Cranker registration and vault state, accepted intents, funding, claims, epoch accounting, and the TCap settlement boundary. Exact Anchor account contexts belong to the deployed IDL.
+The TSN program exposes instruction entrypoints for Mother escrow, Cranker registration and vault state, accepted intents, funding, claims, epoch accounting, and the TCAP settlement boundary. Exact Anchor account contexts belong to the deployed IDL.
 
 | Instruction family | Source entrypoint | Failure boundary |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ The TSN program exposes instruction entrypoints for Mother escrow, Cranker regis
 | Cranker admission | `tsn_register_cranker`, `tsn_set_cranker_funding_policy`, `tsn_initialize_cranker_vault` | Mother-DNA and operator account validation. |
 | Cranker liquidity | `tsn_fund_cranker`, `tsn_withdraw_cranker_funds`, `tsn_fund_epoch_treasury` | Token-account ownership, mint, and amount validation. |
 | Intent settlement | `tsn_accept_intent`, `tsn_create_settlement_dna`, `tsn_execute_private_payout`, `tsn_refund_epoch_claim` | Signed intent, replay, lease, and commitment checks. |
-| TCap settlement boundary | `tsn_register_tcap_credit_authorization`, `tsn_register_tcap_credit_authorization_v2`, `tsn_register_tcap_debit_authorization_v2`, `tsn_register_tcap_exit_debit_v1`, `tsn_register_tcap_exit_payout_v1`, `tsn_register_tcap_one_time_credit`, `tsn_register_tcap_one_time_transfer_credit` | Authorization, liability, exit, and replay checks defined by the Anchor contexts. |
+| TCAP settlement boundary | `tsn_register_tcap_credit_authorization`, `tsn_register_tcap_credit_authorization_v2`, `tsn_register_tcap_debit_authorization_v2`, `tsn_register_tcap_exit_debit_v1`, `tsn_register_tcap_exit_payout_v1`, `tsn_register_tcap_one_time_credit`, `tsn_register_tcap_one_time_transfer_credit` | Authorization, liability, exit, and replay checks defined by the Anchor contexts. |
 
 <CodeGroup>
 ```bash Inspect

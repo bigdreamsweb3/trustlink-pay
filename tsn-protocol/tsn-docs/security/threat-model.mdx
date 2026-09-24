@@ -34,7 +34,7 @@ Cannot mutate the Node-signed permit or claim the epoch slot before authorized s
 
 ## Out of scope
 
-TSN does not defend against the following. Integrators must treat these as separate concerns:
+TSN does not defend against the following. Treat these as separate concerns in your integration:
 
 - **Solana consensus failure.** TSN relies on Solana's execution, ordering, and finality.
 - **Sender device signing key compromise.** If the sender's wallet key is stolen, that wallet can authorize new intents. Use hardware wallets and standard key hygiene.

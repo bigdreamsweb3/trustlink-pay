@@ -4,7 +4,7 @@ sidebarTitle: "Identity & Routing"
 description: "How TSN resolves payment identity through the 10-digit TIN issued by TIP, and how GPRU carries authorization and routing without ever holding funds."
 ---
 
-TSN separates _who the payment is for_ from _what accounts move on Solana_. Identity is a Transfer Identity Number (TIN) issued and resolved by the Transfer Identity Protocol (TIP); routing and authorization scope travel with the transfer through GPRU. Neither TIN nor GPRU takes custody of funds or keys.
+TSN separates _who the payment is for_ from _what accounts move on Solana_. Identity is a Transfer Identity Number (TIN) issued and resolved by the Transfer Identity Protocol (TIP). Routing and authorization scope travel with the transfer through GPRU. Neither TIN nor GPRU takes custody of funds or keys.
 
 ## TIN: Transfer Identity Number
 
@@ -62,7 +62,7 @@ Resolution must not return plaintext seeds, child private keys, or an unrestrict
 
 ### Wallet-owned access
 
-The root wallet is the TIN authority. New and upgraded TINs use a wallet-owned envelope: the owner signs a fresh, canonical TIN-access authorization on whichever device they are using, and the SDK derives a local data key from that approval to decrypt the envelope on-device.
+The root wallet is the TIN authority. New and upgraded TINs use a wallet-owned envelope. The owner signs a fresh, canonical TIN-access authorization on whichever device they are using. The SDK then derives a local data key from that approval to decrypt the envelope on-device.
 
 Plaintext seeds and derived child private keys never leave the device. They are never sent to a Receiver, Node, Cranker, or application backend. Older device-bound envelopes remain readable only by a device that can already unlock them, until the owner performs a one-time upgrade.
 
@@ -104,7 +104,7 @@ sequenceDiagram
 Two properties make this safe under a compromised operator:
 
 - The registry only holds ciphertext. Reading the TIN registry account gives an attacker the envelope but not the seed; the envelope is sealed to the owner wallet.
-- The GPRU authority derived from the seed is transfer-scoped. Even if a derived signing key were captured on a compromised device, the resulting signature is bound to that transfer's commitments and cannot be lifted onto a different intent.
+- The GPRU authority derived from the seed is transfer-scoped. Even if a derived signing key were captured on a compromised device, the resulting signature is bound to that transfer's commitments. It cannot be lifted onto a different intent.
 
 <Note>
   Older `tsn-device-envelope-v1` records were device-bound. They remain readable only by a device that can already unlock them, until the owner performs a one-time upgrade to the wallet-owned envelope. New and upgraded TINs use the wallet-owned model above.

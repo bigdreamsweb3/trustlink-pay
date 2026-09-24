@@ -12,7 +12,7 @@ TSN errors are fail-closed: a route, intent, lease, or upstream provider is not 
 | --- | --- | --- |
 | `401` / `403` | Authentication or authorization failure | Missing/invalid worker key or a settlement lease owned by another Cranker. |
 | `404` | Resource does not exist | Unknown intent or TIN operation identifier. |
-| `409` | State conflict | Duplicate authorization, expired lease, wrong lifecycle state, missing finalized route, or a TCap route being sent through the legacy payout path. |
+| `409` | State conflict | Duplicate authorization, expired lease, wrong lifecycle state, missing finalized route, or a TCAP route being sent through the legacy payout path. |
 | `422` | Request or signed payload is invalid | Missing required fields, unsupported token, invalid commitment, or malformed route data. |
 | `503` | Service or route registry is unavailable | Node verifier is not ready or the settlement registry cannot be read safely. |
 

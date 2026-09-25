@@ -1,5 +1,6 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { localDb } from "./local-firestore";
 
 function normalizePrivateKey(raw: string) {
   let value = raw.trim();
@@ -61,10 +62,11 @@ function credential() {
   return cert({ projectId, clientEmail, privateKey });
 }
 
+const localMode = process.env.TSN_RECEIVER_STORE === "file" && process.env.TSN_ALLOW_LOCAL_JSON_STORE === "true";
 const databaseURL = process.env.FIREBASE_DATABASE_URL?.trim();
-export const app = getApps()[0] ?? initializeApp({
+export const app = localMode ? null : (getApps()[0] ?? initializeApp({
   credential: credential(),
   ...(databaseURL ? { databaseURL } : {}),
-});
-export const db = getFirestore(app);
+}));
+export const db: any = localMode ? localDb : getFirestore(app!);
 export const workCollection = db.collection(process.env.TSN_RECEIVER_COLLECTION ?? "tsn_receiver_work");

@@ -45,14 +45,10 @@
     }
 
     .mark {
-      width: 29px;
-      height: 29px;
-      border: 2px solid var(--gold-light);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      color: var(--gold-light);
-      font-weight: 800;
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      display: block;
     }
 
     .brand {
@@ -476,6 +472,113 @@
       color: #74d19a;
     }
 
+    .wallet-bar {
+      padding: 8px 10px;
+    }
+
+    .wallet-copy strong {
+      font-size: 12px;
+      color: #e7f0e6;
+    }
+
+    .wallet-copy small {
+      margin: 2px 0 0;
+      padding: 0;
+      background: transparent;
+      font-size: 10px;
+    }
+
+    .tabs {
+      scrollbar-width: none;
+    }
+
+    [role="tab"] {
+      padding: 9px 11px 8px;
+      font: 700 10px ui-monospace, monospace;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .tab-panel {
+      padding: 13px;
+    }
+
+    .section-head {
+      margin-bottom: 10px;
+    }
+
+    .section-head h2 {
+      font-size: 17px;
+    }
+
+    .section-head p {
+      margin-top: 3px;
+      font-size: 10px;
+    }
+
+    .status-grid {
+      gap: 6px;
+    }
+
+    .status-card {
+      min-width: 112px;
+      padding: 7px 8px;
+    }
+
+    .status-card span {
+      font-size: 9px;
+    }
+
+    .status-card strong {
+      margin-top: 3px;
+      font-size: 10px;
+    }
+
+    .status-card small {
+      margin-top: 2px;
+      font-size: 9px;
+    }
+
+    .form {
+      gap: 8px;
+    }
+
+    label {
+      font: 700 9px ui-monospace, monospace;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    input,
+    select {
+      margin-top: 4px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .form-actions {
+      gap: 6px;
+    }
+
+    button {
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      letter-spacing: .02em;
+    }
+
+    .notice {
+      padding: 8px 10px;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    details {
+      margin-top: 10px;
+      padding-top: 8px;
+    }
+
     .raw-log {
       margin: 0 13px 13px;
       border-top-color: #26332c;
@@ -678,8 +781,8 @@
 </head>
 
 <body>
-  <header>
-    <div class="mark">T</div>
+    <header>
+      <img class="mark" src="/tsn_icon_logo.png" alt="TSN" />
     <div>
       <div class="brand">TSN PROTOCOL UI</div>
       <div class="sub">SDK integration lab for a Decentralized Settlement Protocol</div>
@@ -712,7 +815,7 @@
           <div class="section-head">
             <div>
               <h2>Network status</h2>
-              <p>Local services are preferred. Live endpoints are used only where local services are unavailable.</p>
+              <p>The active mode checks only its configured Node, Receiver, and RPC endpoints.</p>
             </div><button class="alt" id="refreshStatus">Refresh</button>
           </div>
           <div id="serviceStatus">Checking services...</div>

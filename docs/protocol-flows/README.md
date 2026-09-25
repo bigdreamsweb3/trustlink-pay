@@ -7,6 +7,9 @@ evidence proves the stage completed.
 
 ## Documentation Rule
 
+The Receiver-first lease boundary is documented in
+[receiver-node-cranker-lease.md](receiver-node-cranker-lease.md).
+
 Document every flow as a sequence of stages:
 
 ```text
@@ -38,7 +41,7 @@ confirmed and the resulting Solana account is decoded.
 | ---------------------------------- | ------------------------------------------------------------ | -------------------------------------------- |
 | Browser -> SDK -> Receiver ingress | [01 Receiver ingress](tin-creation/01-receiver-ingress.md)   | Receiver stores `RECEIVED` work              |
 | Receiver -> Node verification      | [02 Node verification](tin-creation/02-node-verification.md) | Node returns verified work to Receiver       |
-| Receiver -> Cranker lease          | Pending: `tin-creation/03-cranker-lease.md`                  | Cranker owns a valid lease                   |
+| Receiver -> Cranker lease          | [03 Cranker lease](tin-creation/03-cranker-lease.md)          | Cranker owns a valid lease                   |
 | Cranker -> Solana                  | Pending: `tin-creation/04-onchain-finalization.md`           | Confirmed transaction and identity PDA       |
 | Final state and evidence           | Pending: `tin-creation/05-evidence.md`                       | Assigned 10-digit TIN and explorer signature |
 
@@ -53,7 +56,7 @@ The protocol test UI currently submits TIN creation directly to the Node's
 `POST /tin-operations` endpoint. This is why the UI can receive an `intentId`
 without a Receiver work ID.
 
-The Receiver already has the concepts needed for the intended path:
+The Receiver implements the work states needed for the intended path:
 
 ```text
 TIN_OPERATION -> RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED

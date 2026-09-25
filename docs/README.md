@@ -32,7 +32,10 @@ Supporting references:
 - [TIN master-seed architecture](./tin-master-seed-architecture.md) (historical compatibility note)
 - [TSN Receiver, Node and Cranker architecture](./tsn-receiver-node-architecture.md)
 - [Public mentions](./mentions.md)
+- [TIN creation data flow](./TSN-TIN-CRANKER-DATAFLOW.md) — Receiver, Node, Cranker, encryption, validation, and evidence boundaries.
+- [Devnet evidence capture](./TSN-DEVNET-EVIDENCE-CAPTURE.md) — capture a real Cranker transaction and verify its finalized Solana state.
 - [TSN Node keys](./TSN-NODE-KEYS.md) — required credentials, key generation, ownership, and rotation.
+- [Receiver storage modes](./team/operations/receiver-storage-modes.md) — local JSON testing versus live Firebase persistence and required boundaries.
 
 ## Canonical terminology
 

@@ -8,6 +8,7 @@ import { PublicKey } from "@solana/web3.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const tsnSdk = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/index.js")).href);
 const port = Number(process.env.TSN_PROTOCOL_UI_PORT ?? 4317);
+const mode = process.argv.includes("--local") ? "local" : "devnet";
 // Use the same live RPC gateway that the SDK network-status check probes.
 // A per-run TSN_RPC_URL override remains available for developers.
 const rpcUrl = process.env.TSN_RPC_URL
@@ -22,6 +23,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname === "/") return sendFile(res, "public/index.html", "text/html; charset=utf-8");
   if (url.pathname === "/tsn-dapp.js") return sendFile(res, "public/tsn-dapp.js", "text/javascript; charset=utf-8");
+  if (url.pathname === "/tsn_icon_logo.png") return sendFile(res, "public/tsn_icon_logo.png", "image/png");
   if (url.pathname === "/api/health") return json(res, 200, { service: "tsn-protocol-ui", status: "READY", sdk: "@trustlink/tsn-sdk", network: "devnet" });
   if (!url.pathname.startsWith("/api/")) return json(res, 404, { error: "NOT_FOUND" });
   try {
@@ -135,8 +137,12 @@ async function handleApi(req, res, url) {
     if (!signature) return json(res, 422, { error: "OWNER_SIGNATURE_REQUIRED" });
     if (!session.preparedTin) return json(res, 409, { error: "TIN_CREATION_MUST_BE_PREPARED_FIRST" });
     const nodeUrl = process.env.TSN_LOCAL_NODE_URL ?? process.env.TSN_NODE_URL ?? "http://127.0.0.1:8000";
+    const ingressUrl = mode === "local"
+      ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
+      : (process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app");
     const result = await tsnSdk.submitProgramAssignedTinCreation({
       nodeUrl,
+      ingressUrl,
       prepared: session.preparedTin.built,
       ownerPubkey: session.wallet,
       ownerSignature: signature,

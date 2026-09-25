@@ -52,6 +52,7 @@ const prepared = buildProgramAssignedTinCreation({
 const ownerSignature = await wallet.signMessage(prepared.intentHash);
 await submitProgramAssignedTinCreation({
   nodeUrl: TSN_NODE_URL,
+  ingressUrl: TSN_RECEIVER_URL,
   prepared,
   ownerPubkey: wallet.publicKey,
   ownerSignature,

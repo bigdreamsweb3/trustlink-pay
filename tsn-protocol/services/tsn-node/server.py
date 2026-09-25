@@ -94,6 +94,7 @@ TSN_RECEIVER_FALLBACK_URL = clean_env(os.environ.get(
 ))
 TSN_RECEIVER_NODE_API_KEY = clean_env(os.environ.get("TSN_RECEIVER_NODE_API_KEY"))
 TSN_NODE_ID = clean_env(os.environ.get("TSN_NODE_ID", "tsn-node-local"))
+TSN_LOCAL_FLOW_LOGS = os.environ.get("TSN_LOCAL_FLOW_LOGS", "").strip().lower() in {"1", "true", "yes", "on"} or TSN_NODE_ID == "tsn-node-local"
 # The Receiver wakes this event after durable work is committed. The Node does
 # not poll while the event is clear; it only drains the authenticated queue
 # after a wake notification (or once at startup for already queued work).
@@ -3418,12 +3419,26 @@ async def receiver_verification_worker() -> None:
                         # Queue drained. Return to the event wait; no polling.
                         logger.info("TSN Receiver verifier drained queue; sleeping")
                         break
+                    lease_context = {
+                        "source": "tsn-receiver",
+                        "workId": str(work.get("id") or ""),
+                        "kind": str(work.get("kind") or ""),
+                        "stateVersion": work.get("stateVersion"),
+                        "payloadCommitment": str(work.get("payloadCommitment") or ""),
+                    }
+                    if TSN_LOCAL_FLOW_LOGS:
+                        logger.info(
+                            "TSN Receiver lease acquired: work_id=%s kind=%s state_version=%s payload_commitment=%s",
+                            lease_context["workId"], lease_context["kind"],
+                            lease_context["stateVersion"], lease_context["payloadCommitment"],
+                        )
                     try:
                         evidence = await _verify_receiver_work(work)
+                        evidence = {**evidence, "receiverLease": lease_context}
                         status = "VERIFIED"
                     except Exception as exc:
                         logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
-                        evidence = {"reason": str(exc)[:500]}
+                        evidence = {"reason": str(exc)[:500], "receiverLease": lease_context}
                         status = "REJECTED"
                     result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
                         "id": work["id"],
@@ -3433,6 +3448,11 @@ async def receiver_verification_worker() -> None:
                         "evidence": evidence,
                     })
                     result.raise_for_status()
+                    if TSN_LOCAL_FLOW_LOGS:
+                        logger.info(
+                            "TSN Receiver work transitioned: work_id=%s status=%s verified_payload_commitment=%s",
+                            lease_context["workId"], status, lease_context["payloadCommitment"],
+                        )
                     retry_delay = 2.0
                     consecutive_failures = 0
                 except asyncio.CancelledError:
@@ -3769,9 +3789,9 @@ async def expire_stale_tin_operations() -> None:
         raw["updatedAt"] = datetime.now(timezone.utc).isoformat()
         await r.hset(k_tin_operations(), str(raw["intentId"]), json.dumps(raw))
 
-@app.post("/tin-operations", response_model=PublicTinOperationRecord)
+@app.post("/tin-operations", response_model=PublicTinOperationRecord, dependencies=[Depends(require_worker_api_key)])
 async def post_tin_operation(payload: dict[str, Any]) -> PublicTinOperationRecord:
-    """Queue a TIN creation/update intent. The mempool never mutates TINS directly."""
+    """Legacy internal queue path; public TIN ingress belongs to the Receiver."""
     operation = _normalize_tin_operation_input(payload)
     pru_route = operation.pop("_pruRoute", None)
     async with _tin_operation_lock:

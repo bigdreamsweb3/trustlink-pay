@@ -977,12 +977,16 @@ export function buildProgramAssignedTinCreation(params: {
 /** Submit a wallet-signed program-assigned creation through the TSN Node. */
 export async function submitProgramAssignedTinCreation(params: {
   nodeUrl: string;
+  ingressUrl?: string;
   prepared: ReturnType<typeof buildProgramAssignedTinCreation>;
   ownerPubkey: PublicKey | string;
   ownerSignature: Uint8Array | string;
   displayName: string;
   ownerIntentMessage?: string;
 }) {
+  if (!params.ingressUrl) {
+    throw new Error("TIN creation must be submitted through the TSN Receiver ingress");
+  }
   const hex = (value: Uint8Array) => Buffer.from(value).toString("hex");
   const base64 = (value: Uint8Array) => Buffer.from(value).toString("base64");
   const ownerPubkey =
@@ -995,7 +999,7 @@ export async function submitProgramAssignedTinCreation(params: {
       : Buffer.from(params.ownerSignature).toString("base64");
   const prepared = params.prepared;
   const response = await fetch(
-    `${params.nodeUrl.replace(/\/$/, "")}/tin-operations`,
+    `${params.ingressUrl.replace(/\/$/, "")}/tin-operations`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },

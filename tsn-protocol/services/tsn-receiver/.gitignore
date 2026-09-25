@@ -1,6 +1,7 @@
 # Runtime secrets: never export or commit.
 .env
 .env.local
+.env.live
 .env.*.local
 !.env.example
 .fb_creds/

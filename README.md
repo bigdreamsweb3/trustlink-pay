@@ -258,7 +258,6 @@ Current Devnet program IDs:
 | `tsn-protocol/sdks/`                                | Canonical TSN SDK and Cranker SDK                             |
 | `tsn-protocol/services/`                            | Node, Receiver, RPC, Cranker, Cross-chain and UI services     |
 | `tsn-protocol/programs/tcap-protocol/`              | TCAP program, SDK and credit tooling                          |
-| `protocol-tests/`                                   | Devnet-only protocol scenarios and UI                         |
 | `docs/`                                             | Architecture, security, operations and evidence documentation |
 
 ## Milestones and ecosystem support

@@ -12,7 +12,6 @@
     "deploy:registry": "tsx scripts/deploy.ts --registry-only --network creditcoin-cc3-testnet",
     "deploy:destination": "tsx scripts/deploy-destination.ts",
     "configure:route": "tsx scripts/configure-route.ts",
-    "test:real-integration": "tsx ../../protocol-tests/cross-chain/test-real-integration.ts",
     "attest:liquidity": "tsx worker/destination-liquidity-attest-worker.ts"
   },
   "dependencies": {

@@ -32,6 +32,7 @@ Supporting references:
 - [TIN master-seed architecture](./tin-master-seed-architecture.md) (historical compatibility note)
 - [TSN Receiver, Node and Cranker architecture](./tsn-receiver-node-architecture.md)
 - [Public mentions](./mentions.md)
+- [TSN Node keys](./TSN-NODE-KEYS.md) — required credentials, key generation, ownership, and rotation.
 
 ## Canonical terminology
 

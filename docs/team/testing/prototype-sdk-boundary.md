@@ -32,9 +32,12 @@ the SDK for TIN route lookup, payment authorization, intent submission,
 wallet-transfer construction, and sponsored funding construction. The browser
 wallet owns signing and no private key enters the UI server.
 
-The UI also calls `getTsnNetworkStatus` before transaction preparation. It
-tries the local Node, Receiver, and RPC endpoints first, falls back to the
-configured live Receiver/RPC and future live Node, and reads Cranker liveness
+The UI also calls `getTsnNetworkStatus` before transaction preparation. Its
+default Devnet mode checks only the published or explicitly configured live
+Node, Receiver, and RPC endpoints. Local integration is a separate launch mode
+(`npm run protocol-tests:ui:local`) that checks only local service endpoints;
+neither mode silently falls back to the other. Both modes use the same RPC for
+health checks and SDK transaction construction. The UI reads Cranker liveness
 from the Node's heartbeat-backed route response. The selected RPC source is
 also passed to SDK route and transaction helpers, so the UI does not report a
 healthy live gateway while quietly preparing transactions against a different

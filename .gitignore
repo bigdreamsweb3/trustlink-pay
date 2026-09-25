@@ -151,16 +151,6 @@ protocol-tests/scenarios/*
 !protocol-tests/scenarios/tcap-credit-v2.mjs
 !protocol-tests/scenarios/tcap-one-time-credit.mjs
 !protocol-tests/scenarios/tcap-asset-state-v2-init.mjs
-!protocol-tests/tcap-credit-devnet.defaults.env
-!protocol-tests/ui/
-protocol-tests/ui/*
-!protocol-tests/ui/server.mjs
-!protocol-tests/ui/public/
-protocol-tests/ui/public/*
-!protocol-tests/ui/public/bridge-controller.js
-!protocol-tests/ui/public/index.html
-!protocol-tests/ui/public/wallet-controller.js
-!protocol-tests/ui/public/tsn-dapp.js
 !protocol-tests/lib/
 protocol-tests/lib/*
 !protocol-tests/lib/privacy-root-commitment.mjs

@@ -117,8 +117,8 @@ const envSchema = z
       .int()
       .positive()
       .default(5),
-    SOLANA_MOCK_MODE: booleanFromEnv.default(true),
-    WHATSAPP_MOCK_MODE: booleanFromEnv.default(true),
+    SOLANA_MOCK_MODE: booleanFromEnv.default(false),
+    WHATSAPP_MOCK_MODE: booleanFromEnv.default(false),
     APP_BASE_URL: z.string().url().default("https://trustlink-pay-backend.vercel.app"),
     SESSION_SECRET: z.string().min(1).optional(),
     ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(10080),

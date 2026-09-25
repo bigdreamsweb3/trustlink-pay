@@ -110,3 +110,12 @@ solana program show TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
 solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
 
 export TCAP_RPC_URL=https://devnet.helius-rpc.com/?api-key=92a02527-5eef-4999-868a-aec60e19f6c3
+
+ABout
+
+I’m a self-taught developer who became obsessed with blockchain technology after seeing how badly the current system breaks trust around money, identity, and user funds. In 2021-2022, I studied how programs gain authority over user funds by building EVM drainer contract simulations and security-related software for educational purposes after I personally got drained. That experience changed my direction.
+
+Since then, I’ve focused on building Transfer Settlement Network (TSN), a privacy-preserving stablecoin settlement protocol designed to move value through identity rather than wallet exposure. I care about building real infrastructure that solves everyday payment problems, not just speculative tools. I’ve taken TSN from concept to a working DevNet prototype with cross-chain testing and am now turning it into a clearer developer experience, product demo, and real-world deployment path.
+
+I’m especially interested in the intersection of payments, identity, trust, and infrastructure. I believe the next big layer in crypto is not just faster settlement — it’s better payment behavior, stronger privacy, and systems that people can actually trust.
+

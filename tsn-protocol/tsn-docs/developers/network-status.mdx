@@ -5,8 +5,10 @@ description: "Use the TSN SDK to select reachable services and prevent an applic
 ---
 
 Payment applications should check TSN service availability before asking a
-wallet to sign. The SDK checks local endpoints first and then uses configured
-live endpoints when a local service is unavailable.
+wallet to sign. The SDK makes the endpoint-selection decision. An application
+or Dapp only supplies optional local and live candidates; the SDK probes each
+service, selects a healthy local candidate first, and falls back to the live
+candidate when local is unavailable.
 
 ```ts
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
@@ -14,7 +16,7 @@ import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 const status = await getTsnNetworkStatus({
   local: {
     node: "http://127.0.0.1:8000",
-    receiver: "http://127.0.0.1:3000",
+    receiver: "http://127.0.0.1:8010",
     rpc: "http://127.0.0.1:8787",
   },
   live: {
@@ -30,6 +32,14 @@ if (!status.readyForNativeTransactions) {
 
 console.log(status.selected);
 ```
+
+Environment variables belong to the application that calls the SDK. The SDK
+does not read a Dapp's `.env` files directly. For example, a Dapp can map
+`TSN_LOCAL_NODE_URL`, `TSN_LOCAL_RECEIVER_URL`, and `TSN_LOCAL_RPC_URL` into the
+`local` object, then pass `TSN_NODE_URL`, `TSN_RECEIVER_URL`, and
+`TSN_RPC_GATEWAY_URL` into `live`. The SDK still performs the health checks and
+returns the selected source; the Dapp only renders that result and uses the
+selected endpoints for subsequent SDK calls.
 
 The selected RPC URL is the RPC endpoint the application should pass to the
 SDK transaction and route helpers. In the prototype UI, the live gateway is

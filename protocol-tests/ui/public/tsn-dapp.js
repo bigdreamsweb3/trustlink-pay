@@ -54,20 +54,53 @@
       tab.setAttribute("aria-selected", String(selected));
       $(tab.getAttribute("aria-controls")).classList.toggle("active", selected);
     });
+    const panel = $(document.querySelector(`[aria-controls="${tabId}"]`)?.getAttribute("aria-controls") ?? "");
+    if (panel && panel.id !== "panel-status" && !panel.querySelector(".modal-close")) {
+      const close = document.createElement("button");
+      close.className = "modal-close";
+      close.type = "button";
+      close.textContent = "Back";
+      close.onclick = () => selectTab("tab-status");
+      panel.prepend(close);
+    }
   }
 
   function renderNetworkStatus(status) {
     networkStatus = status;
+    const headerHealth = $("headerNetworkHealth");
+    if (headerHealth) {
+      const ready = Boolean(status.readyForNativeTransactions ?? status.readyForTransactions);
+      const rpcSelection = status.selected?.rpc;
+      const rpc = status.services?.find((entry) => entry.service === "rpc" && rpcSelection && entry.source === rpcSelection.source && entry.url === rpcSelection.url)
+        ?? status.services?.find((entry) => entry.service === "rpc");
+      headerHealth.className = `network-health ${ready ? "ready" : "blocked"}`;
+      headerHealth.querySelector("span").textContent = ready
+        ? `NETWORK READY · RPC ${rpc?.latencyMs ?? "-"}MS`
+        : "NETWORK BLOCKED";
+      const headerDetail = $("headerNetworkDetail");
+      if (headerDetail) {
+        headerDetail.innerHTML = ["node", "receiver", "rpc"].map((service) => {
+          const item = status.services?.find((entry) => entry.service === service);
+          const state = item?.state ?? "unknown";
+          return `<i class="health-dot ${state}" title="${service.toUpperCase()} ${state}${item?.latencyMs == null ? "" : ` · ${item.latencyMs}ms`}"></i>`;
+        }).join("");
+      }
+      headerHealth.title = `Last sync ${new Date(status.checkedAt).toLocaleTimeString()} · RPC ${rpc?.state ?? "unknown"}`;
+    }
     const selectedByService = new Map(Object.entries(status.selected ?? {}).map(([service, selected]) => [service, selected]));
     const serviceLabels = { node: "MOTHER NODE", receiver: "RECEIVER", rpc: "RPC GATEWAY", cranker: "CRANKER NODE" };
     const services = ["node", "receiver", "rpc", "cranker"].map((service) => {
-      const item = [...status.services].reverse().find((entry) => entry.service === service && entry.state === "online")
+      const selected = selectedByService.get(service);
+      const item = status.services.find((entry) => entry.service === service && selected && entry.source === selected.source && entry.url === selected.url)
+        ?? [...status.services].reverse().find((entry) => entry.service === service && entry.state === "online")
         ?? status.services.find((entry) => entry.service === service)
         ?? { service, state: "unknown", source: "none" };
-      const selected = selectedByService.get(service);
+      const healthDetail = service === "rpc"
+        ? `${item.detail ?? "getHealth: ok"} · ${item.latencyMs == null ? "latency n/a" : `${item.latencyMs}ms`}`
+        : null;
       const detail = service === "cranker" && status.onlineCrankers == null
-        ? "Mother-DNA claim observed on demand"
-        : selected?.url ? `${item.source} / ${selected.url.replace(/^https?:\/\//, "")}` : item.detail ?? item.source;
+        ? "on demand"
+        : selected?.url ? `${healthDetail ?? item.source} · ${selected.url.replace(/^https?:\/\//, "")}` : healthDetail ?? item.detail ?? item.source;
       const displayState = service === "cranker" && status.onlineCrankers == null ? "ON DEMAND" : item.state.toUpperCase();
       const displayClass = service === "cranker" && status.onlineCrankers == null ? "unknown" : item.state;
       return `<div class="status-card service-${service}"><span>${serviceLabels[service]}</span><strong class="state-${displayClass}">${displayState}</strong><small title="${detail}">${short(detail, 34)}</small></div>`;
@@ -75,7 +108,7 @@
     const nativeReady = status.readyForNativeTransactions ?? status.readyForTransactions;
     const crossChainReady = status.readyForCrossChainTransactions ?? (nativeReady && status.routeCount > 0);
     const crankerText = status.onlineCrankers == null
-      ? "discovery on demand"
+      ? "on demand"
       : `${status.onlineCrankers} recently active`;
     $("serviceStatus").innerHTML = `<div class="status-grid">${services.join("")}</div><div class="status-summary"><span>Native TSN <b class="state-${nativeReady ? "online" : "offline"}">${nativeReady ? "READY" : "BLOCKED"}</b></span><span>Cross-chain <b class="state-${crossChainReady ? "online" : "unknown"}">${crossChainReady ? "READY" : "ROUTE REQUIRED"}</b></span><span>Registered routes <b>${status.routeCount}</b></span><span>Cranker Node <b class="state-unknown">${crankerText}</b></span></div><p class="status-note">Cranker Nodes are not tracked by IP. They authenticate with Mother-DNA and become observable when they claim authorized work.</p>`;
   }
@@ -88,6 +121,8 @@
       log("SDK getTsnNetworkStatus", rpc?.url ? `RPC: ${rpc.source} / ${rpc.url}` : "No RPC selected");
     } catch (error) {
       networkStatus = null;
+      const headerHealth = $("headerNetworkHealth");
+      if (headerHealth) { headerHealth.className = "network-health blocked"; headerHealth.querySelector("span").textContent = "STATUS ERROR"; }
       $("serviceStatus").textContent = `Status check failed: ${error.message}`;
       log("NETWORK STATUS BLOCKED", error.message);
     }
@@ -104,10 +139,12 @@
       const tinOwnerWallet = $("tinOwnerWallet");
       if (tinOwnerWallet) tinOwnerWallet.value = publicKey;
       await api("/api/session/wallet", { method: "POST", body: JSON.stringify({ publicKey }) });
-      $("walletStatus").textContent = `${name} connected`;
-      $("walletKey").textContent = publicKey;
-      $("connectWallet").textContent = "Connected";
-      $("connectWallet").disabled = true;
+      if ($("walletStatus")) $("walletStatus").textContent = `${name} connected`;
+      if ($("walletKey")) $("walletKey").textContent = publicKey;
+      if ($("overviewWallet")) $("overviewWallet").textContent = `${publicKey.slice(0, 6)}…${publicKey.slice(-6)}`;
+      if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "Wallet connected";
+      $("headerConnectWallet").textContent = "Connected";
+      $("headerConnectWallet").disabled = true;
       log("WALLET CONNECTED", `${name} / ${publicKey}`);
     } catch (error) {
       log("WALLET CONNECTION BLOCKED", error.message);
@@ -246,12 +283,12 @@
       });
       $("submitTin").disabled = false;
       log("SDK createPaymentAuthorization", `TIN ${recipientTin} / ready for wallet signature`);
-    } catch (error) { log("TIN PAYMENT BLOCKED", error.message); }
+    } catch (error) { log("TIN TRANSFER BLOCKED", error.message); }
   }
 
   async function submitTin() {
     try {
-      if (!pendingPayment) throw new Error("Prepare the TIN payment first.");
+      if (!pendingPayment) throw new Error("Prepare the TIN transfer first.");
       const signatureBase64 = await sign(pendingPayment.message);
       const submitted = await api("/api/tsn/sdk/submit-payment", { method: "POST", body: JSON.stringify({ ...pendingPayment, signatureBase64 }) });
       $("submitTin").disabled = true;
@@ -278,17 +315,78 @@
   }
 
   document.querySelectorAll('[role="tab"]').forEach((tab) => { tab.onclick = () => selectTab(tab.id); });
-  $("connectWallet").onclick = connectWallet;
+  document.querySelectorAll('.tab-panel:not(#panel-status)').forEach((panel) => {
+    if (panel.querySelector('.modal-close')) return;
+    const close = document.createElement('button');
+    close.className = 'modal-close';
+    close.type = 'button';
+    close.textContent = 'Back';
+    close.onclick = () => selectTab('tab-status');
+    panel.prepend(close);
+  });
+  document.querySelectorAll('[data-close-modal]').forEach((button) => { button.onclick = () => selectTab('tab-status'); });
+  document.querySelectorAll("[data-open-tab]").forEach((button) => {
+    button.onclick = () => selectTab(button.dataset.openTab);
+  });
+  $("issueTinAction").onclick = () => selectTab("tab-create-tin");
+  const closeMenu = () => {
+    document.body.classList.remove("menu-open");
+    $("menuToggle").setAttribute("aria-expanded", "false");
+    $("menuToggle").textContent = "☰";
+  };
+  $("menuToggle").onclick = () => {
+    const open = document.body.classList.toggle("menu-open");
+    $("menuToggle").setAttribute("aria-expanded", String(open));
+    $("menuToggle").textContent = open ? "×" : "☰";
+  };
+  $("menuClose").onclick = closeMenu;
+  document.addEventListener("click", (event) => {
+    if (!document.body.classList.contains("menu-open")) return;
+    if (!$("menuToggle").contains(event.target) && !document.querySelector(".tabs").contains(event.target)) closeMenu();
+  });
+  document.querySelectorAll('[role="tab"]').forEach((tab) => tab.addEventListener("click", () => {
+    closeMenu();
+  }));
+  $("headerConnectWallet").onclick = connectWallet;
   $("refreshStatus").onclick = refreshStatus;
   $("payTin").onclick = payTin;
   $("submitTin").onclick = submitTin;
   $("buildWalletTransfer").onclick = buildWalletTransfer;
   $("buildFunding").onclick = buildFunding;
   configureCurrentTinPath();
+  document.querySelectorAll('.tab-panel:not(#panel-status)').forEach((panel) => {
+    if (panel.querySelector('.modal-close')) return;
+    const close = document.createElement('button');
+    close.className = 'modal-close';
+    close.type = 'button';
+    close.textContent = 'Back';
+    close.onclick = () => selectTab('tab-status');
+    panel.prepend(close);
+  });
   $("prepareTinIdentity").onclick = prepareTinIdentity;
   $("clearActivity").onclick = () => { events.splice(0); $("activity").innerHTML = '<div class="event"><time>CLEAR</time><span>Activity cleared.</span></div>'; $("log").textContent = "Activity cleared."; };
   const [walletName] = walletCandidate();
-  if (walletName) $("walletKey").textContent = `${walletName} detected. Connect when ready.`;
+  if (walletName && $("walletKey")) $("walletKey").textContent = `${walletName} detected. Connect when ready.`;
   log("READY", walletName ? `${walletName} detected` : "No browser wallet detected");
-  refreshStatus();
+  let statusTimer;
+  let statusInFlight = false;
+  async function syncNetworkStatus() {
+    if (statusInFlight || document.visibilityState === "hidden") return;
+    statusInFlight = true;
+    try { await refreshStatus(); } finally { statusInFlight = false; }
+  }
+  function scheduleStatusSync(delay = 60000) {
+    window.clearTimeout(statusTimer);
+    statusTimer = window.setTimeout(async () => {
+      await syncNetworkStatus();
+      scheduleStatusSync(document.visibilityState === "visible" ? 60000 : 0);
+    }, delay);
+  }
+  refreshStatus().finally(() => scheduleStatusSync());
+  window.addEventListener("focus", () => { syncNetworkStatus(); scheduleStatusSync(); });
+  window.addEventListener("online", () => { syncNetworkStatus(); scheduleStatusSync(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") { syncNetworkStatus(); scheduleStatusSync(); }
+    else window.clearTimeout(statusTimer);
+  });
 })();

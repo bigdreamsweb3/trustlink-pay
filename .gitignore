@@ -158,3 +158,6 @@ protocol-tests/tcap-credit-devnet.env
 
 .env.local
 .env
+
+protocol-tests/ui/.env
+protocol-tests/ui/.env.local

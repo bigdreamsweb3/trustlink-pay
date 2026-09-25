@@ -31,14 +31,17 @@
       min-height: 100vh;
       background: radial-gradient(900px 500px at 90% -10%, rgba(212, 175, 55, .18), transparent 56%), var(--paper);
       color: var(--ink);
-      font: 14px/1.45 Arial, sans-serif;
+      font: 15px/1.5 Arial, sans-serif;
     }
 
     header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 13px clamp(16px, 4vw, 52px);
+      padding: 13px clamp(16px, 4vw, 52px) 13px clamp(16px, 4vw, 52px);
       background: var(--ink);
       color: var(--paper);
       border-bottom: 1px solid rgba(212, 175, 55, .45);
@@ -72,10 +75,32 @@
       letter-spacing: .08em;
     }
 
+    .network-health {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 12px;
+      color: #bdc8bf;
+      font: 700 10px ui-monospace, monospace;
+      letter-spacing: .06em;
+    }
+
+    .network-health .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 3px rgba(212,175,55,.12); }
+    .network-health small { color: #718077; font-size: 9px; letter-spacing: .04em; }
+    .health-dots { display: inline-flex; gap: 8px; align-items: center; }
+    .health-dot { width: 7px; height: 7px; border-radius: 50%; background: #718077; box-shadow: 0 0 0 3px rgba(113,128,119,.12); }
+    .health-dot.online { background: #74d19a; box-shadow: 0 0 0 3px rgba(116,209,154,.12); }
+    .health-dot.degraded { background: #e7c96e; box-shadow: 0 0 0 3px rgba(231,201,110,.12); }
+    .health-dot.offline { background: #e27f72; box-shadow: 0 0 0 3px rgba(226,127,114,.12); }
+    .network-health.ready .dot { background: #74d19a; box-shadow: 0 0 0 3px rgba(116,209,154,.12); }
+    .network-health.blocked .dot { background: #e27f72; box-shadow: 0 0 0 3px rgba(226,127,114,.12); }
+    #headerConnectWallet { padding: 7px 10px; margin-left: 10px; font-size: 11px; border-radius: 5px; background: var(--paper-2); color: var(--green-2); border-color: rgba(18, 58, 42, .28); }
+    #headerConnectWallet:hover { background: #ded4b8; color: var(--green-2); }
+
     main {
-      width: min(1040px, 100%);
-      margin: 0 auto;
-      padding: clamp(20px, 4vw, 42px) calc(clamp(14px, 3vw, 28px) + 376px) 38px clamp(14px, 3vw, 28px);
+      width: auto;
+      margin: 0 360px 0 0;
+      padding: clamp(20px, 4vw, 42px) clamp(20px, 3vw, 42px) 38px;
     }
 
     .intro {
@@ -108,8 +133,8 @@
 
     .workspace {
       display: grid;
-      display: block;
-      align-items: stretch;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 12px;
     }
 
     .shell {
@@ -123,7 +148,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      padding: 12px 14px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--line);
       background: var(--paper-2);
     }
@@ -143,7 +168,7 @@
       white-space: nowrap;
       max-width: 540px;
       color: var(--body);
-      font-size: 11px;
+      font-size: 13px;
     }
 
     button {
@@ -165,6 +190,34 @@
       color: var(--green);
     }
 
+    #connectWallet, #prepareTinIdentity, #payTin, #submitTin, #buildWalletTransfer, #buildFunding {
+      background: var(--paper-2);
+      color: var(--green-2);
+      border-color: rgba(18, 58, 42, .28);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    #connectWallet::before, #prepareTinIdentity::before, #payTin::before, #submitTin::before,
+    #buildWalletTransfer::before, #buildFunding::before {
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: var(--green-2);
+      color: var(--gold-light);
+      font-size: 11px;
+      content: "↗";
+    }
+    #connectWallet::before { content: "⌁"; }
+    #prepareTinIdentity::before { content: "+"; }
+    #payTin::before { content: "◎"; }
+    #submitTin::before { content: "→"; }
+    #buildWalletTransfer::before, #buildFunding::before { content: "▣"; }
+    #connectWallet:hover, #prepareTinIdentity:hover, #payTin:hover, #submitTin:hover,
+    #buildWalletTransfer:hover, #buildFunding:hover { background: #ded4b8; color: var(--green-2); }
+
     button:disabled {
       opacity: .45;
       cursor: not-allowed;
@@ -172,19 +225,45 @@
 
     .tabs {
       display: flex;
-      gap: 0;
-      overflow: auto;
-      border-bottom: 1px solid var(--line);
-      background: #fffdf7;
+      flex-direction: column;
+      align-self: start;
+      gap: 3px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      background: rgba(251,247,237,.76);
+      position: sticky;
+      top: 74px;
     }
 
     [role="tab"] {
-      flex: 0 0 auto;
+      width: 100%;
+      text-align: left;
       border: 0;
       border-bottom: 3px solid transparent;
       background: transparent;
       color: var(--body);
       padding: 12px 14px 10px;
+    }
+
+    .menu-toggle { display: none; }
+    .menu-close { display: none; }
+
+    @media (max-width: 820px) {
+      header { padding: 10px 14px; gap: 8px; }
+      .menu-toggle { display: inline-grid; place-items: center; order: -1; width: 34px; height: 34px; padding: 0; font-size: 18px; }
+      .menu-close { display: grid; margin-left: auto; width: 30px; height: 30px; padding: 0; place-items: center; font-size: 22px; }
+      .brand { display: none; }
+      #headerConnectWallet { margin-left: 4px; padding: 6px 8px; }
+      .sub { display: none; }
+      .network { margin-left: auto; }
+      .network-health span { display: none; }
+      .network-health small { display: inline-flex; }
+      main { padding: 20px 14px 32px; }
+      .workspace { display: block; }
+      .tabs { position: fixed; z-index: 120; top: 0; left: 0; bottom: 0; width: 238px; padding: 76px 14px 20px; transform: translateX(-105%); transition: transform .2s ease; box-shadow: 18px 0 40px rgba(10,14,12,.18); }
+      body.menu-open .tabs { transform: translateX(0); }
+      body.menu-open::after { content: ""; position: fixed; z-index: 35; inset: 0; background: rgba(10,14,12,.36); }
+      .shell { width: 100%; }
     }
 
     [role="tab"]:hover {
@@ -199,7 +278,6 @@
 
     .tab-panel {
       display: none;
-      padding: 17px;
     }
 
     .tab-panel.active {
@@ -227,14 +305,14 @@
     }
 
     .status-grid {
-      display: flex;
-      gap: 7px;
-      overflow-x: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
       padding-bottom: 2px;
     }
 
     .status-card {
-      flex: 1 0 125px;
+      min-width: 0;
       border: 1px solid var(--line);
       border-top: 3px solid var(--service-color, var(--gold));
       background: #fffdf7;
@@ -252,6 +330,20 @@
     .status-card.service-rpc {
       --service-color: #B8860B;
     }
+
+    .status-card,
+    .verification,
+    .notice,
+    .form,
+    .raw-log,
+    .overview-card,
+    .identity-card {
+      background: #101a14;
+      border: 1px solid #26332c;
+      box-shadow: none;
+    }
+    .status-card { border-top-width: 3px; }
+    .status-card small { color: #91a393; }
 
     .status-card.service-cranker {
       --service-color: #247A88;
@@ -407,7 +499,7 @@
     .activity {
       position: fixed;
       z-index: 20;
-      top: 0;
+      top: 59px;
       right: 0;
       bottom: 0;
       width: 360px;
@@ -472,6 +564,16 @@
       color: #74d19a;
     }
 
+    @media (min-width: 821px) {
+      .shell { font-size: 15px; }
+      .section-head h2 { font-size: 21px; }
+      .section-head p, .notice, label, input, select, textarea { font-size: 14px; }
+      input, select, textarea { min-height: 42px; padding: 10px 12px; }
+      .activity { font-size: 13px; }
+      .event { padding: 11px 14px; }
+      .event time { font-size: 11px; }
+    }
+
     .wallet-bar {
       padding: 8px 10px;
     }
@@ -499,9 +601,6 @@
       text-transform: uppercase;
     }
 
-    .tab-panel {
-      padding: 13px;
-    }
 
     .section-head {
       margin-bottom: 10px;
@@ -612,6 +711,8 @@
       }
 
       main {
+        width: auto;
+        margin: 0;
         padding: clamp(20px, 4vw, 42px) clamp(14px, 3vw, 28px) 38px;
       }
 
@@ -777,46 +878,192 @@
     .event b {
       color: #74d19a;
     }
+    @media (min-width: 821px) {
+      .wallet-bar { padding: 18px 20px; }
+      .wallet-copy strong { font-size: 17px; }
+      .wallet-copy small { font-size: 14px; }
+      .section-head { margin-bottom: 20px; }
+      .section-head h2 { font-size: 25px; }
+      .section-head p { font-size: 14px; line-height: 1.6; }
+      .status-grid { gap: 10px; }
+      .status-card { min-width: 145px; padding: 14px 16px; }
+      .status-card span { font-size: 11px; }
+      .status-card strong { font-size: 14px; }
+      .status-card small { font-size: 12px; }
+      .status-summary { font-size: 14px; padding: 16px 0; }
+    .status-note { font-size: 13px; line-height: 1.6; }
+    .status-note { display: none; }
+    .overview-hero { display: block; margin-bottom: 24px; }
+    .overview-card { border: 1px solid #26332c; background: #111b15; padding: 22px; }
+    .overview-card h3 { margin: 0 0 8px; color: #e7f0e6; font-size: 19px; }
+    .overview-card p { margin: 0; color: #91a393; font-size: 14px; line-height: 1.6; }
+    .overview-kicker { color: #c9a94e; font: 700 10px ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
+    .overview-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .overview-actions button { font-size: 12px; }
+    .overview-actions .overview-link,
+    .identity-tin-field .overview-link { background: var(--paper-2) !important; border-color: rgba(231,201,110,.55) !important; color: var(--green-2) !important; }
+    .overview-actions .overview-link:hover,
+    .identity-tin-field .overview-link:hover { background: #f1ead8 !important; color: var(--green) !important; }
+    button.overview-link { background: #e9e0c8 !important; color: #123a2a !important; border: 1px solid #d4af37 !important; opacity: 1 !important; }
+    button.overview-link:hover { background: #f1ead8 !important; color: #0e2a1f !important; }
+    .identity-card { margin-bottom: 24px; border: 1px solid #26332c; background: linear-gradient(135deg, #111b15, #0d1410); padding: 20px 22px; }
+    .identity-card-head { display: flex; justify-content: space-between; gap: 14px; align-items: start; margin-bottom: 18px; }
+    .identity-card h3 { margin: 0 0 5px; color: #e7f0e6; font-size: 19px; }
+    .identity-card p { margin: 0; color: #91a393; font-size: 13px; }
+    .identity-seal { border: 1px solid rgba(201,169,78,.5); color: #c9a94e; padding: 5px 8px; font: 700 9px ui-monospace, monospace; letter-spacing: .1em; }
+    .identity-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .identity-field { border-top: 1px solid #26332c; padding-top: 9px; }
+    .identity-field span { display: block; color: #718077; font: 700 9px ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .identity-field strong { display: block; margin-top: 5px; color: #dce8dc; font: 13px ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .identity-tin-field .overview-link { margin-top: 10px; padding: 6px 8px; font-size: 10px; background: var(--paper-2); color: var(--green-2); border-color: rgba(231,201,110,.55); }
+    #panel-status { background: transparent; border: 0; }
+    .shell:has(#panel-status.active) { background: transparent; border-color: transparent; box-shadow: none; }
+    .tab-panel { background: transparent; }
+      .tab-panel.active:not(#panel-status) { position: fixed; z-index: 50; top: 90px; right: 390px; left: 190px; bottom: auto; max-height: calc(100vh - 110px); overflow: auto; background: #101a14; border: 1px solid #405846; border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.4); padding: 18px 20px 24px !important; }
+    .modal-close { position: sticky !important; top: 12px !important; z-index: 200 !important; display: block !important; margin: 12px 12px 0 auto !important; background: #e9e0c8 !important; color: #123a2a !important; border: 1px solid #d4af37 !important; border-radius: 4px; padding: 7px 12px !important; font: 700 11px ui-monospace, monospace; }
+    @media (max-width: 820px) { .tab-panel.active:not(#panel-status) { inset: 58px 10px 10px; } }
+    @media (max-width: 820px) { .identity-fields { grid-template-columns: 1fr; } }
+    @media (max-width: 820px) {
+      .intro { margin-bottom: 16px; }
+      .intro h1 { font-size: 23px; }
+      .intro p { max-width: none; font-size: 12px; }
+      .identity-card { padding: 16px; margin-bottom: 16px; }
+      .identity-card-head { align-items: flex-start; flex-direction: column; margin-bottom: 14px; }
+      .identity-card h3 { font-size: 17px; }
+      .identity-card p { font-size: 12px; }
+      .identity-seal { font-size: 8px; }
+      .overview-card { padding: 16px; }
+      .overview-card h3 { font-size: 17px; }
+      .overview-card p { font-size: 12px; }
+      .overview-actions { display: grid; grid-template-columns: 1fr; }
+      .overview-actions button { width: 100%; justify-content: center; }
+      .wallet-bar { padding: 14px; }
+      .wallet-copy small { max-width: 100%; white-space: normal; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .section-head h2 { font-size: 19px; }
+      .section-head p { font-size: 12px; }
+      .section-head button { width: 100%; }
+      .status-card { padding: 11px 12px; }
+      .status-card small { overflow-wrap: anywhere; }
+      .form-actions { flex-direction: column; align-items: stretch; }
+      .form-actions button { width: 100%; }
+      details pre { max-width: 100%; overflow-x: auto; font-size: 11px; }
+      .activity { height: 360px; }
+      .identity-card { width: 100%; }
+      .identity-fields { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      .identity-field strong { font-size: 12px; }
+      .identity-tin-field .overview-link { width: auto; }
+      #panel-status { padding: 14px 0; }
+      #panel-status .identity-card, #panel-status .overview-card { border-radius: 0; }
+    }
+      details { font-size: 14px; }
+      .activity-head { padding: 18px 20px; }
+      .activity-head h2 { font-size: 18px; }
+      .event { font-size: 14px; padding: 14px 18px; }
+      .event time { font-size: 12px; }
+    }
+  </style>
+  <style>
+    @media (max-width: 820px) {
+      .tab-panel.active:not(#panel-status) { position: fixed !important; z-index: 100 !important; top: 64px !important; right: 10px !important; left: 10px !important; bottom: 10px !important; inset: 64px 10px 10px !important; width: auto !important; max-width: none !important; height: auto !important; overflow-y: auto !important; padding: 16px !important; background: #101a14 !important; border: 1px solid #405846 !important; border-radius: 6px !important; box-shadow: 0 16px 40px rgba(0,0,0,.45) !important; }
+      .tab-panel.active:not(#panel-status) .modal-close { position: sticky !important; top: 0 !important; display: block !important; width: fit-content !important; min-width: 58px !important; height: 32px !important; margin: 0 0 14px auto !important; padding: 7px 12px !important; border-radius: 4px !important; background: #e9e0c8 !important; color: #123a2a !important; border: 1px solid #d4af37 !important; font: 700 11px/16px ui-monospace, monospace !important; text-align: center !important; }
+      body { font-size: 14px !important; }
+      main { padding: 18px 14px 28px !important; }
+      .intro h1 { font-size: 24px !important; }
+      .intro p { font-size: 12px !important; line-height: 1.5 !important; }
+      .shell { border: 0 !important; box-shadow: none !important; background: transparent !important; }
+      #panel-status { padding: 8px 0 !important; }
+      .identity-card, .overview-card { padding: 18px !important; margin-bottom: 14px !important; }
+      .identity-card-head { display: block !important; margin-bottom: 18px !important; }
+      .identity-card h3 { font-size: 19px !important; margin: 7px 0 !important; }
+      .identity-card p, .overview-card p { font-size: 13px !important; line-height: 1.55 !important; }
+      .identity-fields { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 14px 12px !important; }
+      .identity-field { min-width: 0 !important; }
+      .identity-field span { font-size: 9px !important; }
+      .identity-field strong { display: block !important; margin-top: 5px !important; font-size: 13px !important; line-height: 1.35 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+      .identity-tin-field .overview-link { display: block !important; margin-top: 9px !important; }
+      .overview-hero { margin-bottom: 14px !important; }
+      .overview-card h3 { font-size: 18px !important; }
+      .overview-actions { gap: 8px !important; }
+      .overview-actions button { font-size: 11px !important; }
+      .section-head { margin-bottom: 12px !important; }
+      .section-head h2 { font-size: 20px !important; }
+      .section-head p { font-size: 12px !important; }
+      .status-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      .status-card { min-width: 0 !important; padding: 11px !important; }
+      .status-card span { font-size: 9px !important; }
+      .status-card strong { font-size: 12px !important; }
+      .status-card small { font-size: 10px !important; overflow-wrap: anywhere !important; }
+      .status-summary { gap: 6px !important; font-size: 10px !important; flex-wrap: wrap !important; }
+      .status-note { display: none !important; }
+      .activity { margin-top: 14px !important; height: 390px !important; width: 100% !important; }
+      .activity-head h2 { font-size: 18px !important; }
+      .event { grid-template-columns: 52px 1fr !important; font-size: 12px !important; padding: 12px !important; }
+      .raw-log { margin: 0 14px 14px !important; }
+    }
   </style>
 </head>
 
 <body>
-    <header>
+  <header>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false">☰</button>
       <img class="mark" src="/tsn_icon_logo.png" alt="TSN" />
     <div>
-      <div class="brand">TSN PROTOCOL UI</div>
-      <div class="sub">SDK integration lab for a Decentralized Settlement Protocol</div>
+      <div class="brand">TSN DAPP</div>
+      <div class="sub">Identity, transfers, and settlement on TSN</div>
     </div>
     <div class="network">SOLANA DEVNET</div>
+    <div id="headerNetworkHealth" class="network-health" title="Network status synchronizes automatically"><i class="dot"></i><span>SYNCING</span><small id="headerNetworkDetail">NODE · RECEIVER · RPC</small></div>
+    <button id="headerConnectWallet">Connect</button>
   </header>
   <main>
     <section class="intro">
       <div>
-        <div class="eyebrow">TSN / SDK CONSOLE</div>
-        <h1>Protocol workspace</h1>
+        <div class="eyebrow">TSN DAPP / DEVNET</div>
+        <h1>Build with TSN</h1>
       </div>
-      <p>Run one SDK action at a time. Activity stays visible in the terminal rail.</p>
+      <p>Identity, transfers, and settlement tools for the TSN network.</p>
     </section>
     <section class="workspace">
-      <div class="shell">
-        <div class="wallet-bar">
-          <div class="wallet-copy"><strong id="walletStatus">No wallet connected</strong><small id="walletKey">Solflare,
-              Phantom, or Backpack can connect here.</small></div><button id="connectWallet">Connect wallet</button>
-        </div>
-        <nav class="tabs" role="tablist" aria-label="TSN SDK actions">
-          <button id="tab-status" role="tab" aria-controls="panel-status" aria-selected="true">Status</button>
-          <button id="tab-create-tin" role="tab" aria-controls="panel-create-tin" aria-selected="false">Create
-            TIN</button>
-          <button id="tab-tin" role="tab" aria-controls="panel-tin" aria-selected="false">TIN payment</button>
-          <button id="tab-wallet" role="tab" aria-controls="panel-wallet" aria-selected="false">Wallet transfer</button>
-          <button id="tab-funding" role="tab" aria-controls="panel-funding" aria-selected="false">Funding</button>
-        </nav>
-        <section id="panel-status" class="tab-panel active" role="tabpanel" aria-labelledby="tab-status">
+      <nav class="tabs" role="tablist" aria-label="TSN Dapp navigation">
+        <button class="menu-close" id="menuClose" aria-label="Close navigation">×</button>
+        <button id="tab-status" role="tab" aria-controls="panel-status" aria-selected="true">Overview</button>
+        <button id="tab-create-tin" role="tab" aria-controls="panel-create-tin" aria-selected="false">Create TIN</button>
+        <button id="tab-tin" role="tab" aria-controls="panel-tin" aria-selected="false">TIN transfer</button>
+        <button id="tab-wallet" role="tab" aria-controls="panel-wallet" aria-selected="false">Wallet transfer</button>
+        <button id="tab-funding" role="tab" aria-controls="panel-funding" aria-selected="false">Funding</button>
+      </nav>
+      <div>
+        <section id="panel-status" class="overview-panel active" role="tabpanel" aria-labelledby="tab-status">
+          <div class="identity-card">
+            <div class="identity-card-head">
+              <div><div class="overview-kicker">TSN Identity Registry</div><h3>Protocol identity pass</h3><p>Account record for private settlement.</p></div>
+            </div>
+            <div class="identity-fields">
+              <div class="identity-field identity-tin-field"><span>TIN</span><strong id="overviewTin">Not issued</strong><button class="overview-link" id="issueTinAction" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Issue private TIN</button></div>
+              <div class="identity-field"><span>Display name</span><strong id="overviewDisplayName">—</strong></div>
+              <div class="identity-field"><span>Wallet</span><strong id="overviewWallet">Not connected</strong></div>
+              <div class="identity-field"><span>Stablecoin balance</span><strong id="overviewStablecoin">—</strong></div>
+              <div class="identity-field"><span>TIN balance</span><strong id="overviewTinBalance">—</strong></div>
+              <div class="identity-field"><span>Account status</span><strong id="overviewAccountStatus">Awaiting wallet</strong></div>
+            </div>
+          </div>
+          <div class="overview-hero">
+            <div class="overview-card">
+              <div class="overview-kicker">Transfer Settlement Network</div>
+              <h3>Identity, transfers, and settlement in one protocol surface.</h3>
+              <p>Connect a wallet to create a private TIN, prepare a transfer, or build a sponsored settlement transaction. Every action stays visible at the SDK boundary.</p>
+              <div class="overview-actions">
+                <button class="alt overview-link" data-open-tab="tab-tin" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Private TIN transfer</button>
+                <button class="alt overview-link" data-open-tab="tab-wallet" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Private wallet transfer</button>
+              </div>
+            </div>
+          </div>
           <div class="section-head">
             <div>
               <h2>Network status</h2>
-              <p>The active mode checks only its configured Node, Receiver, and RPC endpoints.</p>
-            </div><button class="alt" id="refreshStatus">Refresh</button>
+              <p>Live service health and routing.</p>
+            </div><button class="alt" id="refreshStatus">Sync now</button>
           </div>
           <div id="serviceStatus">Checking services...</div>
           <details>
@@ -828,6 +1075,7 @@ if (!status.readyForTransactions) throw new Error("TSN is not ready");</pre><a
           </details>
         </section>
         <section id="panel-create-tin" class="tab-panel" role="tabpanel" aria-labelledby="tab-create-tin">
+          <button class="modal-close" type="button" data-close-modal>Back</button>
           <div class="section-head">
             <div>
               <h2>Create your private TIN</h2>
@@ -875,9 +1123,10 @@ const identity = await createTinV1IdentityEnvelope({
           </details>
         </section>
         <section id="panel-tin" class="tab-panel" role="tabpanel" aria-labelledby="tab-tin">
+          <button class="modal-close" type="button" data-close-modal>Back</button>
           <div class="section-head">
             <div>
-              <h2>TIN payment</h2>
+              <h2>TIN transfer</h2>
               <p>Prepare a signed TIN debit intent. The UI does not create fake TINs or bypass the Node, Receiver, or
                 Cranker.</p>
             </div>
@@ -898,6 +1147,7 @@ await submitPaymentAuthorizationToMempool({ ...authorization, ...paymentFields }
           </details>
         </section>
         <section id="panel-wallet" class="tab-panel" role="tabpanel" aria-labelledby="tab-wallet">
+          <button class="modal-close" type="button" data-close-modal>Back</button>
           <div class="section-head">
             <div>
               <h2>Wallet transfer</h2>
@@ -919,6 +1169,7 @@ await submitPaymentAuthorizationToMempool({ ...authorization, ...paymentFields }
           </details>
         </section>
         <section id="panel-funding" class="tab-panel" role="tabpanel" aria-labelledby="tab-funding">
+          <button class="modal-close" type="button" data-close-modal>Back</button>
           <div class="section-head">
             <div>
               <h2>Settlement funding</h2>

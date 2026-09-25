@@ -6,9 +6,17 @@ import { randomBytes } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const mode = process.argv.includes("--local") ? "local" : "devnet";
+const envFile = path.join(path.dirname(fileURLToPath(import.meta.url)), mode === "local" ? ".env.local" : ".env");
+try {
+  const envText = await fs.readFile(envFile, "utf8");
+  for (const line of envText.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)\s*$/);
+    if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, "");
+  }
+} catch { /* environment variables may be supplied by the process manager */ }
 const tsnSdk = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/index.js")).href);
 const port = Number(process.env.TSN_PROTOCOL_UI_PORT ?? 4317);
-const mode = process.argv.includes("--local") ? "local" : "devnet";
 // Use the same live RPC gateway that the SDK network-status check probes.
 // A per-run TSN_RPC_URL override remains available for developers.
 const rpcUrl = process.env.TSN_RPC_URL
@@ -53,8 +61,8 @@ async function handleApi(req, res, url) {
     const network = await tsnSdk.getTsnNetworkStatus({
       local: {
         node: process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000",
-        receiver: process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:3000",
-        rpc: process.env.TSN_LOCAL_RPC_URL ?? "http://127.0.0.1:8787",
+        receiver: process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010",
+        rpc: process.env.TSN_LOCAL_RPC_URL ?? "https://tsn-rpc-gateway.vercel.app",
       },
       live: {
         node: process.env.TSN_NODE_URL ?? null,

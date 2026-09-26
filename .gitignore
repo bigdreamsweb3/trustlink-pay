@@ -126,7 +126,7 @@ research/Trustlink-Research/
 blogger/
 blogger_tsn/
 data-guard/
-resume/
+# resume/
 tools/
 /tools/add_blogger_updates.py
 /tools/add_blogger_search_pagination.py

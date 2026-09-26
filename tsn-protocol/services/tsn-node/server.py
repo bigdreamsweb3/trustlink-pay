@@ -66,7 +66,11 @@ from app.services.cross_chain_routes import (
     verify_destination_route,
 )
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+_node_root = Path(__file__).resolve().parent
+# Local development is local-first. The hosted .env remains a fallback for
+# values that are not present in the ignored .env.local file.
+load_dotenv(_node_root / ".env.local", override=False)
+load_dotenv(_node_root / ".env", override=False)
 
 
 def clean_env(value: str | None, default: str = "") -> str:

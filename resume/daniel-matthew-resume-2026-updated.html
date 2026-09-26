@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daniel U. Agbake Matthew — Resume 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090B;
+      --surface: #111116;
+      --surface2: #18181C;
+      --accent: #22D3EE;
+      --accent2: #F59E0B;
+      --border: #27272A;
+      --text: #E4E4E7;
+      --muted: #A1A1AA;
+      --dim: #71717A;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 48px 72px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 28px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 72px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .name {
+      font-family: var(--font-head);
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .title-line {
+      font-family: var(--font-head);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .contact-row a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .contact-row a:hover {
+      color: var(--accent);
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .contact-item svg {
+      width: 13px;
+      height: 13px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 34px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── SUMMARY ── */
+    .summary p {
+      color: var(--text);
+      font-size: 13.5px;
+      line-height: 1.75;
+      font-weight: 300;
+      max-width: 780px;
+    }
+
+    /* ── EXPERIENCE ── */
+    .job {
+      margin-bottom: 26px;
+      padding-left: 16px;
+      border-left: 2px solid var(--border);
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .job::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .job:hover {
+      border-color: var(--accent);
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 3px;
+      flex-wrap: wrap;
+    }
+
+    .job-title {
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .job-period {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent2);
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .job-company {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .job ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .job ul li {
+      position: relative;
+      padding-left: 14px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.65;
+      margin-bottom: 5px;
+      font-weight: 300;
+    }
+
+    .job ul li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── PROJECTS ── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .project-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .project-card:hover::before {
+      opacity: 1;
+    }
+
+    .project-name {
+      font-family: var(--font-head);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .project-stack {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent2);
+      margin-bottom: 7px;
+    }
+
+    .project-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 300;
+    }
+
+    .project-link {
+      display: inline-block;
+      margin-top: 7px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      text-decoration: none;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+
+    .project-link:hover {
+      opacity: 1;
+    }
+
+    /* ── AWARDS ── */
+    .award-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .award-badge {
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      border-radius: 4px;
+      padding: 8px 10px;
+      text-align: center;
+      min-width: 68px;
+    }
+
+    .award-badge-amount {
+      font-family: var(--font-head);
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .award-badge-label {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .award-title {
+      font-family: var(--font-head);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .award-org {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .award ul {
+      list-style: none;
+    }
+
+    .award ul li {
+      position: relative;
+      padding-left: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 4px;
+      font-weight: 300;
+    }
+
+    .award ul li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    /* ── SKILLS ── */
+    .skills-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .skills-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skills-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .skill-cat {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--accent);
+      padding: 7px 16px 7px 0;
+      white-space: nowrap;
+      vertical-align: top;
+      min-width: 130px;
+    }
+
+    .skill-list {
+      font-size: 12.5px;
+      color: var(--muted);
+      padding: 7px 0;
+      line-height: 1.55;
+      font-weight: 300;
+    }
+
+    /* ── EDUCATION ── */
+    .edu-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .edu-degree {
+      font-family: var(--font-head);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .edu-school {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .edu-notes {
+      list-style: none;
+    }
+
+    .edu-notes li {
+      position: relative;
+      padding-left: 14px;
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.55;
+      margin-bottom: 3px;
+      font-weight: 300;
+    }
+
+    .edu-notes li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--dim);
+    }
+
+    .edu-period {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent2);
+      white-space: nowrap;
+    }
+
+    /* ── LINKS ── */
+    .links-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 0;
+    }
+
+    .link-chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      margin-right: 8px;
+      margin-bottom: 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .link-chip:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      body {
+        background: #fff;
+        color: #111;
+      }
+
+      body::before {
+        display: none;
+      }
+
+      :root {
+        --bg: #fff;
+        --surface: #f8f8f8;
+        --surface2: #f0f0f0;
+        --accent: #0891b2;
+        --accent2: #b45309;
+        --border: #e5e5e5;
+        --text: #18181b;
+        --muted: #52525b;
+        --dim: #71717a;
+      }
+
+      .page {
+        padding: 24px 32px;
+        max-width: 100%;
+      }
+
+      .project-card:hover {
+        transform: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 32px 24px;
+      }
+
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .edu-block {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="name">Daniel U. Agbake Matthew</div>
+      <div class="title-line">Full-Stack Web3 Engineer &middot; Blockchain Systems Architect</div>
+      <div class="contact-row">
+        <span class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          Awka, Nigeria
+        </span>
+        <a class="contact-item" href="mailto:99craftson@gmail.com">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+          99craftson@gmail.com
+        </a>
+        <span class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          +234 903 733 4349
+        </span>
+        <a class="contact-item" href="https://x.com/0xbigdream" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631Zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          @0xbigdream
+        </a>
+        <a class="contact-item" href="https://github.com/bigdreamsweb3" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+          </svg>
+          github.com/bigdreamsweb3
+        </a>
+      </div>
+    </header>
+
+    <!-- SUMMARY -->
+    <section class="section summary">
+      <div class="section-label">Professional Summary</div>
+      <p>Full-stack Web3 engineer and blockchain systems architect with hands-on experience building production-oriented
+        applications across React/Next.js, TypeScript, Node.js, backend APIs, databases, wallet integrations, and
+        blockchain infrastructure. Founder of TrustLink Labs and architect of the Transfer Settlement Network (TSN), a
+        Solana-based settlement protocol for cross-chain stablecoin payments. CTO at FRAMP, building crypto on/off-ramp,
+        payments, and stablecoin savings infrastructure. Experienced in connecting frontend applications, backend
+        services, wallets, RPC/blockchain infrastructure, and transaction workflows into complete end-to-end products.
+        DSCVR Canvas Buildathon winner ($3,500) with multiple shipped open-source Web3 projects.</p>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="section">
+      <div class="section-label">Work Experience</div>
+
+      <div class="job">
+        <div class="job-header">
+          <div class="job-title">Founder &amp; Protocol Architect</div>
+          <div class="job-period">2025 &ndash; Present</div>
+        </div>
+        <div class="job-company">TrustLink Labs &nbsp;&middot;&nbsp; github.com/Trustlink-Labs &nbsp;&middot;&nbsp;
+          trustlink-pay.vercel.app</div>
+        <ul>
+          <li>Architected and implemented the Transfer Settlement Network (TSN), a Solana-based settlement
+            infrastructure for identity-first, intent-based cross-chain stablecoin payments.</li>
+          <li>Built end-to-end blockchain workflows spanning TypeScript/Next.js applications, backend services, Solana
+            programs, transaction authorization, settlement execution, and off-chain state management.</li>
+          <li>Developed the live Solana settlement layer using Rust/Anchor, including TIN identity infrastructure, GPRU
+            routing, epoch-based treasury accounting, confidential settlement interfaces, and cranker-based transaction
+            execution.</li>
+          <li>Designed transaction lifecycle and security mechanisms covering authorization, replay protection,
+            non-custodial fund routing, verification, settlement, and recipient payout.</li>
+          <li>Architected a cross-chain settlement domain connecting Solana intents with Attestcoin/Creditcoin
+            verification and settlement infrastructure.</li>
+          <li>Built and maintained technical specifications, architecture documentation, developer workflows, and
+            open-source repositories for the protocol.</li>
+          <li>Submitted TSN to the BUIDL CTC 2026 Fall hackathon in the DeFi track.</li>
+        </ul>
+      </div>
+
+      <div class="job">
+        <div class="job-header">
+          <div class="job-title">Chief Technical Officer (CTO) / Full-Stack Developer</div>
+          <div class="job-period">May 2025 &ndash; Present</div>
+        </div>
+        <div class="job-company">FRAMP</div>
+        <ul>
+          <li>Architected and developed full-stack crypto financial applications using Next.js, React, TypeScript,
+            Node.js, Supabase, and Firebase.</li>
+          <li>Built backend APIs and data services supporting crypto on-ramping/off-ramping, stablecoin savings,
+            payments, wallet management, and transaction workflows.</li>
+          <li>Integrated crypto/payment gateways and wallet infrastructure into user-facing applications and backend
+            services.</li>
+          <li>Implemented authentication and KYC/AML-oriented user flows for cross-border financial products.</li>
+          <li>Designed frontend and backend components for production deployment, operational reliability, and
+            maintainability.</li>
+          <li>Led development workflows including code reviews, CI/CD, debugging, performance optimization, and
+            technical planning.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section class="section">
+      <div class="section-label">Selected Projects</div>
+      <div class="projects-grid">
+
+        <div class="project-card">
+          <div class="project-name">Transfer Settlement Network (TSN)</div>
+          <div class="project-stack">Rust/Anchor · Solana · TypeScript · Creditcoin/Attestcoin</div>
+          <div class="project-desc">Identity-first, intent-based settlement protocol. Live Solana layer with TIN, GPRU,
+            TCAP, and ConfidentialSettlement. Cross-chain Creditcoin domain using Attestcoin Protocol in active build.
+          </div>
+          <a class="project-link" href="https://github.com/Trustlink-Labs" target="_blank">github.com/Trustlink-Labs</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-name">ChainPay-Africa</div>
+          <div class="project-stack">TypeScript · Blockchain</div>
+          <div class="project-desc">Blockchain-based bill payment for electricity, internet, and utilities across
+            Africa. Fast, low-cost, borderless transactions.</div>
+          <a class="project-link" href="https://github.com/bigdreamsweb3/ChainPay-Africa"
+            target="_blank">github.com/bigdreamsweb3/ChainPay-Africa</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-name">DeFiSeek</div>
+          <div class="project-stack">TypeScript · Next.js · OpenAI · Web3</div>
+          <div class="project-desc">AI-powered dApp for real-time blockchain analysis, scam/risky asset detection, and
+            misinformation alerts. Integrated Civic Auth for secure Web3 login.</div>
+          <a class="project-link" href="https://github.com/bigdreamsweb3/defiseek"
+            target="_blank">github.com/bigdreamsweb3/defiseek</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-name">Aurion Swap Protocol</div>
+          <div class="project-stack">TypeScript · Solana</div>
+          <div class="project-desc">Decentralised token swapping on Solana with gas-efficient DeFi swaps and wallet
+            integration.</div>
+          <a class="project-link" href="https://github.com/bigdreamsweb3/Aurion-Swap-Protocol"
+            target="_blank">github.com/bigdreamsweb3/Aurion-Swap-Protocol</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-name">WhatsApp-My-Kitchen</div>
+          <div class="project-stack">TypeScript · Next.js</div>
+          <div class="project-desc">Full-stack WhatsApp-based food ordering system for home cooks and local food
+            businesses. Cart, checkout, and payment proof.</div>
+          <a class="project-link" href="https://github.com/bigdreamsweb3/WhatsApp-My-Kitchen"
+            target="_blank">github.com/bigdreamsweb3/WhatsApp-My-Kitchen</a>
+        </div>
+
+        <div class="project-card">
+          <div class="project-name">MemeCoinTracker</div>
+          <div class="project-stack">JavaScript · LitElement · Vite.js · Web3</div>
+          <div class="project-desc">Real-time meme coin tracker with market data feeds and search. <strong
+              style="color:#F59E0B">DSCVR Canvas Buildathon winner — $3,500.</strong></div>
+          <a class="project-link" href="https://github.com/bigdreamsweb3/MemeCoinTracker"
+            target="_blank">github.com/bigdreamsweb3/MemeCoinTracker</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- AWARDS -->
+    <section class="section">
+      <div class="section-label">Awards</div>
+      <div class="award-block">
+        <div class="award-badge">
+          <div class="award-badge-amount">$3,500</div>
+          <div class="award-badge-label">Prize</div>
+        </div>
+        <div class="award">
+          <div class="award-title">DSCVR Canvas Buildathon Winner</div>
+          <div class="award-org">DSCVR / DoraHacks &nbsp;&middot;&nbsp; November 2024</div>
+          <ul>
+            <li>Built MemeCoinTracker: real-time meme coin tracking app (LitElement, Vite.js, Web3) with market data,
+              search, and responsive UI. Recognised for innovative design and real-time functionality.</li>
+            <li>Repo: <a href="https://github.com/bigdreamsweb3/MemeCoinTracker" target="_blank"
+                style="color:var(--accent);text-decoration:none;">github.com/bigdreamsweb3/MemeCoinTracker</a></li>
+            <li>Announcement: <a href="https://youtu.be/aTrYfaXhtvc" target="_blank"
+                style="color:var(--accent);text-decoration:none;">youtu.be/aTrYfaXhtvc</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section">
+      <div class="section-label">Technical Skills</div>
+      <table class="skills-table">
+        <tr>
+          <td class="skill-cat">Frontend</td>
+          <td class="skill-list">React, Next.js, TypeScript, JavaScript, LitElement, Vite.js, responsive Web3 interfaces
+          </td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Backend</td>
+          <td class="skill-list">Node.js, REST APIs, Supabase, Firebase, PostgreSQL, authentication, backend services
+          </td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Blockchain</td>
+          <td class="skill-list">Solana, Rust, Anchor, wallet integration, RPC infrastructure, transaction workflows,
+            smart-contract integration, on-chain/off-chain systems</td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Web3 / DeFi</td>
+          <td class="skill-list">Wallets, token transfers, DeFi applications, stablecoins, payment infrastructure,
+            cross-chain settlement, intent-based transaction architecture</td>
+        </tr>
+        <tr>
+          <td class="skill-cat">EVM</td>
+          <td class="skill-list">Solidity, EVM fundamentals, smart-contract integration, ERC token standards</td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Infrastructure</td>
+          <td class="skill-list">Git, CI/CD, deployment, testing, performance optimization, distributed transaction
+            workflows</td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Security / Architecture</td>
+          <td class="skill-list">Non-custodial systems, authorization flows, replay protection, confidential state,
+            commitment schemes, privacy-preserving architecture</td>
+        </tr>
+        <tr>
+          <td class="skill-cat">Additional</td>
+          <td class="skill-list">Attestcoin Protocol, AI/Web3 applications, open-source package development</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- EDUCATION -->
+    <section class="section">
+      <div class="section-label">Education</div>
+      <div class="edu-block">
+        <div>
+          <div class="edu-degree">Industrial Production Engineering (Certificate of Higher Education)</div>
+          <div class="edu-school">Nnamdi Azikiwe University &mdash; Awka, Nigeria</div>
+          <ul class="edu-notes">
+            <li>Self-directed transition to full-stack, blockchain, and AI development with hands-on fintech/Web3
+              experience.</li>
+            <li>GitHub: <a href="https://github.com/bigdreamsweb3" target="_blank"
+                style="color:var(--accent);text-decoration:none;">github.com/bigdreamsweb3</a></li>
+          </ul>
+        </div>
+        <div class="edu-period">2016 &ndash; 2021</div>
+      </div>
+    </section>
+
+    <!-- LINKS -->
+    <section class="section">
+      <div class="section-label">Links</div>
+      <div class="links-row">
+        <a class="link-chip" href="https://x.com/0xbigdream" target="_blank">x.com/0xbigdream</a>
+        <a class="link-chip" href="https://github.com/bigdreamsweb3" target="_blank">github.com/bigdreamsweb3</a>
+        <a class="link-chip" href="https://github.com/Trustlink-Labs" target="_blank">github.com/Trustlink-Labs</a>
+        <a class="link-chip" href="https://trustlink-pay.vercel.app" target="_blank">trustlink-pay.vercel.app</a>
+        <a class="link-chip" href="https://tsn-protocol.blogspot.com" target="_blank">tsn-protocol.blogspot.com</a>
+      </div>
+    </section>
+
+  </div>
+</body>
+
+</html>

@@ -25,6 +25,33 @@ not treat a successful UI response or an `intentId` as a completed creation.
 
 ## Capture points
 
+The demo workspace includes a Python collector for repeatable, redacted
+snapshots. From the repository root:
+
+```powershell
+python demo-video/evidence_taker.py --watch 30
+```
+
+After the run has an intent ID and transaction details, pass them with optional
+service log paths:
+
+```powershell
+python demo-video/evidence_taker.py `
+  --intent-id "<receiver-work-id>" `
+  --signature "<confirmed-solana-signature>" `
+  --registry "<tin-registry-pda>" `
+  --node-log "evidence/node.log" `
+  --cranker-log "evidence/cranker.log"
+```
+
+The tool writes a timestamped folder under `evidence/`. It records allowlisted
+Receiver fields, health snapshots, filtered/redacted service log excerpts, and
+optional finalized signature and public registry account metadata. It never
+copies `payload`, authorization data, encrypted envelopes, or raw account
+data. Receiver records are captured only from the local JSON store; hosted
+Firebase records need an authenticated export path and are not fetched by this
+tool. TINs are masked in Receiver summaries.
+
 Create an evidence directory before starting the flow:
 
 ```powershell

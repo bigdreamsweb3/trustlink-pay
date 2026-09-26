@@ -33,5 +33,30 @@ transaction signature.
 - `cuts/` — extracted clips for editing;
 - `exports/` — final demo renders.
 
+## Evidence capture
+
+Use `python evidence_taker.py` from this folder or the repository root to make
+a timestamped evidence bundle. It records SDK/Receiver/Node/RPC health,
+allowlisted Receiver work fields, filtered/redacted Node and Cranker log
+events, and optional Devnet signature/registry account metadata. It does not
+copy raw Receiver payloads or raw Solana account data. The local JSON adapter
+must be enabled for Receiver records to be read from disk; hosted Firebase
+records are not fetched by this local tool.
+
+Example:
+
+```powershell
+python demo-video/evidence_taker.py `
+  --intent-id "<receiver-work-id>" `
+  --signature "<confirmed-solana-signature>" `
+  --registry "<tin-registry-pda>" `
+  --node-log "evidence/node.log" `
+  --cranker-log "evidence/cranker.log" `
+  --watch 30
+```
+
+Review the generated bundle before sharing it. Public transaction signatures
+and registry addresses are included when supplied; TIN values are masked.
+
 Do not put API keys, wallet secret keys, encrypted environment files, or raw
 private payloads in this workspace.

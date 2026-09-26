@@ -1,0 +1,8 @@
+{
+  "tsn_receiver_state": {
+    "6d17a1bece320dce49de1fc7045f2f37546cd6ee57081779eab757295595e619": {
+      "key": "tsn:epoch",
+      "value": "{\"epoch_number\": 1, \"started_at\": \"2026-09-26T15:57:07.172479+00:00\"}"
+    }
+  }
+}

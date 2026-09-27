@@ -179,10 +179,10 @@
     return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
   }
 
-  async function createProgramAssignedOwnerEnvelope({ ownerPublicKey, nonce, signature, encryptionMessage }) {
+  async function createTinV1OwnerEnvelope({ ownerPublicKey, nonce, signature, encryptionMessage }) {
     const dataKey = new Uint8Array(await crypto.subtle.digest("SHA-256", signature));
     const masterSeed = crypto.getRandomValues(new Uint8Array(32));
-    const marker = "program-assigned";
+    const marker = "tin-v1";
     const zeroHash = "0".repeat(64);
     const resourceCommitment = await sha256Hex(crypto.getRandomValues(new Uint8Array(32)));
     const aad = canonicalFields(["TSN_TIN_LOCAL_MASTER_SEED", marker, ownerPublicKey, "1", zeroHash]);
@@ -233,42 +233,75 @@
     if (!networkStatus?.readyForTransactions) throw new Error("TSN services are not ready. Refresh Status before creating a transaction.");
   }
 
-  function configureLegacyTinPath() {
-    $("panel-create-tin").innerHTML = `<div class="section-head"><div><h2>Prepare a private TIN identity</h2><p>The current SDK path accepts a 10-digit TIN and display name. This prepares the encrypted identity envelope; it does not claim that an on-chain TIN was created.</p></div></div><div class="form"><label>10-digit TIN<input id="tinIdentity" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="1234567890" autocomplete="off"></label><label>Name shown after authorized resolution<input id="tinDisplayName" placeholder="Your display name" autocomplete="name"></label><div></div></div><div class="form-actions" style="margin-top:12px"><button id="prepareTinIdentity">Prepare identity envelope</button></div><p class="notice" style="margin-top:14px">Phone verification and random-secret issuance are not part of the current deployed SDK path. The SDK returns a commitment and encrypted envelope, not a public identity record.</p><details><summary>VIEW SDK CODE / current accepted path</summary><pre>const identity = await createTinV1IdentityEnvelope({\n  tin,\n  displayName,\n});</pre><a href="https://trust-link-tsn.mintlify.site/developers/private-tin-issuance" target="_blank" rel="noreferrer">Read the Private TIN guide -&gt;</a></details>`;
-  }
-
   function configureCurrentTinPath() {
-    $("panel-create-tin").innerHTML = `<div class="section-head"><div><h2>Create private TIN</h2><p>Connect a wallet and choose a display name. The Solana program assigns the 10-digit TIN during the finalized creation transaction.</p></div></div><div class="form"><label>Connected wallet<input id="tinOwnerWallet" readonly value="${activeWallet?.publicKey?.toBase58?.() ?? "Connect wallet above"}"></label><label>Display name<input id="tinDisplayName" placeholder="Your display name" autocomplete="name"></label><div></div></div><div class="form-actions" style="margin-top:12px"><button id="prepareTinIdentity">Prepare owner creation</button></div><p class="notice" style="margin-top:14px">The current protocol does not ask the user for a TIN, phone number, or lookup secret. The UI will not claim a TIN was created until the SDK creation payload is accepted by the Node, submitted by a Cranker, and finalized on Solana.</p><details><summary>VIEW SDK CODE / creation boundary</summary><pre>User inputs: connected wallet and display name. The SDK must build the encrypted route payload and owner authorization before submission.</pre><a href="https://trust-link-tsn.mintlify.site/developers/private-tin-issuance" target="_blank" rel="noreferrer">Read the Private TIN guide -&gt;</a></details>`;
+    $("panel-create-tin").innerHTML = `<div class="section-head"><div><h2>Create private TIN</h2><p>Connect a wallet and choose a display name. TSN generates a random TIN privately; the program stores only its keyed lookup commitment and encrypted identity.</p></div></div><div class="form"><label>Connected wallet<input id="tinOwnerWallet" readonly value="${activeWallet?.publicKey?.toBase58?.() ?? "Connect wallet above"}"></label><label>Display name<input id="tinDisplayName" placeholder="Your display name" autocomplete="name"></label><div></div></div><div class="form-actions" style="margin-top:12px"><button id="prepareTinIdentity">Prepare owner creation</button></div><div id="tinCreationResult" class="notice" style="margin-top:14px" hidden></div><p class="notice" style="margin-top:14px">The TIN stays in the XP session until the Node verifies the Receiver work and the Cranker confirms the CreateTinV1 transaction. It is not included in Receiver work or the on-chain account.</p><details><summary>VIEW SDK CODE / TIN V1 creation boundary</summary><pre>const identity = await createTinV1IdentityEnvelope({ tin, displayName, lookupSecret });\nconst intent = buildTinV1Creation({ lookupCommitment, encryptedIdentityEnvelope, ownerPubkey, ... });\nawait submitTinV1Creation({ ...intent, ownerSignature });</pre><a href="https://trust-link-tsn.mintlify.site/developers/private-tin-issuance" target="_blank" rel="noreferrer">Read the Private TIN guide -&gt;</a></details>`;
   }
 
   async function prepareTinIdentity() {
+    let stage = "validating wallet and display name";
     try {
       const displayName = $("tinDisplayName").value.trim();
       if (!activeWallet) throw new Error("Connect a browser wallet first.");
       if (!displayName) throw new Error("Enter a display name.");
       log("TIN CREATION INPUTS VALID", `Wallet ${activeWallet.publicKey.toBase58()} / display name ${displayName}`);
+      stage = "requesting owner-encryption approval message from TSN XP server";
       let prepared = await api("/api/tsn/sdk/prepare-tin", { method: "POST", body: JSON.stringify({ displayName }) });
       if (prepared.status === "OWNER_ENCRYPTION_SIGNATURE_REQUIRED") {
+        stage = "requesting wallet approval for local seed encryption";
         const encryptionBytes = new TextEncoder().encode(prepared.ownerEncryptionMessage);
         const ownerEncryptionSignatureBase64 = await signBytes(encryptionBytes);
         const ownerEncryptionSignature = Uint8Array.from(atob(ownerEncryptionSignatureBase64), (character) => character.charCodeAt(0));
-        const encryptedMasterSeed = await createProgramAssignedOwnerEnvelope({
+        stage = "encrypting the owner seed locally";
+        const encryptedMasterSeed = await createTinV1OwnerEnvelope({
           ownerPublicKey: activeWallet.publicKey.toBase58(),
           nonce: Uint8Array.from(prepared.ownerEncryptionNonce.match(/.{2}/g), (pair) => parseInt(pair, 16)),
           signature: ownerEncryptionSignature,
           encryptionMessage: prepared.ownerEncryptionMessage,
         });
+        stage = "building private TIN V1 intent with the TSN SDK";
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",
           body: JSON.stringify({ displayName, encryptedMasterSeed: btoa(String.fromCharCode(...encryptedMasterSeed)) }),
         });
       }
+      stage = "requesting owner-intent signature from wallet";
       const ownerIntentMessage = prepared.ownerIntentMessage;
-      const ownerSignature = await sign(ownerIntentMessage);
+      const ownerIntentHash = Uint8Array.from(prepared.ownerIntentHash.match(/.{2}/g), (pair) => parseInt(pair, 16));
+      const ownerSignature = await signBytes(ownerIntentHash);
+      stage = "submitting signed TIN intent to TSN Receiver ingress";
       const submitted = await api("/api/tsn/sdk/submit-tin", { method: "POST", body: JSON.stringify({ ...prepared, ownerSignature, ownerIntentMessage }) });
       log("SDK createTin", submitted.intentId ?? "TIN creation intent submitted");
-      log("TIN CREATION SUBMITTED", "The Node accepted the owner-authorized creation intent. The Cranker will submit CreateTin and the program will assign the TIN on Solana.");
-    } catch (error) { log("TIN IDENTITY BLOCKED", error.message); }
+      const result = $("tinCreationResult");
+      if (result) { result.hidden = false; result.textContent = "TIN V1 intent accepted by Receiver. Waiting for Node verification and Cranker finalization…"; }
+      log("TIN V1 INTENT RECEIVED", "Receiver accepted the encrypted identity envelope and owner-signed lookup commitment. Node verification and Cranker submission are pending.");
+      void watchTinFinalization(submitted.operationId);
+    } catch (error) { log("TIN IDENTITY BLOCKED", `${stage}: ${error instanceof Error ? error.message : String(error)}`); }
+  }
+
+  async function watchTinFinalization(operationId) {
+    if (!operationId) { log("TIN V1 STATUS PENDING", "Receiver did not return its operation reference."); return; }
+    const terminal = new Set(["CONFIRMED", "FAILED"]);
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      try {
+        const current = await api(`/api/tsn/sdk/tin-status?operationId=${encodeURIComponent(operationId)}`);
+        if (!terminal.has(current.status)) continue;
+        if (current.status === "CONFIRMED" && current.tin) {
+          if ($("overviewTin")) $("overviewTin").textContent = current.tin;
+          const result = $("tinCreationResult");
+          if (result) result.textContent = `TIN ${current.tin} finalized on Solana${current.signature ? ` · ${current.signature}` : ""}.`;
+          log("TIN V1 FINALIZED", `TIN ${current.tin}${current.signature ? ` / Solana ${current.signature}` : ""}`);
+        } else {
+          const result = $("tinCreationResult");
+          if (result) result.textContent = `TIN V1 operation ${current.status}. Check SDK activity for the Node or Cranker result.`;
+          log("TIN V1 OPERATION ENDED", current.status.toUpperCase());
+        }
+        return;
+      } catch (error) {
+        if (attempt === 0) log("TIN V1 STATUS WAITING", error instanceof Error ? error.message : String(error));
+      }
+    }
+    log("TIN V1 STATUS PENDING", "The owner session remains active; refresh status after the Cranker submits the transaction.");
   }
 
   async function payTin() {

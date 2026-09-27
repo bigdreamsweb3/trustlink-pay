@@ -29,14 +29,14 @@ The demo workspace includes a Python collector for repeatable, redacted
 snapshots. From the repository root:
 
 ```powershell
-python demo-video/evidence_taker.py --watch 30
+python tsn-demo/evidence_taker.py --watch 30
 ```
 
 After the run has an intent ID and transaction details, pass them with optional
 service log paths:
 
 ```powershell
-python demo-video/evidence_taker.py `
+python tsn-demo/evidence_taker.py `
   --intent-id "<receiver-work-id>" `
   --signature "<confirmed-solana-signature>" `
   --registry "<tin-registry-pda>" `

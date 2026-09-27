@@ -1,0 +1,32 @@
+{
+  "catalogVersion": 1,
+  "flows": [
+    {
+      "evidencePath": "tin-creation/manifest.json",
+      "id": "tin-creation",
+      "status": "implemented",
+      "title": "Private TIN creation"
+    },
+    {
+      "captureRequirement": "Capture the actual SDK request, Receiver record, Node decision, Cranker lease, Solana result, and final Receiver state when this flow is run.",
+      "evidencePath": null,
+      "id": "private-tin-transfer",
+      "status": "planned",
+      "title": "Private TIN transfer"
+    },
+    {
+      "captureRequirement": "Capture the actual SDK request, Receiver record, Node decision, Cranker lease, Solana result, and final Receiver state when this flow is run.",
+      "evidencePath": null,
+      "id": "private-wallet-transfer",
+      "status": "planned",
+      "title": "Private wallet transfer"
+    },
+    {
+      "captureRequirement": "Capture the actual SDK request/transaction, Receiver record if used, Node decision if used, Cranker action if used, Solana result, and final state when this flow is run.",
+      "evidencePath": null,
+      "id": "settlement-funding",
+      "status": "planned",
+      "title": "Settlement funding"
+    }
+  ]
+}

@@ -23,12 +23,9 @@ import {
   tsnFetchMotherEscrowOnChain,
   getTsnCrankerPda,
 } from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn";
-import { resolveSolanaRpcUrl } from "../../../sdks/tsn-sdk/src/rpc";
+import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc";
 import {
-  getTinsIdentityPda,
   getTinsGlobalStatePda,
-  decodeTinAccount,
-  serializeTinCreationRegistryParams,
   serializeTinV1CreationParams,
 } from "../../../sdks/tsn-sdk/src/tins";
 
@@ -75,6 +72,39 @@ const receiver = () =>
   (
     process.env.TSN_RECEIVER_URL || "https://tsn-receiver-kappa.vercel.app"
   ).replace(/\/$/, "");
+const displayRpcEndpoint = (value: string) => {
+  try {
+    const url = new URL(value);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "configured RPC endpoint";
+  }
+};
+async function resolveWorkingSolanaRpcUrl() {
+  const candidates = resolveSolanaRpcUrls({ frontendSafe: false });
+  const failures: string[] = [];
+  for (const rpcUrl of candidates) {
+    try {
+      const connection = new Connection(rpcUrl, "confirmed");
+      await connection.getVersion();
+      const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
+      if (!mother?.valid) {
+        throw new Error(`Mother Escrow is missing or invalid${mother?.reason ? ` (${mother.reason})` : ""}`);
+      }
+      console.log(`[tsn-cranker] Solana RPC ready=${displayRpcEndpoint(rpcUrl)}`);
+      return { rpcUrl, mother };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const safeReason = reason
+        .replace(/https?:\/\/[^\s]+/gi, "[RPC URL]")
+        .replace(/([?&](?:api[-_]?key|key|token|secret)=)[^&\s]+/gi, "$1[REDACTED]")
+        .replace(/\s+/g, " ")
+        .slice(0, 180);
+      failures.push(`${displayRpcEndpoint(rpcUrl)}: ${safeReason}`);
+    }
+  }
+  throw new Error(`No configured TSN Solana RPC endpoint passed getVersion. Start the local RPC gateway or repair its upstreams. ${failures.join("; ")}`);
+}
 const operator = () => {
   const path = resolve(
     process.env.TSN_CRANKER_KEYPAIR_PATH ||
@@ -262,8 +292,8 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   });
 }
 
-function base64Bytes(value: unknown, field: string) {
-  if (typeof value !== "string" || !value)
+function base64Bytes(value: unknown, field: string, allowEmpty = false) {
+  if (typeof value !== "string" || (!allowEmpty && !value))
     throw new Error(`TIN operation is missing ${field}`);
   return Buffer.from(value, "base64");
 }
@@ -284,95 +314,31 @@ async function processTinOperation(
       "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
   );
   const owner = new PublicKey(String(payload.ownerPubkey));
-  const programAssigned = Boolean(payload.programAssigned);
-  const lookupCommitment = programAssigned
-    ? Buffer.alloc(32)
-    : hex32(payload.lookupCommitment, "lookupCommitment");
-  const registry = programAssigned
-    ? getTinsIdentityPda({ walletPubkey: owner, programId })
-    : PublicKey.findProgramAddressSync(
-        [Buffer.from("tin-v1"), lookupCommitment],
-        programId,
-      )[0];
-  const instructionData = programAssigned
-    ? serializeTinCreationRegistryParams({
-        ownerPubkey: owner,
-        displayName: String(payload.displayName),
-        encryptedMasterSeed: base64Bytes(
-          payload.encryptedMasterSeed,
-          "encryptedMasterSeed",
-        ),
-        encryptedMetadataHash: hex32(
-          payload.encryptedMetadataHash,
-          "encryptedMetadataHash",
-        ),
-        pruConfigurationHash: new Uint8Array(32),
-        encryptedPublicRouteEnvelope: new Uint8Array(0),
-        routeVersion: BigInt(String(payload.routeVersion)),
-        routeNonce: hex32(payload.routeNonce, "routeNonce"),
-        tcapRouteVersion: 1,
-        tcapRelationshipCommitment: hex32(
-          payload.tcapRelationshipCommitment,
-          "tcapRelationshipCommitment",
-        ),
-        tcapRelationshipReference: hex32(
-          payload.tcapRelationshipReference,
-          "tcapRelationshipReference",
-        ),
-        tcapPolicyCommitment: hex32(
-          payload.tcapPolicyCommitment,
-          "tcapPolicyCommitment",
-        ),
-        nonce: hex32(payload.nonce, "nonce"),
-        intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
-        expiryTs: BigInt(String(payload.expiry)),
-      })
-    : serializeTinV1CreationParams({
-        ownerPubkey: owner,
-        lookupCommitment,
-        encryptedIdentityEnvelope: base64Bytes(
-          payload.encryptedIdentityEnvelope,
-          "encryptedIdentityEnvelope",
-        ),
-        encryptedMasterSeed: base64Bytes(
-          payload.encryptedMasterSeed,
-          "encryptedMasterSeed",
-        ),
-        encryptedMetadataHash: hex32(
-          payload.encryptedMetadataHash,
-          "encryptedMetadataHash",
-        ),
-        pruConfigurationHash: hex32(
-          payload.pruConfigurationHash,
-          "pruConfigurationHash",
-        ),
-        encryptedPublicRouteEnvelope: base64Bytes(
-          payload.encryptedPublicRouteEnvelope,
-          "encryptedPublicRouteEnvelope",
-        ),
-        routeVersion: BigInt(String(payload.routeVersion)),
-        routeNonce: hex32(payload.routeNonce, "routeNonce"),
-        tcapRouteVersion: Number(
-          payload.tcapRouteVersion ?? (programAssigned ? 1 : 0),
-        ),
-        tcapRelationshipCommitment: programAssigned
-          ? hex32(
-              payload.tcapRelationshipCommitment,
-              "tcapRelationshipCommitment",
-            )
-          : new Uint8Array(32),
-        tcapRelationshipReference: programAssigned
-          ? hex32(
-              payload.tcapRelationshipReference,
-              "tcapRelationshipReference",
-            )
-          : new Uint8Array(32),
-        tcapPolicyCommitment: programAssigned
-          ? hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment")
-          : new Uint8Array(32),
-        intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
-        expiryTs: BigInt(String(payload.expiry)),
-      });
+  if (payload.programAssigned !== false) {
+    throw new Error("Legacy owner-derived TIN creation is disabled; Cranker accepts only verified TIN V1 registry work");
+  }
+  const lookupCommitment = hex32(payload.lookupCommitment, "lookupCommitment");
+  const registry = PublicKey.findProgramAddressSync(
+    [Buffer.from("tin-v1"), lookupCommitment],
+    programId,
+  )[0];
+  const instructionData = serializeTinV1CreationParams({
+    ownerPubkey: owner,
+    lookupCommitment,
+    encryptedIdentityEnvelope: base64Bytes(payload.encryptedIdentityEnvelope, "encryptedIdentityEnvelope"),
+    encryptedMasterSeed: base64Bytes(payload.encryptedMasterSeed, "encryptedMasterSeed"),
+    encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
+    pruConfigurationHash: hex32(payload.pruConfigurationHash, "pruConfigurationHash"),
+    encryptedPublicRouteEnvelope: base64Bytes(payload.encryptedPublicRouteEnvelope, "encryptedPublicRouteEnvelope", true),
+    routeVersion: BigInt(String(payload.routeVersion)),
+    routeNonce: hex32(payload.routeNonce, "routeNonce"),
+    tcapRouteVersion: Number(payload.tcapRouteVersion),
+    tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
+    tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
+    tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    intentHash: hex32(payload.ownerIntentHash, "ownerIntentHash"),
+    expiryTs: BigInt(String(payload.expiry)),
+  });
   const connection = new Connection(rpcUrl, "confirmed");
   const ownerSignature = base64Bytes(payload.ownerSignature, "ownerSignature");
   const ownerProof = Ed25519Program.createInstructionWithPublicKey({
@@ -404,32 +370,22 @@ async function processTinOperation(
     skipPreflight: false,
   });
   await connection.confirmTransaction(signature, "confirmed");
-  let createdTin: string | undefined;
-  if (programAssigned) {
-    const createdAccount = await connection.getAccountInfo(
-      registry,
-      "confirmed",
-    );
-    if (!createdAccount)
-      throw new Error(
-        "CreateTin confirmed but the identity account was not found",
-      );
-    createdTin = decodeTinAccount(createdAccount.data).tin.toString();
-  }
+  const createdAccount = await connection.getAccountInfo(registry, "confirmed");
+  if (!createdAccount || !createdAccount.owner.equals(programId))
+    throw new Error("CreateTinV1 confirmed but the registry account was not found under the TIN program");
+  if (createdAccount.data.length < 40 || createdAccount.data[0] !== 1 || createdAccount.data[2] !== 1
+      || !createdAccount.data.subarray(8, 40).equals(lookupCommitment))
+    throw new Error("CreateTinV1 registry account failed the V1 version, status, or lookup commitment check");
   await report(signer, work, "CONFIRMED", {
-    stage: programAssigned ? "TIN_CREATED" : "TIN_V1_REGISTRY_SUBMITTED",
+    stage: "TIN_V1_REGISTRY_CREATED",
     signature,
     registry: registry.toBase58(),
-    ...(programAssigned && createdTin ? { tin: createdTin } : {}),
   });
 }
 
 async function main() {
   const signer = operator();
-  const rpcUrl = resolveSolanaRpcUrl({ frontendSafe: false });
-  const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
-  if (!mother || !mother.valid)
-    throw new Error("Mother Escrow is not initialized for this RPC");
+  const { rpcUrl, mother } = await resolveWorkingSolanaRpcUrl();
   const cranker = getTsnCrankerPda({
     motherEscrow: new PublicKey(mother.address),
     operator: signer.publicKey,

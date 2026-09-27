@@ -1,5 +1,14 @@
 # TIN Creation: Node Verification
 
+> **Historical contract:** The detailed sections below describe the retired
+> `programAssigned: true` payload. New issuance uses `programAssigned: false`
+> and TIN V1. The current V1 Node contract validates the encrypted identity
+> envelope, keyed lookup commitment, HMAC issuance proof, owner signature over
+> the raw intent hash, expiry, and TCap route commitments. See the current
+> [TIN V1 creation lifecycle](README.md) and
+> [canonical rules](../../team/tin/tin-v1-canonical-rules.md). Do not use the
+> legacy field table or hash recipe below for new requests.
+
 ## Why This Is a Separate Stage
 
 TIN creation needs a separate Node verification document because the Node is the

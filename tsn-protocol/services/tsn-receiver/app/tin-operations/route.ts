@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const payload = await request.json() as Record<string, unknown>;
     const work = await receive({ kind: "TIN_OPERATION", payload });
     return NextResponse.json({
-      intentId: String(payload.ownerIntentHash ?? work.id),
+      intentId: String(payload.intentId ?? payload.ownerIntentHash ?? work.id),
       operationId: work.id,
       kind: work.kind,
       status: work.status,

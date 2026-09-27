@@ -46,7 +46,19 @@ const AUTHORIZED_FUNDING_KEYS = new Set([
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source"]),
-  TIN_OPERATION: new Set(["operationId", "intentType", "ownerPubkey", "tin", "nonce", "payload", "source"]),
+  // Private TIN V1 payload accepted from the SDK. Plaintext TIN, display name,
+  // and resolver secret are excluded; the Node verifies signature, hash,
+  // expiry, issuer proof, and route commitments.
+  TIN_OPERATION: new Set([
+    "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash",
+    "ownerIntentMessage", "nonce", "expiry", "displayName", "encryptedMasterSeed",
+    "encryptedMetadataHash", "pruConfigurationHash", "encryptedPublicRouteEnvelope",
+    "routeVersion", "routeNonce", "tcapRouteVersion", "tcapRelationshipCommitment",
+    "tcapRelationshipReference", "tcapPolicyCommitment", "tin", "lookupCommitment", "lookupIssuanceProof",
+    "encryptedIdentityEnvelope", "newDisplayName", "newEncryptedMasterSeed",
+    "newEncryptedMetadataHash", "newPruConfigurationHash", "newEncryptedPublicRouteEnvelope",
+    "newRouteVersion", "newRouteNonce", "intentId", "intent_id", "source",
+  ]),
 };
 
 function assertAllowlisted(value: Record<string, unknown>, allowed: Set<string>, context: string) {

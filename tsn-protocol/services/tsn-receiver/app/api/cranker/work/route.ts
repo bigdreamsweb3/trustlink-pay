@@ -30,9 +30,11 @@ function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
   const tinPayload = work.kind === "TIN_OPERATION" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
     ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>)
       .filter(([key]) => [
-        "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash", "expiry",
+        "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash", "expiry",
+        "nonce", "displayName",
         "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
         "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce",
+        "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
       ].includes(key)))
     : undefined;
   return {

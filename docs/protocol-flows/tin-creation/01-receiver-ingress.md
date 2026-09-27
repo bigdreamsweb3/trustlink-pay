@@ -42,21 +42,30 @@ submitted payload. Repeating the same operation must return the existing work;
 repeating the same ID with different content must fail with an idempotency
 conflict.
 
-## What Receiver Ingress Must Accept
+## Current TIN V1 Payload
 
-The TIN operation payload is the SDK-generated protocol object, including:
+The XP backend generates the random TIN and uses the shared protected lookup
+secret to derive the lookup commitment and identity envelope. The TIN and
+display name stay out of this Receiver payload. `TinV1Account` does not assign
+the TIN; it initializes the commitment-derived registry account after the
+Cranker submits the signed `CreateTinV1` instruction.
+
+Receiver ingress accepts the SDK-generated object with these fields:
 
 | Field                          | Type    | Encoding                             |
 | ------------------------------ | ------- | ------------------------------------ |
 | `intentType`                   | string  | `tin_creation`                       |
-| `programAssigned`              | boolean | JSON boolean, true                   |
+| `programAssigned`              | boolean | JSON boolean, false                  |
+| `intentId`                     | string  | XP-generated operation UUID          |
 | `ownerPubkey`                  | string  | Solana base58 public key             |
-| `ownerSignature`               | string  | Base64 Ed25519 signature             |
+| `ownerSignature`               | string  | Base64 Ed25519 signature over raw 32-byte intent hash |
 | `ownerIntentHash`              | string  | 64 lowercase hexadecimal characters  |
-| `ownerIntentMessage`           | string  | Exact UTF-8 message signed by wallet |
-| `nonce`                        | string  | 64 lowercase hexadecimal characters  |
+| `ownerIntentMessage`           | string  | Canonical display text; not the signed bytes |
+| `nonce`                        | string  | Same 32-byte value as `routeNonce`   |
 | `expiry`                       | number  | Unix seconds                         |
-| `displayName`                  | string  | UTF-8 text                           |
+| `lookupCommitment`             | string  | 64 lowercase hexadecimal characters  |
+| `lookupIssuanceProof`          | string  | 32-byte HMAC hex; contains no secret |
+| `encryptedIdentityEnvelope`    | string  | Standard base64 AES-GCM envelope     |
 | `encryptedMasterSeed`          | string  | Standard base64 opaque envelope      |
 | `encryptedMetadataHash`        | string  | 64 hexadecimal characters            |
 | `pruConfigurationHash`         | string  | 64 hexadecimal characters            |
@@ -68,60 +77,47 @@ The TIN operation payload is the SDK-generated protocol object, including:
 | `tcapRelationshipReference`    | string  | 64 hexadecimal characters            |
 | `tcapPolicyCommitment`         | string  | 64 hexadecimal characters            |
 
-The Receiver may validate the outer request contract and authentication, but
-Node-only rules remain Node responsibilities. In particular, the Receiver must
-not decide whether the owner signature, intent hash, expiry, or TCap route is
-valid.
+The Receiver allowlists this schema and stores the encrypted identity and
+commitment with the work. It must not store or accept the plaintext TIN,
+display name, or `TINS_LOOKUP_SECRET`. Node verification checks the
+length-prefixed intent hash, raw Ed25519 signature, expiry, TCap commitments,
+and HMAC issuance proof; the Receiver does not make those protocol decisions.
 
-## Current Implementation Gap
+## Current Wiring
 
-The current protocol test UI does **not** yet use Receiver-first TIN ingress.
-The SDK submission helper currently targets:
-
-```text
-POST http://127.0.0.1:8000/tin-operations
-```
-
-The Receiver has a proxy route:
+The Dapp calls the SDK submission helper with the selected Receiver ingress:
 
 ```text
-POST /api/tin-operations
+POST {receiverUrl}/tin-operations
 ```
 
-but that route currently forwards to the Node through `proxyNode` instead of
-creating a Receiver `TIN_OPERATION` work record. Therefore the successful UI
-result proves:
+For local development, the standard `npm run protocol-tests:ui` command loads
+`protocol-tests/ui/.env.local` and selects `http://127.0.0.1:8010`. Run
+`npm run protocol-tests:ui:live` only when intentionally targeting the live
+Receiver. Network status probes and transaction submission must use the same
+selected environment.
+
+The Receiver accepts the documented private TIN V1 payload, creates durable
+work with `kind: "TIN_OPERATION"` and `status: "RECEIVED"`, commits an
+idempotency fingerprint, and sends a payload-free Node wake after persistence.
+The Node re-reads and verifies the work through its authenticated Receiver API;
+only `VERIFIED` work is available to an authorized Cranker.
+
+Receiver ingress acceptance proves only that the signed intent was durably
+queued. It does not prove Node verification, Cranker submission, or Solana
+finalization; each stage needs its own evidence.
+
+## Remaining Evidence
+
+This stage is evidenced only when the local run shows:
 
 ```text
-Browser -> SDK -> Node accepted intent
+Receiver receives TIN_OPERATION: yes
+Receiver creates RECEIVED work ID: yes
+Node leases and verifies the work: yes
+Cranker leases VERIFIED work: pending
+Solana CreateTin transaction finalizes: pending
 ```
-
-It does not yet prove:
-
-```text
-Browser -> Receiver durable work -> Node verification
-```
-
-This distinction must remain visible in status messages and documentation.
-
-## Required Wiring Change
-
-To implement Receiver-first TIN creation:
-
-1. Add an authenticated Receiver ingress handler for `TIN_OPERATION`.
-2. Allow only the documented TIN operation fields.
-3. Create durable work with `kind: "TIN_OPERATION"` and `status: "RECEIVED"`.
-4. Generate the idempotent `payloadCommitment`.
-5. Return a public work view and work ID; do not return private payload fields
-   to unauthenticated callers.
-6. Wake the Node with a control-only notification after the Firestore write.
-7. Have the Node lease `/api/internal/node/work` with `TIN_OPERATION` support.
-8. Have the Node verify the leased payload and PATCH the Receiver to
-   `VERIFIED` or `REJECTED`.
-9. Have the Cranker lease only `VERIFIED` TIN work through
-   `POST /api/cranker/work`.
-10. Have the Cranker report `CONFIRMED` or `FAILED` through
-    `PATCH /api/cranker/work`.
 
 The wake notification must contain no TIN payload, encrypted envelope, owner
 signature, or private identity data. It is only a hint that durable work is
@@ -141,7 +137,6 @@ Node returns VERIFIED work to Receiver: yes
 Cranker leases VERIFIED work from Receiver: pending
 ```
 
-The current UI's returned `intentId` is not sufficient evidence for this stage.
-The next implementation document is
-[Node verification](02-node-verification.md), but it should be finalized only
-after Receiver ingress is actually wired.
+The Receiver's `operationId` is the work reference for status polling. The
+owner-intent `intentId` is separate and binds the Node operation lifecycle.
+Neither identifier proves Solana finalization.

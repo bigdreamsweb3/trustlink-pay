@@ -1622,8 +1622,14 @@ async function importAesKey(keyMaterial: Uint8Array) {
 export async function createTinV1IdentityEnvelope(params: {
   tin: bigint | number | string;
   displayName: string;
+  /** Protected resolver secret. Never include this value in Receiver work. */
+  lookupSecret: Uint8Array | string;
 }) {
-  const secret = Buffer.from(String(params.tin), "utf8");
+  if (params.lookupSecret == null) throw new Error("lookupSecret is required for TIN V1 identity creation");
+  const secret = typeof params.lookupSecret === "string"
+    ? Buffer.from(params.lookupSecret, "utf8")
+    : Buffer.from(params.lookupSecret);
+  if (secret.length < 16) throw new Error("lookupSecret must contain at least 16 bytes");
   const tin = Buffer.from(String(params.tin), "utf8");
   const lookupCommitment = sha256(
     Buffer.concat([Buffer.from("TSN_TIN_V1_LOOKUP", "utf8"), secret, tin]),
@@ -1651,6 +1657,157 @@ export async function createTinV1IdentityEnvelope(params: {
       Buffer.from(ciphertext),
     ]),
   };
+}
+
+export async function submitTinV1Creation(params: {
+  ingressUrl: string;
+  prepared: ReturnType<typeof buildTinV1Creation>;
+  intentId: string;
+  ownerPubkey: PublicKey | string;
+  ownerSignature: Uint8Array | string;
+  lookupIssuanceProof: string;
+  ownerIntentMessage?: string;
+}) {
+  const hex = (value: Uint8Array) => Buffer.from(value).toString("hex");
+  const base64 = (value: Uint8Array) => Buffer.from(value).toString("base64");
+  const ownerPubkey = typeof params.ownerPubkey === "string"
+    ? params.ownerPubkey
+    : params.ownerPubkey.toBase58();
+  const ownerSignature = typeof params.ownerSignature === "string"
+    ? params.ownerSignature
+    : Buffer.from(params.ownerSignature).toString("base64");
+  const prepared = params.prepared;
+  const response = await fetch(`${params.ingressUrl.replace(/\/$/, "")}/tin-operations`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      intentType: "tin_creation",
+      intentId: params.intentId,
+      programAssigned: false,
+      ownerPubkey,
+      ownerSignature,
+      ownerIntentHash: hex(prepared.intentHash),
+      ownerIntentMessage: params.ownerIntentMessage,
+      nonce: hex(prepared.nonce),
+      expiry: Number(prepared.expiryTs),
+      lookupCommitment: hex(prepared.lookupCommitment),
+      encryptedIdentityEnvelope: base64(prepared.encryptedIdentityEnvelope),
+      encryptedMasterSeed: base64(prepared.encryptedMasterSeed),
+      encryptedMetadataHash: hex(prepared.encryptedMetadataHash),
+      pruConfigurationHash: hex(prepared.pruConfigurationHash),
+      encryptedPublicRouteEnvelope: base64(prepared.encryptedPublicRouteEnvelope),
+      routeVersion: Number(prepared.routeVersion),
+      routeNonce: hex(prepared.routeNonce),
+      tcapRouteVersion: prepared.tcapRouteVersion,
+      tcapRelationshipCommitment: hex(prepared.tcapRelationshipCommitment),
+      tcapRelationshipReference: hex(prepared.tcapRelationshipReference),
+      tcapPolicyCommitment: hex(prepared.tcapPolicyCommitment),
+      lookupIssuanceProof: params.lookupIssuanceProof,
+    }),
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body?.detail ?? body?.error ?? `TIN V1 creation rejected (${response.status})`);
+  return body;
+}
+
+/** Build the canonical owner intent for a private TIN V1 registry record. */
+export function createTinV1OwnerIntentHash(params: {
+  ownerPubkey: PublicKey;
+  lookupCommitment: Buffer | Uint8Array;
+  encryptedIdentityEnvelope: Buffer | Uint8Array;
+  encryptedMasterSeed: Buffer | Uint8Array;
+  encryptedMetadataHash: Buffer | Uint8Array;
+  pruConfigurationHash: Buffer | Uint8Array;
+  encryptedPublicRouteEnvelope: Buffer | Uint8Array;
+  routeVersion: bigint | number;
+  routeNonce: Buffer | Uint8Array;
+  tcapRouteVersion: number;
+  tcapRelationshipCommitment: Buffer | Uint8Array;
+  tcapRelationshipReference: Buffer | Uint8Array;
+  tcapPolicyCommitment: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}) {
+  const routeVersion = Buffer.alloc(8);
+  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion));
+  if (routeVersion.equals(Buffer.alloc(8))) throw new Error("routeVersion must be positive");
+  const expiry = Buffer.alloc(8);
+  expiry.writeBigInt64LE(BigInt(params.expiryTs));
+  return Buffer.from(sha256(Buffer.concat([
+    Buffer.from("TSN_TIN_V1_CREATE", "utf8"),
+    params.ownerPubkey.toBuffer(),
+    normalizeHash32(params.lookupCommitment, "lookupCommitment"),
+    u32LengthPrefixed(params.encryptedIdentityEnvelope),
+    u32LengthPrefixed(params.encryptedMasterSeed),
+    normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
+    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
+    u32LengthPrefixed(params.encryptedPublicRouteEnvelope),
+    routeVersion,
+    requireHash32(params.routeNonce, "routeNonce"),
+    Buffer.from([params.tcapRouteVersion]),
+    normalizeHash32(params.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
+    normalizeHash32(params.tcapRelationshipReference, "tcapRelationshipReference"),
+    normalizeHash32(params.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    expiry,
+  ])));
+}
+
+function u32LengthPrefixed(value: Buffer | Uint8Array) {
+  const bytes = Buffer.from(value);
+  const length = Buffer.alloc(4);
+  length.writeUInt32LE(bytes.length);
+  return Buffer.concat([length, bytes]);
+}
+
+/** Prepare a private TIN V1 creation. The raw TIN and lookup secret are used
+ * only to create the encrypted envelope and keyed commitment; callers submit
+ * the returned payload without either plaintext value. */
+export function buildTinV1Creation(params: {
+  ownerPubkey: PublicKey;
+  lookupCommitment: Buffer | Uint8Array;
+  encryptedIdentityEnvelope: Buffer | Uint8Array;
+  encryptedMasterSeed: Buffer | Uint8Array;
+  encryptedMetadataHash?: Buffer | Uint8Array;
+  pruConfigurationHash?: Buffer | Uint8Array;
+  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
+  routeVersion?: bigint | number;
+  routeNonce?: Buffer | Uint8Array;
+  tcapRouteVersion: number;
+  tcapRelationshipCommitment: Buffer | Uint8Array;
+  tcapRelationshipReference: Buffer | Uint8Array;
+  tcapPolicyCommitment: Buffer | Uint8Array;
+  expiryTs?: bigint | number;
+  nonce?: Buffer | Uint8Array;
+}) {
+  const zero = Buffer.alloc(32);
+  const nonce = Buffer.from(params.nonce ?? params.routeNonce ?? randomNonce(32));
+  if (nonce.length !== 32) throw new Error("nonce must be 32 bytes");
+  const routeNonce = Buffer.from(params.routeNonce ?? nonce);
+  if (routeNonce.length !== 32) throw new Error("routeNonce must be 32 bytes");
+  if (!routeNonce.equals(nonce)) throw new Error("nonce must equal the signed routeNonce");
+  const routeVersion = BigInt(params.routeVersion ?? 1);
+  const expiryTs = BigInt(params.expiryTs ?? Math.floor(Date.now() / 1000) + 900);
+  const encryptedMetadataHash = Buffer.from(params.encryptedMetadataHash ?? zero);
+  const pruConfigurationHash = Buffer.from(params.pruConfigurationHash ?? zero);
+  const encryptedPublicRouteEnvelope = Buffer.from(params.encryptedPublicRouteEnvelope ?? Buffer.alloc(0));
+  const fields = {
+    ownerPubkey: params.ownerPubkey,
+    lookupCommitment: params.lookupCommitment,
+    encryptedIdentityEnvelope: params.encryptedIdentityEnvelope,
+    encryptedMasterSeed: params.encryptedMasterSeed,
+    encryptedMetadataHash,
+    pruConfigurationHash,
+    encryptedPublicRouteEnvelope,
+    routeVersion,
+    routeNonce,
+    tcapRouteVersion: params.tcapRouteVersion,
+    tcapRelationshipCommitment: params.tcapRelationshipCommitment,
+    tcapRelationshipReference: params.tcapRelationshipReference,
+    tcapPolicyCommitment: params.tcapPolicyCommitment,
+    expiryTs,
+  };
+  const intentHash = createTinV1OwnerIntentHash(fields);
+  const instructionData = serializeTinV1CreationParams({ ...fields, intentHash });
+  return { ...fields, nonce, intentHash, instructionData };
 }
 
 export function deriveTinSocialKey(tin: bigint | number | string) {
@@ -1758,15 +1915,15 @@ async function resolvePrivateTinRecord(params: {
   tin: bigint | number | string;
   connection: Connection;
   programId?: PublicKey | string | null;
-  /** @deprecated Private resolution derives the lookup material from the TIN. */
-  lookupSecret?: Uint8Array | string;
+  lookupSecret: Uint8Array | string;
 }): Promise<TinResolvedIdentity> {
   const programId = getTinsProgramPublicKey(params.programId);
   const secret = params.lookupSecret
     ? typeof params.lookupSecret === "string"
       ? Buffer.from(params.lookupSecret, "utf8")
       : Buffer.from(params.lookupSecret)
-    : Buffer.from(String(params.tin), "utf8");
+    : Buffer.alloc(0);
+  if (secret.length < 16) throw new Error("lookupSecret must contain at least 16 bytes");
   const lookupCommitment = Buffer.from(
     sha256(
       Buffer.concat([
@@ -1883,7 +2040,6 @@ export async function resolveTIN(params: {
   tin: bigint | number | string;
   connection: Connection;
   programId?: PublicKey | string | null;
-  /** @deprecated The private TIN model uses the TIN as lookup material. */
   lookupSecret?: Uint8Array | string;
   sensitiveAuthorizations?: Record<string, Uint8Array | string>;
 }): Promise<TinResolvedIdentity> {
@@ -2092,10 +2248,12 @@ export async function resolveTinRoute(params: {
   tin: bigint | number | string;
   rpcUrl: string;
   programId?: PublicKey | string | null;
+  lookupSecret?: Uint8Array | string;
 }): Promise<TinResolvedIdentity> {
   return resolveTIN({
     tin: params.tin,
     connection: new Connection(params.rpcUrl, "confirmed"),
     programId: params.programId,
+    lookupSecret: params.lookupSecret,
   });
 }

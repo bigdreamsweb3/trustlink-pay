@@ -101,14 +101,20 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: CreateTinV
 }
 
 fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
+    let identity_len = (params.encrypted_identity_envelope.len() as u32).to_le_bytes();
+    let seed_len = (params.encrypted_master_seed.len() as u32).to_le_bytes();
+    let route_len = (params.encrypted_public_route_envelope.len() as u32).to_le_bytes();
     hashv(&[
         b"TSN_TIN_V1_CREATE",
         params.owner_pubkey.as_ref(),
         &params.lookup_commitment,
+        &identity_len,
         &params.encrypted_identity_envelope,
+        &seed_len,
         &params.encrypted_master_seed,
         &params.encrypted_metadata_hash,
         &params.pru_configuration_hash,
+        &route_len,
         &params.encrypted_public_route_envelope,
         &params.route_version.to_le_bytes(),
         &params.route_nonce,

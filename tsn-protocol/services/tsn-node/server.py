@@ -2396,6 +2396,8 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
 
     program_assigned = bool(_field(payload, "program_assigned", "programAssigned", default=False))
     tin = str(_field(payload, "tin", default="") or "").strip()
+    if intent_type == "tin_creation" and program_assigned:
+        raise HTTPException(422, "program-assigned TIN creation is retired; submit a private TIN V1 payload")
     if intent_type == "tin_update" and not tin:
         raise HTTPException(422, "tin is required for TIN updates")
     encrypted_master_seed = _field(payload, "encrypted_master_seed", "encryptedMasterSeed")
@@ -2462,8 +2464,12 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     owner_pubkey = _require_string(payload, "owner_pubkey", "ownerPubkey")
     owner_signature = _require_string(payload, "owner_signature", "ownerSignature")
     display_name = str(_field(payload, "display_name", "displayName", "new_display_name", "newDisplayName", default="")).strip()
-    if not display_name:
+    if intent_type == "tin_update" and not display_name:
         raise HTTPException(422, "display_name is required")
+    if intent_type == "tin_creation" and display_name:
+        raise HTTPException(422, "TIN V1 creation must keep display_name inside encrypted_identity_envelope")
+    if intent_type == "tin_creation" and tin:
+        raise HTTPException(422, "TIN V1 creation must not submit a plaintext tin")
 
     owner_bytes = _decode_owner_pubkey(owner_pubkey)
     intent_hash_bytes = _decode_hash32(owner_intent_hash, "owner_intent_hash")
@@ -2486,10 +2492,11 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         pru_configuration_hash,
         "pru_configuration_hash",
     )
-    encrypted_public_route_envelope_bytes = _decode_base64_blob(
-        encrypted_public_route_envelope,
-        "encrypted_public_route_envelope",
-    ) if not program_assigned else b""
+    encrypted_public_route_envelope_bytes = (
+        _decode_base64_blob(encrypted_public_route_envelope, "encrypted_public_route_envelope")
+        if encrypted_public_route_envelope and not program_assigned
+        else b""
+    )
     try:
         route_version = int(route_version_raw)
     except (TypeError, ValueError) as exc:
@@ -2515,14 +2522,21 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
             nonce_bytes, _encode_signed_i64_le(expiry),
         ])).digest()
     elif intent_type == "tin_creation":
+        if tcap_route_version != 1:
+            raise HTTPException(422, "TIN V1 creation requires the TCap route commitment set")
+        if encrypted_public_route_envelope_bytes or configuration_hash_bytes != bytes(32):
+            raise HTTPException(422, "TCap-backed TIN V1 must not include legacy PRU route material")
+        if any(value == bytes(32) for value in (tcap_relationship_commitment, tcap_relationship_reference, tcap_policy_commitment)):
+            raise HTTPException(422, "TIN V1 TCap route commitments must be nonzero")
         expected_hash = hashlib.sha256(b"".join([
             b"TSN_TIN_V1_CREATE", owner_bytes, lookup_commitment_bytes,
             _encode_u32_le(len(encrypted_identity_envelope_bytes)), encrypted_identity_envelope_bytes,
             _encode_u32_le(len(encrypted_master_seed_bytes)), encrypted_master_seed_bytes,
             metadata_hash_bytes, configuration_hash_bytes,
             _encode_u32_le(len(encrypted_public_route_envelope_bytes)), encrypted_public_route_envelope_bytes,
-            route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, b"\x00",
-            bytes(32), bytes(32), bytes(32), _encode_signed_i64_le(expiry),
+            route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tcap_route_version]),
+            tcap_relationship_commitment, tcap_relationship_reference, tcap_policy_commitment,
+            _encode_signed_i64_le(expiry),
         ])).digest()
     else:
         expected_hash = hashlib.sha256(b"".join([
@@ -2531,7 +2545,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
             route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, nonce_bytes, _encode_signed_i64_le(expiry),
         ])).digest()
     pru_route = None
-    if not program_assigned:
+    if intent_type == "tin_update" and not program_assigned:
         pru_route = _decrypt_public_route_envelope(
             encrypted_envelope_base64=encrypted_public_route_envelope,
             expected_tin=tin,
@@ -2541,17 +2555,31 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         )
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
         raise HTTPException(422, "owner_intent_hash does not match the submitted TIN operation payload")
+    if intent_type == "tin_creation":
+        if len(TINS_LOOKUP_SECRET.encode("utf-8")) < 16:
+            raise HTTPException(503, "TIN V1 issuer secret is not configured on the TSN Node")
+        issuance_proof = _decode_hash32(
+            _field(payload, "lookup_issuance_proof", "lookupIssuanceProof", default=""),
+            "lookup_issuance_proof",
+        )
+        proof_message = b"".join([
+            b"TSN_TIN_V1_ISSUANCE", owner_bytes, lookup_commitment_bytes,
+            nonce_bytes, intent_hash_bytes, _encode_signed_i64_le(expiry),
+        ])
+        expected_issuance_proof = hmac.new(
+            TINS_LOOKUP_SECRET.encode("utf-8"), proof_message, hashlib.sha256,
+        ).digest()
+        if not secrets.compare_digest(expected_issuance_proof, issuance_proof):
+            raise HTTPException(401, "TIN V1 lookup issuance proof is invalid")
     # Browser wallets commonly reject arbitrary binary payloads for
     # signMessage.  Accept the exact 32-byte commitment for low-level
     # signers, or the deterministic printable wrapper used by the frontend.
     # In both cases the signature is still bound to the recomputed hash above.
-    signed_message = intent_hash_bytes
     if owner_intent_message:
-        signed_message = owner_intent_message.encode("utf-8")
-        if signed_message != _canonical_tin_owner_intent_message(intent_hash_bytes):
+        if owner_intent_message.encode("utf-8") != _canonical_tin_owner_intent_message(intent_hash_bytes):
             raise HTTPException(422, "ownerIntentMessage must be the canonical TIN upgrade message")
     try:
-        VerifyKey(owner_bytes).verify(signed_message, signature_bytes)
+        VerifyKey(owner_bytes).verify(intent_hash_bytes, signature_bytes)
     except BadSignatureError as exc:
         raise HTTPException(401, "owner_signature is invalid for owner_intent_hash") from exc
 
@@ -2589,7 +2617,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "feeMetadata": None,
         "failureReason": None,
         "onchainSignatures": [],
-        "displayName": display_name if intent_type == "tin_creation" else None,
+        "displayName": display_name if display_name else None,
         "lookupCommitment": lookup_commitment.lower() if intent_type == "tin_creation" else None,
         "encryptedIdentityEnvelope": encrypted_identity_envelope if intent_type == "tin_creation" else None,
         "encryptedMasterSeed": encrypted_master_seed if intent_type == "tin_creation" else None,

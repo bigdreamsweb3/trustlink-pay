@@ -2,8 +2,8 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { randomBytes } from "node:crypto";
-import { PublicKey } from "@solana/web3.js";
+import { createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const mode = process.argv.includes("--local") ? "local" : "devnet";
@@ -23,9 +23,28 @@ const rpcUrl = process.env.TSN_RPC_URL
   ?? process.env.TSN_RPC_GATEWAY_URL
   ?? process.env.SOLANA_RPC_URL
   ?? "https://tsn-rpc-gateway.vercel.app";
-const tinProgramId = process.env.TIN_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
+const tinProgramId = process.env.TINS_PROGRAM_ID ?? process.env.TIN_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 const sessions = new Map();
 const sessionTtlMs = 30 * 60_000;
+
+function requireTinLookupSecret() {
+  const value = String(process.env.TINS_LOOKUP_SECRET ?? "");
+  if (Buffer.byteLength(value, "utf8") < 16) throw new Error("TIN V1 issuance is unavailable: configure the shared TINS_LOOKUP_SECRET on the XP server and TSN Node");
+  return value;
+}
+
+function makeTinIssuanceProof(secret, { ownerPubkey, lookupCommitment, nonce, intentHash, expiryTs }) {
+  const expiry = Buffer.alloc(8);
+  expiry.writeBigInt64LE(BigInt(expiryTs));
+  return createHmac("sha256", secret).update(Buffer.concat([
+    Buffer.from("TSN_TIN_V1_ISSUANCE", "utf8"),
+    new PublicKey(ownerPubkey).toBuffer(),
+    Buffer.from(lookupCommitment),
+    Buffer.from(nonce),
+    Buffer.from(intentHash),
+    expiry,
+  ])).digest("hex");
+}
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -89,7 +108,7 @@ async function handleApi(req, res, url) {
     if (!displayName) return json(res, 422, { error: "DISPLAY_NAME_REQUIRED" });
     if (!body.encryptedMasterSeed) {
       const ownerEncryptionNonce = randomBytes(32);
-      const ownerEncryptionMessage = tsnSdk.buildProgramAssignedTinOwnerEncryptionMessage({
+      const ownerEncryptionMessage = tsnSdk.buildTinV1OwnerEncryptionMessage({
         ownerPublicKey: session.wallet,
         displayName,
         nonce: ownerEncryptionNonce,
@@ -99,7 +118,7 @@ async function handleApi(req, res, url) {
         status: "OWNER_ENCRYPTION_SIGNATURE_REQUIRED",
         ownerEncryptionMessage: Buffer.from(ownerEncryptionMessage).toString("utf8"),
         ownerEncryptionNonce: ownerEncryptionNonce.toString("hex"),
-        sdk: "@trustlink/tsn-sdk.buildProgramAssignedTinOwnerEncryptionMessage",
+        sdk: "@trustlink/tsn-sdk.buildTinV1OwnerEncryptionMessage",
       });
     }
     if (!session.pendingTinEncryption || session.pendingTinEncryption.displayName !== displayName) {
@@ -107,24 +126,62 @@ async function handleApi(req, res, url) {
     }
     const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? ""), "base64");
     if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
-    const built = tsnSdk.buildProgramAssignedTinCreation({
-      ownerPubkey: new PublicKey(session.wallet),
-      displayName,
+    const lookupSecret = requireTinLookupSecret();
+    const ownerPubkey = new PublicKey(session.wallet);
+    const connection = new Connection(rpcUrl, "confirmed");
+    let tin = "";
+    let identity;
+    let registry;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      tin = String(randomInt(1_000_000_000, 10_000_000_000));
+      identity = await tsnSdk.createTinV1IdentityEnvelope({ tin, displayName, lookupSecret });
+      registry = PublicKey.findProgramAddressSync(
+        [Buffer.from("tin-v1", "utf8"), Buffer.from(identity.lookupCommitment)],
+        new PublicKey(tinProgramId),
+      )[0];
+      if (!(await connection.getAccountInfo(registry, "confirmed"))) break;
+      tin = "";
+    }
+    if (!tin || !identity || !registry) throw new Error("Could not reserve a unique private TIN after 8 Devnet checks");
+    const zero = Buffer.alloc(32);
+    const built = tsnSdk.buildTinV1Creation({
+      ownerPubkey,
+      lookupCommitment: identity.lookupCommitment,
+      encryptedIdentityEnvelope: identity.encryptedIdentityEnvelope,
       encryptedMasterSeed,
+      encryptedMetadataHash: zero,
+      pruConfigurationHash: zero,
+      encryptedPublicRouteEnvelope: Buffer.alloc(0),
+      routeVersion: 1,
+      routeNonce: randomBytes(32),
+      tcapRouteVersion: 1,
+      tcapRelationshipCommitment: randomBytes(32),
+      tcapRelationshipReference: randomBytes(32),
+      tcapPolicyCommitment: randomBytes(32),
     });
-    session.preparedTin = { built, displayName };
+    const intentId = randomUUID();
+    const lookupIssuanceProof = makeTinIssuanceProof(lookupSecret, {
+      ownerPubkey,
+      lookupCommitment: built.lookupCommitment,
+      nonce: built.nonce,
+      intentHash: built.intentHash,
+      expiryTs: built.expiryTs,
+    });
+    session.preparedTin = { built, displayName, tin, intentId, lookupIssuanceProof };
     session.pendingTinEncryption = null;
     const b64 = (value) => Buffer.from(value).toString("base64");
     const hex = (value) => Buffer.from(value).toString("hex");
     return json(res, 200, {
       intentType: "tin_creation",
-      programAssigned: true,
+      programAssigned: false,
+      intentId,
       ownerPubkey: session.wallet,
-      displayName,
       ownerIntentHash: hex(built.intentHash),
       ownerIntentMessage: Buffer.from(tsnSdk.buildTinOwnerIntentMessage(built.intentHash)).toString("utf8"),
       nonce: hex(built.nonce),
       expiry: Number(built.expiryTs),
+      lookupCommitment: hex(built.lookupCommitment),
+      encryptedIdentityEnvelope: b64(built.encryptedIdentityEnvelope),
       encryptedMasterSeed: b64(built.encryptedMasterSeed),
       encryptedMetadataHash: hex(built.encryptedMetadataHash),
       pruConfigurationHash: hex(built.pruConfigurationHash),
@@ -135,7 +192,7 @@ async function handleApi(req, res, url) {
       tcapRelationshipCommitment: hex(built.tcapRelationshipCommitment),
       tcapRelationshipReference: hex(built.tcapRelationshipReference),
       tcapPolicyCommitment: hex(built.tcapPolicyCommitment),
-      sdk: "@trustlink/tsn-sdk.buildProgramAssignedTinCreation",
+      sdk: "@trustlink/tsn-sdk.buildTinV1Creation",
     });
   }
 
@@ -144,28 +201,49 @@ async function handleApi(req, res, url) {
     const signature = String(body.ownerSignature ?? "").trim();
     if (!signature) return json(res, 422, { error: "OWNER_SIGNATURE_REQUIRED" });
     if (!session.preparedTin) return json(res, 409, { error: "TIN_CREATION_MUST_BE_PREPARED_FIRST" });
-    const nodeUrl = process.env.TSN_LOCAL_NODE_URL ?? process.env.TSN_NODE_URL ?? "http://127.0.0.1:8000";
     const ingressUrl = mode === "local"
       ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
       : (process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app");
-    const result = await tsnSdk.submitProgramAssignedTinCreation({
-      nodeUrl,
+    const result = await tsnSdk.submitTinV1Creation({
       ingressUrl,
       prepared: session.preparedTin.built,
+      intentId: session.preparedTin.intentId,
       ownerPubkey: session.wallet,
       ownerSignature: signature,
-      displayName: session.preparedTin.displayName,
+      lookupIssuanceProof: session.preparedTin.lookupIssuanceProof,
       ownerIntentMessage: String(body.ownerIntentMessage ?? ""),
     });
+    session.pendingTin = { tin: session.preparedTin.tin, operationId: result.operationId };
     session.preparedTin = null;
-    return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.submitProgramAssignedTinCreation" });
+    return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.submitTinV1Creation" });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/tsn/sdk/tin-status") {
+    const pending = session.pendingTin;
+    const operationId = String(url.searchParams.get("operationId") ?? "");
+    if (!pending || !operationId || pending.operationId !== operationId) return json(res, 404, { error: "TIN_ISSUANCE_NOT_FOUND_IN_SESSION" });
+    const ingressUrl = mode === "local"
+      ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
+      : (process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app");
+    const statusResponse = await fetch(`${ingressUrl.replace(/\/$/, "")}/api/work-status/${encodeURIComponent(operationId)}`, { cache: "no-store" });
+    const operation = await statusResponse.json();
+    if (!statusResponse.ok) return json(res, statusResponse.status, operation);
+    const finalized = operation.status === "CONFIRMED";
+    const terminal = finalized || operation.status === "FAILED";
+    if (terminal) session.pendingTin = null;
+    return json(res, 200, {
+      operationId,
+      status: operation.status,
+      signature: operation.result?.signature ?? null,
+      ...(finalized ? { tin: pending.tin } : {}),
+    });
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/resolve-tin") {
     const body = await readJson(req);
     const tin = String(body.tin ?? "").trim();
     if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
-    const identity = await tsnSdk.resolveTinRoute({ tin, rpcUrl, programId: tinProgramId });
+    const identity = await tsnSdk.resolveTinRoute({ tin, rpcUrl, programId: tinProgramId, lookupSecret: requireTinLookupSecret() });
     if (!identity.tcapRelationshipCommitment || identity.tcapRouteVersion == null) {
       return json(res, 409, { error: "CURRENT_TIN_ROUTE_NOT_AVAILABLE", tin, upgradeRequired: identity.upgradeRequired });
     }

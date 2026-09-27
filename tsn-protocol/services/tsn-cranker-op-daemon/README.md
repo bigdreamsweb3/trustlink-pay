@@ -42,6 +42,13 @@ The daemon logs pool state, settlement submission, and the final Receiver state.
 It never logs private keys, master seeds, decrypted commitments, or raw
 authorization payloads.
 
+Before leasing work, startup checks the configured Solana RPC candidates with
+`getVersion`. When local RPC is selected but unavailable, it tries the
+configured TSN live gateway before any Receiver work is claimed. Start the
+local RPC gateway for local-first operation. The gateway must have a working
+upstream; its `getHealth` response alone does not prove that account reads or
+transaction submission work.
+
 ## Local Operation
 
 ```bash

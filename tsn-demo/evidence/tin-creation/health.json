@@ -1,0 +1,26 @@
+{
+  "services": {
+    "node": {
+      "httpStatus": 200,
+      "reachable": true
+    },
+    "receiver": {
+      "httpStatus": 200,
+      "reachable": true,
+      "service": "TSN_RECEIVER",
+      "status": "READY"
+    },
+    "rpc": {
+      "httpStatus": 200,
+      "method": "getHealth",
+      "reachable": true,
+      "result": "ok"
+    },
+    "tsnXp": {
+      "httpStatus": 200,
+      "reachable": true,
+      "service": "tsn-protocol-ui",
+      "status": "READY"
+    }
+  }
+}

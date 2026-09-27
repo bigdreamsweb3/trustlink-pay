@@ -18,6 +18,9 @@ to TSN applications and operators.
 TrustLink Pay apps, scripts, SDKs, and services point to the gateway server by URL through `TSN_RPC_GATEWAY_URL` (or `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` in browser bundles). They do not import this project as a client library and do not configure upstream Solana RPC URLs directly.
 
 The gateway itself reads a comma-separated list from `TSN_SOLANA_RPC_URLS` and automatically fails over when a provider is slow or unhealthy.
+Provider authentication failures such as HTTP 401/403 and JSON-RPC
+`Invalid API key` errors are treated as unhealthy-provider failures and cause
+the gateway to try its next configured upstream.
 Provider health and latency are learned from real requests and cached in
 memory. `TSN_RPC_GATEWAY_PROBE_MODE` defaults to `on-demand`, so the gateway
 does not continuously poll upstreams while idle. Set it to `scheduled` only

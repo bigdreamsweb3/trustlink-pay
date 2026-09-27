@@ -1,78 +1,54 @@
-# TIN Creation Lifecycle
+# TIN V1 Creation Flow
 
-This folder documents the complete program-assigned TIN creation lifecycle.
-The current verified boundary is browser -> SDK -> TSN Node. The remaining
-stages must be documented and verified before the flow is called complete.
+The current creation design uses a private `TinV1Account`. Do not follow the
+older `programAssigned: true` flow in historical notes: the TIN program does
+not assign randomness, and owner-derived identity PDAs are retired for new
+issuance.
 
-## Stages
+## Current sequence
 
-1. **Browser and SDK construction**
-   - Connect the owner wallet.
-   - Build and sign the owner-encryption message.
-   - Encrypt the random master seed locally.
-   - Build the program-assigned creation intent.
-   - Sign the readable owner-intent message.
+1. The XP backend uses a CSPRNG to generate a ten-digit TIN.
+2. It uses the shared, protected `TINS_LOOKUP_SECRET` to derive the keyed
+   lookup commitment and checks the commitment-derived PDA on the selected
+   Solana cluster. If the account exists, it generates another TIN.
+3. The SDK encrypts the TIN and display name into the identity envelope and
+   builds the V1 owner intent. The browser receives ciphertext and commitments,
+   never the lookup secret.
+4. The owner wallet signs the raw 32-byte intent hash. The XP backend adds an
+   HMAC issuance proof bound to the owner, commitment, intent hash, nonce, and
+   expiry. The proof contains no lookup secret.
+5. The SDK submits the V1 payload through Receiver ingress. Receiver stores
+   durable `TIN_OPERATION` work and wakes the Node without sending payload data
+   in the wake request.
+6. The Node leases the Receiver work, validates the V1 hash, owner signature,
+   HMAC proof, expiry, and TCap route commitments, then marks it `VERIFIED` or
+   `REJECTED` on Receiver.
+7. An authorized Cranker leases only `VERIFIED` work and submits
+   `CreateTinV1` with the owner Ed25519 proof. The program creates the registry
+   PDA from the lookup commitment and stores encrypted identity material.
+8. Receiver records the Cranker result. The XP session returns the generated
+   TIN to its owner only after the transaction is confirmed.
 
-2. **Receiver ingress**
-   - Receive the signed SDK payload first.
-   - Store durable `TIN_OPERATION` work with an idempotent work ID.
-   - Mark the work `RECEIVED`.
-   - Wake the Node verifier.
+The plaintext TIN and display name are absent from Receiver work and the
+on-chain account. The TIN remains only in the trusted XP session and the
+resolver's protected lookup boundary. The shared secret is configured on the
+XP backend and Node, never Receiver, browser code, Cranker, or the repo.
 
-3. **Node verification**
-   - Lease `RECEIVED` work as `NODE_VERIFYING`.
-   - Decode and type-check the JSON fields.
-   - Recompute the intent hash from bytes.
-   - Verify the owner signature against the exact signed message.
-   - Check expiry, route commitments, and required fields.
-   - Return the verified result to the Receiver.
+## Documents
 
-4. **Receiver verified storage**
-   - Store the Node verification result.
-   - Redact private fields from Cranker work views where required.
-   - Mark the work `VERIFIED`.
+- [01 Receiver ingress](01-receiver-ingress.md) describes the exact payload
+  and Receiver responsibility.
+- [02 Node verification](02-node-verification.md) contains the earlier
+  program-assigned verifier contract and is historical until its V1 rewrite is
+  complete. Use the current contract above and `server.py` for implementation.
+- [TIN V1 canonical rules](../../team/tin/tin-v1-canonical-rules.md) defines
+  the privacy, lookup, and deployment boundaries.
+- [Private TIN developer guide](../../../tsn-protocol/tsn-docs/developers/private-tin-issuance.mdx)
+  documents the SDK and service integration.
 
-5. **Cranker lease**
-   - Assign verified work to an eligible Cranker.
-   - Bind the lease to the operation and expiry.
-   - Prevent duplicate or concurrent execution.
+## Evidence boundary
 
-6. **On-chain finalization**
-   - Serialize the exact TIN creation instruction.
-   - Add the owner Ed25519 proof required by the deployed program.
-   - Submit with the Cranker operator signer.
-   - Decode the created PDA and assigned 10-digit TIN.
-
-7. **Evidence and reporting**
-   - Report the Solana signature, registry PDA, assigned TIN, and final status.
-   - Record the explorer URL and the exact source/version used.
-
-## Current State
-
-The current direct browser-to-Node stage is documented in:
-
-- [TIN creation intent handoff](../../TSN-TIN-CREATION-INTENT-HANDOFF.md)
-
-Current result from the protocol test UI:
-
-```text
-Browser wallet connected: yes
-Owner encryption envelope created: yes
-Intent hash created: yes
-Node accepted and returned intentId: yes
-Receiver-first TIN ingress: not yet wired
-Cranker lease through Receiver: not yet verified
-Solana transaction: not yet submitted
-TIN assigned on-chain: no
-```
-
-Do not move the operation to the next stage until the current stage has
-explicit evidence. In particular, Node acceptance is not on-chain creation.
-
-## Stage Documents
-
-- [01 Receiver ingress](01-receiver-ingress.md): Receiver-first submission and durable work creation;
-- [02 Node verification](02-node-verification.md): Node lease, normalization, and rejection rules;
-- `03-cranker-lease.md`: pending Receiver lease and Cranker work view;
-- `04-onchain-finalization.md`: pending instruction bytes, accounts, proof, and PDA;
-- `05-evidence.md`: pending commands, signatures, decoded result, and acceptance gate.
+Ingress acceptance means only that Receiver persisted the operation. `VERIFIED`
+means Node accepted the signed payload. `CONFIRMED` means Cranker reported a
+confirmed Solana transaction. Keep these stages distinct in SDK activity and
+demo evidence; do not claim a TIN is finalized before `CONFIRMED`.

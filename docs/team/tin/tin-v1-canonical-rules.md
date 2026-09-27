@@ -16,6 +16,22 @@ The lookup commitment must be keyed with resolver-held secret material. Hashing 
 
 TIN V1 issuance uses cryptographically random issuance material and an explicit uniqueness check. A check digit may be used for input-error detection, but it is not treated as a privacy mechanism or as the source of uniqueness. The old sequential counter and raw-TIN PDA lookup are not part of TIN V1.
 
+The XP backend generates the random ten-digit TIN before the owner signs the
+creation intent. The backend derives the lookup commitment with the protected
+`TINS_LOOKUP_SECRET`, checks the commitment-derived PDA on the selected
+Solana cluster, and retries if that account already exists. The secret is
+shared only with the trusted Node resolver; it is never sent to the browser or
+Receiver. The Receiver receives the keyed commitment and encrypted identity,
+not the TIN or display name. `TinV1Account` does not assign random numbers; it
+validates the owner-authorized commitment and initializes the V1 registry PDA.
+
+The Node verifies a keyed HMAC issuance proof bound to the owner, commitment,
+owner intent hash, nonce, and expiry. This prevents callers from bypassing the
+trusted issuer and submitting arbitrary lookup commitments through Receiver
+ingress. The owner signs the raw 32-byte intent hash used by the Rust
+processor. The SDK, Node, and program include four-byte little-endian lengths
+before each variable-length encrypted blob in that hash.
+
 ## Resolver behavior
 
 The SDK exposes one TIN V1 resolver. It does not scan for old account layouts, return `accountKind: "legacy"`, set `upgradeRequired`, or silently reinterpret an old account as current. If the commitment or account schema is not TIN V1, resolution fails.

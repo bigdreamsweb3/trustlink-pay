@@ -2,7 +2,98 @@
   "tsn_receiver_state": {
     "6d17a1bece320dce49de1fc7045f2f37546cd6ee57081779eab757295595e619": {
       "key": "tsn:epoch",
-      "value": "{\"epoch_number\": 1, \"started_at\": \"2026-09-26T15:57:07.172479+00:00\"}"
+      "value": "{\"epoch_number\": 2, \"started_at\": \"2026-09-26T22:57:53.474317+00:00\"}"
+    }
+  },
+  "tsn_receiver_work": {
+    "9eda4387-bd52-40da-9313-2c71bd175bb7": {
+      "id": "9eda4387-bd52-40da-9313-2c71bd175bb7",
+      "kind": "TIN_OPERATION",
+      "status": "VERIFIED",
+      "stateVersion": 3,
+      "payloadCommitment": "b1a68b7c3b3f8826da6c835f6bdda6f112ecdf7bc0adff4adaa4b78c80c8b031",
+      "payload": {
+        "intentType": "tin_creation",
+        "programAssigned": true,
+        "ownerPubkey": "9V7qYgC8wiUoPB6bZuE7Py9t3jywJXcxhihk15MGrTpR",
+        "ownerSignature": "9uTJvclVBspAil+KUiVC50tjWefvFb/WxouQAZ0whkycU9T4O/Wew6p6YrS/S8vYAgH3IG+8JLNBi7xCUGFrBQ==",
+        "displayName": "Daniel TrustLINK LABS",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: 8466640de2dd87fd5643b981085e4dd4a4f2d1e6affe9be8aeca06b99171630d\n\nProtocol: Transfer Identity Network\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "ownerIntentHash": "8466640de2dd87fd5643b981085e4dd4a4f2d1e6affe9be8aeca06b99171630d",
+        "nonce": "06189a562bc8d8a294ef6d92c69d4aab2371ed5fabca5e4056ecdf3f32abc6fe",
+        "expiry": 1790464351,
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InByb2dyYW0tYXNzaWduZWQiLCJvd25lclB1YmxpY0tleSI6IjlWN3FZZ0M4d2lVb1BCNmJadUU3UHk5dDNqeXdKWGN4aGloazE1TUdyVHBSIiwicm91dGVWZXJzaW9uIjoxLCJwcnVDb25maWd1cmF0aW9uSGFzaCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJyZXNvdXJjZUNvbW1pdG1lbnQiOiI0ZDlmYjM2M2Q2YTRmMDExODBmMzkyOGMzODg1NDk2NDhhZmYxOTczMjVkYTk4N2YzOWE2YThjOGQ0YTgzOWM4Iiwic2VlZEVuY3J5cHRpb25BbGdvcml0aG0iOiJhZXMtMjU2LWdjbS1sb2NhbC1tYXN0ZXItc2VlZCIsInNlZWRDaXBoZXJ0ZXh0IjoiRkdaXzAtOVlXVURUb0lSdGQwcWxXLW40V0VJSkEzbWJXS3VZcHl2YldDT0g4S01DNzRpUm1Wc01jbEVXWnUyRCIsInNlZWROb25jZSI6IlJWc1pNbGppYlBFRGRVME0iLCJzZWVkQ2lwaGVydGV4dENvbW1pdG1lbnQiOiI5YjVhNzFjMjg0ODU1MDYzNGNkYTFkZmJmMmM0YmI4YjkwYjRhNDZlMTYzNWJhNGI3MDA5MzA4ODg1ZjNlMzQ2IiwicHJvdGVjdGVkS2V5Ijoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS1kZXJpdmVkIiwicHJvdGVjdGVkS2V5Q29tbWl0bWVudCI6ImY2NTIwNzIzNjRkNzFhMGFmODdmM2JmNjgwMDBlZTllOTBhNGI1NWU1MWNlZjkyYzU2ZWEwNjU3ZjdkYzRkMzkiLCJhY2Nlc3NDb250cm9sSGFzaCI6IjlmOThiZjI5MjdhNjVhYzNmNjA4ODMwMThhMjcyYjRkZWNhZDYyZTBmYzk0MzEzYTllYWZlNTRjNWUyYjdhMzAiLCJpbnRlZ3JpdHlDb21taXRtZW50IjoiNDRhOTk0YWQ4ZDFiOGQ2ZWY5ODNlMDIxYjAwYjBmMmJjMzhkZGJjZDA4ODYwNDZlMTk1ZjMzNWNmNDQ2NjRiMCJ9",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "pruConfigurationHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "encryptedPublicRouteEnvelope": "",
+        "routeVersion": 1,
+        "routeNonce": "06189a562bc8d8a294ef6d92c69d4aab2371ed5fabca5e4056ecdf3f32abc6fe",
+        "tcapRouteVersion": 1,
+        "tcapRelationshipCommitment": "47f482cf3fd6fb497576c31b15d42a0ec2065cb03d88672e91c401eac337b7e2",
+        "tcapRelationshipReference": "15099738b285aae97f8b792779d413fab07066fe5a5736b6691f641051df631d",
+        "tcapPolicyCommitment": "f03cc3a108f16ee986cdac2da360a78bb025390460288df46349f5e640ae5a69"
+      },
+      "receivedAt": "2026-09-26T22:57:48.899Z",
+      "updatedAt": "2026-09-26T23:05:53.297Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verifiedPayload": {
+          "intentId": "321a1c34-0772-4fca-beab-d4de4c1be112",
+          "intentType": "tin_creation",
+          "tin": "",
+          "programAssigned": true,
+          "ownerPubkey": "9V7qYgC8wiUoPB6bZuE7Py9t3jywJXcxhihk15MGrTpR",
+          "ownerSignature": "9uTJvclVBspAil+KUiVC50tjWefvFb/WxouQAZ0whkycU9T4O/Wew6p6YrS/S8vYAgH3IG+8JLNBi7xCUGFrBQ==",
+          "ownerIntentHash": "8466640de2dd87fd5643b981085e4dd4a4f2d1e6affe9be8aeca06b99171630d",
+          "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: 8466640de2dd87fd5643b981085e4dd4a4f2d1e6affe9be8aeca06b99171630d\n\nProtocol: Transfer Identity Network\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+          "nonce": "06189a562bc8d8a294ef6d92c69d4aab2371ed5fabca5e4056ecdf3f32abc6fe",
+          "expiry": 1790464351,
+          "createdAt": "2026-09-26T23:05:49.824304+00:00",
+          "updatedAt": "2026-09-26T23:05:49.824304+00:00",
+          "status": "pending_verification",
+          "verifierCranker": null,
+          "submitterCranker": null,
+          "feeMetadata": null,
+          "failureReason": null,
+          "onchainSignatures": [],
+          "displayName": "Daniel TrustLINK LABS",
+          "lookupCommitment": "",
+          "encryptedIdentityEnvelope": "",
+          "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InByb2dyYW0tYXNzaWduZWQiLCJvd25lclB1YmxpY0tleSI6IjlWN3FZZ0M4d2lVb1BCNmJadUU3UHk5dDNqeXdKWGN4aGloazE1TUdyVHBSIiwicm91dGVWZXJzaW9uIjoxLCJwcnVDb25maWd1cmF0aW9uSGFzaCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJyZXNvdXJjZUNvbW1pdG1lbnQiOiI0ZDlmYjM2M2Q2YTRmMDExODBmMzkyOGMzODg1NDk2NDhhZmYxOTczMjVkYTk4N2YzOWE2YThjOGQ0YTgzOWM4Iiwic2VlZEVuY3J5cHRpb25BbGdvcml0aG0iOiJhZXMtMjU2LWdjbS1sb2NhbC1tYXN0ZXItc2VlZCIsInNlZWRDaXBoZXJ0ZXh0IjoiRkdaXzAtOVlXVURUb0lSdGQwcWxXLW40V0VJSkEzbWJXS3VZcHl2YldDT0g4S01DNzRpUm1Wc01jbEVXWnUyRCIsInNlZWROb25jZSI6IlJWc1pNbGppYlBFRGRVME0iLCJzZWVkQ2lwaGVydGV4dENvbW1pdG1lbnQiOiI5YjVhNzFjMjg0ODU1MDYzNGNkYTFkZmJmMmM0YmI4YjkwYjRhNDZlMTYzNWJhNGI3MDA5MzA4ODg1ZjNlMzQ2IiwicHJvdGVjdGVkS2V5Ijoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS1kZXJpdmVkIiwicHJvdGVjdGVkS2V5Q29tbWl0bWVudCI6ImY2NTIwNzIzNjRkNzFhMGFmODdmM2JmNjgwMDBlZTllOTBhNGI1NWU1MWNlZjkyYzU2ZWEwNjU3ZjdkYzRkMzkiLCJhY2Nlc3NDb250cm9sSGFzaCI6IjlmOThiZjI5MjdhNjVhYzNmNjA4ODMwMThhMjcyYjRkZWNhZDYyZTBmYzk0MzEzYTllYWZlNTRjNWUyYjdhMzAiLCJpbnRlZ3JpdHlDb21taXRtZW50IjoiNDRhOTk0YWQ4ZDFiOGQ2ZWY5ODNlMDIxYjAwYjBmMmJjMzhkZGJjZDA4ODYwNDZlMTk1ZjMzNWNmNDQ2NjRiMCJ9",
+          "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "pruConfigurationHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "encryptedPublicRouteEnvelope": "",
+          "routeVersion": 1,
+          "routeNonce": "06189a562bc8d8a294ef6d92c69d4aab2371ed5fabca5e4056ecdf3f32abc6fe",
+          "tcapRouteVersion": 1,
+          "tcapRelationshipCommitment": "47f482cf3fd6fb497576c31b15d42a0ec2065cb03d88672e91c401eac337b7e2",
+          "tcapRelationshipReference": "15099738b285aae97f8b792779d413fab07066fe5a5736b6691f641051df631d",
+          "tcapPolicyCommitment": "f03cc3a108f16ee986cdac2da360a78bb025390460288df46349f5e640ae5a69",
+          "creationFeeAmount": "50000",
+          "creationFeeMint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "newDisplayName": null,
+          "newEncryptedMasterSeed": null,
+          "newEncryptedMetadataHash": null,
+          "newPruConfigurationHash": null,
+          "newEncryptedPublicRouteEnvelope": null,
+          "newRouteVersion": null,
+          "newRouteNonce": null,
+          "updateFeeAmount": null,
+          "updateFeeMint": null
+        },
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "9eda4387-bd52-40da-9313-2c71bd175bb7",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "b1a68b7c3b3f8826da6c835f6bdda6f112ecdf7bc0adff4adaa4b78c80c8b031"
+        }
+      },
+      "result": null,
+      "authorization": null
     }
   }
 }

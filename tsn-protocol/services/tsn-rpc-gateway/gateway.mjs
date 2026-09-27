@@ -219,7 +219,11 @@ function shouldRetryRpcError(error) {
   const message = String(error.message ?? "").toLowerCase();
   return (
     error.code === -32005 ||
+    error.code === -32401 ||
     error.code === 429 ||
+    message.includes("invalid api key") ||
+    message.includes("unauthorized") ||
+    message.includes("forbidden") ||
     message.includes("rate limit") ||
     message.includes("too many requests") ||
     message.includes("timeout") ||
@@ -322,6 +326,14 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
         responseBody: parsed,
       },
     );
+  }
+
+  if (!response.ok && (response.status === 401 || response.status === 403)) {
+    throw Object.assign(new Error(`Upstream ${provider.label} rejected its provider credentials (${response.status})`), {
+      latencyMs,
+      retryable: true,
+      responseBody: parsed,
+    });
   }
 
   if (isJsonObject(parsed) && hasMalformedAccountData(payload, parsed)) {

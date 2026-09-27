@@ -37,7 +37,7 @@ export type TinOwnerWallet = {
   signMessage(message: Uint8Array): Promise<Uint8Array>;
 };
 
-export function buildProgramAssignedTinOwnerEncryptionMessage(params: {
+export function buildTinV1OwnerEncryptionMessage(params: {
   ownerPublicKey: string;
   displayName: string;
   nonce: Uint8Array;
@@ -66,6 +66,9 @@ export function buildProgramAssignedTinOwnerEncryptionMessage(params: {
     ].join("\n"),
   );
 }
+
+/** @deprecated Use buildTinV1OwnerEncryptionMessage. */
+export const buildProgramAssignedTinOwnerEncryptionMessage = buildTinV1OwnerEncryptionMessage;
 
 export async function createProgramAssignedTinOwnerEncryption(params: {
   ownerPublicKey: string;

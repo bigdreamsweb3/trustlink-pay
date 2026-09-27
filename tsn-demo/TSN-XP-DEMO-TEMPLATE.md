@@ -5,7 +5,7 @@ This template breaks the final demo into short cuts that can be recorded indepen
 ## Final edit target
 
 - **Length:** 2:00–3:00 for the public product demo.
-- **Product:** TSN XP at the live deployment URL.
+- **Product:** TSN XP, recorded against the local Receiver and Node on Solana Devnet.
 - **Network:** Solana Devnet.
 - **Story:** a user creates a private TIN identity, prepares a transfer, and the protocol moves the intent through Receiver ingress, Node verification, Cranker settlement, and Solana finality.
 - **Evidence rule:** show only observed results. If a step is prepared but not finalized, say that it is prepared.
@@ -54,7 +54,7 @@ This template breaks the final demo into short cuts that can be recorded indepen
 
 **Capture:** Request ID or intent ID, route name, timestamp, payload commitment, and Receiver acceptance status. Keep encrypted values and credentials hidden.
 
-**Protocol boundary:** Browser → SDK → Receiver. The Receiver validates the ingress request, stores the durable JSON/Firebase record, and wakes the Node without sending the full payload in the wake signal.
+**Protocol boundary:** Browser → SDK → Receiver. For this local run, the Receiver stores the durable work in its JSON file and sends the Node a payload-free wake. The live Receiver uses Firebase.
 
 **Voiceover cue:** “The request enters through the Receiver first. The Receiver stores the durable operation and signals the Node that work is available, so user traffic does not overload the verifier.”
 
@@ -66,7 +66,7 @@ This template breaks the final demo into short cuts that can be recorded indepen
 
 **Capture:** Receiver lease, Node verification result, rejection reason if a negative test is shown, and the fact that the Node is using the local Receiver.
 
-**Protocol boundary:** Receiver → Node. The Node leases work from the Receiver, verifies signatures, canonical payload bytes, route authorization, and replay protection, then returns verification evidence.
+**Protocol boundary:** Receiver → Node → Receiver. The Node leases the work through the Receiver API, validates the signed payload, and returns its decision. The Receiver stays the durable source of truth; the Node does not own a separate TIN work database. The Node uses the Receiver's internal state API for its replay guard.
 
 **Voiceover cue:** “The Node does not accept a browser submission directly. It leases work from the Receiver, verifies the authorization and exact payload commitment, and returns evidence for the next settlement step.”
 

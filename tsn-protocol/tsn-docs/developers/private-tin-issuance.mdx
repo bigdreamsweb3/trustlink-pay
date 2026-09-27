@@ -1,132 +1,109 @@
 ---
 title: "Use a Private TIN in a TSN Payment App"
 sidebarTitle: "Private TINs"
-description: "Build a privacy-aware payment experience with the TSN SDK without exposing TIN secrets to application servers or settlement operators."
+description: "Create and resolve privacy-preserving TIN V1 records through the TSN SDK and services."
 ---
 
-TSN applications use private-by-default TINs. The user supplies a connected
-wallet and display name; the Solana program generates the 10-digit TIN from
-its global sequence during creation. Phone verification, user-entered TINs,
-and random-secret-only issuance are not part of the current creation path.
+TSN TIN V1 keeps the TIN and display name out of Receiver work and the on-chain
+account. The XP backend generates a random ten-digit TIN, checks that its
+keyed registry address is unused, encrypts the identity, and submits only the
+owner-authorized V1 payload through Receiver ingress. The TIN is shown to the
+owner after the Cranker confirms the Solana transaction.
 
-The TSN SDK owns application-facing protocol construction. The Node, Receiver,
-and generic Cranker receive authenticated protocol data rather than a
-plaintext identity document. A Cranker submits only verified work.
+The TIN V1 program does not generate random numbers. The backend performs
+random issuance; the program verifies the signed commitment and creates the
+`TinV1Account` at its commitment-derived PDA. Never describe this as the
+program assigning a TIN.
 
-## Application boundary
+## Service boundary
 
 ```text
-Payment UI -> @trustlink/tsn-sdk -> TSN services -> generic Cranker
+Owner wallet -> TSN XP + SDK -> Receiver queue -> Node verification -> Cranker -> TinV1Account
 ```
 
-The application integrates through `@trustlink/tsn-sdk`. It does not import
-TCAP or TIN program clients directly, derive settlement PDAs, or assemble raw
-settlement instructions. Those responsibilities remain behind the SDK and
-service boundaries.
+`TINS_LOOKUP_SECRET` is provisioned on the trusted XP backend and TSN Node with
+the same value. It is used to derive the keyed lookup commitment and issuance
+proof. It must not be sent to the browser or Receiver, committed, or logged.
+The Receiver stores the signed commitment and encrypted identity envelope;
+the Node validates the owner signature, canonical intent hash, and issuance
+proof before marking the work eligible for Cranker processing.
 
 ## Creation sequence
 
-The program-defined creation flow is:
+1. The XP backend generates a random TIN and derives its keyed lookup PDA.
+2. It checks Devnet for an existing account at that PDA and retries if occupied.
+3. The SDK encrypts the TIN and display name, then builds the V1 owner intent.
+4. The wallet signs the exact 32-byte intent hash used by the on-chain program.
+5. The SDK submits the commitment, ciphertext, proof, and signature to Receiver.
+6. The Node verifies the Receiver work; the Cranker serializes and submits
+   `CreateTinV1`.
+7. The XP backend reveals the generated TIN to the same wallet session only
+   after Receiver reports the Cranker transaction as confirmed.
 
-1. Connect the owner wallet and enter a display name.
-2. Let the SDK build the encrypted route payload and owner authorization.
-3. Submit the creation operation through the TSN service boundary.
-4. Let the Solana program assign the TIN during finalization.
-5. Show the assigned TIN only after the finalized on-chain record is read.
+The intent hash covers the owner, lookup commitment, length-prefixed encrypted
+blobs, metadata and route commitments, route nonce, and expiry. The Rust
+program, SDK serializer, and Node verifier use the same field order and
+encoding. The separate HMAC issuance proof binds the commitment to the owner,
+intent hash, nonce, and expiry without disclosing the TIN.
 
-The TIN is an identifier, not a private identity document. Do not log encrypted
-envelope contents or expose decrypted identity data to a Cranker.
+## SDK primitives
 
-## SDK submission flow
-
-Use the program-assigned builder. It generates the encrypted seed material,
-nonce, expiry, TCAP commitments, and owner intent hash locally. The wallet
-signs that exact intent before any payload reaches the Node.
+The SDK requires a protected lookup secret when it creates the identity
+envelope. The trusted XP backend supplies it; browser code must not receive it.
 
 ```ts
-const prepared = buildProgramAssignedTinCreation({
-  ownerPubkey: wallet.publicKey,
-  displayName: "Daniel TrustLINK LABS",
+const identity = await createTinV1IdentityEnvelope({
+  tin: generatedTin,
+  displayName,
+  lookupSecret: TINS_LOOKUP_SECRET,
+});
+
+const prepared = buildTinV1Creation({
+  ownerPubkey,
+  lookupCommitment: identity.lookupCommitment,
+  encryptedIdentityEnvelope: identity.encryptedIdentityEnvelope,
+  encryptedMasterSeed,
+  tcapRouteVersion: 1,
+  tcapRelationshipCommitment,
+  tcapRelationshipReference,
+  tcapPolicyCommitment,
 });
 
 const ownerSignature = await wallet.signMessage(prepared.intentHash);
-await submitProgramAssignedTinCreation({
-  nodeUrl: TSN_NODE_URL,
+await submitTinV1Creation({
   ingressUrl: TSN_RECEIVER_URL,
   prepared,
-  ownerPubkey: wallet.publicKey,
+  intentId,
+  ownerPubkey,
   ownerSignature,
-  displayName: "Daniel TrustLINK LABS",
+  lookupIssuanceProof,
 });
 ```
 
-The Node validates the signed payload, the generic Cranker submits the
-`CreateTin` instruction, and Solana assigns the 10-digit TIN. The application
-reads and displays the assigned value only after finalization. No application
-code predicts a sequence value or asks the user to type a TIN.
+The signature must cover the raw 32-byte intent hash because the Cranker
+places that exact signature in the Ed25519 verification instruction consumed
+by `CreateTinV1`. A printable intent message may be shown for review, but its
+signature is not interchangeable with the on-chain proof.
 
-## Resolve a TIN and prepare a payment
+## Resolve a TIN and prepare a transfer
 
-Resolve a TIN with the SDK after the owner authorizes local disclosure, then
-use the returned route commitment to prepare a payment authorization.
+The trusted resolver derives the same PDA with the protected lookup secret.
+The SDK decrypts the identity envelope only after resolving the V1 account.
 
 ```ts
-import {
-  createPaymentAuthorization,
-  resolveTinRoute,
-} from "@trustlink/tsn-sdk";
-
 const identity = await resolveTinRoute({
   tin: recipientTin,
   rpcUrl: TSN_RPC_URL,
   programId: TIN_PROGRAM_ID,
-});
-
-const authorization = createPaymentAuthorization({
-  senderWallet: wallet.publicKey.toBase58(),
-  senderIdentity: `wallet:${wallet.publicKey.toBase58()}`,
-  receiverIdentity: `tin:${recipientTin}`,
-  recipientRouteCommitment: identity.tcapRelationshipCommitment,
-  recipientRouteVersion: identity.tcapRouteVersion,
-  tokenMintAddress: settlementMint,
-  amount,
-  senderFeeAmount,
-  totalTokenRequiredUi: amount + senderFeeAmount,
-  fundingMode: "wallet_only_v2",
+  lookupSecret: TINS_LOOKUP_SECRET,
 });
 ```
 
-The wallet signs the authorization required by the SDK-generated intent. The
-Node validates the request and route, while the generic Cranker submits only
-the authorized protocol operation.
+Use the returned TCap relationship commitments in the SDK payment
+authorization. Do not pass the lookup secret into Receiver work or Cranker
+payloads.
 
-## Build a wallet-to-wallet transfer
-
-Use the SDK to construct the unsigned transaction. The connected wallet signs
-it; no private key is passed to the SDK or Node.
-
-```ts
-import { buildTsnSplTokenTransferTransaction } from "@trustlink/tsn-sdk";
-import { Transaction } from "@solana/web3.js";
-
-const unsigned = await buildTsnSplTokenTransferTransaction({
-  senderWallet: wallet.publicKey.toBase58(),
-  recipientWallet,
-  tokenMintAddress: settlementMint,
-  amountUi: "1.00",
-  tokenDecimals: 6,
-  rpcUrl: TSN_RPC_URL,
-});
-
-await wallet.signTransaction(
-  Transaction.from(Buffer.from(unsigned.transactionBase64, "base64")),
-);
-```
-
-For a TIN payment, use `createPaymentAuthorization` and
-`buildPaymentAuthorizationIntentRequest` from the SDK instead. The SDK is the
-application interface; the TSN services coordinate settlement underneath it.
-
-For internal deployment, registry initialization, RPC configuration, and
-evidence procedures, use the team runbooks. Those operator instructions are
-intentionally not part of public developer documentation.
+For wallet-to-wallet SPL transfers, use
+`buildTsnSplTokenTransferTransaction` from the SDK and let the connected wallet
+sign the returned unsigned transaction. Private TIN routing and ordinary
+wallet transfers remain separate flows.

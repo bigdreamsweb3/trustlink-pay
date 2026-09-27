@@ -1,18 +1,18 @@
 ---
 title: "createTinV1IdentityEnvelope — Encrypt a TIN identity"
 sidebarTitle: "createTinV1IdentityEnvelope"
-description: "Create the encrypted identity envelope and lookup commitment accepted by the legacy CreateTinV1 registry instruction."
+description: "Create the keyed lookup commitment and encrypted identity envelope accepted by the TIN V1 registry instruction."
 ---
 
 ## What it does
 
-This SDK helper derives a lookup commitment from the supplied TIN, encrypts the display name and TIN with AES-GCM, and returns the ciphertext envelope. It does not create an on-chain TIN account.
+This SDK helper derives a keyed lookup commitment from the supplied TIN and protected resolver secret, encrypts the display name and TIN with AES-GCM, and returns the ciphertext envelope. It does not create an on-chain TIN account. Call it only in a trusted backend that can access the lookup secret; never send that secret to Receiver.
 
 ## How the flow works
 
 <Steps>
-  <Step title="Caller invokes the function">The caller supplies the TIN lookup material and display name.</Step>
-  <Step title="Validation">The function converts both values to UTF-8 bytes and prepares deterministic commitment/key material.</Step>
+  <Step title="Caller invokes the function">The trusted issuer supplies the random TIN, display name, and protected lookup secret.</Step>
+  <Step title="Validation">The function requires at least 16 bytes of resolver secret material.</Step>
   <Step title="Main work">It derives the lookup commitment, generates a random AES-GCM nonce, and encrypts the JSON identity payload.</Step>
   <Step title="Result">It returns `lookupCommitment` and an envelope containing nonce bytes followed by ciphertext bytes.</Step>
 </Steps>
@@ -23,18 +23,24 @@ This SDK helper derives a lookup commitment from the supplied TIN, encrypts the 
 export async function createTinV1IdentityEnvelope(params: {
   tin: bigint | number | string;
   displayName: string;
+  lookupSecret: Uint8Array | string;
 }): Promise<{ lookupCommitment: Uint8Array; encryptedIdentityEnvelope: Uint8Array }>
 ```
 
 <ParamField path="tin" type="bigint | number | string" required>TIN lookup material.</ParamField>
 <ParamField path="displayName" type="string" required>Name placed inside the encrypted JSON payload.</ParamField>
+<ParamField path="lookupSecret" type="Uint8Array | string" required>Protected resolver secret; keep it on the trusted XP backend and TSN Node only.</ParamField>
 
 ## Result and errors
 
 The helper returns a 32-byte lookup commitment and AES-GCM envelope. It throws if the runtime does not expose WebCrypto AES-GCM support.
 
 ```ts
-const envelope = await createTinV1IdentityEnvelope({ tin: "1234567890", displayName: "Example" });
+const envelope = await createTinV1IdentityEnvelope({
+  tin: generatedTin,
+  displayName: "Example",
+  lookupSecret: process.env.TINS_LOOKUP_SECRET,
+});
 ```
 
 Source: [`tins.ts:1289-1304`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L1289-L1304)

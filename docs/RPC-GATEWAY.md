@@ -1,66 +1,67 @@
-# TrustLink RPC Gateway
+# TSN RPC Gateway
 
-TrustLink Pay uses one shared Solana RPC entry point for the app, backend, SDKs, scripts, and Cranker tooling.
+TSN applications and operators use one configured Solana RPC endpoint for SDK
+reads, transaction work, and Cranker operations. The default is the hosted TSN
+RPC gateway. A developer may choose another preferred RPC, including a locally
+running TSN gateway.
 
-The gateway lives in `tsn-rpc-gateway/` as its own project. That keeps the RPC system separate from the app and makes it easier to move into a private repository later.
+## Endpoint selection
 
-The current Devnet gateway endpoint is
-[`https://tsn-rpc-gateway.vercel.app/`](https://tsn-rpc-gateway.vercel.app/).
-Use the local URL below only when running the gateway locally.
+Set `TSN_RPC_URL` for SDK and Cranker consumers. `TSN_RPC_GATEWAY_URL` is
+accepted as a compatibility alias. If neither is set, the SDK uses the hosted
+TSN gateway:
 
-The goal is simple:
-
-- one public RPC URL for the product
-- multiple upstream Solana RPC providers behind it
-- automatic fallback when a provider is slow or unhealthy
-- less hardcoded RPC logic scattered through the codebase
-
-## How it works
-
-Set the app-facing RPC URL once:
-
-```bash
-TSN_RPC_GATEWAY_URL=http://127.0.0.1:8787
+```env
+TSN_RPC_URL=https://tsn-rpc-gateway.vercel.app
 ```
 
-That shared URL points to the TrustLink RPC gateway.
+For a local gateway, use `http://127.0.0.1:8787`. The SDK and Cranker validate
+and use the one selected RPC endpoint. They do not silently switch to
+Solana's public endpoint or another RPC if it fails. Network status describes
+the endpoint as `configured`; Node and Receiver can be independently labelled
+`local` or `live`.
 
-The gateway then reads its own upstream list:
+## Gateway upstreams
 
-```bash
-TSN_SOLANA_RPC_URLS=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY,https://api.devnet.solana.com
+The gateway process itself reads its provider list from
+`TSN_SOLANA_RPC_URLS`, for example:
+
+```env
+TSN_SOLANA_RPC_URLS=https://devnet.helius-rpc.com/?api-key=<provider-key>,https://api.devnet.solana.com
 ```
 
-The gateway ranks upstreams by health and latency, then forwards Solana JSON-RPC requests to the best option first. If one provider fails, it moves to the next provider in the list.
+Provider credentials belong only in the gateway's server environment. SDKs and
+Crankers send requests to the gateway endpoint and do not need provider keys.
+The gateway's provider selection is separate from the client's selected RPC
+endpoint.
 
 ## Local development
 
-Start the gateway:
+Start the gateway from the repository root:
 
-```bash
+```powershell
 npm run rpc:gateway:dev
-```
-
-Inspect the configured upstream order:
-
-```bash
 npm run rpc:gateway:inspect
 ```
 
-The same commands exist inside the gateway project:
+Or run it from `tsn-protocol/services/tsn-rpc-gateway`:
 
-```bash
-cd tsn-rpc-gateway
+```powershell
 npm run dev
 npm run inspect
 ```
 
-## Worker compatibility
+The gateway serves HTTP JSON-RPC and WebSocket PubSub on the same host and
+port. Locally use `http://127.0.0.1:8787` and
+`ws://127.0.0.1:8787/ws`. Set `TSN_RPC_WS_URL` explicitly if the Cranker cannot
+derive the corresponding WebSocket endpoint. It must not assume a separate
+adjacent port.
 
-The gateway is written as a fetch-style handler, so the same core logic can later be deployed to Cloudflare Workers or a similar edge runtime.
+## Readiness
 
-## Notes
-
-- The gateway keeps API keys out of the app code.
-- The app should point to the gateway URL, not directly to each upstream provider.
-- The gateway should be the only place that knows the upstream provider list.
+The SDK reports the selected endpoint as configured and probes its health.
+The Cranker performs `getVersion` and Mother Escrow account validation against
+the same endpoint before it leases work. A healthy HTTP `/getHealth` response
+alone does not prove account reads or transaction submission are working.
+Gateway upstream health and failover are handled inside the gateway; client
+fallback to a different RPC is disabled.

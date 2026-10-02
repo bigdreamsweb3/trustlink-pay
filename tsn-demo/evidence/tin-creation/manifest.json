@@ -2,7 +2,7 @@
   "flowId": "tin-creation",
   "flowTitle": "Private TIN creation",
   "network": "solana-devnet",
-  "ownerIntentId": "321a1c34-0772-4fca-beab-d4de4c1be112",
+  "ownerIntentId": "75a0f387-c9d5-4b6d-9139-11501b61782d",
   "paths": {
     "flowCatalog": "../flow-catalog.json",
     "health": "health.json",
@@ -45,7 +45,7 @@
   },
   "privacy": "complete allowlisted TIN payload and process evidence; arbitrary database fields and service secrets are excluded",
   "receiverSource": "tsn-protocol/services/tsn-receiver/.receiver-store.json",
-  "receiverWorkId": "9eda4387-bd52-40da-9313-2c71bd175bb7",
+  "receiverWorkId": "d613aa7e-9c6e-4547-9ac1-20e250a39553",
   "signature": null,
   "sourceCodeReferences": [
     "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
@@ -54,7 +54,8 @@
     "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
     "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
     "tsn-protocol/services/tsn-node/server.py",
-    "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+    "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/processor/create_tin_v1.rs"
   ],
   "sourceMedia": [
     {

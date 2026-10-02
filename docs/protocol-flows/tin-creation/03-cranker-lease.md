@@ -92,7 +92,10 @@ The Node sends the work ID, lease owner, expected state version, and
 
 The Receiver accepts this only when lease owner, expiry, and state version
 match. It clears the Node lease, increments `stateVersion`, stores the
-verification evidence, and makes verified work available:
+verification decision and TIN payload delta, and makes verified work available.
+The complete ingress payload remains stored once; the Cranker API rebuilds
+the normalized view from that payload and the delta before applying its
+execution allowlist:
 
 ```text
 NODE_VERIFYING -> VERIFIED
@@ -110,6 +113,18 @@ VERIFIED -> CRANKER_LEASED
 The Cranker receives the verified public work view needed to construct the
 program instruction. It does not receive Node service credentials or private
 route material.
+
+Before executing the work, it verifies the Node Ed25519 attestation using the
+configured `TSN_NODE_VERIFICATION_PUBLIC_KEY`. It checks the work ID, kind,
+decision, active lease, input and evidence commitments, and recomputes the
+execution-payload commitment from the allowlisted work projection. Missing,
+invalid, expired, or mismatched receipts stop execution. This verification
+receipt is not the separate settlement payout permit enforced by the TSN
+program.
+
+TIN V1 creation uses a direct transaction only when the complete signed
+transaction fits Solana's 1,232-byte packet limit. Larger creation payloads use
+the program's staged path, described in [04 On-chain finalization](04-onchain-finalization.md).
 
 ## 6. Solana Submission and Result
 

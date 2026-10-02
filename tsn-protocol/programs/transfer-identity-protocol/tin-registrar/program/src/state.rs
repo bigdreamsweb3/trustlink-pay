@@ -372,3 +372,40 @@ impl TinMutationStaging {
             + 4
     }
 }
+
+/// Temporary program-owned storage for the encrypted fields of a TIN V1
+/// creation. A Cranker writes bounded chunks, then the owner-authorized
+/// finalize instruction creates the permanent registry PDA.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct TinV1CreationStaging {
+    pub version: u8,
+    pub bump: u8,
+    pub owner_pubkey: Pubkey,
+    pub lookup_commitment: [u8; 32],
+    pub intent_hash: [u8; 32],
+    pub encrypted_identity_envelope: Vec<u8>,
+    pub identity_written: u32,
+    pub encrypted_master_seed: Vec<u8>,
+    pub master_seed_written: u32,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub encrypted_public_route_envelope: Vec<u8>,
+    pub route_written: u32,
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub tcap_route_version: u8,
+    pub tcap_relationship_commitment: [u8; 32],
+    pub tcap_relationship_reference: [u8; 32],
+    pub tcap_policy_commitment: [u8; 32],
+    pub expiry_ts: i64,
+}
+
+impl TinV1CreationStaging {
+    pub const VERSION: u8 = 1;
+    pub const MAX_BLOB_LEN: usize = 16 * 1024;
+
+    pub fn space(identity_len: usize, seed_len: usize, route_len: usize) -> usize {
+        1 + 1 + 32 + 32 + 32 + 4 + identity_len + 4 + 4 + seed_len + 4 + 32 + 32
+            + 4 + route_len + 4 + 8 + 32 + 1 + 32 + 32 + 32 + 8
+    }
+}

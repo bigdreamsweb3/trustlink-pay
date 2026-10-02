@@ -38,13 +38,29 @@ XP backend and Node, never Receiver, browser code, Cranker, or the repo.
 
 - [01 Receiver ingress](01-receiver-ingress.md) describes the exact payload
   and Receiver responsibility.
-- [02 Node verification](02-node-verification.md) contains the earlier
-  program-assigned verifier contract and is historical until its V1 rewrite is
-  complete. Use the current contract above and `server.py` for implementation.
+- [02 Node verification](02-node-verification.md) identifies the retired
+  program-assigned schema as historical and documents the current signed V1
+  verification receipt.
+- [03 Cranker lease](03-cranker-lease.md) documents receipt validation and
+  authorized work leasing.
+- [04 On-chain finalization](04-onchain-finalization.md) describes direct and
+  staged creation transactions.
+- [05 Evidence](05-evidence.md) records the observed Devnet completion and the
+  evidence needed for future captures.
 - [TIN V1 canonical rules](../../team/tin/tin-v1-canonical-rules.md) defines
   the privacy, lookup, and deployment boundaries.
 - [Private TIN developer guide](../../../tsn-protocol/tsn-docs/developers/private-tin-issuance.mdx)
   documents the SDK and service integration.
+
+## XP identity lookup limitation
+
+The SDK can resolve a TIN when the application supplies the TIN and its
+authorized lookup secret. The registry intentionally does not provide a
+publicly enumerable wallet-to-TIN reverse index. TSN XP currently retains a
+newly issued TIN in the issuing browser session and resolves its identity after
+finalization; reconnecting the wallet or opening another device does not yet
+recover that TIN automatically. A future recovery flow must be explicitly
+owner-authorized and preserve the keyed lookup boundary.
 
 ## Evidence boundary
 

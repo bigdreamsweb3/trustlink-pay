@@ -29,7 +29,7 @@ npm start -- <command> [arguments]
 <ParamField path="KEYPAIR_PATH" type="string" required={false}>Signer keypair path; defaults to `./cranker-keypair.json`.</ParamField>
 <ParamField path="PROGRAM_ID" type="string" required={true}>Required when no command is supplied.</ParamField>
 <ParamField path="TINS_PROGRAM_ID" type="string" required={false}>TIN program ID; defaults to the source-defined program ID.</ParamField>
-<ParamField path="TSN_RPC_GATEWAY_URL" type="string" required={false}>Gateway RPC URL selected by `resolveSolanaRpcUrl`.</ParamField>
+<ParamField path="TSN_RPC_URL" type="string" required={false}>Preferred RPC URL selected by `resolveSolanaRpcUrl`; defaults to the TSN RPC gateway.</ParamField>
 
 <CodeGroup>
 ```bash Setup

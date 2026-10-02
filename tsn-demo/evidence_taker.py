@@ -59,7 +59,7 @@ SVG_GRID_ROWS = 30
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def source_media_manifest() -> list[dict[str, Any]]:
@@ -268,8 +268,9 @@ def complete_verified_tin_payload(payload: Any) -> dict[str, Any] | None:
         return None
     keys = (
         "intentId", "intentType", "tin", "programAssigned", "ownerPubkey", "ownerSignature",
-        "ownerIntentHash", "ownerIntentMessage", "nonce", "expiry", "createdAt", "updatedAt",
+        "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "nonce", "expiry", "createdAt", "updatedAt",
         "status", "verifierCranker", "submitterCranker", "feeMetadata", "failureReason",
+        "displayNameStatus", "displayNameReadableByNode",
         "onchainSignatures", "displayName", "lookupCommitment", "encryptedIdentityEnvelope",
         "encryptedMasterSeed", "encryptedMetadataHash", "pruConfigurationHash",
         "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce", "tcapRouteVersion",
@@ -280,9 +281,58 @@ def complete_verified_tin_payload(payload: Any) -> dict[str, Any] | None:
     )
     scalar = (str, int, float, bool, type(None))
     result = {key: payload[key] for key in keys if key in payload and isinstance(payload[key], scalar)}
+    checks = payload.get("envelopeChecks")
+    if isinstance(checks, dict):
+        result["envelopeChecks"] = {
+            name: {
+                key: check[key]
+                for key in (
+                    "present", "base64Decoded", "includedInOwnerIntentHash",
+                    "intentHashVerified", "signatureVerified", "ciphertextOpenedByNode",
+                )
+                if isinstance(check, dict) and isinstance(check.get(key), bool)
+            }
+            for name, check in checks.items()
+            if isinstance(check, dict)
+        }
     if isinstance(payload.get("onchainSignatures"), list) and all(isinstance(value, str) for value in payload["onchainSignatures"]):
         result["onchainSignatures"] = payload["onchainSignatures"]
     return result
+
+
+def tin_payload_delta(ingress: Any, verified: Any) -> dict[str, Any]:
+    """Describe what Node changed without copying the accepted request again."""
+    ingress_full = complete_tin_payload(ingress) or {}
+    verified_full = complete_verified_tin_payload(verified) or {}
+    common = ingress_full.keys() & verified_full.keys()
+    return {
+        "interpretation": "Node keeps unchanged ingress values and adds normalized TIN operation fields; the full verified payload is not stored a second time.",
+        "statusScope": "Receiver record.status is work-queue state; addedFields.status is the inner TIN operation lifecycle state.",
+        "unchangedFields": sorted(key for key in common if ingress_full[key] == verified_full[key]),
+        "addedFields": {key: verified_full[key] for key in sorted(verified_full.keys() - ingress_full.keys())},
+        "changedFields": {
+            key: {"ingress": ingress_full[key], "nodeVerified": verified_full[key]}
+            for key in sorted(common) if ingress_full[key] != verified_full[key]
+        },
+        # Field names only: ingress-only values (such as the issuance proof)
+        # are not duplicated in the Node result or repeated here.
+        "removedFields": sorted(set(ingress.keys() if isinstance(ingress, dict) else ()) - verified_full.keys()),
+    }
+
+
+def reconstruct_verified_payload(record: dict[str, Any]) -> dict[str, Any]:
+    """Rebuild the Cranker-ready payload from ingress plus Node's delta."""
+    payload = dict(record.get("payload") or {})
+    delta = (record.get("verification") or {}).get("payloadDelta") or {}
+    for key in delta.get("removedFields", []):
+        payload.pop(key, None)
+    payload.update(delta.get("addedFields") or {})
+    for key, values in (delta.get("changedFields") or {}).items():
+        if isinstance(values, dict) and "nodeVerified" in values:
+            payload[key] = values["nodeVerified"]
+        else:
+            payload[key] = values
+    return payload
 
 
 def safe_record(record: Any, document_id: str) -> dict[str, Any] | None:
@@ -298,7 +348,6 @@ def safe_record(record: Any, document_id: str) -> dict[str, Any] | None:
         result[key] = safe_lease(record.get(key))
     if record.get("kind") == "TIN_OPERATION":
         result["payload"] = complete_tin_payload(record.get("payload"))
-        result["ingressPayloadSummary"] = ingress_payload_summary(record.get("payload"))
     verification = record.get("verification")
     if isinstance(verification, dict):
         scalar = (str, int, float, bool, type(None))
@@ -314,24 +363,23 @@ def safe_record(record: Any, document_id: str) -> dict[str, Any] | None:
                 for key in ("source", "owner", "leaseId", "expiresAt", "version", "workId", "kind", "stateVersion", "payloadCommitment")
                 if key in receiver_lease and isinstance(receiver_lease[key], scalar)
             }
-        verified_payload = verification.get("verifiedPayload")
-        if isinstance(verified_payload, dict):
-            safe_verification["verifiedPayload"] = complete_verified_tin_payload(verified_payload)
-            owner = verified_payload.get("ownerPubkey")
-            signature = verified_payload.get("ownerSignature")
-            encrypted_seed = verified_payload.get("encryptedMasterSeed")
-            safe_verification["verifiedPayloadSummary"] = {
-                "intentId": verified_payload.get("intentId"),
-                "intentType": verified_payload.get("intentType"),
-                "programAssigned": verified_payload.get("programAssigned"),
-                "ownerPubkey": owner if isinstance(owner, str) else None,
-                "ownerSignaturePresent": isinstance(signature, str) and bool(signature),
-                "ownerSignatureBytes": encoded_bytes_length(signature),
-                "displayName": verified_payload.get("displayName") if isinstance(verified_payload.get("displayName"), str) else None,
-                "encryptedMasterSeedPresent": isinstance(encrypted_seed, str) and bool(encrypted_seed),
-                "encryptedMasterSeedBytes": encoded_bytes_length(encrypted_seed),
-                "ownerIntentHash": verified_payload.get("ownerIntentHash"),
+        node_attestation = verification.get("nodeAttestation")
+        if isinstance(node_attestation, dict):
+            safe_verification["nodeAttestation"] = {
+                key: node_attestation[key]
+                for key in (
+                    "version", "algorithm", "workId", "workKind", "decision",
+                    "inputPayloadCommitment", "evidenceCommitment", "executionPayloadCommitment",
+                    "verificationType", "leaseId", "leaseVersion", "nodeId", "keyId",
+                    "signedAt", "signatureBase64",
+                )
+                if key in node_attestation and isinstance(node_attestation[key], scalar)
             }
+        verified_payload = verification.get("verifiedPayload")
+        if not isinstance(verified_payload, dict) and isinstance(verification.get("payloadDelta"), dict):
+            verified_payload = reconstruct_verified_payload(record)
+        if isinstance(verified_payload, dict):
+            safe_verification["payloadDelta"] = tin_payload_delta(record.get("payload"), verified_payload)
         if safe_verification:
             result["verification"] = safe_verification
     outcome = record.get("result")
@@ -392,29 +440,15 @@ def tin_stage_snapshots(receiver: dict[str, Any]) -> dict[str, Any] | None:
     record = next((item for item in records if isinstance(item, dict) and item.get("kind") == "TIN_OPERATION"), None)
     if not record:
         return None
-    received_at = record.get("receivedAt")
-    payload = record.get("ingressPayloadSummary") or {}
+    payload = record.get("payload") or {}
     verification = record.get("verification") or {}
     lease = verification.get("receiverLease") or {}
-    intent_fields = {
-        "intentType": payload.get("intentType"),
-        "programAssigned": payload.get("programAssigned"),
-        "ownerPubkey": payload.get("ownerPubkey"),
-        "displayName": payload.get("displayName"),
-        "ownerIntentHash": payload.get("ownerIntentHash"),
-        "ownerSignature": {"present": payload.get("ownerSignature", {}).get("present"),
-                           "encoding": "base64", "decodedBytes": payload.get("ownerSignature", {}).get("decodedBytes")},
-        "encryptedMasterSeed": {"present": payload.get("encryptedMasterSeed", {}).get("present"),
-                                "encoding": "base64", "decodedBytes": payload.get("encryptedMasterSeed", {}).get("decodedBytes")},
-    }
     compact_record = {
         key: record.get(key)
         for key in ("id", "kind", "status", "stateVersion", "payloadCommitment", "receivedAt", "updatedAt")
     }
     compact_record.update({"nodeLease": lease or None,
                            "verificationType": verification.get("verificationType"),
-                           "verification": verification,
-                           "payload": record.get("payload"),
                            "crankerLease": record.get("crankerLease"), "result": record.get("result")})
     before_node = {
         "captureType": "reconstructed-from-retained-receiver-ingress",
@@ -423,11 +457,8 @@ def tin_stage_snapshots(receiver: dict[str, Any]) -> dict[str, Any] | None:
         "status": "RECEIVED",
         "stateVersion": 1,
         "payloadCommitment": record.get("payloadCommitment"),
-        "updatedAt": received_at,
-        # The Receiver persists the accepted ingress body. It is the source for
-        # this reconstructed pre-Node snapshot; no separate ingress snapshot was
-        # retained, so the manifest labels the reconstruction explicitly.
-        "ingressPayload": record.get("payload"),
+        "ingressPayloadRef": "../receiver-evidence.json#/records/0/payload",
+        "requestFieldNames": sorted(payload),
         "nodeLease": None,
         "crankerLease": None,
         "verification": None,
@@ -437,12 +468,26 @@ def tin_stage_snapshots(receiver: dict[str, Any]) -> dict[str, Any] | None:
         "stage": "after-node-processing",
         "captureType": "observed-current-receiver-record",
         "record": compact_record,
+        "nodeDecisionRef": "../receiver-evidence.json#/records/0/verification",
+        "payloadDeltaRef": "../receiver-evidence.json#/records/0/verification/payloadDelta",
+        "payloadDeltaSummary": {
+            "unchangedFieldCount": len((verification.get("payloadDelta") or {}).get("unchangedFields", [])),
+            "addedFieldNames": sorted((verification.get("payloadDelta") or {}).get("addedFields", {})),
+            "changedFieldNames": sorted((verification.get("payloadDelta") or {}).get("changedFields", {})),
+            "removedFieldNames": (verification.get("payloadDelta") or {}).get("removedFields", []),
+        },
     }
     before_cranker = {
         "stage": "cranker-input-after-node-verification",
         "captureType": "observed-current-receiver-record",
         "eligibility": "ready" if record.get("status") == "VERIFIED" else "not-ready",
         "record": compact_record,
+        "effectivePayload": {
+            "reconstruction": "merge ingress payload with Node payload delta",
+            "ingressPayloadRef": "../receiver-evidence.json#/records/0/payload",
+            "payloadDeltaRef": "../receiver-evidence.json#/records/0/verification/payloadDelta",
+            "crankerFieldNames": sorted(cranker_tin_payload(reconstruct_verified_payload(record)) or {}),
+        },
     }
     if record.get("status") in {"CRANKER_LEASED", "SUBMITTED", "CONFIRMED", "FAILED"} or record.get("result"):
         after_cranker = {
@@ -473,7 +518,7 @@ def cranker_tin_payload(payload: Any) -> dict[str, Any] | None:
         return None
     keys = (
         "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature",
-        "ownerIntentHash", "expiry", "nonce", "displayName", "lookupCommitment",
+        "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "displayName", "lookupCommitment",
         "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
         "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce",
         "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
@@ -491,7 +536,8 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
         return None
     payload = work.get("payload") or {}
     verification = work.get("verification") or {}
-    verified_payload = verification.get("verifiedPayload") or {}
+    verified_payload = reconstruct_verified_payload(work)
+    payload_delta = verification.get("payloadDelta") or {}
     receiver_lease = verification.get("receiverLease") or {}
     cranker_lease = work.get("crankerLease")
     cranker_payload = cranker_tin_payload(verified_payload)
@@ -499,21 +545,21 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
     instruction_payload = None
     if cranker_payload and cranker_payload.get("intentType") == "tin_creation":
         instruction_payload = {
-            "ownerPubkey": cranker_payload.get("ownerPubkey"),
-            "displayName": cranker_payload.get("displayName"),
-            "encryptedMasterSeed": cranker_payload.get("encryptedMasterSeed"),
-            "encryptedMetadataHash": cranker_payload.get("encryptedMetadataHash"),
-            "pruConfigurationHash": "00" * 32 if program_assigned else cranker_payload.get("pruConfigurationHash"),
-            "encryptedPublicRouteEnvelope": "" if program_assigned else cranker_payload.get("encryptedPublicRouteEnvelope"),
-            "routeVersion": cranker_payload.get("routeVersion"),
-            "routeNonce": cranker_payload.get("routeNonce"),
-            "tcapRouteVersion": 1 if program_assigned else cranker_payload.get("tcapRouteVersion", 0),
-            "tcapRelationshipCommitment": cranker_payload.get("tcapRelationshipCommitment") if program_assigned else "00" * 32,
-            "tcapRelationshipReference": cranker_payload.get("tcapRelationshipReference") if program_assigned else "00" * 32,
-            "tcapPolicyCommitment": cranker_payload.get("tcapPolicyCommitment") if program_assigned else "00" * 32,
-            "nonce": cranker_payload.get("nonce"),
-            "intentHash": cranker_payload.get("ownerIntentHash"),
-            "expiryTs": cranker_payload.get("expiry"),
+            "ownerPubkey": "verifiedPayload.ownerPubkey",
+            "lookupCommitment": "verifiedPayload.lookupCommitment",
+            "encryptedIdentityEnvelope": "verifiedPayload.encryptedIdentityEnvelope",
+            "encryptedMasterSeed": "verifiedPayload.encryptedMasterSeed",
+            "encryptedMetadataHash": "verifiedPayload.encryptedMetadataHash",
+            "pruConfigurationHash": "verifiedPayload.pruConfigurationHash",
+            "encryptedPublicRouteEnvelope": "verifiedPayload.encryptedPublicRouteEnvelope",
+            "routeVersion": "verifiedPayload.routeVersion",
+            "routeNonce": "verifiedPayload.routeNonce",
+            "tcapRouteVersion": "verifiedPayload.tcapRouteVersion",
+            "tcapRelationshipCommitment": "verifiedPayload.tcapRelationshipCommitment",
+            "tcapRelationshipReference": "verifiedPayload.tcapRelationshipReference",
+            "tcapPolicyCommitment": "verifiedPayload.tcapPolicyCommitment",
+            "intentHash": "verifiedPayload.ownerIntentHash",
+            "expiryTs": "verifiedPayload.expiry",
         }
     node_expected_version = receiver_lease.get("stateVersion")
     if node_expected_version is not None:
@@ -521,14 +567,17 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
     return {
         "sdkToReceiver": {
             "captureStatus": "RECEIVER_RECORD_OBSERVED",
-            "request": {"method": "POST", "path": "/tin-operations", "body": payload},
+            "request": {
+                "method": "POST", "path": "/tin-operations",
+                "bodyRef": "receiver-evidence.json#/records/0/payload",
+                "bodyFieldNames": sorted(payload),
+            },
             "response": {
                 "id": work.get("id"), "kind": work.get("kind"), "statusAtIngress": "RECEIVED",
                 "stateVersionAtIngress": 1, "payloadCommitment": work.get("payloadCommitment"),
                 "receivedAt": work.get("receivedAt"),
             },
-            "reconstruction": "The retained record is now VERIFIED; ingress response fields are reconstructed from its immutable record and version history.",
-            "encryptedMasterSeedInspection": inspect_seed_envelope(payload.get("encryptedMasterSeed")),
+            "reconstruction": "The request body is stored once in receiver-evidence.json; this trace references it.",
         },
         "receiverToNode": {
             "captureStatus": "NODE_VERIFICATION_OBSERVED",
@@ -540,7 +589,8 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
             "leasedWork": {
                 "id": work.get("id"), "kind": work.get("kind"), "status": "NODE_VERIFYING",
                 "stateVersion": receiver_lease.get("stateVersion"),
-                "payloadCommitment": work.get("payloadCommitment"), "payload": payload,
+                "payloadCommitment": work.get("payloadCommitment"),
+                "payloadRef": "receiver-evidence.json#/records/0/payload",
                 "nodeLease": work.get("nodeLease"),
             },
             "leaseEvidenceReturnedByNode": receiver_lease,
@@ -552,11 +602,23 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 "bodyShape": {
                     "id": work.get("id"), "owner": "Node ID not retained in current Receiver record",
                     "expectedVersion": node_expected_version, "status": work.get("status"),
-                    "evidence": verification,
+                    "evidence": {
+                        "verificationType": verification.get("verificationType"),
+                        "receiverLease": receiver_lease,
+                        "payloadDeltaRef": "receiver-evidence.json#/records/0/verification/payloadDelta",
+                    },
                 },
             },
             "receiverRecordAfterPatch": {
-                key: work.get(key) for key in ("id", "kind", "status", "stateVersion", "payloadCommitment", "updatedAt", "nodeLease", "verification")
+                key: work.get(key) for key in ("id", "kind", "status", "stateVersion", "payloadCommitment", "updatedAt", "nodeLease")
+            },
+            "verificationType": verification.get("verificationType"),
+            "payloadDeltaRef": "receiver-evidence.json#/records/0/verification/payloadDelta",
+            "payloadDeltaSummary": {
+                "unchangedFieldCount": len(payload_delta.get("unchangedFields", [])),
+                "addedFieldNames": sorted(payload_delta.get("addedFields", {})),
+                "changedFieldNames": sorted(payload_delta.get("changedFields", {})),
+                "removedFieldNames": payload_delta.get("removedFields", []),
             },
         },
         "receiverToCranker": {
@@ -569,24 +631,29 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
             "lease": cranker_lease,
             "crankerWorkProjection": {
                 "id": work.get("id"), "kind": work.get("kind"), "status": work.get("status"),
-                "stateVersion": work.get("stateVersion"), "payload": {},
-                "verification": {"verificationType": verification.get("verificationType"), "verifiedPayload": cranker_payload},
+                "stateVersion": work.get("stateVersion"),
+                "payloadRef": "merge sdkToReceiver.request.bodyRef with nodeVerificationToReceiver.payloadDeltaRef",
+                "verifiedPayloadFieldNames": sorted(cranker_payload or {}),
             },
-            "projectionSource": "Receiver crankerWorkView allowlist applied to the Node-verified payload; no live Cranker claim is present in this record.",
+            "projectionSource": "Receiver crankerWorkView allowlist selects these fields from the reconstructed Node-verified payload; no live Cranker claim is present.",
         },
         "crankerToSolana": {
             "captureStatus": "NOT_CAPTURED",
-            "input": cranker_payload,
-            "encryptedMasterSeedInspection": inspect_seed_envelope(cranker_payload.get("encryptedMasterSeed") if cranker_payload else None),
-                "ownerProof": {
-                "program": "Ed25519Program", "publicKey": payload.get("ownerPubkey"),
-                "message": payload.get("ownerIntentHash"), "signature": payload.get("ownerSignature"),
+            "inputRef": "receiverToCranker.crankerWorkProjection.payloadRef",
+            "ownerProof": {
+                "program": "Ed25519Program",
+                "publicKeyRef": "receiver-evidence.json#/records/0/payload/ownerPubkey",
+                "messageFormat": cranker_payload.get("ownerSignatureMessageFormat") if cranker_payload else None,
+                "messageEncoding": "UTF-8" if cranker_payload and cranker_payload.get("ownerSignatureMessageFormat") == "readable-v1" else "hex",
+                "messageRef": "receiver-evidence.json#/records/0/payload/ownerIntentMessage",
+                "signatureRef": "receiver-evidence.json#/records/0/payload/ownerSignature",
+                "signatureBytes": encoded_bytes_length(payload.get("ownerSignature")),
             },
             "createTinInstruction": {
                 "programIdFallback": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
                 "programIdEnvironmentKey": "TINS_PROGRAM_ID",
-                "registryDerivation": "getTinsIdentityPda(ownerPubkey, programId)",
-                "serializedInstructionFields": instruction_payload,
+                "registryDerivation": "findProgramAddress([utf8(\"tin-v1\"), lookupCommitment], programId)",
+                "serializedInstructionFieldSources": instruction_payload,
                 "accountRoles": [
                     {"role": "cranker signer", "isSigner": True, "isWritable": True},
                     {"role": "TINS global state PDA", "isSigner": False, "isWritable": True},
@@ -690,7 +757,7 @@ def write_canvas(out: Path, path: Path, title: str, data: dict[str, Any], note: 
     if path.exists():
         path.unlink()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json_code_svg(title, data, note=note), encoding="utf-8")
+    path.write_text(json_code_svg(title, data, note=note), encoding="utf-8", newline="\n")
     return [str(path.relative_to(out)).replace("\\", "/")]
 
 
@@ -705,46 +772,33 @@ def write_stage_svgs(out: Path, stages: dict[str, Any]) -> list[str]:
     for filename, snapshot in stages.items():
         title, note = titles[filename]
         record = snapshot.get("record", snapshot)
-        payload = record.get("payload") or snapshot.get("ingressPayload") or {}
-        verification = record.get("verification") or {}
-        receiver_lease = verification.get("receiverLease") or {}
-        verified_payload = verification.get("verifiedPayload") or {}
         if filename == "01-before-node.json":
             data = {
                 "id": snapshot.get("id"), "kind": snapshot.get("kind"), "status": snapshot.get("status"),
                 "stateVersion": snapshot.get("stateVersion"), "payloadCommitment": snapshot.get("payloadCommitment"),
-                "payload": {
-                    key: payload.get(key) for key in (
-                        "intentType", "programAssigned", "ownerPubkey", "displayName", "ownerIntentHash",
-                        "nonce", "expiry", "encryptedMetadataHash", "pruConfigurationHash", "routeVersion",
-                        "routeNonce", "tcapRouteVersion", "tcapRelationshipCommitment",
-                        "tcapRelationshipReference", "tcapPolicyCommitment",
-                    ) if key in payload
-                },
-                "ownerSignature": {"encoding": "base64", "decodedBytes": encoded_bytes_length(payload.get("ownerSignature"))},
-                "encryptedMasterSeed": {"encoding": "base64", "decodedBytes": encoded_bytes_length(payload.get("encryptedMasterSeed"))},
+                "ingressPayloadRef": snapshot.get("ingressPayloadRef"),
+                "requestFieldNames": snapshot.get("requestFieldNames", []),
             }
-            note += " Full payload values are in 01-before-node.json."
+            note += " The request body appears once in receiver-evidence.json."
         elif filename in {"02-after-node.json", "03-before-cranker.json"}:
-            cranker_fields = cranker_tin_payload(verified_payload)
-            visible_cranker_fields = {
-                key: value for key, value in (cranker_fields or {}).items()
-                if key not in {"ownerSignature", "encryptedMasterSeed"}
-            }
-            visible_cranker_fields["ownerSignature"] = {
-                "encoding": "base64", "decodedBytes": encoded_bytes_length((cranker_fields or {}).get("ownerSignature"))
-            }
-            visible_cranker_fields["encryptedMasterSeed"] = {
-                "encoding": "base64", "decodedBytes": encoded_bytes_length((cranker_fields or {}).get("encryptedMasterSeed"))
-            }
-            data = {
-                "id": record.get("id"), "status": record.get("status"),
-                "stateVersion": record.get("stateVersion"), "payloadCommitment": record.get("payloadCommitment"),
-                "verificationType": verification.get("verificationType"),
-                "receiverLease": receiver_lease, "crankerLease": record.get("crankerLease"),
-                "verifiedPayload": visible_cranker_fields,
-            }
-            note += f" Full process payload and result are in {filename}."
+            if filename == "02-after-node.json":
+                data = {
+                    "id": record.get("id"), "status": record.get("status"),
+                    "stateVersion": record.get("stateVersion"), "payloadCommitment": record.get("payloadCommitment"),
+                    "verificationType": record.get("verificationType"),
+                    "receiverLease": record.get("nodeLease"),
+                    "payloadDeltaRef": snapshot.get("payloadDeltaRef"),
+                    "payloadDeltaSummary": snapshot.get("payloadDeltaSummary"),
+                }
+                note = "Receiver VERIFIED is work status; TIN pending_verification is operation status. Node delta is referenced, not copied."
+            else:
+                data = {
+                    "id": record.get("id"), "status": record.get("status"),
+                    "stateVersion": record.get("stateVersion"), "crankerLease": record.get("crankerLease"),
+                    "eligibility": snapshot.get("eligibility"),
+                    "effectivePayload": snapshot.get("effectivePayload"),
+                }
+                note = "Cranker input is reconstructed from the ingress body and Node delta; no second payload copy."
         else:
             observed_record = next((stage.get("record") for stage in stages.values()
                                     if isinstance(stage, dict) and isinstance(stage.get("record"), dict)), {})
@@ -771,8 +825,8 @@ def write_process_svgs(out: Path, process: dict[str, Any]) -> list[str]:
             "statusAtIngress": sdk["response"]["statusAtIngress"],
             "stateVersion": sdk["response"]["stateVersionAtIngress"],
             "payloadCommitment": sdk["response"]["payloadCommitment"],
-            "bodyFields": list((sdk["request"].get("body") or {}).keys()),
-        }, "Full request body is in process-boundaries.json and receiver-evidence.json."),
+            "bodyFieldNames": sdk["request"].get("bodyFieldNames", []),
+        }, "The request body is stored once in receiver-evidence.json."),
         ("02-receiver-to-node.svg", "02 · Receiver → Node lease", {
             "method": node_in["request"]["method"], "path": node_in["request"]["path"],
             "supportedKinds": node_in["request"]["bodyShape"]["supportedKinds"],
@@ -785,19 +839,21 @@ def write_process_svgs(out: Path, process: dict[str, Any]) -> list[str]:
             "workId": node_out["receiverRecordAfterPatch"]["id"],
             "status": node_out["receiverRecordAfterPatch"]["status"],
             "stateVersion": node_out["receiverRecordAfterPatch"]["stateVersion"],
-            "verificationType": (node_out["receiverRecordAfterPatch"].get("verification") or {}).get("verificationType"),
-            "verifiedPayloadFields": list(((node_out["receiverRecordAfterPatch"].get("verification") or {}).get("verifiedPayload") or {}).keys()),
-        }, "Complete verifiedPayload and evidence object are in process-boundaries.json."),
+            "verificationType": node_out.get("verificationType"),
+            "payloadDeltaRef": node_out.get("payloadDeltaRef"),
+            "payloadDeltaSummary": node_out.get("payloadDeltaSummary"),
+        }, "Ingress values live once in receiver-evidence.json; Node contributes the referenced delta."),
         ("04-receiver-to-cranker.svg", "04 · Receiver → Cranker lease", {
             "captureStatus": cranker_in["captureStatus"], "method": cranker_in["request"]["method"],
             "path": cranker_in["request"]["path"], "supportedKinds": cranker_in["request"]["body"]["supportedKinds"],
             "lease": cranker_in["lease"],
-            "crankerVerifiedPayloadFields": list((cranker_in["crankerWorkProjection"].get("verification") or {}).get("verifiedPayload", {}).keys()),
-        }, "No live Cranker claim is present; exact input projection is in process-boundaries.json."),
+            "payloadRef": cranker_in["crankerWorkProjection"].get("payloadRef"),
+            "crankerVerifiedPayloadFieldNames": cranker_in["crankerWorkProjection"].get("verifiedPayloadFieldNames", []),
+        }, "No live claim is present; the projection references ingress plus Node delta."),
         ("05-cranker-to-solana.svg", "05 · Cranker → Solana instruction", {
             "captureStatus": solana["captureStatus"], "programIdFallback": solana["createTinInstruction"]["programIdFallback"],
             "registryDerivation": solana["createTinInstruction"]["registryDerivation"],
-            "ownerProofMessage": solana["ownerProof"]["message"],
+            "ownerProof": solana["ownerProof"],
             "accountRoles": solana["createTinInstruction"]["accountRoles"],
             "rpcCommitment": solana["rpcCommitment"], "transactionSignature": solana["observedTransactionSignature"],
         }, "Instruction fields and values are in process-boundaries.json; no transaction is captured yet."),
@@ -817,12 +873,24 @@ def write_process_svgs(out: Path, process: dict[str, Any]) -> list[str]:
 def write_section_svgs(out: Path, health: dict[str, Any], receiver: dict[str, Any],
                        stages: dict[str, Any], args: argparse.Namespace) -> list[str]:
     record = next((item for item in receiver.get("records", []) if isinstance(item, dict)), {})
-    payload = record.get("ingressPayloadSummary", {})
+    payload = record.get("payload", {})
     verification = record.get("verification", {})
     lease = verification.get("receiverLease", {}) if isinstance(verification, dict) else {}
+    delta = verification.get("payloadDelta", {}) if isinstance(verification, dict) else {}
     verification_excerpt = {
         "verificationType": verification.get("verificationType") if isinstance(verification, dict) else None,
         "receiverLease": {key: lease.get(key) for key in ("source", "workId", "kind", "stateVersion", "payloadCommitment")},
+        "nodeAttestation": {
+            key: (verification.get("nodeAttestation") or {}).get(key)
+            for key in ("algorithm", "decision", "inputPayloadCommitment", "evidenceCommitment", "executionPayloadCommitment", "keyId", "signedAt", "signatureBase64")
+        } if isinstance(verification, dict) and isinstance(verification.get("nodeAttestation"), dict) else None,
+        "payloadDeltaRef": "../receiver-evidence.json#/records/0/verification/payloadDelta",
+        "payloadDeltaSummary": {
+            "preservedFieldCount": len(delta.get("unchangedFields", [])),
+            "addedFieldNames": sorted(delta.get("addedFields", {})),
+            "changedFieldNames": sorted(delta.get("changedFields", {})),
+            "removedFieldNames": delta.get("removedFields", []),
+        },
     }
     services = health.get("services", {})
     health_excerpt = {
@@ -834,15 +902,15 @@ def write_section_svgs(out: Path, health: dict[str, Any], receiver: dict[str, An
         ("01-product-readiness.svg", "01 · Service health", {"network": "solana-devnet", "services": health_excerpt}, "Live endpoint snapshot."),
         ("02-wallet-context.svg", "02 · Owner identity", {
             "ownerPubkey": payload.get("ownerPubkey"), "displayName": payload.get("displayName"),
-            "walletAuthorization": "owner signature present" if payload.get("ownerSignature", {}).get("present") else "not captured",
+            "walletAuthorization": "owner signature present" if payload.get("ownerSignature") else "not captured",
         }, "Selected public identity fields from the signed TIN intent."),
         ("03-create-tin-intent.svg", "03 · SDK TIN intent", {
             "intentType": payload.get("intentType"), "programAssigned": payload.get("programAssigned"),
             "ownerPubkey": payload.get("ownerPubkey"), "displayName": payload.get("displayName"),
-            "ownerIntentId": verification.get("verifiedPayloadSummary", {}).get("intentId"),
+            "ownerIntentId": payload.get("intentId"),
             "ownerIntentHash": payload.get("ownerIntentHash"),
-            "ownerSignature": {"encoding": "base64", "decodedBytes": payload.get("ownerSignature", {}).get("decodedBytes")},
-            "encryptedMasterSeed": {"encoding": "base64", "decodedBytes": payload.get("encryptedMasterSeed", {}).get("decodedBytes")},
+            "ownerSignature": {"encoding": "base64", "decodedBytes": encoded_bytes_length(payload.get("ownerSignature"))},
+            "encryptedMasterSeed": {"encoding": "base64", "decodedBytes": encoded_bytes_length(payload.get("encryptedMasterSeed"))},
         }, "Selected fields from the accepted Receiver payload; opaque signature and ciphertext omitted."),
         ("04-receiver-ingress.svg", "04 · Receiver ingress", {
             key: record.get(key) for key in ("id", "kind", "status", "stateVersion", "payloadCommitment", "receivedAt")
@@ -971,6 +1039,7 @@ def main() -> int:
                                     "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
                                     "tsn-protocol/services/tsn-node/server.py",
                                     "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+                                    "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/processor/create_tin_v1.rs",
                                 ],
                                 "paths": {"flowCatalog": os.path.relpath(catalog_path, out).replace("\\", "/")}}
     health = health_snapshot(args)
@@ -979,7 +1048,7 @@ def main() -> int:
     receiver = receiver_snapshot(args.store, args.receiver_work_id)
     manifest["receiverWorkId"] = receiver.get("selectedReceiverWorkId")
     selected_record = next((item for item in receiver.get("records", []) if isinstance(item, dict)), {})
-    manifest["ownerIntentId"] = (selected_record.get("verification") or {}).get("verifiedPayloadSummary", {}).get("intentId")
+    manifest["ownerIntentId"] = (selected_record.get("payload") or {}).get("intentId")
     write_json(out / "receiver-evidence.json", receiver)
     manifest["paths"]["receiver"] = "receiver-evidence.json"
     stages = tin_stage_snapshots(receiver)

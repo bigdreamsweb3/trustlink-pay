@@ -8,7 +8,7 @@ import { app } from "./firebase";
  */
 export async function publishCrankerWake(reason: string): Promise<void> {
   const databaseURL = process.env.FIREBASE_DATABASE_URL?.trim();
-  if (!databaseURL) return;
+  if (!databaseURL || !app) return;
 
   try {
     await getDatabase(app).ref("tsn/crankerWake").set({

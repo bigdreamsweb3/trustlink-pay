@@ -26,6 +26,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -98,6 +99,7 @@ TSN_RECEIVER_FALLBACK_URL = clean_env(os.environ.get(
 ))
 TSN_RECEIVER_NODE_API_KEY = clean_env(os.environ.get("TSN_RECEIVER_NODE_API_KEY"))
 TSN_NODE_ID = clean_env(os.environ.get("TSN_NODE_ID", "tsn-node-local"))
+TSN_NODE_VERIFICATION_SIGNING_KEY = clean_env(os.environ.get("TSN_NODE_VERIFICATION_SIGNING_KEY"))
 TSN_LOCAL_FLOW_LOGS = os.environ.get("TSN_LOCAL_FLOW_LOGS", "").strip().lower() in {"1", "true", "yes", "on"} or TSN_NODE_ID == "tsn-node-local"
 # The Receiver wakes this event after durable work is committed. The Node does
 # not poll while the event is clear; it only drains the authenticated queue
@@ -145,7 +147,7 @@ _tin_fee_config_cache_expires_at = 0.0
 
 
 TSN_RPC_GATEWAY_URL = clean_env(
-    os.environ.get("TSN_RPC_GATEWAY_URL"),
+    os.environ.get("TSN_RPC_URL") or os.environ.get("TSN_RPC_GATEWAY_URL"),
     "https://tsn-rpc-gateway.vercel.app",
 ).rstrip("/")
 # All Node on-chain reads, including replay and settlement authorization
@@ -372,6 +374,97 @@ def get_settlement_authorization_signing_key() -> SigningKey:
         "TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY",
     )
     return SigningKey(secret[:32])
+
+
+def _stable_verification_json(value: Any) -> str:
+    """Match Receiver stable JSON for signing Node verification evidence."""
+    if isinstance(value, dict):
+        return "{" + ",".join(
+            json.dumps(str(key), ensure_ascii=False) + ":" + _stable_verification_json(child)
+            for key, child in sorted(value.items(), key=lambda item: str(item[0]))
+        ) + "}"
+    if isinstance(value, (list, tuple)):
+        return "[" + ",".join(_stable_verification_json(child) for child in value) + "]"
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return "null"
+        if value == 0:
+            return "0"
+        rendered = repr(value).lower()
+        magnitude = abs(value)
+        if 1e-6 <= magnitude < 1e21:
+            decimal = format(Decimal(rendered), "f")
+            return decimal.rstrip("0").rstrip(".") if "." in decimal else decimal
+        if "e" in rendered:
+            mantissa, exponent = rendered.split("e", 1)
+            exponent_value = int(exponent)
+            sign = "+" if exponent_value >= 0 else "-"
+            return f"{mantissa}e{sign}{abs(exponent_value)}"
+        return rendered
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _node_verification_signing_key() -> SigningKey:
+    secret = decode_secret_key(
+        TSN_NODE_VERIFICATION_SIGNING_KEY,
+        {32, 64},
+        "TSN_NODE_VERIFICATION_SIGNING_KEY",
+    )
+    return SigningKey(secret[:32])
+
+
+def _node_verification_message(attestation: dict[str, Any]) -> bytes:
+    fields = (
+        "version", "workId", "workKind", "decision", "inputPayloadCommitment",
+        "evidenceCommitment", "executionPayloadCommitment", "verificationType", "leaseId", "leaseVersion",
+        "nodeId", "keyId", "signedAt",
+    )
+    values = [str(attestation.get(field) or "") for field in fields]
+    if any("\n" in value or "\r" in value for value in values):
+        raise ValueError("Node verification attestation contains an invalid field")
+    return ("TSN_NODE_VERIFICATION_V1\n" + "\n".join(values)).encode("utf-8")
+
+
+def _sign_node_verification(
+    *, work: dict[str, Any], status: str, evidence: dict[str, Any], verification_type: str,
+) -> dict[str, Any]:
+    key = _node_verification_signing_key()
+    public_key = bytes(key.verify_key)
+    lease = work.get("nodeLease") or {}
+    verified_payload = evidence.get("verifiedPayload")
+    if status == "VERIFIED" and isinstance(verified_payload, dict):
+        allowed = {
+            "AUTHORIZED_FUNDING": {"senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode"},
+            "TIN_OPERATION": {
+                "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash",
+                "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "displayName",
+                "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
+                "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce",
+                "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
+            },
+        }.get(str(work.get("kind") or ""), set())
+        execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
+    else:
+        execution_payload = {}
+    attestation: dict[str, Any] = {
+        "version": 1,
+        "algorithm": "Ed25519",
+        "workId": str(work.get("id") or ""),
+        "workKind": str(work.get("kind") or ""),
+        "decision": status,
+        "inputPayloadCommitment": str(work.get("payloadCommitment") or "").lower(),
+        "evidenceCommitment": hashlib.sha256(_stable_verification_json(evidence).encode("utf-8")).hexdigest(),
+        "executionPayloadCommitment": hashlib.sha256(_stable_verification_json(execution_payload).encode("utf-8")).hexdigest(),
+        "verificationType": verification_type,
+        "leaseId": str(lease.get("leaseId") or ""),
+        "leaseVersion": int(lease.get("version") or work.get("stateVersion") or 0),
+        "nodeId": TSN_NODE_ID,
+        "keyId": hashlib.sha256(public_key).hexdigest()[:24],
+        "signedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
+    attestation["signatureBase64"] = base64.b64encode(key.sign(_node_verification_message(attestation)).signature).decode("ascii")
+    attestation["signerPublicKeyBase64"] = base64.b64encode(public_key).decode("ascii")
+    return attestation
 
 def settlement_authorization_signer_pubkey() -> str:
     return encode_base58(bytes(get_settlement_authorization_signing_key().verify_key))
@@ -1709,6 +1802,7 @@ class TinOperationRecord(BaseModel):
     ownerSignature: str
     ownerIntentHash: str
     ownerIntentMessage: Optional[str] = None
+    ownerSignatureMessageFormat: Optional[Literal["readable-v1", "hash-v1"]] = None
     nonce: str
     expiry: int
     createdAt: str
@@ -2571,17 +2665,22 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         ).digest()
         if not secrets.compare_digest(expected_issuance_proof, issuance_proof):
             raise HTTPException(401, "TIN V1 lookup issuance proof is invalid")
-    # Browser wallets commonly reject arbitrary binary payloads for
-    # signMessage.  Accept the exact 32-byte commitment for low-level
-    # signers, or the deterministic printable wrapper used by the frontend.
-    # In both cases the signature is still bound to the recomputed hash above.
+    # The wallet signs the deterministic, printable wrapper so the approval
+    # prompt is readable. Keep accepting legacy signatures over the raw hash
+    # while old intents are draining from the Receiver queue.
+    owner_signature_message_format = "hash-v1"
+    canonical_owner_message = _canonical_tin_owner_intent_message(intent_hash_bytes)
     if owner_intent_message:
-        if owner_intent_message.encode("utf-8") != _canonical_tin_owner_intent_message(intent_hash_bytes):
-            raise HTTPException(422, "ownerIntentMessage must be the canonical TIN upgrade message")
+        if owner_intent_message.encode("utf-8") != canonical_owner_message:
+            raise HTTPException(422, "ownerIntentMessage must be the canonical TIN owner approval message")
     try:
-        VerifyKey(owner_bytes).verify(intent_hash_bytes, signature_bytes)
-    except BadSignatureError as exc:
-        raise HTTPException(401, "owner_signature is invalid for owner_intent_hash") from exc
+        VerifyKey(owner_bytes).verify(canonical_owner_message, signature_bytes)
+        owner_signature_message_format = "readable-v1"
+    except BadSignatureError:
+        try:
+            VerifyKey(owner_bytes).verify(intent_hash_bytes, signature_bytes)
+        except BadSignatureError as exc:
+            raise HTTPException(401, "owner_signature is invalid for the canonical TIN approval message") from exc
 
     fee_amount = _field(
         payload,
@@ -2606,7 +2705,8 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "ownerPubkey": owner_pubkey,
         "ownerSignature": owner_signature,
         "ownerIntentHash": owner_intent_hash.lower(),
-        "ownerIntentMessage": owner_intent_message or None,
+        "ownerIntentMessage": canonical_owner_message.decode("utf-8"),
+        "ownerSignatureMessageFormat": owner_signature_message_format,
         "nonce": nonce.lower(),
         "expiry": expiry,
         "createdAt": now_iso,
@@ -2642,6 +2742,36 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "updateFeeAmount": str(fee_amount) if intent_type == "tin_update" else None,
         "updateFeeMint": fee_mint if intent_type == "tin_update" else None,
         **({"_pruRoute": pru_route} if pru_route else {}),
+    }
+    base["displayNameStatus"] = (
+        "opaque_to_node"
+        if intent_type == "tin_creation" and encrypted_identity_envelope_bytes
+        else "plaintext_verified" if display_name else "not_available_to_node"
+    )
+    base["displayNameReadableByNode"] = bool(display_name)
+    base["envelopeChecks"] = {
+        "ownerAuthorization": {
+            "intentHashVerified": True,
+            "signatureVerified": True,
+        },
+        "encryptedIdentityEnvelope": {
+            "present": bool(encrypted_identity_envelope_bytes),
+            "base64Decoded": bool(encrypted_identity_envelope_bytes),
+            "includedInOwnerIntentHash": True,
+            "ciphertextOpenedByNode": False,
+        },
+        "encryptedMasterSeed": {
+            "present": bool(encrypted_master_seed_bytes),
+            "base64Decoded": bool(encrypted_master_seed_bytes),
+            "includedInOwnerIntentHash": True,
+            "ciphertextOpenedByNode": False,
+        },
+        "encryptedPublicRouteEnvelope": {
+            "present": bool(encrypted_public_route_envelope_bytes),
+            "base64Decoded": bool(encrypted_public_route_envelope_bytes),
+            "includedInOwnerIntentHash": True,
+            "ciphertextOpenedByNode": pru_route is not None,
+        },
     }
     return base
 
@@ -3472,6 +3602,12 @@ async def receiver_verification_worker() -> None:
                         logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
                         evidence = {"reason": str(exc)[:500], "receiverLease": lease_context}
                         status = "REJECTED"
+                    evidence["nodeAttestation"] = _sign_node_verification(
+                        work=work,
+                        status=status,
+                        evidence=evidence,
+                        verification_type=str(evidence.get("verificationType") or ""),
+                    )
                     result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
                         "id": work["id"],
                         "owner": TSN_NODE_ID,
@@ -3521,12 +3657,39 @@ async def _receiver_work_by_id(work_id: str) -> dict[str, Any]:
         raise HTTPException(422, "Receiver returned malformed work")
     return work
 
+
+def _receiver_verified_payload(work: dict[str, Any]) -> dict[str, Any] | None:
+    verification = work.get("verification") or {}
+    verified = verification.get("verifiedPayload")
+    if isinstance(verified, dict):
+        return dict(verified)
+    delta = verification.get("payloadDelta")
+    if not isinstance(delta, dict):
+        return None
+    payload = dict(work.get("payload") or {})
+    for key in delta.get("removedFields") or []:
+        payload.pop(str(key), None)
+    payload.update(delta.get("addedFields") or {})
+    for key, value in (delta.get("changedFields") or {}).items():
+        if isinstance(value, dict) and "nodeVerified" in value:
+            payload[key] = value["nodeVerified"]
+        else:
+            payload[key] = value
+    return payload
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialise the configured mempool store.
     await get_store()
     if not TSN_RECEIVER_NODE_API_KEY and not MEMPOOL_API_KEY:
         raise RuntimeError("TSN Node service credential is not configured")
+    if TSN_RECEIVER_URL and TSN_RECEIVER_NODE_API_KEY:
+        try:
+            _node_verification_signing_key()
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "TSN Node verification signing key is required when the Receiver worker is enabled"
+            ) from exc
     if not TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY:
         logger.warning("TSN settlement authorization signing is disabled until its signing key is configured")
     if not TSN_ROUTE_DECRYPTION_PRIVATE_KEY:
@@ -3615,7 +3778,7 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     intent_work = await _receiver_work_by_id(intent_id)
     if intent_work.get("kind") != "AUTHORIZED_FUNDING" or intent_work.get("status") != "CONFIRMED":
         raise HTTPException(409, "Payment intent is not confirmed for payout")
-    verified = (intent_work.get("verification") or {}).get("verifiedPayload")
+    verified = _receiver_verified_payload(intent_work)
     if not isinstance(verified, dict):
         raise HTTPException(422, "Payment has no verified route authorization")
     token_mint_text = str(verified.get("tokenMintAddress") or "")

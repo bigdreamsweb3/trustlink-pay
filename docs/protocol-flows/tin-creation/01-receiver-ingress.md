@@ -50,6 +50,13 @@ display name stay out of this Receiver payload. `TinV1Account` does not assign
 the TIN; it initializes the commitment-derived registry account after the
 Cranker submits the signed `CreateTinV1` instruction.
 
+The display name is included with the TIN inside the encrypted identity
+envelope. The SDK submission does not send it as a plaintext `displayName`
+field, and the Node rejects that field for private TIN creation. The on-chain
+account stores the envelope, not a public display-name string. After finality,
+the owner XP resolves the name from the confirmed registry through the SDK and
+displays that result in the identity pass.
+
 Receiver ingress accepts the SDK-generated object with these fields:
 
 | Field                          | Type    | Encoding                             |
@@ -82,6 +89,24 @@ commitment with the work. It must not store or accept the plaintext TIN,
 display name, or `TINS_LOOKUP_SECRET`. Node verification checks the
 length-prefixed intent hash, raw Ed25519 signature, expiry, TCap commitments,
 and HMAC issuance proof; the Receiver does not make those protocol decisions.
+
+## Stored Verification Shape
+
+The Receiver stores each work intent once in `payload`. When the Node returns
+`verifiedPayload`, the Receiver compares it with the durable payload shape and
+stores only `verification.payloadDelta` alongside the Node decision. The delta
+contains `addedFields`, `changedFields`, and field names in `removedFields`;
+unchanged values remain in `payload`. This applies to every Node-verified work
+kind in local JSON and Firestore. For funding work, the comparison uses the
+redacted durable summary that replaces its encrypted ingress envelope. The
+Cranker endpoint reconstructs the verified view for its allowlisted execution
+projection, and the Node can reconstruct confirmed funding context from the
+delta. Legacy records with a full `verification.verifiedPayload` remain readable.
+
+The local JSON Receiver compacts existing work records with the legacy shape
+when its storage module starts. This migration changes only the duplicate
+verification payload; work status, leases, result, authorization, timestamps,
+and durable payload remain intact.
 
 ## Current Wiring
 

@@ -25,10 +25,10 @@ No webhook group is listed because the scanned source does not expose a consumer
 | --- | --- | --- |
 | TSN Node | `http://127.0.0.1:8000` | Configure a deployment URL; no hard-coded public Node URL is declared in `server.py`. |
 | Receiver | Configure `TSN_RECEIVER_PUBLIC_URL` | Configure a deployment URL; the Node source treats it as environment configuration. |
-| Solana RPC gateway | `http://127.0.0.1:8787` | `https://tsn-rpc-gateway.vercel.app/` |
-| Solana WebSocket gateway | `ws://127.0.0.1:8787/ws` | Same gateway host with `/ws`. |
+| Solana RPC | Configure `TSN_RPC_URL`; defaults to the TSN gateway | `https://tsn-rpc-gateway.vercel.app/` |
+| Solana WebSocket gateway | Configure the gateway's `/ws` endpoint | Same gateway host with `/ws`. |
 
-The SDK chooses local endpoints before live endpoints when both are supplied to `getTsnNetworkStatus`. Applications should use the gateway URL rather than embedding an upstream Solana provider URL.
+The SDK may select local Node and Receiver endpoints before live endpoints. Solana RPC calls use one TSN gateway endpoint; applications should not embed an upstream provider or configure an RPC fallback.
 
 ## Versioning and evidence
 

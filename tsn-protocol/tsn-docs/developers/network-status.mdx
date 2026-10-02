@@ -5,10 +5,10 @@ description: "Use the TSN SDK to select reachable services and prevent an applic
 ---
 
 Payment applications should check TSN service availability before asking a
-wallet to sign. The SDK makes the endpoint-selection decision. An application
-or Dapp only supplies optional local and live candidates; the SDK probes each
-service, selects a healthy local candidate first, and falls back to the live
-candidate when local is unavailable.
+wallet to sign. The SDK makes the endpoint-selection decision. Node and
+Receiver may use healthy local endpoints before their live services. Solana
+requests use one configured TSN RPC gateway; if it is unavailable, the SDK
+reports RPC offline and stops without switching to another endpoint.
 
 ```ts
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
@@ -17,7 +17,6 @@ const status = await getTsnNetworkStatus({
   local: {
     node: "http://127.0.0.1:8000",
     receiver: "http://127.0.0.1:8010",
-    rpc: "http://127.0.0.1:8787",
   },
   live: {
     node: process.env.TSN_NODE_URL ?? null,
@@ -34,17 +33,17 @@ console.log(status.selected);
 ```
 
 Environment variables belong to the application that calls the SDK. The SDK
-does not read a Dapp's `.env` files directly. For example, a Dapp can map
-`TSN_LOCAL_NODE_URL`, `TSN_LOCAL_RECEIVER_URL`, and `TSN_LOCAL_RPC_URL` into the
-`local` object, then pass `TSN_NODE_URL`, `TSN_RECEIVER_URL`, and
-`TSN_RPC_GATEWAY_URL` into `live`. The SDK still performs the health checks and
-returns the selected source; the Dapp only renders that result and uses the
-selected endpoints for subsequent SDK calls.
+does not read a Dapp's `.env` files directly. A Dapp can map
+`TSN_LOCAL_NODE_URL` and `TSN_LOCAL_RECEIVER_URL` into `local`, then pass
+`TSN_NODE_URL` and `TSN_RECEIVER_URL` into `live`. Pass the preferred Solana
+RPC as `live.rpc` (or `local.rpc` if it is the only configured choice); the
+SDK reports its source as `configured` because the endpoint may be local,
+hosted, or another RPC selected by the application.
 
-The selected RPC URL is the RPC endpoint the application should pass to the
-SDK transaction and route helpers. In the prototype UI, the live gateway is
-`https://tsn-rpc-gateway.vercel.app`. It is used only after the local RPC
-probe fails, so status checks and transaction preparation use the same source.
+Set `TSN_RPC_URL` to the application's preferred endpoint. The default is
+`https://tsn-rpc-gateway.vercel.app`; status checks and transaction helpers use
+the same endpoint. An unavailable endpoint blocks Solana actions instead of
+silently switching to another RPC.
 
 The result reports the selected source for each service, route count, and the
 number of online Crankers reported by the Node. A Cranker is a worker rather

@@ -33,12 +33,25 @@ proof before marking the work eligible for Cranker processing.
 1. The XP backend generates a random TIN and derives its keyed lookup PDA.
 2. It checks Devnet for an existing account at that PDA and retries if occupied.
 3. The SDK encrypts the TIN and display name, then builds the V1 owner intent.
-4. The wallet signs the exact 32-byte intent hash used by the on-chain program.
+4. The wallet signs the deterministic UTF-8 owner-approval message. That
+   message contains the 32-byte intent hash in hex; the program verifies the
+   same message through the Ed25519 instruction immediately before creation.
 5. The SDK submits the commitment, ciphertext, proof, and signature to Receiver.
 6. The Node verifies the Receiver work; the Cranker serializes and submits
    `CreateTinV1`.
-7. The XP backend reveals the generated TIN to the same wallet session only
-   after Receiver reports the Cranker transaction as confirmed.
+7. The XP backend reveals the generated TIN to the issuing browser session only
+   after Receiver reports the Cranker transaction as confirmed and the SDK
+   resolves the registry identity. Reconnecting a wallet does not currently
+   recover a TIN automatically; the registry is not publicly enumerable by
+   wallet.
+
+If the complete transaction fits Solana's 1,232-byte packet limit, the Cranker
+submits one creation transaction. Larger payloads use the on-chain staging
+account: initialize an intent-bound stage, append encrypted blobs in chunks of
+at most 700 bytes, then finalize with the owner proof and `CreateTinV1` checks.
+The finalization signature, rather than a staging signature, proves registry
+creation. See the [TIN V1 flow guide](/developers/private-tin-issuance) for the
+service-by-service lifecycle.
 
 The intent hash covers the owner, lookup commitment, length-prefixed encrypted
 blobs, metadata and route commitments, route nonce, and expiry. The Rust
@@ -80,10 +93,11 @@ await submitTinV1Creation({
 });
 ```
 
-The signature must cover the raw 32-byte intent hash because the Cranker
-places that exact signature in the Ed25519 verification instruction consumed
-by `CreateTinV1`. A printable intent message may be shown for review, but its
-signature is not interchangeable with the on-chain proof.
+The signature covers the SDK's canonical UTF-8 approval message, which binds
+the readable approval to the exact intent hash. The Cranker places that same
+message and signature in the Ed25519 verification instruction consumed by
+`CreateTinV1`; a signature over the raw hash or a different message is not
+interchangeable.
 
 ## Resolve a TIN and prepare a transfer
 

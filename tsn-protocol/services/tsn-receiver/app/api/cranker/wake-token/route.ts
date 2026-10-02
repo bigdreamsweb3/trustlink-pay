@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       );
     }
+    if (!app) {
+      return NextResponse.json(
+        { error: "Realtime Database wake authentication is unavailable with the local JSON store" },
+        { status: 503 },
+      );
+    }
 
     const customToken = await getAuth(app).createCustomToken(crankerId, {
       role: "cranker",

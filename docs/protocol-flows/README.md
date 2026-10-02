@@ -42,29 +42,42 @@ confirmed and the resulting Solana account is decoded.
 | Browser -> SDK -> Receiver ingress | [01 Receiver ingress](tin-creation/01-receiver-ingress.md)   | Receiver stores `RECEIVED` work              |
 | Receiver -> Node verification      | [02 Node verification](tin-creation/02-node-verification.md) | Node returns verified work to Receiver       |
 | Receiver -> Cranker lease          | [03 Cranker lease](tin-creation/03-cranker-lease.md)          | Cranker owns a valid lease                   |
-| Cranker -> Solana                  | Pending: `tin-creation/04-onchain-finalization.md`           | Confirmed transaction and identity PDA       |
-| Final state and evidence           | Pending: `tin-creation/05-evidence.md`                       | Assigned 10-digit TIN and explorer signature |
+| Cranker -> Solana                  | [04 On-chain finalization](tin-creation/04-onchain-finalization.md) | Confirmed transaction and identity PDA  |
+| Final state and evidence           | [05 Evidence](tin-creation/05-evidence.md)                    | Confirmed operation and decoded TIN V1 account |
 
-The current handoff document contains the complete browser-to-Node contract and
-identifies the remaining owner-proof compatibility decision before Cranker
-execution. It documents the path that currently works, not yet the desired
-Receiver-first production path.
+The TIN V1 flow is wired through Receiver ingress, Node verification, Cranker
+submission, and the staged on-chain creation path. The individual stage guides
+are the operational source of truth; older direct-Node and program-assigned
+descriptions elsewhere in the repository are historical and must not be used
+for new TIN issuance.
 
-### Current TIN creation exception
+### Receiver-first ingress and retained payloads
 
-The protocol test UI currently submits TIN creation directly to the Node's
-`POST /tin-operations` endpoint. This is why the UI can receive an `intentId`
-without a Receiver work ID.
-
-The Receiver implements the work states needed for the intended path:
+The TSN XP uses the SDK to submit owner-authorized TIN work to the Receiver.
+Only the Node's authenticated worker leases it for verification; the browser
+does not submit directly to the Node. The Receiver work states are:
 
 ```text
 TIN_OPERATION -> RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED
 ```
 
-However, the TIN creation UI and SDK submission route must be changed to post to
-the Receiver's authenticated `tin-operations` proxy first. Until that wiring
-is implemented, do not document Node acceptance as Receiver acceptance.
+For Node-verified work, the Receiver stores the durable ingress payload once and
+records a verification delta plus a signed Node attestation. The attestation
+binds the decision to the work ID/kind, ingress commitment, verification
+evidence commitment, execution-payload commitment, and active Node lease. The
+Receiver checks the signature before accepting the decision; the Cranker checks
+it again against the exact execution payload before submission. The Cranker
+projection reconstructs the verified view from the payload and delta. Local
+JSON records using the legacy duplicated shape are compacted when the Receiver
+storage module loads.
+
+For private TIN creation, the display name and TIN travel inside the encrypted
+identity envelope. Receiver work and the on-chain account contain ciphertext,
+not the plaintext TIN or display name. After finality, the XP can resolve the
+identity with the protected lookup secret. The current UI presents the TIN in
+the issuing browser session; reconnecting a wallet does not yet perform a
+wallet-to-TIN reverse lookup, because the registry intentionally does not
+expose an enumerable owner index.
 
 ## Recommended Files
 

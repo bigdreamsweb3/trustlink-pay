@@ -20,6 +20,7 @@ const TINS_IDENTITY_SEED = Buffer.from("identity");
 const TINS_REGISTRY_SEED = Buffer.from("registry");
 const TINS_PLATFORM_REGISTRY_SEED = Buffer.from("platform-registry");
 const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
+const TINS_V1_CREATE_STAGE_SEED = Buffer.from("tin-v1-create-stage");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -494,10 +495,9 @@ function appendI64(parts: Buffer[], value: bigint | number) {
  * Build the wallet-displayable message for a TIN owner intent.
  *
  * Solana wallets such as Phantom intentionally reject arbitrary binary
- * messages that look like a transaction payload.  The owner commitment is
- * still the exact 32-byte `intentHash`; this wrapper only gives the wallet a
- * stable UTF-8 representation to display and sign.  Verifiers bind the
- * signature to the same hash before accepting the operation.
+ * messages that look like a transaction payload. The owner commitment stays
+ * the exact 32-byte `intentHash`; the wallet signs this deterministic UTF-8
+ * wrapper, and verifiers bind it to the recomputed commitment.
  */
 export function buildTinOwnerIntentMessage(
   intentHash: Buffer | Uint8Array,
@@ -829,6 +829,103 @@ export function serializeTinUpdateStagedParams(params: {
   return encodeInstruction(16, [
     requireHash32(params.intentHash, "intentHash"),
   ]);
+}
+
+export function getTinV1CreationStagingPda(
+  ownerPubkey: PublicKey,
+  intentHash: Buffer | Uint8Array,
+  programId = new PublicKey(DEFAULT_TIP_PROGRAM_ID),
+) {
+  return PublicKey.findProgramAddressSync(
+    [
+      TINS_V1_CREATE_STAGE_SEED,
+      ownerPubkey.toBuffer(),
+      requireHash32(intentHash, "intentHash"),
+    ],
+    programId,
+  )[0];
+}
+
+/** Serialize instruction 19: initialize a bounded, intent-bound TIN V1 stage. */
+export function serializeTinV1CreationStageParams(params: {
+  ownerPubkey: PublicKey;
+  lookupCommitment: Buffer | Uint8Array;
+  intentHash: Buffer | Uint8Array;
+  encryptedIdentityEnvelopeLength: number;
+  encryptedMasterSeedLength: number;
+  encryptedPublicRouteEnvelopeLength: number;
+  encryptedMetadataHash: Buffer | Uint8Array;
+  pruConfigurationHash: Buffer | Uint8Array;
+  routeVersion: bigint | number;
+  routeNonce: Buffer | Uint8Array;
+  tcapRouteVersion: number;
+  tcapRelationshipCommitment: Buffer | Uint8Array;
+  tcapRelationshipReference: Buffer | Uint8Array;
+  tcapPolicyCommitment: Buffer | Uint8Array;
+  expiryTs: bigint | number;
+}) {
+  for (const [field, value, required] of [
+    ["encryptedIdentityEnvelopeLength", params.encryptedIdentityEnvelopeLength, true],
+    ["encryptedMasterSeedLength", params.encryptedMasterSeedLength, true],
+    ["encryptedPublicRouteEnvelopeLength", params.encryptedPublicRouteEnvelopeLength, false],
+  ] as const) {
+    if (!Number.isSafeInteger(value) || (required ? value <= 0 : value < 0)) {
+      throw new Error(`${field} is invalid`);
+    }
+  }
+  const parts: Buffer[] = [];
+  appendPubkey(parts, params.ownerPubkey);
+  parts.push(
+    requireHash32(params.lookupCommitment, "lookupCommitment"),
+    requireHash32(params.intentHash, "intentHash"),
+  );
+  appendU32(parts, params.encryptedIdentityEnvelopeLength);
+  appendU32(parts, params.encryptedMasterSeedLength);
+  appendU32(parts, params.encryptedPublicRouteEnvelopeLength);
+  parts.push(
+    requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
+    requireHash32(params.pruConfigurationHash, "pruConfigurationHash"),
+  );
+  appendU64(parts, params.routeVersion);
+  parts.push(requireHash32(params.routeNonce, "routeNonce"));
+  appendU8(parts, params.tcapRouteVersion);
+  parts.push(
+    requireHash32(params.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
+    requireHash32(params.tcapRelationshipReference, "tcapRelationshipReference"),
+    requireHash32(params.tcapPolicyCommitment, "tcapPolicyCommitment"),
+  );
+  appendI64(parts, params.expiryTs);
+  return encodeInstruction(19, parts);
+}
+
+/** Serialize instruction 20: append one bounded encrypted-data chunk. */
+export function serializeTinV1CreationChunkParams(params: {
+  kind: "identity" | "master_seed" | "public_route";
+  offset: number;
+  bytes: Buffer | Uint8Array;
+}) {
+  if (!Number.isSafeInteger(params.offset) || params.offset < 0) {
+    throw new Error("TIN V1 creation chunk offset must be a non-negative safe integer");
+  }
+  const parts: Buffer[] = [];
+  appendU8(parts, params.kind === "identity" ? 0 : params.kind === "master_seed" ? 1 : 2);
+  appendU32(parts, params.offset);
+  appendBytes(parts, params.bytes);
+  return encodeInstruction(20, parts);
+}
+
+/** Serialize instruction 21: finalize by the creation intent hash. */
+export function serializeTinV1CreationFinalizeParams(params: {
+  intentHash: Buffer | Uint8Array;
+}) {
+  return encodeInstruction(21, [requireHash32(params.intentHash, "intentHash")]);
+}
+
+/** Serialize instruction 22: recover expired staged-creation rent. */
+export function serializeTinV1CreationCloseParams(params: {
+  intentHash: Buffer | Uint8Array;
+}) {
+  return encodeInstruction(22, [requireHash32(params.intentHash, "intentHash")]);
 }
 
 function serializeTinRegistryMutationParams(

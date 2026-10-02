@@ -1,5 +1,13 @@
 # TSN Program-Assigned TIN Creation Intent
 
+> **Historical implementation note:** This document records the retired
+> program-assigned TIN path (`programAssigned: true`). It is not a deploy or
+> issuance guide. New issuance uses private TIN V1: the trusted XP backend
+> generates the ten-digit TIN, creates a keyed lookup commitment, and submits
+> the encrypted identity through Receiver -> Node -> Cranker. See the
+> [canonical TIN V1 flow](protocol-flows/tin-creation/README.md) before using
+> any command or data shape below.
+
 ## Status
 
 The browser-to-Node creation flow is working. The Node accepted this creation

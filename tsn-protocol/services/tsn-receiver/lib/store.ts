@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
-import { assertExternalWorkKind, assertAuthorizedFundingIngress, createReceivedWork, payloadCommitment, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
 import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
+import { assertNodeVerificationAttestation } from "./node-verification";
 import { wakeTsnNode } from "./node-wake";
 import { publishCrankerWake } from "./cranker-wake";
 
@@ -19,10 +20,9 @@ function redactedPaymentPayload(payload: Record<string, unknown>) {
   };
 }
 
-function paymentReceiptVerification(verification: Record<string, unknown> | null | undefined) {
-  const payload = verification?.verifiedPayload;
-  if (!payload || typeof payload !== "object") return verification ?? {};
-  const verified = payload as Record<string, unknown>;
+function paymentReceiptVerification(work: ReceiverWork) {
+  const verified = verifiedPayloadForWork(work);
+  if (!verified) return work.verification ?? {};
   const keep = [
     "paymentId",
     "tokenMintAddress",
@@ -34,12 +34,13 @@ function paymentReceiptVerification(verification: Record<string, unknown> | null
     "recipientRouteCommitment",
     "recipientRouteVersion",
   ];
-  return {
-    verificationType: verification?.verificationType ?? "TSN_AUTHORIZED_FUNDING",
+  return compactVerificationPayload(work.payload, {
+    verificationType: work.verification?.verificationType ?? "TSN_AUTHORIZED_FUNDING",
+    ...(work.verification?.nodeAttestation ? { nodeAttestation: work.verification.nodeAttestation } : {}),
     verifiedPayload: Object.fromEntries(
       keep.filter((key) => verified[key] !== undefined).map((key) => [key, verified[key]]),
     ),
-  };
+  });
 }
 
 export async function receive(input: { id?: string; kind: WorkKind; payload: Record<string, unknown> }) {
@@ -254,6 +255,15 @@ export async function transition(params: {
       throw new Error("LEASE_INVALID");
     }
     if (current.stateVersion !== params.expectedVersion) throw new Error("STALE_STATE_VERSION");
+    if (params.actor === "node" && (params.status === "VERIFIED" || params.status === "REJECTED")) {
+      assertNodeVerificationAttestation({
+        work: current,
+        owner: params.owner,
+        expectedVersion: params.expectedVersion,
+        status: params.status,
+        evidence: params.evidence,
+      });
+    }
     const allowed = params.actor === "node"
       ? ["VERIFIED", "REJECTED"]
       : ["SUBMITTED", "CONFIRMED", "FAILED"];
@@ -264,7 +274,12 @@ export async function transition(params: {
       updatedAt: now(),
       ...(params.actor === "node"
         ? {
-            verification: params.evidence ?? {},
+            verification: params.status === "VERIFIED" && params.evidence?.verifiedPayload
+              ? compactVerificationPayload(
+                  current.kind === "AUTHORIZED_FUNDING" ? redactedPaymentPayload(current.payload) : current.payload,
+                  params.evidence,
+                )
+              : params.evidence ?? {},
             nodeLease: null,
             ...(current.kind === "AUTHORIZED_FUNDING"
               ? { payload: redactedPaymentPayload(current.payload) }
@@ -276,7 +291,7 @@ export async function transition(params: {
             // The signed handoff transaction is needed only until funding has
             // confirmed. Keep a compact receipt context thereafter.
             ...(params.status === "CONFIRMED" && current.kind === "AUTHORIZED_FUNDING"
-              ? { verification: paymentReceiptVerification(current.verification) }
+              ? { verification: paymentReceiptVerification(current) }
               : {}),
             // A payout authorization contains the recipient wallet and is
             // short-lived work material, not a permanent settlement record.

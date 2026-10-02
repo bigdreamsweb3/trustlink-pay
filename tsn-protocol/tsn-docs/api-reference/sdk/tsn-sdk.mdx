@@ -29,7 +29,6 @@ const status = await getTsnNetworkStatus({
   local: {
     node: "http://127.0.0.1:8000",
     receiver: "http://127.0.0.1:3000",
-    rpc: "http://127.0.0.1:8787",
   },
   live: {
     receiver: "https://tsn-receiver.example",
@@ -40,7 +39,7 @@ const status = await getTsnNetworkStatus({
 if (!status.readyForTransactions) throw new Error("TSN core services are unavailable");
 ```
 
-The function probes local candidates before live candidates, reports route count and Cranker observations, and does not require a Cranker heartbeat for native intent creation. Cross-chain readiness additionally requires at least one registered ready destination.
+The function probes local Node and Receiver candidates before their live candidates. It checks only the configured TSN RPC gateway and reports it offline instead of switching endpoints. The function reports route count and Cranker observations, and does not require a Cranker heartbeat for native intent creation. Cross-chain readiness additionally requires at least one registered ready destination.
 
 ## Payment authorization
 

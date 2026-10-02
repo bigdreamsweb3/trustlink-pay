@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">TSN TIN identity and issuer architecture</title>
+  <desc id="desc">Developer-oriented map of the universal ten-digit TIN lookup and Solana settlement flow, with a proposed institutional issuer extension.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#18251f" stroke-width="1"/></pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#d6b65c"/></marker>
+    <style>
+      .mono{font-family:Consolas,Menlo,monospace}.sans{font-family:Inter,Segoe UI,Arial,sans-serif}
+      .muted{fill:#91a397}.bright{fill:#eff4ed}.green{fill:#74d69c}.gold{fill:#d6b65c}.line{stroke:#34463a}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#07100c"/><rect width="1600" height="1000" fill="url(#grid)"/>
+  <text x="64" y="58" class="mono gold" font-size="18" letter-spacing="3">TSN / SDK ARCHITECTURE NOTE</text>
+  <text x="64" y="112" class="sans bright" font-size="40" font-weight="700">A 10-digit identity at the edge. Protocol settlement underneath.</text>
+  <text x="64" y="151" class="sans muted" font-size="20">Share a payment ID, resolve the recipient, authorize the transfer, settle on Solana.</text>
+  <rect x="1320" y="36" width="216" height="38" rx="19" fill="#13251b" stroke="#41674d"/><circle cx="1343" cy="55" r="6" fill="#74d69c"/><text x="1360" y="61" class="mono green" font-size="14" letter-spacing="1">UNIVERSAL TIN</text>
+
+  <rect x="64" y="184" width="1472" height="438" rx="16" fill="#0b1711" stroke="#293b30"/>
+  <text x="96" y="224" class="mono green" font-size="14" letter-spacing="2">CURRENT NETWORK FLOW</text>
+  <text x="96" y="258" class="sans bright" font-size="24" font-weight="650">A readable recipient ID enters the SDK; verified work reaches the chain through TSN services.</text>
+
+  <rect x="96" y="290" width="244" height="250" rx="12" fill="#101f17" stroke="#3a5943"/>
+  <text x="120" y="326" class="mono gold" font-size="13">01 / PAYMENT INPUT</text><text x="120" y="368" class="sans bright" font-size="22" font-weight="650">10-digit TIN</text>
+  <text x="120" y="402" class="sans muted" font-size="16">Human-readable ID</text><line x1="120" y1="425" x2="316" y2="425" class="line"/>
+  <text x="120" y="461" class="mono green" font-size="14">tin: userInput</text><text x="120" y="491" class="sans muted" font-size="14">Share instead of a</text><text x="120" y="512" class="sans muted" font-size="14">long wallet address.</text>
+  <line x1="344" y1="415" x2="373" y2="415" stroke="#d6b65c" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="384" y="290" width="300" height="250" rx="12" fill="#101f17" stroke="#3a5943"/>
+  <text x="408" y="326" class="mono gold" font-size="13">02 / SERVER-SIDE SDK RESOLUTION</text><text x="408" y="365" class="mono green" font-size="15">resolveTinRoute({</text>
+  <text x="428" y="390" class="mono bright" font-size="14">tin, rpcUrl, lookupSecret</text><text x="408" y="415" class="mono green" font-size="15">})</text>
+  <line x1="408" y1="435" x2="660" y2="435" class="line"/><text x="408" y="469" class="mono gold" font-size="14">identity.name</text>
+  <text x="408" y="496" class="sans muted" font-size="14">lookup secret stays</text><text x="408" y="517" class="sans muted" font-size="14">server-side; verify name.</text>
+  <line x1="688" y1="415" x2="717" y2="415" stroke="#d6b65c" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="728" y="290" width="300" height="250" rx="12" fill="#101f17" stroke="#3a5943"/>
+  <text x="752" y="326" class="mono gold" font-size="13">03 / RECEIVER → NODE</text><text x="752" y="366" class="sans bright" font-size="21" font-weight="650">Receiver ingress</text>
+  <text x="752" y="395" class="sans muted" font-size="15">Durable work queue</text><path d="M752 414H1002" class="line"/>
+  <text x="752" y="450" class="sans bright" font-size="19" font-weight="650">Node verification</text><text x="752" y="480" class="sans muted" font-size="14">Checks owner authorization</text><text x="752" y="503" class="sans muted" font-size="14">and protocol commitments.</text>
+  <line x1="1032" y1="415" x2="1061" y2="415" stroke="#d6b65c" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="1072" y="290" width="424" height="250" rx="12" fill="#101f17" stroke="#3a5943"/>
+  <text x="1096" y="326" class="mono gold" font-size="13">04 / CRANKER → SOLANA DEVNET</text><text x="1096" y="368" class="sans bright" font-size="21" font-weight="650">Authorized Cranker submission</text>
+  <text x="1096" y="398" class="sans muted" font-size="15">TIN issue / transfer operation</text><path d="M1096 418H1472" class="line"/>
+  <text x="1096" y="455" class="mono green" font-size="15">confirmed signature</text><text x="1096" y="486" class="sans muted" font-size="14">Public transaction evidence;</text><text x="1096" y="508" class="sans muted" font-size="14">identity plaintext stays protected.</text>
+
+  <rect x="96" y="562" width="1400" height="38" rx="7" fill="#09110d" stroke="#26372c"/>
+  <text x="116" y="587" class="mono muted" font-size="14">DEVELOPER CHECKPOINT</text><text x="366" y="587" class="mono bright" font-size="14">resolve</text>
+  <text x="438" y="587" class="mono gold" font-size="14">→</text><text x="464" y="587" class="mono bright" font-size="14">review recipient.name</text>
+  <text x="650" y="587" class="mono gold" font-size="14">→</text><text x="676" y="587" class="mono bright" font-size="14">authorize</text>
+  <text x="776" y="587" class="mono gold" font-size="14">→</text><text x="802" y="587" class="mono bright" font-size="14">Receiver → Node → Cranker</text>
+  <text x="1070" y="587" class="mono gold" font-size="14">→</text><text x="1096" y="587" class="mono bright" font-size="14">Solana finality</text>
+
+  <rect x="64" y="652" width="1472" height="270" rx="16" fill="#0a1510" stroke="#3d3a24"/>
+  <rect x="96" y="678" width="198" height="30" rx="15" fill="#292511" stroke="#6e6030"/><text x="113" y="699" class="mono gold" font-size="12" letter-spacing="1">PROPOSED EXTENSION</text>
+  <text x="320" y="701" class="sans bright" font-size="24" font-weight="650">Institutions can join without replacing their customer relationship.</text>
+  <rect x="96" y="736" width="354" height="132" rx="10" fill="#111a13" stroke="#665b2d"/><text x="120" y="772" class="mono gold" font-size="13">ISSUER BACKEND</text>
+  <text x="120" y="807" class="sans bright" font-size="19" font-weight="650">Bank or payment provider</text><text x="120" y="837" class="sans muted" font-size="14">Own customer records, issuer key,</text><text x="120" y="858" class="sans muted" font-size="14">support and service fees.</text>
+  <line x1="456" y1="802" x2="499" y2="802" stroke="#d6b65c" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="512" y="736" width="354" height="132" rx="10" fill="#111a13" stroke="#665b2d"/><text x="536" y="772" class="mono gold" font-size="13">ISSUER IDENTITY</text>
+  <text x="536" y="807" class="sans bright" font-size="19" font-weight="650">Issuer-branded payment ID</text><text x="536" y="837" class="sans muted" font-size="14">Mapped to the customer's existing</text><text x="536" y="858" class="sans muted" font-size="14">account inside the issuer system.</text>
+  <line x1="872" y1="802" x2="915" y2="802" stroke="#d6b65c" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="928" y="736" width="536" height="132" rx="10" fill="#101c15" stroke="#3a5943"/><text x="952" y="772" class="mono green" font-size="13">TSN SETTLEMENT NETWORK</text>
+  <text x="952" y="807" class="sans bright" font-size="19" font-weight="650">Shared protocol; multiple issuer namespaces</text><text x="952" y="837" class="sans muted" font-size="14">Blockchain users address a payment ID; the institution</text><text x="952" y="858" class="sans muted" font-size="14">provides its customer-facing crypto service.</text>
+  <text x="64" y="964" class="mono muted" font-size="13">CURRENT: UNIVERSAL TIN + VERIFIED ON-CHAIN HISTORY</text><text x="1536" y="964" text-anchor="end" class="mono gold" font-size="13">ISSUER-SPECIFIC INTEGRATION: ROADMAP</text>
+</svg>

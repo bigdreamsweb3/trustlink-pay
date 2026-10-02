@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateCrankerRequest, enforceCrankerLeaseRateLimit } from "../../../../lib/cranker-auth";
 import { attachCrankerAuthorization, leaseForCranker, transition } from "../../../../lib/store";
+import { crankerExecutionPayload, verifiedPayloadForWork } from "../../../../lib/work-contract";
 export const runtime = "nodejs";
 
 function cleanUrl(value: string) {
@@ -20,31 +21,20 @@ function errorStatus(error: unknown) {
 
 function crankerWorkView(work: Awaited<ReturnType<typeof leaseForCranker>>) {
   if (!work) return null;
+  const verifiedPayload = verifiedPayloadForWork(work);
   // Funding work exposes only the already sender-signed transaction envelope
   // required for sponsorship. It never exposes the private Node payload,
   // recipient TIN, route map, commitment plaintext, or payment record fields.
-  const fundingPayload = work.kind === "AUTHORIZED_FUNDING" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
-    ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>)
-      .filter(([key]) => ["senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode"].includes(key)))
-    : undefined;
-  const tinPayload = work.kind === "TIN_OPERATION" && work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
-    ? Object.fromEntries(Object.entries(work.verification.verifiedPayload as Record<string, unknown>)
-      .filter(([key]) => [
-        "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash", "expiry",
-        "nonce", "displayName",
-        "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
-        "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce",
-        "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
-      ].includes(key)))
-    : undefined;
+  const executionPayload = verifiedPayload ? crankerExecutionPayload(work.kind, verifiedPayload) : undefined;
   return {
     id: work.id, kind: work.kind, status: work.status, stateVersion: work.stateVersion,
+    payloadCommitment: work.payloadCommitment,
     payload: {},
     receivedAt: work.receivedAt, updatedAt: work.updatedAt, crankerLease: work.crankerLease ?? null,
     verification: work.verification ? {
       verificationType: work.verification.verificationType ?? null,
-      ...(fundingPayload && Object.keys(fundingPayload).length ? { verifiedPayload: fundingPayload } : {}),
-      ...(tinPayload && Object.keys(tinPayload).length ? { verifiedPayload: tinPayload } : {}),
+      nodeAttestation: work.verification.nodeAttestation ?? null,
+      ...(executionPayload && Object.keys(executionPayload).length ? { verifiedPayload: executionPayload } : {}),
     } : null,
     authorization: work.authorization ?? null,
     result: work.result ?? null,

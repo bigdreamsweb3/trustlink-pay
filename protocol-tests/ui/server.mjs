@@ -17,12 +17,9 @@ try {
 } catch { /* environment variables may be supplied by the process manager */ }
 const tsnSdk = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/index.js")).href);
 const port = Number(process.env.TSN_PROTOCOL_UI_PORT ?? 4317);
-// Use the same live RPC gateway that the SDK network-status check probes.
-// A per-run TSN_RPC_URL override remains available for developers.
-const rpcUrl = process.env.TSN_RPC_URL
-  ?? process.env.TSN_RPC_GATEWAY_URL
-  ?? process.env.SOLANA_RPC_URL
-  ?? "https://tsn-rpc-gateway.vercel.app";
+// Route every Solana request through the TSN gateway; an unavailable gateway
+// is surfaced to the caller rather than bypassed with another RPC endpoint.
+const rpcUrl = process.env.TSN_RPC_URL ?? process.env.TSN_RPC_GATEWAY_URL ?? "https://tsn-rpc-gateway.vercel.app";
 const tinProgramId = process.env.TINS_PROGRAM_ID ?? process.env.TIN_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 const sessions = new Map();
 const sessionTtlMs = 30 * 60_000;
@@ -81,12 +78,12 @@ async function handleApi(req, res, url) {
       local: {
         node: process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000",
         receiver: process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010",
-        rpc: process.env.TSN_LOCAL_RPC_URL ?? "https://tsn-rpc-gateway.vercel.app",
+        rpc: null,
       },
       live: {
         node: process.env.TSN_NODE_URL ?? null,
         receiver: process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app",
-        rpc: process.env.TSN_RPC_GATEWAY_URL ?? "https://tsn-rpc-gateway.vercel.app",
+        rpc: rpcUrl,
       },
     });
     return json(res, 200, network);
@@ -213,7 +210,10 @@ async function handleApi(req, res, url) {
       lookupIssuanceProof: session.preparedTin.lookupIssuanceProof,
       ownerIntentMessage: String(body.ownerIntentMessage ?? ""),
     });
-    session.pendingTin = { tin: session.preparedTin.tin, operationId: result.operationId };
+    session.pendingTin = {
+      tin: session.preparedTin.tin,
+      operationId: result.operationId,
+    };
     session.preparedTin = null;
     return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.submitTinV1Creation" });
   }
@@ -230,12 +230,26 @@ async function handleApi(req, res, url) {
     if (!statusResponse.ok) return json(res, statusResponse.status, operation);
     const finalized = operation.status === "CONFIRMED";
     const terminal = finalized || operation.status === "FAILED";
+    let displayName;
+    if (finalized) {
+      try {
+        const identity = await tsnSdk.resolveTinRoute({
+          tin: pending.tin,
+          rpcUrl,
+          programId: tinProgramId,
+          lookupSecret: requireTinLookupSecret(),
+        });
+        if (typeof identity.name === "string") displayName = identity.name;
+      } catch (error) {
+        console.warn("[tsn-protocol-ui] finalized TIN name could not be resolved from the registry", error instanceof Error ? error.message : "resolution failed");
+      }
+    }
     if (terminal) session.pendingTin = null;
     return json(res, 200, {
       operationId,
       status: operation.status,
       signature: operation.result?.signature ?? null,
-      ...(finalized ? { tin: pending.tin } : {}),
+      ...(finalized ? { tin: pending.tin, ...(displayName ? { displayName } : {}) } : {}),
     });
   }
 

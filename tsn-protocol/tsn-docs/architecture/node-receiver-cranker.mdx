@@ -10,7 +10,7 @@ TSN splits transport into three non-overlapping roles: the Receiver accepts and 
 
 The Receiver is authenticated ingress for payment intents. It uses Firestore for accepted work, state transitions, idempotency, short leases, and compact confirmation receipts. When a sender submits a signed intent, the Receiver stores it and marks it `RECEIVED`.
 
-The Receiver does not verify the plan, choose a recipient, or sign a Solana transaction. It also never receives plaintext roots or private snapshots. Its job is to hold work briefly and hand it off to the Node for verification.
+The Receiver does not verify the plan, choose a recipient, or sign a Solana transaction. It also never receives plaintext roots or private snapshots. Its job is to hold work briefly and hand it off to the Node for verification. The Node signs `VERIFIED` and `REJECTED` decisions with a dedicated Ed25519 verification key. The Receiver validates that receipt against the current work and Node lease before storing the decision; the Cranker validates it again against the exact execution payload before it submits the work. This receipt is separate from settlement permits enforced by the TSN program.
 
 ## Mother Node: stateless verification and route decisions
 

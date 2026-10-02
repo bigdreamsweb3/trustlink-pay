@@ -28,6 +28,12 @@ export type ReceiverWork = {
   authorization?: Record<string, unknown> | null;
 };
 
+export type PayloadDelta = {
+  addedFields: Record<string, unknown>;
+  changedFields: Record<string, unknown>;
+  removedFields: string[];
+};
+
 /** Work kinds that may be accepted from an untrusted HTTP caller. */
 export function assertExternalWorkKind(kind: WorkKind): void {
   if (kind === "SETTLEMENT") throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
@@ -112,6 +118,63 @@ function stable(value: unknown): string {
   return JSON.stringify(value);
 }
 
+export function diffPayload(base: Record<string, unknown>, next: Record<string, unknown>): PayloadDelta {
+  const addedFields: Record<string, unknown> = {};
+  const changedFields: Record<string, unknown> = {};
+  const removedFields: string[] = [];
+  for (const [key, value] of Object.entries(next)) {
+    if (!(key in base)) addedFields[key] = value;
+    else if (stable(base[key]) !== stable(value)) changedFields[key] = value;
+  }
+  for (const key of Object.keys(base)) if (!(key in next)) removedFields.push(key);
+  return { addedFields, changedFields, removedFields };
+}
+
+/** Store a Node decision and payload differences without a second copy of the work intent. */
+export function compactVerificationPayload(
+  payload: Record<string, unknown>,
+  verification: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const verified = verification?.verifiedPayload;
+  if (!verified || typeof verified !== "object" || Array.isArray(verified)) return verification ?? {};
+  const { verifiedPayload: _verifiedPayload, ...decision } = verification;
+  return {
+    ...decision,
+    payloadDelta: diffPayload(payload, verified as Record<string, unknown>),
+  };
+}
+
+/** Resolve compact current records and legacy records for existing consumers. */
+export function verifiedPayloadForWork(work: ReceiverWork): Record<string, unknown> | null {
+  const verification = work.verification;
+  if (!verification) return null;
+  const legacy = verification.verifiedPayload;
+  if (legacy && typeof legacy === "object" && !Array.isArray(legacy)) {
+    return legacy as Record<string, unknown>;
+  }
+  const delta = verification.payloadDelta as PayloadDelta | undefined;
+  if (!delta || typeof delta !== "object") return null;
+  const result: Record<string, unknown> = { ...work.payload };
+  for (const key of delta.removedFields ?? []) delete result[key];
+  Object.assign(result, delta.addedFields ?? {}, delta.changedFields ?? {});
+  return result;
+}
+
+/** Privacy-filtered fields that the Cranker may execute from Node-verified work. */
+export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, unknown>): Record<string, unknown> {
+  const allowed = kind === "AUTHORIZED_FUNDING"
+    ? new Set(["senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode"])
+    : kind === "TIN_OPERATION"
+      ? new Set([
+          "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry",
+          "nonce", "displayName", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
+          "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce", "tcapRouteVersion",
+          "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
+        ])
+      : new Set<string>();
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
+}
+
 export function payloadCommitment(value: unknown): string {
   return createHash("sha256").update(stable(value)).digest("hex");
 }
@@ -137,8 +200,7 @@ export function createReceivedWork(input: { id?: string; kind: WorkKind; payload
 }
 
 export function publicCoordinationPayload(work: ReceiverWork): Record<string, unknown> {
-  const payload = work.verification?.verifiedPayload && typeof work.verification.verifiedPayload === "object"
-    ? work.verification.verifiedPayload as Record<string, unknown> : work.payload;
+  const payload = verifiedPayloadForWork(work) ?? work.payload;
   const allowed = new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "transferId", "commitmentHash", "settlementEpoch"]);
   return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
 }

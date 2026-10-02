@@ -27,6 +27,10 @@ pub enum ProgramInstruction {
     TinUpdateStaged = 16,
     CreateTinV1 = 17,
     ResolveTinV1 = 18,
+    TinV1CreationStage = 19,
+    TinV1CreationChunk = 20,
+    TinV1CreationFinalize = 21,
+    TinV1CreationClose = 22,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -140,6 +144,37 @@ pub struct CreateTinV1Params {
     pub tcap_policy_commitment: [u8; 32],
     pub intent_hash: [u8; 32],
     pub expiry_ts: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct StageTinV1CreationParams {
+    pub owner_pubkey: Pubkey,
+    pub lookup_commitment: [u8; 32],
+    pub intent_hash: [u8; 32],
+    pub encrypted_identity_envelope_len: u32,
+    pub encrypted_master_seed_len: u32,
+    pub encrypted_public_route_envelope_len: u32,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub pru_configuration_hash: [u8; 32],
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub tcap_route_version: u8,
+    pub tcap_relationship_commitment: [u8; 32],
+    pub tcap_relationship_reference: [u8; 32],
+    pub tcap_policy_commitment: [u8; 32],
+    pub expiry_ts: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct TinV1CreationChunkParams {
+    pub kind: u8,
+    pub offset: u32,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct FinalizeTinV1CreationParams {
+    pub intent_hash: [u8; 32],
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -331,6 +366,72 @@ pub fn create_tin_v1(
             AccountMeta::new_readonly(system_program::id(), false),
         ],
         data: encode(ProgramInstruction::CreateTinV1, &params),
+    }
+}
+
+pub fn stage_tin_v1_creation(
+    program_id: Pubkey,
+    payer: Pubkey,
+    staging: Pubkey,
+    params: StageTinV1CreationParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(payer, true),
+            AccountMeta::new(staging, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+        ],
+        data: encode(ProgramInstruction::TinV1CreationStage, &params),
+    }
+}
+
+pub fn tin_v1_creation_chunk(
+    program_id: Pubkey,
+    payer: Pubkey,
+    staging: Pubkey,
+    params: TinV1CreationChunkParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![AccountMeta::new(payer, true), AccountMeta::new(staging, false)],
+        data: encode(ProgramInstruction::TinV1CreationChunk, &params),
+    }
+}
+
+pub fn finalize_tin_v1_creation(
+    program_id: Pubkey,
+    payer: Pubkey,
+    global_state: Pubkey,
+    registry: Pubkey,
+    instructions_sysvar: Pubkey,
+    staging: Pubkey,
+    params: FinalizeTinV1CreationParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![
+            AccountMeta::new(payer, true),
+            AccountMeta::new(global_state, false),
+            AccountMeta::new(registry, false),
+            AccountMeta::new_readonly(instructions_sysvar, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+            AccountMeta::new(staging, false),
+        ],
+        data: encode(ProgramInstruction::TinV1CreationFinalize, &params),
+    }
+}
+
+pub fn close_tin_v1_creation_stage(
+    program_id: Pubkey,
+    cranker: Pubkey,
+    staging: Pubkey,
+    params: FinalizeTinV1CreationParams,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![AccountMeta::new(cranker, true), AccountMeta::new(staging, false)],
+        data: encode(ProgramInstruction::TinV1CreationClose, &params),
     }
 }
 

@@ -14,6 +14,7 @@ TSN uses distinct key material for each role. No single key dominates the protoc
 | TIN owner-key commitment | TIN registry (public) | Verification material for route integrity and ownership claims | Bound to the current wallet owner; changes with wallet rotation |
 | Mother authority key | Mother / TSN program | Creation of the one-time `SettlementDna` PDA at the derived opaque slot | Program-governed; rotated via program upgrade or governance instruction |
 | Node-signed Ed25519 permit key | TSN Node | Short-lived permit binding opaque slot, commitment, nullifier, lease, amount, mint, recipient, expiry | Per-lease generation; expires no later than the Receiver lease |
+| Node verification receipt key | TSN Node | Signed `VERIFIED`/`REJECTED` decision bound to work ID, payload/evidence/execution commitments, and Node lease | Dedicated Ed25519 key; Receiver and Cranker pin the public key |
 | Node/Mother encrypted-binding encryption key | Node/Mother only | Encryption of full payment binding off-chain | Never leaves Node/Mother; rotated via key ceremony or service migration |
 | Node-only route reference key | TSN Node | Short-lived recipient-route reference keyed by work ID | Expires and is deleted automatically; not persisted in durable records |
 | Cranker Solana fee-payer key | Cranker operator | Transaction submission fees | Standard Solana key rotation; no authorization semantics |
@@ -36,6 +37,14 @@ Only Mother authority can materialize the `SettlementDna` PDA. This is program-e
 ### Node permit
 
 The Node signs a short-lived Ed25519 permit per lease. The permit binds every field required for settlement and expires no later than the Receiver lease. The Solana program re-verifies the permit signature and every bound field on chain.
+
+### Node verification receipt
+
+The Node uses a separate Ed25519 key to attest to work verification. The
+Receiver validates the signed decision before persisting it, and the Cranker
+checks it against the exact verified payload before execution. This receipt
+proves which Node decision was recorded; it does not authorize token movement
+and is not a replacement for the on-chain settlement permit.
 
 ### Encrypted binding key
 

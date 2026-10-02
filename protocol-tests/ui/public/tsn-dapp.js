@@ -266,8 +266,10 @@
       }
       stage = "requesting owner-intent signature from wallet";
       const ownerIntentMessage = prepared.ownerIntentMessage;
-      const ownerIntentHash = Uint8Array.from(prepared.ownerIntentHash.match(/.{2}/g), (pair) => parseInt(pair, 16));
-      const ownerSignature = await signBytes(ownerIntentHash);
+      if (typeof ownerIntentMessage !== "string" || !ownerIntentMessage.trim()) {
+        throw new Error("TSN did not provide the human-readable owner approval message.");
+      }
+      const ownerSignature = await signBytes(new TextEncoder().encode(ownerIntentMessage));
       stage = "submitting signed TIN intent to TSN Receiver ingress";
       const submitted = await api("/api/tsn/sdk/submit-tin", { method: "POST", body: JSON.stringify({ ...prepared, ownerSignature, ownerIntentMessage }) });
       log("SDK createTin", submitted.intentId ?? "TIN creation intent submitted");
@@ -288,8 +290,9 @@
         if (!terminal.has(current.status)) continue;
         if (current.status === "CONFIRMED" && current.tin) {
           if ($("overviewTin")) $("overviewTin").textContent = current.tin;
+          if (current.displayName && $("overviewDisplayName")) $("overviewDisplayName").textContent = current.displayName;
           const result = $("tinCreationResult");
-          if (result) result.textContent = `TIN ${current.tin} finalized on Solana${current.signature ? ` · ${current.signature}` : ""}.`;
+          if (result) result.textContent = `TIN ${current.tin}${current.displayName ? ` · ${current.displayName}` : ""} finalized on Solana${current.signature ? ` · ${current.signature}` : ""}.`;
           log("TIN V1 FINALIZED", `TIN ${current.tin}${current.signature ? ` / Solana ${current.signature}` : ""}`);
         } else {
           const result = $("tinCreationResult");
@@ -381,7 +384,7 @@
     closeMenu();
   }));
   $("headerConnectWallet").onclick = connectWallet;
-  $("refreshStatus").onclick = refreshStatus;
+  $("refreshStatus").onclick = syncNetworkStatus;
   $("payTin").onclick = payTin;
   $("submitTin").onclick = submitTin;
   $("buildWalletTransfer").onclick = buildWalletTransfer;
@@ -401,25 +404,11 @@
   const [walletName] = walletCandidate();
   if (walletName && $("walletKey")) $("walletKey").textContent = `${walletName} detected. Connect when ready.`;
   log("READY", walletName ? `${walletName} detected` : "No browser wallet detected");
-  let statusTimer;
   let statusInFlight = false;
   async function syncNetworkStatus() {
-    if (statusInFlight || document.visibilityState === "hidden") return;
+    if (statusInFlight) return;
     statusInFlight = true;
     try { await refreshStatus(); } finally { statusInFlight = false; }
   }
-  function scheduleStatusSync(delay = 60000) {
-    window.clearTimeout(statusTimer);
-    statusTimer = window.setTimeout(async () => {
-      await syncNetworkStatus();
-      scheduleStatusSync(document.visibilityState === "visible" ? 60000 : 0);
-    }, delay);
-  }
-  refreshStatus().finally(() => scheduleStatusSync());
-  window.addEventListener("focus", () => { syncNetworkStatus(); scheduleStatusSync(); });
-  window.addEventListener("online", () => { syncNetworkStatus(); scheduleStatusSync(); });
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") { syncNetworkStatus(); scheduleStatusSync(); }
-    else window.clearTimeout(statusTimer);
-  });
+  syncNetworkStatus();
 })();

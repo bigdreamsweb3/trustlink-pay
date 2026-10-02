@@ -1,5 +1,14 @@
 # TIN creation: Receiver, Node, and Cranker data flow
 
+> **Historical flow:** This walkthrough describes the retired
+> `programAssigned: true` creation format and the September 25 recording. New
+> issuance uses private `TinV1Account` creation with `programAssigned: false`,
+> Receiver-first work, a signed Node verification receipt, and a direct or
+> staged Cranker transaction. Use the [canonical TIN V1 flow](protocol-flows/tin-creation/README.md)
+> and its [on-chain finalization](protocol-flows/tin-creation/04-onchain-finalization.md)
+> and [evidence](protocol-flows/tin-creation/05-evidence.md) guides for current
+> operations.
+
 This document describes the program-assigned TIN creation path used by the
 protocol UI. It separates the data visible to each service from the private
 material retained by the owner device. A Node acceptance or Cranker lease is

@@ -61,6 +61,7 @@ FIREBASE_DATABASE_URL
 FIREBASE_WEB_API_KEY
 TSN_RECEIVER_NODE_API_KEY
 TSN_RECEIVER_NODE_PAYLOAD_KEY
+TSN_NODE_VERIFICATION_PUBLIC_KEY
 ```
 
 All three Firebase variables are mandatory in the hosted Receiver. The service
@@ -98,6 +99,13 @@ firebase deploy --only database
 After deployment, use the generated HTTPS URL as `TSN_RECEIVER_URL` in the
 TSN Node and TSN Cranker. Internal API keys are for server-to-server calls
 only; they must not be placed in browser-visible Vercel variables.
+
+`TSN_NODE_VERIFICATION_PUBLIC_KEY` pins the Node's Ed25519 verification signer.
+The Receiver rejects Node `VERIFIED` or `REJECTED` transitions unless the
+signature matches the current work, payload commitment, decision, and active
+Node lease. Configure the same public key in the Cranker so it can independently
+verify the receipt and the exact execution payload before submitting a
+transaction.
 
 ## Local verification
 

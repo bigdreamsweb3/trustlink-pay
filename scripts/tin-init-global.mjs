@@ -3,7 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 
-const require = createRequire(import.meta.url);
+// Reuse the TSN SDK's Solana client dependency. The backend package is not
+// required for registry initialization and may not be installed in WSL.
+const require = createRequire(new URL("../tsn-protocol/sdks/tsn-sdk/package.json", import.meta.url));
 const {
   Connection,
   Keypair,
@@ -12,7 +14,7 @@ const {
   Transaction,
   TransactionInstruction,
   sendAndConfirmTransaction,
-} = require("../backend/node_modules/@solana/web3.js");
+} = require("@solana/web3.js");
 import { resolveSolanaRpcUrl } from "./lib/tsn-rpc.mjs";
 
 const DEFAULT_PROGRAM_ID = "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";

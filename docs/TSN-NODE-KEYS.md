@@ -12,6 +12,7 @@ the frontend `.env`, Git, screenshots, or a public hackathon submission.
 | `TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY` | Signs bounded settlement authorization receipts issued by the Node. | Generate a new random 32-byte secret for each Node. The Node accepts hex, Base64, or a JSON byte array. |
 | `TSN_ROUTE_DECRYPTION_PRIVATE_KEY` | Decrypts the encrypted public route envelope used for recipient TIN routing. | Generate or provision the private key that matches the public route encryption key registered with the Receiver/TIN route flow. Do not rotate it without rotating the corresponding public key. |
 | `TSN_THRESHOLD_NONCE_SIGNING_KEY` | Signs threshold-access nonce receipts for authorized TIN access. | Generate a separate random 32-byte secret for each Node. Never reuse a wallet, route key, or settlement signing key. |
+| `TSN_NODE_VERIFICATION_SIGNING_KEY` | Ed25519 private seed used to sign every Receiver `VERIFIED` or `REJECTED` decision, binding the decision to its work, commitments, and Node lease. | Generate a dedicated Ed25519 keypair as shown below. Keep the private seed only in the Node environment. |
 
 The three locally generated secrets must be different. A PowerShell command for
 a 32-byte hex value is:
@@ -20,14 +21,28 @@ a 32-byte hex value is:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Set each result in `tsn-protocol/services/tsn-node/.env`:
+Set the service credentials and key material in `tsn-protocol/services/tsn-node/.env`:
 
 ```env
 TSN_RECEIVER_NODE_API_KEY=<shared-with-the-Receiver>
 TSN_ROUTE_DECRYPTION_PRIVATE_KEY=<64-hex-characters>
 TSN_THRESHOLD_NONCE_SIGNING_KEY=<64-hex-characters>
 TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY=<64-hex-characters>
+TSN_NODE_VERIFICATION_SIGNING_KEY=<base64-encoded-32-byte-ed25519-seed>
 ```
+
+Generate a verification signing key and its public pin locally with PyNaCl:
+
+```powershell
+python -c "from nacl.signing import SigningKey; import base64; k=SigningKey.generate(); print('TSN_NODE_VERIFICATION_SIGNING_KEY='+base64.b64encode(bytes(k)).decode()); print('TSN_NODE_VERIFICATION_PUBLIC_KEY='+base64.b64encode(bytes(k.verify_key)).decode())"
+```
+
+Configure the matching `TSN_NODE_VERIFICATION_PUBLIC_KEY` in the Receiver and
+Cranker environments. The Receiver validates the Node receipt before storing a
+decision; the Cranker validates it again against the exact work projection it
+will execute. Do not put the private value in the Receiver, Cranker, frontend,
+or evidence bundle. Rotate by updating the public pins and Node signer as one
+coordinated change.
 
 Restart the Node after changing any key. A running process does not reload its
 environment automatically.

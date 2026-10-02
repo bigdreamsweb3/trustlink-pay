@@ -48,6 +48,17 @@ returns `VERIFIED`:
 If any check fails, the Receiver records `REJECTED`. A Cranker can never lease
 rejected or merely received work.
 
+The Node also signs each verification or rejection with its dedicated Ed25519
+verification key. The receipt binds the work ID and kind, original ingress
+commitment, decision, verified evidence commitment, Cranker execution-payload
+commitment, and active Node lease. The Receiver verifies the signature before
+accepting the state transition, and the Cranker verifies it again against the
+exact allowlisted payload it receives. The shared Node API key still protects
+the internal endpoint; the signature lets the Receiver and Cranker detect a
+forged or modified verification record independently. Settlement payout
+authorizations use a separate Node signature that the TSN program validates
+on-chain.
+
 ## What is kept, and what is removed
 
 After a successful payment verification, the durable Receiver payment record is

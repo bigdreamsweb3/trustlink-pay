@@ -237,7 +237,7 @@ Private ciphertext remains available only to the authenticated execution path
 that requires it. Public operation views redact signatures, encrypted seed
 data, route nonce, and other private fields.
 
-The Node then PATCHes the Receiver with:
+The Node then PATCHes the Receiver with this transient response shape:
 
 ```json
 {
@@ -252,11 +252,26 @@ The Node then PATCHes the Receiver with:
 }
 ```
 
-The Receiver atomically changes:
+The Receiver atomically changes the work state and persists the Node decision
+with a field delta against the existing ingress payload. It does not retain a
+second full copy of the normalized intent. The authenticated Cranker projection
+reconstructs the verified payload from `payload` plus `verification.payloadDelta`.
+The state transition is:
 
 ```text
 NODE_VERIFYING -> VERIFIED
 ```
+
+The Node signs the decision with the separate
+`TSN_NODE_VERIFICATION_SIGNING_KEY`. Its Ed25519 receipt includes the work ID
+and kind, decision, input payload commitment, verification evidence commitment,
+execution-payload commitment, Node lease ID/version, Node identity, key ID, and
+signing time. The Receiver verifies the signature and active lease before
+accepting `VERIFIED` or `REJECTED`. The Cranker verifies the same receipt and
+recomputes the execution-payload commitment before it executes work. This
+receipt makes a Receiver record's Node decision independently verifiable; it is
+separate from the settlement authorization signature checked by the TSN
+program.
 
 A failure instead changes the work to `REJECTED` with a bounded reason.
 
@@ -274,6 +289,17 @@ The route and TCap commitments satisfy Node rules.
 The exact payload can now be offered to an authorized Cranker.
 ```
 
+For opaque values, the Node reports envelope facts separately from plaintext
+fields. `envelopeChecks.encryptedIdentityEnvelope.present` reports that bytes
+were supplied; `base64Decoded`, `includedInOwnerIntentHash`, and the sibling
+`ownerAuthorization.signatureVerified` report the checks the Node actually
+performed. `ciphertextOpenedByNode` remains false, so
+`displayNameStatus: "opaque_to_node"` does not claim the Node knows the name
+inside the envelope. The XP resolves the name from the confirmed registry with
+the protected lookup secret. The Node attestation signs the evidence commitment
+and exact execution-payload commitment without exposing or decrypting envelope
+contents.
+
 It does **not** prove:
 
 ```text
@@ -284,16 +310,12 @@ An identity PDA exists.
 The private envelope can be opened after TIN assignment.
 ```
 
-## Current Direct-Node Exception
+## Receiver-First Wiring
 
-The protocol test UI currently calls the Node's public-ish
-`POST /tin-operations` path directly. That path runs normalization and replay
-checks immediately and returns an `intentId`, but it bypasses the Receiver work
-lifecycle described above.
-
-The intended implementation is to submit the same SDK payload to Receiver
-ingress first, then let this Node worker perform the exact same TIN-specific
-verification branch from a Receiver lease.
+The TSN XP submits the signed SDK payload to Receiver ingress. The Receiver
+stores the intent and wakes the Node; the Node verifies only work leased through
+its authenticated Receiver API. Browser requests do not submit directly to the
+Node. The Cranker later leases the verified work from the Receiver.
 
 ## Acceptance Evidence
 
@@ -308,5 +330,5 @@ Receiver state after verification: VERIFIED
 Cranker can lease the verified work: yes
 ```
 
-A Node log that says “TIN operation queued” is not enough. It proves only direct
-Node intake, not Receiver-first verification.
+Receiver acceptance alone does not prove Node verification, Cranker submission,
+or Solana finality; each stage requires its own evidence.

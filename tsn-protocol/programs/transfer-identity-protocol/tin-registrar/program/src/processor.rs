@@ -3,7 +3,9 @@ use crate::instruction_auto::{
     CreateTinParams, CreateTinV1Params, InitializePlatformRegistryParams, LinkSensitiveFieldParams,
     LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams, ProgramInstruction,
     RemoveVerificationPlatformParams, ResolveTinParams, UpdateTinParams, UpsertVerificationPlatformParams,
-    FinalizeTinUpdateParams, ResolveTinV1Params, StageTinMutationParams, TinMutationChunkParams,
+    FinalizeTinUpdateParams, FinalizeTinV1CreationParams, ResolveTinV1Params,
+    StageTinMutationParams, StageTinV1CreationParams, TinMutationChunkParams,
+    TinV1CreationChunkParams,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -23,6 +25,7 @@ pub mod resolve_tin;
 pub mod platform_registry;
 pub mod tin_mutation_staging;
 pub mod create_tin_v1;
+pub mod tin_v1_creation_staging;
 pub mod resolve_tin_v1;
 
 pub struct Processor;
@@ -140,6 +143,26 @@ impl Processor {
                 let params = ResolveTinV1Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 resolve_tin_v1::process(program_id, accounts, params)
+            }
+            ProgramInstruction::TinV1CreationStage => {
+                let params = StageTinV1CreationParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_v1_creation_staging::stage(program_id, accounts, params)
+            }
+            ProgramInstruction::TinV1CreationChunk => {
+                let params = TinV1CreationChunkParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_v1_creation_staging::append_chunk(program_id, accounts, params)
+            }
+            ProgramInstruction::TinV1CreationFinalize => {
+                let params = FinalizeTinV1CreationParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_v1_creation_staging::finalize(program_id, accounts, params)
+            }
+            ProgramInstruction::TinV1CreationClose => {
+                let params = FinalizeTinV1CreationParams::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                tin_v1_creation_staging::close_expired(program_id, accounts, params)
             }
         }
     }

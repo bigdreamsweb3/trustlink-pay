@@ -1,4 +1,4 @@
-export type TsnServiceSource = "local" | "live" | "none";
+export type TsnServiceSource = "local" | "live" | "configured" | "none";
 export type TsnServiceState = "online" | "degraded" | "offline" | "unknown";
 
 export type TsnServiceStatus = {
@@ -86,7 +86,8 @@ function serviceCandidates(local: string | null | undefined, live: string | null
 }
 
 /**
- * Checks the TSN service dependencies and chooses local endpoints first.
+ * Checks the TSN service dependencies. Node and Receiver may use local
+ * endpoints first; Solana RPC is pinned to one configured gateway endpoint.
  * Cranker liveness is read from the Node route response because the Cranker
  * is a worker, not an HTTP service exposed to applications.
  */
@@ -109,7 +110,10 @@ export async function getTsnNetworkStatus(params: TsnNetworkStatusOptions = {}):
 
   for (const service of ["node", "receiver", "rpc"] as const) {
     let chosen: TsnServiceStatus | null = null;
-    for (const [source, base] of serviceCandidates(local[service], live[service])) {
+    const candidates: Array<[TsnServiceSource, string]> = service === "rpc"
+      ? (live.rpc ?? local.rpc) ? [["configured", (live.rpc ?? local.rpc)!]] : []
+      : serviceCandidates(local[service], live[service]);
+    for (const [source, base] of candidates) {
       const target = service === "node"
         ? `${base}/settlement-networks`
         : service === "receiver"

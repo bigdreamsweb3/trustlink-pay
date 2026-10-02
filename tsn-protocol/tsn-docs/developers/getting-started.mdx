@@ -33,15 +33,17 @@ clients or construct raw settlement instructions.
     Configure the Devnet endpoints for your integration:
 
     ```bash title="Environment variables"
-    export TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+    export TSN_RPC_URL=https://tsn-rpc-gateway.vercel.app
     export TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
     export SOLANA_CLUSTER=devnet
     ```
 
   </Step>
   <Step title="Check the TSN network before signing">
-    Let the SDK select local services first and live services second. Do this
-    before preparing a payment and again before requesting a wallet signature.
+    Let the SDK select local Node and Receiver services first and their live
+    services second. Solana requests always use the configured TSN RPC gateway.
+    Do this before preparing a payment and again before requesting a wallet
+    signature.
 
     ```ts title="SDK service gate"
     import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
@@ -50,12 +52,11 @@ clients or construct raw settlement instructions.
       local: {
         node: "http://127.0.0.1:8000",
         receiver: "http://127.0.0.1:8010",
-        rpc: "http://127.0.0.1:8787",
       },
       live: {
         node: process.env.TSN_NODE_URL ?? null,
         receiver: process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app",
-        rpc: process.env.TSN_RPC_GATEWAY_URL ?? "https://tsn-rpc-gateway.vercel.app",
+        rpc: process.env.TSN_RPC_URL ?? "https://tsn-rpc-gateway.vercel.app",
       },
     });
 
@@ -64,7 +65,8 @@ clients or construct raw settlement instructions.
     }
     ```
 
-    Cranker availability comes from the Node heartbeat-backed route response;
+    A gateway failure blocks Solana actions rather than switching to another
+    RPC. Cranker availability comes from the Node heartbeat-backed route response;
     a Cranker is a worker, not a public application HTTP service.
 
   </Step>
@@ -76,7 +78,7 @@ clients or construct raw settlement instructions.
 
     const tinRecord = await resolveTinRoute({
       tin: "1234567890",
-      rpcUrl: process.env.TSN_RPC_GATEWAY_URL!,
+      rpcUrl: process.env.TSN_RPC_URL ?? "https://tsn-rpc-gateway.vercel.app",
       programId: "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     });
     ```

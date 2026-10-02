@@ -68,15 +68,19 @@ This template breaks the final demo into short cuts that can be recorded indepen
 
 **Protocol boundary:** Receiver → Node → Receiver. The Node leases the work through the Receiver API, validates the signed payload, and returns its decision. The Receiver stays the durable source of truth; the Node does not own a separate TIN work database. The Node uses the Receiver's internal state API for its replay guard.
 
+The Node's `VERIFIED` or `REJECTED` decision carries a dedicated Ed25519
+attestation. The Receiver validates it before recording the decision, and the
+Cranker validates it again against the exact work projection before execution.
+
 **Voiceover cue:** “The Node does not accept a browser submission directly. It leases work from the Receiver, verifies the authorization and exact payload commitment, and returns evidence for the next settlement step.”
 
 ## Cut 06 — Cranker authorization and settlement submission
 
 **Length:** 12–18 seconds.
 
-**Screen action:** Show the Cranker process claiming the verified operation. Keep Mother-DNA, signing keys, and private route data out of view.
+**Screen action:** Show the Cranker validating the signed Node receipt, claiming the verified operation, and selecting direct or staged creation. Keep Mother-DNA, signing keys, and private route data out of view.
 
-**Capture:** Claim or lease ID, authorized operation, Cranker state transition, and the Solana submission attempt.
+**Capture:** Claim or lease ID, receipt-validation result, authorized operation, direct/staged path, transaction-size guard, stage signatures when staging is used, and final Solana submission attempt.
 
 **Protocol boundary:** Node verification → authorized Cranker → Solana program. The Cranker submits the already-authorized operation; it does not create a new user intent or choose a different payout.
 
@@ -86,13 +90,13 @@ This template breaks the final demo into short cuts that can be recorded indepen
 
 **Length:** 12–20 seconds.
 
-**Screen action:** Show the finalized transaction signature, program result, assigned ten-digit TIN, and registry resolution if the run completes successfully.
+**Screen action:** Show the finalized creation signature, TIN V1 registry result, and the TIN resolved for the owner session if the run completes successfully.
 
 **Capture:** Transaction signature, slot or confirmation state, program instruction, assigned TIN, and the final identity status in TSN XP.
 
-**Protocol boundary:** Solana program finalization is the point at which the TIN can be presented as issued. Earlier SDK, Receiver, or Node states must remain labelled as prepared, accepted, or verified.
+**Protocol boundary:** Solana finalization creates the commitment-derived TIN V1 registry account. The TIN and display name remain encrypted in the registry; the trusted XP session resolves the identity using the protected lookup secret and then displays it to the owner. Earlier SDK, Receiver, or Node states must remain labelled as prepared, accepted, or verified.
 
-**Voiceover cue:** “Only after Solana finalizes the program instruction does TSN XP show the TIN as issued. The transaction signature and registry result provide the proof for this state.”
+**Voiceover cue:** “The Cranker finalizes the TIN V1 registry account on Solana. TSN XP then resolves the private identity for the owner session, while the transaction and registry provide independently checkable completion evidence.”
 
 ## Cut 08 — Prepare a private TIN transfer
 
@@ -159,6 +163,7 @@ This template breaks the final demo into short cuts that can be recorded indepen
 - Capture a fresh request ID and transaction signature for the final run.
 - Record browser, Receiver, Node, Cranker, and Solana evidence as separate clips when possible.
 - Redact wallet addresses beyond the shortened UI form, API keys, signing keys, encrypted seeds, lookup secrets, and private route payloads.
+- The current XP does not recover an issued TIN by wallet after reconnect or on another device; keep the creation session open through the identity-card shot.
 - Keep each cut under twenty seconds so the final edit can remove failed attempts without re-recording the whole story.
 - Name clips with the cut number and date, for example `01-network-ready-2026-09-26.webm`.
 

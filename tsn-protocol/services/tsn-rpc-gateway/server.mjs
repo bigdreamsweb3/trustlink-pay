@@ -1,5 +1,7 @@
 import http from "node:http";
-import { WebSocketServer, WebSocket } from "ws";
+import * as ws from "ws";
+
+const { WebSocketServer, WebSocket } = ws;
 
 import { createRpcGatewayApp } from "./gateway.mjs";
 import { getRpcGatewayConfig, redactRpcUrlForDisplay } from "./config.mjs";

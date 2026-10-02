@@ -27,6 +27,21 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: CreateTinV
     if !payer.is_signer || *instructions_sysvar.key != INSTRUCTIONS_ID {
         return Err(ProgramError::MissingRequiredSignature);
     }
+    apply(program_id, payer, global_state, registry, instructions_sysvar, system_program, params)
+}
+
+pub fn apply<'a>(
+    program_id: &Pubkey,
+    payer: &AccountInfo<'a>,
+    global_state: &AccountInfo<'a>,
+    registry: &AccountInfo<'a>,
+    instructions_sysvar: &AccountInfo<'a>,
+    system_program: &AccountInfo<'a>,
+    params: CreateTinV1Params,
+) -> ProgramResult {
+    if !payer.is_signer || *instructions_sysvar.key != INSTRUCTIONS_ID {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
     if params.lookup_commitment == [0; 32]
         || params.encrypted_identity_envelope.is_empty()
         || params.encrypted_master_seed.is_empty()
@@ -132,9 +147,15 @@ fn verify_owner_intent(
     expected: &[u8; 32],
 ) -> Result<bool, ProgramError> {
     let current_index = load_current_index_checked(instructions_sysvar)? as usize;
+    let readable_message = canonical_owner_intent_message(expected);
     for index in 0..current_index {
         if let Ok(ix) = load_instruction_at_checked(index, instructions_sysvar) {
-            if ix.program_id == solana_program::ed25519_program::ID && verify_ed25519(&ix.data, owner, expected) {
+            // Keep supporting raw-hash proofs for old queued work, while new
+            // TIN XP requests prove approval with readable UTF-8 text.
+            if ix.program_id == solana_program::ed25519_program::ID
+                && (verify_ed25519(&ix.data, owner, expected)
+                    || verify_ed25519(&ix.data, owner, &readable_message))
+            {
                 return Ok(true);
             }
         }
@@ -142,7 +163,23 @@ fn verify_owner_intent(
     Ok(false)
 }
 
-fn verify_ed25519(data: &[u8], owner: &Pubkey, message: &[u8; 32]) -> bool {
+fn canonical_owner_intent_message(intent_hash: &[u8; 32]) -> Vec<u8> {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut message = Vec::with_capacity(256);
+    message.extend_from_slice(
+        b"TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: ",
+    );
+    for byte in intent_hash {
+        message.push(HEX[(byte >> 4) as usize]);
+        message.push(HEX[(byte & 0x0f) as usize]);
+    }
+    message.extend_from_slice(
+        b"\n\nProtocol: Transfer Identity Network\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+    );
+    message
+}
+
+fn verify_ed25519(data: &[u8], owner: &Pubkey, message: &[u8]) -> bool {
     if data.len() < 112 || data[0] != 1 { return false; }
     let pubkey_offset = u16::from_le_bytes([data[6], data[7]]) as usize;
     let message_offset = u16::from_le_bytes([data[10], data[11]]) as usize;

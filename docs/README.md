@@ -11,6 +11,7 @@ Read these documents in order:
 3. [Identity and TIN](./identity-and-tin.md) — the payment identity, privacy-receiving root, resolution and encrypted boundaries.
 4. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
 5. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+   The Node's signed verification receipt is checked by both Receiver and Cranker before execution.
 6. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
 7. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
 8. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
@@ -33,6 +34,7 @@ Supporting references:
 - [TSN Receiver, Node and Cranker architecture](./tsn-receiver-node-architecture.md)
 - [Public mentions](./mentions.md)
 - [TIN creation data flow](./TSN-TIN-CRANKER-DATAFLOW.md) — Receiver, Node, Cranker, encryption, validation, and evidence boundaries.
+- [Canonical TIN V1 flow](./protocol-flows/tin-creation/README.md) — current Receiver-first issuance, signed Node decision, Cranker lease, staged Solana creation, and completion evidence. Use this instead of historical program-assigned walkthroughs.
 - [Devnet evidence capture](./TSN-DEVNET-EVIDENCE-CAPTURE.md) — capture a real Cranker transaction and verify its finalized Solana state.
 - [TSN Node keys](./TSN-NODE-KEYS.md) — required credentials, key generation, ownership, and rotation.
 - [Receiver storage modes](./team/operations/receiver-storage-modes.md) — local JSON testing versus live Firebase persistence and required boundaries.

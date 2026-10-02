@@ -1,23 +1,14 @@
 import { Connection, type Commitment } from "@solana/web3.js";
 
 export const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
-const LOCAL_TSN_RPC_GATEWAY_URL = "http://127.0.0.1:8787";
 
 type RpcSelectionOptions = {
   frontendSafe?: boolean;
 };
 
 export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
-  const configured = process.env.TSN_RPC_GATEWAY_URL?.trim();
-  if (configured) {
-    const selected = configured.replace(/\/+$/, "");
-    return selected === LOCAL_TSN_RPC_GATEWAY_URL
-      ? [selected, DEFAULT_TSN_RPC_GATEWAY_URL]
-      : [selected];
-  }
-  return process.env.VERCEL
-    ? [DEFAULT_TSN_RPC_GATEWAY_URL]
-    : [LOCAL_TSN_RPC_GATEWAY_URL, DEFAULT_TSN_RPC_GATEWAY_URL];
+  const configured = process.env.TSN_RPC_URL?.trim() || process.env.TSN_RPC_GATEWAY_URL?.trim();
+  return [configured ? configured.replace(/\/+$/, "") : DEFAULT_TSN_RPC_GATEWAY_URL];
 }
 
 export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {

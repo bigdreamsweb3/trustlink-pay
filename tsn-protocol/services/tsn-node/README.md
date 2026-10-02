@@ -28,9 +28,10 @@ Copy `.env.example` to `.env` and configure:
 - `GITHUB_TOKEN` - GitHub token used to archive closed epochs
 - `TSN_RECEIVER_URL` - Receiver base URL
 - `TSN_RECEIVER_NODE_API_KEY` - Node-to-Receiver service credential
+- `TSN_NODE_VERIFICATION_SIGNING_KEY` - dedicated Ed25519 private seed used to sign verification and rejection receipts
 - `TSN_NODE_WAKE_TIMEOUT_MS` - Receiver wake request timeout (default `2500`)
 - `TSN_PROGRAM_ID` - TSN settlement program id scanned for epoch treasury and `CrankerVault` accounts
-- `TSN_RPC_GATEWAY_URL` - The single TrustLink RPC gateway used for every on-chain read and settlement authorization check
+- `TSN_RPC_URL` - Preferred endpoint for on-chain reads and settlement authorization checks; defaults to the TSN RPC gateway
 - `EPOCH_HOURS` - epoch duration, default `7`
 
 The production Node has no local JSON or direct Firebase store. Firebase belongs
@@ -38,6 +39,29 @@ to the TSN Receiver. Direct Firebase and JSON adapters require explicit
 isolated-test flags and are not production fallbacks.
 
 Operator daemon state files such as `operator-state.json` are private per operator and must never be read by the TSN Node. Liquidity is discovered by scanning the TSN program for public `CrankerVault` accounts, then querying each vault SPL token account balance on-chain.
+
+## Signed verification receipts
+
+The Node signs every `VERIFIED` and `REJECTED` decision with a dedicated
+Ed25519 key. The receipt binds the work ID and kind, original Receiver payload
+commitment, decision, verification evidence commitment, Cranker execution
+payload commitment, Node lease, Node identity, key ID, and signing time. The
+Receiver checks the signature and current lease before storing the decision;
+the Cranker checks the signature and exact execution payload before submitting
+work. This signing key is separate from settlement, route, owner, and Cranker
+keys.
+
+Generate one keypair locally, then configure the private value only in the
+Node's environment and the public value in both Receiver and Cranker:
+
+```bash
+python -c "from nacl.signing import SigningKey; import base64; k=SigningKey.generate(); print('TSN_NODE_VERIFICATION_SIGNING_KEY='+base64.b64encode(bytes(k)).decode()); print('TSN_NODE_VERIFICATION_PUBLIC_KEY='+base64.b64encode(bytes(k.verify_key)).decode())"
+```
+
+Keep the private seed in the Node secret store. Never put it in Receiver,
+Cranker, browser, or repository configuration. All three services must use the
+same pinned public key; rotate it by updating the Receiver and Cranker pins
+before switching the Node signer.
 
 ## API Endpoints
 

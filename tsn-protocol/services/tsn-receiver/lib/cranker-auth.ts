@@ -12,9 +12,11 @@ const MAX_LEASE_ATTEMPTS_PER_MINUTE = 30;
 // deployment. A stale hosted environment variable must not silently move
 // Mother-DNA validation to another program or cluster.
 const VERIFIED_TSN_PROGRAM_ID = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";
-const VERIFIED_TSN_SOLANA_RPC_URL = "https://api.devnet.solana.com";
+const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
 const TSN_PROGRAM_ID = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
-const SOLANA_RPC_URL = process.env.TSN_SOLANA_RPC_URL?.trim() || VERIFIED_TSN_SOLANA_RPC_URL;
+const SOLANA_RPC_URL = process.env.TSN_RPC_URL?.trim()
+  || process.env.TSN_RPC_GATEWAY_URL?.trim()
+  || DEFAULT_TSN_RPC_GATEWAY_URL;
 const MOTHER_SEED = Buffer.from("tsn_mother_escrow");
 const CRANKER_SEED = Buffer.from("tsn_cranker");
 const ANCHOR_DISCRIMINATOR_BYTES = 8;
@@ -33,11 +35,28 @@ async function assertMotherDnaCranker(operatorText: string): Promise<void> {
     [CRANKER_SEED, mother.toBuffer(), operator.toBuffer()],
     TSN_PROGRAM_ID,
   )[0];
-  const connection = new Connection(SOLANA_RPC_URL, "confirmed");
-  const [motherInfo, crankerInfo] = await Promise.all([
-    connection.getAccountInfo(mother, "confirmed"),
-    connection.getAccountInfo(cranker, "confirmed"),
-  ]);
+  let motherInfo = null;
+  let crankerInfo = null;
+  let rpcFailure: unknown;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const connection = new Connection(SOLANA_RPC_URL, "confirmed");
+      [motherInfo, crankerInfo] = await Promise.all([
+        connection.getAccountInfo(mother, "confirmed"),
+        connection.getAccountInfo(cranker, "confirmed"),
+      ]);
+      rpcFailure = undefined;
+      break;
+    } catch (error) {
+      rpcFailure = error;
+      const message = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+      if (attempt === 3 || !/fetch failed|timeout|timed out|ECONNRESET|EAI_AGAIN|UND_ERR_CONNECT/i.test(message)) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+    }
+  }
+  if (rpcFailure) {
+    throw new Error("CRANKER_RPC_UNAVAILABLE: Mother-DNA lookup failed at the configured RPC endpoint after retries");
+  }
   if (!motherInfo || !crankerInfo || !motherInfo.owner.equals(TSN_PROGRAM_ID) || !crankerInfo.owner.equals(TSN_PROGRAM_ID)) {
     throw new Error("CRANKER_MOTHER_DNA_NOT_FOUND");
   }
@@ -69,6 +88,16 @@ function challengeId(publicKey: string, nonce: string) {
   return createHash("sha256").update(`${publicKey}|${nonce}`).digest("hex");
 }
 
+async function pruneCrankerChallenges() {
+  const expiredAt = new Date().toISOString();
+  const [used, expired] = await Promise.all([
+    challengeCollection.where("used", "==", true).limit(100).get(),
+    challengeCollection.where("expiresAt", "<=", expiredAt).limit(100).get(),
+  ]);
+  const stale = new Map([...used.docs, ...expired.docs].map((document) => [document.id, document.ref]));
+  await Promise.all([...stale.values()].map((reference) => reference?.delete()));
+}
+
 function decodeBase58(value: string): Buffer {
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   let number = 0n;
@@ -95,6 +124,7 @@ function publicKeyObject(publicKey: string) {
 
 export async function issueCrankerChallenge(publicKey: string) {
   await assertMotherDnaCranker(publicKey);
+  await pruneCrankerChallenges();
   const nonce = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS).toISOString();
   await challengeCollection.doc(challengeId(publicKey, nonce)).create({ publicKey, nonce, expiresAt, used: false });

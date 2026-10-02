@@ -42,12 +42,20 @@ The daemon logs pool state, settlement submission, and the final Receiver state.
 It never logs private keys, master seeds, decrypted commitments, or raw
 authorization payloads.
 
-Before leasing work, startup checks the configured Solana RPC candidates with
-`getVersion`. When local RPC is selected but unavailable, it tries the
-configured TSN live gateway before any Receiver work is claimed. Start the
-local RPC gateway for local-first operation. The gateway must have a working
-upstream; its `getHealth` response alone does not prove that account reads or
-transaction submission work.
+Before executing Node-verified funding or TIN work, the Cranker verifies the
+Node's Ed25519 attestation with `TSN_NODE_VERIFICATION_PUBLIC_KEY` and checks
+the signed commitment against the exact execution payload returned by the
+Receiver. Configure this public key from the Node verification keypair; the
+Cranker does not need the private signing key. Solana payout authorizations
+continue to use their separate Node signature, which the TSN program verifies
+on-chain.
+
+Before leasing work, startup checks the single configured TSN RPC gateway with
+`getVersion` and validates Mother Escrow through that same gateway. If either
+check fails, the Cranker stops before claiming Receiver work; it does not switch
+to a local validator or a public Solana endpoint. The gateway must have a
+working upstream; its `getHealth` response alone does not prove that account
+reads or transaction submission work.
 
 ## Local Operation
 
@@ -67,8 +75,15 @@ initialization, environment configuration, and troubleshooting, see
 - Do not log decrypted settlement payloads.
 - Do not expose private routes in terminal output.
 - Treat repeated simulation failures as quarantine candidates.
-- Use `TSN_RPC_GATEWAY_URL` for Cranker Solana traffic; do not point the daemon
-  at an unapproved upstream in production.
+- Use `TSN_RPC_URL` to choose the Cranker's RPC endpoint. It defaults to the TSN
+  RPC gateway; local development may point it to `http://127.0.0.1:8787`.
+  Startup validates only that endpoint and does not fall back to another RPC.
+- At startup, the Cranker checks `TSN_LOCAL_RECEIVER_URL` (default
+  `http://127.0.0.1:8010`) at `/api/health`. A ready local Receiver is pinned
+  for the process lifetime so leases and results stay in the same work store.
+  If no local Receiver is ready, it uses `TSN_RECEIVER_URL` (default
+  `https://tsn-receiver-kappa.vercel.app`). Set both explicitly when operating
+  a non-default environment.
 
 ## Related Docs
 

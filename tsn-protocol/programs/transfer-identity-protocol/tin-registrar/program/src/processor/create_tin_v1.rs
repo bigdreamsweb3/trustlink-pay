@@ -12,7 +12,7 @@ use crate::{
     cpi::create_pda_account,
     error::Error,
     instruction_auto::CreateTinV1Params,
-    state::{validate_tcap_route, GlobalState, TinV1Account},
+    state::{validate_tcap_route, GlobalState, TinV1Account, TinV1OwnerRecoveryAccount},
     utils::{assert_pda, assert_program_owned, load_borsh, store_borsh},
 };
 
@@ -21,13 +21,14 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: CreateTinV
     let payer = next_account_info(accounts_iter)?;
     let global_state = next_account_info(accounts_iter)?;
     let registry = next_account_info(accounts_iter)?;
+    let owner_recovery = next_account_info(accounts_iter)?;
     let instructions_sysvar = next_account_info(accounts_iter)?;
     let system_program = next_account_info(accounts_iter)?;
 
     if !payer.is_signer || *instructions_sysvar.key != INSTRUCTIONS_ID {
         return Err(ProgramError::MissingRequiredSignature);
     }
-    apply(program_id, payer, global_state, registry, instructions_sysvar, system_program, params)
+    apply(program_id, payer, global_state, registry, owner_recovery, instructions_sysvar, system_program, params)
 }
 
 pub fn apply<'a>(
@@ -35,6 +36,7 @@ pub fn apply<'a>(
     payer: &AccountInfo<'a>,
     global_state: &AccountInfo<'a>,
     registry: &AccountInfo<'a>,
+    owner_recovery: &AccountInfo<'a>,
     instructions_sysvar: &AccountInfo<'a>,
     system_program: &AccountInfo<'a>,
     params: CreateTinV1Params,
@@ -44,6 +46,7 @@ pub fn apply<'a>(
     }
     if params.lookup_commitment == [0; 32]
         || params.encrypted_identity_envelope.is_empty()
+        || params.encrypted_tin_recovery.len() < 28
         || params.encrypted_master_seed.is_empty()
         || params.route_version == 0
         || params.expiry_ts < Clock::get()?.unix_timestamp
@@ -74,6 +77,11 @@ pub fn apply<'a>(
     }
     let (expected_registry, bump) = crate::tin_v1_pda(program_id, &params.lookup_commitment);
     assert_pda(registry, &expected_registry)?;
+    let (expected_recovery, recovery_bump) = crate::tin_v1_owner_recovery_pda(program_id, &params.owner_pubkey);
+    assert_pda(owner_recovery, &expected_recovery)?;
+    if !owner_recovery.data_is_empty() {
+        return Err(Error::RegistryAlreadyInitialized.into());
+    }
 
     let mut global: GlobalState = load_borsh(global_state)?;
     global.next_sequence = global.next_sequence.checked_add(1).ok_or(Error::Overflow)?;
@@ -112,6 +120,23 @@ pub fn apply<'a>(
         &seeds,
     )?;
     store_borsh(registry, &account)?;
+    let recovery = TinV1OwnerRecoveryAccount {
+        version: TinV1OwnerRecoveryAccount::VERSION,
+        bump: recovery_bump,
+        owner_pubkey: params.owner_pubkey,
+        encrypted_tin: params.encrypted_tin_recovery,
+    };
+    let recovery_seeds: [&[u8]; 3] = [crate::seeds::TIN_V1_OWNER_RECOVERY, params.owner_pubkey.as_ref(), &[recovery_bump]];
+    create_pda_account(
+        payer,
+        owner_recovery,
+        system_program,
+        program_id,
+        TinV1OwnerRecoveryAccount::space(recovery.encrypted_tin.len()),
+        0,
+        &recovery_seeds,
+    )?;
+    store_borsh(owner_recovery, &recovery)?;
     store_borsh(global_state, &global)
 }
 
@@ -123,6 +148,8 @@ fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
         b"TSN_TIN_V1_CREATE",
         params.owner_pubkey.as_ref(),
         &params.lookup_commitment,
+        &(params.encrypted_tin_recovery.len() as u32).to_le_bytes(),
+        &params.encrypted_tin_recovery,
         &identity_len,
         &params.encrypted_identity_envelope,
         &seed_len,

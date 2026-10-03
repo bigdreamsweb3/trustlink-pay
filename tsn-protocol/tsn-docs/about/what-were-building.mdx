@@ -1,7 +1,7 @@
 ---
 title: "What TrustLink Labs Is Building: Protocols and Products"
 sidebarTitle: "What We're Building"
-description: "Concrete artifacts from TrustLink Labs: TSN protocol, TIN registry, GPRU authorization, TCAP credit-only transitions, TrustLink Pay reference app, and TSN SDK."
+description: "Concrete artifacts from TrustLink Labs: TSN protocol, TIN registry, GPRU authorization, TCAP credit-only transitions, TSN XP, and TSN SDK."
 ---
 
 TrustLink Labs builds open infrastructure for stablecoin payments. The current stack includes protocol programs, network services, a reference application, and SDKs. Everything is developed on Solana and designed to separate identity, authorization, settlement, and private balance accounting into independent layers.
@@ -29,9 +29,11 @@ GPRU is a TSN-derived settlement identity for authorization and routing only. It
 
 The Transfer Confidential Asset Protocol manages credit-only tip transitions and encrypted owner snapshots. TCAP stores commitments, sequence, policy, and nullifiers on chain. Private balance values remain in AES-GCM encrypted snapshots that the owner device decrypts locally.
 
-### TrustLink Pay
+### TSN XP
 
-TrustLink Pay is the reference application on top of TSN. It demonstrates native TIN-to-TIN payments, wallet-to-TIN routes, TIN-to-wallet public exits, and wallet-to-wallet compatibility flows. All routes use the same intent, verification, lease, commitment, and settlement boundaries.
+TSN XP is the active user-facing TSN product and SDK integration experience in development. Its Devnet flows demonstrate TIN identity, wallet authorization, Receiver ingress, Node verification, Cranker execution, and Solana finality. A wallet owns and authorizes its TIN; reconnect-based identity recovery is a known product gap until the wallet-authorized private lookup path is implemented.
+
+The separately hosted TrustLink Pay site is an earlier application surface and should not be presented as the current TSN XP product.
 
 ### TSN SDK
 
@@ -50,8 +52,8 @@ The `@trustlink/tsn-sdk` package provides TypeScript interfaces for intent const
     Build your first TSN payment intent.
   </Card>
 
-  <Card title="TrustLink Pay" icon="external-link" href="https://trustlink-pay.vercel.app">
-    Try the reference application.
+  <Card title="TSN XP" icon="external-link">
+    Active product and SDK integration experience; Devnet workflows are in development.
   </Card>
 </CardGroup>
 

@@ -11,13 +11,13 @@
 
 Show the TSN XP Overview screen on Solana Devnet with the network health indicators.
 
-**Voiceover:** “This week we moved the public product from the earlier TrustLink Pay surface into TSN XP, the identity and transfer experience for the Transfer Settlement Network.”
+**Voiceover:** “This week we moved the product experience from the earlier TrustLink Pay surface into TSN XP, the identity and transfer experience for the Transfer Settlement Network.”
 
 ### 0:08–0:20 — Real SDK flow
 
 Show wallet connection, the identity card, and the Create TIN modal preparing an owner-authorized request.
 
-**Voiceover:** “The dApp now uses the real TSN SDK for wallet context, private TIN preparation, transfer intents, and network readiness checks.”
+**Voiceover:** “TSN XP now uses the TSN SDK for wallet context, private TIN preparation, transfer intents, and network readiness checks.”
 
 ### 0:20–0:35 — Receiver-first architecture
 

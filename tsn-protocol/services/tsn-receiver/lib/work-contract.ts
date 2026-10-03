@@ -61,7 +61,7 @@ const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
     "encryptedMetadataHash", "pruConfigurationHash", "encryptedPublicRouteEnvelope",
     "routeVersion", "routeNonce", "tcapRouteVersion", "tcapRelationshipCommitment",
     "tcapRelationshipReference", "tcapPolicyCommitment", "tin", "lookupCommitment", "lookupIssuanceProof",
-    "encryptedIdentityEnvelope", "newDisplayName", "newEncryptedMasterSeed",
+    "encryptedIdentityEnvelope", "encryptedTinRecovery", "newDisplayName", "newEncryptedMasterSeed",
     "newEncryptedMetadataHash", "newPruConfigurationHash", "newEncryptedPublicRouteEnvelope",
     "newRouteVersion", "newRouteNonce", "intentId", "intent_id", "source",
   ]),
@@ -167,7 +167,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
     : kind === "TIN_OPERATION"
       ? new Set([
           "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry",
-          "nonce", "displayName", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
+          "nonce", "displayName", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
           "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce", "tcapRouteVersion",
           "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
         ])

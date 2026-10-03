@@ -33,6 +33,7 @@ pub fn stage(
         return Err(ProgramError::MissingRequiredSignature);
     }
     let identity_len = params.encrypted_identity_envelope_len as usize;
+    let recovery_len = params.encrypted_tin_recovery_len as usize;
     let seed_len = params.encrypted_master_seed_len as usize;
     let route_len = params.encrypted_public_route_envelope_len as usize;
     if params.lookup_commitment == [0; 32]
@@ -40,11 +41,12 @@ pub fn stage(
         || params.route_version == 0
         || params.expiry_ts < Clock::get()?.unix_timestamp
         || identity_len == 0
+        || recovery_len < 28
         || seed_len == 0
         || identity_len > TinV1CreationStaging::MAX_BLOB_LEN
         || seed_len > TinV1CreationStaging::MAX_BLOB_LEN
         || route_len > TinV1CreationStaging::MAX_BLOB_LEN
-        || identity_len + seed_len + route_len > TinV1CreationStaging::MAX_BLOB_LEN
+        || identity_len + recovery_len + seed_len + route_len > TinV1CreationStaging::MAX_BLOB_LEN
         || !validate_tcap_route(
             params.tcap_route_version,
             &params.pru_configuration_hash,
@@ -72,6 +74,7 @@ pub fn stage(
             || existing.lookup_commitment != params.lookup_commitment
             || existing.intent_hash != params.intent_hash
             || existing.encrypted_identity_envelope.len() != identity_len
+            || existing.encrypted_tin_recovery.len() != recovery_len
             || existing.encrypted_master_seed.len() != seed_len
             || existing.encrypted_public_route_envelope.len() != route_len
             || existing.encrypted_metadata_hash != params.encrypted_metadata_hash
@@ -97,6 +100,8 @@ pub fn stage(
         intent_hash: params.intent_hash,
         encrypted_identity_envelope: vec![0; identity_len],
         identity_written: 0,
+        encrypted_tin_recovery: vec![0; recovery_len],
+        recovery_written: 0,
         encrypted_master_seed: vec![0; seed_len],
         master_seed_written: 0,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
@@ -116,7 +121,7 @@ pub fn stage(
         staging,
         system,
         program_id,
-        TinV1CreationStaging::space(identity_len, seed_len, route_len),
+        TinV1CreationStaging::space(identity_len, recovery_len, seed_len, route_len),
         0,
         &[
             crate::seeds::TIN_V1_CREATE_STAGE,
@@ -158,6 +163,7 @@ pub fn append_chunk(
         0 => (&mut state.encrypted_identity_envelope, &mut state.identity_written),
         1 => (&mut state.encrypted_master_seed, &mut state.master_seed_written),
         2 => (&mut state.encrypted_public_route_envelope, &mut state.route_written),
+        3 => (&mut state.encrypted_tin_recovery, &mut state.recovery_written),
         _ => return Err(ProgramError::InvalidArgument),
     };
     let offset = params.offset as usize;
@@ -187,6 +193,7 @@ pub fn finalize(
     let payer = next_account_info(accounts_iter)?;
     let global_state = next_account_info(accounts_iter)?;
     let registry = next_account_info(accounts_iter)?;
+    let owner_recovery = next_account_info(accounts_iter)?;
     let instructions = next_account_info(accounts_iter)?;
     let system = next_account_info(accounts_iter)?;
     let staging = next_account_info(accounts_iter)?;
@@ -199,6 +206,7 @@ pub fn finalize(
         || state.intent_hash != params.intent_hash
         || state.expiry_ts < Clock::get()?.unix_timestamp
         || state.identity_written as usize != state.encrypted_identity_envelope.len()
+        || state.recovery_written as usize != state.encrypted_tin_recovery.len()
         || state.master_seed_written as usize != state.encrypted_master_seed.len()
         || state.route_written as usize != state.encrypted_public_route_envelope.len()
     {
@@ -215,6 +223,7 @@ pub fn finalize(
     let creation = CreateTinV1Params {
         owner_pubkey: state.owner_pubkey,
         lookup_commitment: state.lookup_commitment,
+        encrypted_tin_recovery: state.encrypted_tin_recovery,
         encrypted_identity_envelope: state.encrypted_identity_envelope,
         encrypted_master_seed: state.encrypted_master_seed,
         encrypted_metadata_hash: state.encrypted_metadata_hash,
@@ -234,6 +243,7 @@ pub fn finalize(
         payer,
         global_state,
         registry,
+        owner_recovery,
         instructions,
         system,
         creation,

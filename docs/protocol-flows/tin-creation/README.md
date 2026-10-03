@@ -8,19 +8,21 @@ issuance.
 ## Current sequence
 
 1. The XP backend uses a CSPRNG to generate a ten-digit TIN.
-2. It uses the shared, protected `TINS_LOOKUP_SECRET` to derive the keyed
-   lookup commitment and checks the commitment-derived PDA on the selected
+2. It uses the universal public all-zero namespace value, or the issuer's
+   private namespace value, to derive the lookup commitment and checks the
+   commitment-derived PDA on the selected
    Solana cluster. If the account exists, it generates another TIN.
 3. The SDK encrypts the TIN and display name into the identity envelope and
    builds the V1 owner intent. The browser receives ciphertext and commitments,
-   never the lookup secret.
-4. The owner wallet signs the raw 32-byte intent hash. The XP backend adds an
+   never a private issuer lookup value.
+4. The owner wallet signs the canonical UTF-8 approval message that binds the
+   32-byte intent hash. The XP backend adds an
    HMAC issuance proof bound to the owner, commitment, intent hash, nonce, and
    expiry. The proof contains no lookup secret.
 5. The SDK submits the V1 payload through Receiver ingress. Receiver stores
    durable `TIN_OPERATION` work and wakes the Node without sending payload data
    in the wake request.
-6. The Node leases the Receiver work, validates the V1 hash, owner signature,
+6. The Node leases the Receiver work, validates the V1 hash, canonical owner signature,
    HMAC proof, expiry, and TCap route commitments, then marks it `VERIFIED` or
    `REJECTED` on Receiver.
 7. An authorized Cranker leases only `VERIFIED` work and submits
@@ -54,13 +56,27 @@ XP backend and Node, never Receiver, browser code, Cranker, or the repo.
 
 ## XP identity lookup limitation
 
-The SDK can resolve a TIN when the application supplies the TIN and its
-authorized lookup secret. The registry intentionally does not provide a
-publicly enumerable wallet-to-TIN reverse index. TSN XP currently retains a
-newly issued TIN in the issuing browser session and resolves its identity after
-finalization; reconnecting the wallet or opening another device does not yet
-recover that TIN automatically. A future recovery flow must be explicitly
-owner-authorized and preserve the keyed lookup boundary.
+The wallet is the user's ownership and authorization anchor: only its owner
+can approve creation and wallet-controlled identity actions. The TIN registry
+is not derived directly from the wallet address. The public all-zero lookup
+value in the universal issuer allows anyone to derive universal TIN/name
+records, which is intentional and does not by itself reveal transfer history.
+The product requirement is that reconnecting the same wallet
+automatically restores the owner's TIN without requiring the ten digits, and
+that the program enforces one TIN per owner in the universal issuer namespace.
+TSN XP does not implement these features yet, so reconnecting does not restore
+the identity and repeated creation is currently possible. Recovery requires a
+private owner-bound record or equivalent mechanism; do not add a plaintext
+`wallet -> TIN` index. Issuer-specific namespaces may use private lookup
+values to restrict identity resolution. These are product and program gaps,
+not a loss of ownership.
+
+An issuer may place a private namespace value behind its own resolver API and
+give partners scoped API keys. Partners submit a TIN to that API without
+receiving the issuer value. This API model is a planned integration pattern;
+it does not make the partner an owner of the TIN or authorize activity
+monitoring. Wallet authorization remains the boundary for owner activity
+access.
 
 ## Evidence boundary
 

@@ -21,6 +21,10 @@ const TINS_REGISTRY_SEED = Buffer.from("registry");
 const TINS_PLATFORM_REGISTRY_SEED = Buffer.from("platform-registry");
 const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
 const TINS_V1_CREATE_STAGE_SEED = Buffer.from("tin-v1-create-stage");
+const TINS_V1_OWNER_RECOVERY_SEED = Buffer.from("tin-v1-owner-recovery");
+const TIN_V1_RECOVERY_V2_MAGIC = Buffer.from("TSNTIN02", "ascii");
+const TIN_V1_RECOVERY_V3_MAGIC = Buffer.from("TSNTIN03", "ascii");
+const TIN_V1_RECOVERY_V4_MAGIC = Buffer.from("TSNTIN04", "ascii");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -666,6 +670,7 @@ function serializePrivateTinCreationParams(params: {
 export function serializeTinV1CreationParams(params: {
   ownerPubkey: PublicKey;
   lookupCommitment: Buffer | Uint8Array;
+  encryptedTinRecovery: Buffer | Uint8Array;
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash: Buffer | Uint8Array;
@@ -702,6 +707,7 @@ export function serializeTinV1CreationParams(params: {
     "tcapPolicyCommitment",
   );
   const body: Buffer[] = [params.ownerPubkey.toBuffer(), lookupCommitment];
+  appendBytes(body, params.encryptedTinRecovery);
   appendBytes(body, params.encryptedIdentityEnvelope);
   appendBytes(body, params.encryptedMasterSeed);
   body.push(
@@ -846,12 +852,221 @@ export function getTinV1CreationStagingPda(
   )[0];
 }
 
+export function getTinV1OwnerRecoveryPda(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
+  return PublicKey.findProgramAddressSync(
+    [TINS_V1_OWNER_RECOVERY_SEED, ownerPubkey.toBuffer()],
+    getTinsProgramPublicKey(programId),
+  )[0];
+}
+
+export function buildTinV1OwnerRecoveryMessage(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
+  return Buffer.from([
+    "TrustLink",
+    "Recover TSN identity",
+    "",
+    "Action",
+    "",
+    "Decrypt the 10-digit TIN and display name saved for this wallet.",
+    "",
+    "Wallet",
+    "",
+    ownerPubkey.toBase58(),
+    "",
+    "Network",
+    "",
+    "Solana Devnet",
+    "",
+    "TIN program",
+    "",
+    getTinsProgramPublicKey(programId).toBase58(),
+    "",
+    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
+    "",
+    "Only approve this request if you started TIN recovery in TSN XP.",
+  ].join("\n"), "utf8");
+}
+
+function buildTinV1OwnerRecoveryMessageV3(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
+  return Buffer.from([
+    "TrustLink",
+    "Recover TSN identity",
+    "",
+    "Action",
+    "Decrypt the 10-digit TIN and display name saved for this wallet.",
+    "",
+    "Wallet",
+    ownerPubkey.toBase58(),
+    "",
+    "Network",
+    "Solana Devnet",
+    "",
+    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
+    "Only approve this request if you started TIN recovery in TSN XP.",
+  ].join("\n"), "utf8");
+}
+
+function buildTinV1OwnerRecoveryMessageV2(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
+  return Buffer.from([
+    "TrustLink",
+    "TIN recovery",
+    "",
+    "Action",
+    "Decrypt the encrypted TIN recovery record for this wallet.",
+    "",
+    "Wallet",
+    ownerPubkey.toBase58(),
+    "",
+    "Network",
+    "Solana Devnet",
+    "",
+    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
+    "Only approve this request if you started TIN recovery in TSN XP.",
+  ].join("\n"), "utf8");
+}
+
+function buildTinV1OwnerRecoveryMessageV1(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
+  return Buffer.from([
+    "TrustLink TIN recovery authorization",
+    "Recover the encrypted TIN associated with this wallet.",
+    `Wallet: ${ownerPubkey.toBase58()}`,
+    `TIN program: ${getTinsProgramPublicKey(programId).toBase58()}`,
+    "This signature is used locally to decrypt the recovery record. It does not authorize a transaction.",
+  ].join("\n"), "utf8");
+}
+
+export function getTinV1OwnerRecoveryMessageForEnvelope(
+  encryptedTinRecovery: Uint8Array,
+  ownerPubkey: PublicKey,
+  programId?: PublicKey | string | null,
+) {
+  const envelope = Buffer.from(encryptedTinRecovery);
+  if (envelope.subarray(0, TIN_V1_RECOVERY_V4_MAGIC.length).equals(TIN_V1_RECOVERY_V4_MAGIC)) {
+    return buildTinV1OwnerRecoveryMessage(ownerPubkey, programId);
+  }
+  if (envelope.subarray(0, TIN_V1_RECOVERY_V3_MAGIC.length).equals(TIN_V1_RECOVERY_V3_MAGIC)) {
+    return buildTinV1OwnerRecoveryMessageV3(ownerPubkey, programId);
+  }
+  if (envelope.subarray(0, TIN_V1_RECOVERY_V2_MAGIC.length).equals(TIN_V1_RECOVERY_V2_MAGIC)) {
+    return buildTinV1OwnerRecoveryMessageV2(ownerPubkey, programId);
+  }
+  return buildTinV1OwnerRecoveryMessageV1(ownerPubkey, programId);
+}
+
+async function tinRecoveryAesKey(ownerPubkey: PublicKey, signature: Uint8Array, programId?: PublicKey | string | null) {
+  if (signature.length !== 64) throw new Error("TIN recovery requires a 64-byte wallet signature");
+  const program = getTinsProgramPublicKey(programId);
+  return importAesKey(sha256(Buffer.concat([
+    Buffer.from("TSN_TIN_OWNER_RECOVERY_KEY_V1", "utf8"),
+    ownerPubkey.toBuffer(), program.toBuffer(), Buffer.from(signature),
+  ])));
+}
+
+export async function createTinV1OwnerRecoveryEnvelope(params: {
+  tin: string; displayName: string; ownerPubkey: PublicKey; signature: Uint8Array; programId?: PublicKey | string | null;
+}) {
+  if (!/^\d{10}$/.test(params.tin)) throw new Error("A 10-digit TIN is required for its recovery envelope");
+  if (!params.displayName.trim()) throw new Error("A display name is required for its recovery envelope");
+  const nonce = randomNonce(12);
+  const key = await tinRecoveryAesKey(params.ownerPubkey, params.signature, params.programId);
+  const ciphertext = new Uint8Array(await getWebCrypto().subtle.encrypt(
+    { name: "AES-GCM", iv: nonce as any }, key,
+    TEXT_ENCODER.encode(JSON.stringify({ tin: params.tin, displayName: params.displayName })) as any,
+  ));
+  return Buffer.concat([TIN_V1_RECOVERY_V4_MAGIC, Buffer.from(nonce), Buffer.from(ciphertext)]);
+}
+
+export async function recoverTinV1ForOwner(params: {
+  connection: Connection; ownerPubkey: PublicKey; signMessage: (message: Uint8Array) => Promise<Uint8Array>;
+  programId?: PublicKey | string | null;
+}) {
+  const identity = await recoverTinV1IdentityForOwner(params);
+  return identity?.tin ?? null;
+}
+
+export async function recoverTinV1IdentityForOwner(params: {
+  connection: Connection; ownerPubkey: PublicKey; signMessage: (message: Uint8Array) => Promise<Uint8Array>;
+  programId?: PublicKey | string | null;
+}) {
+  const programId = getTinsProgramPublicKey(params.programId);
+  const encryptedTinRecovery = await getTinV1OwnerRecoveryEnvelope({
+    connection: params.connection,
+    ownerPubkey: params.ownerPubkey,
+    programId,
+  });
+  if (!encryptedTinRecovery) return null;
+  const signature = await params.signMessage(getTinV1OwnerRecoveryMessageForEnvelope(
+    encryptedTinRecovery,
+    params.ownerPubkey,
+    programId,
+  ));
+  return decryptTinV1OwnerRecoveryIdentity({
+    encryptedTinRecovery,
+    ownerPubkey: params.ownerPubkey,
+    signature,
+    programId,
+  });
+}
+
+export async function getTinV1OwnerRecoveryEnvelope(params: {
+  connection: Connection; ownerPubkey: PublicKey; programId?: PublicKey | string | null;
+}) {
+  const programId = getTinsProgramPublicKey(params.programId);
+  const recoveryPda = getTinV1OwnerRecoveryPda(params.ownerPubkey, programId);
+  const account = await params.connection.getAccountInfo(recoveryPda, "confirmed");
+  if (!account) return null;
+  if (!account.owner.equals(programId)) throw new Error("TIN recovery record is not owned by the configured program");
+  const data = Buffer.from(account.data);
+  if (data.length < 2 + 32 + 4 + 28 || data[0] !== 1) throw new Error("TIN recovery record is malformed");
+  const owner = new PublicKey(data.subarray(2, 34));
+  const length = data.readUInt32LE(34);
+  if (!owner.equals(params.ownerPubkey) || length < 28 || 38 + length !== data.length) throw new Error("TIN recovery record does not match this wallet");
+  return Buffer.from(data.subarray(38));
+}
+
+export async function decryptTinV1OwnerRecoveryEnvelope(params: {
+  encryptedTinRecovery: Uint8Array; ownerPubkey: PublicKey; signature: Uint8Array;
+  programId?: PublicKey | string | null;
+}) {
+  return (await decryptTinV1OwnerRecoveryIdentity(params)).tin;
+}
+
+export async function decryptTinV1OwnerRecoveryIdentity(params: {
+  encryptedTinRecovery: Uint8Array; ownerPubkey: PublicKey; signature: Uint8Array;
+  programId?: PublicKey | string | null;
+}) {
+  const encrypted = Buffer.from(params.encryptedTinRecovery);
+  const versionFour = encrypted.subarray(0, TIN_V1_RECOVERY_V4_MAGIC.length).equals(TIN_V1_RECOVERY_V4_MAGIC);
+  const versionThree = encrypted.subarray(0, TIN_V1_RECOVERY_V3_MAGIC.length).equals(TIN_V1_RECOVERY_V3_MAGIC);
+  const versionTwo = encrypted.subarray(0, TIN_V1_RECOVERY_V2_MAGIC.length).equals(TIN_V1_RECOVERY_V2_MAGIC);
+  const prefixLength = versionFour ? TIN_V1_RECOVERY_V4_MAGIC.length : versionThree ? TIN_V1_RECOVERY_V3_MAGIC.length : versionTwo ? TIN_V1_RECOVERY_V2_MAGIC.length : 0;
+  const ciphertext = encrypted.subarray(prefixLength);
+  if (ciphertext.length < 28) throw new Error("TIN recovery envelope is malformed");
+  const key = await tinRecoveryAesKey(params.ownerPubkey, params.signature, params.programId);
+  try {
+    const plaintext = await getWebCrypto().subtle.decrypt(
+      { name: "AES-GCM", iv: ciphertext.subarray(0, 12) as any }, key, ciphertext.subarray(12) as any,
+    );
+    const decoded = TEXT_DECODER.decode(plaintext);
+    const identity = versionFour || versionThree
+      ? JSON.parse(decoded) as { tin?: string; displayName?: string }
+      : { tin: decoded };
+    if (!identity.tin || !/^\d{10}$/.test(identity.tin)) throw new Error("Recovered value is not a valid TIN");
+    if ((versionFour || versionThree) && (!identity.displayName || typeof identity.displayName !== "string")) {
+      throw new Error("Recovered display name is invalid");
+    }
+    return { tin: identity.tin, ...(identity.displayName ? { displayName: identity.displayName } : {}) };
+  } catch {
+    throw new Error("Wallet signature could not decrypt this TIN recovery record");
+  }
+}
+
 /** Serialize instruction 19: initialize a bounded, intent-bound TIN V1 stage. */
 export function serializeTinV1CreationStageParams(params: {
   ownerPubkey: PublicKey;
   lookupCommitment: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   encryptedIdentityEnvelopeLength: number;
+  encryptedTinRecoveryLength: number;
   encryptedMasterSeedLength: number;
   encryptedPublicRouteEnvelopeLength: number;
   encryptedMetadataHash: Buffer | Uint8Array;
@@ -866,6 +1081,7 @@ export function serializeTinV1CreationStageParams(params: {
 }) {
   for (const [field, value, required] of [
     ["encryptedIdentityEnvelopeLength", params.encryptedIdentityEnvelopeLength, true],
+    ["encryptedTinRecoveryLength", params.encryptedTinRecoveryLength, true],
     ["encryptedMasterSeedLength", params.encryptedMasterSeedLength, true],
     ["encryptedPublicRouteEnvelopeLength", params.encryptedPublicRouteEnvelopeLength, false],
   ] as const) {
@@ -880,6 +1096,7 @@ export function serializeTinV1CreationStageParams(params: {
     requireHash32(params.intentHash, "intentHash"),
   );
   appendU32(parts, params.encryptedIdentityEnvelopeLength);
+  appendU32(parts, params.encryptedTinRecoveryLength);
   appendU32(parts, params.encryptedMasterSeedLength);
   appendU32(parts, params.encryptedPublicRouteEnvelopeLength);
   parts.push(
@@ -900,7 +1117,7 @@ export function serializeTinV1CreationStageParams(params: {
 
 /** Serialize instruction 20: append one bounded encrypted-data chunk. */
 export function serializeTinV1CreationChunkParams(params: {
-  kind: "identity" | "master_seed" | "public_route";
+  kind: "identity" | "master_seed" | "public_route" | "owner_recovery";
   offset: number;
   bytes: Buffer | Uint8Array;
 }) {
@@ -908,7 +1125,7 @@ export function serializeTinV1CreationChunkParams(params: {
     throw new Error("TIN V1 creation chunk offset must be a non-negative safe integer");
   }
   const parts: Buffer[] = [];
-  appendU8(parts, params.kind === "identity" ? 0 : params.kind === "master_seed" ? 1 : 2);
+  appendU8(parts, params.kind === "identity" ? 0 : params.kind === "master_seed" ? 1 : params.kind === "public_route" ? 2 : 3);
   appendU32(parts, params.offset);
   appendBytes(parts, params.bytes);
   return encodeInstruction(20, parts);
@@ -1788,6 +2005,7 @@ export async function submitTinV1Creation(params: {
       nonce: hex(prepared.nonce),
       expiry: Number(prepared.expiryTs),
       lookupCommitment: hex(prepared.lookupCommitment),
+      encryptedTinRecovery: base64(prepared.encryptedTinRecovery),
       encryptedIdentityEnvelope: base64(prepared.encryptedIdentityEnvelope),
       encryptedMasterSeed: base64(prepared.encryptedMasterSeed),
       encryptedMetadataHash: hex(prepared.encryptedMetadataHash),
@@ -1811,6 +2029,7 @@ export async function submitTinV1Creation(params: {
 export function createTinV1OwnerIntentHash(params: {
   ownerPubkey: PublicKey;
   lookupCommitment: Buffer | Uint8Array;
+  encryptedTinRecovery: Buffer | Uint8Array;
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash: Buffer | Uint8Array;
@@ -1833,6 +2052,7 @@ export function createTinV1OwnerIntentHash(params: {
     Buffer.from("TSN_TIN_V1_CREATE", "utf8"),
     params.ownerPubkey.toBuffer(),
     normalizeHash32(params.lookupCommitment, "lookupCommitment"),
+    u32LengthPrefixed(params.encryptedTinRecovery),
     u32LengthPrefixed(params.encryptedIdentityEnvelope),
     u32LengthPrefixed(params.encryptedMasterSeed),
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
@@ -1861,6 +2081,7 @@ function u32LengthPrefixed(value: Buffer | Uint8Array) {
 export function buildTinV1Creation(params: {
   ownerPubkey: PublicKey;
   lookupCommitment: Buffer | Uint8Array;
+  encryptedTinRecovery: Buffer | Uint8Array;
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
@@ -1889,6 +2110,7 @@ export function buildTinV1Creation(params: {
   const fields = {
     ownerPubkey: params.ownerPubkey,
     lookupCommitment: params.lookupCommitment,
+    encryptedTinRecovery: params.encryptedTinRecovery,
     encryptedIdentityEnvelope: params.encryptedIdentityEnvelope,
     encryptedMasterSeed: params.encryptedMasterSeed,
     encryptedMetadataHash,

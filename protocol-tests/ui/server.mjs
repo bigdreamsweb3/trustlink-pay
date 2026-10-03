@@ -2,7 +2,7 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { createHash, createHmac, createPublicKey, randomBytes, randomInt, randomUUID, verify as verifySignature } from "node:crypto";
 import { Connection, PublicKey } from "@solana/web3.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -41,6 +41,31 @@ function makeTinIssuanceProof(secret, { ownerPubkey, lookupCommitment, nonce, in
     Buffer.from(intentHash),
     expiry,
   ])).digest("hex");
+}
+
+function buildOwnerTinIdentityChallengeMessage(ownerPubkey, tin, challengeId) {
+  return Buffer.from([
+    "TrustLink",
+    "Private identity display",
+    "",
+    "Purpose",
+    "",
+    "Confirm wallet ownership to display the name encrypted with this TIN.",
+    "",
+    "Wallet",
+    "",
+    ownerPubkey.toBase58(),
+    "",
+    "TIN",
+    "",
+    tin,
+    "",
+    "One-time request",
+    "",
+    challengeId,
+    "",
+    "This signature authorizes this XP lookup only. It does not authorize a transaction or move funds.",
+  ].join("\n"), "utf8");
 }
 
 const server = http.createServer(async (req, res) => {
@@ -121,15 +146,15 @@ async function handleApi(req, res, url) {
     if (!session.pendingTinEncryption || session.pendingTinEncryption.displayName !== displayName) {
       return json(res, 409, { error: "OWNER_ENCRYPTION_MUST_BE_PREPARED_FIRST" });
     }
-    const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? ""), "base64");
+    const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? session.preparedTinDraft?.encryptedMasterSeed ?? ""), "base64");
     if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
     const lookupSecret = requireTinLookupSecret();
     const ownerPubkey = new PublicKey(session.wallet);
     const connection = new Connection(rpcUrl, "confirmed");
-    let tin = "";
-    let identity;
-    let registry;
-    for (let attempt = 0; attempt < 8; attempt += 1) {
+    let tin = session.preparedTinDraft?.tin ?? "";
+    let identity = session.preparedTinDraft?.identity;
+    let registry = session.preparedTinDraft?.registry;
+    if (!tin || !identity || !registry) for (let attempt = 0; attempt < 8; attempt += 1) {
       tin = String(randomInt(1_000_000_000, 10_000_000_000));
       identity = await tsnSdk.createTinV1IdentityEnvelope({ tin, displayName, lookupSecret });
       registry = PublicKey.findProgramAddressSync(
@@ -140,10 +165,23 @@ async function handleApi(req, res, url) {
       tin = "";
     }
     if (!tin || !identity || !registry) throw new Error("Could not reserve a unique private TIN after 8 Devnet checks");
+    const encryptedTinRecovery = Buffer.from(String(body.encryptedTinRecovery ?? ""), "base64");
+    if (encryptedTinRecovery.length < 28) {
+      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64") };
+      const ownerPubkey = new PublicKey(session.wallet);
+      const programId = new PublicKey(tinProgramId);
+      return json(res, 200, {
+        status: "TIN_RECOVERY_SIGNATURE_REQUIRED",
+        tin,
+        recoveryMessage: Buffer.from(tsnSdk.buildTinV1OwnerRecoveryMessage(ownerPubkey, programId)).toString("utf8"),
+        recoveryKeyContextBase64: Buffer.concat([ownerPubkey.toBuffer(), programId.toBuffer()]).toString("base64"),
+      });
+    }
     const zero = Buffer.alloc(32);
     const built = tsnSdk.buildTinV1Creation({
       ownerPubkey,
       lookupCommitment: identity.lookupCommitment,
+      encryptedTinRecovery,
       encryptedIdentityEnvelope: identity.encryptedIdentityEnvelope,
       encryptedMasterSeed,
       encryptedMetadataHash: zero,
@@ -165,6 +203,7 @@ async function handleApi(req, res, url) {
       expiryTs: built.expiryTs,
     });
     session.preparedTin = { built, displayName, tin, intentId, lookupIssuanceProof };
+    session.preparedTinDraft = null;
     session.pendingTinEncryption = null;
     const b64 = (value) => Buffer.from(value).toString("base64");
     const hex = (value) => Buffer.from(value).toString("hex");
@@ -250,6 +289,72 @@ async function handleApi(req, res, url) {
       status: operation.status,
       signature: operation.result?.signature ?? null,
       ...(finalized ? { tin: pending.tin, ...(displayName ? { displayName } : {}) } : {}),
+    });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/tsn/sdk/owner-tin-recovery") {
+    const ownerPubkey = new PublicKey(session.wallet);
+    const programId = new PublicKey(tinProgramId);
+    const connection = new Connection(rpcUrl, "confirmed");
+    const encryptedTinRecovery = await tsnSdk.getTinV1OwnerRecoveryEnvelope({
+      connection,
+      ownerPubkey,
+      programId,
+    });
+    if (!encryptedTinRecovery) return json(res, 200, { found: false });
+    return json(res, 200, {
+      found: true,
+      encryptedTinRecovery: Buffer.from(encryptedTinRecovery).toString("base64"),
+      recoveryMessage: Buffer.from(tsnSdk.getTinV1OwnerRecoveryMessageForEnvelope(encryptedTinRecovery, ownerPubkey, programId)).toString("utf8"),
+      recoveryKeyContextBase64: Buffer.concat([ownerPubkey.toBuffer(), programId.toBuffer()]).toString("base64"),
+      sdk: "@trustlink/tsn-sdk.getTinV1OwnerRecoveryEnvelope",
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/owner-tin-identity-challenge") {
+    const body = await readJson(req);
+    const tin = String(body.tin ?? "").trim();
+    if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
+    const ownerPubkey = new PublicKey(session.wallet);
+    const challengeId = randomBytes(24).toString("hex");
+    session.pendingOwnerTinIdentityChallenge = { tin, challengeId, expiresAt: Date.now() + 120_000 };
+    const message = buildOwnerTinIdentityChallengeMessage(ownerPubkey, tin, challengeId);
+    return json(res, 200, { challengeId, message: message.toString("utf8") });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/owner-tin-identity") {
+    const body = await readJson(req);
+    const tin = String(body.tin ?? "").trim();
+    if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
+    const ownerPubkey = new PublicKey(session.wallet);
+    const challenge = session.pendingOwnerTinIdentityChallenge;
+    session.pendingOwnerTinIdentityChallenge = null;
+    if (!challenge || challenge.expiresAt < Date.now() || challenge.tin !== tin || challenge.challengeId !== body.challengeId) {
+      return json(res, 401, { error: "OWNER_IDENTITY_CHALLENGE_EXPIRED" });
+    }
+    const recoveryMessage = buildOwnerTinIdentityChallengeMessage(ownerPubkey, tin, challenge.challengeId);
+    const ownerSignature = Buffer.from(String(body.ownerSignature ?? ""), "base64");
+    if (ownerSignature.length !== 64) return json(res, 401, { error: "OWNER_IDENTITY_SIGNATURE_REQUIRED" });
+    const publicKeyDer = Buffer.concat([
+      Buffer.from("302a300506032b6570032100", "hex"),
+      ownerPubkey.toBuffer(),
+    ]);
+    const publicKey = createPublicKey({ key: publicKeyDer, format: "der", type: "spki" });
+    if (!verifySignature(null, recoveryMessage, publicKey, ownerSignature)) {
+      return json(res, 401, { error: "OWNER_IDENTITY_SIGNATURE_INVALID" });
+    }
+    const identity = await tsnSdk.resolveTinRoute({
+      tin,
+      rpcUrl,
+      programId: tinProgramId,
+      lookupSecret: requireTinLookupSecret(),
+    });
+    const expectedOwnerHash = createHash("sha256").update(ownerPubkey.toBuffer()).digest("hex");
+    if (identity.ownerPubkeyHash !== expectedOwnerHash) return json(res, 404, { error: "OWNER_TIN_NOT_FOUND" });
+    return json(res, 200, {
+      tin,
+      displayName: identity.name,
+      source: "@trustlink/tsn-sdk.resolveTinRoute",
     });
   }
 

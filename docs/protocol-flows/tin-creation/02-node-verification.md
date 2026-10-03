@@ -84,8 +84,9 @@ The Node must not:
 
 ## Verification Input
 
-The Receiver provides the Node with a `TIN_OPERATION` payload. For the current
-program-assigned route, the important fields are:
+The Receiver provides the Node with a `TIN_OPERATION` payload. The field table
+below documents only the retired program-assigned route; it is kept for
+historical diagnosis and is not the current TIN V1 schema.
 
 | Field                          | Required type | Node validation                                     |
 | ------------------------------ | ------------- | --------------------------------------------------- |
@@ -193,8 +194,12 @@ The signed message and the hash have different jobs:
 | `ownerIntentHash`    | Compact commitment to the complete binary operation                 |
 | `ownerSignature`     | Owner proof over the readable approval message at the Node boundary |
 
-The Cranker/on-chain proof must use a protocol-consistent message rule. See the
-Cranker handoff gap in the parent handoff document before enabling execution.
+For current private TIN V1, the Node verifies the canonical UTF-8 message
+produced by `buildTinOwnerIntentMessage(intentHash)`. The Cranker places that
+same message and signature in the Ed25519 instruction immediately before TIN
+program execution. The Rust program verifies that instruction's public key,
+message, and signature. The raw-hash mismatch described in older handoff notes
+is resolved; treat those notes as historical.
 
 ### 5. Enforce replay and uniqueness
 

@@ -21,12 +21,15 @@ program assigning a TIN.
 Owner wallet -> TSN XP + SDK -> Receiver queue -> Node verification -> Cranker -> TinV1Account
 ```
 
-`TINS_LOOKUP_SECRET` is provisioned on the trusted XP backend and TSN Node with
-the same value. It is used to derive the keyed lookup commitment and issuance
-proof. It must not be sent to the browser or Receiver, committed, or logged.
-The Receiver stores the signed commitment and encrypted identity envelope;
-the Node validates the owner signature, canonical intent hash, and issuance
-proof before marking the work eligible for Cranker processing.
+`TINS_LOOKUP_SECRET` is the legacy configuration name for the value used to
+derive the lookup commitment and identity-envelope key. The universal issuer
+uses the public all-zero value so any integrated app can resolve its TINs;
+this intentionally makes universal TIN/name records enumerable and is not a
+confidentiality key. An institutional issuer can configure a high-entropy
+private value to restrict its own identity lookup. Receiver work carries the
+derived commitment and encrypted envelope, not the configuration value. The
+Node validates the owner signature, canonical intent hash, and issuance proof
+before marking work eligible for Cranker processing.
 
 ## Creation sequence
 
@@ -50,8 +53,8 @@ submits one creation transaction. Larger payloads use the on-chain staging
 account: initialize an intent-bound stage, append encrypted blobs in chunks of
 at most 700 bytes, then finalize with the owner proof and `CreateTinV1` checks.
 The finalization signature, rather than a staging signature, proves registry
-creation. See the [TIN V1 flow guide](/developers/private-tin-issuance) for the
-service-by-service lifecycle.
+creation. The service-by-service lifecycle is documented in the repository's
+canonical TIN V1 flow guide.
 
 The intent hash covers the owner, lookup commitment, length-prefixed encrypted
 blobs, metadata and route commitments, route nonce, and expiry. The Rust
@@ -61,8 +64,15 @@ intent hash, nonce, and expiry without disclosing the TIN.
 
 ## SDK primitives
 
-The SDK requires a protected lookup secret when it creates the identity
-envelope. The trusted XP backend supplies it; browser code must not receive it.
+The SDK accepts the namespace lookup value when creating or resolving the
+identity envelope. The universal value is public; an issuer-specific private
+value must stay on trusted services and out of Receiver payloads. The wallet
+remains the user's ownership and authorization anchor. The product requirement
+is wallet-only recovery: after connecting, the owner should see the existing
+TIN without memorizing or re-entering its digits. The current XP does not
+implement this, and its creation path also does not enforce one TIN per wallet
+in the universal issuer namespace. Implement an owner-bound recovery record
+and an on-chain uniqueness check before calling this flow complete.
 
 ```ts
 const identity = await createTinV1IdentityEnvelope({
@@ -82,7 +92,9 @@ const prepared = buildTinV1Creation({
   tcapPolicyCommitment,
 });
 
-const ownerSignature = await wallet.signMessage(prepared.intentHash);
+const ownerSignature = await wallet.signMessage(
+  buildTinOwnerIntentMessage(prepared.intentHash),
+);
 await submitTinV1Creation({
   ingressUrl: TSN_RECEIVER_URL,
   prepared,

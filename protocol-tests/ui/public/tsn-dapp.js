@@ -65,6 +65,28 @@
     }
   }
 
+  function setWalletConnectedView(connected) {
+    document.body.classList.toggle("wallet-connected", connected);
+    const walletOverview = $("walletOverviewSection");
+    if (walletOverview) walletOverview.hidden = !connected;
+  }
+
+  function handleWalletDisconnect(wallet) {
+    if (wallet !== activeWallet) return;
+    activeWallet = null;
+    setWalletConnectedView(false);
+    if ($("headerConnectWallet")) {
+      $("headerConnectWallet").textContent = "Connect";
+      $("headerConnectWallet").disabled = false;
+    }
+    if ($("overviewTin")) $("overviewTin").textContent = "Not issued";
+    if ($("overviewDisplayName")) $("overviewDisplayName").textContent = "—";
+    if ($("overviewWallet")) $("overviewWallet").textContent = "Not connected";
+    if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "Awaiting wallet";
+    if ($("issueTinAction")) $("issueTinAction").hidden = false;
+    log("WALLET DISCONNECTED", "Connect a wallet to load its TSN identity.");
+  }
+
   function renderNetworkStatus(status) {
     networkStatus = status;
     const headerHealth = $("headerNetworkHealth");
@@ -136,6 +158,8 @@
       const publicKey = (connected.publicKey ?? wallet.publicKey)?.toBase58();
       if (!publicKey) throw new Error("Wallet did not return a Solana public key.");
       activeWallet = wallet;
+      setWalletConnectedView(true);
+      if (typeof wallet.on === "function") wallet.on("disconnect", () => handleWalletDisconnect(wallet));
       const tinOwnerWallet = $("tinOwnerWallet");
       if (tinOwnerWallet) tinOwnerWallet.value = publicKey;
       await api("/api/session/wallet", { method: "POST", body: JSON.stringify({ publicKey }) });
@@ -146,6 +170,11 @@
       $("headerConnectWallet").textContent = "Connected";
       $("headerConnectWallet").disabled = true;
       log("WALLET CONNECTED", `${name} / ${publicKey}`);
+      try {
+        await recoverConnectedTin();
+      } catch (error) {
+        log("TIN RECOVERY BLOCKED", error instanceof Error ? error.message : String(error));
+      }
     } catch (error) {
       log("WALLET CONNECTION BLOCKED", error.message);
     }
@@ -161,6 +190,97 @@
     if (!activeWallet?.signMessage) throw new Error("The connected wallet must support signMessage.");
     const signed = await activeWallet.signMessage(bytes, "utf8");
     return btoa(String.fromCharCode(...signed.signature));
+  }
+
+  function decodeBase64(value) {
+    return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+  }
+
+  function encodeBase64(value) {
+    return btoa(String.fromCharCode(...value));
+  }
+
+  async function tinRecoveryKey(recoveryKeyContextBase64, signatureBase64) {
+    const domain = new TextEncoder().encode("TSN_TIN_OWNER_RECOVERY_KEY_V1");
+    const context = decodeBase64(recoveryKeyContextBase64);
+    const signature = decodeBase64(signatureBase64);
+    const material = new Uint8Array(domain.length + context.length + signature.length);
+    material.set(domain, 0);
+    material.set(context, domain.length);
+    material.set(signature, domain.length + context.length);
+    const rawKey = await crypto.subtle.digest("SHA-256", material);
+    return crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["encrypt", "decrypt"]);
+  }
+
+  async function encryptTinRecovery(tin, displayName, recoveryKeyContextBase64, signatureBase64) {
+    const key = await tinRecoveryKey(recoveryKeyContextBase64, signatureBase64);
+    const nonce = crypto.getRandomValues(new Uint8Array(12));
+    const magic = new TextEncoder().encode("TSNTIN04");
+    const recoveryPlaintext = new TextEncoder().encode(JSON.stringify({ tin, displayName }));
+    const recoveryCiphertext = new Uint8Array(await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: nonce }, key, recoveryPlaintext,
+    ));
+    const envelope = new Uint8Array(magic.length + nonce.length + recoveryCiphertext.length);
+    envelope.set(magic, 0);
+    envelope.set(nonce, magic.length);
+    envelope.set(recoveryCiphertext, magic.length + nonce.length);
+    return encodeBase64(envelope);
+  }
+
+  async function decryptTinRecovery(encryptedTinRecovery, recoveryKeyContextBase64, signatureBase64) {
+    const envelope = decodeBase64(encryptedTinRecovery);
+    const versionFourMagic = new TextEncoder().encode("TSNTIN04");
+    const versionThreeMagic = new TextEncoder().encode("TSNTIN03");
+    const versionTwoMagic = new TextEncoder().encode("TSNTIN02");
+    const versionFour = versionFourMagic.every((byte, index) => envelope[index] === byte);
+    const versionThree = versionThreeMagic.every((byte, index) => envelope[index] === byte);
+    const versionTwo = versionTwoMagic.every((byte, index) => envelope[index] === byte);
+    const magicLength = versionFour ? versionFourMagic.length : versionThree ? versionThreeMagic.length : versionTwo ? versionTwoMagic.length : 0;
+    const ciphertext = envelope.slice(magicLength);
+    if (ciphertext.length < 28) throw new Error("The encrypted TIN recovery record is malformed.");
+    const key = await tinRecoveryKey(recoveryKeyContextBase64, signatureBase64);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: ciphertext.slice(0, 12) }, key, ciphertext.slice(12),
+    );
+    const decoded = new TextDecoder().decode(plaintext);
+    let tin = decoded;
+    let displayName;
+    if (versionFour || versionThree) {
+      const identity = JSON.parse(decoded);
+      tin = identity.tin;
+      displayName = identity.displayName;
+    }
+    if (!/^\d{10}$/.test(tin)) throw new Error("Recovered identity is not a 10-digit TIN.");
+    if ((versionFour || versionThree) && (typeof displayName !== "string" || !displayName.trim())) {
+      throw new Error("Recovered display name is invalid.");
+    }
+    return { tin, ...(displayName ? { displayName } : {}) };
+  }
+
+  async function recoverConnectedTin() {
+    const recovery = await api("/api/tsn/sdk/owner-tin-recovery");
+    if (!recovery.found) return;
+    const signature = await signBytes(new TextEncoder().encode(recovery.recoveryMessage));
+    const identity = await decryptTinRecovery(recovery.encryptedTinRecovery, recovery.recoveryKeyContextBase64, signature);
+    let displayName = identity.displayName;
+    if (!displayName) {
+      const challenge = await api("/api/tsn/sdk/owner-tin-identity-challenge", {
+        method: "POST",
+        body: JSON.stringify({ tin: identity.tin }),
+      });
+      const identitySignature = await signBytes(new TextEncoder().encode(challenge.message));
+      const resolved = await api("/api/tsn/sdk/owner-tin-identity", {
+        method: "POST",
+        body: JSON.stringify({ tin: identity.tin, challengeId: challenge.challengeId, ownerSignature: identitySignature }),
+      });
+      displayName = resolved.displayName;
+    }
+    if ($("overviewTin")) $("overviewTin").textContent = identity.tin;
+    if (displayName && $("overviewDisplayName")) $("overviewDisplayName").textContent = displayName;
+    if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "TIN recovered from wallet";
+    const issueButton = $("issueTinAction");
+    if (issueButton) issueButton.hidden = true;
+    log("TIN RECOVERED", `Wallet-authorized recovery / TIN ${identity.tin}${displayName ? ` · ${displayName}` : ""}`);
   }
 
   function bytesToHex(bytes) {
@@ -259,10 +379,20 @@
           encryptionMessage: prepared.ownerEncryptionMessage,
         });
         stage = "building private TIN V1 intent with the TSN SDK";
+        const encryptedMasterSeedBase64 = btoa(String.fromCharCode(...encryptedMasterSeed));
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",
-          body: JSON.stringify({ displayName, encryptedMasterSeed: btoa(String.fromCharCode(...encryptedMasterSeed)) }),
+          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64 }),
         });
+        if (prepared.status === "TIN_RECOVERY_SIGNATURE_REQUIRED") {
+          stage = "encrypting the owner recovery record locally";
+          const recoverySignature = await signBytes(new TextEncoder().encode(prepared.recoveryMessage));
+          const encryptedTinRecovery = await encryptTinRecovery(prepared.tin, displayName, prepared.recoveryKeyContextBase64, recoverySignature);
+          prepared = await api("/api/tsn/sdk/prepare-tin", {
+            method: "POST",
+            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery }),
+          });
+        }
       }
       stage = "requesting owner-intent signature from wallet";
       const ownerIntentMessage = prepared.ownerIntentMessage;
@@ -291,6 +421,8 @@
         if (current.status === "CONFIRMED" && current.tin) {
           if ($("overviewTin")) $("overviewTin").textContent = current.tin;
           if (current.displayName && $("overviewDisplayName")) $("overviewDisplayName").textContent = current.displayName;
+          if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "TIN secured to wallet";
+          if ($("issueTinAction")) $("issueTinAction").hidden = true;
           const result = $("tinCreationResult");
           if (result) result.textContent = `TIN ${current.tin}${current.displayName ? ` · ${current.displayName}` : ""} finalized on Solana${current.signature ? ` · ${current.signature}` : ""}.`;
           log("TIN V1 FINALIZED", `TIN ${current.tin}${current.signature ? ` / Solana ${current.signature}` : ""}`);
@@ -384,6 +516,9 @@
     closeMenu();
   }));
   $("headerConnectWallet").onclick = connectWallet;
+  window.addEventListener("focus", () => {
+    if (activeWallet && activeWallet.isConnected === false) handleWalletDisconnect(activeWallet);
+  });
   $("refreshStatus").onclick = syncNetworkStatus;
   $("payTin").onclick = payTin;
   $("submitTin").onclick = submitTin;

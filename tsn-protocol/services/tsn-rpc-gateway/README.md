@@ -15,7 +15,10 @@ to TSN applications and operators.
 - keeps API keys out of the app code
 - exposes a fetch handler for Node and future Workers deployment
 
-TrustLink Pay apps, scripts, SDKs, and services point to the gateway server by URL through `TSN_RPC_GATEWAY_URL` (or `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` in browser bundles). They do not import this project as a client library and do not configure upstream Solana RPC URLs directly.
+TSN apps, scripts, SDKs, and services select one preferred RPC endpoint through
+`TSN_RPC_URL` (or a browser-safe configured endpoint). It defaults to this
+gateway. `TSN_RPC_GATEWAY_URL` remains a compatibility alias. Clients do not
+import this project as a library and do not configure provider URLs directly.
 
 The gateway itself reads a comma-separated list from `TSN_SOLANA_RPC_URLS` and automatically fails over when a provider is slow or unhealthy.
 Provider authentication failures such as HTTP 401/403 and JSON-RPC

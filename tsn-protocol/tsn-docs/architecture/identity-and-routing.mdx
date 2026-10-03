@@ -25,46 +25,60 @@ A **Transfer Identity Number (TIN)** is a portable, 10-digit payment identity is
 
 A TIN does not replace every Solana address. The final settlement transaction still uses public keys, token accounts, PDAs, and program accounts as required by Solana.
 
-### What a TIN record can contain
+### TIN V1 record and ownership
 
-The root wallet (or an implemented root signer) owns and authorizes the TIN. A TIN record may hold four classes of data, each on a different boundary:
+The owner wallet controls and authorizes its TIN. Creation is owner-approved,
+and the TIN V1 registry binds to the owner's public key. Losing an app session
+does not transfer or revoke ownership.
 
-| Class | Examples | Boundary |
-| --- | --- | --- |
-| Public | TIN number, display label, active status, route version | Returnable for resolution, subject to anti-enumeration controls |
-| Integrity metadata | Owner-key commitment, route commitment, state version | Public verification material, not private authority |
-| Encrypted | Privacy-receiving-root metadata, private snapshot references, recovery material | Ciphertext; unlock requires fresh approval from the owning wallet |
-| Off-chain application data | Optional profile or notification references | Stored by the application under its own access policy |
-
-The exact on-chain layout is implementation-specific. Do not infer private plaintext from a public account or registry response.
+The TIN and display name are carried in an identity envelope. The registry
+PDA uses a lookup commitment; it is not derived directly from the raw TIN or
+wallet address. The universal issuer deliberately uses a public all-zero
+lookup value, allowing open TIN/name resolution and enumeration. Institutional
+issuers may configure private high-entropy lookup values. Receiver, Node, and
+Cranker receive the commitment and encrypted fields, not a plaintext TIN in
+the work payload.
 
 ### Resolution flow
 
 <Steps>
-  <Step title="Sender enters the 10-digit TIN">
-    A sender supplies the recipient's TIN to a TSN-integrated interface such as TrustLink Pay.
+  <Step title="Sender supplies a 10-digit TIN">
+    The sender enters the recipient's human-readable payment ID in TSN XP or another integrated application.
   </Step>
-  <Step title="TIP resolves public routing metadata">
-    The TIN service or on-chain registry returns the active public routing metadata for that TIN, subject to non-enumeration and rate limits.
+  <Step title="Trusted resolver finds the private registry">
+    The issuer/resolver uses the TIN and that issuer's lookup value to derive the registry address. The universal value is public; institutional values may be private.
   </Step>
-  <Step title="TSN SDK binds the relationship">
-    The TSN SDK resolves the GPRU/TCAP relationship commitment and policy that the sender will bind into the signed intent.
+  <Step title="SDK prepares the authorized route">
+    The SDK obtains the permitted recipient identity and route data, then binds the route into the sender's signed transfer intent.
   </Step>
-  <Step title="Route is bound to the signed intent">
-    The recipient route commitment and route version are included in the sender-signed plan. Any later change to the route invalidates the signature.
-  </Step>
-  <Step title="Owner approves locally when needed">
-    When local private derivation is required, the owning wallet gives a fresh approval on the current device. A TIN is not tied to one browser or one device.
+  <Step title="Wallet authorizes the transfer">
+    The user's wallet signs the relevant authorization. A resolved display name helps confirm the intended recipient but is not itself authorization.
   </Step>
 </Steps>
 
 Resolution must not return plaintext seeds, child private keys, or an unrestricted wallet-to-person mapping. Implementations must apply non-enumeration, rate limiting, revocation, and state-version checks.
 
-### Wallet-owned access
+### Wallet ownership and private identity lookup
 
-The root wallet is the TIN authority. New and upgraded TINs use a wallet-owned envelope. The owner signs a fresh, canonical TIN-access authorization on whichever device they are using. The SDK then derives a local data key from that approval to decrypt the envelope on-device.
+The owner's wallet is the authorization anchor for TIN creation and wallet-
+authorized access. In the current private TIN V1 issuer flow, the trusted XP
+backend generates the ten-digit TIN and uses `TINS_LOOKUP_SECRET` to derive its
+keyed registry commitment and encrypt the TIN/name envelope. The wallet signs
+the creation intent, and the registry records the owner binding. The backend
+must keep the lookup secret protected; Receiver, Node, and Cranker see only the
+keyed commitment and encrypted identity fields.
 
-Plaintext seeds and derived child private keys never leave the device. They are never sent to a Receiver, Node, Cranker, or application backend. Older device-bound envelopes remain readable only by a device that can already unlock them, until the owner performs a one-time upgrade.
+The registry address is not derived from the wallet alone. However, the public
+universal lookup value allows candidate TINs and names to be enumerated; this
+identity lookup property is separate from transaction privacy. Institutional
+issuers can restrict identity lookup with private namespace values. The
+current XP does not implement wallet-authorized recovery after a fresh
+connection, even though the wallet remains the TIN owner. This is a product
+recovery gap, not a loss of ownership.
+
+The encrypted master-seed envelope is a separate owner-protected item. The
+owner approval protects that seed for local use; plaintext seed material and
+derived child private keys must not be sent to Receiver, Node, or Cranker.
 
 <Warning>
   A TIN is not a username, a bank-account number, or a legal identity on its own. Any legal-name, business, phone, or verification context is optional enrichment and must not be confused with payment authorization.

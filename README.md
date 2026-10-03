@@ -1,18 +1,21 @@
-# TrustLink Pay / TSN
+# TrustLink Labs / TSN
 
 TrustLink Labs is building **TSN (Transfer Settlement Network)**, an
 identity-aware payment coordination and settlement infrastructure on Solana.
-TrustLink Pay is the application experience built on that network. **TCAP
-(Transfer Confidential Asset Protocol)** provides the commitment-backed private
+**TSN XP** is the active user-facing experience being built on that network.
+The separately hosted TrustLink Pay site is an earlier application surface.
+**TCAP (Transfer Confidential Asset Protocol)** provides the commitment-backed private
 balance accounting used by the current credit architecture.
 
 ## TrustLink Labs resources
 
-- [TrustLink Pay application](https://trustlink-pay.vercel.app/)
+- [Earlier hosted TrustLink Pay application](https://trustlink-pay.vercel.app/)
 - [TSN Protocol research blog](https://tsn-protocol.blogspot.com/)
 - [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
 - [Service hosting and deployment map](docs/SERVICE-HOSTING.md)
 - [Live testing and contributor guide](docs/GETTING-STARTED-LIVE.md)
+- [TSN XP and protocol-flow guides](docs/protocol-flows/README.md)
+- [TIN ownership and identity](docs/identity-and-tin.md)
 - [Cranker operator guide](docs/CRANKER-OPERATOR-GUIDE.md)
 - [Receiver, Node and settlement verification](docs/tsn-receiver-verification-settlement.md)
 - [GPRU ownership and TCAP custody](docs/GPRU-TCAP-LINK-BREAKING.md)
@@ -251,7 +254,8 @@ Current Devnet program IDs:
 
 | Path                                                | Purpose                                                       |
 | --------------------------------------------------- | ------------------------------------------------------------- |
-| `frontend/`                                         | TrustLink Pay application                                     |
+| `protocol-tests/ui/`                                | TSN XP user experience and SDK integration lab                 |
+| `frontend/`                                         | Earlier TrustLink Pay application                              |
 | `backend/`                                          | API, application records and notifications                    |
 | `tsn-protocol/programs/transfer-identity-protocol/` | TIP/TIN registrar and SDK                                     |
 | `tsn-protocol/programs/`                            | Solana TSN, TCAP and TIP programs                             |

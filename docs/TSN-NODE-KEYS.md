@@ -14,8 +14,8 @@ the frontend `.env`, Git, screenshots, or a public hackathon submission.
 | `TSN_THRESHOLD_NONCE_SIGNING_KEY` | Signs threshold-access nonce receipts for authorized TIN access. | Generate a separate random 32-byte secret for each Node. Never reuse a wallet, route key, or settlement signing key. |
 | `TSN_NODE_VERIFICATION_SIGNING_KEY` | Ed25519 private seed used to sign every Receiver `VERIFIED` or `REJECTED` decision, binding the decision to its work, commitments, and Node lease. | Generate a dedicated Ed25519 keypair as shown below. Keep the private seed only in the Node environment. |
 
-The three locally generated secrets must be different. A PowerShell command for
-a 32-byte hex value is:
+Keep locally generated secrets distinct. A PowerShell command for a 32-byte
+hex value is:
 
 ```powershell
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"

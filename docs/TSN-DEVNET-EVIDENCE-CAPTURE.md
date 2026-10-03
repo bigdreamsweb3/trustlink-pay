@@ -44,13 +44,14 @@ python tsn-demo/evidence_taker.py `
   --cranker-log "evidence/cranker.log"
 ```
 
-The tool writes a timestamped folder under `evidence/`. It records allowlisted
-Receiver fields, health snapshots, filtered/redacted service log excerpts, and
-optional finalized signature and public registry account metadata. It never
-copies `payload`, authorization data, encrypted envelopes, or raw account
-data. Receiver records are captured only from the local JSON store; hosted
-Firebase records need an authenticated export path and are not fetched by this
-tool. TINs are masked in Receiver summaries.
+The collector updates the local `tsn-demo/evidence/tin-creation/` bundle in
+place. It records an explicit selection of Receiver work and verification
+fields, filtered service logs, and optional finalized signature and registry
+metadata. Local forensic output may contain owner signatures, ciphertext, and
+identity-bound commitments, so keep it access-controlled and inspect it before
+sharing. Receiver records are read only from the local JSON store; hosted
+Firebase records are not fetched by this local tool. Do not treat the full
+forensic bundle as a public demo asset.
 
 Create an evidence directory before starting the flow:
 
@@ -69,19 +70,23 @@ Invoke-WebRequest http://127.0.0.1:8000/settlement-networks |
 solana cluster-version --url devnet | Set-Content "$evidence/cluster.txt"
 ```
 
-In the UI activity rail, save the following values when they appear:
+In the UI activity rail and service logs, save these evidence fields when
+available:
 
 - owner wallet public key;
 - display name;
 - owner-encryption approval completed;
-- owner intent hash and owner-intent signature completed;
-- Node `intentId` and accepted status;
-- Receiver operation ID, verification status, state version, and lease status;
-- Cranker transaction signature, registry PDA, assigned TIN, and final status.
+- owner approval completion and operation reference (do not publish signatures);
+- Receiver work ID, state version, and masked payload commitment;
+- Node decision and attestation verification result with public key ID;
+- Cranker lease ID/version, staged step signature count, final creation signature,
+  registry PDA, and final status;
+- finalized Solana account validation and owner-session identity resolution.
 
-The owner-encryption and owner-intent signatures prove authorization. They are
-not private keys. Never save the browser wallet seed, the plaintext master
-seed, or Node/Receiver credentials in the evidence directory.
+Do not save wallet keys, owner signatures, plaintext TIN or master seed, lookup
+secret, Node/Receiver credentials, or private route data in public evidence.
+For public materials, include only redacted lifecycle state, receipt status,
+public transaction references, and the final verified result.
 
 ## Verify the final transaction
 
@@ -113,7 +118,7 @@ The final record should contain at least:
   "intentId": "<receiver-or-node-intent-id>",
   "signature": "<solana-signature>",
   "registry": "<identity-registry-pda>",
-  "tin": "<assigned-10-digit-tin>",
+  "tin": "<private TIN; disclose only in owner-approved demo capture>",
   "status": "CONFIRMED",
   "explorer": "https://explorer.solana.com/tx/<signature>?cluster=devnet"
 }
@@ -128,7 +133,8 @@ Call the demo a successful TIN creation only when all of these are present:
 - the Cranker submitted the exact authorized transaction;
 - Solana returned a confirmed signature;
 - the identity registry account exists at the reported PDA;
-- the assigned TIN was decoded from that finalized account.
+- the SDK resolved the identity from the finalized account for the authorized
+  owner session.
 
 If any item is missing, describe the run as queued, verified, leased, or
 submitted rather than finalized.

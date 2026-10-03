@@ -1,6 +1,6 @@
 # TrustLink Labs Service Hosting
 
-This document records where the TrustLink Pay and Transfer Settlement Network
+This document records where the active TSN XP and Transfer Settlement Network
 (TSN) components run. It describes the current Devnet/test deployment, not a
 mainnet production guarantee.
 
@@ -8,7 +8,8 @@ mainnet production guarantee.
 
 | Component              | Responsibility                                                                     | Hosting                  | Public endpoint                                                               | Source                                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| TrustLink Pay frontend | Browser application, wallet connection, local authorization, UI                    | Vercel                   | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | `trustlink-pay` repository, `frontend/`                                           |
+| TSN XP                | Active user-facing product and SDK integration experience                              | Local development        | No public XP URL yet                                                           | `protocol-tests/ui/`                                                             |
+| Earlier TrustLink Pay | Earlier hosted browser application                                                    | Vercel                   | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | `trustlink-pay` repository, `frontend/`                                           |
 | TrustLink backend      | User authentication, application APIs, non-secret application data                 | Vercel                   | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | `trustlink-pay` repository, `backend/`                                            |
 | TSN Receiver           | Durable ingress, Firestore-backed work records, leases, transitions, and evidence  | Vercel endpoint supplied | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver)       |
 | TSN RPC Gateway        | Controlled Solana RPC access and upstream selection                                | Vercel                   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) |
@@ -26,7 +27,7 @@ submits transactions to Solana.
 
 ```mermaid
 flowchart TD
-    USER["User browser"] --> FRONTEND["TrustLink Pay frontend\nVercel"]
+    USER["User browser"] --> FRONTEND["TSN XP\nlocal development"]
     FRONTEND --> BACKEND["TrustLink backend\nVercel\nauthentication and app APIs"]
     FRONTEND --> RECEIVER["TSN Receiver\nVercel\ndurable ingress and work state"]
     FRONTEND --> RPC["TSN RPC Gateway\nVercel"]

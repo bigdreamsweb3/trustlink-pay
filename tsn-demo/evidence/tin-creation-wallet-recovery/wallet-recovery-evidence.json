@@ -1,0 +1,103 @@
+{
+  "flowId": "tin-creation-wallet-recovery",
+  "title": "Create a TIN and recover it with the owner wallet",
+  "network": "solana-devnet",
+  "ownerPubkey": "4NTmdhDZ4eephUgMhNEgzgPMiZSGeDt5g5GoRLVWW9kH",
+  "receiverWorkId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+  "ownerIntentId": "7d99bf29-2258-4de1-b4e0-6dfde4a53137",
+  "onchainRecoveryRecord": {
+    "pda": "AnfP9MXmxrpxcAZX8EnidBfyscsCKCBytKi3mXbQ9c5x",
+    "exists": true,
+    "programId": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+    "accountDataLength": 132,
+    "recoveryEnvelopeBytes": 94,
+    "envelopeVersion": "TSNTIN04",
+    "envelopeSha256": "d6182d829b6ee5a4c68d4f9f0d4b4731983fd0f840860cec7b1161a7abe41485",
+    "plaintextIncluded": false,
+    "evidenceFile": "onchain-recovery-record.json",
+    "contextSlot": 507034899
+  },
+  "recoveryBehavior": {
+    "approval": "Owner wallet signs the versioned recovery message.",
+    "decryption": "The TIN and display name are decrypted locally in the browser.",
+    "receiverStoresPlaintext": false,
+    "transactionRequired": false,
+    "visualResult": "Captured in the source recording; plaintext identity is not duplicated in this evidence JSON."
+  },
+  "creationEvidence": {
+    "receiverStatus": "CONFIRMED",
+    "receiverStateVersion": 5,
+    "nodeDecision": "VERIFIED",
+    "nodeAttestationAlgorithm": "Ed25519",
+    "nodeAttestationSignerKeyId": "658161d5d4f0990d57f68045",
+    "nodeAttestationSignatureBase64": "ZHna20770kGOLc9ecWoATLWxu9GWPCwiAdVmKRCwxXoQRNYFPbWWaENBCjtVIaypyYYbn3Y8EJoboHK6FBD9Ag==",
+    "nodeLeaseRetainedAfterCompletion": false,
+    "crankerLeaseRetainedAfterCompletion": false,
+    "leaseNote": "The finalized Receiver record has null lease fields; this bundle does not claim to contain the transient Cranker lease.",
+    "stagingTransactionCount": 5,
+    "stagingTransactionsFinalized": true,
+    "finalTransactionFinalized": true,
+    "registry": "CMZtYHvd4GgL3jWmzJXRL1hCYeoz2jxqBfDj1rG5ohfa",
+    "finalSignature": "5DqdWoiuW2qHwvLokcN63VVyebGQYU9NfrqcrxEq45mmeKWHnT6AmKANHh5uV4ZbAZnj1k5PHrtSv7H45h4RP8Ys",
+    "solanaEvidenceFile": "solana-staged-transactions.json",
+    "receiverEvidenceFile": "receiver-evidence.json"
+  },
+  "sourceVideo": "tsn-demo/source/tin-creation-and-wallet-recovery-devnet.webm",
+  "sdkCodeMap": "sdk-code-map.md",
+  "sourceCodeReferences": [
+    {
+      "path": "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "symbols": [
+        "recoverTinV1IdentityForOwner",
+        "getTinV1OwnerRecoveryEnvelope",
+        "getTinV1OwnerRecoveryMessageForEnvelope",
+        "createTinV1OwnerRecoveryEnvelope"
+      ]
+    },
+    {
+      "path": "protocol-tests/ui/public/tsn-dapp.js",
+      "symbols": [
+        "connectWallet",
+        "recoverConnectedTin",
+        "decryptTinRecovery"
+      ]
+    },
+    {
+      "path": "protocol-tests/ui/server.mjs",
+      "symbols": [
+        "GET /api/tsn/sdk/owner-tin-recovery"
+      ]
+    },
+    {
+      "path": "tsn-protocol/services/tsn-receiver/app/api/tin-operations/route.ts",
+      "symbols": [
+        "TIN_OPERATION ingress"
+      ]
+    },
+    {
+      "path": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+      "symbols": [
+        "Node work lease and transitions"
+      ]
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/server.py",
+      "symbols": [
+        "TIN operation verification and signed attestation"
+      ]
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "symbols": [
+        "staged TIN V1 creation"
+      ]
+    },
+    {
+      "path": "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/processor/create_tin_v1.rs",
+      "symbols": [
+        "TIN V1 registry creation"
+      ]
+    }
+  ],
+  "privacy": "Local evidence includes owner signature and encrypted identity envelopes in receiver-evidence.json. Keep this pack private; do not publish raw evidence."
+}

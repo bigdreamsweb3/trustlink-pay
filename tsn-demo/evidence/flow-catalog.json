@@ -8,6 +8,13 @@
       "title": "Private TIN creation"
     },
     {
+      "id": "tin-creation-wallet-recovery",
+      "title": "Create a TIN and recover it with the owner wallet",
+      "status": "captured",
+      "evidencePath": "tin-creation-wallet-recovery/manifest.json",
+      "captureRequirement": "Keep the creation transaction and wallet-authorized recovery evidence linked to the same owner and source recording."
+    },
+    {
       "captureRequirement": "Capture the actual SDK request, Receiver record, Node decision, Cranker lease, Solana result, and final Receiver state when this flow is run.",
       "evidencePath": null,
       "id": "private-tin-transfer",

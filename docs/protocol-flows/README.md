@@ -74,10 +74,12 @@ storage module loads.
 For private TIN creation, the display name and TIN travel inside the encrypted
 identity envelope. Receiver work and the on-chain account contain ciphertext,
 not the plaintext TIN or display name. After finality, the XP can resolve the
-identity with the protected lookup secret. The current UI presents the TIN in
+identity with the namespace lookup value. The universal value is public; an
+institutional issuer may keep its own value private. The current UI presents the TIN in
 the issuing browser session; reconnecting a wallet does not yet perform a
 wallet-to-TIN reverse lookup, because the registry intentionally does not
-expose an enumerable owner index.
+expose an owner-to-TIN recovery index. Universal identity records are
+enumerable by design; this does not grant transaction monitoring access.
 
 ## Recommended Files
 

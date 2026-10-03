@@ -1,0 +1,165 @@
+{
+  "available": true,
+  "collection": "tsn_receiver_work",
+  "count": 1,
+  "records": [
+    {
+      "authorization": null,
+      "crankerLease": null,
+      "id": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+      "kind": "TIN_OPERATION",
+      "nodeLease": null,
+      "payload": {
+        "encryptedIdentityEnvelope": "/tVZCPlt6i6m9u6lg0rCeekaQRFg0DiOhQPnkqaPkSaQN7RLzvrsj7RXGFgxa+WmXqD7nePAxzYLD30B3x//XY53mEfwNkbNqfvl5BQHCw==",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsIm93bmVyUHVibGljS2V5IjoiNE5UbWRoRFo0ZWVwaFVnTWhORWd6Z1BNaVpTR2VEdDVnNUdvUkxWV1c5a0giLCJyb3V0ZVZlcnNpb24iOjEsInBydUNvbmZpZ3VyYXRpb25IYXNoIjoiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsInJlc291cmNlQ29tbWl0bWVudCI6ImY1NGFhMmUyMDk2Njk3ZDA2MjYxZGQzMGUyZGIxMWJiNjAyMGViYWRmY2Q2ZGY4ZWI0ZDRjNjk1MmIzYjU3ZDAiLCJzZWVkRW5jcnlwdGlvbkFsZ29yaXRobSI6ImFlcy0yNTYtZ2NtLWxvY2FsLW1hc3Rlci1zZWVkIiwic2VlZENpcGhlcnRleHQiOiI2ZldMdzhfOHRFaGszU0E5emZPNlZocHVDcXBjSUlHOC0zY0NyTF85NTAtSG5aYVBaQXd3eFE1Z2NiYzUyV0l3Iiwic2VlZE5vbmNlIjoiY3hBclNFRk1PbFcyRXV3bCIsInNlZWRDaXBoZXJ0ZXh0Q29tbWl0bWVudCI6ImU2MmQxMmIxNzc0MWFiNjVmM2JmMDliZmIxYTA4MTc2ZWNkZGNkMDhiNDEzNDg2YTkwZjViMmIyYWI3NGZhN2EiLCJwcm90ZWN0ZWRLZXkiOiJ3YWxsZXQtb3duZXItc2lnbmF0dXJlLWRlcml2ZWQiLCJwcm90ZWN0ZWRLZXlDb21taXRtZW50IjoiZjY1MjA3MjM2NGQ3MWEwYWY4N2YzYmY2ODAwMGVlOWU5MGE0YjU1ZTUxY2VmOTJjNTZlYTA2NTdmN2RjNGQzOSIsImFjY2Vzc0NvbnRyb2xIYXNoIjoiNDM0OWJiNTE0NDc2ZDk3NzUyM2Y5YTZjYzk4ZGQyYmVhYTNjYzJhOWE2OWY2YjE3ZDFkNmE4MmE5ZmQ0ZTA2ZSIsImludGVncml0eUNvbW1pdG1lbnQiOiJmZDExOTc2NTQ0ZGIwNmI5ODRkZjE3YzRiN2U0N2Q2MDBmN2NkZGE1YzYzNTU0Y2RlYzhiYWZmYWFlODliYzU1In0=",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "encryptedPublicRouteEnvelope": "",
+        "expiry": 1791039293,
+        "intentId": "7d99bf29-2258-4de1-b4e0-6dfde4a53137",
+        "intentType": "tin_creation",
+        "lookupCommitment": "63c83ba57ae0e85b634bc6e753d922a0565e8e3a9e8a0b3124cb935801a19e61",
+        "nonce": "768cdda6e0873d0fa2506871cc9fc6730ab8e9a5a575e18dfcbf6e85c5f9f8ab",
+        "ownerIntentHash": "a05249c09e4f56591f7b963d1789ae44b73fa768ad0401c1268a9e20bcb74f15",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: a05249c09e4f56591f7b963d1789ae44b73fa768ad0401c1268a9e20bcb74f15\n\nProtocol: Transfer Identity Network\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "ownerPubkey": "4NTmdhDZ4eephUgMhNEgzgPMiZSGeDt5g5GoRLVWW9kH",
+        "ownerSignature": "W6SDSYjFjuRPLH9idvFzTw7iU9DjNyF3FK54V1Fs7IC4tDzrT5phnlNY2MK3YWH7/swW9xh4kpKYQ8MFxyaDAw==",
+        "programAssigned": false,
+        "pruConfigurationHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeNonce": "768cdda6e0873d0fa2506871cc9fc6730ab8e9a5a575e18dfcbf6e85c5f9f8ab",
+        "routeVersion": 1,
+        "tcapPolicyCommitment": "c841b5a387983f917dd4605ce28f742b4aa0289426364ec66d41baefa24ecaf9",
+        "tcapRelationshipCommitment": "a425eebf7a26eb8852846ef45817388082ace3b32a1b8f64a7cb657183a3ea4d",
+        "tcapRelationshipReference": "15908fc82a8e98dba65be0ff7cca2339e9d7e10a331ed643ce3dee0465e96a1c",
+        "tcapRouteVersion": 1
+      },
+      "payloadCommitment": "add9dd0481faec78c56340dbcf7b9cecc2f61bee2812cc1935de1a08f1a07641",
+      "receivedAt": "2026-10-03T14:40:14.186Z",
+      "result": {
+        "registry": "CMZtYHvd4GgL3jWmzJXRL1hCYeoz2jxqBfDj1rG5ohfa",
+        "signature": "5DqdWoiuW2qHwvLokcN63VVyebGQYU9NfrqcrxEq45mmeKWHnT6AmKANHh5uV4ZbAZnj1k5PHrtSv7H45h4RP8Ys",
+        "stage": "TIN_V1_REGISTRY_CREATED"
+      },
+      "stateVersion": 5,
+      "status": "CONFIRMED",
+      "updatedAt": "2026-10-03T14:40:30.960Z",
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "nodeAttestation": {
+          "algorithm": "Ed25519",
+          "decision": "VERIFIED",
+          "evidenceCommitment": "7879bd0c0b2f0efc6ef34e869b0288d1c589119cb06d47c8a8b57b3e20c376f3",
+          "executionPayloadCommitment": "c43f675f650dc22784d5e7f6800f7adb1622897c6badeb856aad4f8fa776b38a",
+          "inputPayloadCommitment": "add9dd0481faec78c56340dbcf7b9cecc2f61bee2812cc1935de1a08f1a07641",
+          "keyId": "658161d5d4f0990d57f68045",
+          "leaseId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "signatureBase64": "ZHna20770kGOLc9ecWoATLWxu9GWPCwiAdVmKRCwxXoQRNYFPbWWaENBCjtVIaypyYYbn3Y8EJoboHK6FBD9Ag==",
+          "signedAt": "2026-10-03T14:40:19.969792Z",
+          "verificationType": "TSN_TIN_OPERATION",
+          "version": 1,
+          "workId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+          "workKind": "TIN_OPERATION"
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "createdAt": "2026-10-03T14:40:19.810415+00:00",
+            "creationFeeAmount": "50000",
+            "creationFeeMint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "displayName": null,
+            "displayNameReadableByNode": false,
+            "displayNameStatus": "opaque_to_node",
+            "envelopeChecks": {
+              "encryptedIdentityEnvelope": {
+                "base64Decoded": true,
+                "ciphertextOpenedByNode": false,
+                "includedInOwnerIntentHash": true,
+                "present": true
+              },
+              "encryptedMasterSeed": {
+                "base64Decoded": true,
+                "ciphertextOpenedByNode": false,
+                "includedInOwnerIntentHash": true,
+                "present": true
+              },
+              "encryptedPublicRouteEnvelope": {
+                "base64Decoded": false,
+                "ciphertextOpenedByNode": false,
+                "includedInOwnerIntentHash": true,
+                "present": false
+              },
+              "encryptedTinRecovery": {
+                "base64Decoded": true,
+                "ciphertextOpenedByNode": false,
+                "includedInOwnerIntentHash": true,
+                "present": true
+              },
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              }
+            },
+            "failureReason": null,
+            "feeMetadata": null,
+            "newDisplayName": null,
+            "newEncryptedMasterSeed": null,
+            "newEncryptedMetadataHash": null,
+            "newEncryptedPublicRouteEnvelope": null,
+            "newPruConfigurationHash": null,
+            "newRouteNonce": null,
+            "newRouteVersion": null,
+            "onchainSignatures": [],
+            "ownerSignatureMessageFormat": "readable-v1",
+            "status": "pending_verification",
+            "submitterCranker": null,
+            "tin": "",
+            "updateFeeAmount": null,
+            "updateFeeMint": null,
+            "updatedAt": "2026-10-03T14:40:19.810415+00:00",
+            "verifierCranker": null
+          },
+          "changedFields": {},
+          "interpretation": "Node keeps unchanged ingress values and adds normalized TIN operation fields; the full verified payload is not stored a second time.",
+          "removedFields": [
+            "encryptedTinRecovery",
+            "lookupIssuanceProof"
+          ],
+          "statusScope": "Receiver record.status is work-queue state; addedFields.status is the inner TIN operation lifecycle state.",
+          "unchangedFields": [
+            "encryptedIdentityEnvelope",
+            "encryptedMasterSeed",
+            "encryptedMetadataHash",
+            "encryptedPublicRouteEnvelope",
+            "expiry",
+            "intentId",
+            "intentType",
+            "lookupCommitment",
+            "nonce",
+            "ownerIntentHash",
+            "ownerIntentMessage",
+            "ownerPubkey",
+            "ownerSignature",
+            "programAssigned",
+            "pruConfigurationHash",
+            "routeNonce",
+            "routeVersion",
+            "tcapPolicyCommitment",
+            "tcapRelationshipCommitment",
+            "tcapRelationshipReference",
+            "tcapRouteVersion"
+          ]
+        },
+        "receiverLease": {
+          "kind": "TIN_OPERATION",
+          "payloadCommitment": "add9dd0481faec78c56340dbcf7b9cecc2f61bee2812cc1935de1a08f1a07641",
+          "source": "tsn-receiver",
+          "stateVersion": 2,
+          "workId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0"
+        },
+        "verificationType": "TSN_TIN_OPERATION"
+      }
+    }
+  ],
+  "selectedReceiverWorkId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+  "source": "local-json"
+}

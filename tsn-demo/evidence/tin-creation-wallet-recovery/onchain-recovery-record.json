@@ -1,0 +1,20 @@
+{
+  "network": "solana-devnet",
+  "rpc": "https://tsn-rpc-gateway.vercel.app",
+  "ownerPubkey": "4NTmdhDZ4eephUgMhNEgzgPMiZSGeDt5g5GoRLVWW9kH",
+  "programId": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+  "recoveryRecordPda": "AnfP9MXmxrpxcAZX8EnidBfyscsCKCBytKi3mXbQ9c5x",
+  "exists": true,
+  "accountOwner": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+  "accountDataLength": 132,
+  "envelopeBytes": 94,
+  "envelopeVersion": "TSNTIN04",
+  "envelopeSha256": "d6182d829b6ee5a4c68d4f9f0d4b4731983fd0f840860cec7b1161a7abe41485",
+  "rawAccountBytesStored": false,
+  "plaintextIdentityStored": false,
+  "rpcHttpStatus": 200,
+  "commitment": "finalized",
+  "contextSlot": 507034899,
+  "lamports": 1320800,
+  "executable": false
+}

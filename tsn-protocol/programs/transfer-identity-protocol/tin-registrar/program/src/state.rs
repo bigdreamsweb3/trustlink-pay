@@ -286,6 +286,21 @@ pub struct TinV1Account {
     pub tcap_policy_commitment: [u8; 32],
 }
 
+/// Wallet-addressable recovery locator. The TIN is ciphertext; recovering it
+/// requires a key derived locally from an explicit owner-wallet signature.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct TinV1OwnerRecoveryAccount {
+    pub version: u8,
+    pub bump: u8,
+    pub owner_pubkey: Pubkey,
+    pub encrypted_tin: Vec<u8>,
+}
+
+impl TinV1OwnerRecoveryAccount {
+    pub const VERSION: u8 = 1;
+    pub fn space(encrypted_tin_len: usize) -> usize { 1 + 1 + 32 + 4 + encrypted_tin_len }
+}
+
 impl TinV1Account {
     pub const VERSION: u8 = 1;
     pub const STATUS_ACTIVE: u8 = 1;
@@ -385,6 +400,8 @@ pub struct TinV1CreationStaging {
     pub intent_hash: [u8; 32],
     pub encrypted_identity_envelope: Vec<u8>,
     pub identity_written: u32,
+    pub encrypted_tin_recovery: Vec<u8>,
+    pub recovery_written: u32,
     pub encrypted_master_seed: Vec<u8>,
     pub master_seed_written: u32,
     pub encrypted_metadata_hash: [u8; 32],
@@ -401,11 +418,12 @@ pub struct TinV1CreationStaging {
 }
 
 impl TinV1CreationStaging {
-    pub const VERSION: u8 = 1;
+    // Version 2 adds the encrypted owner-recovery envelope to the stage layout.
+    pub const VERSION: u8 = 2;
     pub const MAX_BLOB_LEN: usize = 16 * 1024;
 
-    pub fn space(identity_len: usize, seed_len: usize, route_len: usize) -> usize {
-        1 + 1 + 32 + 32 + 32 + 4 + identity_len + 4 + 4 + seed_len + 4 + 32 + 32
+    pub fn space(identity_len: usize, recovery_len: usize, seed_len: usize, route_len: usize) -> usize {
+        1 + 1 + 32 + 32 + 32 + 4 + identity_len + 4 + 4 + recovery_len + 4 + 4 + seed_len + 4 + 32 + 32
             + 4 + route_len + 4 + 8 + 32 + 1 + 32 + 32 + 32 + 8
     }
 }

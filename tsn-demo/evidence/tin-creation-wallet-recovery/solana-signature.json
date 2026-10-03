@@ -1,0 +1,9 @@
+{
+  "confirmationStatus": "finalized",
+  "err": null,
+  "explorer": "https://explorer.solana.com/tx/5DqdWoiuW2qHwvLokcN63VVyebGQYU9NfrqcrxEq45mmeKWHnT6AmKANHh5uV4ZbAZnj1k5PHrtSv7H45h4RP8Ys?cluster=devnet",
+  "finalized": true,
+  "found": true,
+  "signature": "5DqdWoiuW2qHwvLokcN63VVyebGQYU9NfrqcrxEq45mmeKWHnT6AmKANHh5uV4ZbAZnj1k5PHrtSv7H45h4RP8Ys",
+  "slot": 507029424
+}

@@ -1,0 +1,54 @@
+{
+  "flowId": "tin-creation-wallet-recovery",
+  "flowTitle": "Create a TIN and recover it with the owner wallet",
+  "network": "solana-devnet",
+  "ownerIntentId": "7d99bf29-2258-4de1-b4e0-6dfde4a53137",
+  "paths": {
+    "flowCatalog": "../flow-catalog.json",
+    "health": "health.json",
+    "processBoundaries": "process-boundaries.json",
+    "processCanvases": [
+      "processes/01-sdk-to-receiver.svg",
+      "processes/02-receiver-to-node.svg",
+      "processes/03-node-verification.svg",
+      "processes/04-receiver-to-cranker.svg",
+      "processes/05-cranker-to-solana.svg",
+      "processes/06-cranker-result-to-receiver.svg",
+      "processes/07-wallet-recovery-sdk.svg"
+    ],
+    "receiver": "receiver-evidence.json",
+    "registry": "solana-registry.json",
+    "solana": "solana-signature.json",
+    "sourceVideo": "../../source/tin-creation-and-wallet-recovery-devnet.webm",
+    "walletRecovery": "wallet-recovery-evidence.json",
+    "onchainRecovery": "onchain-recovery-record.json",
+    "stagedTransactions": "solana-staged-transactions.json",
+    "sdkCodeMap": "sdk-code-map.md",
+    "voiceoverScript": "voiceover-script.md"
+  },
+  "privacy": "Local allowlisted Receiver evidence and public Devnet account/transaction metadata. Owner signatures and encrypted envelopes are present in the private bundle; do not publish it.",
+  "receiverSource": "tsn-protocol/services/tsn-receiver/.receiver-store.json",
+  "receiverWorkId": "4d63ca6d-c8b8-4828-b5a4-92b988262be0",
+  "signature": "5DqdWoiuW2qHwvLokcN63VVyebGQYU9NfrqcrxEq45mmeKWHnT6AmKANHh5uV4ZbAZnj1k5PHrtSv7H45h4RP8Ys",
+  "sourceCodeReferences": [
+    "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+    "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+    "tsn-protocol/services/tsn-receiver/app/api/tin-operations/route.ts",
+    "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+    "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+    "tsn-protocol/services/tsn-node/server.py",
+    "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+    "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/processor/create_tin_v1.rs",
+    "protocol-tests/ui/public/tsn-dapp.js",
+    "protocol-tests/ui/server.mjs"
+  ],
+  "sourceMedia": [
+    {
+      "path": "tsn-demo/source/tin-creation-and-wallet-recovery-devnet.webm",
+      "mediaType": "webm",
+      "sizeBytes": 3389442,
+      "sha256": "0f4cf8c7d1ae48619e50c944530938c0b41699599524aa9090f1d0f67ca1024c",
+      "relationship": "Recorded Devnet flow: create a TIN, reload TSN XP, reconnect the owner wallet, and recover the TIN identity."
+    }
+  ]
+}

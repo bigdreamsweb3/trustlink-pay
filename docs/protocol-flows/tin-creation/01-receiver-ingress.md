@@ -65,7 +65,7 @@ Receiver ingress accepts the SDK-generated object with these fields:
 | `programAssigned`              | boolean | JSON boolean, false                  |
 | `intentId`                     | string  | XP-generated operation UUID          |
 | `ownerPubkey`                  | string  | Solana base58 public key             |
-| `ownerSignature`               | string  | Base64 Ed25519 signature over raw 32-byte intent hash |
+| `ownerSignature`               | string  | Base64 Ed25519 signature over canonical UTF-8 owner-approval message containing the 32-byte intent hash |
 | `ownerIntentHash`              | string  | 64 lowercase hexadecimal characters  |
 | `ownerIntentMessage`           | string  | Canonical display text; not the signed bytes |
 | `nonce`                        | string  | Same 32-byte value as `routeNonce`   |

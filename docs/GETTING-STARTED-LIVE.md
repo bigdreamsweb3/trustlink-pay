@@ -10,7 +10,7 @@ for production funds, real stablecoins, or private keys that hold value.
 
 | Service           | Live location                                                                 | What to use it for                                 |
 | ----------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
-| TrustLink Pay     | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | Browser wallet and payment experience              |
+| Earlier TrustLink Pay app | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)            | Earlier hosted application surface                 |
 | TrustLink backend | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | Authentication and application APIs                |
 | TSN Receiver      | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | Intent ingress, durable work, leases, and evidence |
 | TSN Node          | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | Verification and Receiver work processing          |
@@ -20,18 +20,28 @@ for production funds, real stablecoins, or private keys that hold value.
 Use these canonical Devnet endpoints:
 
 ```text
-TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
-NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+TSN_RPC_URL=https://tsn-rpc-gateway.vercel.app
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 ```
 
+`TSN_RPC_URL` selects the preferred endpoint for SDK and Cranker traffic. It
+defaults to the hosted TSN gateway; a developer may set it to a local gateway
+or another RPC endpoint. The SDK and Cranker fail closed on that configured
+endpoint rather than silently switching to a public Solana RPC. The gateway
+itself manages its private upstream provider list.
+
 The TSN Node and TIN registry are pinned to the deployed program IDs below.
+
+TSN XP is the active user-facing product and SDK integration experience under
+development in `protocol-tests/ui/`. It is not represented by the older
+hosted TrustLink Pay URL above; use the local XP UI for the current Devnet
+test flow.
 
 ## What a live payment test does
 
 ```mermaid
 flowchart TD
-    A["Open TrustLink Pay"] --> B["Connect a Devnet wallet"]
+    A["Open TSN XP"] --> B["Connect a Devnet wallet"]
     B --> C["Resolve recipient TIN or wallet"]
     C --> D["TSN SDK builds the signed intent"]
     D --> E["Frontend submits intent to TSN Receiver"]
@@ -48,7 +58,7 @@ account state is fetched from Solana.
 
 ## Browser tester
 
-1. Open [TrustLink Pay](https://trustlink-pay.vercel.app/).
+1. Start the local TSN XP UI and open its local development URL.
 2. Connect a Devnet wallet with test SOL and the supported test token.
 3. Use the Send or Identity experience.
 4. Approve wallet messages and transactions only when the review screen shows
@@ -147,12 +157,16 @@ The operator configures:
 - the live Receiver URL;
 - the Cranker service credential;
 - a dedicated operator/fee-payer keypair;
-- direct Solana Devnet RPC and WebSocket endpoints;
+- the preferred Solana Devnet RPC and its matching WebSocket endpoint (the
+  hosted TSN gateway by default; local gateway during local development);
 - the deployed TSN and TIN program IDs.
 
-Crankers must not receive user private keys, master seeds, serialized private
-commitments, or browser secrets. They lease verified work and submit the exact
-authorized transaction; they do not replan it.
+Crankers verify the Node's signed decision receipt against the Receiver work
+before execution. They must not receive user private keys, master seeds,
+lookup secrets, or decrypted identity material. For oversized private TIN V1
+creation, the TIN program uses intent-bound staging and bounded encrypted-data
+chunks before finalization; other transaction types must be sized and supported
+by their own on-chain instruction paths.
 
 ## Evidence checklist
 

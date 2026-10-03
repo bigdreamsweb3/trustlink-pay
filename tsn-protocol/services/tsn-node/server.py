@@ -438,7 +438,7 @@ def _sign_node_verification(
             "TIN_OPERATION": {
                 "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash",
                 "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "displayName",
-                "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMasterSeed", "encryptedMetadataHash",
+                "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
                 "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce",
                 "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
             },
@@ -1828,6 +1828,7 @@ class TinOperationRecord(BaseModel):
     displayName: Optional[str] = None
     lookupCommitment: Optional[str] = None
     encryptedIdentityEnvelope: Optional[str] = None
+    encryptedTinRecovery: Optional[str] = None
     encryptedMasterSeed: Optional[str] = None
     encryptedMetadataHash: str
     pruConfigurationHash: str
@@ -2500,6 +2501,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     encrypted_master_seed = str(encrypted_master_seed or "").strip()
     lookup_commitment = str(_field(payload, "lookup_commitment", "lookupCommitment", default="") or "").strip()
     encrypted_identity_envelope = str(_field(payload, "encrypted_identity_envelope", "encryptedIdentityEnvelope", default="") or "").strip()
+    encrypted_tin_recovery = str(_field(payload, "encrypted_tin_recovery", "encryptedTinRecovery", default="") or "").strip()
     encrypted_metadata_hash = str(
         _field(
             payload,
@@ -2578,6 +2580,9 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     )
     lookup_commitment_bytes = _decode_hash32(lookup_commitment, "lookup_commitment") if intent_type == "tin_creation" and not program_assigned else bytes(32)
     encrypted_identity_envelope_bytes = _decode_base64_blob(encrypted_identity_envelope, "encrypted_identity_envelope") if intent_type == "tin_creation" and not program_assigned else b""
+    encrypted_tin_recovery_bytes = _decode_base64_blob(encrypted_tin_recovery, "encrypted_tin_recovery") if intent_type == "tin_creation" and not program_assigned else b""
+    if intent_type == "tin_creation" and len(encrypted_tin_recovery_bytes) < 28:
+        raise HTTPException(422, "encrypted_tin_recovery must contain an authenticated recovery envelope")
     metadata_hash_bytes = _decode_hash32(
         encrypted_metadata_hash,
         "encrypted_metadata_hash",
@@ -2624,6 +2629,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
             raise HTTPException(422, "TIN V1 TCap route commitments must be nonzero")
         expected_hash = hashlib.sha256(b"".join([
             b"TSN_TIN_V1_CREATE", owner_bytes, lookup_commitment_bytes,
+            _encode_u32_le(len(encrypted_tin_recovery_bytes)), encrypted_tin_recovery_bytes,
             _encode_u32_le(len(encrypted_identity_envelope_bytes)), encrypted_identity_envelope_bytes,
             _encode_u32_le(len(encrypted_master_seed_bytes)), encrypted_master_seed_bytes,
             metadata_hash_bytes, configuration_hash_bytes,
@@ -2720,6 +2726,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "displayName": display_name if display_name else None,
         "lookupCommitment": lookup_commitment.lower() if intent_type == "tin_creation" else None,
         "encryptedIdentityEnvelope": encrypted_identity_envelope if intent_type == "tin_creation" else None,
+        "encryptedTinRecovery": encrypted_tin_recovery if intent_type == "tin_creation" else None,
         "encryptedMasterSeed": encrypted_master_seed if intent_type == "tin_creation" else None,
         "encryptedMetadataHash": encrypted_metadata_hash.lower(),
         "pruConfigurationHash": pru_configuration_hash.lower(),
@@ -2760,6 +2767,12 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
             "includedInOwnerIntentHash": True,
             "ciphertextOpenedByNode": False,
         },
+        "encryptedTinRecovery": {
+            "present": bool(encrypted_tin_recovery_bytes),
+            "base64Decoded": bool(encrypted_tin_recovery_bytes),
+            "includedInOwnerIntentHash": True,
+            "ciphertextOpenedByNode": False,
+        },
         "encryptedMasterSeed": {
             "present": bool(encrypted_master_seed_bytes),
             "base64Decoded": bool(encrypted_master_seed_bytes),
@@ -2782,6 +2795,7 @@ def public_tin_operation(record: TinOperationRecord | dict[str, Any]) -> PublicT
     data.pop("encryptedMasterSeed", None)
     data.pop("lookupCommitment", None)
     data.pop("encryptedIdentityEnvelope", None)
+    data.pop("encryptedTinRecovery", None)
     data.pop("newEncryptedMasterSeed", None)
     data.pop("encryptedPublicRouteEnvelope", None)
     data.pop("newEncryptedPublicRouteEnvelope", None)

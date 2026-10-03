@@ -33,6 +33,13 @@ FLOW_CATALOG = [
         "evidencePath": "tin-creation/manifest.json",
     },
     {
+        "id": "tin-creation-wallet-recovery",
+        "title": "Create a TIN and recover it with the owner wallet",
+        "status": "captured",
+        "evidencePath": "tin-creation-wallet-recovery/manifest.json",
+        "captureRequirement": "Keep the creation transaction and wallet-authorized recovery evidence linked to the same owner and source recording.",
+    },
+    {
         "id": "private-tin-transfer",
         "title": "Private TIN transfer",
         "status": "planned",
@@ -569,7 +576,7 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
             "captureStatus": "RECEIVER_RECORD_OBSERVED",
             "request": {
                 "method": "POST", "path": "/tin-operations",
-                "bodyRef": "receiver-evidence.json#/records/0/payload",
+                "body": payload,
                 "bodyFieldNames": sorted(payload),
             },
             "response": {
@@ -577,7 +584,7 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 "stateVersionAtIngress": 1, "payloadCommitment": work.get("payloadCommitment"),
                 "receivedAt": work.get("receivedAt"),
             },
-            "reconstruction": "The request body is stored once in receiver-evidence.json; this trace references it.",
+            "reconstruction": "Exact accepted SDK request body captured from the Receiver record.",
         },
         "receiverToNode": {
             "captureStatus": "NODE_VERIFICATION_OBSERVED",
@@ -590,7 +597,7 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 "id": work.get("id"), "kind": work.get("kind"), "status": "NODE_VERIFYING",
                 "stateVersion": receiver_lease.get("stateVersion"),
                 "payloadCommitment": work.get("payloadCommitment"),
-                "payloadRef": "receiver-evidence.json#/records/0/payload",
+                "payload": payload,
                 "nodeLease": work.get("nodeLease"),
             },
             "leaseEvidenceReturnedByNode": receiver_lease,
@@ -605,7 +612,8 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                     "evidence": {
                         "verificationType": verification.get("verificationType"),
                         "receiverLease": receiver_lease,
-                        "payloadDeltaRef": "receiver-evidence.json#/records/0/verification/payloadDelta",
+                        "payloadDelta": payload_delta,
+                        "nodeAttestation": verification.get("nodeAttestation"),
                     },
                 },
             },
@@ -613,7 +621,8 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 key: work.get(key) for key in ("id", "kind", "status", "stateVersion", "payloadCommitment", "updatedAt", "nodeLease")
             },
             "verificationType": verification.get("verificationType"),
-            "payloadDeltaRef": "receiver-evidence.json#/records/0/verification/payloadDelta",
+            "payloadDelta": payload_delta,
+            "nodeAttestation": verification.get("nodeAttestation"),
             "payloadDeltaSummary": {
                 "unchangedFieldCount": len(payload_delta.get("unchangedFields", [])),
                 "addedFieldNames": sorted(payload_delta.get("addedFields", {})),
@@ -632,21 +641,21 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
             "crankerWorkProjection": {
                 "id": work.get("id"), "kind": work.get("kind"), "status": work.get("status"),
                 "stateVersion": work.get("stateVersion"),
-                "payloadRef": "merge sdkToReceiver.request.bodyRef with nodeVerificationToReceiver.payloadDeltaRef",
+                "verifiedPayload": cranker_payload,
                 "verifiedPayloadFieldNames": sorted(cranker_payload or {}),
             },
-            "projectionSource": "Receiver crankerWorkView allowlist selects these fields from the reconstructed Node-verified payload; no live Cranker claim is present.",
+            "projectionSource": "Receiver crankerWorkView allowlist selects these values from the reconstructed Node-verified payload; a transient Cranker lease is not retained in this final record.",
         },
         "crankerToSolana": {
-            "captureStatus": "NOT_CAPTURED",
-            "inputRef": "receiverToCranker.crankerWorkProjection.payloadRef",
+            "captureStatus": "FINAL_RESULT_OBSERVED" if isinstance(work.get("result"), dict) and work["result"].get("signature") else "NOT_CAPTURED",
+            "input": cranker_payload,
             "ownerProof": {
                 "program": "Ed25519Program",
-                "publicKeyRef": "receiver-evidence.json#/records/0/payload/ownerPubkey",
+                "publicKey": payload.get("ownerPubkey"),
                 "messageFormat": cranker_payload.get("ownerSignatureMessageFormat") if cranker_payload else None,
                 "messageEncoding": "UTF-8" if cranker_payload and cranker_payload.get("ownerSignatureMessageFormat") == "readable-v1" else "hex",
-                "messageRef": "receiver-evidence.json#/records/0/payload/ownerIntentMessage",
-                "signatureRef": "receiver-evidence.json#/records/0/payload/ownerSignature",
+                "message": payload.get("ownerIntentMessage"),
+                "signature": payload.get("ownerSignature"),
                 "signatureBytes": encoded_bytes_length(payload.get("ownerSignature")),
             },
             "createTinInstruction": {
@@ -654,6 +663,23 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 "programIdEnvironmentKey": "TINS_PROGRAM_ID",
                 "registryDerivation": "findProgramAddress([utf8(\"tin-v1\"), lookupCommitment], programId)",
                 "serializedInstructionFieldSources": instruction_payload,
+                "serializedInstructionValues": {
+                    "ownerPubkey": cranker_payload.get("ownerPubkey"),
+                    "lookupCommitment": cranker_payload.get("lookupCommitment"),
+                    "encryptedIdentityEnvelope": payload.get("encryptedIdentityEnvelope"),
+                    "encryptedMasterSeed": payload.get("encryptedMasterSeed"),
+                    "encryptedMetadataHash": cranker_payload.get("encryptedMetadataHash"),
+                    "pruConfigurationHash": cranker_payload.get("pruConfigurationHash"),
+                    "encryptedPublicRouteEnvelope": cranker_payload.get("encryptedPublicRouteEnvelope"),
+                    "routeVersion": cranker_payload.get("routeVersion"),
+                    "routeNonce": cranker_payload.get("routeNonce"),
+                    "tcapRouteVersion": cranker_payload.get("tcapRouteVersion"),
+                    "tcapRelationshipCommitment": cranker_payload.get("tcapRelationshipCommitment"),
+                    "tcapRelationshipReference": cranker_payload.get("tcapRelationshipReference"),
+                    "tcapPolicyCommitment": cranker_payload.get("tcapPolicyCommitment"),
+                    "intentHash": cranker_payload.get("ownerIntentHash"),
+                    "expiryTs": cranker_payload.get("expiry"),
+                },
                 "accountRoles": [
                     {"role": "cranker signer", "isSigner": True, "isWritable": True},
                     {"role": "TINS global state PDA", "isSigner": False, "isWritable": True},
@@ -663,17 +689,20 @@ def tin_process_evidence(receiver: dict[str, Any]) -> dict[str, Any] | None:
                 ],
             },
             "rpcCommitment": "confirmed",
-            "finalizedSignatureCheck": "Not performed by the Cranker path shown here; pass a real signature to the evidence taker for an RPC status check.",
-            "observedTransactionSignature": None,
+            "finalizedSignatureCheck": "Receiver final result captured; consult the linked Devnet transaction evidence for RPC finality." if isinstance(work.get("result"), dict) and work["result"].get("signature") else "Not captured; pass a real signature to the evidence taker for an RPC status check.",
+            "observedTransactionSignature": (work.get("result") or {}).get("signature"),
+            "observedRegistry": (work.get("result") or {}).get("registry"),
+            "observedResultStage": (work.get("result") or {}).get("stage"),
         },
         "crankerResultToReceiver": {
-            "captureStatus": "NOT_CAPTURED",
+            "captureStatus": "RECEIVER_RESULT_OBSERVED" if isinstance(work.get("result"), dict) else "NOT_CAPTURED",
+            "requestCaptureStatus": "RECONSTRUCTED_FROM_FINAL_RECORD",
             "request": {
                 "method": "PATCH", "path": "/api/cranker/work",
                 "body": {
                     "id": work.get("id"), "owner": (cranker_lease or {}).get("owner"),
                     "expectedVersion": (cranker_lease or {}).get("version"),
-                    "status": "CONFIRMED or FAILED", "evidence": work.get("result"),
+                    "status": work.get("status"), "evidence": work.get("result"),
                 },
             },
             "receiverResult": work.get("result"),
@@ -688,15 +717,16 @@ def xml(value: Any) -> str:
             .replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;"))
 
 
-def json_code_svg(title: str, data: dict[str, Any], *, note: str = "") -> str:
+def json_code_svg(title: str, data: dict[str, Any], *, note: str = "",
+                  sdk_code: str | None = None, sdk_label: str = "TSN SDK") -> str:
     """Render JSON into one scalable canvas, using adjacent code cards as needed."""
     lines = json.dumps(data, ensure_ascii=False, indent=2).splitlines()
     columns = [lines[index:index + SVG_GRID_ROWS]
                for index in range(0, len(lines), SVG_GRID_ROWS)] or [[]]
     gap = 16
     card_width = (1424 - gap * (len(columns) - 1)) / len(columns)
-    card_y, card_h = 194, 622
-    code_top, code_bottom = 258, 792
+    card_y, card_h = 194, (570 if sdk_code else 622)
+    code_top, code_bottom = 258, (740 if sdk_code else 792)
     grid_row_count = max(1, max(len(column) for column in columns))
     grid_line_height = min(34, max(18, int((code_bottom - code_top) / grid_row_count)))
     grid_font_size = min(22, max(13, grid_line_height - 4))
@@ -736,9 +766,19 @@ def json_code_svg(title: str, data: dict[str, Any], *, note: str = "") -> str:
             f'{"".join(rendered_lines)}'
         )
         line_start = line_end + 1
-    note_svg = (f'<text x="112" y="840" fill="#91a397" font-family="Consolas, Menlo, monospace" '
+    note_y = 784 if sdk_code else 840
+    note_svg = (f'<text x="112" y="{note_y}" fill="#91a397" font-family="Consolas, Menlo, monospace" '
                 f'font-size="13" textLength="{min(1376, max(1, len(note) * 7.2))}" '
                 f'lengthAdjust="spacingAndGlyphs">{xml(note)}</text>') if note else ""
+    sdk_panel = ""
+    if sdk_code:
+        sdk_panel = (
+            '<rect x="88" y="801" width="1424" height="48" rx="8" fill="#080e0a" stroke="#536746"/>'
+            f'<text x="106" y="821" fill="#d7b961" font-family="Consolas, Menlo, monospace" '
+            f'font-size="12" font-weight="700" letter-spacing="1">{xml(sdk_label)}</text>'
+            f'<text x="106" y="840" fill="#dce5dc" font-family="Consolas, Menlo, monospace" font-size="13" '
+            f'textLength="{min(1388, max(1, len(sdk_code) * 7.2))}" lengthAdjust="spacingAndGlyphs">{xml(sdk_code)}</text>'
+        )
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">
 <rect width="1600" height="900" fill="#08100c"/>
 <rect x="48" y="42" width="1504" height="816" rx="16" fill="#0d1711" stroke="#293b30" stroke-width="2"/>
@@ -747,17 +787,20 @@ def json_code_svg(title: str, data: dict[str, Any], *, note: str = "") -> str:
 <text x="88" y="153" fill="#f1f3ec" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">{xml(title)}</text>
 {''.join(rendered_cards)}
 {note_svg}
+{sdk_panel}
 </svg>'''
 
 
-def write_canvas(out: Path, path: Path, title: str, data: dict[str, Any], note: str) -> list[str]:
+def write_canvas(out: Path, path: Path, title: str, data: dict[str, Any], note: str,
+                 sdk_code: str | None = None, sdk_label: str = "TSN SDK") -> list[str]:
     """Replace this canvas and remove page files from the previous renderer."""
     for stale in path.parent.glob(f"{path.stem}-page-*.svg"):
         stale.unlink()
     if path.exists():
         path.unlink()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json_code_svg(title, data, note=note), encoding="utf-8", newline="\n")
+    path.write_text(json_code_svg(title, data, note=note, sdk_code=sdk_code, sdk_label=sdk_label),
+                    encoding="utf-8", newline="\n")
     return [str(path.relative_to(out)).replace("\\", "/")]
 
 
@@ -818,55 +861,150 @@ def write_process_svgs(out: Path, process: dict[str, Any]) -> list[str]:
     cranker_in = process["receiverToCranker"]
     solana = process["crankerToSolana"]
     cranker_out = process["crankerResultToReceiver"]
+    staged_transactions: dict[str, Any] = {}
+    staged_path = out / "solana-staged-transactions.json"
+    if staged_path.is_file():
+        try:
+            staged_transactions = json.loads(staged_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            staged_transactions = {}
+    ingress_payload = sdk["request"].get("body", {})
+    verified_payload = cranker_in["crankerWorkProjection"].get("verifiedPayload", {})
+    attestation = node_out.get("nodeAttestation") or {}
+    delta = node_out.get("payloadDelta") or {}
+    added_fields = delta.get("addedFields", {})
+    envelope_checks = added_fields.get("envelopeChecks", {})
+    staged_rows = staged_transactions.get("stagedTransactions", [])
+    staged_finalized = sum(1 for item in staged_rows if isinstance(item, dict) and item.get("finalized") is True)
     definitions = [
         ("01-sdk-to-receiver.svg", "01 · SDK → Receiver ingress", {
+            "captureStatus": sdk["captureStatus"],
             "method": sdk["request"]["method"], "path": sdk["request"]["path"],
             "receiverWorkId": sdk["response"]["id"], "kind": sdk["response"]["kind"],
             "statusAtIngress": sdk["response"]["statusAtIngress"],
             "stateVersion": sdk["response"]["stateVersionAtIngress"],
             "payloadCommitment": sdk["response"]["payloadCommitment"],
-            "bodyFieldNames": sdk["request"].get("bodyFieldNames", []),
-        }, "The request body is stored once in receiver-evidence.json."),
+            "requestBody": {key: ingress_payload.get(key) for key in (
+                "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerIntentHash",
+                "ownerSignature", "lookupCommitment", "encryptedIdentityEnvelope",
+                "encryptedMetadataHash", "routeVersion", "tcapRouteVersion",
+            ) if key in ingress_payload},
+        }, "Selected actual values from the accepted request; the complete payload is preserved in the JSON breakdown."),
         ("02-receiver-to-node.svg", "02 · Receiver → Node lease", {
+            "captureStatus": node_in["captureStatus"],
             "method": node_in["request"]["method"], "path": node_in["request"]["path"],
-            "supportedKinds": node_in["request"]["bodyShape"]["supportedKinds"],
+            "requestBody": node_in["request"]["bodyShape"],
+            "credential": node_in["request"]["credential"],
             "workId": node_in["leasedWork"]["id"], "kind": node_in["leasedWork"]["kind"],
+            "statusAtLease": node_in["leasedWork"]["status"],
             "leaseStateVersion": node_in["leasedWork"]["stateVersion"],
             "payloadCommitment": node_in["leasedWork"]["payloadCommitment"],
-            "leaseEvidenceReturned": node_in["leaseEvidenceReturnedByNode"],
-        }, "The Node API key is intentionally omitted from evidence."),
+            "leasedPayload": {key: ingress_payload.get(key) for key in (
+                "intentId", "intentType", "ownerPubkey", "ownerIntentHash", "lookupCommitment",
+                "encryptedIdentityEnvelope", "routeVersion", "tcapRouteVersion",
+            ) if key in ingress_payload},
+            "leaseEvidenceReturnedByReceiver": node_in["leaseEvidenceReturnedByNode"],
+        }, "The service API key is omitted; the actual leased payload and Receiver lease receipt are shown."),
         ("03-node-verification.svg", "03 · Node → Receiver verification", {
+            "captureStatus": node_out["captureStatus"],
             "workId": node_out["receiverRecordAfterPatch"]["id"],
             "status": node_out["receiverRecordAfterPatch"]["status"],
             "stateVersion": node_out["receiverRecordAfterPatch"]["stateVersion"],
             "verificationType": node_out.get("verificationType"),
-            "payloadDeltaRef": node_out.get("payloadDeltaRef"),
-            "payloadDeltaSummary": node_out.get("payloadDeltaSummary"),
-        }, "Ingress values live once in receiver-evidence.json; Node contributes the referenced delta."),
+            "nodeAttestation": {key: attestation.get(key) for key in (
+                "algorithm", "decision", "workId", "leaseVersion",
+                "inputPayloadCommitment", "evidenceCommitment", "signatureBase64",
+            ) if key in attestation},
+            "payloadDelta": {
+                "statusScope": delta.get("statusScope"),
+                "interpretation": delta.get("interpretation"),
+                "addedFields": {key: added_fields.get(key) for key in (
+                    "status", "tin", "displayName", "displayNameStatus", "displayNameReadableByNode",
+                ) if key in added_fields},
+                "envelopeChecks": {key: {field: value.get(field) for field in (
+                    "present", "base64Decoded", "ciphertextOpenedByNode",
+                )} for key, value in envelope_checks.items() if isinstance(value, dict)},
+                "unchangedFieldCount": len(delta.get("unchangedFields", [])),
+                "removedFields": delta.get("removedFields", []),
+            },
+        }, "Shows the Node-signed decision and the actual fields added, changed, preserved, or removed."),
         ("04-receiver-to-cranker.svg", "04 · Receiver → Cranker lease", {
             "captureStatus": cranker_in["captureStatus"], "method": cranker_in["request"]["method"],
-            "path": cranker_in["request"]["path"], "supportedKinds": cranker_in["request"]["body"]["supportedKinds"],
+            "path": cranker_in["request"]["path"], "requestBody": cranker_in["request"]["body"],
+            "authentication": cranker_in["request"]["authentication"],
             "lease": cranker_in["lease"],
-            "payloadRef": cranker_in["crankerWorkProjection"].get("payloadRef"),
-            "crankerVerifiedPayloadFieldNames": cranker_in["crankerWorkProjection"].get("verifiedPayloadFieldNames", []),
-        }, "No live claim is present; the projection references ingress plus Node delta."),
+            "verifiedPayload": {key: verified_payload.get(key) for key in (
+                "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerIntentHash",
+                "lookupCommitment", "encryptedIdentityEnvelope", "routeVersion", "tcapRouteVersion",
+            ) if key in verified_payload},
+        }, "The final Receiver snapshot does not retain a transient Cranker lease; values shown are the verified work projection."),
         ("05-cranker-to-solana.svg", "05 · Cranker → Solana instruction", {
-            "captureStatus": solana["captureStatus"], "programIdFallback": solana["createTinInstruction"]["programIdFallback"],
+            "captureStatus": solana["captureStatus"], "programId": solana["createTinInstruction"]["programIdFallback"],
             "registryDerivation": solana["createTinInstruction"]["registryDerivation"],
-            "ownerProof": solana["ownerProof"],
-            "accountRoles": solana["createTinInstruction"]["accountRoles"],
-            "rpcCommitment": solana["rpcCommitment"], "transactionSignature": solana["observedTransactionSignature"],
-        }, "Instruction fields and values are in process-boundaries.json; no transaction is captured yet."),
+            "ownerProof": {key: solana["ownerProof"].get(key) for key in (
+                "program", "messageFormat", "messageEncoding", "publicKey", "signature", "signatureBytes",
+            )},
+            "instructionValues": {key: solana["createTinInstruction"].get("serializedInstructionValues", {}).get(key) for key in (
+                "ownerPubkey", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedMetadataHash",
+                "routeVersion", "tcapRouteVersion", "tcapPolicyCommitment", "intentHash",
+            )},
+            "accountRoles": [item.get("role") for item in solana["createTinInstruction"]["accountRoles"]],
+            "rpcCommitment": solana["rpcCommitment"],
+            "finalResult": {"stage": solana.get("observedResultStage"), "signature": solana.get("observedTransactionSignature"), "registry": solana.get("observedRegistry")},
+            "stagedTransactionEvidence": {"count": len(staged_rows), "finalizedCount": staged_finalized},
+        }, "Observed instruction arguments and transaction signatures from this Devnet run."),
         ("06-cranker-result-to-receiver.svg", "06 · Cranker → Receiver result", {
-            "captureStatus": cranker_out["captureStatus"], "method": cranker_out["request"]["method"],
-            "path": cranker_out["request"]["path"], "requestFields": list(cranker_out["request"]["body"].keys()),
+            "captureStatus": cranker_out["captureStatus"],
+            "requestCaptureStatus": cranker_out["requestCaptureStatus"],
+            "method": cranker_out["request"]["method"],
+            "path": cranker_out["request"]["path"], "requestBody": cranker_out["request"]["body"],
+            "receiverFinalStatus": node_out["receiverRecordAfterPatch"]["status"],
             "receiverResult": cranker_out["receiverResult"],
-        }, "No Cranker report, Solana signature, or TIN is claimed."),
+        }, "Receiver-retained final result shown; transient Cranker lease metadata was not retained."),
     ]
     written = []
     for filename, title, data, note in definitions:
         path = out / "processes" / filename
-        written.extend(write_canvas(out, path, title, data, note))
+        sdk_code = None
+        sdk_label = "TSN SDK"
+        if filename == "01-sdk-to-receiver.svg":
+            sdk_label = "TSN SDK · submitTinV1Creation"
+            sdk_code = "await submitTinV1Creation({ ingressUrl: receiverUrl, prepared, intentId, ownerPubkey, ownerSignature, lookupIssuanceProof });"
+        written.extend(write_canvas(out, path, title, data, note, sdk_code=sdk_code, sdk_label=sdk_label))
+
+    recovery_path = out / "wallet-recovery-evidence.json"
+    onchain_path = out / "onchain-recovery-record.json"
+    if recovery_path.is_file() and onchain_path.is_file():
+        try:
+            recovery = json.loads(recovery_path.read_text(encoding="utf-8"))
+            onchain = json.loads(onchain_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            recovery = onchain = {}
+        if recovery and onchain:
+            recovery_view = recovery.get("onchainRecoveryRecord", {})
+            recovery_data = {
+                "network": recovery.get("network"),
+                "ownerPubkey": recovery.get("ownerPubkey"),
+                "programId": recovery_view.get("programId"),
+                "recoveryRecordPda": recovery_view.get("pda"),
+                "accountExists": recovery_view.get("exists"),
+                "envelopeVersion": recovery_view.get("envelopeVersion"),
+                "envelopeBytes": recovery_view.get("recoveryEnvelopeBytes"),
+                "envelopeSha256": recovery_view.get("envelopeSha256"),
+                "plaintextStoredOnChain": recovery_view.get("plaintextIncluded"),
+                "transactionRequiredForRecovery": recovery.get("recoveryBehavior", {}).get("transactionRequired"),
+                "ownerSignatureAuthorizesLocalDecryption": True,
+                "rpcCommitment": onchain.get("commitment"),
+                "contextSlot": onchain.get("contextSlot"),
+            }
+            recovery_code = "const identity = await recoverTinV1IdentityForOwner({ connection, ownerPubkey, signMessage, programId });"
+            written.extend(write_canvas(
+                out, out / "processes" / "07-wallet-recovery-sdk.svg",
+                "07 · Wallet-authorized TIN recovery", recovery_data,
+                "SDK helper example; TSN XP fetches the envelope with the SDK and decrypts it locally.",
+                sdk_code=recovery_code,
+                sdk_label="TSN SDK · recoverTinV1IdentityForOwner",
+            ))
     return written
 
 
@@ -1053,11 +1191,6 @@ def main() -> int:
     manifest["paths"]["receiver"] = "receiver-evidence.json"
     stages = tin_stage_snapshots(receiver)
     if stages:
-        for filename, snapshot in stages.items():
-            write_json(out / "tin-creation-stages" / filename, snapshot)
-        manifest["paths"]["tinStageData"] = [f"tin-creation-stages/{filename}" for filename in stages]
-        manifest["paths"]["tinStageCanvases"] = write_stage_svgs(out, stages)
-        manifest["paths"]["sectionCanvases"] = write_section_svgs(out, health, receiver, stages, args)
         processes = tin_process_evidence(receiver)
         if processes:
             write_json(out / "process-boundaries.json", processes)

@@ -919,9 +919,13 @@
     #panel-status { background: transparent; border: 0; }
     .shell:has(#panel-status.active) { background: transparent; border-color: transparent; box-shadow: none; }
     .tab-panel { background: transparent; }
-      .tab-panel.active:not(#panel-status) { position: fixed; z-index: 50; top: 90px; right: 390px; left: 190px; bottom: auto; max-height: calc(100vh - 110px); overflow: auto; background: #101a14; border: 1px solid #405846; border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.4); padding: 18px 20px 24px !important; }
+      .tab-panel.active:not(#panel-status) { position: fixed; z-index: 50; top: auto; right: 390px; left: 190px; bottom: 24px; max-height: calc(100vh - 110px); overflow: auto; background: #101a14; border: 1px solid #405846; border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.4); padding: 18px 20px 24px !important; animation: modal-rise .22s ease-out both; }
+    body:not(.wallet-connected) #walletOverviewSection,
+    #walletOverviewSection[hidden] { display: none !important; }
+    @keyframes modal-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
     .modal-close { position: sticky !important; top: 12px !important; z-index: 200 !important; display: block !important; margin: 12px 12px 0 auto !important; background: #e9e0c8 !important; color: #123a2a !important; border: 1px solid #d4af37 !important; border-radius: 4px; padding: 7px 12px !important; font: 700 11px ui-monospace, monospace; }
-    @media (max-width: 820px) { .tab-panel.active:not(#panel-status) { inset: 58px 10px 10px; } }
+    @media (max-width: 820px) { .tab-panel.active:not(#panel-status) { inset: auto 10px 10px; max-height: calc(100dvh - 84px); animation: modal-rise-mobile .24s cubic-bezier(.2,.75,.25,1) both; } }
+    @keyframes modal-rise-mobile { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 820px) { .identity-fields { grid-template-columns: 1fr; } }
     @media (max-width: 820px) {
       .intro { margin-bottom: 16px; }
@@ -965,7 +969,7 @@
   </style>
   <style>
     @media (max-width: 820px) {
-      .tab-panel.active:not(#panel-status) { position: fixed !important; z-index: 100 !important; top: 64px !important; right: 10px !important; left: 10px !important; bottom: 10px !important; inset: 64px 10px 10px !important; width: auto !important; max-width: none !important; height: auto !important; overflow-y: auto !important; padding: 16px !important; background: #101a14 !important; border: 1px solid #405846 !important; border-radius: 6px !important; box-shadow: 0 16px 40px rgba(0,0,0,.45) !important; }
+      .tab-panel.active:not(#panel-status) { position: fixed !important; z-index: 100 !important; top: auto !important; right: 10px !important; left: 10px !important; bottom: 10px !important; inset: auto 10px 10px !important; width: auto !important; max-width: none !important; height: auto !important; max-height: calc(100dvh - 84px) !important; overflow-y: auto !important; padding: 16px !important; background: #101a14 !important; border: 1px solid #405846 !important; border-radius: 6px !important; box-shadow: 0 16px 40px rgba(0,0,0,.45) !important; animation: modal-rise-mobile .24s cubic-bezier(.2,.75,.25,1) both !important; }
       .tab-panel.active:not(#panel-status) .modal-close { position: sticky !important; top: 0 !important; display: block !important; width: fit-content !important; min-width: 58px !important; height: 32px !important; margin: 0 0 14px auto !important; padding: 7px 12px !important; border-radius: 4px !important; background: #e9e0c8 !important; color: #123a2a !important; border: 1px solid #d4af37 !important; font: 700 11px/16px ui-monospace, monospace !important; text-align: center !important; }
       body { font-size: 14px !important; }
       main { padding: 18px 14px 28px !important; }
@@ -1035,6 +1039,7 @@
       </nav>
       <div>
         <section id="panel-status" class="overview-panel active" role="tabpanel" aria-labelledby="tab-status">
+          <div id="walletOverviewSection" hidden>
           <div class="identity-card">
             <div class="identity-card-head">
               <div><div class="overview-kicker">TSN Identity Registry</div><h3>Protocol identity pass</h3><p>Account record for private settlement.</p></div>
@@ -1059,20 +1064,23 @@
               </div>
             </div>
           </div>
-          <div class="section-head">
-            <div>
-              <h2>Network status</h2>
-              <p>Live service health and routing.</p>
-            </div><button class="alt" id="refreshStatus">Sync now</button>
           </div>
-          <div id="serviceStatus">Checking services...</div>
-          <details>
-            <summary>VIEW SDK CODE / getTsnNetworkStatus</summary>
-            <pre>const status = await getTsnNetworkStatus({ local, live });
+          <div id="networkStatusSection" class="network-status-section">
+            <div class="section-head">
+              <div>
+                <h2>Network status</h2>
+                <p>Live service health and routing.</p>
+              </div><button class="alt" id="refreshStatus">Sync now</button>
+            </div>
+            <div id="serviceStatus">Checking services...</div>
+            <details>
+              <summary>VIEW SDK CODE / getTsnNetworkStatus</summary>
+              <pre>const status = await getTsnNetworkStatus({ local, live });
 if (!status.readyForTransactions) throw new Error("TSN is not ready");</pre><a
-              href="https://trust-link-tsn.mintlify.site/developers/network-status" target="_blank"
-              rel="noreferrer">Read the Network Status guide -&gt;</a>
-          </details>
+                href="https://trust-link-tsn.mintlify.site/developers/network-status" target="_blank"
+                rel="noreferrer">Read the Network Status guide -&gt;</a>
+            </details>
+          </div>
         </section>
         <section id="panel-create-tin" class="tab-panel" role="tabpanel" aria-labelledby="tab-create-tin">
           <button class="modal-close" type="button" data-close-modal>Back</button>

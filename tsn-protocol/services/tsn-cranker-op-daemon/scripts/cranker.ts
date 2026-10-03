@@ -27,6 +27,7 @@ import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc";
 import {
   getTinsGlobalStatePda,
   getTinV1CreationStagingPda,
+  getTinV1OwnerRecoveryPda,
   serializeTinV1CreationStageParams,
   serializeTinV1CreationChunkParams,
   serializeTinV1CreationFinalizeParams,
@@ -536,6 +537,7 @@ async function submitStagedTinV1Creation(params: {
   payload: Record<string, unknown>;
   intentHash: Buffer | Uint8Array;
   identityEnvelope: Buffer;
+  recoveryEnvelope: Buffer;
   masterSeed: Buffer;
   routeEnvelope: Buffer;
   ownerProof: TransactionInstruction;
@@ -549,6 +551,7 @@ async function submitStagedTinV1Creation(params: {
     payload,
     intentHash,
     identityEnvelope,
+    recoveryEnvelope,
     masterSeed,
     routeEnvelope,
     ownerProof,
@@ -559,6 +562,7 @@ async function submitStagedTinV1Creation(params: {
     lookupCommitment: hex32(payload.lookupCommitment, "lookupCommitment"),
     intentHash,
     encryptedIdentityEnvelopeLength: identityEnvelope.length,
+    encryptedTinRecoveryLength: recoveryEnvelope.length,
     encryptedMasterSeedLength: masterSeed.length,
     encryptedPublicRouteEnvelopeLength: routeEnvelope.length,
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
@@ -589,6 +593,7 @@ async function submitStagedTinV1Creation(params: {
   const chunkSigs = [stageSig];
   const blobs = [
     ["identity", identityEnvelope] as const,
+    ["owner_recovery", recoveryEnvelope] as const,
     ["master_seed", masterSeed] as const,
     ["public_route", routeEnvelope] as const,
   ];
@@ -624,6 +629,7 @@ async function submitStagedTinV1Creation(params: {
       { pubkey: signer.publicKey, isSigner: true, isWritable: true },
       { pubkey: getTinsGlobalStatePda(programId), isSigner: false, isWritable: true },
       { pubkey: registry, isSigner: false, isWritable: true },
+      { pubkey: getTinV1OwnerRecoveryPda(owner, programId), isSigner: false, isWritable: true },
       { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: stage, isSigner: false, isWritable: true },
@@ -664,6 +670,8 @@ async function processTinOperation(
     !payload.lookupCommitment ||
     typeof payload.encryptedIdentityEnvelope !== "string" ||
     !payload.encryptedIdentityEnvelope ||
+    typeof payload.encryptedTinRecovery !== "string" ||
+    !payload.encryptedTinRecovery ||
     payload.tin
   ) {
     throw new Error("Cranker accepts only verified private TIN V1 creation work with encrypted identity data");
@@ -671,6 +679,7 @@ async function processTinOperation(
   const lookupCommitment = hex32(payload.lookupCommitment, "lookupCommitment");
   const intentHash = hex32(payload.ownerIntentHash, "ownerIntentHash");
   const identityEnvelope = base64Bytes(payload.encryptedIdentityEnvelope, "encryptedIdentityEnvelope");
+  const recoveryEnvelope = base64Bytes(payload.encryptedTinRecovery, "encryptedTinRecovery");
   const masterSeed = base64Bytes(payload.encryptedMasterSeed, "encryptedMasterSeed");
   const routeEnvelope = base64Bytes(payload.encryptedPublicRouteEnvelope, "encryptedPublicRouteEnvelope", true);
   const registry = PublicKey.findProgramAddressSync(
@@ -680,6 +689,7 @@ async function processTinOperation(
   const instructionData = serializeTinV1CreationParams({
     ownerPubkey: owner,
     lookupCommitment,
+    encryptedTinRecovery: recoveryEnvelope,
     encryptedIdentityEnvelope: identityEnvelope,
     encryptedMasterSeed: masterSeed,
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
@@ -715,6 +725,7 @@ async function processTinOperation(
         isWritable: true,
       },
       { pubkey: registry, isSigner: false, isWritable: true },
+      { pubkey: getTinV1OwnerRecoveryPda(owner, programId), isSigner: false, isWritable: true },
       {
         pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
         isSigner: false,
@@ -727,7 +738,7 @@ async function processTinOperation(
   const tx = new Transaction().add(ownerProof, tinInstruction);
   const transactionBytes = legacyTransactionWireSize(tx, signer.publicKey);
   crankerLog(
-    `TIN creation start workId=${work.id} registry=${registry.toBase58()} txBytes=${transactionBytes} path=${transactionBytes > 1232 ? "staged" : "direct"} identityBytes=${identityEnvelope.length} seedBytes=${masterSeed.length} routeBytes=${routeEnvelope.length}`,
+    `TIN creation start workId=${work.id} registry=${registry.toBase58()} recovery=${getTinV1OwnerRecoveryPda(owner, programId).toBase58()} txBytes=${transactionBytes} path=${transactionBytes > 1232 ? "staged" : "direct"} identityBytes=${identityEnvelope.length} recoveryBytes=${recoveryEnvelope.length} seedBytes=${masterSeed.length} routeBytes=${routeEnvelope.length}`,
   );
   let signature: string;
   let staging: { stage: string; stagingSignatures: string[] } | null = null;
@@ -741,6 +752,7 @@ async function processTinOperation(
       payload,
       intentHash,
       identityEnvelope,
+      recoveryEnvelope,
       masterSeed,
       routeEnvelope,
       ownerProof,

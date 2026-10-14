@@ -11,7 +11,7 @@ pub mod debit_tcap_balance_v1;
 pub mod deposit_asset_v2;
 pub mod deposit_with_funding_commitment_v2;
 pub mod exit_tcap_liquidity_v1;
-pub mod initialize_asset_state_v1;
+pub mod initialize_asset_registry_v1;
 pub mod initialize_commitment_root_v1;
 pub mod initialize_nullifier_registry_v1;
 pub mod initialize_tcap_tin_tip_v1;
@@ -34,6 +34,7 @@ pub use debit_tcap_gpru_tip_v2::*;
 pub use initialize_tcap_tip_liability_v2::*;
 pub use migrate_asset_entry_custody_graph_v2::*;
 pub use debit_tcap_balance_v1::*;
+pub use deposit_with_funding_commitment_v2::*;
 pub use exit_tcap_liquidity_v1::*;
 pub use credit_one_time_tip::*;
 pub use credit_one_time_tip_transfer::*;
@@ -53,8 +54,7 @@ pub struct DepositWithFundingCommitmentArgsV1 {
     pub expected_funding_commitment: [u8; 32],
 }
 pub use deposit_asset_v2::*;
-pub use deposit_with_funding_commitment_v2::*;
-pub use initialize_asset_state_v1::*;
+pub use initialize_asset_registry_v1::*;
 pub use initialize_tcap_tin_tip_v1::*;
 pub use one_time_tip::*;
 pub use encrypted_snapshot::*;

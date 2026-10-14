@@ -132,9 +132,9 @@ accounts in order:
 1. TSN Mother Escrow and the canonical TSN epoch-commitment PDA for the chosen
    `TSN_MOTHER_ESCROW` and `TCAP_EPOCH_ID`.
 2. TCAP global configuration (`initialize_tcap_v1`), commitment root
-   (`initialize_commitment_root_v1`), asset registry/state and reserve
-   (`initialize_asset_registry_v1`, `initialize_asset_state_v1`,
-   `initialize_reserve_state_v1`, and the governed reserve/vault instructions).
+   (`initialize_commitment_root_v1`), governed asset registry and asset entry,
+   followed by the governed reserve and vault instructions. The active asset
+   entry is the source for reserve, authority, and vault derivation.
 3. The approved, active TCAP asset entry and reserve state must be readable at
    `TCAP_ASSET_ENTRY` and `TCAP_RESERVE_STATE`.
 4. The smoke initializes the deterministic TIN tip with
@@ -146,7 +146,7 @@ Devnet-only environment file and source it before the live run. The required
 values include Mother Escrow, asset/reserve accounts, all commitment/nullifier
 fields, epoch/sequence/expiry, token ID, snapshot key and private snapshot JSON.
 The smoke defaults `TCAP_PROGRAM_ID` to the deployed Devnet program
-`TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x` and prints every missing variable
+`tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF` and prints every missing variable
 in one checklist before failing.
 
 This flow exercises only the TSN CPI authorization and
@@ -171,7 +171,7 @@ npm run deploy:lockfiles:stabilize
 npm run deploy:doctor
 npm run tcap:program:build:devnet
 npm run tcap:program:deploy:devnet
-solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x \
+solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF \
   --url "$ANCHOR_PROVIDER_URL"
 ```
 

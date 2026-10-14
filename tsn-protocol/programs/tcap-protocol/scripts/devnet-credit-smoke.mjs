@@ -29,7 +29,7 @@ if (process.env.TCAP_ALLOW_LEGACY_V1 !== "1") {
 }
 
 const fail = (message) => { throw new Error(message); };
-const TCAP_PROGRAM_ID = process.env.TCAP_PROGRAM_ID ?? "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x";
+const TCAP_PROGRAM_ID = process.env.TCAP_PROGRAM_ID ?? "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF";
 const REQUIRED_ENV = [
   "TSN_MOTHER_ESCROW", "TCAP_ASSET_ENTRY", "TCAP_RESERVE_STATE",
   "TCAP_TIP_ROOT_COMMITMENT", "TCAP_INITIAL_COMMITMENT", "TCAP_NEW_COMMITMENT",

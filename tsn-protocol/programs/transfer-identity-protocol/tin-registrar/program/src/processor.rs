@@ -1,11 +1,6 @@
 use crate::instruction_auto::{
-    ClaimEscrowParams, CreateEscrowParams, InitializeIdentityParams, InitializeProgramParams,
-    CreateTinParams, CreateTinV1Params, InitializePlatformRegistryParams, LinkSensitiveFieldParams,
-    LinkSocialIdentityParams, LinkVerifiedSocialIdentityParams, ProgramInstruction,
-    RemoveVerificationPlatformParams, ResolveTinParams, UpdateTinParams, UpsertVerificationPlatformParams,
-    FinalizeTinUpdateParams, FinalizeTinV1CreationParams, ResolveTinV1Params,
-    StageTinMutationParams, StageTinV1CreationParams, TinMutationChunkParams,
-    TinV1CreationChunkParams,
+    CreateTinV1Params, FinalizeTinV1CreationParams, InitializeProgramParams, ProgramInstruction,
+    ResolveTinV1Params, StageTinV1CreationParams, TinV1CreationChunkParams,
 };
 use borsh::BorshDeserialize;
 use num_traits::FromPrimitive;
@@ -14,16 +9,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-pub mod claim_escrow;
-pub mod create_escrow;
 pub mod init_program;
-pub mod initialize_identity;
-pub mod create_tin;
-pub mod update_tin;
-pub mod identity_links;
-pub mod resolve_tin;
-pub mod platform_registry;
-pub mod tin_mutation_staging;
 pub mod create_tin_v1;
 pub mod tin_v1_creation_staging;
 pub mod resolve_tin_v1;
@@ -50,87 +36,6 @@ impl Processor {
                 let params = InitializeProgramParams::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 init_program::process(program_id, accounts, params)
-            }
-            ProgramInstruction::InitializeIdentity => {
-                let params = InitializeIdentityParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                initialize_identity::process(program_id, accounts, params)
-            }
-            ProgramInstruction::CreateEscrow => {
-                msg!("Instruction: CreateEscrow");
-                let params = CreateEscrowParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                create_escrow::process(program_id, accounts, params)
-            }
-            ProgramInstruction::ClaimEscrow => {
-                msg!("Instruction: ClaimEscrow");
-                let params = ClaimEscrowParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                claim_escrow::process(program_id, accounts, params)
-            }
-            ProgramInstruction::CreateTin => {
-                msg!("Instruction: CreateTinDisabledDirectPath");
-                Err(ProgramError::InvalidInstructionData)
-            }
-            ProgramInstruction::ResolveTin => {
-                let params = ResolveTinParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                resolve_tin::process(program_id, accounts, params)
-            }
-            ProgramInstruction::InitializePlatformRegistry => {
-                let params = InitializePlatformRegistryParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                platform_registry::initialize(program_id, accounts, params)
-            }
-            ProgramInstruction::UpsertVerificationPlatform => {
-                let params = UpsertVerificationPlatformParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                platform_registry::upsert_platform(program_id, accounts, params)
-            }
-            ProgramInstruction::RemoveVerificationPlatform => {
-                let params = RemoveVerificationPlatformParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                platform_registry::remove_platform(program_id, accounts, params)
-            }
-            ProgramInstruction::LinkSocialIdentity => {
-                let params = LinkSocialIdentityParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                identity_links::link_social_identity(program_id, accounts, params)
-            }
-            ProgramInstruction::LinkSensitiveField => {
-                let params = LinkSensitiveFieldParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                identity_links::link_sensitive_field(program_id, accounts, params)
-            }
-            ProgramInstruction::LinkVerifiedSocialIdentity => {
-                let params = LinkVerifiedSocialIdentityParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                identity_links::link_verified_social_identity(program_id, accounts, params)
-            }
-            ProgramInstruction::TinCreationRegistry => {
-                let params = CreateTinParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                create_tin::process(program_id, accounts, params)
-            }
-            ProgramInstruction::TinUpdate => {
-                let params = UpdateTinParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                update_tin::process(program_id, accounts, params)
-            }
-            ProgramInstruction::TinMutationStage => {
-                let params = StageTinMutationParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                tin_mutation_staging::stage(program_id, accounts, params)
-            }
-            ProgramInstruction::TinMutationChunk => {
-                let params = TinMutationChunkParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                tin_mutation_staging::append_chunk(program_id, accounts, params)
-            }
-            ProgramInstruction::TinUpdateStaged => {
-                let params = FinalizeTinUpdateParams::try_from_slice(instruction_data)
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
-                update_tin::process_staged(program_id, accounts, params)
             }
             ProgramInstruction::CreateTinV1 => {
                 msg!("Instruction: CreateTinV1");

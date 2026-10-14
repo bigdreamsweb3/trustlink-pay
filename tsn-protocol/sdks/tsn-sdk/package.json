@@ -50,10 +50,6 @@
       "import": "./dist/payment-jobs.js",
       "types": "./dist/payment-jobs.d.ts"
     },
-    "./sponsored-settlement": {
-      "import": "./dist/sponsored-settlement.js",
-      "types": "./dist/sponsored-settlement.d.ts"
-    },
     "./settlement-economics": {
       "import": "./dist/settlement-economics.js",
       "types": "./dist/settlement-economics.d.ts"
@@ -152,12 +148,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "npm --prefix ../../programs/tcap-protocol/tcap-sdk run build && tsc -b",
     "watch": "tsc --watch",
     "test": "npm run build && node --test tests/*.test.mjs",
     "simulate": "node --input-type=module -e \"console.log('TCap snapshots are private and are read through the owner-authorized snapshot API')\""
   },
   "dependencies": {
+    "@trustlink/tcap-sdk": "file:../../programs/tcap-protocol/tcap-sdk",
     "@coral-xyz/anchor": "^0.32.1",
     "@lit-protocol/auth-helpers": "7.4.0",
     "@lit-protocol/constants": "7.4.0",

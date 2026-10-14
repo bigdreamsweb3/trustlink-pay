@@ -23,7 +23,7 @@ class CreateIntentRequest(BaseModel):
     senderAuthorizationIssuedAt: Optional[str] = Field(None, description="Authorization issue timestamp")
     senderAuthorizationExpiresAt: Optional[str] = Field(None, description="Authorization expiry timestamp")
     senderFeeAmount: Optional[float] = Field(None, description="Sender-side protocol fee routed to treasury")
-    senderSignedFundingTransaction: Optional[str] = Field(None, description="Sender-signed epoch funding transaction for Cranker sponsorship")
+    senderSignedFundingTransaction: Optional[str] = Field(None, description="Owner-signed TCAP deposit_asset_v2 transaction")
     senderSignedFundingFeePayer: Optional[str] = Field(None, description="Cranker fee payer expected to complete and broadcast funding")
     senderFundingMode: Optional[str] = Field(None, description="Funding authority model")
     encryptedSettlementToken: Optional[dict] = None

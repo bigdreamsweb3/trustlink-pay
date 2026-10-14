@@ -132,6 +132,39 @@ class Query {
   }
 }
 class Tx { constructor(private db: Record<string, Record<string, Row>>) {} async get(ref: Ref | Query) { return ref instanceof Ref ? new Snap(ref.id, this.db[ref.collectionPath]?.[ref.id] ?? null) : ref.get(); } create(ref: Ref, value: Row) { const c = this.db[ref.collectionPath] ??= {}; if (c[ref.id]) throw new Error("ALREADY_EXISTS"); c[ref.id] = value; } set(ref: Ref, value: Row, options?: { merge?: boolean }) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = options?.merge ? { ...(c[ref.id] ?? {}), ...value } : value; } update(ref: Ref, patch: Row) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = { ...(c[ref.id] ?? {}), ...patch }; } }
-export class LocalDb { collection(name: string) { return new LocalCollection(name); } async runTransaction<T>(fn: (tx: Tx) => Promise<T>) { return mutate((data) => fn(new Tx(data))); } }
+type BatchWrite =
+  | { operation: "set"; reference: Ref; value: Row; merge?: boolean }
+  | { operation: "delete"; reference: Ref };
+class Batch {
+  private writes: BatchWrite[] = [];
+  set(reference: Ref, value: Row, options?: { merge?: boolean }) {
+    this.writes.push({ operation: "set", reference, value, merge: options?.merge });
+    return this;
+  }
+  delete(reference: Ref) {
+    this.writes.push({ operation: "delete", reference });
+    return this;
+  }
+  async commit() {
+    await mutate((data) => {
+      for (const write of this.writes) {
+        const collection = data[write.reference.collectionPath] ??= {};
+        if (write.operation === "delete") {
+          delete collection[write.reference.id];
+          continue;
+        }
+        collection[write.reference.id] = write.merge
+          ? { ...(collection[write.reference.id] ?? {}), ...write.value }
+          : write.value;
+      }
+    });
+    this.writes = [];
+  }
+}
+export class LocalDb {
+  collection(name: string) { return new LocalCollection(name); }
+  batch() { return new Batch(); }
+  async runTransaction<T>(fn: (tx: Tx) => Promise<T>) { return mutate((data) => fn(new Tx(data))); }
+}
 class LocalCollection extends Query { constructor(private name: string) { super(name); } doc(id: string) { return new Ref(this.name, id); } }
 export const localDb = new LocalDb();

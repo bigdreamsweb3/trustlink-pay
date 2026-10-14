@@ -5,33 +5,21 @@ use thiserror::Error;
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum Error {
     #[error("Invalid instruction data")]
-    InvalidInstruction,
+    InvalidInstruction = 0,
     #[error("Overflow")]
-    Overflow,
-    #[error("Invalid name")]
-    InvalidName,
-    #[error("Name too long")]
-    NameTooLong,
+    Overflow = 1,
     #[error("The global state is already initialized")]
-    GlobalStateAlreadyInitialized,
+    GlobalStateAlreadyInitialized = 4,
     #[error("The identity registry is already initialized")]
-    RegistryAlreadyInitialized,
+    RegistryAlreadyInitialized = 5,
     #[error("Invalid PDA provided")]
-    InvalidPda,
+    InvalidPda = 6,
     #[error("TIN counter exhausted")]
-    TinExhausted,
-    #[error("The transfer identity number is invalid")]
-    InvalidTin,
-    #[error("Transfer amount must be positive")]
-    InvalidAmount,
-    #[error("Escrow is already claimed")]
-    EscrowAlreadyClaimed,
-    #[error("Unauthorized claimant")]
-    UnauthorizedClaimant,
+    TinExhausted = 7,
     #[error("Account is not owned by this program")]
-    InvalidAccountOwner,
+    InvalidAccountOwner = 12,
     #[error("Signature verification failed")]
-    SignatureVerificationFailed,
+    SignatureVerificationFailed = 13,
 }
 
 impl From<Error> for ProgramError {

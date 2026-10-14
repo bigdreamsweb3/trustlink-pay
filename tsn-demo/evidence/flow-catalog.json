@@ -15,11 +15,11 @@
       "captureRequirement": "Keep the creation transaction and wallet-authorized recovery evidence linked to the same owner and source recording."
     },
     {
-      "captureRequirement": "Capture the actual SDK request, Receiver record, Node decision, Cranker lease, Solana result, and final Receiver state when this flow is run.",
+      "captureRequirement": "Use the TIN already created in the TIN creation-and-recovery demo as the recipient. Capture the real wallet funding approval, Receiver ingress, signed Node verification, Cranker submission, Solana finality, and the resulting private TIN credit. Do not mark captured until the TCap ConfidentialSettlement path completes on Devnet.",
       "evidencePath": null,
       "id": "private-tin-transfer",
       "status": "planned",
-      "title": "Private TIN transfer"
+      "title": "Wallet-funded transfer and private credit to an existing TIN"
     },
     {
       "captureRequirement": "Capture the actual SDK request, Receiver record, Node decision, Cranker lease, Solana result, and final Receiver state when this flow is run.",

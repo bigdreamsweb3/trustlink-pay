@@ -15,6 +15,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://tsn-receiver-kappa.vercel.app",
   "http://localhost:3001",
   "http://localhost:3000",
+  "http://localhost:4317",
+  "http://127.0.0.1:4317",
 ];
 
 const ENV_KEYS = [

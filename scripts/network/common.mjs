@@ -1,14 +1,15 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { decodeAssetEntry, deriveAssetAddresses, inspectAsset } from "../../tsn-protocol/programs/tcap-protocol/scripts/tcap-asset-admin.mjs";
 
-export const TCAP = new PublicKey("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+export const TCAP = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 export const TSN = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
+export const TIP = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
 export const SPL = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-export const DEVNET_RPC = process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 export const DEFAULTS = path.resolve(process.env.TCAP_DEVNET_DEFAULTS_FILE ?? "protocol-tests/tcap-credit-devnet.defaults.env");
 export const seed = (value) => Buffer.from(value, "utf8");
 
@@ -22,6 +23,11 @@ function loadDefaults(file) {
   }
 }
 loadDefaults(DEFAULTS);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const anchorConfigPath = path.join(repositoryRoot, "tsn-protocol/programs/tcap-protocol/Anchor.toml");
+const anchorConfig = fs.existsSync(anchorConfigPath) ? fs.readFileSync(anchorConfigPath, "utf8") : "";
+const configuredAnchorRpc = anchorConfig.match(/^cluster\s*=\s*"([^"]+)"/m)?.[1];
+export const DEVNET_RPC = configuredAnchorRpc ?? process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 
 export function parseOptions(argv) {
   const options = {};

@@ -1235,7 +1235,7 @@ export function SendExperience() {
         recipientRouteCommitment: recipientRoute.pruConfigurationHash,
         recipientRouteVersion: recipientRoute.routeVersion,
         tokenMintAddress: selectedToken.mintAddress,
-        amount: Number(form.amount),
+        amount: form.amount,
         senderFeeAmount,
         totalTokenRequiredUi,
         fundingMode: tinSpendPlan?.fundingMode ?? "wallet_only_v2",

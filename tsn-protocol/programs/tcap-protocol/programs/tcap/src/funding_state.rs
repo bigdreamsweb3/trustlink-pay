@@ -27,7 +27,7 @@ pub enum FundingClaimStatusV1 {
 pub struct FundingRootV1 {
     pub version: u16,
     pub protocol_version: u16,
-    pub asset_state: Pubkey,
+    pub asset_entry: Pubkey,
     pub current_root: [u8; 32],
     pub previous_root: [u8; 32],
     pub sequence: u64,
@@ -43,7 +43,7 @@ pub struct FundingClaimV1 {
     pub version: u16,
     pub protocol_version: u16,
     pub config: Pubkey,
-    pub asset_state: Pubkey,
+    pub asset_entry: Pubkey,
     pub reserve_state: Pubkey,
     pub funding_identifier: [u8; 32],
     pub funding_commitment: [u8; 32],
@@ -67,7 +67,7 @@ impl FundingClaimV1 {
 #[account]
 pub struct FundingAuthorizationNonceV1 {
     pub version: u16,
-    pub asset_state: Pubkey,
+    pub asset_entry: Pubkey,
     pub depositor: Pubkey,
     pub next_nonce: u64,
     pub last_funding_claim: Pubkey,

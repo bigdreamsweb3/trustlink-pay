@@ -1,5 +1,6 @@
 import nacl from "tweetnacl";
 import { PublicKey, type Connection } from "@solana/web3.js";
+import { deriveTinPrivacyReceivingKeyPair } from "./gpru.js";
 
 import {
   computePruConfigurationHash,
@@ -9,6 +10,7 @@ import {
 import {
   createTinMasterSeedEnvelope,
   createTinPublicRoutePayload,
+  decodeTinMasterSeedEnvelope,
   encodeTinEnvelope,
   encryptTinPublicRoutePayload,
   serializeTinMasterSeedWalletAuthorization,
@@ -40,35 +42,127 @@ export type TinOwnerWallet = {
 export function buildTinV1OwnerEncryptionMessage(params: {
   ownerPublicKey: string;
   displayName: string;
-  nonce: Uint8Array;
-}) {
-  if (!params.displayName.trim()) throw new Error("displayName is required");
-  if (params.nonce.length !== 32) throw new Error("nonce must be 32 bytes");
+} & ({ resourceCommitment: string; nonce?: never } | { nonce: Uint8Array; resourceCommitment?: never })) {
+  const displayName = params.displayName.trim();
+  if (!displayName || displayName.length > 100 || /[\r\n\u0000-\u001f\u007f]/u.test(displayName)) {
+    throw new Error("displayName must be a single printable line of at most 100 characters");
+  }
+  const reference = params.resourceCommitment
+    ? `Encryption resource commitment: ${params.resourceCommitment.toLowerCase()}`
+    : `Request reference: ${Buffer.from(params.nonce!).toString("hex")}`;
+  if (params.resourceCommitment && !/^[0-9a-f]{64}$/i.test(params.resourceCommitment)) {
+    throw new Error("resourceCommitment must be 32-byte hex");
+  }
   return new TextEncoder().encode(
     [
-      "TrustLink TIN security approval",
+      "TrustLink private TIN creation",
       "",
-      "You are authorizing private protection for a new TIN identity.",
+      "Action",
+      "Create a new private TIN.",
       "",
-      "APPROVAL DETAILS",
-      `Owner wallet: ${params.ownerPublicKey}`,
+      "Owner wallet",
+      params.ownerPublicKey,
       "",
-      `Display name: ${params.displayName.trim()}`,
+      "Display name",
+      displayName,
       "",
-      "Version: 1",
+      reference,
       "",
-      `Request reference: ${Buffer.from(params.nonce).toString("hex")}`,
+      "The TIN identity record is submitted in encrypted form. The owner seed is encrypted on this device.",
       "",
-      "NEXT STEP",
-      "Your encrypted identity request will be submitted to TSN.",
-      "",
-      "No funds are transferred by this approval.",
+      "This signature confirms that you control this wallet and approve this display name for TIN creation. It does not authorize a token transfer.",
     ].join("\n"),
   );
 }
 
 /** @deprecated Use buildTinV1OwnerEncryptionMessage. */
 export const buildProgramAssignedTinOwnerEncryptionMessage = buildTinV1OwnerEncryptionMessage;
+
+/** Stable, reproducible wallet approval used to encrypt a TIN seed for later recovery. */
+export async function prepareTinV1OwnerSeedAccess(params: {
+  ownerPublicKey: string;
+  displayName: string;
+  nonce: Uint8Array;
+}) {
+  if (params.nonce.length !== 32) throw new Error("nonce must be 32 bytes");
+  const resourceCommitment = await sha256Hex(new TextEncoder().encode(
+    `TSN_TIN_MASTER_SEED_RESOURCE_V1\n${Buffer.from(params.nonce).toString("hex")}`,
+  ));
+  const message = new TextDecoder().decode(buildTinV1OwnerEncryptionMessage({
+    ownerPublicKey: new PublicKey(params.ownerPublicKey).toBase58(),
+    displayName: params.displayName,
+    resourceCommitment,
+  }));
+  return { resourceCommitment, message };
+}
+
+/**
+ * Creates the owner-recoverable seed envelope used by program-assigned TIN V1.
+ * The seed and signature-derived key stay in this runtime; only the encrypted
+ * envelope is returned for inclusion in the owner-authorized creation intent.
+ */
+export async function createProgramAssignedTinV1OwnerSeedEnvelope(params: {
+  ownerWallet: TinOwnerWallet;
+  displayName: string;
+  nonce: Uint8Array;
+}) {
+  const access = await prepareTinV1OwnerSeedAccess({
+    ownerPublicKey: params.ownerWallet.publicKey,
+    displayName: params.displayName,
+    nonce: params.nonce,
+  });
+  const message = new TextEncoder().encode(access.message);
+  const signature = await params.ownerWallet.signMessage(message);
+  assertWalletAuthorization(params.ownerWallet, message, signature);
+  const dataKey = await walletOwnerDataKey(signature);
+  const masterSeed = generateTinMasterSeed();
+  const marker = "tin-v1";
+  const pruConfigurationHash = "0".repeat(64);
+  const tinPrivacyReceivingKeyPair = deriveTinPrivacyReceivingKeyPair(masterSeed);
+  try {
+    const localSeed = await encryptTinMasterSeedLocally({
+      masterSeed,
+      dataKey,
+      context: {
+        tin: marker,
+        ownerPublicKey: params.ownerWallet.publicKey,
+        routeVersion: 1,
+        pruConfigurationHash,
+      },
+    });
+    const envelope = await createTinMasterSeedEnvelope({
+      provider: WALLET_OWNER_ENVELOPE_PROVIDER,
+      tin: marker,
+      ownerPublicKey: params.ownerWallet.publicKey,
+      routeVersion: 1,
+      pruConfigurationHash,
+      resourceCommitment: access.resourceCommitment,
+      ...localSeed,
+      protectedKey: "wallet-owner-signature-derived",
+      protectedKeyCommitment: await sha256Hex(
+        new TextEncoder().encode("wallet-owner-signature-derived"),
+      ),
+      accessControlHash: await sha256Hex(message),
+    });
+    return {
+      resourceCommitment: access.resourceCommitment,
+      encryptedMasterSeed: encodeTinEnvelope(envelope),
+      gpruCommitment: new Uint8Array(tinPrivacyReceivingKeyPair.publicKey),
+    };
+  } finally {
+    dataKey.fill(0);
+    masterSeed.fill(0);
+    tinPrivacyReceivingKeyPair.secretKey.fill(0);
+  }
+}
+
+function buildOwnerSeedAccessMessage(envelope: TinMasterSeedEnvelope, displayName: string): Uint8Array {
+  return buildTinV1OwnerEncryptionMessage({
+    ownerPublicKey: new PublicKey(envelope.ownerPublicKey).toBase58(),
+    displayName,
+    resourceCommitment: envelope.resourceCommitment,
+  });
+}
 
 export async function createProgramAssignedTinOwnerEncryption(params: {
   ownerPublicKey: string;
@@ -564,6 +658,91 @@ export async function unlockTinPrivateRoute(params: {
         prus,
       }).prus,
     };
+  } finally {
+    masterSeed?.fill(0);
+    dataKey.fill(0);
+  }
+}
+
+/**
+ * Run an owner-only operation with the TIN master seed in memory. The SDK asks
+ * the connected wallet to authorize access, verifies the envelope bindings,
+ * and clears both the derived key and seed when the callback completes.
+ * Callers should use this instead of exporting or persisting the seed.
+ */
+export async function withTinOwnerMasterSeed<T>(params: {
+  tin: string;
+  displayName: string;
+  pruConfigurationHash: string;
+  envelope: TinMasterSeedEnvelope | Uint8Array;
+  ownerWallet: TinOwnerWallet;
+}, use: (masterSeed: Uint8Array) => Promise<T>): Promise<T> {
+  const candidate = params.envelope instanceof Uint8Array
+    ? decodeTinMasterSeedEnvelope(params.envelope)
+    : params.envelope;
+  // Current TIN V1 XP accounts were issued before the generated TIN was known
+  // to the browser. Their owner-encrypted seed is bound to the explicit
+  // `tin-v1` marker and wallet; the on-chain owner hash binds it to the TIN.
+  if (candidate.tin !== params.tin && candidate.tin !== "tin-v1" && candidate.tin !== PROGRAM_ASSIGNED_TIN_MARKER) {
+    throw new Error("TIN_MASTER_SEED_ENVELOPE_IDENTITY_MISMATCH");
+  }
+  const envelope = await validateTinMasterSeedEnvelope({
+    envelope: candidate,
+    tin: candidate.tin,
+    ownerPublicKey: params.ownerWallet.publicKey,
+    pruConfigurationHash: candidate.pruConfigurationHash,
+  });
+  if (envelope.provider !== WALLET_OWNER_ENVELOPE_PROVIDER) {
+    throw new Error("TIN_MASTER_SEED_PROVIDER_REQUIRES_MIGRATION");
+  }
+  let accessMessage: Uint8Array;
+  if (envelope.tin === "tin-v1") {
+    accessMessage = buildOwnerSeedAccessMessage(envelope, params.displayName);
+    const expectedAccessHash = await sha256Hex(accessMessage);
+    if (expectedAccessHash !== envelope.accessControlHash.toLowerCase()) {
+      throw new Error("TIN_MASTER_SEED_REAUTHORIZATION_REQUIRED");
+    }
+  } else {
+    accessMessage = serializeTinMasterSeedWalletAuthorization({
+      tin: envelope.tin,
+      ownerPublicKey: envelope.ownerPublicKey,
+      routeVersion: envelope.routeVersion,
+      pruConfigurationHash: envelope.pruConfigurationHash,
+      resourceCommitment: envelope.resourceCommitment,
+      deviceSessionBinding: WALLET_OWNER_SESSION_BINDING,
+    });
+    if ((await sha256Hex(accessMessage)) !== envelope.accessControlHash.toLowerCase()) {
+      throw new Error("TIN_MASTER_SEED_REAUTHORIZATION_REQUIRED");
+    }
+  }
+  const signature = await params.ownerWallet.signMessage(accessMessage);
+  assertWalletAuthorization(params.ownerWallet, accessMessage, signature);
+  const dataKey = await walletOwnerDataKey(signature);
+  let masterSeed: Uint8Array | null = null;
+  try {
+    masterSeed = await decryptTinMasterSeedLocally({
+      seedCiphertext: envelope.seedCiphertext,
+      seedNonce: envelope.seedNonce,
+      expectedSeedCiphertextCommitment: envelope.seedCiphertextCommitment,
+      dataKey,
+      context: {
+        tin: envelope.tin,
+        ownerPublicKey: envelope.ownerPublicKey,
+        routeVersion: envelope.routeVersion,
+        pruConfigurationHash: envelope.pruConfigurationHash,
+      },
+    });
+    if (!/^0{64}$/i.test(params.pruConfigurationHash)) {
+      const expectedRoute = computePruConfigurationHash(derivePruSet({
+        masterSeed,
+        tinId: params.tin,
+        initialState: "ACTIVE",
+      }));
+      if (expectedRoute.toLowerCase() !== params.pruConfigurationHash.toLowerCase()) {
+        throw new Error("TIN_MASTER_SEED_ROUTE_COMMITMENT_MISMATCH");
+      }
+    }
+    return await use(masterSeed);
   } finally {
     masterSeed?.fill(0);
     dataKey.fill(0);

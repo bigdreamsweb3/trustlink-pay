@@ -1,5 +1,5 @@
 /** Development TCAP program identity. Keep synchronized with declare_id! and Anchor.toml. */
-export const TCAP_PROGRAM_ID = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x" as const;
+export const TCAP_PROGRAM_ID = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF" as const;
 
 export const TCAP_PDA_SEEDS = Object.freeze({
   globalConfig: "tcap:global-config:v1",

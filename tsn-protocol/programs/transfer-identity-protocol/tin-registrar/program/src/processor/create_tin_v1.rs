@@ -55,8 +55,6 @@ pub fn apply<'a>(
     }
     if !validate_tcap_route(
         params.tcap_route_version,
-        &params.pru_configuration_hash,
-        &params.encrypted_public_route_envelope,
         &params.tcap_relationship_commitment,
         &params.tcap_relationship_reference,
         &params.tcap_policy_commitment,
@@ -96,8 +94,6 @@ pub fn apply<'a>(
         encrypted_master_seed: params.encrypted_master_seed,
         created_at: Clock::get()?.unix_timestamp,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
-        pru_configuration_hash: params.pru_configuration_hash,
-        encrypted_public_route_envelope: params.encrypted_public_route_envelope,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
         tcap_route_version: params.tcap_route_version,
@@ -111,11 +107,7 @@ pub fn apply<'a>(
         registry,
         system_program,
         program_id,
-        TinV1Account::space(
-            account.encrypted_identity_envelope.len(),
-            account.encrypted_master_seed.len(),
-            account.encrypted_public_route_envelope.len(),
-        ),
+        TinV1Account::space(account.encrypted_identity_envelope.len(), account.encrypted_master_seed.len()),
         0,
         &seeds,
     )?;
@@ -143,7 +135,6 @@ pub fn apply<'a>(
 fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
     let identity_len = (params.encrypted_identity_envelope.len() as u32).to_le_bytes();
     let seed_len = (params.encrypted_master_seed.len() as u32).to_le_bytes();
-    let route_len = (params.encrypted_public_route_envelope.len() as u32).to_le_bytes();
     hashv(&[
         b"TSN_TIN_V1_CREATE",
         params.owner_pubkey.as_ref(),
@@ -155,9 +146,6 @@ fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
         &seed_len,
         &params.encrypted_master_seed,
         &params.encrypted_metadata_hash,
-        &params.pru_configuration_hash,
-        &route_len,
-        &params.encrypted_public_route_envelope,
         &params.route_version.to_le_bytes(),
         &params.route_nonce,
         &[params.tcap_route_version],
@@ -177,11 +165,8 @@ fn verify_owner_intent(
     let readable_message = canonical_owner_intent_message(expected);
     for index in 0..current_index {
         if let Ok(ix) = load_instruction_at_checked(index, instructions_sysvar) {
-            // Keep supporting raw-hash proofs for old queued work, while new
-            // TIN XP requests prove approval with readable UTF-8 text.
             if ix.program_id == solana_program::ed25519_program::ID
-                && (verify_ed25519(&ix.data, owner, expected)
-                    || verify_ed25519(&ix.data, owner, &readable_message))
+                && verify_ed25519(&ix.data, owner, &readable_message)
             {
                 return Ok(true);
             }

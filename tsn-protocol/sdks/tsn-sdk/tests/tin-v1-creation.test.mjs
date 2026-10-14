@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { Keypair } from "@solana/web3.js";
+import { deriveTcapTipRootCommitment } from "../dist/gpru.js";
 import {
   buildTinV1Creation,
   createTinV1IdentityEnvelope,
@@ -38,18 +39,18 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
   const ownerPubkey = Keypair.generate().publicKey;
   const params = {
     ownerPubkey,
+    displayName: "Example TIN",
     lookupCommitment: fixed32(1),
+    encryptedTinRecovery: Buffer.from([0]),
     encryptedIdentityEnvelope: Buffer.from([1, 2, 3, 4]),
     encryptedMasterSeed: Buffer.from([5, 6, 7]),
     encryptedMetadataHash: fixed32(8),
-    pruConfigurationHash: fixed32(0),
-    encryptedPublicRouteEnvelope: Buffer.alloc(0),
     routeVersion: 1,
     routeNonce: fixed32(9),
     nonce: fixed32(9),
     tcapRouteVersion: 1,
     tcapRelationshipCommitment: fixed32(10),
-    tcapRelationshipReference: fixed32(11),
+    tcapRelationshipReference: deriveTcapTipRootCommitment(fixed32(10)),
     tcapPolicyCommitment: fixed32(12),
     expiryTs: 1_900_000_000,
   };
@@ -59,8 +60,6 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
     createTinV1OwnerIntentHash({
       ...params,
       encryptedMetadataHash: params.encryptedMetadataHash,
-      pruConfigurationHash: params.pruConfigurationHash,
-      encryptedPublicRouteEnvelope: params.encryptedPublicRouteEnvelope,
       routeNonce: params.routeNonce,
     }),
   );
@@ -72,7 +71,7 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
   assert.throws(
     () => serializeTinV1CreationParams({
       ...prepared,
-      tcapRelationshipReference: fixed32(13),
+      tcapPolicyCommitment: fixed32(13),
       intentHash: prepared.intentHash,
     }),
     /intentHash does not match CreateTinV1 payload/,

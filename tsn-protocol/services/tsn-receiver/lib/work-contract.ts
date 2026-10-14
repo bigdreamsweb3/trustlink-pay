@@ -43,27 +43,25 @@ const AUTHORIZED_FUNDING_KEYS = new Set([
   "paymentId", "intentSeedHash", "recipientHash", "recipientTin", "recipientRouteCommitment", "recipientRouteVersion",
   "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet", "senderAuthorizationMessage",
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
-  "senderFeeAmount", "senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode",
+  "senderFeeAmount", "senderSignedFundingTransaction", "senderFundingMode",
   "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
   "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "senderTokenAccount",
   "transferId", "commitmentHash",
-  "settlementEpoch", "encryptedSettlementToken", "source",
+  "settlementEpoch", "encryptedSettlementToken", "source", "tcapCreditTransition",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
-  SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source"]),
+  SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
   // Private TIN V1 payload accepted from the SDK. Plaintext TIN, display name,
   // and resolver secret are excluded; the Node verifies signature, hash,
   // expiry, issuer proof, and route commitments.
   TIN_OPERATION: new Set([
-    "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash",
+    "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
     "ownerIntentMessage", "nonce", "expiry", "displayName", "encryptedMasterSeed",
-    "encryptedMetadataHash", "pruConfigurationHash", "encryptedPublicRouteEnvelope",
+    "encryptedMetadataHash",
     "routeVersion", "routeNonce", "tcapRouteVersion", "tcapRelationshipCommitment",
     "tcapRelationshipReference", "tcapPolicyCommitment", "tin", "lookupCommitment", "lookupIssuanceProof",
-    "encryptedIdentityEnvelope", "encryptedTinRecovery", "newDisplayName", "newEncryptedMasterSeed",
-    "newEncryptedMetadataHash", "newPruConfigurationHash", "newEncryptedPublicRouteEnvelope",
-    "newRouteVersion", "newRouteNonce", "intentId", "intent_id", "source",
+    "encryptedIdentityEnvelope", "encryptedTinRecovery", "intentId", "intent_id", "source",
   ]),
 };
 
@@ -89,6 +87,13 @@ function decodeBase58(value: string): Buffer {
 
 export function assertAuthorizedFundingIngress(payload: Record<string, unknown>): void {
   assertAllowlisted(payload, AUTHORIZED_FUNDING_KEYS, "authorizedFunding");
+  if (payload.senderFundingMode !== "tcap_deposit_v2") throw new Error("LEGACY_FUNDING_MODE_RETIRED_TCAP_DEPOSIT_V2_REQUIRED");
+  if (typeof payload.senderSignedFundingTransaction !== "string" || !payload.senderSignedFundingTransaction.trim()) {
+    throw new Error("OWNER_SIGNED_TCAP_DEPOSIT_REQUIRED");
+  }
+  if (!payload.tcapCreditTransition || typeof payload.tcapCreditTransition !== "object" || Array.isArray(payload.tcapCreditTransition)) {
+    throw new Error("TCAP_V2_CREDIT_TRANSITION_REQUIRED");
+  }
   for (const key of ["paymentId", "recipientHash", "recipientRouteCommitment", "tokenMintAddress", "senderWallet", "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce"]) {
     if (typeof payload[key] !== "string" || !String(payload[key]).trim()) throw new Error(`PAYMENT_AUTH_FIELD_REQUIRED:${key}`);
   }
@@ -163,16 +168,28 @@ export function verifiedPayloadForWork(work: ReceiverWork): Record<string, unkno
 /** Privacy-filtered fields that the Cranker may execute from Node-verified work. */
 export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, unknown>): Record<string, unknown> {
   const allowed = kind === "AUTHORIZED_FUNDING"
-    ? new Set(["senderSignedFundingTransaction", "senderSignedFundingFeePayer", "senderFundingMode"])
-    : kind === "TIN_OPERATION"
+    ? new Set(["senderSignedFundingTransaction", "senderFundingMode"])
+    : kind === "SETTLEMENT"
+      ? new Set(["tcapCreditTransition"])
+      : kind === "TIN_OPERATION"
       ? new Set([
-          "intentId", "intentType", "programAssigned", "ownerPubkey", "ownerSignature", "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry",
+          "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry",
           "nonce", "displayName", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
-          "pruConfigurationHash", "encryptedPublicRouteEnvelope", "routeVersion", "routeNonce", "tcapRouteVersion",
+          "routeVersion", "routeNonce", "tcapRouteVersion",
           "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
         ])
       : new Set<string>();
-  return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
+  const filtered = Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
+  if (kind === "SETTLEMENT" && filtered.tcapCreditTransition && typeof filtered.tcapCreditTransition === "object") {
+    const transition = filtered.tcapCreditTransition as Record<string, unknown>;
+    filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => new Set([
+      "tipRootCommitment", "previousCommitment", "newCommitment", "sequence", "tokenId",
+      "amountBaseUnits", "depositAmountBaseUnits", "mint", "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot",
+      "expiresAtSlot", "authorizationDigest", "gpruCreditEnvelopeBase64", "gpruCreditNonceBase64", "recipientPrivacyKeyCommitment",
+      "depositAccounts", "assetEntry", "tcapConfig",
+    ]).has(key)));
+  }
+  return filtered;
 }
 
 export function payloadCommitment(value: unknown): string {

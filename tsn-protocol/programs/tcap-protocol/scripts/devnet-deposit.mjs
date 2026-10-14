@@ -5,7 +5,7 @@ import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction, se
 
 const [mintText, sourceText, amountText = "100"] = process.argv.slice(2);
 if (!mintText || !sourceText) throw new Error("Usage: node scripts/devnet-deposit.mjs <mint> <source-token-account> [amount]");
-const PROGRAM_ID = new PublicKey("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+const PROGRAM_ID = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const RPC = process.env.TCAP_RPC_URL ?? "https://api.devnet.solana.com";
 const walletPath = process.env.SOLANA_WALLET ?? `${os.homedir()}/.config/solana/id.json`;

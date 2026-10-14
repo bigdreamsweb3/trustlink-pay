@@ -15,13 +15,10 @@ import type {
 import { TsnHttpClient } from "./client.js";
 
 const TIN_CREATION_FEE_BASE_UNITS = 50_000n;
-const TIN_UPDATE_FEE_BASE_UNITS = 10_000n;
 
 function tinOperationFeeBaseUnits(operation: TsnTinOperationRecord) {
-  const raw = operation.intentType === "tin_creation"
-    ? operation.creationFeeAmount
-    : operation.updateFeeAmount;
-  if (!raw) return operation.intentType === "tin_creation" ? TIN_CREATION_FEE_BASE_UNITS : TIN_UPDATE_FEE_BASE_UNITS;
+  const raw = operation.creationFeeAmount;
+  if (!raw) return TIN_CREATION_FEE_BASE_UNITS;
   const value = BigInt(raw);
   if (value <= 0n) throw new Error("TIN operation fee amount must be positive");
   return value;
@@ -283,9 +280,7 @@ class JsonFileTsnMempool implements TsnMempool {
     const timestamp = now();
     const feeMetadata = {
       intentId: id,
-      feeMint: operation.intentType === "tin_creation"
-        ? operation.creationFeeMint ?? process.env.TSN_TINS_FEE_MINT ?? "USDC"
-        : operation.updateFeeMint ?? process.env.TSN_TINS_FEE_MINT ?? "USDC",
+      feeMint: operation.creationFeeMint ?? process.env.TSN_TINS_FEE_MINT ?? "USDC",
       grossAmount: gross.toString(),
       verifierAmount: split.verifier.toString(),
       submitterAmount: split.submitter.toString(),

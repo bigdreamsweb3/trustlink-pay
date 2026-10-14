@@ -17,9 +17,76 @@ try {
 } catch { /* environment variables may be supplied by the process manager */ }
 const tsnSdk = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/index.js")).href);
 const port = Number(process.env.TSN_PROTOCOL_UI_PORT ?? 4317);
-// Route every Solana request through the TSN gateway; an unavailable gateway
-// is surfaced to the caller rather than bypassed with another RPC endpoint.
-const rpcUrl = process.env.TSN_RPC_URL ?? process.env.TSN_RPC_GATEWAY_URL ?? "https://tsn-rpc-gateway.vercel.app";
+// Prefer the local TSN gateway when it is healthy; otherwise use the live TSN
+// gateway. Never bypass the TSN gateway with a raw Solana provider.
+const configuredRpcUrl = process.env.TSN_RPC_URL ?? process.env.TSN_RPC_GATEWAY_URL ?? null;
+const isLoopbackUrl = (value) => {
+  try { return ["localhost", "127.0.0.1", "::1"].includes(new URL(value).hostname); } catch { return false; }
+};
+const localRpcUrl = process.env.TSN_LOCAL_RPC_GATEWAY_URL
+  ?? (configuredRpcUrl && isLoopbackUrl(configuredRpcUrl) ? configuredRpcUrl : "http://127.0.0.1:8787");
+const liveRpcUrl = process.env.TSN_LIVE_RPC_GATEWAY_URL
+  ?? (configuredRpcUrl && !isLoopbackUrl(configuredRpcUrl) ? configuredRpcUrl : "https://tsn-rpc-gateway.vercel.app");
+let rpcSelectionCache = null;
+let rpcSelectionExpiresAt = 0;
+async function resolveRpcUrl() {
+  if (rpcSelectionCache && Date.now() < rpcSelectionExpiresAt) return rpcSelectionCache;
+  try {
+    const response = await fetch(localRpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth" }),
+      signal: AbortSignal.timeout(1500),
+    });
+    const result = response.ok ? await response.json() : null;
+    if (result?.result === "ok") {
+      rpcSelectionCache = localRpcUrl;
+      rpcSelectionExpiresAt = Date.now() + 5000;
+      return rpcSelectionCache;
+    }
+  } catch { /* the local gateway is optional; use the live TSN gateway */ }
+  rpcSelectionCache = liveRpcUrl;
+  rpcSelectionExpiresAt = Date.now() + 5000;
+  return rpcSelectionCache;
+}
+function isTransientRpcReadError(error) {
+  const message = error instanceof Error ? `${error.message} ${error.cause instanceof Error ? error.cause.message : ""}` : String(error);
+  return /fetch failed|operation was aborted|abort(ed)? due to timeout|timed? ?out|ECONN|ENET|UND_ERR|429|502|503|504|failed to get (?:info|token accounts) about account|SolanaJSONRPCError/i.test(message);
+}
+
+function rpcLabel(url) {
+  return url === localRpcUrl ? "local TSN RPC gateway" : url === liveRpcUrl ? "live TSN RPC gateway" : "configured TSN RPC gateway";
+}
+
+function createRpcReadSession(initialUrl) {
+  let activeUrl = initialUrl;
+  let connection = new Connection(activeUrl, "confirmed");
+  let fallbackAttempted = false;
+  return {
+    read: async (operation) => {
+      try {
+        return await operation(connection);
+      } catch (error) {
+        if (!isTransientRpcReadError(error)) throw error;
+        const failedUrl = activeUrl;
+        const fallbackUrl = failedUrl === localRpcUrl ? liveRpcUrl : null;
+        if (fallbackAttempted || !fallbackUrl || fallbackUrl === failedUrl) {
+          throw new Error(`${rpcLabel(failedUrl)} failed during a Solana read: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+        }
+        fallbackAttempted = true;
+        activeUrl = fallbackUrl;
+        connection = new Connection(activeUrl, "confirmed");
+        rpcSelectionCache = activeUrl;
+        rpcSelectionExpiresAt = Date.now() + 30_000;
+        try {
+          return await operation(connection);
+        } catch (fallbackError) {
+          throw new Error(`${rpcLabel(failedUrl)} and ${rpcLabel(activeUrl)} failed during Solana reads: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`, { cause: fallbackError });
+        }
+      }
+    },
+  };
+}
 const tinProgramId = process.env.TINS_PROGRAM_ID ?? process.env.TIN_PROGRAM_ID ?? "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 const sessions = new Map();
 const sessionTtlMs = 30 * 60_000;
@@ -72,12 +139,36 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname === "/") return sendFile(res, "public/index.html", "text/html; charset=utf-8");
   if (url.pathname === "/tsn-dapp.js") return sendFile(res, "public/tsn-dapp.js", "text/javascript; charset=utf-8");
+  if (url.pathname === "/tsn-recipient-credit-sdk.bundle.js") return sendFile(res, "public/tsn-recipient-credit-sdk.bundle.js", "text/javascript; charset=utf-8");
   if (url.pathname === "/tsn_icon_logo.png") return sendFile(res, "public/tsn_icon_logo.png", "image/png");
   if (url.pathname === "/api/health") return json(res, 200, { service: "tsn-protocol-ui", status: "READY", sdk: "@trustlink/tsn-sdk", network: "devnet" });
+  if (req.method === "POST" && url.pathname === "/api/tsn/rpc") {
+    const session = getSession(req);
+    if (!session) return json(res, 401, { error: "INVALID_OR_EXPIRED_SESSION" });
+    if (req.headers["x-trustlink-csrf"] !== session.csrfToken) return json(res, 403, { error: "CSRF_VALIDATION_FAILED" });
+    const payload = await readJson(req);
+    if (!payload || typeof payload !== "object" || typeof payload.method !== "string") {
+      return json(res, 400, { error: "SOLANA_JSON_RPC_REQUEST_REQUIRED" });
+    }
+    const rpcResponse = await fetch(await resolveRpcUrl(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const responseBody = await rpcResponse.text();
+    res.writeHead(rpcResponse.status, {
+      "content-type": rpcResponse.headers.get("content-type") ?? "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(responseBody);
+    return;
+  }
   if (!url.pathname.startsWith("/api/")) return json(res, 404, { error: "NOT_FOUND" });
   try {
     await handleApi(req, res, url);
   } catch (error) {
+    console.error(`[tsn-xp] ${req.method} ${url.pathname} failed`, error);
     json(res, 500, { error: "PROTOCOL_UI_ERROR", message: error instanceof Error ? error.message : "Unknown error" });
   }
 });
@@ -103,12 +194,12 @@ async function handleApi(req, res, url) {
       local: {
         node: process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000",
         receiver: process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010",
-        rpc: null,
+        rpc: localRpcUrl,
       },
       live: {
         node: process.env.TSN_NODE_URL ?? null,
         receiver: process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app",
-        rpc: rpcUrl,
+        rpc: liveRpcUrl,
       },
     });
     return json(res, 200, network);
@@ -130,15 +221,16 @@ async function handleApi(req, res, url) {
     if (!displayName) return json(res, 422, { error: "DISPLAY_NAME_REQUIRED" });
     if (!body.encryptedMasterSeed) {
       const ownerEncryptionNonce = randomBytes(32);
-      const ownerEncryptionMessage = tsnSdk.buildTinV1OwnerEncryptionMessage({
+      const seedAccess = await tsnSdk.prepareTinV1OwnerSeedAccess({
         ownerPublicKey: session.wallet,
         displayName,
         nonce: ownerEncryptionNonce,
       });
-      session.pendingTinEncryption = { displayName, ownerEncryptionNonce };
+      session.pendingTinEncryption = { displayName, ownerEncryptionNonce, resourceCommitment: seedAccess.resourceCommitment };
       return json(res, 200, {
         status: "OWNER_ENCRYPTION_SIGNATURE_REQUIRED",
-        ownerEncryptionMessage: Buffer.from(ownerEncryptionMessage).toString("utf8"),
+        ownerEncryptionMessage: seedAccess.message,
+        resourceCommitment: seedAccess.resourceCommitment,
         ownerEncryptionNonce: ownerEncryptionNonce.toString("hex"),
         sdk: "@trustlink/tsn-sdk.buildTinV1OwnerEncryptionMessage",
       });
@@ -148,9 +240,13 @@ async function handleApi(req, res, url) {
     }
     const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? session.preparedTinDraft?.encryptedMasterSeed ?? ""), "base64");
     if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
+    const gpruCommitment = String(body.gpruCommitment ?? session.preparedTinDraft?.gpruCommitment ?? "").toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(gpruCommitment)) return json(res, 422, { error: "GPRU_COMMITMENT_REQUIRED" });
+    const gpruCommitmentBytes = Buffer.from(gpruCommitment, "hex");
+    const tipRootCommitment = Buffer.from(tsnSdk.deriveTcapTipRootCommitment(gpruCommitmentBytes));
     const lookupSecret = requireTinLookupSecret();
     const ownerPubkey = new PublicKey(session.wallet);
-    const connection = new Connection(rpcUrl, "confirmed");
+    const connection = new Connection(await resolveRpcUrl(), "confirmed");
     let tin = session.preparedTinDraft?.tin ?? "";
     let identity = session.preparedTinDraft?.identity;
     let registry = session.preparedTinDraft?.registry;
@@ -167,7 +263,7 @@ async function handleApi(req, res, url) {
     if (!tin || !identity || !registry) throw new Error("Could not reserve a unique private TIN after 8 Devnet checks");
     const encryptedTinRecovery = Buffer.from(String(body.encryptedTinRecovery ?? ""), "base64");
     if (encryptedTinRecovery.length < 28) {
-      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64") };
+      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64"), gpruCommitment };
       const ownerPubkey = new PublicKey(session.wallet);
       const programId = new PublicKey(tinProgramId);
       return json(res, 200, {
@@ -190,8 +286,8 @@ async function handleApi(req, res, url) {
       routeVersion: 1,
       routeNonce: randomBytes(32),
       tcapRouteVersion: 1,
-      tcapRelationshipCommitment: randomBytes(32),
-      tcapRelationshipReference: randomBytes(32),
+      tcapRelationshipCommitment: gpruCommitmentBytes,
+      tcapRelationshipReference: tipRootCommitment,
       tcapPolicyCommitment: randomBytes(32),
     });
     const intentId = randomUUID();
@@ -209,7 +305,6 @@ async function handleApi(req, res, url) {
     const hex = (value) => Buffer.from(value).toString("hex");
     return json(res, 200, {
       intentType: "tin_creation",
-      programAssigned: false,
       intentId,
       ownerPubkey: session.wallet,
       ownerIntentHash: hex(built.intentHash),
@@ -220,13 +315,17 @@ async function handleApi(req, res, url) {
       encryptedIdentityEnvelope: b64(built.encryptedIdentityEnvelope),
       encryptedMasterSeed: b64(built.encryptedMasterSeed),
       encryptedMetadataHash: hex(built.encryptedMetadataHash),
-      pruConfigurationHash: hex(built.pruConfigurationHash),
+      // The current TIN V1 route binds no PRU configuration; this value is
+      // intentionally the zero hash and is not part of buildTinV1Creation's
+      // returned on-chain payload fields.
+      pruConfigurationHash: hex(zero),
       encryptedPublicRouteEnvelope: "",
       routeVersion: Number(built.routeVersion),
       routeNonce: hex(built.routeNonce),
       tcapRouteVersion: built.tcapRouteVersion,
       tcapRelationshipCommitment: hex(built.tcapRelationshipCommitment),
       tcapRelationshipReference: hex(built.tcapRelationshipReference),
+      gpruCommitment,
       tcapPolicyCommitment: hex(built.tcapPolicyCommitment),
       sdk: "@trustlink/tsn-sdk.buildTinV1Creation",
     });
@@ -274,7 +373,7 @@ async function handleApi(req, res, url) {
       try {
         const identity = await tsnSdk.resolveTinRoute({
           tin: pending.tin,
-          rpcUrl,
+          rpcUrl: await resolveRpcUrl(),
           programId: tinProgramId,
           lookupSecret: requireTinLookupSecret(),
         });
@@ -295,7 +394,7 @@ async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/tsn/sdk/owner-tin-recovery") {
     const ownerPubkey = new PublicKey(session.wallet);
     const programId = new PublicKey(tinProgramId);
-    const connection = new Connection(rpcUrl, "confirmed");
+    const connection = new Connection(await resolveRpcUrl(), "confirmed");
     const encryptedTinRecovery = await tsnSdk.getTinV1OwnerRecoveryEnvelope({
       connection,
       ownerPubkey,
@@ -345,7 +444,7 @@ async function handleApi(req, res, url) {
     }
     const identity = await tsnSdk.resolveTinRoute({
       tin,
-      rpcUrl,
+      rpcUrl: await resolveRpcUrl(),
       programId: tinProgramId,
       lookupSecret: requireTinLookupSecret(),
     });
@@ -362,73 +461,224 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const tin = String(body.tin ?? "").trim();
     if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
-    const identity = await tsnSdk.resolveTinRoute({ tin, rpcUrl, programId: tinProgramId, lookupSecret: requireTinLookupSecret() });
-    if (!identity.tcapRelationshipCommitment || identity.tcapRouteVersion == null) {
-      return json(res, 409, { error: "CURRENT_TIN_ROUTE_NOT_AVAILABLE", tin, upgradeRequired: identity.upgradeRequired });
-    }
-    return json(res, 200, {
+    const identity = await tsnSdk.resolveTinRoute({ tin, rpcUrl: await resolveRpcUrl(), programId: tinProgramId, lookupSecret: requireTinLookupSecret() });
+    session.resolvedTin = {
       tin,
       recipientRouteCommitment: identity.tcapRelationshipCommitment,
+      // The recipient's opaque TIP root is distinct from the route commitment
+      // signed by the sender. The credit instruction derives the TIP PDA from
+      // this reference, so keep both values in the resolved session.
+      recipientTipRoot: identity.tcapRelationshipReference,
+      gpruCommitment: identity.gpruCommitment,
       recipientRouteVersion: identity.tcapRouteVersion,
+      ownerPubkeyHash: identity.ownerPubkeyHash,
+      tcapPolicyCommitment: identity.tcapPolicyCommitment,
+      pruConfigurationHash: identity.pruConfigurationHash,
+      canReceiveGpruCredit: Boolean(
+        identity.tcapRouteVersion === 1 &&
+        identity.tcapRelationshipCommitment &&
+        identity.tcapRelationshipReference &&
+        identity.tcapPolicyCommitment &&
+        identity.gpruCommitment
+      ),
+      expiresAt: Date.now() + 5 * 60_000,
+    };
+    return json(res, 200, {
+      tin,
+      displayName: identity.name ?? "",
+      ownerPubkeyHash: identity.ownerPubkeyHash,
+      tcapPolicyCommitment: identity.tcapPolicyCommitment,
+      pruConfigurationHash: identity.pruConfigurationHash,
+      displayNameSource: "owner-provided",
+      governmentAttestation: null,
+      recipientRouteCommitment: identity.tcapRelationshipCommitment,
+      recipientTipRoot: identity.tcapRelationshipReference,
+      gpruCommitment: identity.gpruCommitment,
+      recipientRouteVersion: identity.tcapRouteVersion,
+      canReceiveGpruCredit: session.resolvedTin.canReceiveGpruCredit,
       source: "@trustlink/tsn-sdk.resolveTinRoute",
     });
   }
 
-  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-payment") {
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {
     const body = await readJson(req);
-    const amount = Number(body.amount);
-    if (!Number.isFinite(amount) || amount <= 0) return json(res, 422, { error: "POSITIVE_AMOUNT_REQUIRED" });
-    const authorization = tsnSdk.createPaymentAuthorization({
-      senderWallet: session.wallet,
-      senderIdentity: `wallet:${session.wallet}`,
-      receiverIdentity: `tin:${String(body.recipientTin)}`,
-      recipientRouteCommitment: String(body.recipientRouteCommitment),
-      recipientRouteVersion: Number(body.recipientRouteVersion),
-      tokenMintAddress: String(body.tokenMintAddress),
-      amount,
-      senderFeeAmount: Number(body.senderFeeAmount ?? 0),
-      totalTokenRequiredUi: amount + Number(body.senderFeeAmount ?? 0),
-      fundingMode: "wallet_only_v2",
-    });
+    const route = session.resolvedTin;
+    const mintText = String(body.tokenMintAddress ?? "").trim();
+    if (!route || route.expiresAt < Date.now()) return json(res, 409, { error: "RESOLVE_RECIPIENT_TIN_FIRST" });
+    if (!route.canReceiveGpruCredit) {
+      return json(res, 409, {
+        error: route.gpruCommitment
+          ? "TIN_TCAP_CREDIT_ROUTE_UNAVAILABLE"
+          : "TIN_PRIVACY_RECEIVING_KEY_MISSING",
+        stage: "CREDIT_PREPARATION",
+        tin: route.tin,
+      });
+    }
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintText)) return json(res, 422, { error: "VALID_TOKEN_MINT_REQUIRED" });
+    const amountText = String(body.amount ?? "").trim();
+    if (!/^\d+(?:\.\d{1,9})?$/.test(amountText) || Number(amountText) <= 0) return json(res, 422, { error: "POSITIVE_TOKEN_AMOUNT_REQUIRED" });
+    const rpc = createRpcReadSession(await resolveRpcUrl());
+    const mint = new PublicKey(mintText);
+    const mintAccount = await rpc.read((connection) => connection.getAccountInfo(mint, "confirmed"));
+    const tokenProgram = mintAccount?.owner;
+    const supportedTokenPrograms = new Set([
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    ]);
+    if (!tokenProgram || !supportedTokenPrograms.has(tokenProgram.toBase58())) return json(res, 422, { error: "UNSUPPORTED_TOKEN_MINT_PROGRAM" });
+    const depositor = new PublicKey(session.wallet);
+    const tcapProgram = new PublicKey(process.env.TCAP_PROGRAM_ID ?? tsnSdk.GPRU_TCAP_PROGRAM_ID.toBase58());
+    const accounts = await rpc.read((connection) => tsnSdk.resolveTcapGpruDepositAccounts(connection, {
+      depositor, mint, tokenProgram, tcapProgramId: tcapProgram,
+    }));
+    const tipAddress = tsnSdk.deriveTinCreditTip(route.recipientTipRoot, tcapProgram);
+    const [reserveAccount, vaultAccount, tipAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
+      accounts.reserveState, accounts.vault, tipAddress,
+    ], "confirmed"));
+    const { assetEntryAccount: entryAccount, ...accountAddresses } = accounts;
+    const entryData = entryAccount?.data;
+    if (!entryAccount || !entryData || !entryAccount.owner.equals(tcapProgram) || entryData.length < 287
+      || entryData.subarray(0, 8).toString("hex") !== createHash("sha256").update("account:TcapAssetEntryV1").digest().subarray(0, 8).toString("hex")
+      || entryData.subarray(80, 112).toString("hex") !== mint.toBuffer().toString("hex")
+      || entryData.subarray(48, 80).toString("hex") !== tokenProgram.toBuffer().toString("hex")) {
+      return json(res, 409, { error: "MINT_NOT_REGISTERED_IN_TCAP" });
+    }
+    if (entryData[245] !== 1 || entryData[247] !== 0 || entryData[283] !== 1 || entryData[284] !== 1 || entryData[285] !== 0) {
+      return json(res, 409, { error: "TCAP_ASSET_DEPOSITS_NOT_ENABLED" });
+    }
+    if (!reserveAccount) return json(res, 409, { error: "TCAP_CANONICAL_RESERVE_ACCOUNT_MISSING", address: accounts.reserveState.toBase58() });
+    if (!vaultAccount) return json(res, 409, { error: "TCAP_CANONICAL_VAULT_ACCOUNT_MISSING", address: accounts.vault.toBase58() });
+    if (!reserveAccount.owner.equals(tcapProgram)) return json(res, 409, { error: "TCAP_RESERVE_ACCOUNT_OWNER_MISMATCH" });
+    if (!vaultAccount.owner.equals(tokenProgram)) return json(res, 409, { error: "TCAP_VAULT_TOKEN_PROGRAM_MISMATCH" });
+    if (vaultAccount.data.length < 72 || vaultAccount.data.subarray(0, 32).toString("hex") !== mint.toBuffer().toString("hex")) {
+      return json(res, 409, { error: "TCAP_VAULT_TOKEN_ACCOUNT_BINDING_INVALID" });
+    }
+    const decimals = entryData[244];
+    const [whole, fraction = ""] = amountText.split(".");
+    if (fraction.length > decimals) return json(res, 422, { error: "AMOUNT_EXCEEDS_TOKEN_DECIMALS" });
+    const amountBaseUnits = BigInt(whole + fraction.padEnd(decimals, "0"));
+    if (amountBaseUnits <= 0n || amountBaseUnits > 0xffff_ffff_ffff_ffffn) return json(res, 422, { error: "TOKEN_AMOUNT_OUT_OF_RANGE" });
+    const senderTokenAccounts = await rpc.read((connection) => connection.getTokenAccountsByOwner(depositor, { mint }, "confirmed"));
+    const eligibleSources = senderTokenAccounts.value
+      .filter(({ account }) => account.owner.equals(tokenProgram) && account.data.length >= 72
+        && account.data.subarray(0, 32).equals(mint.toBuffer())
+        && account.data.subarray(32, 64).equals(depositor.toBuffer()))
+      .map(({ pubkey, account }) => ({ pubkey, account, balance: account.data.readBigUInt64LE(64) }))
+      .sort((left, right) => left.balance === right.balance ? 0 : left.balance > right.balance ? -1 : 1);
+    const selectedSource = eligibleSources.find(({ balance }) => balance >= amountBaseUnits);
+    if (!selectedSource) {
+      return json(res, 409, {
+        error: eligibleSources.length ? "INSUFFICIENT_SENDER_TOKEN_BALANCE" : "SENDER_TOKEN_ACCOUNT_MISSING",
+        mint: mint.toBase58(),
+        associatedTokenAccount: accounts.source.toBase58(),
+        availableBaseUnits: eligibleSources.reduce((sum, source) => sum + source.balance, 0n).toString(),
+        requiredBaseUnits: amountBaseUnits.toString(),
+      });
+    }
+    accounts.source = selectedSource.pubkey;
+    const sourceTokenBalance = selectedSource.balance;
+    if (sourceTokenBalance < amountBaseUnits) return json(res, 409, { error: "INSUFFICIENT_SENDER_TOKEN_BALANCE", availableBaseUnits: sourceTokenBalance.toString() });
+    let previousCommitment;
+    let sequence;
+    let policyCommitment;
+    if (tipAccount) {
+      const data = tipAccount.data;
+      const tipDisc = createHash("sha256").update("account:TCapTinTipV1").digest().subarray(0, 8);
+      if (!tipAccount.owner.equals(tcapProgram) || data.length !== 116 || !data.subarray(0, 8).equals(tipDisc) || data[114] !== 0) {
+        return json(res, 409, { error: "TCAP_TIN_TIP_LAYOUT_INVALID" });
+      }
+      previousCommitment = data.subarray(10, 42).toString("hex");
+      sequence = data.readBigUInt64LE(42) + 1n;
+      policyCommitment = data.subarray(50, 82).toString("hex");
+      if (policyCommitment !== String(route.tcapPolicyCommitment).toLowerCase()) return json(res, 409, { error: "TCAP_TIN_TIP_POLICY_MISMATCH" });
+    } else {
+      previousCommitment = randomBytes(32).toString("hex");
+      sequence = 1n;
+      policyCommitment = String(route.tcapPolicyCommitment).toLowerCase();
+    }
+    const [slot, latestBlockhash] = await rpc.read(async (connection) => Promise.all([
+      connection.getSlot("confirmed"), connection.getLatestBlockhash("confirmed"),
+    ]));
+    session.pendingTinCredit = {
+      recipientTin: route.tin,
+      mint: mint.toBase58(),
+      amountBaseUnits: amountBaseUnits.toString(),
+      previousCommitment,
+      sequence: sequence.toString(),
+      policyCommitment,
+      initializeTip: !tipAccount,
+      expiresAt: Date.now() + 120_000,
+      accounts: Object.fromEntries(Object.entries(accountAddresses).map(([key, value]) => [key, value.toBase58()])),
+      tokenId: entryData.readUInt32LE(44),
+      decimals,
+    };
     return json(res, 200, {
-      status: "WALLET_SIGNATURE_REQUIRED",
-      paymentId: randomBytes(16).toString("hex"),
-      ...authorization,
-      senderWallet: session.wallet,
-      recipientTin: String(body.recipientTin),
-      recipientRouteCommitment: String(body.recipientRouteCommitment),
-      recipientRouteVersion: Number(body.recipientRouteVersion),
-      tokenMintAddress: String(body.tokenMintAddress),
-      amount,
-      sdk: "@trustlink/tsn-sdk.createPaymentAuthorization",
+      recipientTin: route.tin,
+      recipientRouteCommitment: route.recipientRouteCommitment,
+      recipientRouteVersion: route.recipientRouteVersion,
+      recipientTipRoot: route.recipientTipRoot,
+      gpruCommitment: route.gpruCommitment,
+      tokenId: entryData.readUInt32LE(44),
+      decimals,
+      amountBaseUnits: amountBaseUnits.toString(),
+      previousCommitment,
+      sequence: sequence.toString(),
+      policyCommitment,
+      initializeTip: !tipAccount,
+      tip: tsnSdk.deriveTinCreditTip(route.recipientTipRoot, tcapProgram).toBase58(),
+      currentSlot: slot,
+      expiresAtSlot: slot + 300,
+      recentBlockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      depositAccounts: {
+        depositor: depositor.toBase58(), config: accounts.config.toBase58(),
+        assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(),
+        source: accounts.source.toBase58(), vault: accounts.vault.toBase58(), mint: mint.toBase58(),
+        tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
+      },
+      sourceTokenBalance: sourceTokenBalance.toString(),
+      sdk: "@trustlink/tsn-sdk.resolveTcapGpruDepositAccounts",
     });
   }
 
-  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/submit-payment") {
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/submit-tin-credit") {
     const body = await readJson(req);
-    const receiverUrl = process.env.TSN_RECEIVER_URL?.trim();
-    const apiKey = process.env.TSN_RECEIVER_NODE_API_KEY?.trim();
-    if (!receiverUrl || !apiKey) return json(res, 503, { error: "RECEIVER_CONFIGURATION_REQUIRED" });
-    const result = await tsnSdk.submitPaymentAuthorizationToMempool({
-      mempoolUrl: receiverUrl,
-      apiKey,
-      paymentId: String(body.paymentId),
-      recipientHash: String(body.recipientTin),
-      recipientTin: String(body.recipientTin),
-      recipientRouteCommitment: String(body.recipientRouteCommitment),
-      recipientRouteVersion: Number(body.recipientRouteVersion),
-      tokenMintAddress: String(body.tokenMintAddress),
-      senderWallet: session.wallet,
-      senderAuthorizationMessage: String(body.message),
-      senderAuthorizationSignature: String(body.signatureBase64),
-      senderAuthorizationNonce: String(body.nonce),
-      senderAuthorizationIssuedAt: String(body.issuedAt),
-      senderAuthorizationExpiresAt: String(body.expiresAt),
-      amount: Number(body.amount),
-      senderFundingMode: "wallet_only_v2",
-      source: "tsn-protocol-ui",
+    const prepared = session.pendingTinCredit;
+    const request = body.request;
+    if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
+    if (!request || request.senderWallet !== session.wallet || request.recipientTin !== prepared.recipientTin
+      || request.tokenMintAddress !== prepared.mint || String(request.tcapCreditTransition?.amountBaseUnits) !== prepared.amountBaseUnits
+      || String(request.tcapCreditTransition?.sequence) !== prepared.sequence
+      || request.tcapCreditTransition?.previousCommitment !== prepared.previousCommitment
+      || request.tcapCreditTransition?.policyCommitment !== prepared.policyCommitment
+      || request.tcapCreditTransition?.depositAccounts?.assetEntry !== prepared.accounts.assetEntry) {
+      return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
+    }
+    const nodeUrl = (mode === "local"
+      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
+      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
+    const response = await fetch(`${nodeUrl}/intents`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request),
+      signal: AbortSignal.timeout(30_000),
     });
-    return json(res, 201, { status: "INTENT_SUBMITTED", ...result, sdk: "@trustlink/tsn-sdk.submitPaymentAuthorizationToMempool" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return json(res, response.status, result);
+    session.pendingTinCredit = null;
+    session.pendingTinCreditOperationId = String(result.id ?? result.paymentId ?? "");
+    return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.buildPaymentAuthorizationIntentRequest -> TSN Node /intents" });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/tsn/sdk/tin-credit-status") {
+    const operationId = String(url.searchParams.get("operationId") ?? "");
+    if (!operationId || operationId !== session.pendingTinCreditOperationId) return json(res, 404, { error: "TIN_CREDIT_OPERATION_NOT_FOUND_IN_SESSION" });
+    const receiverUrl = (mode === "local"
+      ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
+      : process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "");
+    const response = await fetch(`${receiverUrl}/api/work-status/${encodeURIComponent(operationId)}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return json(res, response.status, result);
+    return json(res, 200, result);
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/build-wallet-transfer") {
@@ -439,23 +689,11 @@ async function handleApi(req, res, url) {
       tokenMintAddress: String(body.tokenMintAddress),
       amountUi: String(body.amountUi),
       tokenDecimals: Number(body.tokenDecimals ?? 6),
-      rpcUrl,
+      rpcUrl: await resolveRpcUrl(),
     });
     return json(res, 200, { status: "UNSIGNED_TRANSACTION_READY", ...transfer, sdk: "@trustlink/tsn-sdk.buildTsnSplTokenTransferTransaction" });
   }
 
-  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/build-funding") {
-    const body = await readJson(req);
-    const funding = await tsnSdk.buildTsnSponsoredSettlementTransaction({
-      crankerFeePayer: session.wallet,
-      senderWallet: session.wallet,
-      tokenMintAddress: String(body.tokenMintAddress),
-      amountUi: String(body.amountUi),
-      tokenDecimals: Number(body.tokenDecimals ?? 6),
-      rpcUrl,
-    });
-    return json(res, 200, { status: "UNSIGNED_FUNDING_READY", ...funding, sdk: "@trustlink/tsn-sdk.buildTsnSponsoredSettlementTransaction" });
-  }
   return json(res, 404, { error: "SDK_ROUTE_NOT_FOUND", method: req.method, path: url.pathname });
 }
 

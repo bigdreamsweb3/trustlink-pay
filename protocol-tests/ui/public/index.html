@@ -190,7 +190,7 @@
       color: var(--green);
     }
 
-    #connectWallet, #prepareTinIdentity, #payTin, #submitTin, #buildWalletTransfer, #buildFunding {
+    #connectWallet, #prepareTinIdentity, #resolveTin, #payTin, #buildWalletTransfer {
       background: var(--paper-2);
       color: var(--green-2);
       border-color: rgba(18, 58, 42, .28);
@@ -198,8 +198,8 @@
       align-items: center;
       gap: 7px;
     }
-    #connectWallet::before, #prepareTinIdentity::before, #payTin::before, #submitTin::before,
-    #buildWalletTransfer::before, #buildFunding::before {
+    #connectWallet::before, #prepareTinIdentity::before, #resolveTin::before, #payTin::before,
+    #buildWalletTransfer::before {
       display: inline-grid;
       place-items: center;
       width: 18px;
@@ -212,11 +212,11 @@
     }
     #connectWallet::before { content: "⌁"; }
     #prepareTinIdentity::before { content: "+"; }
+    #resolveTin::before { content: "⌕"; }
     #payTin::before { content: "◎"; }
-    #submitTin::before { content: "→"; }
-    #buildWalletTransfer::before, #buildFunding::before { content: "▣"; }
-    #connectWallet:hover, #prepareTinIdentity:hover, #payTin:hover, #submitTin:hover,
-    #buildWalletTransfer:hover, #buildFunding:hover { background: #ded4b8; color: var(--green-2); }
+    #buildWalletTransfer::before { content: "▣"; }
+    #connectWallet:hover, #prepareTinIdentity:hover, #resolveTin:hover, #payTin:hover,
+    #buildWalletTransfer:hover { background: #ded4b8; color: var(--green-2); }
 
     button:disabled {
       opacity: .45;
@@ -1033,9 +1033,8 @@
         <button class="menu-close" id="menuClose" aria-label="Close navigation">×</button>
         <button id="tab-status" role="tab" aria-controls="panel-status" aria-selected="true">Overview</button>
         <button id="tab-create-tin" role="tab" aria-controls="panel-create-tin" aria-selected="false">Create TIN</button>
-        <button id="tab-tin" role="tab" aria-controls="panel-tin" aria-selected="false">TIN transfer</button>
+        <button id="tab-tin" role="tab" aria-controls="panel-tin" aria-selected="false">TIN credit</button>
         <button id="tab-wallet" role="tab" aria-controls="panel-wallet" aria-selected="false">Wallet transfer</button>
-        <button id="tab-funding" role="tab" aria-controls="panel-funding" aria-selected="false">Funding</button>
       </nav>
       <div>
         <section id="panel-status" class="overview-panel active" role="tabpanel" aria-labelledby="tab-status">
@@ -1059,7 +1058,7 @@
               <h3>Identity, transfers, and settlement in one protocol surface.</h3>
               <p>Connect a wallet to create a private TIN, prepare a transfer, or build a sponsored settlement transaction. Every action stays visible at the SDK boundary.</p>
               <div class="overview-actions">
-                <button class="alt overview-link" data-open-tab="tab-tin" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Private TIN transfer</button>
+                <button class="alt overview-link" data-open-tab="tab-tin" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Deposit to TIN credit</button>
                 <button class="alt overview-link" data-open-tab="tab-wallet" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Private wallet transfer</button>
               </div>
             </div>
@@ -1134,22 +1133,21 @@ const identity = await createTinV1IdentityEnvelope({
           <button class="modal-close" type="button" data-close-modal>Back</button>
           <div class="section-head">
             <div>
-              <h2>TIN transfer</h2>
-              <p>Prepare a signed TIN debit intent. The UI does not create fake TINs or bypass the Node, Receiver, or
-                Cranker.</p>
+              <h2>Wallet deposit to TIN credit</h2>
+              <p>Send an amount-bearing intent from any wallet to a recipient TIN. The recipient's private key stays with its owner while the Receiver, Node, and Cranker process the deposit and credit stages.</p>
             </div>
           </div>
           <div class="form"><label>Recipient TIN<input id="recipientTin" inputmode="numeric" maxlength="10"
-                placeholder="10-digit TIN"></label><label>Settlement token mint<input id="tinMint"
+                placeholder="10-digit recipient TIN"></label><label>Settlement token mint<input id="tinMint"
                 placeholder="Solana SPL token mint"></label><label>Amount<input id="tinAmount" type="number"
                 min="0.000001" step="0.000001" value="1"></label></div>
-          <div class="form-actions" style="margin-top:12px"><button id="payTin">Prepare intent</button><button
-              class="alt" id="submitTin" disabled>Sign and submit</button></div>
+          <div class="form-actions" style="margin-top:12px"><button id="resolveTin">Resolve TIN</button><button id="payTin" disabled>Deposit to TIN</button></div>
+          <div id="tinResolution" class="notice" style="margin-top:12px" hidden aria-live="polite"></div>
           <details>
-            <summary>VIEW SDK CODE / resolve + authorize + submit</summary>
-            <pre>const route = await resolveTinRoute({ tin, rpcUrl });
-const authorization = createPaymentAuthorization(paymentFields);
-await submitPaymentAuthorizationToMempool({ ...authorization, ...paymentFields });</pre><a
+            <summary>VIEW SDK CODE / wallet to recipient GPRU credit</summary>
+              <pre>const recipient = await resolveTinRoute({ tin });
+// The sender wallet authorizes the amount-bearing deposit.
+// Recipient GPRU credit is applied after Node verification.</pre><a
               href="https://trust-link-tsn.mintlify.site/developers/payment-intent-lifecycle" target="_blank"
               rel="noreferrer">Read the Payment Intent guide -&gt;</a>
           </details>
@@ -1176,28 +1174,6 @@ await submitPaymentAuthorizationToMempool({ ...authorization, ...paymentFields }
               rel="noreferrer">Read the Getting Started guide -&gt;</a>
           </details>
         </section>
-        <section id="panel-funding" class="tab-panel" role="tabpanel" aria-labelledby="tab-funding">
-          <button class="modal-close" type="button" data-close-modal>Back</button>
-          <div class="section-head">
-            <div>
-              <h2>Settlement funding</h2>
-              <p>Prepare the unsigned sponsored settlement funding transaction through the SDK.</p>
-            </div>
-          </div>
-          <div class="form"><label>Token mint<input id="fundingMint"
-                placeholder="Solana SPL token mint"></label><label>Amount<input id="fundingAmount" type="number"
-                min="0.000001" step="0.000001" value="1"></label>
-            <div></div>
-          </div>
-          <div class="form-actions" style="margin-top:12px"><button id="buildFunding">Build funding</button></div>
-          <details>
-            <summary>VIEW SDK CODE / build settlement funding</summary>
-            <pre>const funding = await buildTsnSponsoredSettlementTransaction({
-  senderWallet, crankerFeePayer, tokenMintAddress, amountUi, tokenDecimals, rpcUrl,
-});</pre><a href="https://trust-link-tsn.mintlify.site/developers/funding-and-accepted-intent" target="_blank"
-              rel="noreferrer">Read the Funding guide -&gt;</a>
-          </details>
-        </section>
       </div>
       <aside class="activity">
         <div class="activity-head">
@@ -1213,6 +1189,7 @@ await submitPaymentAuthorizationToMempool({ ...authorization, ...paymentFields }
       </aside>
     </section>
   </main>
+  <script src="/tsn-recipient-credit-sdk.bundle.js"></script>
   <script src="/tsn-dapp.js"></script>
 </body>
 

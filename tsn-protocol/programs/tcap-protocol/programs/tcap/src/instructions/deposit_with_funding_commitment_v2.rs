@@ -36,18 +36,31 @@ pub struct DepositWithFundingCommitmentV2<'info> {
     )]
     pub config: Box<Account<'info, TcapGlobalConfigV1>>,
     #[account(
-        seeds = [TCAP_ASSET_STATE_SEED, token_program.key().as_ref(), mint.key().as_ref()],
-        bump = asset_state.bump,
-        constraint = asset_state.asset.token_program == token_program.key() @ TcapError::InvalidTokenProgram,
-        constraint = asset_state.asset.mint == mint.key() @ TcapError::WrongAsset
+        seeds = [TCAP_ASSET_REGISTRY_SEED],
+        bump = registry.bump,
+        constraint = registry.config == config.key() @ TcapError::InvalidPda,
+        constraint = !registry.frozen @ TcapError::AssetUnavailable
     )]
-    pub asset_state: Box<Account<'info, TcapAssetStateV1>>,
+    pub registry: Box<Account<'info, TcapAssetRegistryV1>>,
+    #[account(
+        seeds = [TCAP_ASSET_ENTRY_SEED, registry.key().as_ref(), asset_entry.asset.token_program.as_ref(), asset_entry.asset.mint.as_ref()],
+        bump = asset_entry.bump,
+        constraint = asset_entry.registry == registry.key() @ TcapError::InvalidPda,
+        constraint = asset_entry.asset.token_program == token_program.key() @ TcapError::InvalidTokenProgram,
+        constraint = asset_entry.asset.mint == mint.key() @ TcapError::WrongAsset,
+        constraint = asset_entry.deposits_enabled @ TcapError::AssetUnavailable,
+        constraint = !asset_entry.paused @ TcapError::AssetUnavailable,
+        constraint = !asset_entry.deprecated @ TcapError::AssetUnavailable,
+        constraint = asset_entry.status == TcapAssetStatusV1::Active @ TcapError::AssetUnavailable,
+        constraint = asset_entry.risk_state == TcapRiskStateV1::Approved @ TcapError::AssetUnavailable
+    )]
+    pub asset_entry: Box<Account<'info, TcapAssetEntryV1>>,
     #[account(
         mut,
-        address = asset_state.reserve_state @ TcapError::InvalidReserve,
-        constraint = reserve_state.asset_state == asset_state.key() @ TcapError::InvalidReserve,
+        address = asset_entry.reserve_state @ TcapError::InvalidReserve,
+        constraint = reserve_state.asset_entry == asset_entry.key() @ TcapError::InvalidReserve,
         constraint = reserve_state.future_vault == vault.key() @ TcapError::InvalidReserve,
-        constraint = reserve_state.reserve_authority == asset_state.reserve_authority @ TcapError::InvalidReserve,
+        constraint = reserve_state.reserve_authority == asset_entry.reserve_authority @ TcapError::InvalidReserve,
         constraint = reserve_state.funding_enabled @ TcapError::AssetUnavailable,
         constraint = !reserve_state.paused @ TcapError::AssetUnavailable
     )]
@@ -56,7 +69,7 @@ pub struct DepositWithFundingCommitmentV2<'info> {
         init_if_needed,
         payer = depositor,
         space = FundingRootV1::SPACE,
-        seeds = [TCAP_FUNDING_ROOT_SEED, asset_state.key().as_ref()],
+        seeds = [TCAP_FUNDING_ROOT_SEED, asset_entry.key().as_ref()],
         bump
     )]
     pub funding_root: Box<Account<'info, FundingRootV1>>,
@@ -64,7 +77,7 @@ pub struct DepositWithFundingCommitmentV2<'info> {
         init,
         payer = depositor,
         space = FundingClaimV1::SPACE,
-        seeds = [TCAP_FUNDING_CLAIM_SEED, asset_state.key().as_ref(), args.funding_identifier.as_ref()],
+        seeds = [TCAP_FUNDING_CLAIM_SEED, asset_entry.key().as_ref(), args.funding_identifier.as_ref()],
         bump
     )]
     pub funding_claim: Box<Account<'info, FundingClaimV1>>,
@@ -72,7 +85,7 @@ pub struct DepositWithFundingCommitmentV2<'info> {
         init_if_needed,
         payer = depositor,
         space = FundingAuthorizationNonceV1::SPACE,
-        seeds = [TCAP_FUNDING_NONCE_SEED, asset_state.key().as_ref(), depositor.key().as_ref()],
+        seeds = [TCAP_FUNDING_NONCE_SEED, asset_entry.key().as_ref(), depositor.key().as_ref()],
         bump
     )]
     pub funding_nonce: Box<Account<'info, FundingAuthorizationNonceV1>>,
@@ -84,14 +97,14 @@ pub struct DepositWithFundingCommitmentV2<'info> {
     pub source: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
         mut,
-        address = asset_state.future_vault @ TcapError::ReserveVaultUnavailable,
+        address = asset_entry.future_vault @ TcapError::ReserveVaultUnavailable,
         constraint = vault.mint == mint.key() @ TcapError::WrongAsset,
-        constraint = vault.owner == asset_state.reserve_authority @ TcapError::InvalidReserve
+        constraint = vault.owner == asset_entry.reserve_authority @ TcapError::InvalidReserve
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(address = asset_state.asset.mint @ TcapError::WrongAsset)]
+    #[account(address = asset_entry.asset.mint @ TcapError::WrongAsset)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(address = asset_state.asset.token_program @ TcapError::InvalidTokenProgram)]
+    #[account(address = asset_entry.asset.token_program @ TcapError::InvalidTokenProgram)]
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
@@ -151,7 +164,7 @@ pub fn handler(
     let authorization_commitment = depositor_authorization_commitment_v3(
         ctx.accounts.config.protocol_version,
         &ctx.accounts.depositor.key(),
-        &ctx.accounts.asset_state.key(),
+        &ctx.accounts.asset_entry.key(),
         &args.funding_identifier,
         args.authorization_nonce,
         args.expires_at_slot,
@@ -174,7 +187,7 @@ pub fn handler(
     if nonce.version != 0 {
         require!(
             nonce.version == TCAP_STATE_VERSION_V1
-                && nonce.asset_state == ctx.accounts.asset_state.key()
+                && nonce.asset_entry == ctx.accounts.asset_entry.key()
                 && nonce.depositor == ctx.accounts.depositor.key(),
             TcapError::InvalidFundingAuthorizationNonce
         );
@@ -190,14 +203,14 @@ pub fn handler(
     let root = &ctx.accounts.funding_root;
     let (starting_root, starting_sequence) = if root.version == 0 {
         (
-            empty_funding_root(&expected_domain, &ctx.accounts.asset_state.key()),
+            empty_funding_root(&expected_domain, &ctx.accounts.asset_entry.key()),
             0,
         )
     } else {
         require!(
             root.version == TCAP_STATE_VERSION_V1
                 && root.protocol_version == ctx.accounts.config.protocol_version
-                && root.asset_state == ctx.accounts.asset_state.key(),
+                && root.asset_entry == ctx.accounts.asset_entry.key(),
             TcapError::InvalidFundingRoot
         );
         (root.current_root, root.sequence)
@@ -240,7 +253,7 @@ pub fn handler(
     claim.version = TCAP_STATE_VERSION_V1;
     claim.protocol_version = ctx.accounts.config.protocol_version;
     claim.config = ctx.accounts.config.key();
-    claim.asset_state = ctx.accounts.asset_state.key();
+    claim.asset_entry = ctx.accounts.asset_entry.key();
     claim.reserve_state = ctx.accounts.reserve_state.key();
     claim.funding_identifier = args.funding_identifier;
     claim.funding_commitment = computed_commitment;
@@ -259,7 +272,7 @@ pub fn handler(
     let root = &mut ctx.accounts.funding_root;
     root.version = TCAP_STATE_VERSION_V1;
     root.protocol_version = ctx.accounts.config.protocol_version;
-    root.asset_state = ctx.accounts.asset_state.key();
+    root.asset_entry = ctx.accounts.asset_entry.key();
     root.previous_root = previous_root;
     root.current_root = current_root;
     root.sequence = next_sequence;
@@ -267,7 +280,7 @@ pub fn handler(
 
     let funding_nonce = &mut ctx.accounts.funding_nonce;
     funding_nonce.version = TCAP_STATE_VERSION_V1;
-    funding_nonce.asset_state = ctx.accounts.asset_state.key();
+    funding_nonce.asset_entry = ctx.accounts.asset_entry.key();
     funding_nonce.depositor = ctx.accounts.depositor.key();
     funding_nonce.next_nonce = next_nonce;
     funding_nonce.last_funding_claim = claim.key();
@@ -277,7 +290,7 @@ pub fn handler(
         version: crate::TCAP_INSTRUCTION_VERSION_V1,
         funding_claim: claim.key(),
         registry: Pubkey::default(),
-        asset_entry: claim.asset_state,
+        asset_entry: claim.asset_entry,
         governance_policy: Pubkey::default(),
         extension_policy: Pubkey::default(),
         reserve_state: claim.reserve_state,

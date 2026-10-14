@@ -15,15 +15,15 @@ import {
 } from "@solana/web3.js";
 import { CreditcoinCranker } from "../../tsn-crosschain/src/creditcoin-cranker.js";
 import {
-  getTsnSettlementDnaPda,
-  tsnExecutePrivatePayoutOnChain,
-} from "../../../sdks/tsn-sdk/legacy/private-settlement";
-import {
-  tsnSubmitEpochFundingTransaction,
   tsnFetchMotherEscrowOnChain,
   getTsnCrankerPda,
-} from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn";
-import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc";
+} from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn.js";
+import {
+  buildTsnRegisterTcapCreditAuthorizationV2Instruction,
+  deriveTinCreditTip,
+  GPRU_TCAP_PROGRAM_ID as TCAP_PROGRAM_ID,
+} from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
+import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
 import {
   getTinsGlobalStatePda,
   getTinV1CreationStagingPda,
@@ -32,7 +32,7 @@ import {
   serializeTinV1CreationChunkParams,
   serializeTinV1CreationFinalizeParams,
   serializeTinV1CreationParams,
-} from "../../../sdks/tsn-sdk/src/tins";
+} from "../../../sdks/tsn-sdk/src/tins.js";
 
 // Read local overrides first, then shared defaults. Inherited process
 // variables keep precedence; RPC errors never select another endpoint.
@@ -51,6 +51,7 @@ type Work = {
     nodeAttestation?: Record<string, unknown> | null;
   } | null;
   authorization?: Record<string, unknown> | null;
+  crankerLease?: { leaseId?: string; expiresAt?: string; version?: number } | null;
 };
 
 const NODE_ATTESTATION_FIELDS = [
@@ -97,7 +98,25 @@ function verifyNodeAttestation(work: Work) {
   for (const [field, value] of Object.entries(expected)) {
     if (attestation[field] !== value) throw new Error(`Node verification receipt context mismatch: ${field}`);
   }
-  const executionPayload = work.verification?.verifiedPayload ?? {};
+  const verifiedPayload = work.verification?.verifiedPayload ?? {};
+  const attestedFields: Record<Work["kind"], readonly string[]> = {
+    AUTHORIZED_FUNDING: [
+      "senderSignedFundingTransaction", "senderFundingMode", "tcapCreditTransition", "recipientTin",
+      "recipientRouteCommitment", "recipientRouteVersion", "tokenMintAddress", "amount", "senderWallet",
+      "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
+    ],
+    SETTLEMENT: ["tcapCreditTransition"],
+    TIN_OPERATION: [
+      "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
+      "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "displayName", "lookupCommitment",
+      "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
+      "routeVersion", "routeNonce", "tcapRouteVersion",
+      "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
+    ],
+  };
+  const executionPayload = Object.fromEntries(
+    attestedFields[work.kind].filter((field) => field in verifiedPayload).map((field) => [field, verifiedPayload[field]]),
+  );
   const executionPayloadCommitment = createHash("sha256").update(stableJson(executionPayload)).digest("hex");
   if (attestation.executionPayloadCommitment !== executionPayloadCommitment) {
     throw new Error("Node verification receipt does not match the Cranker execution payload");
@@ -122,6 +141,36 @@ function verifyNodeAttestation(work: Work) {
 
 function crankerLog(message: string) {
   console.log(`[${new Date().toISOString()}] [tsn-cranker] ${message}`);
+}
+
+function bs58Encode(bytes: Uint8Array): string {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  let value = BigInt(`0x${Buffer.from(bytes).toString("hex")}`);
+  let encoded = "";
+  while (value > 0n) {
+    const remainder = Number(value % 58n);
+    encoded = alphabet[remainder] + encoded;
+    value /= 58n;
+  }
+  for (const byte of bytes) {
+    if (byte !== 0) break;
+    encoded = `1${encoded}`;
+  }
+  return encoded || "1";
+}
+
+async function confirmSignatureViaRpc(connection: Connection, signature: string, label: string, timeoutMs = 90_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const response = await connection.getSignatureStatuses([signature], { searchTransactionHistory: true });
+    const status = response.value[0];
+    if (status?.err) throw new Error(`${label} transaction failed on chain: ${JSON.stringify(status.err)}`);
+    if (status && ["confirmed", "finalized"].includes(String(status.confirmationStatus))) {
+      return status;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+  }
+  throw new Error(`${label} was not confirmed within ${timeoutMs}ms; signature=${signature}`);
 }
 
 const creditcoinCranker = () => {
@@ -269,6 +318,12 @@ const operator = () => {
     Uint8Array.from(JSON.parse(readFileSync(path, "utf8")) as number[]),
   );
 };
+const motherAuthority = () => {
+  const path = process.env.TSN_MOTHER_AUTHORITY_KEYPAIR_PATH?.trim();
+  if (!path) throw new Error("TSN_MOTHER_AUTHORITY_KEYPAIR_PATH is required for TCAP one-time credit submission");
+  const secret = JSON.parse(readFileSync(resolve(path), "utf8")) as number[];
+  return Keypair.fromSecretKey(Uint8Array.from(secret));
+};
 const hash = (value: string) =>
   createHash("sha256").update(value, "utf8").digest();
 const hex32 = (value: unknown, field: string) => {
@@ -363,21 +418,33 @@ async function processAuthorizedFunding(
   const payload = work.verification?.verifiedPayload;
   const encoded = payload?.senderSignedFundingTransaction;
   if (typeof encoded !== "string" || !encoded)
-    throw new Error(
-      "Node did not provide the sender-authorized epoch funding transaction",
-    );
-  crankerLog(`funding start id=${work.id} stateVersion=${work.stateVersion}`);
-  const result = await tsnSubmitEpochFundingTransaction({
-    operator: signer,
-    signedTransactionBase64: encoded,
-    rpcUrl,
-  });
-  crankerLog(`funding confirmed id=${work.id} signature=${result.signature}`);
+    throw new Error("Node did not provide the owner-signed TCAP deposit transaction");
+  if (payload?.senderFundingMode !== "tcap_deposit_v2") throw new Error("Legacy funding modes are retired; expected TCAP deposit V2");
+  const connection = createSolanaConnection(rpcUrl);
+  const wire = Buffer.from(encoded, "base64");
+  if (!wire.length || wire.toString("base64") !== encoded) throw new Error("Owner-signed TCAP deposit is not valid base64 transaction data");
+  const tx = Transaction.from(wire);
+  const ownerSignature = tx.signatures.find((item) => item.signature)?.signature;
+  if (!ownerSignature) throw new Error("Owner-signed TCAP deposit signature is missing");
+  const verifiedWire = tx.serialize({ requireAllSignatures: true, verifySignatures: true });
+  if (!verifiedWire.equals(wire)) throw new Error("Cranker will not alter the owner-signed TCAP deposit transaction");
+  const expectedSignature = bs58Encode(ownerSignature);
+  crankerLog(`TCAP deposit submit start workId=${work.id} transactionBytes=${wire.length} ownerSignature=${expectedSignature}`);
+  let signature: string;
+  try {
+    signature = await connection.sendRawTransaction(wire, { skipPreflight: false, preflightCommitment: "confirmed" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/already processed|already been processed/i.test(message)) throw error;
+    signature = expectedSignature;
+    crankerLog(`TCAP deposit replay detected workId=${work.id} signature=${signature}; checking chain status`);
+  }
+  if (signature !== expectedSignature) throw new Error("RPC returned a different signature for the owner-signed TCAP deposit");
+  await confirmSignatureViaRpc(connection, signature, "TCAP deposit");
+  crankerLog(`TCAP deposit confirmed workId=${work.id} signature=${signature}`);
   await report(signer, work, "CONFIRMED", {
-    signature: result.signature,
-    stage: "EPOCH_TREASURY_FUNDED",
-    reason:
-      "Authorized funding uses only the epoch treasury; no payment account was created.",
+    signature,
+    stage: "TCAP_DEPOSIT_ASSET_V2_CONFIRMED",
   });
 }
 
@@ -408,50 +475,64 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     });
     return;
   }
-  if (!auth || auth.kind !== "TSN_PAYOUT_AUTHORIZATION")
-    throw new Error("Settlement has no Node payout authorization");
-  const expiresAtTs = BigInt(String(auth.expiresAtTs));
-  if (expiresAtTs <= BigInt(Math.floor(Date.now() / 1000)))
-    throw new Error("Payout authorization expired");
-  const leaseId = String(auth.leaseId ?? work.id);
-  const claimSlot = hex32(auth.claimSlot, "claimSlot");
-  const expectedDna = getTsnSettlementDnaPda(claimSlot).toBase58();
-  if (String(auth.settlementDna ?? "") !== expectedDna)
-    throw new Error("Settlement DNA does not match the opaque slot");
-  crankerLog(`Solana settlement start id=${work.id} claimSlot=${String(auth.claimSlot)}`);
-  const result = await tsnExecutePrivatePayoutOnChain({
-    operator: signer,
-    permitSigner: new PublicKey(String(auth.authorizationSigner)),
-    permitSignature: Uint8Array.from(
-      Buffer.from(String(auth.authorizationSignatureBase64), "base64"),
-    ),
-    epochTreasury: new PublicKey(String(auth.epochTreasury)),
-    epochLedger: new PublicKey(String(auth.epochLedger)),
-    claimSlot,
-    settlementCommitment: hex32(
-      auth.settlementCommitment,
-      "settlementCommitment",
-    ),
-    randomNonce: hex32(auth.randomNonce, "randomNonce"),
-    payoutNullifier: hex32(auth.payoutNullifier, "payoutNullifier"),
-    commitmentDigest: hex32(auth.commitmentDigest, "commitmentDigest"),
-    tokenMint: new PublicKey(String(auth.tokenMintAddress)),
-    recipientWallet: new PublicKey(String(auth.recipientWallet)),
-    payoutAmount: BigInt(String(auth.payoutAmountBaseUnits)),
-    claimFeeAmount: BigInt(String(auth.claimFeeAmountBaseUnits ?? "0")),
-    leaseIdHash: hash(leaseId),
-    leaseVersion: BigInt(String(auth.leaseVersion ?? 0)),
-    leaseExpiryTs: BigInt(
-      String(Date.parse(String(auth.leaseExpiresAt)) / 1000),
-    ),
-    expiresAtTs,
-    rpcUrl,
+  if (!auth || auth.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2")
+    throw new Error("Settlement has no verified TCAP GPRU credit authorization");
+  const transition = auth.transition as Record<string, unknown> | undefined;
+  if (!transition) throw new Error("Node TCAP V2 credit transition is missing");
+  if (String(auth.leaseId ?? "") !== (work.crankerLease?.leaseId ?? work.id)
+      || Number(auth.leaseVersion) !== Number(work.crankerLease?.version ?? work.stateVersion)
+      || String(auth.leaseExpiresAt ?? "") !== String(work.crankerLease?.expiresAt ?? "")) {
+    throw new Error("Node TCAP authorization does not match the active Receiver lease");
+  }
+  if (Number(auth.expiresAtTs ?? 0) <= Math.floor(Date.now() / 1000)) throw new Error("TCAP credit authorization expired");
+  const authority = motherAuthority();
+  const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
+  if (!mother?.valid || mother.authority !== authority.publicKey.toBase58()) {
+    throw new Error("Configured Mother authority keypair does not match the on-chain Mother Escrow authority");
+  }
+  const tipRootCommitment = String(transition.tipRootCommitment ?? "");
+  const currentTip = deriveTinCreditTip(tipRootCommitment);
+  const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
+  const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
+  const connection = createSolanaConnection(rpcUrl);
+  const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
+    authority: authority.publicKey,
+    motherEscrow: new PublicKey(mother.address),
+    config: tcapConfig,
+    tipRootCommitment,
+    assetEntry,
+    tip: currentTip,
+    authorizationDigest: String(transition.authorizationDigest ?? ""),
+    validAfterSlot: String(transition.validAfterSlot ?? ""),
+    expiresAtSlot: String(transition.expiresAtSlot ?? ""),
+    previousCommitment: String(transition.previousCommitment ?? ""),
+    newCommitment: String(transition.newCommitment ?? ""),
+    sequence: String(transition.sequence ?? ""),
+    tokenId: Number(transition.tokenId),
+    policyCommitment: String(transition.policyCommitment ?? ""),
+    gpruScopeCommitment: String(transition.gpruScopeCommitment ?? ""),
+    nullifier: String(transition.nullifier ?? ""),
   });
-  crankerLog(`Solana settlement confirmed id=${work.id} signature=${result.signature}`);
+  const signature = await sendCrankerInstruction(connection, signer, instruction, "TCAP_GPRU_TIN_TIP_CREDIT_V2", [authority]);
+  const tip = currentTip;
+  const tipAccount = await connection.getAccountInfo(tip, "confirmed");
+  const tipData = tipAccount?.data;
+  const expectedTipDiscriminator = createHash("sha256").update("account:TCapTinTipV1").digest().subarray(0, 8);
+  if (!tipAccount || !tipAccount.owner.equals(TCAP_PROGRAM_ID) || !tipData
+      || tipData.length !== 116 || !tipData.subarray(0, 8).equals(expectedTipDiscriminator)
+      || !tipData.subarray(10, 42).equals(Buffer.from(String(transition.newCommitment), "hex"))
+      || tipData.readBigUInt64LE(42) !== BigInt(String(transition.sequence))
+      || !tipData.subarray(50, 82).equals(Buffer.from(String(transition.policyCommitment), "hex"))
+      || !tipData.subarray(82, 114).equals(Buffer.from(String(transition.nullifier), "hex"))
+      || tipData[114] !== 0) {
+    throw new Error("Confirmed transaction did not apply the authorized TCAP V2 TIN TIP transition");
+  }
+  crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} sequence=${String(transition.sequence)} tokenId=${String(transition.tokenId)}`);
   await report(signer, work, "CONFIRMED", {
-    signature: result.signature,
-    stage: "SETTLEMENT_SETTLED",
-    claimSlot: String(auth.claimSlot),
+    signature,
+    stage: "TCAP_GPRU_TIN_TIP_CREDIT_V2_CONFIRMED",
+    sequence: String(transition.sequence),
+    authorizationDigest: String(transition.authorizationDigest),
   });
 }
 
@@ -507,23 +588,21 @@ async function sendCrankerInstruction(
   signer: Keypair,
   instructions: TransactionInstruction | TransactionInstruction[],
   label: string,
+  additionalSigners: Keypair[] = [],
 ) {
   const tx = new Transaction().add(...(Array.isArray(instructions) ? instructions : [instructions]));
+  tx.feePayer = signer.publicKey;
   const size = legacyTransactionWireSize(tx, signer.publicKey);
   if (size > 1232) {
     throw new Error(`TSN staging instruction is ${size} bytes, over Solana's 1232-byte packet limit`);
   }
   crankerLog(`tx submit step=${label} bytes=${size}/1232`);
-  const signature = await connection.sendTransaction(tx, [signer], {
+  const signature = await connection.sendTransaction(tx, [signer, ...additionalSigners], {
     skipPreflight: false,
   });
   crankerLog(`tx sent step=${label} signature=${signature}`);
-  try {
-    await connection.confirmTransaction(signature, "confirmed");
-  } catch (error) {
-    crankerLog(`tx confirmation failed step=${label} signature=${signature} error=${error instanceof Error ? error.message : String(error)}`);
-    throw error;
-  }
+  try { await confirmSignatureViaRpc(connection, signature, label); }
+  catch (error) { crankerLog(`tx confirmation failed step=${label} signature=${signature} error=${error instanceof Error ? error.message : String(error)}`); throw error; }
   crankerLog(`tx confirmed step=${label} signature=${signature}`);
   return signature;
 }
@@ -539,7 +618,6 @@ async function submitStagedTinV1Creation(params: {
   identityEnvelope: Buffer;
   recoveryEnvelope: Buffer;
   masterSeed: Buffer;
-  routeEnvelope: Buffer;
   ownerProof: TransactionInstruction;
 }) {
   const {
@@ -553,7 +631,6 @@ async function submitStagedTinV1Creation(params: {
     identityEnvelope,
     recoveryEnvelope,
     masterSeed,
-    routeEnvelope,
     ownerProof,
   } = params;
   const stage = getTinV1CreationStagingPda(owner, intentHash, programId);
@@ -564,12 +641,10 @@ async function submitStagedTinV1Creation(params: {
     encryptedIdentityEnvelopeLength: identityEnvelope.length,
     encryptedTinRecoveryLength: recoveryEnvelope.length,
     encryptedMasterSeedLength: masterSeed.length,
-    encryptedPublicRouteEnvelopeLength: routeEnvelope.length,
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
-    pruConfigurationHash: hex32(payload.pruConfigurationHash, "pruConfigurationHash"),
     routeVersion: BigInt(String(payload.routeVersion)),
     routeNonce: hex32(payload.routeNonce, "routeNonce"),
-    tcapRouteVersion: Number(payload.tcapRouteVersion),
+    tcapRouteVersion: 1,
     tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
     tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
     tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
@@ -595,7 +670,6 @@ async function submitStagedTinV1Creation(params: {
     ["identity", identityEnvelope] as const,
     ["owner_recovery", recoveryEnvelope] as const,
     ["master_seed", masterSeed] as const,
-    ["public_route", routeEnvelope] as const,
   ];
   for (const [kind, blob] of blobs) {
     for (let offset = 0; offset < blob.length; offset += 700) {
@@ -656,16 +730,16 @@ async function processTinOperation(
       "Only verified tin_creation operations are executable by the Cranker",
     );
   }
+  if (Number(payload.tcapRouteVersion) !== 1) {
+    throw new Error("Cranker accepts only the current TIN GPRU route version");
+  }
   const programId = new PublicKey(
     process.env.TINS_PROGRAM_ID ||
       "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
   );
   const owner = new PublicKey(String(payload.ownerPubkey));
-  // TIN V1 keeps the human TIN inside the encrypted identity envelope. The
-  // Node marks this format programAssigned=false; the Cranker uses the
-  // verified lookup commitment and envelopes to create the registry account.
+  // TIN V1 keeps the human TIN inside the encrypted identity envelope.
   if (
-    payload.programAssigned !== false ||
     typeof payload.lookupCommitment !== "string" ||
     !payload.lookupCommitment ||
     typeof payload.encryptedIdentityEnvelope !== "string" ||
@@ -681,7 +755,6 @@ async function processTinOperation(
   const identityEnvelope = base64Bytes(payload.encryptedIdentityEnvelope, "encryptedIdentityEnvelope");
   const recoveryEnvelope = base64Bytes(payload.encryptedTinRecovery, "encryptedTinRecovery");
   const masterSeed = base64Bytes(payload.encryptedMasterSeed, "encryptedMasterSeed");
-  const routeEnvelope = base64Bytes(payload.encryptedPublicRouteEnvelope, "encryptedPublicRouteEnvelope", true);
   const registry = PublicKey.findProgramAddressSync(
     [Buffer.from("tin-v1"), lookupCommitment],
     programId,
@@ -693,11 +766,9 @@ async function processTinOperation(
     encryptedIdentityEnvelope: identityEnvelope,
     encryptedMasterSeed: masterSeed,
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
-    pruConfigurationHash: hex32(payload.pruConfigurationHash, "pruConfigurationHash"),
-    encryptedPublicRouteEnvelope: routeEnvelope,
     routeVersion: BigInt(String(payload.routeVersion)),
     routeNonce: hex32(payload.routeNonce, "routeNonce"),
-    tcapRouteVersion: Number(payload.tcapRouteVersion),
+    tcapRouteVersion: 1,
     tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
     tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
     tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
@@ -706,10 +777,10 @@ async function processTinOperation(
   });
   const connection = createSolanaConnection(rpcUrl);
   const ownerSignature = base64Bytes(payload.ownerSignature, "ownerSignature");
-  const signatureMessage = typeof payload.ownerIntentMessage === "string" && payload.ownerIntentMessage.length > 0
-    ? Buffer.from(payload.ownerIntentMessage, "utf8")
-    : Buffer.from(hex32(payload.ownerIntentHash, "ownerIntentHash"));
-  if (signatureMessage.length === 0) throw new Error("Verified TIN owner approval message is missing");
+  if (typeof payload.ownerIntentMessage !== "string" || payload.ownerIntentMessage.length === 0) {
+    throw new Error("Verified TIN owner approval message is missing");
+  }
+  const signatureMessage = Buffer.from(payload.ownerIntentMessage, "utf8");
   const ownerProof = Ed25519Program.createInstructionWithPublicKey({
     publicKey: owner.toBytes(),
     message: signatureMessage,
@@ -738,7 +809,7 @@ async function processTinOperation(
   const tx = new Transaction().add(ownerProof, tinInstruction);
   const transactionBytes = legacyTransactionWireSize(tx, signer.publicKey);
   crankerLog(
-    `TIN creation start workId=${work.id} registry=${registry.toBase58()} recovery=${getTinV1OwnerRecoveryPda(owner, programId).toBase58()} txBytes=${transactionBytes} path=${transactionBytes > 1232 ? "staged" : "direct"} identityBytes=${identityEnvelope.length} recoveryBytes=${recoveryEnvelope.length} seedBytes=${masterSeed.length} routeBytes=${routeEnvelope.length}`,
+    `TIN creation start workId=${work.id} registry=${registry.toBase58()} recovery=${getTinV1OwnerRecoveryPda(owner, programId).toBase58()} txBytes=${transactionBytes} path=${transactionBytes > 1232 ? "staged" : "direct"} identityBytes=${identityEnvelope.length} recoveryBytes=${recoveryEnvelope.length} seedBytes=${masterSeed.length}`,
   );
   let signature: string;
   let staging: { stage: string; stagingSignatures: string[] } | null = null;
@@ -754,7 +825,6 @@ async function processTinOperation(
       identityEnvelope,
       recoveryEnvelope,
       masterSeed,
-      routeEnvelope,
       ownerProof,
     });
     signature = result.signature;
@@ -811,7 +881,7 @@ async function main() {
       }
       crankerLog(`work leased id=${work.id} kind=${work.kind} stateVersion=${work.stateVersion}`);
       try {
-        if (work.kind !== "SETTLEMENT") verifyNodeAttestation(work);
+        verifyNodeAttestation(work);
         if (work.kind === "AUTHORIZED_FUNDING")
           await processAuthorizedFunding(signer, work, rpcUrl);
         else if (work.kind === "TIN_OPERATION")

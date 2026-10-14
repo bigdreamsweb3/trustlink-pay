@@ -13,7 +13,7 @@ pub struct PayoutTcapExitV1<'info> {
     #[account(mut)] pub reserve_state: Account<'info,TcapReserveStateV1>,
     #[account(seeds=[crate::authority::TCAP_ASSET_ENTRY_SEED,asset_entry.registry.as_ref(),asset_entry.asset.token_program.as_ref(),asset_entry.asset.mint.as_ref()],bump=asset_entry.bump)] pub asset_entry: Account<'info,TcapAssetEntryV1>,
     #[account(mut, constraint=!permit.consumed @ TcapError::NullifierAlreadyConsumed)] pub permit: Account<'info,TcapExitPermitV1>,
-    #[account(seeds=[TCAP_RESERVE_AUTHORITY_SEED,reserve_state.asset_state.as_ref()],bump=reserve_state.reserve_authority_bump)] pub reserve_authority: UncheckedAccount<'info>,
+    #[account(seeds=[TCAP_RESERVE_AUTHORITY_SEED,asset_entry.key().as_ref()],bump=reserve_state.reserve_authority_bump, constraint=reserve_state.asset_entry==asset_entry.key() @ TcapError::InvalidReserve)] pub reserve_authority: UncheckedAccount<'info>,
     #[account(mut,address=asset_entry.future_vault @ TcapError::ReserveVaultUnavailable)] pub vault: InterfaceAccount<'info,TokenAccount>,
     #[account(mut, constraint=destination.mint==asset_entry.asset.mint @ TcapError::WrongAsset)] pub destination: InterfaceAccount<'info,TokenAccount>,
     #[account(address=asset_entry.asset.mint @ TcapError::WrongAsset)] pub mint: InterfaceAccount<'info,Mint>,
@@ -26,7 +26,7 @@ pub fn handler(ctx: Context<PayoutTcapExitV1>, args: PayoutTcapExitArgsV1) -> Re
     require!(ctx.accounts.permit.mint == ctx.accounts.asset_entry.asset.mint, TcapError::WrongAsset);
     require!(ctx.accounts.vault.amount>=ctx.accounts.permit.amount,TcapError::InvalidReserveLiability);
     let amount=ctx.accounts.permit.amount; let decimals=ctx.accounts.mint.decimals;
-    token_interface::transfer_checked(CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(),TransferChecked{from:ctx.accounts.vault.to_account_info(),mint:ctx.accounts.mint.to_account_info(),to:ctx.accounts.destination.to_account_info(),authority:ctx.accounts.reserve_authority.to_account_info()},&[&[TCAP_RESERVE_AUTHORITY_SEED,ctx.accounts.reserve_state.asset_state.as_ref(),&[ctx.accounts.reserve_state.reserve_authority_bump]]]),amount,decimals)?;
+    token_interface::transfer_checked(CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(),TransferChecked{from:ctx.accounts.vault.to_account_info(),mint:ctx.accounts.mint.to_account_info(),to:ctx.accounts.destination.to_account_info(),authority:ctx.accounts.reserve_authority.to_account_info()},&[&[TCAP_RESERVE_AUTHORITY_SEED,ctx.accounts.asset_entry.key().as_ref(),&[ctx.accounts.reserve_state.reserve_authority_bump]]]),amount,decimals)?;
     ctx.accounts.reserve_state.actual_assets=ctx.accounts.vault.amount.checked_sub(amount).ok_or(TcapError::ArithmeticOverflow)?;
     ctx.accounts.permit.consumed=true; Ok(())
 }

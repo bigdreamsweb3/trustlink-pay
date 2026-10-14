@@ -247,7 +247,7 @@ Current Devnet program IDs:
 | Program                                 | Address                                       |
 | --------------------------------------- | --------------------------------------------- |
 | TSN / `trustlink_escrow`                | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TCAP / `tcap`                           | `TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x` |
+| TCAP / `tcap`                           | `tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF` |
 | TIP / Transfer Identity / TIN registrar | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 ## Repository map

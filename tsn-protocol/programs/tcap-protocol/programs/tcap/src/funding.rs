@@ -154,7 +154,7 @@ pub fn funding_domain_separator_v3(
 pub fn depositor_authorization_commitment_v3(
     protocol_version: u16,
     depositor: &Pubkey,
-    asset_state: &Pubkey,
+    asset_entry: &Pubkey,
     funding_identifier: &[u8; 32],
     authorization_nonce: u64,
     expires_at_slot: u64,
@@ -164,7 +164,7 @@ pub fn depositor_authorization_commitment_v3(
         crate::ID.as_ref(),
         &protocol_version.to_le_bytes(),
         depositor.as_ref(),
-        asset_state.as_ref(),
+        asset_entry.as_ref(),
         funding_identifier,
         &authorization_nonce.to_le_bytes(),
         &expires_at_slot.to_le_bytes(),

@@ -10,7 +10,7 @@ use crate::tsn::{
     state::{AcceptedIntentStatus, AcceptedIntentV1, EpochCommitmentStateV1, MotherEscrow},
 };
 
-pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct RegisterTcapCreditAuthorizationArgs {

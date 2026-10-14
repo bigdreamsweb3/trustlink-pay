@@ -43,13 +43,13 @@ infrastructure.
 
 The canonical documentation is in the repository root:
 
-- [`../docs/protocol-architecture.md`](../docs/protocol-architecture.md)
-- [`../docs/identity-and-tin.md`](../docs/identity-and-tin.md)
-- [`../docs/CURRENT-ARCHITECTURE.md`](../docs/CURRENT-ARCHITECTURE.md)
-- [`../docs/execution-plan.md`](../docs/execution-plan.md)
-- [`../docs/network-and-runtime.md`](../docs/network-and-runtime.md)
-- [`../docs/security-model.md`](../docs/security-model.md)
-- [`../docs/operations-and-testing.md`](../docs/operations-and-testing.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/protocol-architecture.md`](../docs/protocol-architecture.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/identity-and-tin.md`](../docs/identity-and-tin.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/CURRENT-ARCHITECTURE.md`](../docs/CURRENT-ARCHITECTURE.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/execution-plan.md`](../docs/execution-plan.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/network-and-runtime.md`](../docs/network-and-runtime.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/security-model.md`](../docs/security-model.md)
+- [`https://github.com/bigdreamsweb3/trustlink-pay/docs/operations-and-testing.md`](../docs/operations-and-testing.md)
 
 TCap is the live private balance path for credit-only tip transitions and
 owner-encrypted snapshots. Confidential debits/exits are not implemented.

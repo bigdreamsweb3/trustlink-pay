@@ -17,7 +17,7 @@ use crate::{
     },
     processor::create_tin_v1,
     state::{validate_tcap_route, TinV1CreationStaging},
-    utils::{assert_pda, assert_program_owned, load_borsh, store_borsh},
+    utils::{assert_pda, assert_program_owned, load_borsh_with_zero_padding, store_borsh},
 };
 
 pub fn stage(
@@ -35,7 +35,6 @@ pub fn stage(
     let identity_len = params.encrypted_identity_envelope_len as usize;
     let recovery_len = params.encrypted_tin_recovery_len as usize;
     let seed_len = params.encrypted_master_seed_len as usize;
-    let route_len = params.encrypted_public_route_envelope_len as usize;
     if params.lookup_commitment == [0; 32]
         || params.intent_hash == [0; 32]
         || params.route_version == 0
@@ -45,12 +44,9 @@ pub fn stage(
         || seed_len == 0
         || identity_len > TinV1CreationStaging::MAX_BLOB_LEN
         || seed_len > TinV1CreationStaging::MAX_BLOB_LEN
-        || route_len > TinV1CreationStaging::MAX_BLOB_LEN
-        || identity_len + recovery_len + seed_len + route_len > TinV1CreationStaging::MAX_BLOB_LEN
+        || identity_len + recovery_len + seed_len > TinV1CreationStaging::MAX_BLOB_LEN
         || !validate_tcap_route(
             params.tcap_route_version,
-            &params.pru_configuration_hash,
-            &[],
             &params.tcap_relationship_commitment,
             &params.tcap_relationship_reference,
             &params.tcap_policy_commitment,
@@ -67,7 +63,7 @@ pub fn stage(
     assert_pda(staging, &expected_staging)?;
     if !staging.data_is_empty() {
         assert_program_owned(staging, program_id)?;
-        let existing: TinV1CreationStaging = load_borsh(staging)?;
+        let existing: TinV1CreationStaging = load_borsh_with_zero_padding(staging)?;
         if existing.version != TinV1CreationStaging::VERSION
             || existing.bump != bump
             || existing.owner_pubkey != params.owner_pubkey
@@ -76,9 +72,7 @@ pub fn stage(
             || existing.encrypted_identity_envelope.len() != identity_len
             || existing.encrypted_tin_recovery.len() != recovery_len
             || existing.encrypted_master_seed.len() != seed_len
-            || existing.encrypted_public_route_envelope.len() != route_len
             || existing.encrypted_metadata_hash != params.encrypted_metadata_hash
-            || existing.pru_configuration_hash != params.pru_configuration_hash
             || existing.route_version != params.route_version
             || existing.route_nonce != params.route_nonce
             || existing.tcap_route_version != params.tcap_route_version
@@ -105,9 +99,6 @@ pub fn stage(
         encrypted_master_seed: vec![0; seed_len],
         master_seed_written: 0,
         encrypted_metadata_hash: params.encrypted_metadata_hash,
-        pru_configuration_hash: params.pru_configuration_hash,
-        encrypted_public_route_envelope: vec![0; route_len],
-        route_written: 0,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
         tcap_route_version: params.tcap_route_version,
@@ -121,7 +112,7 @@ pub fn stage(
         staging,
         system,
         program_id,
-        TinV1CreationStaging::space(identity_len, recovery_len, seed_len, route_len),
+        TinV1CreationStaging::space(identity_len, recovery_len, seed_len),
         0,
         &[
             crate::seeds::TIN_V1_CREATE_STAGE,
@@ -145,7 +136,7 @@ pub fn append_chunk(
         return Err(ProgramError::InvalidArgument);
     }
     assert_program_owned(staging, program_id)?;
-    let mut state: TinV1CreationStaging = load_borsh(staging)?;
+    let mut state: TinV1CreationStaging = load_borsh_with_zero_padding(staging)?;
     if state.version != TinV1CreationStaging::VERSION
         || state.expiry_ts < Clock::get()?.unix_timestamp
     {
@@ -162,7 +153,6 @@ pub fn append_chunk(
     let (target, written) = match params.kind {
         0 => (&mut state.encrypted_identity_envelope, &mut state.identity_written),
         1 => (&mut state.encrypted_master_seed, &mut state.master_seed_written),
-        2 => (&mut state.encrypted_public_route_envelope, &mut state.route_written),
         3 => (&mut state.encrypted_tin_recovery, &mut state.recovery_written),
         _ => return Err(ProgramError::InvalidArgument),
     };
@@ -201,14 +191,13 @@ pub fn finalize(
         return Err(ProgramError::MissingRequiredSignature);
     }
     assert_program_owned(staging, program_id)?;
-    let state: TinV1CreationStaging = load_borsh(staging)?;
+    let state: TinV1CreationStaging = load_borsh_with_zero_padding(staging)?;
     if state.version != TinV1CreationStaging::VERSION
         || state.intent_hash != params.intent_hash
         || state.expiry_ts < Clock::get()?.unix_timestamp
         || state.identity_written as usize != state.encrypted_identity_envelope.len()
         || state.recovery_written as usize != state.encrypted_tin_recovery.len()
         || state.master_seed_written as usize != state.encrypted_master_seed.len()
-        || state.route_written as usize != state.encrypted_public_route_envelope.len()
     {
         return Err(Error::InvalidInstruction.into());
     }
@@ -227,8 +216,6 @@ pub fn finalize(
         encrypted_identity_envelope: state.encrypted_identity_envelope,
         encrypted_master_seed: state.encrypted_master_seed,
         encrypted_metadata_hash: state.encrypted_metadata_hash,
-        pru_configuration_hash: state.pru_configuration_hash,
-        encrypted_public_route_envelope: state.encrypted_public_route_envelope,
         route_version: state.route_version,
         route_nonce: state.route_nonce,
         tcap_route_version: state.tcap_route_version,
@@ -263,7 +250,7 @@ pub fn close_expired(
         return Err(ProgramError::MissingRequiredSignature);
     }
     assert_program_owned(staging, program_id)?;
-    let state: TinV1CreationStaging = load_borsh(staging)?;
+    let state: TinV1CreationStaging = load_borsh_with_zero_padding(staging)?;
     if state.intent_hash != params.intent_hash || state.expiry_ts >= Clock::get()?.unix_timestamp {
         return Err(Error::InvalidInstruction.into());
     }

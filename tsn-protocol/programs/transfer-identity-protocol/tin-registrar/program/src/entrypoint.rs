@@ -32,16 +32,10 @@ impl PrintProgramError for Error {
         match self {
             Error::InvalidInstruction => msg!("Error: invalid instruction"),
             Error::Overflow => msg!("Error: overflow"),
-            Error::InvalidName => msg!("Error: invalid identity name"),
-            Error::NameTooLong => msg!("Error: identity name too long"),
             Error::GlobalStateAlreadyInitialized => msg!("Error: global state already initialized"),
             Error::RegistryAlreadyInitialized => msg!("Error: registry already initialized"),
             Error::InvalidPda => msg!("Error: invalid PDA"),
             Error::TinExhausted => msg!("Error: TIN counter exhausted"),
-            Error::InvalidTin => msg!("Error: invalid TIN"),
-            Error::InvalidAmount => msg!("Error: invalid amount"),
-            Error::EscrowAlreadyClaimed => msg!("Error: escrow already claimed"),
-            Error::UnauthorizedClaimant => msg!("Error: unauthorized claimant"),
             Error::InvalidAccountOwner => msg!("Error: invalid account owner"),
             Error::SignatureVerificationFailed => msg!("Error: signature verification failed"),
         }

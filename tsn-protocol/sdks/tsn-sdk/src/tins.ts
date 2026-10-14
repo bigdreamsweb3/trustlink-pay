@@ -1,4 +1,5 @@
 import { Buffer } from "buffer";
+import { deriveTcapTipRootCommitment, resolveTinGpruCommitment } from "./gpru.js";
 import { sha256 } from "@noble/hashes/sha2";
 import {
   Connection,
@@ -8,23 +9,17 @@ import {
   SystemProgram,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { buildTinUpgradeMessage } from "./canonical-message.js";
-import { decodeTinMasterSeedEnvelope } from "./tin-envelopes.js";
 
 export const DEFAULT_TIP_PROGRAM_ID =
   "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT";
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
 
 const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
-const TINS_IDENTITY_SEED = Buffer.from("identity");
-const TINS_REGISTRY_SEED = Buffer.from("registry");
-const TINS_PLATFORM_REGISTRY_SEED = Buffer.from("platform-registry");
-const TINS_MUTATION_STAGE_SEED = Buffer.from("tin-mutation-stage");
 const TINS_V1_CREATE_STAGE_SEED = Buffer.from("tin-v1-create-stage");
 const TINS_V1_OWNER_RECOVERY_SEED = Buffer.from("tin-v1-owner-recovery");
-const TIN_V1_RECOVERY_V2_MAGIC = Buffer.from("TSNTIN02", "ascii");
-const TIN_V1_RECOVERY_V3_MAGIC = Buffer.from("TSNTIN03", "ascii");
 const TIN_V1_RECOVERY_V4_MAGIC = Buffer.from("TSNTIN04", "ascii");
+const TIN_V1_RECOVERY_V3_MAGIC = Buffer.from("TSNTIN03", "ascii");
+const TIN_V1_RECOVERY_V2_MAGIC = Buffer.from("TSNTIN02", "ascii");
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -37,8 +32,6 @@ const ZERO_HASH_32 = Buffer.alloc(32);
  */
 export function validateTinTcapRelationship(params: {
   tcapRouteVersion: number;
-  pruConfigurationHash?: Uint8Array | null;
-  encryptedPublicRouteEnvelope?: Uint8Array | null;
   tcapRelationshipCommitment?: Uint8Array | null;
   tcapRelationshipReference?: Uint8Array | null;
   tcapPolicyCommitment?: Uint8Array | null;
@@ -47,120 +40,47 @@ export function validateTinTcapRelationship(params: {
     !value || value.every((byte) => byte === 0);
   const nonZero32 = (value?: Uint8Array | null) =>
     Boolean(value && value.length === 32 && !zero(value));
-  if (params.tcapRouteVersion === 0) {
-    return (
-      zero(params.tcapRelationshipCommitment) &&
-      zero(params.tcapRelationshipReference) &&
-      zero(params.tcapPolicyCommitment)
-    );
-  }
   if (params.tcapRouteVersion !== 1) return false;
   return (
-    zero(params.pruConfigurationHash) &&
-    (!params.encryptedPublicRouteEnvelope ||
-      params.encryptedPublicRouteEnvelope.length === 0) &&
     nonZero32(params.tcapRelationshipCommitment) &&
     nonZero32(params.tcapRelationshipReference) &&
-    nonZero32(params.tcapPolicyCommitment)
+    nonZero32(params.tcapPolicyCommitment) &&
+    resolveTinGpruCommitment(
+      params.tcapRelationshipCommitment!,
+      params.tcapRelationshipReference!,
+    ) !== null
   );
 }
-/**
- * Envelope-format validation is deliberately separate from provider choice.
- * `tsn-device-envelope-v1` is the provider currently written by the shipped
- * upgrade flow; treating that provider name as a legacy marker made every
- * successfully upgraded TIN appear locked again in the resolver.
- */
-function hasReadableTinMasterSeedEnvelope(encryptedMasterSeed: Uint8Array) {
-  try {
-    const envelope = decodeTinMasterSeedEnvelope(encryptedMasterSeed);
-    return Boolean(envelope.provider.trim());
-  } catch {
-    // An opaque or malformed seed envelope cannot be treated as current.
-    return false;
-  }
-}
-
-export type TinSocialIdentityType =
-  | "whatsapp"
-  | "x"
-  | "email"
-  | "telegram"
-  | "discord"
-  | string;
-
-export type TinEncryptedSocialIdentity = {
-  identityType: TinSocialIdentityType;
-  label: string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  metadata: string;
-  verifiedBy: PublicKey | null;
-  proofHash: Uint8Array;
-  linkedAt: bigint;
-};
-
-export type TinEncryptedSensitiveField = {
-  fieldType: "kyc_document_hash" | string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  metadata: string;
-  proofHash: Uint8Array;
-  linkedAt: bigint;
-};
-
-export type TinIdentityRegistry = {
-  version: number;
-  bump: number;
-  status: number;
-  tin: bigint;
-  authority: PublicKey;
-  masterPrivacy: PublicKey;
-  lastEscrowId: bigint;
-  createdAt: bigint;
-  name: string;
-  socialIdentities: TinEncryptedSocialIdentity[];
-  sensitiveFields: TinEncryptedSensitiveField[];
-};
-
 export type TinResolvedIdentity = {
   tin: string;
   name: string;
   authority: PublicKey;
   ownerPubkeyHash: string;
   registry: PublicKey;
-  accountKind: "registry" | "legacy";
-  upgradeRequired: boolean;
-  upgradeReason: string | null;
-  settlementAuthorityVerified: boolean;
+  settlementAuthorityVerified: true;
   status: number;
   createdAt: string;
-  socialIdentities: Array<{
-    type: TinSocialIdentityType;
-    label: string;
-    value: string;
-    metadata: unknown;
-    verifiedBy: string | null;
-    linkedAt: string;
-  }>;
-  sensitiveFields: Array<{
-    type: string;
-    value: string;
-    metadata: unknown;
-    linkedAt: string;
-  }>;
-  encryptedSensitiveFields: TinEncryptedSensitiveField[];
-  pruConfigurationHash: string | null;
-  routeVersion: number | null;
-  tcapRouteVersion: number | null;
-  tcapRelationshipCommitment: string | null;
-  tcapRelationshipReference: string | null;
-  tcapPolicyCommitment: string | null;
+  tcapRouteVersion: 1;
+  tcapRelationshipCommitment: string;
+  tcapRelationshipReference: string;
+  gpruCommitment: string;
+  tcapPolicyCommitment: string;
+  encryptedMasterSeed: Uint8Array;
 };
 
 export function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
   return programId instanceof PublicKey
     ? programId
     : new PublicKey(programId ?? DEFAULT_TIP_PROGRAM_ID);
+}
+
+function publishedGpruCommitment(
+  commitment: Uint8Array,
+  reference: Uint8Array,
+): string {
+  const gpruCommitment = resolveTinGpruCommitment(commitment, reference);
+  if (!gpruCommitment) throw new Error("TIN GPRU commitment does not match the blinded TIP seed");
+  return bytesToHex(gpruCommitment);
 }
 
 const BASE58_ALPHABET =
@@ -194,17 +114,6 @@ function encodeBase58(value: Uint8Array) {
   );
 }
 
-export function getTinsIdentitySeed(walletPubkey: PublicKey): Buffer {
-  return Buffer.from(
-    sha256(
-      Buffer.concat([
-        walletPubkey.toBuffer(),
-        Buffer.from(TINS_PROGRAM_SALT, "utf8"),
-      ]),
-    ),
-  );
-}
-
 export function getTinsGlobalStatePda(
   programId?: PublicKey | string | null,
 ): PublicKey {
@@ -214,50 +123,110 @@ export function getTinsGlobalStatePda(
   )[0];
 }
 
-export function getTinsIdentityPda(params: {
-  walletPubkey: PublicKey;
-  programId?: PublicKey | string | null;
-}): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [TINS_IDENTITY_SEED, getTinsIdentitySeed(params.walletPubkey)],
-    getTinsProgramPublicKey(params.programId),
-  )[0];
-}
-
-export function getTinsRegistryPda(params: {
-  tin: bigint | number | string;
-  programId?: PublicKey | string | null;
-}): PublicKey {
-  const tinBuffer = Buffer.alloc(8);
-  tinBuffer.writeBigUInt64LE(BigInt(params.tin));
-  return PublicKey.findProgramAddressSync(
-    [TINS_REGISTRY_SEED, tinBuffer],
-    getTinsProgramPublicKey(params.programId),
-  )[0];
-}
-
-export function getTinsPlatformRegistryPda(
+/** PDA that holds one in-progress, owner-authorized staged TIN creation. */
+export function getTinV1CreationStagingPda(
+  owner: PublicKey,
+  intentHash: Uint8Array,
   programId?: PublicKey | string | null,
 ): PublicKey {
   return PublicKey.findProgramAddressSync(
-    [TINS_PLATFORM_REGISTRY_SEED],
+    [TINS_V1_CREATE_STAGE_SEED, owner.toBuffer(), normalizeHash32(intentHash, "intentHash")],
     getTinsProgramPublicKey(programId),
   )[0];
 }
 
-export function getTinsMutationStagingPda(params: {
-  ownerPubkey: PublicKey;
-  intentHash: Buffer | Uint8Array;
-  programId?: PublicKey | string | null;
-}) {
+/** Owner-indexed locator used only for wallet-authorized TIN recovery. */
+export function getTinV1OwnerRecoveryPda(
+  owner: PublicKey,
+  programId?: PublicKey | string | null,
+): PublicKey {
   return PublicKey.findProgramAddressSync(
-    [
-      TINS_MUTATION_STAGE_SEED,
-      params.ownerPubkey.toBuffer(),
-      requireHash32(params.intentHash, "intentHash"),
-    ],
-    getTinsProgramPublicKey(params.programId),
+    [TINS_V1_OWNER_RECOVERY_SEED, owner.toBuffer()],
+    getTinsProgramPublicKey(programId),
   )[0];
+}
+
+/** Read the encrypted owner recovery envelope from its owner-indexed TIP PDA.
+ * The TIN remains encrypted; the wallet signature used to decrypt it stays on
+ * the owner's device. */
+export async function getTinV1OwnerRecoveryEnvelope(params: {
+  connection: Connection;
+  ownerPubkey: PublicKey | string;
+  programId?: PublicKey | string | null;
+}): Promise<Uint8Array | null> {
+  const ownerPubkey = params.ownerPubkey instanceof PublicKey
+    ? params.ownerPubkey
+    : new PublicKey(params.ownerPubkey);
+  const programId = getTinsProgramPublicKey(params.programId);
+  const [recoveryPda, expectedBump] = PublicKey.findProgramAddressSync(
+    [TINS_V1_OWNER_RECOVERY_SEED, ownerPubkey.toBuffer()],
+    programId,
+  );
+  const account = await params.connection.getAccountInfo(recoveryPda, "confirmed");
+  if (!account) return null;
+  if (!account.owner.equals(programId)) {
+    throw new Error("TIN_OWNER_RECOVERY_ACCOUNT_PROGRAM_MISMATCH");
+  }
+
+  const data = Buffer.from(account.data);
+  const headerLength = 1 + 1 + 32 + 4;
+  if (data.length < headerLength) {
+    throw new Error("TIN_OWNER_RECOVERY_ACCOUNT_MALFORMED");
+  }
+  const version = data.readUInt8(0);
+  const bump = data.readUInt8(1);
+  const storedOwner = data.subarray(2, 34);
+  const envelopeLength = data.readUInt32LE(34);
+  if (version !== 1 || bump !== expectedBump || !storedOwner.equals(ownerPubkey.toBuffer())) {
+    throw new Error("TIN_OWNER_RECOVERY_ACCOUNT_BINDING_MISMATCH");
+  }
+  if (envelopeLength !== data.length - headerLength) {
+    throw new Error("TIN_OWNER_RECOVERY_ACCOUNT_MALFORMED");
+  }
+  const envelope = new Uint8Array(data.subarray(headerLength));
+  // Validate the supported envelope framing before returning it to the caller.
+  getTinV1OwnerRecoveryMessageForEnvelope(envelope, ownerPubkey, programId);
+  return envelope;
+}
+
+/** Canonical wallet-signature message used locally to derive the key for the
+ * encrypted TIN recovery record. This signature does not authorize a
+ * transaction. */
+export function buildTinV1OwnerRecoveryMessage(
+  owner: PublicKey | string,
+  programId?: PublicKey | string | null,
+): Buffer {
+  const ownerPubkey = owner instanceof PublicKey ? owner : new PublicKey(owner);
+  const tinsProgram = getTinsProgramPublicKey(programId);
+  return Buffer.from([
+    "TrustLink TIN recovery authorization",
+    "Purpose: Recover the encrypted TIN associated with this wallet.",
+    "",
+    `Wallet: ${ownerPubkey.toBase58()}`,
+    `TIN program: ${tinsProgram.toBase58()}`,
+    "",
+    "This signature is used locally to decrypt the recovery record.",
+    "It does not authorize a transaction.",
+  ].join("\n"), "utf8");
+}
+
+/** Return the same stable message that was signed when the recovery envelope
+ * was created. The envelope is checked for a supported TIN V1 format first. */
+export function getTinV1OwnerRecoveryMessageForEnvelope(
+  encryptedEnvelope: Buffer | Uint8Array,
+  owner: PublicKey | string,
+  programId?: PublicKey | string | null,
+): Buffer {
+  const envelope = Buffer.from(encryptedEnvelope);
+  const supportedMagic = [
+    TIN_V1_RECOVERY_V4_MAGIC,
+    TIN_V1_RECOVERY_V3_MAGIC,
+    TIN_V1_RECOVERY_V2_MAGIC,
+  ].find((magic) => envelope.subarray(0, magic.length).equals(magic));
+  if (!supportedMagic || envelope.length < supportedMagic.length + 12 + 16) {
+    throw new Error("TIN_OWNER_RECOVERY_ENVELOPE_UNSUPPORTED");
+  }
+  return buildTinV1OwnerRecoveryMessage(owner, programId);
 }
 
 function appendU8(parts: Buffer[], value: number) {
@@ -269,12 +238,6 @@ function appendU8(parts: Buffer[], value: number) {
 function appendU32(parts: Buffer[], value: number) {
   const buffer = Buffer.alloc(4);
   buffer.writeUInt32LE(value);
-  parts.push(buffer);
-}
-
-function appendString(parts: Buffer[], value: string) {
-  const buffer = Buffer.from(value, "utf8");
-  appendU32(parts, buffer.length);
   parts.push(buffer);
 }
 
@@ -321,166 +284,6 @@ function requireHash32(
 
 function bytesToHex(value: Buffer | Uint8Array) {
   return Buffer.from(value).toString("hex");
-}
-
-function resolveEncryptedMasterSeed(params: {
-  encryptedMasterSeed?: Buffer | Uint8Array;
-}) {
-  const value = params.encryptedMasterSeed;
-  if (!value) {
-    throw new Error(
-      "encryptedMasterSeed is required for TIP registry mutation serialization",
-    );
-  }
-  return Buffer.from(value);
-}
-
-export function createTinOwnerIntentMessage(params: {
-  purpose: "create" | "update";
-  ownerPubkey: PublicKey;
-  tin: bigint | number | string;
-  displayName: string;
-  lookupCommitment?: Buffer | Uint8Array;
-  encryptedIdentityEnvelope?: Buffer | Uint8Array;
-  phoneNumber: string;
-  nonce: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-}) {
-  if (params.purpose !== "update") {
-    throw new Error(
-      "TIN creation owner intent must use the TSN mempool TIN creation builder",
-    );
-  }
-  return buildTinUpgradeMessage({
-    tin: String(params.tin),
-    displayName: params.displayName,
-    nonce: bytesToHex(requireHash32(params.nonce, "nonce")),
-    expires: new Date(Number(params.expiryTs) * 1000).toISOString(),
-  });
-}
-
-export function createTinOwnerIntentHash(params: {
-  purpose: "create" | "update";
-  ownerPubkey: PublicKey;
-  tin?: bigint | number | string;
-  displayName: string;
-  lookupCommitment?: Buffer | Uint8Array;
-  encryptedIdentityEnvelope?: Buffer | Uint8Array;
-  phoneNumber?: string;
-  encryptedMasterSeed?: Buffer | Uint8Array;
-  encryptedMetadataHash?: Buffer | Uint8Array;
-  pruConfigurationHash?: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-  routeVersion?: bigint | number;
-  routeNonce?: Buffer | Uint8Array;
-  nonce: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-}): Buffer {
-  const expiry = Buffer.alloc(8);
-  expiry.writeBigInt64LE(BigInt(params.expiryTs));
-
-  const encryptedMasterSeed = params.encryptedMasterSeed;
-  if (!encryptedMasterSeed) {
-    if (params.tin == null)
-      throw new Error("tin is required for TIP owner intent V2 hashing");
-    if (!params.phoneNumber)
-      throw new Error(
-        "phoneNumber is required for TIP owner intent V2 hashing",
-      );
-    return Buffer.from(
-      sha256(
-        TEXT_ENCODER.encode(
-          createTinOwnerIntentMessage({
-            purpose: params.purpose,
-            ownerPubkey: params.ownerPubkey,
-            tin: params.tin,
-            displayName: params.displayName,
-            phoneNumber: params.phoneNumber,
-            nonce: params.nonce,
-            expiryTs: params.expiryTs,
-          }),
-        ),
-      ),
-    );
-  }
-
-  if (params.purpose === "create") {
-    if (!params.lookupCommitment || !params.encryptedIdentityEnvelope)
-      throw new Error(
-        "lookupCommitment and encryptedIdentityEnvelope are required for TIN creation",
-      );
-    const identity = Buffer.from(params.encryptedIdentityEnvelope);
-    const identityLength = Buffer.alloc(4);
-    identityLength.writeUInt32LE(identity.length);
-    const seed = Buffer.from(encryptedMasterSeed);
-    const seedLength = Buffer.alloc(4);
-    seedLength.writeUInt32LE(seed.length);
-    const route = Buffer.from(
-      params.encryptedPublicRouteEnvelope ??
-        (() => {
-          throw new Error("encryptedPublicRouteEnvelope is required");
-        })(),
-    );
-    const routeLength = Buffer.alloc(4);
-    routeLength.writeUInt32LE(route.length);
-    const routeVersion = Buffer.alloc(8);
-    routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
-    return Buffer.from(
-      sha256(
-        Buffer.concat([
-          Buffer.from("TSN_TIN_V1_CREATE", "utf8"),
-          params.ownerPubkey.toBuffer(),
-          normalizeHash32(params.lookupCommitment, "lookupCommitment"),
-          identityLength,
-          identity,
-          seedLength,
-          seed,
-          normalizeHash32(
-            params.encryptedMetadataHash,
-            "encryptedMetadataHash",
-          ),
-          normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-          routeLength,
-          route,
-          routeVersion,
-          requireHash32(params.routeNonce, "routeNonce"),
-          Buffer.from([0]),
-          Buffer.alloc(32),
-          Buffer.alloc(32),
-          Buffer.alloc(32),
-          expiry,
-        ]),
-      ),
-    );
-  }
-  return Buffer.from(
-    sha256(
-      Buffer.concat([
-        Buffer.from(`TINS_${params.purpose.toUpperCase()}_INTENT_V1`, "utf8"),
-        params.ownerPubkey.toBuffer(),
-        Buffer.from(params.displayName, "utf8"),
-        Buffer.from(encryptedMasterSeed),
-        normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-        normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-        Buffer.from(
-          params.encryptedPublicRouteEnvelope ??
-            (() => {
-              throw new Error("encryptedPublicRouteEnvelope is required");
-            })(),
-        ),
-        (() => {
-          const routeVersion = Buffer.alloc(8);
-          routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
-          if (routeVersion.equals(Buffer.alloc(8)))
-            throw new Error("routeVersion must be positive");
-          return routeVersion;
-        })(),
-        requireHash32(params.routeNonce, "routeNonce"),
-        requireHash32(params.nonce, "nonce"),
-        expiry,
-      ]),
-    ),
-  );
 }
 
 function appendU64(parts: Buffer[], value: bigint | number) {
@@ -544,127 +347,6 @@ export function createOwnerIntentSignatureInstruction(params: {
   });
 }
 
-export function serializeTinCreationRegistryParams(params: {
-  ownerPubkey: PublicKey;
-  displayName: string;
-  tin?: bigint | number | string;
-  encryptedIdentityEnvelope?: Buffer | Uint8Array;
-  encryptedMasterSeed?: Buffer | Uint8Array;
-  encryptedMetadataHash?: Buffer | Uint8Array;
-  pruConfigurationHash?: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-  routeVersion?: bigint | number;
-  routeNonce?: Buffer | Uint8Array;
-  tcapRouteVersion?: number;
-  tcapRelationshipCommitment?: Buffer | Uint8Array;
-  tcapRelationshipReference?: Buffer | Uint8Array;
-  tcapPolicyCommitment?: Buffer | Uint8Array;
-  nonce?: Buffer | Uint8Array;
-  intentHash: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-}) {
-  if (params.tin != null || params.encryptedIdentityEnvelope) {
-    if (params.tin == null || !params.encryptedIdentityEnvelope) {
-      throw new Error(
-        "Private TIN creation requires tin and encryptedIdentityEnvelope",
-      );
-    }
-    return serializePrivateTinCreationParams({
-      ...params,
-      tin: params.tin,
-      encryptedIdentityEnvelope: params.encryptedIdentityEnvelope,
-    });
-  }
-  return serializeTinRegistryMutationParams(12, params);
-}
-
-function serializePrivateTinCreationParams(params: {
-  ownerPubkey: PublicKey;
-  tin: bigint | number | string;
-  encryptedIdentityEnvelope: Buffer | Uint8Array;
-  encryptedMasterSeed?: Buffer | Uint8Array;
-  encryptedMetadataHash?: Buffer | Uint8Array;
-  pruConfigurationHash?: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-  routeVersion?: bigint | number;
-  routeNonce?: Buffer | Uint8Array;
-  tcapRouteVersion?: number;
-  tcapRelationshipCommitment?: Buffer | Uint8Array;
-  tcapRelationshipReference?: Buffer | Uint8Array;
-  tcapPolicyCommitment?: Buffer | Uint8Array;
-  intentHash: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-}) {
-  const secret = Buffer.from(String(params.tin), "utf8");
-  const encryptedMasterSeed = resolveEncryptedMasterSeed(params);
-  const lookupCommitment = Buffer.from(
-    sha256(
-      Buffer.concat([
-        Buffer.from("TSN_TIN_V1_LOOKUP", "utf8"),
-        secret,
-        Buffer.from(String(params.tin), "utf8"),
-      ]),
-    ),
-  );
-  const routeVersion = Buffer.alloc(8);
-  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
-  if (routeVersion.equals(Buffer.alloc(8)))
-    throw new Error("routeVersion must be positive");
-  const routeNonce = requireHash32(params.routeNonce, "routeNonce");
-  const tcapRouteVersion = params.tcapRouteVersion ?? 0;
-  const relationshipCommitment = normalizeHash32(
-    params.tcapRelationshipCommitment,
-    "tcapRelationshipCommitment",
-  );
-  const relationshipReference = normalizeHash32(
-    params.tcapRelationshipReference,
-    "tcapRelationshipReference",
-  );
-  const policyCommitment = normalizeHash32(
-    params.tcapPolicyCommitment,
-    "tcapPolicyCommitment",
-  );
-  const routeEnvelope =
-    params.encryptedPublicRouteEnvelope ??
-    (() => {
-      throw new Error("encryptedPublicRouteEnvelope is required");
-    })();
-  const body: Buffer[] = [params.ownerPubkey.toBuffer(), lookupCommitment];
-  appendBytes(body, params.encryptedIdentityEnvelope);
-  appendBytes(body, encryptedMasterSeed);
-  body.push(
-    normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-  );
-  body.push(
-    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-  );
-  appendBytes(body, routeEnvelope);
-  body.push(
-    routeVersion,
-    routeNonce,
-    Buffer.from([tcapRouteVersion]),
-    relationshipCommitment,
-    relationshipReference,
-    policyCommitment,
-  );
-  const expiry = Buffer.alloc(8);
-  expiry.writeBigInt64LE(BigInt(params.expiryTs));
-  const expectedIntentHash = Buffer.from(
-    sha256(
-      Buffer.concat([
-        Buffer.from("TSN_TIN_V1_CREATE", "utf8"),
-        ...body,
-        expiry,
-      ]),
-    ),
-  );
-  if (
-    !expectedIntentHash.equals(requireHash32(params.intentHash, "intentHash"))
-  )
-    throw new Error("intentHash does not match private TIN creation payload");
-  return encodeInstruction(17, [...body, expectedIntentHash, expiry]);
-}
-
 /** Serialize a Node-verified CreateTinV1 payload without receiving the lookup
  * secret. Plaintext lookup material remains on the owner side. */
 export function serializeTinV1CreationParams(params: {
@@ -674,14 +356,12 @@ export function serializeTinV1CreationParams(params: {
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash: Buffer | Uint8Array;
-  pruConfigurationHash: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
-  tcapRouteVersion?: number;
-  tcapRelationshipCommitment?: Buffer | Uint8Array;
-  tcapRelationshipReference?: Buffer | Uint8Array;
-  tcapPolicyCommitment?: Buffer | Uint8Array;
+  tcapRouteVersion: 1;
+  tcapRelationshipCommitment: Buffer | Uint8Array;
+  tcapRelationshipReference: Buffer | Uint8Array;
+  tcapPolicyCommitment: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -706,6 +386,12 @@ export function serializeTinV1CreationParams(params: {
     params.tcapPolicyCommitment,
     "tcapPolicyCommitment",
   );
+  if (!validateTinTcapRelationship({
+    tcapRouteVersion: params.tcapRouteVersion as 1,
+    tcapRelationshipCommitment: relationshipCommitment,
+    tcapRelationshipReference: relationshipReference,
+    tcapPolicyCommitment: policyCommitment,
+  })) throw new Error("TIN creation requires the current GPRU commitment and blinded TIP seed route");
   const body: Buffer[] = [params.ownerPubkey.toBuffer(), lookupCommitment];
   appendBytes(body, params.encryptedTinRecovery);
   appendBytes(body, params.encryptedIdentityEnvelope);
@@ -714,13 +400,9 @@ export function serializeTinV1CreationParams(params: {
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
   );
   body.push(
-    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-  );
-  appendBytes(body, params.encryptedPublicRouteEnvelope);
-  body.push(
     routeVersion,
     routeNonce,
-    Buffer.from([params.tcapRouteVersion ?? 0]),
+    Buffer.from([params.tcapRouteVersion]),
     relationshipCommitment,
     relationshipReference,
     policyCommitment,
@@ -743,323 +425,6 @@ export function serializeTinV1CreationParams(params: {
   return encodeInstruction(17, [...body, expectedIntentHash, expiry]);
 }
 
-export function serializeTinUpdateParams(params: {
-  ownerPubkey: PublicKey;
-  displayName: string;
-  encryptedMasterSeed?: Buffer | Uint8Array;
-  encryptedMetadataHash?: Buffer | Uint8Array;
-  pruConfigurationHash?: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-  routeVersion?: bigint | number;
-  routeNonce?: Buffer | Uint8Array;
-  tcapRouteVersion?: number;
-  tcapRelationshipCommitment?: Buffer | Uint8Array;
-  tcapRelationshipReference?: Buffer | Uint8Array;
-  tcapPolicyCommitment?: Buffer | Uint8Array;
-  nonce?: Buffer | Uint8Array;
-  intentHash: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-}) {
-  return serializeTinRegistryMutationParams(13, params);
-}
-
-/** Stage large encrypted TIN mutation blobs before the final owner-authorized commit. */
-export function serializeTinMutationStageParams(params: {
-  ownerPubkey: PublicKey;
-  intentHash: Buffer | Uint8Array;
-  displayName: string;
-  encryptedMetadataHash: Buffer | Uint8Array;
-  pruConfigurationHash: Buffer | Uint8Array;
-  routeVersion: bigint | number;
-  routeNonce: Buffer | Uint8Array;
-  nonce: Buffer | Uint8Array;
-  expiryTs: bigint | number;
-  encryptedMasterSeedLength: number;
-  encryptedPublicRouteEnvelopeLength: number;
-}) {
-  if (
-    !Number.isSafeInteger(params.encryptedMasterSeedLength) ||
-    params.encryptedMasterSeedLength <= 0
-  ) {
-    throw new Error(
-      "encryptedMasterSeedLength must be a positive safe integer",
-    );
-  }
-  if (
-    !Number.isSafeInteger(params.encryptedPublicRouteEnvelopeLength) ||
-    params.encryptedPublicRouteEnvelopeLength <= 0
-  ) {
-    throw new Error(
-      "encryptedPublicRouteEnvelopeLength must be a positive safe integer",
-    );
-  }
-  const parts: Buffer[] = [];
-  appendPubkey(parts, params.ownerPubkey);
-  parts.push(requireHash32(params.intentHash, "intentHash"));
-  appendString(parts, params.displayName);
-  parts.push(
-    requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-  );
-  parts.push(
-    requireHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-  );
-  appendU64(parts, params.routeVersion);
-  parts.push(requireHash32(params.routeNonce, "routeNonce"));
-  parts.push(requireHash32(params.nonce, "nonce"));
-  appendI64(parts, params.expiryTs);
-  appendU32(parts, params.encryptedMasterSeedLength);
-  appendU32(parts, params.encryptedPublicRouteEnvelopeLength);
-  return encodeInstruction(14, parts);
-}
-
-export function serializeTinMutationChunkParams(params: {
-  kind: "master_seed" | "public_route";
-  offset: number;
-  bytes: Buffer | Uint8Array;
-}) {
-  if (!Number.isSafeInteger(params.offset) || params.offset < 0) {
-    throw new Error(
-      "mutation chunk offset must be a non-negative safe integer",
-    );
-  }
-  const parts: Buffer[] = [];
-  appendU8(parts, params.kind === "master_seed" ? 0 : 1);
-  appendU32(parts, params.offset);
-  appendBytes(parts, params.bytes);
-  return encodeInstruction(15, parts);
-}
-
-export function serializeTinUpdateStagedParams(params: {
-  intentHash: Buffer | Uint8Array;
-}) {
-  return encodeInstruction(16, [
-    requireHash32(params.intentHash, "intentHash"),
-  ]);
-}
-
-export function getTinV1CreationStagingPda(
-  ownerPubkey: PublicKey,
-  intentHash: Buffer | Uint8Array,
-  programId = new PublicKey(DEFAULT_TIP_PROGRAM_ID),
-) {
-  return PublicKey.findProgramAddressSync(
-    [
-      TINS_V1_CREATE_STAGE_SEED,
-      ownerPubkey.toBuffer(),
-      requireHash32(intentHash, "intentHash"),
-    ],
-    programId,
-  )[0];
-}
-
-export function getTinV1OwnerRecoveryPda(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
-  return PublicKey.findProgramAddressSync(
-    [TINS_V1_OWNER_RECOVERY_SEED, ownerPubkey.toBuffer()],
-    getTinsProgramPublicKey(programId),
-  )[0];
-}
-
-export function buildTinV1OwnerRecoveryMessage(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
-  return Buffer.from([
-    "TrustLink",
-    "Recover TSN identity",
-    "",
-    "Action",
-    "",
-    "Decrypt the 10-digit TIN and display name saved for this wallet.",
-    "",
-    "Wallet",
-    "",
-    ownerPubkey.toBase58(),
-    "",
-    "Network",
-    "",
-    "Solana Devnet",
-    "",
-    "TIN program",
-    "",
-    getTinsProgramPublicKey(programId).toBase58(),
-    "",
-    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
-    "",
-    "Only approve this request if you started TIN recovery in TSN XP.",
-  ].join("\n"), "utf8");
-}
-
-function buildTinV1OwnerRecoveryMessageV3(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
-  return Buffer.from([
-    "TrustLink",
-    "Recover TSN identity",
-    "",
-    "Action",
-    "Decrypt the 10-digit TIN and display name saved for this wallet.",
-    "",
-    "Wallet",
-    ownerPubkey.toBase58(),
-    "",
-    "Network",
-    "Solana Devnet",
-    "",
-    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
-    "Only approve this request if you started TIN recovery in TSN XP.",
-  ].join("\n"), "utf8");
-}
-
-function buildTinV1OwnerRecoveryMessageV2(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
-  return Buffer.from([
-    "TrustLink",
-    "TIN recovery",
-    "",
-    "Action",
-    "Decrypt the encrypted TIN recovery record for this wallet.",
-    "",
-    "Wallet",
-    ownerPubkey.toBase58(),
-    "",
-    "Network",
-    "Solana Devnet",
-    "",
-    "This signature is used to recover your TIN. It does not authorize a transaction or move funds.",
-    "Only approve this request if you started TIN recovery in TSN XP.",
-  ].join("\n"), "utf8");
-}
-
-function buildTinV1OwnerRecoveryMessageV1(ownerPubkey: PublicKey, programId?: PublicKey | string | null) {
-  return Buffer.from([
-    "TrustLink TIN recovery authorization",
-    "Recover the encrypted TIN associated with this wallet.",
-    `Wallet: ${ownerPubkey.toBase58()}`,
-    `TIN program: ${getTinsProgramPublicKey(programId).toBase58()}`,
-    "This signature is used locally to decrypt the recovery record. It does not authorize a transaction.",
-  ].join("\n"), "utf8");
-}
-
-export function getTinV1OwnerRecoveryMessageForEnvelope(
-  encryptedTinRecovery: Uint8Array,
-  ownerPubkey: PublicKey,
-  programId?: PublicKey | string | null,
-) {
-  const envelope = Buffer.from(encryptedTinRecovery);
-  if (envelope.subarray(0, TIN_V1_RECOVERY_V4_MAGIC.length).equals(TIN_V1_RECOVERY_V4_MAGIC)) {
-    return buildTinV1OwnerRecoveryMessage(ownerPubkey, programId);
-  }
-  if (envelope.subarray(0, TIN_V1_RECOVERY_V3_MAGIC.length).equals(TIN_V1_RECOVERY_V3_MAGIC)) {
-    return buildTinV1OwnerRecoveryMessageV3(ownerPubkey, programId);
-  }
-  if (envelope.subarray(0, TIN_V1_RECOVERY_V2_MAGIC.length).equals(TIN_V1_RECOVERY_V2_MAGIC)) {
-    return buildTinV1OwnerRecoveryMessageV2(ownerPubkey, programId);
-  }
-  return buildTinV1OwnerRecoveryMessageV1(ownerPubkey, programId);
-}
-
-async function tinRecoveryAesKey(ownerPubkey: PublicKey, signature: Uint8Array, programId?: PublicKey | string | null) {
-  if (signature.length !== 64) throw new Error("TIN recovery requires a 64-byte wallet signature");
-  const program = getTinsProgramPublicKey(programId);
-  return importAesKey(sha256(Buffer.concat([
-    Buffer.from("TSN_TIN_OWNER_RECOVERY_KEY_V1", "utf8"),
-    ownerPubkey.toBuffer(), program.toBuffer(), Buffer.from(signature),
-  ])));
-}
-
-export async function createTinV1OwnerRecoveryEnvelope(params: {
-  tin: string; displayName: string; ownerPubkey: PublicKey; signature: Uint8Array; programId?: PublicKey | string | null;
-}) {
-  if (!/^\d{10}$/.test(params.tin)) throw new Error("A 10-digit TIN is required for its recovery envelope");
-  if (!params.displayName.trim()) throw new Error("A display name is required for its recovery envelope");
-  const nonce = randomNonce(12);
-  const key = await tinRecoveryAesKey(params.ownerPubkey, params.signature, params.programId);
-  const ciphertext = new Uint8Array(await getWebCrypto().subtle.encrypt(
-    { name: "AES-GCM", iv: nonce as any }, key,
-    TEXT_ENCODER.encode(JSON.stringify({ tin: params.tin, displayName: params.displayName })) as any,
-  ));
-  return Buffer.concat([TIN_V1_RECOVERY_V4_MAGIC, Buffer.from(nonce), Buffer.from(ciphertext)]);
-}
-
-export async function recoverTinV1ForOwner(params: {
-  connection: Connection; ownerPubkey: PublicKey; signMessage: (message: Uint8Array) => Promise<Uint8Array>;
-  programId?: PublicKey | string | null;
-}) {
-  const identity = await recoverTinV1IdentityForOwner(params);
-  return identity?.tin ?? null;
-}
-
-export async function recoverTinV1IdentityForOwner(params: {
-  connection: Connection; ownerPubkey: PublicKey; signMessage: (message: Uint8Array) => Promise<Uint8Array>;
-  programId?: PublicKey | string | null;
-}) {
-  const programId = getTinsProgramPublicKey(params.programId);
-  const encryptedTinRecovery = await getTinV1OwnerRecoveryEnvelope({
-    connection: params.connection,
-    ownerPubkey: params.ownerPubkey,
-    programId,
-  });
-  if (!encryptedTinRecovery) return null;
-  const signature = await params.signMessage(getTinV1OwnerRecoveryMessageForEnvelope(
-    encryptedTinRecovery,
-    params.ownerPubkey,
-    programId,
-  ));
-  return decryptTinV1OwnerRecoveryIdentity({
-    encryptedTinRecovery,
-    ownerPubkey: params.ownerPubkey,
-    signature,
-    programId,
-  });
-}
-
-export async function getTinV1OwnerRecoveryEnvelope(params: {
-  connection: Connection; ownerPubkey: PublicKey; programId?: PublicKey | string | null;
-}) {
-  const programId = getTinsProgramPublicKey(params.programId);
-  const recoveryPda = getTinV1OwnerRecoveryPda(params.ownerPubkey, programId);
-  const account = await params.connection.getAccountInfo(recoveryPda, "confirmed");
-  if (!account) return null;
-  if (!account.owner.equals(programId)) throw new Error("TIN recovery record is not owned by the configured program");
-  const data = Buffer.from(account.data);
-  if (data.length < 2 + 32 + 4 + 28 || data[0] !== 1) throw new Error("TIN recovery record is malformed");
-  const owner = new PublicKey(data.subarray(2, 34));
-  const length = data.readUInt32LE(34);
-  if (!owner.equals(params.ownerPubkey) || length < 28 || 38 + length !== data.length) throw new Error("TIN recovery record does not match this wallet");
-  return Buffer.from(data.subarray(38));
-}
-
-export async function decryptTinV1OwnerRecoveryEnvelope(params: {
-  encryptedTinRecovery: Uint8Array; ownerPubkey: PublicKey; signature: Uint8Array;
-  programId?: PublicKey | string | null;
-}) {
-  return (await decryptTinV1OwnerRecoveryIdentity(params)).tin;
-}
-
-export async function decryptTinV1OwnerRecoveryIdentity(params: {
-  encryptedTinRecovery: Uint8Array; ownerPubkey: PublicKey; signature: Uint8Array;
-  programId?: PublicKey | string | null;
-}) {
-  const encrypted = Buffer.from(params.encryptedTinRecovery);
-  const versionFour = encrypted.subarray(0, TIN_V1_RECOVERY_V4_MAGIC.length).equals(TIN_V1_RECOVERY_V4_MAGIC);
-  const versionThree = encrypted.subarray(0, TIN_V1_RECOVERY_V3_MAGIC.length).equals(TIN_V1_RECOVERY_V3_MAGIC);
-  const versionTwo = encrypted.subarray(0, TIN_V1_RECOVERY_V2_MAGIC.length).equals(TIN_V1_RECOVERY_V2_MAGIC);
-  const prefixLength = versionFour ? TIN_V1_RECOVERY_V4_MAGIC.length : versionThree ? TIN_V1_RECOVERY_V3_MAGIC.length : versionTwo ? TIN_V1_RECOVERY_V2_MAGIC.length : 0;
-  const ciphertext = encrypted.subarray(prefixLength);
-  if (ciphertext.length < 28) throw new Error("TIN recovery envelope is malformed");
-  const key = await tinRecoveryAesKey(params.ownerPubkey, params.signature, params.programId);
-  try {
-    const plaintext = await getWebCrypto().subtle.decrypt(
-      { name: "AES-GCM", iv: ciphertext.subarray(0, 12) as any }, key, ciphertext.subarray(12) as any,
-    );
-    const decoded = TEXT_DECODER.decode(plaintext);
-    const identity = versionFour || versionThree
-      ? JSON.parse(decoded) as { tin?: string; displayName?: string }
-      : { tin: decoded };
-    if (!identity.tin || !/^\d{10}$/.test(identity.tin)) throw new Error("Recovered value is not a valid TIN");
-    if ((versionFour || versionThree) && (!identity.displayName || typeof identity.displayName !== "string")) {
-      throw new Error("Recovered display name is invalid");
-    }
-    return { tin: identity.tin, ...(identity.displayName ? { displayName: identity.displayName } : {}) };
-  } catch {
-    throw new Error("Wallet signature could not decrypt this TIN recovery record");
-  }
-}
-
 /** Serialize instruction 19: initialize a bounded, intent-bound TIN V1 stage. */
 export function serializeTinV1CreationStageParams(params: {
   ownerPubkey: PublicKey;
@@ -1068,12 +433,10 @@ export function serializeTinV1CreationStageParams(params: {
   encryptedIdentityEnvelopeLength: number;
   encryptedTinRecoveryLength: number;
   encryptedMasterSeedLength: number;
-  encryptedPublicRouteEnvelopeLength: number;
   encryptedMetadataHash: Buffer | Uint8Array;
-  pruConfigurationHash: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
-  tcapRouteVersion: number;
+  tcapRouteVersion: 1;
   tcapRelationshipCommitment: Buffer | Uint8Array;
   tcapRelationshipReference: Buffer | Uint8Array;
   tcapPolicyCommitment: Buffer | Uint8Array;
@@ -1083,13 +446,18 @@ export function serializeTinV1CreationStageParams(params: {
     ["encryptedIdentityEnvelopeLength", params.encryptedIdentityEnvelopeLength, true],
     ["encryptedTinRecoveryLength", params.encryptedTinRecoveryLength, true],
     ["encryptedMasterSeedLength", params.encryptedMasterSeedLength, true],
-    ["encryptedPublicRouteEnvelopeLength", params.encryptedPublicRouteEnvelopeLength, false],
   ] as const) {
     if (!Number.isSafeInteger(value) || (required ? value <= 0 : value < 0)) {
       throw new Error(`${field} is invalid`);
     }
   }
   const parts: Buffer[] = [];
+  if (!validateTinTcapRelationship({
+    tcapRouteVersion: params.tcapRouteVersion as 1,
+    tcapRelationshipCommitment: params.tcapRelationshipCommitment,
+    tcapRelationshipReference: params.tcapRelationshipReference,
+    tcapPolicyCommitment: params.tcapPolicyCommitment,
+  })) throw new Error("TIN creation stage requires the current GPRU commitment and blinded TIP seed route");
   appendPubkey(parts, params.ownerPubkey);
   parts.push(
     requireHash32(params.lookupCommitment, "lookupCommitment"),
@@ -1098,11 +466,7 @@ export function serializeTinV1CreationStageParams(params: {
   appendU32(parts, params.encryptedIdentityEnvelopeLength);
   appendU32(parts, params.encryptedTinRecoveryLength);
   appendU32(parts, params.encryptedMasterSeedLength);
-  appendU32(parts, params.encryptedPublicRouteEnvelopeLength);
-  parts.push(
-    requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-    requireHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-  );
+  parts.push(requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
   appendU64(parts, params.routeVersion);
   parts.push(requireHash32(params.routeNonce, "routeNonce"));
   appendU8(parts, params.tcapRouteVersion);
@@ -1117,7 +481,7 @@ export function serializeTinV1CreationStageParams(params: {
 
 /** Serialize instruction 20: append one bounded encrypted-data chunk. */
 export function serializeTinV1CreationChunkParams(params: {
-  kind: "identity" | "master_seed" | "public_route" | "owner_recovery";
+  kind: "identity" | "master_seed" | "owner_recovery";
   offset: number;
   bytes: Buffer | Uint8Array;
 }) {
@@ -1125,7 +489,7 @@ export function serializeTinV1CreationChunkParams(params: {
     throw new Error("TIN V1 creation chunk offset must be a non-negative safe integer");
   }
   const parts: Buffer[] = [];
-  appendU8(parts, params.kind === "identity" ? 0 : params.kind === "master_seed" ? 1 : params.kind === "public_route" ? 2 : 3);
+  appendU8(parts, params.kind === "identity" ? 0 : params.kind === "master_seed" ? 1 : 3);
   appendU32(parts, params.offset);
   appendBytes(parts, params.bytes);
   return encodeInstruction(20, parts);
@@ -1143,769 +507,6 @@ export function serializeTinV1CreationCloseParams(params: {
   intentHash: Buffer | Uint8Array;
 }) {
   return encodeInstruction(22, [requireHash32(params.intentHash, "intentHash")]);
-}
-
-function serializeTinRegistryMutationParams(
-  tag: 12 | 13,
-  params: {
-    ownerPubkey: PublicKey;
-    displayName: string;
-    encryptedMasterSeed?: Buffer | Uint8Array;
-    encryptedMetadataHash?: Buffer | Uint8Array;
-    pruConfigurationHash?: Buffer | Uint8Array;
-    encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-    routeVersion?: bigint | number;
-    routeNonce?: Buffer | Uint8Array;
-    tcapRouteVersion?: number;
-    tcapRelationshipCommitment?: Buffer | Uint8Array;
-    tcapRelationshipReference?: Buffer | Uint8Array;
-    tcapPolicyCommitment?: Buffer | Uint8Array;
-    nonce?: Buffer | Uint8Array;
-    intentHash: Buffer | Uint8Array;
-    expiryTs: bigint | number;
-  },
-) {
-  if (params.tcapRouteVersion === 1) {
-    return serializeTinTcapRegistryMutationParams(tag, params);
-  }
-  const parts: Buffer[] = [];
-  const encryptedMasterSeed = resolveEncryptedMasterSeed(params);
-  appendPubkey(parts, params.ownerPubkey);
-  appendString(parts, params.displayName);
-  appendBytes(parts, encryptedMasterSeed);
-  parts.push(
-    normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-  );
-  parts.push(
-    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-  );
-  appendBytes(
-    parts,
-    params.encryptedPublicRouteEnvelope ??
-      (() => {
-        throw new Error("encryptedPublicRouteEnvelope is required");
-      })(),
-  );
-  const routeVersion = Buffer.alloc(8);
-  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
-  if (routeVersion.equals(Buffer.alloc(8)))
-    throw new Error("routeVersion must be positive");
-  parts.push(routeVersion);
-  parts.push(requireHash32(params.routeNonce, "routeNonce"));
-  parts.push(requireHash32(params.nonce, "nonce"));
-  parts.push(normalizeHash32(params.intentHash, "intentHash"));
-  const expiry = Buffer.alloc(8);
-  expiry.writeBigInt64LE(BigInt(params.expiryTs));
-  parts.push(expiry);
-  return encodeInstruction(tag, parts);
-}
-
-/**
- * Build the canonical program-assigned TIN creation payload. The caller
- * supplies only the owner wallet and display name; the Solana program assigns
- * the 10-digit TIN when the Cranker submits the resulting instruction.
- */
-export function buildProgramAssignedTinCreation(params: {
-  ownerPubkey: PublicKey;
-  displayName: string;
-  expiryTs?: bigint | number;
-  nonce?: Uint8Array;
-  encryptedMasterSeed?: Uint8Array;
-}) {
-  if (!params.displayName.trim()) throw new Error("displayName is required");
-  const nonce = Buffer.from(params.nonce ?? randomNonce(32));
-  if (nonce.length !== 32) throw new Error("nonce must be 32 bytes");
-  const expiryTs = BigInt(
-    params.expiryTs ?? Math.floor(Date.now() / 1000) + 900,
-  );
-  const encryptedMasterSeed = Buffer.from(
-    params.encryptedMasterSeed ??
-      (() => {
-        throw new Error(
-          "encryptedMasterSeed must come from the SDK owner-encryption flow",
-        );
-      })(),
-  );
-  const zero = Buffer.alloc(32);
-  const relationshipCommitment = Buffer.from(randomNonce(32));
-  const relationshipReference = Buffer.from(randomNonce(32));
-  const policyCommitment = Buffer.from(randomNonce(32));
-  const routeVersion = Buffer.alloc(8);
-  routeVersion.writeBigUInt64LE(1n);
-  const expiry = Buffer.alloc(8);
-  expiry.writeBigInt64LE(expiryTs);
-  const intentHash = Buffer.from(
-    sha256(
-      Buffer.concat([
-        Buffer.from("TINS_CREATE_INTENT_V1"),
-        params.ownerPubkey.toBuffer(),
-        Buffer.from(params.displayName),
-        encryptedMasterSeed,
-        zero,
-        zero,
-        routeVersion,
-        nonce,
-        Buffer.from([1]),
-        relationshipCommitment,
-        relationshipReference,
-        policyCommitment,
-        nonce,
-        expiry,
-      ]),
-    ),
-  );
-  return {
-    intentHash,
-    nonce,
-    expiryTs,
-    encryptedMasterSeed,
-    encryptedMetadataHash: zero,
-    pruConfigurationHash: zero,
-    encryptedPublicRouteEnvelope: Buffer.alloc(0),
-    routeVersion: 1n,
-    routeNonce: nonce,
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: relationshipCommitment,
-    tcapRelationshipReference: relationshipReference,
-    tcapPolicyCommitment: policyCommitment,
-    instructionData: serializeTinRegistryMutationParams(12, {
-      ownerPubkey: params.ownerPubkey,
-      displayName: params.displayName,
-      encryptedMasterSeed,
-      encryptedMetadataHash: zero,
-      pruConfigurationHash: zero,
-      encryptedPublicRouteEnvelope: Buffer.alloc(0),
-      routeVersion: 1n,
-      routeNonce: nonce,
-      tcapRouteVersion: 1,
-      tcapRelationshipCommitment: relationshipCommitment,
-      tcapRelationshipReference: relationshipReference,
-      tcapPolicyCommitment: policyCommitment,
-      nonce,
-      intentHash,
-      expiryTs,
-    }),
-  };
-}
-
-/** Submit a wallet-signed program-assigned creation through the TSN Node. */
-export async function submitProgramAssignedTinCreation(params: {
-  nodeUrl: string;
-  ingressUrl?: string;
-  prepared: ReturnType<typeof buildProgramAssignedTinCreation>;
-  ownerPubkey: PublicKey | string;
-  ownerSignature: Uint8Array | string;
-  displayName: string;
-  ownerIntentMessage?: string;
-}) {
-  if (!params.ingressUrl) {
-    throw new Error("TIN creation must be submitted through the TSN Receiver ingress");
-  }
-  const hex = (value: Uint8Array) => Buffer.from(value).toString("hex");
-  const base64 = (value: Uint8Array) => Buffer.from(value).toString("base64");
-  const ownerPubkey =
-    typeof params.ownerPubkey === "string"
-      ? params.ownerPubkey
-      : params.ownerPubkey.toBase58();
-  const ownerSignature =
-    typeof params.ownerSignature === "string"
-      ? params.ownerSignature
-      : Buffer.from(params.ownerSignature).toString("base64");
-  const prepared = params.prepared;
-  const response = await fetch(
-    `${params.ingressUrl.replace(/\/$/, "")}/tin-operations`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        intentType: "tin_creation",
-        programAssigned: true,
-        ownerPubkey,
-        ownerSignature,
-        displayName: params.displayName,
-        ...(params.ownerIntentMessage
-          ? { ownerIntentMessage: params.ownerIntentMessage }
-          : {}),
-        ownerIntentHash: hex(prepared.intentHash),
-        nonce: hex(prepared.nonce),
-        expiry: Number(prepared.expiryTs),
-        encryptedMasterSeed: base64(prepared.encryptedMasterSeed),
-        encryptedMetadataHash: hex(prepared.encryptedMetadataHash),
-        pruConfigurationHash: hex(prepared.pruConfigurationHash),
-        encryptedPublicRouteEnvelope: "",
-        routeVersion: Number(prepared.routeVersion),
-        routeNonce: hex(prepared.routeNonce),
-        tcapRouteVersion: prepared.tcapRouteVersion,
-        tcapRelationshipCommitment: hex(prepared.tcapRelationshipCommitment),
-        tcapRelationshipReference: hex(prepared.tcapRelationshipReference),
-        tcapPolicyCommitment: hex(prepared.tcapPolicyCommitment),
-      }),
-    },
-  );
-  const body = await response.json();
-  if (!response.ok)
-    throw new Error(
-      body?.detail ??
-        body?.error ??
-        `TIN creation rejected (${response.status})`,
-    );
-  return body;
-}
-
-/** Complete Borsh layout for the active TCap-backed TIN mutation. */
-function serializeTinTcapRegistryMutationParams(
-  tag: 12 | 13,
-  params: {
-    ownerPubkey: PublicKey;
-    displayName: string;
-    encryptedMasterSeed?: Buffer | Uint8Array;
-    encryptedMetadataHash?: Buffer | Uint8Array;
-    pruConfigurationHash?: Buffer | Uint8Array;
-    encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
-    routeVersion?: bigint | number;
-    routeNonce?: Buffer | Uint8Array;
-    tcapRouteVersion?: number;
-    tcapRelationshipCommitment?: Buffer | Uint8Array;
-    tcapRelationshipReference?: Buffer | Uint8Array;
-    tcapPolicyCommitment?: Buffer | Uint8Array;
-    nonce?: Buffer | Uint8Array;
-    intentHash: Buffer | Uint8Array;
-    expiryTs: bigint | number;
-  },
-) {
-  if (params.tcapRouteVersion !== 1)
-    throw new Error("TCap registry mutations require tcapRouteVersion=1");
-  const configurationHash = normalizeHash32(
-    params.pruConfigurationHash,
-    "pruConfigurationHash",
-  );
-  if (!configurationHash.equals(ZERO_HASH_32))
-    throw new Error(
-      "TCap registry mutations cannot include pruConfigurationHash",
-    );
-  if ((params.encryptedPublicRouteEnvelope?.length ?? 0) !== 0) {
-    throw new Error(
-      "TCap registry mutations cannot include encryptedPublicRouteEnvelope",
-    );
-  }
-  const relationshipCommitment = requireHash32(
-    params.tcapRelationshipCommitment,
-    "tcapRelationshipCommitment",
-  );
-  const relationshipReference = requireHash32(
-    params.tcapRelationshipReference,
-    "tcapRelationshipReference",
-  );
-  const policyCommitment = requireHash32(
-    params.tcapPolicyCommitment,
-    "tcapPolicyCommitment",
-  );
-  if (
-    relationshipCommitment.equals(ZERO_HASH_32) ||
-    relationshipReference.equals(ZERO_HASH_32) ||
-    policyCommitment.equals(ZERO_HASH_32)
-  ) {
-    throw new Error(
-      "TCap relationship and policy commitments must be non-zero",
-    );
-  }
-  const routeVersion = Buffer.alloc(8);
-  routeVersion.writeBigUInt64LE(BigInt(params.routeVersion ?? 0));
-  const parts: Buffer[] = [];
-  appendPubkey(parts, params.ownerPubkey);
-  appendString(parts, params.displayName);
-  appendBytes(parts, resolveEncryptedMasterSeed(params));
-  parts.push(
-    normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-  );
-  parts.push(configurationHash);
-  appendU32(parts, 0);
-  parts.push(routeVersion);
-  parts.push(normalizeHash32(params.routeNonce, "routeNonce"));
-  appendU8(parts, 1);
-  parts.push(relationshipCommitment, relationshipReference, policyCommitment);
-  parts.push(requireHash32(params.nonce, "nonce"));
-  parts.push(requireHash32(params.intentHash, "intentHash"));
-  appendI64(parts, params.expiryTs);
-  return encodeInstruction(tag, parts);
-}
-
-export function buildCreateTinInstruction(params: {
-  payer: PublicKey;
-  identity: PublicKey;
-  displayName: string;
-  encryptedMasterSeed: Uint8Array;
-  programId?: PublicKey | string | null;
-}) {
-  void params;
-  throw new Error(
-    "Direct TIP create is disabled; submit a TSN TIN creation intent and let a Cranker call tin_creation_registry.",
-  );
-}
-
-export function buildInitializePlatformRegistryInstruction(params: {
-  authority: PublicKey;
-  platformRegistry?: PublicKey;
-  programId?: PublicKey | string | null;
-}) {
-  const program = getTinsProgramPublicKey(params.programId);
-  return new TransactionInstruction({
-    programId: program,
-    keys: [
-      { pubkey: params.authority, isSigner: true, isWritable: true },
-      {
-        pubkey: params.platformRegistry ?? getTinsPlatformRegistryPda(program),
-        isSigner: false,
-        isWritable: true,
-      },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data: encodeInstruction(6, []),
-  });
-}
-
-export function buildUpsertVerificationPlatformInstruction(params: {
-  authority: PublicKey;
-  platformId: string;
-  platformPubkey: PublicKey;
-  rotatedFrom?: PublicKey | null;
-  platformRegistry?: PublicKey;
-  programId?: PublicKey | string | null;
-}) {
-  const parts: Buffer[] = [];
-  appendString(parts, params.platformId);
-  appendPubkey(parts, params.platformPubkey);
-  appendOptionPubkey(parts, params.rotatedFrom ?? null);
-  const program = getTinsProgramPublicKey(params.programId);
-  return new TransactionInstruction({
-    programId: program,
-    keys: [
-      { pubkey: params.authority, isSigner: true, isWritable: true },
-      {
-        pubkey: params.platformRegistry ?? getTinsPlatformRegistryPda(program),
-        isSigner: false,
-        isWritable: true,
-      },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data: encodeInstruction(7, parts),
-  });
-}
-
-export function buildRemoveVerificationPlatformInstruction(params: {
-  authority: PublicKey;
-  platformPubkey: PublicKey;
-  platformRegistry?: PublicKey;
-  programId?: PublicKey | string | null;
-}) {
-  const parts: Buffer[] = [];
-  appendPubkey(parts, params.platformPubkey);
-  const program = getTinsProgramPublicKey(params.programId);
-  return new TransactionInstruction({
-    programId: program,
-    keys: [
-      { pubkey: params.authority, isSigner: true, isWritable: true },
-      {
-        pubkey: params.platformRegistry ?? getTinsPlatformRegistryPda(program),
-        isSigner: false,
-        isWritable: true,
-      },
-    ],
-    data: encodeInstruction(8, parts),
-  });
-}
-
-export function buildLinkSocialIdentityInstruction(params: {
-  owner: PublicKey;
-  registry: PublicKey;
-  identityType: TinSocialIdentityType;
-  label?: string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  metadata?: string;
-  programId?: PublicKey | string | null;
-}) {
-  const parts: Buffer[] = [];
-  appendString(parts, params.identityType);
-  appendString(parts, params.label ?? "");
-  appendBytes(parts, params.nonce);
-  appendBytes(parts, params.ciphertext);
-  appendString(parts, params.metadata ?? "{}");
-  return new TransactionInstruction({
-    programId: getTinsProgramPublicKey(params.programId),
-    keys: [
-      { pubkey: params.owner, isSigner: true, isWritable: true },
-      { pubkey: params.registry, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data: encodeInstruction(9, parts),
-  });
-}
-
-export function buildLinkSensitiveFieldInstruction(params: {
-  owner: PublicKey;
-  registry: PublicKey;
-  fieldType: string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  metadata?: string;
-  userAuthorizationHash: Uint8Array;
-  programId?: PublicKey | string | null;
-}) {
-  if (params.userAuthorizationHash.length !== 32)
-    throw new Error("userAuthorizationHash must be 32 bytes");
-  const parts: Buffer[] = [];
-  appendString(parts, params.fieldType);
-  appendBytes(parts, params.nonce);
-  appendBytes(parts, params.ciphertext);
-  appendString(parts, params.metadata ?? "{}");
-  parts.push(Buffer.from(params.userAuthorizationHash));
-  return new TransactionInstruction({
-    programId: getTinsProgramPublicKey(params.programId),
-    keys: [
-      { pubkey: params.owner, isSigner: true, isWritable: true },
-      { pubkey: params.registry, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data: encodeInstruction(10, parts),
-  });
-}
-
-export function buildPlatformSignedProofMessage(params: {
-  tin: bigint | number | string;
-  identityType: string;
-  label?: string;
-  encryptedPayloadHash: Uint8Array;
-  subjectWallet: PublicKey;
-  issuedAt: bigint | number;
-}) {
-  if (params.encryptedPayloadHash.length !== 32)
-    throw new Error("encryptedPayloadHash must be 32 bytes");
-  return Buffer.concat([
-    Buffer.from("TINS_PLATFORM_PROOF_V1", "utf8"),
-    Buffer.from(String(params.tin), "utf8"),
-    Buffer.from(params.identityType, "utf8"),
-    Buffer.from(params.label ?? "", "utf8"),
-    Buffer.from(params.encryptedPayloadHash),
-    params.subjectWallet.toBuffer(),
-    Buffer.from(BigInt(params.issuedAt).toString(), "utf8"),
-  ]);
-}
-
-export function buildLinkVerifiedSocialIdentityInstructions(params: {
-  owner: PublicKey;
-  registry: PublicKey;
-  platformPubkey: PublicKey;
-  platformSignature: Uint8Array;
-  proofMessage: Uint8Array;
-  identityType: TinSocialIdentityType;
-  label?: string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  metadata?: string;
-  platformRegistry?: PublicKey;
-  programId?: PublicKey | string | null;
-}) {
-  const parts: Buffer[] = [];
-  appendString(parts, params.identityType);
-  appendString(parts, params.label ?? "");
-  appendBytes(parts, params.nonce);
-  appendBytes(parts, params.ciphertext);
-  appendString(parts, params.metadata ?? "{}");
-  appendPubkey(parts, params.platformPubkey);
-  appendBytes(parts, params.proofMessage);
-  const program = getTinsProgramPublicKey(params.programId);
-  return [
-    Ed25519Program.createInstructionWithPublicKey({
-      publicKey: params.platformPubkey.toBytes(),
-      message: params.proofMessage,
-      signature: params.platformSignature,
-    }),
-    new TransactionInstruction({
-      programId: program,
-      keys: [
-        { pubkey: params.owner, isSigner: true, isWritable: true },
-        { pubkey: params.registry, isSigner: false, isWritable: true },
-        {
-          pubkey:
-            params.platformRegistry ?? getTinsPlatformRegistryPda(program),
-          isSigner: false,
-          isWritable: false,
-        },
-        {
-          pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
-          isSigner: false,
-          isWritable: false,
-        },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: encodeInstruction(11, parts),
-    }),
-  ];
-}
-
-export function decodeTinAccount(data: Uint8Array) {
-  const buffer = Buffer.from(data);
-  let offset = 0;
-  const tin = buffer.readBigUInt64LE(offset);
-  offset += 8;
-  const displayNameLength = buffer.readUInt32LE(offset);
-  offset += 4;
-  const displayName = buffer
-    .subarray(offset, offset + displayNameLength)
-    .toString("utf8");
-  offset += displayNameLength;
-  const ownerPubkeyHash = buffer.subarray(offset, offset + 32);
-  offset += 32;
-  const encryptedMasterSeedLength = buffer.readUInt32LE(offset);
-  offset += 4;
-  const encryptedMasterSeed = buffer.subarray(
-    offset,
-    offset + encryptedMasterSeedLength,
-  );
-  offset += encryptedMasterSeedLength;
-  const createdAt = buffer.readBigInt64LE(offset);
-  offset += 8;
-  const encryptedMetadataHash =
-    offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
-  offset += encryptedMetadataHash ? 32 : 0;
-  const pruConfigurationHash =
-    offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
-  offset += pruConfigurationHash ? 32 : 0;
-  let encryptedPublicRouteEnvelope: Buffer | null = null;
-  let routeVersion: bigint | null = null;
-  let routeNonce: Buffer | null = null;
-  if (offset + 4 <= buffer.length) {
-    const routeEnvelopeLength = buffer.readUInt32LE(offset);
-    offset += 4;
-    if (offset + routeEnvelopeLength + 8 + 32 <= buffer.length) {
-      if (routeEnvelopeLength > 0) {
-        encryptedPublicRouteEnvelope = buffer.subarray(
-          offset,
-          offset + routeEnvelopeLength,
-        );
-      }
-      offset += routeEnvelopeLength;
-      routeVersion = buffer.readBigUInt64LE(offset);
-      offset += 8;
-      routeNonce = buffer.subarray(offset, offset + 32);
-      offset += 32;
-    }
-  }
-
-  const hasTcapRouteVersion = offset + 1 <= buffer.length;
-  const tcapRouteVersion = hasTcapRouteVersion ? buffer.readUInt8(offset) : 0;
-  offset += hasTcapRouteVersion ? 1 : 0;
-  const tcapRelationshipCommitment =
-    offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
-  offset += tcapRelationshipCommitment ? 32 : 0;
-  const tcapRelationshipReference =
-    offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
-  offset += tcapRelationshipReference ? 32 : 0;
-  const tcapPolicyCommitment =
-    offset + 32 <= buffer.length ? buffer.subarray(offset, offset + 32) : null;
-
-  return {
-    tin,
-    displayName,
-    ownerPubkeyHash,
-    encryptedMasterSeed,
-    createdAt,
-    encryptedMetadataHash,
-    pruConfigurationHash,
-    encryptedPublicRouteEnvelope,
-    routeVersion,
-    routeNonce,
-    tcapRouteVersion,
-    tcapRelationshipCommitment,
-    tcapRelationshipReference,
-    tcapPolicyCommitment,
-  };
-}
-
-async function findLegacyTinAccount(params: {
-  tin: bigint | number | string;
-  connection: Connection;
-  programId: PublicKey;
-}) {
-  const tinBuffer = Buffer.alloc(8);
-  tinBuffer.writeBigUInt64LE(BigInt(params.tin));
-  const accounts = await params.connection.getProgramAccounts(
-    params.programId,
-    {
-      filters: [
-        {
-          memcmp: {
-            offset: 0,
-            bytes: encodeBase58(tinBuffer),
-          },
-        },
-      ],
-    },
-  );
-
-  for (const account of accounts) {
-    try {
-      const decoded = decodeTinAccount(account.account.data);
-      if (decoded.tin.toString() === String(params.tin)) {
-        return { address: account.pubkey, decoded };
-      }
-    } catch {
-      // Other TIP account layouts can share the same leading bytes.
-    }
-  }
-  return null;
-}
-
-async function findLegacyTinCreationAuthority(
-  connection: Connection,
-  identityAccount: PublicKey,
-) {
-  let before: string | undefined;
-  let oldestSignature: string | null = null;
-  for (let page = 0; page < 5; page += 1) {
-    const signatures = await connection.getSignaturesForAddress(
-      identityAccount,
-      { before, limit: 1_000 },
-      "confirmed",
-    );
-    if (signatures.length === 0) break;
-    oldestSignature = signatures[signatures.length - 1].signature;
-    if (signatures.length < 1_000) break;
-    before = oldestSignature;
-  }
-  if (!oldestSignature) return null;
-
-  const transaction = await connection.getParsedTransaction(oldestSignature, {
-    commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
-  });
-  const signer = transaction?.transaction.message.accountKeys.find(
-    (account) => account.signer && !account.pubkey.equals(identityAccount),
-  );
-  return signer?.pubkey ?? null;
-}
-
-function readString(buffer: Buffer, offsetRef: { offset: number }) {
-  const length = buffer.readUInt32LE(offsetRef.offset);
-  offsetRef.offset += 4;
-  const value = buffer
-    .subarray(offsetRef.offset, offsetRef.offset + length)
-    .toString("utf8");
-  offsetRef.offset += length;
-  return value;
-}
-
-function readBytes(buffer: Buffer, offsetRef: { offset: number }) {
-  const length = buffer.readUInt32LE(offsetRef.offset);
-  offsetRef.offset += 4;
-  const value = buffer.subarray(offsetRef.offset, offsetRef.offset + length);
-  offsetRef.offset += length;
-  return value;
-}
-
-function readPubkey(buffer: Buffer, offsetRef: { offset: number }) {
-  const value = new PublicKey(
-    buffer.subarray(offsetRef.offset, offsetRef.offset + 32),
-  );
-  offsetRef.offset += 32;
-  return value;
-}
-
-function readOptionPubkey(buffer: Buffer, offsetRef: { offset: number }) {
-  const tag = buffer.readUInt8(offsetRef.offset);
-  offsetRef.offset += 1;
-  return tag === 1 ? readPubkey(buffer, offsetRef) : null;
-}
-
-export function decodeTinsIdentityRegistry(
-  data: Uint8Array,
-): TinIdentityRegistry {
-  const buffer = Buffer.from(data);
-  const offsetRef = { offset: 0 };
-  const version = buffer.readUInt8(offsetRef.offset++);
-  const bump = buffer.readUInt8(offsetRef.offset++);
-  const status = buffer.readUInt8(offsetRef.offset++);
-  offsetRef.offset += 5;
-  const tin = buffer.readBigUInt64LE(offsetRef.offset);
-  offsetRef.offset += 8;
-  const authority = readPubkey(buffer, offsetRef);
-  const masterPrivacy = readPubkey(buffer, offsetRef);
-  const lastEscrowId = buffer.readBigUInt64LE(offsetRef.offset);
-  offsetRef.offset += 8;
-  const createdAt = buffer.readBigInt64LE(offsetRef.offset);
-  offsetRef.offset += 8;
-  const name = readString(buffer, offsetRef);
-  if (offsetRef.offset === buffer.length) {
-    return {
-      version,
-      bump,
-      status,
-      tin,
-      authority,
-      masterPrivacy,
-      lastEscrowId,
-      createdAt,
-      name,
-      socialIdentities: [],
-      sensitiveFields: [],
-    };
-  }
-  if (offsetRef.offset + 4 > buffer.length) {
-    throw new Error("TIP identity registry data is truncated");
-  }
-  const socialCount = buffer.readUInt32LE(offsetRef.offset);
-  offsetRef.offset += 4;
-  const socialIdentities: TinEncryptedSocialIdentity[] = [];
-  for (let index = 0; index < socialCount; index += 1) {
-    socialIdentities.push({
-      identityType: readString(buffer, offsetRef),
-      label: readString(buffer, offsetRef),
-      nonce: readBytes(buffer, offsetRef),
-      ciphertext: readBytes(buffer, offsetRef),
-      metadata: readString(buffer, offsetRef),
-      verifiedBy: readOptionPubkey(buffer, offsetRef),
-      proofHash: buffer.subarray(offsetRef.offset, offsetRef.offset + 32),
-      linkedAt: buffer.readBigInt64LE(offsetRef.offset + 32),
-    });
-    offsetRef.offset += 40;
-  }
-  const sensitiveCount = buffer.readUInt32LE(offsetRef.offset);
-  offsetRef.offset += 4;
-  const sensitiveFields: TinEncryptedSensitiveField[] = [];
-  for (let index = 0; index < sensitiveCount; index += 1) {
-    sensitiveFields.push({
-      fieldType: readString(buffer, offsetRef),
-      nonce: readBytes(buffer, offsetRef),
-      ciphertext: readBytes(buffer, offsetRef),
-      metadata: readString(buffer, offsetRef),
-      proofHash: buffer.subarray(offsetRef.offset, offsetRef.offset + 32),
-      linkedAt: buffer.readBigInt64LE(offsetRef.offset + 32),
-    });
-    offsetRef.offset += 40;
-  }
-
-  return {
-    version,
-    bump,
-    status,
-    tin,
-    authority,
-    masterPrivacy,
-    lastEscrowId,
-    createdAt,
-    name,
-    socialIdentities,
-    sensitiveFields,
-  };
-}
-
-function parseMetadata(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
 }
 
 function getWebCrypto() {
@@ -1980,13 +581,16 @@ export async function submitTinV1Creation(params: {
   ownerPubkey: PublicKey | string;
   ownerSignature: Uint8Array | string;
   lookupIssuanceProof: string;
-  ownerIntentMessage?: string;
+  ownerIntentMessage: string;
 }) {
   const hex = (value: Uint8Array) => Buffer.from(value).toString("hex");
   const base64 = (value: Uint8Array) => Buffer.from(value).toString("base64");
   const ownerPubkey = typeof params.ownerPubkey === "string"
     ? params.ownerPubkey
     : params.ownerPubkey.toBase58();
+  if (!params.ownerIntentMessage.trim()) {
+    throw new Error("The signed, human-readable TIN owner intent message is required");
+  }
   const ownerSignature = typeof params.ownerSignature === "string"
     ? params.ownerSignature
     : Buffer.from(params.ownerSignature).toString("base64");
@@ -1997,7 +601,6 @@ export async function submitTinV1Creation(params: {
     body: JSON.stringify({
       intentType: "tin_creation",
       intentId: params.intentId,
-      programAssigned: false,
       ownerPubkey,
       ownerSignature,
       ownerIntentHash: hex(prepared.intentHash),
@@ -2009,8 +612,6 @@ export async function submitTinV1Creation(params: {
       encryptedIdentityEnvelope: base64(prepared.encryptedIdentityEnvelope),
       encryptedMasterSeed: base64(prepared.encryptedMasterSeed),
       encryptedMetadataHash: hex(prepared.encryptedMetadataHash),
-      pruConfigurationHash: hex(prepared.pruConfigurationHash),
-      encryptedPublicRouteEnvelope: base64(prepared.encryptedPublicRouteEnvelope),
       routeVersion: Number(prepared.routeVersion),
       routeNonce: hex(prepared.routeNonce),
       tcapRouteVersion: prepared.tcapRouteVersion,
@@ -2033,8 +634,6 @@ export function createTinV1OwnerIntentHash(params: {
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash: Buffer | Uint8Array;
-  pruConfigurationHash: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
   tcapRouteVersion: number;
@@ -2056,8 +655,6 @@ export function createTinV1OwnerIntentHash(params: {
     u32LengthPrefixed(params.encryptedIdentityEnvelope),
     u32LengthPrefixed(params.encryptedMasterSeed),
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
-    normalizeHash32(params.pruConfigurationHash, "pruConfigurationHash"),
-    u32LengthPrefixed(params.encryptedPublicRouteEnvelope),
     routeVersion,
     requireHash32(params.routeNonce, "routeNonce"),
     Buffer.from([params.tcapRouteVersion]),
@@ -2085,8 +682,6 @@ export function buildTinV1Creation(params: {
   encryptedIdentityEnvelope: Buffer | Uint8Array;
   encryptedMasterSeed: Buffer | Uint8Array;
   encryptedMetadataHash?: Buffer | Uint8Array;
-  pruConfigurationHash?: Buffer | Uint8Array;
-  encryptedPublicRouteEnvelope?: Buffer | Uint8Array;
   routeVersion?: bigint | number;
   routeNonce?: Buffer | Uint8Array;
   tcapRouteVersion: number;
@@ -2096,6 +691,12 @@ export function buildTinV1Creation(params: {
   expiryTs?: bigint | number;
   nonce?: Buffer | Uint8Array;
 }) {
+  if (params.tcapRouteVersion !== 1) throw new Error("TIN V1 creation requires the active TCap route version");
+  const gpruCommitment = Buffer.from(params.tcapRelationshipCommitment);
+  const tipRootCommitment = Buffer.from(params.tcapRelationshipReference);
+  if (!Buffer.from(deriveTcapTipRootCommitment(gpruCommitment)).equals(tipRootCommitment)) {
+    throw new Error("TIN route must store the GPRU public commitment separately from its blinded TCAP TIP seed");
+  }
   const zero = Buffer.alloc(32);
   const nonce = Buffer.from(params.nonce ?? params.routeNonce ?? randomNonce(32));
   if (nonce.length !== 32) throw new Error("nonce must be 32 bytes");
@@ -2105,8 +706,6 @@ export function buildTinV1Creation(params: {
   const routeVersion = BigInt(params.routeVersion ?? 1);
   const expiryTs = BigInt(params.expiryTs ?? Math.floor(Date.now() / 1000) + 900);
   const encryptedMetadataHash = Buffer.from(params.encryptedMetadataHash ?? zero);
-  const pruConfigurationHash = Buffer.from(params.pruConfigurationHash ?? zero);
-  const encryptedPublicRouteEnvelope = Buffer.from(params.encryptedPublicRouteEnvelope ?? Buffer.alloc(0));
   const fields = {
     ownerPubkey: params.ownerPubkey,
     lookupCommitment: params.lookupCommitment,
@@ -2114,11 +713,9 @@ export function buildTinV1Creation(params: {
     encryptedIdentityEnvelope: params.encryptedIdentityEnvelope,
     encryptedMasterSeed: params.encryptedMasterSeed,
     encryptedMetadataHash,
-    pruConfigurationHash,
-    encryptedPublicRouteEnvelope,
     routeVersion,
     routeNonce,
-    tcapRouteVersion: params.tcapRouteVersion,
+    tcapRouteVersion: params.tcapRouteVersion as 1,
     tcapRelationshipCommitment: params.tcapRelationshipCommitment,
     tcapRelationshipReference: params.tcapRelationshipReference,
     tcapPolicyCommitment: params.tcapPolicyCommitment,
@@ -2127,107 +724,6 @@ export function buildTinV1Creation(params: {
   const intentHash = createTinV1OwnerIntentHash(fields);
   const instructionData = serializeTinV1CreationParams({ ...fields, intentHash });
   return { ...fields, nonce, intentHash, instructionData };
-}
-
-export function deriveTinSocialKey(tin: bigint | number | string) {
-  return sha256(TEXT_ENCODER.encode(`trustlink:tins:social:v1:${String(tin)}`));
-}
-
-export function buildSensitiveAuthorizationMessage(params: {
-  tin: bigint | number | string;
-  fieldType: string;
-  nonce?: string;
-}) {
-  return `TrustLink TIP sensitive decrypt\nTIN: ${String(params.tin)}\nField: ${params.fieldType}\nNonce: ${params.nonce ?? ""}`;
-}
-
-export function deriveTinSensitiveKey(params: {
-  tin: bigint | number | string;
-  userSignature: Uint8Array | string;
-  fieldType: string;
-}) {
-  const signature =
-    typeof params.userSignature === "string"
-      ? TEXT_ENCODER.encode(params.userSignature)
-      : params.userSignature;
-  return sha256(
-    Buffer.concat([
-      TEXT_ENCODER.encode(
-        `trustlink:tins:sensitive:v1:${String(params.tin)}:${params.fieldType}:`,
-      ),
-      Buffer.from(signature),
-    ]),
-  );
-}
-
-export async function encryptTinSocialIdentity(params: {
-  tin: bigint | number | string;
-  value: string;
-  nonce?: Uint8Array;
-}) {
-  const nonce = params.nonce ?? randomNonce();
-  const key = await importAesKey(deriveTinSocialKey(params.tin));
-  const ciphertext = new Uint8Array(
-    await getWebCrypto().subtle.encrypt(
-      { name: "AES-GCM", iv: nonce as any },
-      key,
-      TEXT_ENCODER.encode(params.value) as any,
-    ),
-  );
-  return { nonce, ciphertext };
-}
-
-export async function decryptTinSocialIdentity(params: {
-  tin: bigint | number | string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-}) {
-  const key = await importAesKey(deriveTinSocialKey(params.tin));
-  const plaintext = await getWebCrypto().subtle.decrypt(
-    { name: "AES-GCM", iv: params.nonce as any },
-    key,
-    params.ciphertext as any,
-  );
-  return TEXT_DECODER.decode(plaintext);
-}
-
-export async function encryptTinSensitiveField(params: {
-  tin: bigint | number | string;
-  fieldType: string;
-  value: string;
-  userSignature: Uint8Array | string;
-  nonce?: Uint8Array;
-}) {
-  const nonce = params.nonce ?? randomNonce();
-  const key = await importAesKey(deriveTinSensitiveKey(params));
-  const ciphertext = new Uint8Array(
-    await getWebCrypto().subtle.encrypt(
-      { name: "AES-GCM", iv: nonce as any },
-      key,
-      TEXT_ENCODER.encode(params.value) as any,
-    ),
-  );
-  const signatureBytes =
-    typeof params.userSignature === "string"
-      ? TEXT_ENCODER.encode(params.userSignature)
-      : params.userSignature;
-  return { nonce, ciphertext, userAuthorizationHash: sha256(signatureBytes) };
-}
-
-export async function decryptTinSensitiveField(params: {
-  tin: bigint | number | string;
-  fieldType: string;
-  nonce: Uint8Array;
-  ciphertext: Uint8Array;
-  userSignature: Uint8Array | string;
-}) {
-  const key = await importAesKey(deriveTinSensitiveKey(params));
-  const plaintext = await getWebCrypto().subtle.decrypt(
-    { name: "AES-GCM", iv: params.nonce as any },
-    key,
-    params.ciphertext as any,
-  );
-  return TEXT_DECODER.decode(plaintext);
 }
 
 async function resolvePrivateTinRecord(params: {
@@ -2288,12 +784,10 @@ async function resolvePrivateTinRecord(params: {
   const storedLookup = readFixed(32);
   const ownerCommitment = readFixed(32);
   const encryptedIdentityEnvelope = readBytes();
-  readBytes();
+  const encryptedMasterSeed = readBytes();
   const createdAt = buffer.readBigInt64LE(offset);
   offset += 8;
   const encryptedMetadataHash = readFixed(32);
-  const pruConfigurationHash = readFixed(32);
-  const encryptedPublicRouteEnvelope = readBytes();
   const routeVersion = buffer.readBigUInt64LE(offset);
   offset += 8;
   const routeNonce = readFixed(32);
@@ -2305,9 +799,18 @@ async function resolvePrivateTinRecord(params: {
     version !== 1 ||
     status !== 1 ||
     !Buffer.from(storedLookup).equals(lookupCommitment) ||
-    offset !== buffer.length
+    offset > buffer.length ||
+    buffer.subarray(offset).some((byte) => byte !== 0)
   ) {
     throw new Error("unsupported private TIN account schema");
+  }
+  if (routeVersion !== 1n || !validateTinTcapRelationship({
+    tcapRouteVersion,
+    tcapRelationshipCommitment,
+    tcapRelationshipReference,
+    tcapPolicyCommitment,
+  })) {
+    throw new Error("private TIN route does not match the current GPRU commitment schema");
   }
   if (encryptedIdentityEnvelope.length < 13)
     throw new Error("private TIN identity envelope is invalid");
@@ -2337,21 +840,18 @@ async function resolvePrivateTinRecord(params: {
     authority: registry,
     ownerPubkeyHash: bytesToHex(ownerCommitment),
     registry,
-    accountKind: "registry",
-    upgradeRequired: false,
-    upgradeReason: null,
     settlementAuthorityVerified: true,
     status,
     createdAt: createdAt.toString(),
-    socialIdentities: [],
-    sensitiveFields: [],
-    encryptedSensitiveFields: [],
-    pruConfigurationHash: bytesToHex(pruConfigurationHash),
-    routeVersion: Number(routeVersion),
-    tcapRouteVersion,
+    tcapRouteVersion: 1,
     tcapRelationshipCommitment: bytesToHex(tcapRelationshipCommitment),
     tcapRelationshipReference: bytesToHex(tcapRelationshipReference),
+    gpruCommitment: publishedGpruCommitment(
+      tcapRelationshipCommitment,
+      tcapRelationshipReference,
+    ),
     tcapPolicyCommitment: bytesToHex(tcapPolicyCommitment),
+    encryptedMasterSeed: new Uint8Array(encryptedMasterSeed),
   };
 }
 
@@ -2359,203 +859,14 @@ export async function resolveTIN(params: {
   tin: bigint | number | string;
   connection: Connection;
   programId?: PublicKey | string | null;
-  lookupSecret?: Uint8Array | string;
-  sensitiveAuthorizations?: Record<string, Uint8Array | string>;
+  lookupSecret: Uint8Array | string;
 }): Promise<TinResolvedIdentity> {
-  if (params.lookupSecret) {
-    return resolvePrivateTinRecord({
-      tin: params.tin,
-      connection: params.connection,
-      programId: params.programId,
-      lookupSecret: params.lookupSecret,
-    });
-  }
-  const programId = getTinsProgramPublicKey(params.programId);
-  const registryPda = getTinsRegistryPda({ tin: params.tin, programId });
-  const account = await params.connection.getAccountInfo(registryPda);
-  if (!account) {
-    const legacy = await findLegacyTinAccount({
-      tin: params.tin,
-      connection: params.connection,
-      programId,
-    });
-    if (!legacy) {
-      throw new Error(
-        `TIN ${String(params.tin)} was not found in TIP program ${programId.toBase58()}`,
-      );
-    }
-    const hasCurrentTsnEnvelopes =
-      legacy.decoded.encryptedMasterSeed.length > 0 &&
-      Boolean(legacy.decoded.pruConfigurationHash?.length === 32) &&
-      Boolean(legacy.decoded.encryptedPublicRouteEnvelope?.length) &&
-      Boolean(
-        legacy.decoded.routeVersion && legacy.decoded.routeVersion > 0n,
-      ) &&
-      Boolean(legacy.decoded.routeNonce?.length === 32);
-    const hasReadableSeedEnvelope =
-      hasCurrentTsnEnvelopes &&
-      hasReadableTinMasterSeedEnvelope(legacy.decoded.encryptedMasterSeed);
-    return {
-      tin: legacy.decoded.tin.toString(),
-      name: legacy.decoded.displayName,
-      authority: legacy.address,
-      ownerPubkeyHash: bytesToHex(legacy.decoded.ownerPubkeyHash),
-      registry: legacy.address,
-      accountKind: "legacy",
-      // TIP storage may remain legacy while carrying the complete current TSN
-      // envelope set. Provider selection is not a migration gate: the SDK
-      // performs the wallet + authorized-device proof when it unlocks.
-      upgradeRequired: !hasCurrentTsnEnvelopes || !hasReadableSeedEnvelope,
-      upgradeReason: !hasCurrentTsnEnvelopes
-        ? "Legacy TIN requires the current wallet-authorized seed envelope before local PRU balance discovery is available."
-        : !hasReadableSeedEnvelope
-          ? "TIN master-seed envelope is invalid or incomplete. Upgrade the TIN before loading private balances."
-          : null,
-      settlementAuthorityVerified: true,
-      status: 1,
-      createdAt: legacy.decoded.createdAt.toString(),
-      socialIdentities: [],
-      sensitiveFields: [],
-      encryptedSensitiveFields: [],
-      pruConfigurationHash: legacy.decoded.pruConfigurationHash
-        ? bytesToHex(legacy.decoded.pruConfigurationHash)
-        : null,
-      routeVersion:
-        legacy.decoded.routeVersion &&
-        legacy.decoded.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
-          ? Number(legacy.decoded.routeVersion)
-          : null,
-      tcapRouteVersion: legacy.decoded.tcapRouteVersion ?? null,
-      tcapRelationshipCommitment: legacy.decoded.tcapRelationshipCommitment
-        ? bytesToHex(legacy.decoded.tcapRelationshipCommitment)
-        : null,
-      tcapRelationshipReference: legacy.decoded.tcapRelationshipReference
-        ? bytesToHex(legacy.decoded.tcapRelationshipReference)
-        : null,
-      tcapPolicyCommitment: legacy.decoded.tcapPolicyCommitment
-        ? bytesToHex(legacy.decoded.tcapPolicyCommitment)
-        : null,
-    };
-  }
-  try {
-    const tinAccount = decodeTinAccount(account.data);
-    if (tinAccount.tin.toString() === String(params.tin)) {
-      return {
-        tin: tinAccount.tin.toString(),
-        name: tinAccount.displayName,
-        authority: registryPda,
-        ownerPubkeyHash: bytesToHex(tinAccount.ownerPubkeyHash),
-        registry: registryPda,
-        accountKind: "registry",
-        upgradeRequired:
-          !tinAccount.encryptedMasterSeed.length ||
-          !tinAccount.routeVersion ||
-          !tinAccount.routeNonce ||
-          (tinAccount.tcapRouteVersion === 1
-            ? !tinAccount.tcapRelationshipCommitment ||
-              !tinAccount.tcapRelationshipReference ||
-              !tinAccount.tcapPolicyCommitment
-            : !tinAccount.pruConfigurationHash ||
-              !tinAccount.encryptedPublicRouteEnvelope) ||
-          !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed),
-        upgradeReason: Boolean(
-          tinAccount.tcapRouteVersion === 1
-            ? tinAccount.tcapRelationshipCommitment &&
-                tinAccount.tcapRelationshipReference &&
-                tinAccount.tcapPolicyCommitment &&
-                tinAccount.routeVersion &&
-                tinAccount.routeNonce
-            : tinAccount.pruConfigurationHash &&
-                tinAccount.encryptedPublicRouteEnvelope &&
-                tinAccount.routeVersion &&
-                tinAccount.routeNonce,
-        )
-          ? !hasReadableTinMasterSeedEnvelope(tinAccount.encryptedMasterSeed)
-            ? "TIN master-seed envelope is invalid or incomplete. Upgrade the TIN before loading private balances."
-            : null
-          : "TIN account does not yet store the current wallet-authorized seed envelope and Node routing envelope.",
-        settlementAuthorityVerified: true,
-        status: 1,
-        createdAt: tinAccount.createdAt.toString(),
-        socialIdentities: [],
-        sensitiveFields: [],
-        encryptedSensitiveFields: [],
-        pruConfigurationHash: tinAccount.pruConfigurationHash
-          ? bytesToHex(tinAccount.pruConfigurationHash)
-          : null,
-        routeVersion:
-          tinAccount.routeVersion &&
-          tinAccount.routeVersion <= BigInt(Number.MAX_SAFE_INTEGER)
-            ? Number(tinAccount.routeVersion)
-            : null,
-        tcapRouteVersion: tinAccount.tcapRouteVersion ?? null,
-        tcapRelationshipCommitment: tinAccount.tcapRelationshipCommitment
-          ? bytesToHex(tinAccount.tcapRelationshipCommitment)
-          : null,
-        tcapRelationshipReference: tinAccount.tcapRelationshipReference
-          ? bytesToHex(tinAccount.tcapRelationshipReference)
-          : null,
-        tcapPolicyCommitment: tinAccount.tcapPolicyCommitment
-          ? bytesToHex(tinAccount.tcapPolicyCommitment)
-          : null,
-      };
-    }
-  } catch {}
-  const registry = decodeTinsIdentityRegistry(account.data);
-  const socialIdentities = await Promise.all(
-    registry.socialIdentities.map(async (identity) => ({
-      type: identity.identityType,
-      label: identity.label,
-      value: await decryptTinSocialIdentity({
-        tin: params.tin,
-        nonce: identity.nonce,
-        ciphertext: identity.ciphertext,
-      }),
-      metadata: parseMetadata(identity.metadata),
-      verifiedBy: identity.verifiedBy?.toBase58() ?? null,
-      linkedAt: identity.linkedAt.toString(),
-    })),
-  );
-  const sensitiveFields = [];
-  for (const field of registry.sensitiveFields) {
-    const signature = params.sensitiveAuthorizations?.[field.fieldType];
-    if (!signature) continue;
-    sensitiveFields.push({
-      type: field.fieldType,
-      value: await decryptTinSensitiveField({
-        tin: params.tin,
-        fieldType: field.fieldType,
-        nonce: field.nonce,
-        ciphertext: field.ciphertext,
-        userSignature: signature,
-      }),
-      metadata: parseMetadata(field.metadata),
-      linkedAt: field.linkedAt.toString(),
-    });
-  }
-
-  return {
-    tin: String(params.tin),
-    name: registry.name,
-    authority: registryPda,
-    ownerPubkeyHash: bytesToHex(sha256(registry.authority.toBytes())),
-    registry: registryPda,
-    accountKind: "registry",
-    upgradeRequired: false,
-    upgradeReason: null,
-    settlementAuthorityVerified: true,
-    status: registry.status,
-    createdAt: registry.createdAt.toString(),
-    socialIdentities,
-    sensitiveFields,
-    encryptedSensitiveFields: registry.sensitiveFields,
-    pruConfigurationHash: null,
-    routeVersion: null,
-    tcapRouteVersion: null,
-    tcapRelationshipCommitment: null,
-    tcapRelationshipReference: null,
-    tcapPolicyCommitment: null,
-  };
+  return resolvePrivateTinRecord({
+    tin: params.tin,
+    connection: params.connection,
+    programId: params.programId,
+    lookupSecret: params.lookupSecret,
+  });
 }
 
 /**
@@ -2567,7 +878,7 @@ export async function resolveTinRoute(params: {
   tin: bigint | number | string;
   rpcUrl: string;
   programId?: PublicKey | string | null;
-  lookupSecret?: Uint8Array | string;
+  lookupSecret: Uint8Array | string;
 }): Promise<TinResolvedIdentity> {
   return resolveTIN({
     tin: params.tin,

@@ -33,7 +33,9 @@ python tsn-demo/evidence_taker.py `
 
 - `source/` — original screen recordings;
 - `cuts/` — extracted clips for editing;
-- `exports/` — rendered demo videos;
+- `exports/<flow-id>/` — final video for each demo subject, with that video's intermediate renders isolated under `working/`;
+- `COLOSSEUM-PITCH-VIDEO-SCRIPT.md` — separate founder presentation script and filming plan;
+- `voiceover-studio/` — shared local microphone recorder and audio mastering tool for any demo flow; takes are saved under that flow's `exports/<flow-id>/voiceover/takes/` folder;
 - `evidence/flow-catalog.json` — captured and planned flows;
 - `evidence/tin-creation/` — earlier TIN creation artifacts, retained as a separate historical pack;
 - `evidence/issuer-model/` — evidence notes for the universal TIN and proposed institutional issuer model;

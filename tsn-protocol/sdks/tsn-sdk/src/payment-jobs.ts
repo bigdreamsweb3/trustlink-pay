@@ -20,7 +20,7 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
   recipientRouteCommitment: string;
   recipientRouteVersion: number;
   tokenMintAddress: string;
-  amount: number;
+  amount: string | number;
   senderFeeAmount: number;
   totalTokenRequiredUi: number;
   issuedAt: string;

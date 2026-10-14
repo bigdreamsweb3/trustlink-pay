@@ -6,15 +6,15 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+tcap = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF"
 stable_tcap_faucet = "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
 
 [programs.devnet]
-tcap = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"
+tcap = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF"
 stable_tcap_faucet = "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
 
 [provider]
-cluster = "https://devnet.helius-rpc.com/?api-key=bbd5bcd1-ee1b-419e-a226-00455f2e295d"
+cluster = "https://devnet.helius-rpc.com/?api-key=42fbc8ea-86e6-4037-8a78-3217d027f292"
 wallet = "~/.config/solana/id.json"
 
 [workspace]

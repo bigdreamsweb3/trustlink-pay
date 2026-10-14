@@ -1,6 +1,6 @@
 (() => {
   let session;
-  let pendingPayment;
+  let resolvedTin;
   let networkStatus;
   let activeWallet;
   const events = [];
@@ -17,7 +17,7 @@
     return candidates.find(([, wallet]) => wallet?.connect) ?? [null, null];
   }
 
-  function short(value, max = 88) {
+  function short(value, max = 220) {
     const text = typeof value === "string" ? value : JSON.stringify(value);
     return text.length > max ? `${text.slice(0, max - 3)}...` : text;
   }
@@ -31,7 +31,15 @@
 
   async function read(response) {
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.message ?? body.error ?? `HTTP ${response.status}`);
+    if (!response.ok) {
+      const detail = Array.isArray(body.detail)
+        ? body.detail.map((item) => {
+          const location = Array.isArray(item?.loc) ? item.loc.join(".") : "request";
+          return `${location}: ${item?.msg ?? item?.type ?? "invalid"}`;
+        }).join("; ")
+        : body.detail;
+      throw new Error(body.message ?? body.error ?? detail ?? `HTTP ${response.status}`);
+    }
     return body;
   }
 
@@ -299,12 +307,11 @@
     return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
   }
 
-  async function createTinV1OwnerEnvelope({ ownerPublicKey, nonce, signature, encryptionMessage }) {
+  async function createTinV1OwnerEnvelope({ ownerPublicKey, resourceCommitment, signature, accessMessage }) {
     const dataKey = new Uint8Array(await crypto.subtle.digest("SHA-256", signature));
     const masterSeed = crypto.getRandomValues(new Uint8Array(32));
     const marker = "tin-v1";
     const zeroHash = "0".repeat(64);
-    const resourceCommitment = await sha256Hex(crypto.getRandomValues(new Uint8Array(32)));
     const aad = canonicalFields(["TSN_TIN_LOCAL_MASTER_SEED", marker, ownerPublicKey, "1", zeroHash]);
     const seedNonce = crypto.getRandomValues(new Uint8Array(12));
     const seedCiphertext = new Uint8Array(await crypto.subtle.encrypt(
@@ -318,7 +325,7 @@
       "TSN_TIN_LOCAL_MASTER_SEED_CIPHERTEXT", marker, ownerPublicKey, "1", zeroHash,
       seedNonceBase64, seedCiphertextBase64,
     ]));
-    const accessControlHash = await sha256Hex(new TextEncoder().encode(encryptionMessage));
+    const accessControlHash = await sha256Hex(new TextEncoder().encode(accessMessage));
     const envelope = {
       version: "tsn-tin-master-seed-envelope",
       provider: "wallet-owner-signature-v1",
@@ -342,7 +349,16 @@
       envelope.seedCiphertextCommitment, envelope.protectedKey, envelope.protectedKeyCommitment,
       envelope.accessControlHash,
     ]));
-    return new TextEncoder().encode(JSON.stringify(envelope));
+    const receivingPair = window.TsnRecipientCreditSdk?.deriveTinPrivacyReceivingKeyPair(masterSeed);
+    if (!receivingPair) throw new Error("TIN privacy-receiving-key SDK bundle is unavailable");
+    const gpruCommitment = bytesToHex(receivingPair.publicKey);
+    receivingPair.secretKey.fill(0);
+    masterSeed.fill(0);
+    dataKey.fill(0);
+    return {
+      encryptedMasterSeed: new TextEncoder().encode(JSON.stringify(envelope)),
+      gpruCommitment,
+    };
   }
 
   function requireWallet() {
@@ -372,25 +388,33 @@
         const ownerEncryptionSignatureBase64 = await signBytes(encryptionBytes);
         const ownerEncryptionSignature = Uint8Array.from(atob(ownerEncryptionSignatureBase64), (character) => character.charCodeAt(0));
         stage = "encrypting the owner seed locally";
-        const encryptedMasterSeed = await createTinV1OwnerEnvelope({
+        const ownerSeed = await createTinV1OwnerEnvelope({
           ownerPublicKey: activeWallet.publicKey.toBase58(),
-          nonce: Uint8Array.from(prepared.ownerEncryptionNonce.match(/.{2}/g), (pair) => parseInt(pair, 16)),
+          resourceCommitment: prepared.resourceCommitment,
           signature: ownerEncryptionSignature,
-          encryptionMessage: prepared.ownerEncryptionMessage,
+          accessMessage: prepared.ownerEncryptionMessage,
         });
         stage = "building private TIN V1 intent with the TSN SDK";
-        const encryptedMasterSeedBase64 = btoa(String.fromCharCode(...encryptedMasterSeed));
+        const encryptedMasterSeedBase64 = btoa(String.fromCharCode(...ownerSeed.encryptedMasterSeed));
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",
-          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64 }),
+          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, gpruCommitment: ownerSeed.gpruCommitment }),
         });
         if (prepared.status === "TIN_RECOVERY_SIGNATURE_REQUIRED") {
-          stage = "encrypting the owner recovery record locally";
+          if (typeof prepared.recoveryMessage !== "string" || !prepared.recoveryMessage.trim()) {
+            throw new Error("TSN did not provide the human-readable recovery authorization message.");
+          }
+          if (typeof prepared.recoveryKeyContextBase64 !== "string" || !prepared.recoveryKeyContextBase64) {
+            throw new Error("TSN did not provide the recovery key context.");
+          }
+          stage = "requesting wallet approval for local TIN recovery encryption";
           const recoverySignature = await signBytes(new TextEncoder().encode(prepared.recoveryMessage));
+          stage = "encrypting the owner recovery record locally";
           const encryptedTinRecovery = await encryptTinRecovery(prepared.tin, displayName, prepared.recoveryKeyContextBase64, recoverySignature);
+          stage = "sending the encrypted recovery record to TSN XP";
           prepared = await api("/api/tsn/sdk/prepare-tin", {
             method: "POST",
-            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery }),
+            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery, gpruCommitment: ownerSeed.gpruCommitment }),
           });
         }
       }
@@ -439,29 +463,178 @@
     log("TIN V1 STATUS PENDING", "The owner session remains active; refresh status after the Cranker submits the transaction.");
   }
 
+  async function resolveTinForReview() {
+    const tin = $("recipientTin").value.trim();
+    const result = $("tinResolution");
+    resolvedTin = null;
+    $("payTin").disabled = true;
+    result.hidden = false;
+    result.textContent = "Resolving TIN through the TSN SDK…";
+    try {
+      requireNetwork();
+      const identity = await api("/api/tsn/sdk/resolve-tin", { method: "POST", body: JSON.stringify({ tin }) });
+      resolvedTin = identity;
+      result.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = identity.displayName || "No display name provided";
+      const detail = document.createElement("p");
+      detail.textContent = "Display name supplied by the TIN owner. No government identity attestation is attached.";
+      const match = document.createElement("small");
+      match.textContent = `Resolved TIN ${identity.tin} · route version ${identity.recipientRouteVersion}`;
+      result.append(heading, detail, match);
+      $("payTin").disabled = false;
+      log("SDK resolveTinRoute", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
+    } catch (error) {
+      result.textContent = `TIN could not be resolved: ${error.message}`;
+      log("TIN RESOLUTION BLOCKED", error.message);
+    }
+  }
+
   async function payTin() {
+    let stage = "validating sender and recipient";
     try {
       requireWallet();
       requireNetwork();
       const recipientTin = $("recipientTin").value.trim();
-      const route = await api("/api/tsn/sdk/resolve-tin", { method: "POST", body: JSON.stringify({ tin: recipientTin }) });
-      pendingPayment = await api("/api/tsn/sdk/prepare-payment", {
-        method: "POST",
-        body: JSON.stringify({ recipientTin, recipientRouteCommitment: route.recipientRouteCommitment, recipientRouteVersion: route.recipientRouteVersion, tokenMintAddress: $("tinMint").value.trim(), amount: Number($("tinAmount").value) }),
+      if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
+      const amount = String($("tinAmount").value ?? "").trim();
+      const mint = String($("tinMint").value ?? "").trim();
+      if (!/^\d+(?:\.\d{1,6})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with up to six decimal places.");
+      if (!mint) throw new Error("Enter a token mint registered and enabled in the TCAP asset registry.");
+      if (typeof activeWallet.signTransaction !== "function") throw new Error("The connected wallet must support transaction signing.");
+      const sdk = window.TsnRecipientCreditSdk;
+      if (!sdk?.createGpruTinCredit || !sdk?.buildTcapGpruWalletDepositTransaction) throw new Error("The browser TSN SDK bundle is missing the GPRU credit builders.");
+
+      stage = "checking the on-chain TCAP asset registry and recipient TIP";
+      const prepared = await api("/api/tsn/sdk/prepare-tin-credit", {
+        method: "POST", body: JSON.stringify({ tokenMintAddress: mint, amount }),
       });
-      $("submitTin").disabled = false;
-      log("SDK createPaymentAuthorization", `TIN ${recipientTin} / ready for wallet signature`);
-    } catch (error) { log("TIN TRANSFER BLOCKED", error.message); }
+      if (prepared.decimals !== 6) throw new Error("This TSN payment authorization currently supports six-decimal settlement assets.");
+      const amountBaseUnits = BigInt(prepared.amountBaseUnits);
+      const currentSlot = BigInt(prepared.currentSlot);
+      const expiresAtSlot = BigInt(prepared.expiresAtSlot);
+      stage = "encrypting the GPRU credit note for the recipient";
+      const transition = sdk.createGpruTinCredit({
+        tcapProgramId: new sdk.PublicKey(prepared.depositAccounts.tcapProgramId),
+        tipRootCommitment: prepared.recipientTipRoot,
+        gpruCommitment: Uint8Array.from(prepared.gpruCommitment.match(/../g), (byte) => Number.parseInt(byte, 16)),
+        previousCommitment: prepared.previousCommitment,
+        sequence: BigInt(prepared.sequence),
+        tokenId: prepared.tokenId,
+        amountBaseUnits,
+        policyCommitment: prepared.policyCommitment,
+        validAfterSlot: currentSlot,
+        expiresAtSlot,
+      });
+      Object.assign(transition, {
+        tipRootCommitment: prepared.recipientTipRoot,
+        mint: prepared.depositAccounts.mint,
+        amountBaseUnits: amountBaseUnits.toString(),
+        depositAmountBaseUnits: amountBaseUnits.toString(),
+        depositAccounts: prepared.depositAccounts,
+      });
+
+      stage = "building the wallet-authorized TCAP reserve deposit";
+      const key = (value) => new sdk.PublicKey(value);
+      const accounts = Object.fromEntries(Object.entries(prepared.depositAccounts).map(([name, value]) => [name, key(value)]));
+      const transaction = sdk.buildTcapGpruWalletDepositTransaction({
+        accounts,
+        amountBaseUnits,
+        tipRootCommitment: prepared.recipientTipRoot,
+        previousCommitment: prepared.previousCommitment,
+        policyCommitment: prepared.policyCommitment,
+        initializeTip: prepared.initializeTip,
+      });
+      transaction.recentBlockhash = prepared.recentBlockhash;
+      transaction.lastValidBlockHeight = prepared.lastValidBlockHeight;
+
+      stage = "requesting the sender's amount and recipient-route approval";
+      const authorization = sdk.createPaymentAuthorization({
+        senderWallet: activeWallet.publicKey.toBase58(),
+        senderIdentity: activeWallet.publicKey.toBase58(),
+        receiverIdentity: `tin:${recipientTin}`,
+        recipientRouteCommitment: prepared.recipientRouteCommitment,
+        recipientRouteVersion: prepared.recipientRouteVersion,
+        tokenMintAddress: prepared.depositAccounts.mint,
+        amount,
+        senderFeeAmount: "0",
+        totalTokenRequiredUi: amount,
+        tokenDecimals: prepared.decimals,
+        fundingMode: "tcap_deposit_v2",
+      });
+      if (authorization.amountBaseUnits !== amountBaseUnits.toString()) {
+        throw new Error("The SDK amount does not match the TCAP registry amount; review the token and amount before signing.");
+      }
+      const senderAuthorizationSignature = await sign(authorization.message);
+
+      stage = "requesting the sender's TCAP deposit transaction signature";
+      const signedTransaction = await activeWallet.signTransaction(transaction);
+      const senderSignedFundingTransaction = encodeBase64(signedTransaction.serialize());
+      const paymentId = crypto.randomUUID();
+      const request = sdk.buildPaymentAuthorizationIntentRequest({
+        paymentId,
+        recipientHash: prepared.recipientRouteCommitment,
+        recipientTin,
+        recipientRouteCommitment: prepared.recipientRouteCommitment,
+        recipientRouteVersion: prepared.recipientRouteVersion,
+        tokenMintAddress: prepared.depositAccounts.mint,
+        senderWallet: activeWallet.publicKey.toBase58(),
+        senderAuthorizationMessage: authorization.message,
+        senderAuthorizationSignature,
+        senderAuthorizationNonce: authorization.nonce,
+        senderAuthorizationIssuedAt: authorization.issuedAt,
+        senderAuthorizationExpiresAt: authorization.expiresAt,
+        senderFeeAmount: "0",
+        senderSignedFundingTransaction,
+        senderFundingMode: "tcap_deposit_v2",
+        tcapCreditTransition: transition,
+        senderTokenAccount: prepared.depositAccounts.source,
+        amount,
+        source: "TSN XP",
+      });
+      stage = "validating the signed intent before Receiver ingress";
+      const accepted = await api("/api/tsn/sdk/submit-tin-credit", { method: "POST", body: JSON.stringify({ request }) });
+      const output = document.createElement("div");
+      output.id = "tinCreditResult";
+      output.className = "notice";
+      output.style.marginTop = "12px";
+      output.textContent = `Intent ${accepted.id ?? paymentId} accepted by the TSN Node for Receiver verification.`;
+      $("tinResolution").after(output);
+      log("SDK depositToTinCredit", `TIN ${recipientTin} / ${amount} / ${prepared.depositAccounts.mint} / wallet authorized`);
+      log("TIN CREDIT INTENT RECEIVED", `Node accepted ${accepted.id ?? paymentId}; Receiver verification and Cranker processing are pending.`);
+      void watchTinCredit(accepted.id ?? paymentId);
+    } catch (error) {
+      log("TIN CREDIT BLOCKED", `${stage}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
-  async function submitTin() {
-    try {
-      if (!pendingPayment) throw new Error("Prepare the TIN transfer first.");
-      const signatureBase64 = await sign(pendingPayment.message);
-      const submitted = await api("/api/tsn/sdk/submit-payment", { method: "POST", body: JSON.stringify({ ...pendingPayment, signatureBase64 }) });
-      $("submitTin").disabled = true;
-      log("SDK submitPaymentAuthorizationToMempool", submitted.status ?? "Intent submitted");
-    } catch (error) { log("INTENT SUBMISSION BLOCKED", error.message); }
+  async function watchTinCredit(operationId) {
+    let lastStatus = "";
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      try {
+        const work = await api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(operationId)}`);
+        const fundingStatus = String(work.status ?? "UNKNOWN").toUpperCase();
+        const creditStatus = String(work.settlement?.status ?? "WAITING_FOR_FUNDING").toUpperCase();
+        const progress = `${fundingStatus}/${creditStatus}`;
+        if (progress !== lastStatus) {
+          lastStatus = progress;
+          log(`TIN CREDIT ${creditStatus}`, creditStatus === "CONFIRMED"
+            ? `GPRU credit finalized / Solana ${work.settlement?.result?.signature ?? "confirmed"}`
+            : `Reserve funding ${fundingStatus}; Receiver settlement ${creditStatus}`);
+        }
+        if (creditStatus === "CONFIRMED" || ["FAILED", "REJECTED"].includes(fundingStatus) || ["FAILED", "REJECTED"].includes(creditStatus)) {
+          const output = $("tinCreditResult");
+          if (output) output.textContent = creditStatus === "CONFIRMED"
+            ? `TIN credit ${operationId} confirmed${work.settlement?.result?.signature ? ` on Solana: ${work.settlement.result.signature}` : ""}.`
+            : `TIN credit ${operationId} ended with funding ${fundingStatus} and credit ${creditStatus}. See SDK activity for the service result.`;
+          return;
+        }
+      } catch (error) {
+        if (attempt === 0) log("TIN CREDIT STATUS WAITING", error instanceof Error ? error.message : String(error));
+      }
+    }
+    log("TIN CREDIT STATUS PENDING", `Check Receiver work ${operationId} for its latest Node and Cranker state.`);
   }
 
   async function buildWalletTransfer() {
@@ -471,15 +644,6 @@
       const transfer = await api("/api/tsn/sdk/build-wallet-transfer", { method: "POST", body: JSON.stringify({ recipientWallet: $("walletRecipient").value.trim(), tokenMintAddress: $("walletMint").value.trim(), amountUi: $("walletAmount").value, tokenDecimals: 6 }) });
       log("SDK buildTsnSplTokenTransferTransaction", transfer.status ?? "Unsigned transfer ready");
     } catch (error) { log("WALLET TRANSFER BLOCKED", error.message); }
-  }
-
-  async function buildFunding() {
-    try {
-      requireWallet();
-      requireNetwork();
-      const funding = await api("/api/tsn/sdk/build-funding", { method: "POST", body: JSON.stringify({ tokenMintAddress: $("fundingMint").value.trim(), amountUi: $("fundingAmount").value, tokenDecimals: 6 }) });
-      log("SDK buildTsnSponsoredSettlementTransaction", funding.status ?? "Unsigned funding ready");
-    } catch (error) { log("FUNDING BUILD BLOCKED", error.message); }
   }
 
   document.querySelectorAll('[role="tab"]').forEach((tab) => { tab.onclick = () => selectTab(tab.id); });
@@ -520,10 +684,14 @@
     if (activeWallet && activeWallet.isConnected === false) handleWalletDisconnect(activeWallet);
   });
   $("refreshStatus").onclick = syncNetworkStatus;
+  $("resolveTin").onclick = resolveTinForReview;
+  $("recipientTin").addEventListener("input", () => {
+    resolvedTin = null;
+    $("payTin").disabled = true;
+    $("tinResolution").hidden = true;
+  });
   $("payTin").onclick = payTin;
-  $("submitTin").onclick = submitTin;
   $("buildWalletTransfer").onclick = buildWalletTransfer;
-  $("buildFunding").onclick = buildFunding;
   configureCurrentTinPath();
   document.querySelectorAll('.tab-panel:not(#panel-status)').forEach((panel) => {
     if (panel.querySelector('.modal-close')) return;

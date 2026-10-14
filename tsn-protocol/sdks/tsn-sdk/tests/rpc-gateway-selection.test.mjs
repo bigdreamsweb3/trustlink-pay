@@ -19,7 +19,7 @@ test("SDK defaults to the TSN RPC gateway and never adds a local or public fallb
   else process.env.TSN_RPC_GATEWAY_URL = previous;
 });
 
-test("network status checks only the configured RPC gateway when live and local RPCs are supplied", async () => {
+test("network status prefers a healthy local TSN RPC gateway", async () => {
   const requested = [];
   const status = await getTsnNetworkStatus({
     local: { rpc: "http://127.0.0.1:8787" },
@@ -33,9 +33,32 @@ test("network status checks only the configured RPC gateway when live and local 
     },
   });
 
-  assert.deepEqual(requested, ["https://tsn-rpc-gateway.vercel.app"]);
+  assert.deepEqual(requested, ["http://127.0.0.1:8787"]);
   assert.deepEqual(status.selected.rpc, {
-    source: "configured",
+    source: "local",
+    url: "http://127.0.0.1:8787",
+  });
+});
+
+test("network status falls back to the live TSN RPC gateway when local RPC is unavailable", async () => {
+  const requested = [];
+  const status = await getTsnNetworkStatus({
+    local: { rpc: "http://127.0.0.1:8787" },
+    live: { rpc: "https://tsn-rpc-gateway.vercel.app" },
+    fetchImpl: async (input) => {
+      const url = String(input);
+      requested.push(url);
+      if (url.startsWith("http://127.0.0.1")) throw new Error("connection refused");
+      return new Response(JSON.stringify({ result: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  assert.deepEqual(requested, ["http://127.0.0.1:8787", "https://tsn-rpc-gateway.vercel.app"]);
+  assert.deepEqual(status.selected.rpc, {
+    source: "live",
     url: "https://tsn-rpc-gateway.vercel.app",
   });
 });

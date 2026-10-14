@@ -24,23 +24,23 @@ pub const TCAP_LIQUIDITY_POOL_SEED: &[u8] = b"tcap:liquidity-pool:v1";
 pub const TCAP_EXIT_RECEIPT_SEED: &[u8] = b"tcap:exit-receipt:v1";
 pub const TCAP_TIP_LIABILITY_V2_SEED: &[u8] = b"tcap:tip-liability:v2";
 
-pub fn derive_reserve_authority(asset_state: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_reserve_authority(asset_entry: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[TCAP_RESERVE_AUTHORITY_SEED, asset_state.as_ref()],
+        &[TCAP_RESERVE_AUTHORITY_SEED, asset_entry.as_ref()],
         &crate::ID,
     )
 }
 
-pub fn derive_reserve_state(asset_state: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[TCAP_RESERVE_STATE_SEED, asset_state.as_ref()], &crate::ID)
+pub fn derive_reserve_state(asset_entry: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_RESERVE_STATE_SEED, asset_entry.as_ref()], &crate::ID)
 }
 
-pub fn derive_future_vault(asset_state: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[TCAP_FUTURE_VAULT_SEED, asset_state.as_ref()], &crate::ID)
+pub fn derive_future_vault(asset_entry: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_FUTURE_VAULT_SEED, asset_entry.as_ref()], &crate::ID)
 }
 
-pub fn derive_funding_root(asset_state: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[TCAP_FUNDING_ROOT_SEED, asset_state.as_ref()], &crate::ID)
+pub fn derive_funding_root(asset_entry: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[TCAP_FUNDING_ROOT_SEED, asset_entry.as_ref()], &crate::ID)
 }
 
 /// Derives the TCAP tip-state PDA from a blinded TINS privacy-receiving-root
@@ -58,11 +58,11 @@ pub fn derive_tcap_tin_tip_v1(
     )
 }
 
-pub fn derive_funding_claim(asset_state: &Pubkey, funding_identifier: &[u8; 32]) -> (Pubkey, u8) {
+pub fn derive_funding_claim(asset_entry: &Pubkey, funding_identifier: &[u8; 32]) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             TCAP_FUNDING_CLAIM_SEED,
-            asset_state.as_ref(),
+            asset_entry.as_ref(),
             funding_identifier,
         ],
         &crate::ID,
@@ -70,29 +70,29 @@ pub fn derive_funding_claim(asset_state: &Pubkey, funding_identifier: &[u8; 32])
 }
 
 pub fn derive_funding_authorization_nonce(
-    asset_state: &Pubkey,
+    asset_entry: &Pubkey,
     depositor: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             TCAP_FUNDING_NONCE_SEED,
-            asset_state.as_ref(),
+            asset_entry.as_ref(),
             depositor.as_ref(),
         ],
         &crate::ID,
     )
 }
 
-pub fn derive_asset_governance_policy(asset_state: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_asset_governance_policy(asset_entry: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[TCAP_ASSET_GOVERNANCE_POLICY_SEED, asset_state.as_ref()],
+        &[TCAP_ASSET_GOVERNANCE_POLICY_SEED, asset_entry.as_ref()],
         &crate::ID,
     )
 }
 
-pub fn derive_asset_extension_policy(asset_state: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_asset_extension_policy(asset_entry: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[TCAP_ASSET_EXTENSION_POLICY_SEED, asset_state.as_ref()],
+        &[TCAP_ASSET_EXTENSION_POLICY_SEED, asset_entry.as_ref()],
         &crate::ID,
     )
 }

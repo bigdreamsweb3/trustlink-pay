@@ -15,7 +15,6 @@ export {
 export type {
   TransientOwnerAuthorizationProof,
 } from "./transient-owner-authorization.js";
-export { createSolanaTinsOwnerVerifier } from "./tins-owner-verifier.js";
 export type {
   TinsOwnerVerifier,
   TinsOwnerVerificationResult,

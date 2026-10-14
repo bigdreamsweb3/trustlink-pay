@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-const EXPECTED_ID = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x";
+const EXPECTED_ID = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const rust = readFileSync(resolve(root, "programs/tcap/src/lib.rs"), "utf8");

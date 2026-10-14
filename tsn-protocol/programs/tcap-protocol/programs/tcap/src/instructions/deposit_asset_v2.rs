@@ -16,28 +16,23 @@ pub struct DepositAssetV2<'info> {
     )]
     pub config: Box<Account<'info, TcapGlobalConfigV1>>,
     #[account(
-        seeds = [TCAP_ASSET_STATE_SEED, token_program.key().as_ref(), mint.key().as_ref()],
-        bump = asset_state.bump,
-        constraint = asset_state.asset.token_program == token_program.key() @ TcapError::InvalidTokenProgram,
-        constraint = asset_state.asset.mint == mint.key() @ TcapError::WrongAsset
-    )]
-    pub asset_state: Box<Account<'info, TcapAssetStateV1>>,
-    #[account(
         seeds = [TCAP_ASSET_ENTRY_SEED, asset_entry.registry.as_ref(), asset_entry.asset.token_program.as_ref(), asset_entry.asset.mint.as_ref()],
         bump = asset_entry.bump,
         constraint = asset_entry.asset.token_program == token_program.key() @ TcapError::InvalidTokenProgram,
         constraint = asset_entry.asset.mint == mint.key() @ TcapError::WrongAsset,
-        constraint = asset_entry.reserve_state == asset_state.reserve_state @ TcapError::InvalidReserve,
-        constraint = asset_entry.future_vault == asset_state.future_vault @ TcapError::InvalidReserve,
-        constraint = asset_entry.reserve_authority == asset_state.reserve_authority @ TcapError::InvalidReserve,
+        constraint = asset_entry.deposits_enabled @ TcapError::AssetUnavailable,
+        constraint = !asset_entry.paused @ TcapError::AssetUnavailable,
+        constraint = !asset_entry.deprecated @ TcapError::AssetUnavailable,
+        constraint = asset_entry.status == TcapAssetStatusV1::Active @ TcapError::AssetUnavailable,
+        constraint = asset_entry.risk_state == TcapRiskStateV1::Approved @ TcapError::AssetUnavailable,
     )]
     pub asset_entry: Box<Account<'info, TcapAssetEntryV1>>,
     #[account(
         mut,
-        address = asset_state.reserve_state @ TcapError::InvalidReserve,
-        constraint = reserve_state.asset_state == asset_state.key() @ TcapError::InvalidReserve,
+        address = asset_entry.reserve_state @ TcapError::InvalidReserve,
+        constraint = reserve_state.asset_entry == asset_entry.key() @ TcapError::InvalidReserve,
         constraint = reserve_state.future_vault == vault.key() @ TcapError::InvalidReserve,
-        constraint = reserve_state.reserve_authority == asset_state.reserve_authority @ TcapError::InvalidReserve,
+        constraint = reserve_state.reserve_authority == asset_entry.reserve_authority @ TcapError::InvalidReserve,
         constraint = reserve_state.funding_enabled @ TcapError::AssetUnavailable,
         constraint = !reserve_state.paused @ TcapError::AssetUnavailable
     )]
@@ -50,14 +45,14 @@ pub struct DepositAssetV2<'info> {
     pub source: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(
         mut,
-        address = asset_state.future_vault @ TcapError::ReserveVaultUnavailable,
+        address = asset_entry.future_vault @ TcapError::ReserveVaultUnavailable,
         constraint = vault.mint == mint.key() @ TcapError::WrongAsset,
-        constraint = vault.owner == asset_state.reserve_authority @ TcapError::InvalidReserve
+        constraint = vault.owner == asset_entry.reserve_authority @ TcapError::InvalidReserve
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(address = asset_state.asset.mint @ TcapError::WrongAsset)]
+    #[account(address = asset_entry.asset.mint @ TcapError::WrongAsset)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(address = asset_state.asset.token_program @ TcapError::InvalidTokenProgram)]
+    #[account(address = asset_entry.asset.token_program @ TcapError::InvalidTokenProgram)]
     pub token_program: Interface<'info, TokenInterface>,
 }
 
@@ -111,7 +106,7 @@ pub fn handler(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()> {
     emit!(AssetDepositAcceptedV2 {
         version: crate::TCAP_INSTRUCTION_VERSION_V1,
         registry: Pubkey::default(),
-        asset_entry: ctx.accounts.asset_state.key(),
+        asset_entry: ctx.accounts.asset_entry.key(),
         governance_policy: Pubkey::default(),
         extension_policy: Pubkey::default(),
         reserve_state: ctx.accounts.reserve_state.key(),

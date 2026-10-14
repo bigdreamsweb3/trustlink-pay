@@ -29,7 +29,6 @@ export const TIN_OPERATION_FEE_SPLIT_BPS = {
 } as const;
 
 export const TIN_CREATION_FEE_USDC = "0.05" as const;
-export const TIN_UPDATE_FEE_USDC = "0.01" as const;
 export const DEFAULT_TIN_PRU_COUNT = 30 as const;
 export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint) {
   const verifier = (amountBaseUnits * BigInt(TIN_OPERATION_FEE_SPLIT_BPS.verifier)) / 10_000n;
@@ -43,13 +42,13 @@ export function computeTinOperationFeeSplitBaseUnits(amountBaseUnits: bigint) {
   };
 }
 
-export type TsnTinOperationKind = "tin_creation" | "tin_update";
+export type TsnTinOperationKind = "tin_creation";
 
 export type TsnTinOperationIntent = {
   id: string;
   kind: TsnTinOperationKind;
   ownerPubkey: string;
-  tin?: string | null;
+  tin?: never;
   displayName: string;
   encryptedMasterSeedBase64: string;
   encryptedMetadataHash: string;
@@ -130,15 +129,6 @@ export type TsnTinOperationRecord = {
   pruCount?: 30;
   creationFeeAmount?: string | null;
   creationFeeMint?: string | null;
-  newDisplayName?: string | null;
-  newEncryptedMasterSeed?: string | null;
-  newEncryptedMetadataHash?: string | null;
-  newPruConfigurationHash?: string | null;
-  newEncryptedPublicRouteEnvelope?: string | null;
-  newRouteVersion?: number | null;
-  newRouteNonce?: string | null;
-  updateFeeAmount?: string | null;
-  updateFeeMint?: string | null;
 };
 
 export type CreateIntentRequest = {
@@ -153,8 +143,37 @@ export type CreateIntentRequest = {
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
-  senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
+  senderFundingMode?: "tcap_deposit_v2" | null;
+  /** Opaque V2 GPRU transition plus recipient-encrypted credit note. */
+  tcapCreditTransition?: {
+    tipRootCommitment: string;
+    previousCommitment: string;
+    newCommitment: string;
+    sequence: string;
+    tokenId: number;
+    policyCommitment: string;
+    gpruScopeCommitment: string;
+    nullifier: string;
+    validAfterSlot: string;
+    expiresAtSlot: string;
+    authorizationDigest: string;
+    gpruCreditEnvelopeBase64: string;
+    gpruCreditNonceBase64: string;
+    recipientPrivacyKeyCommitment: string;
+    mint: string;
+    amountBaseUnits: string;
+    depositAmountBaseUnits: string;
+    depositAccounts: {
+      depositor: string;
+      config: string;
+      assetEntry: string;
+      reserveState: string;
+      source: string;
+      vault: string;
+      mint: string;
+      tokenProgram: string;
+    };
+  } | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -248,8 +267,8 @@ export function buildCreateIntentRequest(params: {
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
-  senderSignedFundingFeePayer?: string | null;
-  senderFundingMode?: "epoch_treasury_v1" | "sponsored_sender_cosigned" | null;
+  senderFundingMode?: "tcap_deposit_v2" | null;
+  tcapCreditTransition?: CreateIntentRequest["tcapCreditTransition"];
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -279,8 +298,8 @@ export function buildCreateIntentRequest(params: {
     senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt ?? null,
     senderFeeAmount: params.senderFeeAmount ?? null,
     senderSignedFundingTransaction: params.senderSignedFundingTransaction ?? null,
-    senderSignedFundingFeePayer: params.senderSignedFundingFeePayer ?? null,
     senderFundingMode: params.senderFundingMode ?? null,
+    tcapCreditTransition: params.tcapCreditTransition ?? null,
     privacyVersion: params.privacyVersion ?? null,
     senderTokenAccount: params.senderTokenAccount ?? null,
     transferId: params.transferId ?? null,

@@ -62,6 +62,23 @@ test("local JSON store creates unique challenge documents, queries, and deletes 
       return worker.collection("parallel").doc(String(index)).create({ index });
     }));
     assert.equal((await localDb.collection("parallel").get()).docs.length, 20);
+
+    const state = localDb.collection("node-state");
+    const bucket = state.doc("state-bucket");
+    const item = bucket.collection("items").doc("item-a");
+    const batch = localDb.batch();
+    batch.set(bucket, { key: "state", value: "ready" });
+    batch.set(item, { field: "item-a", value: "one" });
+    await batch.commit();
+    assert.equal((await bucket.get()).get("value"), "ready");
+    assert.equal((await item.get()).get("value"), "one");
+
+    const cleanup = localDb.batch();
+    cleanup.delete(item);
+    cleanup.delete(bucket);
+    await cleanup.commit();
+    assert.equal((await bucket.get()).exists, false);
+    assert.equal((await item.get()).exists, false);
   } finally {
     if (previousStorePath === undefined) delete process.env.TSN_RECEIVER_LOCAL_FILE;
     else process.env.TSN_RECEIVER_LOCAL_FILE = previousStorePath;

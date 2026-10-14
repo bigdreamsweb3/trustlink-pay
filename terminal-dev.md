@@ -107,7 +107,7 @@ npm run tcap:program:build:devnet
 npm run tcap:program:deploy:devnet
 
 solana program show TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
-solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
+solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF
 
 export TCAP_RPC_URL=https://devnet.helius-rpc.com/?api-key=92a02527-5eef-4999-868a-aec60e19f6c3
 
@@ -119,3 +119,18 @@ Since then, I’ve focused on building Transfer Settlement Network (TSN), a priv
 
 I’m especially interested in the intersection of payments, identity, trust, and infrastructure. I believe the next big layer in crypto is not just faster settlement — it’s better payment behavior, stronger privacy, and systems that people can actually trust.
 
+<!--  -->
+
+I fixed the TCAP liability setup path. **The Cranker now pays the transaction fee and, when needed, rent** to initialize the empty liability account, then submits the credit. Node verifies the deposit and attests the exact liability PDA; the TSN-authorized credit checks remain in place.
+
+The program now permits any signer to initialize that PDA with a zero balance, and the SDK and standalone builder match the updated instruction. I removed the Node’s governance-key signing path. Your main wallet was not changed, no key was created, and nothing was deployed to Devnet.
+
+**Checks passed:** SDK build, Cranker typecheck, Rust `cargo check`, Node syntax parse, and `node --check` for the standalone builder. The TCAP source change must be built and deployed before this flow can run on Devnet.
+
+<!-- NBs -->
+
+The receiving root comes from the TIN owner’s master seed. GPRU uses it with each transaction’s context to derive a unique public key for that transaction. That per-transaction key identifies the recipient’s credit route without reusing the same key each time.
+
+<!--  -->
+
+**Recommendation:** keep settlement details off-chain until the final credit transaction, and don’t create a public settlement record when the intent first arrives. The Receiver currently creates a small internal settlement queue record at ingress, but it contains only a reference to the funding work. It is not an on-chain account or event, and it cannot be leased until funding is confirmed. That internal placeholder is fine for coordinating the work. [Receiver store](C:/Users/codepara/Desktop/trust-link/tsn-protocol/services/tsn-receiver/lib/store.ts:82)

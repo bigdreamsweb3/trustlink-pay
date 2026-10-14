@@ -1,64 +1,21 @@
-# TCAP V2 Devnet preparation
+# TCAP governed asset-entry Devnet flow
 
-The V2 funding runner requires the canonical TCAP asset infrastructure before
-it can deposit liquidity. The required accounts are the asset state, reserve
-state, reserve authority PDA, and governed token vault derived from the
-classic SPL token program and `TCAP_MINT`.
+The current TCAP deposit path is keyed by the governed `asset_entry`. Its
+reserve state, reserve authority, and token vault are derived from that entry;
+the old standalone `initialize_asset_state_v1` instruction is not part of the
+active program interface. Both active deposit instructions bind to the
+governed entry: `deposit_asset_v2` for a reserve deposit and
+`deposit_with_funding_commitment_v2` for a funding-commitment deposit.
 
-The setup command is intentionally separate from the V2 funding/credit test.
-It submits only TCAP's `initialize_asset_state_v1` infrastructure instruction.
-The `v1` suffix names the account layout; this command does not create a V1
-payment intent, AcceptedIntent, epoch, receipt, nullifier, TIN, route, or
-ZK-PRU account.
-
-## Dry-run the setup
-
-Run from the repository root. Shell values override the checked-in defaults;
-the defaults file fills values that are not set. Use a Helius or another
-provider Devnet RPC rather than the browser gateway for this operator command.
-
-```bash
-export TCAP_RPC_URL="https://devnet.helius-rpc.com/?api-key=<your-key>"
-export TCAP_MINT="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
-export TCAP_TOKEN_PROGRAM="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-export TSN_MOTHER_AUTHORITY_WALLET="tsn-protocol/services/tsn-node/keys/tsn-mother-authority.json"
-
-npm run tcap:asset-state:v2:init:devnet
-```
-
-The dry-run prints the canonical addresses and does not write to Devnet. The
-command is idempotent: an already-valid set is reported as
-`ALREADY_INITIALIZED`; a partial or malformed set fails closed.
-
-## Submit the one-time initialization
-
-Review the dry-run output, then explicitly add `--confirm`:
-
-```bash
-npm run tcap:asset-state:v2:init:devnet -- --confirm
-```
-
-The payer must have enough Devnet SOL for rent and transaction fees. The
-script prints only public addresses and the sanitized transaction signature.
-It validates the account owners, discriminators, mint, token program, reserve
-binding, and vault authority after confirmation.
-
-## Run the V2 funding and credit scenario
-
-Once setup reports `INITIALIZED` or `ALREADY_INITIALIZED`, run:
-
-```bash
-npm run tcap:credit:v2:devnet
-```
-
-That scenario performs `deposit_asset_v2` followed by the TSN V2 wrapper and
-TCAP `credit_tcap_tin_tip_v2`. It derives the Mother's associated token account
-when `TCAP_SOURCE_TOKEN_ACCOUNT` is not set and loads the Devnet tip root from
-`protocol-tests/tcap-credit-devnet.defaults.env` when no explicit root is
-provided.
+Register and govern an asset with the root `network:init-asset` / asset-admin
+workflow, then initialize or synchronize the governed reserve and vault. Check
+the resulting on-chain state with `npm run network:status`. The XP deposit
+builder supplies the TCAP program ID, governed asset entry, reserve state,
+reserve authority, vault, sender token account, mint, and token program to
+the selected deposit instruction.
 
 The credit transaction is checked against a strict V2 account and instruction
-allowlist. Funding token accounts, asset state, reserve state, vault, mint,
+allowlist. Funding token accounts, asset entry, reserve state, vault, mint,
 epoch/receipt/nullifier PDAs, TIN/route accounts, and ZK-PRU accounts must not
 appear in that credit transaction.
 

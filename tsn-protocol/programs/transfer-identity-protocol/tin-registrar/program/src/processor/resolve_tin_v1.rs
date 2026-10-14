@@ -8,7 +8,7 @@ use solana_program::{
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID},
 };
 
-use crate::{error::Error, instruction_auto::ResolveTinV1Params, state::TinV1Account, utils::{assert_pda, assert_program_owned, load_borsh}};
+use crate::{error::Error, instruction_auto::ResolveTinV1Params, state::TinV1Account, utils::{assert_pda, assert_program_owned, load_borsh_with_zero_padding}};
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: ResolveTinV1Params) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
@@ -21,7 +21,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: ResolveTin
     let (expected_registry, _) = crate::tin_v1_pda(program_id, &params.lookup_commitment);
     assert_pda(registry, &expected_registry)?;
     assert_program_owned(registry, program_id)?;
-    let account: TinV1Account = load_borsh(registry)?;
+    let account: TinV1Account = load_borsh_with_zero_padding(registry)?;
     if account.version != TinV1Account::VERSION || account.status != TinV1Account::STATUS_ACTIVE
         || account.lookup_commitment != params.lookup_commitment
         || account.owner_commitment != hash(params.owner_pubkey.as_ref()).to_bytes() {

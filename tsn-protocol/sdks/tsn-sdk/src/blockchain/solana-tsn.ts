@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { utils as anchorUtils } from "@coral-xyz/anchor";
 import {
   Keypair,
   PublicKey,
@@ -23,52 +22,6 @@ const VERIFIED_TSN_PROGRAM_PUBLIC_KEY = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
 
 function getVerifiedTsnProgramId() {
   return VERIFIED_TSN_PROGRAM_PUBLIC_KEY;
-}
-
-function isAlreadyProcessedTransactionError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  const transactionMessage =
-    error && typeof error === "object" && "transactionMessage" in error
-      ? String((error as { transactionMessage?: unknown }).transactionMessage ?? "")
-      : "";
-  return (
-    message.includes("This transaction has already been processed") ||
-    transactionMessage.includes("This transaction has already been processed")
-  );
-}
-
-function getSignedTransactionSignature(tx: Transaction) {
-  const signature = tx.signature ?? tx.signatures.find((entry) => entry.signature)?.signature;
-  if (!signature) {
-    throw new Error("Sender-signed settlement transaction is missing a signature after cranker signing.");
-  }
-  return anchorUtils.bytes.bs58.encode(signature);
-}
-
-async function confirmSubmittedTransaction(connection: ReturnType<typeof getConnection>, signature: string) {
-  const deadline = Date.now() + 45_000;
-  while (Date.now() < deadline) {
-    const status = (await connection.getSignatureStatuses([signature], {
-      searchTransactionHistory: true,
-    })).value[0];
-    if (status?.err) {
-      const transaction = await connection.getTransaction(signature, {
-        commitment: "confirmed",
-        maxSupportedTransactionVersion: 0,
-      });
-      const logs = transaction?.meta?.logMessages?.join(" | ") ?? "";
-      const error = new Error(
-        `TSN settlement transaction failed: ${JSON.stringify(status.err)}${logs ? `; logs=${logs}` : ""}`,
-      ) as Error & { transactionLogs?: string[] };
-      error.transactionLogs = transaction?.meta?.logMessages ?? undefined;
-      throw error;
-    }
-    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-  }
-  throw new Error(`TSN settlement confirmation timed out; signature=${signature}`);
 }
 
 const TSN_MOTHER_ESCROW_SEED = Buffer.from("tsn_mother_escrow");
@@ -148,55 +101,6 @@ function encodeOptionU16(value?: number | null) {
 
 
 
-
-export async function tsnSubmitEpochFundingTransaction(params: {
-  operator: Keypair;
-  signedTransactionBase64: string;
-  rpcUrl?: string;
-}) {
-  // The user signature covers the immutable funding message before the Cranker
-  // sees it. The Cranker may add only its required fee-payer signature and
-  // submit the exact serialized transaction; any amount, mint, destination,
-  // or commitment edit invalidates that sender signature.
-  const connection = getConnection(params.rpcUrl);
-  const tx = Transaction.from(Buffer.from(params.signedTransactionBase64, "base64"));
-  if (!tx.feePayer?.equals(params.operator.publicKey)) {
-    throw new Error(
-      `Sender-signed epoch funding fee payer mismatch. Expected cranker ${params.operator.publicKey.toBase58()}, got ${tx.feePayer?.toBase58() ?? "missing"}.`,
-    );
-  }
-
-  tx.partialSign(params.operator);
-  const signedTransaction = tx.serialize({
-    requireAllSignatures: true,
-    verifySignatures: true,
-  });
-  const signedTransactionSignature = getSignedTransactionSignature(tx);
-  let signature: string;
-  try {
-    signature = await connection.sendRawTransaction(signedTransaction, {
-      preflightCommitment: "confirmed",
-    });
-  } catch (error) {
-    if (!isAlreadyProcessedTransactionError(error)) {
-      throw error;
-    }
-    signature = signedTransactionSignature;
-    logger.info("tsn.epoch_funding.replay_confirmed", {
-      feePayer: params.operator.publicKey.toBase58(),
-      signature,
-    });
-  }
-  await confirmSubmittedTransaction(connection, signature);
-
-  logger.info("tsn.epoch_funding.submitted", {
-    feePayer: params.operator.publicKey.toBase58(),
-    signature,
-    stage: "EPOCH_TREASURY_FUNDING",
-  });
-
-  return { mode: "devnet" as const, signature };
-}
 
 export async function tsnInitializeMotherEscrowOnChain(params: {
   authority?: Keypair;

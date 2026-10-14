@@ -36,7 +36,7 @@ class TinTcapRouteResponse(BaseModel):
 
 class TinOperationRecord(BaseModel):
     intentId: str
-    intentType: Literal["tin_creation", "tin_update"]
+    intentType: Literal["tin_creation"]
     tin: str
     ownerPubkey: str
     ownerSignature: Optional[str] = None
@@ -67,12 +67,9 @@ class TinOperationRecord(BaseModel):
     displayName: Optional[str] = None
     encryptedMasterSeed: Optional[str] = None
     encryptedMetadataHash: str
-    pruConfigurationHash: str
     pruCount: Optional[int] = None
     creationFeeAmount: Optional[str] = None
-    updateFeeAmount: Optional[str] = None
     creationFeeMint: Optional[str] = None
-    updateFeeMint: Optional[str] = None
 
 
 class PublicTinOperationRecord(BaseModel):

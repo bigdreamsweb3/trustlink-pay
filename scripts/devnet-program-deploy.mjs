@@ -23,7 +23,7 @@ const plans = {
     workspace: "tsn-protocol/programs/tcap-protocol",
     anchor: "tsn-protocol/programs/tcap-protocol/Anchor.toml",
     program: "tcap",
-    programId: "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x",
+    programId: "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
     artifact: "tsn-protocol/programs/tcap-protocol/target/deploy/tcap.so",
     artifactRelative: "target/deploy/tcap.so",
     keypair: "target/deploy/tcap-keypair.json",
@@ -59,6 +59,10 @@ function displayArgs(args) {
   return args.map((arg) => String(arg).replace(/([?&](?:api-key|key|token)=)[^&\s]+/gi, "$1<redacted>"));
 }
 
+function redactRpcCredentials(value) {
+  return String(value).replace(/([?&](?:api-key|key|token)=)[^&\s'"\\)]+/gi, "$1<redacted>");
+}
+
 function useWslForPrograms() {
   return process.platform === "win32" && process.env.TSN_NATIVE_SOLANA_TOOLS !== "1";
 }
@@ -70,7 +74,11 @@ function runProgram(command, args, cwd, label, env = {}, capture = false) {
     console.log(`[devnet] $ ${command} ${displayArgs(args).join(" ")}`);
     const result = spawnSync(command, args, { cwd, env: mergedEnv, encoding: capture ? "utf8" : undefined, stdio: capture ? "pipe" : "inherit" });
     if (result.error) throw result.error;
-    if (result.status !== 0) throw new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);
+    if (result.status !== 0) {
+      const error = new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);
+      error.commandOutput = redactRpcCredentials(`${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim());
+      throw error;
+    }
     return capture ? result.stdout.trim() : "";
   }
 
@@ -82,13 +90,15 @@ function runProgram(command, args, cwd, label, env = {}, capture = false) {
   const unixCommand = [command, ...args].map(shellQuote).join(" ");
   const script = `${assignments ? `${assignments} && ` : ""}cd ${shellQuote(unixCwd)} && ${unixCommand}`;
   console.log(`\n[devnet] ${label}`);
-  const loggedScript = process.env.ANCHOR_PROVIDER_URL
-    ? script.replaceAll(process.env.ANCHOR_PROVIDER_URL, "<rpc-redacted>")
-    : script;
+  const loggedScript = script.replace(/([?&](?:api-key|key|token)=)[^&\s'"\\]+/gi, "$1<redacted>");
   console.log(`[devnet] wsl.exe bash -lc ${shellQuote(loggedScript)}`);
   const result = spawnSync("wsl.exe", ["bash", "-lc", script], { encoding: capture ? "utf8" : undefined, env: process.env, stdio: capture ? "pipe" : "inherit" });
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);
+  if (result.status !== 0) {
+    const error = new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);
+    error.commandOutput = redactRpcCredentials(`${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim());
+    throw error;
+  }
   return capture ? result.stdout.trim() : "";
 }
 
@@ -100,9 +110,10 @@ function readAnchorConfig(relativePath) {
 }
 
 function resolveRpc(plan) {
-  return process.env.ANCHOR_PROVIDER_URL
+  const configuredCluster = readAnchorConfig(plan.anchor).cluster;
+  return configuredCluster
+    ?? process.env.ANCHOR_PROVIDER_URL
     ?? process.env.SOLANA_RPC_URL
-    ?? readAnchorConfig(plan.anchor).cluster
     ?? (() => { throw new Error("No Devnet RPC found. Set ANCHOR_PROVIDER_URL or use the workspace Anchor.toml cluster."); })();
 }
 
@@ -226,16 +237,27 @@ function deploy(plan) {
   console.log(`max sign attempts: ${maxSignAttempts}`);
   console.log("Deploying SBF artifact to Devnet...");
   const workspace = join(root, plan.workspace);
+  let currentShow = "";
+  let initialDeploy = false;
+  try {
+    currentShow = runProgram("solana", ["program", "show", "--url", rpc, programId], workspace, `Inspect ${plan.label} ProgramData capacity`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet }, true);
+  } catch (error) {
+    const output = error.commandOutput ?? "";
+    const missingAccount = /AccountNotFound|Unable to find (?:the )?account|account .* not found/i.test(output);
+    if (!missingAccount) throw error;
+    console.log(`${plan.label} program ${programId} is not deployed; preparing initial deployment.`);
+    programIdFromKeypair(plan);
+    initialDeploy = true;
+  }
   const buffer = ensureBufferSigner(plan, workspace);
   const bufferSigner = buffer.path;
   console.log(`buffer signer: ${bufferSigner}`);
-  const currentShow = runProgram("solana", ["program", "show", "--url", rpc, programId], workspace, `Inspect ${plan.label} ProgramData capacity`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet }, true);
   const currentLength = Number.parseInt(currentShow.match(/Data Length:\s*([\d,]+)/)?.[1]?.replaceAll(",", "") ?? "0", 10);
   const maxLen = currentLength >= requiredLength
-    ? requiredLength
+    ? currentLength
     : requiredLength + growthHeadroom;
   console.log(`program data max length: ${maxLen}`);
-  if (currentLength > 0 && currentLength < requiredLength) {
+  if (!initialDeploy && currentLength > 0 && currentLength < requiredLength) {
     const extension = maxLen - currentLength;
     console.log(`extending ProgramData by ${extension} bytes (${currentLength} -> ${maxLen})`);
     // `program extend` does not accept the transport flags used by

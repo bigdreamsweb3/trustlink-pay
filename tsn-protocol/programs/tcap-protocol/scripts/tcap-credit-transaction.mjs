@@ -11,7 +11,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-export const TCAP_PROGRAM_ID = new PublicKey(process.env.TCAP_PROGRAM_ID ?? "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+export const TCAP_PROGRAM_ID = new PublicKey(process.env.TCAP_PROGRAM_ID ?? "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 export const TSN_PROGRAM_ID = new PublicKey(process.env.TSN_PROGRAM_ID ?? "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 const seed = (value) => Buffer.from(value, "utf8");
 const digest = (value) => createHash("sha256").update(value).digest();
@@ -526,7 +526,6 @@ export function buildDepositAssetV2Instruction(fields) {
     keys: [
       { pubkey: pubkey(fields.depositor), isSigner: true, isWritable: true },
       { pubkey: pubkey(fields.config), isSigner: false, isWritable: false },
-      { pubkey: pubkey(fields.assetState), isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
       { pubkey: pubkey(fields.source), isSigner: false, isWritable: true },
@@ -545,18 +544,21 @@ export function deriveOneTimeTipLiabilityPda({ oneTimeTip, assetEntry }) {
 }
 
 export function buildInitializeOneTimeTipLiabilityInstruction(fields) {
+  if (BigInt(fields.initialAvailable ?? 0) !== 0n) {
+    throw new Error("One-time TIP liability initialization only creates an empty account");
+  }
   const tip = pubkey(fields.oneTimeTip);
   const liability = fields.liability ? pubkey(fields.liability) : deriveOneTimeTipLiabilityPda({ oneTimeTip: tip, assetEntry: fields.assetEntry });
   return new TransactionInstruction({
     programId: TCAP_PROGRAM_ID, keys: [
-      { pubkey: pubkey(fields.authority), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
       { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
       { pubkey: tip, isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
       { pubkey: liability, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ], data: concat(discriminator("initialize_one_time_tip_liability"), u64(fields.initialAvailable ?? 0))
+    ], data: concat(discriminator("initialize_one_time_tip_liability"), u64(0))
   });
 }
 

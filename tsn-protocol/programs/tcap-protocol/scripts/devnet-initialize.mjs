@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
+import { createHash } from "node:crypto";
 import {
   Connection,
   Keypair,
@@ -10,10 +11,17 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-const PROGRAM_ID = new PublicKey("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+const PROGRAM_ID = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 const TSN_ID = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
-const RPC = process.env.TCAP_RPC_URL ?? "https://api.devnet.solana.com";
-const walletPath = process.env.SOLANA_WALLET ?? `${os.homedir()}/.config/solana/id.json`;
+const anchorConfig = fs.readFileSync(new URL("../Anchor.toml", import.meta.url), "utf8");
+const anchorRpc = anchorConfig.match(/^cluster\s*=\s*"([^"]+)"/m)?.[1];
+const anchorWallet = anchorConfig.match(/^wallet\s*=\s*"([^"]+)"/m)?.[1];
+const RPC = anchorRpc ?? process.env.TCAP_RPC_URL ?? process.env.ANCHOR_PROVIDER_URL ?? process.env.SOLANA_RPC_URL;
+if (!RPC) throw new Error("No Devnet RPC configured in tsn-protocol/programs/tcap-protocol/Anchor.toml");
+const configuredWallet = process.env.SOLANA_WALLET ?? anchorWallet ?? `${os.homedir()}/.config/solana/id.json`;
+const walletPath = configuredWallet.startsWith("~/")
+  ? `${os.homedir()}/${configuredWallet.slice(2)}`
+  : configuredWallet;
 const payer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(walletPath, "utf8"))));
 const connection = new Connection(RPC, "confirmed");
 
@@ -61,15 +69,39 @@ function initializeRegistryInstruction() {
   });
 }
 
+function initializeCommitmentRootInstruction() {
+  const data = Buffer.alloc(8 + 32);
+  createHash("sha256")
+    .update("global:initialize_commitment_root_v1")
+    .digest()
+    .subarray(0, 8)
+    .copy(data, 0);
+  return new TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+      { pubkey: config, isSigner: false, isWritable: false },
+      { pubkey: root, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
 const configInfo = await connection.getAccountInfo(config);
 if (configInfo) {
   console.log(`TCAP config already initialized: ${config.toBase58()}`);
   process.exit(0);
 }
 
-const tx = new Transaction().add(initializeTcapInstruction(), initializeRegistryInstruction());
+const tx = new Transaction().add(
+  initializeTcapInstruction(),
+  initializeRegistryInstruction(),
+  initializeCommitmentRootInstruction(),
+);
 const signature = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: "confirmed" });
 console.log(`TCAP initialized on devnet: ${PROGRAM_ID.toBase58()}`);
 console.log(`Config PDA: ${config.toBase58()}`);
 console.log(`Registry PDA: ${registry.toBase58()}`);
+console.log(`Commitment root PDA: ${root.toBase58()}`);
 console.log(`Signature: ${signature}`);

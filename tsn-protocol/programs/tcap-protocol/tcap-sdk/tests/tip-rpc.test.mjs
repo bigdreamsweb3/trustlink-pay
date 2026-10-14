@@ -6,7 +6,7 @@ import { decodeTcapTinTipV1Account, fetchTcapTinTipV1 } from "../dist/index.js";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 
 const address = "Tip111111111111111111111111111111111111111";
-const owner = "TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x";
+const owner = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF";
 
 function base64(bytes) {
   let binary = "";

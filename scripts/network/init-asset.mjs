@@ -15,7 +15,7 @@ if (live.config.registryAuthority !== signer.publicKey.toBase58()) {
   const config = new PublicKey(live.addresses.config);
   const data = createHash("sha256").update("global:migrate_tcap_config_layout_v1").digest().subarray(0, 8);
   const repair = new TransactionInstruction({
-    programId: live.program.address ? new PublicKey(live.program.address) : new PublicKey("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x"), keys: [
+    programId: live.program.address ? new PublicKey(live.program.address) : new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF"), keys: [
       { pubkey: signer.publicKey, isSigner: true, isWritable: true }, { pubkey: config, isSigner: false, isWritable: true }, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ], data
   });

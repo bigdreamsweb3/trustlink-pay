@@ -1,11 +1,4 @@
-use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    program::{invoke_signed},
-    rent::Rent,
-    system_instruction,
-    sysvar::Sysvar,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed, rent::Rent, system_instruction, sysvar::Sysvar};
 
 pub fn create_pda_account<'a>(
     payer: &AccountInfo<'a>,
@@ -32,12 +25,3 @@ pub fn create_pda_account<'a>(
     )
 }
 
-pub fn transfer_signed<'a>(
-    source: &AccountInfo<'a>,
-    destination: &AccountInfo<'a>,
-    amount: u64,
-    signer_seeds: &[&[u8]],
-) -> ProgramResult {
-    let instruction = system_instruction::transfer(source.key, destination.key, amount);
-    invoke_signed(&instruction, &[source.clone(), destination.clone()], &[signer_seeds])
-}

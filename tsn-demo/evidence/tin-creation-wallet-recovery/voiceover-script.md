@@ -1,19 +1,19 @@
-# TSN XP: create and recover a TIN
+# Demo 1 · Create and recover a TIN
 
-**Voiceover draft, approximately 55 seconds.** Timing is an edit guide; align each beat to the matching moment in the source recording.
+Use each line as a short voice cue, not a paragraph to read. Record one section at a time and leave a natural pause after each cue so you can add your own explanation before moving to the next scene.
 
-| Edit beat | Narration |
-| --- | --- |
-| Open on TSN XP / connect wallet | “This is TSN XP on Solana Devnet. A Transfer Identity Number gives a person a simple ten-digit identity to share when receiving a transfer.” |
-| Show the wallet and Create TIN action | “We connect the owner wallet and create a TIN. The wallet approves the request, while the identity details travel as encrypted data.” |
-| Show Receiver, Node, and staged-transaction evidence | “The Receiver accepts the intent. The Node verifies it and signs its decision. The staged registry writes then finalize on Solana.” |
-| Show the confirmed result | “For this run, the Receiver reached confirmed state, the Node decision is recorded as verified, and all five staging transactions plus the final registry transaction finalized on Devnet.” |
-| Reload, reconnect the same wallet, show recovery approval | “After a reload, the same wallet finds its owner recovery record. One wallet signature lets TSN XP decrypt the TIN and display name locally.” |
-| End on the recovered identity and Devnet proof | “The identity is ready again without asking the owner to remember or re-enter the ten digits. The recovery signature authorizes decryption; it does not submit a transaction or move funds.” |
+| Video time | Scene | Voice cue |
+| --- | --- | --- |
+| 00:00–00:10 | TSN XP and wallet connection | “This is TSN XP on Solana Devnet. A TIN is a ten-digit ID people can share to receive transfers.” |
+| 00:10–00:23 | Create TIN and wallet approval | “I connect my wallet, add a display name, and approve creation. TSN encrypts the identity on this device before the signed request is sent.” |
+| 00:23–00:29 | Receiver ingress | “The Receiver accepts the encrypted request.” |
+| 00:28–00:33 | Node verification | “The Node verifies it and signs its decision.” |
+| 00:33–00:40 | Cranker submission | “A Cranker takes the verified work and stages the registry update.” |
+| 00:39–00:46 | Solana finality | “Five staged writes and the final registry write confirm on Devnet. The program assigns the TIN.” |
+| 00:46–00:54 | Wallet recovery | “After reload, I reconnect the same wallet and approve recovery. TSN XP decrypts my TIN and name on this device. Recovery sends no transaction.” |
 
-## Edit notes
+## Delivery notes
 
-- Keep the wallet approval readable, but do not show recovery phrases, private keys, or the encrypted master-seed value.
-- Pair the verification and finality beat with `receiver-evidence.json` and `solana-staged-transactions.json` as source overlays. All six creation transactions are finalized.
-- The final Receiver snapshot does not preserve the transient Cranker lease. Do not add a lease ID or claim a lease was captured in this run.
-- Use the SDK call from `sdk-code-map.md` during the recovery beat. The XP currently uses the SDK to fetch the encrypted owner recovery record and performs V4 decryption locally in its browser code.
+- Keep each cue conversational and pause between scenes. Add personal details only where they match the on-screen action.
+- For the creation scene, say that encryption happens on the user's device before the request is sent. Do not claim that an attacker can never access the device; local encryption protects the identity data from being sent in plaintext, but cannot make a compromised device safe.
+- Keep the owner's signature and encrypted identity bytes out of overlays. The saved Receiver snapshot does not preserve the transient Cranker lease, so describe the Cranker's submission role without claiming a lease ID was captured.

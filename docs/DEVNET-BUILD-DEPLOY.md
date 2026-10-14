@@ -67,7 +67,7 @@ The expected Devnet program IDs are:
 
 ```text
 TSN  TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
-TCAP TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x
+TCAP tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF
 ```
 
 ### Required upgrade gate before credit bootstrap
@@ -82,7 +82,7 @@ Verify the deployed program after the upgrade and record the new `Last Deployed
 In Slot` value before continuing:
 
 ```bash
-solana program show TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x \
+solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF \
   --url "$ANCHOR_PROVIDER_URL"
 ```
 

@@ -19,7 +19,7 @@ test("legacy TSN program does not compile a TCAP-owned module", () => {
 });
 
 test("TCAP has an independent program ID and reserve-authority seed domain", () => {
-  assert.match(tcapLib, /TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x/);
+  assert.match(tcapLib, /tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF/);
   assert.match(tcapAuthority, /tcap:reserve-authority:v1/);
   const productionAuthorityCode = tcapAuthority.split("#[cfg(test)]", 1)[0];
   assert.doesNotMatch(productionAuthorityCode, /TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V/);

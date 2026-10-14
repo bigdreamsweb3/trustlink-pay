@@ -14,6 +14,32 @@ export const TSN_CANONICAL_DOMAIN_HASH = bytesToHex(
 export const TSN_CANONICAL_DOMAIN_DISPLAY = `...${TSN_CANONICAL_DOMAIN_HASH.slice(-8)}`;
 const USDC_DECIMALS = 6n;
 
+/** Convert a human token amount to integer base units without floating-point rounding. */
+export function parseTokenAmountToBaseUnits(
+  value: string | number,
+  decimals = 6,
+  options: { allowZero?: boolean } = {},
+): bigint {
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
+    throw new CanonicalMessageError("Token decimals must be an integer from 0 through 18");
+  }
+  const amount = String(value).trim();
+  const match = amount.match(/^(\d+)(?:\.(\d+))?$/);
+  if (!match || (match[2]?.length ?? 0) > decimals) {
+    throw new CanonicalMessageError(`Amount must be a plain decimal with at most ${decimals} fractional digits`);
+  }
+  const whole = BigInt(match[1]);
+  const fractional = BigInt((match[2] ?? "").padEnd(decimals, "0") || "0");
+  const baseUnits = whole * 10n ** BigInt(decimals) + fractional;
+  if (baseUnits < 0n || (!options.allowZero && baseUnits === 0n)) {
+    throw new CanonicalMessageError(options.allowZero ? "Amount must not be negative" : "Amount must be positive");
+  }
+  if (baseUnits > 0xffff_ffff_ffff_ffffn) {
+    throw new CanonicalMessageError("Amount is outside the u64 range");
+  }
+  return baseUnits;
+}
+
 type CanonicalValue = string | number | bigint | Date;
 
 function formatValue(value: CanonicalValue) {
@@ -272,30 +298,6 @@ export function parseTinCreationMessage(message: string) {
     tin: parseTin(requireField(fields, "TIN"), "TIN"),
     displayName: requireField(fields, "Display Name"),
     privacy: requireField(fields, "Privacy"),
-    nonce: requireField(fields, "Nonce"),
-    expires: parseExpiry(requireField(fields, "Expires")),
-  };
-}
-
-export function buildTinUpgradeMessage(params: {
-  tin: string;
-  displayName: string;
-  nonce: string;
-  expires: string | Date;
-}) {
-  return buildMessage("TIN Upgrade", [
-    ["TIN", parseTin(params.tin, "TIN")],
-    ["Display Name", params.displayName],
-    ["Nonce", params.nonce],
-    ["Expires", params.expires instanceof Date ? params.expires : new Date(params.expires)],
-  ]);
-}
-
-export function parseTinUpgradeMessage(message: string) {
-  const fields = parseMessage(message, "TIN Upgrade");
-  return {
-    tin: parseTin(requireField(fields, "TIN"), "TIN"),
-    displayName: requireField(fields, "Display Name"),
     nonce: requireField(fields, "Nonce"),
     expires: parseExpiry(requireField(fields, "Expires")),
   };

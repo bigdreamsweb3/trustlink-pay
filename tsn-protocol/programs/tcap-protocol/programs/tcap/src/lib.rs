@@ -18,7 +18,7 @@ pub use funding_state::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+declare_id!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 
 #[program]
 pub mod tcap {
@@ -137,8 +137,8 @@ pub mod tcap {
         instructions::exit_tcap_liquidity_v1::handler(ctx, args)
     }
 
-    pub fn initialize_asset_state_v1(ctx: Context<InitializeAssetStateV1>) -> Result<()> {
-        instructions::initialize_asset_state_v1::handler(ctx)
+    pub fn initialize_asset_registry_v1(ctx: Context<InitializeAssetRegistryV1>) -> Result<()> {
+        instructions::initialize_asset_registry_v1::handler(ctx)
     }
 
     pub fn migrate_reserve_transfer_pending_v1(
@@ -300,4 +300,5 @@ pub mod tcap {
     ) -> Result<()> {
         instructions::deposit_with_funding_commitment_v2::handler(ctx, args)
     }
+
 }

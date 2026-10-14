@@ -12,7 +12,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-const PROGRAM_ID = new PublicKey("TcApT4CytBqvqEDpRYVB7Wfi6aFzmtSZdWvDsq6bp9x");
+const PROGRAM_ID = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const RPC = process.env.TCAP_RPC_URL ?? "https://api.devnet.solana.com";
 const MINT = new PublicKey(process.env.TCAP_TEST_MINT ?? "9ZqZ4fLxzSedkoZfUFYVXrbezNUbf41KxU9N5i6R92PK");

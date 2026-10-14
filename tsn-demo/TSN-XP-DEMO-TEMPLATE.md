@@ -5,9 +5,10 @@ This template breaks the final demo into short cuts that can be recorded indepen
 ## Final edit target
 
 - **Length:** 2:00–3:00 for the public product demo.
+- **Assembly:** Record each product flow as its own short section. The existing create-and-recover recording remains Demo 1; do not stretch it into the full product demo. Capture the wallet-to-TIN credit as Demo 2, then assemble both with later sections.
 - **Product:** TSN XP, recorded against the local Receiver and Node on Solana Devnet.
 - **Network:** Solana Devnet.
-- **Story:** a user creates a private TIN identity, prepares a transfer, and the protocol moves the intent through Receiver ingress, Node verification, Cranker settlement, and Solana finality.
+- **Story:** a wallet connects to its TIN in any dApp using the TSN SDK. A separate transfer section shows a wallet-funded payment to the already-created TIN and its resulting private credit through TSN.
 - **Evidence rule:** show only observed results. If a step is prepared but not finalized, say that it is prepared.
 
 ## Cut 01 — Product identity and network readiness
@@ -98,17 +99,17 @@ Cranker validates it again against the exact work projection before execution.
 
 **Voiceover cue:** “The Cranker finalizes the TIN V1 registry account on Solana. TSN XP then resolves the private identity for the owner session, while the transaction and registry provide independently checkable completion evidence.”
 
-## Cut 08 — Prepare a private TIN transfer
+## Cut 08 — Wallet-funded transfer to the existing TIN
 
-**Length:** 12–18 seconds.
+**Length:** Record as a separate short demo section. Set final runtime after the real Devnet path is measured.
 
-**Screen action:** Open the TIN transfer modal. Enter the recipient TIN, settlement mint, and amount. Prepare the intent and show the SDK activity result.
+**Screen action:** Open the TIN transfer modal, connect the sending wallet, enter the TIN created in Demo 1 as the recipient, choose the supported settlement mint and a small amount, then approve the actual wallet funding and authorization prompts. Follow the same intent through its final status and the recipient's private credit.
 
-**Capture:** TIN route input, token mint, amount, intent ID, and Receiver acceptance. Redact recipient secrets and any encrypted route fields.
+**Capture:** The signed wallet funding transaction, owner authorization, intent ID, Receiver state, signed Node decision, Cranker lease and submission, confirmed Solana signatures, and the resulting TCap tip sequence/commitment plus owner-readable private balance. Keep credentials, private keys, lookup secrets, and encrypted snapshot keys out of the recording.
 
-**Protocol boundary:** The user addresses the recipient through a TIN route. The SDK builds the transfer intent; the Receiver accepts and stores it before Node verification.
+**Protocol boundary:** The planned path is SDK route resolution and wallet-funded intent, Receiver storage, Node verification and `ConfidentialSettlement` authorization, then Cranker submission of the Solana operations that produce the private TIN credit. The current Node/Cranker integration does not complete this TCap path yet, so keep this cut marked as planned until it is wired and completes on Devnet.
 
-**Voiceover cue:** “A private transfer uses the recipient’s TIN route instead of exposing a wallet address. TSN XP prepares the intent through the SDK, then sends it to Receiver ingress for durable processing.”
+**Voiceover cue:** “The sender funds a transfer to the TIN created in the first demo. TSN verifies the request and records the resulting credit against the recipient’s private balance.”
 
 ## Cut 09 — Wallet transfer and funding boundary
 

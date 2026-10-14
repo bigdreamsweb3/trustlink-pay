@@ -1,0 +1,70 @@
+{
+  "flowId": "tin-creation-wallet-recovery",
+  "title": "Demo 1 · Create and recover a TIN",
+  "source": "../evidence/tin-creation-wallet-recovery/record-xp-demo-rec/tin-creation-and-wallet-recovery-devnet.webm",
+  "output": "../exports/tin-creation-wallet-recovery/TSN-XP-TIN-Creation-and-Recovery-Devnet.mp4",
+  "voiceoverOutput": "../exports/tin-creation-wallet-recovery/final/TSN-XP-Demo-01-TIN-Creation-and-Wallet-Recovery-Devnet.mp4",
+  "voiceoverScript": "../evidence/tin-creation-wallet-recovery/voiceover-script.md",
+  "music": "../music/tsn-regal-drill-bed.wav",
+  "musicVolume": 0.75,
+  "musicFadeOutSeconds": 1.5,
+  "fps": 12,
+  "clips": [
+    {
+      "id": "overview-wallet-connect",
+      "scene": "hero",
+      "sourceStart": 0,
+      "sourceEnd": 30,
+      "speed": 3,
+      "transitionSeconds": 0
+    },
+    {
+      "id": "owner-create-and-approve",
+      "scene": "creation",
+      "sourceStart": 30,
+      "sourceEnd": 70,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    },
+    {
+      "id": "receiver-ingress",
+      "scene": "receiver",
+      "sourceStart": 70,
+      "sourceEnd": 88,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    },
+    {
+      "id": "node-verification",
+      "scene": "node",
+      "sourceStart": 88,
+      "sourceEnd": 103,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    },
+    {
+      "id": "cranker-staged-submit",
+      "scene": "cranker",
+      "sourceStart": 103,
+      "sourceEnd": 124,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    },
+    {
+      "id": "solana-finality",
+      "scene": "finality",
+      "sourceStart": 124,
+      "sourceEnd": 145,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    },
+    {
+      "id": "after-reload-wallet-recovery",
+      "scene": "recovery",
+      "sourceStart": 173,
+      "sourceEnd": 198,
+      "speed": 3,
+      "transitionSeconds": 0.4
+    }
+  ]
+}

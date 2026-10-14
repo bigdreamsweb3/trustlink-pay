@@ -30,7 +30,7 @@ const tsnNodeApplication = {
   name: "tsn-node",
   script: path.join(root, ".venv", "Scripts", "python.exe"),
   args: "-u server.py",
-  cwd: path.join(root, "tsn-protocol", "tsn-node"),
+  cwd: path.join(root, "tsn-protocol", "services", "tsn-node"),
   interpreter: "none",
   instances: 1,
   autorestart: true,

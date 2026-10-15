@@ -279,14 +279,23 @@ function logGatewayEvent(config, level, message, details = {}) {
 async function fetchRpcPayload(provider, payload, timeoutMs) {
   const signal = createTimeoutSignal(timeoutMs);
   const startedAt = performance.now();
-  const response = await globalThis.fetch(provider.url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal,
-  });
+  let response;
+  try {
+    response = await globalThis.fetch(provider.url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    const latencyMs = performance.now() - startedAt;
+    throw Object.assign(
+      error instanceof Error ? error : new Error(String(error)),
+      { latencyMs, retryable: true },
+    );
+  }
   const latencyMs = performance.now() - startedAt;
   const text = await response.text();
   let parsed;

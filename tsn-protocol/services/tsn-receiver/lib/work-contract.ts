@@ -40,17 +40,17 @@ export function assertExternalWorkKind(kind: WorkKind): void {
 }
 
 const AUTHORIZED_FUNDING_KEYS = new Set([
-  "paymentId", "intentSeedHash", "recipientHash", "recipientTin", "recipientRouteCommitment", "recipientRouteVersion",
+  "paymentId", "intentSeedHash", "recipientHash", "recipientTin",
   "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet", "senderAuthorizationMessage",
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
   "senderFeeAmount", "senderSignedFundingTransaction", "senderFundingMode",
   "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
   "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "senderTokenAccount",
   "transferId", "commitmentHash",
-  "settlementEpoch", "encryptedSettlementToken", "source", "tcapCreditTransition",
+  "settlementEpoch", "encryptedSettlementToken", "source",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
-  AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "nodeEncryptedPayload"]),
+  AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "recipientTin", "privacyVersion", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
   // Private TIN V1 payload accepted from the SDK. Plaintext TIN, display name,
   // and resolver secret are excluded; the Node verifies signature, hash,
@@ -91,10 +91,10 @@ export function assertAuthorizedFundingIngress(payload: Record<string, unknown>)
   if (typeof payload.senderSignedFundingTransaction !== "string" || !payload.senderSignedFundingTransaction.trim()) {
     throw new Error("OWNER_SIGNED_TCAP_DEPOSIT_REQUIRED");
   }
-  if (!payload.tcapCreditTransition || typeof payload.tcapCreditTransition !== "object" || Array.isArray(payload.tcapCreditTransition)) {
-    throw new Error("TCAP_V2_CREDIT_TRANSITION_REQUIRED");
-  }
-  for (const key of ["paymentId", "recipientHash", "recipientRouteCommitment", "tokenMintAddress", "senderWallet", "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce"]) {
+  // The TCAP transition is Node-owned. Receiver ingress stores the signed
+  // payment and reserve deposit first; Node resolves the recipient route and
+  // constructs the transition after leasing the work.
+  for (const key of ["paymentId", "recipientHash", "recipientTin", "tokenMintAddress", "senderWallet", "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce"]) {
     if (typeof payload[key] !== "string" || !String(payload[key]).trim()) throw new Error(`PAYMENT_AUTH_FIELD_REQUIRED:${key}`);
   }
   if (typeof payload.amount !== "number" && typeof payload.amount !== "string") throw new Error("PAYMENT_AUTH_FIELD_REQUIRED:amount");
@@ -183,9 +183,10 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
   if (kind === "SETTLEMENT" && filtered.tcapCreditTransition && typeof filtered.tcapCreditTransition === "object") {
     const transition = filtered.tcapCreditTransition as Record<string, unknown>;
     filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => new Set([
-      "tipRootCommitment", "previousCommitment", "newCommitment", "sequence", "tokenId",
+      "tipRootCommitment", "previousCommitment", "newCommitment", "amountCommitment", "sequence", "tokenId",
       "amountBaseUnits", "depositAmountBaseUnits", "mint", "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot",
-      "expiresAtSlot", "authorizationDigest", "gpruCreditEnvelopeBase64", "gpruCreditNonceBase64", "recipientPrivacyKeyCommitment",
+      "expiresAtSlot", "authorizationDigest", "tip",
+      "initializeTip", "initialCommitment",
       "depositAccounts", "assetEntry", "tcapConfig",
     ]).has(key)));
   }
@@ -218,6 +219,6 @@ export function createReceivedWork(input: { id?: string; kind: WorkKind; payload
 
 export function publicCoordinationPayload(work: ReceiverWork): Record<string, unknown> {
   const payload = verifiedPayloadForWork(work) ?? work.payload;
-  const allowed = new Set(["paymentId", "recipientHash", "privacyVersion", "tokenMintAddress", "amount", "recipientRouteCommitment", "recipientRouteVersion", "transferId", "commitmentHash", "settlementEpoch"]);
+  const allowed = new Set(["paymentId", "recipientHash", "recipientTin", "privacyVersion", "tokenMintAddress", "amount", "transferId", "commitmentHash", "settlementEpoch"]);
   return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
 }

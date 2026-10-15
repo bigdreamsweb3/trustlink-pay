@@ -6,12 +6,10 @@ import {
   parsePaymentIntentMessage,
 } from "../dist/canonical-message.js";
 
-test("payment authorization binds the recipient route commitment and version", () => {
+test("payment authorization binds the recipient TIN without route data", () => {
   const message = buildPaymentIntentMessage({
     amountBaseUnits: 1_250_000n,
     recipientTin: "1234567890",
-    recipientRouteCommitment: "ab".repeat(32),
-    recipientRouteVersion: 4,
     feeBaseUnits: 5_000n,
     sender: "Main Wallet",
     nonce: "nonce-1",
@@ -19,19 +17,18 @@ test("payment authorization binds the recipient route commitment and version", (
   });
   const parsed = parsePaymentIntentMessage(message);
 
-  assert.equal(parsed.recipientRouteCommitment, "ab".repeat(32));
-  assert.equal(parsed.recipientRouteVersion, 4);
+  assert.equal(parsed.recipientTin, "1234567890");
+  assert.doesNotMatch(message, /Recipient Route Commitment|Recipient Route Version/);
 });
 
-test("payment authorization rejects an invalid recipient route commitment", () => {
-  assert.throws(() => buildPaymentIntentMessage({
+test("payment authorization does not accept sender-supplied route data", () => {
+  const message = buildPaymentIntentMessage({
     amountBaseUnits: 1n,
     recipientTin: "1234567890",
-    recipientRouteCommitment: "not-a-commitment",
-    recipientRouteVersion: 1,
     feeBaseUnits: 0n,
     sender: "Main Wallet",
     nonce: "nonce-1",
     expires: "2030-01-01T00:00:00.000Z",
-  }), /Recipient Route Commitment/);
+  });
+  assert.doesNotMatch(message, /Recipient Route Commitment|Recipient Route Version/);
 });

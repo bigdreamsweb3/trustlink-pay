@@ -20,7 +20,6 @@ import {
 } from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn.js";
 import {
   buildTsnRegisterTcapCreditAuthorizationV2Instruction,
-  deriveTinCreditTip,
   GPRU_TCAP_PROGRAM_ID as TCAP_PROGRAM_ID,
 } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
 import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
@@ -102,7 +101,7 @@ function verifyNodeAttestation(work: Work) {
   const attestedFields: Record<Work["kind"], readonly string[]> = {
     AUTHORIZED_FUNDING: [
       "senderSignedFundingTransaction", "senderFundingMode", "tcapCreditTransition", "recipientTin",
-      "recipientRouteCommitment", "recipientRouteVersion", "tokenMintAddress", "amount", "senderWallet",
+      "tokenMintAddress", "amount", "senderWallet",
       "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
     ],
     SETTLEMENT: ["tcapCreditTransition"],
@@ -332,6 +331,39 @@ const hex32 = (value: unknown, field: string) => {
   return Uint8Array.from(bytes);
 };
 
+function buildInitializeTcapTinTipInstruction(fields: {
+  payer: PublicKey;
+  motherEscrow: PublicKey;
+  cranker: PublicKey;
+  tip: PublicKey;
+  tipRootCommitment: string;
+  initialCommitment: string;
+  policyCommitment: string;
+}) {
+  const root = Buffer.from(hex32(fields.tipRootCommitment, "tipRootCommitment"));
+  const [expectedTip] = PublicKey.findProgramAddressSync(
+    [Buffer.from("tcap:tin-tip:v1"), root],
+    TCAP_PROGRAM_ID,
+  );
+  if (!expectedTip.equals(fields.tip)) throw new Error("TCAP_TIN_TIP_PDA_MISMATCH");
+  return new TransactionInstruction({
+    programId: TCAP_PROGRAM_ID,
+    keys: [
+      { pubkey: fields.payer, isSigner: true, isWritable: true },
+      { pubkey: fields.motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: fields.cranker, isSigner: false, isWritable: false },
+      { pubkey: fields.tip, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.concat([
+      hash("global:initialize_tcap_tin_tip_v1").subarray(0, 8),
+      root,
+      Buffer.from(hex32(fields.initialCommitment, "initialCommitment")),
+      Buffer.from(hex32(fields.policyCommitment, "policyCommitment")),
+    ]),
+  });
+}
+
 async function receiverRequest<T>(
   signer: Keypair,
   method: "POST" | "PATCH",
@@ -491,7 +523,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     throw new Error("Configured Mother authority keypair does not match the on-chain Mother Escrow authority");
   }
   const tipRootCommitment = String(transition.tipRootCommitment ?? "");
-  const currentTip = deriveTinCreditTip(tipRootCommitment);
+  const currentTip = new PublicKey(String(transition.tip ?? ""));
   const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
   const connection = createSolanaConnection(rpcUrl);
@@ -513,7 +545,50 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     gpruScopeCommitment: String(transition.gpruScopeCommitment ?? ""),
     nullifier: String(transition.nullifier ?? ""),
   });
-  const signature = await sendCrankerInstruction(connection, signer, instruction, "TCAP_GPRU_TIN_TIP_CREDIT_V2", [authority]);
+  const settlementInstructions = [instruction];
+  const tipBeforeSettlement = await connection.getAccountInfo(currentTip, "confirmed");
+  if (transition.initializeTip === true) {
+    const initialCommitment = Buffer.from(hex32(transition.initialCommitment, "initialCommitment"));
+    const previousCommitment = Buffer.from(hex32(transition.previousCommitment, "previousCommitment"));
+    if (String(transition.sequence) !== "1" || !initialCommitment.equals(previousCommitment)) {
+      throw new Error("TCAP_FIRST_CREDIT_INITIAL_STATE_MISMATCH");
+    }
+    if (!tipBeforeSettlement) {
+      settlementInstructions.unshift(buildInitializeTcapTinTipInstruction({
+        payer: signer.publicKey,
+        motherEscrow: new PublicKey(mother.address),
+        cranker: getTsnCrankerPda({
+          motherEscrow: new PublicKey(mother.address),
+          operator: signer.publicKey,
+        }),
+        tip: currentTip,
+        tipRootCommitment,
+        initialCommitment: initialCommitment.toString("hex"),
+        policyCommitment: String(transition.policyCommitment ?? ""),
+      }));
+      crankerLog(`TCAP TIN TIP initialization queued before first credit workId=${work.id}`);
+    } else {
+      const expectedTipDiscriminator = hash("account:TCapTinTipV1").subarray(0, 8);
+      const tipData = tipBeforeSettlement.data;
+      if (!tipBeforeSettlement.owner.equals(TCAP_PROGRAM_ID)
+          || tipData.length !== 116 || !tipData.subarray(0, 8).equals(expectedTipDiscriminator)
+          || !tipData.subarray(10, 42).equals(initialCommitment)
+          || tipData.readBigUInt64LE(42) !== 0n
+          || !tipData.subarray(50, 82).equals(Buffer.from(hex32(transition.policyCommitment, "policyCommitment")))
+          || !tipData.subarray(82, 114).equals(Buffer.alloc(32)) || tipData[114] !== 0) {
+        throw new Error("TCAP_TIN_TIP_CHANGED_BEFORE_FIRST_CREDIT");
+      }
+    }
+  } else if (!tipBeforeSettlement) {
+    throw new Error("TCAP_TIN_TIP_MISSING_WITHOUT_NODE_INITIALIZATION_AUTHORIZATION");
+  }
+  const signature = await sendCrankerInstruction(
+    connection,
+    signer,
+    settlementInstructions,
+    transition.initializeTip === true ? "TCAP_TIN_TIP_INIT_AND_GPRU_CREDIT_V2" : "TCAP_GPRU_TIN_TIP_CREDIT_V2",
+    [authority],
+  );
   const tip = currentTip;
   const tipAccount = await connection.getAccountInfo(tip, "confirmed");
   const tipData = tipAccount?.data;

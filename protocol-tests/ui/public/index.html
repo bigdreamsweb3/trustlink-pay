@@ -1144,10 +1144,10 @@ const identity = await createTinV1IdentityEnvelope({
           <div class="form-actions" style="margin-top:12px"><button id="resolveTin">Resolve TIN</button><button id="payTin" disabled>Deposit to TIN</button></div>
           <div id="tinResolution" class="notice" style="margin-top:12px" hidden aria-live="polite"></div>
           <details>
-            <summary>VIEW SDK CODE / wallet to recipient GPRU credit</summary>
-              <pre>const recipient = await resolveTinRoute({ tin });
-// The sender wallet authorizes the amount-bearing deposit.
-// Recipient GPRU credit is applied after Node verification.</pre><a
+            <summary>VIEW SDK CODE / wallet deposit to TIN credit</summary>
+              <pre>// The sender reviews the owner-provided display name resolved by TSN Node.
+// The sender signs only the amount authorization and reserve deposit.
+// TSN Node resolves the TIN route and builds the TCAP credit transition.</pre><a
               href="https://trust-link-tsn.mintlify.site/developers/payment-intent-lifecycle" target="_blank"
               rel="noreferrer">Read the Payment Intent guide -&gt;</a>
           </details>

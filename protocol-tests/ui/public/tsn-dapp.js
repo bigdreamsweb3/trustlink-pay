@@ -469,7 +469,7 @@
     resolvedTin = null;
     $("payTin").disabled = true;
     result.hidden = false;
-    result.textContent = "Resolving TIN through the TSN SDK…";
+    result.textContent = "Resolving the TIN display name through TSN Node…";
     try {
       requireNetwork();
       const identity = await api("/api/tsn/sdk/resolve-tin", { method: "POST", body: JSON.stringify({ tin }) });
@@ -480,10 +480,10 @@
       const detail = document.createElement("p");
       detail.textContent = "Display name supplied by the TIN owner. No government identity attestation is attached.";
       const match = document.createElement("small");
-      match.textContent = `Resolved TIN ${identity.tin} · route version ${identity.recipientRouteVersion}`;
+      match.textContent = `Resolved TIN ${identity.tin}`;
       result.append(heading, detail, match);
       $("payTin").disabled = false;
-      log("SDK resolveTinRoute", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
+      log("TSN Node resolve TIN", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
     } catch (error) {
       result.textContent = `TIN could not be resolved: ${error.message}`;
       log("TIN RESOLUTION BLOCKED", error.message);
@@ -499,62 +499,35 @@
       if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
       const amount = String($("tinAmount").value ?? "").trim();
       const mint = String($("tinMint").value ?? "").trim();
-      if (!/^\d+(?:\.\d{1,6})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with up to six decimal places.");
+      if (!/^\d+(?:\.\d{1,9})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with a supported token precision.");
       if (!mint) throw new Error("Enter a token mint registered and enabled in the TCAP asset registry.");
       if (typeof activeWallet.signTransaction !== "function") throw new Error("The connected wallet must support transaction signing.");
       const sdk = window.TsnRecipientCreditSdk;
-      if (!sdk?.createGpruTinCredit || !sdk?.buildTcapGpruWalletDepositTransaction) throw new Error("The browser TSN SDK bundle is missing the GPRU credit builders.");
+      if (!sdk?.buildTcapGpruWalletDepositTransaction) throw new Error("The browser TSN SDK bundle is missing the reserve deposit builder.");
 
-      stage = "checking the on-chain TCAP asset registry and recipient TIP";
+      stage = "checking the TCAP reserve and sender wallet token balance";
       const prepared = await api("/api/tsn/sdk/prepare-tin-credit", {
-        method: "POST", body: JSON.stringify({ tokenMintAddress: mint, amount }),
+        method: "POST", body: JSON.stringify({ recipientTin, tokenMintAddress: mint, amount }),
       });
-      if (prepared.decimals !== 6) throw new Error("This TSN payment authorization currently supports six-decimal settlement assets.");
       const amountBaseUnits = BigInt(prepared.amountBaseUnits);
-      const currentSlot = BigInt(prepared.currentSlot);
-      const expiresAtSlot = BigInt(prepared.expiresAtSlot);
-      stage = "encrypting the GPRU credit note for the recipient";
-      const transition = sdk.createGpruTinCredit({
-        tcapProgramId: new sdk.PublicKey(prepared.depositAccounts.tcapProgramId),
-        tipRootCommitment: prepared.recipientTipRoot,
-        gpruCommitment: Uint8Array.from(prepared.gpruCommitment.match(/../g), (byte) => Number.parseInt(byte, 16)),
-        previousCommitment: prepared.previousCommitment,
-        sequence: BigInt(prepared.sequence),
-        tokenId: prepared.tokenId,
-        amountBaseUnits,
-        policyCommitment: prepared.policyCommitment,
-        validAfterSlot: currentSlot,
-        expiresAtSlot,
-      });
-      Object.assign(transition, {
-        tipRootCommitment: prepared.recipientTipRoot,
-        mint: prepared.depositAccounts.mint,
-        amountBaseUnits: amountBaseUnits.toString(),
-        depositAmountBaseUnits: amountBaseUnits.toString(),
-        depositAccounts: prepared.depositAccounts,
-      });
-
       stage = "building the wallet-authorized TCAP reserve deposit";
       const key = (value) => new sdk.PublicKey(value);
       const accounts = Object.fromEntries(Object.entries(prepared.depositAccounts).map(([name, value]) => [name, key(value)]));
       const transaction = sdk.buildTcapGpruWalletDepositTransaction({
         accounts,
         amountBaseUnits,
-        tipRootCommitment: prepared.recipientTipRoot,
-        previousCommitment: prepared.previousCommitment,
-        policyCommitment: prepared.policyCommitment,
-        initializeTip: prepared.initializeTip,
       });
       transaction.recentBlockhash = prepared.recentBlockhash;
       transaction.lastValidBlockHeight = prepared.lastValidBlockHeight;
 
-      stage = "requesting the sender's amount and recipient-route approval";
+      stage = "requesting the sender's amount authorization";
       const authorization = sdk.createPaymentAuthorization({
         senderWallet: activeWallet.publicKey.toBase58(),
         senderIdentity: activeWallet.publicKey.toBase58(),
         receiverIdentity: `tin:${recipientTin}`,
-        recipientRouteCommitment: prepared.recipientRouteCommitment,
-        recipientRouteVersion: prepared.recipientRouteVersion,
+        recipientDisplayName: resolvedTin.displayName,
+        recipientDisplayNameSource: resolvedTin.displayNameSource,
+        recipientVerifiedCredentials: resolvedTin.verifiedCredentials,
         tokenMintAddress: prepared.depositAccounts.mint,
         amount,
         senderFeeAmount: "0",
@@ -573,11 +546,10 @@
       const paymentId = crypto.randomUUID();
       const request = sdk.buildPaymentAuthorizationIntentRequest({
         paymentId,
-        recipientHash: prepared.recipientRouteCommitment,
+        recipientHash: recipientTin,
         recipientTin,
-        recipientRouteCommitment: prepared.recipientRouteCommitment,
-        recipientRouteVersion: prepared.recipientRouteVersion,
         tokenMintAddress: prepared.depositAccounts.mint,
+        tokenDecimals: prepared.decimals,
         senderWallet: activeWallet.publicKey.toBase58(),
         senderAuthorizationMessage: authorization.message,
         senderAuthorizationSignature,
@@ -587,7 +559,6 @@
         senderFeeAmount: "0",
         senderSignedFundingTransaction,
         senderFundingMode: "tcap_deposit_v2",
-        tcapCreditTransition: transition,
         senderTokenAccount: prepared.depositAccounts.source,
         amount,
         source: "TSN XP",
@@ -598,10 +569,10 @@
       output.id = "tinCreditResult";
       output.className = "notice";
       output.style.marginTop = "12px";
-      output.textContent = `Intent ${accepted.id ?? paymentId} accepted by the TSN Node for Receiver verification.`;
+      output.textContent = `Receiver accepted intent ${accepted.id ?? paymentId}. TSN Node verification is pending.`;
       $("tinResolution").after(output);
       log("SDK depositToTinCredit", `TIN ${recipientTin} / ${amount} / ${prepared.depositAccounts.mint} / wallet authorized`);
-      log("TIN CREDIT INTENT RECEIVED", `Node accepted ${accepted.id ?? paymentId}; Receiver verification and Cranker processing are pending.`);
+      log("TIN CREDIT RECEIVER ACCEPTED", `Receiver accepted ${accepted.id ?? paymentId}; TSN Node verification is pending.`);
       void watchTinCredit(accepted.id ?? paymentId);
     } catch (error) {
       log("TIN CREDIT BLOCKED", `${stage}: ${error instanceof Error ? error.message : String(error)}`);
@@ -616,18 +587,29 @@
         const work = await api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(operationId)}`);
         const fundingStatus = String(work.status ?? "UNKNOWN").toUpperCase();
         const creditStatus = String(work.settlement?.status ?? "WAITING_FOR_FUNDING").toUpperCase();
-        const progress = `${fundingStatus}/${creditStatus}`;
+        const nodeReason = String(work.nodeDecisionReason ?? "").trim();
+        const progress = `${fundingStatus}/${creditStatus}/${nodeReason}`;
         if (progress !== lastStatus) {
           lastStatus = progress;
-          log(`TIN CREDIT ${creditStatus}`, creditStatus === "CONFIRMED"
-            ? `GPRU credit finalized / Solana ${work.settlement?.result?.signature ?? "confirmed"}`
-            : `Reserve funding ${fundingStatus}; Receiver settlement ${creditStatus}`);
+          if (fundingStatus === "REJECTED") {
+            log("TIN CREDIT NODE REJECTED", `TSN Node rejected reserve funding${nodeReason ? `: ${nodeReason}` : "."} Settlement work remains ${creditStatus}.`);
+          } else if (fundingStatus === "NODE_VERIFYING") {
+            log("TIN CREDIT NODE VERIFYING", `Receiver accepted the intent; TSN Node verification is in progress. Settlement work is ${creditStatus}.`);
+          } else if (creditStatus === "CONFIRMED") {
+            log("TIN CREDIT SETTLED", `GPRU credit finalized / Solana ${work.settlement?.result?.signature ?? "confirmed"}`);
+          } else if (creditStatus === "RECEIVED") {
+            log("TIN CREDIT SETTLEMENT WAITING", `Receiver has settlement work in ${creditStatus}; it has not executed. Reserve funding is ${fundingStatus}.`);
+          } else {
+            log("TIN CREDIT STATUS", `Reserve funding is ${fundingStatus}; settlement work is ${creditStatus}.`);
+          }
         }
         if (creditStatus === "CONFIRMED" || ["FAILED", "REJECTED"].includes(fundingStatus) || ["FAILED", "REJECTED"].includes(creditStatus)) {
           const output = $("tinCreditResult");
           if (output) output.textContent = creditStatus === "CONFIRMED"
             ? `TIN credit ${operationId} confirmed${work.settlement?.result?.signature ? ` on Solana: ${work.settlement.result.signature}` : ""}.`
-            : `TIN credit ${operationId} ended with funding ${fundingStatus} and credit ${creditStatus}. See SDK activity for the service result.`;
+            : fundingStatus === "REJECTED"
+              ? `TSN Node rejected reserve funding for ${operationId}${nodeReason ? `: ${nodeReason}` : "."} Settlement work is ${creditStatus} and has not executed.`
+              : `TIN credit ${operationId} ended with reserve funding ${fundingStatus} and settlement ${creditStatus}.`;
           return;
         }
       } catch (error) {

@@ -148,11 +148,52 @@ export function isCanonicalTsnMessage(message: string) {
   return typeof message === "string" && message.startsWith("TSN ") && message.includes("\n---\n");
 }
 
+export type VerifiedRecipientCredential = {
+  credentialType: string;
+  issuer: string;
+  claims: Record<string, string>;
+};
+
+function canonicalRecipientCredentials(credentials: readonly VerifiedRecipientCredential[] = []) {
+  const normalized = credentials.map((credential) => {
+    if (!credential.credentialType.trim() || !credential.issuer.trim() || !credential.claims
+      || typeof credential.claims !== "object" || Array.isArray(credential.claims)) {
+      throw new CanonicalMessageError("Verified recipient credentials must include a type, issuer, and claims");
+    }
+    const claims = Object.fromEntries(Object.entries(credential.claims)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => {
+        if (!key.trim() || typeof value !== "string") {
+          throw new CanonicalMessageError("Verified recipient credential claims must be named strings");
+        }
+        return [key, value];
+      }));
+    return {
+      credentialType: credential.credentialType,
+      issuer: credential.issuer,
+      claims,
+    };
+  }).sort((left, right) =>
+    left.credentialType.localeCompare(right.credentialType)
+      || left.issuer.localeCompare(right.issuer)
+      || JSON.stringify(left.claims).localeCompare(JSON.stringify(right.claims)));
+  return JSON.stringify(normalized);
+}
+
+function canonicalDisplayName(value: string | undefined) {
+  const displayName = value?.trim() ?? "";
+  if (/[\u0000-\u001f\u007f]/.test(displayName)) {
+    throw new CanonicalMessageError("Recipient display name must not contain control characters");
+  }
+  return displayName || "(not provided)";
+}
+
 export function buildPaymentIntentMessage(params: {
   amountBaseUnits: bigint | string | number;
   recipientTin: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
+  recipientDisplayName?: string;
+  recipientDisplayNameSource?: "owner-provided" | "not provided";
+  recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[];
   feeBaseUnits: bigint | string | number;
   sender: string;
   nonce: string;
@@ -161,8 +202,9 @@ export function buildPaymentIntentMessage(params: {
   return buildMessage("Payment Intent", [
     ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
-    ["Recipient Route Commitment", parseHash32(params.recipientRouteCommitment, "Recipient Route Commitment")],
-    ["Recipient Route Version", parseRouteVersion(params.recipientRouteVersion)],
+    ["Recipient Display Name", canonicalDisplayName(params.recipientDisplayName)],
+    ["Recipient Display Name Source", params.recipientDisplayName?.trim() ? (params.recipientDisplayNameSource ?? "owner-provided") : "not provided"],
+    ["Recipient Verified Credentials", canonicalRecipientCredentials(params.recipientVerifiedCredentials)],
     ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
     ["Sender", params.sender],
     ["Nonce", params.nonce],
@@ -175,8 +217,9 @@ export function parsePaymentIntentMessage(message: string) {
   return {
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
-    recipientRouteCommitment: parseHash32(requireField(fields, "Recipient Route Commitment"), "Recipient Route Commitment"),
-    recipientRouteVersion: parseRouteVersion(requireField(fields, "Recipient Route Version")),
+    recipientDisplayName: requireField(fields, "Recipient Display Name"),
+    recipientDisplayNameSource: requireField(fields, "Recipient Display Name Source"),
+    recipientVerifiedCredentials: JSON.parse(requireField(fields, "Recipient Verified Credentials")) as VerifiedRecipientCredential[],
     feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
     sender: requireField(fields, "Sender"),
     nonce: requireField(fields, "Nonce"),
@@ -194,8 +237,6 @@ export function buildCrossChainPaymentIntentMessage(params: {
   amountBaseUnits: bigint | string | number;
   destinationToken: string;
   recipientTin: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   feeBaseUnits: bigint | string | number;
   sender: string;
   nonce: string;
@@ -215,8 +256,6 @@ export function buildCrossChainPaymentIntentMessage(params: {
     ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
     ["Asset", params.destinationToken.toLowerCase()],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
-    ["Recipient Route Commitment", parseHash32(params.recipientRouteCommitment, "Recipient Route Commitment")],
-    ["Recipient Route Version", parseRouteVersion(params.recipientRouteVersion)],
     ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
     ["Sender", params.sender],
     ["Nonce", params.nonce],
@@ -238,8 +277,6 @@ export function parseCrossChainPaymentIntentMessage(message: string) {
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     destinationToken: requireField(fields, "Asset").toLowerCase(),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
-    recipientRouteCommitment: parseHash32(requireField(fields, "Recipient Route Commitment"), "Recipient Route Commitment"),
-    recipientRouteVersion: parseRouteVersion(requireField(fields, "Recipient Route Version")),
     feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
     sender: requireField(fields, "Sender"),
     nonce: requireField(fields, "Nonce"),

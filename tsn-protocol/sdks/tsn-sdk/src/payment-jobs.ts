@@ -17,8 +17,6 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: string | number;
   senderFeeAmount: number;
@@ -43,8 +41,6 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
     senderWallet: params.senderWallet,
     senderIdentity: params.senderIdentity,
     receiverIdentity: params.receiverIdentity,
-    recipientRouteCommitment: params.recipientRouteCommitment,
-    recipientRouteVersion: params.recipientRouteVersion,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     senderFeeAmount: params.senderFeeAmount,
@@ -84,8 +80,6 @@ export async function createTsnPaymentMempoolJobs(params: {
   underlyingPayment?: string | null;
   recipientHash: string;
   recipientTin?: string | null;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   senderFeeAmount?: number | null;
@@ -106,8 +100,6 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
   underlyingPayment?: string | null;
   recipientHash: string;
   recipientTin?: string | null;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   senderFeeAmount?: number | null;
@@ -121,8 +113,6 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
       underlyingPayment: params.underlyingPayment,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
-      recipientRouteCommitment: params.recipientRouteCommitment,
-      recipientRouteVersion: params.recipientRouteVersion,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
       senderFeeAmount: params.senderFeeAmount,

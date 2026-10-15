@@ -6,14 +6,16 @@ import {
   buildPaymentIntentMessage,
   buildCrossChainPaymentIntentMessage,
   parseTokenAmountToBaseUnits,
+  type VerifiedRecipientCredential,
 } from "./canonical-message.js";
 
 export function createSenderPaymentAuthorizationMessage(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
+  recipientDisplayName?: string;
+  recipientDisplayNameSource?: "owner-provided" | "not provided";
+  recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[];
   tokenMintAddress: string;
   amount: string | number;
   senderFeeAmount: string | number;
@@ -33,16 +35,14 @@ export function createSenderPaymentAuthorizationMessage(params: {
     );
   }
   const decimals = params.tokenDecimals ?? 6;
-  if (decimals !== 6) {
-    throw new Error("Canonical TSN payment authorization currently supports six-decimal assets");
-  }
   const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const feeBaseUnits = parseTokenAmountToBaseUnits(params.senderFeeAmount, decimals, { allowZero: true });
   return buildPaymentIntentMessage({
     amountBaseUnits,
     recipientTin,
-    recipientRouteCommitment: params.recipientRouteCommitment,
-    recipientRouteVersion: params.recipientRouteVersion,
+    recipientDisplayName: params.recipientDisplayName,
+    recipientDisplayNameSource: params.recipientDisplayNameSource,
+    recipientVerifiedCredentials: params.recipientVerifiedCredentials,
     feeBaseUnits,
     sender: "Main Wallet",
     nonce: params.nonce ?? "",
@@ -67,8 +67,9 @@ export function createPaymentAuthorization(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
+  recipientDisplayName?: string;
+  recipientDisplayNameSource?: "owner-provided" | "not provided";
+  recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[];
   tokenMintAddress: string;
   amount: string | number;
   senderFeeAmount: string | number;
@@ -106,8 +107,6 @@ export function createCrossChainPaymentAuthorization(params: {
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
   destinationToken: string;
   amount: string | number;
@@ -131,8 +130,6 @@ export function createCrossChainPaymentAuthorization(params: {
     amountBaseUnits: parseTokenAmountToBaseUnits(params.amount, 6),
     destinationToken: params.destinationToken,
     recipientTin,
-    recipientRouteCommitment: params.recipientRouteCommitment,
-    recipientRouteVersion: params.recipientRouteVersion,
     feeBaseUnits: parseTokenAmountToBaseUnits(params.senderFeeAmount, 6, { allowZero: true }),
     sender: "Main Wallet",
     nonce,
@@ -148,9 +145,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   paymentId: string;
   recipientHash: string;
   recipientTin?: string | null;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
+  tokenDecimals?: number;
   senderWallet: string;
   senderAuthorizationMessage: string;
   senderAuthorizationSignature: string;
@@ -160,7 +156,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderFeeAmount?: string | number | null;
   senderSignedFundingTransaction?: string | null;
   senderFundingMode?: "tcap_deposit_v2" | null;
-  tcapCreditTransition?: CreateIntentRequest["tcapCreditTransition"];
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -175,15 +170,16 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   recipientAmount?: number;
   source?: string;
 }): CreateIntentRequest {
-  const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, 6);
+  const decimals = params.tokenDecimals ?? 6;
+  const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const requestAmount = Number(params.amount);
-  if (!Number.isFinite(requestAmount) || parseTokenAmountToBaseUnits(String(requestAmount), 6) !== amountBaseUnits) {
+  if (!Number.isFinite(requestAmount) || parseTokenAmountToBaseUnits(String(requestAmount), decimals) !== amountBaseUnits) {
     throw new Error("Payment amount cannot be represented exactly in the TSN intent request");
   }
   const feeValue = params.senderFeeAmount ?? 0;
-  const feeBaseUnits = parseTokenAmountToBaseUnits(feeValue, 6, { allowZero: true });
+  const feeBaseUnits = parseTokenAmountToBaseUnits(feeValue, decimals, { allowZero: true });
   const requestFee = Number(feeValue);
-  if (!Number.isFinite(requestFee) || parseTokenAmountToBaseUnits(String(requestFee), 6, { allowZero: true }) !== feeBaseUnits) {
+  if (!Number.isFinite(requestFee) || parseTokenAmountToBaseUnits(String(requestFee), decimals, { allowZero: true }) !== feeBaseUnits) {
     throw new Error("Sender fee cannot be represented exactly in the TSN intent request");
   }
   return {
@@ -200,7 +196,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderSignedFundingTransaction:
         params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
-      tcapCreditTransition: params.tcapCreditTransition,
       privacyVersion: params.privacyVersion,
       senderTokenAccount: params.senderTokenAccount,
       transferId: params.transferId,
@@ -209,8 +204,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       encryptedSettlementToken: params.encryptedSettlementToken,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
-      recipientRouteCommitment: params.recipientRouteCommitment,
-      recipientRouteVersion: params.recipientRouteVersion,
       tokenMintAddress: params.tokenMintAddress,
       amount: requestAmount,
       destinationNetwork: params.destinationNetwork,

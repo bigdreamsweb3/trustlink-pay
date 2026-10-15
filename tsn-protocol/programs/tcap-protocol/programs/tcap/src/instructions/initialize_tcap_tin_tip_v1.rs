@@ -1,9 +1,14 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::hash::{hash, hashv};
 
 use crate::authority::TCAP_TIN_TIP_V1_SEED;
 use crate::error::TcapError;
 use crate::events::TcapTinTipInitializedV1;
 use crate::state::TCapTinTipV1;
+
+const TSN_PROGRAM_ID: Pubkey = pubkey!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
+const TSN_MOTHER_ESCROW_SEED: &[u8] = b"tsn_mother_escrow";
+const TSN_CRANKER_SEED: &[u8] = b"tsn_cranker";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct InitializeTcapTinTipV1Args {
@@ -19,6 +24,10 @@ pub struct InitializeTcapTinTipV1Args {
 pub struct InitializeTcapTinTipV1<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    /// CHECK: The account is validated against the canonical TSN Mother PDA and layout below.
+    pub mother_escrow: UncheckedAccount<'info>,
+    /// CHECK: The account is validated against the canonical operator Cranker PDA and DNA below.
+    pub cranker: UncheckedAccount<'info>,
     #[account(
         init,
         payer = payer,
@@ -37,6 +46,11 @@ pub fn initialize_tcap_tin_tip_v1(
     ctx: Context<InitializeTcapTinTipV1>,
     args: InitializeTcapTinTipV1Args,
 ) -> Result<()> {
+    validate_registered_cranker(
+        &ctx.accounts.mother_escrow,
+        &ctx.accounts.cranker,
+        &ctx.accounts.payer.key(),
+    )?;
     require!(
         args.blinded_tins_privacy_receiving_root_commitment != [0; 32],
         TcapError::EmptyCommitment
@@ -62,6 +76,49 @@ pub fn initialize_tcap_tin_tip_v1(
     emit!(TcapTinTipInitializedV1 {
         tin_tip: tin_tip.key(),
     });
+    Ok(())
+}
+
+fn validate_registered_cranker(
+    mother_escrow: &UncheckedAccount,
+    cranker: &UncheckedAccount,
+    operator: &Pubkey,
+) -> Result<()> {
+    require_keys_eq!(*mother_escrow.owner, TSN_PROGRAM_ID, TcapError::InvalidCrankerDna);
+    require_keys_eq!(*cranker.owner, TSN_PROGRAM_ID, TcapError::InvalidCrankerDna);
+
+    let (expected_mother, _) = Pubkey::find_program_address(&[TSN_MOTHER_ESCROW_SEED], &TSN_PROGRAM_ID);
+    require_keys_eq!(mother_escrow.key(), expected_mother, TcapError::InvalidCrankerDna);
+    let (expected_cranker, _) = Pubkey::find_program_address(
+        &[TSN_CRANKER_SEED, mother_escrow.key().as_ref(), operator.as_ref()],
+        &TSN_PROGRAM_ID,
+    );
+    require_keys_eq!(cranker.key(), expected_cranker, TcapError::InvalidCrankerDna);
+
+    let mother_data = mother_escrow.try_borrow_data()?;
+    let mother_discriminator = hash(b"account:MotherEscrow").to_bytes();
+    require!(mother_data.len() >= 104, TcapError::InvalidCrankerDna);
+    require!(mother_data[..8] == mother_discriminator[..8], TcapError::InvalidCrankerDna);
+
+    let cranker_data = cranker.try_borrow_data()?;
+    let cranker_discriminator = hash(b"account:Cranker").to_bytes();
+    require!(cranker_data.len() >= 104, TcapError::InvalidCrankerDna);
+    require!(cranker_data[..8] == cranker_discriminator[..8], TcapError::InvalidCrankerDna);
+    require!(cranker_data[8..40] == mother_escrow.key().to_bytes(), TcapError::InvalidCrankerDna);
+    require!(cranker_data[40..72] == operator.to_bytes(), TcapError::InvalidCrankerDna);
+
+    // MotherEscrow.protocol_seed follows the 8-byte discriminator and two Pubkeys.
+    let protocol_seed: [u8; 32] = mother_data[72..104]
+        .try_into()
+        .map_err(|_| error!(TcapError::InvalidCrankerDna))?;
+    let expected_dna = hashv(&[
+        b"tsn_dna",
+        mother_escrow.key().as_ref(),
+        operator.as_ref(),
+        &protocol_seed,
+    ])
+    .to_bytes();
+    require!(cranker_data[72..104] == expected_dna, TcapError::InvalidCrankerDna);
     Ok(())
 }
 

@@ -13,10 +13,11 @@ const MAX_LEASE_ATTEMPTS_PER_MINUTE = 30;
 // Mother-DNA validation to another program or cluster.
 const VERIFIED_TSN_PROGRAM_ID = "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V";
 const DEFAULT_TSN_RPC_GATEWAY_URL = "https://tsn-rpc-gateway.vercel.app";
+const DEVNET_RPC_URL = "https://api.devnet.solana.com";
 const TSN_PROGRAM_ID = new PublicKey(VERIFIED_TSN_PROGRAM_ID);
-const SOLANA_RPC_URL = process.env.TSN_RPC_URL?.trim()
+const SOLANA_RPC_URLS = Array.from(new Set([process.env.TSN_RPC_URL?.trim()
   || process.env.TSN_RPC_GATEWAY_URL?.trim()
-  || DEFAULT_TSN_RPC_GATEWAY_URL;
+  || DEFAULT_TSN_RPC_GATEWAY_URL, DEVNET_RPC_URL].filter((url): url is string => Boolean(url))));
 const MOTHER_SEED = Buffer.from("tsn_mother_escrow");
 const CRANKER_SEED = Buffer.from("tsn_cranker");
 const ANCHOR_DISCRIMINATOR_BYTES = 8;
@@ -40,11 +41,21 @@ async function assertMotherDnaCranker(operatorText: string): Promise<void> {
   let rpcFailure: unknown;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const connection = new Connection(SOLANA_RPC_URL, "confirmed");
-      [motherInfo, crankerInfo] = await Promise.all([
-        connection.getAccountInfo(mother, "confirmed"),
-        connection.getAccountInfo(cranker, "confirmed"),
-      ]);
+      let lastError: unknown;
+      for (const rpcUrl of SOLANA_RPC_URLS) {
+        try {
+          const connection = new Connection(rpcUrl, "confirmed");
+          [motherInfo, crankerInfo] = await Promise.all([
+            connection.getAccountInfo(mother, "confirmed"),
+            connection.getAccountInfo(cranker, "confirmed"),
+          ]);
+          lastError = undefined;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (lastError) throw lastError;
       rpcFailure = undefined;
       break;
     } catch (error) {

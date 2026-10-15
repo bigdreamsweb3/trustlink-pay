@@ -21,7 +21,6 @@ const TIN_V1_RECOVERY_V4_MAGIC = Buffer.from("TSNTIN04", "ascii");
 const TIN_V1_RECOVERY_V3_MAGIC = Buffer.from("TSNTIN03", "ascii");
 const TIN_V1_RECOVERY_V2_MAGIC = Buffer.from("TSNTIN02", "ascii");
 const TEXT_ENCODER = new TextEncoder();
-const TEXT_DECODER = new TextDecoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
 
 /**
@@ -51,36 +50,10 @@ export function validateTinTcapRelationship(params: {
     ) !== null
   );
 }
-export type TinResolvedIdentity = {
-  tin: string;
-  name: string;
-  authority: PublicKey;
-  ownerPubkeyHash: string;
-  registry: PublicKey;
-  settlementAuthorityVerified: true;
-  status: number;
-  createdAt: string;
-  tcapRouteVersion: 1;
-  tcapRelationshipCommitment: string;
-  tcapRelationshipReference: string;
-  gpruCommitment: string;
-  tcapPolicyCommitment: string;
-  encryptedMasterSeed: Uint8Array;
-};
-
 export function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
   return programId instanceof PublicKey
     ? programId
     : new PublicKey(programId ?? DEFAULT_TIP_PROGRAM_ID);
-}
-
-function publishedGpruCommitment(
-  commitment: Uint8Array,
-  reference: Uint8Array,
-): string {
-  const gpruCommitment = resolveTinGpruCommitment(commitment, reference);
-  if (!gpruCommitment) throw new Error("TIN GPRU commitment does not match the blinded TIP seed");
-  return bytesToHex(gpruCommitment);
 }
 
 const BASE58_ALPHABET =
@@ -726,164 +699,3 @@ export function buildTinV1Creation(params: {
   return { ...fields, nonce, intentHash, instructionData };
 }
 
-async function resolvePrivateTinRecord(params: {
-  tin: bigint | number | string;
-  connection: Connection;
-  programId?: PublicKey | string | null;
-  lookupSecret: Uint8Array | string;
-}): Promise<TinResolvedIdentity> {
-  const programId = getTinsProgramPublicKey(params.programId);
-  const secret = params.lookupSecret
-    ? typeof params.lookupSecret === "string"
-      ? Buffer.from(params.lookupSecret, "utf8")
-      : Buffer.from(params.lookupSecret)
-    : Buffer.alloc(0);
-  if (secret.length < 16) throw new Error("lookupSecret must contain at least 16 bytes");
-  const lookupCommitment = Buffer.from(
-    sha256(
-      Buffer.concat([
-        Buffer.from("TSN_TIN_V1_LOOKUP", "utf8"),
-        secret,
-        Buffer.from(String(params.tin), "utf8"),
-      ]),
-    ),
-  );
-  const registry = PublicKey.findProgramAddressSync(
-    [Buffer.from("tin-v1", "utf8"), lookupCommitment],
-    programId,
-  )[0];
-  const account = await params.connection.getAccountInfo(registry);
-  if (!account || !account.owner.equals(programId))
-    throw new Error(
-      `TIN ${String(params.tin)} was not found in the private registry`,
-    );
-
-  const buffer = Buffer.from(account.data);
-  let offset = 0;
-  const readU8 = () => buffer.readUInt8(offset++);
-  const readU32 = () => {
-    const value = buffer.readUInt32LE(offset);
-    offset += 4;
-    return value;
-  };
-  const readBytes = () => {
-    const length = readU32();
-    const value = buffer.subarray(offset, offset + length);
-    offset += length;
-    return value;
-  };
-  const readFixed = (length: number) => {
-    const value = buffer.subarray(offset, offset + length);
-    offset += length;
-    return value;
-  };
-  const version = readU8();
-  const bump = readU8();
-  const status = readU8();
-  readFixed(5);
-  const storedLookup = readFixed(32);
-  const ownerCommitment = readFixed(32);
-  const encryptedIdentityEnvelope = readBytes();
-  const encryptedMasterSeed = readBytes();
-  const createdAt = buffer.readBigInt64LE(offset);
-  offset += 8;
-  const encryptedMetadataHash = readFixed(32);
-  const routeVersion = buffer.readBigUInt64LE(offset);
-  offset += 8;
-  const routeNonce = readFixed(32);
-  const tcapRouteVersion = readU8();
-  const tcapRelationshipCommitment = readFixed(32);
-  const tcapRelationshipReference = readFixed(32);
-  const tcapPolicyCommitment = readFixed(32);
-  if (
-    version !== 1 ||
-    status !== 1 ||
-    !Buffer.from(storedLookup).equals(lookupCommitment) ||
-    offset > buffer.length ||
-    buffer.subarray(offset).some((byte) => byte !== 0)
-  ) {
-    throw new Error("unsupported private TIN account schema");
-  }
-  if (routeVersion !== 1n || !validateTinTcapRelationship({
-    tcapRouteVersion,
-    tcapRelationshipCommitment,
-    tcapRelationshipReference,
-    tcapPolicyCommitment,
-  })) {
-    throw new Error("private TIN route does not match the current GPRU commitment schema");
-  }
-  if (encryptedIdentityEnvelope.length < 13)
-    throw new Error("private TIN identity envelope is invalid");
-  const identityKey = await importAesKey(
-    sha256(
-      Buffer.concat([
-        Buffer.from("TSN_TIN_V1_IDENTITY", "utf8"),
-        secret,
-        Buffer.from(String(params.tin), "utf8"),
-      ]),
-    ),
-  );
-  const identityPlaintext = await getWebCrypto().subtle.decrypt(
-    { name: "AES-GCM", iv: encryptedIdentityEnvelope.subarray(0, 12) as any },
-    identityKey,
-    encryptedIdentityEnvelope.subarray(12) as any,
-  );
-  const identity = JSON.parse(TEXT_DECODER.decode(identityPlaintext)) as {
-    name?: string;
-    tin?: string;
-  };
-  if (identity.tin !== String(params.tin) || typeof identity.name !== "string")
-    throw new Error("private TIN identity disclosure is invalid");
-  return {
-    tin: String(params.tin),
-    name: identity.name,
-    authority: registry,
-    ownerPubkeyHash: bytesToHex(ownerCommitment),
-    registry,
-    settlementAuthorityVerified: true,
-    status,
-    createdAt: createdAt.toString(),
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: bytesToHex(tcapRelationshipCommitment),
-    tcapRelationshipReference: bytesToHex(tcapRelationshipReference),
-    gpruCommitment: publishedGpruCommitment(
-      tcapRelationshipCommitment,
-      tcapRelationshipReference,
-    ),
-    tcapPolicyCommitment: bytesToHex(tcapPolicyCommitment),
-    encryptedMasterSeed: new Uint8Array(encryptedMasterSeed),
-  };
-}
-
-export async function resolveTIN(params: {
-  tin: bigint | number | string;
-  connection: Connection;
-  programId?: PublicKey | string | null;
-  lookupSecret: Uint8Array | string;
-}): Promise<TinResolvedIdentity> {
-  return resolvePrivateTinRecord({
-    tin: params.tin,
-    connection: params.connection,
-    programId: params.programId,
-    lookupSecret: params.lookupSecret,
-  });
-}
-
-/**
- * Resolve the public payment-route commitments for a TIN through the TSN SDK.
- * Application code supplies an RPC URL instead of constructing a Solana client
- * or importing TIP program helpers directly.
- */
-export async function resolveTinRoute(params: {
-  tin: bigint | number | string;
-  rpcUrl: string;
-  programId?: PublicKey | string | null;
-  lookupSecret: Uint8Array | string;
-}): Promise<TinResolvedIdentity> {
-  return resolveTIN({
-    tin: params.tin,
-    connection: new Connection(params.rpcUrl, "confirmed"),
-    programId: params.programId,
-    lookupSecret: params.lookupSecret,
-  });
-}

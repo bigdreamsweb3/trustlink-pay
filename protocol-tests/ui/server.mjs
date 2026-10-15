@@ -27,6 +27,7 @@ const localRpcUrl = process.env.TSN_LOCAL_RPC_GATEWAY_URL
   ?? (configuredRpcUrl && isLoopbackUrl(configuredRpcUrl) ? configuredRpcUrl : "http://127.0.0.1:8787");
 const liveRpcUrl = process.env.TSN_LIVE_RPC_GATEWAY_URL
   ?? (configuredRpcUrl && !isLoopbackUrl(configuredRpcUrl) ? configuredRpcUrl : "https://tsn-rpc-gateway.vercel.app");
+const devnetRpcUrl = "https://api.devnet.solana.com";
 let rpcSelectionCache = null;
 let rpcSelectionExpiresAt = 0;
 async function resolveRpcUrl() {
@@ -55,13 +56,13 @@ function isTransientRpcReadError(error) {
 }
 
 function rpcLabel(url) {
-  return url === localRpcUrl ? "local TSN RPC gateway" : url === liveRpcUrl ? "live TSN RPC gateway" : "configured TSN RPC gateway";
+  return url === localRpcUrl ? "local TSN RPC gateway" : url === liveRpcUrl ? "live TSN RPC gateway" : url === devnetRpcUrl ? "Solana Devnet RPC" : "configured TSN RPC gateway";
 }
 
 function createRpcReadSession(initialUrl) {
   let activeUrl = initialUrl;
   let connection = new Connection(activeUrl, "confirmed");
-  let fallbackAttempted = false;
+  const triedUrls = new Set([initialUrl]);
   return {
     read: async (operation) => {
       try {
@@ -69,11 +70,12 @@ function createRpcReadSession(initialUrl) {
       } catch (error) {
         if (!isTransientRpcReadError(error)) throw error;
         const failedUrl = activeUrl;
-        const fallbackUrl = failedUrl === localRpcUrl ? liveRpcUrl : null;
-        if (fallbackAttempted || !fallbackUrl || fallbackUrl === failedUrl) {
+        const fallbackUrl = [localRpcUrl, liveRpcUrl, devnetRpcUrl]
+          .find((candidate) => candidate !== failedUrl && !triedUrls.has(candidate));
+        if (!fallbackUrl) {
           throw new Error(`${rpcLabel(failedUrl)} failed during a Solana read: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
         }
-        fallbackAttempted = true;
+        triedUrls.add(fallbackUrl);
         activeUrl = fallbackUrl;
         connection = new Connection(activeUrl, "confirmed");
         rpcSelectionCache = activeUrl;
@@ -371,13 +373,12 @@ async function handleApi(req, res, url) {
     let displayName;
     if (finalized) {
       try {
-        const identity = await tsnSdk.resolveTinRoute({
-          tin: pending.tin,
-          rpcUrl: await resolveRpcUrl(),
-          programId: tinProgramId,
-          lookupSecret: requireTinLookupSecret(),
-        });
-        if (typeof identity.name === "string") displayName = identity.name;
+        const nodeUrl = (mode === "local"
+          ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
+          : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
+        const identityResponse = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(pending.tin)}`, { cache: "no-store" });
+        const identity = await identityResponse.json().catch(() => ({}));
+        if (identityResponse.ok && typeof identity.displayName === "string") displayName = identity.displayName;
       } catch (error) {
         console.warn("[tsn-protocol-ui] finalized TIN name could not be resolved from the registry", error instanceof Error ? error.message : "resolution failed");
       }
@@ -442,18 +443,18 @@ async function handleApi(req, res, url) {
     if (!verifySignature(null, recoveryMessage, publicKey, ownerSignature)) {
       return json(res, 401, { error: "OWNER_IDENTITY_SIGNATURE_INVALID" });
     }
-    const identity = await tsnSdk.resolveTinRoute({
-      tin,
-      rpcUrl: await resolveRpcUrl(),
-      programId: tinProgramId,
-      lookupSecret: requireTinLookupSecret(),
-    });
+    const nodeUrl = (mode === "local"
+      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
+      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
+    const identityResponse = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(tin)}`, { cache: "no-store" });
+    const identity = await identityResponse.json().catch(() => ({}));
+    if (!identityResponse.ok) return json(res, identityResponse.status, identity);
     const expectedOwnerHash = createHash("sha256").update(ownerPubkey.toBuffer()).digest("hex");
     if (identity.ownerPubkeyHash !== expectedOwnerHash) return json(res, 404, { error: "OWNER_TIN_NOT_FOUND" });
     return json(res, 200, {
       tin,
-      displayName: identity.name,
-      source: "@trustlink/tsn-sdk.resolveTinRoute",
+      displayName: identity.displayName,
+      source: "TSN Node /tin-resolution",
     });
   }
 
@@ -461,59 +462,30 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const tin = String(body.tin ?? "").trim();
     if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
-    const identity = await tsnSdk.resolveTinRoute({ tin, rpcUrl: await resolveRpcUrl(), programId: tinProgramId, lookupSecret: requireTinLookupSecret() });
-    session.resolvedTin = {
-      tin,
-      recipientRouteCommitment: identity.tcapRelationshipCommitment,
-      // The recipient's opaque TIP root is distinct from the route commitment
-      // signed by the sender. The credit instruction derives the TIP PDA from
-      // this reference, so keep both values in the resolved session.
-      recipientTipRoot: identity.tcapRelationshipReference,
-      gpruCommitment: identity.gpruCommitment,
-      recipientRouteVersion: identity.tcapRouteVersion,
-      ownerPubkeyHash: identity.ownerPubkeyHash,
-      tcapPolicyCommitment: identity.tcapPolicyCommitment,
-      pruConfigurationHash: identity.pruConfigurationHash,
-      canReceiveGpruCredit: Boolean(
-        identity.tcapRouteVersion === 1 &&
-        identity.tcapRelationshipCommitment &&
-        identity.tcapRelationshipReference &&
-        identity.tcapPolicyCommitment &&
-        identity.gpruCommitment
-      ),
-      expiresAt: Date.now() + 5 * 60_000,
-    };
+    const nodeUrl = (mode === "local"
+      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
+      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED" });
+    const response = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(tin)}`, {
+      cache: "no-store", signal: AbortSignal.timeout(10_000),
+    });
+    const identity = await response.json().catch(() => ({}));
+    if (!response.ok) return json(res, response.status, identity);
+    session.resolvedTin = { tin, displayName: String(identity.displayName ?? ""), expiresAt: Date.now() + 5 * 60_000 };
     return json(res, 200, {
       tin,
-      displayName: identity.name ?? "",
-      ownerPubkeyHash: identity.ownerPubkeyHash,
-      tcapPolicyCommitment: identity.tcapPolicyCommitment,
-      pruConfigurationHash: identity.pruConfigurationHash,
-      displayNameSource: "owner-provided",
-      governmentAttestation: null,
-      recipientRouteCommitment: identity.tcapRelationshipCommitment,
-      recipientTipRoot: identity.tcapRelationshipReference,
-      gpruCommitment: identity.gpruCommitment,
-      recipientRouteVersion: identity.tcapRouteVersion,
-      canReceiveGpruCredit: session.resolvedTin.canReceiveGpruCredit,
-      source: "@trustlink/tsn-sdk.resolveTinRoute",
+      displayName: session.resolvedTin.displayName,
+      displayNameSource: identity.displayNameSource === "owner-provided" ? "owner-provided" : "not provided",
+      verifiedCredentials: Array.isArray(identity.verifiedCredentials) ? identity.verifiedCredentials : [],
+      source: "TSN Node /tin-resolution",
     });
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {
     const body = await readJson(req);
-    const route = session.resolvedTin;
+    const recipientTin = String(body.recipientTin ?? "").trim();
     const mintText = String(body.tokenMintAddress ?? "").trim();
-    if (!route || route.expiresAt < Date.now()) return json(res, 409, { error: "RESOLVE_RECIPIENT_TIN_FIRST" });
-    if (!route.canReceiveGpruCredit) {
-      return json(res, 409, {
-        error: route.gpruCommitment
-          ? "TIN_TCAP_CREDIT_ROUTE_UNAVAILABLE"
-          : "TIN_PRIVACY_RECEIVING_KEY_MISSING",
-        stage: "CREDIT_PREPARATION",
-        tin: route.tin,
-      });
-    }
+    if (!/^\d{10}$/.test(recipientTin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
     if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintText)) return json(res, 422, { error: "VALID_TOKEN_MINT_REQUIRED" });
     const amountText = String(body.amount ?? "").trim();
     if (!/^\d+(?:\.\d{1,9})?$/.test(amountText) || Number(amountText) <= 0) return json(res, 422, { error: "POSITIVE_TOKEN_AMOUNT_REQUIRED" });
@@ -531,9 +503,8 @@ async function handleApi(req, res, url) {
     const accounts = await rpc.read((connection) => tsnSdk.resolveTcapGpruDepositAccounts(connection, {
       depositor, mint, tokenProgram, tcapProgramId: tcapProgram,
     }));
-    const tipAddress = tsnSdk.deriveTinCreditTip(route.recipientTipRoot, tcapProgram);
-    const [reserveAccount, vaultAccount, tipAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
-      accounts.reserveState, accounts.vault, tipAddress,
+    const [reserveAccount, vaultAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
+      accounts.reserveState, accounts.vault,
     ], "confirmed"));
     const { assetEntryAccount: entryAccount, ...accountAddresses } = accounts;
     const entryData = entryAccount?.data;
@@ -578,54 +549,21 @@ async function handleApi(req, res, url) {
     accounts.source = selectedSource.pubkey;
     const sourceTokenBalance = selectedSource.balance;
     if (sourceTokenBalance < amountBaseUnits) return json(res, 409, { error: "INSUFFICIENT_SENDER_TOKEN_BALANCE", availableBaseUnits: sourceTokenBalance.toString() });
-    let previousCommitment;
-    let sequence;
-    let policyCommitment;
-    if (tipAccount) {
-      const data = tipAccount.data;
-      const tipDisc = createHash("sha256").update("account:TCapTinTipV1").digest().subarray(0, 8);
-      if (!tipAccount.owner.equals(tcapProgram) || data.length !== 116 || !data.subarray(0, 8).equals(tipDisc) || data[114] !== 0) {
-        return json(res, 409, { error: "TCAP_TIN_TIP_LAYOUT_INVALID" });
-      }
-      previousCommitment = data.subarray(10, 42).toString("hex");
-      sequence = data.readBigUInt64LE(42) + 1n;
-      policyCommitment = data.subarray(50, 82).toString("hex");
-      if (policyCommitment !== String(route.tcapPolicyCommitment).toLowerCase()) return json(res, 409, { error: "TCAP_TIN_TIP_POLICY_MISMATCH" });
-    } else {
-      previousCommitment = randomBytes(32).toString("hex");
-      sequence = 1n;
-      policyCommitment = String(route.tcapPolicyCommitment).toLowerCase();
-    }
     const [slot, latestBlockhash] = await rpc.read(async (connection) => Promise.all([
       connection.getSlot("confirmed"), connection.getLatestBlockhash("confirmed"),
     ]));
     session.pendingTinCredit = {
-      recipientTin: route.tin,
+      recipientTin,
       mint: mint.toBase58(),
       amountBaseUnits: amountBaseUnits.toString(),
-      previousCommitment,
-      sequence: sequence.toString(),
-      policyCommitment,
-      initializeTip: !tipAccount,
       expiresAt: Date.now() + 120_000,
       accounts: Object.fromEntries(Object.entries(accountAddresses).map(([key, value]) => [key, value.toBase58()])),
-      tokenId: entryData.readUInt32LE(44),
       decimals,
     };
     return json(res, 200, {
-      recipientTin: route.tin,
-      recipientRouteCommitment: route.recipientRouteCommitment,
-      recipientRouteVersion: route.recipientRouteVersion,
-      recipientTipRoot: route.recipientTipRoot,
-      gpruCommitment: route.gpruCommitment,
-      tokenId: entryData.readUInt32LE(44),
+      recipientTin,
       decimals,
       amountBaseUnits: amountBaseUnits.toString(),
-      previousCommitment,
-      sequence: sequence.toString(),
-      policyCommitment,
-      initializeTip: !tipAccount,
-      tip: tsnSdk.deriveTinCreditTip(route.recipientTipRoot, tcapProgram).toBase58(),
       currentSlot: slot,
       expiresAtSlot: slot + 300,
       recentBlockhash: latestBlockhash.blockhash,
@@ -637,7 +575,7 @@ async function handleApi(req, res, url) {
         tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
       },
       sourceTokenBalance: sourceTokenBalance.toString(),
-      sdk: "@trustlink/tsn-sdk.resolveTcapGpruDepositAccounts",
+      sdk: "@trustlink/tsn-sdk.buildTcapGpruWalletDepositTransaction",
     });
   }
 
@@ -647,11 +585,7 @@ async function handleApi(req, res, url) {
     const request = body.request;
     if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
     if (!request || request.senderWallet !== session.wallet || request.recipientTin !== prepared.recipientTin
-      || request.tokenMintAddress !== prepared.mint || String(request.tcapCreditTransition?.amountBaseUnits) !== prepared.amountBaseUnits
-      || String(request.tcapCreditTransition?.sequence) !== prepared.sequence
-      || request.tcapCreditTransition?.previousCommitment !== prepared.previousCommitment
-      || request.tcapCreditTransition?.policyCommitment !== prepared.policyCommitment
-      || request.tcapCreditTransition?.depositAccounts?.assetEntry !== prepared.accounts.assetEntry) {
+      || request.tokenMintAddress !== prepared.mint) {
       return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
     }
     const nodeUrl = (mode === "local"

@@ -31,8 +31,6 @@ function paymentReceiptVerification(work: ReceiverWork) {
     "transferId",
     "commitmentHash",
     "settlementEpoch",
-    "recipientRouteCommitment",
-    "recipientRouteVersion",
   ];
   return compactVerificationPayload(work.payload, {
     verificationType: work.verification?.verificationType ?? "TSN_AUTHORIZED_FUNDING",
@@ -49,9 +47,9 @@ export async function receive(input: { id?: string; kind: WorkKind; payload: Rec
   const durablePayload = input.kind === "AUTHORIZED_FUNDING"
     ? {
         paymentId: String(input.payload.paymentId), recipientHash: String(input.payload.recipientHash),
+        recipientTin: String(input.payload.recipientTin),
         privacyVersion: input.payload.privacyVersion ?? null, tokenMintAddress: input.payload.tokenMintAddress ?? null,
-        amount: input.payload.amount ?? null, recipientRouteCommitment: input.payload.recipientRouteCommitment ?? null,
-        recipientRouteVersion: input.payload.recipientRouteVersion ?? null,
+        amount: input.payload.amount ?? null,
         nodeEncryptedPayload: encryptPayloadForNode(input.payload),
       }
     : input.payload;
@@ -126,21 +124,7 @@ export async function getWork(id: string) {
 export async function getWorkForNode(id: string) {
   const work = await getWork(id);
   if (!work) return work;
-  if (work.kind === "SETTLEMENT") {
-    const fundingId = String(work.payload.intentId ?? "");
-    const funding = fundingId ? await getWork(fundingId) : null;
-    if (!funding || funding.kind !== "AUTHORIZED_FUNDING") return work;
-    const envelope = funding.payload.nodeEncryptedPayload;
-    if (!envelope || typeof envelope !== "object") return work;
-    const privatePayload = decryptPayloadForNode(envelope as Parameters<typeof decryptPayloadForNode>[0]);
-    return {
-      ...work,
-      payload: {
-        ...work.payload,
-        ...(privatePayload.tcapCreditTransition ? { tcapCreditTransition: privatePayload.tcapCreditTransition } : {}),
-      },
-    } as ReceiverWork;
-  }
+  if (work.kind === "SETTLEMENT") return work;
   if (work.kind !== "AUTHORIZED_FUNDING") return work;
   const envelope = work.payload.nodeEncryptedPayload;
   // VERIFIED/terminal payment records are deliberately redacted after Node

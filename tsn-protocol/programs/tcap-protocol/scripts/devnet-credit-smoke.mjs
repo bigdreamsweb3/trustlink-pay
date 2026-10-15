@@ -71,11 +71,13 @@ function reportMissingEnv() {
   process.exit(2);
 }
 
-function buildInitializeTipInstruction({ payer, tipRoot, tip, initialCommitment, policyCommitment }) {
+function buildInitializeTipInstruction({ payer, motherEscrow, cranker, tipRoot, tip, initialCommitment, policyCommitment }) {
   return new TransactionInstruction({
     programId: new PublicKey(TCAP_PROGRAM_ID),
     keys: [
       { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+      { pubkey: motherEscrow, isSigner: false, isWritable: false },
+      { pubkey: cranker, isSigner: false, isWritable: false },
       { pubkey: tip, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
@@ -124,7 +126,12 @@ for (const [label, value] of [
 }
 const existingTip = await connection.getAccountInfo(pdas.tip);
 if (!existingTip) {
-  const init = buildInitializeTipInstruction({ payer: wallet, tipRoot: rootCommitment, tip: pdas.tip, initialCommitment, policyCommitment });
+  const tsnProgram = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
+  const [cranker] = PublicKey.findProgramAddressSync(
+    [seed("tsn_cranker"), motherEscrow.toBuffer(), wallet.publicKey.toBuffer()],
+    tsnProgram,
+  );
+  const init = buildInitializeTipInstruction({ payer: wallet, motherEscrow, cranker, tipRoot: rootCommitment, tip: pdas.tip, initialCommitment, policyCommitment });
   await sendAndConfirmTransaction(connection, new Transaction().add(init), [wallet], { commitment: "confirmed" });
 }
 

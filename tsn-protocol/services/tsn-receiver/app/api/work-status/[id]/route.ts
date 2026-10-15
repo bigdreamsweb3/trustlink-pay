@@ -22,11 +22,13 @@ export async function GET(_request: NextRequest, context: Context) {
       receivedAt: work.receivedAt,
       updatedAt: work.updatedAt,
       verificationType: work.verification?.verificationType ?? null,
+      nodeDecisionReason: work.status === "REJECTED" ? work.verification?.reason ?? null : null,
       result: work.result ? { signature: work.result.signature ?? null, stage: work.result.stage ?? null } : null,
       settlement: settlement ? {
         operationId: settlement.id,
         status: settlement.status,
         verificationType: settlement.verification?.verificationType ?? null,
+        nodeDecisionReason: settlement.status === "REJECTED" ? settlement.verification?.reason ?? null : null,
         result: settlement.result ? { signature: settlement.result.signature ?? null, stage: settlement.result.stage ?? null } : null,
       } : null,
     }, { headers: { "cache-control": "no-store" } });

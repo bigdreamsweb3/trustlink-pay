@@ -116,4 +116,6 @@ pub enum TcapError {
     TipSealAlreadyMigrated,
     #[msg("The TIP seal payload is missing")]
     TipSealRequired,
+    #[msg("TIP initialization requires a registered Cranker with valid TSN DNA")]
+    InvalidCrankerDna,
 }

@@ -144,36 +144,6 @@ export type CreateIntentRequest = {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderFundingMode?: "tcap_deposit_v2" | null;
-  /** Opaque V2 GPRU transition plus recipient-encrypted credit note. */
-  tcapCreditTransition?: {
-    tipRootCommitment: string;
-    previousCommitment: string;
-    newCommitment: string;
-    sequence: string;
-    tokenId: number;
-    policyCommitment: string;
-    gpruScopeCommitment: string;
-    nullifier: string;
-    validAfterSlot: string;
-    expiresAtSlot: string;
-    authorizationDigest: string;
-    gpruCreditEnvelopeBase64: string;
-    gpruCreditNonceBase64: string;
-    recipientPrivacyKeyCommitment: string;
-    mint: string;
-    amountBaseUnits: string;
-    depositAmountBaseUnits: string;
-    depositAccounts: {
-      depositor: string;
-      config: string;
-      assetEntry: string;
-      reserveState: string;
-      source: string;
-      vault: string;
-      mint: string;
-      tokenProgram: string;
-    };
-  } | null;
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -192,8 +162,6 @@ export type CreateIntentRequest = {
   recipientHash: string;
   tokenMintAddress: string;
   amount: number;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   recipientAmount?: number;
   source?: string;
   recipientTin?: string | null;
@@ -268,7 +236,6 @@ export function buildCreateIntentRequest(params: {
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction?: string | null;
   senderFundingMode?: "tcap_deposit_v2" | null;
-  tcapCreditTransition?: CreateIntentRequest["tcapCreditTransition"];
   privacyVersion?: number | null;
   senderTokenAccount?: string | null;
   transferId?: string | null;
@@ -277,8 +244,6 @@ export function buildCreateIntentRequest(params: {
   encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
   recipientHash: string;
   recipientTin?: string | null;
-  recipientRouteCommitment: string;
-  recipientRouteVersion: number;
   tokenMintAddress: string;
   amount: number;
   destinationNetwork?: string | null;
@@ -299,7 +264,6 @@ export function buildCreateIntentRequest(params: {
     senderFeeAmount: params.senderFeeAmount ?? null,
     senderSignedFundingTransaction: params.senderSignedFundingTransaction ?? null,
     senderFundingMode: params.senderFundingMode ?? null,
-    tcapCreditTransition: params.tcapCreditTransition ?? null,
     privacyVersion: params.privacyVersion ?? null,
     senderTokenAccount: params.senderTokenAccount ?? null,
     transferId: params.transferId ?? null,
@@ -309,8 +273,6 @@ export function buildCreateIntentRequest(params: {
     intentSeedHash: sha256Hex(params.paymentId),
     recipientHash: params.recipientHash,
     recipientTin: params.recipientTin ?? null,
-    recipientRouteCommitment: params.recipientRouteCommitment,
-    recipientRouteVersion: params.recipientRouteVersion,
     tokenMintAddress: params.tokenMintAddress,
     amount: params.amount,
     destinationNetwork: params.destinationNetwork ?? null,

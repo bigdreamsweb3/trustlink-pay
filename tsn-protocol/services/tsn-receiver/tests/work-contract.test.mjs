@@ -50,7 +50,7 @@ test("payment ingress requires a valid sender Ed25519 authorization", () => {
   const der = publicKey.export({ format: "der", type: "spki" });
   const wallet = base58(der.subarray(-32));
   const message = "TSN payment authorization";
-  const payload = { paymentId: "p", recipientHash: "h", recipientRouteCommitment: "c", recipientRouteVersion: 1, tokenMintAddress: "m", amount: 1, senderWallet: wallet, senderAuthorizationMessage: message, senderAuthorizationSignature: sign(null, Buffer.from(message), privateKey).toString("base64"), senderAuthorizationNonce: "n" };
+  const payload = { paymentId: "p", recipientHash: "h", recipientTin: "1234567890", tokenMintAddress: "m", amount: 1, senderWallet: wallet, senderAuthorizationMessage: message, senderAuthorizationSignature: sign(null, Buffer.from(message), privateKey).toString("base64"), senderAuthorizationNonce: "n" };
   assert.doesNotThrow(() => assertAuthorizedFundingIngress(payload));
   assert.throws(() => assertAuthorizedFundingIngress({ ...payload, senderAuthorizationSignature: Buffer.alloc(64).toString("base64") }), /INVALID_SENDER_SIGNATURE/);
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listRecent, receive } from "../../../lib/store";
-import { assertExternalWorkKind, publicCoordinationPayload, type WorkKind } from "../../../lib/work-contract";
+import { assertExternalWorkKind, publicCoordinationPayload, type ReceiverWork, type WorkKind } from "../../../lib/work-contract";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const work = await listRecent();
-  return NextResponse.json(work.map((item) => ({
+  return NextResponse.json(work.map((item: ReceiverWork) => ({
     id: item.id,
     kind: item.kind,
     status: item.status,

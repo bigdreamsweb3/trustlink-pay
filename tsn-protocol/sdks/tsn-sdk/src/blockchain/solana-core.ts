@@ -56,9 +56,20 @@ export function getConnection(rpcUrl?: string) {
   const normalizedRpcUrl = !rpcUrl || rpcUrl === "http://127.0.0.1:8899"
     ? resolveSolanaRpcUrl({ frontendSafe: false })
     : rpcUrl;
+  let wsEndpoint = process.env.TSN_RPC_WS_URL?.trim();
+  if (!wsEndpoint) {
+    const endpoint = new URL(normalizedRpcUrl);
+    endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+    const localHost = ["localhost", "127.0.0.1", "::1"].includes(endpoint.hostname);
+    const configuredPath = process.env.TSN_RPC_GATEWAY_WS_PATH?.trim();
+    if ((endpoint.pathname === "/" || endpoint.pathname === "") && (localHost || configuredPath)) {
+      endpoint.pathname = configuredPath || "/ws";
+    }
+    wsEndpoint = endpoint.toString();
+  }
   return new Connection(
     normalizedRpcUrl,
-    "confirmed",
+    { commitment: "confirmed", wsEndpoint },
   );
 }
 

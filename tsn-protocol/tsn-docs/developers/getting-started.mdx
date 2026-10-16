@@ -70,88 +70,83 @@ clients or construct raw settlement instructions.
     a Cranker is a worker, not a public application HTTP service.
 
   </Step>
-  <Step title="Obtain or register a TIN">
-    A TIN is a portable 10-digit identity issued by the Transfer Identity Protocol (TIP). Resolve its public payment route through the SDK.
+  <Step title="Obtain or resolve a TIN">
+    A TIN is issued by a trusted TIN V1 issuer; the program does not generate TINs. Issuance requires an owner-signed intent, an issuer HMAC proof, and a protected lookup secret configured on the issuer and Node. See [Private TIN issuance](/developers/private-tin-issuance) for the service boundary.
 
-    ```ts title="Resolve a TIN"
-    import { resolveTinRoute } from "@trustlink/tsn-sdk";
+    For an existing TIN, use the Node resolution endpoint for the user-approved display identity. The sender authorization contains the TIN and resolved display identity; the Node independently resolves and validates the current TCAP route from on-chain TIN V1 state. Do not resolve a legacy TIN account with the retired SDK resolver or include route commitments in the sender's authorization message.
 
-    const tinRecord = await resolveTinRoute({
-      tin: "1234567890",
-      rpcUrl: process.env.TSN_RPC_URL ?? "https://tsn-rpc-gateway.vercel.app",
-      programId: "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
-    });
+    ```ts title="Resolve a TIN through TSN Node"
+    const response = await fetch(
+      `${process.env.TSN_NODE_URL}/tin-resolution/${encodeURIComponent(recipientTin)}`,
+      { headers: { accept: "application/json" } },
+    );
+    if (!response.ok) throw new Error("TIN could not be resolved");
+    const recipient = await response.json();
     ```
 
-    The registry returns the active route commitment, route version, and policy commitment. Your device never shares the privacy-receiving root with the registry or the Node.
+    The lookup secret never leaves the trusted issuer/Node boundary. The encrypted identity and owner-recovery envelopes remain encrypted in Receiver work and on-chain account data.
 
   </Step>
-  <Step title="Construct and sign a payment intent locally">
-    Build the canonical payment message on your authorized device. The intent binds amount, mint, fee limits, expiry, a one-time nonce, sender authorization, transaction commitment, recipient route commitment, and route version.
+  <Step title="Construct and sign a payment authorization locally">
+    The signed message binds the sender, recipient TIN and resolved display identity, amount, fee, nonce, expiry, and the TCAP deposit funding mode. The recipient route commitment is not supplied by the sender; Node resolves and verifies it from the current TIN V1 account.
 
-    ```json title="Conceptual intent fields"
-    {
-      "amount": "1000000",
-      "tokenMint": "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h",
-      "feeLimit": "5000",
-      "expiresAtSlot": 320000000,
-      "nonce": "a1b2c3d4e5f6...",
-      "senderAuthorization": "signed-canonical-message...",
-      "transactionCommitment": "commitment-digest...",
-      "recipientRouteCommitment": "route-commitment-digest...",
-      "routeVersion": 1
-    }
+    ```ts title="Build and sign the canonical authorization"
+    import { createPaymentAuthorization } from "@trustlink/tsn-sdk";
+
+    const authorization = createPaymentAuthorization({
+      senderWallet,
+      senderIdentity: senderWallet,
+      receiverIdentity: `tin:${recipientTin}`,
+      recipientDisplayName: recipient.displayName,
+      recipientDisplayNameSource: recipient.displayNameSource,
+      recipientVerifiedCredentials: recipient.verifiedCredentials,
+      tokenMintAddress,
+      amount,
+      senderFeeAmount,
+      totalTokenRequiredUi: amount + senderFeeAmount,
+      fundingMode: "tcap_deposit_v2",
+    });
+    const signature = await wallet.signMessage(
+      new TextEncoder().encode(authorization.message),
+    );
     ```
 
-    Use the GPRU helpers to derive the authorization scope:
-
-    ```ts title="Derive GPRU identity"
-    import { deriveGpruIdentity, createCanonicalGpruAuthorizationMessage } from "@trustlink/tsn-sdk/gpru";
-
-    const gpruIdentity = deriveGpruIdentity({
-      tinPrivacyReceivingRoot,
-      settlementCommitment,
-      epochContext,
-      authorizationScope,
-    });
-
-    const authMessage = createCanonicalGpruAuthorizationMessage({
-      tinPrivacyReceivingRoot,
-      settlementCommitment,
-      epochContext,
-      authorizationScope,
-      gpruIdentity,
-    });
-    ```
+    The wallet must also sign the TCAP wallet deposit transaction. Do not use legacy wallet-only, PRU, or mixed-funding modes; the live Node accepts only `tcap_deposit_v2`.
 
   </Step>
-  <Step title="Submit to the TSN Receiver">
-    Submit the signed intent through the SDK. The SDK sends the request to the configured TSN service boundary; the browser must never hold a Node or Receiver API key.
-    ```ts title="Submit authorized funding work"
-    import { submitPaymentAuthorizationToMempool } from "@trustlink/tsn-sdk";
+  <Step title="Submit the authorized funding work">
+    Build the intent request from the signed message and signed deposit transaction, then submit it to the TSN Node `/intents` ingress. The Node forwards it to Receiver; do not post directly to Receiver or expose its service key in browser code.
 
-    const result = await submitPaymentAuthorizationToMempool({
-      mempoolUrl: process.env.TSN_RECEIVER_URL!,
-      apiKey: process.env.TSN_RECEIVER_NODE_API_KEY,
+    ```ts title="Build and submit a current intent"
+    import {
+      TsnHttpClient,
+      buildPaymentAuthorizationIntentRequest,
+    } from "@trustlink/tsn-sdk";
+
+    const request = buildPaymentAuthorizationIntentRequest({
       paymentId,
       recipientHash: recipientTin,
       recipientTin,
-      recipientRouteCommitment,
-      recipientRouteVersion,
       tokenMintAddress,
       senderWallet,
-      senderAuthorizationMessage,
-      senderAuthorizationSignature,
-      senderAuthorizationNonce,
-      senderAuthorizationIssuedAt,
-      senderAuthorizationExpiresAt,
+      senderAuthorizationMessage: authorization.message,
+      senderAuthorizationSignature: Buffer.from(signature).toString("base64"),
+      senderAuthorizationNonce: authorization.nonce,
+      senderAuthorizationIssuedAt: authorization.issuedAt,
+      senderAuthorizationExpiresAt: authorization.expiresAt,
+      senderFeeAmount,
+      senderSignedFundingTransaction,
+      senderFundingMode: "tcap_deposit_v2",
+      senderTokenAccount,
       amount,
-      senderFundingMode: "wallet_only_v2",
+      source: "my-tsn-app",
     });
-    console.log(result.intent.id, result.intent.status);
+    const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
+    const intent = await client.postIntent(request);
+    console.log(intent.id, intent.status);
     ```
 
-    The Receiver records the work as `RECEIVED`. The response uses `id` as the stable work/payment identifier. The Node then verifies the signed authorization before a Cranker can lease it.
+    The Receiver records work as `RECEIVED`; the response `id` is the stable work identifier. Node independently verifies the authorization, TIN V1 identity, TCAP route, and deposit before a Cranker can lease it.
 
   </Step>
   <Step title="Observe the work lifecycle">

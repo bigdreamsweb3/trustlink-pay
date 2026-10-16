@@ -144,7 +144,7 @@ export function createCrossChainPaymentAuthorization(params: {
 export function buildPaymentAuthorizationIntentRequest(params: {
   paymentId: string;
   recipientHash: string;
-  recipientTin?: string | null;
+  recipientTin: string;
   tokenMintAddress: string;
   tokenDecimals?: number;
   senderWallet: string;
@@ -154,14 +154,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderAuthorizationIssuedAt: string;
   senderAuthorizationExpiresAt: string;
   senderFeeAmount?: string | number | null;
-  senderSignedFundingTransaction?: string | null;
-  senderFundingMode?: "tcap_deposit_v2" | null;
-  privacyVersion?: number | null;
-  senderTokenAccount?: string | null;
-  transferId?: string | null;
-  commitmentHash?: string | null;
-  settlementEpoch?: number | null;
-  encryptedSettlementToken?: CreateIntentRequest["encryptedSettlementToken"];
+  senderSignedFundingTransaction: string;
+  senderFundingMode: "tcap_deposit_v2";
   amount: string | number;
   destinationNetwork?: string | null;
   destinationExecutor?: string | null;
@@ -185,7 +179,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   return {
     ...buildCreateIntentRequest({
       paymentId: params.paymentId,
-      underlyingPayment: params.senderWallet,
       senderWallet: params.senderWallet,
       senderAuthorizationMessage: params.senderAuthorizationMessage,
       senderAuthorizationSignature: params.senderAuthorizationSignature,
@@ -193,15 +186,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
       senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount == null ? null : requestFee,
-      senderSignedFundingTransaction:
-        params.senderSignedFundingTransaction,
+      senderSignedFundingTransaction: params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
-      privacyVersion: params.privacyVersion,
-      senderTokenAccount: params.senderTokenAccount,
-      transferId: params.transferId,
-      commitmentHash: params.commitmentHash,
-      settlementEpoch: params.settlementEpoch,
-      encryptedSettlementToken: params.encryptedSettlementToken,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
       tokenMintAddress: params.tokenMintAddress,

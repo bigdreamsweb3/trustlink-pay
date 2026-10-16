@@ -10,6 +10,8 @@ export function resolveSolanaRpcUrls(_options: RpcSelectionOptions = {}) {
 
 export function resolveSolanaRpcUrl(_options: RpcSelectionOptions = {}) {
   return (
-    process.env.TSN_RPC_GATEWAY_URL || DEFAULT_TSN_RPC_GATEWAY_URL
+    process.env.TSN_RPC_URL ||
+    process.env.TSN_RPC_GATEWAY_URL ||
+    DEFAULT_TSN_RPC_GATEWAY_URL
   ).replace(/\/+$/, "");
 }

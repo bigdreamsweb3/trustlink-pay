@@ -41,27 +41,23 @@ export function assertExternalWorkKind(kind: WorkKind): void {
 
 const AUTHORIZED_FUNDING_KEYS = new Set([
   "paymentId", "intentSeedHash", "recipientHash", "recipientTin",
-  "tokenMintAddress", "amount", "recipientAmount", "underlyingPayment", "senderWallet", "senderAuthorizationMessage",
+  "tokenMintAddress", "amount", "recipientAmount", "senderWallet", "senderAuthorizationMessage",
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
   "senderFeeAmount", "senderSignedFundingTransaction", "senderFundingMode",
-  "pruSpendTin", "pruSpendAmountBaseUnits", "pruSpendSenderFeeBaseUnits", "walletTopUpAmountBaseUnits",
-  "walletTopUpSenderFeeBaseUnits", "pruSpendSelections", "privacyVersion", "senderTokenAccount",
-  "transferId", "commitmentHash",
-  "settlementEpoch", "encryptedSettlementToken", "source",
+  "destinationNetwork", "destinationExecutor", "destinationToken", "settlementRouteId",
+  "source",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
-  AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "recipientTin", "privacyVersion", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
+  AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
-  // Private TIN V1 payload accepted from the SDK. Plaintext TIN, display name,
-  // and resolver secret are excluded; the Node verifies signature, hash,
-  // expiry, issuer proof, and route commitments.
+  // Exact private TIN V1 creation payload accepted from the SDK.
   TIN_OPERATION: new Set([
-    "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
-    "ownerIntentMessage", "nonce", "expiry", "displayName", "encryptedMasterSeed",
-    "encryptedMetadataHash",
-    "routeVersion", "routeNonce", "tcapRouteVersion", "tcapRelationshipCommitment",
-    "tcapRelationshipReference", "tcapPolicyCommitment", "tin", "lookupCommitment", "lookupIssuanceProof",
-    "encryptedIdentityEnvelope", "encryptedTinRecovery", "intentId", "intent_id", "source",
+    "intentType", "intentId", "ownerPubkey", "ownerSignature",
+    "ownerIntentHash", "ownerIntentMessage", "nonce", "expiry",
+    "lookupCommitment", "lookupIssuanceProof", "encryptedIdentityEnvelope",
+    "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
+    "routeVersion", "routeNonce", "tcapRouteVersion",
+    "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
   ]),
 };
 
@@ -149,6 +145,26 @@ export function compactVerificationPayload(
   };
 }
 
+export function compactAuthorizedFundingVerification(
+  payload: Record<string, unknown>,
+  evidence: Record<string, unknown>,
+): Record<string, unknown> {
+  const verified = evidence.verifiedPayload;
+  const verifiedPayload = verified && typeof verified === "object" && !Array.isArray(verified)
+    ? Object.fromEntries(
+        ["paymentId", "recipientHash", "tokenMintAddress", "amount", "senderSignedFundingTransaction", "senderFundingMode"]
+          .filter((key) => (verified as Record<string, unknown>)[key] !== undefined)
+          .map((key) => [key, (verified as Record<string, unknown>)[key]]),
+      )
+    : {};
+  return compactVerificationPayload(payload, {
+    ...(evidence.verificationType !== undefined ? { verificationType: evidence.verificationType } : {}),
+    ...(evidence.nodeAttestation !== undefined ? { nodeAttestation: evidence.nodeAttestation } : {}),
+    ...(evidence.programSimulation !== undefined ? { programSimulation: evidence.programSimulation } : {}),
+    verifiedPayload,
+  });
+}
+
 /** Resolve compact current records and legacy records for existing consumers. */
 export function verifiedPayloadForWork(work: ReceiverWork): Record<string, unknown> | null {
   const verification = work.verification;
@@ -174,7 +190,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
       : kind === "TIN_OPERATION"
       ? new Set([
           "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash", "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry",
-          "nonce", "displayName", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
+          "nonce", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
           "routeVersion", "routeNonce", "tcapRouteVersion",
           "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
         ])
@@ -219,6 +235,6 @@ export function createReceivedWork(input: { id?: string; kind: WorkKind; payload
 
 export function publicCoordinationPayload(work: ReceiverWork): Record<string, unknown> {
   const payload = verifiedPayloadForWork(work) ?? work.payload;
-  const allowed = new Set(["paymentId", "recipientHash", "recipientTin", "privacyVersion", "tokenMintAddress", "amount", "transferId", "commitmentHash", "settlementEpoch"]);
+  const allowed = new Set(["paymentId", "intentId", "recipientHash", "source", "tokenMintAddress", "amount"]);
   return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
 }

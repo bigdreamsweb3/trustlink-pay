@@ -1,6 +1,7 @@
 import { Buffer } from "buffer";
 import { deriveTcapTipRootCommitment, resolveTinGpruCommitment } from "./gpru.js";
 import { sha256 } from "@noble/hashes/sha2";
+import nacl from "tweetnacl";
 import {
   Connection,
   Ed25519Program,
@@ -19,6 +20,7 @@ const TINS_V1_CREATE_STAGE_SEED = Buffer.from("tin-v1-create-stage");
 const TINS_V1_OWNER_RECOVERY_SEED = Buffer.from("tin-v1-owner-recovery");
 const TIN_V1_RECOVERY_V4_MAGIC = Buffer.from("TSNTIN04", "ascii");
 const TIN_V1_RECOVERY_V3_MAGIC = Buffer.from("TSNTIN03", "ascii");
+const TIN_V1_RECOVERY_KEY_DOMAIN = Buffer.from("TSN_TIN_OWNER_RECOVERY_KEY_V1", "utf8");
 const TIN_V1_RECOVERY_V2_MAGIC = Buffer.from("TSNTIN02", "ascii");
 const TEXT_ENCODER = new TextEncoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
@@ -202,6 +204,94 @@ export function getTinV1OwnerRecoveryMessageForEnvelope(
   return buildTinV1OwnerRecoveryMessage(owner, programId);
 }
 
+function tinRecoveryKeyContext(owner: PublicKey | string, programId?: PublicKey | string | null) {
+  const ownerPubkey = owner instanceof PublicKey ? owner : new PublicKey(owner);
+  return Buffer.concat([ownerPubkey.toBuffer(), getTinsProgramPublicKey(programId).toBuffer()]);
+}
+
+async function importTinRecoveryKey(
+  owner: PublicKey | string,
+  signature: Buffer | Uint8Array,
+  programId?: PublicKey | string | null,
+) {
+  const ownerPubkey = owner instanceof PublicKey ? owner : new PublicKey(owner);
+  const message = buildTinV1OwnerRecoveryMessage(ownerPubkey, programId);
+  const signatureBytes = Buffer.from(signature);
+  if (!nacl.sign.detached.verify(message, signatureBytes, ownerPubkey.toBytes())) {
+    throw new Error("TIN_OWNER_RECOVERY_SIGNATURE_INVALID");
+  }
+  const keyMaterial = sha256(Buffer.concat([
+    TIN_V1_RECOVERY_KEY_DOMAIN,
+    tinRecoveryKeyContext(ownerPubkey, programId),
+    signatureBytes,
+  ]));
+  return importAesKey(keyMaterial);
+}
+
+/** Encrypt a new owner's TIN locally for the owner-indexed recovery PDA. */
+export async function createTinV1OwnerRecoveryEnvelope(params: {
+  tin: string;
+  displayName: string;
+  owner: PublicKey | string;
+  signature: Buffer | Uint8Array;
+  programId?: PublicKey | string | null;
+}): Promise<Uint8Array> {
+  if (!/^\d{10}$/.test(params.tin)) throw new Error("TIN_OWNER_RECOVERY_TIN_INVALID");
+  const displayName = params.displayName.trim();
+  if (!displayName || displayName.length > 100 || /[\r\n\u0000-\u001f\u007f]/u.test(displayName)) {
+    throw new Error("TIN_OWNER_RECOVERY_DISPLAY_NAME_INVALID");
+  }
+  const key = await importTinRecoveryKey(params.owner, params.signature, params.programId);
+  const nonce = randomNonce(12);
+  const plaintext = TEXT_ENCODER.encode(JSON.stringify({ tin: params.tin, displayName }));
+  const ciphertext = new Uint8Array(await getWebCrypto().subtle.encrypt(
+    { name: "AES-GCM", iv: nonce as any },
+    key,
+    plaintext as any,
+  ));
+  return Buffer.concat([TIN_V1_RECOVERY_V4_MAGIC, Buffer.from(nonce), Buffer.from(ciphertext)]);
+}
+
+/** Decrypt the owner-recovery record locally after wallet signing. */
+export async function decryptTinV1OwnerRecoveryEnvelope(params: {
+  encryptedEnvelope: Buffer | Uint8Array;
+  owner: PublicKey | string;
+  signature: Buffer | Uint8Array;
+  programId?: PublicKey | string | null;
+}): Promise<{ tin: string; displayName?: string }> {
+  const envelope = Buffer.from(params.encryptedEnvelope);
+  const magic = [TIN_V1_RECOVERY_V4_MAGIC, TIN_V1_RECOVERY_V3_MAGIC, TIN_V1_RECOVERY_V2_MAGIC]
+    .find((candidate) => envelope.subarray(0, candidate.length).equals(candidate));
+  if (!magic || envelope.length < magic.length + 12 + 16) {
+    throw new Error("TIN_OWNER_RECOVERY_ENVELOPE_UNSUPPORTED");
+  }
+  const key = await importTinRecoveryKey(params.owner, params.signature, params.programId);
+  const nonceStart = magic.length;
+  const plaintext = await getWebCrypto().subtle.decrypt(
+    { name: "AES-GCM", iv: envelope.subarray(nonceStart, nonceStart + 12) as any },
+    key,
+    envelope.subarray(nonceStart + 12) as any,
+  );
+  const decoded = new TextDecoder().decode(plaintext);
+  const isJsonEnvelope = magic.equals(TIN_V1_RECOVERY_V4_MAGIC) || magic.equals(TIN_V1_RECOVERY_V3_MAGIC);
+  let identity: { tin?: unknown; displayName?: unknown };
+  try {
+    identity = isJsonEnvelope ? JSON.parse(decoded) : { tin: decoded };
+  } catch {
+    throw new Error("TIN_OWNER_RECOVERY_ENVELOPE_MALFORMED");
+  }
+  if (typeof identity.tin !== "string" || !/^\d{10}$/.test(identity.tin)) {
+    throw new Error("TIN_OWNER_RECOVERY_TIN_INVALID");
+  }
+  if (isJsonEnvelope && (typeof identity.displayName !== "string" || !identity.displayName.trim())) {
+    throw new Error("TIN_OWNER_RECOVERY_DISPLAY_NAME_INVALID");
+  }
+  return {
+    tin: identity.tin,
+    ...(typeof identity.displayName === "string" ? { displayName: identity.displayName } : {}),
+  };
+}
+
 function appendU8(parts: Buffer[], value: number) {
   const buffer = Buffer.alloc(1);
   buffer.writeUInt8(value);
@@ -315,7 +405,7 @@ export function createOwnerIntentSignatureInstruction(params: {
     publicKey: params.ownerPubkey.toBytes(),
     message: params.message
       ? Buffer.from(params.message)
-      : normalizeHash32(params.intentHash, "intentHash"),
+      : buildTinOwnerIntentMessage(params.intentHash),
     signature: Buffer.from(params.signature),
   });
 }

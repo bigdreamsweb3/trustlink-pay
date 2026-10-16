@@ -22,7 +22,10 @@ Crankers submit both stages while paying their own Solana fees.
   payment-specific escrow account.
 - For `SETTLEMENT`, re-check Node/Mother DNA authorization, signatures, opaque
   slot commitment, epoch, amount, vault, recipient, and expiry before
-  submitting the DNA-bound payout. Refunds remain Node/Mother-only operations.
+  submitting the DNA-bound payout. For TCAP settlements, the Node holds the
+  Mother authority key and signs the exact verified transaction message;
+  Cranker holds no Mother key and only pays the fee and submits. Refunds remain
+  Node/Mother-only operations.
 - Back off while idle and wake from the Receiver's payload-free notification.
 
 ## Processing and evidence
@@ -32,8 +35,10 @@ User device signs funding authorization off-chain
     -> Receiver/Node verify `AUTHORIZED_FUNDING`
     -> Cranker leases and submits the exact sender-signed epoch-treasury funding transaction
     -> Receiver: CONFIRMED; it creates internal `SETTLEMENT` work
-    -> Receiver attaches Node/Mother DNA authorization to the leased settlement
-    -> Cranker verifies exact binding and expiry, pays from its CrankerVault, and consumes the opaque epoch slot
+    -> Receiver exposes Node-verified settlement authorization to the leased Cranker
+    -> Cranker builds the exact settlement message and requests the Mother Node signature through Receiver
+    -> Mother Node validates the active lease and message, then signs it
+    -> Cranker pays from its own key and submits the co-signed transaction
     -> Cranker reports the settlement signature and slot metadata
     -> Receiver: CONFIRMED
 ```
@@ -53,9 +58,13 @@ on-chain.
 Before leasing work, startup checks the single configured TSN RPC gateway with
 `getVersion` and validates Mother Escrow through that same gateway. If either
 check fails, the Cranker stops before claiming Receiver work; it does not switch
-to a local validator or a public Solana endpoint. The gateway must have a
-working upstream; its `getHealth` response alone does not prove that account
-reads or transaction submission work.
+to another endpoint during startup. If an `AUTHORIZED_FUNDING` submission gets
+`BlockhashNotFound`, the Cranker retries the exact same sender-signed bytes
+through `TSN_RPC_FALLBACK_URL` (default
+`https://api.devnet.solana.com`). It does not refresh the blockhash or modify
+the transaction, and this retry does not apply to other work kinds. The gateway
+must have a working upstream; its `getHealth` response alone does not prove
+that account reads or transaction submission work.
 
 ## Local Operation
 
@@ -77,13 +86,14 @@ initialization, environment configuration, and troubleshooting, see
 - Treat repeated simulation failures as quarantine candidates.
 - Use `TSN_RPC_URL` to choose the Cranker's RPC endpoint. It defaults to the TSN
   RPC gateway; local development may point it to `http://127.0.0.1:8787`.
-  Startup validates only that endpoint and does not fall back to another RPC.
+  Startup validates that endpoint. Funding submission retries another Devnet
+  RPC only after `BlockhashNotFound`; set `TSN_RPC_FALLBACK_URL` to override it.
 - At startup, the Cranker checks `TSN_LOCAL_RECEIVER_URL` (default
-  `http://127.0.0.1:8010`) at `/api/health`. A ready local Receiver is pinned
-  for the process lifetime so leases and results stay in the same work store.
-  If no local Receiver is ready, it uses `TSN_RECEIVER_URL` (default
-  `https://tsn-receiver-kappa.vercel.app`). Set both explicitly when operating
-  a non-default environment.
+  `http://127.0.0.1:8010`) at `/api/health` up to three times, with a five
+  second timeout per check. A ready local Receiver is pinned for the process
+  lifetime so leases and results stay in the same work store. Hosted selection
+  via `TSN_RECEIVER_URL` requires `TSN_ALLOW_HOSTED_RECEIVER_FALLBACK=true`;
+  otherwise startup stops when the local Receiver is not ready.
 
 ## Related Docs
 

@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { tsnResolveSplTokenInput } from "@trustlink/tsn-cranker-sdk";
-import { resolveSolanaRpcUrl } from "../../sdks/tsn-cranker-sdk/dist/rpc.js";
+import { resolveSolanaRpcUrl } from "../../../sdks/tsn-cranker-sdk/dist/rpc.js";
 
 import "dotenv";
 

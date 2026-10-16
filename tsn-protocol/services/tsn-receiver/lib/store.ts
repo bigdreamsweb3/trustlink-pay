@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
-import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
 import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
 import { assertNodeVerificationAttestation } from "./node-verification";
 import { wakeTsnNode } from "./node-wake";
@@ -23,15 +23,7 @@ function redactedPaymentPayload(payload: Record<string, unknown>) {
 function paymentReceiptVerification(work: ReceiverWork) {
   const verified = verifiedPayloadForWork(work);
   if (!verified) return work.verification ?? {};
-  const keep = [
-    "paymentId",
-    "tokenMintAddress",
-    "amount",
-    "privacyVersion",
-    "transferId",
-    "commitmentHash",
-    "settlementEpoch",
-  ];
+  const keep = ["paymentId", "tokenMintAddress", "amount"];
   return compactVerificationPayload(work.payload, {
     verificationType: work.verification?.verificationType ?? "TSN_AUTHORIZED_FUNDING",
     ...(work.verification?.nodeAttestation ? { nodeAttestation: work.verification.nodeAttestation } : {}),
@@ -47,8 +39,7 @@ export async function receive(input: { id?: string; kind: WorkKind; payload: Rec
   const durablePayload = input.kind === "AUTHORIZED_FUNDING"
     ? {
         paymentId: String(input.payload.paymentId), recipientHash: String(input.payload.recipientHash),
-        recipientTin: String(input.payload.recipientTin),
-        privacyVersion: input.payload.privacyVersion ?? null, tokenMintAddress: input.payload.tokenMintAddress ?? null,
+        tokenMintAddress: input.payload.tokenMintAddress ?? null,
         amount: input.payload.amount ?? null,
         nodeEncryptedPayload: encryptPayloadForNode(input.payload),
       }
@@ -59,7 +50,7 @@ export async function receive(input: { id?: string; kind: WorkKind; payload: Rec
     ? `settlement-${createHash("sha256").update(`${work.id}:${work.payloadCommitment}`).digest("hex").slice(0, 32)}`
     : null;
   const settlementRef = settlementId ? workCollection.doc(settlementId) : null;
-  const result = await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction: any) => {
     const existing = await transaction.get(ref);
     const existingSettlement = settlementRef ? await transaction.get(settlementRef) : null;
     if (existing.exists) {
@@ -100,20 +91,20 @@ export async function receive(input: { id?: string; kind: WorkKind; payload: Rec
 export async function list(status: WorkStatus, limit = 50) {
   const snapshot = await workCollection.where("status", "==", status)
     .orderBy("receivedAt", "asc").limit(Math.min(Math.max(limit, 1), 100)).get();
-  return snapshot.docs.map((doc) => doc.data() as ReceiverWork);
+  return snapshot.docs.map((doc: any) => doc.data() as ReceiverWork);
 }
 
 export async function listKind(kind: WorkKind) {
   const snapshot = await workCollection.where("kind", "==", kind).limit(200).get();
   return snapshot.docs
-    .map((doc) => doc.data() as ReceiverWork)
-    .sort((left, right) => left.receivedAt.localeCompare(right.receivedAt));
+    .map((doc: any) => doc.data() as ReceiverWork)
+    .sort((left: ReceiverWork, right: ReceiverWork) => left.receivedAt.localeCompare(right.receivedAt));
 }
 
 export async function listRecent(limit = 200) {
   const snapshot = await workCollection.orderBy("receivedAt", "desc")
     .limit(Math.min(Math.max(limit, 1), 200)).get();
-  return snapshot.docs.map((doc) => doc.data() as ReceiverWork);
+  return snapshot.docs.map((doc: any) => doc.data() as ReceiverWork);
 }
 
 export async function getWork(id: string) {
@@ -142,7 +133,7 @@ export async function attachCrankerAuthorization(params: {
   authorization: Record<string, unknown>;
 }) {
   const ref = workCollection.doc(params.id);
-  return db.runTransaction(async (transaction) => {
+  return db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
@@ -183,7 +174,7 @@ async function lease(
     const data = candidate.data() as ReceiverWork;
     const leaseValue = next === "NODE_VERIFYING" ? data.nodeLease : data.crankerLease;
     if (!leaseValue || Date.parse(leaseValue.expiresAt) > Date.now()) continue;
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(candidate.ref);
       if (!snapshot.exists || snapshot.get("status") !== next) return;
       const current = snapshot.data() as ReceiverWork;
@@ -201,7 +192,7 @@ async function lease(
   // Avoid requiring a composite Firestore index for the hot lease path. The
   // bounded result set is ordered locally and remains deterministic.
   const candidates = await workCollection.where("status", "==", status).limit(50).get();
-  candidates.docs.sort((left, right) =>
+  candidates.docs.sort((left: any, right: any) =>
     String(left.get("receivedAt") ?? "").localeCompare(String(right.get("receivedAt") ?? "")),
   );
   for (const candidate of candidates.docs) {
@@ -220,7 +211,7 @@ async function lease(
       const funding = fundingId ? await workCollection.doc(fundingId).get() : null;
       if (!funding?.exists || funding.get("kind") !== "AUTHORIZED_FUNDING" || funding.get("status") !== "CONFIRMED") continue;
     }
-    const leased = await db.runTransaction(async (transaction) => {
+    const leased = await db.runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(candidate.ref);
       if (!snapshot.exists || snapshot.get("status") !== status) return null;
       const current = snapshot.data() as ReceiverWork;
@@ -262,7 +253,7 @@ export async function transition(params: {
   evidence?: Record<string, unknown>;
 }) {
   const ref = workCollection.doc(params.id);
-  const result = await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
@@ -304,10 +295,9 @@ export async function transition(params: {
       ...(params.actor === "node"
         ? {
             verification: params.status === "VERIFIED" && params.evidence?.verifiedPayload
-              ? compactVerificationPayload(
-                  current.kind === "AUTHORIZED_FUNDING" ? redactedPaymentPayload(current.payload) : current.payload,
-                  params.evidence,
-                )
+              ? current.kind === "AUTHORIZED_FUNDING"
+                ? compactAuthorizedFundingVerification(redactedPaymentPayload(current.payload), params.evidence)
+                : compactVerificationPayload(current.payload, params.evidence)
               : params.evidence ?? {},
             nodeLease: null,
             ...(current.kind === "AUTHORIZED_FUNDING"

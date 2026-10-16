@@ -497,6 +497,7 @@
       requireNetwork();
       const recipientTin = $("recipientTin").value.trim();
       if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
+      if (!/^[a-f0-9]{64}$/i.test(resolvedTin.ownerPubkeyHash ?? "")) throw new Error("Node did not return a valid recipient owner hash.");
       const amount = String($("tinAmount").value ?? "").trim();
       const mint = String($("tinMint").value ?? "").trim();
       if (!/^\d+(?:\.\d{1,9})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with a supported token precision.");
@@ -546,7 +547,7 @@
       const paymentId = crypto.randomUUID();
       const request = sdk.buildPaymentAuthorizationIntentRequest({
         paymentId,
-        recipientHash: recipientTin,
+        recipientHash: resolvedTin.ownerPubkeyHash.toLowerCase(),
         recipientTin,
         tokenMintAddress: prepared.depositAccounts.mint,
         tokenDecimals: prepared.decimals,
@@ -559,7 +560,6 @@
         senderFeeAmount: "0",
         senderSignedFundingTransaction,
         senderFundingMode: "tcap_deposit_v2",
-        senderTokenAccount: prepared.depositAccounts.source,
         amount,
         source: "TSN XP",
       });

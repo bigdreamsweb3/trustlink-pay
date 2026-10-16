@@ -29,6 +29,7 @@ Copy `.env.example` to `.env` and configure:
 - `TSN_RECEIVER_URL` - Receiver base URL
 - `TSN_RECEIVER_NODE_API_KEY` - Node-to-Receiver service credential
 - `TSN_NODE_VERIFICATION_SIGNING_KEY` - dedicated Ed25519 private seed used to sign verification and rejection receipts
+- `TSN_MOTHER_AUTHORITY_KEYPAIR_PATH` - Mother authority Solana JSON keypair, kept only by the Node for signing validated TCAP settlement messages
 - `TSN_NODE_WAKE_TIMEOUT_MS` - Receiver wake request timeout (default `2500`)
 - `TSN_PROGRAM_ID` - TSN settlement program id scanned for epoch treasury and `CrankerVault` accounts
 - `TSN_RPC_URL` - Preferred endpoint for on-chain reads and settlement authorization checks; defaults to the TSN RPC gateway
@@ -62,6 +63,13 @@ Keep the private seed in the Node secret store. Never put it in Receiver,
 Cranker, browser, or repository configuration. All three services must use the
 same pinned public key; rotate it by updating the Receiver and Cranker pins
 before switching the Node signer.
+
+The Mother authority keypair is separate from the Node verification key and
+must remain available only to the trusted Node process. The Cranker sends the
+Node-verified settlement message to the Receiver signing route; the Node
+checks the lease, transition, and transaction contents, then returns only its
+Mother signature. The Cranker pays the network fee and submits the co-signed
+transaction with its own operator key.
 
 ## API Endpoints
 

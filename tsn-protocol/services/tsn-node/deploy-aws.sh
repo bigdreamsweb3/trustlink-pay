@@ -11,7 +11,7 @@ ENV_FILE="${ROOT}/.env"
 REMOTE_DIR="/home/ubuntu/trustlink-pay/tsn-protocol/services/tsn-node"
 
 test -f "${ENV_FILE}" || { echo "Missing ${ENV_FILE}" >&2; exit 1; }
-required=(TSN_RECEIVER_NODE_API_KEY TSN_NODE_VERIFICATION_SIGNING_KEY TSN_ROUTE_DECRYPTION_PRIVATE_KEY TSN_THRESHOLD_NONCE_SIGNING_KEY TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY TSN_ROUTE_ATTESTATION_SIGNING_KEY TSN_NODE_CLAIM_SLOT_HMAC_SECRET TSN_PROGRAM_ID TSN_RECEIVER_URL)
+required=(TSN_RECEIVER_NODE_API_KEY TSN_NODE_VERIFICATION_SIGNING_KEY TINS_LOOKUP_SECRET TSN_THRESHOLD_NONCE_SIGNING_KEY TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY TSN_ROUTE_ATTESTATION_SIGNING_KEY TSN_NODE_CLAIM_SLOT_HMAC_SECRET TSN_PROGRAM_ID TSN_RECEIVER_URL)
 for key in "${required[@]}"; do
   value="$(awk -F= -v k="${key}" '$1==k {sub(/^[^=]*=/,""); print; exit}' "${ENV_FILE}")"
   [[ -n "${value}" && "${value}" != *replace-with* && "${value}" != *your_* ]] || { echo "Missing or placeholder: ${key}" >&2; exit 1; }

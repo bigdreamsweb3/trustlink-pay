@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
     const body = JSON.parse(bodyText) as { supportedKinds?: Parameters<typeof leaseForCranker>[1] };
     let work = await leaseForCranker(operator, body.supportedKinds);
     if (work && work.kind === "SETTLEMENT") {
-      const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL || "https://tsn-node.wasmer.app"].filter(Boolean).map((value) => cleanUrl(value as string));
+      const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL]
+        .filter((value): value is string => Boolean(value?.trim()))
+        .map(cleanUrl);
       const nodeKey = process.env.TSN_RECEIVER_NODE_API_KEY;
       if (!nodeKey || nodeUrls.length === 0) throw new Error("TSN Node authorization service is not configured");
       let response: Response | undefined;
@@ -61,8 +63,14 @@ export async function POST(request: NextRequest) {
             headers: { "content-type": "application/json", "x-api-key": nodeKey },
             body: JSON.stringify({ workId: work.id, crankerPubkey: operator }),
           });
-          if (response.status < 500) break;
+          if (response.ok) break;
+          // A 404 means this process is not serving the current Node API. It
+          // is an availability failure for this route, so try an explicitly
+          // configured fallback. Other 4xx responses are protocol failures
+          // and must be returned without trying another Node.
+          if (response.status !== 404 && response.status < 500) break;
           lastNodeError = `${nodeUrl} returned ${response.status}`;
+          response = undefined;
         } catch (error) {
           // A dead primary Node must not strand a leased settlement when a
           // configured fallback is available. Continue to the next URL.

@@ -123,22 +123,8 @@
             ]
           },
           {
-            "group": "TIN SDK Functions",
-            "pages": [
-              "api-reference/sdk/tins/resolveTIN",
-              "api-reference/sdk/tins/resolveTinRoute",
-              "api-reference/sdk/tins/createTinV1IdentityEnvelope",
-              "api-reference/sdk/tins/buildCreateTinInstruction",
-              "api-reference/sdk/tins/buildLinkSocialIdentityInstruction",
-              "api-reference/sdk/tins/buildLinkVerifiedSocialIdentityInstructions",
-              "api-reference/sdk/tins/buildLinkSensitiveFieldInstruction",
-              "api-reference/sdk/tins/encryptTinSocialIdentity",
-              "api-reference/sdk/tins/decryptTinSocialIdentity",
-              "api-reference/sdk/tins/encryptTinSensitiveField",
-              "api-reference/sdk/tins/decryptTinSensitiveField",
-              "api-reference/sdk/tins/decodeTinAccount",
-              "api-reference/sdk/tins/decodeTinsIdentityRegistry"
-            ]
+            "group": "TIN V1 SDK",
+            "pages": ["api-reference/sdk/tins"]
           },
           {
             "group": "CLI",

@@ -77,14 +77,20 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
 export async function createTsnPaymentMempoolJobs(params: {
   mempool: TsnMempool;
   paymentId: string;
-  underlyingPayment?: string | null;
   recipientHash: string;
-  recipientTin?: string | null;
+  recipientTin: string;
   tokenMintAddress: string;
   amount: number;
+  senderWallet: string;
+  senderAuthorizationMessage: string;
+  senderAuthorizationSignature: string;
+  senderAuthorizationNonce: string;
+  senderSignedFundingTransaction: string;
+  senderFundingMode: "tcap_deposit_v2";
+  senderAuthorizationIssuedAt?: string | null;
+  senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   recipientAmount?: number;
-  destinationWallet: string;
   source?: string;
 }) {
   const requests = prepareTsnPaymentMempoolJobRequests(params);
@@ -97,25 +103,38 @@ export async function createTsnPaymentMempoolJobs(params: {
 
 export function prepareTsnPaymentMempoolJobRequests(params: {
   paymentId: string;
-  underlyingPayment?: string | null;
   recipientHash: string;
-  recipientTin?: string | null;
+  recipientTin: string;
   tokenMintAddress: string;
   amount: number;
+  senderWallet: string;
+  senderAuthorizationMessage: string;
+  senderAuthorizationSignature: string;
+  senderAuthorizationNonce: string;
+  senderSignedFundingTransaction: string;
+  senderFundingMode: "tcap_deposit_v2";
+  senderAuthorizationIssuedAt?: string | null;
+  senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   recipientAmount?: number;
-  destinationWallet: string;
   source?: string;
 }) {
   const intentRequest = {
     ...buildCreateIntentRequest({
       paymentId: params.paymentId,
-      underlyingPayment: params.underlyingPayment,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
       tokenMintAddress: params.tokenMintAddress,
       amount: params.amount,
+      senderWallet: params.senderWallet,
+      senderAuthorizationMessage: params.senderAuthorizationMessage,
+      senderAuthorizationSignature: params.senderAuthorizationSignature,
+      senderAuthorizationNonce: params.senderAuthorizationNonce,
+      senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
+      senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount,
+      senderSignedFundingTransaction: params.senderSignedFundingTransaction,
+      senderFundingMode: params.senderFundingMode,
       source: params.source,
     }),
     ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),

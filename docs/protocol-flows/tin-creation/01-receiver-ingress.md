@@ -54,29 +54,29 @@ The display name is included with the TIN inside the encrypted identity
 envelope. The SDK submission does not send it as a plaintext `displayName`
 field, and the Node rejects that field for private TIN creation. The on-chain
 account stores the envelope, not a public display-name string. After finality,
-the owner XP resolves the name from the confirmed registry through the SDK and
-displays that result in the identity pass.
+the trusted Node resolver decrypts the confirmed registry identity when asked;
+the XP displays that result in the owner's identity pass. The resolver endpoint
+is not owner-authenticated, so callers who know a TIN can request its display
+identity.
 
 Receiver ingress accepts the SDK-generated object with these fields:
 
 | Field                          | Type    | Encoding                             |
 | ------------------------------ | ------- | ------------------------------------ |
 | `intentType`                   | string  | `tin_creation`                       |
-| `programAssigned`              | boolean | JSON boolean, false                  |
 | `intentId`                     | string  | XP-generated operation UUID          |
 | `ownerPubkey`                  | string  | Solana base58 public key             |
 | `ownerSignature`               | string  | Base64 Ed25519 signature over canonical UTF-8 owner-approval message containing the 32-byte intent hash |
-| `ownerIntentHash`              | string  | 64 lowercase hexadecimal characters  |
-| `ownerIntentMessage`           | string  | Canonical display text; not the signed bytes |
+| `ownerIntentHash`              | string  | 64 lowercase hexadecimal characters |
+| `ownerIntentMessage`           | string  | Exact canonical UTF-8 text signed by the wallet |
 | `nonce`                        | string  | Same 32-byte value as `routeNonce`   |
 | `expiry`                       | number  | Unix seconds                         |
 | `lookupCommitment`             | string  | 64 lowercase hexadecimal characters  |
 | `lookupIssuanceProof`          | string  | 32-byte HMAC hex; contains no secret |
 | `encryptedIdentityEnvelope`    | string  | Standard base64 AES-GCM envelope     |
+| `encryptedTinRecovery`         | string  | Standard base64 encrypted owner-recovery value |
 | `encryptedMasterSeed`          | string  | Standard base64 opaque envelope      |
 | `encryptedMetadataHash`        | string  | 64 hexadecimal characters            |
-| `pruConfigurationHash`         | string  | 64 hexadecimal characters            |
-| `encryptedPublicRouteEnvelope` | string  | Empty for active TCap route          |
 | `routeVersion`                 | number  | Positive integer                     |
 | `routeNonce`                   | string  | 64 hexadecimal characters            |
 | `tcapRouteVersion`             | number  | `1`                                  |
@@ -85,8 +85,9 @@ Receiver ingress accepts the SDK-generated object with these fields:
 | `tcapPolicyCommitment`         | string  | 64 hexadecimal characters            |
 
 The Receiver allowlists this schema and stores the encrypted identity and
-commitment with the work. It must not store or accept the plaintext TIN,
-display name, or `TINS_LOOKUP_SECRET`. Node verification checks the
+commitments with the work. It must not store or accept the plaintext TIN,
+display name, legacy `programAssigned` flag, old PRU route fields, or
+`TINS_LOOKUP_SECRET`. Node verification checks the
 length-prefixed intent hash, raw Ed25519 signature, expiry, TCap commitments,
 and HMAC issuance proof; the Receiver does not make those protocol decisions.
 

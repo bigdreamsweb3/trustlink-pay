@@ -1,34 +1,65 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PublicKey } from "@solana/web3.js";
-import { serializeTinCreationRegistryParams } from "../dist/tins.js";
+import { Keypair } from "@solana/web3.js";
+import { deriveTcapTipRootCommitment } from "../dist/gpru.js";
+import {
+  serializeTinV1CreationChunkParams,
+  serializeTinV1CreationCloseParams,
+  serializeTinV1CreationFinalizeParams,
+  serializeTinV1CreationStageParams,
+} from "../dist/tins.js";
 
-const base = {
-  ownerPubkey: PublicKey.unique(),
-  displayName: "devnet-tin",
-  encryptedMasterSeed: Buffer.from("device-only-ciphertext"),
+const fixed32 = (byte) => Buffer.alloc(32, byte);
+const relationship = fixed32(1);
+const intentHash = fixed32(4);
+const stageParams = {
+  ownerPubkey: Keypair.generate().publicKey,
+  lookupCommitment: fixed32(2),
+  intentHash,
+  encryptedIdentityEnvelopeLength: 80,
+  encryptedTinRecoveryLength: 96,
+  encryptedMasterSeedLength: 320,
+  encryptedMetadataHash: fixed32(3),
+  routeVersion: 1,
+  routeNonce: fixed32(5),
   tcapRouteVersion: 1,
-  tcapRelationshipCommitment: Buffer.alloc(32, 1),
-  tcapRelationshipReference: Buffer.alloc(32, 2),
-  tcapPolicyCommitment: Buffer.alloc(32, 3),
-  nonce: Buffer.alloc(32, 4),
-  intentHash: Buffer.alloc(32, 5),
-  expiryTs: 10n,
+  tcapRelationshipCommitment: relationship,
+  tcapRelationshipReference: deriveTcapTipRootCommitment(relationship),
+  tcapPolicyCommitment: fixed32(6),
+  expiryTs: 1_900_000_000,
 };
 
-test("TSN SDK emits the complete TCap TIN mutation ABI", () => {
-  const encoded = serializeTinCreationRegistryParams(base);
-  assert.equal(encoded[0], 12);
-  assert.ok(encoded.length > 250);
+test("TIN V1 stage serializer matches the current bounded staging instruction", () => {
+  const data = serializeTinV1CreationStageParams(stageParams);
+  assert.equal(data[0], 19);
+  assert.equal(data.length, 1 + 32 + 32 + 32 + 4 + 4 + 4 + 32 + 8 + 32 + 1 + 32 + 32 + 32 + 8);
+  assert.throws(
+    () => serializeTinV1CreationStageParams({
+      ...stageParams,
+      tcapRelationshipReference: fixed32(7),
+    }),
+    /current GPRU commitment and blinded TIP seed/,
+  );
 });
 
-test("TSN SDK rejects legacy PRU material on the active TCap route", () => {
+test("TIN V1 chunks select only active encrypted blobs and retain byte offsets", () => {
+  for (const [kind, tag] of [["identity", 0], ["master_seed", 1], ["owner_recovery", 3]]) {
+    const data = serializeTinV1CreationChunkParams({ kind, offset: 700, bytes: Buffer.from([8, 9]) });
+    assert.equal(data[0], 20);
+    assert.equal(data[1], tag);
+    assert.equal(data.readUInt32LE(2), 700);
+    assert.equal(data.readUInt32LE(6), 2);
+  }
   assert.throws(
-    () => serializeTinCreationRegistryParams({ ...base, pruConfigurationHash: Buffer.alloc(32, 9) }),
-    /cannot include pruConfigurationHash/,
+    () => serializeTinV1CreationChunkParams({ kind: "identity", offset: -1, bytes: Buffer.from([1]) }),
+    /non-negative safe integer/,
   );
-  assert.throws(
-    () => serializeTinCreationRegistryParams({ ...base, encryptedPublicRouteEnvelope: Buffer.from([1]) }),
-    /cannot include encryptedPublicRouteEnvelope/,
-  );
+});
+
+test("TIN V1 stage finalization and expiry close use distinct instruction tags", () => {
+  const finalize = serializeTinV1CreationFinalizeParams({ intentHash });
+  const close = serializeTinV1CreationCloseParams({ intentHash });
+  assert.equal(finalize[0], 21);
+  assert.equal(close[0], 22);
+  assert.deepEqual(finalize.subarray(1), close.subarray(1));
 });

@@ -21,32 +21,35 @@ program assigning a TIN.
 Owner wallet -> TSN XP + SDK -> Receiver queue -> Node verification -> Cranker -> TinV1Account
 ```
 
-`TINS_LOOKUP_SECRET` is the legacy configuration name for the value used to
-derive the lookup commitment and identity-envelope key. The universal issuer
-uses the public all-zero value so any integrated app can resolve its TINs;
-this intentionally makes universal TIN/name records enumerable and is not a
-confidentiality key. An institutional issuer can configure a high-entropy
-private value to restrict its own identity lookup. Receiver work carries the
-derived commitment and encrypted envelope, not the configuration value. The
-Node validates the owner signature, canonical intent hash, and issuance proof
+`TINS_LOOKUP_SECRET` is protected issuer/Node configuration used to derive the
+keyed lookup commitment and identity-envelope key. It must contain at least 16
+bytes of secret material. There is no public all-zero fallback: an absent or
+invalid value blocks issuance and resolution. Receiver work carries the derived
+commitment and encrypted envelope, never the configuration value. The Node
+validates the owner signature, canonical intent hash, and HMAC issuance proof
 before marking work eligible for Cranker processing.
 
 ## Creation sequence
 
-1. The XP backend generates a random TIN and derives its keyed lookup PDA.
-2. It checks Devnet for an existing account at that PDA and retries if occupied.
-3. The SDK encrypts the TIN and display name, then builds the V1 owner intent.
-4. The wallet signs the deterministic UTF-8 owner-approval message. That
-   message contains the 32-byte intent hash in hex; the program verifies the
-   same message through the Ed25519 instruction immediately before creation.
-5. The SDK submits the commitment, ciphertext, proof, and signature to Receiver.
-6. The Node verifies the Receiver work; the Cranker serializes and submits
-   `CreateTinV1`.
-7. The XP backend reveals the generated TIN to the issuing browser session only
-   after Receiver reports the Cranker transaction as confirmed and the SDK
-   resolves the registry identity. Reconnecting a wallet does not currently
-   recover a TIN automatically; the registry is not publicly enumerable by
-   wallet.
+1. The trusted XP issuer generates a random TIN, derives the keyed lookup
+   commitment using `TINS_LOOKUP_SECRET`, and checks that the derived registry
+   PDA is unused.
+2. The issuer encrypts the TIN and display name. The owner wallet separately
+   creates an encrypted recovery envelope after signing the domain-separated
+   recovery message; only that ciphertext leaves the owner's device.
+3. The SDK builds the V1 owner intent with both encrypted envelopes and the
+   current TCAP relationship fields. The owner signs the deterministic UTF-8
+   approval message over the exact intent hash.
+4. The trusted issuer computes the HMAC issuance proof using its protected
+   secret. The SDK submits the commitment, ciphertext, proof, and owner
+   signature to Receiver; it never receives the lookup secret.
+5. Node verifies the proof, canonical intent and owner signature, TIN V1
+   fields, and TCAP relationship before marking Receiver work eligible.
+6. The Cranker serializes and submits `CreateTinV1`; report issuance complete
+   only when Receiver reports the Cranker transaction as confirmed.
+7. The issuing session may then reveal the TIN to its owner. Later, the owner
+   retrieves the wallet-indexed recovery envelope and decrypts it locally; the
+   registry is not publicly enumerable.
 
 If the complete transaction fits Solana's 1,232-byte packet limit, the Cranker
 submits one creation transaction. Larger payloads use the on-chain staging
@@ -64,36 +67,50 @@ intent hash, nonce, and expiry without disclosing the TIN.
 
 ## SDK primitives
 
-The SDK accepts the namespace lookup value when creating or resolving the
-identity envelope. The universal value is public; an issuer-specific private
-value must stay on trusted services and out of Receiver payloads. The wallet
-remains the user's ownership and authorization anchor. The product requirement
-is wallet-only recovery: after connecting, the owner should see the existing
-TIN without memorizing or re-entering its digits. The current XP does not
-implement this, and its creation path also does not enforce one TIN per wallet
-in the universal issuer namespace. Implement an owner-bound recovery record
-and an on-chain uniqueness check before calling this flow complete.
+The SDK provides the V1 identity-envelope, owner-recovery, intent serialization,
+and Receiver submission helpers. `createTinV1IdentityEnvelope` must run in a
+trusted issuer process because its `lookupSecret` parameter is the protected
+issuer/Node secret. The browser instead creates the owner-recovery ciphertext
+using a wallet signature, and submits only that ciphertext to the issuer. The
+on-chain owner-recovery PDA enforces one recovery locator per wallet.
 
 ```ts
+// Trusted issuer only: never run this with the lookup secret in browser code.
 const identity = await createTinV1IdentityEnvelope({
   tin: generatedTin,
   displayName,
   lookupSecret: TINS_LOOKUP_SECRET,
 });
 
+// Owner device: encrypt the recovery envelope locally after a separate,
+// domain-separated wallet signature. Only the ciphertext is sent to the issuer.
+const recoveryMessage = buildTinV1OwnerRecoveryMessage(ownerPubkey, programId);
+const recoverySignature = await wallet.signMessage(recoveryMessage);
+const encryptedTinRecovery = await createTinV1OwnerRecoveryEnvelope({
+  tin: generatedTin,
+  displayName,
+  owner: ownerPubkey,
+  programId,
+  signature: recoverySignature,
+});
+
 const prepared = buildTinV1Creation({
   ownerPubkey,
   lookupCommitment: identity.lookupCommitment,
+  encryptedTinRecovery,
   encryptedIdentityEnvelope: identity.encryptedIdentityEnvelope,
   encryptedMasterSeed,
+  encryptedMetadataHash,
+  routeVersion: 1,
+  routeNonce,
   tcapRouteVersion: 1,
   tcapRelationshipCommitment,
   tcapRelationshipReference,
   tcapPolicyCommitment,
 });
-
+const ownerIntentMessage = buildTinOwnerIntentMessage(prepared.intentHash);
 const ownerSignature = await wallet.signMessage(
-  buildTinOwnerIntentMessage(prepared.intentHash),
+  new TextEncoder().encode(ownerIntentMessage),
 );
 await submitTinV1Creation({
   ingressUrl: TSN_RECEIVER_URL,
@@ -101,33 +118,26 @@ await submitTinV1Creation({
   intentId,
   ownerPubkey,
   ownerSignature,
-  lookupIssuanceProof,
+  ownerIntentMessage,
+  lookupIssuanceProof, // Issuer-generated HMAC; never derive it in browser code.
 });
 ```
 
-The signature covers the SDK's canonical UTF-8 approval message, which binds
-the readable approval to the exact intent hash. The Cranker places that same
-message and signature in the Ed25519 verification instruction consumed by
-`CreateTinV1`; a signature over the raw hash or a different message is not
-interchangeable.
+The owner-intent signature covers the SDK's canonical UTF-8 approval message,
+which binds the readable approval to the exact intent hash. The Cranker places
+that same message and signature in the Ed25519 verification instruction
+consumed by `CreateTinV1`; a signature over the raw hash or a different message
+is not interchangeable. The Node validates the issuer-generated HMAC proof;
+the lookup secret itself is never sent to Receiver or Cranker.
 
 ## Resolve a TIN and prepare a transfer
 
-The trusted resolver derives the same PDA with the protected lookup secret.
-The SDK decrypts the identity envelope only after resolving the V1 account.
-
-```ts
-const identity = await resolveTinRoute({
-  tin: recipientTin,
-  rpcUrl: TSN_RPC_URL,
-  programId: TIN_PROGRAM_ID,
-  lookupSecret: TINS_LOOKUP_SECRET,
-});
-```
-
-Use the returned TCap relationship commitments in the SDK payment
-authorization. Do not pass the lookup secret into Receiver work or Cranker
-payloads.
+TIN resolution is a trusted Node service operation, not an SDK account scan.
+Use `GET /tin-resolution/{tin}` when the user requests display identity. Node
+uses the protected lookup secret internally and returns the decrypted identity
+disclosure. For payment ingress, Node independently reads and validates the
+current TIN V1 TCAP relationship from chain; the sender should not supply route
+commitments or the lookup secret in the signed authorization or Receiver work.
 
 For wallet-to-wallet SPL transfers, use
 `buildTsnSplTokenTransferTransaction` from the SDK and let the connected wallet

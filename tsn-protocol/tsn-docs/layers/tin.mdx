@@ -21,36 +21,41 @@ TIN is not a private key or token account. A confirmed TIN V1 binds to an owner 
 
 <Note>**Status: Live on Devnet.**</Note>
 
-The current TIN V1 registry derives its account from a keyed lookup commitment,
-not from the public TIN number or owner wallet. This prevents public observers
-from deriving it directly from either value. The universal issuer deliberately
-uses a public all-zero lookup value, so observers can still enumerate TIN/name
-records by testing the 10-digit space. That tradeoff enables open universal
-resolution; it does not by itself reveal a transfer or settlement history.
-The program records the owner authorization and encrypted identity; it does not
-generate the random ten-digit number. The trusted XP issuer generates the TIN,
-checks uniqueness, encrypts the identity, and submits the owner-approved
-commitment through Receiver, Node, and Cranker processing.
+The current TIN V1 registry derives its PDA from a keyed lookup commitment,
+not from a public TIN or owner wallet. The trusted issuer and Node share a
+high-entropy `TINS_LOOKUP_SECRET`; there is no all-zero public fallback. The
+secret is required to derive the commitment and decrypt the identity envelope,
+and must never enter a browser, Receiver payload, or Cranker request. The
+program records the owner authorization and encrypted identity; it does not
+generate the random ten-digit number. The trusted issuer generates the TIN,
+checks that its commitment PDA is unused, and submits the owner-authorized
+creation through Receiver, Node verification, and Cranker execution.
 
-The TIN Registrar exposes deterministic PDA helpers rather than a large instruction surface:
+The V1 route binds the GPRU public commitment to its blinded TCAP TIP-seed
+reference and policy commitment. Earlier account layouts and PRU route fields
+are rejected by current TIN V1 creation and resolution.
 
-| Helper                         | Seeds / derivation                                             |
-| ------------------------------ | -------------------------------------------------------------- |
-| `tin_v1_pda`                   | `tin-v1`, keyed lookup commitment; not raw TIN or owner key    |
-| `tin_v1_creation_staging_pda`  | `tin-v1-create-stage`, owner key, intent hash                  |
-| `tin_mutation_staging_pda`     | `tin-mutation-stage`, owner key, intent hash                   |
-| `registry_pda`                 | Legacy numeric-TIN registry layout; not the current TIN V1 PDA |
-| Other identity / escrow helpers | Legacy account layouts                                         |
+Current TIN V1 SDK helpers derive these PDAs:
+
+| Helper | Seeds / derivation |
+| --- | --- |
+| `getTinV1CreationStagingPda` | `tin-v1-create-stage`, owner key, intent hash |
+| `getTinV1OwnerRecoveryPda` | `tin-v1-owner-recovery`, owner key |
+| TIN V1 registry PDA | `tin-v1`, keyed lookup commitment |
 
 ## Resolution flow
 
-1. Sender supplies a 10-digit TIN to a trusted resolver.
-2. The resolver derives the keyed registry address using protected issuer lookup material and reads the TIN V1 account.
-3. The TSN SDK returns the identity disclosure and active GPRU/TCAP route data to the authorized application.
-4. The recipient route commitment is bound into the sender's signed transfer intent.
-5. The recipient owner wallet provides any required authorization locally.
+1. The sender supplies the 10-digit TIN to the application.
+2. The application requests display identity from the TSN Node resolution
+   endpoint; Node derives the registry PDA with its protected secret, validates
+   current TIN V1 state, and decrypts the identity disclosure.
+3. The SDK builds the sender authorization using the TIN and resolved display
+   identity. The sender does not sign a client-supplied route commitment.
+4. At payment ingress, Node independently resolves the current on-chain TIN V1
+   TCAP relationship and constructs the recipient transition from that route.
 
-Resolution must not return plaintext seeds, child private keys, or an unrestricted wallet-to-person mapping. Registrars apply non-enumeration, rate limiting, revocation, and state-version checks.
+Resolution is by requested TIN, not public registry enumeration. The endpoint
+returns identity disclosure, never plaintext seeds or child private keys.
 
 ## Record classes
 
@@ -63,24 +68,19 @@ Resolution must not return plaintext seeds, child private keys, or an unrestrict
 
 ## Ownership and recovery
 
-The user's wallet owns and authorizes the TIN identity: creation is owner
-approved, the registry binds to that owner, and the owner key authorizes
-wallet-controlled actions. Reconnecting the owner wallet should restore and
-display the TIN without requiring the owner to remember or re-enter its ten
-digits. The default universal issuer must enforce one TIN per owner.
+The owner wallet authorizes TIN creation and is stored in the registry record.
+A separate PDA indexed by owner stores only the encrypted recovery envelope;
+its one-per-owner initialization prevents multiple recovery locators for the
+same wallet. When the owner reconnects, the SDK reads that ciphertext and
+requires a separate domain-separated wallet signature to decrypt it locally.
+The raw recovery signature, TIN, and display name are not sent to Node or
+Cranker as part of recovery.
 
-The current privacy design deliberately does not derive a public registry
-address from the owner wallet. A TIN V1 registry is found through its lookup
-commitment using the TIN and namespace lookup value. The universal value is
-public; issuer-specific values may be private. The
-current SDK/XP does not yet implement wallet-only recovery, and the current
-creation path does not enforce one TIN per owner. These are recovery and
-uniqueness gaps, not a transfer of ownership. A private owner-bound recovery
-record or equivalent lookup mechanism must prove wallet control, recover the
-identity, and prevent duplicate issuance without publishing plaintext TINs.
-The all-zero 32-byte genesis value may identify the public universal issuer
-namespace; it must not be used as the lookup secret. Receiver, Node, and
-Cranker continue to receive only commitments and encrypted fields.
+The recovery locator does not reveal the TIN or derive the registry PDA. The
+registry is found through its keyed lookup commitment, while the owner PDA only
+locates the ciphertext. Registry uniqueness follows from the keyed commitment
+PDA; owner uniqueness follows from the recovery PDA. Receiver and Cranker
+receive only the recovery ciphertext and other encrypted fields.
 
 ## Related
 

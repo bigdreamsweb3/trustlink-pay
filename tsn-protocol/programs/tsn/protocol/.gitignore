@@ -1,0 +1,5 @@
+# TSN program deployment key
+tsn-program-keypair.json
+tsn-program-keys/
+tsn-program-keypair.json
+**/tsn-program-keypair.json

@@ -32,7 +32,7 @@ import { sha256Hex, toArrayBuffer } from "./receipts/internal/encoding.js";
 
 const WALLET_OWNER_ENVELOPE_PROVIDER = "wallet-owner-signature-v1";
 const WALLET_OWNER_SESSION_BINDING = "wallet-owner-any-device-v1";
-const PROGRAM_ASSIGNED_TIN_MARKER = "program-assigned";
+const LEGACY_PROGRAM_ASSIGNED_TIN_MARKER = "program-assigned";
 
 export type TinOwnerWallet = {
   publicKey: string;
@@ -75,9 +75,6 @@ export function buildTinV1OwnerEncryptionMessage(params: {
   );
 }
 
-/** @deprecated Use buildTinV1OwnerEncryptionMessage. */
-export const buildProgramAssignedTinOwnerEncryptionMessage = buildTinV1OwnerEncryptionMessage;
-
 /** Stable, reproducible wallet approval used to encrypt a TIN seed for later recovery. */
 export async function prepareTinV1OwnerSeedAccess(params: {
   ownerPublicKey: string;
@@ -97,11 +94,11 @@ export async function prepareTinV1OwnerSeedAccess(params: {
 }
 
 /**
- * Creates the owner-recoverable seed envelope used by program-assigned TIN V1.
+ * Creates the owner-recoverable seed envelope for a new TIN V1 intent.
  * The seed and signature-derived key stay in this runtime; only the encrypted
  * envelope is returned for inclusion in the owner-authorized creation intent.
  */
-export async function createProgramAssignedTinV1OwnerSeedEnvelope(params: {
+export async function createTinV1OwnerSeedEnvelope(params: {
   ownerWallet: TinOwnerWallet;
   displayName: string;
   nonce: Uint8Array;
@@ -162,61 +159,6 @@ function buildOwnerSeedAccessMessage(envelope: TinMasterSeedEnvelope, displayNam
     displayName,
     resourceCommitment: envelope.resourceCommitment,
   });
-}
-
-export async function createProgramAssignedTinOwnerEncryption(params: {
-  ownerPublicKey: string;
-  displayName: string;
-  nonce: Uint8Array;
-  ownerSignature: Uint8Array;
-}) {
-  const message = buildProgramAssignedTinOwnerEncryptionMessage(params);
-  if (
-    params.ownerSignature.length !== nacl.sign.signatureLength ||
-    !nacl.sign.detached.verify(
-      message,
-      params.ownerSignature,
-      new PublicKey(params.ownerPublicKey).toBytes(),
-    )
-  ) {
-    throw new Error("Main-wallet authorization is invalid");
-  }
-  const dataKey = await walletOwnerDataKey(params.ownerSignature);
-  const masterSeed = generateTinMasterSeed();
-  const pruConfigurationHash = "00".repeat(32);
-  const resourceCommitment = await sha256Hex(
-    crypto.getRandomValues(new Uint8Array(32)),
-  );
-  try {
-    const localSeed = await encryptTinMasterSeedLocally({
-      masterSeed,
-      dataKey,
-      context: {
-        tin: PROGRAM_ASSIGNED_TIN_MARKER,
-        ownerPublicKey: params.ownerPublicKey,
-        routeVersion: 1,
-        pruConfigurationHash,
-      },
-    });
-    const envelope = await createTinMasterSeedEnvelope({
-      provider: WALLET_OWNER_ENVELOPE_PROVIDER,
-      tin: PROGRAM_ASSIGNED_TIN_MARKER,
-      ownerPublicKey: params.ownerPublicKey,
-      routeVersion: 1,
-      pruConfigurationHash,
-      resourceCommitment,
-      ...localSeed,
-      protectedKey: "wallet-owner-signature-derived",
-      protectedKeyCommitment: await sha256Hex(
-        new TextEncoder().encode("wallet-owner-signature-derived"),
-      ),
-      accessControlHash: await sha256Hex(message),
-    });
-    return encodeTinEnvelope(envelope);
-  } finally {
-    dataKey.fill(0);
-    masterSeed.fill(0);
-  }
 }
 
 export type TinMasterSeedAccessContext = {
@@ -683,7 +625,7 @@ export async function withTinOwnerMasterSeed<T>(params: {
   // Current TIN V1 XP accounts were issued before the generated TIN was known
   // to the browser. Their owner-encrypted seed is bound to the explicit
   // `tin-v1` marker and wallet; the on-chain owner hash binds it to the TIN.
-  if (candidate.tin !== params.tin && candidate.tin !== "tin-v1" && candidate.tin !== PROGRAM_ASSIGNED_TIN_MARKER) {
+  if (candidate.tin !== params.tin && candidate.tin !== "tin-v1" && candidate.tin !== LEGACY_PROGRAM_ASSIGNED_TIN_MARKER) {
     throw new Error("TIN_MASTER_SEED_ENVELOPE_IDENTITY_MISMATCH");
   }
   const envelope = await validateTinMasterSeedEnvelope({

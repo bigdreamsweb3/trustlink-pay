@@ -1,64 +1,46 @@
 ---
-title: "Node API — TSN mempool and route endpoints"
+title: "TSN Node API"
 sidebarTitle: "Node API"
-description: "Use the TSN Node REST surface to submit signed intents, inspect routes, lease worker work, and observe settlement state."
+description: "Current TSN Node application, resolver, and internal service endpoints."
 ---
 
-The TSN Node exposes the mempool and settlement coordination boundary. Applications submit signed intent payloads; workers use authenticated work and lifecycle endpoints.
+The Node verifies Receiver-leased work, resolves private TIN V1 records, constructs TCAP V2 credit transitions, and exposes network status. Receiver owns the durable work queue; Crankers lease work from Receiver, not from Node work endpoints.
 
-## Public application and observation routes
+## Application and read endpoints
 
-| Method and path | Purpose | Parameters and response |
-| --- | --- | --- |
-| `POST /` | Mempool health and epoch status. | `MempoolStatusRequest`; returns `MempoolStatusResponse`. TODO: confirm request fields from the Pydantic model declaration. |
-| `POST /threshold-access/nonces/consume` | Consume a public threshold-access nonce after wallet/device proof validation. | JSON proof request; returns a source-defined nonce-consumption record. |
-| `POST /tin-operations` | Submit a TIN creation or update operation. | JSON operation request; returns `PublicTinOperationRecord`; idempotency and route validation are source-defined. |
-| `POST /intents` | Submit an idempotent signed payment intent. | JSON `CreateIntentRequest`; returns `PublicMempoolIntent`. `paymentId` is the idempotency key. |
-| `GET /tin-operations` | List public TIN operation records. | Optional `status` and `intent_type`; returns `PublicTinOperationRecord[]`. |
-| `GET /tin-operations/{intent_id}` | Read one public TIN operation. | Required path `intent_id`; returns `PublicTinOperationRecord`; 404 when missing. |
-| `GET /metrics` | Read Node uptime and settlement metrics. | No parameters; returns `MetricsResponse`. |
-| `GET /settlement-networks` | Read destinations that pass registry and live-liquidity checks. | No parameters; returns ready route objects; 503 when the registry is invalid. |
-| `GET /network/overview` | Read aggregate Cranker, liquidity, and intent state. | No parameters; returns `NetworkOverviewResponse`. |
-| `GET /epoch/status` | Read current epoch state. | No parameters; returns `EpochStatus`. |
+| Method and path | Purpose |
+| --- | --- |
+| `POST /` | Node health and epoch status. |
+| `POST /intents` | Forward payment intent ingress to Receiver; requires Receiver to be configured. |
+| `GET /tin-resolution/{tin}` | Resolve a TIN V1 display identity using the Node's protected lookup secret. The TIN itself is a lookup credential; responses are not owner-authenticated, so treat returned identity fields as public to callers who know the TIN. |
+| `POST /threshold-access/nonces/consume` | Validate public wallet/device proofs and atomically consume the threshold-access nonce. |
+| `GET /metrics` | Node uptime and settlement metrics. |
+| `GET /settlement-networks` | Registered destination networks passing route and liquidity checks. |
+| `GET /network/overview` | Aggregate network and Cranker status. |
+| `GET /epoch/status` | Current epoch state. |
 
-## Worker and Cranker routes
+TIN creation is submitted to Receiver `POST /tin-operations` by the SDK. The Node has no public TIN-operation API. Its background worker reads signed work from Receiver and records `VERIFIED` or `REJECTED` decisions through the authenticated internal Receiver contract.
 
-All rows in this table require `x-api-key` via `require_worker_api_key` unless the source says otherwise.
+## Internal service endpoints
 
-| Method and path | Purpose | Parameters and response |
-| --- | --- | --- |
-| `POST /internal/wake` | Wake the Receiver verifier. | No body; returns `{ ok, status }`; 503 if the verifier is not ready. |
-| `POST /internal/settlement-authorizations/settlement` | Mint one-time payout authorization for a leased settlement. | JSON `{ workId, crankerPubkey }`; returns `TSN_PAYOUT_AUTHORIZATION`; 403/409/422 on lease or evidence failure. |
-| `GET /intents` | List worker-visible intents. | Optional `status`; returns `PublicMempoolIntent[]`. |
-| `PATCH /intents/{intent_id}/status` | Update worker lifecycle data. | Path `intent_id`, `UpdateStatusRequest`; returns `MempoolIntent`; 404 when missing. |
-| `GET /intent-work` | Read pending payment-intent work. | Optional `limit` 1–500, default 50; returns `IntentWorkItem[]`. |
-| `POST /crankers/heartbeat` | Record a Cranker's liveness. | `CrankerHeartbeatRequest`; returns `CrankerHeartbeatRecord`. |
-| `GET /tin-operations/verification-work` | List TIN operations awaiting verification. | Optional `limit` 1–500, default 50; returns `TinOperationRecord[]`. |
-| `GET /tin-operations/fee-work` | List operations awaiting fee commitment. | Optional `operator_pubkey`, `limit`; returns `TinOperationRecord[]`. |
-| `GET /tin-operations/registry-work` | List operations awaiting registry submission. | Optional `operator_pubkey`, `limit`; returns `TinOperationRecord[]`. |
-| `POST /tin-operations/{intent_id}/verified` | Mark a TIN operation verified. | Path `intent_id`, `TinOperationStageRequest`; requires verifier Cranker. |
-| `POST /tin-operations/{intent_id}/fee-committed` | Commit the operation fee. | Path `intent_id`, `TinOperationStageRequest`; requires a valid submitter and lifecycle state. |
-| `POST /tin-operations/{intent_id}/submitted` | Record an on-chain submission. | Requires submitter and transaction signature in `TinOperationStageRequest`. |
-| `POST /tin-operations/{intent_id}/finalized` | Finalize and reconcile the operation. | Optional transaction signature; returns `TinOperationRecord`. |
-| `POST /tin-operations/{intent_id}/failed` | Mark an operation failed. | Optional failure reason; returns `TinOperationRecord`. |
-| `POST /tin-operations/{intent_id}/rejected` | Mark an operation rejected. | Optional reason; returns `TinOperationRecord`. |
-| `POST /epoch/close` | Close and archive the current epoch. | No body; returns `EpochCloseResult`. |
+These endpoints require the configured internal service API key:
 
-## Application example
+| Method and path | Purpose |
+| --- | --- |
+| `POST /internal/wake` | Payload-free Receiver wake signal for the sleeping Node verifier. |
+| `POST /internal/settlement-authorizations/settlement` | Build a short-lived authorization for a Receiver-leased settlement after checking its lease and Node-verified TCAP V2 transition. |
 
-<CodeGroup>
-```bash cURL
-curl -X GET "$TSN_NODE_URL/settlement-networks"
-```
+## SDK example
 
-```ts TypeScript
+```ts
 import { TsnHttpClient } from "@trustlink/tsn-sdk";
 
 const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
-const routes = await client.get("/settlement-networks");
+const networks = await client.get("/settlement-networks");
 ```
-</CodeGroup>
 
-`POST /intents` requires the complete signed request produced by the SDK; do not hand-assemble its commitment fields in application code.
+Payment intents use the SDK's `buildPaymentAuthorizationIntentRequest` and are submitted to Receiver ingress. The sender supplies the TIN and signed funding transaction, not the recipient route commitments. Node resolves the current TIN V1 TCAP relationship itself. TIN resolution returns display identity only and does not authorize a transfer.
 
-Source: [`server.py:3485-3640`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/services/tsn-node/server.py#L3485-L3640), [`server.py:3733-4007`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/services/tsn-node/server.py#L3733-L4007), [`server.py:4009-4290`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/services/tsn-node/server.py#L4009-L4290)
+Do not call retired Node `/tin-operations`, `/intent-work`, or direct route-storage endpoints. Receiver is the source of truth for work state and leases.
+
+Source: [`server.py`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/services/tsn-node/server.py), [`cranker/work`](https://github.com/Trustlink-Labs/TSN-Protocol/tree/main/tsn-protocol/services/tsn-receiver/app/api/cranker/work), [`private TIN issuance`](../../developers/private-tin-issuance).

@@ -58,8 +58,10 @@ the authenticated Node:
 RECEIVED -> NODE_VERIFYING
 ```
 
-The browser never receives this response. Direct browser submission to the
-Node's legacy `/tin-operations` endpoint is rejected without the internal key.
+The browser never receives this response. The Node has no public
+`/tin-operations` route: browser clients submit TIN creation only to Receiver,
+and the Node verifies the durable Receiver work through its internal service
+contract.
 
 ## 3. Node Verifies the Leased Payload
 

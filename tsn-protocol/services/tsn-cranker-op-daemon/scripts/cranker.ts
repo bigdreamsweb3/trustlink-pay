@@ -107,7 +107,7 @@ function verifyNodeAttestation(work: Work) {
     SETTLEMENT: ["tcapCreditTransition"],
     TIN_OPERATION: [
       "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
-      "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "displayName", "lookupCommitment",
+      "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "lookupCommitment",
       "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
       "routeVersion", "routeNonce", "tcapRouteVersion",
       "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
@@ -212,24 +212,35 @@ async function selectReceiver() {
     .trim().replace(/\/$/, "");
   const fallbackUrl = (process.env.TSN_RECEIVER_URL || "https://tsn-receiver-kappa.vercel.app")
     .trim().replace(/\/$/, "");
-  try {
-    const response = await fetch(`${localUrl}/api/health`, {
-      signal: AbortSignal.timeout(1_500),
-      headers: { accept: "application/json" },
-    });
-    const health = response.ok ? await response.json() as Record<string, unknown> : null;
-    if (health?.service === "TSN_RECEIVER" && health.status === "READY") {
-      activeReceiverUrl = localUrl;
-      console.log(`[tsn-cranker] Receiver selected=local url=${displayRpcEndpoint(localUrl)} storage=${String(health.storage ?? "unknown")}`);
-      return activeReceiverUrl;
+  let localFailure = "unavailable";
+  // Next's local Receiver can take longer than a short health probe while its
+  // file-backed store initializes. Retry it before considering hosted mode.
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(`${localUrl}/api/health`, {
+        signal: AbortSignal.timeout(5_000),
+        headers: { accept: "application/json" },
+      });
+      const health = response.ok ? await response.json() as Record<string, unknown> : null;
+      if (health?.service === "TSN_RECEIVER" && health.status === "READY") {
+        activeReceiverUrl = localUrl;
+        console.log(`[tsn-cranker] Receiver selected=local url=${displayRpcEndpoint(localUrl)} storage=${String(health.storage ?? "unknown")}`);
+        return activeReceiverUrl;
+      }
+      localFailure = `health=${String(health?.status ?? response.status)}`;
+    } catch (error) {
+      localFailure = error instanceof Error ? error.name : "unavailable";
     }
-    console.log(`[tsn-cranker] Local Receiver is not ready (${String(health?.status ?? response.status)}); using configured hosted Receiver`);
-  } catch (error) {
-    const reason = error instanceof Error ? error.name : "unavailable";
-    console.log(`[tsn-cranker] Local Receiver is unavailable (${reason}); using configured hosted Receiver`);
+    if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  // Never move local work to a different Receiver's store implicitly. Hosted
+  // selection must be explicitly enabled by the operator.
+  if (process.env.TSN_ALLOW_HOSTED_RECEIVER_FALLBACK !== "true") {
+    throw new Error(`Local Receiver ${displayRpcEndpoint(localUrl)} is not ready after 3 checks (${localFailure}); hosted fallback is disabled`);
   }
   activeReceiverUrl = fallbackUrl;
-  console.log(`[tsn-cranker] Receiver selected=hosted url=${displayRpcEndpoint(fallbackUrl)}`);
+  console.log(`[tsn-cranker] Local Receiver unavailable (${localFailure}); explicitly enabled hosted fallback selected=${displayRpcEndpoint(fallbackUrl)}`);
   return activeReceiverUrl;
 }
 const displayRpcEndpoint = (value: string) => {
@@ -317,12 +328,6 @@ const operator = () => {
     Uint8Array.from(JSON.parse(readFileSync(path, "utf8")) as number[]),
   );
 };
-const motherAuthority = () => {
-  const path = process.env.TSN_MOTHER_AUTHORITY_KEYPAIR_PATH?.trim();
-  if (!path) throw new Error("TSN_MOTHER_AUTHORITY_KEYPAIR_PATH is required for TCAP one-time credit submission");
-  const secret = JSON.parse(readFileSync(resolve(path), "utf8")) as number[];
-  return Keypair.fromSecretKey(Uint8Array.from(secret));
-};
 const hash = (value: string) =>
   createHash("sha256").update(value, "utf8").digest();
 const hex32 = (value: unknown, field: string) => {
@@ -368,6 +373,7 @@ async function receiverRequest<T>(
   signer: Keypair,
   method: "POST" | "PATCH",
   body: Record<string, unknown>,
+  path = "/api/cranker/work",
 ): Promise<T> {
   const bodyText = JSON.stringify(body);
   const publicKey = signer.publicKey.toBase58();
@@ -393,11 +399,11 @@ async function receiverRequest<T>(
   if (!data.nonce) throw new Error("Receiver challenge is malformed");
   const timestamp = String(Math.floor(Date.now() / 1000));
   const digest = createHash("sha256").update(bodyText).digest("hex");
-  const message = `TSN_RECEIVER_CRANKER_V1|${method}|/api/cranker/work|${timestamp}|${data.nonce}|${digest}`;
+  const message = `TSN_RECEIVER_CRANKER_V1|${method}|${path}|${timestamp}|${data.nonce}|${digest}`;
   const signature = Buffer.from(
     nacl.sign.detached(Buffer.from(message), signer.secretKey),
   ).toString("base64");
-  const response = await fetch(`${receiver()}/api/cranker/work`, {
+  const response = await fetch(`${receiver()}${path}`, {
     method,
     headers: {
       "content-type": "application/json",
@@ -410,7 +416,7 @@ async function receiverRequest<T>(
   });
   if (!response.ok)
     throw new Error(
-      `Receiver work request failed (${response.status}): ${(await response.text()).slice(0, 300)}`,
+      `Receiver request failed (${response.status}): ${(await response.text()).slice(0, 300)}`,
     );
   return (await response.json()) as T;
 }
@@ -452,7 +458,7 @@ async function processAuthorizedFunding(
   if (typeof encoded !== "string" || !encoded)
     throw new Error("Node did not provide the owner-signed TCAP deposit transaction");
   if (payload?.senderFundingMode !== "tcap_deposit_v2") throw new Error("Legacy funding modes are retired; expected TCAP deposit V2");
-  const connection = createSolanaConnection(rpcUrl);
+  let connection = createSolanaConnection(rpcUrl);
   const wire = Buffer.from(encoded, "base64");
   if (!wire.length || wire.toString("base64") !== encoded) throw new Error("Owner-signed TCAP deposit is not valid base64 transaction data");
   const tx = Transaction.from(wire);
@@ -467,9 +473,20 @@ async function processAuthorizedFunding(
     signature = await connection.sendRawTransaction(wire, { skipPreflight: false, preflightCommitment: "confirmed" });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!/already processed|already been processed/i.test(message)) throw error;
-    signature = expectedSignature;
-    crankerLog(`TCAP deposit replay detected workId=${work.id} signature=${signature}; checking chain status`);
+    if (/already processed|already been processed/i.test(message)) {
+      signature = expectedSignature;
+      crankerLog(`TCAP deposit replay detected workId=${work.id} signature=${signature}; checking chain status`);
+    } else if (/BlockhashNotFound|blockhash not found/i.test(message)) {
+      const fallbackRpcUrl = process.env.TSN_RPC_FALLBACK_URL?.trim() || "https://api.devnet.solana.com";
+      if (fallbackRpcUrl.replace(/\/+$/, "") === rpcUrl.replace(/\/+$/, "")) {
+        throw new Error("Configured Cranker RPC did not recognize the sender-signed deposit blockhash and no fallback RPC is configured");
+      }
+      crankerLog(`TCAP deposit blockhash not recognized by ${displayRpcEndpoint(rpcUrl)}; retrying unchanged signed transaction via ${displayRpcEndpoint(fallbackRpcUrl)}`);
+      connection = createSolanaConnection(fallbackRpcUrl);
+      signature = await connection.sendRawTransaction(wire, { skipPreflight: false, preflightCommitment: "confirmed" });
+    } else {
+      throw error;
+    }
   }
   if (signature !== expectedSignature) throw new Error("RPC returned a different signature for the owner-signed TCAP deposit");
   await confirmSignatureViaRpc(connection, signature, "TCAP deposit");
@@ -517,18 +534,18 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     throw new Error("Node TCAP authorization does not match the active Receiver lease");
   }
   if (Number(auth.expiresAtTs ?? 0) <= Math.floor(Date.now() / 1000)) throw new Error("TCAP credit authorization expired");
-  const authority = motherAuthority();
   const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
-  if (!mother?.valid || mother.authority !== authority.publicKey.toBase58()) {
-    throw new Error("Configured Mother authority keypair does not match the on-chain Mother Escrow authority");
+  if (!mother?.valid || !mother.authority) {
+    throw new Error("On-chain Mother Escrow authority is unavailable");
   }
+  const authority = new PublicKey(mother.authority);
   const tipRootCommitment = String(transition.tipRootCommitment ?? "");
   const currentTip = new PublicKey(String(transition.tip ?? ""));
   const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
   const connection = createSolanaConnection(rpcUrl);
   const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
-    authority: authority.publicKey,
+    authority,
     motherEscrow: new PublicKey(mother.address),
     config: tcapConfig,
     tipRootCommitment,
@@ -582,12 +599,13 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   } else if (!tipBeforeSettlement) {
     throw new Error("TCAP_TIN_TIP_MISSING_WITHOUT_NODE_INITIALIZATION_AUTHORIZATION");
   }
-  const signature = await sendCrankerInstruction(
+  const signature = await sendMotherNodeCoSignedInstruction(
     connection,
     signer,
+    authority,
+    work.id,
     settlementInstructions,
     transition.initializeTip === true ? "TCAP_TIN_TIP_INIT_AND_GPRU_CREDIT_V2" : "TCAP_GPRU_TIN_TIP_CREDIT_V2",
-    [authority],
   );
   const tip = currentTip;
   const tipAccount = await connection.getAccountInfo(tip, "confirmed");
@@ -675,6 +693,48 @@ async function sendCrankerInstruction(
   const signature = await connection.sendTransaction(tx, [signer, ...additionalSigners], {
     skipPreflight: false,
   });
+  crankerLog(`tx sent step=${label} signature=${signature}`);
+  try { await confirmSignatureViaRpc(connection, signature, label); }
+  catch (error) { crankerLog(`tx confirmation failed step=${label} signature=${signature} error=${error instanceof Error ? error.message : String(error)}`); throw error; }
+  crankerLog(`tx confirmed step=${label} signature=${signature}`);
+  return signature;
+}
+
+async function sendMotherNodeCoSignedInstruction(
+  connection: Connection,
+  signer: Keypair,
+  motherAuthority: PublicKey,
+  workId: string,
+  instructions: TransactionInstruction | TransactionInstruction[],
+  label: string,
+) {
+  const tx = new Transaction().add(...(Array.isArray(instructions) ? instructions : [instructions]));
+  const latest = await connection.getLatestBlockhash("confirmed");
+  tx.feePayer = signer.publicKey;
+  tx.recentBlockhash = latest.blockhash;
+  const message = tx.serializeMessage();
+  const motherSigning = await receiverRequest<{ authority: string; signatureBase64: string }>(
+    signer,
+    "POST",
+    { workId, messageBase64: message.toString("base64") },
+    "/api/cranker/settlement-signature",
+  );
+  if (motherSigning.authority !== motherAuthority.toBase58()) {
+    throw new Error("Mother Node signing key does not match the on-chain Mother authority");
+  }
+  const motherSignatureBase64 = String(motherSigning.signatureBase64 ?? "");
+  const motherSignature = Buffer.from(motherSignatureBase64, "base64");
+  if (motherSignature.length !== 64 || motherSignature.toString("base64") !== motherSignatureBase64) {
+    throw new Error("Mother Node transaction signature is malformed");
+  }
+  tx.addSignature(motherAuthority, motherSignature);
+  tx.partialSign(signer);
+  const wire = tx.serialize({ requireAllSignatures: true, verifySignatures: true });
+  if (wire.length > 1232) {
+    throw new Error(`Mother-authorized TCAP settlement transaction is ${wire.length} bytes, over Solana's 1232-byte packet limit`);
+  }
+  crankerLog(`tx submit step=${label} bytes=${wire.length}/1232 signer=Mother-Node`);
+  const signature = await connection.sendRawTransaction(wire, { skipPreflight: false });
   crankerLog(`tx sent step=${label} signature=${signature}`);
   try { await confirmSignatureViaRpc(connection, signature, label); }
   catch (error) { crankerLog(`tx confirmation failed step=${label} signature=${signature} error=${error instanceof Error ? error.message : String(error)}`); throw error; }

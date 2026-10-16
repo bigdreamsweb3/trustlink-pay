@@ -156,7 +156,7 @@ export async function authenticateCrankerRequest(request: NextRequest, body: str
   const timestampMs = Number(timestamp) * 1000;
   if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > CHALLENGE_TTL_MS) throw new Error("CRANKER_REQUEST_EXPIRED");
   const reference = challengeCollection.doc(challengeId(publicKey, nonce));
-  const consumed = await db.runTransaction(async (transaction) => {
+  const consumed = await db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(reference);
     if (!snapshot.exists || snapshot.get("used") === true || snapshot.get("publicKey") !== publicKey || Date.parse(String(snapshot.get("expiresAt") ?? "")) <= Date.now()) return false;
     transaction.update(reference, { used: true, usedAt: new Date().toISOString() });
@@ -170,9 +170,11 @@ export async function authenticateCrankerRequest(request: NextRequest, body: str
 }
 
 export async function enforceCrankerLeaseRateLimit(publicKey: string) {
+  const now = Date.now();
+  await pruneCrankerRateLimits(new Date(now - 60_000).toISOString());
   const bucket = `${publicKey}|${Math.floor(Date.now() / 60_000)}`;
   const reference = rateCollection.doc(createHash("sha256").update(bucket).digest("hex"));
-  const allowed = await db.runTransaction(async (transaction) => {
+  const allowed = await db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(reference);
     const count = Number(snapshot.get("count") ?? 0);
     if (count >= MAX_LEASE_ATTEMPTS_PER_MINUTE) return false;
@@ -180,4 +182,9 @@ export async function enforceCrankerLeaseRateLimit(publicKey: string) {
     return true;
   });
   if (!allowed) throw new Error("CRANKER_LEASE_RATE_LIMITED");
+}
+
+async function pruneCrankerRateLimits(updatedBefore: string) {
+  const stale = await rateCollection.where("updatedAt", "<=", updatedBefore).limit(100).get();
+  await Promise.all(stale.docs.map((document: { ref?: { delete: () => Promise<unknown> } }) => document.ref?.delete()));
 }

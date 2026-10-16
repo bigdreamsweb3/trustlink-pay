@@ -28,6 +28,12 @@ const localRpcUrl = process.env.TSN_LOCAL_RPC_GATEWAY_URL
 const liveRpcUrl = process.env.TSN_LIVE_RPC_GATEWAY_URL
   ?? (configuredRpcUrl && !isLoopbackUrl(configuredRpcUrl) ? configuredRpcUrl : "https://tsn-rpc-gateway.vercel.app");
 const devnetRpcUrl = "https://api.devnet.solana.com";
+function configuredNodeUrl() {
+  const value = mode === "local"
+    ? process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000"
+    : process.env.TSN_NODE_URL ?? "";
+  return value.replace(/\/$/, "");
+}
 let rpcSelectionCache = null;
 let rpcSelectionExpiresAt = 0;
 async function resolveRpcUrl() {
@@ -471,9 +477,12 @@ async function handleApi(req, res, url) {
     });
     const identity = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, identity);
-    session.resolvedTin = { tin, displayName: String(identity.displayName ?? ""), expiresAt: Date.now() + 5 * 60_000 };
+    const ownerPubkeyHash = String(identity.ownerPubkeyHash ?? "").toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(ownerPubkeyHash)) return json(res, 502, { error: "NODE_TIN_OWNER_HASH_INVALID" });
+    session.resolvedTin = { tin, ownerPubkeyHash, displayName: String(identity.displayName ?? ""), expiresAt: Date.now() + 5 * 60_000 };
     return json(res, 200, {
       tin,
+      ownerPubkeyHash,
       displayName: session.resolvedTin.displayName,
       displayNameSource: identity.displayNameSource === "owner-provided" ? "owner-provided" : "not provided",
       verifiedCredentials: Array.isArray(identity.verifiedCredentials) ? identity.verifiedCredentials : [],
@@ -484,6 +493,10 @@ async function handleApi(req, res, url) {
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {
     const body = await readJson(req);
     const recipientTin = String(body.recipientTin ?? "").trim();
+    const resolved = session.resolvedTin;
+    if (!resolved || resolved.tin !== recipientTin || resolved.expiresAt < Date.now()) {
+      return json(res, 409, { error: "TIN_RESOLUTION_REQUIRED" });
+    }
     const mintText = String(body.tokenMintAddress ?? "").trim();
     if (!/^\d{10}$/.test(recipientTin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
     if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintText)) return json(res, 422, { error: "VALID_TOKEN_MINT_REQUIRED" });
@@ -549,11 +562,25 @@ async function handleApi(req, res, url) {
     accounts.source = selectedSource.pubkey;
     const sourceTokenBalance = selectedSource.balance;
     if (sourceTokenBalance < amountBaseUnits) return json(res, 409, { error: "INSUFFICIENT_SENDER_TOKEN_BALANCE", availableBaseUnits: sourceTokenBalance.toString() });
-    const [slot, latestBlockhash] = await rpc.read(async (connection) => Promise.all([
-      connection.getSlot("confirmed"), connection.getLatestBlockhash("confirmed"),
-    ]));
+    const slot = await rpc.read((connection) => connection.getSlot("confirmed"));
+    const nodeUrl = configuredNodeUrl();
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_BLOCKHASH" });
+    let blockhashResponse;
+    try {
+      blockhashResponse = await fetch(`${nodeUrl}/network/recent-blockhash`, {
+        cache: "no-store", signal: AbortSignal.timeout(10_000),
+      });
+    } catch (error) {
+      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
+    }
+    const latestBlockhash = await blockhashResponse.json().catch(() => ({}));
+    if (!blockhashResponse.ok || typeof latestBlockhash.recentBlockhash !== "string"
+      || !Number.isInteger(latestBlockhash.lastValidBlockHeight)) {
+      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
+    }
     session.pendingTinCredit = {
       recipientTin,
+      recipientHash: resolved.ownerPubkeyHash,
       mint: mint.toBase58(),
       amountBaseUnits: amountBaseUnits.toString(),
       expiresAt: Date.now() + 120_000,
@@ -565,8 +592,8 @@ async function handleApi(req, res, url) {
       decimals,
       amountBaseUnits: amountBaseUnits.toString(),
       currentSlot: slot,
-      expiresAtSlot: slot + 300,
-      recentBlockhash: latestBlockhash.blockhash,
+      expiresAtSlot: (latestBlockhash.contextSlot ?? slot) + 300,
+      recentBlockhash: latestBlockhash.recentBlockhash,
       lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
       depositAccounts: {
         depositor: depositor.toBase58(), config: accounts.config.toBase58(),
@@ -585,12 +612,10 @@ async function handleApi(req, res, url) {
     const request = body.request;
     if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
     if (!request || request.senderWallet !== session.wallet || request.recipientTin !== prepared.recipientTin
-      || request.tokenMintAddress !== prepared.mint) {
+      || request.recipientHash !== prepared.recipientHash || request.tokenMintAddress !== prepared.mint) {
       return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
     }
-    const nodeUrl = (mode === "local"
-      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
-      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
+    const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
     const response = await fetch(`${nodeUrl}/intents`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request),

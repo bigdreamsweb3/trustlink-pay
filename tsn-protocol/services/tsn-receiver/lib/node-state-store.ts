@@ -27,7 +27,7 @@ export async function executeStateOperation(body: Record<string, unknown>) {
   if (operation === "hgetall") {
     const snapshot = await bucket(key).collection("items").get();
     return {
-      values: Object.fromEntries(snapshot.docs.map((document) => [
+      values: Object.fromEntries(snapshot.docs.map((document: any) => [
         String(document.get("field")),
         document.get("value"),
       ])),
@@ -50,7 +50,7 @@ export async function executeStateOperation(body: Record<string, unknown>) {
   if (operation === "consume_once") {
     if (!field) throw new Error("STATE_FIELD_REQUIRED");
     const reference = item(key, field);
-    const consumed = await db.runTransaction(async (transaction) => {
+    const consumed = await db.runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(reference);
       if (snapshot.exists) return false;
       transaction.create(reference, { field, value: String(body.value ?? "") });
@@ -64,7 +64,7 @@ export async function executeStateOperation(body: Record<string, unknown>) {
       const reference = bucket(entryKey);
       const children = await reference.collection("items").get();
       const batch = db.batch();
-      children.docs.forEach((document) => batch.delete(document.ref));
+      children.docs.forEach((document: any) => batch.delete(document.ref));
       batch.delete(reference);
       await batch.commit();
     }

@@ -12,10 +12,9 @@ function cleanUrl(value: string) {
 }
 
 export async function proxyNode(request: NextRequest, path: string) {
-  const nodeUrls = [
-    process.env.TSN_NODE_URL,
-    process.env.TSN_NODE_FALLBACK_URL || "https://tsn-node.wasmer.app",
-  ].filter(Boolean).map((value) => cleanUrl(value as string));
+  const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map(cleanUrl);
   const headers = new Headers();
   for (const name of forwardedHeaders) {
     const value = request.headers.get(name);

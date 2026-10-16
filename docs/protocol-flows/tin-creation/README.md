@@ -8,17 +8,19 @@ issuance.
 ## Current sequence
 
 1. The XP backend uses a CSPRNG to generate a ten-digit TIN.
-2. It uses the universal public all-zero namespace value, or the issuer's
-   private namespace value, to derive the lookup commitment and checks the
-   commitment-derived PDA on the selected
-   Solana cluster. If the account exists, it generates another TIN.
-3. The SDK encrypts the TIN and display name into the identity envelope and
-   builds the V1 owner intent. The browser receives ciphertext and commitments,
-   never a private issuer lookup value.
-4. The owner wallet signs the canonical UTF-8 approval message that binds the
-   32-byte intent hash. The XP backend adds an
-   HMAC issuance proof bound to the owner, commitment, intent hash, nonce, and
-   expiry. The proof contains no lookup secret.
+2. The trusted issuer and Node use the same high-entropy `TINS_LOOKUP_SECRET`
+   to derive the lookup commitment. The issuer checks the commitment-derived
+   PDA on the selected Solana cluster and retries if the account exists. There
+   is no public all-zero lookup-secret fallback.
+3. The trusted XP issuer derives the commitment and encrypts the TIN/name
+   identity envelope. It returns the TIN only to the authenticated owner session
+   so the browser can encrypt the owner-recovery envelope locally; the lookup
+   secret never leaves trusted service configuration.
+4. The wallet signs a recovery message; the SDK encrypts the TIN/name locally
+   into a V4 owner-recovery envelope. The wallet separately signs the canonical
+   UTF-8 approval message that binds the 32-byte intent hash. The XP backend
+   adds an HMAC issuance proof bound to the owner, commitment, intent hash,
+   nonce, and expiry. The proof contains no lookup secret.
 5. The SDK submits the V1 payload through Receiver ingress. Receiver stores
    durable `TIN_OPERATION` work and wakes the Node without sending payload data
    in the wake request.
@@ -28,13 +30,15 @@ issuance.
 7. An authorized Cranker leases only `VERIFIED` work and submits
    `CreateTinV1` with the owner Ed25519 proof. The program creates the registry
    PDA from the lookup commitment and stores encrypted identity material.
-8. Receiver records the Cranker result. The XP session returns the generated
-   TIN to its owner only after the transaction is confirmed.
+8. Receiver records the Cranker result. The owner session displays the TIN as
+   finalized only after the transaction is confirmed; it already held the TIN
+   in order to prepare the encrypted recovery envelope.
 
 The plaintext TIN and display name are absent from Receiver work and the
-on-chain account. The TIN remains only in the trusted XP session and the
-resolver's protected lookup boundary. The shared secret is configured on the
-XP backend and Node, never Receiver, browser code, Cranker, or the repo.
+on-chain registry account. The TIN is present transiently in the trusted issuer
+and owner browser session, and may be supplied to the trusted resolver for
+lookup. The lookup secret is configured on the XP backend and Node, never in
+Receiver, browser code, Cranker, or the repository.
 
 ## Documents
 
@@ -54,29 +58,22 @@ XP backend and Node, never Receiver, browser code, Cranker, or the repo.
 - [Private TIN developer guide](../../../tsn-protocol/tsn-docs/developers/private-tin-issuance.mdx)
   documents the SDK and service integration.
 
-## XP identity lookup limitation
+## Wallet recovery and resolver boundary
 
-The wallet is the user's ownership and authorization anchor: only its owner
-can approve creation and wallet-controlled identity actions. The TIN registry
-is not derived directly from the wallet address. The public all-zero lookup
-value in the universal issuer allows anyone to derive universal TIN/name
-records, which is intentional and does not by itself reveal transfer history.
-The product requirement is that reconnecting the same wallet
-automatically restores the owner's TIN without requiring the ten digits, and
-that the program enforces one TIN per owner in the universal issuer namespace.
-TSN XP does not implement these features yet, so reconnecting does not restore
-the identity and repeated creation is currently possible. Recovery requires a
-private owner-bound record or equivalent mechanism; do not add a plaintext
-`wallet -> TIN` index. Issuer-specific namespaces may use private lookup
-values to restrict identity resolution. These are product and program gaps,
-not a loss of ownership.
+The wallet is the user's ownership and authorization anchor. The TIP program
+creates a single owner-indexed recovery PDA and rejects creation when that
+owner already has an active TIN. The PDA contains only an encrypted recovery
+envelope. On a new device, the SDK fetches it by owner PDA and uses a fresh
+signature over the recovery message to decrypt the TIN locally; newly created
+records use V4 envelopes. The SDK also retains read-only V2/V3 decryption for
+existing records. None of these steps writes a plaintext `wallet -> TIN` index.
 
-An issuer may place a private namespace value behind its own resolver API and
-give partners scoped API keys. Partners submit a TIN to that API without
-receiving the issuer value. This API model is a planned integration pattern;
-it does not make the partner an owner of the TIN or authorize activity
-monitoring. Wallet authorization remains the boundary for owner activity
-access.
+The issuer and Node must share a high-entropy lookup secret. The current flow
+has no universal public all-zero fallback; the secret is not sent to the
+browser, Receiver, or Cranker. Resolver API access and rate limiting are an
+operational boundary and must be configured before exposing a resolver to
+untrusted callers. Identity lookup alone does not authorize owner actions or
+reveal a settlement transaction graph.
 
 ## Evidence boundary
 

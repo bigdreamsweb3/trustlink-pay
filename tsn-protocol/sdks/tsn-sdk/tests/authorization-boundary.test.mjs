@@ -1,7 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-
 import nacl from "tweetnacl";
 import { PublicKey } from "@solana/web3.js";
 
@@ -20,7 +18,6 @@ import {
 } from "../dist/index.js";
 import {
   createDeviceRegistrationChallenge,
-  createSolanaTinsOwnerVerifier,
   verifyTsnDeviceRegistration,
 } from "../dist/authorization/server/index.js";
 import {
@@ -199,49 +196,6 @@ test("a session token without a fresh registered-device signature cannot retriev
     }),
     /unregistered signing key/,
   );
-});
-
-test("Solana TINS verifier reads the owner commitment from the derived registry account", async () => {
-  const owner = nacl.sign.keyPair();
-  const ownerPublicKey = new PublicKey(owner.publicKey);
-  const tin = "1000000042";
-  const ownerCommitment = createHash("sha256")
-    .update(ownerPublicKey.toBytes())
-    .digest();
-  const data = Buffer.alloc(8 + 4 + 32 + 4 + 8 + 64);
-  let offset = 0;
-  data.writeBigUInt64LE(BigInt(tin), offset);
-  offset += 8;
-  data.writeUInt32LE(0, offset);
-  offset += 4;
-  ownerCommitment.copy(data, offset);
-  offset += 32;
-  data.writeUInt32LE(0, offset);
-  offset += 4;
-  data.writeBigInt64LE(1n, offset);
-
-  let fallbackScanned = false;
-  const verifier = createSolanaTinsOwnerVerifier({
-    connection: {
-      async getAccountInfo() {
-        return { data };
-      },
-      async getProgramAccounts() {
-        fallbackScanned = true;
-        return [];
-      },
-    },
-    programId: new PublicKey(nacl.sign.keyPair().publicKey),
-  });
-  const result = await verifier.verifyOwner({
-    tin,
-    transientSignerPublicKey: ownerPublicKey.toBase58(),
-  });
-  assert.equal(result.ownerIdentityCommitment, ownerCommitment.toString("hex"));
-  assert.equal("ownerPublicKey" in result, false);
-  assert.equal("signerPublicKey" in result, false);
-  assert.equal("transientSignerPublicKey" in result, false);
-  assert.equal(fallbackScanned, false);
 });
 
 test("public authorizeDevice returns only privacy-safe state", async () => {

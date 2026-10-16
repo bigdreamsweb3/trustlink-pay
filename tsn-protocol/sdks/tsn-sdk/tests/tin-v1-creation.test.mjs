@@ -2,16 +2,62 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { Keypair } from "@solana/web3.js";
+import nacl from "tweetnacl";
 import { deriveTcapTipRootCommitment } from "../dist/gpru.js";
 import {
   buildTinV1Creation,
+  buildTinV1OwnerRecoveryMessage,
   createTinV1IdentityEnvelope,
   createTinV1OwnerIntentHash,
+  createTinV1OwnerRecoveryEnvelope,
+  decryptTinV1OwnerRecoveryEnvelope,
   serializeTinV1CreationParams,
 } from "../dist/tins.js";
 
 const digest = (...parts) => createHash("sha256").update(Buffer.concat(parts)).digest();
 const fixed32 = (byte) => Buffer.alloc(32, byte);
+
+test("TIN V1 owner recovery is encrypted and decrypted only with the owner's wallet signature", async () => {
+  const owner = Keypair.generate();
+  const signature = nacl.sign.detached(
+    buildTinV1OwnerRecoveryMessage(owner.publicKey),
+    owner.secretKey,
+  );
+  const envelope = await createTinV1OwnerRecoveryEnvelope({
+    tin: "1234567890",
+    displayName: "Example Owner",
+    owner: owner.publicKey,
+    signature,
+  });
+
+  assert.equal(Buffer.from(envelope).subarray(0, 8).toString("ascii"), "TSNTIN04");
+  assert.deepEqual(
+    await decryptTinV1OwnerRecoveryEnvelope({
+      encryptedEnvelope: envelope,
+      owner: owner.publicKey,
+      signature,
+    }),
+    { tin: "1234567890", displayName: "Example Owner" },
+  );
+  await assert.rejects(
+    decryptTinV1OwnerRecoveryEnvelope({
+      encryptedEnvelope: envelope,
+      owner: Keypair.generate().publicKey,
+      signature,
+    }),
+    /TIN_OWNER_RECOVERY_SIGNATURE_INVALID/,
+  );
+  await assert.rejects(
+    createTinV1OwnerRecoveryEnvelope({
+      tin: "123",
+      displayName: "Example Owner",
+      owner: owner.publicKey,
+      signature,
+    }),
+    /TIN_OWNER_RECOVERY_TIN_INVALID/,
+  );
+});
+
 
 test("TIN V1 requires a high-entropy resolver secret and derives its PDA commitment from it", async () => {
   await assert.rejects(

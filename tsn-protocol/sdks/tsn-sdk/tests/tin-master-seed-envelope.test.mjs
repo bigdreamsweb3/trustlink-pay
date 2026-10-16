@@ -2,16 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import nacl from "tweetnacl";
-import { PublicKey } from "@solana/web3.js";
+import { Ed25519Program, PublicKey } from "@solana/web3.js";
 
 import {
   createTinPrivateIdentity,
+  createTinV1OwnerSeedEnvelope,
   rewrapTinPrivateIdentityForWalletOwner,
   unlockTinPrivateRoute,
-} from "../dist/tin-private-controller.js";
-import {
-  buildProgramAssignedTinOwnerEncryptionMessage,
-  createProgramAssignedTinOwnerEncryption,
 } from "../dist/tin-private-controller.js";
 import {
   decodeTinMasterSeedEnvelope,
@@ -30,7 +27,10 @@ import {
   wrapTinThresholdKeyForDevice,
 } from "../dist/tin-device-key-envelope.js";
 import { TsnDeviceEnvelopeTinMasterSeedProvider } from "../dist/tin-device-key-provider.js";
-import { buildTinOwnerIntentMessage } from "../dist/tins.js";
+import {
+  buildTinOwnerIntentMessage,
+  createOwnerIntentSignatureInstruction,
+} from "../dist/tins.js";
 
 test("TIN owner approval uses a deterministic printable detached message", () => {
   const message = new TextDecoder().decode(
@@ -57,6 +57,22 @@ test("TIN owner approval uses a deterministic printable detached message", () =>
     ].join("\n"),
   );
   assert.equal(new TextEncoder().encode(message).length, message.length);
+});
+
+
+test("owner proof defaults to the canonical readable intent message", () => {
+  const owner = nacl.sign.keyPair();
+  const ownerPubkey = new PublicKey(owner.publicKey);
+  const intentHash = new Uint8Array(32).fill(0x5a);
+  const message = buildTinOwnerIntentMessage(intentHash);
+  const signature = nacl.sign.detached(message, owner.secretKey);
+  const instruction = createOwnerIntentSignatureInstruction({ ownerPubkey, intentHash, signature });
+  const expected = Ed25519Program.createInstructionWithPublicKey({
+    publicKey: owner.publicKey,
+    message,
+    signature,
+  });
+  assert.deepEqual(instruction.data, expected.data);
 });
 
 const networkStore = new Map();
@@ -244,23 +260,18 @@ test("wallet-owned envelope unlocks from any device without device credentials",
   assert.deepEqual(unlocked.prus, created.publicRoute.prus);
 });
 
-test("program-assigned creation builds owner encryption material from the wallet signature", async () => {
+test("TIN V1 seed envelope uses the current pre-issuance marker", async () => {
   const owner = wallet();
-  const nonce = new Uint8Array(32).fill(7);
-  const message = buildProgramAssignedTinOwnerEncryptionMessage({
-    ownerPublicKey: owner.publicKey,
-    displayName: "Program assigned",
-    nonce,
+  const seed = await createTinV1OwnerSeedEnvelope({
+    ownerWallet: owner,
+    displayName: "Example TIN",
+    nonce: new Uint8Array(32).fill(7),
   });
-  const signature = await owner.signMessage(message);
-  const envelope = await createProgramAssignedTinOwnerEncryption({
-    ownerPublicKey: owner.publicKey,
-    displayName: "Program assigned",
-    nonce,
-    ownerSignature: signature,
-  });
-  assert.ok(envelope.length > 0);
-  assert.notEqual(new TextDecoder().decode(envelope).includes(Buffer.from(signature).toString("base64")), true);
+  const envelope = decodeTinMasterSeedEnvelope(seed.encryptedMasterSeed);
+  assert.equal(envelope.tin, "tin-v1");
+  assert.equal(envelope.pruConfigurationHash, "0".repeat(64));
+  assert.equal(seed.gpruCommitment.length, 32);
+  assert.ok(seed.resourceCommitment.length > 0);
 });
 
 test("wallet-owned envelope remains available on a new device after a fresh wallet signature", async () => {

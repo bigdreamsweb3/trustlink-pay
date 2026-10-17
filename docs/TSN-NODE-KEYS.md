@@ -10,7 +10,7 @@ the frontend `.env`, Git, screenshots, or a public hackathon submission.
 | --- | --- | --- |
 | `TSN_RECEIVER_NODE_API_KEY` | Authenticates the Node to the TSN Receiver and protects Receiver wake, work, and state endpoints. | Obtain the shared value from the Receiver operator. Do not generate a different local value unless the Receiver is configured with the same value. |
 | `TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY` | Signs bounded settlement authorization receipts issued by the Node. | Generate a new random 32-byte secret for each Node. The Node accepts hex, Base64, or a JSON byte array. |
-| `TSN_ROUTE_DECRYPTION_PRIVATE_KEY` | Decrypts the encrypted public route envelope used for recipient TIN routing. | Generate or provision the private key that matches the public route encryption key registered with the Receiver/TIN route flow. Do not rotate it without rotating the corresponding public key. |
+| `TSN_ROUTE_DECRYPTION_PRIVATE_KEY` | Decrypts the encrypted public route envelope used for a recipient's TIP route associated with a TIN. | Generate or provision the private key that matches the public route encryption key registered with the Receiver/TIP route flow. Do not rotate it without rotating the corresponding public key. |
 | `TSN_THRESHOLD_NONCE_SIGNING_KEY` | Signs threshold-access nonce receipts for authorized TIN access. | Generate a separate random 32-byte secret for each Node. Never reuse a wallet, route key, or settlement signing key. |
 | `TSN_NODE_VERIFICATION_SIGNING_KEY` | Ed25519 private seed used to sign every Receiver `VERIFIED` or `REJECTED` decision, binding the decision to its work, commitments, and Node lease. | Generate a dedicated Ed25519 keypair as shown below. Keep the private seed only in the Node environment. |
 

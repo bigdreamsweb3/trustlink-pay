@@ -1,19 +1,19 @@
 ---
-title: "TIN Layer: Transfer Identity Number and Route Discovery"
-sidebarTitle: "TIN"
-description: "TIN is the 10-digit Transfer Identity Number issued by the Transfer Identity Protocol. It resolves payment routing without exposing a wallet address."
+title: "TIP Layer: Transfer Identity Protocol and TINs"
+sidebarTitle: "TIP and TIN"
+description: "TIP is the Transfer Identity Protocol. It issues and resolves transfer identities, including the 10-digit Transfer Identity Number (TIN), and their payment routes."
 ---
 
-**In plain English:** TIN is a portable, human-readable 10-digit payment identity. A sender shares the TIN and can confirm the resolved recipient name before authorizing a transfer, instead of copying a long wallet address. The TIN routes a payment; it does not hold tokens or replace the owner's wallet authority.
+**In plain English:** TIP is the Transfer Identity Protocol that manages transfer identities and resolves their payment routes. A TIN is one portable, human-readable 10-digit identity within TIP. A sender can share a TIN and confirm the resolved recipient name before authorizing a transfer, instead of copying a wallet address. The TIN does not hold tokens or replace the owner's wallet authority.
 
 ## What TIN is (and is not)
 
-| Wallet address                               | TIN                                                        |
+| Wallet address                               | TIN (managed by TIP)                                        |
 | -------------------------------------------- | ---------------------------------------------------------- |
-| Public cryptographic account identifier      | Payment identity and route-discovery identifier            |
-| Identifies a public key or account authority | Resolves permitted payment routing metadata                |
+| Public cryptographic account identifier      | 10-digit payment identity                                  |
+| Identifies a public key or account authority | TIP resolves the route associated with a TIN                |
 | May own token accounts                       | Does not itself hold tokens or act as a private key        |
-| Usually exposed directly                     | Binds to the TCAP relationship and encrypted snapshot path |
+| Usually exposed directly                     | Binds to a GPRU public key, TIP root, and policy commitment |
 
 TIN is not a private key or token account. A confirmed TIN V1 binds to an owner wallet and encrypted identity data. A sender can use the resolved display name as a payment-confidence check; that name alone is not legal verification or payment authorization.
 
@@ -31,8 +31,8 @@ generate the random ten-digit number. The trusted issuer generates the TIN,
 checks that its commitment PDA is unused, and submits the owner-authorized
 creation through Receiver, Node verification, and Cranker execution.
 
-The V1 route binds the GPRU public commitment to its blinded TCAP TIP-seed
-reference and policy commitment. Earlier account layouts and PRU route fields
+The TIP V1 route associated with a TIN stores a GPRU public commitment, its blinded TIP root commitment,
+a TIP-specific route version, and a policy commitment. Earlier account layouts and PRU route fields
 are rejected by current TIN V1 creation and resolution.
 
 Current TIN V1 SDK helpers derive these PDAs:
@@ -52,7 +52,7 @@ Current TIN V1 SDK helpers derive these PDAs:
 3. The SDK builds the sender authorization using the TIN and resolved display
    identity. The sender does not sign a client-supplied route commitment.
 4. At payment ingress, Node independently resolves the current on-chain TIN V1
-   TCAP relationship and constructs the recipient transition from that route.
+   TIP route and constructs the recipient transition from that route.
 
 Resolution is by requested TIN, not public registry enumeration. The endpoint
 returns identity disclosure, never plaintext seeds or child private keys.
@@ -68,19 +68,29 @@ returns identity disclosure, never plaintext seeds or child private keys.
 
 ## Ownership and recovery
 
-The owner wallet authorizes TIN creation and is stored in the registry record.
-A separate PDA indexed by owner stores only the encrypted recovery envelope;
-its one-per-owner initialization prevents multiple recovery locators for the
-same wallet. When the owner reconnects, the SDK reads that ciphertext and
-requires a separate domain-separated wallet signature to decrypt it locally.
-The raw recovery signature, TIN, and display name are not sent to Node or
-Cranker as part of recovery.
+The owner wallet authorizes TIN creation. The main TIN registry account stores
+an owner commitment and no standalone owner-public-key field. Wallet recovery
+is stored separately in an on-chain PDA owned by the TIN Registrar program;
+it is not stored in the main TIN registry account. The recovery PDA is derived
+from the `tin-v1-owner-recovery` seed and the owner's wallet public key. It
+contains that public key and an encrypted TIN recovery envelope. TIN creation
+creates and writes both accounts.
+
+When the owner reconnects, the SDK derives the recovery PDA from the connected
+wallet, fetches its envelope, and decrypts it locally after a separate
+domain-separated wallet signature. The recovery PDA gives the wallet a lookup
+path without adding the owner public key as a field in the main registry
+account. Previously created master-seed envelopes may still contain an
+`ownerPublicKey` property in plaintext; removing it from the SDK affects newly
+created envelopes and does not rewrite existing on-chain accounts. The raw
+recovery signature, TIN, and display name are not sent to Node or Cranker as
+part of recovery.
 
 The recovery locator does not reveal the TIN or derive the registry PDA. The
-registry is found through its keyed lookup commitment, while the owner PDA only
-locates the ciphertext. Registry uniqueness follows from the keyed commitment
-PDA; owner uniqueness follows from the recovery PDA. Receiver and Cranker
-receive only the recovery ciphertext and other encrypted fields.
+registry is found through its keyed lookup commitment, while the owner PDA
+locates the recovery ciphertext. Registry uniqueness follows from the keyed
+commitment PDA; owner uniqueness follows from the recovery PDA. Receiver and
+Cranker receive the recovery ciphertext and other encrypted fields.
 
 ## Related
 

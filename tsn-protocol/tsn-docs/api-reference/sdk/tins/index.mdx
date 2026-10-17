@@ -58,7 +58,16 @@ The recovery signature and decrypted identity must remain on the owner's device.
 
 `buildTinV1Creation` validates and hashes the exact V1 fields. `serializeTinV1CreationParams` emits the program instruction data. If the complete transaction does not fit Solana's packet limit, use the staged-instruction serializers for begin, bounded chunks, and finalization; the SDK's `submitTinV1Creation` sends the owner-authorized payload to Receiver and does not submit directly to Solana.
 
-`getTinV1CreationStagingPda` derives the temporary creation PDA. `getTinV1OwnerRecoveryPda` derives the one-per-owner recovery locator. The recovery PDA contains ciphertext only and is distinct from the commitment-derived identity registry PDA.
+`getTinV1CreationStagingPda` derives the temporary creation PDA.
+`getTinV1OwnerRecoveryPda` derives the one-per-owner recovery PDA from the
+`tin-v1-owner-recovery` seed and owner wallet public key. The TIN Registrar
+program creates it alongside the main registry account. It stores the owner
+public key and encrypted TIN recovery envelope; the main registry account is a
+separate account and has no standalone owner-public-key field. Newly created
+master-seed envelopes omit `ownerPublicKey`; previously created on-chain
+envelopes may still expose it in plaintext. On wallet recovery, the SDK derives
+this PDA, fetches the envelope,
+and decrypts it locally after the owner signs the recovery message.
 
 ## Lookup commitment
 

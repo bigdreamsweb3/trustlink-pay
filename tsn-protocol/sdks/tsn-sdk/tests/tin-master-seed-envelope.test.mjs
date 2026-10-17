@@ -13,6 +13,7 @@ import {
 import {
   decodeTinMasterSeedEnvelope,
   serializeTinMasterSeedWalletAuthorization,
+  validateTinMasterSeedEnvelope,
 } from "../dist/tin-envelopes.js";
 import {
   createTinDeviceAccessProof,
@@ -46,7 +47,7 @@ test("TIN owner approval uses a deterministic printable detached message", () =>
       "REQUEST DETAILS",
       "Intent reference: abababababababababababababababababababababababababababababababab",
       "",
-      "Protocol: Transfer Identity Network",
+      "Protocol: Transfer Identity Protocol (TIP)",
       "",
       "Version: 1",
       "",
@@ -231,7 +232,16 @@ test("SDK creates seed, PRUs, commitments, and both envelopes without exposing s
   });
   const envelope = decodeTinMasterSeedEnvelope(result.encryptedMasterSeed);
   assert.equal(result.publicRoute.prus.length, 30);
-  assert.equal(envelope.ownerPublicKey, owner.publicKey);
+  assert.equal("ownerPublicKey" in envelope, false);
+  assert.equal(Buffer.from(result.encryptedMasterSeed).includes(Buffer.from("ownerPublicKey")), false);
+  const legacyEnvelope = { ...envelope, ownerPublicKey: owner.publicKey };
+  const validatedLegacyEnvelope = await validateTinMasterSeedEnvelope({
+    envelope: legacyEnvelope,
+    tin: "1000000008",
+    ownerPublicKey: owner.publicKey,
+    pruConfigurationHash: result.pruConfigurationHash,
+  });
+  assert.equal("ownerPublicKey" in validatedLegacyEnvelope, false);
   assert.equal(envelope.pruConfigurationHash, result.pruConfigurationHash);
   assert.equal("deviceId" in envelope, false);
   assert.equal("deviceSessionBinding" in envelope, false);

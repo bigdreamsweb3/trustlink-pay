@@ -248,10 +248,10 @@ async function handleApi(req, res, url) {
     }
     const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? session.preparedTinDraft?.encryptedMasterSeed ?? ""), "base64");
     if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
-    const gpruCommitment = String(body.gpruCommitment ?? session.preparedTinDraft?.gpruCommitment ?? "").toLowerCase();
-    if (!/^[0-9a-f]{64}$/.test(gpruCommitment)) return json(res, 422, { error: "GPRU_COMMITMENT_REQUIRED" });
-    const gpruCommitmentBytes = Buffer.from(gpruCommitment, "hex");
-    const tipRootCommitment = Buffer.from(tsnSdk.deriveTcapTipRootCommitment(gpruCommitmentBytes));
+    const gpruPublicCommitment = String(body.gpruPublicCommitment ?? session.preparedTinDraft?.gpruPublicCommitment ?? "").toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(gpruPublicCommitment)) return json(res, 422, { error: "GPRU_PUBLIC_COMMITMENT_REQUIRED" });
+    const gpruPublicCommitmentBytes = Buffer.from(gpruPublicCommitment, "hex");
+    const tipRootCommitment = Buffer.from(tsnSdk.deriveTipRootCommitment(gpruPublicCommitmentBytes));
     const lookupSecret = requireTinLookupSecret();
     const ownerPubkey = new PublicKey(session.wallet);
     const connection = new Connection(await resolveRpcUrl(), "confirmed");
@@ -271,7 +271,7 @@ async function handleApi(req, res, url) {
     if (!tin || !identity || !registry) throw new Error("Could not reserve a unique private TIN after 8 Devnet checks");
     const encryptedTinRecovery = Buffer.from(String(body.encryptedTinRecovery ?? ""), "base64");
     if (encryptedTinRecovery.length < 28) {
-      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64"), gpruCommitment };
+      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64"), gpruPublicCommitment };
       const ownerPubkey = new PublicKey(session.wallet);
       const programId = new PublicKey(tinProgramId);
       return json(res, 200, {
@@ -293,10 +293,10 @@ async function handleApi(req, res, url) {
       encryptedPublicRouteEnvelope: Buffer.alloc(0),
       routeVersion: 1,
       routeNonce: randomBytes(32),
-      tcapRouteVersion: 1,
-      tcapRelationshipCommitment: gpruCommitmentBytes,
-      tcapRelationshipReference: tipRootCommitment,
-      tcapPolicyCommitment: randomBytes(32),
+      tipRouteVersion: 1,
+      gpruPublicCommitment: gpruPublicCommitmentBytes,
+      tipRootCommitment,
+      policyCommitment: randomBytes(32),
     });
     const intentId = randomUUID();
     const lookupIssuanceProof = makeTinIssuanceProof(lookupSecret, {
@@ -330,11 +330,10 @@ async function handleApi(req, res, url) {
       encryptedPublicRouteEnvelope: "",
       routeVersion: Number(built.routeVersion),
       routeNonce: hex(built.routeNonce),
-      tcapRouteVersion: built.tcapRouteVersion,
-      tcapRelationshipCommitment: hex(built.tcapRelationshipCommitment),
-      tcapRelationshipReference: hex(built.tcapRelationshipReference),
-      gpruCommitment,
-      tcapPolicyCommitment: hex(built.tcapPolicyCommitment),
+      tipRouteVersion: built.tipRouteVersion,
+      gpruPublicCommitment: hex(built.gpruPublicCommitment),
+      tipRootCommitment: hex(built.tipRootCommitment),
+      policyCommitment: hex(built.policyCommitment),
       sdk: "@trustlink/tsn-sdk.buildTinV1Creation",
     });
   }

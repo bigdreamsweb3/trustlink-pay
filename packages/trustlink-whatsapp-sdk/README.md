@@ -2,7 +2,7 @@
 
 Standalone WhatsApp SDK for TrustLink authentication, session approval, notifications, number checks, and webhook handling.
 
-WhatsApp is not the protocol identity. TIN is the protocol identity. WhatsApp is only a communication and confirmation layer.
+WhatsApp is not the transfer-identity protocol. TIP manages transfer identities; a TIN is the 10-digit identity users can share. WhatsApp is only a communication and confirmation layer.
 
 ## Docs
 

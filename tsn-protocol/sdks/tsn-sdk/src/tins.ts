@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { deriveTcapTipRootCommitment, resolveTinGpruCommitment } from "./gpru.js";
+import { deriveTipRootCommitment, resolveTinGpruPublicCommitment } from "./gpru.js";
 import { sha256 } from "@noble/hashes/sha2";
 import nacl from "tweetnacl";
 import {
@@ -26,29 +26,29 @@ const TEXT_ENCODER = new TextEncoder();
 const ZERO_HASH_32 = Buffer.alloc(32);
 
 /**
- * Validate the public portion of a TCap-backed TIN relationship. The
+ * Validate the public TIP route associated with a TIN. The
  * privacy-receiving root, snapshot key, and any spend authority remain on the
  * owner device; only these commitments are safe to pass through coordination
  * services.
  */
-export function validateTinTcapRelationship(params: {
-  tcapRouteVersion: number;
-  tcapRelationshipCommitment?: Uint8Array | null;
-  tcapRelationshipReference?: Uint8Array | null;
-  tcapPolicyCommitment?: Uint8Array | null;
+export function validateTinTipRoute(params: {
+  tipRouteVersion: number;
+  gpruPublicCommitment?: Uint8Array | null;
+  tipRootCommitment?: Uint8Array | null;
+  policyCommitment?: Uint8Array | null;
 }): boolean {
   const zero = (value?: Uint8Array | null) =>
     !value || value.every((byte) => byte === 0);
   const nonZero32 = (value?: Uint8Array | null) =>
     Boolean(value && value.length === 32 && !zero(value));
-  if (params.tcapRouteVersion !== 1) return false;
+  if (params.tipRouteVersion !== 1) return false;
   return (
-    nonZero32(params.tcapRelationshipCommitment) &&
-    nonZero32(params.tcapRelationshipReference) &&
-    nonZero32(params.tcapPolicyCommitment) &&
-    resolveTinGpruCommitment(
-      params.tcapRelationshipCommitment!,
-      params.tcapRelationshipReference!,
+    nonZero32(params.gpruPublicCommitment) &&
+    nonZero32(params.tipRootCommitment) &&
+    nonZero32(params.policyCommitment) &&
+    resolveTinGpruPublicCommitment(
+      params.gpruPublicCommitment!,
+      params.tipRootCommitment!,
     ) !== null
   );
 }
@@ -382,7 +382,7 @@ export function buildTinOwnerIntentMessage(
       "REQUEST DETAILS",
       `Intent reference: ${normalized.toString("hex")}`,
       "",
-      "Protocol: Transfer Identity Network",
+      "Protocol: Transfer Identity Protocol (TIP)",
       "",
       "Version: 1",
       "",
@@ -421,10 +421,10 @@ export function serializeTinV1CreationParams(params: {
   encryptedMetadataHash: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
-  tcapRouteVersion: 1;
-  tcapRelationshipCommitment: Buffer | Uint8Array;
-  tcapRelationshipReference: Buffer | Uint8Array;
-  tcapPolicyCommitment: Buffer | Uint8Array;
+  tipRouteVersion: 1;
+  gpruPublicCommitment: Buffer | Uint8Array;
+  tipRootCommitment: Buffer | Uint8Array;
+  policyCommitment: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -437,23 +437,23 @@ export function serializeTinV1CreationParams(params: {
   if (routeVersion.equals(Buffer.alloc(8)))
     throw new Error("routeVersion must be positive");
   const routeNonce = requireHash32(params.routeNonce, "routeNonce");
-  const relationshipCommitment = normalizeHash32(
-    params.tcapRelationshipCommitment,
-    "tcapRelationshipCommitment",
+  const gpruPublicCommitment = normalizeHash32(
+    params.gpruPublicCommitment,
+    "gpruPublicCommitment",
   );
-  const relationshipReference = normalizeHash32(
-    params.tcapRelationshipReference,
-    "tcapRelationshipReference",
+  const tipRootCommitment = normalizeHash32(
+    params.tipRootCommitment,
+    "tipRootCommitment",
   );
   const policyCommitment = normalizeHash32(
-    params.tcapPolicyCommitment,
-    "tcapPolicyCommitment",
+    params.policyCommitment,
+    "policyCommitment",
   );
-  if (!validateTinTcapRelationship({
-    tcapRouteVersion: params.tcapRouteVersion as 1,
-    tcapRelationshipCommitment: relationshipCommitment,
-    tcapRelationshipReference: relationshipReference,
-    tcapPolicyCommitment: policyCommitment,
+  if (!validateTinTipRoute({
+    tipRouteVersion: params.tipRouteVersion as 1,
+    gpruPublicCommitment,
+    tipRootCommitment,
+    policyCommitment,
   })) throw new Error("TIN creation requires the current GPRU commitment and blinded TIP seed route");
   const body: Buffer[] = [params.ownerPubkey.toBuffer(), lookupCommitment];
   appendBytes(body, params.encryptedTinRecovery);
@@ -465,9 +465,9 @@ export function serializeTinV1CreationParams(params: {
   body.push(
     routeVersion,
     routeNonce,
-    Buffer.from([params.tcapRouteVersion]),
-    relationshipCommitment,
-    relationshipReference,
+    Buffer.from([params.tipRouteVersion]),
+    gpruPublicCommitment,
+    tipRootCommitment,
     policyCommitment,
   );
   const expiry = Buffer.alloc(8);
@@ -499,10 +499,10 @@ export function serializeTinV1CreationStageParams(params: {
   encryptedMetadataHash: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
-  tcapRouteVersion: 1;
-  tcapRelationshipCommitment: Buffer | Uint8Array;
-  tcapRelationshipReference: Buffer | Uint8Array;
-  tcapPolicyCommitment: Buffer | Uint8Array;
+  tipRouteVersion: 1;
+  gpruPublicCommitment: Buffer | Uint8Array;
+  tipRootCommitment: Buffer | Uint8Array;
+  policyCommitment: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
   for (const [field, value, required] of [
@@ -515,11 +515,11 @@ export function serializeTinV1CreationStageParams(params: {
     }
   }
   const parts: Buffer[] = [];
-  if (!validateTinTcapRelationship({
-    tcapRouteVersion: params.tcapRouteVersion as 1,
-    tcapRelationshipCommitment: params.tcapRelationshipCommitment,
-    tcapRelationshipReference: params.tcapRelationshipReference,
-    tcapPolicyCommitment: params.tcapPolicyCommitment,
+  if (!validateTinTipRoute({
+    tipRouteVersion: params.tipRouteVersion as 1,
+    gpruPublicCommitment: params.gpruPublicCommitment,
+    tipRootCommitment: params.tipRootCommitment,
+    policyCommitment: params.policyCommitment,
   })) throw new Error("TIN creation stage requires the current GPRU commitment and blinded TIP seed route");
   appendPubkey(parts, params.ownerPubkey);
   parts.push(
@@ -532,11 +532,11 @@ export function serializeTinV1CreationStageParams(params: {
   parts.push(requireHash32(params.encryptedMetadataHash, "encryptedMetadataHash"));
   appendU64(parts, params.routeVersion);
   parts.push(requireHash32(params.routeNonce, "routeNonce"));
-  appendU8(parts, params.tcapRouteVersion);
+  appendU8(parts, params.tipRouteVersion);
   parts.push(
-    requireHash32(params.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
-    requireHash32(params.tcapRelationshipReference, "tcapRelationshipReference"),
-    requireHash32(params.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    requireHash32(params.gpruPublicCommitment, "gpruPublicCommitment"),
+    requireHash32(params.tipRootCommitment, "tipRootCommitment"),
+    requireHash32(params.policyCommitment, "policyCommitment"),
   );
   appendI64(parts, params.expiryTs);
   return encodeInstruction(19, parts);
@@ -677,10 +677,10 @@ export async function submitTinV1Creation(params: {
       encryptedMetadataHash: hex(prepared.encryptedMetadataHash),
       routeVersion: Number(prepared.routeVersion),
       routeNonce: hex(prepared.routeNonce),
-      tcapRouteVersion: prepared.tcapRouteVersion,
-      tcapRelationshipCommitment: hex(prepared.tcapRelationshipCommitment),
-      tcapRelationshipReference: hex(prepared.tcapRelationshipReference),
-      tcapPolicyCommitment: hex(prepared.tcapPolicyCommitment),
+      tipRouteVersion: prepared.tipRouteVersion,
+      gpruPublicCommitment: hex(prepared.gpruPublicCommitment),
+      tipRootCommitment: hex(prepared.tipRootCommitment),
+      policyCommitment: hex(prepared.policyCommitment),
       lookupIssuanceProof: params.lookupIssuanceProof,
     }),
   });
@@ -699,10 +699,10 @@ export function createTinV1OwnerIntentHash(params: {
   encryptedMetadataHash: Buffer | Uint8Array;
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
-  tcapRouteVersion: number;
-  tcapRelationshipCommitment: Buffer | Uint8Array;
-  tcapRelationshipReference: Buffer | Uint8Array;
-  tcapPolicyCommitment: Buffer | Uint8Array;
+  tipRouteVersion: number;
+  gpruPublicCommitment: Buffer | Uint8Array;
+  tipRootCommitment: Buffer | Uint8Array;
+  policyCommitment: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
   const routeVersion = Buffer.alloc(8);
@@ -720,10 +720,10 @@ export function createTinV1OwnerIntentHash(params: {
     normalizeHash32(params.encryptedMetadataHash, "encryptedMetadataHash"),
     routeVersion,
     requireHash32(params.routeNonce, "routeNonce"),
-    Buffer.from([params.tcapRouteVersion]),
-    normalizeHash32(params.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
-    normalizeHash32(params.tcapRelationshipReference, "tcapRelationshipReference"),
-    normalizeHash32(params.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    Buffer.from([params.tipRouteVersion]),
+    normalizeHash32(params.gpruPublicCommitment, "gpruPublicCommitment"),
+    normalizeHash32(params.tipRootCommitment, "tipRootCommitment"),
+    normalizeHash32(params.policyCommitment, "policyCommitment"),
     expiry,
   ])));
 }
@@ -747,18 +747,18 @@ export function buildTinV1Creation(params: {
   encryptedMetadataHash?: Buffer | Uint8Array;
   routeVersion?: bigint | number;
   routeNonce?: Buffer | Uint8Array;
-  tcapRouteVersion: number;
-  tcapRelationshipCommitment: Buffer | Uint8Array;
-  tcapRelationshipReference: Buffer | Uint8Array;
-  tcapPolicyCommitment: Buffer | Uint8Array;
+  tipRouteVersion: number;
+  gpruPublicCommitment: Buffer | Uint8Array;
+  tipRootCommitment: Buffer | Uint8Array;
+  policyCommitment: Buffer | Uint8Array;
   expiryTs?: bigint | number;
   nonce?: Buffer | Uint8Array;
 }) {
-  if (params.tcapRouteVersion !== 1) throw new Error("TIN V1 creation requires the active TCap route version");
-  const gpruCommitment = Buffer.from(params.tcapRelationshipCommitment);
-  const tipRootCommitment = Buffer.from(params.tcapRelationshipReference);
-  if (!Buffer.from(deriveTcapTipRootCommitment(gpruCommitment)).equals(tipRootCommitment)) {
-    throw new Error("TIN route must store the GPRU public commitment separately from its blinded TCAP TIP seed");
+  if (params.tipRouteVersion !== 1) throw new Error("TIN V1 creation requires the active TIP route version");
+  const gpruPublicCommitment = Buffer.from(params.gpruPublicCommitment);
+  const tipRootCommitment = Buffer.from(params.tipRootCommitment);
+  if (!Buffer.from(deriveTipRootCommitment(gpruPublicCommitment)).equals(tipRootCommitment)) {
+    throw new Error("TIP route must store the GPRU public commitment separately from its blinded TIP seed");
   }
   const zero = Buffer.alloc(32);
   const nonce = Buffer.from(params.nonce ?? params.routeNonce ?? randomNonce(32));
@@ -778,10 +778,10 @@ export function buildTinV1Creation(params: {
     encryptedMetadataHash,
     routeVersion,
     routeNonce,
-    tcapRouteVersion: params.tcapRouteVersion as 1,
-    tcapRelationshipCommitment: params.tcapRelationshipCommitment,
-    tcapRelationshipReference: params.tcapRelationshipReference,
-    tcapPolicyCommitment: params.tcapPolicyCommitment,
+    tipRouteVersion: params.tipRouteVersion as 1,
+    gpruPublicCommitment: params.gpruPublicCommitment,
+    tipRootCommitment: params.tipRootCommitment,
+    policyCommitment: params.policyCommitment,
     expiryTs,
   };
   const intentHash = createTinV1OwnerIntentHash(fields);

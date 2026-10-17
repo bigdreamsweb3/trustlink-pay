@@ -4,7 +4,7 @@ sidebarTitle: "Identity & Routing"
 description: "How TSN resolves payment identity through the 10-digit TIN issued by TIP, and how GPRU carries authorization and routing without ever holding funds."
 ---
 
-TSN separates _who the payment is for_ from _what accounts move on Solana_. Identity is a Transfer Identity Number (TIN) issued and resolved by the Transfer Identity Protocol (TIP). Routing and authorization scope travel with the transfer through GPRU. Neither TIN nor GPRU takes custody of funds or keys.
+TSN separates _who the payment is for_ from _what accounts move on Solana_. The Transfer Identity Protocol (TIP) manages transfer identities and their routing. A Transfer Identity Number (TIN) is one 10-digit identity within TIP; it is not the protocol itself. GPRU carries transfer-scoped routing and authorization data. Neither TIP, a TIN, nor GPRU takes custody of funds or keys.
 
 ## TIN: Transfer Identity Number
 
@@ -21,14 +21,18 @@ A **Transfer Identity Number (TIN)** is a portable, 10-digit payment identity is
 | Public cryptographic account identifier | TSN payment identity and route-discovery identifier |
 | Identifies a public key or account authority | Resolves permitted payment routing metadata |
 | May own token accounts | Does not itself hold tokens or act as a private key |
-| Usually exposes the address directly | Binds to the TCAP relationship and encrypted snapshot path |
+| Usually exposes the address directly | Binds to GPRU public, TIP root, and policy commitments |
 
 A TIN does not replace every Solana address. The final settlement transaction still uses public keys, token accounts, PDAs, and program accounts as required by Solana.
 
 ### TIN V1 record and ownership
 
 TIN V1 creation is owner-authorized and binds the registry record to the
-owner's public key. The registry PDA is derived from a keyed lookup commitment,
+owner through an owner commitment. The main registry account stores that
+commitment and has no standalone owner-public-key field. A separate owner-recovery
+PDA stores the owner public key and encrypted TIN recovery envelope for wallet
+recovery. It is derived from the `tin-v1-owner-recovery` seed and owner wallet
+public key. The registry PDA is derived from a keyed lookup commitment,
 not directly from the raw TIN or wallet address. The trusted issuer and Node
 share a high-entropy `TINS_LOOKUP_SECRET`; there is no public all-zero fallback.
 An absent or invalid secret blocks issuance and resolution. Receiver and
@@ -37,10 +41,10 @@ TIN from the creation operation. Node is a trusted resolution boundary: it
 holds the secret and can decrypt the identity envelope when performing a
 requested resolution.
 
-The registry also binds the current TIN V1 TCAP relationship: a GPRU public
-commitment, its blinded TIP-seed reference, and a policy commitment. Legacy
-PRU configuration and prior account layouts are not accepted by current
-creation or resolution.
+The registry also binds the current TIN V1 TIP route: a GPRU public commitment,
+its blinded TIP root commitment, a TIP-specific route version, and a policy
+commitment. Legacy PRU configuration and prior account layouts are not accepted
+by current creation or resolution.
 
 ### Resolution flow
 
@@ -51,7 +55,7 @@ creation or resolution.
   </Step>
   <Step title="Node resolves the identity">
     Node derives the commitment-based registry address using its protected
-    lookup secret, validates the current TIN V1 account and TCAP relationship,
+    lookup secret, validates the current TIN V1 account and TIP route,
     and decrypts the user-approved display identity. The secret is not exposed
     to the application, Receiver, or Cranker.
   </Step>
@@ -79,13 +83,20 @@ owner-authorized ciphertext and proof; Node verifies the proof, canonical
 intent, owner signature, and route relationship before work is eligible for
 Cranker execution.
 
-A separate owner-recovery PDA stores only an encrypted recovery envelope and
-provides a wallet-indexed locator. The owner signs a domain-separated recovery
-message and encrypts the TIN and display name locally; the recovery signature
-and plaintext stay on the owner's device. The one-per-owner PDA prevents
-multiple recovery locators for the same wallet. The encrypted master seed is a
-separate owner-protected item. Plaintext seed material and derived child
-private keys must not be sent to Receiver, Node, or Cranker.
+A separate owner-recovery PDA, distinct from the main TIN registry account,
+stores the owner public key and encrypted recovery envelope. It provides a
+wallet-indexed locator and is created alongside the registry during TIN
+creation. On recovery, the SDK derives this PDA from the connected wallet,
+fetches the envelope, and decrypts the TIN locally after a separate
+domain-separated wallet signature. This recovery PDA is the wallet-recovery
+record; there is no need to add an owner-public-key field to the main registry
+account. Previously created master-seed envelopes may still include
+`ownerPublicKey` in plaintext; the SDK no longer writes it to newly created
+envelopes, and existing on-chain accounts are not rewritten by this change.
+The one-per-owner PDA prevents multiple recovery locators for the same wallet.
+The encrypted master seed is a separate owner-protected item.
+Plaintext seed material and derived child private keys must not be sent to
+Receiver, Node, or Cranker.
 
 <Warning>
   A TIN is not a username, a bank-account number, or a legal identity on its own. Any legal-name, business, phone, or verification context is optional enrichment and must not be confused with payment authorization.
@@ -149,9 +160,9 @@ What GPRU does not do:
 - Own a token account.
 - Grant permission to construct an arbitrary transaction from a resolved route.
 
-## TCAP relationship
+## TIP route commitments
 
-A TIN binds to a TCAP relationship through an opaque commitment, a relationship reference, and a policy commitment. The on-chain registry never receives policy plaintext, a static PRU list, pre-generated receiving wallets, or a maximum-PRU field. See [TCAP](/architecture/tcap) for how the tip PDA and encrypted snapshots use these commitments.
+TIP associates a TIN with its privacy route through a GPRU public commitment, a TIP root commitment derived from that public commitment, a TIP-specific route version, and a policy commitment. These names describe the route independently of the settlement program that consumes it. The on-chain registry never receives policy plaintext, a static PRU list, pre-generated receiving wallets, or a maximum-PRU field. See [TCAP](/architecture/tcap) for how the current settlement program consumes the TIP root and policy commitments.
 
 ## What is public vs. private
 
@@ -161,7 +172,7 @@ A TIN binds to a TCAP relationship through an opaque commitment, a relationship 
 | Route commitment and route version | Plaintext route map and recipient wallet map |
 | Owner-key commitment, state version | Snapshot decryption keys |
 | GPRU scope commitment carried in receipts | Privacy-receiving root and derivation material |
-| TCAP relationship and policy commitments | Encrypted TIN envelope contents |
+| GPRU public, TIP root, and policy commitments with TIP route version | Encrypted TIN envelope contents |
 
 ## Historical note: ZK-PRU is retired
 
@@ -175,11 +186,11 @@ Earlier revisions of TIN used a ZK-PRU public-route model with funded PRU receiv
   </Card>
 
   <Card title="TCAP" icon="lock" href="/architecture/tcap">
-    How TIN-derived commitments become tip PDAs and owner-encrypted snapshots.
+    How TIP route commitments become tip PDAs and owner-encrypted snapshots.
   </Card>
 
   <Card title="Payment Intent Lifecycle" icon="signature" href="/developers/payment-intent-lifecycle">
-    Where the resolved TIN route and GPRU scope enter the signed intent.
+    Where the resolved TIP route and GPRU scope enter the signed intent.
   </Card>
 
   <Card title="Architecture Overview" icon="cubes" href="/overview/architecture">

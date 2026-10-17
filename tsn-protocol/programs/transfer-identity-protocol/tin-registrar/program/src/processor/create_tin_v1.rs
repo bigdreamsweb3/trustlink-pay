@@ -12,7 +12,7 @@ use crate::{
     cpi::create_pda_account,
     error::Error,
     instruction_auto::CreateTinV1Params,
-    state::{validate_tcap_route, GlobalState, TinV1Account, TinV1OwnerRecoveryAccount},
+    state::{validate_tip_route, GlobalState, TinV1Account, TinV1OwnerRecoveryAccount},
     utils::{assert_pda, assert_program_owned, load_borsh, store_borsh},
 };
 
@@ -53,11 +53,11 @@ pub fn apply<'a>(
     {
         return Err(Error::InvalidInstruction.into());
     }
-    if !validate_tcap_route(
-        params.tcap_route_version,
-        &params.tcap_relationship_commitment,
-        &params.tcap_relationship_reference,
-        &params.tcap_policy_commitment,
+    if !validate_tip_route(
+        params.tip_route_version,
+        &params.gpru_public_commitment,
+        &params.tip_root_commitment,
+        &params.policy_commitment,
     ) {
         return Err(Error::InvalidInstruction.into());
     }
@@ -96,10 +96,10 @@ pub fn apply<'a>(
         encrypted_metadata_hash: params.encrypted_metadata_hash,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
-        tcap_route_version: params.tcap_route_version,
-        tcap_relationship_commitment: params.tcap_relationship_commitment,
-        tcap_relationship_reference: params.tcap_relationship_reference,
-        tcap_policy_commitment: params.tcap_policy_commitment,
+        tip_route_version: params.tip_route_version,
+        gpru_public_commitment: params.gpru_public_commitment,
+        tip_root_commitment: params.tip_root_commitment,
+        policy_commitment: params.policy_commitment,
     };
     let seeds: [&[u8]; 3] = [crate::seeds::TIN_V1, &params.lookup_commitment, &[bump]];
     create_pda_account(
@@ -148,10 +148,10 @@ fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
         &params.encrypted_metadata_hash,
         &params.route_version.to_le_bytes(),
         &params.route_nonce,
-        &[params.tcap_route_version],
-        &params.tcap_relationship_commitment,
-        &params.tcap_relationship_reference,
-        &params.tcap_policy_commitment,
+        &[params.tip_route_version],
+        &params.gpru_public_commitment,
+        &params.tip_root_commitment,
+        &params.policy_commitment,
         &params.expiry_ts.to_le_bytes(),
     ]).to_bytes()
 }
@@ -186,7 +186,7 @@ fn canonical_owner_intent_message(intent_hash: &[u8; 32]) -> Vec<u8> {
         message.push(HEX[(byte & 0x0f) as usize]);
     }
     message.extend_from_slice(
-        b"\n\nProtocol: Transfer Identity Network\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        b"\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
     );
     message
 }

@@ -109,8 +109,8 @@ function verifyNodeAttestation(work: Work) {
       "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
       "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "lookupCommitment",
       "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
-      "routeVersion", "routeNonce", "tcapRouteVersion",
-      "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
+      "routeVersion", "routeNonce", "tipRouteVersion",
+      "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
     ],
   };
   const executionPayload = Object.fromEntries(
@@ -779,10 +779,10 @@ async function submitStagedTinV1Creation(params: {
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
     routeVersion: BigInt(String(payload.routeVersion)),
     routeNonce: hex32(payload.routeNonce, "routeNonce"),
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
-    tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
-    tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    tipRouteVersion: 1,
+    gpruPublicCommitment: hex32(payload.gpruPublicCommitment, "gpruPublicCommitment"),
+    tipRootCommitment: hex32(payload.tipRootCommitment, "tipRootCommitment"),
+    policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
     expiryTs: BigInt(String(payload.expiry)),
   });
   const stageSig = await sendCrankerInstruction(
@@ -865,7 +865,7 @@ async function processTinOperation(
       "Only verified tin_creation operations are executable by the Cranker",
     );
   }
-  if (Number(payload.tcapRouteVersion) !== 1) {
+  if (Number(payload.tipRouteVersion) !== 1) {
     throw new Error("Cranker accepts only the current TIN GPRU route version");
   }
   const programId = new PublicKey(
@@ -903,10 +903,10 @@ async function processTinOperation(
     encryptedMetadataHash: hex32(payload.encryptedMetadataHash, "encryptedMetadataHash"),
     routeVersion: BigInt(String(payload.routeVersion)),
     routeNonce: hex32(payload.routeNonce, "routeNonce"),
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: hex32(payload.tcapRelationshipCommitment, "tcapRelationshipCommitment"),
-    tcapRelationshipReference: hex32(payload.tcapRelationshipReference, "tcapRelationshipReference"),
-    tcapPolicyCommitment: hex32(payload.tcapPolicyCommitment, "tcapPolicyCommitment"),
+    tipRouteVersion: 1,
+    gpruPublicCommitment: hex32(payload.gpruPublicCommitment, "gpruPublicCommitment"),
+    tipRootCommitment: hex32(payload.tipRootCommitment, "tipRootCommitment"),
+    policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
     intentHash,
     expiryTs: BigInt(String(payload.expiry)),
   });

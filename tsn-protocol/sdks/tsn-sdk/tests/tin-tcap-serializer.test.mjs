@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Keypair } from "@solana/web3.js";
-import { deriveTcapTipRootCommitment } from "../dist/gpru.js";
+import { deriveTipRootCommitment } from "../dist/gpru.js";
 import {
   serializeTinV1CreationChunkParams,
   serializeTinV1CreationCloseParams,
@@ -22,10 +22,10 @@ const stageParams = {
   encryptedMetadataHash: fixed32(3),
   routeVersion: 1,
   routeNonce: fixed32(5),
-  tcapRouteVersion: 1,
-  tcapRelationshipCommitment: relationship,
-  tcapRelationshipReference: deriveTcapTipRootCommitment(relationship),
-  tcapPolicyCommitment: fixed32(6),
+  tipRouteVersion: 1,
+  gpruPublicCommitment: relationship,
+  tipRootCommitment: deriveTipRootCommitment(relationship),
+  policyCommitment: fixed32(6),
   expiryTs: 1_900_000_000,
 };
 
@@ -36,7 +36,7 @@ test("TIN V1 stage serializer matches the current bounded staging instruction", 
   assert.throws(
     () => serializeTinV1CreationStageParams({
       ...stageParams,
-      tcapRelationshipReference: fixed32(7),
+      tipRootCommitment: fixed32(7),
     }),
     /current GPRU commitment and blinded TIP seed/,
   );

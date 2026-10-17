@@ -4,12 +4,12 @@ sidebarTitle: "TCAP"
 description: "TCAP is the Transfer Confidential Asset Protocol: commitment-backed tip credits, gated confidential debit and exit, and encrypted balance snapshots."
 ---
 
-**In plain English:** TCAP (Transfer Confidential Asset Protocol) is the private balance layer. It advances commitment-backed tips per TIN, anchors encrypted balance snapshots off-chain, and gates confidential debit and exit behind a proof verifier. Balances are never public; the chain only stores opaque commitments and sequence values.
+**In plain English:** TCAP (Transfer Confidential Asset Protocol) is the private balance layer. It advances commitment-backed tip state for TIP routes associated with TINs, anchors encrypted balance snapshots off-chain, and gates confidential debit and exit behind a proof verifier. Balances are never public; the chain only stores opaque commitments and sequence values.
 
 ## What TCAP owns
 
 - Global config and per-asset governed reserves and vaults.
-- The TIN-TIP tip commitment root and monotonic sequence.
+- The TIP route's tip commitment root and monotonic sequence, associated with a TIN.
 - The nullifier registry.
 - The liability account per governed asset.
 - The credit, debit, and exit statements (only credit is enabled today).

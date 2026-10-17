@@ -29,6 +29,6 @@ export async function GET(
       },
     });
   } catch {
-    return NextResponse.json({ error: "TIN route lookup is unavailable" }, { status: 503 });
+    return NextResponse.json({ error: "TIP route lookup for this TIN is unavailable" }, { status: 503 });
   }
 }

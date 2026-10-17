@@ -8,7 +8,7 @@ payment dApp and what must remain infrastructure-only.
 The prototype must use the canonical `@trustlink/tsn-sdk` façade for:
 
 - private TIN identity-envelope preparation;
-- TIN route resolution;
+- TIP route resolution using a TIN;
 - payment authorization and intent serialization;
 - wallet-to-wallet SPL transfer transaction construction;
 - sponsored settlement transaction preparation;
@@ -28,7 +28,7 @@ scripts, not in the dApp example.
 ## Current implementation observation
 
 The UI server has no Solana, SPL-token, TCAP, or TIN client imports. It invokes
-the SDK for TIN route lookup, payment authorization, intent submission,
+the SDK for TIP route lookup using a TIN, payment authorization, intent submission,
 wallet-transfer construction, and sponsored funding construction. The browser
 wallet owns signing and no private key enters the UI server.
 

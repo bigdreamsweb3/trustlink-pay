@@ -16,7 +16,7 @@ use crate::{
         TinV1CreationChunkParams,
     },
     processor::create_tin_v1,
-    state::{validate_tcap_route, TinV1CreationStaging},
+    state::{validate_tip_route, TinV1CreationStaging},
     utils::{assert_pda, assert_program_owned, load_borsh_with_zero_padding, store_borsh},
 };
 
@@ -45,11 +45,11 @@ pub fn stage(
         || identity_len > TinV1CreationStaging::MAX_BLOB_LEN
         || seed_len > TinV1CreationStaging::MAX_BLOB_LEN
         || identity_len + recovery_len + seed_len > TinV1CreationStaging::MAX_BLOB_LEN
-        || !validate_tcap_route(
-            params.tcap_route_version,
-            &params.tcap_relationship_commitment,
-            &params.tcap_relationship_reference,
-            &params.tcap_policy_commitment,
+        || !validate_tip_route(
+            params.tip_route_version,
+            &params.gpru_public_commitment,
+            &params.tip_root_commitment,
+            &params.policy_commitment,
         )
     {
         return Err(Error::InvalidInstruction.into());
@@ -75,10 +75,10 @@ pub fn stage(
             || existing.encrypted_metadata_hash != params.encrypted_metadata_hash
             || existing.route_version != params.route_version
             || existing.route_nonce != params.route_nonce
-            || existing.tcap_route_version != params.tcap_route_version
-            || existing.tcap_relationship_commitment != params.tcap_relationship_commitment
-            || existing.tcap_relationship_reference != params.tcap_relationship_reference
-            || existing.tcap_policy_commitment != params.tcap_policy_commitment
+            || existing.tip_route_version != params.tip_route_version
+            || existing.gpru_public_commitment != params.gpru_public_commitment
+            || existing.tip_root_commitment != params.tip_root_commitment
+            || existing.policy_commitment != params.policy_commitment
             || existing.expiry_ts != params.expiry_ts
         {
             return Err(Error::InvalidInstruction.into());
@@ -101,10 +101,10 @@ pub fn stage(
         encrypted_metadata_hash: params.encrypted_metadata_hash,
         route_version: params.route_version,
         route_nonce: params.route_nonce,
-        tcap_route_version: params.tcap_route_version,
-        tcap_relationship_commitment: params.tcap_relationship_commitment,
-        tcap_relationship_reference: params.tcap_relationship_reference,
-        tcap_policy_commitment: params.tcap_policy_commitment,
+        tip_route_version: params.tip_route_version,
+        gpru_public_commitment: params.gpru_public_commitment,
+        tip_root_commitment: params.tip_root_commitment,
+        policy_commitment: params.policy_commitment,
         expiry_ts: params.expiry_ts,
     };
     create_pda_account(
@@ -218,10 +218,10 @@ pub fn finalize(
         encrypted_metadata_hash: state.encrypted_metadata_hash,
         route_version: state.route_version,
         route_nonce: state.route_nonce,
-        tcap_route_version: state.tcap_route_version,
-        tcap_relationship_commitment: state.tcap_relationship_commitment,
-        tcap_relationship_reference: state.tcap_relationship_reference,
-        tcap_policy_commitment: state.tcap_policy_commitment,
+        tip_route_version: state.tip_route_version,
+        gpru_public_commitment: state.gpru_public_commitment,
+        tip_root_commitment: state.tip_root_commitment,
+        policy_commitment: state.policy_commitment,
         intent_hash: state.intent_hash,
         expiry_ts: state.expiry_ts,
     };

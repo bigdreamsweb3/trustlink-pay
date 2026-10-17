@@ -97,7 +97,7 @@ does not provide a practical inverse to recover the TIN or root.
 
 ```text
 Owner device authorizes intent
-  → SDK binds TIN route, root commitment, policy, and GPRU scope
+  → SDK binds TIP route, root commitment, policy, and GPRU scope
   → Receiver stores redacted work
   → Node verifies signatures, commitments, sequence, lease, and expiry
   → Mother/TSN authorizes ConfidentialSettlement for the epoch

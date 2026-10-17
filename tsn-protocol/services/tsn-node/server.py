@@ -449,7 +449,7 @@ def _sign_node_verification(
                 "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce",
                 "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
                 "routeVersion", "routeNonce",
-                "tcapRouteVersion", "tcapRelationshipCommitment", "tcapRelationshipReference", "tcapPolicyCommitment",
+                "tipRouteVersion", "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
             },
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
@@ -1068,10 +1068,10 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     take(32, "metadata hash")
     route_version = int.from_bytes(take(8, "route version"), "little")
     route_nonce = take(32, "route nonce")
-    tcap_route_version = take(1, "TCap route version")[0]
-    tcap_relationship_commitment = take(32, "TCap relationship commitment")
-    tcap_relationship_reference = take(32, "TCap relationship reference")
-    tcap_policy_commitment = take(32, "TCap policy commitment")
+    tip_route_version = take(1, "TIP route version")[0]
+    gpru_public_commitment = take(32, "GPRU public commitment")
+    tip_root_commitment = take(32, "TIP root commitment")
+    policy_commitment = take(32, "policy commitment")
     if version != 1 or status != 1 or any(buffer[offset:]):
         raise ValueError("unsupported private TIN account schema")
     if lookup_commitment == bytes(32) or route_version < 1:
@@ -1082,10 +1082,10 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
         "identityEnvelope": identity_envelope,
         "routeVersion": route_version,
         "routeNonce": route_nonce.hex(),
-        "tcapRouteVersion": tcap_route_version,
-        "tcapRelationshipCommitment": tcap_relationship_commitment.hex(),
-        "tcapRelationshipReference": tcap_relationship_reference.hex(),
-        "tcapPolicyCommitment": tcap_policy_commitment.hex(),
+        "tipRouteVersion": tip_route_version,
+        "gpruPublicCommitment": gpru_public_commitment.hex(),
+        "tipRootCommitment": tip_root_commitment.hex(),
+        "policyCommitment": policy_commitment.hex(),
     }
 
 
@@ -1139,8 +1139,8 @@ async def read_tins_account_data(pubkey: Pubkey) -> Optional[bytes]:
 
 
 
-async def read_onchain_tin_tcap_relationship(tin: str) -> Optional[dict[str, Any]]:
-    """Resolve only the current private TIN V1 TCap commitments."""
+async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
+    """Resolve only the current protocol-neutral private TIN V1 TIP route."""
     try:
         lookup_commitment = hashlib.sha256(
             b"TSN_TIN_V1_LOOKUP" + TINS_LOOKUP_SECRET.encode("utf-8") + str(tin).encode("utf-8")
@@ -1152,37 +1152,36 @@ async def read_onchain_tin_tcap_relationship(tin: str) -> Optional[dict[str, Any
         material = decode_private_tin_route_material(data)
         if not hmac.compare_digest(bytes.fromhex(material["lookupCommitment"]), lookup_commitment):
             return None
-        if int(material.get("tcapRouteVersion") or 0) != 1:
+        if int(material.get("tipRouteVersion") or 0) != 1:
             return None
-        gpru_commitment = _resolve_tin_gpru_commitment(
-            material["tcapRelationshipCommitment"], material["tcapRelationshipReference"]
+        gpru_public_commitment = _resolve_tin_gpru_public_commitment(
+            material["gpruPublicCommitment"], material["tipRootCommitment"]
         )
-        if not gpru_commitment:
+        if not gpru_public_commitment:
             return None
         return {
             "tin": str(tin),
             "ownerPubkeyHash": material["ownerPubkeyHash"],
-            "tcapRouteVersion": 1,
-            "tcapRelationshipCommitment": material["tcapRelationshipCommitment"],
-            "tcapRelationshipReference": material["tcapRelationshipReference"],
-            "gpruCommitment": gpru_commitment,
-            "tcapPolicyCommitment": material["tcapPolicyCommitment"],
+            "tipRouteVersion": 1,
+            "gpruPublicCommitment": gpru_public_commitment,
+            "tipRootCommitment": material["tipRootCommitment"],
+            "policyCommitment": material["policyCommitment"],
         }
     except (HTTPException, ValueError, TypeError, binascii.Error):
         return None
 
 
-def _resolve_tin_gpru_commitment(relationship_commitment: str, relationship_reference: str) -> Optional[str]:
+def _resolve_tin_gpru_public_commitment(gpru_public_commitment: str, tip_root_commitment: str) -> Optional[str]:
     """Return the public GPRU curve point only for the active field layout."""
     try:
-        commitment = bytes.fromhex(relationship_commitment)
-        reference = bytes.fromhex(relationship_reference)
+        commitment = bytes.fromhex(gpru_public_commitment)
+        reference = bytes.fromhex(tip_root_commitment)
     except (TypeError, ValueError):
         return None
     if len(commitment) != 32 or len(reference) != 32:
         return None
     current_tip_seed = hashlib.sha256(
-        b"TSN_TCAP_TIN_TIP_ROOT_COMMITMENT_V1\0" + commitment
+        b"TSN_TIP_ROOT_COMMITMENT_V1\0" + commitment
     ).digest()
     if hmac.compare_digest(current_tip_seed, reference):
         return commitment.hex()
@@ -1534,7 +1533,7 @@ def _canonical_tin_owner_intent_message(intent_hash: bytes) -> bytes:
         "REQUEST DETAILS\n"
         f"Intent reference: {intent_hash.hex()}\n"
         "\n"
-        "Protocol: Transfer Identity Network\n"
+        "Protocol: Transfer Identity Protocol (TIP)\n"
         "\n"
         "Version: 1\n"
         "\n"
@@ -1664,7 +1663,7 @@ def _assert_recipient_hash_matches_owner(recipient_hash: str, owner_pubkey_hash:
     normalized_recipient_hash = str(recipient_hash or "").strip().lower()
     normalized_owner_hash = str(owner_pubkey_hash or "").strip().lower()
     if not re.fullmatch(r"[0-9a-f]{64}", normalized_owner_hash):
-        raise HTTPException(422, "Recipient TIN route has an invalid owner hash")
+        raise HTTPException(422, "Recipient TIP route has an invalid owner hash")
     if not re.fullmatch(r"[0-9a-f]{64}", normalized_recipient_hash):
         raise HTTPException(400, "recipientHash must be a 32-byte hexadecimal owner hash")
     if not hmac.compare_digest(normalized_recipient_hash, normalized_owner_hash):
@@ -1779,12 +1778,12 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
             )
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(409, f"destination route preflight failed: {exc}") from exc
-    route = await read_onchain_tin_tcap_relationship(recipient_tin)
+    route = await read_onchain_tin_tip_route(recipient_tin)
     if not route:
-        raise HTTPException(422, "Recipient TIN has no active TCAP route")
+        raise HTTPException(422, "Recipient TIN has no active TIP route")
     _assert_recipient_hash_matches_owner(req.recipientHash, str(route.get("ownerPubkeyHash") or ""))
-    recipient_route_commitment = str(route["tcapRelationshipCommitment"]).lower()
-    recipient_route_version = int(route["tcapRouteVersion"])
+    recipient_route_commitment = str(route["gpruPublicCommitment"]).lower()
+    recipient_route_version = int(route["tipRouteVersion"])
     return {
         "recipientTin": recipient_tin,
         "recipientRouteCommitment": recipient_route_commitment,
@@ -1836,22 +1835,22 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     metadata_hash_bytes = _decode_hash32(encrypted_metadata_hash, "encrypted_metadata_hash")
     route_version = int(_field(payload, "route_version", "routeVersion", default=0))
     if route_version != 1:
-        raise HTTPException(422, "Current TIN V1 route version must be 1")
+        raise HTTPException(422, "Current TIN V1 registry version must be 1")
     route_nonce = _require_string(payload, "route_nonce", "routeNonce")
     route_nonce_bytes = _decode_hash32(route_nonce, "route_nonce")
     if not secrets.compare_digest(route_nonce_bytes, nonce_bytes):
-        raise HTTPException(422, "TIN V1 route nonce must match the signed operation nonce")
-    tcap_route_version = int(_field(payload, "tcap_route_version", "tcapRouteVersion", default=0))
-    if tcap_route_version != 1:
-        raise HTTPException(422, "Current TIN V1 requires TCap route version 1")
-    tcap_relationship_commitment = _decode_hash32(_field(payload, "tcap_relationship_commitment", "tcapRelationshipCommitment", default=""), "tcap_relationship_commitment")
-    tcap_relationship_reference = _decode_hash32(_field(payload, "tcap_relationship_reference", "tcapRelationshipReference", default=""), "tcap_relationship_reference")
-    tcap_policy_commitment = _decode_hash32(_field(payload, "tcap_policy_commitment", "tcapPolicyCommitment", default=""), "tcap_policy_commitment")
-    if any(value == bytes(32) for value in (tcap_relationship_commitment, tcap_relationship_reference, tcap_policy_commitment)):
-        raise HTTPException(422, "TIN V1 GPRU and TCap commitments must be nonzero")
-    expected_tip_root = hashlib.sha256(b"TSN_TCAP_TIN_TIP_ROOT_COMMITMENT_V1\0" + tcap_relationship_commitment).digest()
-    if not hmac.compare_digest(expected_tip_root, tcap_relationship_reference):
-        raise HTTPException(422, "TIN GPRU commitment does not match its blinded TCAP TIP seed")
+        raise HTTPException(422, "TIN V1 registry nonce must match the signed operation nonce")
+    tip_route_version = int(_field(payload, "tip_route_version", "tipRouteVersion", default=0))
+    if tip_route_version != 1:
+        raise HTTPException(422, "Current TIN V1 requires TIP route version 1")
+    gpru_public_commitment = _decode_hash32(_field(payload, "gpru_public_commitment", "gpruPublicCommitment", default=""), "gpru_public_commitment")
+    tip_root_commitment = _decode_hash32(_field(payload, "tip_root_commitment", "tipRootCommitment", default=""), "tip_root_commitment")
+    policy_commitment = _decode_hash32(_field(payload, "policy_commitment", "policyCommitment", default=""), "policy_commitment")
+    if any(value == bytes(32) for value in (gpru_public_commitment, tip_root_commitment, policy_commitment)):
+        raise HTTPException(422, "TIP route GPRU public, root, and policy commitments must be nonzero")
+    expected_tip_root = hashlib.sha256(b"TSN_TIP_ROOT_COMMITMENT_V1\0" + gpru_public_commitment).digest()
+    if not hmac.compare_digest(expected_tip_root, tip_root_commitment):
+        raise HTTPException(422, "TIP GPRU public commitment does not match its TIP root commitment")
 
     expected_hash = hashlib.sha256(b"".join([
         b"TSN_TIN_V1_CREATE", owner_bytes, lookup_commitment_bytes,
@@ -1859,8 +1858,8 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         _encode_u32_le(len(encrypted_identity_bytes)), encrypted_identity_bytes,
         _encode_u32_le(len(encrypted_master_seed_bytes)), encrypted_master_seed_bytes,
         metadata_hash_bytes,
-        route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tcap_route_version]),
-        tcap_relationship_commitment, tcap_relationship_reference, tcap_policy_commitment,
+        route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tip_route_version]),
+        gpru_public_commitment, tip_root_commitment, policy_commitment,
         _encode_signed_i64_le(expiry),
     ])).digest()
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
@@ -1896,15 +1895,15 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "encryptedTinRecovery": encrypted_tin_recovery, "encryptedMasterSeed": encrypted_master_seed,
         "encryptedMetadataHash": encrypted_metadata_hash.lower(),
         "routeVersion": route_version, "routeNonce": route_nonce.lower(),
-        "tcapRouteVersion": tcap_route_version, "tcapRelationshipCommitment": tcap_relationship_commitment.hex(),
-        "tcapRelationshipReference": tcap_relationship_reference.hex(), "tcapPolicyCommitment": tcap_policy_commitment.hex(),
+        "tipRouteVersion": tip_route_version, "gpruPublicCommitment": gpru_public_commitment.hex(),
+        "tipRootCommitment": tip_root_commitment.hex(), "policyCommitment": policy_commitment.hex(),
         "displayNameStatus": "opaque_to_node", "displayNameReadableByNode": False,
         "envelopeChecks": {
             "ownerAuthorization": {"intentHashVerified": True, "signatureVerified": True},
             "encryptedIdentityEnvelope": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "encryptedTinRecovery": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "encryptedMasterSeed": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
-            "gpruCommitment": {"present": True, "includedInOwnerIntentHash": True},
+            "gpruPublicCommitment": {"present": True, "includedInOwnerIntentHash": True},
         },
     }
     return base
@@ -2604,15 +2603,15 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
     if not funding:
         raise ValueError("Owner-signed TCAP reserve deposit transaction is missing")
     tin = str(verified_fields["recipientTin"])
-    relation = await read_onchain_tin_tcap_relationship(tin)
+    relation = await read_onchain_tin_tip_route(tin)
     if not relation:
-        raise ValueError("Recipient TIN has no active on-chain TCAP relationship")
-    if int(relation.get("tcapRouteVersion") or 0) != int(verified_fields["recipientRouteVersion"]):
+        raise ValueError("Recipient TIN has no active on-chain TIP route")
+    if int(relation.get("tipRouteVersion") or 0) != int(verified_fields["recipientRouteVersion"]):
         raise ValueError("Recipient route version differs from the signed authorization")
-    if not hmac.compare_digest(str(relation.get("tcapRelationshipCommitment") or "").lower(), str(verified_fields["recipientRouteCommitment"]).lower()):
+    if not hmac.compare_digest(str(relation.get("gpruPublicCommitment") or "").lower(), str(verified_fields["recipientRouteCommitment"]).lower()):
         raise ValueError("Recipient route commitment differs from the signed authorization")
-    root = _tcap_credit_bytes32(relation.get("tcapRelationshipReference"), "tipRootCommitment")
-    policy = _tcap_credit_bytes32(relation.get("tcapPolicyCommitment"), "policyCommitment")
+    root = _tcap_credit_bytes32(relation.get("tipRootCommitment"), "tipRootCommitment")
+    policy = _tcap_credit_bytes32(relation.get("policyCommitment"), "policyCommitment")
     instructions = _parse_signed_tcap_deposit_instructions(funding)
     if len(instructions) != 1:
         raise ValueError("TCAP reserve deposit must contain exactly one deposit instruction")
@@ -2640,7 +2639,7 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
     if not isinstance(tip_result, dict) or "value" not in tip_result:
         raise ValueError("Solana RPC returned no TCAP TIN TIP account state")
     tip_value = tip_result["value"]
-    initial_commitment = _tcap_credit_bytes32(relation.get("gpruCommitment"), "initialCommitment")
+    initial_commitment = _tcap_credit_bytes32(relation.get("gpruPublicCommitment"), "initialCommitment")
     initialize_tip = tip_value is None
     if initialize_tip:
         # The owner-derived GPRU commitment is the initial opaque TIP predecessor.
@@ -2714,24 +2713,24 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         tin = str(signed_fields.get("Recipient TIN") or "")
         if not re.fullmatch(r"\d{10}", tin):
             raise ValueError("Funding authorization does not contain a valid TIN")
-        relation = await read_onchain_tin_tcap_relationship(tin)
+        relation = await read_onchain_tin_tip_route(tin)
         if not relation:
-            raise ValueError("TIN has no active on-chain TCAP relationship")
+            raise ValueError("TIN has no active on-chain TIP route")
         transition = await _construct_node_owned_tcap_transition(request, {
             "recipientTin": tin,
-            "recipientRouteCommitment": str(relation["tcapRelationshipCommitment"]).lower(),
-            "recipientRouteVersion": int(relation["tcapRouteVersion"]),
+            "recipientRouteCommitment": str(relation["gpruPublicCommitment"]).lower(),
+            "recipientRouteVersion": int(relation["tipRouteVersion"]),
         })
         if not hmac.compare_digest(
             str(transition.get("tipRootCommitment") or "").lower(),
-            str(relation.get("tcapRelationshipReference") or "").lower(),
+            str(relation.get("tipRootCommitment") or "").lower(),
         ):
-            raise ValueError("Credit transition TIP root differs from the resolved TIN route reference")
+        raise ValueError("Credit transition TIP root differs from the resolved TIP route reference")
         if not hmac.compare_digest(
             str(transition.get("policyCommitment") or "").lower(),
-            str(relation.get("tcapPolicyCommitment") or "").lower(),
+            str(relation.get("policyCommitment") or "").lower(),
         ):
-            raise ValueError("Credit transition policy differs from the resolved TIN route")
+        raise ValueError("Credit transition policy differs from the resolved TIP route")
         tip = _validate_tcap_credit_digest(transition)
         tip_exists = await _assert_tcap_tip_predecessor(transition, tip, allow_missing=True)
         if not tip_exists and not transition.get("initializeTip"):

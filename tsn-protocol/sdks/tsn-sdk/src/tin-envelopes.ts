@@ -20,7 +20,6 @@ export type TinMasterSeedEnvelope = {
   version: typeof TIN_MASTER_SEED_ENVELOPE_VERSION;
   provider: string;
   tin: string;
-  ownerPublicKey: string;
   routeVersion: number;
   pruConfigurationHash: string;
   resourceCommitment: string;
@@ -88,14 +87,15 @@ export function encodeTinEnvelope(value: TinMasterSeedEnvelope | TinPublicRouteE
 }
 
 export function decodeTinMasterSeedEnvelope(value: Uint8Array): TinMasterSeedEnvelope {
-  const parsed = JSON.parse(textDecoder.decode(value)) as Partial<TinMasterSeedEnvelope>;
+  const parsed = JSON.parse(textDecoder.decode(value)) as Partial<TinMasterSeedEnvelope> & {
+    ownerPublicKey?: string;
+  };
   if (parsed.version !== TIN_MASTER_SEED_ENVELOPE_VERSION) {
     throw new Error("TIN master-seed envelope version is unsupported");
   }
   if (
     !parsed.provider ||
     !parsed.tin ||
-    !parsed.ownerPublicKey ||
     parsed.seedEncryptionAlgorithm !== TIN_MASTER_SEED_LOCAL_ENCRYPTION_ALGORITHM ||
     !parsed.seedCiphertext ||
     !parsed.seedNonce ||
@@ -114,7 +114,24 @@ export function decodeTinMasterSeedEnvelope(value: Uint8Array): TinMasterSeedEnv
   assertHash32(String(parsed.protectedKeyCommitment), "protectedKeyCommitment");
   assertHash32(String(parsed.accessControlHash), "accessControlHash");
   assertHash32(String(parsed.integrityCommitment), "integrityCommitment");
-  return parsed as TinMasterSeedEnvelope;
+  // Explicitly project the supported envelope fields. Older envelopes may
+  // contain a plaintext ownerPublicKey property; never return or re-emit it.
+  return {
+    version: parsed.version,
+    provider: parsed.provider,
+    tin: parsed.tin,
+    routeVersion: Number(parsed.routeVersion),
+    pruConfigurationHash: String(parsed.pruConfigurationHash),
+    resourceCommitment: String(parsed.resourceCommitment),
+    seedEncryptionAlgorithm: parsed.seedEncryptionAlgorithm,
+    seedCiphertext: parsed.seedCiphertext,
+    seedNonce: parsed.seedNonce,
+    seedCiphertextCommitment: parsed.seedCiphertextCommitment,
+    protectedKey: parsed.protectedKey,
+    protectedKeyCommitment: parsed.protectedKeyCommitment,
+    accessControlHash: parsed.accessControlHash,
+    integrityCommitment: parsed.integrityCommitment,
+  } as TinMasterSeedEnvelope;
 }
 
 export function serializeTinMasterSeedWalletAuthorization(params: {
@@ -163,7 +180,6 @@ export async function createTinMasterSeedEnvelope(params: {
     version: TIN_MASTER_SEED_ENVELOPE_VERSION,
     provider: params.provider,
     tin: params.tin,
-    ownerPublicKey: params.ownerPublicKey,
     routeVersion: params.routeVersion,
     pruConfigurationHash: params.pruConfigurationHash.toLowerCase(),
     resourceCommitment: params.resourceCommitment.toLowerCase(),
@@ -181,7 +197,7 @@ export async function createTinMasterSeedEnvelope(params: {
       identity.version,
       identity.provider,
       identity.tin,
-      identity.ownerPublicKey,
+      params.ownerPublicKey,
       String(identity.routeVersion),
       identity.pruConfigurationHash,
       identity.resourceCommitment,
@@ -204,10 +220,9 @@ export async function validateTinMasterSeedEnvelope(params: {
 }) {
   const envelope = params.envelope instanceof Uint8Array
     ? decodeTinMasterSeedEnvelope(params.envelope)
-    : params.envelope;
+    : decodeTinMasterSeedEnvelope(textEncoder.encode(JSON.stringify(params.envelope)));
   if (
     envelope.tin !== params.tin ||
-    envelope.ownerPublicKey !== params.ownerPublicKey ||
     envelope.pruConfigurationHash.toLowerCase() !== params.pruConfigurationHash.toLowerCase()
   ) {
     throw new Error("TIN master-seed envelope identity does not match");
@@ -215,7 +230,7 @@ export async function validateTinMasterSeedEnvelope(params: {
   const expectedIntegrity = await createTinMasterSeedEnvelope({
     provider: envelope.provider,
     tin: envelope.tin,
-    ownerPublicKey: envelope.ownerPublicKey,
+    ownerPublicKey: params.ownerPublicKey,
     routeVersion: envelope.routeVersion,
     pruConfigurationHash: envelope.pruConfigurationHash,
     resourceCommitment: envelope.resourceCommitment,

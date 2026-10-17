@@ -19,7 +19,7 @@ The Node takes a short lease and performs the following checks in order:
 1. Canonical message and signatures are valid.
 2. The request exactly matches the signed message.
 3. The nonce has not been used and the authorization has not expired.
-4. The recipient TIN's current route matches the signed route commitment and route version.
+4. The recipient's current TIP route, resolved from the submitted TIN, matches the signed route commitment and route version.
 5. The amount, mint, transaction commitment, and program constraints match the authorized plan.
 
 If any check fails, the Receiver records `REJECTED`. A Cranker can never lease rejected or merely received work.

@@ -10,7 +10,7 @@ export const GPRU_DERIVATION_DOMAIN = "TSN_GPRU_DERIVATION_V1";
 export const GPRU_AUTHORIZATION_DOMAIN = "TSN_GPRU_AUTHORIZATION_V1";
 export const TIN_PRIVACY_RECEIVING_KEY_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_V1";
 export const TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_V1";
-export const TCAP_TIN_TIP_ROOT_COMMITMENT_DOMAIN = "TSN_TCAP_TIN_TIP_ROOT_COMMITMENT_V1";
+export const TIP_ROOT_COMMITMENT_DOMAIN = "TSN_TIP_ROOT_COMMITMENT_V1";
 const encoder = new TextEncoder();
 
 export type GpruDerivationInput = {
@@ -56,7 +56,7 @@ export function deriveGpruIdentityHex(input: GpruDerivationInput): string {
 }
 
 /** Derive the recipient's stable privacy-receiving root keypair from the TIN
- * owner master seed. Publish only the root public key in the TIN route. GPRU
+ * owner master seed. Publish only the root public key in the TIP route associated with the TIN. GPRU
  * derives a fresh recipient public key for each transaction from this root.
  */
 export function deriveTinPrivacyReceivingKeyPair(masterSeed: Uint8Array): nacl.BoxKeyPair {
@@ -73,16 +73,16 @@ export function deriveTinPrivacyReceivingKeyPair(masterSeed: Uint8Array): nacl.B
   }
 }
 
-/** Derive TCAP's blinded TIP PDA seed from the public GPRU commitment.
+/** Derive the blinded TIP PDA seed from the public GPRU commitment.
  * The GPRU commitment is the public curve point; the owner's receiving scalar
  * stays local. TCAP receives only this domain-separated 32-byte hash.
  */
-export function deriveTcapTipRootCommitment(gpruCommitment: Uint8Array): Uint8Array {
-  if (!(gpruCommitment instanceof Uint8Array) || gpruCommitment.length !== nacl.box.publicKeyLength) {
+export function deriveTipRootCommitment(gpruPublicCommitment: Uint8Array): Uint8Array {
+  if (!(gpruPublicCommitment instanceof Uint8Array) || gpruPublicCommitment.length !== nacl.box.publicKeyLength) {
     throw new Error("GPRU commitment must be exactly 32 bytes");
   }
   return sha256(new Uint8Array([
-    ...encoder.encode(TCAP_TIN_TIP_ROOT_COMMITMENT_DOMAIN), 0, ...gpruCommitment,
+    ...encoder.encode(TIP_ROOT_COMMITMENT_DOMAIN), 0, ...gpruPublicCommitment,
   ]));
 }
 
@@ -96,14 +96,14 @@ export function deriveTinPrivacyReceivingKeyCommitment(publicKey: Uint8Array): U
   ]));
 }
 
-/** Validate the active TIN route layout and return its public GPRU point. */
-export function resolveTinGpruCommitment(
-  relationshipCommitment: Uint8Array,
-  relationshipReference: Uint8Array,
+/** Validate the active TIP route layout associated with a TIN and return its public GPRU point. */
+export function resolveTinGpruPublicCommitment(
+  gpruPublicCommitment: Uint8Array,
+  tipRootCommitment: Uint8Array,
 ): Uint8Array | null {
-  if (relationshipCommitment.length !== 32 || relationshipReference.length !== 32) return null;
-  if (nacl.verify(deriveTcapTipRootCommitment(relationshipCommitment), relationshipReference)) {
-    return new Uint8Array(relationshipCommitment);
+  if (gpruPublicCommitment.length !== 32 || tipRootCommitment.length !== 32) return null;
+  if (nacl.verify(deriveTipRootCommitment(gpruPublicCommitment), tipRootCommitment)) {
+    return new Uint8Array(gpruPublicCommitment);
   }
   return null;
 }

@@ -2,33 +2,33 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{hash::hashv, pubkey::Pubkey};
 
 pub const CURRENT_VERSION: u8 = 3;
-pub const TCAP_ROUTE_VERSION_V1: u8 = 1;
+pub const TIP_ROUTE_VERSION_V1: u8 = 1;
 
-/// Current TIN creation accepts only the GPRU-point -> blinded TIP-seed
-/// relationship. No prior route layout is accepted by the program.
-pub fn validate_tcap_route(
-    tcap_route_version: u8,
-    relationship_commitment: &[u8; 32],
-    relationship_reference: &[u8; 32],
+/// Current TIN creation accepts only the GPRU public commitment -> blinded TIP
+/// root binding. No prior route layout is accepted by the program.
+pub fn validate_tip_route(
+    tip_route_version: u8,
+    gpru_public_commitment: &[u8; 32],
+    tip_root_commitment: &[u8; 32],
     policy_commitment: &[u8; 32],
 ) -> bool {
-    tcap_route_version == TCAP_ROUTE_VERSION_V1
-        && relationship_commitment != &[0; 32]
-        && relationship_reference != &[0; 32]
+    tip_route_version == TIP_ROUTE_VERSION_V1
+        && gpru_public_commitment != &[0; 32]
+        && tip_root_commitment != &[0; 32]
         && policy_commitment != &[0; 32]
-        && valid_tcap_relationship_binding(relationship_commitment, relationship_reference)
+        && valid_tip_root_binding(gpru_public_commitment, tip_root_commitment)
 }
 
-fn valid_tcap_relationship_binding(
-    relationship_commitment: &[u8; 32],
-    relationship_reference: &[u8; 32],
+fn valid_tip_root_binding(
+    gpru_public_commitment: &[u8; 32],
+    tip_root_commitment: &[u8; 32],
 ) -> bool {
     let expected_reference = hashv(&[
-        b"TSN_TCAP_TIN_TIP_ROOT_COMMITMENT_V1\0",
-        relationship_commitment,
+        b"TSN_TIP_ROOT_COMMITMENT_V1\0",
+        gpru_public_commitment,
     ])
     .to_bytes();
-    &expected_reference == relationship_reference
+    &expected_reference == tip_root_commitment
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
@@ -59,12 +59,12 @@ pub struct TinV1Account {
     pub encrypted_metadata_hash: [u8; 32],
     pub route_version: u64,
     pub route_nonce: [u8; 32],
-    pub tcap_route_version: u8,
+    pub tip_route_version: u8,
     /// Public GPRU commitment. Its receiving secret remains in the owner envelope.
-    pub tcap_relationship_commitment: [u8; 32],
+    pub gpru_public_commitment: [u8; 32],
     /// Blinded TIP PDA seed derived from the public GPRU commitment.
-    pub tcap_relationship_reference: [u8; 32],
-    pub tcap_policy_commitment: [u8; 32],
+    pub tip_root_commitment: [u8; 32],
+    pub policy_commitment: [u8; 32],
 }
 
 /// Owner-wallet recovery locator; the TIN itself remains encrypted.
@@ -113,10 +113,10 @@ pub struct TinV1CreationStaging {
     pub encrypted_metadata_hash: [u8; 32],
     pub route_version: u64,
     pub route_nonce: [u8; 32],
-    pub tcap_route_version: u8,
-    pub tcap_relationship_commitment: [u8; 32],
-    pub tcap_relationship_reference: [u8; 32],
-    pub tcap_policy_commitment: [u8; 32],
+    pub tip_route_version: u8,
+    pub gpru_public_commitment: [u8; 32],
+    pub tip_root_commitment: [u8; 32],
+    pub policy_commitment: [u8; 32],
     pub expiry_ts: i64,
 }
 

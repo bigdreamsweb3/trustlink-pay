@@ -73,7 +73,7 @@ clients or construct raw settlement instructions.
   <Step title="Obtain or resolve a TIN">
     A TIN is issued by a trusted TIN V1 issuer; the program does not generate TINs. Issuance requires an owner-signed intent, an issuer HMAC proof, and a protected lookup secret configured on the issuer and Node. See [Private TIN issuance](/developers/private-tin-issuance) for the service boundary.
 
-    For an existing TIN, use the Node resolution endpoint for the user-approved display identity. The sender authorization contains the TIN and resolved display identity; the Node independently resolves and validates the current TCAP route from on-chain TIN V1 state. Do not resolve a legacy TIN account with the retired SDK resolver or include route commitments in the sender's authorization message.
+    For an existing TIN, use the Node resolution endpoint for the user-approved display identity. The sender authorization contains the TIN and resolved display identity; the Node independently resolves and validates the current TIP route from on-chain TIN V1 state. Do not resolve a legacy TIN account with the retired SDK resolver or include route commitments in the sender's authorization message.
 
     ```ts title="Resolve a TIN through TSN Node"
     const response = await fetch(
@@ -146,7 +146,7 @@ clients or construct raw settlement instructions.
     console.log(intent.id, intent.status);
     ```
 
-    The Receiver records work as `RECEIVED`; the response `id` is the stable work identifier. Node independently verifies the authorization, TIN V1 identity, TCAP route, and deposit before a Cranker can lease it.
+    The Receiver records work as `RECEIVED`; the response `id` is the stable work identifier. Node independently verifies the authorization, TIN V1 identity, TIP route, and deposit before a Cranker can lease it.
 
   </Step>
   <Step title="Observe the work lifecycle">

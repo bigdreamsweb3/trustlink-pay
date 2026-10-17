@@ -330,7 +330,6 @@
       version: "tsn-tin-master-seed-envelope",
       provider: "wallet-owner-signature-v1",
       tin: marker,
-      ownerPublicKey,
       routeVersion: 1,
       pruConfigurationHash: zeroHash,
       resourceCommitment,
@@ -343,7 +342,7 @@
       accessControlHash,
     };
     envelope.integrityCommitment = await sha256Hex(canonicalFields([
-      envelope.version, envelope.provider, envelope.tin, envelope.ownerPublicKey,
+      envelope.version, envelope.provider, envelope.tin, ownerPublicKey,
       String(envelope.routeVersion), envelope.pruConfigurationHash, envelope.resourceCommitment,
       envelope.seedEncryptionAlgorithm, envelope.seedCiphertext, envelope.seedNonce,
       envelope.seedCiphertextCommitment, envelope.protectedKey, envelope.protectedKeyCommitment,
@@ -351,13 +350,13 @@
     ]));
     const receivingPair = window.TsnRecipientCreditSdk?.deriveTinPrivacyReceivingKeyPair(masterSeed);
     if (!receivingPair) throw new Error("TIN privacy-receiving-key SDK bundle is unavailable");
-    const gpruCommitment = bytesToHex(receivingPair.publicKey);
+    const gpruPublicCommitment = bytesToHex(receivingPair.publicKey);
     receivingPair.secretKey.fill(0);
     masterSeed.fill(0);
     dataKey.fill(0);
     return {
       encryptedMasterSeed: new TextEncoder().encode(JSON.stringify(envelope)),
-      gpruCommitment,
+      gpruPublicCommitment,
     };
   }
 
@@ -398,7 +397,7 @@
         const encryptedMasterSeedBase64 = btoa(String.fromCharCode(...ownerSeed.encryptedMasterSeed));
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",
-          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, gpruCommitment: ownerSeed.gpruCommitment }),
+          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, gpruPublicCommitment: ownerSeed.gpruPublicCommitment }),
         });
         if (prepared.status === "TIN_RECOVERY_SIGNATURE_REQUIRED") {
           if (typeof prepared.recoveryMessage !== "string" || !prepared.recoveryMessage.trim()) {
@@ -414,7 +413,7 @@
           stage = "sending the encrypted recovery record to TSN XP";
           prepared = await api("/api/tsn/sdk/prepare-tin", {
             method: "POST",
-            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery, gpruCommitment: ownerSeed.gpruCommitment }),
+            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery, gpruPublicCommitment: ownerSeed.gpruPublicCommitment }),
           });
         }
       }

@@ -42,7 +42,7 @@ Supporting references:
 ## Canonical terminology
 
 - **TSN** is settlement and authorization coordination infrastructure.
-- **TIN** is the payment identity and route-discovery system.
+- **TIP** is the transfer-identity and route-discovery protocol; **TIN** is its 10-digit Transfer Identity Number.
 - **GPRU** is non-custodial authorization and routing; it never holds funds.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
 - **Mother** creates the one-time TSN ConfidentialSettlement authorization.

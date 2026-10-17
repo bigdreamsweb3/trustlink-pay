@@ -52,7 +52,7 @@ Node/Mother encrypt the full payment binding with a key that never leaves their 
 
 ### Node-only route reference
 
-After verification, the Node keeps a separate, short-lived route reference keyed by work ID. It contains the recipient TIN, signed route commitment, route version, and expiry. It is not mixed into the sender's durable payment record and is deleted when it expires.
+After verification, the Node keeps a separate, short-lived TIP route reference keyed by work ID. It contains the recipient TIN used to resolve the route, the signed route commitment, route version, and expiry. It is not mixed into the sender's durable payment record and is deleted when it expires.
 
 ### Cranker fee-payer
 

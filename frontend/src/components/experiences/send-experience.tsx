@@ -1202,11 +1202,11 @@ export function SendExperience() {
     try {
       const recipientTinForAuthorization = recipientPreview.recipient.tin;
       if (!recipientTinForAuthorization) {
-        throw new Error("Recipient must have an active TIN route before a TSN payment can be authorized.");
+        throw new Error("Recipient must have an active TIP route associated with the TIN before a TSN payment can be authorized.");
       }
       // The sender signs the exact public route commitment, never the
       // recipient wallet. The Node later resolves that commitment from the
-      // recipient's separate TIN route record.
+      // recipient's separate TIP route record.
       const recipientRoute = await resolveTinFromChain(recipientTinForAuthorization);
       if (
         !recipientRoute.active ||
@@ -1296,7 +1296,7 @@ export function SendExperience() {
         result.tsn?.recipientTin ?? recipientPreview.recipient.tin ?? null;
       if (!destinationWallet || !recipientHash || !recipientTin) {
         throw new Error(
-          "Recipient TIN route is not ready for private TSN enqueue",
+          "Recipient TIP route for this TIN is not ready for private TSN enqueue",
         );
       }
 

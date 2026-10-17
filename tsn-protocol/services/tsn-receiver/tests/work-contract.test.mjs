@@ -60,10 +60,10 @@ test("TIN ingress accepts the current V1 shape and rejects retired or plaintext 
     encryptedMetadataHash: "metadata",
     routeVersion: 1,
     routeNonce: "route-nonce",
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: "relationship",
-    tcapRelationshipReference: "reference",
-    tcapPolicyCommitment: "policy",
+    tipRouteVersion: 1,
+    gpruPublicCommitment: "gpru-public",
+    tipRootCommitment: "tip-root",
+    policyCommitment: "policy",
   };
   assert.equal(createReceivedWork({ kind: "TIN_OPERATION", payload }).status, "RECEIVED");
   for (const obsolete of ["programAssigned", "tin", "displayName", "pruConfigurationHash", "encryptedPublicRouteEnvelope"]) {

@@ -67,7 +67,7 @@ TSN is the complete network. TIN, GPRU, and TCAP are protocol components with di
 
 A Transfer Identity Number (TIN), issued and resolved by the Transfer Identity Protocol (TIP), is a human-facing 10-digit payment identity. It separates the identity a user shares from the wallet or protected receiving route used for settlement.
 
-TIN can bind identity metadata, owner authority, route commitments, encrypted envelopes, and versioned integrity state. It does not turn a wallet address into a user's permanent public identity.
+The TIP registry can associate a TIN with identity metadata, owner authority, route commitments, encrypted envelopes, and versioned integrity state. It does not turn a wallet address into a user's permanent public identity.
 
 ### GPRU and TCAP - live private balance architecture
 

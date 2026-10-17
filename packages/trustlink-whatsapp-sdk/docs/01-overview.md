@@ -47,7 +47,7 @@ The SDK connects to those systems through ports.
 
 WhatsApp is not TIN ownership.
 
-TIN is the protocol identity.
+TIP is the Transfer Identity Protocol. TIN is the 10-digit Transfer Identity Number managed within TIP.
 
 WhatsApp helps users communicate and approve actions, but WhatsApp does not control:
 

@@ -38,13 +38,13 @@ before marking work eligible for Cranker processing.
    creates an encrypted recovery envelope after signing the domain-separated
    recovery message; only that ciphertext leaves the owner's device.
 3. The SDK builds the V1 owner intent with both encrypted envelopes and the
-   current TCAP relationship fields. The owner signs the deterministic UTF-8
+   current TIP route fields. The owner signs the deterministic UTF-8
    approval message over the exact intent hash.
 4. The trusted issuer computes the HMAC issuance proof using its protected
    secret. The SDK submits the commitment, ciphertext, proof, and owner
    signature to Receiver; it never receives the lookup secret.
 5. Node verifies the proof, canonical intent and owner signature, TIN V1
-   fields, and TCAP relationship before marking Receiver work eligible.
+   fields, and TIP route before marking Receiver work eligible.
 6. The Cranker serializes and submits `CreateTinV1`; report issuance complete
    only when Receiver reports the Cranker transaction as confirmed.
 7. The issuing session may then reveal the TIN to its owner. Later, the owner
@@ -72,7 +72,11 @@ and Receiver submission helpers. `createTinV1IdentityEnvelope` must run in a
 trusted issuer process because its `lookupSecret` parameter is the protected
 issuer/Node secret. The browser instead creates the owner-recovery ciphertext
 using a wallet signature, and submits only that ciphertext to the issuer. The
-on-chain owner-recovery PDA enforces one recovery locator per wallet.
+on-chain owner-recovery PDA stores the owner public key and that ciphertext,
+separate from the main TIN registry account, and enforces one recovery locator
+per wallet. The main registry layout has no standalone owner-public-key field.
+New master-seed envelopes omit `ownerPublicKey`; previously created on-chain
+envelopes may still expose it in plaintext.
 
 ```ts
 // Trusted issuer only: never run this with the lookup secret in browser code.
@@ -103,10 +107,10 @@ const prepared = buildTinV1Creation({
   encryptedMetadataHash,
   routeVersion: 1,
   routeNonce,
-  tcapRouteVersion: 1,
-  tcapRelationshipCommitment,
-  tcapRelationshipReference,
-  tcapPolicyCommitment,
+  tipRouteVersion: 1,
+  gpruPublicCommitment,
+  tipRootCommitment,
+  policyCommitment,
 });
 const ownerIntentMessage = buildTinOwnerIntentMessage(prepared.intentHash);
 const ownerSignature = await wallet.signMessage(
@@ -136,7 +140,7 @@ TIN resolution is a trusted Node service operation, not an SDK account scan.
 Use `GET /tin-resolution/{tin}` when the user requests display identity. Node
 uses the protected lookup secret internally and returns the decrypted identity
 disclosure. For payment ingress, Node independently reads and validates the
-current TIN V1 TCAP relationship from chain; the sender should not supply route
+current TIN V1 TIP route from chain; the sender should not supply route
 commitments or the lookup secret in the signed authorization or Receiver work.
 
 For wallet-to-wallet SPL transfers, use

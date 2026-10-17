@@ -29,8 +29,8 @@ sequenceDiagram
     participant TSN as TSN program
     participant TCap as TCAP program
 
-    U->>TIN: Resolve 10-digit TIN via GPRU to a route commitment
-    TIN-->>U: Route commitment and policy
+    U->>TIP: Submit recipient's 10-digit TIN for route resolution
+    TIP-->>U: Route commitment and policy
     U->>U: Sign the payment intent bound to the route
     U->>Node: Submit signed intent
     Node->>Node: Verify signatures, sequence, expiry, policy

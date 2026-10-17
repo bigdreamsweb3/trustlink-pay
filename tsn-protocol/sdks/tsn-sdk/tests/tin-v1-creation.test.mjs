@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { Keypair } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { deriveTcapTipRootCommitment } from "../dist/gpru.js";
+import { deriveTipRootCommitment } from "../dist/gpru.js";
 import {
   buildTinV1Creation,
   buildTinV1OwnerRecoveryMessage,
@@ -94,10 +94,10 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
     routeVersion: 1,
     routeNonce: fixed32(9),
     nonce: fixed32(9),
-    tcapRouteVersion: 1,
-    tcapRelationshipCommitment: fixed32(10),
-    tcapRelationshipReference: deriveTcapTipRootCommitment(fixed32(10)),
-    tcapPolicyCommitment: fixed32(12),
+    tipRouteVersion: 1,
+    gpruPublicCommitment: fixed32(10),
+    tipRootCommitment: deriveTipRootCommitment(fixed32(10)),
+    policyCommitment: fixed32(12),
     expiryTs: 1_900_000_000,
   };
   const prepared = buildTinV1Creation(params);
@@ -117,7 +117,7 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
   assert.throws(
     () => serializeTinV1CreationParams({
       ...prepared,
-      tcapPolicyCommitment: fixed32(13),
+      policyCommitment: fixed32(13),
       intentHash: prepared.intentHash,
     }),
     /intentHash does not match CreateTinV1 payload/,

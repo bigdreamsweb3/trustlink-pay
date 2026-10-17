@@ -27,8 +27,8 @@ sequenceDiagram
     participant TSN as TSN
     participant TCAP as TCAP
 
-    U->>TIN: Resolve 10-digit TIN to a route
-    TIN-->>U: Route commitment + policy
+    U->>TIP: Submit 10-digit TIN for route resolution
+    TIP-->>U: Route commitment + policy
     U->>GPRU: Sign intent bound to route
     GPRU->>TSN: Sender authorization and route commitment
     TSN->>TSN: Node verifies and submits authorized work to Receiver

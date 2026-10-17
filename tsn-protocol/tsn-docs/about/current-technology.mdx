@@ -9,7 +9,7 @@ TrustLink Labs develops and tests its protocol stack on Solana Devnet. The curre
 ## What is on Devnet today
 
 - **TSN payment intents** — Sender-signed intents binding amount, mint, fee limits, expiry, nonce, and recipient route commitment.
-- **TIN registry** — 10-digit Transfer Identity Numbers issued and resolved by TIP, with route commitments and encrypted identity envelopes.
+- **TIP and TIN registry** — TIP issues and resolves transfer identities; the registry stores 10-digit TIN records, route commitments, and encrypted identity envelopes.
 - **GPRU authorization and routing** — Non-custodial authorization identity derived from the TIN privacy-receiving root for scoped settlement permissions.
 - **Mother Escrow authority** — Epoch coordination and `ConfidentialSettlement` authorization through the one-time `SettlementDna` PDA.
 - **TSN Node verification** — Stateless signature verification, route commitment matching, nonce/replay checks, and short-lived permit signing.

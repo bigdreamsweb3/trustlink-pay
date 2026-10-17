@@ -134,10 +134,10 @@ completed.
 
 - **TSN:** Transfer Settlement Network, coordinating authorization, leases,
   epoch liability and settlement execution.
-- **TIN:** Transfer Identity Number, a 10-digit identity and route-discovery
-  handle; it is not a private key, token account or balance.
-- **TIP:** Transfer Identity Protocol and the Transfer Identity stack that
-  issues and resolves TIN relationships.
+- **TIP:** Transfer Identity Protocol, which manages transfer identities and
+  resolves their payment routes.
+- **TIN:** Transfer Identity Number, a 10-digit identity within TIP; it is not
+  a private key, token account or balance.
 - **GPRU:** Guard Privacy Routing Unit, a non-custodial authorization and
   routing layer that never holds funds or balances.
 - **TCAP:** Transfer Confidential Asset Protocol, the private balance accounting
@@ -204,7 +204,7 @@ then run simulation or live transactions. See [Devnet build and deploy](docs/DEV
 The project&#8217;s first recorded Devnet payment test used the earlier ZK-PRU
 receiving path. It is preserved here as historical transaction evidence only;
 it is not the current TSN receiving or TCAP credit architecture. The test used a
-sender TIN route and recipient TIN route, combined a 5 USDC main-wallet top-up
+sender TIP route and recipient TIP route, combined a 5 USDC main-wallet top-up
 with the sender-side sources for a 10 USDC intent, and settled into a new
 private receiving route.
 
@@ -217,7 +217,7 @@ flowchart TD
     E["Earlier protected source 3"]
     F["Combined sender funding<br/>10 USDC intent commitment"]
     G["TSN settlement submission"]
-    H["Recipient TIN route"]
+    H["Recipient TIP route"]
     I["Earlier private receiving route<br/>10 USDC"]
 
     A --> B

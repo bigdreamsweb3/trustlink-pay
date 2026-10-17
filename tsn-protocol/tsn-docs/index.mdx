@@ -12,12 +12,12 @@ TSN is not one program. It is four cooperating layers, each with a strict bounda
 
 | Layer    | Role                                                                       | Custody                                         |
 | -------- | -------------------------------------------------------------------------- | ----------------------------------------------- |
-| **TIN**  | Payment identity and route discovery                                       | None                                            |
+| **TIP**  | Transfer Identity Protocol; manages identities and route resolution       | None                                            |
 | **GPRU** | Non-custodial authorization and routing                                    | Never holds funds                               |
 | **TSN**  | Settlement coordination, epoch treasury, Mother-rooted permits             | Program-owned epoch treasury and cranker vaults |
 | **TCAP** | Private balance accounting through commitment tips and encrypted snapshots | Governed reserves and vaults, per-asset         |
 
-The layers are separated on purpose. A GPRU signature alone cannot move custody. A cranker cannot rewrite an authorization. TCAP owns the tip and sequence, not payment intent. TIN never holds a key.
+The layers are separated on purpose. A GPRU signature alone cannot move custody. A cranker cannot rewrite an authorization. TCAP owns the tip and sequence, not payment intent. TIP coordinates identity and route resolution; a TIN is the 10-digit identity managed by TIP and never holds a key.
 
 ## What is deployed today
 

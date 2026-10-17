@@ -1,4 +1,4 @@
-# GPRU derivation and TCAP TIN routes
+# GPRU derivation and TCAP credits through TIP routes
 
 **Protocol version:** GPRU V1 / TCAP route V1. **Commit reference:** 394c4f9 (GPRU and TCAP implementation).
 

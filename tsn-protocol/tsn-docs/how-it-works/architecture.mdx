@@ -51,7 +51,7 @@ sequenceDiagram
 
 ## Component responsibilities
 
-- **TIN** is the human-facing payment identity. It binds identity ownership to a privacy-receiving root relationship and the TCAP route without becoming a token account or private key.
+- **TIP** manages human-facing transfer identities and their routes. Each **TIN** is a 10-digit identity; its registry record associates it with a GPRU public commitment, TIP root commitment, TIP route version, and policy commitment without becoming a token account or private key.
 - **Privacy-receiving root** is the owner-controlled root used to derive the blinded TCAP tip relationship. Plaintext roots and spendable secrets remain on the authorized device.
 - **GPRU** is authorization and routing only. It carries scoped permissions, commitments, expiry, and replay material. It never holds funds, balances, or custody keys.
 - **Receiver** is durable ingress, redacted work storage, leases, and status. It does not receive plaintext roots or private balance snapshots.
@@ -122,7 +122,7 @@ Until those are in place, live confidential debit and exit return `ProofSystemNo
 - **TSN** is settlement and authorization coordination infrastructure. It verifies intent, leases, epoch liability, and one-time execution authority.
 - **TCAP** (Transfer Confidential Asset Protocol) is private balance accounting. It advances commitment-backed tips and anchors encrypted owner snapshots.
 - **GPRU** is non-custodial authorization and routing. It tells the system what may happen and where the authorized work may go without holding value.
-- **TIN** is the payment identity and route-discovery system.
+- **TIP** is the transfer-identity and route-discovery protocol; **TIN** is its 10-digit Transfer Identity Number.
 
 ## Architecture history
 

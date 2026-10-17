@@ -39,7 +39,7 @@ const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
 const networks = await client.get("/settlement-networks");
 ```
 
-Payment intents use the SDK's `buildPaymentAuthorizationIntentRequest` and are submitted to Receiver ingress. The sender supplies the TIN and signed funding transaction, not the recipient route commitments. Node resolves the current TIN V1 TCAP relationship itself. TIN resolution returns display identity only and does not authorize a transfer.
+Payment intents use the SDK's `buildPaymentAuthorizationIntentRequest` and are submitted to Receiver ingress. The sender supplies the TIN and signed funding transaction, not the recipient route commitments. Node resolves the current TIN V1 TIP route itself. TIN resolution returns display identity only and does not authorize a transfer.
 
 Do not call retired Node `/tin-operations`, `/intent-work`, or direct route-storage endpoints. Receiver is the source of truth for work state and leases.
 

@@ -19,10 +19,10 @@ The Mother Node takes a short lease on received work and performs verification b
 1. Canonical signatures are valid.
 2. The request exactly matches the signed message.
 3. The nonce has not been used and the authorization has not expired.
-4. The recipient TIN's current route matches the signed commitment and route version.
+4. The recipient's current TIP route, resolved from the submitted TIN, matches the signed commitment and route version.
 5. The amount, mint, sources, and transaction commitment match the authorized plan.
 
-If all checks pass, the Node returns the work as `VERIFIED` with the recipient identity redacted from the durable record. The Node keeps a separate, short-lived Node-only route reference keyed by work ID. This reference contains the recipient TIN, signed route commitment, route version, and expiry. It expires and is deleted, and it is never mixed into the sender's payment work.
+If all checks pass, the Node returns the work as `VERIFIED` with the recipient identity redacted from the durable record. The Node keeps a separate, short-lived Node-only TIP route reference keyed by work ID. This reference contains the recipient TIN used to resolve the route, the signed route commitment, route version, and expiry. It expires and is deleted, and it is never mixed into the sender's payment work.
 
 ## Cranker Node: exact submission only
 

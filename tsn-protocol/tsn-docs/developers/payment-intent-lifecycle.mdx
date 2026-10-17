@@ -50,7 +50,7 @@ The Node takes a short lease and verifies all of the following before returning 
 1. The canonical message and signatures are valid.
 2. The request exactly matches the signed message.
 3. The nonce has not been used and the authorization has not expired.
-4. The recipient TIN's current route has the same signed commitment and route version.
+4. The recipient's current TIP route, resolved from the submitted TIN, has the same signed commitment and route version.
 5. The amount, mint, sources, transaction commitment, and program constraints match the authorized plan.
 
 If any check fails, the Receiver records `REJECTED`. A Cranker can never lease rejected or merely received work.
@@ -61,7 +61,7 @@ After successful verification, the Node redacts the recipient identity from the 
 
 It does **not** keep the recipient TIN, the full recipient route, a recipient wallet address, the raw sender authorization message/signature, or the original serialized transaction.
 
-The Node keeps a separate, short-lived recipient-route reference keyed by the work ID. It contains only the recipient TIN, signed route commitment, route version, and expiry. It expires and is deleted when no longer valid.
+The Node keeps a separate, short-lived recipient TIP route reference keyed by the work ID. It contains only the recipient TIN used to resolve that route, the signed route commitment, route version, and expiry. It expires and is deleted when no longer valid.
 
 ### CRANKER_LEASED
 
@@ -89,7 +89,7 @@ After a confirmed payment, the durable Receiver record excludes the recipient TI
 
 <Info>
   The recipient is not chosen from an unsigned request at payout time. The Node
-  re-resolves the recipient TIN, checks the same commitment and route version
+  re-resolves the recipient TIP route from the TIN, checks the same commitment and route version
   again, and selects an eligible receiving account using the verified route. If
   the route changed, expired, or no longer matches the sender-signed commitment,
   the payout authorization is refused.

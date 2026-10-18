@@ -11,6 +11,8 @@ export const GPRU_AUTHORIZATION_DOMAIN = "TSN_GPRU_AUTHORIZATION_V1";
 export const TIN_PRIVACY_RECEIVING_KEY_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_V1";
 export const TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_V1";
 export const TIP_ROOT_COMMITMENT_DOMAIN = "TSN_TIP_ROOT_COMMITMENT_V1";
+export const GPRU_ROUTE_ROOT_COMMITMENT_DOMAIN = "TSN_GPRU_ROUTE_ROOT_COMMITMENT_V1";
+export const GPRU_ROUTE_VERSION_V1 = 1 as const;
 const encoder = new TextEncoder();
 
 export type GpruDerivationInput = {
@@ -71,6 +73,17 @@ export function deriveTinPrivacyReceivingKeyPair(masterSeed: Uint8Array): nacl.B
   } finally {
     secretKey.fill(0);
   }
+}
+
+/** Commit to owner-held GPRU root material without publishing the seed or
+ * reusing the legacy NaCl receiving public key as a proof-system key. */
+export function deriveGpruRouteCommitment(masterSeed: Uint8Array): Uint8Array {
+  if (!(masterSeed instanceof Uint8Array) || masterSeed.length !== 32) {
+    throw new Error("TIN master seed must be exactly 32 bytes");
+  }
+  return sha256(new Uint8Array([
+    ...encoder.encode(GPRU_ROUTE_ROOT_COMMITMENT_DOMAIN), 0, ...masterSeed,
+  ]));
 }
 
 /** Derive the blinded TIP PDA seed from the public GPRU commitment.

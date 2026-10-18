@@ -8,7 +8,8 @@ use solana_program::{
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_ID},
 };
 
-use crate::{error::Error, instruction_auto::ResolveTinV1Params, state::TinV1Account, utils::{assert_pda, assert_program_owned, load_borsh_with_zero_padding}};
+use borsh::BorshDeserialize;
+use crate::{error::Error, instruction_auto::ResolveTinV1Params, state::{TinV1Account, TinV1AccountLegacy}, utils::{assert_pda, assert_program_owned, load_borsh_with_zero_padding}};
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: ResolveTinV1Params) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
@@ -21,13 +22,25 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: ResolveTin
     let (expected_registry, _) = crate::tin_v1_pda(program_id, &params.lookup_commitment);
     assert_pda(registry, &expected_registry)?;
     assert_program_owned(registry, program_id)?;
-    let account: TinV1Account = load_borsh_with_zero_padding(registry)?;
-    if account.version != TinV1Account::VERSION || account.status != TinV1Account::STATUS_ACTIVE
-        || account.lookup_commitment != params.lookup_commitment
-        || account.owner_commitment != hash(params.owner_pubkey.as_ref()).to_bytes() {
+    let data = registry.try_borrow_data()?;
+    let mut current = &data[..];
+    if let Ok(account) = TinV1Account::deserialize(&mut current) {
+        if account.version != TinV1Account::VERSION || account.status != TinV1Account::STATUS_ACTIVE
+            || account.lookup_commitment != params.lookup_commitment
+            || account.owner_commitment != hash(params.owner_pubkey.as_ref()).to_bytes() {
+            return Err(Error::InvalidPda.into());
+        }
+        set_return_data(&account.encrypted_identity_envelope);
+        return Ok(());
+    }
+    drop(data);
+    let legacy: TinV1AccountLegacy = load_borsh_with_zero_padding(registry)?;
+    if legacy.version != TinV1Account::VERSION || legacy.status != TinV1Account::STATUS_ACTIVE
+        || legacy.lookup_commitment != params.lookup_commitment
+        || legacy.owner_commitment != hash(params.owner_pubkey.as_ref()).to_bytes() {
         return Err(Error::InvalidPda.into());
     }
-    set_return_data(&account.encrypted_identity_envelope);
+    set_return_data(&legacy.encrypted_identity_envelope);
     Ok(())
 }
 

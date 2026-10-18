@@ -111,6 +111,7 @@ function verifyNodeAttestation(work: Work) {
       "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
       "routeVersion", "routeNonce", "tipRouteVersion",
       "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
+      "gpruRouteVersion", "gpruRouteCommitment",
     ],
   };
   const executionPayload = Object.fromEntries(
@@ -783,6 +784,8 @@ async function submitStagedTinV1Creation(params: {
     gpruPublicCommitment: hex32(payload.gpruPublicCommitment, "gpruPublicCommitment"),
     tipRootCommitment: hex32(payload.tipRootCommitment, "tipRootCommitment"),
     policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
+    gpruRouteVersion: Number(payload.gpruRouteVersion) as 1,
+    gpruRouteCommitment: hex32(payload.gpruRouteCommitment, "gpruRouteCommitment"),
     expiryTs: BigInt(String(payload.expiry)),
   });
   const stageSig = await sendCrankerInstruction(
@@ -868,6 +871,16 @@ async function processTinOperation(
   if (Number(payload.tipRouteVersion) !== 1) {
     throw new Error("Cranker accepts only the current TIN GPRU route version");
   }
+  if (Number(payload.gpruRouteVersion) !== 1) {
+    throw new Error("Cranker accepts only GPRU route version 1");
+  }
+  const gpruRouteCommitment = hex32(
+    payload.gpruRouteCommitment,
+    "gpruRouteCommitment",
+  );
+  if (Buffer.from(gpruRouteCommitment).equals(Buffer.alloc(32))) {
+    throw new Error("GPRU route commitment must be nonzero");
+  }
   const programId = new PublicKey(
     process.env.TINS_PROGRAM_ID ||
       "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
@@ -907,6 +920,8 @@ async function processTinOperation(
     gpruPublicCommitment: hex32(payload.gpruPublicCommitment, "gpruPublicCommitment"),
     tipRootCommitment: hex32(payload.tipRootCommitment, "tipRootCommitment"),
     policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
+    gpruRouteVersion: Number(payload.gpruRouteVersion) as 1,
+    gpruRouteCommitment,
     intentHash,
     expiryTs: BigInt(String(payload.expiry)),
   });

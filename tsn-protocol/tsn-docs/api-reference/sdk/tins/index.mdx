@@ -56,7 +56,7 @@ The recovery signature and decrypted identity must remain on the owner's device.
 
 ## TIN V1 creation and staging
 
-`buildTinV1Creation` validates and hashes the exact V1 fields. `serializeTinV1CreationParams` emits the program instruction data. If the complete transaction does not fit Solana's packet limit, use the staged-instruction serializers for begin, bounded chunks, and finalization; the SDK's `submitTinV1Creation` sends the owner-authorized payload to Receiver and does not submit directly to Solana.
+`buildTinV1Creation` validates and hashes the exact V1 fields, including `gpruRouteVersion` and `gpruRouteCommitment`. Derive the route commitment locally from the owner-held master seed with `deriveGpruRouteCommitment`; never send the seed itself. `serializeTinV1CreationParams` emits the program instruction data. If the complete transaction does not fit Solana's packet limit, use the staged-instruction serializers for begin, bounded chunks, and finalization; the SDK's `submitTinV1Creation` sends the owner-authorized payload to Receiver and does not submit directly to Solana.
 
 `getTinV1CreationStagingPda` derives the temporary creation PDA.
 `getTinV1OwnerRecoveryPda` derives the one-per-owner recovery PDA from the

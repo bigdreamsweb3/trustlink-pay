@@ -1,0 +1,15 @@
+[package]
+name = "tsn-gpru-proof-contract"
+version = "0.1.0"
+description = "Shared GPRU confidential-balance proof context contract"
+edition = "2021"
+
+[lib]
+name = "tsn_gpru_proof_contract"
+crate-type = ["lib"]
+
+[dependencies]
+solana-program = "=1.18.26"
+solana-zk-token-sdk = "=1.18.26"
+
+[workspace]

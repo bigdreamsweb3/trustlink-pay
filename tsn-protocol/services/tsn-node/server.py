@@ -450,6 +450,7 @@ def _sign_node_verification(
                 "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
                 "routeVersion", "routeNonce",
                 "tipRouteVersion", "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
+                "gpruRouteVersion", "gpruRouteCommitment",
             },
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
@@ -1072,6 +1073,14 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     gpru_public_commitment = take(32, "GPRU public commitment")
     tip_root_commitment = take(32, "TIP root commitment")
     policy_commitment = take(32, "policy commitment")
+    # Older TIN V1 registries may have the historical 32-byte zero allocation tail.
+    # The new route extension is exactly 33 bytes, so old records remain readable.
+    if len(buffer) - offset >= 33:
+        gpru_route_version = take(1, "GPRU route version")[0]
+        gpru_route_commitment = take(32, "GPRU route commitment")
+    else:
+        gpru_route_version = 0
+        gpru_route_commitment = bytes(32)
     if version != 1 or status != 1 or any(buffer[offset:]):
         raise ValueError("unsupported private TIN account schema")
     if lookup_commitment == bytes(32) or route_version < 1:
@@ -1086,6 +1095,8 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
         "gpruPublicCommitment": gpru_public_commitment.hex(),
         "tipRootCommitment": tip_root_commitment.hex(),
         "policyCommitment": policy_commitment.hex(),
+        "gpruRouteVersion": gpru_route_version,
+        "gpruRouteCommitment": gpru_route_commitment.hex(),
     }
 
 
@@ -1166,6 +1177,8 @@ async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
             "gpruPublicCommitment": gpru_public_commitment,
             "tipRootCommitment": material["tipRootCommitment"],
             "policyCommitment": material["policyCommitment"],
+            "gpruRouteVersion": material["gpruRouteVersion"],
+            "gpruRouteCommitment": material["gpruRouteCommitment"],
         }
     except (HTTPException, ValueError, TypeError, binascii.Error):
         return None
@@ -1846,8 +1859,12 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     gpru_public_commitment = _decode_hash32(_field(payload, "gpru_public_commitment", "gpruPublicCommitment", default=""), "gpru_public_commitment")
     tip_root_commitment = _decode_hash32(_field(payload, "tip_root_commitment", "tipRootCommitment", default=""), "tip_root_commitment")
     policy_commitment = _decode_hash32(_field(payload, "policy_commitment", "policyCommitment", default=""), "policy_commitment")
-    if any(value == bytes(32) for value in (gpru_public_commitment, tip_root_commitment, policy_commitment)):
-        raise HTTPException(422, "TIP route GPRU public, root, and policy commitments must be nonzero")
+    gpru_route_version = int(_field(payload, "gpru_route_version", "gpruRouteVersion", default=0))
+    gpru_route_commitment = _decode_hash32(_field(payload, "gpru_route_commitment", "gpruRouteCommitment", default=""), "gpru_route_commitment")
+    if any(value == bytes(32) for value in (gpru_public_commitment, tip_root_commitment, policy_commitment, gpru_route_commitment)):
+        raise HTTPException(422, "TIP route GPRU public, root, policy, and GPRU route commitments must be nonzero")
+    if gpru_route_version != 1:
+        raise HTTPException(422, "Current TIP creation requires GPRU route version 1")
     expected_tip_root = hashlib.sha256(b"TSN_TIP_ROOT_COMMITMENT_V1\0" + gpru_public_commitment).digest()
     if not hmac.compare_digest(expected_tip_root, tip_root_commitment):
         raise HTTPException(422, "TIP GPRU public commitment does not match its TIP root commitment")
@@ -1860,6 +1877,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         metadata_hash_bytes,
         route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tip_route_version]),
         gpru_public_commitment, tip_root_commitment, policy_commitment,
+        bytes([gpru_route_version]), gpru_route_commitment,
         _encode_signed_i64_le(expiry),
     ])).digest()
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
@@ -1897,6 +1915,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "routeVersion": route_version, "routeNonce": route_nonce.lower(),
         "tipRouteVersion": tip_route_version, "gpruPublicCommitment": gpru_public_commitment.hex(),
         "tipRootCommitment": tip_root_commitment.hex(), "policyCommitment": policy_commitment.hex(),
+        "gpruRouteVersion": gpru_route_version, "gpruRouteCommitment": gpru_route_commitment.hex(),
         "displayNameStatus": "opaque_to_node", "displayNameReadableByNode": False,
         "envelopeChecks": {
             "ownerAuthorization": {"intentHashVerified": True, "signatureVerified": True},
@@ -1904,6 +1923,7 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
             "encryptedTinRecovery": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "encryptedMasterSeed": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "gpruPublicCommitment": {"present": True, "includedInOwnerIntentHash": True},
+            "gpruRouteCommitment": {"present": True, "includedInOwnerIntentHash": True},
         },
     }
     return base
@@ -2725,12 +2745,12 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             str(transition.get("tipRootCommitment") or "").lower(),
             str(relation.get("tipRootCommitment") or "").lower(),
         ):
-        raise ValueError("Credit transition TIP root differs from the resolved TIP route reference")
+            raise ValueError("Credit transition TIP root differs from the resolved TIP route reference")
         if not hmac.compare_digest(
             str(transition.get("policyCommitment") or "").lower(),
             str(relation.get("policyCommitment") or "").lower(),
         ):
-        raise ValueError("Credit transition policy differs from the resolved TIP route")
+            raise ValueError("Credit transition policy differs from the resolved TIP route")
         tip = _validate_tcap_credit_digest(transition)
         tip_exists = await _assert_tcap_tip_predecessor(transition, tip, allow_missing=True)
         if not tip_exists and not transition.get("initializeTip"):

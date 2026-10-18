@@ -43,8 +43,12 @@ requested resolution.
 
 The registry also binds the current TIN V1 TIP route: a GPRU public commitment,
 its blinded TIP root commitment, a TIP-specific route version, and a policy
-commitment. Legacy PRU configuration and prior account layouts are not accepted
-by current creation or resolution.
+commitment. It stores a separately versioned GPRU route commitment derived
+locally from the owner-held master seed. The seed is not published, and the
+existing TIP root remains active during this GPRU development stage. The new
+commitment binds future GPRU proofs to the owner's route but is not itself proof
+of ownership. Legacy PRU configuration is rejected by current creation; prior
+registry account layouts remain readable.
 
 ### Resolution flow
 
@@ -162,7 +166,7 @@ What GPRU does not do:
 
 ## TIP route commitments
 
-TIP associates a TIN with its privacy route through a GPRU public commitment, a TIP root commitment derived from that public commitment, a TIP-specific route version, and a policy commitment. These names describe the route independently of the settlement program that consumes it. The on-chain registry never receives policy plaintext, a static PRU list, pre-generated receiving wallets, or a maximum-PRU field. See [TCAP](/architecture/tcap) for how the current settlement program consumes the TIP root and policy commitments.
+TIP associates a TIN with its privacy route through a GPRU public commitment, a TIP root commitment derived from that public commitment, a TIP-specific route version, and a policy commitment. It separately stores a versioned GPRU route commitment derived locally from the owner's master seed. That seed is not sent to TIP or GPRU, the existing TIP root remains in use for this rollout, and the new commitment alone does not prove ownership or route membership. The on-chain registry never receives policy plaintext, a static PRU list, pre-generated receiving wallets, or a maximum-PRU field. See [TCAP](/architecture/tcap) for how the current settlement program consumes the TIP root and policy commitments.
 
 ## What is public vs. private
 
@@ -172,7 +176,7 @@ TIP associates a TIN with its privacy route through a GPRU public commitment, a 
 | Route commitment and route version | Plaintext route map and recipient wallet map |
 | Owner-key commitment, state version | Snapshot decryption keys |
 | GPRU scope commitment carried in receipts | Privacy-receiving root and derivation material |
-| GPRU public, TIP root, and policy commitments with TIP route version | Encrypted TIN envelope contents |
+| GPRU public, TIP root, and policy commitments with TIP route version; GPRU route commitment with its own version | Encrypted TIN envelope contents |
 
 ## Historical note: ZK-PRU is retired
 

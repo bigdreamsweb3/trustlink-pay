@@ -38,6 +38,8 @@ pub struct CreateTinV1Params {
     pub gpru_public_commitment: [u8; 32],
     pub tip_root_commitment: [u8; 32],
     pub policy_commitment: [u8; 32],
+    pub gpru_route_version: u8,
+    pub gpru_route_commitment: [u8; 32],
     pub intent_hash: [u8; 32],
     pub expiry_ts: i64,
 }
@@ -57,6 +59,8 @@ pub struct StageTinV1CreationParams {
     pub gpru_public_commitment: [u8; 32],
     pub tip_root_commitment: [u8; 32],
     pub policy_commitment: [u8; 32],
+    pub gpru_route_version: u8,
+    pub gpru_route_commitment: [u8; 32],
     pub expiry_ts: i64,
 }
 

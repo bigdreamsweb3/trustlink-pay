@@ -98,6 +98,8 @@ solana confirm <SIGNATURE> --url devnet
 
 # Use comments (#) to explain what each command does.
 
+node scripts/tin-lookup.mjs 9124678485 --rpc https://api.devnet.solana.com
+
 # PROGRAM BUILD/DEPLOY SCRIPTS RUNNER
 
 npm run tsn:program:build:devnet
@@ -135,4 +137,6 @@ The receiving root comes from the TIN owner’s master seed. GPRU uses it with e
 
 **Recommendation:** keep settlement details off-chain until the final credit transaction, and don’t create a public settlement record when the intent first arrives. The Receiver currently creates a small internal settlement queue record at ingress, but it contains only a reference to the funding work. It is not an on-chain account or event, and it cannot be leased until funding is confirmed. That internal placeholder is fine for coordinating the work. [Receiver store](C:/Users/codepara/Desktop/trust-link/tsn-protocol/services/tsn-receiver/lib/store.ts:82)
 
-PV 9239
+<!--  -->
+
+I found the key distinction: the verifier’s proof context can prove that a particular successor ciphertext represents an in-range value, but it does not by itself prove that the successor equals the previous balance minus the requested debit. I’m coding the reusable verifier-context binding as a GPRU core module and keeping the spend path closed until that predecessor-to-successor relation is also enforced.

@@ -58,6 +58,7 @@ const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
     "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
     "routeVersion", "routeNonce", "tipRouteVersion",
     "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
+    "gpruRouteVersion", "gpruRouteCommitment",
   ]),
 };
 
@@ -193,6 +194,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
           "nonce", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
           "routeVersion", "routeNonce", "tipRouteVersion",
           "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
+          "gpruRouteVersion", "gpruRouteCommitment",
         ])
       : new Set<string>();
   const filtered = Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));

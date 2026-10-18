@@ -1,6 +1,6 @@
 import nacl from "tweetnacl";
 import { PublicKey, type Connection } from "@solana/web3.js";
-import { deriveTinPrivacyReceivingKeyPair } from "./gpru.js";
+import { deriveGpruRouteCommitment, deriveTinPrivacyReceivingKeyPair, GPRU_ROUTE_VERSION_V1 } from "./gpru.js";
 
 import {
   computePruConfigurationHash,
@@ -145,6 +145,8 @@ export async function createTinV1OwnerSeedEnvelope(params: {
       resourceCommitment: access.resourceCommitment,
       encryptedMasterSeed: encodeTinEnvelope(envelope),
       gpruPublicCommitment: new Uint8Array(tinPrivacyReceivingKeyPair.publicKey),
+      gpruRouteVersion: GPRU_ROUTE_VERSION_V1,
+      gpruRouteCommitment: deriveGpruRouteCommitment(masterSeed),
     };
   } finally {
     dataKey.fill(0);

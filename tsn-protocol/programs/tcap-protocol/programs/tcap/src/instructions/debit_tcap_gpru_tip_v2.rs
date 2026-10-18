@@ -40,6 +40,11 @@ pub struct DebitTcapGpruTipV2<'info> {
 }
 
 pub fn handler(ctx: Context<DebitTcapGpruTipV2>, args: DebitTcapGpruTipV2Args) -> Result<()> {
+    // This legacy route also relies on a public per-TIP liability and does not
+    // consume a verified GPRU balance proof. Keep it closed until the new
+    // proof-carrying state transition is available.
+    crate::instructions::debit_tcap_balance_v1::proof_gate(&[])?;
+
     validate_debit(&ctx.accounts.tin_tip, &ctx.accounts.asset_entry, &ctx.accounts.liability, &ctx.accounts.reserve_state, &args, Clock::get()?.slot)?;
     let (expected, _) = derive_tsn_authorization_signer(&ctx.accounts.config.approved_tsn_program, &args.authorization_digest);
     require_keys_eq!(expected, ctx.accounts.tsn_authorization_signer.key(), TcapError::InvalidTsnAuthorizationSigner);

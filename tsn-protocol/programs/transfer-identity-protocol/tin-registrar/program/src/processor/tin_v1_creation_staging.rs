@@ -50,6 +50,8 @@ pub fn stage(
             &params.gpru_public_commitment,
             &params.tip_root_commitment,
             &params.policy_commitment,
+            params.gpru_route_version,
+            &params.gpru_route_commitment,
         )
     {
         return Err(Error::InvalidInstruction.into());
@@ -79,6 +81,8 @@ pub fn stage(
             || existing.gpru_public_commitment != params.gpru_public_commitment
             || existing.tip_root_commitment != params.tip_root_commitment
             || existing.policy_commitment != params.policy_commitment
+            || existing.gpru_route_version != params.gpru_route_version
+            || existing.gpru_route_commitment != params.gpru_route_commitment
             || existing.expiry_ts != params.expiry_ts
         {
             return Err(Error::InvalidInstruction.into());
@@ -105,6 +109,8 @@ pub fn stage(
         gpru_public_commitment: params.gpru_public_commitment,
         tip_root_commitment: params.tip_root_commitment,
         policy_commitment: params.policy_commitment,
+        gpru_route_version: params.gpru_route_version,
+        gpru_route_commitment: params.gpru_route_commitment,
         expiry_ts: params.expiry_ts,
     };
     create_pda_account(
@@ -222,6 +228,8 @@ pub fn finalize(
         gpru_public_commitment: state.gpru_public_commitment,
         tip_root_commitment: state.tip_root_commitment,
         policy_commitment: state.policy_commitment,
+        gpru_route_version: state.gpru_route_version,
+        gpru_route_commitment: state.gpru_route_commitment,
         intent_hash: state.intent_hash,
         expiry_ts: state.expiry_ts,
     };

@@ -45,6 +45,11 @@ pub struct DebitTcapBalanceV1<'info> {
 }
 
 pub fn handler(ctx: Context<DebitTcapBalanceV1>, args: DebitTcapBalanceV1Args) -> Result<()> {
+    // The current balance account still stores a public `available` amount and
+    // this instruction has no verified encrypted-balance proof context. Do not
+    // mutate TCAP liabilities until the GPRU proof verifier is integrated.
+    proof_gate(&[])?;
+
     let clock = Clock::get()?;
     let tip = &ctx.accounts.current_tip;
     let asset = &ctx.accounts.asset_entry;
@@ -99,8 +104,8 @@ pub fn handler(ctx: Context<DebitTcapBalanceV1>, args: DebitTcapBalanceV1Args) -
     Ok(())
 }
 
-/// Retained for the explicitly disabled legacy exit path; debit itself is no
-/// longer proof-gated.
+/// Fail-closed guard shared by debit paths until the GPRU proof contract is
+/// implemented and the verifier context is bound to the successor state.
 pub(crate) fn proof_gate(_payload: &[u8]) -> Result<()> {
     err!(TcapError::ProofSystemNotEnabled)
 }

@@ -63,8 +63,26 @@ function decodeRegistry(data) {
     tipRootCommitment: take(32, "TIP root commitment"),
     policyCommitment: take(32, "policy commitment"),
   };
+  if (bytes.length - offset >= 33) {
+    account.gpruRouteVersion = u8("GPRU route version");
+    account.gpruRouteCommitment = take(32, "GPRU route commitment");
+  }
   account.trailingAllocation = take(bytes.length - offset, "allocation padding");
   return account;
+}
+
+function displayRegistryBytes(value) {
+  if (Buffer.isBuffer(value) || value instanceof Uint8Array) {
+    return Buffer.from(value).toString("hex");
+  }
+  if (typeof value === "bigint") return value.toString();
+  if (Array.isArray(value)) return value.map(displayRegistryBytes);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, displayRegistryBytes(entry)]),
+    );
+  }
+  return value;
 }
 
 function decryptIdentity(envelope, tin, lookupKey) {
@@ -124,7 +142,7 @@ async function main() {
     maxArrayLength: null,
     maxStringLength: null,
   };
-  console.dir(account, inspectOptions);
+  console.dir(displayRegistryBytes(account), inspectOptions);
   console.dir(identity, inspectOptions);
   console.dir(masterSeedEnvelope, inspectOptions);
 }

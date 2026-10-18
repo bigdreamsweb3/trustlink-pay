@@ -32,8 +32,11 @@ checks that its commitment PDA is unused, and submits the owner-authorized
 creation through Receiver, Node verification, and Cranker execution.
 
 The TIP V1 route associated with a TIN stores a GPRU public commitment, its blinded TIP root commitment,
-a TIP-specific route version, and a policy commitment. Earlier account layouts and PRU route fields
-are rejected by current TIN V1 creation and resolution.
+a TIP-specific route version, and a policy commitment. It also stores a separately versioned GPRU route
+commitment derived locally from the owner-held master seed. The seed is not published. The existing TIP
+root remains active while GPRU is developed; the new commitment is only route-binding data and does not
+by itself prove ownership or authorize a GPRU operation. Earlier account layouts remain readable by
+the current resolution path, while new TIN creation requires both route versions and commitments.
 
 Current TIN V1 SDK helpers derive these PDAs:
 

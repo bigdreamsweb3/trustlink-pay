@@ -3,19 +3,24 @@ use solana_program::{hash::hashv, pubkey::Pubkey};
 
 pub const CURRENT_VERSION: u8 = 3;
 pub const TIP_ROUTE_VERSION_V1: u8 = 1;
+pub const GPRU_ROUTE_VERSION_V1: u8 = 1;
 
-/// Current TIN creation accepts only the GPRU public commitment -> blinded TIP
-/// root binding. No prior route layout is accepted by the program.
+/// Current TIN creation requires both the existing GPRU-public-to-TIP-root
+/// binding and the versioned owner-held GPRU route commitment.
 pub fn validate_tip_route(
     tip_route_version: u8,
     gpru_public_commitment: &[u8; 32],
     tip_root_commitment: &[u8; 32],
     policy_commitment: &[u8; 32],
+    gpru_route_version: u8,
+    gpru_route_commitment: &[u8; 32],
 ) -> bool {
     tip_route_version == TIP_ROUTE_VERSION_V1
         && gpru_public_commitment != &[0; 32]
         && tip_root_commitment != &[0; 32]
         && policy_commitment != &[0; 32]
+        && gpru_route_version == GPRU_ROUTE_VERSION_V1
+        && gpru_route_commitment != &[0; 32]
         && valid_tip_root_binding(gpru_public_commitment, tip_root_commitment)
 }
 
@@ -65,6 +70,30 @@ pub struct TinV1Account {
     /// Blinded TIP PDA seed derived from the public GPRU commitment.
     pub tip_root_commitment: [u8; 32],
     pub policy_commitment: [u8; 32],
+    pub gpru_route_version: u8,
+    pub gpru_route_commitment: [u8; 32],
+}
+
+/// Decoder retained for already-created V1 registry accounts that predate the
+/// GPRU route commitment extension.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct TinV1AccountLegacy {
+    pub version: u8,
+    pub bump: u8,
+    pub status: u8,
+    pub reserved: [u8; 5],
+    pub lookup_commitment: [u8; 32],
+    pub owner_commitment: [u8; 32],
+    pub encrypted_identity_envelope: Vec<u8>,
+    pub encrypted_master_seed: Vec<u8>,
+    pub created_at: i64,
+    pub encrypted_metadata_hash: [u8; 32],
+    pub route_version: u64,
+    pub route_nonce: [u8; 32],
+    pub tip_route_version: u8,
+    pub gpru_public_commitment: [u8; 32],
+    pub tip_root_commitment: [u8; 32],
+    pub policy_commitment: [u8; 32],
 }
 
 /// Owner-wallet recovery locator; the TIN itself remains encrypted.
@@ -92,7 +121,7 @@ impl TinV1Account {
         // Keep allocation equal to the Borsh struct size. The prior formula
         // reserved an extra 32-byte tail that strict decoders rejected.
         1 + 1 + 1 + 5 + 32 + 32 + 4 + identity_len + 4 + seed_len + 8 + 32
-            + 8 + 32 + 1 + 32 + 32 + 32
+            + 8 + 32 + 1 + 32 + 32 + 32 + 1 + 32
     }
 }
 
@@ -117,15 +146,17 @@ pub struct TinV1CreationStaging {
     pub gpru_public_commitment: [u8; 32],
     pub tip_root_commitment: [u8; 32],
     pub policy_commitment: [u8; 32],
+    pub gpru_route_version: u8,
+    pub gpru_route_commitment: [u8; 32],
     pub expiry_ts: i64,
 }
 
 impl TinV1CreationStaging {
-    pub const VERSION: u8 = 2;
+    pub const VERSION: u8 = 3;
     pub const MAX_BLOB_LEN: usize = 16 * 1024;
 
     pub fn space(identity_len: usize, recovery_len: usize, seed_len: usize) -> usize {
         1 + 1 + 32 + 32 + 32 + 4 + identity_len + 4 + 4 + recovery_len + 4 + 4 + seed_len + 4
-            + 32 + 8 + 32 + 1 + 32 + 32 + 32 + 8
+            + 32 + 8 + 32 + 1 + 32 + 32 + 32 + 1 + 32 + 8
     }
 }

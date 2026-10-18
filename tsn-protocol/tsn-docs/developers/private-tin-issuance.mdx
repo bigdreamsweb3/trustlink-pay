@@ -78,6 +78,12 @@ per wallet. The main registry layout has no standalone owner-public-key field.
 New master-seed envelopes omit `ownerPublicKey`; previously created on-chain
 envelopes may still expose it in plaintext.
 
+While the owner-held master seed is in memory, `createTinV1OwnerSeedEnvelope`
+also derives `gpruRouteVersion` and `gpruRouteCommitment`. Pass those fields
+with the existing GPRU public commitment, TIP root, and policy commitment into
+`buildTinV1Creation`. The seed itself remains encrypted and is never included
+as a route field; the existing TIP root stays active for this deployment stage.
+
 ```ts
 // Trusted issuer only: never run this with the lookup secret in browser code.
 const identity = await createTinV1IdentityEnvelope({
@@ -111,6 +117,8 @@ const prepared = buildTinV1Creation({
   gpruPublicCommitment,
   tipRootCommitment,
   policyCommitment,
+  gpruRouteVersion: 1,
+  gpruRouteCommitment,
 });
 const ownerIntentMessage = buildTinOwnerIntentMessage(prepared.intentHash);
 const ownerSignature = await wallet.signMessage(

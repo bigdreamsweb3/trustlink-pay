@@ -6,10 +6,12 @@ edition = "2021"
 
 [lib]
 name = "tsn_gpru_proof_contract"
-crate-type = ["lib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
+curve25519-dalek = "=3.2.1"
 solana-program = "=1.18.26"
 solana-zk-token-sdk = "=1.18.26"
+sha3 = "=0.9.1"
 
 [workspace]

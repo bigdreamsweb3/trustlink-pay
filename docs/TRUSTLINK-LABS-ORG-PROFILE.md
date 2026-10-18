@@ -69,15 +69,15 @@ A Transfer Identity Number (TIN), issued and resolved by the Transfer Identity P
 
 The TIP registry can associate a TIN with identity metadata, owner authority, route commitments, encrypted envelopes, and versioned integrity state. It does not turn a wallet address into a user's permanent public identity.
 
-### GPRU and TCAP - live private balance architecture
+### GPRU and TCAP — current behavior and target integration
 
-GPRU is authorization/routing only. TCAP owns credit-only tip transitions and owner-encrypted balance snapshots. Confidential debits/exits are not live.
+The deployed TCAP instructions define the current credit path and commitment state. GPRU is a separate protocol design for unique transaction DNA and proof-verified confidential state transitions; its derivation library is in source, but the on-chain program and TCAP handoff are not deployed. Confidential debit and exit remain disabled.
 
 ### TCAP — Transfer Confidential Asset Protocol
 
-TCAP is the live credit-only private balance protocol for governed token control, asset registration, mint binding, tip transitions, and encrypted snapshots.
+TCAP governs approved token assets, reserves, and liability accounting. Current instruction behavior is defined by the deployed program and does not yet include GPRU DNA proof verification.
 
-TCAP credit authorization is integrated through the TSN CPI path; debits/exits remain out of scope.
+The current TCAP credit instruction uses opaque commitments and replay checks; it does not by itself prove a spendable encrypted balance. Debit and exit remain disabled pending proof-gated on-chain enforcement.
 
 Stable-TCAP is a Devnet-only, valueless test asset. It is not USDC and is not a production stablecoin.
 

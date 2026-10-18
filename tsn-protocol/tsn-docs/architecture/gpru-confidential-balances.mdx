@@ -1,91 +1,70 @@
 ---
-title: GPRU Confidential Balance Architecture
-description: Proposed proof-carrying encrypted balances for GPRU and TCAP.
+title: "GPRU and TCAP: Confidential Transaction State"
+description: "The target architecture for unique GPRU DNA outputs, owner-recoverable ElGamal keys, and proof-verified TCAP balance transitions."
 ---
 
-# GPRU confidential balances
+# GPRU and TCAP confidential state
 
-## Current source boundary
+GPRU (Guarded Privacy Routing Unit) is being developed as a protocol for transaction-specific routing and confidential balance-state transitions. TIP (Transfer Identity Protocol) identifies transfer identities and their route metadata; a TIN (Transfer Identity Number) is one identity within TIP. TCAP (Transfer Confidential Asset Protocol) governs reserves and applies only valid state transitions.
 
-The TCAP debit entrypoints do not yet verify that an encrypted balance can cover a debit. Their account layout still includes public `available` amounts, and the supplied `sealed` bytes are not a proof. Both `debit_tcap_balance_v1` and `debit_tcap_gpru_tip_v2` now stop at the existing `ProofSystemNotEnabled` guard before changing liability state. They remain unavailable until GPRU supplies a proof context bound to the encrypted successor state.
+## Implemented source and current boundary
 
-## Proposed security contract
+TIP V1 stores a versioned GPRU ElGamal scan public key and a commitment to that key, with separate TIP route and policy commitments. The scan key is stable for a route and is public. The commitment detects substitution; it is not a private key, encryption, ownership proof, or balance proof.
 
-GPRU should use an additive encrypted-balance scheme with a zero-knowledge proof for every state change. The owner device decrypts its own balance and may reject an overspend locally for a useful error message. That local check is only a convenience; TCAP must accept a debit only after verifying a proof that binds the prior state, debit or transfer, successor state, asset, policy, sequence, and nullifier, and proves every resulting balance is in the permitted non-negative range.
+The GPRU source contains a Rust derivation core, a native interface intended for the Python Node, and an SDK owner-recovery helper. Given the scan key, fresh Node randomness, and a transaction DNA, the primitive derives an ephemeral public point and a one-time ElGamal public key. The owner can derive the corresponding private key locally from owner-held secret material and public transaction inputs. The SDK build has been source-checked; the Rust native library build still needs verification.
 
-The implementation should use Solana's ZK ElGamal proof tooling as the initial cryptographic candidate rather than inventing a proof format. The official confidential-balance flow generates equality, ciphertext-validity, and range proofs on the client, verifies them through the ZK ElGamal Proof program, and supplies verified proof context to the state-changing instruction. GPRU must define its own account and transition contract around those primitives; Token-2022's account model is not automatically the TCAP reserve model.
+This primitive is not yet connected to a deployable GPRU Solana program or the TCAP settlement ABI. The GPRU directory is currently a library. Existing TCAP instructions and account layouts remain authoritative for deployed behavior. The new DNA flow, confidential balance proof system, and debit path are not live.
 
-TIP route input for GPRU V1 is a `gpruRouteVersion` and `gpruRouteCommitment`, stored beside the existing TIP route commitments. The commitment is derived locally from the owner-held TIN master seed using the GPRU route domain; the seed itself is never included in the TIP account or sent to GPRU. The existing TIP root remains in place for this deployment stage. GPRU V1 must verify a proof tied to the route commitment before accepting a one-time transaction key; the commitment alone is not proof of ownership or route membership.
-
-## Credit and debit flow
+## Target credit flow
 
 ```mermaid
 sequenceDiagram
-    participant Owner as Owner SDK
-    participant Receiver
-    participant Node as TSN Node
-    participant Cranker
-    participant GPRU as GPRU program
-    participant TCAP as TCAP program
+    participant S as Sender SDK
+    participant R as Receiver
+    participant N as TSN Node
+    participant C as Cranker
+    participant G as GPRU
+    participant T as TCAP
+    participant O as Recipient SDK
 
-    Owner->>Owner: Decrypt owned balance; check debit locally
-    Owner->>Owner: Build successor ciphertext and zero-knowledge proof
-    Owner->>Receiver: Signed intent plus opaque proof/ciphertext payload
-    Receiver->>Node: Authenticated work; no balance decryption
-    Node->>Node: Verify signature, route, asset, sequence, and payload binding
-    Node->>Cranker: Immutable verified work
-    Cranker->>GPRU: Submit proof and encrypted state transition
-    GPRU->>GPRU: Verify proof, sequence, and nullifier; update encrypted state
-    GPRU->>TCAP: CPI result in the same transaction
-    TCAP->>TCAP: Update reserve accounting only if GPRU accepted
+    S->>R: Signed payment authorization and reserve funding
+    R->>N: Accepted ingress work
+    N->>N: Resolve TIN through TIP; validate authorization and asset
+    N->>N: Create unique DNA and one-time ElGamal public key
+    N->>C: Immutable verified settlement work
+    C->>G: Submit the authorized transition
+    G->>G: Verify derivation, encrypted-state proof, and replay protection
+    G->>T: Atomic validated credit handoff
+    T->>T: Update governed reserve liabilities
+    O->>O: Discover DNA and recover its private key locally
+    O->>O: Decrypt and verify the owner's state
 ```
 
-For a credit from a public wallet, the public deposit amount is known to the chain. GPRU can add an encryption of that amount to the recipient's encrypted state, while the Node resolves the recipient route and the sender SDK never resolves the recipient TIP. The V1 privacy target for a TIN-to-TIN transfer is to hide the amount as well as both balances; the owner SDK supplies proofs for a valid source debit and matching recipient output. The transaction must fail atomically if either the proof or the TCAP reserve transition fails.
+The sender signs the payment details and reserve deposit. Recipient route resolution and GPRU transition construction belong to Node. Receiver accepts and stores ingress; Node verifies it; Cranker submits the exact authorized work. These are separate roles and lifecycle stages.
 
-The proof must establish that the prior encrypted state is valid, the successor is correctly related to the prior state and transfer, the successor remains within the allowed range, and the nullifier has not been consumed. If transfer amounts are intended to remain hidden for TIN-to-TIN transfers, the proof must also establish conservation between source and destination without putting the amount in instruction data. Wallet deposits and wallet exits remain publicly observable at their wallet boundary.
+## Target debit and transfer requirements
 
-## State and privacy requirements
+For a debit, the owner authorizes a transition and supplies a proof that the previous encrypted balance covers the amount and that the successor is the correct subtraction. TCAP must rely on a proof verified by GPRU, not on a client-side balance check. The SDK may still check the owner's local balance to improve feedback.
 
-- Do not store a per-TIN plaintext `available` balance. Keep reserve-wide solvency accounting separate from each owner's encrypted balance. Internal TIN-to-TIN transfers conserve aggregate liabilities; public deposits and exits may change public aggregate accounting.
-- Do not put a stable owner wallet, TIN, TIP route, or recipient identifier in a public GPRU transfer record. Use one-time transaction outputs and nullifiers; a proof must establish membership of the prior encrypted state without publishing a predecessor pointer that links the owner's history.
-- The owner SDK derives the GPRU decryption key from owner-controlled recovery material and decrypts locally. The Node and Cranker receive only public keys, ciphertexts, proofs, and signed/verified transaction bindings; they do not receive decryption keys or plaintext balances.
-- The current `gpruPublicCommitment` is produced by the existing NaCl box key derivation. It must not be silently reused as a ZK ElGamal key. GPRU needs a separately domain-separated, versioned encryption key and public commitment.
-- Sequence, policy, asset binding, validity window, and nullifier checks remain required alongside the proof. A valid range proof alone does not authorize a payment or prevent replay.
+A TIN-to-TIN transfer must prove that the source debit equals the destination credit while concealing the amount and avoiding a shared public identifier between their DNA outputs. Both successor states must be valid, replay-protected, and bound to the same governed asset. TCAP applies the associated liability changes atomically with GPRU validation.
 
-## Module boundaries
+Wallet deposits and exits remain public at the wallet boundary. GPRU's target is to avoid publishing a stable recipient route on every confidential transfer; it does not conceal public funding or exit metadata.
 
-Keep GPRU logic in dedicated modules and import those modules at integration points:
+## One-time key model
 
-```text
-tsn-protocol/programs/gpru/
-  src/state.rs        latest encrypted balance and continuity contract
-  src/proofs/         verifier-owned proof context parsing
-  src/instructions/   initialize, credit, transfer, and spend
+The stable TIP scan key is used to derive transaction-specific receiving keys. Node creates a fresh DNA and ephemeral point for each output, then derives a one-time public key. The recipient later combines the public derivation data with owner-held secret material to recover the matching private key locally. A domain-separated commitment binds the key version, DNA, ephemeral point, and derived public key.
 
-tsn-protocol/sdks/tsn-sdk/src/gpru/
-  keys.ts             owner-derived GPRU encryption keys
-  ciphertext.ts       encrypt, decrypt, add, and subtract operations
-  proofs.ts           client-side proof construction
-  notes.ts            note discovery and local balance reconstruction
-  instructions.ts     GPRU transaction builders
+The derivation primitive does not itself prove a valid balance update. GPRU must verify the derivation and the encrypted-state proof, enforce sequence and replay rules, and update its state atomically with TCAP. Node and Cranker must never receive the owner's long-term secret or plaintext balance.
 
-tsn-protocol/services/tsn-node/app/services/gpru/
-  route.py             resolve the recipient route from TIN server-side
-  verification.py      bind signed intent fields to proof inputs
-  transition.py        create the authorized handoff without decrypting balances
+## Remaining protocol work
 
-tsn-protocol/services/tsn-cranker-op-daemon/scripts/gpru/
-  submit.ts            submit the immutable Node-authorized GPRU/TCAP transaction
-```
+The following work is required before the target flow can be called complete:
 
-TCAP should expose a narrow CPI boundary to GPRU and update reserve state only after that CPI succeeds. Receiver remains an ingress and work store. Node performs route and authorization checks but does not replace on-chain proof verification. Cranker submits the exact authorized transaction and cannot change the proof, amount relation, destination, commitment, sequence, or nullifier.
+- define the deployable GPRU program, DNA account lifecycle, and instruction ABI;
+- verify one-time-key derivation on chain;
+- define and audit encrypted balance and successor/range/conservation proofs;
+- implement replay-protected state changes and the atomic TCAP CPI;
+- connect Node construction, Cranker submission, and SDK discovery to the same ABI;
+- build and validate the programs, then perform a reviewed Devnet deployment.
 
-## Implementation gates
-
-The initial GPRU core now decodes verifier-owned ciphertext-equality and range contexts using the repository's pinned Solana 1.18.26 types and defines sequence/nullifier state continuity. This is not enough to authorize a debit: the GPRU instruction must still verify that the successor ciphertext is the correct arithmetic result of the current state and transaction, then atomically update encrypted state and TCAP reserve accounting. The GPRU program ID, deployable instruction/account ABI, hidden-amount transfer proof, SDK proof generation, and GPRU/TCAP CPI boundary remain unimplemented. Existing debit handlers fail closed until those pieces are wired.
-
-The references below describe the upstream proof model, not a claim that this repository has integrated it:
-
-- [Solana confidential-balance integration guide](https://solana.com/docs/tokens/extensions/confidential-transfer/integration-guide)
-- [Solana confidential withdrawal proofs](https://solana.com/docs/tokens/extensions/confidential-transfer/withdraw-tokens)
-- [Solana syscall reference](https://solana.com/docs/core/programs/syscall-reference)
+Until these gates are met, the current TCAP program and account layouts—not this design page—define actual chain behavior.

@@ -59,14 +59,11 @@ function decodeRegistry(data) {
     routeVersion: u64("route version"),
     routeNonce: take(32, "route nonce"),
     tipRouteVersion: u8("TIP route version"),
-    gpruPublicCommitment: take(32, "GPRU public commitment"),
-    tipRootCommitment: take(32, "TIP root commitment"),
+    gpruElgamalKeyVersion: u8("GPRU ElGamal key version"),
+    gpruElgamalPublicKey: take(32, "GPRU ElGamal public key"),
+    gpruElgamalKeyCommitment: take(32, "GPRU ElGamal key commitment"),
     policyCommitment: take(32, "policy commitment"),
   };
-  if (bytes.length - offset >= 33) {
-    account.gpruRouteVersion = u8("GPRU route version");
-    account.gpruRouteCommitment = take(32, "GPRU route commitment");
-  }
   account.trailingAllocation = take(bytes.length - offset, "allocation padding");
   return account;
 }
@@ -134,6 +131,17 @@ async function main() {
   if (value.owner !== TINS_PROGRAM_ID.toBase58()) throw new Error(`Unexpected account owner: ${value.owner}`);
 
   const account = decodeRegistry(Buffer.from(value.data[0], "base64"));
+  if (account.version !== 1) {
+    throw new Error(`Unsupported TIN registry schema version ${account.version}; expected 1`);
+  }
+  const expectedGpruElgamalKeyCommitment = createHash("sha256").update(Buffer.concat([
+    Buffer.from("TSN_GPRU_ELGAMAL_KEY_COMMITMENT_V1\0", "utf8"),
+    Buffer.from([account.gpruElgamalKeyVersion]),
+    account.gpruElgamalPublicKey,
+  ])).digest();
+  if (!expectedGpruElgamalKeyCommitment.equals(account.gpruElgamalKeyCommitment)) {
+    throw new Error("GPRU ElGamal public key does not match the registry commitment");
+  }
   const identity = decryptIdentity(account.encryptedIdentityEnvelope, args.tin, lookupKey);
   const masterSeedEnvelope = JSON.parse(account.encryptedMasterSeedEnvelope.toString("utf8"));
   const inspectOptions = {

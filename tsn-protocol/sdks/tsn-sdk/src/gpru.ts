@@ -1,18 +1,12 @@
 import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
+import { ConfidentialKeys } from "@solana/zk-sdk";
 import nacl from "tweetnacl";
 
-/** The TIN publishes a stable privacy-receiving root public key. For every
- * credit, GPRU combines that root with a fresh sender ephemeral key and the
- * public transaction context to derive a one-time recipient public key.
- */
 export const GPRU_DERIVATION_DOMAIN = "TSN_GPRU_DERIVATION_V1";
 export const GPRU_AUTHORIZATION_DOMAIN = "TSN_GPRU_AUTHORIZATION_V1";
-export const TIN_PRIVACY_RECEIVING_KEY_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_V1";
-export const TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_DOMAIN = "TSN_TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_V1";
-export const TIP_ROOT_COMMITMENT_DOMAIN = "TSN_TIP_ROOT_COMMITMENT_V1";
-export const GPRU_ROUTE_ROOT_COMMITMENT_DOMAIN = "TSN_GPRU_ROUTE_ROOT_COMMITMENT_V1";
-export const GPRU_ROUTE_VERSION_V1 = 1 as const;
+export const GPRU_ELGAMAL_KEY_VERSION_V1 = 1 as const;
+const GPRU_ELGAMAL_KEY_COMMITMENT_DOMAIN = "TSN_GPRU_ELGAMAL_KEY_COMMITMENT_V1\0";
 const encoder = new TextEncoder();
 
 export type GpruDerivationInput = {
@@ -57,68 +51,39 @@ export function deriveGpruIdentityHex(input: GpruDerivationInput): string {
   return bytesToHex(deriveGpruIdentity(input));
 }
 
-/** Derive the recipient's stable privacy-receiving root keypair from the TIN
- * owner master seed. Publish only the root public key in the TIP route associated with the TIN. GPRU
- * derives a fresh recipient public key for each transaction from this root.
- */
-export function deriveTinPrivacyReceivingKeyPair(masterSeed: Uint8Array): nacl.BoxKeyPair {
-  if (!(masterSeed instanceof Uint8Array) || masterSeed.length !== 32) {
-    throw new Error("TIN master seed must be exactly 32 bytes");
+/** Derive the versioned GPRU ElGamal public key from owner-held key material.
+ * The derived secret key stays local and is released with the WASM key objects. */
+export function deriveGpruElgamalPublicKey(masterSeed: Uint8Array): Uint8Array {
+  if (!(masterSeed instanceof Uint8Array) || masterSeed.length < 32) {
+    throw new Error("GPRU ElGamal derivation requires at least 32 bytes of owner key material");
   }
-  const secretKey = sha256(new Uint8Array([
-    ...encoder.encode(TIN_PRIVACY_RECEIVING_KEY_DOMAIN), 0, ...masterSeed,
-  ]));
+  const keys = ConfidentialKeys.fromIkm(masterSeed);
+  const keypair = keys.elgamal();
+  const publicKey = keypair.pubkey();
   try {
-    return nacl.box.keyPair.fromSecretKey(secretKey);
+    const encoded = publicKey.toBytes();
+    if (encoded.length !== 32 || encoded.every((value) => value === 0)) {
+      throw new Error("Solana zk-sdk returned an invalid GPRU ElGamal public key");
+    }
+    return new Uint8Array(encoded);
   } finally {
-    secretKey.fill(0);
+    publicKey.free();
+    keypair.free();
+    keys.free();
   }
 }
 
-/** Commit to owner-held GPRU root material without publishing the seed or
- * reusing the legacy NaCl receiving public key as a proof-system key. */
-export function deriveGpruRouteCommitment(masterSeed: Uint8Array): Uint8Array {
-  if (!(masterSeed instanceof Uint8Array) || masterSeed.length !== 32) {
-    throw new Error("TIN master seed must be exactly 32 bytes");
+export function deriveGpruElgamalKeyCommitment(version: number, publicKey: Uint8Array): Uint8Array {
+  if (version !== GPRU_ELGAMAL_KEY_VERSION_V1) throw new Error("Unsupported GPRU ElGamal key version");
+  if (!(publicKey instanceof Uint8Array) || publicKey.length !== 32 || publicKey.every((value) => value === 0)) {
+    throw new Error("GPRU ElGamal public key must be a nonzero 32-byte value");
   }
-  return sha256(new Uint8Array([
-    ...encoder.encode(GPRU_ROUTE_ROOT_COMMITMENT_DOMAIN), 0, ...masterSeed,
-  ]));
-}
-
-/** Derive the blinded TIP PDA seed from the public GPRU commitment.
- * The GPRU commitment is the public curve point; the owner's receiving scalar
- * stays local. TCAP receives only this domain-separated 32-byte hash.
- */
-export function deriveTipRootCommitment(gpruPublicCommitment: Uint8Array): Uint8Array {
-  if (!(gpruPublicCommitment instanceof Uint8Array) || gpruPublicCommitment.length !== nacl.box.publicKeyLength) {
-    throw new Error("GPRU commitment must be exactly 32 bytes");
-  }
-  return sha256(new Uint8Array([
-    ...encoder.encode(TIP_ROOT_COMMITMENT_DOMAIN), 0, ...gpruPublicCommitment,
-  ]));
-}
-
-/** Legacy envelope-binding hash; not the TCAP TIP PDA seed. */
-export function deriveTinPrivacyReceivingKeyCommitment(publicKey: Uint8Array): Uint8Array {
-  if (!(publicKey instanceof Uint8Array) || publicKey.length !== nacl.box.publicKeyLength) {
-    throw new Error("TIN privacy-receiving public key must be exactly 32 bytes");
-  }
-  return sha256(new Uint8Array([
-    ...encoder.encode(TIN_PRIVACY_RECEIVING_KEY_COMMITMENT_DOMAIN), 0, ...publicKey,
-  ]));
-}
-
-/** Validate the active TIP route layout associated with a TIN and return its public GPRU point. */
-export function resolveTinGpruPublicCommitment(
-  gpruPublicCommitment: Uint8Array,
-  tipRootCommitment: Uint8Array,
-): Uint8Array | null {
-  if (gpruPublicCommitment.length !== 32 || tipRootCommitment.length !== 32) return null;
-  if (nacl.verify(deriveTipRootCommitment(gpruPublicCommitment), tipRootCommitment)) {
-    return new Uint8Array(gpruPublicCommitment);
-  }
-  return null;
+  const input = new Uint8Array(encoder.encode(GPRU_ELGAMAL_KEY_COMMITMENT_DOMAIN).length + 1 + publicKey.length);
+  const domain = encoder.encode(GPRU_ELGAMAL_KEY_COMMITMENT_DOMAIN);
+  input.set(domain, 0);
+  input[domain.length] = version;
+  input.set(publicKey, domain.length + 1);
+  return sha256(input);
 }
 
 /** Exact bytes an authorization signer must sign; fields are length-prefixed, not concatenated. */
@@ -146,13 +111,7 @@ export function verifyGpruAuthorizationSignature(params: GpruAuthorization & {
   );
 }
 
-/**
- * Owner-authorized O(1) private balance read hook for the live GPRU/TCap
- * route.  GPRU itself never stores balances: the caller supplies the TCap tip
- * reader, opaque snapshot store, and local decrypt/verify function.  The
- * commitment from the tip is used as the only lookup key, so no PRU list or
- * token-account enumeration is required.
- */
+/** Owner-authorized O(1) private balance read hook; GPRU itself never stores balances. */
 export async function readGpruPrivateBalance<TTip extends {
   current_commitment: Uint8Array | string;
   sequence: bigint | number;
@@ -165,9 +124,7 @@ export async function readGpruPrivateBalance<TTip extends {
   const commitment = typeof tip.current_commitment === "string"
     ? tip.current_commitment.toLowerCase()
     : bytesToHex(tip.current_commitment);
-  if (!/^[0-9a-f]{64}$/.test(commitment)) {
-    throw new Error("TCap tip commitment must be exactly 32 bytes");
-  }
+  if (!/^[0-9a-f]{64}$/.test(commitment)) throw new Error("TCap tip commitment must be exactly 32 bytes");
   const envelope = await params.loadEncryptedSnapshot(commitment);
   if (!envelope) throw new Error("private snapshot not found");
   return params.decryptAndVerify(envelope, tip);

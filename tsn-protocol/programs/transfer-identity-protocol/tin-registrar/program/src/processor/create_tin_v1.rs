@@ -55,11 +55,10 @@ pub fn apply<'a>(
     }
     if !validate_tip_route(
         params.tip_route_version,
-        &params.gpru_public_commitment,
-        &params.tip_root_commitment,
+        params.gpru_elgamal_key_version,
+        &params.gpru_elgamal_public_key,
+        &params.gpru_elgamal_key_commitment,
         &params.policy_commitment,
-        params.gpru_route_version,
-        &params.gpru_route_commitment,
     ) {
         return Err(Error::InvalidInstruction.into());
     }
@@ -99,11 +98,10 @@ pub fn apply<'a>(
         route_version: params.route_version,
         route_nonce: params.route_nonce,
         tip_route_version: params.tip_route_version,
-        gpru_public_commitment: params.gpru_public_commitment,
-        tip_root_commitment: params.tip_root_commitment,
+        gpru_elgamal_key_version: params.gpru_elgamal_key_version,
+        gpru_elgamal_public_key: params.gpru_elgamal_public_key,
+        gpru_elgamal_key_commitment: params.gpru_elgamal_key_commitment,
         policy_commitment: params.policy_commitment,
-        gpru_route_version: params.gpru_route_version,
-        gpru_route_commitment: params.gpru_route_commitment,
     };
     let seeds: [&[u8]; 3] = [crate::seeds::TIN_V1, &params.lookup_commitment, &[bump]];
     create_pda_account(
@@ -153,11 +151,10 @@ fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
         &params.route_version.to_le_bytes(),
         &params.route_nonce,
         &[params.tip_route_version],
-        &params.gpru_public_commitment,
-        &params.tip_root_commitment,
+        &[params.gpru_elgamal_key_version],
+        &params.gpru_elgamal_public_key,
+        &params.gpru_elgamal_key_commitment,
         &params.policy_commitment,
-        &[params.gpru_route_version],
-        &params.gpru_route_commitment,
         &params.expiry_ts.to_le_bytes(),
     ]).to_bytes()
 }

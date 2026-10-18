@@ -51,4 +51,4 @@ That’s photocopying the slip onto a billboard each time. Extra cost, extra tra
 
 ---
 
-**One sentence:** vault = the cash in the building; TIP slip = your encrypted statement in the box; liability = the spendable till; GPRU = the one-time stamp that this payment was allowed.
+**One sentence:** vault = the cash in the building; TIP slip = your encrypted statement in the box; liability = the spendable till; GPRU is designed to derive unique transaction DNA and verify confidential state transitions; a GPRU key or commitment alone does not authorize custody or prove a valid payment. The on-chain GPRU program is not deployed.

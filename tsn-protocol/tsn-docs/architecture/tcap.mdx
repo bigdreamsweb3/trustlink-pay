@@ -1,103 +1,55 @@
 ---
-title: "TCAP: Transfer Confidential Asset Protocol"
+title: "TCAP Reserve and Confidential State Architecture"
 sidebarTitle: "TCAP"
-description: "TCAP provides private GPRU balance transitions on Solana using blinded tip PDAs and owner-encrypted balance snapshots."
+description: "Current TCAP reserve responsibilities and the planned GPRU DNA integration for verified private balance transitions."
 ---
 
-TCAP is the **Transfer Confidential Asset Protocol**. It provides private balance accounting for governed assets on Solana. TCAP owns the blinded tip and sequence checks. A successful credit advances the tip from one commitment to the next, and the owner maintains private balance state through locally encrypted snapshots.
+# TCAP reserve and confidential state
 
-<Warning>
-  The live TCAP path is credit-only. Confidential debits and exits are not live and remain proof-gated. Do not attempt to spend or exit from a TCAP tip using the current Devnet release.
-</Warning>
+TCAP (Transfer Confidential Asset Protocol) governs approved token assets, their reserve vaults, and protocol liability accounting. It is the asset and accounting layer for TSN's confidential settlement design. TIP supplies identity routing; GPRU is being developed to verify transaction-specific encrypted-state transitions before TCAP changes liabilities.
 
-## TCAP TIN Tip PDA
+## Current implementation boundary
 
-The `TCapTinTipV1` PDA is derived from `['tcap:tin-tip:v1', blindedRootCommitment]`. The account stores:
+The current program source and deployed instruction/account layouts are authoritative for live behavior. Existing credit instructions update opaque TIP-rooted commitment state, but the transition does not itself prove a spendable balance. Confidential debit and exit are fail-closed. The new GPRU program and DNA-based credit/debit flow are not yet deployed.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `current_commitment` | 32-byte hash | Current balance commitment |
-| `sequence` | u64 | Strictly increasing transition number |
-| `policy_commitment` | 32-byte hash | Policy binding for accepted transitions |
-| `last_nullifier` | 32-byte hash | Last consumed transition nullifier |
-| `frozen` | bool | Freeze flag |
-| `version` | u8 | Account version |
-| `bump` | u8 | PDA bump |
+## Target settlement sequence
 
-The tip does NOT store: TIN, privacy-receiving root, seed, plaintext balance, snapshot key, or token account.
+```mermaid
+sequenceDiagram
+    participant Sender
+    participant Receiver
+    participant Node
+    participant Cranker
+    participant GPRU
+    participant TCAP
+    participant Owner as Recipient SDK
 
-## Privacy-safe transition: credit_tcap_tin_tip_v1
-
-The `credit_tcap_tin_tip_v1` instruction accepts only a TSN PDA authorization and opaque tip-transition fields. It takes `CreditTcapTinTipV1Args`:
-
-```rust
-pub struct CreditTcapTinTipV1Args {
-    pub previous_commitment: [u8; 32],
-    pub new_commitment: [u8; 32],
-    pub sequence: u64,
-    pub token_id: u32,
-    pub policy_commitment: [u8; 32],
-    pub gpru_scope_commitment: [u8; 32],
-    pub nullifier: [u8; 32],
-}
+    Sender->>Receiver: Signed intent and reserve funding
+    Receiver->>Node: Accepted ingress work
+    Node->>Node: Resolve TIN via TIP and validate route/asset
+    Node->>Node: Derive unique DNA and one-time ElGamal key
+    Node->>Cranker: Immutable verified transition
+    Cranker->>GPRU: Submit transition and proof
+    GPRU->>GPRU: Verify derivation, balance relation, and replay rules
+    GPRU->>TCAP: Atomic validated handoff
+    TCAP->>TCAP: Update reserve liability
+    Owner->>Owner: Recover one-time private key locally; decrypt own state
 ```
 
-It performs the following checks:
+Receiver acceptance is ingress acceptance. Node verification is a separate stage. Cranker submission is not proof of confirmation. TCAP changes reserve accounting only after the future GPRU on-chain verification succeeds atomically.
 
-- `previous_commitment` and `new_commitment` match the expected sequence.
-- `sequence` is the next expected value.
-- Token registry ID matches the asset entry.
-- `policy_commitment` matches the tip.
-- `gpru_scope_commitment` matches the TSN PDA authorization.
-- The nullifier differs from the tip's last transition nullifier, and a nullifier PDA at `[TCAP_NULLIFIER_SEED, nullifier]` under `NullifierDomainV1::FundedIntentSettlement` is initialized to prevent replay.
-- Slot window is valid.
-- Asset entry is active, approved, and unpaused.
+## Target credit and debit rules
 
-If all checks pass, TCAP atomically advances the tip. The emitted event contains only the tip PDA, sequence, compact token ID, and an opaque transition digest. It never exposes payment intent IDs, raw TIN values, balances, or token accounts. The tip advances without a per-transfer receipt PDA.
+A wallet-to-TIN credit begins with sender-authorized public reserve funding. Node resolves the recipient route and constructs a unique DNA transition; the sender SDK does not resolve recipient TIP state. GPRU verifies that the one-time ElGamal key matches the route scan key and DNA, and that the encrypted successor is valid. TCAP then applies the liability update.
 
-## Encrypted balance snapshots
+A TIN debit must prove that the prior encrypted balance covers the amount and that the successor is the exact subtraction. A TIN-to-TIN transfer must prove source and destination conservation while hiding the amount and avoiding a shared public transaction identifier. The owner SDK may do a local check for usability, but the program proof is the enforcement boundary.
 
-After a successful credit, the owner device constructs a canonical private balance snapshot and computes its commitment. The snapshot is encrypted using AES-GCM in an `EncryptedTCapBalanceSnapshotV1` envelope. The owner-held snapshot key and plaintext never leave the device.
+## Privacy guarantees and limits
 
-To read a private balance, the owner device:
+The design uses transaction-specific DNA outputs to avoid repeatedly exposing a stable recipient route. Each output has a one-time ElGamal public key that the recipient can recover locally using owner-held secret material. The Node derives the public key but does not receive the private key or plaintext balance.
 
-1. Fetches the public tip commitment and sequence.
-2. Locates the matching encrypted snapshot ciphertext by `new_commitment`.
-3. Decrypts locally with the owner snapshot key.
-4. Verifies envelope bindings and commitment hash.
+Public wallet funding and exit still reveal wallet-level metadata. A one-time key commitment binds derivation inputs; it does not prove a valid balance update. GPRU must verify the derivation, encrypted-state proof, asset and policy bindings, sequence, and nullifier before TCAP acts.
 
-## Commitment binding rules
+## Current status
 
-TCAP enforces a strict binding between the on-chain tip and the off-chain snapshot:
-
-```text
-tip.current_commitment == snapshot.new_commitment
-snapshot.new_commitment = SHA256(canonical snapshot record excluding new_commitment)
-tip.sequence == snapshot.sequence
-```
-
-This ensures the private snapshot is an exact successor of the on-chain tip state.
-
-## TSN CPI
-
-The TSN CPI wrapper passes only the opaque authorization digest, validity window, predecessor/successor commitments, policy, GPRU scope, and nullifier. It does not pass an `AcceptedIntentV1`, epoch commitment, settlement commitment, or TCAP authorization receipt. A GPRU signature alone cannot move custody; the approved TSN program must sign the CPI-derived authorization PDA.
-
-## Related pages
-
-<CardGroup cols={2}>
-  <Card title="TCAP Credits" icon="coins" href="/developers/tcap-tip-credits">
-    Developer integration with tip states and credit transitions.
-  </Card>
-
-  <Card title="Confidential Settlement" icon="lock" href="/developers/confidential-settlement">
-    Full TSN to TCAP authorization flow and ABI.
-  </Card>
-
-  <Card title="Epoch Treasury" icon="vault" href="/architecture/epoch-treasury">
-    How settlement liability is tracked at the treasury layer.
-  </Card>
-
-  <Card title="Identity & Routing" icon="id-card" href="/architecture/identity-and-routing">
-    TIN, master seed, and GPRU authorization derivation.
-  </Card>
-</CardGroup>
+GPRU exists as a derivation library and integration scaffold. The on-chain GPRU program, encrypted-balance proof verification, and atomic TCAP handoff are not deployed. The deployed TCAP program remains authoritative; confidential debit and exit are disabled.

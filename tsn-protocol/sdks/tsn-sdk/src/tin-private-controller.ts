@@ -1,6 +1,10 @@
 import nacl from "tweetnacl";
 import { PublicKey, type Connection } from "@solana/web3.js";
-import { deriveGpruRouteCommitment, deriveTinPrivacyReceivingKeyPair, GPRU_ROUTE_VERSION_V1 } from "./gpru.js";
+import {
+  deriveGpruElgamalKeyCommitment,
+  deriveGpruElgamalPublicKey,
+  GPRU_ELGAMAL_KEY_VERSION_V1,
+} from "./gpru.js";
 
 import {
   computePruConfigurationHash,
@@ -115,7 +119,7 @@ export async function createTinV1OwnerSeedEnvelope(params: {
   const masterSeed = generateTinMasterSeed();
   const marker = "tin-v1";
   const pruConfigurationHash = "0".repeat(64);
-  const tinPrivacyReceivingKeyPair = deriveTinPrivacyReceivingKeyPair(masterSeed);
+  const gpruElgamalPublicKey = deriveGpruElgamalPublicKey(masterSeed);
   try {
     const localSeed = await encryptTinMasterSeedLocally({
       masterSeed,
@@ -144,14 +148,16 @@ export async function createTinV1OwnerSeedEnvelope(params: {
     return {
       resourceCommitment: access.resourceCommitment,
       encryptedMasterSeed: encodeTinEnvelope(envelope),
-      gpruPublicCommitment: new Uint8Array(tinPrivacyReceivingKeyPair.publicKey),
-      gpruRouteVersion: GPRU_ROUTE_VERSION_V1,
-      gpruRouteCommitment: deriveGpruRouteCommitment(masterSeed),
+      gpruElgamalKeyVersion: GPRU_ELGAMAL_KEY_VERSION_V1,
+      gpruElgamalPublicKey,
+      gpruElgamalKeyCommitment: deriveGpruElgamalKeyCommitment(
+        GPRU_ELGAMAL_KEY_VERSION_V1,
+        gpruElgamalPublicKey,
+      ),
     };
   } finally {
     dataKey.fill(0);
     masterSeed.fill(0);
-    tinPrivacyReceivingKeyPair.secretKey.fill(0);
   }
 }
 

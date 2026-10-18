@@ -13,7 +13,7 @@ description: "TIP is the Transfer Identity Protocol. It issues and resolves tran
 | Public cryptographic account identifier      | 10-digit payment identity                                  |
 | Identifies a public key or account authority | TIP resolves the route associated with a TIN                |
 | May own token accounts                       | Does not itself hold tokens or act as a private key        |
-| Usually exposed directly                     | Binds to a GPRU public key, TIP root, and policy commitment |
+| Usually exposed directly                     | Resolved through TIP route metadata; not itself a wallet key |
 
 TIN is not a private key or token account. A confirmed TIN V1 binds to an owner wallet and encrypted identity data. A sender can use the resolved display name as a payment-confidence check; that name alone is not legal verification or payment authorization.
 
@@ -31,12 +31,11 @@ generate the random ten-digit number. The trusted issuer generates the TIN,
 checks that its commitment PDA is unused, and submits the owner-authorized
 creation through Receiver, Node verification, and Cranker execution.
 
-The TIP V1 route associated with a TIN stores a GPRU public commitment, its blinded TIP root commitment,
-a TIP-specific route version, and a policy commitment. It also stores a separately versioned GPRU route
-commitment derived locally from the owner-held master seed. The seed is not published. The existing TIP
-root remains active while GPRU is developed; the new commitment is only route-binding data and does not
-by itself prove ownership or authorize a GPRU operation. Earlier account layouts remain readable by
-the current resolution path, while new TIN creation requires both route versions and commitments.
+The current TIP V1 route stores a versioned GPRU ElGamal scan public key and its key commitment, alongside
+TIP route and policy commitments. The scan key is public and stable for the route; its matching secret
+material stays with the owner. GPRU uses the scan key to derive unique one-time public keys for transaction
+DNA outputs. The commitment detects key/version substitution, but does not prove ownership or a valid
+balance transition. On-chain derivation verification and TCAP integration remain future work.
 
 Current TIN V1 SDK helpers derive these PDAs:
 

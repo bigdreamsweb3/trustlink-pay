@@ -1,108 +1,54 @@
-# TCAP V2 debit and GPRU-to-GPRU credit design
+# TCAP confidential debit and credit target
 
-This document defines the next V2 custody path for TrustLink Pay. It is a design and implementation boundary; it does not claim that debit, transfer, or wallet exit is deployed.
+This document describes the target integration of GPRU transaction DNA with TCAP reserve accounting. It is a design specification, not a statement that the described flow is deployed. The TCAP program instructions and account layouts remain the implementation source of truth.
 
-## Scope and invariants
+## Responsibilities
 
-GPRU identifies ownership and authorization. TCAP owns custody, asset reserves, confidential-liability accounting, and opaque tip state. ZK-PRU, payment-intent PDAs, AcceptedIntent, epoch, receipt, route, and public per-transfer join accounts are outside this path.
+- **TIP** resolves a TIN and provides the associated versioned GPRU scan public key and route policy commitments.
+- **GPRU** creates unique per-transaction DNA outputs, verifies encrypted-state transitions and replay protection, and supplies a validated transition to TCAP.
+- **TCAP** owns governed assets, reserve accounting, and confidential liabilities. It updates those liabilities only after GPRU validates the corresponding transition.
+- **TSN Node** resolves and validates recipient routing, constructs the transition, and authorizes immutable settlement work.
+- **Receiver** accepts and stores ingress. **Cranker** submits the exact Node-authorized transaction; it does not resolve recipient secrets or change the transition.
 
-The existing `deposit_asset_v2` transaction moves tokens from a depositor token account into the governed TCAP vault and increases reserve `actual_assets`. The existing `credit_tcap_tin_tip_v2` transaction advances an opaque tip commitment only; it does not move tokens or create a spendable balance. A debit implementation must therefore add an explicit liability ledger before it can be enabled.
+## Credit path
 
-## Proposed instruction: `debit_tcap_gpru_tip_v2`
+For wallet-to-TIN credit, the sender signs payment details and a wallet reserve-deposit transaction. The SDK does not fetch the recipient's TIP route or construct a recipient transition. Receiver accepts the signed ingress; Node resolves the TIN from TIP, validates the route and asset, and derives a unique GPRU DNA with a one-time ElGamal public key. Node releases settlement work only after constructing and validating the complete transition.
 
-The debit instruction consumes an authorized source-tip transition and creates a destination-credit authorization. It must atomically:
+Cranker submits that work unchanged. GPRU must verify that the key derivation is valid for the registered scan key and DNA, validate the encrypted-state successor proof, and enforce replay protection. In the same atomic transaction, TCAP applies the corresponding governed-asset liability update. A failed GPRU proof or TCAP invariant must roll back the whole settlement.
 
-1. verify the source tip's previous commitment, next sequence, policy commitment, and non-repeated nullifier;
-2. verify `amount > 0`, the asset entry is active, and the token identifier matches the governed asset;
-3. bind the amount, token identifier, source tip, destination tip commitment, sequence, validity window, policy commitment, GPRU scope commitment, and nullifier into a domain-separated authorization digest;
-4. verify the TSN authorization signer derived from that digest;
-5. check `settled_confidential_liabilities + amount <= actual_assets` and update the confidential-liability counters atomically;
-6. advance the source tip commitment and sequence without storing a TIN, route, wallet, or recipient identifier;
-7. emit only an opaque transition digest, never the source or destination TIN.
+## Debit path
 
-The destination side is represented by a separate `credit_tcap_tin_tip_v2` transition using a fresh authorization digest. The debit and credit must not share a public per-transfer account or include the funding transaction's token accounts.
+A TIN debit requires an owner-authorized request and a proof that:
 
-## Authorization binding
+1. the prior encrypted state is valid and associated with the consumed state;
+2. the debit amount is no greater than the prior balance;
+3. the successor ciphertext represents the exact subtraction and remains in the allowed range;
+4. the asset, policy, DNA, expiry, and one-time nullifier match the authorization;
+5. the nullifier has not been used before.
 
-The digest domain must be distinct from the existing credit domain, for example `TSN_GPRU_TCAP_DEBIT_V2`, and include:
+The owner SDK may check a locally decrypted balance for user feedback. TCAP must rely on GPRU's verifiable proof and state transition, not that local check. The proof format and its verifier remain to be implemented and audited.
 
-```text
-source_tip PDA
-destination_tip commitment (not a destination TIN)
-amount
-token_id
-source previous commitment
-source new commitment
-source sequence
-policy commitment
-GPRU scope commitment
-nullifier
-valid-after slot
-expiry slot
-```
+## Encrypted addition and subtraction
 
-The TSN wrapper must derive its signer PDA from this digest and CPI into TCAP. No client-controlled signer may authorize a debit. The destination credit must use a separate digest and sequence, so replaying a debit authorization cannot mint another credit.
+The balance-state objective is to let the protocol apply credits and debits to encrypted state without decrypting the balance. Homomorphic arithmetic can support addition and subtraction over ciphertexts, but encrypted arithmetic alone does not prove that a debit is affordable. GPRU must verify a proof that binds the prior ciphertext, transaction amount, and successor ciphertext, including a non-negative range check. The concrete encryption scheme, proof construction, and account ABI are not finalized in the current program source.
 
-## Accounts allowed on each transaction
+## TIN-to-TIN transfer
 
-### Debit transaction
+A transfer must prove that the source debit and destination credit conserve value without exposing the amount or giving both outputs a shared public transfer address. Each side receives transaction-specific DNA. A proof must bind both encrypted successors to the same hidden amount and governed asset. TCAP's reserve liability changes must be consistent with the internal transfer and cannot create or destroy liabilities.
 
-Only these accounts are allowed:
+## Wallet boundaries and asset accounting
 
-- TSN authority signer and TSN mother escrow;
-- TSN and TCAP executable accounts;
-- TCAP global config;
-- the governed asset entry and reserve state;
-- opaque source tip root and source tip PDA;
-- an opaque authorization signer PDA;
-- the system program, if an authorization state account is required.
+Wallet deposits and exits remain publicly visible at their wallet boundary. TCAP tracks actual assets held in the governed vault separately from confidential liabilities owed to TIN holders. A public deposit can increase assets and a validated private credit can increase liabilities; a validated debit or exit must preserve solvency. Exact fee charging, rate conversion, and account structures must follow the eventual audited TCAP ABI rather than assumptions in this design note.
 
-The debit transaction must not include a source token account, governed vault token account, destination tip PDA, TIN account, route account, payment-intent account, epoch account, receipt, nullifier PDA, commitment-root PDA, or ZK-PRU account. A nullifier is data in the authorization and tip state, not a public nullifier account.
+## Privacy and authorization constraints
 
-### Credit transaction
+- Do not publish a stable TIP route address as every transfer's destination; use unique GPRU DNA outputs.
+- Do not send owner private keys or plaintext balances to Receiver, Node, or Cranker.
+- Do not treat a GPRU public-key commitment, hash, signature, or ciphertext shape as proof of a valid balance transition.
+- Do not let Cranker modify the Node-authorized asset, amount binding, DNA, proof, policy, sequence, or nullifier.
+- Do not report Receiver acceptance as Node verification or chain settlement. These are separate lifecycle events.
+- Public wallet deposits and exits reveal their wallet-level transaction data; DNA does not hide those boundaries.
 
-The current V2 credit allowlist remains the model:
+## Status
 
-- TSN authority signer and mother escrow;
-- TSN and TCAP executable accounts;
-- TCAP global config and governed asset entry;
-- opaque destination tip root and destination tip PDA;
-- opaque authorization signer PDA;
-- system program where required.
-
-Funding bookkeeping accounts and all debit-side accounts must be absent. The existing runner's `fundingAccountsInCredit: []` check should become a required regression test for both debit and credit.
-
-## Unlinkability from funding
-
-Funding is intentionally public: observers can see the depositor token account, mint, amount, and governed vault. Debit and credit must be separate opaque state transitions. Neither transaction may carry the funding signature, funding token account, vault token account, source TIN, destination TIN, or a shared transfer PDA. The only common protocol-level relationship is an authorization that the TSN and TCAP programs can verify; it must not be a publicly joinable account.
-
-This provides unlinkability from the funding transaction at the account and instruction layer. It does not make a public wallet exit invisible: an exit necessarily reveals its destination wallet, mint, and amount. The exit can remain unlinkable to a TIN only if it uses a separately authorized opaque liability release and never includes TIN or funding accounts.
-
-## Custody and liability model
-
-`actual_assets` is the token amount physically held by the governed vault. `settled_confidential_liabilities` (or a dedicated V2 liability counter) is the amount already credited to private ownership. A debit must reject when the resulting liability would exceed `actual_assets`; a later exit must decrement the liability and vault balance atomically. The current V2 credit instruction does not update this liability and therefore cannot be treated as a payment credit until the debit/liability instruction exists.
-
-## Implementation plan
-
-1. Add a V2 liability representation and conservation helpers to TCAP state, with unit tests for underflow, overflow, wrong asset, stale sequence, replayed nullifier, expired authorization, and reserve insolvency.
-2. Add `debit_tcap_gpru_tip_v2` to TCAP. Keep the existing V1 debit and exit handlers fail-closed and unused.
-3. Add `tsn_register_tcap_debit_authorization_v2` to TSN with a CPI account allowlist matching this document.
-4. Add a runner scenario that performs funding, debit authorization, and destination credit. It must inspect every transaction and fail on forbidden accounts/instructions.
-5. Add tests proving funding accounts are absent from debit and credit transactions and that replaying either authorization fails.
-6. Only after debit and credit compile and pass Devnet tests should a separate wallet-exit V2 instruction be designed. No live exit is part of this milestone.
-
-## Current blockers
-
-- No V2 debit instruction exists in the deployed source.
-- `TCapTinTipV1` has no spendable amount; commitment advancement alone cannot debit funds.
-- TCAP reserve liability fields exist, but no V2 instruction currently binds them to an opaque source-tip debit.
-- The existing V1 debit and exit paths are proof-gated and must not be promoted to the final architecture.
-- A V2 runner for debit plus destination credit does not yet exist.
-
-The next implementation command, after reviewing this specification, is:
-
-```bash
-npm run tcap:program:build:devnet
-```
-
-That command is only a compile baseline. No deployment or live exit is authorized by this document.
+The GPRU source currently contains the one-time ElGamal derivation primitive, but the deployable program, encrypted balance proof system, replay-safe state transition, and atomic TCAP handoff are not connected to the current chain path. Existing debit and exit paths remain disabled. Current program source and deployed account layouts define executable behavior; this document describes the target asset-accounting contract.

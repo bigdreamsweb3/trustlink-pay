@@ -24,7 +24,7 @@ Users control their identity authorities, device authorization, keys, and assets
 In practice, this means:
 
 - The owner wallet signs the TIN access authorization.
-- The owner device derives the GPRU scope and decrypts the snapshot locally.
+- The owner device recovers a transaction-specific GPRU private key and decrypts its state locally.
 - No operator (Receiver, Node, Cranker) receives the plaintext TIN master seed or private child keys.
 - The Mother authority creates settlement vouchers but cannot spend user funds.
 

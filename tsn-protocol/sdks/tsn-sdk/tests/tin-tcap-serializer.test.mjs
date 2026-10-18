@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Keypair } from "@solana/web3.js";
-import { deriveTipRootCommitment } from "../dist/gpru.js";
+import { deriveGpruElgamalKeyCommitment } from "../dist/gpru.js";
 import {
   serializeTinV1CreationChunkParams,
   serializeTinV1CreationCloseParams,
@@ -23,8 +23,9 @@ const stageParams = {
   routeVersion: 1,
   routeNonce: fixed32(5),
   tipRouteVersion: 1,
-  gpruPublicCommitment: relationship,
-  tipRootCommitment: deriveTipRootCommitment(relationship),
+  gpruElgamalKeyVersion: 1,
+  gpruElgamalPublicKey: relationship,
+  gpruElgamalKeyCommitment: deriveGpruElgamalKeyCommitment(1, relationship),
   policyCommitment: fixed32(6),
   expiryTs: 1_900_000_000,
 };
@@ -32,13 +33,13 @@ const stageParams = {
 test("TIN V1 stage serializer matches the current bounded staging instruction", () => {
   const data = serializeTinV1CreationStageParams(stageParams);
   assert.equal(data[0], 19);
-  assert.equal(data.length, 1 + 32 + 32 + 32 + 4 + 4 + 4 + 32 + 8 + 32 + 1 + 32 + 32 + 32 + 8);
+  assert.equal(data.length, 1 + 32 + 32 + 32 + 4 + 4 + 4 + 32 + 8 + 32 + 1 + 1 + 32 + 32 + 32 + 8);
   assert.throws(
     () => serializeTinV1CreationStageParams({
       ...stageParams,
-      tipRootCommitment: fixed32(7),
+      gpruElgamalKeyCommitment: fixed32(7),
     }),
-    /current GPRU commitment and blinded TIP seed/,
+    /valid versioned GPRU ElGamal key commitment/,
   );
 });
 

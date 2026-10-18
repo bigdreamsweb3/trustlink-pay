@@ -4,31 +4,37 @@
 
 ### Abstract
 
-The Transfer Settlement Network (TSN) is an intent-based protocol for stablecoin settlement. It separates payment identity, authorization, routing, settlement liability, and private accounting so that an automated submitter can execute an authorized payment without custody of the owner's keys or disclosure of the recipient's balance.
+The Transfer Settlement Network (TSN) is an intent-based protocol for stablecoin settlement. It separates payment identity, authorization, routing, settlement liability, and private accounting so that an automated submitter can execute an authorized payment without custody of the owner's keys or disclosure of the recipient's balance. This whitepaper distinguishes source-backed behavior from the target GPRU DNA design; current program instructions and account layouts remain authoritative for what executes today.
 
 The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
 
 ## 1. Protocol model
 
-A payment is a state transition authorized by the sender, not an instruction assembled by a relay. The owner device resolves a recipient TIN, binds the privacy-receiving relationship and policy, and signs an intent containing the asset, amount, validity window, replay material, and settlement commitments. Every later transition is bound to those signed values.
+A payment is a state transition authorized by the sender, not an instruction assembled by a relay. The sender signs the payment details and reserve-funding authorization. Receiver accepts and stores ingress, while Node independently resolves the recipient TIN through TIP, validates the route and asset, and constructs recipient transition data. The sender device does not resolve the recipient's TIP state or create the recipient's GPRU transition.
 
 The intended privacy-safe route is:
 
 ```text
-TIN → privacy-receiving root → GPRU → TSN Epoch Treasury
-    → AcceptedIntent → ConfidentialSettlement → TCAP tip credit
-    → encrypted private balance snapshot → owner private read
+Sender authorization and funding
+    → Receiver ingress acceptance
+    → Node TIP resolution and verification
+    → unique GPRU transaction DNA
+    → Cranker submission of immutable authorized work
+    → GPRU proof verification
+    → atomic TCAP reserve-liability update
+    → owner-local recovery of the one-time key and private state
 ```
 
-TIN is a payment identity. GPRU is scoped, non-custodial authorization and
-routing; it never holds a balance. TSN coordinates settlement liability and
-Cranker reimbursement. TCAP (Transfer Confidential Asset Protocol) holds
-governed custody and records opaque private balance transitions. The legacy
-AcceptedIntent and per-transfer receipt path is not used for new transfers.
+TIP is the Transfer Identity Protocol; TIN is one 10-digit identity within
+TIP. GPRU (Guarded Privacy Routing Unit) is being developed as a standalone
+protocol for unique transaction DNA and proof-verified confidential state
+transitions. TCAP (Transfer Confidential Asset Protocol) governs approved
+assets and their reserves. The existing TCAP instructions define current
+behavior; the new GPRU DNA flow is not yet deployed.
 
 ## 2. Participants and authority
 
-The owner device holds the privacy-receiving root, signing material and snapshot key. The Receiver accepts authenticated, redacted work. The Node verifies signatures, policy, commitments, sequence and expiry. Mother and TSN authorize the ConfidentialSettlement transition. The Epoch Treasury records funded liability. A Cranker submits the exact authorized transaction and pays execution fees; it cannot alter the amount, asset, recipient, commitments, policy, sequence or nullifier. TCAP verifies the receipt and advances the recipient tip.
+The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request, resolves TIP, and constructs the recipient transition. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. In the target design, GPRU verifies DNA derivation and encrypted-state proofs before TCAP changes reserve liabilities. The target proof handoff is not yet deployed.
 
 No coordination role grants a spending key or unilateral authority to redirect value.
 
@@ -117,15 +123,16 @@ The cross-chain route extends the settlement boundary; it does not replace the n
 
 The current domain executes these transitions:
 
-1. The device resolves the recipient TIN and signs the canonical payment intent.
-2. The Receiver stores authenticated redacted work; the Node verifies it.
-3. A Cranker submits the exact governed Solana funding and acceptance transaction.
-4. TSN verifies the accounts and records the aggregate liability.
-5. The Node activates settlement only after funding and route checks pass.
-6. Mother/TSN authorizes the applicable settlement transition.
-7. The Cranker submits the exact authorized Solana credit or exit transaction.
-8. TCAP checks the receipt, commitments, sequence, policy, scope, validity window, and nullifier.
-9. The owner device verifies and decrypts the encrypted snapshot addressed by the resulting commitment.
+1. Sender signs payment details and authorizes wallet reserve funding.
+2. Receiver accepts and stores signed ingress work.
+3. Node independently resolves the TIN through TIP, validates route and asset data, and prepares the recipient transition.
+4. Node releases immutable verified work; Cranker submits the exact transaction.
+5. Under the target design, GPRU verifies the unique DNA derivation, encrypted-state proof, and replay rules.
+6. TCAP applies the governed liability update atomically with the GPRU result.
+7. Recipient discovers the DNA output and derives its one-time private key locally.
+
+The target GPRU verification and TCAP handoff are not yet deployed. Existing
+program instructions and layouts govern current chain behavior.
 
 The legacy `AcceptedIntentV1` and `ConfidentialSettlement` receipt path is not
 the privacy-safe V2 path. It remains in source only for migration and audit

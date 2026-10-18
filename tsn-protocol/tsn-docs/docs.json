@@ -30,6 +30,12 @@
     "icon": "book-open",
     "url": "about/trustlink-labs"
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/overview/introduction"
+    }
+  ],
   "navigation": {
     "tabs": [
       {

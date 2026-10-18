@@ -61,8 +61,9 @@ test("TIN ingress accepts the current V1 shape and rejects retired or plaintext 
     routeVersion: 1,
     routeNonce: "route-nonce",
     tipRouteVersion: 1,
-    gpruPublicCommitment: "gpru-public",
-    tipRootCommitment: "tip-root",
+    gpruElgamalKeyVersion: 1,
+    gpruElgamalPublicKey: "gpru-elgamal-public-key",
+    gpruElgamalKeyCommitment: "gpru-elgamal-commitment",
     policyCommitment: "policy",
   };
   assert.equal(createReceivedWork({ kind: "TIN_OPERATION", payload }).status, "RECEIVED");

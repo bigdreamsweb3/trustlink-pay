@@ -1,136 +1,45 @@
-# TCAP credit values explained
+# TIP, GPRU, and TCAP values explained
 
-This page explains the values used by the live TSN → TCAP credit path. They
-are bindings and verification inputs, not a public balance record.
+This guide distinguishes TIP route data from the target GPRU transaction state and TCAP reserve accounting. It describes the design direction; current on-chain instructions and account layouts remain authoritative for deployed behavior.
 
-## Privacy-receiving root
+## TIP scan public key
 
-The privacy-receiving root is owner-device material for receiving payments. The
-root itself stays on the authorized device. A device derives a one-way
-commitment from it when it needs a public routing handle. The root is not sent
-to Receiver, Node, Cranker, TSN, or TCAP.
+TIP V1 stores a versioned GPRU ElGamal scan public key. The matching secret material stays with the owner. Node can use the public key to derive a new transaction-specific receiving key while the owner is offline; the recipient later recovers its matching private key locally.
 
-## `TCAP_TIP_ROOT_COMMITMENT`
+## `gpruElgamalKeyCommitment`
 
-This 32-byte commitment scopes a TCAP tip. It is the seed input for the
-`tcap:tin-tip:v1` PDA. It lets the chain find the correct tip without learning
-the privacy-receiving root, TIN, or wallet address.
+This is a domain-separated integrity commitment to the registered ElGamal public key and its key version. It lets consumers detect that the public key or version changed unexpectedly. It is not the ElGamal key, the secret key, an encryption of the balance, or proof that a transaction is valid.
 
-## Tip PDA (`TCapTinTipV1`)
+## Transaction DNA and one-time key
 
-The tip stores the current balance commitment, transition sequence, policy
-commitment, last transition nullifier, frozen flag, version, and bump. It does
-not store a TIN, privacy-receiving root, seed, plaintext balance, snapshot key,
-or token account. A credit advances the tip from one commitment to the next.
+GPRU's target uses a unique DNA for each transaction. Node derives an ephemeral public point and one-time ElGamal public key from fresh randomness, the DNA, and the TIP scan public key. A one-time commitment binds the derivation version, DNA, ephemeral point, and one-time public key. The recipient derives the matching private key later using owner-held secret material.
 
-## Policy commitment
+The repository contains the key derivation primitive and owner recovery helper. The deployable GPRU program, on-chain derivation verification, encrypted balance proof, and TCAP handoff are not yet complete. A one-time key makes the public output unique; it does not by itself validate a credit or debit.
 
-The policy commitment binds the tip to the policy under which transitions are
-accepted. Credit arguments and the TSN authorization receipt must carry the
-same value as the tip. A mismatch prevents the transition.
+## Confidential balance transitions
 
-## Initial/genesis commitment
+The intended GPRU program verifies the relation between an encrypted prior state and its successor. For a debit, it must establish that the old balance covers the amount, the successor is the correct subtraction, and the result remains in the allowed range. For a TIN-to-TIN transfer, it must prove that source debit equals destination credit without revealing the amount or linking both outputs through a shared public identifier.
 
-The initial commitment is the tip's starting state and becomes
-`previous_commitment` for the first credit. A controlled Devnet fixture may
-derive a deterministic nonzero genesis value; production devices must use the
-owner's authorized initial state.
+The owner SDK may check a locally decrypted balance to give immediate feedback. TCAP must rely on the on-chain proof result, not the SDK check. TCAP applies reserve-liability changes only after GPRU verification succeeds in the same atomic transaction.
 
-## Commitments and sequence
+## Public wallet boundaries
 
-- `previous_commitment` is the commitment currently stored by the tip.
-- `new_commitment` is the successor state authorized by TSN and written by
-  TCAP after a successful credit.
-- `sequence` is the strictly increasing transition number. TCAP requires the
-  next sequence, preventing stale transitions from being replayed.
+A wallet deposit is visible at its public wallet boundary; a wallet exit is likewise visible. GPRU DNA is intended to reduce stable recipient-route linkability during private state updates. It does not hide public wallet funding, public exits, or transaction timing.
 
-Commitments hide private balance state while binding the state transition.
-They are not encryption keys and cannot be used alone to spend.
-
-## Nullifier
-
-A nullifier is a one-time identifier for a transition. TCAP records it in a
-nullifier PDA and rejects a consumed nullifier. This protects against replay
-and double application.
-
-## GPRU scope commitment
-
-The GPRU scope commitment binds authorization to the permitted routing and
-authorization scope. GPRU is non-custodial: it never holds balances or
-spendable keys. TCAP checks that the scope in the receipt matches the credit
-arguments.
-
-## TSN values
-
-- **Mother Escrow** is the TSN authority boundary for epoch coordination and
-  ConfidentialSettlement authorization.
-- **Epoch ID** selects the settlement epoch. The canonical epoch commitment
-  PDA is derived from Mother Escrow and this ID.
-- **Accepted intent root** commits to the accepted, owner-authorized intents
-  for the epoch.
-- **Settlement commitment** binds the TSN settlement context carried into the
-  encrypted owner snapshot.
-- **Asset commitment** binds authorization to the governed TCAP asset record,
-  token program, mint, and policy context.
-
-These values let TSN and TCAP verify the same authorization without exposing a
-payment identity or private balance.
-
-## Encrypted snapshot and key
-
-After credit, the owner device constructs a canonical private balance snapshot
-and computes its commitment. The snapshot is encrypted with an owner-held
-snapshot key. The encrypted record may be stored in a snapshot store, but the
-key and plaintext remain under owner control. A private read fetches the tip
-commitment, locates the matching ciphertext, and decrypts and verifies it
-locally.
-
-## Why the TIN stays private
-
-The tip PDA is derived from a one-way commitment, not from a public TIN. The
-tip stores no TIN field and emits no plaintext receiving root. Public chain
-state contains only commitments, sequence, policy references, nullifier,
-token identifier, and validity data required for verification. A commitment
-does not provide a practical inverse to recover the TIN or root.
-
-## Credit flow
+## Service roles
 
 ```text
-Owner device authorizes intent
-  → SDK binds TIP route, root commitment, policy, and GPRU scope
-  → Receiver stores redacted work
-  → Node verifies signatures, commitments, sequence, lease, and expiry
-  → Mother/TSN authorizes ConfidentialSettlement for the epoch
-  → TSN CPI registers the complete TCAP receipt
-  → TCAP validates receipt, advances the tip, and consumes the nullifier
-  → Owner device encrypts and stores the successor private snapshot
-  → Owner device reads and decrypts the private balance locally
+Sender signs payment and reserve-funding details
+  → Receiver accepts and stores ingress work
+  → Node resolves TIP and constructs the recipient's GPRU transition
+  → Cranker submits the exact Node-authorized transaction
+  → GPRU verifies the proof and replay rules
+  → TCAP atomically applies the reserve-liability change
+  → Recipient derives the one-time private key and reads its state locally
 ```
 
-## Devnet test derivations versus production material
+Receiver acceptance, Node verification, Cranker submission, and on-chain confirmation are separate events. Neither a commitment nor a status at one stage proves completion at a later stage.
 
-The repository provides explicitly labelled controlled-Devnet derivations for
-the fixture wallet and a test identity label. They are deterministic test
-bindings, not production wallet recovery, spend keys, or claims about a real
-owner balance. Production integrations must supply privacy-root, policy,
-genesis, and authorization material generated and retained by the authorized
-owner device and signed TSN workflow.
+## Current implementation boundary
 
-## Glossary
-
-| Term | Meaning | Public on-chain? |
-|---|---|---|
-| TIN | Transfer Identity Number for payment identity and route discovery | No plaintext TIN on the tip |
-| Privacy-receiving root | Owner-device receiving material | No |
-| GPRU | Non-custodial authorization and routing scope | Only its commitment/binding |
-| Tip PDA | `TCapTinTipV1` state account | Yes, commitments and control fields |
-| Commitment | One-way binding to private state or authorization context | Yes, as required for verification |
-| Nullifier | One-time transition identifier | Yes |
-| Mother Escrow | TSN epoch coordination authority account | Yes |
-| Epoch commitment | Canonical TSN state for an epoch | Yes |
-| Snapshot key | Owner encryption/decryption key | No |
-| Encrypted snapshot | Ciphertext containing private balance state | Ciphertext/locator may be stored; plaintext is private |
-| TCAP | Transfer Confidential Asset Protocol private balance accounting layer | Program state public; balances encrypted |
-
-ZK-PRU is retired historical material and is not part of the live receiving,
-credit, balance, or spending architecture.
+The GPRU key derivation exists in source but is not integrated with a deployable GPRU program or TCAP settlement ABI. TCAP's present instructions define current behavior; confidential debit and exit remain disabled. See [Current architecture](./CURRENT-ARCHITECTURE.md), [GPRU and TCAP route](./gpru-tcap-route.md), and [TCAP target design](./TCAP-V2-DEBIT-CREDIT-DESIGN.md).

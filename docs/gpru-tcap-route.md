@@ -1,58 +1,36 @@
-# GPRU derivation and TCAP credits through TIP routes
+# GPRU DNA routing with TIP and TCAP
 
-**Protocol version:** GPRU V1 / TCAP route V1. **Commit reference:** 394c4f9 (GPRU and TCAP implementation).
+## Purpose
 
-## Summary
+GPRU (Guarded Privacy Routing Unit) is a protocol layer for creating and verifying transaction-specific, unlinkable recipient state. TIP identifies the transfer identity and provides the owner's route key material. TCAP governs the asset reserve and applies only a validated GPRU transition. A TIN is one identity within TIP, not a synonym for TIP.
 
-GPRU is a TSN-derived settlement identity. We derive it from a TIN privacy-receiving root, a settlement commitment, epoch context, and authorization scope. It is deliberately **not** a wallet, token-account owner, receiving wallet, or balance container. Actual settlement remains inside TSN escrow and settlement-token primitives.
+## Current TIP route data
 
-TCAP route V1 replaces the retired public/static ZK-PRU route model on a TIN
-with an opaque relationship commitment, relationship reference, and policy
-commitment. Encrypted TIN metadata remains committed as before. The on-chain
-registry never receives policy plaintext, a static PRU list, pre-generated
-receiving wallets, or a maximum-PRU field.
+The current TIP V1 registry includes a versioned GPRU ElGamal scan public key and a commitment to that key, plus TIP route and policy commitments. The scan key is stable for the route and is public. Its commitment detects key/version substitution; it is not a secret, proof, encryption key, DNA, or balance.
 
-## Implementation notes
+## GPRU transaction DNA target
 
-TypeScript exports `deriveGpruIdentity`, canonical authorization-message construction, binding verification, and Ed25519 signature verification from `@trustlink/tsn-sdk/gpru`. The canonical bytes frame each value with a four-byte big-endian length, preventing ambiguous concatenation.
+For each credit or debit, Node will create a fresh DNA identifier and use fresh randomness with the route's scan public key to derive a one-time ElGamal public key. It will bind the DNA, derivation version, ephemeral public point, and one-time public key into a domain-separated commitment. The transaction uses this unique DNA rather than publishing a stable TIP route address as its per-transfer destination.
 
-The TIN Registrar appends TCAP fields to `TinAccount` so existing accounts can
-migrate through the update processor. TCAP V1 requires non-zero
-relationship/reference/policy commitments and rejects legacy PRU configuration
-and route-envelope data. The staged update processor applies the same route
-constraints. Route version `0` is migration-only and must not be used for new
-accounts.
+The owner SDK uses owner-held secret material plus the public DNA and ephemeral point to derive the matching private key locally. Node and Cranker do not receive that private key or decrypt the owner's balance. The Rust GPRU derivation core, Node native adapter, and SDK recovery helper exist in source. They are not connected to a deployable GPRU program or the TCAP settlement ABI.
 
-The Python Cranker daemon has no custody role here: it may carry opaque TCAP references and submit owner-authorized updates, but cannot derive a GPRU without the user-controlled TIN privacy-receiving root or use one to control a token account.
+## Credit flow
 
-## Usage
+1. Sender signs payment details and authorizes reserve funding. The sender SDK does not resolve the recipient's TIP state or construct recipient GPRU state.
+2. Receiver accepts and stores the signed ingress work according to its ingress contract.
+3. Node resolves the TIN through TIP, validates the route, asset, and signed authorization, then derives the unique DNA and one-time public key.
+4. Node creates a complete GPRU transition and releases it as immutable settlement work only after protocol checks pass.
+5. Cranker submits the exact authorized transaction and cannot rewrite its DNA, amount binding, proof, or destination.
+6. GPRU verifies key-derivation evidence, encrypted-state proof, sequence/replay protection, and asset bindings. It hands the validated result to TCAP atomically.
+7. TCAP updates the governed confidential liability only when GPRU verification and its reserve invariants succeed.
+8. The recipient SDK discovers its DNA output and derives the matching private key locally to recover its own state.
 
-```ts
-import {
-  deriveGpruIdentity,
-  createCanonicalGpruAuthorizationMessage,
-} from "@trustlink/tsn-sdk/gpru";
-const gpruIdentity = deriveGpruIdentity({
-  tinPrivacyReceivingRoot,
-  settlementCommitment,
-  epochContext,
-  authorizationScope,
-});
-const message = createCanonicalGpruAuthorizationMessage({
-  tinPrivacyReceivingRoot,
-  settlementCommitment,
-  epochContext,
-  authorizationScope,
-  gpruIdentity,
-});
-```
+## Debit and TIN-to-TIN transfer
 
-A Cranker submits the usual owner-signed TIN update transaction; it does not create any receiving wallet or token account for the GPRU.
+For a debit, the owner proves that the prior encrypted balance covers the requested amount and that the successor is the correct subtraction. For a TIN-to-TIN transfer, the proof must also establish source/destination amount conservation while keeping each DNA unique and hiding the amount. TCAP must not accept an SDK-only balance check. Its state change must be conditional on GPRU's on-chain proof verification and replay protection in the same atomic transaction.
 
-## Security and privacy considerations
+Wallet deposits and wallet exits remain public at their wallet boundary. The privacy objective is to avoid publishing a stable recipient TIP address on every confidential transfer; it does not conceal public funding or exit transaction metadata.
 
-The derivation uses separate domain tags for identity derivation and authorization signing. Settlement commitment, epoch, and scope are bound to both identity and authorization. TCAP stores only fixed-length commitments/references. TIN encrypted metadata stays encrypted off chain; public account state carries only its hash. Legacy ZK-PRU fields are rejected for TCAP routes, preventing accidental mixed-mode public route inventories.
+## Status and security boundary
 
-## Testing notes
-
-Run `npm test` from `tsn-protocol/sdks/tsn-sdk` for deterministic derivation, canonical-byte signature verification, and existing TSN tests. Run `cargo check` from `tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program` to check the TIN Registrar processor and account serialization changes.
+Key derivation alone is not a complete privacy protocol or proof of balance correctness. The deployable GPRU program, DNA state and instruction contract, on-chain derivation and balance-proof verification, replay protection, and atomic TCAP handoff are not part of the current chain path. No plaintext private key or balance may be sent to Receiver, Node, or Cranker. No hash or key commitment alone proves a valid balance transition.

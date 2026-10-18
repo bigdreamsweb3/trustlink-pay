@@ -10,7 +10,7 @@ TSN uses distinct key material for each role. No single key dominates the protoc
 
 | Key | Owner | What it authorizes | Rotation model |
 | --- | --- | --- | --- |
-| Sender/owner root wallet \+ `wallet-owner-signature-v1` envelope | Authorized user device | Canonical TIN-access authorization, local data key derivation, GPRU authority for the exact scope | Wallet rotation creates a new owner binding; old TIN requires re-authorization |
+| Sender/owner root wallet + `wallet-owner-signature-v1` envelope | Authorized user device | Canonical TIN access and local recovery of owner-held GPRU key material | Wallet rotation creates a new owner binding; old TIN requires re-authorization |
 | TIN owner-key commitment | TIN registry (public) | Verification material for route integrity and ownership claims | Bound to the current wallet owner; changes with wallet rotation |
 | Mother authority key | Mother / TSN program | Creation of the one-time `SettlementDna` PDA at the derived opaque slot | Program-governed; rotated via program upgrade or governance instruction |
 | Node-signed Ed25519 permit key | TSN Node | Short-lived permit binding opaque slot, commitment, nullifier, lease, amount, mint, recipient, expiry | Per-lease generation; expires no later than the Receiver lease |
@@ -24,7 +24,7 @@ TSN uses distinct key material for each role. No single key dominates the protoc
 
 ### Sender/owner wallet
 
-The root wallet signs the `wallet-owner-signature-v1` envelope. This authorizes access to the TIN, derives the local data key on the current device, decrypts the seed locally, and derives the GPRU authority scoped to the exact authorization context. The plaintext seed and derived child keys never leave the device.
+The root wallet signs the `wallet-owner-signature-v1` envelope to authorize local access to TIN recovery material. The owner device derives the stable GPRU scan secret locally and uses it with public DNA and ephemeral-key data to recover the matching one-time private key. The plaintext seed, scan secret, and one-time private keys never leave the device.
 
 ### TIN owner-key commitment
 

@@ -8,4 +8,7 @@
 //! the current ciphertext to this successor ciphertext.
 
 pub mod proofs;
+pub mod stealth_keys;
 pub mod state;
+
+mod ffi;

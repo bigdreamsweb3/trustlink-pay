@@ -98,7 +98,7 @@ solana confirm <SIGNATURE> --url devnet
 
 # Use comments (#) to explain what each command does.
 
-node scripts/tin-lookup.mjs 9124678485 --rpc https://api.devnet.solana.com
+node scripts/tin-lookup.mjs 6486695615 --rpc https://api.devnet.solana.com
 
 # PROGRAM BUILD/DEPLOY SCRIPTS RUNNER
 
@@ -140,3 +140,7 @@ The receiving root comes from the TIN owner’s master seed. GPRU uses it with e
 <!--  -->
 
 I found the key distinction: the verifier’s proof context can prove that a particular successor ciphertext represents an in-range value, but it does not by itself prove that the successor equals the previous balance minus the requested debit. I’m coding the reusable verifier-context binding as a GPRU core module and keeping the spend path closed until that predecessor-to-successor relation is also enforced.
+
+<!--  -->
+
+For Solana’s ElGamal key format, if the stable public key is \(P=s^{-1}H\), Node can choose a random \(r\), publish \(E=rH\), and compute the shared point \(S=rP\). The owner computes the same \(S\) from \(E\) and their secret. Both derive a tweak \(t\) from \(S\) and the unique DNA, then use one-time public key \(P\_{\text{DNA}}=tP\); the owner recovers its matching secret as \(s/t\). Solana’s implementation defines its public key using the inverse secret scalar, which is why the matching secret derivation takes this form. Solana ElGamal implementation https://github.com/solana-program/zk-elgamal-proof/blob/main/zk-sdk/src/encryption/elgamal.rs

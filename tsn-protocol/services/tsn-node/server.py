@@ -449,8 +449,8 @@ def _sign_node_verification(
                 "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce",
                 "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
                 "routeVersion", "routeNonce",
-                "tipRouteVersion", "gpruPublicCommitment", "tipRootCommitment", "policyCommitment",
-                "gpruRouteVersion", "gpruRouteCommitment",
+                "tipRouteVersion", "gpruElgamalKeyVersion", "gpruElgamalPublicKey",
+                "gpruElgamalKeyCommitment", "policyCommitment",
             },
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
@@ -1070,18 +1070,11 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     route_version = int.from_bytes(take(8, "route version"), "little")
     route_nonce = take(32, "route nonce")
     tip_route_version = take(1, "TIP route version")[0]
-    gpru_public_commitment = take(32, "GPRU public commitment")
-    tip_root_commitment = take(32, "TIP root commitment")
+    gpru_elgamal_key_version = take(1, "GPRU ElGamal key version")[0]
+    gpru_elgamal_public_key = take(32, "GPRU ElGamal public key")
+    gpru_elgamal_key_commitment = take(32, "GPRU ElGamal key commitment")
     policy_commitment = take(32, "policy commitment")
-    # Older TIN V1 registries may have the historical 32-byte zero allocation tail.
-    # The new route extension is exactly 33 bytes, so old records remain readable.
-    if len(buffer) - offset >= 33:
-        gpru_route_version = take(1, "GPRU route version")[0]
-        gpru_route_commitment = take(32, "GPRU route commitment")
-    else:
-        gpru_route_version = 0
-        gpru_route_commitment = bytes(32)
-    if version != 1 or status != 1 or any(buffer[offset:]):
+    if version != 2 or status != 1 or any(buffer[offset:]):
         raise ValueError("unsupported private TIN account schema")
     if lookup_commitment == bytes(32) or route_version < 1:
         raise ValueError("private TIN account commitments are incomplete")
@@ -1092,11 +1085,10 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
         "routeVersion": route_version,
         "routeNonce": route_nonce.hex(),
         "tipRouteVersion": tip_route_version,
-        "gpruPublicCommitment": gpru_public_commitment.hex(),
-        "tipRootCommitment": tip_root_commitment.hex(),
+        "gpruElgamalKeyVersion": gpru_elgamal_key_version,
+        "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
+        "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
         "policyCommitment": policy_commitment.hex(),
-        "gpruRouteVersion": gpru_route_version,
-        "gpruRouteCommitment": gpru_route_commitment.hex(),
     }
 
 
@@ -1165,41 +1157,32 @@ async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
             return None
         if int(material.get("tipRouteVersion") or 0) != 1:
             return None
-        gpru_public_commitment = _resolve_tin_gpru_public_commitment(
-            material["gpruPublicCommitment"], material["tipRootCommitment"]
-        )
-        if not gpru_public_commitment:
+        gpru_elgamal_public_key = bytes.fromhex(material["gpruElgamalPublicKey"])
+        gpru_elgamal_key_commitment = bytes.fromhex(material["gpruElgamalKeyCommitment"])
+        if int(material.get("gpruElgamalKeyVersion") or 0) != 1 or len(gpru_elgamal_public_key) != 32:
             return None
+        expected_key_commitment = hashlib.sha256(
+            b"TSN_GPRU_ELGAMAL_KEY_COMMITMENT_V1\0"
+            + bytes([int(material["gpruElgamalKeyVersion"])])
+            + gpru_elgamal_public_key
+        ).digest()
+        if not hmac.compare_digest(expected_key_commitment, gpru_elgamal_key_commitment):
+            return None
+        tip_root_commitment = hashlib.sha256(
+            b"TSN_TIP_ROOT_COMMITMENT_V1\0" + gpru_elgamal_key_commitment
+        ).hexdigest()
         return {
             "tin": str(tin),
             "ownerPubkeyHash": material["ownerPubkeyHash"],
             "tipRouteVersion": 1,
-            "gpruPublicCommitment": gpru_public_commitment,
-            "tipRootCommitment": material["tipRootCommitment"],
+            "gpruElgamalKeyVersion": material["gpruElgamalKeyVersion"],
+            "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
+            "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
+            "tipRootCommitment": tip_root_commitment,
             "policyCommitment": material["policyCommitment"],
-            "gpruRouteVersion": material["gpruRouteVersion"],
-            "gpruRouteCommitment": material["gpruRouteCommitment"],
         }
     except (HTTPException, ValueError, TypeError, binascii.Error):
         return None
-
-
-def _resolve_tin_gpru_public_commitment(gpru_public_commitment: str, tip_root_commitment: str) -> Optional[str]:
-    """Return the public GPRU curve point only for the active field layout."""
-    try:
-        commitment = bytes.fromhex(gpru_public_commitment)
-        reference = bytes.fromhex(tip_root_commitment)
-    except (TypeError, ValueError):
-        return None
-    if len(commitment) != 32 or len(reference) != 32:
-        return None
-    current_tip_seed = hashlib.sha256(
-        b"TSN_TIP_ROOT_COMMITMENT_V1\0" + commitment
-    ).digest()
-    if hmac.compare_digest(current_tip_seed, reference):
-        return commitment.hex()
-    return None
-
 
 
 async def get_program_accounts(account_size: int) -> list[dict[str, Any]]:
@@ -1795,7 +1778,7 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
     if not route:
         raise HTTPException(422, "Recipient TIN has no active TIP route")
     _assert_recipient_hash_matches_owner(req.recipientHash, str(route.get("ownerPubkeyHash") or ""))
-    recipient_route_commitment = str(route["gpruPublicCommitment"]).lower()
+    recipient_route_commitment = str(route["gpruElgamalKeyCommitment"]).lower()
     recipient_route_version = int(route["tipRouteVersion"])
     return {
         "recipientTin": recipient_tin,
@@ -1856,18 +1839,17 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     tip_route_version = int(_field(payload, "tip_route_version", "tipRouteVersion", default=0))
     if tip_route_version != 1:
         raise HTTPException(422, "Current TIN V1 requires TIP route version 1")
-    gpru_public_commitment = _decode_hash32(_field(payload, "gpru_public_commitment", "gpruPublicCommitment", default=""), "gpru_public_commitment")
-    tip_root_commitment = _decode_hash32(_field(payload, "tip_root_commitment", "tipRootCommitment", default=""), "tip_root_commitment")
+    gpru_elgamal_key_version = int(_field(payload, "gpru_elgamal_key_version", "gpruElgamalKeyVersion", default=0))
+    gpru_elgamal_public_key = _decode_hash32(_field(payload, "gpru_elgamal_public_key", "gpruElgamalPublicKey", default=""), "gpru_elgamal_public_key")
+    gpru_elgamal_key_commitment = _decode_hash32(_field(payload, "gpru_elgamal_key_commitment", "gpruElgamalKeyCommitment", default=""), "gpru_elgamal_key_commitment")
     policy_commitment = _decode_hash32(_field(payload, "policy_commitment", "policyCommitment", default=""), "policy_commitment")
-    gpru_route_version = int(_field(payload, "gpru_route_version", "gpruRouteVersion", default=0))
-    gpru_route_commitment = _decode_hash32(_field(payload, "gpru_route_commitment", "gpruRouteCommitment", default=""), "gpru_route_commitment")
-    if any(value == bytes(32) for value in (gpru_public_commitment, tip_root_commitment, policy_commitment, gpru_route_commitment)):
-        raise HTTPException(422, "TIP route GPRU public, root, policy, and GPRU route commitments must be nonzero")
-    if gpru_route_version != 1:
-        raise HTTPException(422, "Current TIP creation requires GPRU route version 1")
-    expected_tip_root = hashlib.sha256(b"TSN_TIP_ROOT_COMMITMENT_V1\0" + gpru_public_commitment).digest()
-    if not hmac.compare_digest(expected_tip_root, tip_root_commitment):
-        raise HTTPException(422, "TIP GPRU public commitment does not match its TIP root commitment")
+    if gpru_elgamal_key_version != 1 or any(value == bytes(32) for value in (gpru_elgamal_public_key, gpru_elgamal_key_commitment, policy_commitment)):
+        raise HTTPException(422, "TIP requires nonzero versioned GPRU ElGamal key data and policy commitment")
+    expected_gpru_key_commitment = hashlib.sha256(
+        b"TSN_GPRU_ELGAMAL_KEY_COMMITMENT_V1\0" + bytes([gpru_elgamal_key_version]) + gpru_elgamal_public_key
+    ).digest()
+    if not hmac.compare_digest(expected_gpru_key_commitment, gpru_elgamal_key_commitment):
+        raise HTTPException(422, "GPRU ElGamal public key does not match its versioned commitment")
 
     expected_hash = hashlib.sha256(b"".join([
         b"TSN_TIN_V1_CREATE", owner_bytes, lookup_commitment_bytes,
@@ -1876,8 +1858,8 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         _encode_u32_le(len(encrypted_master_seed_bytes)), encrypted_master_seed_bytes,
         metadata_hash_bytes,
         route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tip_route_version]),
-        gpru_public_commitment, tip_root_commitment, policy_commitment,
-        bytes([gpru_route_version]), gpru_route_commitment,
+        bytes([gpru_elgamal_key_version]), gpru_elgamal_public_key,
+        gpru_elgamal_key_commitment, policy_commitment,
         _encode_signed_i64_le(expiry),
     ])).digest()
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
@@ -1913,17 +1895,19 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "encryptedTinRecovery": encrypted_tin_recovery, "encryptedMasterSeed": encrypted_master_seed,
         "encryptedMetadataHash": encrypted_metadata_hash.lower(),
         "routeVersion": route_version, "routeNonce": route_nonce.lower(),
-        "tipRouteVersion": tip_route_version, "gpruPublicCommitment": gpru_public_commitment.hex(),
-        "tipRootCommitment": tip_root_commitment.hex(), "policyCommitment": policy_commitment.hex(),
-        "gpruRouteVersion": gpru_route_version, "gpruRouteCommitment": gpru_route_commitment.hex(),
+        "tipRouteVersion": tip_route_version,
+        "gpruElgamalKeyVersion": gpru_elgamal_key_version,
+        "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
+        "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
+        "policyCommitment": policy_commitment.hex(),
         "displayNameStatus": "opaque_to_node", "displayNameReadableByNode": False,
         "envelopeChecks": {
             "ownerAuthorization": {"intentHashVerified": True, "signatureVerified": True},
             "encryptedIdentityEnvelope": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "encryptedTinRecovery": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
             "encryptedMasterSeed": {"present": True, "base64Decoded": True, "includedInOwnerIntentHash": True, "ciphertextOpenedByNode": False},
-            "gpruPublicCommitment": {"present": True, "includedInOwnerIntentHash": True},
-            "gpruRouteCommitment": {"present": True, "includedInOwnerIntentHash": True},
+            "gpruElgamalPublicKey": {"present": True, "includedInOwnerIntentHash": True},
+            "gpruElgamalKeyCommitment": {"present": True, "includedInOwnerIntentHash": True},
         },
     }
     return base
@@ -2628,7 +2612,7 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
         raise ValueError("Recipient TIN has no active on-chain TIP route")
     if int(relation.get("tipRouteVersion") or 0) != int(verified_fields["recipientRouteVersion"]):
         raise ValueError("Recipient route version differs from the signed authorization")
-    if not hmac.compare_digest(str(relation.get("gpruPublicCommitment") or "").lower(), str(verified_fields["recipientRouteCommitment"]).lower()):
+    if not hmac.compare_digest(str(relation.get("gpruElgamalKeyCommitment") or "").lower(), str(verified_fields["recipientRouteCommitment"]).lower()):
         raise ValueError("Recipient route commitment differs from the signed authorization")
     root = _tcap_credit_bytes32(relation.get("tipRootCommitment"), "tipRootCommitment")
     policy = _tcap_credit_bytes32(relation.get("policyCommitment"), "policyCommitment")
@@ -2659,7 +2643,7 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
     if not isinstance(tip_result, dict) or "value" not in tip_result:
         raise ValueError("Solana RPC returned no TCAP TIN TIP account state")
     tip_value = tip_result["value"]
-    initial_commitment = _tcap_credit_bytes32(relation.get("gpruPublicCommitment"), "initialCommitment")
+    initial_commitment = _tcap_credit_bytes32(relation.get("gpruElgamalKeyCommitment"), "initialCommitment")
     initialize_tip = tip_value is None
     if initialize_tip:
         # The owner-derived GPRU commitment is the initial opaque TIP predecessor.
@@ -2738,7 +2722,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("TIN has no active on-chain TIP route")
         transition = await _construct_node_owned_tcap_transition(request, {
             "recipientTin": tin,
-            "recipientRouteCommitment": str(relation["gpruPublicCommitment"]).lower(),
+            "recipientRouteCommitment": str(relation["gpruElgamalKeyCommitment"]).lower(),
             "recipientRouteVersion": int(relation["tipRouteVersion"]),
         })
         if not hmac.compare_digest(

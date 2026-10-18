@@ -1,75 +1,46 @@
 ---
-title: "How a TSN Payment Feels: One Action, Many Checks"
+title: "How a TIN Payment Works"
 sidebarTitle: "How It Works"
-description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCAP cooperate. This page shows both views side by side."
+description: "A user-centered explanation of TIP resolution, TSN verification, GPRU transaction DNA, and TCAP settlement."
 ---
 
-**In plain English:** From the user's side, a TSN payment is one action: enter a 10-digit TIN, review the amount, and approve. The protocol then resolves the route, verifies the authorization, coordinates settlement, and records a private credit. Timing depends on wallet approval, service leases, Solana confirmation, and the current settlement path.
+# How a TIN payment works
 
-## What the user sees
+A sender enters a recipient TIN, reviews the resolved display information, and signs payment details. The sender's device does not resolve recipient TIP state or build the recipient's confidential-state transition. Node performs route resolution and transition construction after Receiver accepts ingress.
 
-```text
-1. Type a 10-digit TIN
-2. Confirm amount
-3. See a pending or confirmed status
-```
-
-That is the intended product surface. No wallet address to copy and no settlement network to choose. The wallet still authorizes the payment, and the app should distinguish a submitted payment from a confirmed one.
-
-## What actually happens behind the action
+## Credit flow
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant U as User + wallet
-    participant TIN as TIN
-    participant Node as Mother Node
-    participant Rcv as Receiver
-    participant Cnk as Cranker
-    participant TSN as TSN program
-    participant TCap as TCAP program
+    participant Sender as Sender SDK and wallet
+    participant Receiver
+    participant Node as TSN Node
+    participant Cranker
+    participant GPRU
+    participant TCAP
+    participant Owner as Recipient SDK
 
-    U->>TIP: Submit recipient's 10-digit TIN for route resolution
-    TIP-->>U: Route commitment and policy
-    U->>U: Sign the payment intent bound to the route
-    U->>Node: Submit signed intent
-    Node->>Node: Verify signatures, sequence, expiry, policy
-    Node->>Rcv: Store verified work and lease state
-    Node->>Cnk: Issue short-lived Ed25519 permit for exact leased operation
-    Cnk->>TSN: Submit tsn_execute_private_payout with permit
-    TSN->>TSN: Re-verify SettlementDna, lease, treasury liability
-    TSN-->>Cnk: Payout from epoch treasury; cranker vault reimbursed
-    Cnk->>TCap: Submit credit_tcap_tin_tip_v1
-    TCap-->>U: Encrypted snapshot updated
-    U-->>U: Payment status becomes pending or confirmed
+    Sender->>Receiver: Signed payment details and reserve-funding authorization
+    Receiver-->>Sender: Ingress accepted
+    Receiver->>Node: Stored work awaiting verification
+    Node->>Node: Resolve TIN through TIP; validate route and asset
+    Node->>Node: Derive unique transaction DNA and one-time ElGamal public key
+    Node->>Cranker: Immutable authorized work
+    Cranker->>GPRU: Submit transition and proof
+    GPRU->>GPRU: Verify derivation, encrypted-state relation, and replay controls
+    GPRU->>TCAP: Atomic validated handoff
+    TCAP->>TCAP: Update governed reserve liability
+    Owner->>Owner: Discover DNA and recover one-time private key locally
 ```
 
-Multiple roles, one payment action. Each role stays inside its boundary, so no role needs more information than it should have.
+Receiver acceptance, Node verification, Cranker submission, and Solana confirmation are separate status milestones. A transaction is complete only after the relevant on-chain transition is confirmed and the owner can recover its resulting state.
 
-## Layer-by-layer, in one line each
+## Why GPRU uses transaction DNA
 
-| Step | Layer | What it does | What it never sees |
-| --- | --- | --- | --- |
-| Look up | **TIN + GPRU** | Resolves the 10-digit number to a scoped route | Sender's balance |
-| Authorize | **Sender wallet** | Signs a payment intent bound to the route | Cranker or Receiver keys |
-| Verify | **Mother Node** | Verifies signatures and signs a permit for the exact operation | Recipient's plaintext balance |
-| Submit | **Cranker Node** | Pays Solana fees and submits the exact authorized transaction | The right to change any field |
-| Update balance | **TCAP** | Advances the commitment tip and encrypted snapshot | Plaintext amount |
+TIP stores a stable GPRU ElGamal scan public key and its commitment. GPRU uses the scan key with fresh randomness and a unique DNA to create a one-time public key for an individual output. The recipient can later derive the corresponding private key from owner-held secret material and public transaction data. This is designed to avoid reusing one visible recipient route for every credit.
 
-Any single layer, on its own, is incomplete. Together, they form a payment path.
+The derivation does not prove that a balance update is valid. GPRU must verify the key derivation and the encrypted balance proof on chain before TCAP updates liabilities. Public wallet funding and exits remain visible at their wallet boundary.
 
-## Why the user does not see any of this
+## Current status
 
-Because no layer needs the full picture, the user does not have to hand it out. There is no wallet address to copy and no settlement network to choose. The wallet still authorizes the payment, while TSN and Solana enforce the protocol boundaries.
-
-## Related
-
-<CardGroup cols={2}>
-  <Card title="Architecture" icon="diagram-project" href="/how-it-works/architecture">
-    The architecture and role boundaries behind the payment flow.
-  </Card>
-
-  <Card title="FAQ" icon="circle-question" href="/get-started/faq">
-    What is on-chain, what is not, and what the operator can see.
-  </Card>
-</CardGroup>
+The key derivation library and SDK recovery helper are in source. The GPRU program, proof enforcement, and atomic TCAP integration are not yet deployed. Current TCAP instructions define live behavior, and confidential debit and exit remain disabled. See [Protocol architecture](/overview/architecture) for component boundaries.

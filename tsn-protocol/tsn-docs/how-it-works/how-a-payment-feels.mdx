@@ -1,70 +1,26 @@
 ---
-title: "How a TSN Payment Feels: One Action, Many Checks"
-sidebarTitle: "How It Feels"
-description: "A TSN payment looks like one action to the user. Under the hood, TIN, GPRU, TSN, and TCAP cooperate. This page shows both views side by side."
+title: "A Private TIN Payment"
+sidebarTitle: "Payment experience"
+description: "What a sender and recipient experience in the target TIP, GPRU, TSN, and TCAP flow."
 ---
 
-**In plain English:** From the user's side, a TSN payment is one action: enter a 10-digit TIN, review the amount, and approve. The protocol then resolves the route, verifies the authorization, coordinates settlement, and records a private credit. Timing depends on wallet approval, service leases, Solana confirmation, and the current settlement path.
+# A private TIN payment
 
-## What the user sees
+The sender uses a TIN to identify the recipient, reviews the identity details returned for that request, and signs the payment and funding authorization. Node resolves the recipient's TIP route after Receiver accepts the signed request, then constructs the recipient-specific GPRU transition. The sender's device does not receive the recipient's private route state.
+
+Each GPRU output uses a unique transaction DNA and one-time ElGamal public key. The recipient can later recover the corresponding private key locally from owner-held secret material. GPRU must verify the encrypted balance transition before TCAP changes reserve liabilities.
 
 ```text
-1. Type a 10-digit TIN
-2. Confirm amount
-3. See a pending or confirmed status
+Sender signs payment and funding authorization
+  → Receiver accepts and stores ingress
+  → Node resolves TIP and validates the request
+  → Node constructs unique GPRU DNA work
+  → Cranker submits immutable authorized work
+  → GPRU verifies proof and replay protection
+  → TCAP applies the reserve-liability update atomically
+  → Recipient recovers and reads state locally
 ```
 
-That is the intended product surface. No wallet address to copy and no settlement network to choose. The wallet still authorizes the payment, and the app should distinguish a submitted payment from a confirmed one.
+Receiver acceptance is not Node verification. Node verification is not Cranker submission, and submission is not confirmation. Public wallet funding and exits remain visible at the wallet boundary.
 
-## What actually happens
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User
-    participant TIN as TIN
-    participant GPRU as GPRU
-    participant TSN as TSN
-    participant TCAP as TCAP
-
-    U->>TIP: Submit 10-digit TIN for route resolution
-    TIP-->>U: Route commitment + policy
-    U->>GPRU: Sign intent bound to route
-    GPRU->>TSN: Sender authorization and route commitment
-    TSN->>TSN: Node verifies and submits authorized work to Receiver
-    TSN->>TSN: Cranker leases and submits the exact authorized transaction
-    TSN->>TCAP: Advance opaque tip commitment (CPI)
-    TCAP-->>U: Encrypted snapshot updated
-    U-->>U: Pending or confirmed status
-```
-
-Each layer stays inside its boundary, so no layer needs to know more than it should.
-
-## Layer-by-layer, in one line each
-
-| Step           | Layer    | What it does                                                                  | What it never sees                                           |
-| -------------- | -------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Look up        | **TIN**  | Resolves the 10-digit number to a route                                       | Sender's balance                                             |
-| Authorize      | **GPRU** | Signs a scoped authorization                                                  | Custody of funds                                             |
-| Move value     | **TSN**  | Coordinates authorized funding, acceptance, leases, and settlement submission | Recipient's private route material inside the tip transition |
-| Update balance | **TCAP** | Advances the commitment tip and encrypted snapshot                            | Plaintext balance                                            |
-
-Any single layer, on its own, is incomplete. Together, they form a payment path.
-
-## Why the user does not see any of this
-
-Because no layer needs the full picture, the user does not have to hand it out. The wallet approves the signed authorization, while the Node, Receiver, Cranker, TSN program, and TCAP program each perform only their assigned checks.
-
-The product is a payment. The architecture is a set of enforced boundaries.
-
-## Related
-
-<CardGroup cols={2}>
-  <Card title="Architecture" icon="diagram-project" href="/how-it-works/architecture">
-    The current TIN, GPRU, TSN, and TCAP architecture.
-  </Card>
-
-  <Card title="FAQ" icon="circle-question" href="/get-started/faq">
-    What is on-chain, what is private, and what operators can see.
-  </Card>
-</CardGroup>
+The one-time key derivation and SDK recovery helper are in source, but the deployable GPRU program, proof verifier, and TCAP integration remain future work. For a detailed flow and status, see [How a TIN payment works](/overview/how-it-works) and [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances).

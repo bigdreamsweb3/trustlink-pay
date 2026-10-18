@@ -291,73 +291,30 @@
     log("TIN RECOVERED", `Wallet-authorized recovery / TIN ${identity.tin}${displayName ? ` · ${displayName}` : ""}`);
   }
 
+  function hexToBytes(value) {
+    if (typeof value !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(value)) {
+      throw new Error("TIN owner-encryption nonce is invalid.");
+    }
+    return Uint8Array.from(value.match(/.{2}/g), (byte) => Number.parseInt(byte, 16));
+  }
+
   function bytesToHex(bytes) {
     return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
-  function bytesToBase64Url(bytes) {
-    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-  }
-
-  function canonicalFields(fields) {
-    return new TextEncoder().encode(fields.map((field) => `${field.length}:${field}`).join("|"));
-  }
-
-  async function sha256Hex(bytes) {
-    return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
-  }
-
-  async function createTinV1OwnerEnvelope({ ownerPublicKey, resourceCommitment, signature, accessMessage }) {
-    const dataKey = new Uint8Array(await crypto.subtle.digest("SHA-256", signature));
-    const masterSeed = crypto.getRandomValues(new Uint8Array(32));
-    const marker = "tin-v1";
-    const zeroHash = "0".repeat(64);
-    const aad = canonicalFields(["TSN_TIN_LOCAL_MASTER_SEED", marker, ownerPublicKey, "1", zeroHash]);
-    const seedNonce = crypto.getRandomValues(new Uint8Array(12));
-    const seedCiphertext = new Uint8Array(await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: seedNonce, additionalData: aad, tagLength: 128 },
-      await crypto.subtle.importKey("raw", dataKey, { name: "AES-GCM" }, false, ["encrypt"]),
-      masterSeed,
-    ));
-    const seedCiphertextBase64 = bytesToBase64Url(seedCiphertext);
-    const seedNonceBase64 = bytesToBase64Url(seedNonce);
-    const seedCiphertextCommitment = await sha256Hex(canonicalFields([
-      "TSN_TIN_LOCAL_MASTER_SEED_CIPHERTEXT", marker, ownerPublicKey, "1", zeroHash,
-      seedNonceBase64, seedCiphertextBase64,
-    ]));
-    const accessControlHash = await sha256Hex(new TextEncoder().encode(accessMessage));
-    const envelope = {
-      version: "tsn-tin-master-seed-envelope",
-      provider: "wallet-owner-signature-v1",
-      tin: marker,
-      routeVersion: 1,
-      pruConfigurationHash: zeroHash,
-      resourceCommitment,
-      seedEncryptionAlgorithm: "aes-256-gcm-local-master-seed",
-      seedCiphertext: seedCiphertextBase64,
-      seedNonce: seedNonceBase64,
-      seedCiphertextCommitment,
-      protectedKey: "wallet-owner-signature-derived",
-      protectedKeyCommitment: await sha256Hex(new TextEncoder().encode("wallet-owner-signature-derived")),
-      accessControlHash,
-    };
-    envelope.integrityCommitment = await sha256Hex(canonicalFields([
-      envelope.version, envelope.provider, envelope.tin, ownerPublicKey,
-      String(envelope.routeVersion), envelope.pruConfigurationHash, envelope.resourceCommitment,
-      envelope.seedEncryptionAlgorithm, envelope.seedCiphertext, envelope.seedNonce,
-      envelope.seedCiphertextCommitment, envelope.protectedKey, envelope.protectedKeyCommitment,
-      envelope.accessControlHash,
-    ]));
-    const receivingPair = window.TsnRecipientCreditSdk?.deriveTinPrivacyReceivingKeyPair(masterSeed);
-    if (!receivingPair) throw new Error("TIN privacy-receiving-key SDK bundle is unavailable");
-    const gpruPublicCommitment = bytesToHex(receivingPair.publicKey);
-    receivingPair.secretKey.fill(0);
-    masterSeed.fill(0);
-    dataKey.fill(0);
-    return {
-      encryptedMasterSeed: new TextEncoder().encode(JSON.stringify(envelope)),
-      gpruPublicCommitment,
-    };
+  async function createTinV1OwnerEnvelope({ ownerPublicKey, displayName, nonce }) {
+    const createEnvelope = window.TsnTinCreationSdk?.createTinV1OwnerSeedEnvelope;
+    if (typeof createEnvelope !== "function") {
+      throw new Error("TIN creation SDK bundle is missing the ElGamal seed-envelope builder; rebuild the browser SDK bundle.");
+    }
+    return createEnvelope({
+      ownerWallet: {
+        publicKey: ownerPublicKey,
+        signMessage: async (message) => decodeBase64(await signBytes(message)),
+      },
+      displayName,
+      nonce: hexToBytes(nonce),
+    });
   }
 
   function requireWallet() {
@@ -383,21 +340,23 @@
       let prepared = await api("/api/tsn/sdk/prepare-tin", { method: "POST", body: JSON.stringify({ displayName }) });
       if (prepared.status === "OWNER_ENCRYPTION_SIGNATURE_REQUIRED") {
         stage = "requesting wallet approval for local seed encryption";
-        const encryptionBytes = new TextEncoder().encode(prepared.ownerEncryptionMessage);
-        const ownerEncryptionSignatureBase64 = await signBytes(encryptionBytes);
-        const ownerEncryptionSignature = Uint8Array.from(atob(ownerEncryptionSignatureBase64), (character) => character.charCodeAt(0));
         stage = "encrypting the owner seed locally";
         const ownerSeed = await createTinV1OwnerEnvelope({
           ownerPublicKey: activeWallet.publicKey.toBase58(),
-          resourceCommitment: prepared.resourceCommitment,
-          signature: ownerEncryptionSignature,
-          accessMessage: prepared.ownerEncryptionMessage,
+          displayName,
+          nonce: prepared.ownerEncryptionNonce,
         });
         stage = "building private TIN V1 intent with the TSN SDK";
-        const encryptedMasterSeedBase64 = btoa(String.fromCharCode(...ownerSeed.encryptedMasterSeed));
+        const ownerSeedPayload = {
+          resourceCommitment: ownerSeed.resourceCommitment,
+          encryptedMasterSeed: encodeBase64(ownerSeed.encryptedMasterSeed),
+          gpruElgamalKeyVersion: ownerSeed.gpruElgamalKeyVersion,
+          gpruElgamalPublicKey: bytesToHex(ownerSeed.gpruElgamalPublicKey),
+          gpruElgamalKeyCommitment: bytesToHex(ownerSeed.gpruElgamalKeyCommitment),
+        };
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",
-          body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, gpruPublicCommitment: ownerSeed.gpruPublicCommitment }),
+          body: JSON.stringify({ displayName, ...ownerSeedPayload }),
         });
         if (prepared.status === "TIN_RECOVERY_SIGNATURE_REQUIRED") {
           if (typeof prepared.recoveryMessage !== "string" || !prepared.recoveryMessage.trim()) {
@@ -413,7 +372,7 @@
           stage = "sending the encrypted recovery record to TSN XP";
           prepared = await api("/api/tsn/sdk/prepare-tin", {
             method: "POST",
-            body: JSON.stringify({ displayName, encryptedMasterSeed: encryptedMasterSeedBase64, encryptedTinRecovery, gpruPublicCommitment: ownerSeed.gpruPublicCommitment }),
+            body: JSON.stringify({ displayName, ...ownerSeedPayload, encryptedTinRecovery }),
           });
         }
       }

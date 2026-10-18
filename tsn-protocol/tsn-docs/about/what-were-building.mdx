@@ -1,7 +1,7 @@
 ---
 title: "What TrustLink Labs Is Building: Protocols and Products"
 sidebarTitle: "What We're Building"
-description: "Concrete artifacts from TrustLink Labs: TSN protocol, TIN registry, GPRU authorization, TCAP credit-only transitions, TSN XP, and TSN SDK."
+description: "TrustLink Labs protocols and products: TSN, TIP/TIN, GPRU, TCAP, TSN XP, and the TSN SDK."
 ---
 
 TrustLink Labs builds open infrastructure for stablecoin payments. The current stack includes protocol programs, network services, a reference application, and SDKs. Everything is developed on Solana and designed to separate identity, authorization, settlement, and private balance accounting into independent layers.
@@ -19,15 +19,15 @@ The Transfer Settlement Network is the coordination layer for payments. It inclu
 
 ### TIN registry
 
-The Transfer Identity Protocol issues and resolves 10-digit Transfer Identity Numbers. A TIN separates the identity a user shares from the wallet or protected receiving route used for settlement.
+The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A Transfer Identity Number (TIN) is one 10-digit identity within TIP. A TIN separates the identity a user shares from the wallet address used for public settlement boundaries.
 
 ### GPRU authorization and routing
 
-GPRU is a TSN-derived settlement identity for authorization and routing only. It is non-custodial: it never holds funds, balances, or custody keys. It is derived from a TIN privacy-receiving root, settlement commitment, epoch context, and authorization scope.
+GPRU (Guarded Privacy Routing Unit) is being developed as a standalone protocol for transaction-specific routing and confidential state transitions. Its source includes a one-time ElGamal DNA key derivation primitive: Node can derive a one-time public key while the owner later recovers the matching private key locally. The deployable GPRU program, on-chain proof verification, and TCAP settlement integration remain future work.
 
 ### TCAP
 
-The Transfer Confidential Asset Protocol manages credit-only tip transitions and encrypted owner snapshots. TCAP stores commitments, sequence, policy, and nullifiers on chain. Private balance values remain in AES-GCM encrypted snapshots that the owner device decrypts locally.
+The Transfer Confidential Asset Protocol (TCAP) governs approved assets and their reserves. Existing instructions and account layouts define current behavior. The target GPRU integration will require on-chain verification of encrypted balance transitions before TCAP changes confidential liabilities; debit and exit remain disabled until then.
 
 ### TSN XP
 

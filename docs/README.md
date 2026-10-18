@@ -6,11 +6,13 @@ separately under `tsn-protocol/tsn-docs/`.
 
 Read these documents in order:
 
-1. [Current architecture](./CURRENT-ARCHITECTURE.md) — canonical TIN, privacy-receiving root, GPRU, TSN Epoch Treasury, Mother, TCAP (Transfer Confidential Asset Protocol) and encrypted snapshots.
-2. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
-3. [Identity and TIN](./identity-and-tin.md) — the payment identity, privacy-receiving root, resolution and encrypted boundaries.
-4. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
-5. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+1. [Current architecture](./CURRENT-ARCHITECTURE.md) — separates today's TIP/TSN/TCAP source behavior from the target GPRU DNA and TCAP integration.
+2. [GPRU and TCAP target route](./gpru-tcap-route.md) — unique per-transaction DNA, owner-recoverable one-time ElGamal keys, credit/debit goals, and current implementation limits.
+3. [TCAP debit and credit design](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — target reserve-liability rules and proof gates; not a claim of deployment.
+4. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
+5. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
+6. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
+7. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
    The Node's signed verification receipt is checked by both Receiver and Cranker before execution.
 6. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
 7. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
@@ -42,12 +44,12 @@ Supporting references:
 ## Canonical terminology
 
 - **TSN** is settlement and authorization coordination infrastructure.
-- **TIP** is the transfer-identity and route-discovery protocol; **TIN** is its 10-digit Transfer Identity Number.
-- **GPRU** is non-custodial authorization and routing; it never holds funds.
+- **TIP** is the Transfer Identity Protocol; **TIN** is one 10-digit Transfer Identity Number within TIP.
+- **GPRU** is being developed as a standalone protocol for unique transaction DNA and proof-verified confidential state transitions. Its one-time ElGamal derivation primitive exists in source, but its deployable program and TCAP settlement integration are not yet complete.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
 - **Mother** creates the one-time TSN ConfidentialSettlement authorization.
 - **Cranker** submits exact leased work and cannot rewrite the authorization.
-- **TCAP** is the private balance accounting layer: tip credits plus encrypted owner snapshots.
+- **TCAP** is the Transfer Confidential Asset Protocol and owns governed asset reserves and liability accounting. Current instructions define live behavior; the GPRU DNA-based confidential credit/debit design is a target, and confidential debit remains disabled.
 - **ZK-PRU** is retired historical material only. It is not a live receiving, spending or balance architecture; see [ZK-PRU retired](./ZK-PRU-RETIRED.md).
 
 Live confidential debits and exits remain proof-gated and disabled. No active

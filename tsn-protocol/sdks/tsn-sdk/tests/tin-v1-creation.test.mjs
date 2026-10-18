@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { Keypair } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { deriveTipRootCommitment } from "../dist/gpru.js";
+import { deriveGpruElgamalKeyCommitment } from "../dist/gpru.js";
 import {
   buildTinV1Creation,
   buildTinV1OwnerRecoveryMessage,
@@ -95,8 +95,9 @@ test("TIN V1 SDK builder, serializer, and canonical hash agree on all TCap field
     routeNonce: fixed32(9),
     nonce: fixed32(9),
     tipRouteVersion: 1,
-    gpruPublicCommitment: fixed32(10),
-    tipRootCommitment: deriveTipRootCommitment(fixed32(10)),
+    gpruElgamalKeyVersion: 1,
+    gpruElgamalPublicKey: fixed32(10),
+    gpruElgamalKeyCommitment: deriveGpruElgamalKeyCommitment(1, fixed32(10)),
     policyCommitment: fixed32(12),
     expiryTs: 1_900_000_000,
   };

@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { deriveTipRootCommitment, resolveTinGpruPublicCommitment } from "./gpru.js";
+import { deriveGpruElgamalKeyCommitment } from "./gpru.js";
 import { sha256 } from "@noble/hashes/sha2";
 import nacl from "tweetnacl";
 import {
@@ -33,23 +33,24 @@ const ZERO_HASH_32 = Buffer.alloc(32);
  */
 export function validateTinTipRoute(params: {
   tipRouteVersion: number;
-  gpruPublicCommitment?: Uint8Array | null;
-  tipRootCommitment?: Uint8Array | null;
+  gpruElgamalKeyVersion?: number;
+  gpruElgamalPublicKey?: Uint8Array | null;
+  gpruElgamalKeyCommitment?: Uint8Array | null;
   policyCommitment?: Uint8Array | null;
 }): boolean {
   const zero = (value?: Uint8Array | null) =>
     !value || value.every((byte) => byte === 0);
   const nonZero32 = (value?: Uint8Array | null) =>
     Boolean(value && value.length === 32 && !zero(value));
-  if (params.tipRouteVersion !== 1) return false;
+  if (params.tipRouteVersion !== 1 || params.gpruElgamalKeyVersion !== 1) return false;
   return (
-    nonZero32(params.gpruPublicCommitment) &&
-    nonZero32(params.tipRootCommitment) &&
+    nonZero32(params.gpruElgamalPublicKey) &&
+    nonZero32(params.gpruElgamalKeyCommitment) &&
     nonZero32(params.policyCommitment) &&
-    resolveTinGpruPublicCommitment(
-      params.gpruPublicCommitment!,
-      params.tipRootCommitment!,
-    ) !== null
+    Buffer.from(deriveGpruElgamalKeyCommitment(
+      params.gpruElgamalKeyVersion,
+      params.gpruElgamalPublicKey!,
+    )).equals(Buffer.from(params.gpruElgamalKeyCommitment!))
   );
 }
 export function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
@@ -422,11 +423,10 @@ export function serializeTinV1CreationParams(params: {
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
   tipRouteVersion: 1;
-  gpruPublicCommitment: Buffer | Uint8Array;
-  tipRootCommitment: Buffer | Uint8Array;
+  gpruElgamalPublicKey: Buffer | Uint8Array;
+  gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
-  gpruRouteVersion: 1;
-  gpruRouteCommitment: Buffer | Uint8Array;
+  gpruElgamalKeyVersion: 1;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -439,28 +439,25 @@ export function serializeTinV1CreationParams(params: {
   if (routeVersion.equals(Buffer.alloc(8)))
     throw new Error("routeVersion must be positive");
   const routeNonce = requireHash32(params.routeNonce, "routeNonce");
-  const gpruPublicCommitment = normalizeHash32(
-    params.gpruPublicCommitment,
-    "gpruPublicCommitment",
+  const gpruElgamalPublicKey = normalizeHash32(
+    params.gpruElgamalPublicKey,
+    "gpruElgamalPublicKey",
   );
-  const tipRootCommitment = normalizeHash32(
-    params.tipRootCommitment,
-    "tipRootCommitment",
+  const gpruElgamalKeyCommitment = normalizeHash32(
+    params.gpruElgamalKeyCommitment,
+    "gpruElgamalKeyCommitment",
   );
   const policyCommitment = normalizeHash32(
     params.policyCommitment,
     "policyCommitment",
   );
-  const gpruRouteCommitment = normalizeHash32(params.gpruRouteCommitment, "gpruRouteCommitment");
-  if (params.gpruRouteVersion !== 1 || gpruRouteCommitment.equals(Buffer.alloc(32))) {
-    throw new Error("TIN creation requires a nonzero GPRU route commitment at route version 1");
-  }
   if (!validateTinTipRoute({
     tipRouteVersion: params.tipRouteVersion as 1,
-    gpruPublicCommitment,
-    tipRootCommitment,
+    gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
+    gpruElgamalPublicKey,
+    gpruElgamalKeyCommitment,
     policyCommitment,
-  })) throw new Error("TIN creation requires the current GPRU commitment and blinded TIP seed route");
+  })) throw new Error("TIN creation requires a valid versioned GPRU ElGamal key commitment and TIP policy commitment");
   const body: Buffer[] = [params.ownerPubkey.toBuffer(), lookupCommitment];
   appendBytes(body, params.encryptedTinRecovery);
   appendBytes(body, params.encryptedIdentityEnvelope);
@@ -472,11 +469,10 @@ export function serializeTinV1CreationParams(params: {
     routeVersion,
     routeNonce,
     Buffer.from([params.tipRouteVersion]),
-    gpruPublicCommitment,
-    tipRootCommitment,
+    Buffer.from([params.gpruElgamalKeyVersion]),
+    gpruElgamalPublicKey,
+    gpruElgamalKeyCommitment,
     policyCommitment,
-    Buffer.from([params.gpruRouteVersion]),
-    gpruRouteCommitment,
   );
   const expiry = Buffer.alloc(8);
   expiry.writeBigInt64LE(BigInt(params.expiryTs));
@@ -508,11 +504,10 @@ export function serializeTinV1CreationStageParams(params: {
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
   tipRouteVersion: 1;
-  gpruPublicCommitment: Buffer | Uint8Array;
-  tipRootCommitment: Buffer | Uint8Array;
+  gpruElgamalPublicKey: Buffer | Uint8Array;
+  gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
-  gpruRouteVersion: 1;
-  gpruRouteCommitment: Buffer | Uint8Array;
+  gpruElgamalKeyVersion: 1;
   expiryTs: bigint | number;
 }) {
   for (const [field, value, required] of [
@@ -527,13 +522,11 @@ export function serializeTinV1CreationStageParams(params: {
   const parts: Buffer[] = [];
   if (!validateTinTipRoute({
     tipRouteVersion: params.tipRouteVersion as 1,
-    gpruPublicCommitment: params.gpruPublicCommitment,
-    tipRootCommitment: params.tipRootCommitment,
+    gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
+    gpruElgamalPublicKey: params.gpruElgamalPublicKey,
+    gpruElgamalKeyCommitment: params.gpruElgamalKeyCommitment,
     policyCommitment: params.policyCommitment,
-  })) throw new Error("TIN creation stage requires the current GPRU commitment and blinded TIP seed route");
-  if (params.gpruRouteVersion !== 1 || Buffer.from(params.gpruRouteCommitment).length !== 32 || Buffer.from(params.gpruRouteCommitment).equals(Buffer.alloc(32))) {
-    throw new Error("TIN creation stage requires a nonzero GPRU route commitment at route version 1");
-  }
+  })) throw new Error("TIN creation stage requires a valid versioned GPRU ElGamal key commitment and TIP policy commitment");
   appendPubkey(parts, params.ownerPubkey);
   parts.push(
     requireHash32(params.lookupCommitment, "lookupCommitment"),
@@ -547,11 +540,10 @@ export function serializeTinV1CreationStageParams(params: {
   parts.push(requireHash32(params.routeNonce, "routeNonce"));
   appendU8(parts, params.tipRouteVersion);
   parts.push(
-    requireHash32(params.gpruPublicCommitment, "gpruPublicCommitment"),
-    requireHash32(params.tipRootCommitment, "tipRootCommitment"),
+    Buffer.from([params.gpruElgamalKeyVersion]),
+    requireHash32(params.gpruElgamalPublicKey, "gpruElgamalPublicKey"),
+    requireHash32(params.gpruElgamalKeyCommitment, "gpruElgamalKeyCommitment"),
     requireHash32(params.policyCommitment, "policyCommitment"),
-    Buffer.from([params.gpruRouteVersion]),
-    requireHash32(params.gpruRouteCommitment, "gpruRouteCommitment"),
   );
   appendI64(parts, params.expiryTs);
   return encodeInstruction(19, parts);
@@ -693,11 +685,10 @@ export async function submitTinV1Creation(params: {
       routeVersion: Number(prepared.routeVersion),
       routeNonce: hex(prepared.routeNonce),
       tipRouteVersion: prepared.tipRouteVersion,
-      gpruPublicCommitment: hex(prepared.gpruPublicCommitment),
-      tipRootCommitment: hex(prepared.tipRootCommitment),
+      gpruElgamalKeyVersion: prepared.gpruElgamalKeyVersion,
+      gpruElgamalPublicKey: hex(prepared.gpruElgamalPublicKey),
+      gpruElgamalKeyCommitment: hex(prepared.gpruElgamalKeyCommitment),
       policyCommitment: hex(prepared.policyCommitment),
-      gpruRouteVersion: prepared.gpruRouteVersion,
-      gpruRouteCommitment: hex(prepared.gpruRouteCommitment),
       lookupIssuanceProof: params.lookupIssuanceProof,
     }),
   });
@@ -717,11 +708,10 @@ export function createTinV1OwnerIntentHash(params: {
   routeVersion: bigint | number;
   routeNonce: Buffer | Uint8Array;
   tipRouteVersion: number;
-  gpruPublicCommitment: Buffer | Uint8Array;
-  tipRootCommitment: Buffer | Uint8Array;
+  gpruElgamalPublicKey: Buffer | Uint8Array;
+  gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
-  gpruRouteVersion: 1;
-  gpruRouteCommitment: Buffer | Uint8Array;
+  gpruElgamalKeyVersion: 1;
   expiryTs: bigint | number;
 }) {
   const routeVersion = Buffer.alloc(8);
@@ -740,11 +730,10 @@ export function createTinV1OwnerIntentHash(params: {
     routeVersion,
     requireHash32(params.routeNonce, "routeNonce"),
     Buffer.from([params.tipRouteVersion]),
-    normalizeHash32(params.gpruPublicCommitment, "gpruPublicCommitment"),
-    normalizeHash32(params.tipRootCommitment, "tipRootCommitment"),
+    Buffer.from([params.gpruElgamalKeyVersion]),
+    normalizeHash32(params.gpruElgamalPublicKey, "gpruElgamalPublicKey"),
+    normalizeHash32(params.gpruElgamalKeyCommitment, "gpruElgamalKeyCommitment"),
     normalizeHash32(params.policyCommitment, "policyCommitment"),
-    Buffer.from([params.gpruRouteVersion]),
-    normalizeHash32(params.gpruRouteCommitment, "gpruRouteCommitment"),
     expiry,
   ])));
 }
@@ -769,22 +758,18 @@ export function buildTinV1Creation(params: {
   routeVersion?: bigint | number;
   routeNonce?: Buffer | Uint8Array;
   tipRouteVersion: number;
-  gpruPublicCommitment: Buffer | Uint8Array;
-  tipRootCommitment: Buffer | Uint8Array;
+  gpruElgamalPublicKey: Buffer | Uint8Array;
+  gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
-  gpruRouteVersion: 1;
-  gpruRouteCommitment: Buffer | Uint8Array;
+  gpruElgamalKeyVersion: 1;
   expiryTs?: bigint | number;
   nonce?: Buffer | Uint8Array;
 }) {
   if (params.tipRouteVersion !== 1) throw new Error("TIN V1 creation requires the active TIP route version");
-  if (params.gpruRouteVersion !== 1 || Buffer.from(params.gpruRouteCommitment).length !== 32 || Buffer.from(params.gpruRouteCommitment).equals(Buffer.alloc(32))) {
-    throw new Error("TIN V1 creation requires a nonzero GPRU route commitment at route version 1");
-  }
-  const gpruPublicCommitment = Buffer.from(params.gpruPublicCommitment);
-  const tipRootCommitment = Buffer.from(params.tipRootCommitment);
-  if (!Buffer.from(deriveTipRootCommitment(gpruPublicCommitment)).equals(tipRootCommitment)) {
-    throw new Error("TIP route must store the GPRU public commitment separately from its blinded TIP seed");
+  const gpruElgamalPublicKey = Buffer.from(params.gpruElgamalPublicKey);
+  const gpruElgamalKeyCommitment = Buffer.from(params.gpruElgamalKeyCommitment);
+  if (!validateTinTipRoute({ tipRouteVersion: params.tipRouteVersion, gpruElgamalKeyVersion: params.gpruElgamalKeyVersion, gpruElgamalPublicKey, gpruElgamalKeyCommitment, policyCommitment: params.policyCommitment })) {
+    throw new Error("TIN V1 creation requires a valid versioned GPRU ElGamal key commitment");
   }
   const zero = Buffer.alloc(32);
   const nonce = Buffer.from(params.nonce ?? params.routeNonce ?? randomNonce(32));
@@ -805,11 +790,10 @@ export function buildTinV1Creation(params: {
     routeVersion,
     routeNonce,
     tipRouteVersion: params.tipRouteVersion as 1,
-    gpruPublicCommitment: params.gpruPublicCommitment,
-    tipRootCommitment: params.tipRootCommitment,
+    gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
+    gpruElgamalPublicKey: params.gpruElgamalPublicKey,
+    gpruElgamalKeyCommitment: params.gpruElgamalKeyCommitment,
     policyCommitment: params.policyCommitment,
-    gpruRouteVersion: params.gpruRouteVersion,
-    gpruRouteCommitment: params.gpruRouteCommitment,
     expiryTs,
   };
   const intentHash = createTinV1OwnerIntentHash(fields);

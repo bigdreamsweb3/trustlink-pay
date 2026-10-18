@@ -31,15 +31,15 @@ No. Every payout is authorized by a specific Mother-rooted DNA permit. The Node/
 
 ## What is GPRU?
 
-GPRU is non-custodial authorization and routing. It carries scoped permissions, commitments, expiry, and replay material. It never holds funds, balances, or custody keys. A GPRU signature alone cannot move custody.
+GPRU (Guarded Privacy Routing Unit) is being developed as a standalone protocol for transaction-specific DNA and confidential-state transitions. Its source includes a one-time ElGamal key derivation primitive; the on-chain GPRU program, proof verification, and TCAP integration are not yet complete. A key commitment or signature alone cannot prove a valid balance transition.
 
 ## What is TIN?
 
-TIP is the Transfer Identity Protocol that manages transfer identities and route resolution. A TIN is a 10-digit Transfer Identity Number within TIP. The TIN registry record associates that number with a privacy-receiving root, TIP route version, and policy commitment; it is not a token account or private key.
+TIP is the Transfer Identity Protocol that manages transfer identities and route resolution. A TIN is one 10-digit Transfer Identity Number within TIP. The TIN registry is not a token account or private key.
 
 ## What is TCAP?
 
-TCAP is the Transfer Confidential Asset Protocol. It is private balance accounting: commitment-backed tips plus encrypted owner snapshots. Balances live off-chain in encrypted snapshots. On-chain state stores only opaque commitments and sequence values.
+TCAP is the Transfer Confidential Asset Protocol. It governs approved assets and reserve accounting. Existing instructions define current chain behavior; the target GPRU integration will update confidential liabilities only after on-chain proof verification. Confidential debit and exit remain disabled.
 
 ## Who is the Mother?
 

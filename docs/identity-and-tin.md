@@ -1,10 +1,16 @@
-# Identity and TIN
+# TIP, TIN, and GPRU identity routing
 
-A **Transfer Identity Number (TIN)** is a human-readable 10-digit payment ID.
-The sender can share it and confirm the recipient's resolved display name
-before authorizing a transfer, instead of relying on a long wallet address.
-The TIN identifies a payment destination; Solana transactions still use public
-keys, token accounts, program accounts, and PDAs.
+The **Transfer Identity Protocol (TIP)** manages transfer identities and route
+metadata. A **Transfer Identity Number (TIN)** is one human-readable,
+10-digit identity within TIP, not the name of the whole protocol. A sender can
+share the TIN and confirm the resolved display name before authorizing a
+transfer. Solana transactions still use public keys, token accounts, program
+accounts, and PDAs at the settlement boundary.
+
+**GPRU (Guarded Privacy Routing Unit)** is being developed as a separate
+protocol for unique transaction DNA and proof-verified confidential state
+transitions. It is not merely a static authorization scope or another name
+for TIN.
 
 ## Ownership and private registry
 
@@ -37,9 +43,27 @@ with a wallet signature. No plaintext wallet-to-TIN index is needed.
    submits direct or staged TIN program instructions.
 4. The issuer reveals the TIN to the owner's session after the final Solana
    creation transaction is confirmed and the registry account is verified.
-5. A payment authorization names the recipient TIN but contains no route
-   commitment. Node independently resolves and validates the recipient's
-   current TCAP relationship before constructing the settlement transition.
+5. A payment authorization names the recipient TIN. Node independently
+   resolves the current TIP route, validates the request, and constructs the
+   recipient transition; the sender SDK does not resolve recipient TIP state.
+
+## Current GPRU design status
+
+TIP V1 stores a versioned GPRU ElGamal scan public key and its integrity
+commitment, with separate TIP route and policy commitments. The source now
+contains a GPRU derivation primitive: Node can derive a unique per-transaction
+DNA and one-time ElGamal public key, while the owner later derives the
+matching private key locally from owner-held secret material. The primitive
+is not yet connected to a deployable GPRU program or the TCAP settlement ABI.
+
+The target credit flow has Node resolve TIP and construct the transition,
+Receiver accept and store signed ingress, and Cranker submit immutable Node
+authorized work. For a debit, an on-chain GPRU proof must establish that the
+encrypted prior balance covers the debit and that the successor is correct.
+For a TIN-to-TIN transfer, the proof must establish value conservation while
+keeping both DNA outputs unique. TCAP changes reserve liabilities only after
+GPRU validation succeeds atomically. Debit and exit remain unavailable until
+the source program implements and verifies that contract.
 
 The owner recovery PDA is separate from the commitment-derived identity PDA:
 it lets the connected wallet locate its encrypted recovery envelope without a

@@ -1,55 +1,49 @@
 ---
-title: "Current TSN Architecture: Solana-First Payment Settlement"
+title: "TSN, TIP, GPRU, and TCAP Architecture"
 sidebarTitle: "Architecture"
-description: "Explore TSN's five-layer identity-first architecture on Solana, from identity and routing through intent-based, privacy-preserving settlement."
+description: "How the Transfer Settlement Network, Transfer Identity Protocol, GPRU, and TCAP divide identity, verification, execution, and confidential accounting."
 ---
 
-TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**: an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers on Solana. Its architecture is organized into five layers that take a transfer from identity resolution through to privacy-preserving on-chain settlement. Each layer has a narrow responsibility, and data moves between layers through commitments, signatures, and PDAs rather than plaintext on-chain records.
+# Protocol architecture
 
-```text
-Identity      TIN, TIP, GPRU
-   |
-Intent        signed payment intents (off-chain)
-   |
-Authorization Mother Escrow, Settlement DNA, permit signer
-   |
-Transport     Mother Node, Receiver, Cranker Node
-   |
-Settlement    Epoch Treasury, TCAP
+TrustLink separates transfer identity, payment authorization, service verification, transaction submission, and asset accounting. These are distinct responsibilities with different privacy boundaries.
+
+```mermaid
+flowchart LR
+    TIP[TIP manages identities and routes] -->|TIN lookup| NODE[TSN Node resolves and verifies]
+    SENDER[Sender signs payment and funding details] --> RECEIVER[Receiver accepts and stores ingress]
+    RECEIVER --> NODE
+    NODE -->|immutable verified work| CRANKER[Cranker submits exact work]
+    CRANKER --> GPRU[GPRU verifies DNA and encrypted-state proof]
+    GPRU -->|atomic valid transition| TCAP[TCAP updates governed reserve liabilities]
+    GPRU --> OWNER[Owner derives one-time key and reads state locally]
 ```
 
-## Identity layer
+## TIP and TIN
 
-The identity layer resolves human-meaningful payment identities without exposing them on-chain in plaintext. A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the Transfer Identity Protocol (TIP). Routing is resolved off-chain through a **GPRU** scope. A GPRU scope is a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. Only commitments and derived PDAs reach the Solana ledger.
+TIP is the Transfer Identity Protocol. It manages transfer identities and their routing metadata. A TIN is one 10-digit Transfer Identity Number issued within TIP. Node resolves the recipient's TIN and current route; the sender SDK does not resolve recipient TIP state or construct recipient confidential state.
 
-## Intent layer
+TIP V1 currently stores a versioned GPRU ElGamal scan public key and its integrity commitment, alongside TIP route and policy commitments. The scan key is stable for that route and is public. The owner retains the matching secret material.
 
-The sender's wallet signs payment intents off-chain. Each intent binds recipient, amount, mint, nonce, and a validity window to the sender's TIN. Because the intent lives off-chain until authorization, sensitive terms are never exposed on-chain. Intents are the atomic unit of payment agreement in TSN.
+## GPRU transaction routing
 
-## Authorization layer
+GPRU is being developed as a standalone protocol for transaction-specific DNA and confidential-state transitions. For each output, Node uses fresh randomness, the DNA, and the TIP scan key to derive an ephemeral public point and a one-time ElGamal public key. The recipient later combines the public derivation data with owner-held secret material to recover the matching private key locally.
 
-The **Mother Escrow** is the root TSN authority and epoch controller: a PDA whose stored `authority` is a governed external keypair. Mother authorizes settlement and produces **Settlement DNA**, a one-time `SettlementDna` PDA materialized at an HMAC-SHA256 slot. Settlement DNA binds payout parameters (settlement commitment, digest, nullifier, cranker vault, recipient, mint, amount, lease) to that opaque slot. A separate **permit signer** authorizes the actual private-settlement payout using domain-separated Ed25519 templates. It is governance-rotatable and signs only those templates.
+The current source contains the derivation primitive and owner recovery helper. GPRU does not yet have a deployable program or on-chain proof verification. A key commitment binds public derivation inputs but does not prove a valid balance update.
 
-## Transport layer
+## TSN service roles
 
-The transport layer is split across three roles, none of which can rewrite the sender's authorization:
+- **Sender SDK** collects payment details and creates the sender's authorization and reserve-funding transaction.
+- **Receiver** accepts and stores signed ingress work.
+- **TSN Node** independently resolves TIP, validates the request, and constructs recipient transition data before releasing authorized work.
+- **Cranker** submits the exact immutable work and cannot change its bound fields.
 
-- **Mother Node**: verifies canonical route messages, wallet and device signatures, sequence, expiry, policy, and commitment structure. On success it signs a short-lived Ed25519 permit binding the exact leased operation (slot, commitments, nullifier, cranker vault, recipient, mint, amount, lease). The Node cannot sign as Mother, mutate the intent, decrypt user envelopes, or submit transactions.
-- **Receiver**: durable infrastructure for verified work. It stores and leases work, authenticates Crankers, enforces state versions, and provides wake notifications. It does not create authorization.
-- **Cranker Node**: pays Solana fees and submits the exact authorized transaction via `tsn_execute_private_payout`. It cannot change recipient, mint, amount, settlement commitment, nonce, nullifier, or Settlement DNA. Crankers do not select sources, replan, decrypt envelopes, or sign for users.
+Receiver acceptance, Node verification, Cranker submission, and chain confirmation are distinct lifecycle events.
 
-## Settlement layer
+## TCAP asset accounting
 
-The **Epoch Treasury** holds epoch-level source liquidity and tracks pending liability. Treasury and vault accounting keep settled funds separate from pending obligations, so operators cannot spend against unauthorized payouts. **TCAP (Transfer Confidential Asset Protocol)** records private balance transitions as commitments pinned to a `TCapTinTipV1` PDA and owner-encrypted snapshots stored off-chain. The live path is credit-only via `credit_tcap_tin_tip_v1`; confidential debits and exits remain proof-gated and are not yet enabled.
+TCAP governs approved assets and their reserve vaults. The target design updates confidential liabilities only after GPRU verifies the encrypted-state transition and replay rules in the same atomic transaction. A debit proof must establish that the prior balance covers the amount and that the successor is correct. A TIN-to-TIN transfer must prove value conservation without disclosing the amount or linking the two DNA outputs.
 
-## Layer summary
+Existing TCAP instructions and deployed account layouts define current chain behavior. The GPRU DNA flow and its TCAP handoff are not deployed, and confidential debit and exit remain disabled. Wallet deposits and exits remain public at their wallet boundaries.
 
-| Layer | Key components | Responsibility |
-| --- | --- | --- |
-| Identity | TIN, TIP, GPRU | Resolve portable identities privately; keep routing metadata off-chain |
-| Intent | Signed payment intents | Bind sender, recipient, amount, mint, nonce, expiry off-chain |
-| Authorization | Mother Escrow, Settlement DNA, permit signer | Authorize payouts through governed, template-bound signatures |
-| Transport | Mother Node, Receiver, Cranker | Verify, lease, and submit transactions without changing payment terms |
-| Settlement | Epoch Treasury, TCAP | Hold liquidity, separate obligations, record confidential balance transitions |
-
-For more on how trust is distributed across these layers, see the [Trust Model](/architecture/trust-model). To understand why authorization and transport are separated, read [Separation of Concerns](/overview/separation-of-concerns). For details on confidential accounting, see [TCAP](/architecture/tcap).
+For protocol status and limits, see [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) and [Current technology](/about/current-technology).

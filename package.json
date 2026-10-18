@@ -93,7 +93,7 @@
     "// === TIP Program ===": "Transfer Identity Protocol registry program and identity helpers.",
     "tip:program:id": "echo TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     "tip:build": "cargo build-sbf --manifest-path tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/Cargo.toml",
-    "tip:deploy": "solana program deploy --program-id TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT --upgrade-authority ~/.config/solana/id.json tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/target/deploy/tins_program.so -u devnet",
+    "tip:deploy": "node scripts/tip-program-deploy.mjs",
     "tin:init-global": "node scripts/tin-init-global.mjs",
     "tin:lookup": "node scripts/tin-lookup.mjs",
     "tin:identity:demo": "npm run tsn:sdk:build && node scripts/tin-identity-encryption-demo.mjs",

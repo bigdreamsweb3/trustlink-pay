@@ -148,6 +148,7 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/") return sendFile(res, "public/index.html", "text/html; charset=utf-8");
   if (url.pathname === "/tsn-dapp.js") return sendFile(res, "public/tsn-dapp.js", "text/javascript; charset=utf-8");
   if (url.pathname === "/tsn-recipient-credit-sdk.bundle.js") return sendFile(res, "public/tsn-recipient-credit-sdk.bundle.js", "text/javascript; charset=utf-8");
+  if (url.pathname === "/tsn-tin-creation-sdk.bundle.js") return sendFile(res, "public/tsn-tin-creation-sdk.bundle.js", "text/javascript; charset=utf-8");
   if (url.pathname === "/tsn_icon_logo.png") return sendFile(res, "public/tsn_icon_logo.png", "image/png");
   if (url.pathname === "/api/health") return json(res, 200, { service: "tsn-protocol-ui", status: "READY", sdk: "@trustlink/tsn-sdk", network: "devnet" });
   if (req.method === "POST" && url.pathname === "/api/tsn/rpc") {
@@ -248,10 +249,26 @@ async function handleApi(req, res, url) {
     }
     const encryptedMasterSeed = Buffer.from(String(body.encryptedMasterSeed ?? session.preparedTinDraft?.encryptedMasterSeed ?? ""), "base64");
     if (encryptedMasterSeed.length === 0) return json(res, 422, { error: "ENCRYPTED_MASTER_SEED_REQUIRED" });
-    const gpruPublicCommitment = String(body.gpruPublicCommitment ?? session.preparedTinDraft?.gpruPublicCommitment ?? "").toLowerCase();
-    if (!/^[0-9a-f]{64}$/.test(gpruPublicCommitment)) return json(res, 422, { error: "GPRU_PUBLIC_COMMITMENT_REQUIRED" });
-    const gpruPublicCommitmentBytes = Buffer.from(gpruPublicCommitment, "hex");
-    const tipRootCommitment = Buffer.from(tsnSdk.deriveTipRootCommitment(gpruPublicCommitmentBytes));
+    const resourceCommitment = String(body.resourceCommitment ?? "").toLowerCase();
+    if (resourceCommitment !== session.pendingTinEncryption.resourceCommitment) {
+      return json(res, 422, { error: "OWNER_SEED_RESOURCE_COMMITMENT_MISMATCH" });
+    }
+    const gpruElgamalKeyVersion = Number(body.gpruElgamalKeyVersion ?? 0);
+    const gpruElgamalPublicKey = String(body.gpruElgamalPublicKey ?? "").toLowerCase();
+    const gpruElgamalKeyCommitment = String(body.gpruElgamalKeyCommitment ?? "").toLowerCase();
+    if (gpruElgamalKeyVersion !== 1 || !/^[0-9a-f]{64}$/.test(gpruElgamalPublicKey) || /^0{64}$/.test(gpruElgamalPublicKey)
+      || !/^[0-9a-f]{64}$/.test(gpruElgamalKeyCommitment) || /^0{64}$/.test(gpruElgamalKeyCommitment)) {
+      return json(res, 422, { error: "VERSIONED_GPRU_ELGAMAL_KEY_REQUIRED" });
+    }
+    const gpruElgamalPublicKeyBytes = Buffer.from(gpruElgamalPublicKey, "hex");
+    const gpruElgamalKeyCommitmentBytes = Buffer.from(gpruElgamalKeyCommitment, "hex");
+    const expectedGpruElgamalKeyCommitment = Buffer.from(tsnSdk.deriveGpruElgamalKeyCommitment(
+      gpruElgamalKeyVersion,
+      gpruElgamalPublicKeyBytes,
+    ));
+    if (!expectedGpruElgamalKeyCommitment.equals(gpruElgamalKeyCommitmentBytes)) {
+      return json(res, 422, { error: "GPRU_ELGAMAL_KEY_COMMITMENT_MISMATCH" });
+    }
     const lookupSecret = requireTinLookupSecret();
     const ownerPubkey = new PublicKey(session.wallet);
     const connection = new Connection(await resolveRpcUrl(), "confirmed");
@@ -271,7 +288,12 @@ async function handleApi(req, res, url) {
     if (!tin || !identity || !registry) throw new Error("Could not reserve a unique private TIN after 8 Devnet checks");
     const encryptedTinRecovery = Buffer.from(String(body.encryptedTinRecovery ?? ""), "base64");
     if (encryptedTinRecovery.length < 28) {
-      session.preparedTinDraft = { tin, identity, registry, displayName, encryptedMasterSeed: encryptedMasterSeed.toString("base64"), gpruPublicCommitment };
+      session.preparedTinDraft = {
+        tin, identity, registry, displayName,
+        encryptedMasterSeed: encryptedMasterSeed.toString("base64"),
+        resourceCommitment, gpruElgamalKeyVersion,
+        gpruElgamalPublicKey, gpruElgamalKeyCommitment,
+      };
       const ownerPubkey = new PublicKey(session.wallet);
       const programId = new PublicKey(tinProgramId);
       return json(res, 200, {
@@ -289,13 +311,12 @@ async function handleApi(req, res, url) {
       encryptedIdentityEnvelope: identity.encryptedIdentityEnvelope,
       encryptedMasterSeed,
       encryptedMetadataHash: zero,
-      pruConfigurationHash: zero,
-      encryptedPublicRouteEnvelope: Buffer.alloc(0),
       routeVersion: 1,
       routeNonce: randomBytes(32),
       tipRouteVersion: 1,
-      gpruPublicCommitment: gpruPublicCommitmentBytes,
-      tipRootCommitment,
+      gpruElgamalKeyVersion,
+      gpruElgamalPublicKey: gpruElgamalPublicKeyBytes,
+      gpruElgamalKeyCommitment: gpruElgamalKeyCommitmentBytes,
       policyCommitment: randomBytes(32),
     });
     const intentId = randomUUID();
@@ -323,16 +344,12 @@ async function handleApi(req, res, url) {
       encryptedIdentityEnvelope: b64(built.encryptedIdentityEnvelope),
       encryptedMasterSeed: b64(built.encryptedMasterSeed),
       encryptedMetadataHash: hex(built.encryptedMetadataHash),
-      // The current TIN V1 route binds no PRU configuration; this value is
-      // intentionally the zero hash and is not part of buildTinV1Creation's
-      // returned on-chain payload fields.
-      pruConfigurationHash: hex(zero),
-      encryptedPublicRouteEnvelope: "",
       routeVersion: Number(built.routeVersion),
       routeNonce: hex(built.routeNonce),
       tipRouteVersion: built.tipRouteVersion,
-      gpruPublicCommitment: hex(built.gpruPublicCommitment),
-      tipRootCommitment: hex(built.tipRootCommitment),
+      gpruElgamalKeyVersion: built.gpruElgamalKeyVersion,
+      gpruElgamalPublicKey: hex(built.gpruElgamalPublicKey),
+      gpruElgamalKeyCommitment: hex(built.gpruElgamalKeyCommitment),
       policyCommitment: hex(built.policyCommitment),
       sdk: "@trustlink/tsn-sdk.buildTinV1Creation",
     });

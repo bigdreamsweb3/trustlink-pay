@@ -4,193 +4,72 @@ sidebarTitle: "Introduction"
 description: "TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by TrustLink Labs."
 ---
 
-**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [TrustLink Labs](/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. The Mother Node verifies and reserves work, and the TSN Program enforces Mother DNA commitments and vault reimbursement on-chain. Independent Cranker Nodes pay Solana fees and submit exact authorized transactions. Senders authorize payments against a portable identity, not a raw public key. No operator between the sender and Solana can change what the sender signed.
+# Transfer Settlement Network
 
-<CardGroup cols={3}>
-  <Card title="Identity-first" icon="fingerprint">
-    Payments are bound to a Transfer Identity Number (TIN) and authorized through GPRU scopes. Route metadata stays off-chain; the chain sees only commitments.
-  </Card>
+**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [**TrustLink Labs**](https://trust-link-tsn.mintlify.site/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. The Mother Node verifies and reserves work, and the TSN Program enforces Mother DNA commitments and vault reimbursement on-chain. Independent Cranker Nodes pay Solana fees and submit exact authorized transactions. Senders authorize payments against a portable identity, not a raw public key. No operator between the sender and Solana can change what the sender signed.
 
-<Card title="Intent-based" icon="signature">
-  The sender signs an intent that fixes recipient, amount, mint, nonce, and
-  validity window. Every downstream role verifies against that intent
-  byte-for-byte.
-</Card>
+## Protocol boundaries
 
-  <Card title="Privacy-preserving" icon="lock">
-    TCAP records balance transitions as commitments and owner-decryptable snapshots. The public ledger reveals movement, not amounts or parties.
-  </Card>
-</CardGroup>
+The layers are separated on purpose. A GPRU key or commitment alone cannot authorize custody. A Cranker submits the exact authorized transaction and cannot rewrite its bound fields. TIP manages transfer identities and route resolution; a TIN is the 10-digit Transfer Identity Number managed within TIP and is not a wallet key or token account.
 
-## The core idea
+TCAP's current credit path checks opaque commitment and sequence state. The GPRU DNA architecture assigns unique transaction-specific outputs to GPRU and has TCAP apply reserve accounting only after a verified GPRU transition. The unique-DNA flow is separate from the current TIP-rooted TCAP tip implementation.
 
-Most payment networks collapse three responsibilities into one operator: authorization, routing, and submission. TSN separates them.
+## What is deployed on Devnet
 
-<Note>
-  Transport does not authorize, and authorization does not require transport to
-  be honest. Mother Nodes, Receivers, and Cranker Nodes move traffic through TSN, but they
-  cannot forge a Mother signature, rewrite sender-signed fields, or replay a
-  settlement.
-</Note>
+The TSN program, TCAP program, TIP/TIN Registrar, and Stable-TCAP faucet have Devnet deployments. The [Current Technology page](/about/current-technology) lists program IDs and status.
 
-That separation is enforced by cryptography and on-chain checks, not by trust in any operator. See [Separation of concerns](/overview/separation-of-concerns) for the full boundary.
+The current TCAP credit instruction advances opaque tip state using its commitment, sequence, policy, authorization, and replay checks. That transition alone does not prove that a confidential balance covers a debit. Confidential debit and exit remain proof-gated and disabled; the current program rejects those paths with `ProofSystemNotEnabled`.
 
-## The five roles
+The GPRU source contains a one-time ElGamal DNA key derivation primitive, a Node native adapter, and an SDK recovery helper. The deployable GPRU program, on-chain balance proof verification, and atomic GPRU-to-TCAP integration are not deployed.
 
-| Role                    | Owns                                               | Cannot do                                                |
-| ----------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| **Sender + TIN** | Signs the payment intent under a portable identity | (root of authorization) |
-| **GPRU routing**        | Resolves route metadata privately, off-chain       | Change intent fields                                     |
-| **Mother authority**    | Governs settlement authorization on-chain          | Rewrite sender-signed terms                              |
-| **Node** | Verifies signatures, sequence, expiry, and policy; signs a short-lived permit for the exact leased operation | Sign as Mother, mutate the intent, or submit transactions |
-| **Receiver \+ Cranker** | Stores verified work; pays fees; submits to Solana | Change recipient, mint, amount, nonce, nullifier, or DNA |
+## Protocol layers
 
-Every role fails closed. A Node that cannot verify rejects. A Cranker that submits a mutated transaction is rejected by the on-chain program. A replayed settlement hits a spent nullifier.
+| Layer | Responsibility |
+| --- | --- |
+| **TIP** | Transfer Identity Protocol; manages transfer identities and route metadata. |
+| **TIN** | Transfer Identity Number; one 10-digit identity within TIP. |
+| **GPRU** | Guarded Privacy Routing Unit; transaction DNA, one-time ElGamal outputs, and proof-verified confidential state transitions. |
+| **TSN** | Verifies signed work, coordinates settlement, and authorizes immutable execution. |
+| **TCAP** | Transfer Confidential Asset Protocol; governs approved assets, reserves, and liability accounting. |
 
-## Follow a payment through TSN
+## TIN credit flow
 
-<Steps>
-  <Step title="Sender signs a payment intent">
-    An off-chain intent binds recipient, amount, mint, nonce, and validity
-    window to the sender's TIN. It is never public and never re-signed
-    downstream.
-  </Step>
-  <Step title="Node verifies and signs a permit">
-    A Node checks signatures, TIN and GPRU bindings, sequence, expiry, and policy. It then signs a short-lived Ed25519 permit binding the settlement slot, commitments, nullifier, selected Cranker vault, recipient, mint, amount, and lease. A Node cannot sign as Mother, mutate the intent, or submit the transaction itself, so it can only authorize an exact leased operation or reject.
-  </Step>
-  <Step title="Receiver stores and leases the work">
-    The Receiver is durable infrastructure for verified work. It moves the job through `RECEIVED → NODE_VERIFYING → VERIFIED → CRANKER_LEASED → SUBMITTED → CONFIRMED` under short leases and strict state versions.
-  </Step>
-  <Step title="Mother materializes a one-time settlement slot">
-    Mother submits `tsn_create_settlement_dna`, which writes a `SettlementDna` PDA at an opaque HMAC-SHA256 slot. The slot binds the settlement commitment, digest, nullifier, cranker vault, recipient, mint, amount, and lease. No payment id, sender, or route metadata is written on-chain.
-  </Step>
-  <Step title="Cranker submits the payout atomically">
-    The Cranker pays Solana fees and submits `tsn_execute_private_payout` with the Node's Ed25519 permit. The TSN Program re-checks the stored `SettlementDna`, the permit, the lease, and the treasury liability. It then transfers from the epoch treasury and reimburses the cranker vault, atomically or not at all. The `EpochClaimSlot` PDA is created on this first settlement or refund attempt: first-writer-wins.
-  </Step>
-  <Step title="TCAP records the private balance transition">
-    The recipient's Cranker submits `credit_tcap_tin_tip_v1`, which advances the `TCapTinTipV1` commitment and stores an owner-encrypted snapshot. The recipient reconciles a private balance without exposing amounts on-chain.
-  </Step>
-</Steps>
+The sender signs payment and reserve-funding details. Receiver accepts and stores the ingress. Node resolves the recipient TIN through TIP, validates the route and asset, and constructs the unique GPRU DNA transition. Cranker submits that exact work. GPRU verifies key derivation, encrypted-state arithmetic, and replay protection before TCAP applies a reserve-liability change atomically. The recipient later recovers the matching one-time private key locally.
 
-See the user-facing flow in [How It Works](/how-it-works/how-a-payment-feels), then continue to the detailed architecture and developer guides.
-
-## What a payment intent looks like
-
-<CodeGroup>
-
-```ts intent.ts
-import { signPaymentIntent } from "@trustlink/tsn-sdk";
-
-const intent = await signPaymentIntent({
-  tin: "1029384756", // sender's Transfer Identity Number
-  recipientTin: "5647382910", // recipient TIN, resolved via GPRU
-  mint: "EPjFWdd5AufqSSqeM2q...", // SPL mint
-  amount: 2_500_000n, // base units
-  nonce: crypto.randomUUID(),
-  validAfterSlot: currentSlot,
-  expiresAtSlot: currentSlot + 300n,
-});
-
-await tsn.submit(intent); // Node -> Receiver -> Cranker -> Solana
-```
-
-```rust program.rs
-// On-chain: what the TSN program re-verifies at payout time.
-// Mother materializes this SettlementDna via `tsn_create_settlement_dna`
-// at an opaque slot; the Cranker's `tsn_execute_private_payout` must
-// re-supply every field byte-for-byte or the program rejects.
-#[account]
-pub struct SettlementDna {
-    pub mother_escrow: Pubkey,
-    pub slot: [u8; 32],
-    pub commitment_digest: [u8; 32],
-    pub settlement_commitment: [u8; 32],
-    pub payout_nullifier: [u8; 32],
-    pub random_nonce: [u8; 32],
-    pub cranker: Pubkey,
-    pub cranker_vault: Pubkey,
-    pub recipient: Pubkey,
-    pub token_mint: Pubkey,
-    pub amount: u64,
-    pub lease_id_hash: [u8; 32],
-    pub lease_version: u64,
-    pub lease_expiry_ts: i64,
-    pub authorization_expiry_ts: i64,
-    pub status: SettlementDnaStatus,
-    pub bump: u8,
-}
-
-// TCAP tip-credit transition args, submitted by the Cranker via
-// `credit_tcap_tin_tip_v1` to advance the recipient's private balance.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct CreditTcapTinTipV1Args {
-    pub previous_commitment: [u8; 32],
-    pub new_commitment: [u8; 32],
-    pub sequence: u64,
-    pub token_id: u32,
-    pub policy_commitment: [u8; 32],
-    pub gpru_scope_commitment: [u8; 32],
-    pub nullifier: [u8; 32],
-}
-```
-
-</CodeGroup>
-
-The intent above is what the sender approves. `SettlementDna` is what the TSN program re-verifies at payout time, and `CreditTcapTinTipV1Args` is what TCAP re-verifies at credit time. Nothing between the two can change a field without invalidating both.
-
-## Core primitives
-
-<AccordionGroup>
-  <Accordion title="TIN and GPRU: identity and routing" icon="id-card">
-    A **Transfer Identity Number (TIN)** is a 10-digit portable identity issued by the **Transfer Identity Protocol (TIP)**. The encrypted master seed is sealed to the owner wallet via a `wallet-owner-signature-v1` envelope and authorizes derivation of **GPRU** scopes. A GPRU scope is a non-custodial authorization and routing scope derived from the TIN privacy-receiving root, settlement commitment, epoch, and authorization scope. See [Identity and routing](/architecture/identity-and-routing).
-  </Accordion>
-
-<Accordion title="Mother authority" icon="shield-halved">
-  Mother is the root TSN authority and epoch controller: a Program-Derived
-  Address whose stored `authority` is a governed external keypair. Mother
-  materializes one-time `SettlementDna` PDAs at an HMAC-SHA256 slot and
-  authorizes settlement. See [Mother authority](/architecture/mother-authority).
-</Accordion>
-
-<Accordion title="Settlement DNA, nullifiers, and sequence" icon="dna">
-  Settlement DNA binds payout parameters to a one-time slot. Nullifiers, sequence checks, validity windows, and first-writer-wins `EpochClaimSlot` PDAs enforce single-use consumption. See [Replay protection](/security/replay-protection).
-</Accordion>
-
-<Accordion title="Epoch Treasury" icon="vault">
-  The Epoch Treasury holds epoch-level liquidity and tracks liability against
-  Mother. Funds and pending obligations are separated so operators cannot spend
-  against unauthorized payouts. See [Epoch
-  Treasury](/architecture/epoch-treasury).
-</Accordion>
-
-  <Accordion title="TCAP: confidential balance accounting" icon="lock">
-    The **Transfer Confidential Asset Protocol (TCAP)** records balance transitions as commitments and encrypted snapshots pinned to a `TCapTinTipV1` PDA. The live path is credit-only through `credit_tcap_tin_tip_v1`; confidential debits and exits are proof-gated and not yet enabled. See [TCAP](/architecture/tcap).
-  </Accordion>
-</AccordionGroup>
-
-## Built by TrustLink Labs
-
-TSN is developed and maintained by [TrustLink Labs](/about/trustlink-labs), a research and engineering organization building open infrastructure for identity-aware, privacy-conscious blockchain payments. TSN is the network. TSN XP is the active user-facing product experience being built on top of it; the separately hosted TrustLink Pay site is an earlier application surface.
-
-Follow the work on [GitHub](https://github.com/Trustlink-Labs) and [X](https://x.com/TrustLinkLabs).
+Homomorphic arithmetic is the balance-state objective: credits and debits update encrypted state without revealing the balance. Arithmetic over ciphertext does not establish that a debit is affordable; the GPRU proof must also validate the prior state, amount, successor, and non-negative range. The concrete encryption and proof contract is not part of the deployed program source.
 
 ## Where to go next
 
 <CardGroup cols={2}>
-  <Card title="How It Works" icon="diagram-project" href="/how-it-works/how-a-payment-feels">
-    See the simple payment experience and the protocol work behind it.
+  <Card title="How It Works" icon="hand-pointer" href="/how-it-works/how-a-payment-feels">
+    Sender, Receiver, Node, Cranker, GPRU, and recipient roles in a TIN credit.
   </Card>
+  <Card title="Protocol Architecture" icon="diagram-project" href="/overview/architecture">
+    The current and target boundaries across TIP, GPRU, TSN, and TCAP.
+  </Card>
+  <Card title="FAQ" icon="circle-question" href="/get-started/faq">
+    Privacy boundaries, status milestones, and the debit gate.
+  </Card>
+  <Card title="Run a Cranker" icon="gears" href="/operators/tsn-cranker">
+    The operator role for leasing and submitting authorized work.
+  </Card>
+</CardGroup>
 
-<Card title="Architecture" icon="cubes" href="/overview/architecture">
-  See identity, authorization, verification, transport, settlement, and TCAP as one system on Solana.
-</Card>
+## About TrustLink Labs
 
-<Card title="Getting started" icon="code" href="/developers/getting-started">
-  Set up devnet, resolve a TIN, and submit your first authorized payment intent
-  through TSN.
-</Card>
+TrustLink Labs builds TSN and TSN XP, a reference experience for using the protocol and SDK. The documentation describes the protocol stack and distinguishes deployed behavior from the GPRU DNA architecture.
 
-  <Card title="Security invariants" icon="shield" href="/security/invariants">
-    The guarantees TSN enforces at every boundary, and what no operator can rewrite.
+<CardGroup cols={2}>
+  <Card title="GitHub Organization" icon="github" href="https://github.com/Trustlink-Labs">
+    Open-source repositories from TrustLink Labs.
+  </Card>
+  <Card title="Follow on X" icon="x-twitter" href="https://x.com/TrustLinkLabs">
+    Protocol announcements and Devnet updates.
+  </Card>
+  <Card title="Blog" icon="rss" href="https://tsn-protocol.blogspot.com">
+    Protocol explanations and research notes.
+  </Card>
+  <Card title="Protocol Source" icon="code" href="https://github.com/Trustlink-Labs/TSN-Protocol">
+    TSN protocol programs and services.
   </Card>
 </CardGroup>

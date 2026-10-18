@@ -1,22 +1,22 @@
 ---
 title: "Current TrustLink Technology on Solana Devnet"
 sidebarTitle: "Current Technology"
-description: "What is live on Solana Devnet today: TSN intents, TIN registry, GPRU routing, Mother Escrow, Node verification, Cranker submission, Epoch Treasury, TCAP credit-only transitions, and encrypted snapshots."
+description: "Source-backed Devnet capabilities and current development boundaries for TSN, TIP/TIN, GPRU, and TCAP."
 ---
 
-TrustLink Labs develops and tests its protocol stack on Solana Devnet. The current implementation covers the full payment path from intent to encrypted snapshot, with explicit boundaries for what is included and what remains future work.
+TrustLink Labs develops and tests TSN and its related identity and asset protocols on Solana Devnet. The sections below distinguish deployed or source-backed capabilities from GPRU work that remains a target architecture.
 
 ## What is on Devnet today
 
 - **TSN payment intents** — Sender-signed intents binding amount, mint, fee limits, expiry, nonce, and recipient route commitment.
 - **TIP and TIN registry** — TIP issues and resolves transfer identities; the registry stores 10-digit TIN records, route commitments, and encrypted identity envelopes.
-- **GPRU authorization and routing** — Non-custodial authorization identity derived from the TIN privacy-receiving root for scoped settlement permissions.
+- **GPRU derivation primitive** — Source includes a one-time ElGamal DNA key derivation core, a Node native adapter, and SDK owner recovery. It is not yet a deployable GPRU program or connected to TCAP settlement.
 - **Mother Escrow authority** — Epoch coordination and `ConfidentialSettlement` authorization through the one-time `SettlementDna` PDA.
 - **TSN Node verification** — Stateless signature verification, route commitment matching, nonce/replay checks, and short-lived permit signing.
 - **Cranker submission** — Leased execution of the exact authorized transaction without mutation of bound fields.
 - **Epoch Treasury** — Protocol-controlled accounting for aggregate funding and settlement liability; no per-payment escrow or vault.
-- **TCAP credit-only transitions** — `credit_tcap_tin_tip_v1` advances the tip commitment and consumes the TSN authorization receipt and nullifier atomically.
-- **Encrypted owner snapshots** — AES-GCM encrypted balance state stored off-chain; owner device decrypts locally after verifying commitment and sequence.
+- **TCAP current behavior** — Existing deployed instructions and account layouts define current behavior. Opaque tip commitment advancement is not itself proof of a spendable balance.
+- **Confidential debit and exit** — Disabled and fail-closed pending sound on-chain proof verification.
 
 ## Devnet program identifiers
 
@@ -27,7 +27,7 @@ TrustLink Labs develops and tests its protocol stack on Solana Devnet. The curre
 | TCAP | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` | Credit-only Devnet |
 | Stable-TCAP faucet | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
 
-These identifiers are provided for reproducible Devnet research. They do not imply mainnet readiness beyond the documented credit path.
+These identifiers are provided for reproducible Devnet research. Confirm each program and instruction against current chain state before relying on it; this list does not imply that the new GPRU DNA design is deployed.
 
 ## Explicitly out of scope
 
@@ -35,6 +35,7 @@ The following are separate milestones and are not presented as active production
 
 - Recurring payments and subscription-provider execution.
 - Confidential debits and exits (proof-gated and disabled).
+- Deployable GPRU DNA accounts, proof verification, and atomic TCAP integration.
 - Mainnet deployment.
 - Formal cryptographic audits.
 - Perfect unlinkability.

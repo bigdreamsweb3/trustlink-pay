@@ -47,11 +47,10 @@ pub fn stage(
         || identity_len + recovery_len + seed_len > TinV1CreationStaging::MAX_BLOB_LEN
         || !validate_tip_route(
             params.tip_route_version,
-            &params.gpru_public_commitment,
-            &params.tip_root_commitment,
+            params.gpru_elgamal_key_version,
+            &params.gpru_elgamal_public_key,
+            &params.gpru_elgamal_key_commitment,
             &params.policy_commitment,
-            params.gpru_route_version,
-            &params.gpru_route_commitment,
         )
     {
         return Err(Error::InvalidInstruction.into());
@@ -78,11 +77,10 @@ pub fn stage(
             || existing.route_version != params.route_version
             || existing.route_nonce != params.route_nonce
             || existing.tip_route_version != params.tip_route_version
-            || existing.gpru_public_commitment != params.gpru_public_commitment
-            || existing.tip_root_commitment != params.tip_root_commitment
+            || existing.gpru_elgamal_key_version != params.gpru_elgamal_key_version
+            || existing.gpru_elgamal_public_key != params.gpru_elgamal_public_key
+            || existing.gpru_elgamal_key_commitment != params.gpru_elgamal_key_commitment
             || existing.policy_commitment != params.policy_commitment
-            || existing.gpru_route_version != params.gpru_route_version
-            || existing.gpru_route_commitment != params.gpru_route_commitment
             || existing.expiry_ts != params.expiry_ts
         {
             return Err(Error::InvalidInstruction.into());
@@ -106,11 +104,10 @@ pub fn stage(
         route_version: params.route_version,
         route_nonce: params.route_nonce,
         tip_route_version: params.tip_route_version,
-        gpru_public_commitment: params.gpru_public_commitment,
-        tip_root_commitment: params.tip_root_commitment,
+        gpru_elgamal_key_version: params.gpru_elgamal_key_version,
+        gpru_elgamal_public_key: params.gpru_elgamal_public_key,
+        gpru_elgamal_key_commitment: params.gpru_elgamal_key_commitment,
         policy_commitment: params.policy_commitment,
-        gpru_route_version: params.gpru_route_version,
-        gpru_route_commitment: params.gpru_route_commitment,
         expiry_ts: params.expiry_ts,
     };
     create_pda_account(
@@ -225,11 +222,10 @@ pub fn finalize(
         route_version: state.route_version,
         route_nonce: state.route_nonce,
         tip_route_version: state.tip_route_version,
-        gpru_public_commitment: state.gpru_public_commitment,
-        tip_root_commitment: state.tip_root_commitment,
+        gpru_elgamal_key_version: state.gpru_elgamal_key_version,
+        gpru_elgamal_public_key: state.gpru_elgamal_public_key,
+        gpru_elgamal_key_commitment: state.gpru_elgamal_key_commitment,
         policy_commitment: state.policy_commitment,
-        gpru_route_version: state.gpru_route_version,
-        gpru_route_commitment: state.gpru_route_commitment,
         intent_hash: state.intent_hash,
         expiry_ts: state.expiry_ts,
     };

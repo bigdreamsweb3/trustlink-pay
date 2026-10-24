@@ -27,7 +27,9 @@ def _load_library() -> ctypes.CDLL:
     library = ctypes.CDLL(str(library_path))
     function = library.tsn_gpru_derive_node_dna_key_v1
     byte_pointer = ctypes.POINTER(ctypes.c_ubyte)
-    function.argtypes = [byte_pointer, byte_pointer, byte_pointer, byte_pointer, byte_pointer]
+    function.argtypes = [
+        byte_pointer, byte_pointer, byte_pointer, byte_pointer, byte_pointer, byte_pointer
+    ]
     function.restype = ctypes.c_int
     return library
 
@@ -43,12 +45,13 @@ def derive_node_dna_elgamal_key(
     if len(transaction_dna) != 32 or not any(transaction_dna):
         raise ValueError("GPRU DNA must be a nonzero 32-byte value")
 
-    randomness = secrets.token_bytes(64)
+    randomness = secrets.token_bytes(128)
     scan_input = (ctypes.c_ubyte * 32).from_buffer_copy(scan_public_key)
     dna_input = (ctypes.c_ubyte * 32).from_buffer_copy(transaction_dna)
-    random_input = (ctypes.c_ubyte * 64).from_buffer_copy(randomness)
+    random_input = (ctypes.c_ubyte * 128).from_buffer_copy(randomness)
     ephemeral_output = (ctypes.c_ubyte * 32)()
     one_time_output = (ctypes.c_ubyte * 32)()
+    proof_output = (ctypes.c_ubyte * 128)()
 
     library = _load_library()
     status = library.tsn_gpru_derive_node_dna_key_v1(
@@ -57,17 +60,25 @@ def derive_node_dna_elgamal_key(
         random_input,
         ephemeral_output,
         one_time_output,
+        proof_output,
     )
     if status == 2:
         raise RuntimeError("GPRU crypto library rejected a missing input pointer")
     if status != 0:
         raise ValueError("GPRU scan key or derivation inputs are invalid; generate fresh DNA and randomness")
 
+    proof_bytes = bytes(proof_output)
     return {
         "version": 1,
         "dna": transaction_dna,
         "ephemeralPublicKey": bytes(ephemeral_output),
         "oneTimePublicKey": bytes(one_time_output),
+        "derivationProof": {
+            "sharedPoint": proof_bytes[:32],
+            "generatorCommitment": proof_bytes[32:64],
+            "scanCommitment": proof_bytes[64:96],
+            "response": proof_bytes[96:128],
+        },
         "keyCommitment": hashlib.sha256(
             b"TSN_GPRU_DNA_ELGAMAL_KEY_COMMITMENT_V1\0"
             + b"\x01"

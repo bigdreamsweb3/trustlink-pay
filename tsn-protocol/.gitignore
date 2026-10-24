@@ -168,3 +168,11 @@ protocol-tests/tcap-credit-devnet.env
 
 .env.local
 .env
+
+# Solana program deployment keypairs and local operator signing keys.
+# These files contain 64-byte secret-key arrays and must stay local.
+**/*-program-keys/*.json
+**/program-keys/*.json
+**/*keypair*.json
+**/keys/*.json
+!**/keys/.gitkeep

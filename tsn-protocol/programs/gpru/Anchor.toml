@@ -1,0 +1,16 @@
+[toolchain]
+anchor_version = "0.30.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+tsn_gpru_proof_contract = "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR"
+
+[provider]
+cluster = "https://devnet.helius-rpc.com/?api-key=42fbc8ea-86e6-4037-8a78-3217d027f292"
+wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["./"]

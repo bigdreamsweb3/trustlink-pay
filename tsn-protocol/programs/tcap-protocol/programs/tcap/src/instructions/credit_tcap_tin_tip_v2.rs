@@ -24,6 +24,8 @@ pub struct CreditTcapTinTipV2Args {
     pub policy_commitment: [u8; 32],
     pub gpru_scope_commitment: [u8; 32],
     pub nullifier: [u8; 32],
+    /// Commitment to the one-time GPRU DNA ElGamal key verified by TSN/GPRU.
+    pub dna_key_commitment: [u8; 32],
 }
 
 #[derive(Accounts)]
@@ -57,6 +59,7 @@ pub fn handler(ctx: Context<CreditTcapTinTipV2>, args: CreditTcapTinTipV2Args) -
     require!(args.policy_commitment != [0; 32], TcapError::EmptyCommitment);
     require!(args.gpru_scope_commitment != [0; 32], TcapError::InvalidGpruScope);
     require!(args.nullifier != [0; 32], TcapError::EmptyCommitment);
+    require!(args.dna_key_commitment != [0; 32], TcapError::EmptyCommitment);
     require!(args.sequence == ctx.accounts.tin_tip.sequence.checked_add(1).ok_or(TcapError::ArithmeticOverflow)?, TcapError::InvalidTipSequence);
     require!(args.previous_commitment == ctx.accounts.tin_tip.current_commitment, TcapError::TipCommitmentMismatch);
     require!(args.policy_commitment == ctx.accounts.tin_tip.policy_commitment, TcapError::TipCommitmentMismatch);
@@ -83,6 +86,7 @@ pub fn handler(ctx: Context<CreditTcapTinTipV2>, args: CreditTcapTinTipV2Args) -
         &args.token_id.to_le_bytes(),
         args.gpru_scope_commitment.as_ref(),
         args.nullifier.as_ref(),
+        args.dna_key_commitment.as_ref(),
     ]).to_bytes();
     ctx.accounts.tin_tip.current_commitment = args.new_commitment;
     ctx.accounts.tin_tip.sequence = args.sequence;

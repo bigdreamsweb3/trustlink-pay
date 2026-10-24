@@ -13,6 +13,7 @@ import {
 
 export const TCAP_PROGRAM_ID = new PublicKey(process.env.TCAP_PROGRAM_ID ?? "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 export const TSN_PROGRAM_ID = new PublicKey(process.env.TSN_PROGRAM_ID ?? "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
+export const GPRU_PROGRAM_ID = new PublicKey("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR");
 const seed = (value) => Buffer.from(value, "utf8");
 const digest = (value) => createHash("sha256").update(value).digest();
 const discriminator = (name) => digest(`global:${name}`).subarray(0, 8);
@@ -130,6 +131,7 @@ export function deriveGpruTcapCreditAuthorizationDigest(fields) {
     bytes32(fields.policyCommitment, "policyCommitment"),
     bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
     bytes32(fields.nullifier, "nullifier"),
+    bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"),
   ));
 }
 
@@ -247,6 +249,7 @@ export function buildCreditTcapTinTipV2Instruction(fields) {
     bytes32(fields.policyCommitment, "policyCommitment"),
     bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
     bytes32(fields.nullifier, "nullifier"),
+    bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"),
   );
   return new TransactionInstruction({
     programId: TCAP_PROGRAM_ID,
@@ -277,6 +280,14 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
     bytes32(fields.policyCommitment, "policyCommitment"),
     bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
     bytes32(fields.nullifier, "nullifier"),
+    bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"),
+    bytes32(fields.dna, "dna"),
+    bytes32(fields.ephemeralPublicKey, "ephemeralPublicKey"),
+    bytes32(fields.oneTimePublicKey, "oneTimePublicKey"),
+    bytes32(fields.derivationProof.sharedPoint, "derivationProof.sharedPoint"),
+    bytes32(fields.derivationProof.generatorCommitment, "derivationProof.generatorCommitment"),
+    bytes32(fields.derivationProof.scanCommitment, "derivationProof.scanCommitment"),
+    bytes32(fields.derivationProof.response, "derivationProof.response"),
   );
   return new TransactionInstruction({
     programId: TSN_PROGRAM_ID,
@@ -290,6 +301,8 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
       { pubkey: pdas.tipRoot, isSigner: false, isWritable: false },
       { pubkey: pdas.tip, isSigner: false, isWritable: true },
       { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
+      { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.tipRegistry), isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,

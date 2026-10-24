@@ -68,6 +68,7 @@ from app.services.cross_chain_routes import (
     ready_destination_networks,
     verify_destination_route,
 )
+from gpru_crypto import derive_node_dna_elgamal_key
 
 _node_root = Path(__file__).resolve().parent
 # Local development is local-first. The hosted .env remains a fallback for
@@ -2032,6 +2033,22 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
     policy = _tcap_credit_bytes32(transition.get("policyCommitment"), "policyCommitment")
     scope = _tcap_credit_bytes32(transition.get("gpruScopeCommitment"), "gpruScopeCommitment")
     nonce = _tcap_credit_bytes32(transition.get("nullifier"), "nullifier")
+    dna = _tcap_credit_bytes32(transition.get("dna"), "dna")
+    ephemeral_public_key = _tcap_credit_bytes32(transition.get("ephemeralPublicKey"), "ephemeralPublicKey")
+    one_time_public_key = _tcap_credit_bytes32(transition.get("oneTimePublicKey"), "oneTimePublicKey")
+    dna_key_commitment = _tcap_credit_bytes32(transition.get("dnaKeyCommitment"), "dnaKeyCommitment")
+    try:
+        tip_registry = Pubkey.from_string(str(transition.get("tipRegistry") or ""))
+    except ValueError as exc:
+        raise ValueError("TCAP GPRU transition TIP registry account is invalid") from exc
+    proof = transition.get("derivationProof")
+    if not isinstance(proof, dict):
+        raise ValueError("TCAP GPRU transition is missing the DNA derivation proof")
+    proof_bytes = b"".join(_tcap_credit_bytes32(proof.get(name), name) for name in (
+        "sharedPoint", "generatorCommitment", "scanCommitment", "response",
+    ))
+    if bytes(tip_registry) == bytes(32) or not any(proof_bytes):
+        raise ValueError("TCAP GPRU transition contains an empty registry or derivation proof")
     sequence = _tcap_credit_u64(transition.get("sequence"), "sequence")
     valid_after = _tcap_credit_u64(transition.get("validAfterSlot"), "validAfterSlot")
     expires = _tcap_credit_u64(transition.get("expiresAtSlot"), "expiresAtSlot")
@@ -2043,8 +2060,13 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
         raise ValueError("TCAP credit amountBaseUnits is out of range")
     if int.from_bytes(sequence, "little") <= 0 or int.from_bytes(expires, "little") < int.from_bytes(valid_after, "little"):
         raise ValueError("TCAP credit sequence or validity window is invalid")
-    if successor == bytes(32) or nonce == bytes(32) or policy == bytes(32) or scope == bytes(32):
+    if successor == bytes(32) or nonce == bytes(32) or policy == bytes(32) or scope == bytes(32) or dna == bytes(32):
         raise ValueError("TCAP GPRU transition commitments must be nonzero")
+    expected_dna_key_commitment = hashlib.sha256(
+        b"TSN_GPRU_DNA_ELGAMAL_KEY_COMMITMENT_V1\0" + b"\x01" + dna + ephemeral_public_key + one_time_public_key
+    ).digest()
+    if not hmac.compare_digest(dna_key_commitment, expected_dna_key_commitment):
+        raise ValueError("GPRU DNA key commitment does not match the one-time public key")
     tcap_program = Pubkey.from_string(TCAP_PROGRAM_ID)
     tip, _ = Pubkey.find_program_address([b"tcap:tin-tip:v1", root], tcap_program)
     expected_amount_commitment = hashlib.sha256(
@@ -2071,18 +2093,19 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
         raise ValueError("TCAP GPRU successor does not commit to the credit amount")
     expected_scope = hashlib.sha256(
         b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence
-        + token_id.to_bytes(4, "little") + policy + nonce
+        + token_id.to_bytes(4, "little") + policy + nonce + dna_key_commitment
     ).digest()
     if not hmac.compare_digest(scope, expected_scope):
         raise ValueError("TCAP GPRU scope commitment does not match the authorized credit transition")
     expected = hashlib.sha256(
         b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after + expires + previous + successor
-        + sequence + token_id.to_bytes(4, "little") + policy + scope + nonce
+        + sequence + token_id.to_bytes(4, "little") + policy + scope + nonce + dna_key_commitment
     ).hexdigest()
     supplied = str(transition.get("authorizationDigest") or "").lower()
     if not hmac.compare_digest(expected, supplied):
         raise ValueError("TCAP GPRU credit authorization digest does not match the deployed V2 program contract")
     transition["tipRootCommitment"] = root.hex()
+    transition["dnaKeyCommitment"] = dna_key_commitment.hex()
     return str(tip)
 
 
@@ -2269,6 +2292,13 @@ def _verify_mother_signed_tcap_settlement_message(
         _tcap_credit_bytes32(transition.get("policyCommitment"), "policyCommitment"),
         _tcap_credit_bytes32(transition.get("gpruScopeCommitment"), "gpruScopeCommitment"),
         _tcap_credit_bytes32(transition.get("nullifier"), "nullifier"),
+        _tcap_credit_bytes32(transition.get("dnaKeyCommitment"), "dnaKeyCommitment"),
+        _tcap_credit_bytes32(transition.get("dna"), "dna"),
+        _tcap_credit_bytes32(transition.get("ephemeralPublicKey"), "ephemeralPublicKey"),
+        _tcap_credit_bytes32(transition.get("oneTimePublicKey"), "oneTimePublicKey"),
+        b"".join(_tcap_credit_bytes32((transition.get("derivationProof") or {}).get(name), name) for name in (
+            "sharedPoint", "generatorCommitment", "scanCommitment", "response",
+        )),
     ))
     tsn_program = Pubkey.from_string(TSN_PROGRAM_ID)
     tcap_program = Pubkey.from_string(TCAP_PROGRAM_ID)
@@ -2277,6 +2307,8 @@ def _verify_mother_signed_tcap_settlement_message(
     asset_entry = Pubkey.from_string(str(transition.get("assetEntry") or ""))
     config = Pubkey.from_string(str(transition.get("tcapConfig") or ""))
     tip_root_account = Pubkey(tip_root)
+    tip_registry = Pubkey.from_string(str(transition.get("tipRegistry") or ""))
+    gpru_program = Pubkey.from_string("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR")
     auth_signer = Pubkey.find_program_address(
         [b"tsn:tcap-authorization:v1", authorization_digest], tsn_program,
     )[0]
@@ -2286,7 +2318,7 @@ def _verify_mother_signed_tcap_settlement_message(
         [
             authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
             str(config), str(asset_entry), str(tip_root_account), str(tip),
-            str(auth_signer), str(system_program),
+            str(auth_signer), str(gpru_program), str(tip_registry), str(system_program),
         ],
         hashlib.sha256(b"global:tsn_register_tcap_credit_authorization_v2").digest()[:8] + args,
     )
@@ -2294,7 +2326,7 @@ def _verify_mother_signed_tcap_settlement_message(
     expected_keys = {
         operator, authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
         str(config), str(asset_entry), str(tip_root_account), str(tip), str(auth_signer),
-        str(system_program),
+        str(gpru_program), str(tip_registry), str(system_program),
     }
     if transition.get("initializeTip") is True:
         initial = _tcap_credit_bytes32(transition.get("initialCommitment"), "initialCommitment")
@@ -2659,17 +2691,27 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
         previous = tip_raw[10:42]
         sequence = int.from_bytes(tip_raw[42:50], "little") + 1
     nullifier = hashlib.sha256(b"TSN_TCAP_CREDIT_NULLIFIER_V2" + funding.encode()).digest()
+    dna_key = derive_node_dna_elgamal_key(bytes.fromhex(str(relation["gpruElgamalPublicKey"])))
+    dna = bytes(dna_key["dna"])
+    ephemeral_public_key = bytes(dna_key["ephemeralPublicKey"])
+    one_time_public_key = bytes(dna_key["oneTimePublicKey"])
+    dna_key_commitment = bytes(dna_key["keyCommitment"])
     amount_commitment = hashlib.sha256(b"TSN_TCAP_CREDIT_AMOUNT_V2" + amount.to_bytes(8, "little") + token_id.to_bytes(4, "little")).digest()
     successor = hashlib.sha256(b"TSN_TCAP_CREDIT_COMMITMENT_V2" + root + previous + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + amount_commitment).digest()
-    scope = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + nullifier).digest()
+    scope = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + nullifier + dna_key_commitment).digest()
     expires = valid_after + 150
-    auth = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after.to_bytes(8, "little") + expires.to_bytes(8, "little") + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + scope + nullifier).hexdigest()
+    auth = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after.to_bytes(8, "little") + expires.to_bytes(8, "little") + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + scope + nullifier + dna_key_commitment).hexdigest()
+    derivation_proof = dna_key["derivationProof"]
     return {
         "tipRootCommitment": root.hex(), "previousCommitment": previous.hex(), "newCommitment": successor.hex(),
         "tip": str(tip), "initializeTip": initialize_tip,
         **({"initialCommitment": initial_commitment.hex()} if initialize_tip else {}),
         "amountCommitment": amount_commitment.hex(), "sequence": str(sequence), "tokenId": token_id,
         "policyCommitment": policy.hex(), "gpruScopeCommitment": scope.hex(), "nullifier": nullifier.hex(),
+        "tipRegistry": str(get_private_tin_pda(tin)),
+        "dnaKeyCommitment": dna_key_commitment.hex(), "dna": dna.hex(),
+        "ephemeralPublicKey": ephemeral_public_key.hex(), "oneTimePublicKey": one_time_public_key.hex(),
+        "derivationProof": {name: bytes(value).hex() for name, value in derivation_proof.items()},
         "validAfterSlot": str(valid_after), "expiresAtSlot": str(expires), "authorizationDigest": auth,
         "amountBaseUnits": amount, "depositAmountBaseUnits": str(amount), "mint": str(request.tokenMintAddress),
         "depositAccounts": {"depositor": str(request.senderWallet), "config": accounts[1], "assetEntry": accounts[2], "reserveState": accounts[3], "source": accounts[4], "vault": accounts[5], "mint": accounts[6], "tokenProgram": accounts[7]},
@@ -2769,6 +2811,12 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             "validAfterSlot": str(transition["validAfterSlot"]),
             "expiresAtSlot": str(transition["expiresAtSlot"]),
             "authorizationDigest": str(transition["authorizationDigest"]).lower(),
+            "tipRegistry": str(transition["tipRegistry"]),
+            "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
+            "dna": str(transition["dna"]).lower(),
+            "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
+            "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
+            "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
             "assetEntry": str((transition.get("depositAccounts") or {}).get("assetEntry") or ""),
             "tcapConfig": str((transition.get("depositAccounts") or {}).get("config") or ""),
         }
@@ -3049,7 +3097,8 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
         required_transition_fields = (
             "tipRootCommitment", "tip", "previousCommitment", "newCommitment", "sequence", "tokenId",
             "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot", "expiresAtSlot",
-            "authorizationDigest",
+            "authorizationDigest", "tipRegistry", "dnaKeyCommitment", "dna", "ephemeralPublicKey",
+            "oneTimePublicKey", "derivationProof",
         )
         missing_transition_fields = [name for name in required_transition_fields if transition.get(name) is None]
         if transition.get("initializeTip") and not transition.get("initialCommitment"):
@@ -3080,6 +3129,12 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
             "validAfterSlot": str(transition["validAfterSlot"]),
             "expiresAtSlot": str(transition["expiresAtSlot"]),
             "authorizationDigest": str(transition["authorizationDigest"]).lower(),
+            "tipRegistry": str(transition["tipRegistry"]),
+            "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
+            "dna": str(transition["dna"]).lower(),
+            "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
+            "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
+            "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
             "assetEntry": asset_entry,
             "tcapConfig": tcap_config,
         }

@@ -2,8 +2,7 @@ use solana_program::{account_info::AccountInfo, program_error::ProgramError, pub
 use solana_zk_token_sdk::{
     instruction::{
         ciphertext_commitment_equality::CiphertextCommitmentEqualityProofContext,
-        range_proof::RangeProofContext,
-        ProofType,
+        range_proof::RangeProofContext, ProofType,
     },
     zk_token_elgamal::pod::ElGamalCiphertext,
     zk_token_proof_program,
@@ -42,8 +41,7 @@ pub fn validate_successor_ciphertext_proofs(
     )
     .map_err(|_| ProgramError::InvalidAccountData)?;
     if equality.context_state_authority != *expected_context_authority
-        || equality.proof_type
-            != ProofType::CiphertextCommitmentEquality.into()
+        || equality.proof_type != ProofType::CiphertextCommitmentEquality.into()
         || equality.proof_context.pubkey.0 != expected.encryption_pubkey
         || equality.proof_context.ciphertext.0 != expected.ciphertext
         || equality.proof_context.commitment.0 != expected.pedersen_commitment

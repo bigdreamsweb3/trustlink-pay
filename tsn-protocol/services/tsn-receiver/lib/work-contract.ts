@@ -204,6 +204,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
       "tipRootCommitment", "previousCommitment", "newCommitment", "amountCommitment", "sequence", "tokenId",
       "amountBaseUnits", "depositAmountBaseUnits", "mint", "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot",
       "expiresAtSlot", "authorizationDigest", "tip",
+      "tipRegistry", "dnaKeyCommitment", "dna", "ephemeralPublicKey", "oneTimePublicKey", "derivationProof",
       "initializeTip", "initialCommitment",
       "depositAccounts", "assetEntry", "tcapConfig",
     ]).has(key)));

@@ -7,6 +7,7 @@ const lockfiles = [
   "tsn-protocol/programs/tsn/protocol/Cargo.lock",
   "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/Cargo.lock",
   "tsn-protocol/programs/tcap-protocol/Cargo.lock",
+  "tsn-protocol/programs/gpru/Cargo.lock",
 ];
 const requiredPins = [
   ["blake3", "1.5.5", "cargo update -p blake3 --precise 1.5.5"],

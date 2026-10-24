@@ -102,6 +102,20 @@ tsn-protocol-extraction/
 tsn-protocol/programs/tcap-protocol/tcap-program-keys/
 **/tcap-program-keypair.json
 
+# GPRU Devnet program deployment keypair
+tsn-protocol/programs/gpru/gpru-program-keys/
+
+# Local program and operator signing keys. Keep private key material out of Git
+# regardless of the program, service, or keypair filename.
+**/*-program-keys/
+**/*_program_keys/
+**/keys/*.json
+**/keys/**/*.json
+**/target/deploy/*-keypair.json
+**/*-keypair.json
+**/*_keypair.json
+tsn-protocol/services/tsn-crosschain/.creds_example/contract_auth_keypair.json
+
 # Stable-TCAP Devnet faucet deployment keys (local secrets)
 tsn-protocol/programs/tcap-protocol/stable-tcap-program-keys/
 

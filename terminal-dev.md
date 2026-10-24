@@ -98,7 +98,7 @@ solana confirm <SIGNATURE> --url devnet
 
 # Use comments (#) to explain what each command does.
 
-node scripts/tin-lookup.mjs 6486695615 --rpc https://api.devnet.solana.com
+node scripts/tin-lookup.mjs 1357701033 --rpc https://api.devnet.solana.com
 
 # PROGRAM BUILD/DEPLOY SCRIPTS RUNNER
 

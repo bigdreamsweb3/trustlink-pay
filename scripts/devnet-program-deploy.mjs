@@ -28,10 +28,20 @@ const plans = {
     artifactRelative: "target/deploy/tcap.so",
     keypair: "target/deploy/tcap-keypair.json",
   },
+  gpru: {
+    label: "GPRU",
+    workspace: "tsn-protocol/programs/gpru",
+    anchor: "tsn-protocol/programs/gpru/Anchor.toml",
+    program: "tsn_gpru_proof_contract",
+    programId: "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+    artifact: "tsn-protocol/programs/gpru/target/deploy/tsn_gpru_proof_contract.so",
+    artifactRelative: "target/deploy/tsn_gpru_proof_contract.so",
+    keypair: "gpru-program-keys/gpru-program-keypair.json",
+  },
 };
 
 if (!Object.hasOwn(plans, requested) && requested !== "all") {
-  throw new Error(`Usage: node scripts/devnet-program-deploy.mjs <tsn|tcap|all>`);
+  throw new Error(`Usage: node scripts/devnet-program-deploy.mjs <tsn|tcap|gpru|all>`);
 }
 
 function run(command, args, options = {}) {
@@ -143,7 +153,7 @@ function programIdFromKeypair(plan) {
     throw new Error(`Program keypair missing: ${keypairPath}`);
   }
   const output = runProgram("solana", ["address", "-k", plan.keypair], join(root, plan.workspace), `Verify ${plan.label} program ID`, {}, true);
-  if (output !== plan.programId) {
+  if (plan.programId && output !== plan.programId) {
     throw new Error(`${plan.label} keypair resolves to ${output}, expected ${plan.programId}`);
   }
   return output;
@@ -156,16 +166,20 @@ function printPlan(plan, rpc, wallet) {
   console.log(`cluster policy: Devnet only`);
   console.log(`wallet: ${wallet}`);
   console.log(`program: ${plan.program}`);
-  console.log(`program id: ${plan.programId}`);
-  console.log(`build: anchor build --no-idl`);
-  console.log("note: IDL generation skipped due to host toolchain compatibility; deploying SBF artifact only.");
+  console.log(`program id: ${plan.programId ?? "read from the GPRU deployment keypair"}`);
+  console.log(`build: ${plan.buildCommand ? plan.buildCommand.join(" ") : "anchor build --no-idl"}`);
+  if (!plan.buildCommand) console.log("note: IDL generation skipped due to host toolchain compatibility; deploying SBF artifact only.");
 }
 
 function build(plan) {
   const rpc = resolveRpc(plan);
   const wallet = resolveWallet(plan);
   printPlan(plan, rpc, wallet);
-  runProgram("anchor", ["build", "--no-idl"], join(root, plan.workspace), `Build ${plan.label} program with --no-idl`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  if (plan.buildCommand) {
+    runProgram(plan.buildCommand[0], plan.buildCommand.slice(1), join(root, plan.workspace), `Build ${plan.label} SBF program`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  } else {
+    runProgram("anchor", ["build", "--no-idl"], join(root, plan.workspace), `Build ${plan.label} program with --no-idl`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  }
   const artifact = join(root, plan.artifact);
   if (!existsSync(artifact)) throw new Error(`SBF artifact was not produced: ${artifact}`);
   console.log(`artifact: ${artifact}`);

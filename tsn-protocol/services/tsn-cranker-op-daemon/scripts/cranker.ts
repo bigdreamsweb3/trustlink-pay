@@ -563,6 +563,17 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     policyCommitment: String(transition.policyCommitment ?? ""),
     gpruScopeCommitment: String(transition.gpruScopeCommitment ?? ""),
     nullifier: String(transition.nullifier ?? ""),
+    tipRegistry: new PublicKey(String(transition.tipRegistry ?? "")),
+    dnaKeyCommitment: String(transition.dnaKeyCommitment ?? ""),
+    dna: String(transition.dna ?? ""),
+    ephemeralPublicKey: String(transition.ephemeralPublicKey ?? ""),
+    oneTimePublicKey: String(transition.oneTimePublicKey ?? ""),
+    derivationProof: {
+      sharedPoint: String((transition.derivationProof as Record<string, unknown> | undefined)?.sharedPoint ?? ""),
+      generatorCommitment: String((transition.derivationProof as Record<string, unknown> | undefined)?.generatorCommitment ?? ""),
+      scanCommitment: String((transition.derivationProof as Record<string, unknown> | undefined)?.scanCommitment ?? ""),
+      response: String((transition.derivationProof as Record<string, unknown> | undefined)?.response ?? ""),
+    },
   });
   const settlementInstructions = [instruction];
   const tipBeforeSettlement = await connection.getAccountInfo(currentTip, "confirmed");

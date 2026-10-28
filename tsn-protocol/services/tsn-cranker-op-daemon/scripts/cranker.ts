@@ -4,6 +4,11 @@ import nacl from "tweetnacl";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  createKeyPairTransactionSigner,
+  createRemoteTransactionSigner,
+  sendInstructionsV1,
+} from "@dbrix/solana";
+import {
   Connection,
   Ed25519Program,
   Keypair,
@@ -642,7 +647,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   }
   settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
-    connection,
+    rpcUrl,
     signer,
     authority,
     work.id,
@@ -743,44 +748,38 @@ async function sendCrankerInstruction(
 }
 
 async function sendMotherNodeCoSignedInstruction(
-  connection: Connection,
+  rpcUrl: string,
   signer: Keypair,
   motherAuthority: PublicKey,
   workId: string,
   instructions: TransactionInstruction | TransactionInstruction[],
   label: string,
 ) {
-  const tx = new Transaction().add(...(Array.isArray(instructions) ? instructions : [instructions]));
-  const latest = await connection.getLatestBlockhash("confirmed");
-  tx.feePayer = signer.publicKey;
-  tx.recentBlockhash = latest.blockhash;
-  const message = tx.serializeMessage();
-  const motherSigning = await receiverRequest<{ authority: string; signatureBase64: string }>(
-    signer,
-    "POST",
-    { workId, messageBase64: message.toString("base64") },
-    "/api/cranker/settlement-signature",
+  const payerSigner = await createKeyPairTransactionSigner(signer.secretKey);
+  const motherSigner = createRemoteTransactionSigner(motherAuthority.toBase58(), async (messageBytes) => {
+    const messageBase64 = Buffer.from(messageBytes).toString("base64");
+    const motherSigning = await receiverRequest<{ authority: string; signatureBase64: string }>(
+      signer,
+      "POST",
+      { workId, messageBase64 },
+      "/api/cranker/settlement-signature",
+    );
+    if (motherSigning.authority !== motherAuthority.toBase58()) {
+      throw new Error("Mother Node signing key does not match the on-chain Mother authority");
+    }
+    const encoded = String(motherSigning.signatureBase64 ?? "");
+    const signature = Buffer.from(encoded, "base64");
+    if (signature.length !== 64 || signature.toString("base64") !== encoded) {
+      throw new Error("Mother Node transaction signature is malformed");
+    }
+    return Uint8Array.from(signature);
+  });
+  crankerLog(`tx submit step=${label} format=v1 signer=Mother-Node`);
+  const signature = await sendInstructionsV1(
+    Array.isArray(instructions) ? instructions : [instructions],
+    { payerSigner, additionalSigners: [motherSigner], rpcUrl },
   );
-  if (motherSigning.authority !== motherAuthority.toBase58()) {
-    throw new Error("Mother Node signing key does not match the on-chain Mother authority");
-  }
-  const motherSignatureBase64 = String(motherSigning.signatureBase64 ?? "");
-  const motherSignature = Buffer.from(motherSignatureBase64, "base64");
-  if (motherSignature.length !== 64 || motherSignature.toString("base64") !== motherSignatureBase64) {
-    throw new Error("Mother Node transaction signature is malformed");
-  }
-  tx.addSignature(motherAuthority, motherSignature);
-  tx.partialSign(signer);
-  const wire = tx.serialize({ requireAllSignatures: true, verifySignatures: true });
-  if (wire.length > 1232) {
-    throw new Error(`Mother-authorized TCAP settlement transaction is ${wire.length} bytes, over Solana's 1232-byte packet limit`);
-  }
-  crankerLog(`tx submit step=${label} bytes=${wire.length}/1232 signer=Mother-Node`);
-  const signature = await connection.sendRawTransaction(wire, { skipPreflight: false });
-  crankerLog(`tx sent step=${label} signature=${signature}`);
-  try { await confirmSignatureViaRpc(connection, signature, label); }
-  catch (error) { crankerLog(`tx confirmation failed step=${label} signature=${signature} error=${error instanceof Error ? error.message : String(error)}`); throw error; }
-  crankerLog(`tx confirmed step=${label} signature=${signature}`);
+  crankerLog(`tx sent and confirmed step=${label} signature=${signature}`);
   return signature;
 }
 

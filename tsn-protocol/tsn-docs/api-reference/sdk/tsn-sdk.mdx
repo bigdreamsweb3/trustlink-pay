@@ -1,7 +1,7 @@
 ---
 title: "TSN SDK — Build signed settlement clients"
 sidebarTitle: "TSN SDK"
-description: "Use the TypeScript SDK to build intents, inspect service status, resolve TIP routes for private TINs, and validate cross-chain settlement data."
+description: "Reference for the application-facing TypeScript SDK, including network status, TIP/TIN identity, payment authorization, and cross-chain helpers."
 ---
 
 `@trustlink/tsn-sdk` is the application-facing TypeScript façade. It exports the client, authorization, TIN, cross-chain, wallet-transfer, receipt, recovery, and Solana helpers from `src/index.ts`.
@@ -17,7 +17,7 @@ The exports below are grouped by source module. The linked source is authoritati
 | `payment-authorization` | `createSenderPaymentAuthorizationMessage`, `createPaymentAuthorizationNonce`, `createPaymentAuthorizationExpiry`, `createPaymentAuthorization`, `createCrossChainPaymentAuthorization`, `buildPaymentAuthorizationIntentRequest`. Submit the resulting request with `TsnHttpClient.postIntent`; there is no `submitPaymentAuthorizationToMempool` helper. |
 | `wallet-transfer` | `buildTsnSplTokenTransferTransaction`. |
 | `cross-chain` | `validateCrossChainRecipient`, `validateCreditcoinPayoutAuthorization`, `validateCreditcoinDestination`, `createTinExitReplayKey`, `assertVerifiedDestinationLiquidity`, `CreditcoinRouteClient`, `loadCrossChainUiSnapshot`, `TsnCrossChainClient`. |
-| `tins` | TIN V1 creation-envelope and owner-recovery helpers, creation intent builders, and submission helpers. The SDK does not expose the retired plaintext TIN account resolver or direct-create instruction builders. |
+| `tins` | TIN V1 registry lookup, creation-envelope, owner-recovery, creation intent, and submission helpers. The SDK does not expose retired plaintext TIN account decoders or direct-create instruction builders. |
 | Other exported modules | `contracts`, `canonical-message`, `mempool`, `quote`, `send-estimate`, `settlement-economics`, `program`, `token-registry`, `payment-authorization-server`, `payment-jobs`, `sponsored-settlement`, `tsn-exit`, `blockchain/*`, `gpru`, `tin-envelopes`, `tin-device-*`, `receipts`, `authorization`, `recovery`, `sessions`, and `device`. |
 
 ## Network status
@@ -90,10 +90,10 @@ const intent = await client.postIntent(request);
 
 The application separately constructs and wallet-signs the reserve deposit transaction. Node resolves the TIN's current TIP route itself; do not add route commitments or the protected lookup secret to the sender authorization or intent request. Current Node validation accepts `tcap_deposit_v2`, not retired wallet-only or PRU funding modes.
 
-## Private TIN V1
+## TIN V1 lookup and recovery
 
-TIN V1 creation encrypts the TIN and display name before they enter Receiver work. The trusted issuer supplies the protected lookup secret when it derives the keyed registry commitment; it must never send the secret to Receiver or Cranker. The SDK also provides owner-recovery PDA and envelope helpers so wallet recovery does not rely on public registry enumeration.
+`resolveTinV1Identity` derives the registry PDA from the TIN and TIP program ID, reads the account through the supplied Solana connection, validates the account's version and keyed lookup commitment, and decrypts the identity envelope using the supplied lookup secret. Call it only in a trusted application environment where that secret is protected. Never bundle the lookup secret into browser code or send it to Receiver or Cranker. The Node independently verifies the recipient registry state and route when it validates payment work.
 
-Applications should use the authenticated TSN Node/service boundary for TIN resolution. Do not use retired `resolveTIN` or `resolveTinRoute` exports, raw legacy TIN account decoders, or direct-create instruction builders.
+TIN V1 creation encrypts the TIN and display name before they enter Receiver work. The SDK also provides owner-recovery PDA and envelope helpers so wallet recovery does not rely on public registry enumeration. Do not use retired `resolveTIN` or `resolveTinRoute` exports, raw legacy TIN account decoders, or direct-create instruction builders.
 
 Source: [`index.ts`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/index.ts), [`network-status.ts:79-157`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L79-L157), [`payment-authorization.ts:1-258`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L1-L258), [`tins.ts:1168-1630`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L1168-L1630), [`cross-chain.ts:1-450`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L1-L450)

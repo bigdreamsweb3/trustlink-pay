@@ -17,8 +17,6 @@ pub mod register_tcap_credit_authorization;
 pub mod register_tcap_credit_authorization_v2;
 pub mod register_tcap_one_time_tip_authorization;
 pub use register_tcap_one_time_tip_authorization::*;
-pub mod store_tcap_encrypted_snapshot;
-pub use store_tcap_encrypted_snapshot::*;
 pub mod register_tcap_one_time_credit;
 pub mod register_tcap_one_time_transfer_credit;
 pub use register_tcap_one_time_credit::*;

@@ -42,23 +42,14 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Overview",
             "pages": [
               "overview/introduction",
-              "developers/getting-started",
-              "developers/private-tin-issuance",
-              "developers/network-status",
+              "how-it-works/how-a-payment-feels",
+              "how-it-works/architecture",
               "get-started/faq"
             ]
           },
-          {
-            "group": "How It Works",
-            "pages": [
-              "how-it-works/how-a-payment-feels",
-              "how-it-works/architecture"
-            ]
-          },
-
           {
             "group": "Protocol Layers",
             "pages": ["layers/tsn", "layers/tin", "layers/gpru", "layers/tcap"]
@@ -81,7 +72,34 @@
             ]
           },
           {
-            "group": "Guides",
+            "group": "Security",
+            "pages": [
+              "security/invariants",
+              "security/threat-model",
+              "security/authority-and-keys",
+              "security/fail-closed",
+              "security/replay-protection",
+              "security/operator-boundaries"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK",
+        "groups": [
+          {
+            "group": "Start Here",
+            "pages": ["sdk/index", "developers/getting-started"]
+          },
+          {
+            "group": "Identity and Network",
+            "pages": [
+              "developers/private-tin-issuance",
+              "developers/network-status"
+            ]
+          },
+          {
+            "group": "Integration Guides",
             "pages": [
               "developers/payment-intent-lifecycle",
               "developers/funding-and-accepted-intent",
@@ -91,14 +109,11 @@
             ]
           },
           {
-            "group": "Security",
+            "group": "SDK Reference",
             "pages": [
-              "security/invariants",
-              "security/threat-model",
-              "security/authority-and-keys",
-              "security/fail-closed",
-              "security/replay-protection",
-              "security/operator-boundaries"
+              "api-reference/sdk/tsn-sdk",
+              "api-reference/sdk/tins",
+              "api-reference/sdk/tsn-cranker-sdk"
             ]
           }
         ]
@@ -120,17 +135,6 @@
               "api-reference/rpc/node",
               "api-reference/rpc/solana-rpc-gateway"
             ]
-          },
-          {
-            "group": "SDK",
-            "pages": [
-              "api-reference/sdk/tsn-sdk",
-              "api-reference/sdk/tsn-cranker-sdk"
-            ]
-          },
-          {
-            "group": "TIN V1 SDK",
-            "pages": ["api-reference/sdk/tins"]
           },
           {
             "group": "CLI",

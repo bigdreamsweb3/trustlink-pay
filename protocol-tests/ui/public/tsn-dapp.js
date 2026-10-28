@@ -441,7 +441,7 @@
       match.textContent = `Resolved TIN ${identity.tin}`;
       result.append(heading, detail, match);
       $("payTin").disabled = false;
-      log("TSN Node resolve TIN", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
+      log("TSN SDK resolve TIN", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
     } catch (error) {
       result.textContent = `TIN could not be resolved: ${error.message}`;
       log("TIN RESOLUTION BLOCKED", error.message);
@@ -455,7 +455,7 @@
       requireNetwork();
       const recipientTin = $("recipientTin").value.trim();
       if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
-      if (!/^[a-f0-9]{64}$/i.test(resolvedTin.ownerPubkeyHash ?? "")) throw new Error("Node did not return a valid recipient owner hash.");
+      if (!/^[a-f0-9]{64}$/i.test(resolvedTin.ownerPubkeyHash ?? "")) throw new Error("SDK did not return a valid recipient owner hash.");
       const amount = String($("tinAmount").value ?? "").trim();
       const mint = String($("tinMint").value ?? "").trim();
       if (!/^\d+(?:\.\d{1,9})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with a supported token precision.");

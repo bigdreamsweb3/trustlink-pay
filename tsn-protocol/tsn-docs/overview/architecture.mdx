@@ -14,8 +14,9 @@ flowchart LR
     SENDER[Sender signs payment and funding details] --> RECEIVER[Receiver accepts and stores ingress]
     RECEIVER --> NODE
     NODE -->|immutable verified work| CRANKER[Cranker submits exact work]
-    CRANKER --> GPRU[GPRU verifies DNA and encrypted-state proof]
-    GPRU -->|atomic valid transition| TCAP[TCAP updates governed reserve liabilities]
+    CRANKER --> TSN[TSN validates the exact settlement authorization]
+    TSN --> GPRU[GPRU verifies one-time DNA key derivation]
+    TSN -->|approved CPI| TCAP[TCAP atomically advances commitment and sequence]
     GPRU --> OWNER[Owner derives one-time key and reads state locally]
 ```
 
@@ -27,9 +28,9 @@ TIP V1 currently stores a versioned GPRU ElGamal scan public key and its integri
 
 ## GPRU transaction routing
 
-GPRU is being developed as a standalone protocol for transaction-specific DNA and confidential-state transitions. For each output, Node uses fresh randomness, the DNA, and the TIP scan key to derive an ephemeral public point and a one-time ElGamal public key. The recipient later combines the public derivation data with owner-held secret material to recover the matching private key locally.
+For each output, Node uses fresh randomness, the DNA, and the TIP scan key to derive an ephemeral public point and a one-time ElGamal public key. The recipient later combines the public derivation data with owner-held secret material to recover the matching private key locally. During TCAP credit settlement, TSN invokes GPRU to verify the derivation proof.
 
-The current source contains the derivation primitive and owner recovery helper. GPRU does not yet have a deployable program or on-chain proof verification. A key commitment binds public derivation inputs but does not prove a valid balance update.
+The source includes the derivation primitive, owner recovery helper, and GPRU proof instruction used by TSN. This proof validates the one-time key derivation, not an encrypted balance update. A key commitment or signature alone does not prove a valid balance transition.
 
 ## TSN service roles
 
@@ -42,8 +43,8 @@ Receiver acceptance, Node verification, Cranker submission, and chain confirmati
 
 ## TCAP asset accounting
 
-TCAP governs approved assets and their reserve vaults. The target design updates confidential liabilities only after GPRU verifies the encrypted-state transition and replay rules in the same atomic transaction. A debit proof must establish that the prior balance covers the amount and that the successor is correct. A TIN-to-TIN transfer must prove value conservation without disclosing the amount or linking the two DNA outputs.
+TCAP governs approved assets and reserve vaults. The current credit instruction checks authorization, asset and policy, predecessor commitment, and sequence, then advances the opaque commitment state atomically. The funding-derived commitment binds the authorization to the signed reserve deposit; TCAP does not create a spent-funding PDA. Confidential debit and TIN-to-TIN conservation proofs remain future work.
 
-Existing TCAP instructions and deployed account layouts define current chain behavior. The GPRU DNA flow and its TCAP handoff are not deployed, and confidential debit and exit remain disabled. Wallet deposits and exits remain public at their wallet boundaries.
+Current TSN, GPRU, and TCAP instruction and account layouts define chain behavior. The credit path verifies the one-time key derivation and advances opaque TCAP state. Encrypted-balance proof verification is not implemented, and confidential debit and exit remain disabled. Wallet deposits and exits remain public at their wallet boundaries.
 
 For protocol status and limits, see [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) and [Current technology](/about/current-technology).

@@ -4,11 +4,9 @@ pub const TCAP_STATE_VERSION_V1: u16 = 1;
 pub const TCAP_INSTRUCTION_VERSION_V1: u16 = 1;
 pub const TSN_AUTHORIZATION_VERSION_V1: u16 = 1;
 
-/// Version-one TCAP state for a private TINS tip relationship.
-///
-/// This account deliberately contains only transition commitments and control
-/// bits. It must not be extended with public balances, raw TINs, addresses,
-/// keys, token accounts, or encrypted snapshot material.
+/// TCAP's replay-protection head for a private GPRU route. Encrypted balance
+/// history is carried by DBrix Memo records; this account stores only the
+/// commitment, sequence, policy, and latest nullifier needed for atomic checks.
 #[account]
 pub struct TCapTinTipV1 {
     pub version: u16,
@@ -36,26 +34,6 @@ pub struct TcapOneTimeTip {
     pub token_id: u32,
     pub consumed: bool,
     pub bump: u8,
-}
-
-/// Encrypted owner snapshot. The account contains ciphertext and commitments
-/// only; plaintext balances and decryption keys never reach the chain.
-#[account]
-pub struct TcapEncryptedSnapshot {
-    pub tip: Pubkey,
-    pub commitment: [u8; 32],
-    pub owner_binding: [u8; 32],
-    pub sequence: u64,
-    pub nonce: [u8; 12],
-    pub ciphertext_commitment: [u8; 32],
-    pub ciphertext: Vec<u8>,
-    pub bump: u8,
-}
-
-impl TcapEncryptedSnapshot {
-    pub fn space(ciphertext_len: usize) -> usize {
-        8 + 32 + 32 + 32 + 8 + 12 + 32 + 4 + ciphertext_len + 1
-    }
 }
 
 impl TcapOneTimeTip {

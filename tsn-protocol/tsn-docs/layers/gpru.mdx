@@ -1,36 +1,27 @@
 ---
-title: "GPRU: Transaction-Specific Privacy Routing"
+title: "GPRU: Guarded Privacy Routing Unit"
 sidebarTitle: "GPRU"
-description: "GPRU is the protocol layer being developed for unique transaction DNA and proof-verified confidential state transitions."
+description: "GPRU derives transaction-specific receiving keys and verifies their relationship to TIP route material."
 ---
 
 # GPRU: Guarded Privacy Routing Unit
 
-GPRU is being developed as a protocol for transaction-specific recipient routing and confidential balance-state changes. Each transaction receives a unique DNA output and one-time ElGamal public key, so the same public recipient route does not need to appear on every transfer.
+GPRU derives a unique DNA and one-time ElGamal public key for a transaction output. The owner can recover the corresponding private key locally from the public derivation data and owner-held secret material. This avoids reusing the stable TIP scan key as the public receiving key for every output.
 
 ## Relationship to TIP and TIN
 
-TIP (Transfer Identity Protocol) manages transfer identities and route metadata. A TIN (Transfer Identity Number) is one identity within TIP. TIP holds a versioned GPRU ElGamal scan public key and its commitment. The stable scan key is public routing material; the owner retains its matching secret material.
+TIP (Transfer Identity Protocol) manages transfer identities and route metadata. A TIN (Transfer Identity Number) is one identity within TIP. TIP stores a versioned GPRU ElGamal scan public key and its commitment; the owner retains the matching secret material. Node resolves the TIN route and creates the transaction-specific DNA output while the recipient is offline.
 
-For each transaction, Node uses fresh randomness and a new DNA to derive an ephemeral point and one-time public key. The owner later derives the matching private key locally from the public transaction data and owner-held secret material. The SDK has an owner recovery helper for this derivation. The Node-side primitive and helper are not yet connected to a deployed GPRU program or live TCAP settlement instruction.
+## Current credit path
 
-## Target responsibilities
+The TSN settlement instruction invokes GPRU to verify the DNA key derivation proof against the registered TIP route. If that verification and TSN authorization checks pass, TSN invokes TCAP in the same transaction. TCAP validates its asset and policy, predecessor commitment, sequence, and validity window, then advances its opaque state atomically.
 
-- Create unique DNA outputs without exposing the stable TIP route on every transfer.
-- Verify that a one-time public key was derived from the registered scan key and the transaction DNA.
-- Verify encrypted-state updates, replay protection, and asset/policy bindings.
-- Hand only a validated transition to TCAP for reserve-liability accounting.
+The funding-derived commitment is bound into the settlement authorization and carried through the TCAP transition. TCAP's predecessor and sequence checks reject replay of the same settlement without a per-transaction account.
 
-GPRU does not hold token custody, the owner's long-term private keys, or plaintext balances. A key commitment, signature, hash, or encrypted payload alone is not proof that a balance transition is valid.
+## Confidential balance boundary
 
-## Credit and debit
+GPRU key derivation and its on-chain proof establish that a one-time public key matches the route derivation. They do not prove that an encrypted balance is valid or sufficient for a debit. The current credit transition advances opaque commitments; it does not store an encrypted balance record. Confidential debit and exit remain disabled until the required balance-proof verifier is enabled.
 
-For a wallet-to-TIN credit, the sender signs payment and reserve-funding details. Receiver accepts ingress, Node resolves the TIN and constructs the recipient transition, and Cranker submits that immutable work. GPRU must verify the transition before TCAP updates liabilities.
+GPRU does not hold token custody or receive the owner's long-term secret. TCAP remains responsible for governed reserve assets and commitment-state transitions.
 
-For a TIN debit, GPRU must verify that the previous encrypted balance covers the amount and that the successor is the correct subtraction. A TIN-to-TIN transfer must prove source/destination conservation while concealing the amount and keeping each DNA unique. TCAP changes reserve liabilities only after those proofs pass atomically.
-
-## Status
-
-The repository currently contains the GPRU derivation library and integration scaffolding. It does not yet contain a deployable GPRU program, on-chain derivation verifier, audited balance proof system, or atomic GPRU-to-TCAP handoff. The existing TCAP program defines current chain behavior; confidential debit and exit remain disabled until verified on-chain enforcement is implemented.
-
-See [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) for the end-to-end target architecture.
+See [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) for the current proof boundary and remaining work.

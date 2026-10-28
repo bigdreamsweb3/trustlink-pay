@@ -145,12 +145,27 @@ the lookup secret itself is never sent to Receiver or Cranker.
 
 ## Resolve a TIN and prepare a transfer
 
-TIN resolution is a trusted Node service operation, not an SDK account scan.
-Use `GET /tin-resolution/{tin}` when the user requests display identity. Node
-uses the protected lookup secret internally and returns the decrypted identity
-disclosure. For payment ingress, Node independently reads and validates the
-current TIN V1 TIP route from chain; the sender should not supply route
-commitments or the lookup secret in the signed authorization or Receiver work.
+TIN display lookup is an SDK operation against the TIP registry RPC. Run it in
+a trusted application environment that can protect `TINS_LOOKUP_SECRET`; do not
+bundle the secret into browser code, Receiver work, or Cranker configuration.
+The SDK derives the registry PDA, validates the V1 account and route
+commitments, and decrypts the owner-provided display name. For payment ingress,
+Node independently reads and validates the current TIN V1 TIP route from chain;
+the sender should not supply route commitments or the lookup secret in the
+signed authorization or Receiver work.
+
+```ts
+import { Connection } from "@solana/web3.js";
+import { resolveTinV1Identity } from "@trustlink/tsn-sdk/tins";
+
+const recipient = await resolveTinV1Identity({
+  connection: new Connection(rpcUrl, "confirmed"),
+  tin: recipientTin,
+  lookupSecret: process.env.TINS_LOOKUP_SECRET!,
+  programId,
+});
+if (!recipient) throw new Error("TIN could not be resolved");
+```
 
 For wallet-to-wallet SPL transfers, use
 `buildTsnSplTokenTransferTransaction` from the SDK and let the connected wallet

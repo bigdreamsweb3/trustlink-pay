@@ -158,13 +158,6 @@ pub mod trustlink_escrow {
         tsn::instructions::register_tcap_one_time_tip_authorization::handler(ctx, args)
     }
 
-    pub fn tsn_store_tcap_encrypted_snapshot(
-        ctx: Context<StoreTcapEncryptedSnapshot>,
-        args: StoreTcapEncryptedSnapshotArgs,
-    ) -> Result<()> {
-        tsn::instructions::store_tcap_encrypted_snapshot::handler(ctx, args)
-    }
-
     pub fn tsn_register_tcap_one_time_credit(
         ctx: Context<RegisterTcapOneTimeCredit>,
         args: RegisterTcapOneTimeCreditArgs,

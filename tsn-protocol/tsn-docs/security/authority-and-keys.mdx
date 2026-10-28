@@ -1,7 +1,7 @@
 ---
 title: "TSN Authority and Key Material: Who Holds What"
 sidebarTitle: "Authority & Keys"
-description: "Every key and credential in TSN: sender wallet, TIN owner commitment, Node permit, Mother authority, encrypted binding, and owner snapshot key. Includes owner, authorization scope, and rotation model."
+description: "Key ownership and authorization boundaries across the sender wallet, GPRU recovery material, Node, Mother authority, and Cranker."
 ---
 
 TSN uses distinct key material for each role. No single key dominates the protocol, and no operator receives plaintext secrets belonging to another boundary. This page enumerates the key types, their owners, what they authorize, and how they rotate.
@@ -18,7 +18,7 @@ TSN uses distinct key material for each role. No single key dominates the protoc
 | Node/Mother encrypted-binding encryption key | Node/Mother only | Encryption of full payment binding off-chain | Never leaves Node/Mother; rotated via key ceremony or service migration |
 | Node-only route reference key | TSN Node | Short-lived recipient-route reference keyed by work ID | Expires and is deleted automatically; not persisted in durable records |
 | Cranker Solana fee-payer key | Cranker operator | Transaction submission fees | Standard Solana key rotation; no authorization semantics |
-| Owner-held TCAP snapshot key | Authorized user device | AES-GCM decryption of private balance snapshot | Owner-controlled; derived from wallet authorization or local secure storage |
+| Owner-held GPRU scan secret | Authorized user device | Local recovery of transaction-specific GPRU keys and decryption of the encrypted balance record | Recovered from owner-authorized TIN material; never sent to Node or Cranker |
 
 ## Key boundaries
 
@@ -58,9 +58,9 @@ After verification, the Node keeps a separate, short-lived TIP route reference k
 
 The Cranker pays Solana transaction fees. The fee-payer key has no authorization over amount, mint, recipient, commitments, or policy. Changing any bound field causes the on-chain instruction to fail regardless of who pays the fee.
 
-### Owner snapshot key
+### Owner GPRU scan secret
 
-The owner device holds a snapshot key for AES-GCM decryption of `EncryptedTCapBalanceSnapshotV1`. The key and plaintext never leave the device. The owner fetches the public tip commitment, locates the matching ciphertext, decrypts locally, and verifies envelope bindings and commitment hash before trusting the balance.
+The owner device uses its recovered GPRU secret to derive the matching private key and decrypt the ElGamal balance record. The encrypted balance and transaction record are published in DBrix Memo instructions; TCAP does not store them in a balance PDA. The private key and decrypted values stay on the owner's device.
 
 ## Related topics
 

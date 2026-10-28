@@ -20,9 +20,11 @@ import {
 } from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn.js";
 import {
   buildTsnRegisterTcapCreditAuthorizationV2Instruction,
+  GPRU_PROGRAM_ID,
   GPRU_TCAP_PROGRAM_ID as TCAP_PROGRAM_ID,
 } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
 import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
+import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
 import {
   getTinsGlobalStatePda,
   getTinV1CreationStagingPda,
@@ -337,6 +339,11 @@ const hex32 = (value: unknown, field: string) => {
   if (bytes.length !== 32) throw new Error(`${field} must be 32 bytes`);
   return Uint8Array.from(bytes);
 };
+const hex64 = (value: unknown, field: string) => {
+  const bytes = Buffer.from(String(value ?? ""), "hex");
+  if (bytes.length !== 64) throw new Error(`${field} must be 64 bytes`);
+  return Uint8Array.from(bytes);
+};
 
 function buildInitializeTcapTinTipInstruction(fields: {
   payer: PublicKey;
@@ -574,8 +581,29 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
       scanCommitment: String((transition.derivationProof as Record<string, unknown> | undefined)?.scanCommitment ?? ""),
       response: String((transition.derivationProof as Record<string, unknown> | undefined)?.response ?? ""),
     },
+    amountBaseUnits: String(transition.amountBaseUnits ?? ""),
+    previousBalanceCiphertext: String(transition.previousBalanceCiphertext ?? ""),
+    balanceCiphertext: String(transition.balanceCiphertext ?? ""),
+    initialBalanceCiphertext: String(transition.initialBalanceCiphertext ?? ""),
+    initialBalanceProof: {
+      generatorCommitment: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.generatorCommitment ?? ""),
+      keyCommitment: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.keyCommitment ?? ""),
+      response: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.response ?? ""),
+    },
   });
   const settlementInstructions = [instruction];
+  const memoDocument = transition.memoDocument;
+  if (!memoDocument || typeof memoDocument !== "object" || Array.isArray(memoDocument)) {
+    throw new Error("Node TCAP transition is missing its encrypted DBrix transaction record");
+  }
+  const memoInstruction = createDbrixSettlementMemoInstruction({
+    payer: signer.publicKey,
+    document: memoDocument as Record<string, unknown>,
+    expectedSlots: transition.memoLedgerSlots,
+    expectedPayload: transition.memoPayload,
+    expectedCommitment: transition.memoCommitment,
+  });
+  const memoPayload = String(transition.memoPayload);
   const tipBeforeSettlement = await connection.getAccountInfo(currentTip, "confirmed");
   if (transition.initializeTip === true) {
     const initialCommitment = Buffer.from(hex32(transition.initialCommitment, "initialCommitment"));
@@ -612,13 +640,14 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   } else if (!tipBeforeSettlement) {
     throw new Error("TCAP_TIN_TIP_MISSING_WITHOUT_NODE_INITIALIZATION_AUTHORIZATION");
   }
+  settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
     connection,
     signer,
     authority,
     work.id,
     settlementInstructions,
-    transition.initializeTip === true ? "TCAP_TIN_TIP_INIT_AND_GPRU_CREDIT_V2" : "TCAP_GPRU_TIN_TIP_CREDIT_V2",
+    transition.initializeTip === true ? "TCAP_TIN_TIP_INIT_GPRU_CREDIT_DBrix_MEMO_V1" : "TCAP_GPRU_CREDIT_DBRIX_MEMO_V1",
   );
   const tip = currentTip;
   const tipAccount = await connection.getAccountInfo(tip, "confirmed");
@@ -631,7 +660,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
       || !tipData.subarray(50, 82).equals(Buffer.from(String(transition.policyCommitment), "hex"))
       || !tipData.subarray(82, 114).equals(Buffer.from(String(transition.nullifier), "hex"))
       || tipData[114] !== 0) {
-    throw new Error("Confirmed transaction did not apply the authorized TCAP V2 TIN TIP transition");
+    throw new Error("Confirmed transaction did not advance the TCAP replay head atomically");
   }
   crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} sequence=${String(transition.sequence)} tokenId=${String(transition.tokenId)}`);
   await report(signer, work, "CONFIRMED", {

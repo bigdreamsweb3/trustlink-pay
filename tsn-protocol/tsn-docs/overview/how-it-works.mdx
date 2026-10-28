@@ -43,4 +43,4 @@ The derivation does not prove that a balance update is valid. GPRU must verify t
 
 ## Current status
 
-The key derivation library and SDK recovery helper are in source. The GPRU program, proof enforcement, and atomic TCAP integration are not yet deployed. Current TCAP instructions define live behavior, and confidential debit and exit remain disabled. See [Protocol architecture](/overview/architecture) for component boundaries.
+The GPRU DNA key proof is verified by the current TSN credit instruction before its TCAP CPI. TCAP advances opaque commitment state atomically; the flow does not verify encrypted-balance arithmetic. Confidential debit and exit remain disabled. See [Protocol architecture](/overview/architecture) for component boundaries.

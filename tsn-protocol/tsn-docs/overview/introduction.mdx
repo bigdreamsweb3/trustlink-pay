@@ -4,15 +4,13 @@ sidebarTitle: "Introduction"
 description: "TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by TrustLink Labs."
 ---
 
-# Transfer Settlement Network
-
 **Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers, built on Solana by [**TrustLink Labs**](https://trust-link-tsn.mintlify.site/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. The Mother Node verifies and reserves work, and the TSN Program enforces Mother DNA commitments and vault reimbursement on-chain. Independent Cranker Nodes pay Solana fees and submit exact authorized transactions. Senders authorize payments against a portable identity, not a raw public key. No operator between the sender and Solana can change what the sender signed.
 
 ## Protocol boundaries
 
 The layers are separated on purpose. A GPRU key or commitment alone cannot authorize custody. A Cranker submits the exact authorized transaction and cannot rewrite its bound fields. TIP manages transfer identities and route resolution; a TIN is the 10-digit Transfer Identity Number managed within TIP and is not a wallet key or token account.
 
-TCAP's current credit path checks opaque commitment and sequence state. The GPRU DNA architecture assigns unique transaction-specific outputs to GPRU and has TCAP apply reserve accounting only after a verified GPRU transition. The unique-DNA flow is separate from the current TIP-rooted TCAP tip implementation.
+For a TCAP credit, the Node resolves TIP and constructs a transaction-specific GPRU DNA key. The TSN program verifies the GPRU key proof and invokes TCAP in the same settlement transaction. TCAP advances its current opaque commitment and sequence state atomically; it does not store an encrypted balance record.
 
 ## What is deployed on Devnet
 
@@ -20,27 +18,37 @@ The TSN program, TCAP program, TIP/TIN Registrar, and Stable-TCAP faucet have De
 
 The current TCAP credit instruction advances opaque tip state using its commitment, sequence, policy, authorization, and replay checks. That transition alone does not prove that a confidential balance covers a debit. Confidential debit and exit remain proof-gated and disabled; the current program rejects those paths with `ProofSystemNotEnabled`.
 
-The GPRU source contains a one-time ElGamal DNA key derivation primitive, a Node native adapter, and an SDK recovery helper. The deployable GPRU program, on-chain balance proof verification, and atomic GPRU-to-TCAP integration are not deployed.
+The GPRU source contains one-time ElGamal DNA key derivation and on-chain proof verification used by the TSN credit instruction. The proof validates key derivation, not encrypted balance arithmetic. Confidential debit and exit remain disabled until an audited balance-proof verifier is enabled.
 
-## Protocol layers
+## Protocol components
 
-| Layer | Responsibility |
-| --- | --- |
-| **TIP** | Transfer Identity Protocol; manages transfer identities and route metadata. |
-| **TIN** | Transfer Identity Number; one 10-digit identity within TIP. |
-| **GPRU** | Guarded Privacy Routing Unit; transaction DNA, one-time ElGamal outputs, and proof-verified confidential state transitions. |
-| **TSN** | Verifies signed work, coordinates settlement, and authorizes immutable execution. |
-| **TCAP** | Transfer Confidential Asset Protocol; governs approved assets, reserves, and liability accounting. |
+<CardGroup cols={2}>
+  <Card title="TIP and TIN" icon="fingerprint" href="/layers/tin">
+    TIP is the Transfer Identity Protocol. It manages transfer identities and route metadata; a TIN is one 10-digit identity within TIP.
+  </Card>
+  <Card title="GPRU" icon="key" href="/layers/gpru">
+    GPRU derives transaction-specific DNA keys and verifies their derivation proof in the TCAP credit path. Encrypted-balance proof verification is not enabled.
+  </Card>
+  <Card title="TSN" icon="diagram-project" href="/layers/tsn">
+    Verifies signed work, coordinates settlement, and authorizes exact execution through permissioned Cranker Nodes.
+  </Card>
+  <Card title="TCAP" icon="vault" href="/layers/tcap">
+    Transfer Confidential Asset Protocol governs approved assets, reserves, and liability accounting. Confidential debit and exit remain proof-gated.
+  </Card>
+</CardGroup>
 
 ## TIN credit flow
 
-The sender signs payment and reserve-funding details. Receiver accepts and stores the ingress. Node resolves the recipient TIN through TIP, validates the route and asset, and constructs the unique GPRU DNA transition. Cranker submits that exact work. GPRU verifies key derivation, encrypted-state arithmetic, and replay protection before TCAP applies a reserve-liability change atomically. The recipient later recovers the matching one-time private key locally.
+The sender signs payment and reserve-funding details. Receiver accepts and stores the ingress. Node resolves the recipient TIN through TIP, validates the route and asset, and constructs the unique GPRU DNA transition. Cranker submits that exact work. GPRU verifies one-time key derivation, and TCAP checks its atomic predecessor and sequence transition. The funding-derived commitment binds the settlement authorization to the signed reserve deposit. The recipient can later recover the matching one-time private key locally.
 
-Homomorphic arithmetic is the balance-state objective: credits and debits update encrypted state without revealing the balance. Arithmetic over ciphertext does not establish that a debit is affordable; the GPRU proof must also validate the prior state, amount, successor, and non-negative range. The concrete encryption and proof contract is not part of the deployed program source.
+Homomorphic arithmetic is a future balance-state objective: credits and debits would update encrypted state without revealing the balance. Arithmetic over ciphertext alone does not establish that a debit is affordable; an on-chain proof must also validate the prior state, amount, successor, and non-negative range. That encrypted-balance proof contract is not part of the current TCAP credit instruction.
 
 ## Where to go next
 
 <CardGroup cols={2}>
+  <Card title="Build with the TSN SDK" icon="code" href="/sdk">
+    Start with the SDK overview, quickstart, integration guides, and source-backed API reference.
+  </Card>
   <Card title="How It Works" icon="hand-pointer" href="/how-it-works/how-a-payment-feels">
     Sender, Receiver, Node, Cranker, GPRU, and recipient roles in a TIN credit.
   </Card>
@@ -52,6 +60,9 @@ Homomorphic arithmetic is the balance-state objective: credits and debits update
   </Card>
   <Card title="Run a Cranker" icon="gears" href="/operators/tsn-cranker">
     The operator role for leasing and submitting authorized work.
+  </Card>
+  <Card title="Current Technology" icon="server" href="/about/current-technology">
+    Devnet deployments, source capabilities, and protocol status boundaries.
   </Card>
 </CardGroup>
 

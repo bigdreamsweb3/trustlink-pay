@@ -45,13 +45,6 @@ pub mod tcap {
         instructions::one_time_tip::initialize(ctx, args)
     }
 
-    pub fn store_encrypted_snapshot(
-        ctx: Context<StoreEncryptedSnapshot>,
-        args: StoreEncryptedSnapshotArgs,
-    ) -> Result<()> {
-        instructions::encrypted_snapshot::store(ctx, args)
-    }
-
     pub fn consume_one_time_tip(
         ctx: Context<ConsumeOneTimeTip>,
         args: ConsumeOneTimeTipArgs,

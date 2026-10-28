@@ -45,4 +45,4 @@ Public wallet deposits and exits remain visible at their wallet boundaries. The 
 
 ## Current status
 
-The one-time key derivation library and SDK recovery helper are in source. The deployable GPRU program, on-chain proof verification, encrypted balance-transition contract, and TCAP integration are not yet complete. Existing TCAP instructions define current behavior, and confidential debit and exit remain disabled.
+The current TSN credit instruction invokes GPRU to verify one-time key derivation, then invokes TCAP to atomically advance opaque commitment state. The current path does not verify encrypted-balance arithmetic. Confidential debit and exit remain disabled until an audited balance-proof verifier is enabled.

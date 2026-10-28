@@ -1,0 +1,66 @@
+---
+title: "Build with the TSN SDK"
+sidebarTitle: "SDK Overview"
+description: "Use the TypeScript SDK to connect an application to TSN, resolve TIP identities, create signed payment authorizations, and submit work."
+---
+
+`@trustlink/tsn-sdk` is the application-facing TypeScript package for TSN. It provides service selection, TIP/TIN identity helpers, signed payment authorization builders, intent submission, wallet transaction utilities, and recovery functions. The SDK prepares and submits authorized requests; the TSN Node verifies work, the Receiver coordinates it, and a permissioned Cranker submits the authorized transaction.
+
+The package is currently maintained in the TSN Protocol workspace and is not published to the public npm registry. Use the repository build before importing it into an application:
+
+```bash title="Build the workspace SDK"
+npm --prefix tsn-protocol/sdks/tsn-sdk install
+npm run tsn:sdk:build
+```
+
+## First connection
+
+Pass the endpoints selected by your application. The SDK checks configured local endpoints before configured live endpoints for Node, Receiver, and Solana RPC, then reports which endpoint was selected.
+
+```ts title="Check service availability"
+import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
+
+const network = await getTsnNetworkStatus({
+  local: {
+    node: "http://127.0.0.1:8000",
+    receiver: "http://127.0.0.1:8010",
+    rpc: "http://127.0.0.1:8787",
+  },
+  live: {
+    node: process.env.TSN_NODE_URL,
+    receiver: process.env.TSN_RECEIVER_URL,
+    rpc: process.env.TSN_RPC_URL,
+  },
+});
+
+if (!network.readyForNativeTransactions) {
+  throw new Error("TSN services are not ready");
+}
+```
+
+Use the SDK's TIN V1 resolver in a trusted application environment when the application is authorized to access the TIP registry lookup secret. Keep `TINS_LOOKUP_SECRET` on the server; do not bundle it into browser code. The Node independently validates the TIN registry and route during payment verification.
+
+## Build an integration
+
+The guides introduce one SDK task at a time, with the relevant inputs and code before the protocol details:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/developers/getting-started">
+    Connect services, resolve a TIN, sign an authorization, submit a request, and follow its status.
+  </Card>
+  <Card title="Network status" icon="signal" href="/developers/network-status">
+    Configure local-first service discovery and check readiness before requesting a wallet signature.
+  </Card>
+  <Card title="TIN V1 identity" icon="fingerprint" href="/developers/private-tin-issuance">
+    Create private identity envelopes and recover a TIN through its owner-indexed record.
+  </Card>
+  <Card title="Payment lifecycle" icon="diagram-project" href="/developers/payment-intent-lifecycle">
+    Follow authorization, Receiver acceptance, Node verification, Cranker execution, and confirmation.
+  </Card>
+</CardGroup>
+
+## SDK reference
+
+The reference pages document the public package exports and their source-backed behavior. Start with [TSN SDK](/api-reference/sdk/tsn-sdk) for application functions, [TIN V1 SDK](/api-reference/sdk/tins) for identity creation and recovery, and [Cranker SDK](/api-reference/sdk/tsn-cranker-sdk) for operator setup.
+
+For protocol concepts and deployed status, see [Protocol Architecture](/overview/architecture) and [Current Technology](/about/current-technology). The guides distinguish source behavior from deployed capabilities.

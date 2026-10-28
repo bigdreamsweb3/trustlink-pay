@@ -155,6 +155,8 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@dbrix/core": "^0.1.2",
+    "@dbrix/ledger": "^0.1.0",
     "@lit-protocol/auth-helpers": "7.4.0",
     "@lit-protocol/constants": "7.4.0",
     "@lit-protocol/crypto": "7.4.0",

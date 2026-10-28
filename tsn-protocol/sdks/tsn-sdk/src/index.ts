@@ -23,6 +23,7 @@ export * from "./blockchain/solana-core.js";
 export * from "./blockchain/solana-tsn.js";
 export * from "./gpru.js";
 export * from "./gpru/stealth-keys.js";
+export * from "./gpru/transaction-record.js";
 export * from "./tcap-one-time-credit.js";
 export * from "./tcap-gpru-credit.js";
 export * from "./tin-envelopes.js";

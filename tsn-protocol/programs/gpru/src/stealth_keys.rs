@@ -21,7 +21,7 @@ use sha3::{Digest, Sha3_512};
 /// `hash_from_bytes::<Sha3_512>(RISTRETTO_BASEPOINT_COMPRESSED.as_bytes())`.
 /// Recreate that definition here so the SBF verifier does not pull in the
 /// host-oriented zk-token SDK dependency graph.
-fn elgamal_generator() -> RistrettoPoint {
+pub(crate) fn elgamal_generator() -> RistrettoPoint {
     RistrettoPoint::hash_from_bytes::<Sha3_512>(RISTRETTO_BASEPOINT_COMPRESSED.as_bytes())
 }
 
@@ -144,6 +144,27 @@ pub fn derive_node_dna_key_v1(
         one_time_public_key,
         proof,
     })
+}
+
+/// Create a separate ephemeral Diffie-Hellman shared point for encrypting a
+/// GPRU transaction record to the registered scan key. This deliberately uses
+/// fresh randomness and does not expose the shared point in the DNA proof.
+pub fn derive_node_record_shared_point_v1(
+    scan_public_key: &[u8; 32],
+    randomness: &[u8; 64],
+) -> Result<([u8; 32], [u8; 32]), ()> {
+    let scan_point = decode_point(scan_public_key)?;
+    if scan_point == RistrettoPoint::default() {
+        return Err(());
+    }
+    let scalar = Scalar::from_bytes_mod_order_wide(randomness);
+    if scalar == Scalar::zero() {
+        return Err(());
+    }
+    let generator = elgamal_generator();
+    let ephemeral_public_key = (scalar * generator).compress().to_bytes();
+    let shared_point = (scalar * scan_point).compress().to_bytes();
+    Ok((ephemeral_public_key, shared_point))
 }
 
 /// Verify the public derivation proof and recompute the DNA-specific key.

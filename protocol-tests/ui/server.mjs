@@ -105,6 +105,16 @@ function requireTinLookupSecret() {
   return value;
 }
 
+async function resolveTinIdentityFromSdk(tin) {
+  const connection = new Connection(await resolveRpcUrl(), "confirmed");
+  return tsnSdk.resolveTinV1Identity({
+    connection,
+    tin,
+    lookupSecret: requireTinLookupSecret(),
+    programId: tinProgramId,
+  });
+}
+
 function makeTinIssuanceProof(secret, { ownerPubkey, lookupCommitment, nonce, intentHash, expiryTs }) {
   const expiry = Buffer.alloc(8);
   expiry.writeBigInt64LE(BigInt(expiryTs));
@@ -395,14 +405,10 @@ async function handleApi(req, res, url) {
     let displayName;
     if (finalized) {
       try {
-        const nodeUrl = (mode === "local"
-          ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
-          : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
-        const identityResponse = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(pending.tin)}`, { cache: "no-store" });
-        const identity = await identityResponse.json().catch(() => ({}));
-        if (identityResponse.ok && typeof identity.displayName === "string") displayName = identity.displayName;
+        const identity = await resolveTinIdentityFromSdk(pending.tin);
+        if (identity && typeof identity.displayName === "string") displayName = identity.displayName;
       } catch (error) {
-        console.warn("[tsn-protocol-ui] finalized TIN name could not be resolved from the registry", error instanceof Error ? error.message : "resolution failed");
+        console.warn("[tsn-protocol-ui] finalized TIN name could not be resolved from the TIP registry", error instanceof Error ? error.message : "resolution failed");
       }
     }
     if (terminal) session.pendingTin = null;
@@ -465,18 +471,20 @@ async function handleApi(req, res, url) {
     if (!verifySignature(null, recoveryMessage, publicKey, ownerSignature)) {
       return json(res, 401, { error: "OWNER_IDENTITY_SIGNATURE_INVALID" });
     }
-    const nodeUrl = (mode === "local"
-      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
-      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
-    const identityResponse = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(tin)}`, { cache: "no-store" });
-    const identity = await identityResponse.json().catch(() => ({}));
-    if (!identityResponse.ok) return json(res, identityResponse.status, identity);
+    let identity;
+    try {
+      identity = await resolveTinIdentityFromSdk(tin);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "TIN resolution failed";
+      return json(res, 502, { error: message });
+    }
+    if (!identity) return json(res, 404, { error: "TIN could not be resolved" });
     const expectedOwnerHash = createHash("sha256").update(ownerPubkey.toBuffer()).digest("hex");
     if (identity.ownerPubkeyHash !== expectedOwnerHash) return json(res, 404, { error: "OWNER_TIN_NOT_FOUND" });
     return json(res, 200, {
       tin,
       displayName: identity.displayName,
-      source: "TSN Node /tin-resolution",
+      source: "TSN SDK / TIP registry RPC",
     });
   }
 
@@ -484,17 +492,16 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const tin = String(body.tin ?? "").trim();
     if (!/^\d{10}$/.test(tin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
-    const nodeUrl = (mode === "local"
-      ? (process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000")
-      : process.env.TSN_NODE_URL ?? "").replace(/\/$/, "");
-    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED" });
-    const response = await fetch(`${nodeUrl}/tin-resolution/${encodeURIComponent(tin)}`, {
-      cache: "no-store", signal: AbortSignal.timeout(10_000),
-    });
-    const identity = await response.json().catch(() => ({}));
-    if (!response.ok) return json(res, response.status, identity);
+    let identity;
+    try {
+      identity = await resolveTinIdentityFromSdk(tin);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "TIN resolution failed";
+      return json(res, 502, { error: message });
+    }
+    if (!identity) return json(res, 404, { error: "TIN could not be resolved" });
     const ownerPubkeyHash = String(identity.ownerPubkeyHash ?? "").toLowerCase();
-    if (!/^[a-f0-9]{64}$/.test(ownerPubkeyHash)) return json(res, 502, { error: "NODE_TIN_OWNER_HASH_INVALID" });
+    if (!/^[a-f0-9]{64}$/.test(ownerPubkeyHash)) return json(res, 502, { error: "SDK_TIN_OWNER_HASH_INVALID" });
     session.resolvedTin = { tin, ownerPubkeyHash, displayName: String(identity.displayName ?? ""), expiresAt: Date.now() + 5 * 60_000 };
     return json(res, 200, {
       tin,
@@ -502,7 +509,7 @@ async function handleApi(req, res, url) {
       displayName: session.resolvedTin.displayName,
       displayNameSource: identity.displayNameSource === "owner-provided" ? "owner-provided" : "not provided",
       verifiedCredentials: Array.isArray(identity.verifiedCredentials) ? identity.verifiedCredentials : [],
-      source: "TSN Node /tin-resolution",
+      source: "TSN SDK / TIP registry RPC",
     });
   }
 

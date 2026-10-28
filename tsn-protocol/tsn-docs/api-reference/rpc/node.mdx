@@ -4,7 +4,7 @@ sidebarTitle: "Node API"
 description: "Current TSN Node application, resolver, and internal service endpoints."
 ---
 
-The Node verifies Receiver-leased work, resolves private TIN V1 records, constructs TCAP V2 credit transitions, and exposes network status. Receiver owns the durable work queue; Crankers lease work from Receiver, not from Node work endpoints.
+The Node verifies Receiver-leased work, validates private TIN V1 records for settlement, constructs TCAP V2 credit transitions, and exposes network status. Public TIN display lookup is performed by the TSN SDK against the TIP registry RPC. Receiver owns the durable work queue; Crankers lease work from Receiver, not from Node work endpoints.
 
 ## Application and read endpoints
 
@@ -12,7 +12,6 @@ The Node verifies Receiver-leased work, resolves private TIN V1 records, constru
 | --- | --- |
 | `POST /` | Node health and epoch status. |
 | `POST /intents` | Forward payment intent ingress to Receiver; requires Receiver to be configured. |
-| `GET /tin-resolution/{tin}` | Resolve a TIN V1 display identity using the Node's protected lookup secret. The TIN itself is a lookup credential; responses are not owner-authenticated, so treat returned identity fields as public to callers who know the TIN. |
 | `POST /threshold-access/nonces/consume` | Validate public wallet/device proofs and atomically consume the threshold-access nonce. |
 | `GET /metrics` | Node uptime and settlement metrics. |
 | `GET /settlement-networks` | Registered destination networks passing route and liquidity checks. |

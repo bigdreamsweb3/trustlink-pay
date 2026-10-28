@@ -19,6 +19,7 @@
   "references": [{ "path": "../../sdks/tsn-sdk" }],
   "include": [
     "scripts/**/*",
+    "src/**/*.ts",
     "../tsn-crosschain/src/**/*.ts",
     "../../sdks/tsn-sdk/legacy/**/*.ts"
   ],

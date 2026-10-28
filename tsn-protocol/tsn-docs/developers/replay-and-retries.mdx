@@ -1,60 +1,42 @@
 ---
 title: "Replay Protection and Safe Retry Patterns in TSN"
 sidebarTitle: "Replay & Retries"
-description: "Understand how TSN prevents double spending using replay nonces, nullifiers, slot windows, and sequence monotonicity. Learn safe retry patterns for settlement failures."
+description: "How funding-bound TCAP settlement authorizations use atomic predecessor and sequence checks to reject replay."
 ---
 
-This page explains the replay protection mechanisms in TSN and how to retry safely when a settlement transaction fails. TSN uses multiple overlapping defenses: a replay nonce in the authorization receipt, a one-time nullifier, a Solana slot validity window, and strict sequence monotonicity per TIN tip. Any single defense defeats replay; together they provide defense in depth.
+# Replay protection and retries
 
-## Mechanisms
+For a TCAP credit, the Node derives a funding commitment from the exact signed reserve-deposit transaction. That commitment is included in the GPRU scope and TSN authorization digest, then passed to TCAP as the transition nullifier. It binds the settlement authorization to its funding transaction without a separate spent-funding record or a per-transaction PDA.
 
-### Replay nonce
+TCAP provides the stateful replay check. A credit must name the current predecessor commitment and the next sequence. In the same instruction that applies the successor, TCAP advances the stored commitment and sequence and records the transition nullifier. A replay of that settlement therefore refers to a stale predecessor and sequence and cannot apply again, including when two crankers submit it concurrently.
 
-The `replay_nonce` is a one-time value included in the `ConfidentialSettlement` receipt. The TSN program records consumed nonces and rejects any reuse. The nonce is bound to the signed authorization, so tampering invalidates the signature.
+## What the authorization binds
 
-### Nullifier
+The Node hashes the canonical bytes of the signed funding transaction with a domain separator. The resulting 32-byte value is carried in the transition's `nullifier` field. TSN includes it in the authorization digest; TCAP includes it in the transition and atomically records it with the successor state. The Node verifies the funding transaction and the Mother Node signs the exact settlement message before the Cranker submits it.
 
-The `nullifier` is a one-time transition identifier. TCAP records it in a nullifier PDA and rejects any consumed value. This protects against double application of the same credit transition. The nullifier is consumed atomically with the tip advance.
+The `nullifier` name is retained by the current instruction ABI. In this credit flow it carries the funding-derived commitment; it is not a PDA address and does not create a separate spent-funding account.
 
-### Validity window
+## Atomic state checks
 
-`valid_after_slot` and `expires_at_slot` define a validity window in Solana slots, not Unix timestamps. The TSN program rejects any transaction outside this window. This limits the time an authorization can be replayed even if a nonce or nullifier check were somehow bypassed.
+TCAP accepts a credit only when all of the following match its current state and authorization:
 
-### Sequence monotonicity
+- the supplied predecessor equals the stored commitment;
+- the sequence equals the stored sequence plus one;
+- the policy, asset, authorization digest, and validity window are valid;
+- the transition nullifier differs from the last applied transition.
 
-The `sequence` number in the TIN tip is strictly increasing. TCAP requires the next sequence for every credit. A stale transition with an old sequence is rejected even if all other fields are valid. This prevents replay of previously valid but now outdated authorizations.
+TCAP writes the successor commitment, next sequence, and nullifier as one state transition. If any check fails, the instruction does not advance the state.
 
-### Signed-field binding
+## Retrying settlement work
 
-Every field in the authorization is signed as a unit. Any tampering, including to amount, token, recipient, commitment, or expiry, invalidates the signature. The Node and on-chain program verify the complete binding before acceptance.
+If submission fails before confirmation, the Cranker can retry the same authorized transaction while its slot validity window remains open and TCAP state still has the expected predecessor and sequence. If the first submission actually confirmed but its response was lost, TCAP rejects another application because the state has already advanced; check the transaction signature and current TCAP state before creating replacement work.
 
-## Defense summary
+After the validity window expires, the Node must verify the funding result and current TCAP state before issuing a fresh authorization. The authorization remains bound to the original funding transaction. A retry does not require or create a separate spent-funding PDA.
 
-| Mechanism | What it defeats | Checked by |
-| --- | --- | --- |
-| `replay_nonce` | Reuse of the same authorization receipt | TSN program on chain |
-| `nullifier` | Double application of the same transition | TCAP program atomically |
-| Slot window (`valid_after_slot` / `expires_at_slot`) | Time-shifted replay | TSN program on chain |
-| `sequence` monotonicity | Stale transition replay | TCAP program on chain |
-| Signed-field binding | Tampered authorization | Node Ed25519 verify, TSN program on chain |
-
-## Safe retry guidance
-
-If a Cranker submission fails, retries are safe under these conditions:
-
-- Retry within the validity window defined by `valid_after_slot` and `expires_at_slot`
-- Use the same signed intent, same nonce, and same nullifier
-- Do not modify amount, token, recipient binding, commitments, or expiry
-
-If two Crankers race to submit the same verified work, the Solana program rejects the second attempt because the nullifier is already consumed. Re-execution is impossible even in a race.
-
-If the validity window expires, the work is no longer submittable. The sender must sign a new intent with a fresh nonce, nullifier, and slot window.
-
-<Info>
-  A rejected retry does not indicate a bug. It indicates that the work was already consumed or the window closed. Check the on-chain nullifier state and the tip sequence before retrying.
-</Info>
+This replay guarantee covers reapplying the same settlement transition. It does not mean that a public observer can infer the recipient identity from the funding commitment; the commitment is a domain-separated hash of the signed funding bytes and does not reveal those bytes.
 
 ## Related pages
 
-- [Replay Protection](/security/replay-protection) for the security model perspective
-- [Payment Intent Lifecycle](/developers/payment-intent-lifecycle) for the full state machine and transition checks
+- [Payment Intent Lifecycle](/developers/payment-intent-lifecycle) for Receiver acceptance, Node verification, and settlement stages.
+- [TCAP](/architecture/tcap) for the credit state transition and reserve boundary.
+- [Replay Protection](/security/replay-protection) for the broader security model.

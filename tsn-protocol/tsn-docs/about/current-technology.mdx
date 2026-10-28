@@ -4,13 +4,13 @@ sidebarTitle: "Current Technology"
 description: "Source-backed Devnet capabilities and current development boundaries for TSN, TIP/TIN, GPRU, and TCAP."
 ---
 
-TrustLink Labs develops and tests TSN and its related identity and asset protocols on Solana Devnet. The sections below distinguish deployed or source-backed capabilities from GPRU work that remains a target architecture.
+TrustLink Labs develops and tests TSN and its related identity and asset protocols on Solana Devnet. The sections below distinguish current source-backed settlement behavior from encrypted-balance capabilities that remain future work.
 
 ## What is on Devnet today
 
 - **TSN payment intents** — Sender-signed intents binding amount, mint, fee limits, expiry, nonce, and recipient route commitment.
 - **TIP and TIN registry** — TIP issues and resolves transfer identities; the registry stores 10-digit TIN records, route commitments, and encrypted identity envelopes.
-- **GPRU derivation primitive** — Source includes a one-time ElGamal DNA key derivation core, a Node native adapter, and SDK owner recovery. It is not yet a deployable GPRU program or connected to TCAP settlement.
+- **GPRU key verification** — TSN's credit instruction invokes the GPRU program to verify the one-time ElGamal DNA key proof against TIP route material. This verifies key derivation, not encrypted balance arithmetic.
 - **Mother Escrow authority** — Epoch coordination and `ConfidentialSettlement` authorization through the one-time `SettlementDna` PDA.
 - **TSN Node verification** — Stateless signature verification, route commitment matching, nonce/replay checks, and short-lived permit signing.
 - **Cranker submission** — Leased execution of the exact authorized transaction without mutation of bound fields.
@@ -27,7 +27,7 @@ TrustLink Labs develops and tests TSN and its related identity and asset protoco
 | TCAP | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` | Credit-only Devnet |
 | Stable-TCAP faucet | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
 
-These identifiers are provided for reproducible Devnet research. Confirm each program and instruction against current chain state before relying on it; this list does not imply that the new GPRU DNA design is deployed.
+These identifiers are provided for reproducible Devnet research. Confirm each program and instruction against current chain state before relying on it.
 
 ## Explicitly out of scope
 
@@ -35,7 +35,7 @@ The following are separate milestones and are not presented as active production
 
 - Recurring payments and subscription-provider execution.
 - Confidential debits and exits (proof-gated and disabled).
-- Deployable GPRU DNA accounts, proof verification, and atomic TCAP integration.
+- Encrypted-balance proof verification and confidential debit or exit.
 - Mainnet deployment.
 - Formal cryptographic audits.
 - Perfect unlinkability.

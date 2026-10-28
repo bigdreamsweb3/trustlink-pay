@@ -1,12 +1,12 @@
 ---
 title: "TIP, TIN, and GPRU Routing"
 sidebarTitle: "Identity & Routing"
-description: "How the Transfer Identity Protocol manages TIN identities and how GPRU is being developed for transaction-specific privacy routing."
+description: "How the Transfer Identity Protocol manages TIN identities and how GPRU derives transaction-specific privacy routes."
 ---
 
 # TIP, TIN, and GPRU routing
 
-The **Transfer Identity Protocol (TIP)** manages transfer identities and their route metadata. A **Transfer Identity Number (TIN)** is one 10-digit identity issued within TIP; TIN is not the name of the entire protocol. **GPRU (Guarded Privacy Routing Unit)** is the separate protocol layer being developed to create transaction-specific routing and verify confidential state transitions.
+The **Transfer Identity Protocol (TIP)** manages transfer identities and their route metadata. A **Transfer Identity Number (TIN)** is one 10-digit identity issued within TIP; TIN is not the name of the entire protocol. **GPRU (Guarded Privacy Routing Unit)** creates transaction-specific routing keys and verifies their derivation proof for TSN credit settlement.
 
 ## What TIP and TIN provide
 
@@ -18,18 +18,18 @@ The TIP V1 registry stores public commitments and encrypted identity/recovery da
 
 The current TIP V1 route includes a versioned GPRU ElGamal scan public key and a commitment to that key, plus TIP route and policy commitments. The scan public key is stable for the route; the owner retains the matching secret material. Its key commitment is a domain-bound integrity check for the key/version and is not itself a private key, proof of ownership, or balance proof.
 
-## Target per-transaction routing
+## Transaction-specific routing
 
-GPRU is being developed to avoid publishing the stable recipient route as the destination of every transfer. For each transaction, Node will create a unique DNA and use fresh randomness with the TIP scan public key to derive an ephemeral point and one-time ElGamal public key. Node can construct that public output while the recipient is offline. Later, the recipient SDK combines the public DNA inputs with owner-held secret material to derive the matching private key locally.
+For each transaction, Node creates a unique DNA and uses fresh randomness with the TIP scan public key to derive an ephemeral point and one-time ElGamal public key. Node can construct that public output while the recipient is offline. Later, the recipient SDK combines the public DNA inputs with owner-held secret material to derive the matching private key locally.
 
 The SDK should submit the sender's authorization and funding details. It should not resolve the recipient TIP route or construct the recipient's GPRU transition. Receiver accepts and stores ingress; Node resolves TIP, validates the request, and constructs immutable settlement work; Cranker submits that work without changing it.
 
 ## Privacy and security limits
 
-The key derivation primitive does not prove that a credit or debit is valid. A deployable GPRU program must verify the one-time-key derivation, encrypted balance transition, asset and policy bindings, and replay protection. TCAP must apply reserve-liability changes atomically only after those checks succeed. The SDK can check an owner's local balance for feedback, but that check cannot authorize a debit.
+The on-chain GPRU proof validates one-time-key derivation; it does not prove that a credit or debit has a valid encrypted-balance transition. TSN and TCAP enforce authorization, asset, policy, predecessor, and sequence checks for credit. Confidential debit remains disabled until an audited balance-proof verifier is enabled. The SDK can check an owner's local balance for feedback, but that check cannot authorize a debit.
 
 Public wallet deposits and exits expose transaction data at the wallet boundary. Unique DNA outputs are intended to reduce stable-recipient linkability; they do not make those public transactions anonymous.
 
 ## Current implementation status
 
-TIP V1 contains the stable scan public key and commitment. The repository contains a GPRU key-derivation library, a Node native adapter, and an SDK recovery helper. The derivation is not yet integrated with a deployable GPRU program, on-chain proof verification, or TCAP settlement ABI. Current program source and deployed layouts remain authoritative for live behavior; this architecture describes the intended next system.
+TIP V1 contains the stable scan public key and commitment. The repository contains the GPRU derivation library, Node native adapter, SDK owner-recovery helper, and on-chain DNA key proof instruction invoked by TSN during TCAP credit settlement. Encrypted-balance proofs and confidential debit/exit are not part of the current flow. Current program source and account layouts remain authoritative for live behavior.

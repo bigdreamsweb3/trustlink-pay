@@ -5,6 +5,7 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
   SystemProgram,
   Transaction,
   TransactionInstruction,
@@ -187,6 +188,7 @@ export function buildTsnRegisterTcapDebitAuthorizationV2Instruction(fields) {
   return new TransactionInstruction({
     programId: TSN_PROGRAM_ID, keys: [
       { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.crankerPayer), isSigner: true, isWritable: true },
       { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
       { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
@@ -288,6 +290,13 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
     bytes32(fields.derivationProof.generatorCommitment, "derivationProof.generatorCommitment"),
     bytes32(fields.derivationProof.scanCommitment, "derivationProof.scanCommitment"),
     bytes32(fields.derivationProof.response, "derivationProof.response"),
+    u64(fields.amountBaseUnits),
+    bytes64(fields.previousBalanceCiphertext, "previousBalanceCiphertext"),
+    bytes64(fields.balanceCiphertext, "balanceCiphertext"),
+    bytes64(fields.initialBalanceCiphertext, "initialBalanceCiphertext"),
+    bytes32(fields.initialBalanceProof.generatorCommitment, "initialBalanceProof.generatorCommitment"),
+    bytes32(fields.initialBalanceProof.keyCommitment, "initialBalanceProof.keyCommitment"),
+    bytes32(fields.initialBalanceProof.response, "initialBalanceProof.response"),
   );
   return new TransactionInstruction({
     programId: TSN_PROGRAM_ID,
@@ -303,6 +312,7 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
       { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
       { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.tipRegistry), isSigner: false, isWritable: false },
+      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,
@@ -599,58 +609,6 @@ export function buildConsumeOneTimeTipInstruction(fields) {
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,
-  });
-}
-
-export function deriveEncryptedSnapshotPda({ oneTimeTip, commitment }) {
-  return PublicKey.findProgramAddressSync([
-    seed("tcap:encrypted-snapshot"), pubkey(oneTimeTip).toBuffer(),
-    bytes32(commitment, "commitment"),
-  ], TCAP_PROGRAM_ID)[0];
-}
-
-export function buildStoreEncryptedSnapshotInstruction(fields) {
-  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
-  const tip = pubkey(fields.oneTimeTip);
-  const snapshot = fields.snapshot ? pubkey(fields.snapshot) : deriveEncryptedSnapshotPda({ oneTimeTip: tip, commitment: fields.commitment });
-  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
-  const ciphertext = Buffer.isBuffer(fields.ciphertext) ? fields.ciphertext : Buffer.from(fields.ciphertext, "base64");
-  const data = concat(
-    discriminator("store_encrypted_snapshot"), auth,
-    bytes32(fields.commitment, "commitment"), bytes32(fields.ownerBinding, "ownerBinding"),
-    u64(fields.sequence), Buffer.from(fields.nonce), bytes32(fields.ciphertextCommitment, "ciphertextCommitment"),
-    u32(ciphertext.length), ciphertext,
-  );
-  return new TransactionInstruction({
-    programId: TCAP_PROGRAM_ID,
-    keys: [
-      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
-      { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false },
-      { pubkey: tip, isSigner: false, isWritable: true },
-      { pubkey: snapshot, isSigner: false, isWritable: true },
-      { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: signer, isSigner: true, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
-}
-
-export function buildTsnStoreEncryptedSnapshotInstruction(fields) {
-  const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
-  const tip = pubkey(fields.oneTimeTip);
-  const snapshot = fields.snapshot ? pubkey(fields.snapshot) : deriveEncryptedSnapshotPda({ oneTimeTip: tip, commitment: fields.commitment });
-  const [signer] = PublicKey.findProgramAddressSync([seed("tsn:tcap-authorization:v1"), auth], TSN_PROGRAM_ID);
-  const ciphertext = Buffer.isBuffer(fields.ciphertext) ? fields.ciphertext : Buffer.from(fields.ciphertext, "base64");
-  const data = concat(discriminator("tsn_store_tcap_encrypted_snapshot"), auth, bytes32(fields.commitment, "commitment"), bytes32(fields.ownerBinding, "ownerBinding"), u64(fields.sequence), Buffer.from(fields.nonce), bytes32(fields.ciphertextCommitment, "ciphertextCommitment"), u32(ciphertext.length), ciphertext);
-  return new TransactionInstruction({
-    programId: TSN_PROGRAM_ID, keys: [
-      { pubkey: pubkey(fields.authority ?? fields.payer), isSigner: true, isWritable: true }, { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
-      { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false }, { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: pubkey(fields.tcapConfig), isSigner: false, isWritable: false }, { pubkey: tip, isSigner: false, isWritable: true },
-      { pubkey: snapshot, isSigner: false, isWritable: true }, { pubkey: signer, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ], data
   });
 }
 

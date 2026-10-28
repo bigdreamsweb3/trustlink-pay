@@ -73,18 +73,19 @@ clients or construct raw settlement instructions.
   <Step title="Obtain or resolve a TIN">
     A TIN is issued by a trusted TIN V1 issuer; the program does not generate TINs. Issuance requires an owner-signed intent, an issuer HMAC proof, and a protected lookup secret configured on the issuer and Node. See [Private TIN issuance](/developers/private-tin-issuance) for the service boundary.
 
-    For an existing TIN, use the Node resolution endpoint for the user-approved display identity. The sender authorization contains the TIN and resolved display identity; the Node independently resolves and validates the current TIP route from on-chain TIN V1 state. Do not resolve a legacy TIN account with the retired SDK resolver or include route commitments in the sender's authorization message.
+    For an existing TIN, use the TSN SDK's `resolveTinV1Identity` against the TIP registry RPC in a trusted application environment. The lookup secret must remain server-side and must not be bundled into browser code. The sender authorization contains the TIN and resolved display identity; the Node independently validates the current TIP route from on-chain TIN V1 state. Do not include route commitments or the lookup secret in the sender's authorization message.
 
-    ```ts title="Resolve a TIN through TSN Node"
-    const response = await fetch(
-      `${process.env.TSN_NODE_URL}/tin-resolution/${encodeURIComponent(recipientTin)}`,
-      { headers: { accept: "application/json" } },
-    );
-    if (!response.ok) throw new Error("TIN could not be resolved");
-    const recipient = await response.json();
+    ```ts title="Resolve a TIN with the TSN SDK"
+    const recipient = await resolveTinV1Identity({
+      connection: new Connection(rpcUrl, "confirmed"),
+      tin: recipientTin,
+      lookupSecret: process.env.TINS_LOOKUP_SECRET!,
+      programId,
+    });
+    if (!recipient) throw new Error("TIN could not be resolved");
     ```
 
-    The lookup secret never leaves the trusted issuer/Node boundary. The encrypted identity and owner-recovery envelopes remain encrypted in Receiver work and on-chain account data.
+    The lookup secret never reaches browser code, Receiver work, or Cranker configuration. The encrypted identity and owner-recovery envelopes remain encrypted in Receiver work and on-chain account data.
 
   </Step>
   <Step title="Construct and sign a payment authorization locally">

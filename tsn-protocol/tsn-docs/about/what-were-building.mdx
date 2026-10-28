@@ -23,7 +23,7 @@ The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A 
 
 ### GPRU authorization and routing
 
-GPRU (Guarded Privacy Routing Unit) is being developed as a standalone protocol for transaction-specific routing and confidential state transitions. Its source includes a one-time ElGamal DNA key derivation primitive: Node can derive a one-time public key while the owner later recovers the matching private key locally. The deployable GPRU program, on-chain proof verification, and TCAP settlement integration remain future work.
+GPRU (Guarded Privacy Routing Unit) derives transaction-specific receiving keys, and its on-chain instruction verifies the DNA key proof used by TSN credit settlement. The owner can recover the matching private key locally. Encrypted-balance proof verification, confidential debit, and confidential exit remain future work.
 
 ### TCAP
 

@@ -1,55 +1,33 @@
 ---
 title: "TCAP Reserve and Confidential State Architecture"
 sidebarTitle: "TCAP"
-description: "Current TCAP reserve responsibilities and the planned GPRU DNA integration for verified private balance transitions."
+description: "How TCAP manages approved assets and applies replay-protected credit state transitions."
 ---
 
 # TCAP reserve and confidential state
 
-TCAP (Transfer Confidential Asset Protocol) governs approved token assets, their reserve vaults, and protocol liability accounting. It is the asset and accounting layer for TSN's confidential settlement design. TIP supplies identity routing; GPRU is being developed to verify transaction-specific encrypted-state transitions before TCAP changes liabilities.
+TCAP (Transfer Confidential Asset Protocol) governs approved assets, reserve vaults, and protocol liability accounting. For a TIN credit, TSN authorizes a GPRU-scoped transition and TCAP applies the recipient's commitment update through one atomic instruction.
 
-## Current implementation boundary
+## Credit state transition
 
-The current program source and deployed instruction/account layouts are authoritative for live behavior. Existing credit instructions update opaque TIP-rooted commitment state, but the transition does not itself prove a spendable balance. Confidential debit and exit are fail-closed. The new GPRU program and DNA-based credit/debit flow are not yet deployed.
+The current TCAP credit instruction uses an existing TIP-rooted state account. It checks the authorized asset and policy, the validity window, the expected predecessor commitment, and the next sequence. On success, the instruction advances the successor commitment and sequence and records the transition nullifier in that same account update.
 
-## Target settlement sequence
+The Node derives the transition nullifier from the exact signed reserve-funding transaction. TSN includes it in the authorization digest and forwards it to TCAP. This binds settlement authorization to funding. TCAP's predecessor and sequence checks make the same settlement transition inapplicable after the first successful state advance, without a separate spent-funding record or per-transaction PDA.
 
-```mermaid
-sequenceDiagram
-    participant Sender
-    participant Receiver
-    participant Node
-    participant Cranker
-    participant GPRU
-    participant TCAP
-    participant Owner as Recipient SDK
+The nullifier field is the current ABI name for this transition value. It is not a nullifier PDA. The stable TIP-rooted state account holds the evolving commitment and sequence needed to validate the next transition.
 
-    Sender->>Receiver: Signed intent and reserve funding
-    Receiver->>Node: Accepted ingress work
-    Node->>Node: Resolve TIN via TIP and validate route/asset
-    Node->>Node: Derive unique DNA and one-time ElGamal key
-    Node->>Cranker: Immutable verified transition
-    Cranker->>GPRU: Submit transition and proof
-    GPRU->>GPRU: Verify derivation, balance relation, and replay rules
-    GPRU->>TCAP: Atomic validated handoff
-    TCAP->>TCAP: Update reserve liability
-    Owner->>Owner: Recover one-time private key locally; decrypt own state
-```
+## Settlement roles
 
-Receiver acceptance is ingress acceptance. Node verification is a separate stage. Cranker submission is not proof of confirmation. TCAP changes reserve accounting only after the future GPRU on-chain verification succeeds atomically.
+The sender authorizes payment details and signs reserve funding. The Receiver accepts the ingress payload and stores work. The Node verifies the signed authorization and funding, resolves the recipient's TIP route, and constructs the immutable TCAP transition. The Cranker submits the exact Node-authorized transaction; TCAP performs the final atomic state checks.
 
-## Target credit and debit rules
+Receiver acceptance, Node verification, Cranker submission, and TCAP confirmation are distinct lifecycle stages. A funding transaction can confirm while a later settlement remains pending or fails.
 
-A wallet-to-TIN credit begins with sender-authorized public reserve funding. Node resolves the recipient route and constructs a unique DNA transition; the sender SDK does not resolve recipient TIP state. GPRU verifies that the one-time ElGamal key matches the route scan key and DNA, and that the encrypted successor is valid. TCAP then applies the liability update.
+## Confidentiality boundary
 
-A TIN debit must prove that the prior encrypted balance covers the amount and that the successor is the exact subtraction. A TIN-to-TIN transfer must prove source and destination conservation while hiding the amount and avoiding a shared public transaction identifier. The owner SDK may do a local check for usability, but the program proof is the enforcement boundary.
+Credit state is represented by opaque commitments, sequence values, and a funding-derived transition value. These checks do not prove that an encrypted balance is sufficient for a debit. Confidential debit and exit require an audited proof verifier and remain unavailable wherever the on-chain program returns `ProofSystemNotEnabled`.
 
-## Privacy guarantees and limits
+Wallet funding and exit also expose the public wallet and token-transfer metadata required by those transactions. GPRU's one-time DNA key derivation reduces stable recipient-key reuse, but it does not conceal public funding metadata or independently prove balance correctness.
 
-The design uses transaction-specific DNA outputs to avoid repeatedly exposing a stable recipient route. Each output has a one-time ElGamal public key that the recipient can recover locally using owner-held secret material. The Node derives the public key but does not receive the private key or plaintext balance.
+## Replay and retries
 
-Public wallet funding and exit still reveal wallet-level metadata. A one-time key commitment binds derivation inputs; it does not prove a valid balance update. GPRU must verify the derivation, encrypted-state proof, asset and policy bindings, sequence, and nullifier before TCAP acts.
-
-## Current status
-
-GPRU exists as a derivation library and integration scaffold. The on-chain GPRU program, encrypted-balance proof verification, and atomic TCAP handoff are not deployed. The deployed TCAP program remains authoritative; confidential debit and exit are disabled.
+TCAP rejects a stale transition when its predecessor commitment or sequence no longer matches current state. If the state has advanced, a replacement authorization must be constructed from the current state and verified funding outcome. See [Replay Protection and Safe Retry Patterns](/developers/replay-and-retries) for retry behavior.

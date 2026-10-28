@@ -59,6 +59,138 @@ export function getTinsProgramPublicKey(programId?: PublicKey | string | null) {
     : new PublicKey(programId ?? DEFAULT_TIP_PROGRAM_ID);
 }
 
+/** Derive the private V1 registry PDA from a TIN and the configured lookup key. */
+export function getTinV1RegistryPda(params: {
+  tin: bigint | number | string;
+  lookupSecret: Uint8Array | string;
+  programId?: PublicKey | string | null;
+}): [PublicKey, number] {
+  const tin = String(params.tin);
+  if (!/^\d{10}$/.test(tin)) throw new Error("TIN must contain exactly 10 digits");
+  const lookupSecret = typeof params.lookupSecret === "string"
+    ? Buffer.from(params.lookupSecret, "utf8")
+    : Buffer.from(params.lookupSecret);
+  if (lookupSecret.length < 16) throw new Error("lookupSecret must contain at least 16 bytes");
+  const lookupCommitment = Buffer.from(sha256(Buffer.concat([
+    Buffer.from("TSN_TIN_V1_LOOKUP", "utf8"),
+    lookupSecret,
+    Buffer.from(tin, "utf8"),
+  ])));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("tin-v1", "utf8"), lookupCommitment],
+    getTinsProgramPublicKey(params.programId),
+  );
+}
+
+function decodeTinV1RegistryAccount(data: Uint8Array) {
+  const bytes = Buffer.from(data);
+  let offset = 0;
+  const take = (length: number, label: string) => {
+    if (!Number.isSafeInteger(length) || length < 0 || offset + length > bytes.length) {
+      throw new Error(`TIN_REGISTRY_MALFORMED_AT_${label}`);
+    }
+    const value = bytes.subarray(offset, offset + length);
+    offset += length;
+    return value;
+  };
+  const u8 = (label: string) => take(1, label)[0];
+  const u32 = (label: string) => take(4, `${label}_length`).readUInt32LE(0);
+  const vec = (label: string) => take(u32(label), label);
+  const account = {
+    version: u8("version"),
+    bump: u8("bump"),
+    status: u8("status"),
+    reserved: take(5, "reserved"),
+    lookupCommitment: take(32, "lookup_commitment"),
+    ownerCommitment: take(32, "owner_commitment"),
+    encryptedIdentityEnvelope: vec("identity_envelope"),
+    encryptedMasterSeed: vec("master_seed_envelope"),
+    createdAt: take(8, "created_at"),
+    encryptedMetadataHash: take(32, "metadata_hash"),
+    routeVersion: take(8, "route_version").readBigUInt64LE(0),
+    routeNonce: take(32, "route_nonce"),
+    tipRouteVersion: u8("tip_route_version"),
+    gpruElgamalKeyVersion: u8("gpru_elgamal_key_version"),
+    gpruElgamalPublicKey: take(32, "gpru_elgamal_public_key"),
+    gpruElgamalKeyCommitment: take(32, "gpru_elgamal_key_commitment"),
+    policyCommitment: take(32, "policy_commitment"),
+  };
+  if (bytes.subarray(offset).some((byte) => byte !== 0)) {
+    throw new Error("TIN_REGISTRY_HAS_NONZERO_TRAILING_DATA");
+  }
+  return account;
+}
+
+/** Resolve the owner-provided identity directly from the TIP V1 registry RPC account. */
+export async function resolveTinV1Identity(params: {
+  connection: Connection;
+  tin: bigint | number | string;
+  lookupSecret: Uint8Array | string;
+  programId?: PublicKey | string | null;
+}) {
+  const tin = String(params.tin);
+  const programId = getTinsProgramPublicKey(params.programId);
+  const [registryPda, expectedBump] = getTinV1RegistryPda({ ...params, tin, programId });
+  const accountInfo = await params.connection.getAccountInfo(registryPda, "confirmed");
+  if (!accountInfo) return null;
+  if (!accountInfo.owner.equals(programId)) throw new Error("TIN_REGISTRY_PROGRAM_MISMATCH");
+  const account = decodeTinV1RegistryAccount(accountInfo.data);
+  if (account.version !== 1 || account.bump !== expectedBump || account.status !== 1) {
+    throw new Error("TIN_REGISTRY_V1_ACCOUNT_BINDING_MISMATCH");
+  }
+  const lookupSecret = typeof params.lookupSecret === "string"
+    ? Buffer.from(params.lookupSecret, "utf8")
+    : Buffer.from(params.lookupSecret);
+  const expectedLookupCommitment = Buffer.from(sha256(Buffer.concat([
+    Buffer.from("TSN_TIN_V1_LOOKUP", "utf8"),
+    lookupSecret,
+    Buffer.from(tin, "utf8"),
+  ])));
+  if (!account.lookupCommitment.equals(expectedLookupCommitment)) {
+    throw new Error("TIN_REGISTRY_LOOKUP_COMMITMENT_MISMATCH");
+  }
+  if (account.routeVersion < 1n || account.tipRouteVersion !== 1 || account.gpruElgamalKeyVersion !== 1) {
+    throw new Error("TIN_REGISTRY_ROUTE_VERSION_UNSUPPORTED");
+  }
+  if (!Buffer.from(deriveGpruElgamalKeyCommitment(
+    account.gpruElgamalKeyVersion,
+    account.gpruElgamalPublicKey,
+  )).equals(account.gpruElgamalKeyCommitment)) {
+    throw new Error("TIN_REGISTRY_GPRU_KEY_COMMITMENT_MISMATCH");
+  }
+  const envelope = account.encryptedIdentityEnvelope;
+  if (envelope.length < 28) throw new Error("TIN_REGISTRY_IDENTITY_ENVELOPE_MALFORMED");
+  const identityKeyBytes = Buffer.from(sha256(Buffer.concat([
+    Buffer.from("TSN_TIN_V1_IDENTITY", "utf8"),
+    lookupSecret,
+    Buffer.from(tin, "utf8"),
+  ])));
+  const cryptoApi = getWebCrypto();
+  const identityKey = await cryptoApi.subtle.importKey("raw", identityKeyBytes, "AES-GCM", false, ["decrypt"]);
+  let identity: { name?: unknown; tin?: unknown };
+  try {
+    const plaintext = await cryptoApi.subtle.decrypt(
+      { name: "AES-GCM", iv: envelope.subarray(0, 12) },
+      identityKey,
+      envelope.subarray(12),
+    );
+    identity = JSON.parse(new TextDecoder().decode(plaintext));
+  } catch {
+    throw new Error("TIN_REGISTRY_IDENTITY_DECRYPTION_FAILED");
+  }
+  if (identity.tin !== tin || typeof identity.name !== "string") {
+    throw new Error("TIN_REGISTRY_IDENTITY_BINDING_MISMATCH");
+  }
+  return {
+    tin,
+    displayName: identity.name,
+    displayNameSource: identity.name.trim() ? "owner-provided" : "not provided",
+    ownerPubkeyHash: account.ownerCommitment.toString("hex"),
+    verifiedCredentials: [] as string[],
+    registryPda: registryPda.toBase58(),
+  };
+}
+
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 

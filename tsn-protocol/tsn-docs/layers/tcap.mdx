@@ -1,51 +1,32 @@
 ---
 title: "TCAP: Transfer Confidential Asset Protocol"
 sidebarTitle: "TCAP"
-description: "TCAP governs token reserves and is being extended to apply GPRU-verified confidential balance transitions."
+description: "TCAP governs approved assets and reserve accounting, with atomic commitment-state updates for authorized credits."
 ---
 
 # TCAP: Transfer Confidential Asset Protocol
 
-TCAP governs approved token assets, reserve vaults, and protocol liability accounting. Its target integration with GPRU applies confidential credit and debit transitions only after the GPRU program verifies the encrypted-state proof and replay controls.
+TCAP governs approved assets, reserve vaults, and protocol liability accounting. In the current TSN credit path, TCAP applies an authorized commitment transition only after TSN validates the GPRU DNA key proof and invokes TCAP through its approved CPI path.
 
-## Current source and deployment status
+## Current credit behavior
 
-The TCAP program source and deployed instructions define current behavior. The existing credit path advances opaque TIP-rooted commitment state; that commitment alone does not establish an available balance. Confidential debit and exit remain proof-gated and disabled. The standalone GPRU program, per-transaction DNA accounts, encrypted balance proof system, and atomic GPRU-to-TCAP handoff are not yet deployed.
+The Node resolves the recipient's TIP route and constructs the GPRU-scoped credit authorization and DBrix Memo record. TSN verifies the authorization digest and asks GPRU to validate the transaction-specific key proof and encrypted balance transition. TCAP then checks the asset, policy, validity window, predecessor commitment, and next sequence. The successful instruction advances the replay head atomically.
 
-## Target GPRU integration
+The funding-derived commitment is carried in the transition's `nullifier` field and bound into the authorization digest. The same TCAP state update records the latest nullifier, successor commitment, and sequence. This rejects replay of the same settlement without a separate spent-funding record or per-transaction PDA.
 
-```mermaid
-flowchart LR
-    TIP[TIP resolves TIN route] --> NODE[Node validates and derives unique DNA]
-    NODE --> CRANKER[Cranker submits immutable work]
-    CRANKER --> GPRU[GPRU verifies key derivation and balance proof]
-    GPRU -->|valid transition only| TCAP[TCAP updates governed liability]
-```
+The encrypted balance ciphertext and encrypted transaction history are carried in the transaction's DBrix Memo instruction. The TCAP replay-head account stores only the latest commitment, sequence, policy commitment, nullifier, and frozen flag; it does not hold a ciphertext or history. Credit updates use homomorphic ElGamal addition, while debit and exit remain fail-closed until TCAP can verify balance sufficiency and the exact subtraction.
 
-For a wallet-to-TIN credit, the sender authorizes the reserve deposit and payment details. Node resolves the recipient route and constructs the GPRU transition; recipient TIP resolution is not a sender-device task. A unique DNA and one-time ElGamal public key are used for each transaction. The recipient later derives the corresponding private key locally from owner-held secret material.
+## Credit and debit requirements
 
-For a TIN debit, GPRU must verify that the encrypted prior balance covers the debit and that the successor reflects the correct subtraction. For a TIN-to-TIN transfer, a proof must establish source/destination value conservation while hiding the amount and using separate DNA outputs. TCAP updates aggregate reserve liabilities only when the verified transition succeeds atomically.
+For a debit, a proof system must establish that the prior encrypted balance covers the amount and that the successor reflects the exact subtraction. For a TIN-to-TIN transfer, proofs must establish conservation between source and destination while binding both state transitions to the same governed asset. TCAP must apply the resulting reserve-liability changes atomically after the proofs pass.
 
-## Reserve and privacy boundary
+Wallet deposits and exits expose the public wallet and token-transfer metadata required at that boundary. GPRU's one-time DNA output reduces reuse of a stable recipient key; it does not conceal public funding metadata or prove balance correctness by itself.
 
-TCAP maintains governed reserve assets and protocol liability accounting. The exact liability representation and instruction accounts must be defined in the GPRU/TCAP ABI before this target is enabled. Public wallet deposits and exits remain visible at their wallet boundary. A unique DNA is intended to reduce stable recipient-route linkability; it does not hide public transaction metadata.
+## Source boundaries
 
-## Security requirements
+- TIP resolves TIN identity and publishes the route material used by GPRU.
+- GPRU derives and verifies transaction-specific one-time key material.
+- TSN validates the settlement authorization and coordinates the GPRU-to-TCAP CPI path.
+- TCAP enforces asset policy and atomically advances its commitment state.
 
-- Verify one-time ElGamal key derivation against the TIP scan key and DNA.
-- Verify the encrypted balance successor, range, and conservation proofs on chain.
-- Enforce asset, policy, sequence, and nullifier rules.
-- Apply GPRU state and TCAP liabilities atomically.
-- Keep owner secrets and plaintext balances on the owner device.
-- Keep Cranker limited to submitting immutable authorized work.
-
-A public-key commitment, signature, hash, or ciphertext shape is not a balance proof. The owner SDK may perform local checks for user feedback, but TCAP authorization must rely on on-chain verified evidence.
-
-## Related pages
-
-<CardGroup cols={2}>
-  <Card title="GPRU" icon="route" href="/layers/gpru">Unique DNA and confidential transition verification.</Card>
-  <Card title="Identity and routing" icon="id-card" href="/architecture/identity-and-routing">TIP, TIN, and the public scan key.</Card>
-  <Card title="GPRU confidential state" icon="lock" href="/architecture/gpru-confidential-balances">Credit and debit target flow.</Card>
-  <Card title="TCAP credit API" icon="coins" href="/developers/tcap-tip-credits">Current SDK and instruction reference.</Card>
-</CardGroup>
+The program instruction and account layouts remain the source of truth for deployed behavior. See [GPRU confidential state](/architecture/gpru-confidential-balances) for the memo history format and debit proof boundary.

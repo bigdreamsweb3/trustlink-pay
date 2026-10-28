@@ -68,7 +68,13 @@ from app.services.cross_chain_routes import (
     ready_destination_networks,
     verify_destination_route,
 )
-from gpru_crypto import derive_node_dna_elgamal_key
+from gpru_crypto import (
+    add_balance_credit,
+    derive_node_dna_elgamal_key,
+    derive_node_record_shared_point,
+    encrypt_initial_balance,
+)
+from dbrix_transaction_record import encrypt_transaction_record_v1, validate_transaction_record_v1
 
 _node_root = Path(__file__).resolve().parent
 # Local development is local-first. The hosted .env remains a fallback for
@@ -115,6 +121,7 @@ FIREBASE_COLLECTION = os.environ.get("FIREBASE_COLLECTION", "tsn_mempool").strip
 TSN_PROGRAM_ID  = os.environ.get("TSN_PROGRAM_ID") or os.environ.get("PROGRAM_ID") or "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
 TINS_PROGRAM_ID = os.environ.get("TINS_PROGRAM_ID", "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT")
 TCAP_PROGRAM_ID = os.environ.get("TCAP_PROGRAM_ID", "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF")
+GPRU_PROGRAM_ID = os.environ.get("GPRU_PROGRAM_ID", "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR")
 TINS_PROGRAM_SALT = b"TINS_SALT_2026"
 TINS_LOOKUP_SECRET = clean_env(os.environ.get("TINS_LOOKUP_SECRET"))
 MEMPOOL_API_KEY  = os.environ.get("MEMPOOL_API_KEY", "").strip()
@@ -1075,7 +1082,7 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     gpru_elgamal_public_key = take(32, "GPRU ElGamal public key")
     gpru_elgamal_key_commitment = take(32, "GPRU ElGamal key commitment")
     policy_commitment = take(32, "policy commitment")
-    if version != 2 or status != 1 or any(buffer[offset:]):
+    if version != 1 or status != 1 or any(buffer[offset:]):
         raise ValueError("unsupported private TIN account schema")
     if lookup_commitment == bytes(32) or route_version < 1:
         raise ValueError("private TIN account commitments are incomplete")
@@ -1093,8 +1100,8 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     }
 
 
-async def resolve_tin_display_identity(tin: str) -> Optional[dict[str, Any]]:
-    """Resolve the owner-provided name and owner hash; keep route material in Node."""
+async def resolve_tin_identity_for_verification(tin: str) -> Optional[dict[str, Any]]:
+    """Open the private identity envelope for Node-side work verification."""
     try:
         material = decode_private_tin_route_material(await read_tins_account_data(get_private_tin_pda(tin)) or b"")
         envelope = bytes(material["identityEnvelope"])
@@ -1738,7 +1745,7 @@ async def _verify_payment_authorization_from_signed_message(req: CreateIntentReq
         signed_credentials_json = fields.get("Recipient Verified Credentials")
         if signed_display_name is None or signed_display_name_source is None or signed_credentials_json is None:
             raise HTTPException(400, "Payment authorization must sign the resolved recipient identity")
-        resolved_identity = await resolve_tin_display_identity(recipient_tin)
+        resolved_identity = await resolve_tin_identity_for_verification(recipient_tin)
         if resolved_identity is None:
             raise HTTPException(422, "Recipient TIN identity could not be resolved by Node")
         resolved_display_name = str(resolved_identity.get("displayName") or "").strip() or "(not provided)"
@@ -2026,7 +2033,59 @@ def _tcap_credit_u64(value: Any, label: str) -> bytes:
     return number.to_bytes(8, "little")
 
 
+async def _load_balance_ciphertext_from_memo(
+    tip_address: str, sequence: int, token_id: int, expected_commitment: bytes,
+    key_commitment: bytes, policy_commitment: bytes,
+) -> bytes:
+    """Find the encrypted ciphertext whose hash is TCAP's current replay head."""
+    signatures = await solana_rpc("getSignaturesForAddress", [
+        tip_address, {"limit": 1000, "commitment": "confirmed"},
+    ])
+    entries = ((signatures.get("result") or []))
+    if not isinstance(entries, list):
+        raise ValueError("Solana RPC returned an invalid TIP transaction index")
+    for entry in entries:
+        signature = str((entry or {}).get("signature") or "")
+        if not signature:
+            continue
+        result = await solana_rpc("getTransaction", [
+            signature, {"encoding": "jsonParsed", "commitment": "confirmed", "maxSupportedTransactionVersion": 0},
+        ])
+        tx = result.get("result")
+        instructions = (((tx or {}).get("transaction") or {}).get("message") or {}).get("instructions") or []
+        for instruction in instructions:
+            if str(instruction.get("programId") or "") != "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr":
+                continue
+            payload = instruction.get("parsed")
+            if not isinstance(payload, str):
+                continue
+            try:
+                document = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+                public = document.get("public") if isinstance(document, dict) else None
+                ciphertext_hex = str((public or {}).get("balanceCiphertext") or "")
+                if (
+                    int(str((public or {}).get("sequence") or "-1")) != sequence
+                    or int((public or {}).get("tokenId") or -1) != token_id
+                    or str((public or {}).get("policyCommitment") or "").lower() != policy_commitment.hex()
+                    or str((public or {}).get("gpruKeyCommitment") or "").lower() != key_commitment.hex()
+                    or not re.fullmatch(r"[0-9a-fA-F]{128}", ciphertext_hex)
+                ):
+                    continue
+                ciphertext = bytes.fromhex(ciphertext_hex)
+                computed = hashlib.sha256(
+                    b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0" + key_commitment
+                    + token_id.to_bytes(4, "little") + ciphertext
+                    + sequence.to_bytes(8, "little") + policy_commitment
+                ).digest()
+                if hmac.compare_digest(computed, expected_commitment):
+                    return ciphertext
+            except (ValueError, TypeError, json.JSONDecodeError):
+                continue
+    raise ValueError("Latest encrypted balance ciphertext was not found in the DBrix Memo history")
+
+
 def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
+    validate_transaction_record_v1(transition)
     root = _tcap_credit_bytes32(transition.get("tipRootCommitment"), "tipRootCommitment")
     previous = _tcap_credit_bytes32(transition.get("previousCommitment"), "previousCommitment")
     successor = _tcap_credit_bytes32(transition.get("newCommitment"), "newCommitment")
@@ -2080,25 +2139,29 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
         expected_amount_commitment,
     ):
         raise ValueError("TCAP GPRU amount commitment differs from the verified credit amount")
+    balance_ciphertext = bytes.fromhex(str(transition.get("balanceCiphertext") or ""))
+    if len(balance_ciphertext) != 64:
+        raise ValueError("TCAP GPRU balance ciphertext must be exactly 64 bytes")
     expected_successor = hashlib.sha256(
-        b"TSN_TCAP_CREDIT_COMMITMENT_V2"
-        + root
-        + previous
-        + sequence
+        b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0"
+        + _tcap_credit_bytes32(transition.get("gpruElgamalKeyCommitment"), "gpruElgamalKeyCommitment")
         + token_id.to_bytes(4, "little")
+        + balance_ciphertext
+        + sequence
         + policy
-        + expected_amount_commitment
     ).digest()
     if not hmac.compare_digest(successor, expected_successor):
         raise ValueError("TCAP GPRU successor does not commit to the credit amount")
     expected_scope = hashlib.sha256(
         b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence
         + token_id.to_bytes(4, "little") + policy + nonce + dna_key_commitment
+        + _tcap_credit_bytes32(transition.get("memoCommitment"), "memoCommitment")
     ).digest()
     if not hmac.compare_digest(scope, expected_scope):
         raise ValueError("TCAP GPRU scope commitment does not match the authorized credit transition")
     expected = hashlib.sha256(
-        b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after + expires + previous + successor
+        b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after + expires
+        + _tcap_credit_u64(amount_base_units, "amountBaseUnits") + previous + successor
         + sequence + token_id.to_bytes(4, "little") + policy + scope + nonce + dna_key_commitment
     ).hexdigest()
     supplied = str(transition.get("authorizationDigest") or "").lower()
@@ -2299,6 +2362,13 @@ def _verify_mother_signed_tcap_settlement_message(
         b"".join(_tcap_credit_bytes32((transition.get("derivationProof") or {}).get(name), name) for name in (
             "sharedPoint", "generatorCommitment", "scanCommitment", "response",
         )),
+        _tcap_credit_u64(transition.get("amountBaseUnits"), "amountBaseUnits"),
+        bytes.fromhex(str(transition.get("previousBalanceCiphertext") or "")),
+        bytes.fromhex(str(transition.get("balanceCiphertext") or "")),
+        bytes.fromhex(str(transition.get("initialBalanceCiphertext") or "")),
+        b"".join(_tcap_credit_bytes32((transition.get("initialBalanceProof") or {}).get(name), name) for name in (
+            "generatorCommitment", "keyCommitment", "response",
+        )),
     ))
     tsn_program = Pubkey.from_string(TSN_PROGRAM_ID)
     tcap_program = Pubkey.from_string(TCAP_PROGRAM_ID)
@@ -2309,6 +2379,7 @@ def _verify_mother_signed_tcap_settlement_message(
     tip_root_account = Pubkey(tip_root)
     tip_registry = Pubkey.from_string(str(transition.get("tipRegistry") or ""))
     gpru_program = Pubkey.from_string("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR")
+    instructions_sysvar = "Sysvar1nstructions1111111111111111111111111"
     auth_signer = Pubkey.find_program_address(
         [b"tsn:tcap-authorization:v1", authorization_digest], tsn_program,
     )[0]
@@ -2318,7 +2389,7 @@ def _verify_mother_signed_tcap_settlement_message(
         [
             authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
             str(config), str(asset_entry), str(tip_root_account), str(tip),
-            str(auth_signer), str(gpru_program), str(tip_registry), str(system_program),
+            str(auth_signer), str(gpru_program), str(tip_registry), instructions_sysvar, str(system_program),
         ],
         hashlib.sha256(b"global:tsn_register_tcap_credit_authorization_v2").digest()[:8] + args,
     )
@@ -2326,7 +2397,7 @@ def _verify_mother_signed_tcap_settlement_message(
     expected_keys = {
         operator, authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
         str(config), str(asset_entry), str(tip_root_account), str(tip), str(auth_signer),
-        str(gpru_program), str(tip_registry), str(system_program),
+        str(gpru_program), str(tip_registry), instructions_sysvar, str(system_program),
     }
     if transition.get("initializeTip") is True:
         initial = _tcap_credit_bytes32(transition.get("initialCommitment"), "initialCommitment")
@@ -2344,6 +2415,15 @@ def _verify_mother_signed_tcap_settlement_message(
         ))
         expected_keys.add(str(cranker_pda))
     expected_instructions.append(register_instruction)
+    memo_payload = str(transition.get("memoPayload") or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", memo_payload):
+        raise HTTPException(422, "Node TCAP transition has an invalid DBrix Ledger Memo payload")
+    memo_commitment = hashlib.sha256(memo_payload.encode("ascii")).digest()
+    if not hmac.compare_digest(memo_commitment, _tcap_credit_bytes32(transition.get("memoCommitment"), "memoCommitment")):
+        raise HTTPException(403, "DBrix Memo payload does not match the authorized memo commitment")
+    memo_program = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+    expected_instructions.append((memo_program, [operator], memo_payload.encode("ascii")))
+    expected_keys.add(memo_program)
     if instructions != expected_instructions or set(account_keys) != expected_keys:
         raise HTTPException(403, "Settlement transaction does not exactly match the Node-verified TCAP transition")
     writable_unsigned_count = len(account_keys) - required_signatures - readonly_unsigned
@@ -2506,17 +2586,19 @@ async def _assert_tcap_tip_predecessor(
     if account is None and allow_missing:
         return False
     if not isinstance(account, dict) or str(account.get("owner") or "") != TCAP_PROGRAM_ID:
-        raise ValueError("TCAP TIN tip account is missing or owned by another program")
+        raise ValueError("TCAP replay head is missing or owned by another program")
     encoded = (account.get("data") or [None])[0]
     if not encoded:
-        raise ValueError("TCAP TIN tip account data is missing")
+        raise ValueError("TCAP replay head data is missing")
     try:
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, binascii.Error) as exc:
-        raise ValueError("TCAP TIN tip account data is invalid") from exc
+        raise ValueError("TCAP replay head data is invalid") from exc
     expected_discriminator = hashlib.sha256(b"account:TCapTinTipV1").digest()[:8]
     if len(data) != 116 or data[:8] != expected_discriminator:
-        raise ValueError("TCAP V2 TIN TIP account layout is invalid")
+        raise ValueError("TCAP commitment and sequence account layout is invalid")
+    if int.from_bytes(data[8:10], "little") != 1:
+        raise ValueError("TCAP replay head version is unsupported")
     current_commitment = data[10:42]
     sequence = int.from_bytes(data[42:50], "little")
     policy = data[50:82]
@@ -2526,19 +2608,19 @@ async def _assert_tcap_tip_predecessor(
     expected_policy = _tcap_credit_bytes32(transition.get("policyCommitment"), "policyCommitment")
     expected_sequence = int(str(transition.get("sequence") or "0"))
     if data[114] != 0 or sequence + 1 != expected_sequence or current_commitment != expected_previous or policy != expected_policy or transition_nullifier == nonce:
-        raise ValueError("TCAP V2 TIP predecessor does not match the sequence, policy, or commitments")
+        raise ValueError("TCAP replay predecessor does not match its sequence, policy, or commitments")
     return True
 
 
 async def _assert_tcap_gpru_credit_program_preconditions(
     transition: dict[str, Any], tip_address: str,
 ) -> None:
-    """Mirror the deployed V2 GPRU credit account constraints before release."""
+    """Check TCAP config, route head and asset accounts before authorization."""
     accounts = transition.get("depositAccounts")
     accounts = accounts if isinstance(accounts, dict) else {}
     config_address = str(transition.get("tcapConfig") or accounts.get("config") or "")
     asset_entry_address = str(transition.get("assetEntry") or accounts.get("assetEntry") or "")
-    if not all((config_address, asset_entry_address)):
+    if not config_address or not asset_entry_address:
         raise ValueError("TCAP config and asset entry addresses are required")
 
     tcap_program = Pubkey.from_string(TCAP_PROGRAM_ID)
@@ -2546,19 +2628,15 @@ async def _assert_tcap_gpru_credit_program_preconditions(
     canonical_config, _ = Pubkey.find_program_address([b"tcap:global-config:v1"], tcap_program)
     if config_address != str(canonical_config):
         raise ValueError("TCAP config address is not the canonical program PDA")
-    asset_entry = Pubkey.from_string(asset_entry_address)
     addresses = [config_address, tip_address, asset_entry_address]
     response = await solana_rpc(
-        "getMultipleAccounts",
-        [addresses, {"encoding": "base64", "commitment": "confirmed"}],
+        "getMultipleAccounts", [addresses, {"encoding": "base64", "commitment": "confirmed"}],
     )
     values = ((response.get("result") or {}).get("value"))
     if not isinstance(values, list) or len(values) != len(addresses):
         raise ValueError("TCAP preflight RPC returned an incomplete account set")
     slot = int(((response.get("result") or {}).get("context") or {}).get("slot") or 0)
-    valid_after_slot = int(str(transition.get("validAfterSlot") or "0"))
-    expires_at_slot = int(str(transition.get("expiresAtSlot") or "0"))
-    if slot < valid_after_slot or slot > expires_at_slot:
+    if not int(str(transition.get("validAfterSlot") or "0")) <= slot <= int(str(transition.get("expiresAtSlot") or "0")):
         raise ValueError("TCAP credit authorization is outside the deployed program's slot validity window")
 
     decoded: list[tuple[str, bytes] | None] = []
@@ -2568,69 +2646,46 @@ async def _assert_tcap_gpru_credit_program_preconditions(
             continue
         if str(account.get("owner") or "") != TCAP_PROGRAM_ID:
             raise ValueError(f"TCAP preflight account has the wrong owner: {address}")
-        data = (account.get("data") or [None])[0]
-        if not isinstance(data, str):
+        encoded = (account.get("data") or [None])[0]
+        if not isinstance(encoded, str):
             raise ValueError(f"TCAP preflight account has invalid data: {address}")
         try:
-            raw = base64.b64decode(data, validate=True)
+            decoded.append((str(account.get("owner")), base64.b64decode(encoded, validate=True)))
         except (ValueError, binascii.Error) as exc:
             raise ValueError(f"TCAP preflight account data is not valid base64: {address}") from exc
-        decoded.append((str(account.get("owner")), raw))
 
-    config_record = decoded[0]
-    tip_record = decoded[1]
-    asset_record = decoded[2]
+    config_record, tip_record, asset_record = decoded
     initialize_tip = bool(transition.get("initializeTip"))
     if config_record is None or asset_record is None or (tip_record is None and not initialize_tip):
-        raise ValueError("TCAP config, TIN TIP, or asset entry is missing")
+        raise ValueError("TCAP config, route replay head, or asset entry is missing")
     config_data = config_record[1]
     if len(config_data) < 244 or config_data[:8] != hashlib.sha256(b"account:TcapGlobalConfigV1").digest()[:8]:
         raise ValueError("TCAP global config has an unsupported account layout")
-    if config_data[207] != 0:
-        raise ValueError("TCAP protocol is paused")
-    if config_data[142:174] != bytes(tsn_program):
-        raise ValueError("TCAP config does not approve the configured TSN program")
-
+    if config_data[207] != 0 or config_data[142:174] != bytes(tsn_program):
+        raise ValueError("TCAP is paused or does not approve the configured TSN program")
     if tip_record is None:
-        initial = _tcap_credit_bytes32(transition.get("initialCommitment"), "initialCommitment")
-        if (
-            not initialize_tip
-            or int(str(transition.get("sequence") or "0")) != 1
-            or initial != _tcap_credit_bytes32(transition.get("previousCommitment"), "previousCommitment")
-        ):
-            raise ValueError("Missing TCAP TIP is not authorized for first-credit initialization")
+        if int(str(transition.get("sequence") or "0")) != 1 or not initialize_tip:
+            raise ValueError("Missing TCAP replay head is not authorized for first-credit initialization")
+        if _tcap_credit_bytes32(transition.get("initialCommitment"), "initialCommitment") != _tcap_credit_bytes32(transition.get("previousCommitment"), "previousCommitment"):
+            raise ValueError("First credit predecessor differs from the TIP route commitment")
     else:
         tip_data = tip_record[1]
         if len(tip_data) != 116 or tip_data[:8] != hashlib.sha256(b"account:TCapTinTipV1").digest()[:8]:
-            raise ValueError("TCAP V2 TIN TIP account layout is invalid")
+            raise ValueError("TCAP commitment and sequence account layout is invalid")
         if int.from_bytes(tip_data[8:10], "little") != 1 or tip_data[114] != 0:
-            raise ValueError("TCAP V2 TIN TIP is unsupported or frozen")
+            raise ValueError("TCAP replay head is unsupported or frozen")
         if (
-            tip_data[10:42] != _tcap_credit_bytes32(transition.get("previousCommitment"), "previousCommitment")
-            or int.from_bytes(tip_data[42:50], "little") + 1 != int(str(transition.get("sequence") or "0"))
+            int.from_bytes(tip_data[42:50], "little") + 1 != int(str(transition.get("sequence") or "0"))
+            or tip_data[10:42] != _tcap_credit_bytes32(transition.get("previousCommitment"), "previousCommitment")
             or tip_data[50:82] != _tcap_credit_bytes32(transition.get("policyCommitment"), "policyCommitment")
             or tip_data[82:114] == _tcap_credit_bytes32(transition.get("nullifier"), "nullifier")
         ):
-            raise ValueError("TCAP V2 TIP changed after Node verification")
-
+            raise ValueError("TCAP replay head differs from the authorized predecessor, sequence, policy, or nullifier")
     asset_data = asset_record[1]
-    if len(asset_data) < 287 or asset_data[:8] != hashlib.sha256(b"account:TcapAssetEntryV1").digest()[:8]:
+    if len(asset_data) < 48 or asset_data[:8] != hashlib.sha256(b"account:TcapAssetEntryV1").digest()[:8]:
         raise ValueError("TCAP asset entry has an unsupported account layout")
-    token_id = int.from_bytes(asset_data[44:48], "little")
-    token_program = Pubkey(asset_data[48:80])
-    mint = Pubkey(asset_data[80:112])
-    expected_entry, _ = Pubkey.find_program_address(
-        [b"tcap:asset-entry:v1", asset_data[12:44], bytes(token_program), bytes(mint)],
-        tcap_program,
-    )
-    if str(expected_entry) != asset_entry_address:
-        raise ValueError("TCAP asset entry is not the PDA for its registry, token program, and mint")
-    if asset_data[12:44] != config_data[78:110]:
-        raise ValueError("TCAP asset entry is not in the registry bound to global config")
-    if token_id != int(transition.get("tokenId") or 0):
-        raise ValueError("TCAP asset entry token ID differs from the authorized credit")
-    if asset_data[283] != 1 or asset_data[284] != 1 or asset_data[247] != 0 or asset_data[285] != 0:
-        raise ValueError("TCAP asset is not active, approved, and unpaused")
+    if int.from_bytes(asset_data[44:48], "little") != int(transition.get("tokenId") or 0):
+        raise ValueError("TCAP asset entry token ID differs from the authorized transition")
 
 
 async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, verified_fields: dict[str, Any]) -> dict[str, Any]:
@@ -2668,7 +2723,6 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
     token_id = int.from_bytes(raw[44:48], "little")
     slot_response = await solana_rpc("getSlot", [{"commitment": "confirmed"}])
     valid_after = int((slot_response.get("result") or 0))
-    sequence = 1
     tip, _ = Pubkey.find_program_address([b"tcap:tin-tip:v1", root], Pubkey.from_string(TCAP_PROGRAM_ID))
     tip_response = await solana_rpc("getAccountInfo", [str(tip), {"encoding": "base64", "commitment": "confirmed"}])
     tip_result = tip_response.get("result")
@@ -2677,30 +2731,97 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
     tip_value = tip_result["value"]
     initial_commitment = _tcap_credit_bytes32(relation.get("gpruElgamalKeyCommitment"), "initialCommitment")
     initialize_tip = tip_value is None
+    key_commitment = bytes.fromhex(str(relation["gpruElgamalKeyCommitment"]))
+    scan_public_key = bytes.fromhex(str(relation["gpruElgamalPublicKey"]))
+    current_sequence = 0
+    prior_balance_ciphertext = None
     if initialize_tip:
-        # The owner-derived GPRU commitment is the initial opaque TIP predecessor.
-        # The TIP account itself is created later, atomically with settlement.
-        previous = initial_commitment
-        sequence = 1
+        previous = key_commitment
     else:
         if not isinstance(tip_value, dict) or str(tip_value.get("owner") or "") != TCAP_PROGRAM_ID:
-            raise ValueError("TCAP TIN TIP account is owned by another program")
+            raise ValueError("TCAP TIN TIP replay head is owned by another program")
         tip_raw = base64.b64decode((tip_value.get("data") or [""])[0], validate=True)
         if len(tip_raw) != 116 or tip_raw[:8] != hashlib.sha256(b"account:TCapTinTipV1").digest()[:8]:
-            raise ValueError("TCAP TIN TIP account layout is invalid")
+            raise ValueError("TCAP TIN TIP commitment and sequence layout is invalid")
+        if int.from_bytes(tip_raw[8:10], "little") != 1 or tip_raw[114] != 0 or tip_raw[50:82] != policy:
+            raise ValueError("TCAP TIN TIP replay head version, policy, or frozen state is invalid")
+        current_sequence = int.from_bytes(tip_raw[42:50], "little")
         previous = tip_raw[10:42]
-        sequence = int.from_bytes(tip_raw[42:50], "little") + 1
-    nullifier = hashlib.sha256(b"TSN_TCAP_CREDIT_NULLIFIER_V2" + funding.encode()).digest()
+        if current_sequence == 0:
+            if previous != key_commitment:
+                raise ValueError("Unfunded TCAP replay head does not start at the registered GPRU commitment")
+        else:
+            prior_balance_ciphertext = await _load_balance_ciphertext_from_memo(
+                str(tip), current_sequence, token_id, previous, key_commitment, policy,
+            )
+    sequence = current_sequence + 1
+    # The canonical base64 wire carries the exact owner-signed funding bytes.
+    # Bind the authorization to it without a separate spent-funding account;
+    # TCAP receives this commitment as the transition nullifier and advances
+    # it atomically with the TIP predecessor and sequence.
+    funding_commitment = hashlib.sha256(
+        b"TSN_TCAP_CREDIT_NULLIFIER_V2" + funding.encode()
+    ).digest()
+    nullifier = funding_commitment
     dna_key = derive_node_dna_elgamal_key(bytes.fromhex(str(relation["gpruElgamalPublicKey"])))
     dna = bytes(dna_key["dna"])
     ephemeral_public_key = bytes(dna_key["ephemeralPublicKey"])
     one_time_public_key = bytes(dna_key["oneTimePublicKey"])
     dna_key_commitment = bytes(dna_key["keyCommitment"])
     amount_commitment = hashlib.sha256(b"TSN_TCAP_CREDIT_AMOUNT_V2" + amount.to_bytes(8, "little") + token_id.to_bytes(4, "little")).digest()
-    successor = hashlib.sha256(b"TSN_TCAP_CREDIT_COMMITMENT_V2" + root + previous + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + amount_commitment).digest()
-    scope = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + nullifier + dna_key_commitment).digest()
+    tip_registry = get_private_tin_pda(tin)
+    initial_balance_ciphertext = bytes(64)
+    initial_balance_proof = {"generatorCommitment": bytes(32), "keyCommitment": bytes(32), "response": bytes(32)}
+    if current_sequence == 0:
+        balance_ciphertext, initial_balance_proof = encrypt_initial_balance(scan_public_key, amount)
+        initial_balance_ciphertext = balance_ciphertext
+    else:
+        if prior_balance_ciphertext is None or not prior_balance_ciphertext or sequence != current_sequence + 1:
+            raise ValueError("TCAP encrypted balance is missing for a noninitial sequence")
+        balance_ciphertext = add_balance_credit(prior_balance_ciphertext, amount)
+    successor = hashlib.sha256(
+        b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0" + key_commitment
+        + token_id.to_bytes(4, "little") + balance_ciphertext
+        + sequence.to_bytes(8, "little") + policy
+    ).digest()
+    record_ephemeral_public_key, record_shared_point = derive_node_record_shared_point(
+        bytes.fromhex(str(relation["gpruElgamalPublicKey"])),
+    )
+    encrypted_record = encrypt_transaction_record_v1(
+        record={
+            "schema": "dbrix-tsn-tcap-credit-record-v1",
+            "operation": "credit",
+            "tokenId": token_id,
+            "mint": str(request.tokenMintAddress),
+            "amountBaseUnits": str(amount),
+            "sequence": str(sequence),
+            "predecessorCommitment": previous.hex(),
+            "successorCommitment": successor.hex(),
+            "fundingNullifier": nullifier.hex(),
+            "tipRootCommitment": root.hex(),
+            "policyCommitment": policy.hex(),
+            "dnaKeyCommitment": dna_key_commitment.hex(),
+            "dna": dna.hex(),
+            "oneTimePublicKey": one_time_public_key.hex(),
+            "previousBalanceCiphertext": (prior_balance_ciphertext or bytes(64)).hex(),
+            "balanceCiphertext": balance_ciphertext.hex(),
+            "gpruElgamalKeyCommitment": key_commitment.hex(),
+        },
+        shared_point=record_shared_point,
+        record_ephemeral_public_key=record_ephemeral_public_key,
+        dna=dna,
+        public_fields={
+            "balanceCiphertext": balance_ciphertext.hex(),
+            "sequence": str(sequence),
+            "tokenId": token_id,
+            "policyCommitment": policy.hex(),
+            "gpruKeyCommitment": key_commitment.hex(),
+        },
+    )
+    memo_commitment = bytes.fromhex(str(encrypted_record["memoCommitment"]))
+    scope = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + nullifier + dna_key_commitment + memo_commitment).digest()
     expires = valid_after + 150
-    auth = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after.to_bytes(8, "little") + expires.to_bytes(8, "little") + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + scope + nullifier + dna_key_commitment).hexdigest()
+    auth = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(tip) + valid_after.to_bytes(8, "little") + expires.to_bytes(8, "little") + amount.to_bytes(8, "little") + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + scope + nullifier + dna_key_commitment).hexdigest()
     derivation_proof = dna_key["derivationProof"]
     return {
         "tipRootCommitment": root.hex(), "previousCommitment": previous.hex(), "newCommitment": successor.hex(),
@@ -2710,8 +2831,13 @@ async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, ve
         "policyCommitment": policy.hex(), "gpruScopeCommitment": scope.hex(), "nullifier": nullifier.hex(),
         "tipRegistry": str(get_private_tin_pda(tin)),
         "dnaKeyCommitment": dna_key_commitment.hex(), "dna": dna.hex(),
+        "gpruElgamalKeyCommitment": key_commitment.hex(),
+        "balanceCiphertext": balance_ciphertext.hex(),
+        "initialBalanceCiphertext": initial_balance_ciphertext.hex(),
+        "initialBalanceProof": {name: value.hex() for name, value in initial_balance_proof.items()},
         "ephemeralPublicKey": ephemeral_public_key.hex(), "oneTimePublicKey": one_time_public_key.hex(),
         "derivationProof": {name: bytes(value).hex() for name, value in derivation_proof.items()},
+        **encrypted_record,
         "validAfterSlot": str(valid_after), "expiresAtSlot": str(expires), "authorizationDigest": auth,
         "amountBaseUnits": amount, "depositAmountBaseUnits": str(amount), "mint": str(request.tokenMintAddress),
         "depositAccounts": {"depositor": str(request.senderWallet), "config": accounts[1], "assetEntry": accounts[2], "reserveState": accounts[3], "source": accounts[4], "vault": accounts[5], "mint": accounts[6], "tokenProgram": accounts[7]},
@@ -2780,7 +2906,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         tip = _validate_tcap_credit_digest(transition)
         tip_exists = await _assert_tcap_tip_predecessor(transition, tip, allow_missing=True)
         if not tip_exists and not transition.get("initializeTip"):
-            raise ValueError("TCAP TIN TIP is missing and the verified transition has no initializer")
+            raise ValueError("TCAP replay head is missing and the verified transition has no initializer")
         token_decimals = int(get_supported_token_metadata().get(str(request.tokenMintAddress), {}).get("decimals", 6))
         amount_base_units = ui_amount_to_base_units(request.amount, token_decimals)
         if str(transition.get("mint") or "") != str(request.tokenMintAddress):
@@ -2813,10 +2939,20 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             "authorizationDigest": str(transition["authorizationDigest"]).lower(),
             "tipRegistry": str(transition["tipRegistry"]),
             "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
+            "gpruElgamalKeyCommitment": str(transition["gpruElgamalKeyCommitment"]).lower(),
             "dna": str(transition["dna"]).lower(),
             "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
             "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
+            "recordEphemeralPublicKey": str(transition["recordEphemeralPublicKey"]).lower(),
+            "memoPayload": str(transition["memoPayload"]),
+            "memoLedgerSlots": list(transition["memoLedgerSlots"]),
+            "memoDocument": dict(transition["memoDocument"]),
+            "memoCommitment": str(transition["memoCommitment"]).lower(),
             "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
+            "balanceCiphertext": str(transition["balanceCiphertext"]).lower(),
+            "initialBalanceCiphertext": str(transition["initialBalanceCiphertext"]).lower(),
+            "initialBalanceProof": {name: str(value).lower() for name, value in transition["initialBalanceProof"].items()},
+            "previousBalanceCiphertext": str(transition["previousBalanceCiphertext"]).lower(),
             "assetEntry": str((transition.get("depositAccounts") or {}).get("assetEntry") or ""),
             "tcapConfig": str((transition.get("depositAccounts") or {}).get("config") or ""),
         }
@@ -3097,8 +3233,10 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
         required_transition_fields = (
             "tipRootCommitment", "tip", "previousCommitment", "newCommitment", "sequence", "tokenId",
             "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot", "expiresAtSlot",
-            "authorizationDigest", "tipRegistry", "dnaKeyCommitment", "dna", "ephemeralPublicKey",
-            "oneTimePublicKey", "derivationProof",
+            "authorizationDigest", "tipRegistry", "dnaKeyCommitment", "gpruElgamalKeyCommitment", "dna", "ephemeralPublicKey",
+            "oneTimePublicKey", "derivationProof", "recordEphemeralPublicKey",
+            "memoPayload", "memoLedgerSlots", "memoCommitment", "balanceCiphertext", "previousBalanceCiphertext", "initialBalanceCiphertext", "initialBalanceProof",
+            "memoDocument",
         )
         missing_transition_fields = [name for name in required_transition_fields if transition.get(name) is None]
         if transition.get("initializeTip") and not transition.get("initialCommitment"):
@@ -3131,10 +3269,20 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
             "authorizationDigest": str(transition["authorizationDigest"]).lower(),
             "tipRegistry": str(transition["tipRegistry"]),
             "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
+            "gpruElgamalKeyCommitment": str(transition["gpruElgamalKeyCommitment"]).lower(),
             "dna": str(transition["dna"]).lower(),
             "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
             "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
+            "recordEphemeralPublicKey": str(transition["recordEphemeralPublicKey"]).lower(),
+            "memoPayload": str(transition["memoPayload"]),
+            "memoLedgerSlots": list(transition["memoLedgerSlots"]),
+            "memoDocument": dict(transition["memoDocument"]),
+            "memoCommitment": str(transition["memoCommitment"]).lower(),
             "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
+            "balanceCiphertext": str(transition["balanceCiphertext"]).lower(),
+            "initialBalanceCiphertext": str(transition["initialBalanceCiphertext"]).lower(),
+            "initialBalanceProof": {name: str(value).lower() for name, value in transition["initialBalanceProof"].items()},
+            "previousBalanceCiphertext": str(transition["previousBalanceCiphertext"]).lower(),
             "assetEntry": asset_entry,
             "tcapConfig": tcap_config,
         }
@@ -3333,20 +3481,6 @@ async def get_network_recent_blockhash() -> dict[str, Any]:
         "contextSlot": (result.get("context") or {}).get("slot"),
     }
 
-
-@app.get("/tin-resolution/{tin}")
-async def get_tin_resolution(tin: str = ApiPath(..., min_length=10, max_length=10)) -> dict[str, Any]:
-    if not re.fullmatch(r"\d{10}", tin):
-        raise HTTPException(422, "TIN must contain exactly 10 digits")
-    identity = await resolve_tin_display_identity(tin)
-    if identity is None:
-        raise HTTPException(404, "TIN could not be resolved")
-    display_name = str(identity.get("displayName") or "").strip()
-    return {
-        "tin": tin,
-        **identity,
-        "displayNameSource": "owner-provided" if display_name else "not provided",
-    }
 
 @app.get(
     "/intents",

@@ -23,11 +23,11 @@ The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A 
 
 ### GPRU authorization and routing
 
-GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and proof checks used by the current TSN credit source. The credit verifier also checks an initial encrypted credit or later ElGamal addition against a supplied predecessor ciphertext. A separate Groth16 hidden-head verifier and circuit are present in source but are not called by current settlement services; that circuit does not prove balance arithmetic or debit affordability.
+GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and a Groth16 hidden-head verifier. The TSN/TCAP credit ABI carries the proof, but Node currently fails closed because no compiled circuit, key setup, witness source, or prover service is configured.
 
 ### TCAP
 
-The Transfer Confidential Asset Protocol (TCAP) governs approved assets, reserves, and shared commitment state. The current TSN credit source advances a single global TCAP root after GPRU validation; it does not create a per-TIN latest-head account. TCAP also contains legacy TIN-tip and debit/exit instructions. The hidden-head root-advance instruction is separate from the active TSN caller, and its proof does not establish balance sufficiency or solvency.
+The Transfer Confidential Asset Protocol (TCAP) governs approved assets, reserves, and shared commitment state. Its proof-shaped credit instruction calls GPRU before atomically advancing the global TCAP root and reserve liabilities. This path does not create a per-TIN TCAP tip account. TCAP also contains older TIN-tip instructions that are separate from this proof path.
 
 ### TSN XP
 
@@ -37,7 +37,7 @@ The separately hosted TrustLink Pay site is an earlier application surface and s
 
 ### TSN SDK
 
-The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity operations, intent construction, route handling, and settlement helpers. Its current service callers do not submit the hidden-head Groth16 proof path.
+The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity operations, intent construction, route handling, and settlement helpers. Settlement remains unavailable through Node until a configured hidden-head prover returns a valid proof.
 
 <CardGroup cols={2}>
   <Card title="Architecture overview" icon="building" href="/overview/architecture">
@@ -45,7 +45,7 @@ The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity ope
   </Card>
 
   <Card title="TCAP deep dive" icon="lock" href="/architecture/tcap">
-    Shared-root credit transitions and the separate, not-yet-wired hidden-head proof source.
+    Shared-root proof-shaped credit transitions and their prover readiness boundary.
   </Card>
 
   <Card title="Developer quickstart" icon="code" href="/developers/getting-started">

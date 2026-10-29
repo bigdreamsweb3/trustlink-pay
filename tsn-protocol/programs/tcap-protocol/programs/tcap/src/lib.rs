@@ -254,15 +254,6 @@ pub mod tcap {
         instructions::credit_gpru_memo_v1::handler(ctx, args)
     }
 
-    /// Atomically verify a hidden per-route latest-head transition through
-    /// GPRU and advance TCAP's shared accumulator root.
-    pub fn advance_gpru_hidden_head_v1(
-        ctx: Context<AdvanceGpruHiddenHeadV1>,
-        args: AdvanceGpruHiddenHeadV1Args,
-    ) -> Result<()> {
-        instructions::advance_gpru_hidden_head_v1::handler(ctx, args)
-    }
-
     pub fn initialize_tcap_tip_liability_v2(
         ctx: Context<InitializeTcapTipLiabilityV2>,
         args: InitializeTcapTipLiabilityV2Args,

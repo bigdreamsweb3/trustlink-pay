@@ -4,20 +4,19 @@ sidebarTitle: "Payment Experience"
 description: "What sender, Receiver, Node, Cranker, and Solana each do in the current TIN credit source path."
 ---
 
-The sender enters a TIN, reviews the identity information returned for that request, and signs payment and reserve-funding details. Receiver accepts the ingress. Node verifies the signed request, resolves TIP route data, and prepares authorized work. A Cranker submits the authorized transaction. On chain, TSN calls GPRU's key and encrypted-credit checks, then TCAP advances its shared global root.
+The sender enters a TIN, reviews the identity information returned for that request, and signs payment and reserve-funding details. Receiver accepts the ingress. Node verifies the signed request and resolves TIP route data. Settlement authorization requires a hidden-head Groth16 proof, which Node currently cannot provide; it returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED` and fails closed.
 
 ```text
 Sender signs intent and funding
   → Receiver stores ingress
   → Node verifies and resolves TIP
   → Cranker submits authorized work
-  → TSN invokes GPRU credit validation
-  → TCAP advances the shared global root
+  → Node proof generation (not configured; authorization stops here)
+  → TSN passes proof through TCAP
+  → GPRU verifies; TCAP atomically advances shared root and liabilities
   → encrypted Memo remains in transaction history
 ```
 
-The current credit path does not use the hidden-head Groth16 instruction. It does not persist a per-TIN latest ciphertext, so the shared root does not prove that a supplied TIN predecessor is the latest. A confirmed reserve funding transaction does not prove the TCAP transition confirmed.
-
-GPRU and TCAP source separately contain a hidden-head proof path, but current Node, SDK, and Cranker callers do not use it. Its circuit does not prove balance arithmetic, debit affordability, or solvency, and its instruction ABI exposes action kind, token ID, and amount. The common TCAP root remains visible and creates protocol-level linkage.
+The source ABI uses the hidden-head proof path and does not create a per-TIN TCAP PDA. The circuit, trusted setup, prover, and verifier configuration are not ready, so Node does not authorize settlement. A confirmed reserve funding transaction does not prove the TCAP transition confirmed. The common TCAP root and public action fields remain visible and create protocol-level linkage.
 
 See [How it works](/overview/how-it-works) for the program sequence and [GPRU and TCAP state](/architecture/gpru-confidential-balances) for its proof boundaries.

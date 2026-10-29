@@ -9,16 +9,16 @@ This page reports what the checked-in programs and service callers currently imp
 ## Implemented in source
 
 - **TIP/TIN registry:** TIN V1 registry and separate wallet recovery PDA; the registry includes a versioned GPRU ElGamal scan public key and commitment. TIP source also contains an append-only shared route Merkle root.
-- **GPRU:** One-time ElGamal DNA derivation and proof code; a credit-transition verifier that checks an initial encrypted credit or homomorphic ciphertext addition; and a separate Groth16 hidden-head verifier instruction.
-- **TSN credit CPI:** The current TSN credit instruction verifies the DNA proof, invokes GPRU credit-transition validation, then invokes TCAP's Memo-credit transition.
-- **TCAP shared state:** The wired credit transition advances one global TCAP commitment root after checking the root predecessor and next global sequence. The Memo payload is transaction data, not a persistent TCAP balance account.
+- **GPRU:** One-time ElGamal DNA derivation and proof code; a Groth16 hidden-head verifier and Mother-authorized verifier initializer.
+- **TSN/TCAP credit ABI:** The TSN instruction passes a hidden-head proof to TCAP, which invokes GPRU before advancing the shared root and reserve liabilities atomically.
+- **Memo state:** The encrypted Memo payload is transaction instruction data, not a persistent per-TIN TCAP balance account. No `TCapTinTipV1` PDA is created in this path.
 - **Ingress and execution services:** Receiver accepts and stores ingress work, Node verifies and authorizes work, and Cranker submits the exact authorized transaction. These statuses are distinct from chain confirmation.
 
 ## Important current limits
 
-The wired credit path does not persist an authoritative per-TIN latest ciphertext/head. Its shared root prevents replay of the same global transition but does not establish that a supplied per-TIN predecessor is the latest one. The hidden-head GPRU/TCAP instructions are not called by Node, SDK, Cranker, or the active TSN credit instruction. Their circuit has no verified build/setup/prover evidence in this repository workflow.
+The Node settlement authorization endpoint currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The repo has no compiled/reviewed circuit, generated proving/verifying keys, validated key converter, witness source, configured prover, initialized verifier account, or end-to-end proof evidence. The proof-shaped source ABI is not a live service path.
 
-The hidden-head circuit does not prove encrypted balance arithmetic, debit sufficiency, non-negative range, or reserve conservation. Its current instruction ABI exposes action kind, token ID, and amount. The shared TCAP root is a common writable account and creates visible protocol-level ordering/linkage. Confidential debit and exit are not established as available end to end.
+The circuit source includes balance-point arithmetic and range constraints, but has not been compiled or verified. The current ABI exposes action kind, token ID, and amount. The shared TCAP root is a common writable account and creates visible protocol-level ordering/linkage. Confidential debit and exit are not established as available end to end.
 
 TIP still includes the route registry and TCAP still includes legacy `TCapTinTipV1` instructions. Their presence in source does not mean the active TSN credit caller uses a TCAP per-TIN tip account.
 

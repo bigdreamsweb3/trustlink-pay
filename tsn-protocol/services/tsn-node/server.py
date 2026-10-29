@@ -2667,149 +2667,16 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
 
 
 async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, verified_fields: dict[str, Any]) -> dict[str, Any]:
-    """Build only the opaque fields accepted by TCAP V2; no recipient key or envelope is created."""
-    funding = str(request.senderSignedFundingTransaction or "")
-    if not funding:
-        raise ValueError("Owner-signed TCAP reserve deposit transaction is missing")
-    tin = str(verified_fields["recipientTin"])
-    relation = await read_onchain_tin_tip_route(tin)
-    if not relation:
-        raise ValueError("Recipient TIN has no active on-chain TIP route")
-    if int(relation.get("tipRouteVersion") or 0) != int(verified_fields["recipientRouteVersion"]):
-        raise ValueError("Recipient route version differs from the signed authorization")
-    if not hmac.compare_digest(str(relation.get("gpruElgamalKeyCommitment") or "").lower(), str(verified_fields["recipientRouteCommitment"]).lower()):
-        raise ValueError("Recipient route commitment differs from the signed authorization")
-    root = _tcap_credit_bytes32(relation.get("tipRootCommitment"), "tipRootCommitment")
-    policy = _tcap_credit_bytes32(relation.get("policyCommitment"), "policyCommitment")
-    instructions = _parse_signed_tcap_deposit_instructions(funding)
-    if len(instructions) != 1:
-        raise ValueError("TCAP reserve deposit must contain exactly one deposit instruction")
-    program, accounts, data = instructions[0]
-    if program != TCAP_PROGRAM_ID or len(accounts) != 8 or len(data) != 16:
-        raise ValueError("Signed transaction is not a TCAP reserve deposit")
-    amount = int.from_bytes(data[8:], "little")
-    decimals = int(get_supported_token_metadata().get(str(request.tokenMintAddress), {}).get("decimals", 6))
-    expected_amount = ui_amount_to_base_units(request.amount, decimals)
-    if amount != expected_amount:
-        raise ValueError("TCAP deposit amount differs from the signed payment amount")
-    asset_entry = accounts[2]
-    asset_response = await solana_rpc("getAccountInfo", [asset_entry, {"encoding": "base64", "commitment": "confirmed"}])
-    asset = ((asset_response.get("result") or {}).get("value"))
-    raw = base64.b64decode((asset or {}).get("data", [""])[0], validate=True) if asset else b""
-    if len(raw) < 48 or raw[:8] != hashlib.sha256(b"account:TcapAssetEntryV1").digest()[:8]:
-        raise ValueError("TCAP asset entry is missing or invalid")
-    token_id = int.from_bytes(raw[44:48], "little")
-    slot_response = await solana_rpc("getSlot", [{"commitment": "confirmed"}])
-    valid_after = int((slot_response.get("result") or 0))
-    key_commitment = bytes.fromhex(str(relation["gpruElgamalKeyCommitment"]))
-    scan_public_key = bytes.fromhex(str(relation["gpruElgamalPublicKey"]))
-    current_sequence = 0
-    prior_balance_ciphertext = None
-    previous = key_commitment
-    tip_registry = get_private_tin_pda(tin)
-    memo_head = await _load_latest_balance_ciphertext_from_memo(
-        str(tip_registry), token_id, key_commitment, policy,
+    """Fail closed until a real Groth16 hidden-head prover is configured."""
+    del request, verified_fields
+    raise HTTPException(
+        status_code=503,
+        detail=(
+            "GPRU_GROTH16_PROVER_NOT_CONFIGURED: settlement requires a proof over "
+            "the current hidden TIN head and authenticated-map witness; the legacy "
+            "per-TIN memo scan cannot establish that the selected memo is latest"
+        ),
     )
-    if memo_head is not None:
-        current_sequence, prior_balance_ciphertext, previous = memo_head
-    if current_sequence == 0:
-        previous = key_commitment
-    sequence = current_sequence + 1
-    commitment_root, previous_tcap_root, current_tcap_root_sequence = await _read_tcap_shared_replay_root()
-    tcap_root_sequence = current_tcap_root_sequence + 1
-    # The canonical base64 wire carries the exact owner-signed funding bytes.
-    # Bind the authorization to it without a separate spent-funding account;
-    # TCAP receives this commitment as the transition nullifier and advances
-    # it atomically with TCAP's shared root and sequence.
-    funding_commitment = hashlib.sha256(
-        b"TSN_TCAP_CREDIT_NULLIFIER_V2" + funding.encode()
-    ).digest()
-    nullifier = funding_commitment
-    dna_key = derive_node_dna_elgamal_key(bytes.fromhex(str(relation["gpruElgamalPublicKey"])))
-    dna = bytes(dna_key["dna"])
-    ephemeral_public_key = bytes(dna_key["ephemeralPublicKey"])
-    one_time_public_key = bytes(dna_key["oneTimePublicKey"])
-    dna_key_commitment = bytes(dna_key["keyCommitment"])
-    amount_commitment = hashlib.sha256(b"TSN_TCAP_CREDIT_AMOUNT_V2" + amount.to_bytes(8, "little") + token_id.to_bytes(4, "little")).digest()
-    initial_balance_ciphertext = bytes(64)
-    initial_balance_proof = {"generatorCommitment": bytes(32), "keyCommitment": bytes(32), "response": bytes(32)}
-    if current_sequence == 0:
-        balance_ciphertext, initial_balance_proof = encrypt_initial_balance(scan_public_key, amount)
-        initial_balance_ciphertext = balance_ciphertext
-    else:
-        if prior_balance_ciphertext is None or not prior_balance_ciphertext or sequence != current_sequence + 1:
-            raise ValueError("TCAP encrypted balance is missing for a noninitial sequence")
-        balance_ciphertext = add_balance_credit(prior_balance_ciphertext, amount)
-    successor = hashlib.sha256(
-        b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0" + key_commitment
-        + token_id.to_bytes(4, "little") + balance_ciphertext
-        + sequence.to_bytes(8, "little") + policy
-    ).digest()
-    record_ephemeral_public_key, record_shared_point = derive_node_record_shared_point(
-        bytes.fromhex(str(relation["gpruElgamalPublicKey"])),
-    )
-    encrypted_record = encrypt_transaction_record_v1(
-        record={
-            "schema": "dbrix-tsn-tcap-credit-record-v1",
-            "operation": "credit",
-            "tokenId": token_id,
-            "mint": str(request.tokenMintAddress),
-            "amountBaseUnits": str(amount),
-            "sequence": str(sequence),
-            "predecessorCommitment": previous.hex(),
-            "successorCommitment": successor.hex(),
-            "fundingNullifier": nullifier.hex(),
-            "tipRootCommitment": root.hex(),
-            "policyCommitment": policy.hex(),
-            "dnaKeyCommitment": dna_key_commitment.hex(),
-            "dna": dna.hex(),
-            "oneTimePublicKey": one_time_public_key.hex(),
-            "previousBalanceCiphertext": (prior_balance_ciphertext or bytes(64)).hex(),
-            "balanceCiphertext": balance_ciphertext.hex(),
-            "gpruElgamalKeyCommitment": key_commitment.hex(),
-        },
-        shared_point=record_shared_point,
-        record_ephemeral_public_key=record_ephemeral_public_key,
-        dna=dna,
-        public_fields={
-            "balanceCiphertext": balance_ciphertext.hex(),
-            "sequence": str(sequence),
-            "tokenId": token_id,
-            "policyCommitment": policy.hex(),
-            "gpruKeyCommitment": key_commitment.hex(),
-        },
-    )
-    memo_commitment = bytes.fromhex(str(encrypted_record["memoCommitment"]))
-    scope = hashlib.sha256(b"TSN_GPRU_TCAP_CREDIT_SCOPE_V2" + root + previous + successor + sequence.to_bytes(8, "little") + token_id.to_bytes(4, "little") + policy + nullifier + dna_key_commitment + memo_commitment).digest()
-    expires = valid_after + 150
-    auth = hashlib.sha256(
-        b"TSN_GPRU_TCAP_CREDIT_V2" + bytes(Pubkey.from_string(commitment_root))
-        + previous_tcap_root + tcap_root_sequence.to_bytes(8, "little")
-        + valid_after.to_bytes(8, "little") + expires.to_bytes(8, "little")
-        + amount.to_bytes(8, "little") + previous + successor + sequence.to_bytes(8, "little")
-        + token_id.to_bytes(4, "little") + policy + scope + nullifier + dna_key_commitment
-    ).hexdigest()
-    derivation_proof = dna_key["derivationProof"]
-    return {
-        "tipRootCommitment": root.hex(), "previousCommitment": previous.hex(), "newCommitment": successor.hex(),
-        "commitmentRoot": commitment_root, "previousTcapRoot": previous_tcap_root.hex(),
-        "tcapRootSequence": str(tcap_root_sequence),
-        "amountCommitment": amount_commitment.hex(), "sequence": str(sequence), "tokenId": token_id,
-        "policyCommitment": policy.hex(), "gpruScopeCommitment": scope.hex(), "nullifier": nullifier.hex(),
-        "tipRegistry": str(get_private_tin_pda(tin)),
-        "dnaKeyCommitment": dna_key_commitment.hex(), "dna": dna.hex(),
-        "gpruElgamalKeyCommitment": key_commitment.hex(),
-        "previousBalanceCiphertext": (prior_balance_ciphertext or bytes(64)).hex(),
-        "balanceCiphertext": balance_ciphertext.hex(),
-        "initialBalanceCiphertext": initial_balance_ciphertext.hex(),
-        "initialBalanceProof": {name: value.hex() for name, value in initial_balance_proof.items()},
-        "ephemeralPublicKey": ephemeral_public_key.hex(), "oneTimePublicKey": one_time_public_key.hex(),
-        "derivationProof": {name: bytes(value).hex() for name, value in derivation_proof.items()},
-        **encrypted_record,
-        "validAfterSlot": str(valid_after), "expiresAtSlot": str(expires), "authorizationDigest": auth,
-        "amountBaseUnits": amount, "depositAmountBaseUnits": str(amount), "mint": str(request.tokenMintAddress),
-        "depositAccounts": {"depositor": str(request.senderWallet), "config": accounts[1], "assetEntry": accounts[2], "reserveState": accounts[3], "source": accounts[4], "vault": accounts[5], "mint": accounts[6], "tokenProgram": accounts[7]},
-    }
 
 
 async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
@@ -2822,117 +2689,51 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         verified_fields = await _verify_payment_authorization_from_signed_message(request)
         if request.senderFundingMode != "tcap_deposit_v2":
             raise ValueError("Only the deployed TCAP V2 GPRU TIN credit path is supported")
-        transition = await _construct_node_owned_tcap_transition(request, verified_fields)
-        _validate_tcap_credit_digest(transition)
-        _verify_signed_tcap_deposit_contract(
-            transaction_base64=str(request.senderSignedFundingTransaction), transition=transition,
-            wallet=str(request.senderWallet or ""),
-        )
+        signed_deposit = _parse_signed_tcap_deposit_instructions(str(request.senderSignedFundingTransaction or ""))
+        if len(signed_deposit) != 1:
+            raise ValueError("Wallet funding transaction must contain exactly one TCAP reserve deposit")
+        deposit_program, deposit_accounts, deposit_data = signed_deposit[0]
+        decimals = int(get_supported_token_metadata().get(str(request.tokenMintAddress), {}).get("decimals", 6))
+        expected_amount = ui_amount_to_base_units(request.amount, decimals)
+        if (
+            deposit_program != TCAP_PROGRAM_ID
+            or len(deposit_accounts) != 8
+            or deposit_accounts[0] != str(request.senderWallet)
+            or deposit_accounts[6] != str(request.tokenMintAddress)
+            or len(deposit_data) != 16
+            or deposit_data[:8] != hashlib.sha256(b"global:deposit_asset_v2").digest()[:8]
+            or int.from_bytes(deposit_data[8:], "little") != expected_amount
+        ):
+            raise ValueError("Wallet-signed TCAP deposit does not match the authorized sender, token, or amount")
         simulation = await _simulate_owner_signed_tcap_deposit(str(request.senderSignedFundingTransaction))
         return {
-            "verifiedPayload": {**request.model_dump(), **verified_fields, "tcapCreditTransition": transition},
+            "verifiedPayload": {**request.model_dump(), **verified_fields},
             "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
             "programSimulation": simulation,
         }
     if kind == "SETTLEMENT":
         funding_id = str(payload.get("intentId") or "").strip()
         if not funding_id:
-            raise ValueError("Settlement is missing its funding intent reference")
+            raise ValueError("Settlement is missing its confirmed funding reference")
         funding = await _receiver_work_by_id(funding_id)
         if funding.get("kind") != "AUTHORIZED_FUNDING" or funding.get("status") != "CONFIRMED":
             raise ValueError("Funding deposit is not confirmed")
         funding_payload = funding.get("payload") or {}
         if funding_payload.get("senderFundingMode") != "tcap_deposit_v2":
-            raise ValueError("Settlement is not a TCAP one-time credit deposit")
+            raise ValueError("Settlement is not a TCAP reserve deposit")
         request = CreateIntentRequest(**funding_payload)
-        # Reuse the already verified sender authorization without consuming its
-        # one-time nonce a second time; the settlement references that receipt.
         message = str(request.senderAuthorizationMessage or "")
         action = "Cross-Chain Payment Intent" if message.startswith("TSN Cross-Chain Payment Intent\n") else "Payment Intent"
         signed_fields = _parse_canonical_message(message, action)
         tin = str(signed_fields.get("Recipient TIN") or "")
         if not re.fullmatch(r"\d{10}", tin):
-            raise ValueError("Funding authorization does not contain a valid TIN")
-        relation = await read_onchain_tin_tip_route(tin)
-        if not relation:
-            raise ValueError("TIN has no active on-chain TIP route")
-        transition = await _construct_node_owned_tcap_transition(request, {
-            "recipientTin": tin,
-            "recipientRouteCommitment": str(relation["gpruElgamalKeyCommitment"]).lower(),
-            "recipientRouteVersion": int(relation["tipRouteVersion"]),
-        })
-        if not hmac.compare_digest(
-            str(transition.get("tipRootCommitment") or "").lower(),
-            str(relation.get("tipRootCommitment") or "").lower(),
-        ):
-            raise ValueError("Credit transition TIP root differs from the resolved TIP route reference")
-        if not hmac.compare_digest(
-            str(transition.get("policyCommitment") or "").lower(),
-            str(relation.get("policyCommitment") or "").lower(),
-        ):
-            raise ValueError("Credit transition policy differs from the resolved TIP route")
-        _validate_tcap_credit_digest(transition)
-        token_decimals = int(get_supported_token_metadata().get(str(request.tokenMintAddress), {}).get("decimals", 6))
-        amount_base_units = ui_amount_to_base_units(request.amount, token_decimals)
-        if str(transition.get("mint") or "") != str(request.tokenMintAddress):
-            raise ValueError("Credit transition mint differs from the confirmed wallet deposit")
-        if int(transition.get("amountBaseUnits") or 0) != amount_base_units:
-            raise ValueError("Credit transition amount differs from the confirmed wallet deposit")
-        funding_evidence = await _verify_confirmed_tcap_deposit(
-            funding_work=funding,
-            transition=transition,
-            wallet=str(request.senderWallet or ""),
-            token_mint=str(request.tokenMintAddress),
-        )
-        await _assert_tcap_gpru_credit_program_preconditions(transition)
-        execution_transition = {
-            "tipRootCommitment": str(transition["tipRootCommitment"]).lower(),
-            "commitmentRoot": str(transition["commitmentRoot"]),
-            "previousTcapRoot": str(transition["previousTcapRoot"]).lower(),
-            "tcapRootSequence": str(transition["tcapRootSequence"]),
-            "previousCommitment": str(transition["previousCommitment"]).lower(),
-            "newCommitment": str(transition["newCommitment"]).lower(),
-            "sequence": str(transition["sequence"]),
-            "tokenId": int(transition["tokenId"]),
-            "amountBaseUnits": str(funding_evidence["amountBaseUnits"]),
-            "mint": str(funding_evidence["mint"]),
-            "policyCommitment": str(transition["policyCommitment"]).lower(),
-            "gpruScopeCommitment": str(transition["gpruScopeCommitment"]).lower(),
-            "nullifier": str(transition["nullifier"]).lower(),
-            "validAfterSlot": str(transition["validAfterSlot"]),
-            "expiresAtSlot": str(transition["expiresAtSlot"]),
-            "authorizationDigest": str(transition["authorizationDigest"]).lower(),
-            "tipRegistry": str(transition["tipRegistry"]),
-            "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
-            "gpruElgamalKeyCommitment": str(transition["gpruElgamalKeyCommitment"]).lower(),
-            "dna": str(transition["dna"]).lower(),
-            "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
-            "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
-            "recordEphemeralPublicKey": str(transition["recordEphemeralPublicKey"]).lower(),
-            "memoPayload": str(transition["memoPayload"]),
-            "memoLedgerSlots": list(transition["memoLedgerSlots"]),
-            "memoDocument": dict(transition["memoDocument"]),
-            "memoCommitment": str(transition["memoCommitment"]).lower(),
-            "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
-            "balanceCiphertext": str(transition["balanceCiphertext"]).lower(),
-            "initialBalanceCiphertext": str(transition["initialBalanceCiphertext"]).lower(),
-            "initialBalanceProof": {name: str(value).lower() for name, value in transition["initialBalanceProof"].items()},
-            "previousBalanceCiphertext": str(transition["previousBalanceCiphertext"]).lower(),
-            "assetEntry": str((transition.get("depositAccounts") or {}).get("assetEntry") or ""),
-            "tcapConfig": str((transition.get("depositAccounts") or {}).get("config") or ""),
-        }
-        if not all(execution_transition[name] for name in ("assetEntry", "tcapConfig")):
-            raise ValueError("TCAP asset entry or config is missing from the verified deposit")
-        await _assert_tcap_gpru_credit_program_preconditions(transition)
+            raise ValueError("Funding authorization does not contain a valid recipient TIN")
+        # This call deliberately fails closed until a configured prover can
+        # supply the authenticated-map witness and Memo-bound Groth16 proof.
+        transition = await _construct_node_owned_tcap_transition(request, {"recipientTin": tin})
         return {
-            "verifiedPayload": {
-                "tcapCreditTransition": execution_transition,
-                "fundingSignature": funding_evidence["signature"],
-                "fundingSlot": funding_evidence["slot"],
-                "amountBaseUnits": funding_evidence["amountBaseUnits"],
-                "mint": funding_evidence["mint"],
-            },
-            "verificationType": "TSN_TCAP_V2_DEPOSIT_CONFIRMED_AND_GPRU_CREDIT_READY",
+            "verifiedPayload": {"tcapCreditTransition": transition},
+            "verificationType": "TSN_TCAP_GPRU_HIDDEN_HEAD_V1",
         }
     if kind == "TIN_OPERATION":
         normalized = _normalize_tin_operation_input(payload)
@@ -3139,135 +2940,16 @@ async def wake_receiver_verification() -> dict[str, Any]:
 
 @app.post("/internal/settlement-authorizations/settlement", dependencies=[Depends(require_worker_api_key)])
 async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
-    """Create a one-time DNA authorization without exposing sender escrow data."""
-    settlement_id = str(body.get("workId") or "").strip()
-    operator_text = str(body.get("crankerPubkey") or "").strip()
-    if not settlement_id or not operator_text:
-        raise HTTPException(422, "workId and crankerPubkey are required")
-    settlement_work = await _receiver_work_by_id(settlement_id)
-    if settlement_work.get("kind") != "SETTLEMENT" or settlement_work.get("status") != "CRANKER_LEASED":
-        raise HTTPException(409, "Settlement is not leased")
-    if (settlement_work.get("crankerLease") or {}).get("owner") != operator_text:
-        raise HTTPException(403, "Settlement lease belongs to another Cranker")
-    settlement_lease = settlement_work.get("crankerLease") or {}
-    lease_expires_at = parse_iso(str(settlement_lease.get("expiresAt") or ""))
-    now = datetime.now(timezone.utc)
-    if lease_expires_at <= now:
-        raise HTTPException(409, "Settlement lease has expired")
-    lease_version = int(settlement_lease.get("version") or settlement_work.get("stateVersion") or 0)
-    if lease_version <= 0:
-        raise HTTPException(422, "Settlement lease version is missing")
-    settlement_payload = settlement_work.get("payload") or {}
-    settlement_verified = _receiver_verified_payload(settlement_work) or {}
-    intent_id = str(settlement_payload.get("intentId") or "").strip()
-    if not intent_id:
-        raise HTTPException(422, "Settlement does not reference a payment intent")
-    intent_work = await _receiver_work_by_id(intent_id)
-    if intent_work.get("kind") != "AUTHORIZED_FUNDING" or intent_work.get("status") != "CONFIRMED":
-        raise HTTPException(409, "Payment intent is not confirmed for payout")
-    funding_private = intent_work.get("payload") or {}
-    if funding_private.get("senderFundingMode") == "tcap_deposit_v2":
-        transition = settlement_verified.get("tcapCreditTransition")
-        if not isinstance(transition, dict):
-            raise HTTPException(422, "Verified settlement is missing the TCAP V2 transition")
-        verified_amount = settlement_verified.get("amountBaseUnits")
-        transition_amount = transition.get("amountBaseUnits") or verified_amount
-        try:
-            amount_base_units = int(str(transition_amount or "0"))
-        except (TypeError, ValueError):
-            raise HTTPException(422, "Verified settlement has an invalid TCAP credit amount")
-        if amount_base_units <= 0:
-            raise HTTPException(422, "Verified settlement is missing the TCAP credit amount")
-        if verified_amount is not None:
-            try:
-                confirmed_amount_base_units = int(str(verified_amount))
-            except (TypeError, ValueError):
-                raise HTTPException(422, "Confirmed TCAP deposit evidence has an invalid amount")
-            if confirmed_amount_base_units != amount_base_units:
-                raise HTTPException(409, "Verified TCAP transition amount differs from confirmed deposit evidence")
-        verified_mint = str(
-            settlement_verified.get("mint")
-            or funding_private.get("tokenMintAddress")
-            or ""
-        ).strip()
-        transition_mint = str(transition.get("mint") or verified_mint).strip()
-        if not verified_mint or not transition_mint:
-            raise HTTPException(422, "Verified settlement is missing the confirmed TCAP deposit mint")
-        if transition_mint != verified_mint:
-            raise HTTPException(409, "Verified TCAP transition mint differs from confirmed deposit evidence")
-        required_transition_fields = (
-            "tipRootCommitment", "commitmentRoot", "previousTcapRoot", "tcapRootSequence",
-            "previousCommitment", "newCommitment", "sequence", "tokenId",
-            "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot", "expiresAtSlot",
-            "authorizationDigest", "tipRegistry", "dnaKeyCommitment", "gpruElgamalKeyCommitment", "dna", "ephemeralPublicKey",
-            "oneTimePublicKey", "derivationProof", "recordEphemeralPublicKey",
-            "memoPayload", "memoLedgerSlots", "memoCommitment", "balanceCiphertext", "previousBalanceCiphertext", "initialBalanceCiphertext", "initialBalanceProof",
-            "memoDocument",
-        )
-        missing_transition_fields = [name for name in required_transition_fields if transition.get(name) is None]
-        if missing_transition_fields:
-            raise HTTPException(422, f"Verified TCAP transition is missing fields: {', '.join(missing_transition_fields)}")
-        transition_with_amount = {**transition, "amountBaseUnits": str(amount_base_units)}
-        deposit_accounts = transition.get("depositAccounts")
-        if not isinstance(deposit_accounts, dict):
-            deposit_accounts = {}
-        asset_entry = str(transition.get("assetEntry") or deposit_accounts.get("assetEntry") or "").strip()
-        tcap_config = str(transition.get("tcapConfig") or deposit_accounts.get("config") or "").strip()
-        execution_transition = {
-            "tipRootCommitment": str(transition["tipRootCommitment"]).lower(),
-            "commitmentRoot": str(transition["commitmentRoot"]),
-            "previousTcapRoot": str(transition["previousTcapRoot"]).lower(),
-            "tcapRootSequence": str(transition["tcapRootSequence"]),
-            "previousCommitment": str(transition["previousCommitment"]).lower(),
-            "newCommitment": str(transition["newCommitment"]).lower(),
-            "sequence": str(transition["sequence"]),
-            "tokenId": int(transition["tokenId"]),
-            "amount": str(amount_base_units),
-            "amountBaseUnits": str(amount_base_units),
-            "mint": verified_mint,
-            "policyCommitment": str(transition["policyCommitment"]).lower(),
-            "gpruScopeCommitment": str(transition["gpruScopeCommitment"]).lower(),
-            "nullifier": str(transition["nullifier"]).lower(),
-            "validAfterSlot": str(transition["validAfterSlot"]),
-            "expiresAtSlot": str(transition["expiresAtSlot"]),
-            "authorizationDigest": str(transition["authorizationDigest"]).lower(),
-            "tipRegistry": str(transition["tipRegistry"]),
-            "dnaKeyCommitment": str(transition["dnaKeyCommitment"]).lower(),
-            "gpruElgamalKeyCommitment": str(transition["gpruElgamalKeyCommitment"]).lower(),
-            "dna": str(transition["dna"]).lower(),
-            "ephemeralPublicKey": str(transition["ephemeralPublicKey"]).lower(),
-            "oneTimePublicKey": str(transition["oneTimePublicKey"]).lower(),
-            "recordEphemeralPublicKey": str(transition["recordEphemeralPublicKey"]).lower(),
-            "memoPayload": str(transition["memoPayload"]),
-            "memoLedgerSlots": list(transition["memoLedgerSlots"]),
-            "memoDocument": dict(transition["memoDocument"]),
-            "memoCommitment": str(transition["memoCommitment"]).lower(),
-            "derivationProof": {name: str(value).lower() for name, value in transition["derivationProof"].items()},
-            "balanceCiphertext": str(transition["balanceCiphertext"]).lower(),
-            "initialBalanceCiphertext": str(transition["initialBalanceCiphertext"]).lower(),
-            "initialBalanceProof": {name: str(value).lower() for name, value in transition["initialBalanceProof"].items()},
-            "previousBalanceCiphertext": str(transition["previousBalanceCiphertext"]).lower(),
-            "assetEntry": asset_entry,
-            "tcapConfig": tcap_config,
-        }
-        if not all(execution_transition[name] for name in ("assetEntry", "tcapConfig")):
-            raise HTTPException(422, "Verified TCAP deposit is missing its asset entry or config account")
-        _validate_tcap_credit_digest(transition_with_amount)
-        _validate_tcap_credit_digest(execution_transition)
-        lease_expires_at = parse_iso(str(settlement_lease.get("expiresAt") or ""))
-        expires_at_ts = min(int(time.time()) + PERMIT_TTL_SECS, int(lease_expires_at.timestamp()))
-        if expires_at_ts <= int(time.time()):
-            raise HTTPException(409, "Settlement lease expires before the TCAP credit can be submitted")
-        return {
-            "kind": "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2",
-            "authorizationVersion": 2,
-            "leaseId": str(settlement_lease.get("leaseId") or settlement_id),
-            "leaseVersion": lease_version,
-            "leaseExpiresAt": str(settlement_lease.get("expiresAt")),
-            "expiresAtTs": expires_at_ts,
-            "transition": execution_transition,
-        }
-    raise HTTPException(409, "Legacy PRU payout settlement is retired; only verified TCAP V2 TIN credits are accepted")
+    """Do not issue a settlement permit until GPRU can prove the hidden current head."""
+    del body
+    raise HTTPException(
+        status_code=503,
+        detail=(
+            "GPRU_GROTH16_PROVER_NOT_CONFIGURED: settlement authorization is disabled "
+            "until the circuit, proving key, current hidden-head witness provider, and "
+            "Memo-bound proof generation are configured"
+        ),
+    )
 
 
 @app.post("/internal/settlement-authorizations/signature", dependencies=[Depends(require_worker_api_key)])

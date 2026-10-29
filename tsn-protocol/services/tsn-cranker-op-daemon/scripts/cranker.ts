@@ -524,6 +524,16 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const commitmentRoot = new PublicKey(String(transition.commitmentRoot ?? ""));
   const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
+  const reserveState = new PublicKey(String(transition.reserveState ?? ""));
+  const tipProgramId = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
+  const [tipRouteRoot] = PublicKey.findProgramAddressSync([Buffer.from("tip:route-merkle-root:v1")], tipProgramId);
+  const [gpruVerifier] = PublicKey.findProgramAddressSync([Buffer.from("gpru:hidden-head-verifier:v1")], GPRU_PROGRAM_ID);
+  const proof = transition.proof as Record<string, unknown> | undefined;
+  if (!proof || !Array.isArray(proof.publicInputs) || proof.publicInputs.length !== 8) {
+    throw new Error("Node TCAP transition is missing the Groth16 hidden-head proof");
+  }
+  const publicInputs = proof.publicInputs.map((value) => String(value));
+  const successorBalancePoint = { x: publicInputs[6]!, y: publicInputs[7]! };
   const connection = createSolanaConnection(rpcUrl);
   const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
     authority,
@@ -534,36 +544,24 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     authorizationDigest: String(transition.authorizationDigest ?? ""),
     validAfterSlot: String(transition.validAfterSlot ?? ""),
     expiresAtSlot: String(transition.expiresAtSlot ?? ""),
-    previousCommitment: String(transition.previousCommitment ?? ""),
-    newCommitment: String(transition.newCommitment ?? ""),
-    sequence: String(transition.sequence ?? ""),
     previousTcapRoot: String(transition.previousTcapRoot ?? ""),
     tcapRootSequence: String(transition.tcapRootSequence ?? ""),
     tokenId: Number(transition.tokenId),
-    policyCommitment: String(transition.policyCommitment ?? ""),
-    gpruScopeCommitment: String(transition.gpruScopeCommitment ?? ""),
-    memoCommitment: String(transition.memoCommitment ?? ""),
     nullifier: String(transition.nullifier ?? ""),
-    tipRegistry: new PublicKey(String(transition.tipRegistry ?? "")),
-    dnaKeyCommitment: String(transition.dnaKeyCommitment ?? ""),
-    dna: String(transition.dna ?? ""),
-    ephemeralPublicKey: String(transition.ephemeralPublicKey ?? ""),
-    oneTimePublicKey: String(transition.oneTimePublicKey ?? ""),
-    derivationProof: {
-      sharedPoint: String((transition.derivationProof as Record<string, unknown> | undefined)?.sharedPoint ?? ""),
-      generatorCommitment: String((transition.derivationProof as Record<string, unknown> | undefined)?.generatorCommitment ?? ""),
-      scanCommitment: String((transition.derivationProof as Record<string, unknown> | undefined)?.scanCommitment ?? ""),
-      response: String((transition.derivationProof as Record<string, unknown> | undefined)?.response ?? ""),
+    reserveState,
+    tipRouteRoot,
+    gpruVerifier,
+    proof: {
+      publicInputs,
+      proofA: String(proof.proofA ?? ""),
+      proofB: String(proof.proofB ?? ""),
+      proofC: String(proof.proofC ?? ""),
+      actionKind: Number(proof.actionKind),
+      tokenId: Number(proof.tokenId),
+      amount: String(proof.amount ?? ""),
+      authorizationCommitment: String(proof.authorizationCommitment ?? ""),
     },
     amountBaseUnits: String(transition.amountBaseUnits ?? ""),
-    previousBalanceCiphertext: String(transition.previousBalanceCiphertext ?? ""),
-    balanceCiphertext: String(transition.balanceCiphertext ?? ""),
-    initialBalanceCiphertext: String(transition.initialBalanceCiphertext ?? ""),
-    initialBalanceProof: {
-      generatorCommitment: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.generatorCommitment ?? ""),
-      keyCommitment: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.keyCommitment ?? ""),
-      response: String((transition.initialBalanceProof as Record<string, unknown> | undefined)?.response ?? ""),
-    },
   });
   const settlementInstructions = [instruction];
   const memoDocument = transition.memoDocument;
@@ -576,8 +574,8 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     expectedSlots: transition.memoLedgerSlots,
     expectedPayload: transition.memoPayload,
     expectedCommitment: transition.memoCommitment,
+    successorBalancePoint,
   });
-  const memoPayload = String(transition.memoPayload);
   const rootBefore = await connection.getAccountInfo(commitmentRoot, "confirmed");
   const rootDisc = hash("account:TcapCommitmentRootStateV1").subarray(0, 8);
   if (!rootBefore || !rootBefore.owner.equals(TCAP_PROGRAM_ID) || rootBefore.data.length !== 124
@@ -586,30 +584,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
       || rootBefore.data.readBigUInt64LE(80) + 1n !== BigInt(String(transition.tcapRootSequence))) {
     throw new Error("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT");
   }
-  const u64le = (value: unknown) => {
-    const bytes = Buffer.alloc(8);
-    bytes.writeBigUInt64LE(BigInt(String(value)));
-    return bytes;
-  };
-  const u32le = (value: unknown) => {
-    const bytes = Buffer.alloc(4);
-    bytes.writeUInt32LE(Number(value));
-    return bytes;
-  };
-  const expectedNextRoot = createHash("sha256").update(Buffer.concat([
-    Buffer.from("TCAP_GPRU_MEMO_SETTLEMENT_ROOT_V1\0", "utf8"),
-    Buffer.from(hex32(transition.previousTcapRoot, "previousTcapRoot")),
-    Buffer.from(hex32(transition.authorizationDigest, "authorizationDigest")),
-    Buffer.from(hex32(transition.nullifier, "nullifier")),
-    Buffer.from(hex32(transition.previousCommitment, "previousCommitment")),
-    Buffer.from(hex32(transition.newCommitment, "newCommitment")),
-    u64le(transition.sequence),
-    u32le(transition.tokenId),
-    Buffer.from(hex32(transition.gpruScopeCommitment, "gpruScopeCommitment")),
-    Buffer.from(hex32(transition.memoCommitment, "memoCommitment")),
-    Buffer.from(hex32(transition.dnaKeyCommitment, "dnaKeyCommitment")),
-    u64le(transition.tcapRootSequence),
-  ])).digest();
+  const expectedNextRoot = Buffer.from(hex32(publicInputs[1]!, "proof.publicInputs[1]"));
   settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
     rpcUrl,
@@ -628,7 +603,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
       || rootData.readBigUInt64LE(80) !== BigInt(String(transition.tcapRootSequence))) {
     throw new Error("Confirmed settlement did not advance TCAP's shared replay root atomically");
   }
-  crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} sequence=${String(transition.sequence)} tokenId=${String(transition.tokenId)}`);
+  crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} rootSequence=${String(transition.tcapRootSequence)} tokenId=${String(transition.tokenId)}`);
   await report(signer, work, "CONFIRMED", {
     signature,
     stage: "TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED",

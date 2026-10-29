@@ -64,7 +64,7 @@ pub struct ApplyCreditTransitionV1<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct HiddenHeadProofArgsV1 {
-    pub public_inputs: [[u8; 32]; 6],
+    pub public_inputs: [[u8; 32]; 8],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],

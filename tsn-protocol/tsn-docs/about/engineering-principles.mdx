@@ -16,9 +16,9 @@ The owner authorizes TIN creation with a wallet. Recovery material is held in a 
 
 ## Verifiable state changes
 
-The wired credit path verifies the authorization, DNA-key proof, encrypted credit relation, Memo commitment, approved asset, and TCAP shared-root predecessor/sequence. It does not persist a per-TIN latest head, so it does not establish freshness of the caller-supplied per-TIN ciphertext.
+The proof-shaped credit ABI binds a hidden-head Groth16 proof, Memo commitment, action, and shared-root transition. It does not write a per-TIN TCAP PDA. The circuit source includes balance constraints, but has not been compiled or reviewed.
 
-GPRU and TCAP also contain a hidden-head proof path in source. It is not called by current Node, SDK, Cranker, or TSN credit callers, and no complete circuit/prover/deployment test is established. It does not prove balance arithmetic, debit sufficiency, or solvency. The global writable root and public action arguments limit privacy.
+Node currently fails closed because the circuit/setup artifacts, private witness source, and prover service are not configured. Debit and exit are not established end to end. The global writable root and public action arguments limit privacy.
 
 ## Evidence discipline
 

@@ -3,7 +3,6 @@ mod legacy;
 pub use legacy::*;
 
 pub mod credit_gpru_memo_v1;
-pub mod advance_gpru_hidden_head_v1;
 pub mod activate_commitment_root_v1;
 pub mod debit_tcap_gpru_tip_v2;
 pub mod initialize_tcap_tip_liability_v2;
@@ -28,7 +27,6 @@ pub mod payout_tcap_exit_v1;
 pub mod initialize_tcap_v1;
 
 pub use credit_gpru_memo_v1::*;
-pub use advance_gpru_hidden_head_v1::*;
 pub use activate_commitment_root_v1::*;
 pub use debit_tcap_gpru_tip_v2::*;
 pub use initialize_tcap_tip_liability_v2::*;

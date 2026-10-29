@@ -1,29 +1,27 @@
 ---
 title: "TCAP: Transfer Confidential Asset Protocol"
 sidebarTitle: "TCAP"
-description: "TCAP governs approved assets and advances the shared replay root in the wired TSN credit path."
+description: "TCAP governs approved assets, reserve liabilities, and atomic shared-root updates."
 ---
 
 # TCAP: Transfer Confidential Asset Protocol
 
-TCAP governs approved assets, reserves, and liability accounting. The current TSN credit path invokes TCAP's `credit_gpru_memo_v1` after GPRU validates the encrypted credit transition.
+TCAP governs approved assets, reserves, and liability accounting. In the current proof-shaped TSN source path, TCAP receives the GPRU hidden-head proof and validates it before changing shared replay state or reserve liabilities.
 
-## Shared root in the wired credit path
+## Atomic hidden-head credit transition in source
 
-TCAP validates the approved asset and policy state, Mother-derived authorization signer, validity window, current shared-root value, and next global sequence. On success, it advances the global `TcapCommitmentRootStateV1` atomically. The same shared root is used by every credit on this path; it is not a separate latest-head account per TIN and does not itself establish that the supplied per-TIN ciphertext is the latest.
+The TSN `register_tcap_credit_authorization_v2` instruction calls TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, Mother-derived authorization signer, validity window, current shared-root predecessor, next root sequence, pending liability, and reserve solvency. It then invokes GPRU to verify the proof. On success, the same TCAP instruction advances the global root and moves the authorized amount from pending to settled liabilities. A failed check rolls back the transaction.
 
-The encrypted Memo remains transaction instruction data committed by the transition. TCAP does not persist the Memo history or ciphertext in a per-TIN account in this path. The active TSN credit instruction does not create or update `TCapTinTipV1`.
+The root is one global TCAP account, not a per-TIN account. The proof is intended to establish that the hidden TIN/asset head is current and advance it while inserting a nullifier. The encrypted Memo remains transaction instruction data; TCAP does not store a per-TIN Memo history or balance snapshot PDA in this path.
 
-## Separate hidden-head instruction
+## Runtime readiness
 
-TCAP source also contains `advance_gpru_hidden_head_v1`, which checks authorization, asset, root predecessor, and global sequence; calls GPRU's hidden-head Groth16 verifier; then advances the shared root. The active TSN/Node/SDK/Cranker credit flow does not call this instruction. The circuit does not prove encrypted balance arithmetic, debit sufficiency, exit destination binding, or reserve solvency. Its current ABI exposes action kind, token ID, and amount.
-
-The shared root gives a common atomic checkpoint but appears in every transaction that uses it. This design exposes protocol-level transaction linkage and global order.
+The current Node settlement authorization endpoint returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so this source path cannot yet produce the proof required by TCAP. The circuit has not been compiled or reviewed, there are no generated trusted setup keys or configured prover/witness service, and the GPRU verifier account has not been initialized as part of this work. Do not treat proof-shaped instruction arguments as a live settlement feature.
 
 ## Legacy TIN-tip instructions
 
-TCAP still contains `TCapTinTipV1` and older initialize, credit, debit, exit, and liability instructions. These are source-level legacy paths and are not the active TSN credit caller described above. Their presence must not be taken as proof that the current XP flow initializes a TCAP TIP PDA.
+TCAP still contains older `TCapTinTipV1` instructions. Their presence in source does not make them part of this hidden-head instruction path, and this design does not initialize a per-TIN TCAP tip PDA.
 
 ## Debit and exit
 
-Confidential debit and exit require proof that the prior balance covers the action, the encrypted successor is the exact subtraction, the resulting value is in range, and reserve liabilities remain solvent. The hidden-head source does not provide those proofs. Do not treat debit or exit as enabled based on this instruction family alone.
+The circuit source includes private balance opening and subtraction constraints for debit and exit. Those actions remain disabled until the constraints are compiled and verified, and TSN authorization, TCAP reserve/payout checks, proof generation, nullifier insertion, and shared-root advancement work together in the atomic transaction.

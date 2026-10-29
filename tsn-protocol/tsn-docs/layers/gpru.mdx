@@ -1,27 +1,23 @@
 ---
 title: "GPRU: Guarded Privacy Routing Unit"
 sidebarTitle: "GPRU"
-description: "GPRU source includes one-time key verification, encrypted-credit checks, and a separate hidden-head proof path."
+description: "GPRU verifies one-time DNA keys and Groth16 hidden-head state transitions for TSN and TCAP."
 ---
 
 # GPRU: Guarded Privacy Routing Unit
 
-GPRU is a standalone Solana program that verifies cryptographic relations used by TSN and TCAP. The current TSN credit instruction calls GPRU to verify DNA-key derivation and validate an encrypted credit transition. GPRU does not custody TCAP assets.
+GPRU is a standalone Solana program for verifying cryptographic relations used by TSN and TCAP. It does not custody TCAP assets. Its source includes one-time DNA-key verification and a Groth16 verifier for hidden-head transitions.
 
-## Current credit verifier
+## Hidden-head proof contract in source
 
-TIP stores a versioned GPRU ElGamal scan public key and its commitment. TSN passes the TIP registry and transaction-specific DNA key proof to GPRU. For the credit transition, GPRU checks the first encrypted credit or verifies ElGamal addition against a predecessor ciphertext supplied with the request. It does not store a per-TIN latest head in this path.
+The TSN `register_tcap_credit_authorization_v2` ABI carries a hidden-head proof to TCAP's `credit_gpru_memo_v1` instruction. TCAP calls GPRU `verify_hidden_head_transition_v1` before it updates the shared root and reserve liabilities. The verifier checks the canonical TIP route root and TCAP root, binds the proof to the following Memo instruction and its successor balance point, checks the action commitment, and verifies the Groth16 proof.
 
-The commitment and ciphertext checks establish the specified relation for the supplied values; without persistent authenticated per-TIN head state, they do not prove that the supplied predecessor is the latest state for the TIN.
+The Circom source declares eight public inputs in order: old and new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, and successor balance-point X and Y. Its private witness contains TIP route membership, a hidden route/asset head and sequence, sparse-map authentication paths, and the prior nullifier state. The circuit source constrains credit Pedersen-point addition and debit/exit balance openings, but it has not been compiled or independently reviewed. Source constraints are not proof that a transition can be proven or safely executed.
 
-## Hidden-head verifier source
+## Prover and key status
 
-GPRU also has a Groth16 proof verifier and a Circom source for proving a hidden route-and-asset head update, sequence advancement, Memo/action binding, and nullifier update. The public inputs include old/new TCAP roots, Memo/action commitments, a nullifier, and TIP's shared route root. TCAP has an instruction that invokes this verifier and advances its global commitment root.
-
-This is a separate source path. The active TSN, Node, SDK, and Cranker settlement flow does not call it. The repository does not establish circuit compilation, proving-key artifacts, proof generation, initialized verifier state, or end-to-end chain execution. The circuit does not prove homomorphic balance arithmetic, affordability, or solvency. The current instruction ABI exposes action kind, token ID, and amount.
+Node currently returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; it does not authorize a settlement without proof generation over a current hidden-head witness and Memo. The repository does not contain compiled circuit artifacts, a production proving/verifying key pair, a validated key-encoding adapter, a witness provider, or a prover service. The GPRU verifier PDA has not been initialized as part of this work. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head) for the creation and installation lifecycle.
 
 ## Privacy boundary
 
-The hidden-head proof is designed to conceal the selected route and per-route head. Every update still writes the same public TCAP root account, exposing a shared protocol-level link and ordering. The current wired credit path also passes a TIP registry account, and public wallet funding remains visible. GPRU does not make the system zero-linkable.
-
-See [GPRU and TCAP state](/architecture/gpru-confidential-balances) for the source status and limits.
+The proof is intended to conceal the selected route/head. It does not provide zero linkability: all transitions use the same public writable TCAP root, exposing protocol-level participation and ordering. The current ABI also exposes action kind, token ID, amount, nullifier, root values, Memo commitment, TIP route root, and successor point. Transaction accounts, timing, and Memo bytes remain visible on Solana.

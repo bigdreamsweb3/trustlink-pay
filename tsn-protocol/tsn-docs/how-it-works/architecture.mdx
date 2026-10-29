@@ -46,4 +46,4 @@ Public wallet deposits and exits remain visible at their wallet boundaries. The 
 
 ## Current status
 
-The current TSN credit instruction invokes GPRU to verify one-time key derivation and an encrypted-credit relation, then invokes TCAP to atomically advance one shared global commitment root. It does not persist or authenticate a latest head for each TIN. A separate hidden-head Groth16 verifier is present in GPRU/TCAP source but is not called by the current Node, SDK, Cranker, or TSN credit instruction. The circuit does not prove encrypted balance arithmetic or debit affordability. Confidential debit and exit are not established as available end to end.
+The current TSN credit ABI passes a hidden-head Groth16 proof to TCAP, which invokes GPRU before atomically advancing one shared global commitment root and reserve liabilities. It does not create a per-TIN TCAP account. Node currently fails closed because the circuit, setup artifacts, witness provider, and prover are not configured. Confidential debit and exit are not established as available end to end.

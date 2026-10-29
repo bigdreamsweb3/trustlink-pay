@@ -43,7 +43,7 @@ sequenceDiagram
 
 ## On-chain state and replay boundary
 
-The credit transaction binds the Memo instruction data by commitment. TCAP advances one shared global commitment root and sequence; the current call does not create or update `TCapTinTipV1` and does not store the Memo as per-TIN account data. The global sequence rejects a repeated stale global transition, but does not prove that the supplied ciphertext is the latest for its TIN.
+The credit ABI binds the Memo instruction to a hidden-head proof. TCAP advances one shared global root and reserve liabilities only after GPRU verifies the proof; no `TCapTinTipV1` or per-TIN Memo account is written. Node currently fails closed because the prover and witness source are not configured.
 
 The funding-derived transition value binds the settlement authorization to the signed reserve deposit. It does not create a separate spent-funding PDA. A transaction failure or uncertain client response should be resolved by checking its signature and the current root before constructing a replacement.
 
@@ -51,4 +51,4 @@ The funding-derived transition value binds the settlement authorization to the s
 
 Solana exposes instruction arguments, account keys, Memo bytes, signatures, fee payer, and transaction ordering. An encrypted Memo may hide plaintext from an observer, but the amount passed in public instruction arguments and transaction metadata remain visible where the ABI includes them. The common writable TCAP root is a repeated public account reference.
 
-The hidden-head Groth16 verifier is separate from this runtime flow. Current Node, SDK, Cranker, and TSN credit callers do not invoke it, and its circuit does not prove balance arithmetic or debit affordability. See [GPRU and TCAP state](/architecture/gpru-confidential-balances) and [Replay protection](/security/replay-protection).
+The circuit source has eight public inputs and balance-transition constraints, but compilation, key generation, proof generation, and end-to-end verification remain incomplete. See [GPRU and TCAP state](/architecture/gpru-confidential-balances), [GPRU Groth16 prover setup](/developers/groth16-hidden-head), and [Replay protection](/security/replay-protection).

@@ -1,18 +1,16 @@
 # TCAP balance transitions and GPRU proof boundary
 
-This document distinguishes source that exists from the intended confidential-balance security contract. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. The checked-in hidden-head proof source is not yet a complete or wired balance-proof system.
+This document distinguishes the proof-shaped TSN/TCAP ABI from a working proof-generation system. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. Node currently fails closed because the Groth16 prover and witness provider are not configured.
 
 ## Current source behavior
 
-The TSN credit instruction currently invokes GPRU's `apply_credit_transition_v1`, then TCAP's `credit_gpru_memo_v1`. GPRU validates an initial ciphertext against a proof of the funded amount, or validates later ElGamal ciphertext addition against the caller-provided predecessor ciphertext and sequence. TCAP validates the shared root, global root sequence, approved asset, policy, authorization signer, and validity window before advancing that root. The transaction binds the Memo instruction data to the GPRU credit transition.
+The TSN `register_tcap_credit_authorization_v2` instruction passes the hidden-head Groth16 proof to TCAP's `credit_gpru_memo_v1`. TCAP validates the shared-root predecessor and sequence, approved asset, authorization signer, validity window, pending liabilities, and reserve solvency, then invokes GPRU's `verify_hidden_head_transition_v1`. On proof success, TCAP advances the shared root and reserve liabilities atomically. The Memo is transaction instruction data bound by the proof.
 
-The TCAP shared root prevents the same exact root transition from being applied twice. It is global shared state, not a per-TIN balance head. GPRU does not persist an authoritative per-TIN predecessor in this path, so this check alone does not prove that a caller supplied the latest state for that TIN. The Memo is transaction data available through Solana transaction history; the current source does not make TCAP store a balance ciphertext or the full Memo history in an account.
+The proof is intended to show that the private per-TIN/asset predecessor is the current head and to insert a nullifier as TCAP advances the global root. This does not create a per-TIN TCAP balance account. Memo history remains transaction data available through Solana transaction history.
 
 ## Hidden-head source path
 
-GPRU contains a Groth16 verifier entrypoint and Circom source for a hidden route/asset head update with sequence advancement and nullifier non-membership. TCAP contains `advance_gpru_hidden_head_v1`, which calls that verifier and updates its shared commitment root. This path is not called by the active TSN settlement instruction, Node, SDK, or Cranker.
-
-The current circuit source does not prove encrypted-balance addition or subtraction, debit affordability, non-negative range, or reserve conservation. The TCAP instruction ABI also includes public `action_kind`, `token_id`, and `amount` fields. Do not claim those values are hidden. Circuit compilation, setup artifacts, proof generation, integration testing, and Devnet execution are not established by source presence.
+GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSN credit ABI carries the proof through TCAP to GPRU. The circuit has eight public inputs, including successor balance point X/Y. The circuit has not been compiled or reviewed; no proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
 
 ## Required balance-proof contract
 
@@ -26,4 +24,4 @@ The hidden-head design avoids a public per-TIN head account, but uses a single w
 
 ## Status
 
-The source has a legacy TIN-tip family of TCAP account/instruction definitions, a wired TSN credit path using a shared root and Memo commitment, and a separate hidden-head verifier path that is not wired to runtime callers. Do not use historical per-tip smoke scripts as evidence that the hidden-head path or confidential debit/exit works. See [Current architecture](./CURRENT-ARCHITECTURE.md) and [GPRU hidden-head status](./gpru-tcap-route.md).
+The source has legacy TIN-tip account/instruction definitions and a proof-shaped TSN credit path using one shared root and Memo instruction data. Node disables settlement until the prover and witness source are configured. Do not use historical per-tip smoke scripts as evidence that the hidden-head path or confidential debit/exit works. See [Current architecture](./CURRENT-ARCHITECTURE.md), [GPRU hidden-head status](./gpru-tcap-route.md), and [Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md).

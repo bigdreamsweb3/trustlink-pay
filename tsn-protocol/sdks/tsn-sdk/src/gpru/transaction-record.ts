@@ -95,12 +95,16 @@ export function decryptGpruLedgerMemoV1<T = Record<string, unknown>>(params: {
   masterSeed: Uint8Array;
   gpruElgamalPublicKey: Uint8Array;
 }): T {
-  if (!/^[A-Za-z0-9_-]+$/u.test(params.memoPayload)) {
+  const prefix = /^TSN_GPRU_HEAD_V1:([0-9a-f]{64}):([0-9a-f]{64}):/iu;
+  const match = prefix.exec(params.memoPayload);
+  if (!match) throw new Error("Memo does not contain the GPRU hidden-head V1 binding");
+  const ledgerPayload = params.memoPayload.slice(match[0].length);
+  if (!/^[A-Za-z0-9_-]+$/u.test(ledgerPayload)) {
     throw new Error("GPRU Memo payload must be an unpadded Base64URL Ledger stream");
   }
   const slots: string[] = [];
-  for (let offset = 0; offset < params.memoPayload.length; offset += 32) {
-    slots.push(params.memoPayload.slice(offset, offset + 32).padEnd(32, "="));
+  for (let offset = 0; offset < ledgerPayload.length; offset += 32) {
+    slots.push(ledgerPayload.slice(offset, offset + 32).padEnd(32, "="));
   }
   const documentBytes = decodeLedgerSlots(slots);
   let envelope: GpruTransactionRecordEnvelopeV1;

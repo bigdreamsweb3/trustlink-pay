@@ -20,6 +20,7 @@ export function createDbrixSettlementMemoInstruction(params: {
   expectedSlots: unknown;
   expectedPayload: unknown;
   expectedCommitment: unknown;
+  successorBalancePoint: { x: string; y: string };
 }): TransactionInstruction {
   const slots = encodeToLedgerSlots(Buffer.from(stableJson(params.document), "utf8"));
   if (!Array.isArray(params.expectedSlots)
@@ -31,13 +32,18 @@ export function createDbrixSettlementMemoInstruction(params: {
   if (memoPayload !== params.expectedPayload) {
     throw new Error("Node DBrix Memo payload does not match its Ledger slots");
   }
-  const commitment = createHash("sha256").update(memoPayload, "ascii").digest("hex");
+  const pointHex = (value: string, label: string) => {
+    if (!/^[0-9a-f]{64}$/iu.test(value)) throw new Error(`${label} must be 32-byte hex`);
+    return value.toLowerCase();
+  };
+  const finalMemoPayload = `TSN_GPRU_HEAD_V1:${pointHex(params.successorBalancePoint.x, "successorBalancePoint.x")}:${pointHex(params.successorBalancePoint.y, "successorBalancePoint.y")}:${memoPayload}`;
+  const commitment = createHash("sha256").update(finalMemoPayload, "ascii").digest("hex");
   if (commitment !== String(params.expectedCommitment ?? "").toLowerCase()) {
     throw new Error("Node DBrix Memo commitment does not match the encoded record");
   }
   return new TransactionInstruction({
     programId: MEMO_PROGRAM_ID,
     keys: [{ pubkey: params.payer, isSigner: true, isWritable: false }],
-    data: Buffer.from(memoPayload, "ascii"),
+    data: Buffer.from(finalMemoPayload, "ascii"),
   });
 }

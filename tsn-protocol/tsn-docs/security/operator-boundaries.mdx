@@ -26,6 +26,6 @@ Solana transaction account keys, instruction arguments, Memo bytes, signatures, 
 
 ## Current limits
 
-The active credit path does not persist a per-TIN ciphertext head. The hidden-head proof instruction is present separately in GPRU/TCAP source but has no current Node/SDK/Cranker caller; it does not prove balance arithmetic or debit affordability, and it still writes the shared TCAP root. Confidential debit and exit are not established as available end to end.
+The proof-shaped credit ABI updates the hidden head through TCAP's shared root without a per-TIN TCAP PDA. Node currently fails closed because no Groth16 prover or witness source is configured. Circuit arithmetic, key artifacts, verifier initialization, and end-to-end behavior are unverified. Debit and exit are not established as available end to end, and the shared root remains a public link across actions.
 
 See [Payment intent lifecycle](/developers/payment-intent-lifecycle), [Current architecture](/overview/architecture), and [Threat model](/security/threat-model).

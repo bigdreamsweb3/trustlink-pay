@@ -8,18 +8,19 @@ Read these documents in order:
 
 1. [Current architecture](./CURRENT-ARCHITECTURE.md) — checked-in TIP, GPRU, TSN, and TCAP contracts, wired credit behavior, and implementation limits.
 2. [GPRU hidden-head status](./gpru-tcap-route.md) — the shared-root proof path in source, its public inputs, privacy limits, and missing runtime wiring.
-3. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
-4. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
-5. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
-6. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
-7. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+3. [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) — what the prover does, how circuit-specific keys are created and installed, and which artifacts are still missing.
+4. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
+5. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
+6. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
+7. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
+8. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
    The Node's signed verification receipt is checked by both Receiver and Cranker before execution.
-6. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
-7. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
-8. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
-9. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
-10. [Security](./SECURITY.md) — plain-language security principles.
-11. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
+9. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
+10. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
+11. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
+12. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
+13. [Security](./SECURITY.md) — plain-language security principles.
+14. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
 Supporting references:
 
@@ -45,7 +46,7 @@ Supporting references:
 
 - **TSN** is settlement and authorization coordination infrastructure.
 - **TIP** is the Transfer Identity Protocol; **TIN** is one 10-digit Transfer Identity Number within TIP.
-- **GPRU** is a standalone program with one-time ElGamal derivation, a wired credit-transition verifier, and a hidden-head Groth16 verifier entrypoint in source. The hidden-head path is not wired to TSN Node/SDK/Cranker, and its circuit/proving workflow is not validated end to end.
+- **GPRU** is a standalone program with one-time ElGamal derivation and a Groth16 hidden-head verifier entrypoint in source. The TSN/TCAP credit ABI carries the proof-shaped arguments, but Node settlement authorization fails closed until a circuit-specific proving key, matching verifier setup, witness source, and prover service are available. The circuit and cross-service path are not validated end to end.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
 - **Mother** provides authorization under the applicable TSN instruction family; do not infer that epoch `ConfidentialSettlement`/slot instructions are part of the active TIN credit path.
 - **Cranker** submits exact leased work and cannot rewrite the authorization.

@@ -2,6 +2,23 @@ pragma circom 2.1.8;
 
 include "circomlib/circuits/poseidon.circom";
 include "circomlib/circuits/bitify.circom";
+include "circomlib/circuits/babyjub.circom";
+include "circomlib/circuits/escalarmulany.circom";
+include "circomlib/circuits/comparators.circom";
+
+template BalanceScalarMul(n, baseX, baseY) {
+    signal input scalar;
+    signal output x;
+    signal output y;
+    component bits = Num2Bits(n);
+    bits.in <== scalar;
+    component mul = EscalarMulAny(n);
+    mul.p[0] <== baseX;
+    mul.p[1] <== baseY;
+    for (var i = 0; i < n; i++) mul.e[i] <== bits.out[i];
+    x <== mul.out[0];
+    y <== mul.out[1];
+}
 
 // A sparse Merkle path whose index is derived from a field element. Only the
 // low 128 bits select the path; strict decomposition prevents field aliases.
@@ -57,6 +74,13 @@ template SparsePath32() {
 }
 
 template HiddenHeadTransitionV1() {
+    // BabyJubjub BASE8 and the independently generated Pedersen blinding base.
+    // H is SHA-256(domain || counter=0) mapped to the curve and multiplied by 8.
+    var BALANCE_G_X = 5299619240641551281634865583518297030282874472190772894086521144482721001553;
+    var BALANCE_G_Y = 16950150798460657717958625567821834550301663161624707787222815936182638968203;
+    var BALANCE_H_X = 9398968040714586016327675940839568983565095581299035530848626576251201023018;
+    var BALANCE_H_Y = 15860466305030097496204584978173195991965382154782248789896917824218270823860;
+    var BABYJUB_SUBORDER = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
     // Public signals are intentionally limited to shared protocol state and
     // one-time action data. They do not contain a TIP/TIN account, route key,
     // per-TIN sequence, predecessor, or private sparse-tree index.
@@ -66,6 +90,10 @@ template HiddenHeadTransitionV1() {
     signal input actionCommitment;
     signal input nullifier;
     signal input tipRouteRoot;
+    // Freshly blinded output commitment; GPRU requires the same point in the
+    // fixed Memo prefix, while the hidden map stores it as the successor head.
+    signal input successorBalanceX;
+    signal input successorBalanceY;
 
     // Private TIP membership opening.
     signal input tipLookupCommitment;
@@ -80,6 +108,8 @@ template HiddenHeadTransitionV1() {
     signal input priorSequence;
     signal input predecessorMemoCommitment;
     signal input predecessorActionCommitment;
+    signal input predecessorBalanceX;
+    signal input predecessorBalanceY;
     signal input accountSiblings[128];
 
     // Private nullifier-map path. The public nullifier is one-time and
@@ -92,6 +122,11 @@ template HiddenHeadTransitionV1() {
     signal input assetId;
     signal input amount;
     signal input authorizationCommitment;
+    signal input creditBlindingDelta;
+    signal input predecessorBalance;
+    signal input predecessorBlinding;
+    signal input successorBalance;
+    signal input successorBlinding;
 
     signal routeLeaf;
     component routeHash = Poseidon(3);
@@ -111,12 +146,14 @@ template HiddenHeadTransitionV1() {
     accountKeyHash.inputs[1] <== assetCommitment;
     accountKeyHash.out === accountPathKey;
 
-    component priorLeafHash = Poseidon(5);
+    component priorLeafHash = Poseidon(7);
     priorLeafHash.inputs[0] <== routeKeyCommitment;
     priorLeafHash.inputs[1] <== assetCommitment;
     priorLeafHash.inputs[2] <== priorSequence;
     priorLeafHash.inputs[3] <== predecessorMemoCommitment;
     priorLeafHash.inputs[4] <== predecessorActionCommitment;
+    priorLeafHash.inputs[5] <== predecessorBalanceX;
+    priorLeafHash.inputs[6] <== predecessorBalanceY;
 
     component isFirstHead = IsZero();
     isFirstHead.in <== priorSequence;
@@ -135,23 +172,103 @@ template HiddenHeadTransitionV1() {
     assetCommitment === assetId;
     isFirstHead.out * predecessorMemoCommitment === 0;
     isFirstHead.out * predecessorActionCommitment === 0;
+    isFirstHead.out * predecessorBalanceX === 0;
+    isFirstHead.out * (predecessorBalanceY - 1) === 0;
 
     component currentHeadPath = SparsePath128();
     currentHeadPath.leaf <== (1 - isFirstHead.out) * priorLeafHash.out;
     currentHeadPath.key <== accountPathKey;
     for (var i = 0; i < 128; i++) currentHeadPath.siblings[i] <== accountSiblings[i];
 
-    component nextLeafHash = Poseidon(5);
+    component nextLeafHash = Poseidon(7);
     nextLeafHash.inputs[0] <== routeKeyCommitment;
     nextLeafHash.inputs[1] <== assetCommitment;
     nextLeafHash.inputs[2] <== nextSequence;
     nextLeafHash.inputs[3] <== memoCommitment;
     nextLeafHash.inputs[4] <== actionCommitment;
+    nextLeafHash.inputs[5] <== successorBalanceX;
+    nextLeafHash.inputs[6] <== successorBalanceY;
 
     component nextHeadPath = SparsePath128();
     nextHeadPath.leaf <== nextLeafHash.out;
     nextHeadPath.key <== accountPathKey;
     for (var i = 0; i < 128; i++) nextHeadPath.siblings[i] <== accountSiblings[i];
+
+    // A Pedersen commitment is the hidden balance state. DBrix Memo encrypts
+    // the owner's balance/history record; this point exists only inside the
+    // hidden authenticated-map leaf and the randomized public Memo binding.
+    component isCredit = IsEqual();
+    isCredit.in[0] <== actionKind;
+    isCredit.in[1] <== 1;
+    component isDebit = IsEqual();
+    isDebit.in[0] <== actionKind;
+    isDebit.in[1] <== 2;
+    component isExit = IsEqual();
+    isExit.in[0] <== actionKind;
+    isExit.in[1] <== 3;
+    isCredit.out + isDebit.out + isExit.out === 1;
+    isFirstHead.out * (1 - isCredit.out) === 0;
+
+    // Credit: update the hidden Pedersen point homomorphically. The Node needs
+    // neither the balance nor its blinding opening to add a confirmed amount.
+    component deltaBound = LessThan(252);
+    deltaBound.in[0] <== creditBlindingDelta;
+    deltaBound.in[1] <== BABYJUB_SUBORDER;
+    isCredit.out * (1 - deltaBound.out) === 0;
+    component amountPoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
+    amountPoint.scalar <== amount;
+    component deltaPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
+    deltaPoint.scalar <== creditBlindingDelta;
+    component creditPartial = BabyAdd();
+    creditPartial.x1 <== predecessorBalanceX;
+    creditPartial.y1 <== predecessorBalanceY;
+    creditPartial.x2 <== amountPoint.x;
+    creditPartial.y2 <== amountPoint.y;
+    component creditSuccessor = BabyAdd();
+    creditSuccessor.x1 <== creditPartial.xout;
+    creditSuccessor.y1 <== creditPartial.yout;
+    creditSuccessor.x2 <== deltaPoint.x;
+    creditSuccessor.y2 <== deltaPoint.y;
+    isCredit.out * (successorBalanceX - creditSuccessor.xout) === 0;
+    isCredit.out * (successorBalanceY - creditSuccessor.yout) === 0;
+
+    // Debit and exit: the proving wallet opens both points and proves that the
+    // successor is nonnegative. No balance or blinding is a public input.
+    component oldBalanceBits = Num2Bits(64);
+    oldBalanceBits.in <== predecessorBalance;
+    component newBalanceBits = Num2Bits(64);
+    newBalanceBits.in <== successorBalance;
+    component oldBlindBound = LessThan(252);
+    oldBlindBound.in[0] <== predecessorBlinding;
+    oldBlindBound.in[1] <== BABYJUB_SUBORDER;
+    component newBlindBound = LessThan(252);
+    newBlindBound.in[0] <== successorBlinding;
+    newBlindBound.in[1] <== BABYJUB_SUBORDER;
+    (isDebit.out + isExit.out) * (1 - oldBlindBound.out) === 0;
+    (isDebit.out + isExit.out) * (1 - newBlindBound.out) === 0;
+    component oldValuePoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
+    oldValuePoint.scalar <== predecessorBalance;
+    component oldBlindPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
+    oldBlindPoint.scalar <== predecessorBlinding;
+    component openedOld = BabyAdd();
+    openedOld.x1 <== oldValuePoint.x;
+    openedOld.y1 <== oldValuePoint.y;
+    openedOld.x2 <== oldBlindPoint.x;
+    openedOld.y2 <== oldBlindPoint.y;
+    component newValuePoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
+    newValuePoint.scalar <== successorBalance;
+    component newBlindPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
+    newBlindPoint.scalar <== successorBlinding;
+    component openedNew = BabyAdd();
+    openedNew.x1 <== newValuePoint.x;
+    openedNew.y1 <== newValuePoint.y;
+    openedNew.x2 <== newBlindPoint.x;
+    openedNew.y2 <== newBlindPoint.y;
+    (isDebit.out + isExit.out) * (predecessorBalanceX - openedOld.xout) === 0;
+    (isDebit.out + isExit.out) * (predecessorBalanceY - openedOld.yout) === 0;
+    (isDebit.out + isExit.out) * (successorBalanceX - openedNew.xout) === 0;
+    (isDebit.out + isExit.out) * (successorBalanceY - openedNew.yout) === 0;
+    (isDebit.out + isExit.out) * (predecessorBalance - successorBalance - amount) === 0;
 
     component actionHash = Poseidon(5);
     actionHash.inputs[0] <== actionKind;
@@ -186,4 +303,4 @@ template HiddenHeadTransitionV1() {
     newRootHash.out === newGlobalRoot;
 }
 
-component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot]} = HiddenHeadTransitionV1();
+component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorBalanceX, successorBalanceY]} = HiddenHeadTransitionV1();

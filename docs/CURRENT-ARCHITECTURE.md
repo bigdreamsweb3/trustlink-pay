@@ -1,46 +1,42 @@
 # TIP, GPRU, TSN, and TCAP: source-backed architecture
 
-This document describes the checked-in program and service contracts. It separates the wired credit path from the hidden-head proof path that currently exists only as program and circuit source. A source implementation is not evidence that a path has been built, deployed, initialized, audited, or exercised on chain.
+This document describes the checked-in program and service contracts. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain.
 
 ## Protocol roles
 
-- **TIP (Transfer Identity Protocol)** creates and resolves transfer identities. A **TIN (Transfer Identity Number)** is one 10-digit identity within TIP. The TIN registry contains encrypted identity/recovery fields and public route commitments, including a versioned GPRU ElGamal scan public key. The owner-recovery record is a separate TIP-owned PDA.
-- **GPRU (Guarded Privacy Routing Unit)** contains per-DNA ElGamal key derivation and proof code, a credit-transition verifier, and a Groth16 hidden-head verifier entrypoint. It does not custody TCAP assets.
+- **TIP (Transfer Identity Protocol)** creates and resolves transfer identities. A **TIN (Transfer Identity Number)** is one 10-digit identity within TIP. TIP owns identity and route data; the TIN owner retains the recovery secret.
+- **GPRU (Guarded Privacy Routing Unit)** derives one-time DNA keys and verifies hidden-head Groth16 proofs. It does not custody TCAP assets.
 - **TSN (Transfer Settlement Network)** coordinates authenticated intent/work, Node verification, Mother authorization, and exact Cranker submission.
-- **TCAP (Transfer Confidential Asset Protocol)** governs approved assets and the shared replay commitment root. It is the reserve and liability protocol; the root is not a per-TIN balance account.
+- **TCAP (Transfer Confidential Asset Protocol)** governs approved assets, reserve liabilities, and the shared commitment root. The root is protocol-wide, not a per-TIN balance account.
 
-## Credit path currently wired in source
+## Hidden-head credit ABI in source
 
-The checked-in TSN credit instruction `register_tcap_credit_authorization_v2` verifies the authorization and GPRU DNA-key proof, invokes GPRU's `apply_credit_transition_v1`, then invokes TCAP's `credit_gpru_memo_v1`. GPRU validates the first encrypted credit or checks later ElGamal ciphertext addition against the supplied predecessor ciphertext and verifies the commitment. TCAP validates the asset, Mother-derived authorization signer, validity window, shared-root predecessor, and next global sequence, then advances that shared root. The transaction binds the encrypted Memo instruction to the GPRU transition.
+The TSN `register_tcap_credit_authorization_v2` instruction accepts a proof-shaped hidden-head argument and invokes TCAP's `credit_gpru_memo_v1`. TCAP validates the approved asset, Mother-derived authorization signer, validity window, current root and next sequence, then invokes GPRU `verify_hidden_head_transition_v1`. Only after proof verification does TCAP advance its shared root and move the matching amount from pending to settled reserve liabilities in the same transaction.
 
-This is not a per-TIN on-chain latest-head registry. The GPRU credit verifier receives the TIP registry and TCAP shared root, but does not persist a per-TIN head. TCAP's shared root gives the wired credit path a global atomic checkpoint; it does not by itself prove that a supplied per-TIN ciphertext is the latest ciphertext. Do not describe this source path as a complete stale-balance defense.
+GPRU checks the canonical TIP route root and TCAP root, binds the supplied proof to the Memo instruction following the TSN call, recomputes the action commitment, and verifies the Groth16 proof. The checked-in circuit has eight public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, and successor balance point X/Y. The private witness includes TIP route membership, the hidden route/asset head and sequence, sparse-map paths, and the prior nullifier state. The circuit source expresses credit Pedersen-point addition and debit/exit openings with nonnegative integer balances; this source has not been compiled or validated as a proof system.
 
-The chain transition does not create a `TCapTinTipV1` PDA in this TSN credit instruction. TCAP still contains `TCapTinTipV1` and legacy initialize/credit/debit/exit code for other paths. Those definitions are not proof that the current TSN credit path uses them. The credit path's encrypted Memo is transaction instruction data, not a persistent balance account; reading and rebuilding a user's complete Memo history requires RPC access and an SDK/indexer flow.
+Node currently returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED` for settlement authorization. There is no configured witness source or proof-generation service, no generated proving/verifying-key artifacts, no validated verification-key byte converter, and no end-to-end proof test. Therefore the program ABI is proof-shaped, but the service flow is not operational. See [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) for the complete missing-artifact and setup lifecycle.
 
-## Hidden-head proof path in source
+## TCAP state and Memo records
 
-The GPRU program includes `verify_hidden_head_transition_v1` and a Mother-authorized verifier-key initializer. Its Groth16 circuit source describes private TIP-route membership, a hidden per-route-and-asset head, sequence advancement, Memo/action binding, and nullifier non-membership/insertion. The circuit exposes six public inputs: old TCAP root, new TCAP root, Memo commitment, action commitment, nullifier, and TIP route-membership root. TCAP includes `advance_gpru_hidden_head_v1`, which checks the shared-root predecessor and next global sequence, calls GPRU to verify the proof, and advances the single TCAP commitment-root account.
+The intended hidden-head design does not write a per-TIN TCAP tip PDA. TCAP's shared commitment-root account is updated atomically with reserve liabilities; the encrypted DBrix Memo remains transaction instruction data. SDK history reconstruction must read prior transaction Memos through RPC or an indexer. The current hidden-head proof circuit commits a successor Pedersen balance point in the Memo prefix and private map leaf; the encrypted Memo format and proof generation still require implementation and validation together.
 
-This path is not connected to TSN Node, SDK, Cranker, or the active TSN credit instruction. The Circom circuit has not been compiled into a proving system or validated against generated Groth16 keys/proofs in the documented workflow. No proving-key setup, proof generation pipeline, deployment initialization, end-to-end test, or chain confirmation is established here. The circuit source also does not implement encrypted balance arithmetic; the hidden-head proof and balance-transition proof are separate requirements.
+## Privacy and public-data limits
 
-## Linkability and public-data limits
-
-The hidden-head design avoids a public per-TIN state account, but all transitions still write the same TCAP commitment-root PDA. That shared writable account is visible in every transaction using the path and serializes updates globally. This does not reveal which TIN's hidden head changed, but it creates a common protocol-level link and observable ordering. It is not zero-linkability.
-
-In the current hidden-head instruction ABI, `action_kind`, `token_id`, and `amount` are explicit public fields and are checked against the proof arguments. Treat those values as visible unless the ABI is changed and the circuit proves the required relation without disclosing them. The Memo bytes and transaction metadata are also public on Solana even when the Memo payload is encrypted.
+The hidden-head proof is intended to hide which TIP route/head changed. It does not provide zero linkability: every transition uses the same public writable TCAP root, exposing protocol participation and global ordering. The ABI also exposes action kind, token ID, amount, nullifier, root values, Memo commitment, TIP route root, and successor balance point. Solana transaction accounts, timing, and Memo bytes remain public even when Memo contents are encrypted.
 
 ## Debit, exit, and settlement boundary
 
-TCAP contains older debit and exit instructions that reference `TCapTinTipV1`; the current Node/SDK/Cranker flow does not submit the hidden-head proof path for debit or exit. The checked-in hidden-head circuit binds a generic action commitment but does not prove that an encrypted balance is sufficient, that a ciphertext is the exact subtraction, or that an exit preserves solvency. Do not describe confidential debit/exit as enabled by this proof source.
+The circuit source includes debit and exit arithmetic constraints, but the TSN/SDK/Node/Cranker execution path and TCAP liquidity/payout checks have not been verified end to end for those actions. They remain disabled until authorization, affordability, successor commitment, reserve conservation, payout behavior, and root advancement are proven together. The existence of circuit constraints is not evidence that debit or exit is enabled.
 
-Receiver acceptance, Node verification, Cranker submission, and Solana confirmation are distinct. Confirmed reserve funding is not proof that the follow-up settlement succeeded. A chain claim requires transaction and account evidence from the target cluster.
+Receiver acceptance, Node verification, Cranker submission, reserve-funding confirmation, and TCAP transition confirmation are distinct events. Confirmed reserve funding does not prove that a follow-up settlement succeeded. Confirm a chain result from the transaction signature and relevant account state on the target cluster.
 
 ## Canonical source pointers
 
 - TIP Registrar: `tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/`
-- GPRU program and circuit: `tsn-protocol/programs/gpru/src/` and `circuits/hidden_head_v1/`
+- GPRU program and circuit: `tsn-protocol/programs/gpru/src/` and `tsn-protocol/programs/gpru/circuits/hidden_head_v1/`
 - TSN authorization CPI: `tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs`
-- TCAP current and hidden-head instructions: `tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/`
-- SDK, Node, Receiver, and Cranker callers: `tsn-protocol/sdks/tsn-sdk/src/`, `services/tsn-node/`, `services/tsn-receiver/`, and `services/tsn-cranker-op-daemon/`
+- TCAP atomic credit instruction: `tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs`
+- Prover/key lifecycle: `./GROTH16-PROVER-AND-KEY-ARTIFACTS.md`
 
-Use these contracts over historical design notes. Historical experiments and smoke-test runbooks are labeled as such and must not be treated as the current integration path.
+Use these contracts over historical design notes. Historical experiments and smoke-test runbooks are labeled as such and are not normative for the current proof ABI.

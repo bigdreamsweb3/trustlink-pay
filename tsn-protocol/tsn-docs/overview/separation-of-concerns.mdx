@@ -27,6 +27,6 @@ The current TSN credit caller passes the supplied encrypted-credit transition th
 
 ## Privacy and security boundary
 
-Solana exposes transaction accounts, instruction arguments, Memo ciphertext, fee payer, signatures, and ordering. The common writable TCAP root creates visible protocol-level linkage. GPRU/TCAP hidden-head verifier source is separate from the active caller and does not prove balance arithmetic, debit affordability, or solvency. The architecture therefore does not claim zero linkability or end-to-end confidential debit/exit.
+Solana exposes transaction accounts, instruction arguments, Memo ciphertext, fee payer, signatures, and ordering. The common writable TCAP root creates visible protocol-level linkage. The current TSN/TCAP source ABI carries the GPRU hidden-head proof, but its circuit, setup, prover, and runtime remain unverified; debit and exit are not established end to end. The architecture therefore does not claim zero linkability or live confidential debit/exit.
 
 Epoch treasury, opaque slot, `SettlementDna`, payout, and refund instructions are separate TSN program capabilities; they must not be mixed into a description of the current TIN credit transaction unless that transaction invokes them.

@@ -35,7 +35,6 @@ pub struct TcapGpruMemoCreditedV1 {
     pub previous_root: [u8; 32],
     pub current_root: [u8; 32],
     pub settlement_sequence: u64,
-    pub balance_sequence: u64,
     pub token_id: u32,
     pub transition_digest: [u8; 32],
 }

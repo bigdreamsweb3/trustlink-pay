@@ -104,6 +104,7 @@
               "developers/payment-intent-lifecycle",
               "developers/funding-and-accepted-intent",
               "developers/confidential-settlement",
+              "developers/groth16-hidden-head",
               "developers/tcap-tip-credits",
               "developers/replay-and-retries"
             ]

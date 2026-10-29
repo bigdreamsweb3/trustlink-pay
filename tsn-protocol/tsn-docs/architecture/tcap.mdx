@@ -1,26 +1,26 @@
 ---
 title: "TCAP Reserves and Shared Settlement State"
 sidebarTitle: "TCAP"
-description: "How TCAP governs assets and reserves and advances the shared root used by the current TSN credit path."
+description: "How TCAP governs assets and reserves and atomically applies proof-backed shared-root transitions."
 ---
 
-TCAP (Transfer Confidential Asset Protocol) governs approved assets, reserves, and liability accounting. In the current TSN wallet-to-TIN credit caller, TCAP also advances one shared commitment root after TSN and GPRU validations succeed.
+TCAP (Transfer Confidential Asset Protocol) governs approved assets, reserves, and liability accounting. The TSN credit ABI carries a hidden-head proof to TCAP, which calls GPRU before atomically advancing one shared commitment root and reserve liabilities.
 
 ## Current TIN credit state
 
-The TSN instruction calls GPRU's DNA-key proof and encrypted-credit transition checks, then invokes TCAP `credit_gpru_memo_v1`. TCAP checks its canonical global commitment-root account, expected predecessor root and next global sequence, approved asset and policy, authorization signer, and validity window. It then updates that shared root atomically.
+The TSN instruction invokes TCAP `credit_gpru_memo_v1`. TCAP checks the canonical global root and next sequence, approved asset, authorization signer, validity window, pending liability, and reserve solvency, then invokes GPRU's hidden-head Groth16 verifier. A valid proof allows TCAP to update the shared root and liabilities atomically.
 
-This is protocol-wide replay sequencing. The root is not TIP-rooted, is not a per-TIN balance account, and does not establish that a supplied predecessor ciphertext is the latest ciphertext for its TIN. The active credit caller does not initialize or update `TCapTinTipV1`.
+The root is protocol-wide replay sequencing, not a per-TIN account. The proof is intended to establish that the hidden predecessor head is current and to advance it. This path does not initialize or update `TCapTinTipV1`.
 
-The encrypted balance record is carried in the transaction's Memo instruction and bound by commitment. TCAP does not persist the Memo or balance ciphertext in a per-TIN account. A wallet or application that reads a TIN's history must retrieve and reconstruct relevant transactions through RPC or an indexer; the current source does not provide an authenticated per-TIN latest-head lookup.
+The encrypted balance record is carried in the transaction Memo and bound by commitment. TCAP does not persist Memo history in a per-TIN account. A wallet or application reads history through RPC or an indexer.
 
 ## Funding-derived transition commitment
 
 TSN derives a transition nullifier from the signed reserve-funding transaction and binds it into the authorization digest passed to TCAP. TCAP includes that value in the global-root transition. It is not a separate spent-funding account, and the global root does not prove per-TIN ciphertext freshness.
 
-## Separate hidden-head source
+## Proof setup and runtime status
 
-GPRU and TCAP contain a Groth16 hidden-head verifier and a TCAP instruction that can invoke it before advancing the same shared root. The active Node, SDK, Cranker, and TSN credit caller do not invoke this path. The circuit does not prove balance arithmetic, debit affordability, exit destination binding, or reserve solvency. Its instruction ABI exposes action kind, token ID, and amount, and the common writable TCAP root remains visible in each transition.
+The TSN/TCAP source ABI carries the Groth16 proof and TCAP invokes GPRU. The circuit source includes balance arithmetic constraints, but no compiled circuit, setup keys, validated key converter, prover/witness service, initialized verifier, or end-to-end proof evidence is present. Node settlement authorization currently fails closed. The ABI exposes action kind, token ID, amount and other public inputs; the common writable TCAP root remains visible in each transition.
 
 ## Legacy TIN-tip source
 

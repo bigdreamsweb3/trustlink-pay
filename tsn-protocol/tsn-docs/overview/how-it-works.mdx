@@ -37,7 +37,7 @@ sequenceDiagram
 
 TCAP stores one shared global commitment root for this credit path, not a per-TIN latest-head account. The root transition prevents replay of the same global transition. The current caller still supplies GPRU's prior ciphertext; no persistent per-TIN head proves that it is the latest. The TIP registry is passed to GPRU during key proof verification, and the shared TCAP root is present in each credit transaction, so the current path is not unlinkable.
 
-The separate Groth16 hidden-head verifier and circuit source are not called by the current TSN, Node, SDK, or Cranker flow. The circuit does not verify encrypted balance arithmetic or debit affordability. Its TCAP instruction arguments expose action kind, token ID, and amount. Debit and exit are not enabled by this proof source.
+The TSN/TCAP credit ABI carries the Groth16 hidden-head proof, but Node currently fails closed because no prover or witness provider is configured. The circuit source includes balance arithmetic constraints, but has not been compiled or reviewed. Action kind, token ID, amount, and other proof inputs remain public; debit and exit are not established as enabled.
 
 ## Lifecycle evidence
 

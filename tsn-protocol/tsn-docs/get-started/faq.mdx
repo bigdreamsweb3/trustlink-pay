@@ -14,15 +14,15 @@ No. TIP is the Transfer Identity Protocol. A TIN is one 10-digit Transfer Identi
 
 ## What does the current GPRU credit verifier do?
 
-The current TSN credit instruction invokes GPRU to verify a DNA-key proof and an encrypted credit transition. GPRU checks an initial encrypted credit or later ElGamal addition against a supplied predecessor ciphertext. It does not persist a per-TIN latest head in this path.
+The current TSN credit ABI carries a hidden-head Groth16 proof through TCAP to GPRU. The circuit source represents route membership, latest-head advancement, a nullifier update, and balance transitions. Node currently fails closed because no prover/witness service or generated setup keys are configured.
 
 ## Does the current credit path store a TCAP TIP PDA?
 
-The current TSN credit instruction calls `credit_gpru_memo_v1` and advances one global TCAP commitment root. It does not initialize or update `TCapTinTipV1`. TCAP still contains older TIN-tip instructions in source; those are not proof of the active caller path.
+The current proof-shaped TSN credit instruction calls TCAP `credit_gpru_memo_v1`, which verifies the GPRU proof before advancing one global TCAP commitment root and reserve liabilities. It does not initialize or update `TCapTinTipV1`. TCAP still contains older TIN-tip instructions in source; they are not part of this proof path.
 
 ## What is the hidden-head proof?
 
-GPRU source includes a Groth16 verifier and Circom circuit for a hidden per-route head transition, and TCAP has a root-advance instruction that invokes it. Current Node, SDK, Cranker, and TSN credit callers do not use these instructions. The repo does not establish compiled circuit/setup artifacts, a prover, or end-to-end execution. The circuit does not prove balance arithmetic, debit affordability, or solvency.
+GPRU's Groth16 verifier checks a proof that the private route/asset head is current, updates it, binds a Memo, and inserts a nullifier. The circuit source includes balance-transition constraints. It has not been compiled or reviewed; the repository lacks generated keys, a prover, a witness source, an initialized verifier, and end-to-end execution evidence. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
 
 ## Is the hidden-head design unlinkable?
 
@@ -30,7 +30,7 @@ No. Each transition through that design writes the same public TCAP shared-root 
 
 ## Can a user debit or exit confidentially today?
 
-The current hidden-head proof source does not enable debit or exit. Those operations need proofs for balance sufficiency, exact encrypted subtraction, range, destination binding for exits, and reserve solvency, plus wired service callers and on-chain verification.
+The current source does not establish debit or exit as operational. Those actions need reviewed proof constraints, authorization, reserve/payout checks, a configured prover, and end-to-end on-chain verification.
 
 ## How do I know a payment settled?
 

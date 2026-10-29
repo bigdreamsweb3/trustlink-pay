@@ -116,6 +116,20 @@ tsn-protocol/programs/gpru/gpru-program-keys/
 **/*_keypair.json
 tsn-protocol/services/tsn-crosschain/.creds_example/contract_auth_keypair.json
 
+# Generated GPRU circuit and Groth16 setup artifacts. Keep local witness,
+# ceremony, and proving-key material out of the source repository.
+tsn-protocol/programs/gpru/build/
+tsn-protocol/programs/gpru/circuits/**/build/
+tsn-protocol/programs/gpru/**/*.r1cs
+tsn-protocol/programs/gpru/**/*.wasm
+tsn-protocol/programs/gpru/**/*.sym
+tsn-protocol/programs/gpru/**/*.wtns
+tsn-protocol/programs/gpru/**/*.ptau
+tsn-protocol/programs/gpru/**/*.zkey
+tsn-protocol/programs/gpru/**/verification_key*.json
+tsn-protocol/programs/gpru/**/proof*.json
+tsn-protocol/programs/gpru/**/witness*.json
+
 # Stable-TCAP Devnet faucet deployment keys (local secrets)
 tsn-protocol/programs/tcap-protocol/stable-tcap-program-keys/
 

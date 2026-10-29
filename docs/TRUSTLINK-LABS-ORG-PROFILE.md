@@ -71,7 +71,7 @@ The TIP registry can associate a TIN with identity metadata, owner authority, ro
 
 ### GPRU and TCAP — current behavior and target integration
 
-The current TSN credit source invokes the GPRU program to verify one-time DNA-key derivation and an encrypted-credit relation, then advances TCAP's shared commitment root. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. The separate hidden-head Groth16 path is not wired to current settlement callers, and confidential debit and exit are not established end to end.
+The TSN/TCAP credit ABI carries a GPRU hidden-head Groth16 proof and atomically advances TCAP's shared root and reserve liabilities after verification. Node currently fails closed because the circuit, trusted setup artifacts, witness source, and prover are not configured. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. Confidential debit and exit are not established end to end.
 
 ### TCAP — Transfer Confidential Asset Protocol
 

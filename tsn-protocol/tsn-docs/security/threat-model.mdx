@@ -1,7 +1,7 @@
 ---
 title: "TSN Threat Model: Current Credit Boundaries"
 sidebarTitle: "Threat Model"
-description: "Source-backed threat boundaries for the TSN TIN credit path and its separate hidden-head proof source."
+description: "Source-backed threat boundaries for proof-shaped TSN credit settlement and hidden-head proving."
 ---
 
 This page describes the current wallet-to-TIN credit source and separates implemented checks from security properties that remain unestablished. It does not treat source presence as deployment or end-to-end evidence.
@@ -24,7 +24,7 @@ The shared TCAP root and sequence reject reapplication of the same global predec
 
 ## Hidden-head source boundary
 
-GPRU and TCAP contain a separate Groth16 hidden-head verifier path. Current Node, SDK, Cranker, and active TSN credit callers do not invoke it. Its circuit source does not prove encrypted balance addition or subtraction, debit affordability, non-negative range, or reserve solvency. The instruction exposes action kind, token ID, and amount, and the path uses the same writable TCAP root for every update. It therefore does not provide zero linkability.
+The TSN/TCAP credit ABI carries a Groth16 hidden-head proof and TCAP invokes the GPRU verifier before mutation. Node currently fails closed because the circuit has not been compiled/reviewed and no proving keys, witness source, or prover service are configured. Circuit source includes balance arithmetic constraints, but they are not verified. The instruction exposes action kind, token ID, amount, nullifier and other public inputs; every update uses the same writable TCAP root, so the design does not provide zero linkability.
 
 ## Out of scope and evidence
 

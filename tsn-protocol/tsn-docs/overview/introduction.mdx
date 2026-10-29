@@ -12,9 +12,9 @@ TIP is the Transfer Identity Protocol; a TIN is one 10-digit Transfer Identity N
 
 ## What the current credit source does
 
-The current TSN credit instruction verifies a GPRU DNA-key proof, asks GPRU to validate an encrypted credit transition, and calls TCAP to advance a single shared commitment root. The encrypted Memo is transaction instruction data; TCAP does not store it as a per-TIN balance account. The current path has no persistent per-TIN latest-head state, so the shared root alone does not prove a caller supplied the latest ciphertext for that TIN.
+The checked-in TSN credit ABI passes a GPRU hidden-head Groth16 proof into TCAP. TCAP validates reserve and authorization conditions, invokes GPRU, then atomically advances one shared commitment root and reserve liabilities. The encrypted Memo remains transaction instruction data; the path does not create a per-TIN TCAP tip account.
 
-The source also contains a separate Groth16 hidden-head verifier in GPRU and a TCAP instruction that can invoke it and advance the shared root. Node, SDK, Cranker, and the active TSN credit caller do not use this path. Its circuit and proving workflow are not established as compiled, initialized, or end-to-end tested. It does not prove balance arithmetic or debit sufficiency. The shared TCAP root is a visible, common writable account; the design does not provide zero linkability.
+Node settlement authorization currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The circuit has eight public inputs and source constraints for balance transitions, but it has not been compiled or reviewed; trusted setup keys, a witness provider, prover service, initialized verifier, and end-to-end proof evidence are absent. The shared TCAP root is public and common to transitions; the design does not provide zero linkability. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head) for the artifact lifecycle.
 
 ## Deployment and action status
 
@@ -27,7 +27,7 @@ Program source, a successful build, a Devnet deployment, and a confirmed end-to-
     TIP manages transfer identities and routes; a TIN is one identity within TIP.
   </Card>
   <Card title="GPRU" icon="key" href="/layers/gpru">
-    GPRU verifies transaction-key and credit-transition relations. Its hidden-head proof path is not wired to current settlement callers.
+    GPRU verifies transaction-key proofs and is the on-chain verifier for the proof-shaped hidden-head credit ABI.
   </Card>
   <Card title="TSN" icon="diagram-project" href="/layers/tsn">
     TSN coordinates authorization, verification, leases, and exact transaction submission.

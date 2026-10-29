@@ -8,9 +8,9 @@ TSN is the Transfer Settlement Network. Its service layer coordinates signed int
 
 ## Wallet-to-TIN credit coordination
 
-The sender authorizes payment and reserve funding. Receiver accepts and stores the ingress. Node verifies the request and resolves the TIP route, then releases authorized work. Cranker submits the authorized transaction. In the current credit source, TSN verifies GPRU's DNA-key proof and invokes GPRU credit-transition validation followed by TCAP's shared-root credit transition.
+The sender authorizes payment and reserve funding. Receiver accepts and stores the ingress. Node verifies the request and resolves the TIP route, then releases authorized work. Cranker submits the authorized transaction. The current TSN credit ABI carries a GPRU hidden-head Groth16 proof into TCAP, where GPRU verifies it before TCAP advances its shared root and reserve liabilities atomically.
 
-This path advances a single shared TCAP root. It does not use the hidden-head Groth16 instruction currently present in GPRU and TCAP source, and it does not establish a persistent latest ciphertext for each TIN. See [GPRU and TCAP state](/architecture/gpru-confidential-balances).
+The proof path uses one shared TCAP root rather than a per-TIN TCAP account. Node currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so the service path cannot yet construct the proof required by this ABI. The circuit, setup artifacts, prover, and end-to-end settlement have not been verified. See [GPRU and TCAP state](/architecture/gpru-confidential-balances) and [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
 
 ## Other TSN instructions
 

@@ -18,6 +18,40 @@ const u32 = (value: number) => { const b = Buffer.alloc(4); b.writeUInt32LE(valu
 const u64 = (value: string | bigint) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(value)); return b; };
 const discriminator = (name: string) => digest(utf8ToBytes(`global:${name}`)).subarray(0, 8);
 
+export type GpruHiddenHeadProofV1 = {
+  publicInputs: readonly string[];
+  proofA: string;
+  proofB: string;
+  proofC: string;
+  actionKind: number;
+  tokenId: number;
+  amount: string | bigint;
+  authorizationCommitment: string;
+};
+
+function fixedHex(value: string, byteLength: number, label: string): Buffer {
+  if (!new RegExp(`^[0-9a-f]{${byteLength * 2}}$`, "i").test(value)) {
+    throw new Error(`${label} must be ${byteLength}-byte hex`);
+  }
+  return Buffer.from(value, "hex");
+}
+
+function serializeHiddenHeadProof(proof: GpruHiddenHeadProofV1): Buffer {
+  if (proof.publicInputs.length !== 8) throw new Error("GPRU hidden-head V1 requires exactly 8 public inputs");
+  if (![1, 2, 3].includes(proof.actionKind)) throw new Error("Unsupported GPRU hidden-head action kind");
+  const action = Buffer.from([proof.actionKind]);
+  return Buffer.concat([
+    ...proof.publicInputs.map((value, index) => fixedHex(value, 32, `proof.publicInputs[${index}]`)),
+    fixedHex(proof.proofA, 64, "proof.proofA"),
+    fixedHex(proof.proofB, 128, "proof.proofB"),
+    fixedHex(proof.proofC, 64, "proof.proofC"),
+    action,
+    u32(proof.tokenId),
+    u64(proof.amount),
+    fixedHex(proof.authorizationCommitment, 32, "proof.authorizationCommitment"),
+  ]);
+}
+
 /** Reads the canonical reserve and vault from TCAP's on-chain asset entry.
  * The reserve is never derived from an assetState PDA. */
 export async function resolveTcapGpruDepositAccounts(connection: Connection, fields: {
@@ -72,51 +106,20 @@ export { Transaction as TcapGpruTransaction };
 /** Mother-authorized memo credit, fenced by TCAP's shared settlement root. */
 export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: {
   authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey;
-  assetEntry: PublicKey; config: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint;
-  expiresAtSlot: string | bigint; previousCommitment: string; newCommitment: string;
-  sequence: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint;
-  tokenId: number; policyCommitment: string;
-  gpruScopeCommitment: string; memoCommitment: string; nullifier: string; tipRegistry: PublicKey;
-  dnaKeyCommitment: string; dna: string; ephemeralPublicKey: string; oneTimePublicKey: string;
-  derivationProof: { sharedPoint: string; generatorCommitment: string; scanCommitment: string; response: string };
-  amountBaseUnits: string | bigint;
-  previousBalanceCiphertext: string;
-  balanceCiphertext: string;
-  initialBalanceCiphertext: string;
-  initialBalanceProof: { generatorCommitment: string; keyCommitment: string; response: string };
+  assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey;
+  gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey;
+  authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint;
+  previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number;
+  amountBaseUnits: string | bigint; nullifier: string; proof: GpruHiddenHeadProofV1;
 }) {
   const auth = bytes32(fields.authorizationDigest, "authorizationDigest");
   const [signer] = PublicKey.findProgramAddressSync([Buffer.from("tsn:tcap-authorization:v1"), auth], TSN_ID);
   const data = Buffer.concat([
     discriminator("tsn_register_tcap_credit_authorization_v2"), auth,
     u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
-    bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"),
-    u64(fields.sequence), bytes32(fields.previousTcapRoot, "previousTcapRoot"), u64(fields.tcapRootSequence),
-    u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"),
-    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
-    bytes32(fields.memoCommitment, "memoCommitment"), bytes32(fields.nullifier, "nullifier"),
-    bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"), bytes32(fields.dna, "dna"),
-    bytes32(fields.ephemeralPublicKey, "ephemeralPublicKey"), bytes32(fields.oneTimePublicKey, "oneTimePublicKey"),
-    bytes32(fields.derivationProof.sharedPoint, "derivationProof.sharedPoint"),
-    bytes32(fields.derivationProof.generatorCommitment, "derivationProof.generatorCommitment"),
-    bytes32(fields.derivationProof.scanCommitment, "derivationProof.scanCommitment"),
-    bytes32(fields.derivationProof.response, "derivationProof.response"),
-    u64(fields.amountBaseUnits),
-    (() => {
-      if (!/^[0-9a-f]{128}$/i.test(fields.previousBalanceCiphertext)) throw new Error("previousBalanceCiphertext must be 64-byte hex");
-      return Buffer.from(fields.previousBalanceCiphertext, "hex");
-    })(),
-    (() => {
-      if (!/^[0-9a-f]{128}$/i.test(fields.balanceCiphertext)) throw new Error("balanceCiphertext must be 64-byte hex");
-      return Buffer.from(fields.balanceCiphertext, "hex");
-    })(),
-    (() => {
-      if (!/^[0-9a-f]{128}$/i.test(fields.initialBalanceCiphertext)) throw new Error("initialBalanceCiphertext must be 64-byte hex");
-      return Buffer.from(fields.initialBalanceCiphertext, "hex");
-    })(),
-    bytes32(fields.initialBalanceProof.generatorCommitment, "initialBalanceProof.generatorCommitment"),
-    bytes32(fields.initialBalanceProof.keyCommitment, "initialBalanceProof.keyCommitment"),
-    bytes32(fields.initialBalanceProof.response, "initialBalanceProof.response"),
+    bytes32(fields.previousTcapRoot, "previousTcapRoot"), u64(fields.tcapRootSequence),
+    u32(fields.tokenId), u64(fields.amountBaseUnits), bytes32(fields.nullifier, "nullifier"),
+    serializeHiddenHeadProof(fields.proof),
   ]);
   const tcapProgramId = fields.tcapProgramId ?? TCAP_ID;
   const [canonicalConfig] = PublicKey.findProgramAddressSync([Buffer.from("tcap:global-config:v1")], tcapProgramId);
@@ -129,11 +132,12 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: {
     { pubkey: fields.config, isSigner: false, isWritable: false },
     { pubkey: fields.assetEntry, isSigner: false, isWritable: false },
     { pubkey: fields.commitmentRoot, isSigner: false, isWritable: true },
+    { pubkey: fields.reserveState, isSigner: false, isWritable: true },
     { pubkey: signer, isSigner: false, isWritable: false },
-    { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
-    { pubkey: fields.tipRegistry, isSigner: false, isWritable: false },
-    { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
-    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: fields.tipRouteRoot, isSigner: false, isWritable: false },
+    { pubkey: fields.gpruVerifier, isSigner: false, isWritable: false },
+    { pubkey: fields.instructions ?? SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+    { pubkey: fields.gpruProgramId ?? GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
   ], data });
 }
 

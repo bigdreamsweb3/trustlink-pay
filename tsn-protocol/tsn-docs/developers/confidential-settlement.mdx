@@ -1,26 +1,26 @@
 ---
 title: "TSN Credit Settlement: Current Source Contract"
 sidebarTitle: "Credit Settlement"
-description: "Current TSN-to-GPRU-to-TCAP credit instruction sequence and the hidden-head integration boundary."
+description: "Proof-shaped TSN-to-GPRU-to-TCAP credit instruction sequence and prover readiness boundary."
 ---
 
 This page documents the current TSN credit CPI source. It is not a claim of current deployment or production readiness; verify the target cluster separately.
 
 ## Current instruction sequence
 
-The TSN instruction `register_tcap_credit_authorization_v2` validates the Mother authorization digest and signer, verifies the GPRU DNA-key proof against the TIP registry, invokes GPRU `apply_credit_transition_v1`, and invokes TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, validity slots, current shared-root value, and next global sequence before updating `TcapCommitmentRootStateV1`.
+The TSN instruction `register_tcap_credit_authorization_v2` validates the Mother authorization digest and signer and passes the hidden-head Groth16 proof to TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, validity slots, current shared-root value, next global sequence, pending liability, and reserve solvency, then invokes GPRU `verify_hidden_head_transition_v1`. If the proof is valid, TCAP advances the shared root and reserve liabilities atomically.
 
-The settlement transaction includes a Memo instruction whose bytes are committed by the GPRU transition. The Memo is transaction data. This TSN instruction does not initialize or write `TCapTinTipV1` and does not store a private balance snapshot in TCAP.
+The settlement transaction includes a Memo instruction whose bytes and successor balance point are bound by the GPRU proof. The Memo is transaction data. This TSN instruction does not initialize or write `TCapTinTipV1` and does not store a private balance snapshot in TCAP.
 
 ## Replay and latest-head boundary
 
-The TCAP root is a single global shared account. It rejects a replay that tries to apply the same prior root and sequence after the root advances. It is not a per-TIN current-head registry. GPRU validates the predecessor ciphertext supplied to the instruction but does not persist the per-TIN latest ciphertext in this path. Do not treat the global transition sequence as proof that a supplied per-TIN predecessor is current.
+The TCAP root is a single global shared account. The hidden-head proof binds an update to the prior authenticated root and inserts a nullifier as the root advances. The circuit witness is intended to prove that the selected private per-TIN head is current. It does not create a per-TIN TCAP account.
 
-The funding-derived commitment binds authorization to the source funding transaction. It is not a complete proof of per-TIN balance freshness, and this flow does not use a separate spent-funding PDA.
+The funding-derived commitment binds authorization to the source funding transaction. It is distinct from the hidden-head freshness proof and does not require a separate spent-funding PDA.
 
 ## Hidden-head instruction status
 
-GPRU and TCAP source include a Groth16 hidden-head verifier and TCAP root-advance instruction. Current Node, SDK, Cranker, and TSN credit callers do not submit it. The circuit does not prove balance arithmetic, affordability, or solvency; its instruction ABI exposes action kind, token ID, and amount. The circuit/prover/setup/runtime path remains unverified.
+The TSN and TCAP source ABI carries the proof and TCAP calls the GPRU verifier. The circuit source has eight public inputs and includes Pedersen balance transition constraints, but the circuit has not been compiled or reviewed. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; generated proving/verifying keys, the key conversion adapter, witness source, initialized verifier account, and end-to-end proof execution are not established. Debit and exit remain disabled until their complete paths are verified.
 
 ## Lifecycle evidence
 

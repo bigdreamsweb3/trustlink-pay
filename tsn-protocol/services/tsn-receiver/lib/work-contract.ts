@@ -200,16 +200,12 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
   const filtered = Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
   if (kind === "SETTLEMENT" && filtered.tcapCreditTransition && typeof filtered.tcapCreditTransition === "object") {
     const transition = filtered.tcapCreditTransition as Record<string, unknown>;
-    filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => new Set([
-      "tipRootCommitment", "previousCommitment", "newCommitment", "amountCommitment", "sequence", "tokenId",
-      "amountBaseUnits", "depositAmountBaseUnits", "mint", "policyCommitment", "gpruScopeCommitment", "nullifier", "validAfterSlot",
-      "expiresAtSlot", "authorizationDigest", "tip",
-      "tipRegistry", "dnaKeyCommitment", "gpruElgamalKeyCommitment", "dna", "ephemeralPublicKey", "oneTimePublicKey", "derivationProof",
-      "previousBalanceCiphertext", "balanceCiphertext", "initialBalanceCiphertext", "initialBalanceProof",
-      "recordEphemeralPublicKey", "memoPayload", "memoLedgerSlots", "memoDocument", "memoCommitment",
-      "initializeTip", "initialCommitment",
-      "depositAccounts", "assetEntry", "tcapConfig",
-    ]).has(key)));
+    const allowed = new Set([
+      "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountBaseUnits", "nullifier",
+      "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoLedgerSlots",
+      "memoDocument", "memoCommitment", "successorBalancePoint", "assetEntry", "tcapConfig", "reserveState",
+    ]);
+    filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => allowed.has(key)));
   }
   return filtered;
 }

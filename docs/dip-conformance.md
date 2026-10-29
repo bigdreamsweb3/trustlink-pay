@@ -2,6 +2,14 @@
 
 Checked against `docs/tsn_docs_dip_deposit_ingress_protocol.md` in the TrustLink Pay repo. Router: `TSNArcDepositRouter` on Arc Testnet.
 
+## Network constants note
+
+The reviewed `chain.ts` reference is intentionally configured for Arc Testnet (chain ID `5042002` and
+`explorer.testnet.arc.io`); `PROTOCOL.md` §6 lists Arc mainnet values (chain ID `5042` and
+`explorer.arc.io`). This is an environment difference, not an 18-decimal amount path. The reviewed helper
+is hard-coded to testnet, so a mainnet build must not reuse it unchanged. Network-configurable constants
+remain a separate mainnet-preparation change; `chain.ts` was not changed.
+
 ## Invariants
 
 | #   | DIP invariant                                                                      | Status   | Notes                                                                                                                                           |

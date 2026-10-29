@@ -1,33 +1,29 @@
 ---
-title: "TCAP Reserve and Confidential State Architecture"
+title: "TCAP Reserves and Shared Settlement State"
 sidebarTitle: "TCAP"
-description: "How TCAP manages approved assets and applies replay-protected credit state transitions."
+description: "How TCAP governs assets and reserves and advances the shared root used by the current TSN credit path."
 ---
 
-# TCAP reserve and confidential state
+TCAP (Transfer Confidential Asset Protocol) governs approved assets, reserves, and liability accounting. In the current TSN wallet-to-TIN credit caller, TCAP also advances one shared commitment root after TSN and GPRU validations succeed.
 
-TCAP (Transfer Confidential Asset Protocol) governs approved assets, reserve vaults, and protocol liability accounting. For a TIN credit, TSN authorizes a GPRU-scoped transition and TCAP applies the recipient's commitment update through one atomic instruction.
+## Current TIN credit state
 
-## Credit state transition
+The TSN instruction calls GPRU's DNA-key proof and encrypted-credit transition checks, then invokes TCAP `credit_gpru_memo_v1`. TCAP checks its canonical global commitment-root account, expected predecessor root and next global sequence, approved asset and policy, authorization signer, and validity window. It then updates that shared root atomically.
 
-The current TCAP credit instruction uses an existing TIP-rooted state account. It checks the authorized asset and policy, the validity window, the expected predecessor commitment, and the next sequence. On success, the instruction advances the successor commitment and sequence and records the transition nullifier in that same account update.
+This is protocol-wide replay sequencing. The root is not TIP-rooted, is not a per-TIN balance account, and does not establish that a supplied predecessor ciphertext is the latest ciphertext for its TIN. The active credit caller does not initialize or update `TCapTinTipV1`.
 
-The Node derives the transition nullifier from the exact signed reserve-funding transaction. TSN includes it in the authorization digest and forwards it to TCAP. This binds settlement authorization to funding. TCAP's predecessor and sequence checks make the same settlement transition inapplicable after the first successful state advance, without a separate spent-funding record or per-transaction PDA.
+The encrypted balance record is carried in the transaction's Memo instruction and bound by commitment. TCAP does not persist the Memo or balance ciphertext in a per-TIN account. A wallet or application that reads a TIN's history must retrieve and reconstruct relevant transactions through RPC or an indexer; the current source does not provide an authenticated per-TIN latest-head lookup.
 
-The nullifier field is the current ABI name for this transition value. It is not a nullifier PDA. The stable TIP-rooted state account holds the evolving commitment and sequence needed to validate the next transition.
+## Funding-derived transition commitment
 
-## Settlement roles
+TSN derives a transition nullifier from the signed reserve-funding transaction and binds it into the authorization digest passed to TCAP. TCAP includes that value in the global-root transition. It is not a separate spent-funding account, and the global root does not prove per-TIN ciphertext freshness.
 
-The sender authorizes payment details and signs reserve funding. The Receiver accepts the ingress payload and stores work. The Node verifies the signed authorization and funding, resolves the recipient's TIP route, and constructs the immutable TCAP transition. The Cranker submits the exact Node-authorized transaction; TCAP performs the final atomic state checks.
+## Separate hidden-head source
 
-Receiver acceptance, Node verification, Cranker submission, and TCAP confirmation are distinct lifecycle stages. A funding transaction can confirm while a later settlement remains pending or fails.
+GPRU and TCAP contain a Groth16 hidden-head verifier and a TCAP instruction that can invoke it before advancing the same shared root. The active Node, SDK, Cranker, and TSN credit caller do not invoke this path. The circuit does not prove balance arithmetic, debit affordability, exit destination binding, or reserve solvency. Its instruction ABI exposes action kind, token ID, and amount, and the common writable TCAP root remains visible in each transition.
 
-## Confidentiality boundary
+## Legacy TIN-tip source
 
-Credit state is represented by opaque commitments, sequence values, and a funding-derived transition value. These checks do not prove that an encrypted balance is sufficient for a debit. Confidential debit and exit require an audited proof verifier and remain unavailable wherever the on-chain program returns `ProofSystemNotEnabled`.
+TCAP retains `TCapTinTipV1` and older initialize, credit, debit, exit, and liability instructions in source. Those instruction families are separate from the current TSN credit call; do not infer current XP account requirements from them.
 
-Wallet funding and exit also expose the public wallet and token-transfer metadata required by those transactions. GPRU's one-time DNA key derivation reduces stable recipient-key reuse, but it does not conceal public funding metadata or independently prove balance correctness.
-
-## Replay and retries
-
-TCAP rejects a stale transition when its predecessor commitment or sequence no longer matches current state. If the state has advanced, a replacement authorization must be constructed from the current state and verified funding outcome. See [Replay Protection and Safe Retry Patterns](/developers/replay-and-retries) for retry behavior.
+See [GPRU and TCAP balances](/architecture/gpru-confidential-balances), [Replay protection](/security/replay-protection), and [Current technology](/about/current-technology).

@@ -1,12 +1,11 @@
 # TCAP (Transfer Confidential Asset Protocol) Devnet credit smoke test
 
-> **Legacy diagnostic notice:** this document describes the V1
-> `AcceptedIntent`/TCAP receipt smoke path. New transfers must not use it. The
-> repository's smoke command now fails closed unless
-> `TCAP_ALLOW_LEGACY_V1=1` is explicitly set, and no setting of that flag is a
-> proof of the current V2 architecture. V2 funding/settlement remains blocked
-> until the Node-proof bridge and TCAP settlement instruction are implemented
-> and deployed.
+> **Historical runbook — do not run as the current TIN credit flow.** The
+> commands and account requirements below describe an earlier per-TIN TCAP tip
+> plus owner-local snapshot experiment. The current TSN credit source uses
+> GPRU credit checks, a Memo instruction, and TCAP's shared commitment root;
+> it does not initialize `TCapTinTipV1` or write a balance snapshot. Use
+> [Current architecture](./CURRENT-ARCHITECTURE.md) for source-backed behavior.
 
 This smoke test uses the repository's existing Anchor/Solana wallet and
 cluster conventions. It does not select or create an RPC provider. The script

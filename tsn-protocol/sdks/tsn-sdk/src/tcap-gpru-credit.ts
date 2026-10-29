@@ -69,13 +69,14 @@ export function buildTcapGpruWalletDepositTransaction(fields: {
 
 export { Transaction as TcapGpruTransaction };
 
-/** Exact Mother-authorized TSN CPI wrapper for TCAP credit_tcap_tin_tip_v2. */
+/** Mother-authorized memo credit, fenced by TCAP's shared settlement root. */
 export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: {
-  authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; tipRootCommitment: string; tip: PublicKey;
+  authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey;
   assetEntry: PublicKey; config: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint;
   expiresAtSlot: string | bigint; previousCommitment: string; newCommitment: string;
-  sequence: string | bigint; tokenId: number; policyCommitment: string;
-  gpruScopeCommitment: string; nullifier: string; tipRegistry: PublicKey;
+  sequence: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint;
+  tokenId: number; policyCommitment: string;
+  gpruScopeCommitment: string; memoCommitment: string; nullifier: string; tipRegistry: PublicKey;
   dnaKeyCommitment: string; dna: string; ephemeralPublicKey: string; oneTimePublicKey: string;
   derivationProof: { sharedPoint: string; generatorCommitment: string; scanCommitment: string; response: string };
   amountBaseUnits: string | bigint;
@@ -90,8 +91,10 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: {
     discriminator("tsn_register_tcap_credit_authorization_v2"), auth,
     u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
     bytes32(fields.previousCommitment, "previousCommitment"), bytes32(fields.newCommitment, "newCommitment"),
-    u64(fields.sequence), u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"),
-    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"), bytes32(fields.nullifier, "nullifier"),
+    u64(fields.sequence), bytes32(fields.previousTcapRoot, "previousTcapRoot"), u64(fields.tcapRootSequence),
+    u32(fields.tokenId), bytes32(fields.policyCommitment, "policyCommitment"),
+    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
+    bytes32(fields.memoCommitment, "memoCommitment"), bytes32(fields.nullifier, "nullifier"),
     bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"), bytes32(fields.dna, "dna"),
     bytes32(fields.ephemeralPublicKey, "ephemeralPublicKey"), bytes32(fields.oneTimePublicKey, "oneTimePublicKey"),
     bytes32(fields.derivationProof.sharedPoint, "derivationProof.sharedPoint"),
@@ -125,8 +128,7 @@ export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: {
     { pubkey: TSN_ID, isSigner: false, isWritable: false },
     { pubkey: fields.config, isSigner: false, isWritable: false },
     { pubkey: fields.assetEntry, isSigner: false, isWritable: false },
-    { pubkey: new PublicKey(bytes32(fields.tipRootCommitment, "tipRootCommitment")), isSigner: false, isWritable: false },
-    { pubkey: fields.tip, isSigner: false, isWritable: true },
+    { pubkey: fields.commitmentRoot, isSigner: false, isWritable: true },
     { pubkey: signer, isSigner: false, isWritable: false },
     { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: fields.tipRegistry, isSigner: false, isWritable: false },

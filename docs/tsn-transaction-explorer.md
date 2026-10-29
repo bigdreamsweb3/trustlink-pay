@@ -1,4 +1,6 @@
-# TSN transaction explorer privacy model
+# Historical epoch-settlement transaction explorer notes
+
+> This page describes epoch treasury, opaque-slot payout, and refund transactions. It does not describe the current wallet-to-TIN credit transaction, which calls GPRU and advances the shared TCAP commitment root with a Memo commitment. See [Current architecture](./CURRENT-ARCHITECTURE.md).
 
 Funding transactions contain only the sender, mint, amount, current epoch treasury, and aggregate ledger update. The first public appearance of a payment-specific value is the opaque keyed slot in a settlement or refund transaction.
 

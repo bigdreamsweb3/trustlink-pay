@@ -20,6 +20,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: CreateTinV
     let accounts_iter = &mut accounts.iter();
     let payer = next_account_info(accounts_iter)?;
     let global_state = next_account_info(accounts_iter)?;
+    let route_root = next_account_info(accounts_iter)?;
     let registry = next_account_info(accounts_iter)?;
     let owner_recovery = next_account_info(accounts_iter)?;
     let instructions_sysvar = next_account_info(accounts_iter)?;
@@ -28,13 +29,14 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: CreateTinV
     if !payer.is_signer || *instructions_sysvar.key != INSTRUCTIONS_ID {
         return Err(ProgramError::MissingRequiredSignature);
     }
-    apply(program_id, payer, global_state, registry, owner_recovery, instructions_sysvar, system_program, params)
+    apply(program_id, payer, global_state, route_root, registry, owner_recovery, instructions_sysvar, system_program, params)
 }
 
 pub fn apply<'a>(
     program_id: &Pubkey,
     payer: &AccountInfo<'a>,
     global_state: &AccountInfo<'a>,
+    route_root: &AccountInfo<'a>,
     registry: &AccountInfo<'a>,
     owner_recovery: &AccountInfo<'a>,
     instructions_sysvar: &AccountInfo<'a>,
@@ -83,7 +85,6 @@ pub fn apply<'a>(
     }
 
     let mut global: GlobalState = load_borsh(global_state)?;
-    global.next_sequence = global.next_sequence.checked_add(1).ok_or(Error::Overflow)?;
     let account = TinV1Account {
         version: TinV1Account::VERSION,
         bump,
@@ -131,6 +132,17 @@ pub fn apply<'a>(
         &recovery_seeds,
     )?;
     store_borsh(owner_recovery, &recovery)?;
+    let route_leaf_index = crate::route_root::append_route(
+        route_root,
+        payer,
+        system_program,
+        program_id,
+        &params.lookup_commitment,
+        &params.gpru_elgamal_key_commitment,
+        &params.policy_commitment,
+    )?;
+    solana_program::msg!("TIP V1 route appended to shared membership root at index={}", route_leaf_index);
+    global.next_sequence = global.next_sequence.checked_add(1).ok_or(Error::Overflow)?;
     store_borsh(global_state, &global)
 }
 

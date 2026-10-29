@@ -108,6 +108,7 @@ pub fn create_tin_v1(
     program_id: Pubkey,
     payer: Pubkey,
     global_state: Pubkey,
+    route_root: Pubkey,
     registry: Pubkey,
     owner_recovery: Pubkey,
     instructions_sysvar: Pubkey,
@@ -118,6 +119,7 @@ pub fn create_tin_v1(
         accounts: vec![
             AccountMeta::new(payer, true),
             AccountMeta::new(global_state, false),
+            AccountMeta::new(route_root, false),
             AccountMeta::new(registry, false),
             AccountMeta::new(owner_recovery, false),
             AccountMeta::new_readonly(instructions_sysvar, false),
@@ -161,6 +163,7 @@ pub fn finalize_tin_v1_creation(
     program_id: Pubkey,
     payer: Pubkey,
     global_state: Pubkey,
+    route_root: Pubkey,
     registry: Pubkey,
     owner_recovery: Pubkey,
     instructions_sysvar: Pubkey,
@@ -172,6 +175,7 @@ pub fn finalize_tin_v1_creation(
         accounts: vec![
             AccountMeta::new(payer, true),
             AccountMeta::new(global_state, false),
+            AccountMeta::new(route_root, false),
             AccountMeta::new(registry, false),
             AccountMeta::new(owner_recovery, false),
             AccountMeta::new_readonly(instructions_sysvar, false),

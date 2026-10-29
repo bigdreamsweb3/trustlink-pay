@@ -1,54 +1,29 @@
-# TCAP confidential debit and credit target
+# TCAP balance transitions and GPRU proof boundary
 
-This document describes the target integration of GPRU transaction DNA with TCAP reserve accounting. It is a design specification, not a statement that the described flow is deployed. The TCAP program instructions and account layouts remain the implementation source of truth.
+This document distinguishes source that exists from the intended confidential-balance security contract. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. The checked-in hidden-head proof source is not yet a complete or wired balance-proof system.
 
-## Responsibilities
+## Current source behavior
 
-- **TIP** resolves a TIN and provides the associated versioned GPRU scan public key and route policy commitments.
-- **GPRU** creates unique per-transaction DNA outputs, verifies encrypted-state transitions and replay protection, and supplies a validated transition to TCAP.
-- **TCAP** owns governed assets, reserve accounting, and confidential liabilities. It updates those liabilities only after GPRU validates the corresponding transition.
-- **TSN Node** resolves and validates recipient routing, constructs the transition, and authorizes immutable settlement work.
-- **Receiver** accepts and stores ingress. **Cranker** submits the exact Node-authorized transaction; it does not resolve recipient secrets or change the transition.
+The TSN credit instruction currently invokes GPRU's `apply_credit_transition_v1`, then TCAP's `credit_gpru_memo_v1`. GPRU validates an initial ciphertext against a proof of the funded amount, or validates later ElGamal ciphertext addition against the caller-provided predecessor ciphertext and sequence. TCAP validates the shared root, global root sequence, approved asset, policy, authorization signer, and validity window before advancing that root. The transaction binds the Memo instruction data to the GPRU credit transition.
 
-## Credit path
+The TCAP shared root prevents the same exact root transition from being applied twice. It is global shared state, not a per-TIN balance head. GPRU does not persist an authoritative per-TIN predecessor in this path, so this check alone does not prove that a caller supplied the latest state for that TIN. The Memo is transaction data available through Solana transaction history; the current source does not make TCAP store a balance ciphertext or the full Memo history in an account.
 
-For wallet-to-TIN credit, the sender signs payment details and a wallet reserve-deposit transaction. The SDK does not fetch the recipient's TIP route or construct a recipient transition. Receiver accepts the signed ingress; Node resolves the TIN from TIP, validates the route and asset, and derives a unique GPRU DNA with a one-time ElGamal public key. Node releases settlement work only after constructing and validating the complete transition.
+## Hidden-head source path
 
-Cranker submits that work unchanged. GPRU must verify that the key derivation is valid for the registered scan key and DNA, validate the encrypted-state successor proof, and enforce replay protection. In the same atomic transaction, TCAP applies the corresponding governed-asset liability update. A failed GPRU proof or TCAP invariant must roll back the whole settlement.
+GPRU contains a Groth16 verifier entrypoint and Circom source for a hidden route/asset head update with sequence advancement and nullifier non-membership. TCAP contains `advance_gpru_hidden_head_v1`, which calls that verifier and updates its shared commitment root. This path is not called by the active TSN settlement instruction, Node, SDK, or Cranker.
 
-## Debit path
+The current circuit source does not prove encrypted-balance addition or subtraction, debit affordability, non-negative range, or reserve conservation. The TCAP instruction ABI also includes public `action_kind`, `token_id`, and `amount` fields. Do not claim those values are hidden. Circuit compilation, setup artifacts, proof generation, integration testing, and Devnet execution are not established by source presence.
 
-A TIN debit requires an owner-authorized request and a proof that:
+## Required balance-proof contract
 
-1. the prior encrypted state is valid and associated with the consumed state;
-2. the debit amount is no greater than the prior balance;
-3. the successor ciphertext represents the exact subtraction and remains in the allowed range;
-4. the asset, policy, DNA, expiry, and one-time nullifier match the authorization;
-5. the nullifier has not been used before.
+For a credit, a future integration must prove that the successor encrypted balance is the exact addition of the confirmed deposit to the authenticated predecessor. For a debit, it must prove that the prior balance covers the amount, the successor is the exact subtraction, and the result is in range. For an exit, TCAP must bind the proved debit to the public destination and enforce reserve solvency. A TIN-to-TIN transfer must prove source/destination conservation for the same asset.
 
-The owner SDK may check a locally decrypted balance for user feedback. TCAP must rely on GPRU's verifiable proof and state transition, not that local check. The proof format and its verifier remain to be implemented and audited.
+TCAP must perform its reserve-liability and replay-state updates atomically with the verified proof result. Client-side decryption or arithmetic may improve user feedback but cannot substitute for on-chain validation. A Memo commitment only binds bytes; it is not itself a proof that the encrypted bytes represent a valid balance transition.
 
-## Encrypted addition and subtraction
+## Privacy boundary
 
-The balance-state objective is to let the protocol apply credits and debits to encrypted state without decrypting the balance. Homomorphic arithmetic can support addition and subtraction over ciphertexts, but encrypted arithmetic alone does not prove that a debit is affordable. GPRU must verify a proof that binds the prior ciphertext, transaction amount, and successor ciphertext, including a non-negative range check. The concrete encryption scheme, proof construction, and account ABI are not finalized in the current program source.
-
-## TIN-to-TIN transfer
-
-A transfer must prove that the source debit and destination credit conserve value without exposing the amount or giving both outputs a shared public transfer address. Each side receives transaction-specific DNA. A proof must bind both encrypted successors to the same hidden amount and governed asset. TCAP's reserve liability changes must be consistent with the internal transfer and cannot create or destroy liabilities.
-
-## Wallet boundaries and asset accounting
-
-Wallet deposits and exits remain publicly visible at their wallet boundary. TCAP tracks actual assets held in the governed vault separately from confidential liabilities owed to TIN holders. A public deposit can increase assets and a validated private credit can increase liabilities; a validated debit or exit must preserve solvency. Exact fee charging, rate conversion, and account structures must follow the eventual audited TCAP ABI rather than assumptions in this design note.
-
-## Privacy and authorization constraints
-
-- Do not publish a stable TIP route address as every transfer's destination; use unique GPRU DNA outputs.
-- Do not send owner private keys or plaintext balances to Receiver, Node, or Cranker.
-- Do not treat a GPRU public-key commitment, hash, signature, or ciphertext shape as proof of a valid balance transition.
-- Do not let Cranker modify the Node-authorized asset, amount binding, DNA, proof, policy, sequence, or nullifier.
-- Do not report Receiver acceptance as Node verification or chain settlement. These are separate lifecycle events.
-- Public wallet deposits and exits reveal their wallet-level transaction data; DNA does not hide those boundaries.
+The hidden-head design avoids a public per-TIN head account, but uses a single writable TCAP root account. That account appears in each transition using this path, and its sequence and root changes expose global ordering. The zero-linkability goal is therefore not achieved by the current shared-root design. Public funding, exits, timestamps, fee payer, and transaction instruction data remain visible according to their on-chain representation.
 
 ## Status
 
-The GPRU source currently contains the one-time ElGamal derivation primitive, but the deployable program, encrypted balance proof system, replay-safe state transition, and atomic TCAP handoff are not connected to the current chain path. Existing debit and exit paths remain disabled. Current program source and deployed account layouts define executable behavior; this document describes the target asset-accounting contract.
+The source has a legacy TIN-tip family of TCAP account/instruction definitions, a wired TSN credit path using a shared root and Memo commitment, and a separate hidden-head verifier path that is not wired to runtime callers. Do not use historical per-tip smoke scripts as evidence that the hidden-head path or confidential debit/exit works. See [Current architecture](./CURRENT-ARCHITECTURE.md) and [GPRU hidden-head status](./gpru-tcap-route.md).

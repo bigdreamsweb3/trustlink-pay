@@ -1,105 +1,29 @@
 ---
-title: "TSN Confidential Settlement via TCAP Credit Path"
-sidebarTitle: "Confidential Settlement"
-description: "Understand the live TSN to TCAP credit path, the ConfidentialSettlement ABI fields, and how the TSN CPI wrapper ensures authorized commitment transitions."
+title: "TSN Credit Settlement: Current Source Contract"
+sidebarTitle: "Credit Settlement"
+description: "Current TSN-to-GPRU-to-TCAP credit instruction sequence and the hidden-head integration boundary."
 ---
 
-This page describes the live settlement path from TSN to TCAP. The current implementation is credit-only: TCAP advances the tip commitment after verifying a TSN ConfidentialSettlement authorization receipt. Confidential debits and exits are not live and remain proof-gated. The CrankerVault payout path is historical TSN architecture and is not part of the live TCAP credit flow.
+This page documents the current TSN credit CPI source. It is not a claim of current deployment or production readiness; verify the target cluster separately.
 
-## Credit-only path overview
+## Current instruction sequence
 
-After funding is confirmed, the Node constructs the TCAP credit authorization. The TSN authorization signer marks the transition as `ConfidentialSettlement`. The transaction sequence is:
+The TSN instruction `register_tcap_credit_authorization_v2` validates the Mother authorization digest and signer, verifies the GPRU DNA-key proof against the TIP registry, invokes GPRU `apply_credit_transition_v1`, and invokes TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, validity slots, current shared-root value, and next global sequence before updating `TcapCommitmentRootStateV1`.
 
-```text
-TSN funding confirmed
-  -> Node/Mother signs TCAP credit authorization
-  -> register_tsn_authorization_v1 creates the TCAP receipt
-  -> credit_tcap_tin_tip_v1 verifies and consumes receipt + nullifier
-  -> owner-authorized Node/Mother stores encrypted snapshot by new_commitment
-  -> private reader fetches tip, decrypts locally, verifies hash/sequence
-```
+The settlement transaction includes a Memo instruction whose bytes are committed by the GPRU transition. The Memo is transaction data. This TSN instruction does not initialize or write `TCapTinTipV1` and does not store a private balance snapshot in TCAP.
 
-TCAP owns the tip and credit transition. TSN remains responsible for epoch treasury, lease, and settlement coordination.
+## Replay and latest-head boundary
 
-## ConfidentialSettlement ABI
+The TCAP root is a single global shared account. It rejects a replay that tries to apply the same prior root and sequence after the root advances. It is not a per-TIN current-head registry. GPRU validates the predecessor ciphertext supplied to the instruction but does not persist the per-TIN latest ciphertext in this path. Do not treat the global transition sequence as proof that a supplied per-TIN predecessor is current.
 
-TSN and TCAP share one authorization contract. The required fields are:
+The funding-derived commitment binds authorization to the source funding transaction. It is not a complete proof of per-TIN balance freshness, and this flow does not use a separate spent-funding PDA.
 
-```json title="ConfidentialSettlement required fields"
-{
-  "epoch_id": "string",
-  "intent_commitment": "string",
-  "amount": "string",
-  "settlement_commitment": "string",
-  "accepted_intent_root": "string",
-  "previous_tcap_root": "string",
-  "transition_type": "ConfidentialSettlement",
-  "asset_commitment": "string",
-  "authorization_digest": "string",
-  "verifier_domain_version": "string",
-  "valid_after_slot": "number",
-  "expires_at_slot": "number",
-  "replay_nonce": "string",
-  "tin_tip": "string",
-  "previous_commitment": "string",
-  "new_commitment": "string",
-  "sequence": "number",
-  "token_id": "string",
-  "policy_commitment": "string",
-  "gpru_scope_commitment": "string",
-  "nullifier": "string"
-}
-```
+## Hidden-head instruction status
 
-## TcapCreditAuthorizationV1 handoff
+GPRU and TCAP source include a Groth16 hidden-head verifier and TCAP root-advance instruction. Current Node, SDK, Cranker, and TSN credit callers do not submit it. The circuit does not prove balance arithmetic, affordability, or solvency; its instruction ABI exposes action kind, token ID, and amount. The circuit/prover/setup/runtime path remains unverified.
 
-The Node constructs the additive handoff with exactly these fields:
+## Lifecycle evidence
 
-```text
-tip,
-previous_commitment,
-new_commitment,
-sequence,
-token_id,
-policy_commitment,
-gpru_scope_commitment,
-nullifier,
-valid_after_slot,
-expires_at_slot,
-tsn_settlement_commitment,
-epoch_id
-```
+Receiver acceptance, Node verification, Cranker submission, reserve-funding confirmation, and TCAP transition confirmation are distinct events. A confirmed reserve deposit does not prove the later credit transition completed. Use the on-chain signature and account state to establish settlement.
 
-This handoff never enters CrankerVault payout logic. It contains no token account, escrow account, public amount, debit, or exit instruction.
-
-## TSN CPI wrapper
-
-The TSN CPI wrapper creates the `AcceptedIntentV1` PDA, derives the root from a canonical field sequence, checks every bound field, and consumes the intent after the TCAP CPI succeeds. TCAP stores the same fields in its receipt and requires a `ConfidentialSettlement` transition before credit can consume it.
-
-A caller cannot supply an unrelated root or use a GPRU signature alone. The authorization is Mother-rooted and checked on chain.
-
-## Snapshot binding
-
-After `credit_tcap_tin_tip_v1` succeeds, the owner-authorized Node/Mother path stores an encrypted snapshot envelope under the opaque `new_commitment`. The private reader fetches the public tip, loads that envelope, decrypts locally, verifies the envelope bindings and commitment hash, and only then returns balances.
-
-The commitment binding is deliberately one-way:
-
-```text
-tip.current_commitment == snapshot.new_commitment
-snapshot.new_commitment = SHA256(canonical snapshot record excluding new_commitment)
-tip.sequence == snapshot.sequence
-```
-
-## What is visible and what is private
-
-The chain stores program accounts, commitments, sequence values, token IDs, policy commitments, scoped authorization commitments, nullifiers, and validity windows needed for enforcement. It does not store plaintext receiving roots, private balance values, master seeds, or snapshot plaintext.
-
-<Warning>
-  Earlier drafts incorrectly referenced `TSN_PRIVATE_SLOT_SETTLEMENT_V1` as a template name. The correct authorization is a `ConfidentialSettlement` receipt with the fields listed above. Do not use the retired template name in any integration.
-</Warning>
-
-## Related pages
-
-- [TCAP Architecture](/architecture/tcap) for the private balance layer
-- [Mother Authority](/architecture/mother-authority) for the settlement authorization boundary
-- [TCAP Credits](/developers/tcap-tip-credits) for the tip PDA and credit mechanics
+See [GPRU and TCAP state](/architecture/gpru-confidential-balances) and [Replay Protection](/security/replay-protection).

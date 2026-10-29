@@ -11,6 +11,14 @@
 | `tsn-protocol/services/tsn-node/`                   | TSN Node implementation and intent/claim coordination        |
 | `tsn-protocol/services/tsn-cranker-op-daemon/`      | Cranker operator and fee-paying submission                   |
 | `tsn-protocol/programs/tsn/protocol/`               | Solana TSN Program and on-chain tests                        |
+| `tsn-protocol/programs/gpru/`                       | GPRU key-proof and encrypted-transition program              |
+| `tsn-protocol/programs/tcap-protocol/`              | TCAP asset, reserve, and shared-root instructions             |
+
+The current wallet-to-TIN credit flow is the GPRU-checked Memo transition
+followed by TCAP's shared commitment-root update. Epoch-treasury opaque-slot
+and `AcceptedIntent` instructions are a separate program capability. Legacy
+TCAP per-TIN TIP instructions are not account requirements of the active
+credit caller.
 
 ## Local development
 
@@ -42,28 +50,30 @@ proven by simulation/submission logs, signatures, and fetched account state.
 
 ## Test layers
 
-- **SDK:** canonical serialization, source selection, adaptive tranche,
-  bigint/base-unit accounting, commitment, fee, change, local decryption, and
-  scoped signing.
-- **Frontend:** route review, wallet/device approval, no-secret persistence,
-  status polling, cancellation, and evidence display.
-- **TSN Node:** signature verification, immutable plans, reservation
-  concurrency, replay, expiry, and settlement work.
-- **Cranker:** public-plan-only operation, deterministic batches, retries,
-  fee payment, and no-user-key tests.
-- **Rust/Anchor:** Ed25519 parsing, delegate/allowance checks, PDA authority,
-  opaque slot transitions, replay, and state-version rejection.
-- **Integration:** four routes, receiving accumulation, adaptive spending,
-  change routing, wallet top-up, tampering, stale state, wrong signer, wrong
-  delegate, expiry, and recovery.
+- **SDK and frontend:** TIN resolution from TIP, wallet authorization, funding
+  submission, intent status, and privacy-safe activity reporting.
+- **Receiver and Node:** authenticated intent acceptance, signature and
+  transaction verification, settlement-work creation, lease/status changes,
+  and retry behavior.
+- **Cranker:** exact authorized funding and settlement submission, TCAP/GPRU
+  instruction construction, signature reporting, and safe failure handling.
+- **Rust/Anchor:** GPRU DNA-key and encrypted-credit relation checks; TCAP
+  approved-asset, authorization, shared-root predecessor, sequence, and
+  atomic-update checks. Test epoch-slot instructions separately from the
+  wallet-to-TIN credit path.
+- **Integration:** successful funding and settlement, duplicate/stale global
+  root rejection, expired or malformed authorization, wrong route/key proof,
+  failed settlement recovery, and confirmation evidence. Do not treat a
+  supplied ciphertext as current per-TIN state: the active path has no
+  authenticated per-TIN latest-head check.
 
 ## Evidence requirements
 
-Record cluster, program IDs, plan commitment, transaction signatures, slots,
-logs, fees, escrow balances, source/recipient balances, Payment PDA state,
-delegate state, nonce, and replay state. Label simulation as simulation; only a
-confirmed signature and fetched account state qualify as confirmed Devnet
-evidence.
+Record cluster, program IDs, work and lease identifiers, commitments,
+transaction signatures, slots, sanitized logs, fees, and the relevant fetched
+program/account state. Label simulation as simulation; only a confirmed
+signature and fetched account state qualify as confirmed Devnet evidence. Do
+not infer a private balance from the Memo commitment or global root.
 
 ## Deployment and rollback
 
@@ -75,12 +85,13 @@ preserving evidence; never reset Git history to hide a failed run.
 
 ## Troubleshooting
 
-- **No route:** inspect TIN resolution, active receiving state, and device
-  authorization; do not make the node derive a route.
-- **Plan rejected:** compare canonical serialization and every bound field.
-- **No claim:** inspect node reservation and Cranker health; do not replan in
-  the Cranker.
-- **Escrow failure:** inspect PDA seeds, delegate allowance, Payment PDA state,
-  nonce, and replay state.
+- **No route:** inspect TIP resolution and the Node's route-verification result.
+- **Funding rejected:** inspect the sender-signed transaction's blockhash,
+  cluster, signature, and funding verification result; a Cranker cannot refresh
+  an already signed transaction's blockhash.
+- **Settlement not executed:** inspect Receiver work status, Node verification,
+  Cranker lease/report, and the TCAP/GPRU simulation or confirmed signature.
+- **Stale transition:** inspect the shared TCAP root and sequence. This check
+  is global and does not establish per-TIN ciphertext freshness.
 - **Cluster mismatch:** rebuild and re-authorize the plan for the selected
   cluster.

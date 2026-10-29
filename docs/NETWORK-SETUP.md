@@ -22,10 +22,11 @@ npm run network:status
 3. Confirm the live governance and registry authorities; do not assume a local key is authorized.
 4. Register a mint with `network:init-asset`. The command validates the mint owner, requires six decimals for the Devnet USDC example, and runs the governance lifecycle only after simulation succeeds.
 5. Write checked-in, non-secret account defaults with `npm run network:set-defaults -- --mint=<mint>`.
-6. Do not run the legacy credit bootstrap for a new transfer. The V2 credit
-   source is not yet deployable as an end-to-end TSN funding/settlement flow;
-   use the build/deploy gates in [Devnet build and deploy](./DEVNET-BUILD-DEPLOY.md)
-   and wait for the V2 Node-proof bridge before submitting a transaction.
+6. Do not run the legacy per-TIN tip/snapshot credit bootstrap for a new
+   transfer. Follow the current Node/SDK/Cranker contract in
+   [Current architecture](./CURRENT-ARCHITECTURE.md), verify the deployed
+   program versions, and confirm each settlement on chain. The hidden-head
+   proof path is not the active Node/SDK/Cranker settlement path.
 
 ## Register a new mint
 

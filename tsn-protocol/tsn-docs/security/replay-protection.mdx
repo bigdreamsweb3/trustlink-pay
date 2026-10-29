@@ -1,33 +1,25 @@
 ---
-title: "TSN Replay Protection"
+title: "Replay Protection in the Current TCAP Credit Path"
 sidebarTitle: "Replay Protection"
-description: "How atomic TCAP predecessor and sequence checks reject replay of a credit settlement."
+description: "How the wired credit transition uses a global TCAP root, and why it is not a per-TIN latest-head proof."
 ---
 
 # Replay protection
 
-For a TCAP credit, the Node derives a funding commitment from the signed reserve-deposit transaction. TSN binds that value into the authorization digest and forwards it to TCAP as the transition nullifier. TCAP does not allocate a nullifier PDA or a separate spent-funding account for this flow.
+The current TSN credit instruction calls TCAP `credit_gpru_memo_v1`. TCAP requires the supplied previous global root to match `TcapCommitmentRootStateV1.current_root` and the supplied root sequence to equal the stored sequence plus one. A successful transition updates the root and sequence in the same instruction. Resubmitting the same transition with its stale root and sequence fails.
 
-The decisive replay check is TCAP's atomic state transition. Each credit must use the current predecessor commitment and exactly the next sequence. A successful instruction advances both values and records the transition nullifier in the same TIP-rooted state account. Replaying that settlement then presents a stale predecessor and sequence and cannot apply again.
+The Node also derives a funding-bound commitment and TSN includes it in the authorization. This binds the settlement authorization to the signed deposit. It is not a separate spent-funding registry.
 
-## Credit authorization checks
+## Per-TIN latest state is not established by that root
 
-TCAP also checks the transition's authorization digest, policy, approved asset, GPRU scope, validity window, and nullifier. TSN derives the authorization signer from the digest and invokes TCAP through CPI. GPRU validates the transaction-specific DNA key proof before TSN authorizes the TCAP transition. The Node verifies the signed funding transaction off-chain, and the Mother Node signs the exact settlement message submitted by the Cranker.
+The root is one shared TCAP account, not an authenticated per-TIN balance head. GPRU validates the predecessor ciphertext supplied with the current credit instruction but does not persist an authoritative per-TIN latest ciphertext in that path. A fresh global root and authorization therefore do not by themselves prove that a caller selected the latest predecessor for a particular TIN.
 
-The nullifier is a field in the transition ABI, not an account address. In this credit path it carries the funding-derived commitment; TCAP stores only the latest applied nullifier alongside the current commitment and sequence.
+## Hidden-head verifier source
 
-## Other replay-protected flows
-
-TSN's epoch settlement and refund paths use their own claim-slot state to make the first valid settlement or refund exclusive. Those accounts are distinct from the TCAP credit replay mechanism and should not be described as a per-credit nullifier registry.
+GPRU and TCAP source contain a separate hidden-head Groth16 verifier and root-advance instruction. The active TSN/Node/SDK/Cranker flow does not call them. The circuit/proving workflow has not been demonstrated end to end, and its public instruction ABI exposes action kind, token ID, and amount. All transitions would still touch the same shared TCAP root, which exposes global ordering and protocol-level linkage.
 
 ## Safe retry behavior
 
-If submission fails before confirmation, the Cranker may retry the same authorized settlement while the validity window remains open and the predecessor and sequence still match. If a submission confirmed but the response was lost, inspect its signature and current TCAP state; another submission cannot reapply the same transition after the state advances.
+If a transaction has not confirmed, check its signature and the current global TCAP root before retrying. If it confirmed but the response was lost, do not assume failure from a client timeout. Check the transaction and account state first. A replacement authorization must be based on verified funding and current program state; do not fabricate a new predecessor or replay nonce.
 
-When the authorization expires, the Node must check the confirmed funding result and current TCAP state before constructing a replacement authorization. The replacement remains bound to the original funding transaction and current predecessor. This design does not claim a global on-chain spent-funding registry; it uses the funding commitment to bind authorization and TCAP's atomic state transition to reject replay of the same settlement.
-
-## Related pages
-
-- [Replay and retries](/developers/replay-and-retries) for operator retry guidance.
-- [TCAP](/architecture/tcap) for the credit state transition.
-- [Security invariants](/security/invariants) for the protocol's broader rules.
+See [Credit Settlement](/developers/confidential-settlement) for the active CPI sequence and [Current Technology](/about/current-technology) for the broader status boundary.

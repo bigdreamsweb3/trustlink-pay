@@ -185,6 +185,7 @@ pub fn finalize(
     let accounts_iter = &mut accounts.iter();
     let payer = next_account_info(accounts_iter)?;
     let global_state = next_account_info(accounts_iter)?;
+    let route_root = next_account_info(accounts_iter)?;
     let registry = next_account_info(accounts_iter)?;
     let owner_recovery = next_account_info(accounts_iter)?;
     let instructions = next_account_info(accounts_iter)?;
@@ -233,6 +234,7 @@ pub fn finalize(
         program_id,
         payer,
         global_state,
+        route_root,
         registry,
         owner_recovery,
         instructions,

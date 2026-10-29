@@ -23,21 +23,21 @@ The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A 
 
 ### GPRU authorization and routing
 
-GPRU (Guarded Privacy Routing Unit) derives transaction-specific receiving keys, and its on-chain instruction verifies the DNA key proof used by TSN credit settlement. The owner can recover the matching private key locally. Encrypted-balance proof verification, confidential debit, and confidential exit remain future work.
+GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and proof checks used by the current TSN credit source. The credit verifier also checks an initial encrypted credit or later ElGamal addition against a supplied predecessor ciphertext. A separate Groth16 hidden-head verifier and circuit are present in source but are not called by current settlement services; that circuit does not prove balance arithmetic or debit affordability.
 
 ### TCAP
 
-The Transfer Confidential Asset Protocol (TCAP) governs approved assets and their reserves. Existing instructions and account layouts define current behavior. The target GPRU integration will require on-chain verification of encrypted balance transitions before TCAP changes confidential liabilities; debit and exit remain disabled until then.
+The Transfer Confidential Asset Protocol (TCAP) governs approved assets, reserves, and shared commitment state. The current TSN credit source advances a single global TCAP root after GPRU validation; it does not create a per-TIN latest-head account. TCAP also contains legacy TIN-tip and debit/exit instructions. The hidden-head root-advance instruction is separate from the active TSN caller, and its proof does not establish balance sufficiency or solvency.
 
 ### TSN XP
 
-TSN XP is the active user-facing TSN product and SDK integration experience in development. Its Devnet flows demonstrate TIN identity, wallet authorization, Receiver ingress, Node verification, Cranker execution, and Solana finality. A wallet owns and authorizes its TIN; reconnect-based identity recovery is a known product gap until the wallet-authorized private lookup path is implemented.
+TSN XP is the user-facing application for TIN identity and TSN payment operations. The SDK provides wallet-based TIN creation, registry resolution, and owner recovery helpers. Service health, program deployment, and each transaction's confirmation remain environment-specific and must be checked against the selected cluster.
 
 The separately hosted TrustLink Pay site is an earlier application surface and should not be presented as the current TSN XP product.
 
 ### TSN SDK
 
-The `@trustlink/tsn-sdk` package provides TypeScript interfaces for intent construction, route resolution, permit validation, and snapshot encryption.
+The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity operations, intent construction, route handling, and settlement helpers. Its current service callers do not submit the hidden-head Groth16 proof path.
 
 <CardGroup cols={2}>
   <Card title="Architecture overview" icon="building" href="/overview/architecture">
@@ -45,7 +45,7 @@ The `@trustlink/tsn-sdk` package provides TypeScript interfaces for intent const
   </Card>
 
   <Card title="TCAP deep dive" icon="lock" href="/architecture/tcap">
-    Credit-only transitions, commitments, and encrypted snapshots.
+    Shared-root credit transitions and the separate, not-yet-wired hidden-head proof source.
   </Card>
 
   <Card title="Developer quickstart" icon="code" href="/developers/getting-started">
@@ -53,7 +53,7 @@ The `@trustlink/tsn-sdk` package provides TypeScript interfaces for intent const
   </Card>
 
   <Card title="TSN XP" icon="external-link">
-    Active product and SDK integration experience; Devnet workflows are in development.
+    User-facing TIN and payment operations; check selected service and chain status at runtime.
   </Card>
 </CardGroup>
 

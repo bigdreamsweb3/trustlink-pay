@@ -71,11 +71,11 @@ The TIP registry can associate a TIN with identity metadata, owner authority, ro
 
 ### GPRU and TCAP — current behavior and target integration
 
-The deployed TCAP instructions define the current credit path and commitment state. GPRU is a separate protocol design for unique transaction DNA and proof-verified confidential state transitions; its derivation library is in source, but the on-chain program and TCAP handoff are not deployed. Confidential debit and exit remain disabled.
+The current TSN credit source invokes the GPRU program to verify one-time DNA-key derivation and an encrypted-credit relation, then advances TCAP's shared commitment root. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. The separate hidden-head Groth16 path is not wired to current settlement callers, and confidential debit and exit are not established end to end.
 
 ### TCAP — Transfer Confidential Asset Protocol
 
-TCAP governs approved token assets, reserves, and liability accounting. Current instruction behavior is defined by the deployed program and does not yet include GPRU DNA proof verification.
+TCAP governs approved token assets, reserves, and liability accounting. Its current TSN credit caller follows GPRU DNA-key and encrypted-credit validation with an atomic shared-root update; it does not use a per-TIN balance PDA.
 
 The current TCAP credit instruction uses opaque commitments and replay checks; it does not by itself prove a spendable encrypted balance. Debit and exit remain disabled pending proof-gated on-chain enforcement.
 

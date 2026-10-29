@@ -6,9 +6,9 @@ separately under `tsn-protocol/tsn-docs/`.
 
 Read these documents in order:
 
-1. [Current architecture](./CURRENT-ARCHITECTURE.md) — separates today's TIP/TSN/TCAP source behavior from the target GPRU DNA and TCAP integration.
-2. [GPRU and TCAP target route](./gpru-tcap-route.md) — unique per-transaction DNA, owner-recoverable one-time ElGamal keys, credit/debit goals, and current implementation limits.
-3. [TCAP debit and credit design](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — target reserve-liability rules and proof gates; not a claim of deployment.
+1. [Current architecture](./CURRENT-ARCHITECTURE.md) — checked-in TIP, GPRU, TSN, and TCAP contracts, wired credit behavior, and implementation limits.
+2. [GPRU hidden-head status](./gpru-tcap-route.md) — the shared-root proof path in source, its public inputs, privacy limits, and missing runtime wiring.
+3. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
 4. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
 5. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
 6. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
@@ -25,7 +25,7 @@ Supporting references:
 
 - [TCAP values explained](./TCAP-VALUES-EXPLAINED.md) — plain-language meanings and privacy boundaries for credit values.
 - [Devnet build and deploy](./DEVNET-BUILD-DEPLOY.md) — reproducible WSL/Ubuntu build, deployment and verification procedure.
-- [Devnet TCAP credit smoke](./tcap-devnet-credit-smoke.md) — account gates, bootstrap, simulation and evidence requirements.
+- [Historical TCAP credit smoke](./tcap-devnet-credit-smoke.md) — archived per-TIN tip/snapshot fixture; do not use for current TIN credit.
 
 - [Cranker operator guide](./CRANKER-OPERATOR-GUIDE.md)
 - [Service coordination and quota](./service-coordination-and-quota.md)
@@ -45,16 +45,18 @@ Supporting references:
 
 - **TSN** is settlement and authorization coordination infrastructure.
 - **TIP** is the Transfer Identity Protocol; **TIN** is one 10-digit Transfer Identity Number within TIP.
-- **GPRU** is being developed as a standalone protocol for unique transaction DNA and proof-verified confidential state transitions. Its one-time ElGamal derivation primitive exists in source, but its deployable program and TCAP settlement integration are not yet complete.
+- **GPRU** is a standalone program with one-time ElGamal derivation, a wired credit-transition verifier, and a hidden-head Groth16 verifier entrypoint in source. The hidden-head path is not wired to TSN Node/SDK/Cranker, and its circuit/proving workflow is not validated end to end.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
-- **Mother** creates the one-time TSN ConfidentialSettlement authorization.
+- **Mother** provides authorization under the applicable TSN instruction family; do not infer that epoch `ConfidentialSettlement`/slot instructions are part of the active TIN credit path.
 - **Cranker** submits exact leased work and cannot rewrite the authorization.
-- **TCAP** is the Transfer Confidential Asset Protocol and owns governed asset reserves and liability accounting. Current instructions define live behavior; the GPRU DNA-based confidential credit/debit design is a target, and confidential debit remains disabled.
+- **TCAP** is the Transfer Confidential Asset Protocol and governs assets, reserves, and liability accounting. The wired TSN credit path advances a single shared TCAP root after GPRU credit validation; it does not persist a per-TIN latest head. TCAP also contains legacy TIN-tip account/instruction code. The hidden-head root-advance instruction is separate and has no current TSN runtime caller.
 - **ZK-PRU** is retired historical material only. It is not a live receiving, spending or balance architecture; see [ZK-PRU retired](./ZK-PRU-RETIRED.md).
 
-Live confidential debits and exits remain proof-gated and disabled. No active
-document should describe ZK-PRU as a receiving wallet, balance container or
-spending route.
+Confidential debits and exits are not established as working end-to-end by the
+current hidden-head source. No active document should describe ZK-PRU as a
+receiving wallet, balance container or spending route. Do not call the hidden
+head fully unlinkable: its transactions all write the same public TCAP root,
+and the present instruction ABI exposes action kind, token ID, and amount.
 
 All diagrams in active documentation use Mermaid. Historical material is
 labelled explicitly and is not normative for new implementations.

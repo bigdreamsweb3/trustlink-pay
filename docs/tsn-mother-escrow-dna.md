@@ -1,4 +1,6 @@
-# TSN private settlement: Mother-authorized DNA and opaque epoch slots
+# Historical Mother-rooted epoch settlement architecture
+
+> This document describes the separate epoch/opaque-slot settlement and refund instruction family. It is not the current TIN credit call path; consult [Current architecture](./CURRENT-ARCHITECTURE.md) for GPRU and TCAP behavior.
 
 Funding sends SPL tokens directly to the current epoch's treasury token account.  The funding transaction creates no payment escrow, commitment PDA, payment vault, or claim slot.  It only increases the epoch's aggregate pending liability.
 

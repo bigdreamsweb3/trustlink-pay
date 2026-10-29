@@ -1,27 +1,27 @@
 ---
 title: "GPRU: Guarded Privacy Routing Unit"
 sidebarTitle: "GPRU"
-description: "GPRU derives transaction-specific receiving keys and verifies their relationship to TIP route material."
+description: "GPRU source includes one-time key verification, encrypted-credit checks, and a separate hidden-head proof path."
 ---
 
 # GPRU: Guarded Privacy Routing Unit
 
-GPRU derives a unique DNA and one-time ElGamal public key for a transaction output. The owner can recover the corresponding private key locally from the public derivation data and owner-held secret material. This avoids reusing the stable TIP scan key as the public receiving key for every output.
+GPRU is a standalone Solana program that verifies cryptographic relations used by TSN and TCAP. The current TSN credit instruction calls GPRU to verify DNA-key derivation and validate an encrypted credit transition. GPRU does not custody TCAP assets.
 
-## Relationship to TIP and TIN
+## Current credit verifier
 
-TIP (Transfer Identity Protocol) manages transfer identities and route metadata. A TIN (Transfer Identity Number) is one identity within TIP. TIP stores a versioned GPRU ElGamal scan public key and its commitment; the owner retains the matching secret material. Node resolves the TIN route and creates the transaction-specific DNA output while the recipient is offline.
+TIP stores a versioned GPRU ElGamal scan public key and its commitment. TSN passes the TIP registry and transaction-specific DNA key proof to GPRU. For the credit transition, GPRU checks the first encrypted credit or verifies ElGamal addition against a predecessor ciphertext supplied with the request. It does not store a per-TIN latest head in this path.
 
-## Current credit path
+The commitment and ciphertext checks establish the specified relation for the supplied values; without persistent authenticated per-TIN head state, they do not prove that the supplied predecessor is the latest state for the TIN.
 
-The TSN settlement instruction invokes GPRU to verify the DNA key derivation proof against the registered TIP route. If that verification and TSN authorization checks pass, TSN invokes TCAP in the same transaction. TCAP validates its asset and policy, predecessor commitment, sequence, and validity window, then advances its opaque state atomically.
+## Hidden-head verifier source
 
-The funding-derived commitment is bound into the settlement authorization and carried through the TCAP transition. TCAP's predecessor and sequence checks reject replay of the same settlement without a per-transaction account.
+GPRU also has a Groth16 proof verifier and a Circom source for proving a hidden route-and-asset head update, sequence advancement, Memo/action binding, and nullifier update. The public inputs include old/new TCAP roots, Memo/action commitments, a nullifier, and TIP's shared route root. TCAP has an instruction that invokes this verifier and advances its global commitment root.
 
-## Confidential balance boundary
+This is a separate source path. The active TSN, Node, SDK, and Cranker settlement flow does not call it. The repository does not establish circuit compilation, proving-key artifacts, proof generation, initialized verifier state, or end-to-end chain execution. The circuit does not prove homomorphic balance arithmetic, affordability, or solvency. The current instruction ABI exposes action kind, token ID, and amount.
 
-GPRU key derivation and its on-chain proof establish that a one-time public key matches the route derivation. They do not prove that an encrypted balance is valid or sufficient for a debit. The current credit transition advances opaque commitments; it does not store an encrypted balance record. Confidential debit and exit remain disabled until the required balance-proof verifier is enabled.
+## Privacy boundary
 
-GPRU does not hold token custody or receive the owner's long-term secret. TCAP remains responsible for governed reserve assets and commitment-state transitions.
+The hidden-head proof is designed to conceal the selected route and per-route head. Every update still writes the same public TCAP root account, exposing a shared protocol-level link and ordering. The current wired credit path also passes a TIP registry account, and public wallet funding remains visible. GPRU does not make the system zero-linkable.
 
-See [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) for the current proof boundary and remaining work.
+See [GPRU and TCAP state](/architecture/gpru-confidential-balances) for the source status and limits.

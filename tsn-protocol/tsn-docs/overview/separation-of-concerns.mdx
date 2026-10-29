@@ -1,38 +1,32 @@
 ---
-title: "Why TSN Separates Authorization from Transaction Submission"
+title: "How TIP, TSN, GPRU, and TCAP Divide Responsibilities"
 sidebarTitle: "Separation of Concerns"
-description: "Learn how TSN splits authorization, verification, and submission across distinct roles for safer, more resilient payments."
+description: "Current source responsibilities for identity, settlement coordination, GPRU validation, and TCAP reserve state."
 ---
 
-TSN is built on a core design principle: the party that authorizes a payment is never the same party that submits it to the chain. The sender signs the intent. The Mother authority authorizes settlement and produces Settlement DNA. The Mother Node verifies and signs a short-lived permit for the exact leased operation. The Receiver leases work. The Cranker submits the transaction and pays the fee. No single role can both approve and execute a payment, which limits the blast radius of any single compromise.
+The current TIN credit path assigns different work to identity, service, and settlement layers. TIP stores TIN identity and route data; a TIN is one 10-digit identity within the Transfer Identity Protocol. TSN accepts and verifies payment work, GPRU checks one-time key and encrypted-credit relations, and TCAP governs approved assets and advances its shared commitment root.
 
-This separation yields four concrete benefits.
+## Payment path
 
-## Censorship resistance at the transport layer
+```mermaid
+flowchart LR
+    W[Owner or sender wallet] -->|signed funding and intent| R[Receiver]
+    R -->|authenticated work| N[TSN Node]
+    N -->|resolve TIN route and authorize| X[TSN program]
+    C[Cranker] -->|submit exact transaction| X
+    X -->|key and credit checks| G[GPRU]
+    X -->|atomic shared-root transition| T[TCAP]
+    X --> M[Memo instruction data]
+```
 
-Because the Cranker cannot change the payment terms, Crankers compete on liveness and fee coverage, not on filtering or censoring recipients. If one Cranker refuses to submit, another can pick up the same authorized transaction and submit it. The authorization is the scarce resource; submission is a commodity service.
+Receiver stores and leases work; it does not prove settlement. Node verification constructs authorized work; it does not itself move TCAP assets. Cranker submission can fail or remain pending. Only confirmation of the program transaction establishes that the TCAP state transition executed.
 
-## Safe operation under compromised transport
+## State boundary
 
-If a Node, Receiver, or Cranker is compromised, the attacker cannot redirect funds, change amounts, or alter the mint. The worst case is a liveness failure or a failed submission, both of which are recoverable. The private keys that matter for fund movement never reside in the transport layer.
+The current TSN credit caller passes the supplied encrypted-credit transition through GPRU validation, then asks TCAP to check and advance one shared global root and sequence. The Memo remains transaction instruction data bound by commitment. The current path does not store the Memo in a per-TIN account or authenticate a latest head for each TIN. The shared root rejects stale global transitions but does not prove that a caller supplied the latest ciphertext for a particular TIN.
 
-## Clear operational responsibilities
+## Privacy and security boundary
 
-Each role has a narrow, well-defined job. A Node operator knows they verify signatures and structure and sign short-lived permits for exact leased operations. A Cranker operator knows they pay fees and submit exactly the authorized payload. A Receiver operator knows they store state and lease work. This clarity makes it easier to run infrastructure, onboard operators, and reason about incidents.
+Solana exposes transaction accounts, instruction arguments, Memo ciphertext, fee payer, signatures, and ordering. The common writable TCAP root creates visible protocol-level linkage. GPRU/TCAP hidden-head verifier source is separate from the active caller and does not prove balance arithmetic, debit affordability, or solvency. The architecture therefore does not claim zero linkability or end-to-end confidential debit/exit.
 
-## Reproducible reasoning for security review
-
-When you audit a TSN deployment, you can inspect each layer independently. The authorization layer checks signatures and DNA against the Mother. The transport layer checks that the submitted transaction matches the authorized one exactly. The settlement layer checks the permit template, nullifier, and commitment on-chain. There is no hidden coupling between layers.
-
-## Role authority table
-
-| Role | Can it change the payment terms? |
-| --- | --- |
-| Sender | No, the intent is signed and binding once created |
-| Mother authority | No, it authorizes settlement and produces DNA against the signed intent; it cannot invent new terms |
-| Permit signer | No, it signs only domain-separated templates that bind the exact terms already authorized |
-| Mother Node | No, it verifies and signs an Ed25519 permit for the exact leased operation; it cannot sign as Mother, mutate the intent, decrypt user envelopes, or submit transactions |
-| Receiver | No, it stores and leases work; it does not create authorization |
-| Cranker | No, it submits the exact authorized transaction; it cannot change any field, select sources, replan, decrypt envelopes, or sign for users |
-
-For the full trust model, see [Trust Model](/architecture/trust-model). For operational boundaries and how to run each role, see [Operator Boundaries](/security/operator-boundaries). For the transport architecture, see [Node, Receiver, and Cranker](/architecture/node-receiver-cranker).
+Epoch treasury, opaque slot, `SettlementDna`, payout, and refund instructions are separate TSN program capabilities; they must not be mixed into a description of the current TIN credit transaction unless that transaction invokes them.

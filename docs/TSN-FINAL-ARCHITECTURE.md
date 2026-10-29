@@ -1,4 +1,6 @@
-# TSN private settlement architecture
+# Historical TSN epoch and opaque-slot settlement architecture
+
+> **Scope:** this document covers the separate epoch treasury, opaque slot, payout, and refund instruction family. It is not the current wallet-to-TIN credit architecture. See [Current architecture](./CURRENT-ARCHITECTURE.md) for the GPRU/TCAP Memo-credit path.
 
 TSN uses an epoch treasury and opaque, keyed settlement slots. Funding sends tokens only to the epoch treasury token account and increments aggregate pending liability. Funding creates no payment account, escrow account, commitment PDA, or public payment identifier.
 

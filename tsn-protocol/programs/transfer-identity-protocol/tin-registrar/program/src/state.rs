@@ -51,6 +51,24 @@ impl GlobalState {
     pub const LEN: usize = 16;
 }
 
+/// TIP-wide append-only tree of active GPRU routes. It contains no TIN number,
+/// registry address, or owner key. Route indices are private proof witnesses
+/// during settlement; `frontier` is only the append algorithm's shared state.
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub struct TipRouteMerkleRootV1 {
+    pub version: u8,
+    pub bump: u8,
+    pub root: [u8; 32],
+    pub leaf_count: u64,
+    pub frontier: [[u8; 32]; 32],
+}
+
+impl TipRouteMerkleRootV1 {
+    pub const VERSION: u8 = 1;
+    pub const DEPTH: usize = 32;
+    pub const LEN: usize = 2 + 32 + 8 + 32 * 32;
+}
+
 /// Current private TIN V1 registry account. Only the keyed lookup commitment,
 /// encrypted identity/recovery envelopes, and committed route fields are stored.
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]

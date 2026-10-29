@@ -37,9 +37,12 @@ pub struct RegisterTcapCreditAuthorizationV2Args {
     pub previous_commitment: [u8; 32],
     pub new_commitment: [u8; 32],
     pub sequence: u64,
+    pub previous_tcap_root: [u8; 32],
+    pub tcap_root_sequence: u64,
     pub token_id: u32,
     pub policy_commitment: [u8; 32],
     pub gpru_scope_commitment: [u8; 32],
+    pub memo_commitment: [u8; 32],
     /// Node-derived commitment to the exact signed reserve-funding transaction.
     /// It is included in the authorization digest and forwarded to TCAP's
     /// atomic state transition; TSN does not create a per-funding spent PDA.
@@ -76,10 +79,9 @@ pub struct RegisterTcapCreditAuthorizationV2<'info> {
     pub tcap_config: UncheckedAccount<'info>,
     /// CHECK: validated by TCAP.
     pub tcap_asset_entry: UncheckedAccount<'info>,
-    /// CHECK: the blinded tip root is only a PDA seed.
-    pub tip_root: UncheckedAccount<'info>,
-    /// CHECK: validated by TCAP as the canonical tip PDA.
-    pub tin_tip: UncheckedAccount<'info>,
+    /// CHECK: shared TCAP replay checkpoint; TCAP validates its canonical PDA.
+    #[account(mut)]
+    pub commitment_root: UncheckedAccount<'info>,
     /// CHECK: TSN-owned signer PDA, derived from the opaque authorization digest.
     pub tcap_authorization_signer: UncheckedAccount<'info>,
     /// CHECK: canonical GPRU program, invoked to validate the TIP route and one-time key proof.
@@ -130,7 +132,7 @@ pub fn handler(
     );
     require!(
         args.authorization_digest
-            == derive_authorization_digest_v2(&args, &ctx.accounts.tin_tip.key()),
+            == derive_authorization_digest_v2(&args, &ctx.accounts.commitment_root.key()),
         TsnError::Unauthorized
     );
     let (expected_signer, signer_bump) = Pubkey::find_program_address(
@@ -143,8 +145,8 @@ pub fn handler(
         TsnError::Unauthorized
     );
 
-    // Verify the recipient's registered TIP scan key and the Node's one-time
-    // DNA key proof before authorizing TCAP state mutation in this transaction.
+    // Verify the registered TIP scan key and one-time DNA key proof before
+    // authorizing the shared TCAP replay checkpoint transition.
     let mut gpru_data = anchor_lang::solana_program::hash::hash(b"global:verify_dna_key_proof_v1")
         .to_bytes()[..8]
         .to_vec();
@@ -173,9 +175,12 @@ pub fn handler(
         amount: u64,
         token_id: u32,
         sequence: u64,
+        previous_tcap_root: [u8; 32],
+        tcap_root_sequence: u64,
         policy_commitment: [u8; 32],
         previous_commitment: [u8; 32],
         new_commitment: [u8; 32],
+        memo_commitment: [u8; 32],
         nullifier: [u8; 32],
         authorization_digest: [u8; 32],
         previous_balance_ciphertext: [u8; 64],
@@ -192,9 +197,12 @@ pub fn handler(
             amount: args.amount_base_units,
             token_id: args.token_id,
             sequence: args.sequence,
+            previous_tcap_root: args.previous_tcap_root,
+            tcap_root_sequence: args.tcap_root_sequence,
             policy_commitment: args.policy_commitment,
             previous_commitment: args.previous_commitment,
             new_commitment: args.new_commitment,
+            memo_commitment: args.memo_commitment,
             nullifier: args.nullifier,
             authorization_digest: args.authorization_digest,
             previous_balance_ciphertext: args.previous_balance_ciphertext,
@@ -208,7 +216,7 @@ pub fn handler(
         program_id: GPRU_PROGRAM_ID,
         accounts: vec![
             AccountMeta::new_readonly(ctx.accounts.tip_registry.key(), false),
-            AccountMeta::new_readonly(ctx.accounts.tin_tip.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.commitment_root.key(), false),
             AccountMeta::new_readonly(ctx.accounts.instructions.key(), false),
         ],
         data: balance_data,
@@ -217,25 +225,28 @@ pub fn handler(
         &balance_instruction,
         &[
             ctx.accounts.tip_registry.to_account_info(),
-            ctx.accounts.tin_tip.to_account_info(),
+            ctx.accounts.commitment_root.to_account_info(),
             ctx.accounts.instructions.to_account_info(),
             ctx.accounts.gpru_program.to_account_info(),
         ],
     )?;
 
-    let mut data = anchor_lang::solana_program::hash::hash(b"global:credit_tcap_tin_tip_v2")
+    let mut data = anchor_lang::solana_program::hash::hash(b"global:credit_gpru_memo_v1")
         .to_bytes()[..8]
         .to_vec();
-    let tcap_args = tcap::instructions::credit_tcap_tin_tip_v2::CreditTcapTinTipV2Args {
+    let tcap_args = tcap::instructions::credit_gpru_memo_v1::CreditGpruMemoV1Args {
         authorization_digest: args.authorization_digest,
         valid_after_slot: args.valid_after_slot,
         expires_at_slot: args.expires_at_slot,
         previous_commitment: args.previous_commitment,
         new_commitment: args.new_commitment,
         sequence: args.sequence,
+        previous_tcap_root: args.previous_tcap_root,
+        tcap_root_sequence: args.tcap_root_sequence,
         token_id: args.token_id,
         policy_commitment: args.policy_commitment,
         gpru_scope_commitment: args.gpru_scope_commitment,
+        memo_commitment: args.memo_commitment,
         nullifier: args.nullifier,
         dna_key_commitment: args.dna_key_commitment,
     };
@@ -245,8 +256,7 @@ pub fn handler(
         accounts: vec![
             AccountMeta::new(ctx.accounts.authority.key(), true),
             AccountMeta::new_readonly(ctx.accounts.tcap_config.key(), false),
-            AccountMeta::new(ctx.accounts.tin_tip.key(), false),
-            AccountMeta::new_readonly(ctx.accounts.tip_root.key(), false),
+            AccountMeta::new(ctx.accounts.commitment_root.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tcap_asset_entry.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tsn_program.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tcap_authorization_signer.key(), true),
@@ -258,8 +268,7 @@ pub fn handler(
         &[
             ctx.accounts.authority.to_account_info(),
             ctx.accounts.tcap_config.to_account_info(),
-            ctx.accounts.tin_tip.to_account_info(),
-            ctx.accounts.tip_root.to_account_info(),
+            ctx.accounts.commitment_root.to_account_info(),
             ctx.accounts.tcap_asset_entry.to_account_info(),
             ctx.accounts.tsn_program.to_account_info(),
             ctx.accounts.tcap_authorization_signer.to_account_info(),
@@ -274,15 +283,18 @@ pub fn handler(
     Ok(())
 }
 
-/// Domain-separated digest helper for off-chain builders. It intentionally
-/// contains only the opaque tip transition, not a payment intent or recipient.
+/// Domain-separated digest helper for off-chain builders. It binds the balance
+/// transition to the shared TCAP predecessor without publishing a recipient
+/// route address in this authorization.
 pub fn derive_authorization_digest_v2(
     args: &RegisterTcapCreditAuthorizationV2Args,
-    tin_tip: &Pubkey,
+    commitment_root: &Pubkey,
 ) -> [u8; 32] {
     anchor_lang::solana_program::hash::hashv(&[
         AUTHORIZATION_DOMAIN,
-        tin_tip.as_ref(),
+        commitment_root.as_ref(),
+        &args.previous_tcap_root,
+        &args.tcap_root_sequence.to_le_bytes(),
         &args.valid_after_slot.to_le_bytes(),
         &args.expires_at_slot.to_le_bytes(),
         &args.amount_base_units.to_le_bytes(),

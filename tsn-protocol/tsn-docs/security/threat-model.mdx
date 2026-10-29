@@ -1,63 +1,33 @@
 ---
-title: "TSN Threat Model: Adversary Classes and Guarantees"
+title: "TSN Threat Model: Current Credit Boundaries"
 sidebarTitle: "Threat Model"
-description: "TSN adversary classes: compromised Receiver, Node, Cranker, network observer, malicious sender or recipient. What each can achieve and what stays protected."
+description: "Source-backed threat boundaries for the TSN TIN credit path and its separate hidden-head proof source."
 ---
 
-TSN's guarantees hold under specific, well-defined adversary classes. This page enumerates them, states what each can and cannot achieve, and lists what is deliberately out of scope for the current architecture.
+This page describes the current wallet-to-TIN credit source and separates implemented checks from security properties that remain unestablished. It does not treat source presence as deployment or end-to-end evidence.
 
-## Adversary classes
+## Current credit path
 
-### Compromised Receiver
+The TSN credit instruction validates Mother authorization, verifies the GPRU DNA key proof and encrypted-credit relation, and calls TCAP to advance a shared commitment root. The transaction includes a Memo instruction whose data is bound by commitment. The active caller does not create a per-TIN TCAP tip account or persist the Memo as account state.
 
-Can lose or corrupt work state, delay ingress, or drop leases. Cannot verify signatures, cannot forge Node authorization, cannot decrypt private snapshots, and must never receive plaintext roots or authorization material. A compromised Receiver cannot mint a valid `ConfidentialSettlement` receipt.
+The shared TCAP root and sequence reject reapplication of the same global predecessor. They do not prove that the caller supplied the latest ciphertext for a particular TIN. GPRU checks the supplied predecessor relation but does not persist a per-TIN head in this path.
 
-### Compromised Node
+## Adversary boundaries
 
-Can refuse verification or delay decisions. Cannot forge Mother authority, cannot mint DNA, and cannot access encrypted binding keys beyond its own Node/Mother scope. A compromised Node cannot alter a sender-signed intent because the sender signature is checked on chain.
+| Actor | Source-backed capability | Limit or residual risk |
+| --- | --- | --- |
+| Receiver | Accepts ingress, stores work, and leases it to operators | Acceptance and lease state do not establish Node verification or on-chain settlement. |
+| Node | Verifies work, resolves TIP data, and prepares settlement authorization | Node verification alone does not move funds; the chain instruction must validate the authorized transition. |
+| Cranker | Submits the authorized transaction and pays the Solana fee | Submission can fail or be delayed; only confirmed chain state establishes settlement. |
+| Chain observer | Reads public instruction data, account keys, commitments, sequence, and transaction ordering | Memo payloads may be encrypted, but their ciphertext and surrounding transaction metadata remain public. The shared TCAP root is a repeatable public account reference. |
+| Malicious credit caller | Can submit malformed or stale transition inputs | The programs check authorization, GPRU relation, approved asset/policy, validity, and global root predecessor. The current path lacks an authenticated per-TIN latest-head check. |
 
-### Compromised Cranker
+## Hidden-head source boundary
 
-Can delay, censor, or attempt to replay within a lease window. Cannot change amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry. The Solana program re-checks Node permit and lease before any token movement. If the Cranker tries to submit different bytes than the authorized transaction, the program rejects it.
+GPRU and TCAP contain a separate Groth16 hidden-head verifier path. Current Node, SDK, Cranker, and active TSN credit callers do not invoke it. Its circuit source does not prove encrypted balance addition or subtraction, debit affordability, non-negative range, or reserve solvency. The instruction exposes action kind, token ID, and amount, and the path uses the same writable TCAP root for every update. It therefore does not provide zero linkability.
 
-### Network observer
+## Out of scope and evidence
 
-Sees commitments, sequence numbers, policy commitments, nullifiers, and the opaque slot at the moment of consumption. Does not see the plaintext balance, privacy-receiving root, TIN master seed, or snapshot plaintext. Cannot correlate a funding transaction to a specific settlement slot because the opaque slot is absent from funding.
+The source does not establish confidential debit or exit end to end. Public wallet funding and exits expose their ordinary transaction metadata. A submitted transaction is not a confirmed transaction, and confirmed reserve funding is not proof that the later TCAP transition succeeded. Establish each lifecycle stage from its own signed decision, transaction signature, and resulting chain state.
 
-### Malicious sender
-
-Bounded by TCAP asset entry status: the entry must be active, approved, and unpaused. A `policy_commitment` mismatch prevents the transition. The sender cannot force TCAP to accept a transition that does not match the tip PDA's stored policy.
-
-### Malicious recipient
-
-Cannot mutate the Node-signed permit or claim the epoch slot before authorized settlement. Even if the recipient controls the destination account, the Solana program requires the full `ConfidentialSettlement` receipt before crediting the tip.
-
-## Out of scope
-
-TSN does not defend against the following. Treat these as separate concerns in your integration:
-
-- **Solana consensus failure.** TSN relies on Solana's execution, ordering, and finality.
-- **Sender device signing key compromise.** If the sender's wallet key is stolen, that wallet can authorize new intents. Use hardware wallets and standard key hygiene.
-- **Out-of-band coercion of the TIN holder.** TSN cannot prevent someone from being coerced into signing an authorized transfer.
-- **Confidential debit and exit.** These paths remain proof-gated and are not live in phase one. Do not treat GPRU signatures or placeholder proofs as spend authorization.
-- **Application-layer privacy leaks.** A frontend or backend that logs sensitive fields, exposes plaintext identifiers, or fingerprints users is out of TSN's scope.
-
-## Related pages
-
-<CardGroup cols={2}>
-  <Card title="Invariants" icon="lock" href="/security/invariants">
-    The 11 protocol invariants that must always hold.
-  </Card>
-
-  <Card title="Authority & Keys" icon="key" href="/security/authority-and-keys">
-    Every key in the system and who holds it.
-  </Card>
-
-  <Card title="Operator Boundaries" icon="split" href="/security/operator-boundaries">
-    Data visibility per operator role.
-  </Card>
-
-  <Card title="Fail-Closed" icon="shield-halved" href="/security/fail-closed">
-    How TSN rejects before any token moves.
-  </Card>
-</CardGroup>
+See [Security invariants](/security/invariants), [Replay protection](/security/replay-protection), and [GPRU and TCAP state](/architecture/gpru-confidential-balances).

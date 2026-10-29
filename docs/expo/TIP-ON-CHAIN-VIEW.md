@@ -1,3 +1,5 @@
+> **Historical experiment note:** this page describes an earlier stable TIP-account and encrypted-balance-slip design. It is not the current TCAP/GPRU credit path and must not be used as implementation guidance. See [Current architecture](../CURRENT-ARCHITECTURE.md) for the source-backed flow.
+
 Think of it like a **bank box with a frosted window**.
 
 **The box is the TIP** (`6ZS66`). One box per person. Everyone can *see the box* on the street. Nobody can *read the number inside* unless they have your house key (master seed).
@@ -51,4 +53,4 @@ That’s photocopying the slip onto a billboard each time. Extra cost, extra tra
 
 ---
 
-**One sentence:** vault = the cash in the building; TIP slip = your encrypted statement in the box; liability = the spendable till; GPRU is designed to derive unique transaction DNA and verify confidential state transitions; a GPRU key or commitment alone does not authorize custody or prove a valid payment. The on-chain GPRU program is not deployed.
+**One sentence:** this historical proposal treated a TCAP account as a sealed TIP balance slip. That is not the current Memo-based credit path, and the GPRU deployment status must be checked on the target cluster rather than inferred from this archived page.

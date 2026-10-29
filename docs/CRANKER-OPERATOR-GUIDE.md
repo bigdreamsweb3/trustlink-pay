@@ -6,9 +6,11 @@ process, not a public API and not a Solana program deployment. It watches the
 TSN Receiver for non-secret work, leases work that the TSN Node has verified,
 and submits the exact authorized transaction while paying Solana fees.
 
-This describes the current operator tooling. It does not claim that a Cranker
-is production-ready for mainnet, and it does not replace a Devnet program,
-Receiver, or Node deployment.
+This guide covers current operator tooling for the wallet-to-TIN funding and
+GPRU/TCAP settlement path. The separate epoch-treasury flow has its own
+instruction family and must not be mixed with this credit path. This guide does
+not claim mainnet production readiness or replace a Devnet program, Receiver,
+or Node deployment.
 
 ## Cranker role
 
@@ -20,17 +22,15 @@ flowchart TD
     N["TSN Node - verification and lease eligibility"]
     C["Cranker - lease and submit exact work"]
     S["Solana Devnet - TSN Program and controlled accounts"]
-    V["Legacy payout component - not used by TCAP credit"]
     R --> N --> C --> S
-    C --> V --> S
 ```
 
 The Cranker may:
 
 - lease Node-verified `AUTHORIZED_FUNDING` work and internally-created DNA
   `SETTLEMENT` work that is already eligible;
-- submit the exact sender-signed epoch-treasury funding transaction, then the
-  exact Mother-DNA settlement transaction supplied by the protocol;
+- submit the exact sender-signed TCAP reserve-funding transaction, then the
+  exact GPRU/TCAP settlement transaction authorized by the protocol;
 - pay Solana fees from its operator wallet;
 - report transaction signatures and retry safe failures;
 - submit only explicitly authorized funding or settlement work; refunds are a
@@ -44,10 +44,10 @@ The Cranker must not:
 - mark an intent paid, recoverable, or reimbursable by itself;
 - expose Receiver API keys, operator secret keys, or private route material.
 
-The historical TSN payout implementation uses a registered Cranker Vault as the
-payout source. This is an implementation detail of the current TSN runtime;
-it is not a claim that TCAP has replaced the vault or that mainnet liquidity
-policy is finalized.
+Epoch-treasury funding, opaque claim slots, Mother DNA vouchers, and Cranker
+Vault reimbursement belong to a separate instruction family. Their accounts
+are not part of the current wallet-to-TIN credit transaction unless that
+transaction explicitly invokes those instructions.
 
 ## What must already exist
 

@@ -31,13 +31,6 @@ pub mod tcap {
         instructions::initialize_tcap_v1(ctx, args)
     }
 
-    pub fn initialize_tcap_tin_tip_v1(
-        ctx: Context<InitializeTcapTinTipV1>,
-        args: InitializeTcapTinTipV1Args,
-    ) -> Result<()> {
-        instructions::initialize_tcap_tin_tip_v1(ctx, args)
-    }
-
     pub fn initialize_one_time_tip(
         ctx: Context<InitializeOneTimeTip>,
         args: InitializeOneTimeTipArgs,
@@ -100,13 +93,6 @@ pub mod tcap {
         instructions::initialize_one_time_tip_liability::handler(ctx, args)
     }
 
-
-    pub fn credit_tcap_tin_tip_v1(
-        ctx: Context<CreditTcapTinTipV1>,
-        args: CreditTcapTinTipV1Args,
-    ) -> Result<()> {
-        instructions::credit_tcap_tin_tip_v1::handler(ctx, args)
-    }
 
     pub fn debit_tcap_balance_v1(
         ctx: Context<DebitTcapBalanceV1>,
@@ -241,6 +227,12 @@ pub mod tcap {
         instructions::initialize_commitment_root_v1(ctx, empty_tree_root)
     }
 
+    pub fn activate_commitment_root_v1(
+        ctx: Context<ActivateCommitmentRootV1>,
+    ) -> Result<()> {
+        instructions::activate_commitment_root_v1::handler(ctx)
+    }
+
     pub fn migrate_tcap_config_layout_v1(
         ctx: Context<MigrateTcapConfigLayoutV1>,
     ) -> Result<()> {
@@ -254,13 +246,21 @@ pub mod tcap {
         instructions::register_tsn_authorization_v1(ctx, authorization)
     }
 
-    /// Version 2 privacy-preserving GPRU credit. Unlike the legacy V1 path,
-    /// this instruction has no intent, epoch, receipt, or per-transfer PDA.
-    pub fn credit_tcap_tin_tip_v2(
-        ctx: Context<CreditTcapTinTipV2>,
-        args: CreditTcapTinTipV2Args,
+    /// GPRU-validated encrypted memo credit with a shared atomic TCAP replay root.
+    pub fn credit_gpru_memo_v1(
+        ctx: Context<CreditGpruMemoV1>,
+        args: CreditGpruMemoV1Args,
     ) -> Result<()> {
-        instructions::credit_tcap_tin_tip_v2::handler(ctx, args)
+        instructions::credit_gpru_memo_v1::handler(ctx, args)
+    }
+
+    /// Atomically verify a hidden per-route latest-head transition through
+    /// GPRU and advance TCAP's shared accumulator root.
+    pub fn advance_gpru_hidden_head_v1(
+        ctx: Context<AdvanceGpruHiddenHeadV1>,
+        args: AdvanceGpruHiddenHeadV1Args,
+    ) -> Result<()> {
+        instructions::advance_gpru_hidden_head_v1::handler(ctx, args)
     }
 
     pub fn initialize_tcap_tip_liability_v2(

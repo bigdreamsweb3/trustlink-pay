@@ -1,32 +1,29 @@
 ---
 title: "TCAP: Transfer Confidential Asset Protocol"
 sidebarTitle: "TCAP"
-description: "TCAP governs approved assets and reserve accounting, with atomic commitment-state updates for authorized credits."
+description: "TCAP governs approved assets and advances the shared replay root in the wired TSN credit path."
 ---
 
 # TCAP: Transfer Confidential Asset Protocol
 
-TCAP governs approved assets, reserve vaults, and protocol liability accounting. In the current TSN credit path, TCAP applies an authorized commitment transition only after TSN validates the GPRU DNA key proof and invokes TCAP through its approved CPI path.
+TCAP governs approved assets, reserves, and liability accounting. The current TSN credit path invokes TCAP's `credit_gpru_memo_v1` after GPRU validates the encrypted credit transition.
 
-## Current credit behavior
+## Shared root in the wired credit path
 
-The Node resolves the recipient's TIP route and constructs the GPRU-scoped credit authorization and DBrix Memo record. TSN verifies the authorization digest and asks GPRU to validate the transaction-specific key proof and encrypted balance transition. TCAP then checks the asset, policy, validity window, predecessor commitment, and next sequence. The successful instruction advances the replay head atomically.
+TCAP validates the approved asset and policy state, Mother-derived authorization signer, validity window, current shared-root value, and next global sequence. On success, it advances the global `TcapCommitmentRootStateV1` atomically. The same shared root is used by every credit on this path; it is not a separate latest-head account per TIN and does not itself establish that the supplied per-TIN ciphertext is the latest.
 
-The funding-derived commitment is carried in the transition's `nullifier` field and bound into the authorization digest. The same TCAP state update records the latest nullifier, successor commitment, and sequence. This rejects replay of the same settlement without a separate spent-funding record or per-transaction PDA.
+The encrypted Memo remains transaction instruction data committed by the transition. TCAP does not persist the Memo history or ciphertext in a per-TIN account in this path. The active TSN credit instruction does not create or update `TCapTinTipV1`.
 
-The encrypted balance ciphertext and encrypted transaction history are carried in the transaction's DBrix Memo instruction. The TCAP replay-head account stores only the latest commitment, sequence, policy commitment, nullifier, and frozen flag; it does not hold a ciphertext or history. Credit updates use homomorphic ElGamal addition, while debit and exit remain fail-closed until TCAP can verify balance sufficiency and the exact subtraction.
+## Separate hidden-head instruction
 
-## Credit and debit requirements
+TCAP source also contains `advance_gpru_hidden_head_v1`, which checks authorization, asset, root predecessor, and global sequence; calls GPRU's hidden-head Groth16 verifier; then advances the shared root. The active TSN/Node/SDK/Cranker credit flow does not call this instruction. The circuit does not prove encrypted balance arithmetic, debit sufficiency, exit destination binding, or reserve solvency. Its current ABI exposes action kind, token ID, and amount.
 
-For a debit, a proof system must establish that the prior encrypted balance covers the amount and that the successor reflects the exact subtraction. For a TIN-to-TIN transfer, proofs must establish conservation between source and destination while binding both state transitions to the same governed asset. TCAP must apply the resulting reserve-liability changes atomically after the proofs pass.
+The shared root gives a common atomic checkpoint but appears in every transaction that uses it. This design exposes protocol-level transaction linkage and global order.
 
-Wallet deposits and exits expose the public wallet and token-transfer metadata required at that boundary. GPRU's one-time DNA output reduces reuse of a stable recipient key; it does not conceal public funding metadata or prove balance correctness by itself.
+## Legacy TIN-tip instructions
 
-## Source boundaries
+TCAP still contains `TCapTinTipV1` and older initialize, credit, debit, exit, and liability instructions. These are source-level legacy paths and are not the active TSN credit caller described above. Their presence must not be taken as proof that the current XP flow initializes a TCAP TIP PDA.
 
-- TIP resolves TIN identity and publishes the route material used by GPRU.
-- GPRU derives and verifies transaction-specific one-time key material.
-- TSN validates the settlement authorization and coordinates the GPRU-to-TCAP CPI path.
-- TCAP enforces asset policy and atomically advances its commitment state.
+## Debit and exit
 
-The program instruction and account layouts remain the source of truth for deployed behavior. See [GPRU confidential state](/architecture/gpru-confidential-balances) for the memo history format and debit proof boundary.
+Confidential debit and exit require proof that the prior balance covers the action, the encrypted successor is the exact subtraction, the resulting value is in range, and reserve liabilities remain solvent. The hidden-head source does not provide those proofs. Do not treat debit or exit as enabled based on this instruction family alone.

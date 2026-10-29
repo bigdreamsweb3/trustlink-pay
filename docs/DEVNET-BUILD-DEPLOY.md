@@ -88,21 +88,22 @@ solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF \
 
 Only after the slot changes should you run the config migration/bootstrap.
 
-## Current V2 credit and settlement gate
+## Current credit source and hidden-head status
 
-The V2 TSN CPI wrapper and TCAP tip-credit instruction are present in source
-and compile. They are not a live transfer path until the upgraded binaries are
-deployed. The existing `tcap:credit:bootstrap:devnet` and
+The TSN CPI wrapper and TCAP shared-root Memo-credit instruction are present in
+source. Verify the affected program builds and the matching binaries are
+deployed before treating this as a live transfer path. The existing `tcap:credit:bootstrap:devnet` and
 `tcap:credit:devnet` commands are legacy V1 receipt smoke tests; they now fail
 closed unless `TCAP_ALLOW_LEGACY_V1=1` is explicitly set. Do not set that flag
 for a new transfer.
 
-The current source also has no completed runtime bridge that binds a verified
-TSN Node funding/settlement proof to the V2 tip credit, and TCAP's confidential
-settlement instruction remains disabled. Therefore a real funding plus TCAP
-settlement transaction is **blocked**, even after the two programs build and
-deploy. The deployment commands below prove only compilation and program
-upload; they do not prove an end-to-end payment.
+The current TSN credit caller verifies the Mother authorization, invokes
+GPRU's DNA-key and encrypted-credit checks, then calls TCAP's Memo-credit
+instruction to advance the shared commitment root. It does not use a
+per-TIN TCAP tip. GPRU/TCAP hidden-head instructions are separate source and
+are not invoked by Node, SDK, Cranker, or this TSN caller. A successful build
+or deploy does not prove an end-to-end payment; require a confirmed settlement
+signature and resulting chain state.
 
 The deploy helper uses RPC submission, `confirmed` commitment, and 20 signing
 attempts by default because large SBF upgrades can exceed a single blockhash

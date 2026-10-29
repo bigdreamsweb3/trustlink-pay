@@ -1,56 +1,25 @@
 ---
 title: "TrustLink Labs Engineering Principles"
 sidebarTitle: "Engineering Principles"
-description: "Four principles guide TrustLink Labs: privacy by architecture, user ownership, verifiable execution, and modular open infrastructure."
+description: "Source-backed boundaries for identity, authorization, proof verification, and asset governance."
 ---
 
-TrustLink Labs follows four engineering principles that shape protocol design, implementation priorities, and integration boundaries.
+TrustLink Labs separates transfer identity, settlement coordination, cryptographic verification, and asset governance so each contract can be reviewed independently.
 
-## Privacy by architecture
+## Data minimization
 
-Privacy begins by limiting unnecessary relationships and disclosures before a transaction reaches the ledger. Cryptographic commitments and confidential-asset research complement that architecture; they do not replace careful system boundaries.
+TIP stores encrypted identity and recovery data with public route commitments. Receiver, Node, and Cranker receive only the data required by their service contracts. The current TSN credit transaction passes a TIP registry account into GPRU and writes a shared TCAP root, so the current path still exposes those repeated on-chain account references and transaction ordering.
 
-In practice, this means:
+## User-controlled identity keys
 
-- The Receiver stores redacted work and never receives plaintext roots or private snapshots.
-- The Node verifies and redacts recipient identity from durable records.
-- The opaque slot is deliberately absent from funding and first appears only at settlement or refund.
-- TCAP stores only commitments, sequence, and nullifiers on chain; private balances live in owner-encrypted snapshots.
+The owner authorizes TIN creation with a wallet. Recovery material is held in a separate TIP-owned recovery PDA, and the SDK handles owner recovery. GPRU's one-time ElGamal key design keeps the matching private material owner-side; Node and Cranker do not need the owner's long-term private key.
 
-## User ownership
+## Verifiable state changes
 
-Users control their identity authorities, device authorization, keys, and assets. Infrastructure coordinates execution without receiving user private keys.
+The wired credit path verifies the authorization, DNA-key proof, encrypted credit relation, Memo commitment, approved asset, and TCAP shared-root predecessor/sequence. It does not persist a per-TIN latest head, so it does not establish freshness of the caller-supplied per-TIN ciphertext.
 
-In practice, this means:
+GPRU and TCAP also contain a hidden-head proof path in source. It is not called by current Node, SDK, Cranker, or TSN credit callers, and no complete circuit/prover/deployment test is established. It does not prove balance arithmetic, debit sufficiency, or solvency. The global writable root and public action arguments limit privacy.
 
-- The owner wallet signs the TIN access authorization.
-- The owner device recovers a transaction-specific GPRU private key and decrypts its state locally.
-- No operator (Receiver, Node, Cranker) receives the plaintext TIN master seed or private child keys.
-- The Mother authority creates settlement vouchers but cannot spend user funds.
+## Evidence discipline
 
-## Verifiable execution
-
-Receiver records, Node decisions, Cranker leases, canonical commitments, and Solana program checks provide an auditable path from intent to settlement.
-
-In practice, this means:
-
-- Every state change is recorded: `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, `REJECTED`.
-- The Node signs a permit binding every canonical field; the program re-checks each field on chain.
-- The owner can verify the tip commitment, sequence, and snapshot binding independently.
-- No step relies on unverifiable off-chain trust.
-
-## Modular open infrastructure
-
-Identity, protected receiving, settlement coordination, asset control, SDKs, and applications have distinct interfaces so researchers and developers can review or build on the part they need.
-
-In practice, this means:
-
-- TIN, GPRU, and TCAP are separate protocol components with narrow responsibilities.
-- The TSN SDK exposes independent modules for identity, routing, intent, and snapshot handling.
-- Researchers can audit the Solana programs without running the full application stack.
-- Developers can integrate TIN resolution or TCAP credit without adopting the full TrustLink Pay UI.
-
-## Related topics
-
-- [Security invariants](/security/invariants)
-- [Trust model](/architecture/trust-model)
+Source, compilation, deployment, and confirmed transactions are separate evidence. A page should not label a behavior live because an instruction exists or a build passed. See [Current technology](/about/current-technology) and [Security invariants](/security/invariants) for the current status boundary.

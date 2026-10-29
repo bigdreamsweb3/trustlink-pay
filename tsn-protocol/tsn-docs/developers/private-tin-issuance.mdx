@@ -83,8 +83,9 @@ derives a versioned GPRU ElGamal public key and its domain-separated
 commitment with Solana's `@solana/zk-sdk`. Pass those fields and the TIP policy
 commitment into `buildTinV1Creation`. The seed remains encrypted and is never
 included in the route fields. New registry accounts use schema version 1 and
-do not store the legacy NaCl key or a TIP root commitment; the Node derives
-the TCAP TIP root when it prepares settlement.
+do not store the legacy NaCl key or a TIP root commitment. Current settlement
+uses TCAP's shared commitment root; this creation flow does not derive a
+per-TIN TCAP TIP root.
 
 ```ts
 // Trusted issuer only: never run this with the lookup secret in browser code.

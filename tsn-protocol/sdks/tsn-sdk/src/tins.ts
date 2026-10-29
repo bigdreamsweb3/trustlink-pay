@@ -16,6 +16,7 @@ export const DEFAULT_TIP_PROGRAM_ID =
 export const TINS_PROGRAM_SALT = "TINS_SALT_2026";
 
 const TINS_GLOBAL_STATE_SEED = Buffer.from("global-state");
+const TIP_ROUTE_ROOT_V1_SEED = Buffer.from("tip:route-merkle-root:v1");
 const TINS_V1_CREATE_STAGE_SEED = Buffer.from("tin-v1-create-stage");
 const TINS_V1_OWNER_RECOVERY_SEED = Buffer.from("tin-v1-owner-recovery");
 const TIN_V1_RECOVERY_V4_MAGIC = Buffer.from("TSNTIN04", "ascii");
@@ -227,6 +228,16 @@ export function getTinsGlobalStatePda(
 ): PublicKey {
   return PublicKey.findProgramAddressSync(
     [TINS_GLOBAL_STATE_SEED],
+    getTinsProgramPublicKey(programId),
+  )[0];
+}
+
+/** One TIP-wide append-only route-membership root shared by all TINs. */
+export function getTipRouteMerkleRootV1Pda(
+  programId?: PublicKey | string | null,
+): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [TIP_ROUTE_ROOT_V1_SEED],
     getTinsProgramPublicKey(programId),
   )[0];
 }

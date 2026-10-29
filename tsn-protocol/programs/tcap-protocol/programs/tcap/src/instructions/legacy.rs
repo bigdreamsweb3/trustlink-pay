@@ -375,16 +375,21 @@ pub fn initialize_commitment_root_v1(
     empty_tree_root: [u8; 32],
 ) -> Result<()> {
     let root = &mut ctx.accounts.commitment_root;
+    let expected_empty_root = crate::authority::empty_gpru_hidden_head_root_v1()?;
+    require!(empty_tree_root == [0; 32] || empty_tree_root == expected_empty_root, TcapError::WrongTcapRoot);
+    let initial_root = expected_empty_root;
     root.version = TCAP_STATE_VERSION_V1;
     root.protocol_version = ctx.accounts.config.protocol_version;
-    root.current_root = empty_tree_root;
-    root.previous_root = empty_tree_root;
+    root.current_root = initial_root;
+    root.previous_root = initial_root;
     root.root_version = 1;
     root.sequence = 0;
-    root.history_policy = 1; // append-only external history in a future audited phase
+    root.history_policy = 1; // encrypted transaction history is carried by DBrix Memo instructions
     root.verifier_config = Pubkey::default();
     root.verifier_enabled = false;
-    root.paused = true;
+    // The shared root is used by the GPRU memo-credit replay gate. Proof
+    // verification remains disabled independently through verifier_enabled.
+    root.paused = false;
     root.bump = ctx.bumps.commitment_root;
     Ok(())
 }

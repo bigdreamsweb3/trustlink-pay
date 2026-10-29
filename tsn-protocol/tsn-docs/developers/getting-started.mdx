@@ -4,7 +4,7 @@ sidebarTitle: "Getting Started"
 description: "Set up Solana tooling, register a TIN, sign a payment intent, and submit it to the TSN Receiver on Devnet. Follow the complete path from SDK installation to on-chain confirmation."
 ---
 
-This guide walks you through your first application integration with the Transfer Settlement Network (TSN). You will install the SDK, check service availability, resolve a Transfer Identity Number (TIN), construct a signed payment intent, submit it through the SDK, and observe the work lifecycle. TSN is a Solana-first settlement coordination layer. The live path uses credit-only TCAP tips, not public payout accounts.
+This guide walks through the SDK and payment-intent lifecycle. Source-backed TSN credit checks the GPRU transaction-key and encrypted-credit relations, then advances TCAP's shared commitment root with Memo data bound to the transition. It does not initialize a per-TIN TCAP tip account. Source presence does not by itself establish Devnet deployment or a confirmed transaction; check those separately before treating a flow as live.
 
 ## Prerequisites
 
@@ -207,8 +207,7 @@ clients or construct raw settlement instructions.
   icon="lock"
   href="/developers/confidential-settlement"
 >
-  Explore the TCAP credit-only settlement path and the ConfidentialSettlement
-  ABI.
+  Explore the current GPRU-checked credit CPI and TCAP shared-root transition.
 </Card>
 
   <Card title="Security Invariants" icon="shield" href="/security/invariants">

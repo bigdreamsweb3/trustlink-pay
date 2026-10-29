@@ -4,6 +4,8 @@ sidebarTitle: "Epoch Treasury"
 description: "Learn how the Epoch Treasury records aggregate funding and settlement liability using opaque slots and why it is protocol-controlled accounting, not a user balance."
 ---
 
+> **Scope:** epoch treasury and opaque-slot instructions are a separate TSN program capability. They are not the TCAP per-TIN balance model and are not account requirements of the current wallet-to-TIN credit instruction.
+
 The Epoch Treasury is protocol-controlled accounting for aggregate funding and settlement liability. It is not a user balance container. Funding sends SPL tokens directly to the epoch's treasury token account, and the treasury only tracks the aggregate pending liability. No individual payment escrow, commitment PDA, payment vault, or claim slot is created during funding.
 
 ## How funding works

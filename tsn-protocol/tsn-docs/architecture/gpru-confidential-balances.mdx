@@ -1,51 +1,39 @@
 ---
-title: "GPRU and TCAP: Confidential Transaction State"
-description: "GPRU verifies encrypted credit transitions; DBrix Memo records carry the encrypted balance history while TCAP stores replay state."
+title: "GPRU and TCAP: Hidden Heads and Encrypted Memo State"
+description: "The checked-in GPRU proof sources, TCAP shared root, current credit wiring, and privacy limits."
 ---
 
-# GPRU and TCAP confidential state
+# GPRU and TCAP state
 
-GPRU (Guarded Privacy Routing Unit) creates transaction-specific DNA keys and verifies their relationship to TIP route material. TIP (Transfer Identity Protocol) manages transfer identities and route data; a TIN (Transfer Identity Number) is one identity within TIP. TCAP (Transfer Confidential Asset Protocol) governs approved assets and its credit state.
+GPRU verifies cryptographic relations; TCAP governs assets and reserve state. TIP manages transfer identities and route metadata. A TIN is one 10-digit Transfer Identity Number within TIP. The source currently contains a wired credit-transition path and a separate hidden-head proof path that has not been connected to settlement callers.
 
-## Current implementation
+## Credit transition in the current TSN source
 
-TIP V1 stores a versioned GPRU ElGamal scan public key and its commitment. The SDK can recover a transaction-specific private key locally from the public DNA derivation data and owner-held secret material. The Node creates the DNA and one-time public key while the recipient is offline.
+The TSN `register_tcap_credit_authorization_v2` instruction verifies authorization and the GPRU DNA-key proof, invokes GPRU `apply_credit_transition_v1`, and then invokes TCAP `credit_gpru_memo_v1`. GPRU validates the initial ciphertext against the funded amount or checks later ElGamal addition against a supplied predecessor ciphertext. TCAP validates the asset, authorization signer, validity window, predecessor shared root, and next global sequence before advancing that root. The transition binds the Memo instruction data by commitment.
 
-For TCAP credit settlement, TSN invokes GPRU to verify the DNA key derivation proof and encrypted credit transition, then invokes TCAP in the same transaction. GPRU verifies the first encrypted balance against the funded amount or verifies the homomorphic successor against the previous ciphertext and credit amount. TCAP checks authorization, asset and policy, validity window, predecessor commitment, and next sequence. On success, it atomically advances the replay head.
+TCAP's shared commitment root is one global account, not a latest-head account for each TIN. GPRU does not persist a per-TIN head in this wired credit path. As a result, this path does not independently prove that a supplied predecessor ciphertext is the latest ciphertext for its TIN. The Memo is stored in transaction instruction data, not in a TCAP balance PDA; historical balance reconstruction requires reading the relevant transactions through RPC or an indexer.
 
-The Node derives a funding commitment from the signed reserve-deposit transaction. TSN includes it in the settlement authorization, and TCAP receives it in the transition's `nullifier` field. Once TCAP advances the predecessor and sequence, that same settlement cannot be applied again. This flow has no separate spent-funding record or per-transaction PDA.
+## Hidden-head verifier source
 
-The ElGamal balance ciphertext and encrypted transaction record are carried in the settlement transaction's DBrix Memo instruction. TCAP's `TCapTinTipV1` account stores only the current commitment, sequence, policy commitment, latest nullifier, and frozen flag; it does not store a balance ciphertext or transaction history. The owner recovers the matching GPRU key locally and reads the Memo history through an RPC/indexing service.
+GPRU also contains a Groth16 verifier instruction and Circom source for a hidden route-and-asset head update, sequence increment, Memo/action binding, and one-time nullifier update. The circuit's public inputs are the old and new shared TCAP roots, Memo commitment, action commitment, nullifier, and TIP route-membership root. Private witnesses contain route membership, the prior head, and sparse-map paths. TCAP contains `advance_gpru_hidden_head_v1`, which checks its root and global sequence, verifies asset and authorization conditions, invokes GPRU, and advances the same shared root.
 
-## Settlement sequence
+The Node, SDK, Cranker, and active TSN credit instruction do not call this hidden-head path. The repository does not establish a compiled circuit, generated proving/verifying keys, a proof-generation pipeline, initialized verifier account, or end-to-end transaction evidence. This proof source must not be described as live or production-ready.
 
-```mermaid
-sequenceDiagram
-    participant Sender as Sender SDK
-    participant Receiver
-    participant Node as TSN Node
-    participant Cranker
-    participant TSN as TSN Program
-    participant GPRU
-    participant TCAP
-    participant Owner as Recipient SDK
+## What the hidden-head proof does not prove
 
-    Sender->>Receiver: Signed payment authorization and reserve funding
-    Receiver->>Node: Accepted ingress work
-    Node->>Node: Resolve TIN through TIP; validate route and funding
-    Node->>Node: Derive DNA and one-time ElGamal public key
-    Node->>Cranker: Immutable verified settlement authorization
-    Cranker->>TSN: Submit exact co-signed transaction
-    TSN->>GPRU: Verify DNA key derivation proof
-    TSN->>TCAP: CPI with funding-bound transition
-    TCAP->>TCAP: Check predecessor and sequence; advance state atomically
-    Owner->>Owner: Recover the matching private key locally
-```
+The circuit does not prove homomorphic balance addition or subtraction, debit affordability, a non-negative balance, or reserve conservation. The current hidden-head instruction arguments include public action kind, token ID, and amount; those values are visible in the transaction. A Memo commitment binds the Memo bytes but does not prove that encrypted contents encode a valid balance.
 
-Receiver acceptance, Node verification, Cranker submission, and chain confirmation are separate lifecycle stages. A confirmed reserve deposit does not by itself mean the later TCAP settlement transition confirmed.
+The design uses one writable TCAP shared-root PDA. Every transition using that path references the same account and advances a global sequence, so public observers can see a shared protocol-level link and ordering. The proof is intended to hide which TIN head changed; it does not provide zero linkability.
 
-## Debit boundary and privacy limits
+## Debit and exit status
 
-Credit ciphertext updates use ElGamal addition without decrypting the stored balance. This does not prove that a balance can cover a debit. Confidential debit and exit remain fail-closed until the program verifies a proof that the prior balance is sufficient and the successor reflects the exact subtraction. TIN-to-TIN transfers also need a proof of source/destination conservation.
+TCAP retains older per-TIN tip instructions and debit/exit code paths. The current TSN/Node/SDK/Cranker settlement path does not use the hidden-head proof for debit or exit. The hidden-head circuit does not supply the required balance-sufficiency, subtraction, exit-destination, or solvency proofs. Do not treat these paths as enabled based on the existence of verifier code.
 
-Wallet deposits and exits remain public at their wallet boundary. A transaction-specific DNA key does not hide those public funding details. The TCAP replay-head PDA is stable for its route and appears in credit settlements, so observers can link settlements that update that same head even though each transaction has a distinct DNA output.
+## Source references
+
+- GPRU program: `tsn-protocol/programs/gpru/src/`
+- GPRU circuit: `tsn-protocol/programs/gpru/circuits/hidden_head_v1/`
+- TSN credit CPI: `tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs`
+- TCAP credit and hidden-head instructions: `tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/`
+
+See [Current technology](/about/current-technology) for the overall implementation and deployment evidence boundary.

@@ -1,12 +1,27 @@
 # TSN security model
 
-| Boundary | Allowed data | Forbidden data |
+This page describes the source-backed TIN credit boundary. Receiver acceptance,
+Node verification, Cranker submission, reserve-funding confirmation, and TCAP
+transition confirmation are separate events. Only a confirmed TCAP transition
+establishes that the credit state change executed.
+
+| Boundary | Current role | Security limit |
 | --- | --- | --- |
-| Device → Node | Sender-signed authorization, funding signature, public routing coordinates | Private keys, master seeds, snapshot decryption keys |
-| Receiver → Cranker | Opaque intent work, lease, public coordination fields | Recipient TIN, sender authorization, serialized funding transaction, encrypted binding |
-| Node/Mother → Cranker | Opaque slot/commitment, nullifier, public payout coordinates, short-lived signed permit | Payment id, encrypted record, refund secret, payment-specific account |
-| Cranker → TSN | Permit and public accounts required by the bound instruction | Caller-selected source, payment record, alternate vault, alternate amount/recipient |
+| Owner SDK → Receiver | Submits signed funding/payment intent data and authenticated work | The SDK's local balance view is not an on-chain authorization proof. |
+| Receiver → Node | Stores ingress and leases authenticated work | Receiver acceptance alone does not verify a payment or settle it. |
+| Node → TSN | Resolves TIP, validates work, and prepares authorized transition data | Node verification alone does not move TCAP assets. |
+| Cranker → Solana | Submits the authorized transaction and pays transaction fees | The Cranker cannot change the transaction's authorized fields; submission alone is not confirmation. |
+| TSN → GPRU → TCAP | Verifies the DNA-key/credit relation, then atomically advances TCAP's shared commitment root | The root is global, not a per-TIN head; current source does not prove the supplied predecessor is latest for that TIN. |
 
-The current TCAP credit path verifies the Mother-rooted ConfidentialSettlement receipt, AcceptedIntent binding, lease/validity window, amount, token, recipient tip, commitments, sequence and nullifier. It atomically advances the tip and consumes the receipt/nullifier; replay fails. It does not pay from CrankerVault. CrankerVault payout and reimbursement descriptions are retained only for historical TSN payout instructions and must not be used to implement TCAP credit.
+The encrypted Memo is transaction instruction data. TCAP does not store it in a
+per-TIN balance account in the current credit path. Reading transaction
+history requires RPC access or an indexer. GPRU/TCAP hidden-head instructions
+exist separately in source but are not called by the current Node, SDK,
+Cranker, or TSN credit path; their circuit does not establish balance
+arithmetic, debit affordability, or solvency.
 
-The model provides capability-based authorization and opaque commitment coordination. TCAP private reads use owner-local decryption; this is not a formal zero-knowledge proof system.
+The current source therefore provides authorization checks, a GPRU credit
+relation check, and global replay sequencing. It does not establish
+zero-linkability, an authenticated latest memo per TIN, confidential debit or
+exit, or a complete encrypted-balance proof system. See [Current architecture](./CURRENT-ARCHITECTURE.md)
+and [GPRU/TCAP status](./gpru-tcap-route.md).

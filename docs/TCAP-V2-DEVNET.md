@@ -1,5 +1,12 @@
 # TCAP governed asset-entry Devnet flow
 
+> **Historical debit fixture — not the current TIN settlement procedure.**
+> The debit commands below depend on a TCAP TIN-tip account and an owner-local
+> encrypted snapshot. Those are not used by the current TSN credit caller, and
+> the current GPRU hidden-head proof source does not establish debit
+> affordability or end-to-end debit/exit support. Do not run this as a live
+> XP debit guide. See [current architecture](./CURRENT-ARCHITECTURE.md).
+
 The current TCAP deposit path is keyed by the governed `asset_entry`. Its
 reserve state, reserve authority, and token vault are derived from that entry;
 the old standalone `initialize_asset_state_v1` instruction is not part of the

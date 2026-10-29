@@ -1,6 +1,11 @@
-# From ZK-PRU to GPRU + TCAP
+# Historical design record: from ZK-PRU to GPRU and TCAP
 
-**TrustLink Labs · Transfer Settlement Network**  
+> **Historical architecture.** This document preserves an earlier design and
+> Devnet experiment. Its TCAP per-TIN tip, encrypted snapshot, credit, and
+> two-phase exit descriptions are superseded and are not current operating
+> instructions. For current source behavior, see [Current architecture](../CURRENT-ARCHITECTURE.md).
+
+**TrustLink Labs · Transfer Settlement Network**
 **Experiment log · March 2026 → 8 September 2026**
 
 This is not a product brochure. It is the record of what we built, what broke, what we deleted, and what finally worked on Solana Devnet. Every major path below was tested for real: programs deployed, accounts migrated, transactions confirmed or rejected with logs.
@@ -17,7 +22,7 @@ Between roughly **March 2026** and **September 2026** the protocol did not evolv
 4. **GPRU + TCAP** — authorization without custody, private balance without public amounts
 5. Months of **Devnet deploy / migrate / repair** until Path 1 funding+credit passed
 
-If search engines or future engineers still see “ZK-PRU” associated with TrustLink, this file is the authoritative story: **ZK-PRU was a real experiment, it failed product constraints, and it is retired.** The live architecture is **TIN → GPRU → Epoch treasury / TSN → TCAP tip + sealed private balance → two-phase settlement**.
+If search engines or future engineers still see “ZK-PRU” associated with TrustLink, this file records that earlier experiment and its retirement. The architecture described in the remaining sections is historical and has been superseded by the source-backed GPRU Memo-credit path documented in the current architecture guide.
 
 ---
 
@@ -283,8 +288,8 @@ Left:  GFtayhjBwQsRe7rKKUiPzcYW3Uh5Ed8B7KJgqDfUEcv3
 Right: 11111111111111111111111111111111
 ```
 
-**Cause:** JS (or account meta order) put the wrong pubkey in the `system_program` slot.  
-**Fix class:** align builder account order with the Rust accounts struct — **no philosophy change**.  
+**Cause:** JS (or account meta order) put the wrong pubkey in the `system_program` slot.
+**Fix class:** align builder account order with the Rust accounts struct — **no philosophy change**.
 Until fixed, two-phase exit simulation fails before debit lands.
 
 ---
@@ -403,7 +408,7 @@ From March to September 2026 this project learned the expensive way that **priva
 
 The experiment is not finished. Path 1 credit on Devnet is the first time the new story is not only written in docs — it is written in **confirmed signatures**. Exit will be next when the account list matches the program, the same way seal only worked after repair matched the layout.
 
-**TrustLink Labs**  
+**TrustLink Labs**
 Transfer Settlement Network · Transfer Confidential Asset Protocol · Guard Privacy Routing Unit
 
 _Experiment log for the expo / research archive. Prefer this narrative over any indexed page that still speaks of ZK-PRU as current._

@@ -1,83 +1,21 @@
 ---
-title: "TSN Layer: Settlement Coordination and Epoch Treasury"
+title: "TSN Layer: Authorization and Settlement Coordination"
 sidebarTitle: "TSN"
-description: "The TSN settlement layer: epoch treasury, Mother-rooted DNA permits, opaque EpochClaimSlot PDA, and cranker vault reimbursement."
+description: "TSN coordinates intent verification and exact transaction submission across Receiver, Node, Cranker, and Solana programs."
 ---
 
-**In plain English:** TSN is the settlement and authorization coordination layer. It owns the epoch treasury, verifies Mother-rooted DNA permits, initializes and consumes opaque `EpochClaimSlot` PDAs, pays recipients from cranker vaults, and processes refunds. It does not hold a balance ledger. TCAP does that.
+TSN is the Transfer Settlement Network. Its service layer coordinates signed intents, Receiver work storage, Node verification, Mother authorization, and Cranker transaction submission. Its Solana program enforces the relevant authorization and CPI checks; it does not decrypt user balance data.
 
-## What TSN owns
+## Wallet-to-TIN credit coordination
 
-- **Epoch Treasury.** A protocol-controlled token account that receives funding and holds aggregate pending liability. Not a user balance container.
-- **`EpochClaimSlot` PDA.** Derived from the epoch treasury and an opaque slot key. Initialized by the first valid settlement or refund. Stores `SETTLED` or `REFUNDED` state and the successful cranker.
-- **Cranker vault reimbursement.** After a cranker pays a recipient, TSN reimburses that exact cranker vault for the exact amount, only if the Mother-rooted permit checks out.
-- **Refund path.** If a settlement expires, Node/Mother signs a refund against the same slot. First writer wins.
+The sender authorizes payment and reserve funding. Receiver accepts and stores the ingress. Node verifies the request and resolves the TIP route, then releases authorized work. Cranker submits the authorized transaction. In the current credit source, TSN verifies GPRU's DNA-key proof and invokes GPRU credit-transition validation followed by TCAP's shared-root credit transition.
 
-## Funding
+This path advances a single shared TCAP root. It does not use the hidden-head Groth16 instruction currently present in GPRU and TCAP source, and it does not establish a persistent latest ciphertext for each TIN. See [GPRU and TCAP state](/architecture/gpru-confidential-balances).
 
-Funding sends tokens only to the epoch treasury token account and increments aggregate pending liability. **Funding creates no payment account, escrow account, commitment PDA, or public payment identifier.**
+## Other TSN instructions
 
-## Settlement (payout)
+The TSN program also contains epoch, Mother authorization, and settlement/refund instruction families. Their presence in source is not evidence that a particular XP transaction uses them. A given route must be traced from its Node/Cranker caller through the exact top-level instruction before describing its runtime behavior.
 
-<Note>**Status: Live on Devnet.**</Note>
+## Lifecycle evidence
 
-Node signs a permit binding:
-
-- opaque slot
-- commitment digest, random nonce, nullifier
-- Mother-rooted epoch treasury and ledger
-- CrankerVault, recipient, mint, amount
-- lease id, version, expiry
-- authorization expiry
-
-Cranker submits the exact leased transaction. TSN atomically:
-
-1. Checks the Node permit, lease, slot state, nullifier, treasury liability.
-2. Pays the recipient from the CrankerVault.
-3. Reimburses that exact CrankerVault for the exact amount.
-4. Marks the slot `SETTLED` and records the successful cranker.
-
-The cranker cannot change amount, token, recipient binding, commitments, sequence, policy, nullifier, or expiry. Any change breaks the permit.
-
-## Refund
-
-<Note>**Status: Live on Devnet.**</Note>
-
-Refund uses the same opaque slot as settlement. The first valid refund initializes and consumes the slot as `REFUNDED` and pays the authorized refund destination from the epoch treasury. After `SETTLED` or `REFUNDED`, any later operation against the slot fails before token movement.
-
-## Epoch close
-
-An epoch can close only when pending liability is zero and every slot is resolved.
-
-## Cranker registration
-
-<Note>**Status: Live on Devnet.**</Note>
-
-Crankers are registered with the TSN program and each has a program-owned CrankerVault. Crankers can be funded, unfunded, and have a funding policy set. A cranker cannot rewrite a permit.
-
-## What TSN never sees
-
-- Plaintext receiving roots
-- Private balance values
-- Recipient TIN inside the tip transition
-- Payment intent IDs on the privacy-safe credit path
-
-## Related
-
-<CardGroup cols={2}>
-  <Card title="TIN" icon="id-card" href="/layers/tin">
-    Payment identity and route discovery.
-  </Card>
-
-<Card title="GPRU" icon="route" href="/layers/gpru">
-  Non-custodial authorization and routing.
-</Card>
-
-<Card title="TCAP" icon="lock" href="/layers/tcap">
-  Private balance accounting: credit, debit, exit.
-</Card>
-
-  <Card title="Architecture" icon="diagram-project" href="/how-it-works/architecture">
-    End-to-end sequence diagram.
-  </Card>
-</CardGroup>
+Receiver acceptance, Node verification, Cranker lease/submission, and Solana confirmation are separate milestones. A confirmed funding transaction does not establish that the follow-up TCAP state transition succeeded. Only the transaction signature and resulting on-chain state establish execution on a specific cluster.

@@ -32,6 +32,7 @@ import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
 import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
 import {
   getTinsGlobalStatePda,
+  getTipRouteMerkleRootV1Pda,
   getTinV1CreationStagingPda,
   getTinV1OwnerRecoveryPda,
   serializeTinV1CreationStageParams,
@@ -350,39 +351,6 @@ const hex64 = (value: unknown, field: string) => {
   return Uint8Array.from(bytes);
 };
 
-function buildInitializeTcapTinTipInstruction(fields: {
-  payer: PublicKey;
-  motherEscrow: PublicKey;
-  cranker: PublicKey;
-  tip: PublicKey;
-  tipRootCommitment: string;
-  initialCommitment: string;
-  policyCommitment: string;
-}) {
-  const root = Buffer.from(hex32(fields.tipRootCommitment, "tipRootCommitment"));
-  const [expectedTip] = PublicKey.findProgramAddressSync(
-    [Buffer.from("tcap:tin-tip:v1"), root],
-    TCAP_PROGRAM_ID,
-  );
-  if (!expectedTip.equals(fields.tip)) throw new Error("TCAP_TIN_TIP_PDA_MISMATCH");
-  return new TransactionInstruction({
-    programId: TCAP_PROGRAM_ID,
-    keys: [
-      { pubkey: fields.payer, isSigner: true, isWritable: true },
-      { pubkey: fields.motherEscrow, isSigner: false, isWritable: false },
-      { pubkey: fields.cranker, isSigner: false, isWritable: false },
-      { pubkey: fields.tip, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data: Buffer.concat([
-      hash("global:initialize_tcap_tin_tip_v1").subarray(0, 8),
-      root,
-      Buffer.from(hex32(fields.initialCommitment, "initialCommitment")),
-      Buffer.from(hex32(fields.policyCommitment, "policyCommitment")),
-    ]),
-  });
-}
-
 async function receiverRequest<T>(
   signer: Keypair,
   method: "POST" | "PATCH",
@@ -553,8 +521,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     throw new Error("On-chain Mother Escrow authority is unavailable");
   }
   const authority = new PublicKey(mother.authority);
-  const tipRootCommitment = String(transition.tipRootCommitment ?? "");
-  const currentTip = new PublicKey(String(transition.tip ?? ""));
+  const commitmentRoot = new PublicKey(String(transition.commitmentRoot ?? ""));
   const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
   const connection = createSolanaConnection(rpcUrl);
@@ -562,18 +529,20 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     authority,
     motherEscrow: new PublicKey(mother.address),
     config: tcapConfig,
-    tipRootCommitment,
+    commitmentRoot,
     assetEntry,
-    tip: currentTip,
     authorizationDigest: String(transition.authorizationDigest ?? ""),
     validAfterSlot: String(transition.validAfterSlot ?? ""),
     expiresAtSlot: String(transition.expiresAtSlot ?? ""),
     previousCommitment: String(transition.previousCommitment ?? ""),
     newCommitment: String(transition.newCommitment ?? ""),
     sequence: String(transition.sequence ?? ""),
+    previousTcapRoot: String(transition.previousTcapRoot ?? ""),
+    tcapRootSequence: String(transition.tcapRootSequence ?? ""),
     tokenId: Number(transition.tokenId),
     policyCommitment: String(transition.policyCommitment ?? ""),
     gpruScopeCommitment: String(transition.gpruScopeCommitment ?? ""),
+    memoCommitment: String(transition.memoCommitment ?? ""),
     nullifier: String(transition.nullifier ?? ""),
     tipRegistry: new PublicKey(String(transition.tipRegistry ?? "")),
     dnaKeyCommitment: String(transition.dnaKeyCommitment ?? ""),
@@ -609,42 +578,38 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     expectedCommitment: transition.memoCommitment,
   });
   const memoPayload = String(transition.memoPayload);
-  const tipBeforeSettlement = await connection.getAccountInfo(currentTip, "confirmed");
-  if (transition.initializeTip === true) {
-    const initialCommitment = Buffer.from(hex32(transition.initialCommitment, "initialCommitment"));
-    const previousCommitment = Buffer.from(hex32(transition.previousCommitment, "previousCommitment"));
-    if (String(transition.sequence) !== "1" || !initialCommitment.equals(previousCommitment)) {
-      throw new Error("TCAP_FIRST_CREDIT_INITIAL_STATE_MISMATCH");
-    }
-    if (!tipBeforeSettlement) {
-      settlementInstructions.unshift(buildInitializeTcapTinTipInstruction({
-        payer: signer.publicKey,
-        motherEscrow: new PublicKey(mother.address),
-        cranker: getTsnCrankerPda({
-          motherEscrow: new PublicKey(mother.address),
-          operator: signer.publicKey,
-        }),
-        tip: currentTip,
-        tipRootCommitment,
-        initialCommitment: initialCommitment.toString("hex"),
-        policyCommitment: String(transition.policyCommitment ?? ""),
-      }));
-      crankerLog(`TCAP TIN TIP initialization queued before first credit workId=${work.id}`);
-    } else {
-      const expectedTipDiscriminator = hash("account:TCapTinTipV1").subarray(0, 8);
-      const tipData = tipBeforeSettlement.data;
-      if (!tipBeforeSettlement.owner.equals(TCAP_PROGRAM_ID)
-          || tipData.length !== 116 || !tipData.subarray(0, 8).equals(expectedTipDiscriminator)
-          || !tipData.subarray(10, 42).equals(initialCommitment)
-          || tipData.readBigUInt64LE(42) !== 0n
-          || !tipData.subarray(50, 82).equals(Buffer.from(hex32(transition.policyCommitment, "policyCommitment")))
-          || !tipData.subarray(82, 114).equals(Buffer.alloc(32)) || tipData[114] !== 0) {
-        throw new Error("TCAP_TIN_TIP_CHANGED_BEFORE_FIRST_CREDIT");
-      }
-    }
-  } else if (!tipBeforeSettlement) {
-    throw new Error("TCAP_TIN_TIP_MISSING_WITHOUT_NODE_INITIALIZATION_AUTHORIZATION");
+  const rootBefore = await connection.getAccountInfo(commitmentRoot, "confirmed");
+  const rootDisc = hash("account:TcapCommitmentRootStateV1").subarray(0, 8);
+  if (!rootBefore || !rootBefore.owner.equals(TCAP_PROGRAM_ID) || rootBefore.data.length !== 124
+      || !rootBefore.data.subarray(0, 8).equals(rootDisc)
+      || !rootBefore.data.subarray(12, 44).equals(Buffer.from(hex32(transition.previousTcapRoot, "previousTcapRoot")))
+      || rootBefore.data.readBigUInt64LE(80) + 1n !== BigInt(String(transition.tcapRootSequence))) {
+    throw new Error("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT");
   }
+  const u64le = (value: unknown) => {
+    const bytes = Buffer.alloc(8);
+    bytes.writeBigUInt64LE(BigInt(String(value)));
+    return bytes;
+  };
+  const u32le = (value: unknown) => {
+    const bytes = Buffer.alloc(4);
+    bytes.writeUInt32LE(Number(value));
+    return bytes;
+  };
+  const expectedNextRoot = createHash("sha256").update(Buffer.concat([
+    Buffer.from("TCAP_GPRU_MEMO_SETTLEMENT_ROOT_V1\0", "utf8"),
+    Buffer.from(hex32(transition.previousTcapRoot, "previousTcapRoot")),
+    Buffer.from(hex32(transition.authorizationDigest, "authorizationDigest")),
+    Buffer.from(hex32(transition.nullifier, "nullifier")),
+    Buffer.from(hex32(transition.previousCommitment, "previousCommitment")),
+    Buffer.from(hex32(transition.newCommitment, "newCommitment")),
+    u64le(transition.sequence),
+    u32le(transition.tokenId),
+    Buffer.from(hex32(transition.gpruScopeCommitment, "gpruScopeCommitment")),
+    Buffer.from(hex32(transition.memoCommitment, "memoCommitment")),
+    Buffer.from(hex32(transition.dnaKeyCommitment, "dnaKeyCommitment")),
+    u64le(transition.tcapRootSequence),
+  ])).digest();
   settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
     rpcUrl,
@@ -652,25 +617,21 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     authority,
     work.id,
     settlementInstructions,
-    transition.initializeTip === true ? "TCAP_TIN_TIP_INIT_GPRU_CREDIT_DBrix_MEMO_V1" : "TCAP_GPRU_CREDIT_DBRIX_MEMO_V1",
+    "TCAP_GPRU_MEMO_CREDIT_V1",
   );
-  const tip = currentTip;
-  const tipAccount = await connection.getAccountInfo(tip, "confirmed");
-  const tipData = tipAccount?.data;
-  const expectedTipDiscriminator = createHash("sha256").update("account:TCapTinTipV1").digest().subarray(0, 8);
-  if (!tipAccount || !tipAccount.owner.equals(TCAP_PROGRAM_ID) || !tipData
-      || tipData.length !== 116 || !tipData.subarray(0, 8).equals(expectedTipDiscriminator)
-      || !tipData.subarray(10, 42).equals(Buffer.from(String(transition.newCommitment), "hex"))
-      || tipData.readBigUInt64LE(42) !== BigInt(String(transition.sequence))
-      || !tipData.subarray(50, 82).equals(Buffer.from(String(transition.policyCommitment), "hex"))
-      || !tipData.subarray(82, 114).equals(Buffer.from(String(transition.nullifier), "hex"))
-      || tipData[114] !== 0) {
-    throw new Error("Confirmed transaction did not advance the TCAP replay head atomically");
+  const rootAfter = await connection.getAccountInfo(commitmentRoot, "confirmed");
+  const rootData = rootAfter?.data;
+  if (!rootAfter || !rootAfter.owner.equals(TCAP_PROGRAM_ID) || !rootData
+      || rootData.length !== 124 || !rootData.subarray(0, 8).equals(rootDisc)
+      || !rootData.subarray(44, 76).equals(Buffer.from(hex32(transition.previousTcapRoot, "previousTcapRoot")))
+      || !rootData.subarray(12, 44).equals(expectedNextRoot)
+      || rootData.readBigUInt64LE(80) !== BigInt(String(transition.tcapRootSequence))) {
+    throw new Error("Confirmed settlement did not advance TCAP's shared replay root atomically");
   }
   crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} sequence=${String(transition.sequence)} tokenId=${String(transition.tokenId)}`);
   await report(signer, work, "CONFIRMED", {
     signature,
-    stage: "TCAP_GPRU_TIN_TIP_CREDIT_V2_CONFIRMED",
+    stage: "TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED",
     sequence: String(transition.sequence),
     authorizationDigest: String(transition.authorizationDigest),
   });
@@ -879,6 +840,7 @@ async function submitStagedTinV1Creation(params: {
     keys: [
       { pubkey: signer.publicKey, isSigner: true, isWritable: true },
       { pubkey: getTinsGlobalStatePda(programId), isSigner: false, isWritable: true },
+      { pubkey: getTipRouteMerkleRootV1Pda(programId), isSigner: false, isWritable: true },
       { pubkey: registry, isSigner: false, isWritable: true },
       { pubkey: getTinV1OwnerRecoveryPda(owner, programId), isSigner: false, isWritable: true },
       { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
@@ -983,6 +945,11 @@ async function processTinOperation(
       { pubkey: signer.publicKey, isSigner: true, isWritable: true },
       {
         pubkey: getTinsGlobalStatePda(programId),
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: getTipRouteMerkleRootV1Pda(programId),
         isSigner: false,
         isWritable: true,
       },

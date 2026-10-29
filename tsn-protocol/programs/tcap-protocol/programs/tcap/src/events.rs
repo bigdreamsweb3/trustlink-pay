@@ -27,6 +27,19 @@ pub struct TcapTinTipCreditedV1 {
     pub transition_digest: [u8; 32],
 }
 
+/// A shared, opaque replay checkpoint advanced atomically with GPRU credit.
+/// It contains no per-TIN address or encrypted balance; those records live in
+/// the DBrix Memo transaction history.
+#[event]
+pub struct TcapGpruMemoCreditedV1 {
+    pub previous_root: [u8; 32],
+    pub current_root: [u8; 32],
+    pub settlement_sequence: u64,
+    pub balance_sequence: u64,
+    pub token_id: u32,
+    pub transition_digest: [u8; 32],
+}
+
 #[event]
 pub struct AssetRegistryInitializedV1 {
     pub registry: Pubkey,

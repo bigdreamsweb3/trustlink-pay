@@ -89,16 +89,53 @@ function initializeCommitmentRootInstruction() {
 }
 
 const configInfo = await connection.getAccountInfo(config);
-if (configInfo) {
-  console.log(`TCAP config already initialized: ${config.toBase58()}`);
+const registryInfo = await connection.getAccountInfo(registry);
+const rootInfo = await connection.getAccountInfo(root);
+const instructions = [];
+
+if (!configInfo) {
+  instructions.push(initializeTcapInstruction());
+}
+
+if (!registryInfo) instructions.push(initializeRegistryInstruction());
+if (!rootInfo) {
+  instructions.push(initializeCommitmentRootInstruction());
+} else {
+  const rootData = rootInfo.data;
+  if (rootData.length !== 124) {
+    throw new Error(`Unexpected TCAP commitment root account size: ${rootData.length}`);
+  }
+  const sequence = rootData.readBigUInt64LE(80);
+  const currentRoot = rootData.subarray(12, 44);
+  const isPaused = rootData[122] !== 0;
+  if (sequence === 0n && currentRoot.every((byte) => byte === 0)) {
+    const data = createHash("sha256")
+      .update("global:activate_commitment_root_v1")
+      .digest()
+      .subarray(0, 8);
+    instructions.push(new TransactionInstruction({
+      programId: PROGRAM_ID,
+      keys: [
+        { pubkey: payer.publicKey, isSigner: true, isWritable: false },
+        { pubkey: config, isSigner: false, isWritable: false },
+        { pubkey: root, isSigner: false, isWritable: true },
+      ],
+      data,
+    }));
+  } else if (isPaused) {
+    console.warn("TCAP commitment root is paused with existing state; setup will not unpause it.");
+  }
+}
+
+if (instructions.length === 0) {
+  console.log(`TCAP is initialized: ${PROGRAM_ID.toBase58()}`);
+  console.log(`Config PDA: ${config.toBase58()}`);
+  console.log(`Registry PDA: ${registry.toBase58()}`);
+  console.log(`Commitment root PDA: ${root.toBase58()}`);
   process.exit(0);
 }
 
-const tx = new Transaction().add(
-  initializeTcapInstruction(),
-  initializeRegistryInstruction(),
-  initializeCommitmentRootInstruction(),
-);
+const tx = new Transaction().add(...instructions);
 const signature = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: "confirmed" });
 console.log(`TCAP initialized on devnet: ${PROGRAM_ID.toBase58()}`);
 console.log(`Config PDA: ${config.toBase58()}`);

@@ -1,46 +1,33 @@
 ---
-title: "Current TrustLink Technology on Solana Devnet"
+title: "Current TrustLink Technology"
 sidebarTitle: "Current Technology"
-description: "Source-backed Devnet capabilities and current development boundaries for TSN, TIP/TIN, GPRU, and TCAP."
+description: "Source-backed capabilities and integration boundaries for TIP, GPRU, TSN, and TCAP."
 ---
 
-TrustLink Labs develops and tests TSN and its related identity and asset protocols on Solana Devnet. The sections below distinguish current source-backed settlement behavior from encrypted-balance capabilities that remain future work.
+This page reports what the checked-in programs and service callers currently implement. Program source, a successful build, a deployment, and an end-to-end confirmed transaction are separate evidence levels. Devnet deployment status must be checked against current chain state before relying on it.
 
-## What is on Devnet today
+## Implemented in source
 
-- **TSN payment intents** — Sender-signed intents binding amount, mint, fee limits, expiry, nonce, and recipient route commitment.
-- **TIP and TIN registry** — TIP issues and resolves transfer identities; the registry stores 10-digit TIN records, route commitments, and encrypted identity envelopes.
-- **GPRU key verification** — TSN's credit instruction invokes the GPRU program to verify the one-time ElGamal DNA key proof against TIP route material. This verifies key derivation, not encrypted balance arithmetic.
-- **Mother Escrow authority** — Epoch coordination and `ConfidentialSettlement` authorization through the one-time `SettlementDna` PDA.
-- **TSN Node verification** — Stateless signature verification, route commitment matching, nonce/replay checks, and short-lived permit signing.
-- **Cranker submission** — Leased execution of the exact authorized transaction without mutation of bound fields.
-- **Epoch Treasury** — Protocol-controlled accounting for aggregate funding and settlement liability; no per-payment escrow or vault.
-- **TCAP current behavior** — Existing deployed instructions and account layouts define current behavior. Opaque tip commitment advancement is not itself proof of a spendable balance.
-- **Confidential debit and exit** — Disabled and fail-closed pending sound on-chain proof verification.
+- **TIP/TIN registry:** TIN V1 registry and separate wallet recovery PDA; the registry includes a versioned GPRU ElGamal scan public key and commitment. TIP source also contains an append-only shared route Merkle root.
+- **GPRU:** One-time ElGamal DNA derivation and proof code; a credit-transition verifier that checks an initial encrypted credit or homomorphic ciphertext addition; and a separate Groth16 hidden-head verifier instruction.
+- **TSN credit CPI:** The current TSN credit instruction verifies the DNA proof, invokes GPRU credit-transition validation, then invokes TCAP's Memo-credit transition.
+- **TCAP shared state:** The wired credit transition advances one global TCAP commitment root after checking the root predecessor and next global sequence. The Memo payload is transaction data, not a persistent TCAP balance account.
+- **Ingress and execution services:** Receiver accepts and stores ingress work, Node verifies and authorizes work, and Cranker submits the exact authorized transaction. These statuses are distinct from chain confirmation.
 
-## Devnet program identifiers
+## Important current limits
 
-| Component | Program ID | Status |
-| --- | --- | --- |
-| TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | Active Devnet |
-| TIN registry | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` | Active Devnet |
-| TCAP | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V` | Credit-only Devnet |
-| Stable-TCAP faucet | `E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h` | Devnet test infrastructure |
+The wired credit path does not persist an authoritative per-TIN latest ciphertext/head. Its shared root prevents replay of the same global transition but does not establish that a supplied per-TIN predecessor is the latest one. The hidden-head GPRU/TCAP instructions are not called by Node, SDK, Cranker, or the active TSN credit instruction. Their circuit has no verified build/setup/prover evidence in this repository workflow.
 
-These identifiers are provided for reproducible Devnet research. Confirm each program and instruction against current chain state before relying on it.
+The hidden-head circuit does not prove encrypted balance arithmetic, debit sufficiency, non-negative range, or reserve conservation. Its current instruction ABI exposes action kind, token ID, and amount. The shared TCAP root is a common writable account and creates visible protocol-level ordering/linkage. Confidential debit and exit are not established as available end to end.
 
-## Explicitly out of scope
+TIP still includes the route registry and TCAP still includes legacy `TCapTinTipV1` instructions. Their presence in source does not mean the active TSN credit caller uses a TCAP per-TIN tip account.
 
-The following are separate milestones and are not presented as active production capabilities:
+## Deployment evidence
 
-- Recurring payments and subscription-provider execution.
-- Confidential debits and exits (proof-gated and disabled).
-- Encrypted-balance proof verification and confidential debit or exit.
-- Mainnet deployment.
-- Formal cryptographic audits.
-- Perfect unlinkability.
+Program IDs and deployment scripts are available in the repository. This page does not claim that every current source revision is deployed. Verify the program's current executable, upgrade authority, and deployment slot on the intended cluster before treating a source capability as live.
 
-## Related topics
+## Related pages
 
-- [Getting started](/developers/getting-started)
+- [Protocol architecture](/overview/architecture)
+- [GPRU and TCAP state](/architecture/gpru-confidential-balances)
 - [Security invariants](/security/invariants)

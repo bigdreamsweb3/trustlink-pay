@@ -1,46 +1,46 @@
 ---
-title: "How a TIN Payment Works"
+title: "How a TIN Credit Moves Through TSN"
 sidebarTitle: "How It Works"
-description: "A user-centered explanation of TIP resolution, TSN verification, GPRU transaction DNA, and TCAP settlement."
+description: "The current source-backed ingress, verification, GPRU credit check, and TCAP shared-root transition."
 ---
 
-# How a TIN payment works
+# TIN credit lifecycle
 
-A sender enters a recipient TIN, reviews the resolved display information, and signs payment details. The sender's device does not resolve recipient TIP state or build the recipient's confidential-state transition. Node performs route resolution and transition construction after Receiver accepts ingress.
-
-## Credit flow
+The sender signs payment and reserve-funding details for a recipient TIN. Receiver accepts and stores the ingress. The TSN Node verifies the signed request, resolves the TIP route, and constructs authorized work. A Cranker submits the exact work. In the current TSN credit instruction, GPRU validates the DNA-key proof and encrypted credit transition before TCAP advances its shared root.
 
 ```mermaid
 sequenceDiagram
-    participant Sender as Sender SDK and wallet
-    participant Receiver
-    participant Node as TSN Node
-    participant Cranker
-    participant GPRU
-    participant TCAP
-    participant Owner as Recipient SDK
+    participant S as Sender SDK and wallet
+    participant R as Receiver
+    participant N as TSN Node
+    participant C as Cranker
+    participant T as TSN Program
+    participant G as GPRU
+    participant P as TIP
+    participant A as TCAP
+    participant M as Memo instruction
 
-    Sender->>Receiver: Signed payment details and reserve-funding authorization
-    Receiver-->>Sender: Ingress accepted
-    Receiver->>Node: Stored work awaiting verification
-    Node->>Node: Resolve TIN through TIP; validate route and asset
-    Node->>Node: Derive unique transaction DNA and one-time ElGamal public key
-    Node->>Cranker: Immutable authorized work
-    Cranker->>GPRU: Submit transition and proof
-    GPRU->>GPRU: Verify derivation, encrypted-state relation, and replay controls
-    GPRU->>TCAP: Atomic validated handoff
-    TCAP->>TCAP: Update governed reserve liability
-    Owner->>Owner: Discover DNA and recover one-time private key locally
+    S->>R: Signed intent and reserve-funding transaction
+    R-->>S: Ingress accepted
+    R->>N: Persisted work for verification
+    N->>P: Resolve TIN route
+    N->>C: Authorized settlement work
+    C->>T: Submit exact authorized transaction
+    T->>G: Verify DNA key proof and credit transition
+    G->>T: Validation result
+    T->>A: CPI credit_gpru_memo_v1
+    A->>A: Check global root and sequence; advance root
+    T->>M: Memo data bound by commitment
 ```
 
-Receiver acceptance, Node verification, Cranker submission, and Solana confirmation are separate status milestones. A transaction is complete only after the relevant on-chain transition is confirmed and the owner can recover its resulting state.
+## Current security and privacy limits
 
-## Why GPRU uses transaction DNA
+TCAP stores one shared global commitment root for this credit path, not a per-TIN latest-head account. The root transition prevents replay of the same global transition. The current caller still supplies GPRU's prior ciphertext; no persistent per-TIN head proves that it is the latest. The TIP registry is passed to GPRU during key proof verification, and the shared TCAP root is present in each credit transaction, so the current path is not unlinkable.
 
-TIP stores a stable GPRU ElGamal scan public key and its commitment. GPRU uses the scan key with fresh randomness and a unique DNA to create a one-time public key for an individual output. The recipient can later derive the corresponding private key from owner-held secret material and public transaction data. This is designed to avoid reusing one visible recipient route for every credit.
+The separate Groth16 hidden-head verifier and circuit source are not called by the current TSN, Node, SDK, or Cranker flow. The circuit does not verify encrypted balance arithmetic or debit affordability. Its TCAP instruction arguments expose action kind, token ID, and amount. Debit and exit are not enabled by this proof source.
 
-The derivation does not prove that a balance update is valid. GPRU must verify the key derivation and the encrypted balance proof on chain before TCAP updates liabilities. Public wallet funding and exits remain visible at their wallet boundary.
+## Lifecycle evidence
 
-## Current status
+Receiver acceptance means the request was stored; it does not mean Node verification or chain execution. Node verification is not Cranker submission. A submitted signature is not confirmation until Solana reports the expected instruction as confirmed. A confirmed reserve deposit is separate from confirmation of the later TCAP transition.
 
-The GPRU DNA key proof is verified by the current TSN credit instruction before its TCAP CPI. TCAP advances opaque commitment state atomically; the flow does not verify encrypted-balance arithmetic. Confidential debit and exit remain disabled. See [Protocol architecture](/overview/architecture) for component boundaries.
+See [Protocol architecture](/overview/architecture) and [GPRU and TCAP state](/architecture/gpru-confidential-balances) for program-level boundaries.

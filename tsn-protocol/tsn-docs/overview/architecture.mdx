@@ -1,50 +1,47 @@
 ---
-title: "TSN, TIP, GPRU, and TCAP Architecture"
+title: "TIP, GPRU, TSN, and TCAP Architecture"
 sidebarTitle: "Architecture"
-description: "How the Transfer Settlement Network, Transfer Identity Protocol, GPRU, and TCAP divide identity, verification, execution, and confidential accounting."
+description: "Source-backed roles, the currently wired credit path, and the separate hidden-head proof source."
 ---
 
 # Protocol architecture
 
-TrustLink separates transfer identity, payment authorization, service verification, transaction submission, and asset accounting. These are distinct responsibilities with different privacy boundaries.
+TIP identifies transfer identities and routes. TSN coordinates authorization and settlement work. GPRU checks key and encrypted-credit relations. TCAP governs approved assets and advances shared replay state. These roles are distinct, but the hidden-head design is not yet wired into the active settlement caller.
 
 ```mermaid
 flowchart LR
-    TIP[TIP manages identities and routes] -->|TIN lookup| NODE[TSN Node resolves and verifies]
-    SENDER[Sender signs payment and funding details] --> RECEIVER[Receiver accepts and stores ingress]
-    RECEIVER --> NODE
-    NODE -->|immutable verified work| CRANKER[Cranker submits exact work]
-    CRANKER --> TSN[TSN validates the exact settlement authorization]
-    TSN --> GPRU[GPRU verifies one-time DNA key derivation]
-    TSN -->|approved CPI| TCAP[TCAP atomically advances commitment and sequence]
-    GPRU --> OWNER[Owner derives one-time key and reads state locally]
+    S[Sender SDK: signed intent and funding transaction] --> R[Receiver: accept and persist ingress]
+    R --> N[TSN Node: verify, resolve TIP, prepare authorized work]
+    N --> C[Cranker: submit exact authorized transaction]
+    C --> T[TSN Program: validate Mother authorization]
+    T --> G[GPRU: verify DNA key proof and credit ciphertext transition]
+    TIP[TIP registry: TIN route and scan key] --> G
+    G --> T
+    T -->|CPI| TCAP[TCAP: validate and advance global shared root]
+    T --> M[Solana Memo instruction: transaction payload]
+    O[Owner SDK / RPC reader] --> M
 ```
 
 ## TIP and TIN
 
-TIP is the Transfer Identity Protocol. It manages transfer identities and their routing metadata. A TIN is one 10-digit Transfer Identity Number issued within TIP. Node resolves the recipient's TIN and current route; the sender SDK does not resolve recipient TIP state or construct recipient confidential state.
+TIP is the Transfer Identity Protocol. It manages transfer identity records and route metadata. A TIN is a single 10-digit Transfer Identity Number within TIP. The TIN registry stores encrypted identity fields and route commitments, including the versioned GPRU scan public key and its commitment. TIP source also maintains an append-only shared route Merkle root for the hidden-head proof design.
 
-TIP V1 currently stores a versioned GPRU ElGamal scan public key and its integrity commitment, alongside TIP route and policy commitments. The scan key is stable for that route and is public. The owner retains the matching secret material.
+## Credit path currently wired in source
 
-## GPRU transaction routing
+TSN's `register_tcap_credit_authorization_v2` verifies the Mother authorization and GPRU DNA-key proof, invokes GPRU `apply_credit_transition_v1`, then invokes TCAP `credit_gpru_memo_v1`. GPRU validates initial encryption or later ElGamal addition against a supplied predecessor ciphertext. TCAP checks the approved asset, authorization signer, time window, shared-root predecessor, and next global sequence before advancing the single TCAP commitment-root account. The Memo instruction is bound by commitment and contains transaction data; TCAP does not store the Memo history or ciphertext in a per-TIN account.
 
-For each output, Node uses fresh randomness, the DNA, and the TIP scan key to derive an ephemeral public point and a one-time ElGamal public key. The recipient later combines the public derivation data with owner-held secret material to recover the matching private key locally. During TCAP credit settlement, TSN invokes GPRU to verify the derivation proof.
+The active instruction passes the TIP registry account into GPRU. The global TCAP root prevents reapplying a stale global transition, but GPRU does not persist a per-TIN head in this path. Therefore this path does not prove that the supplied per-TIN ciphertext is the latest one. It also exposes route-account reuse and transaction metadata to chain observers.
 
-The source includes the derivation primitive, owner recovery helper, and GPRU proof instruction used by TSN. This proof validates the one-time key derivation, not an encrypted balance update. A key commitment or signature alone does not prove a valid balance transition.
+## Hidden-head proof path in source
 
-## TSN service roles
+GPRU has a separate Groth16 verifier entrypoint and circuit source. Its private witness represents route membership, a per-route-and-asset head, sequence progression, and nullifier-tree paths. Public inputs bind the old/new global TCAP roots, Memo commitment, action commitment, nullifier, and TIP shared route root. TCAP's `advance_gpru_hidden_head_v1` invokes GPRU and advances the same global root.
 
-- **Sender SDK** collects payment details and creates the sender's authorization and reserve-funding transaction.
-- **Receiver** accepts and stores signed ingress work.
-- **TSN Node** independently resolves TIP, validates the request, and constructs recipient transition data before releasing authorized work.
-- **Cranker** submits the exact immutable work and cannot change its bound fields.
+Node, SDK, Cranker, and the active TSN credit instruction do not call this path. The source does not provide verified circuit compilation, generated proving keys, an initialized verifier, a proof service, or end-to-end transaction evidence. The circuit does not prove balance arithmetic or debit affordability, and current instruction arguments expose action kind, token ID, and amount.
 
-Receiver acceptance, Node verification, Cranker submission, and chain confirmation are distinct lifecycle events.
+All hidden-head transitions would write the same TCAP root account. The account provides shared atomic ordering but is a common public linkage point; the design does not provide zero linkability.
 
-## TCAP asset accounting
+## Service lifecycle
 
-TCAP governs approved assets and reserve vaults. The current credit instruction checks authorization, asset and policy, predecessor commitment, and sequence, then advances the opaque commitment state atomically. The funding-derived commitment binds the authorization to the signed reserve deposit; TCAP does not create a spent-funding PDA. Confidential debit and TIN-to-TIN conservation proofs remain future work.
+Receiver acceptance, Node verification, Cranker submission, and Solana confirmation are separate milestones. A confirmed reserve funding transaction is not itself confirmation of the later TCAP state transition. Use transaction and account evidence from the correct cluster to claim settlement completion.
 
-Current TSN, GPRU, and TCAP instruction and account layouts define chain behavior. The credit path verifies the one-time key derivation and advances opaque TCAP state. Encrypted-balance proof verification is not implemented, and confidential debit and exit remain disabled. Wallet deposits and exits remain public at their wallet boundaries.
-
-For protocol status and limits, see [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances) and [Current technology](/about/current-technology).
+See [GPRU and TCAP state](/architecture/gpru-confidential-balances) and [Current technology](/about/current-technology) for exact limits.

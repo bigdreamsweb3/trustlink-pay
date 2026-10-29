@@ -1,62 +1,27 @@
 ---
-title: "TSN Protocol Invariants: What Must Always Hold"
+title: "TSN Security Invariants and Current Enforcement"
 sidebarTitle: "Invariants"
-description: "The 11 protocol invariants TSN and TCAP enforce on Solana: signed field binding, single-consume slots and nullifiers, sequence monotonicity, and commitment binding."
+description: "What current TSN, GPRU, and TCAP source checks, and which privacy/balance guarantees are not established."
 ---
 
-TSN's security rests on a small set of invariants that the sender device, Node, Mother authority, and Solana programs jointly enforce. If any invariant fails, the operation is rejected before any token movement. This page lists the invariants a compliant integration must respect.
+Security claims should match the instruction path actually called by the Node and Cranker. A program containing an instruction is not evidence that a live route invokes it.
 
-## Authorization invariants
+## Current credit source checks
 
-**(a) Signed field binding.** Recipient, mint, amount, expiry, and one-time nonce are bound by the sender's canonical signature and, at settlement time, by the Node-signed permit. Any mutation invalidates the signature.
+The TSN credit instruction binds its authorization digest and Mother signer, verifies the GPRU DNA-key proof, and invokes GPRU credit-transition validation. GPRU checks the initial encrypted credit or later ElGamal addition against a supplied predecessor ciphertext and binds the Memo instruction. TCAP checks the asset, authorization signer, validity window, shared-root predecessor, and next global sequence before advancing the root.
 
-**(b) Opaque slot absence at funding.** The opaque epoch slot is deliberately absent from the funding transaction. It first appears on chain only at settlement or refund. Funding therefore cannot be correlated to a specific slot from public state alone.
+The shared TCAP root is global. It rejects reuse of a stale global root transition, but it is not a per-TIN current-head record. The current credit source does not prove that the caller supplied the latest ciphertext for that TIN. Do not claim per-TIN stale-state exclusion from the global sequence alone.
 
-**(c) Single-consume EpochClaimSlot.** The `EpochClaimSlot` PDA has two mutually exclusive terminal states: `SETTLED` or `REFUNDED`. First valid transaction wins atomically; a later operation on a resolved slot fails before token movement.
+## Hidden-head source checks
 
-**(d) Mother-only DNA materialization.** Only the Mother authority can materialize the one-time `SettlementDna` PDA at a derived slot. The TSN program rejects any attempt to create the PDA under a different signer.
+GPRU source has a Groth16 verifier for a circuit that represents TIP route membership, hidden per-route-and-asset head advancement, Memo/action binding, and nullifier non-membership. TCAP source has an instruction that calls the verifier and advances the shared root. Current Node, SDK, Cranker, and active TSN credit callers do not invoke these instructions. The circuit and proving workflow are not established as compiled, initialized, or end-to-end verified.
 
-**(e) DNA consumption on first valid operation.** The TSN program consumes the DNA on the first valid settlement or refund. A consumed DNA can never be replaced. An active DNA can be replaced only after its lease expires.
+The circuit does not prove homomorphic balance arithmetic, debit affordability, range, or reserve solvency. The current hidden-head instruction ABI explicitly carries action kind, token ID, and amount. All hidden-head transactions use the same writable TCAP root account and expose global ordering; they are not zero-linkable.
 
-## Credit invariants
+## Service and chain evidence
 
-**(f) ConfidentialSettlement required for credit.** TCAP credit accepts only a `ConfidentialSettlement` TSN authorization receipt. A GPRU signature, hash-only payload, or placeholder proof cannot substitute.
+Receiver acceptance does not establish Node verification. Node verification does not establish Cranker submission. A submitted transaction does not establish confirmation. A confirmed funding deposit does not establish that the later TCAP transition confirmed. Claims of settlement require the confirmed signature and resulting account state on the target cluster.
 
-**(g) Single-consume nullifier.** The `nullifier` is consumed atomically alongside the receipt. Any later attempt to reuse it fails.
+Confidential debit and exit are not established as working end to end by the current hidden-head source. TCAP's older tip-based instructions remain in source, but the active TSN credit caller does not use them.
 
-**(h) Strictly increasing sequence.** The tip PDA's `sequence` is strictly increasing. TCAP requires the next expected value; any other value is rejected.
-
-**(i) Commitment binding.**
-
-```text
-tip.current_commitment == snapshot.new_commitment
-tip.sequence == snapshot.sequence
-```
-
-Any owner snapshot that does not match the on-chain tip is not a valid successor.
-
-## Confidentiality invariants
-
-**(j) Plaintext secrecy.** Plaintext receiving root, private balance values, TIN master seeds, and snapshot plaintext never touch the chain and are never sent to a Receiver, Node, Cranker, or application backend.
-
-**(k) Epoch closure.** An epoch can only close when pending liability is zero and every opaque slot in the epoch is resolved (`SETTLED` or `REFUNDED`).
-
-## Related pages
-
-<CardGroup cols={2}>
-  <Card title="Threat Model" icon="shield-halved" href="/security/threat-model">
-    Adversary classes and what each can achieve.
-  </Card>
-
-  <Card title="Replay Protection" icon="rotate-left" href="/security/replay-protection">
-    Mechanisms that defeat replay and double-spend.
-  </Card>
-
-  <Card title="Fail-Closed" icon="lock" href="/security/fail-closed">
-    Ordered check flow from ingress to on-chain enforcement.
-  </Card>
-
-  <Card title="Operator Boundaries" icon="split" href="/security/operator-boundaries">
-    Data visibility per operator role.
-  </Card>
-</CardGroup>
+See [Replay Protection](/security/replay-protection), [GPRU and TCAP state](/architecture/gpru-confidential-balances), and [Current Technology](/about/current-technology).

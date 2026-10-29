@@ -4,7 +4,9 @@ sidebarTitle: "Funding & Acceptance"
 description: "Learn how TSN epoch treasury funding works, how the AcceptedIntent PDA binds fields, and how opaque slots settle or refund atomically on Solana."
 ---
 
-This page explains the funding and acceptance phase of a TSN payment. You will learn how the SDK builds a treasury funding transaction and how the Node verifies it. You will also learn how the Mother authority materializes settlement state and how the AcceptedIntent PDA checks every bound field before TCAP credit advances.
+This page documents the separate TSN epoch-treasury and `AcceptedIntent` instruction family. It covers that family's treasury funding, Mother authorization, opaque slot, settlement, and refund operations; it is not the wallet-to-TIN credit lifecycle.
+
+> **Scope:** the current TSN wallet-to-TIN credit caller uses the GPRU-checked Memo transition and TCAP shared commitment root. It does not create an `EpochClaimSlot` as per-TIN balance state or credit a TCAP TIP account. Use this page only for transactions that invoke the epoch-treasury/`AcceptedIntent` instruction family.
 
 ## Funding a payment
 
@@ -35,7 +37,7 @@ The `EpochClaimSlot` PDA is derived from epoch treasury \+ opaque slot. Its stat
 
 | State      | Meaning                                             |
 | ---------- | --------------------------------------------------- |
-| `SETTLED`  | Tokens credited to the recipient tip; slot consumed |
+| `SETTLED`  | The epoch settlement instruction completed its authorized token movement; slot consumed |
 | `REFUNDED` | Tokens returned to sender ATA; slot consumed        |
 
 Settlement and refund are mutually exclusive. The first valid transaction initializes the slot and wins atomically. A later operation against the same slot fails before any token movement.

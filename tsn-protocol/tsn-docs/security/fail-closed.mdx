@@ -1,65 +1,25 @@
 ---
-title: "TSN Fail-Closed Design: Reject Before Any Token Moves"
+title: "TSN Fail-Closed Behavior in the Credit Path"
 sidebarTitle: "Fail-Closed"
-description: "TSN fails closed: any failed check rejects the operation with no partial settlement. Learn the ordered checks from Receiver ingress through Solana program enforcement."
+description: "The source-backed rejection boundaries between Receiver ingress and the TCAP credit transition."
 ---
 
-TSN is designed to fail closed. Every check in the payment path is ordered so that a failure at any stage aborts the operation before tokens move. There are no fallback paths, no partial credits, and no trusted off-chain attestation that bypasses on-chain rules.
+The wallet-to-TIN credit route has separate service and on-chain checks. A rejection or timeout at an earlier stage does not prove a later transaction happened, and a confirmed reserve deposit does not prove the TCAP credit transition confirmed.
 
-## Check order
+## Credit path checks
 
-### 1. Receiver ingress
+1. **Receiver ingress:** validates the request shape and stores authenticated work. Acceptance is not payment verification.
+2. **Node verification:** checks the signed request and funding evidence, resolves the TIN route through TIP, and prepares authorized work. Node verification is not on-chain settlement.
+3. **Cranker submission:** leases eligible work and submits the authorized transaction. A Cranker cannot repair stale owner-signed transaction data by changing its blockhash or payment fields; the sender must authorize a fresh transaction when required.
+4. **TSN/GPRU/TCAP execution:** TSN checks the Mother authorization, GPRU checks DNA-key derivation and encrypted-credit relation, and TCAP validates the approved asset, authorization signer, validity window, global root predecessor, and next sequence before advancing shared state.
+5. **Confirmation:** only the transaction signature and resulting account state on the target cluster establish that the transition executed.
 
-The Receiver accepts the signed intent and route commitment from the sender. It validates the format, binds the work ID, and records the state as `RECEIVED`. The Receiver does not verify signatures or authorize settlement. If the payload is malformed or the lease cannot be created, the work is rejected immediately.
+## Current guarantees and limits
 
-### 2. Node verification
+TCAP's shared-root predecessor and sequence make a repeated stale global transition fail. They do not prove that the caller supplied a particular TIN's latest ciphertext. The active credit instruction does not create a TCAP TIN-tip PDA. GPRU/TCAP hidden-head instructions are separate source and are not called by current settlement services; their circuit does not prove debit affordability, exact balance arithmetic, or reserve solvency.
 
-The Node takes a short lease and performs the following checks in order:
+Transaction arguments, account keys, Memo ciphertext, signer, fee payer, and ordering remain visible on Solana. Do not claim zero linkability, private amount, or an authenticated latest Memo based only on the current credit source.
 
-1. Canonical message and signatures are valid.
-2. The request exactly matches the signed message.
-3. The nonce has not been used and the authorization has not expired.
-4. The recipient's current TIP route, resolved from the submitted TIN, matches the signed route commitment and route version.
-5. The amount, mint, transaction commitment, and program constraints match the authorized plan.
+Epoch treasury, `SettlementDna`, opaque slot, payout, and refund checks belong to separate TSN instruction families. Use those checks only when the transaction actually invokes that family.
 
-If any check fails, the Receiver records `REJECTED`. A Cranker can never lease rejected or merely received work.
-
-### 3. Cranker lease validation
-
-The Cranker requests a lease on verified work. The Receiver checks that the work is in `VERIFIED` state, that the lease window is still open, and that no other Cranker holds an active lease. If the lease is expired or already held, the Cranker cannot proceed.
-
-### 4. Solana program enforcement
-
-The Cranker submits the exact authorized transaction. The TSN program re-checks every bound field on chain:
-
-- Lease holder identity
-- Route commitment
-- Mint
-- Amount
-- Expiry
-- One-time/replay state (nullifier and slot)
-- Node permit signature and bound fields
-
-A valid transaction signature alone is not enough. If any bound field differs, the instruction fails before any token movement.
-
-<Warning>
-  Node attestations are off-chain evidence and are not authorization by themselves. The Solana program always re-checks permit, lease, expiry, nullifier, and commitment fields on chain. A compromised Node cannot convince the program to skip these checks.
-</Warning>
-
-## Failure outcomes
-
-| Failure | Outcome | Retry possibility |
-| --- | --- | --- |
-| Malformed intent at Receiver | Rejected; no work ID assigned | Sender may resubmit a corrected intent |
-| Signature mismatch at Node | `REJECTED`; no Cranker lease possible | Sender must re-sign with the correct canonical message |
-| Expired nonce or authorization | `REJECTED` | Sender must create a new intent with a fresh nonce and expiry |
-| Route commitment/version mismatch | `REJECTED` | Sender must resolve the current route and re-commit |
-| Lease expired before Cranker submits | Work returns to `VERIFIED`; another Cranker may lease | Original Cranker may re-lease if still valid |
-| On-chain field mismatch | Transaction fails with program error | Cranker must submit the exact authorized values |
-| Nullifier already consumed | Transaction fails before token movement | No retry; this is a replay attempt |
-| Slot already SETTLED or REFUNDED | Transaction fails before token movement | No retry; first valid transaction already won |
-
-## Related topics
-
-- [Security invariants](/security/invariants) lists the canonical rules enforced at each check.
-- [Replay and retries](/developers/replay-and-retries) provides developer guidance on handling failure and retry.
+See [Security invariants](/security/invariants), [Replay protection](/security/replay-protection), and [Current architecture](/overview/architecture).

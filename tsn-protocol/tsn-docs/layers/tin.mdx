@@ -33,9 +33,10 @@ creation through Receiver, Node verification, and Cranker execution.
 
 The current TIP V1 route stores a versioned GPRU ElGamal scan public key and its key commitment, alongside
 TIP route and policy commitments. The scan key is public and stable for the route; its matching secret
-material stays with the owner. GPRU uses the scan key to derive unique one-time public keys for transaction
-DNA outputs. The commitment detects key/version substitution, but does not prove ownership or a valid
-balance transition. On-chain derivation verification and TCAP integration remain future work.
+material stays with the owner. The current TSN credit source invokes GPRU to verify a DNA-key derivation
+proof against the TIP registry. The key commitment detects key/version substitution; it is not proof of
+ownership or a valid balance transition. TIP source also appends route commitments to a shared route root
+used by hidden-head proof source that is not wired to settlement callers.
 
 Current TIN V1 SDK helpers derive these PDAs:
 

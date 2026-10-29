@@ -4,7 +4,7 @@ sidebarTitle: "Protocol flow"
 description: "The intended wallet-to-TIN credit flow and the current implementation boundary."
 ---
 
-# How a TIN credit is intended to work
+# How a TIN credit moves through TSN
 
 A sender identifies a recipient by TIN and approves payment details. The sender's device does not resolve the recipient's TIP route or create the recipient's confidential state. Receiver accepts the signed ingress, and Node resolves TIP and constructs the transaction-specific GPRU transition before the work is released to a Cranker.
 
@@ -14,6 +14,7 @@ sequenceDiagram
     participant R as Receiver
     participant N as TSN Node
     participant C as Cranker
+    participant P as TSN Program
     participant G as GPRU
     participant T as TCAP
     participant O as Recipient SDK
@@ -24,10 +25,10 @@ sequenceDiagram
     N->>N: Resolve TIN through TIP; validate route and asset
     N->>N: Derive unique DNA and one-time ElGamal public key
     N->>C: Release immutable authorized work
-    C->>G: Submit transition and proof
-    G->>G: Verify derivation, balance relation, and replay rules
-    G->>T: Atomic valid transition
-    T->>T: Apply governed liability update
+    C->>P: Submit authorized credit transaction
+    P->>G: Verify DNA-key proof and encrypted-credit relation
+    P->>T: Advance shared TCAP commitment root
+    T->>T: Check global root predecessor, sequence, asset, and authorization
     O->>O: Discover DNA and derive matching private key locally
 ```
 
@@ -45,4 +46,4 @@ Public wallet deposits and exits remain visible at their wallet boundaries. The 
 
 ## Current status
 
-The current TSN credit instruction invokes GPRU to verify one-time key derivation, then invokes TCAP to atomically advance opaque commitment state. The current path does not verify encrypted-balance arithmetic. Confidential debit and exit remain disabled until an audited balance-proof verifier is enabled.
+The current TSN credit instruction invokes GPRU to verify one-time key derivation and an encrypted-credit relation, then invokes TCAP to atomically advance one shared global commitment root. It does not persist or authenticate a latest head for each TIN. A separate hidden-head Groth16 verifier is present in GPRU/TCAP source but is not called by the current Node, SDK, Cranker, or TSN credit instruction. The circuit does not prove encrypted balance arithmetic or debit affordability. Confidential debit and exit are not established as available end to end.

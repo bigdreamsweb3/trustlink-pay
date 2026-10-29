@@ -1,26 +1,23 @@
 ---
-title: "A Private TIN Payment"
-sidebarTitle: "Payment experience"
-description: "What a sender and recipient experience in the target TIP, GPRU, TSN, and TCAP flow."
+title: "A TIN Credit: User and Protocol Steps"
+sidebarTitle: "Payment Experience"
+description: "What sender, Receiver, Node, Cranker, and Solana each do in the current TIN credit source path."
 ---
 
-# A private TIN payment
-
-The sender uses a TIN to identify the recipient, reviews the identity details returned for that request, and signs the payment and funding authorization. Node resolves the recipient's TIP route after Receiver accepts the signed request, then constructs the recipient-specific GPRU transition. The sender's device does not receive the recipient's private route state.
-
-Each GPRU output uses a unique transaction DNA and one-time ElGamal public key. The recipient can later recover the corresponding private key locally from owner-held secret material. GPRU must verify the encrypted balance transition before TCAP changes reserve liabilities.
+The sender enters a TIN, reviews the identity information returned for that request, and signs payment and reserve-funding details. Receiver accepts the ingress. Node verifies the signed request, resolves TIP route data, and prepares authorized work. A Cranker submits the authorized transaction. On chain, TSN calls GPRU's key and encrypted-credit checks, then TCAP advances its shared global root.
 
 ```text
-Sender signs payment and funding authorization
-  → Receiver accepts and stores ingress
-  → Node resolves TIP and validates the request
-  → Node constructs unique GPRU DNA work
-  → Cranker submits immutable authorized work
-  → GPRU verifies proof and replay protection
-  → TCAP applies the reserve-liability update atomically
-  → Recipient recovers and reads state locally
+Sender signs intent and funding
+  → Receiver stores ingress
+  → Node verifies and resolves TIP
+  → Cranker submits authorized work
+  → TSN invokes GPRU credit validation
+  → TCAP advances the shared global root
+  → encrypted Memo remains in transaction history
 ```
 
-Receiver acceptance is not Node verification. Node verification is not Cranker submission, and submission is not confirmation. Public wallet funding and exits remain visible at the wallet boundary.
+The current credit path does not use the hidden-head Groth16 instruction. It does not persist a per-TIN latest ciphertext, so the shared root does not prove that a supplied TIN predecessor is the latest. A confirmed reserve funding transaction does not prove the TCAP transition confirmed.
 
-The one-time key derivation and SDK recovery helper are in source, but the deployable GPRU program, proof verifier, and TCAP integration remain future work. For a detailed flow and status, see [How a TIN payment works](/overview/how-it-works) and [GPRU and TCAP confidential state](/architecture/gpru-confidential-balances).
+GPRU and TCAP source separately contain a hidden-head proof path, but current Node, SDK, and Cranker callers do not use it. Its circuit does not prove balance arithmetic, debit affordability, or solvency, and its instruction ABI exposes action kind, token ID, and amount. The common TCAP root remains visible and creates protocol-level linkage.
+
+See [How it works](/overview/how-it-works) for the program sequence and [GPRU and TCAP state](/architecture/gpru-confidential-balances) for its proof boundaries.

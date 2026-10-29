@@ -1449,7 +1449,10 @@ dependencies = [
 name = "tins-program"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
+ "ark-ff",
  "borsh 0.10.4",
+ "light-poseidon",
  "num-derive 0.3.3",
  "num-traits",
  "solana-program",

@@ -4,7 +4,7 @@
 
 ### Abstract
 
-The Transfer Settlement Network (TSN) is an intent-based protocol for stablecoin settlement. It separates payment identity, authorization, routing, settlement liability, and private accounting so that an automated submitter can execute an authorized payment without custody of the owner's keys or disclosure of the recipient's balance. This whitepaper distinguishes source-backed behavior from the target GPRU DNA design; current program instructions and account layouts remain authoritative for what executes today.
+The Transfer Settlement Network (TSN) is an intent-based protocol for stablecoin settlement. It separates payment identity, authorization, routing, settlement liability, and private-state verification so that an automated submitter can execute an authorized payment without custody of the owner's keys. This whitepaper distinguishes the wired credit path from the separate, not-yet-wired hidden-head proof source; current program instructions and account layouts remain authoritative for what executes today.
 
 The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
 
@@ -12,7 +12,7 @@ The current source accounting domain is Solana. The repository also contains the
 
 A payment is a state transition authorized by the sender, not an instruction assembled by a relay. The sender signs the payment details and reserve-funding authorization. Receiver accepts and stores ingress, while Node independently resolves the recipient TIN through TIP, validates the route and asset, and constructs recipient transition data. The sender device does not resolve the recipient's TIP state or create the recipient's GPRU transition.
 
-The intended privacy-safe route is:
+The current source-backed credit route is:
 
 ```text
 Sender authorization and funding
@@ -20,21 +20,22 @@ Sender authorization and funding
     → Node TIP resolution and verification
     → unique GPRU transaction DNA
     → Cranker submission of immutable authorized work
-    → GPRU proof verification
-    → atomic TCAP reserve-liability update
-    → owner-local recovery of the one-time key and private state
+    → GPRU DNA-key and encrypted-credit checks
+    → TCAP global shared-root advancement
+    → encrypted Memo remains in transaction history
 ```
 
 TIP is the Transfer Identity Protocol; TIN is one 10-digit identity within
-TIP. GPRU (Guarded Privacy Routing Unit) is being developed as a standalone
-protocol for unique transaction DNA and proof-verified confidential state
-transitions. TCAP (Transfer Confidential Asset Protocol) governs approved
-assets and their reserves. The existing TCAP instructions define current
-behavior; the new GPRU DNA flow is not yet deployed.
+TIP. GPRU (Guarded Privacy Routing Unit) is a standalone program with one-time
+ElGamal DNA-key verification and encrypted-credit transition checks. Its
+separate Groth16 hidden-head verifier and circuit are not wired to the active
+TSN/Node/SDK/Cranker flow. TCAP (Transfer Confidential Asset Protocol)
+governs approved assets and reserves, and advances one global commitment root
+in the current credit source. That root is not a per-TIN latest-head record.
 
 ## 2. Participants and authority
 
-The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request, resolves TIP, and constructs the recipient transition. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. In the target design, GPRU verifies DNA derivation and encrypted-state proofs before TCAP changes reserve liabilities. The target proof handoff is not yet deployed.
+The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request, resolves TIP, and constructs the recipient transition. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. The current credit instruction invokes GPRU's key and credit-transition checks before TCAP advances its global commitment root. It does not persist a per-TIN latest head, so it does not prove that a supplied predecessor ciphertext is current for that TIN.
 
 No coordination role grants a spending key or unilateral authority to redirect value.
 
@@ -107,60 +108,68 @@ voting, activation, liquidity, and payout receipts are observed.
 
 ## 3A. Payment routes
 
-TSN supports four native Solana routes and one Creditcoin-led cross-chain route:
+The repository contains the following route categories. Only the wallet-to-TIN credit path described below is represented by the current wired GPRU/TCAP credit CPI; the other private debit/exit routes are not established as enabled by the hidden-head proof source:
 
 | Route | Settlement behavior |
 | --- | --- |
-| Wallet deposit → wallet exit | Compatibility route using common intent, authorization, and liability boundaries. |
-| Wallet deposit → TIN credit | Funds become private TCAP credit for the recipient identity. |
-| TIN debit → TIN credit | Identity-to-identity settlement without exposing a public destination address from the device boundary. |
-| TIN debit → wallet exit | Public wallet exit through the existing Mother-rooted DNA and exit-permit boundary. |
-| Solana → Creditcoin or another supported EVM network | Solana creates the debit commitment; Creditcoin consumes it and Attestcoin connects the authenticated instruction to a selected prefunded destination route. |
+| Wallet deposit → wallet exit | Public wallet transfer boundary; verify the exact program route and deployment. |
+| Wallet deposit → TIN credit | Current TSN source validates encrypted credit data and advances TCAP's shared global root. |
+| TIN debit → TIN credit | Design category; no current hidden-head proof for encrypted debit/conservation is wired end to end. |
+| TIN debit → wallet exit | Design category; the hidden-head proof does not establish debit sufficiency or exit solvency. |
+| Solana → Creditcoin or another supported EVM network | Cross-chain source/deployment status is separate; see its own testnet evidence before treating it as operational. |
 
 The cross-chain route extends the settlement boundary; it does not replace the native Solana paths.
 
-## 3. Solana settlement domain
+## 3. Solana credit source path
 
-The current domain executes these transitions:
+The TSN source instruction `register_tcap_credit_authorization_v2` verifies
+the Mother authorization and GPRU DNA-key proof, invokes GPRU
+`apply_credit_transition_v1`, then invokes TCAP `credit_gpru_memo_v1`. GPRU
+checks an initial encrypted credit or later ElGamal addition against a
+caller-supplied predecessor ciphertext. TCAP checks the approved asset,
+authorization signer, validity window, current global root, and next global
+sequence, then advances the root. The encrypted Memo remains transaction
+instruction data and is bound by a commitment.
 
-1. Sender signs payment details and authorizes wallet reserve funding.
-2. Receiver accepts and stores signed ingress work.
-3. Node independently resolves the TIN through TIP, validates route and asset data, and prepares the recipient transition.
-4. Node releases immutable verified work; Cranker submits the exact transaction.
-5. Under the target design, GPRU verifies the unique DNA derivation, encrypted-state proof, and replay rules.
-6. TCAP applies the governed liability update atomically with the GPRU result.
-7. Recipient discovers the DNA output and derives its one-time private key locally.
-
-The target GPRU verification and TCAP handoff are not yet deployed. Existing
-program instructions and layouts govern current chain behavior.
-
-The legacy `AcceptedIntentV1` and `ConfidentialSettlement` receipt path is not
-the privacy-safe V2 path. It remains in source only for migration and audit
-history and must not be used for new transfers.
+The shared TCAP root prevents replay of the same global root transition, but
+it is not a per-TIN head and GPRU does not persist the latest per-TIN
+ciphertext in this caller path. Thus, the global sequence alone does not
+prove freshness of the supplied per-TIN predecessor. The separate GPRU
+Groth16 hidden-head verifier and TCAP root-advance instruction are not
+invoked by the active TSN/Node/SDK/Cranker path. Their circuit has no verified
+build/setup/prover evidence in this repository workflow and does not prove
+encrypted balance arithmetic or debit affordability.
 
 ## 4. State and commitments
 
-The legacy V1 `AcceptedIntent` bound the epoch, payment commitment, amount,
-token, recipient tip root, policy, settlement commitments, replay nonce and
-validity window. That public cross-reference is not part of the privacy-safe
-V2 authorization; V2 binds only the opaque GPRU tip transition and its
-predecessor/sequence continuity.
+The current credit instruction uses a shared `TcapCommitmentRootStateV1`
+account. It checks and advances the global root/sequence and emits an opaque
+transition digest. It does not create or update the legacy `TCapTinTipV1`
+account. The Memo commitment binds instruction bytes; it does not prove that
+those bytes represent a valid encrypted balance by itself.
 
-A TCAP tip stores a predecessor commitment and sequence, not a plaintext TIN, private balance or device secret. A credit advances one predecessor to one successor:
+The source contains a separate hidden-head circuit intended to update a
+private route-and-asset head through an authenticated shared root. It is not
+the active runtime path. Its six public values include old/new global roots,
+Memo/action commitments, nullifier, and TIP route root. Its current
+instruction ABI also exposes action kind, token ID, and amount. The shared
+root is a common account referenced by each update, so the design exposes
+global sequencing and protocol-level linkage.
 
-```text
-previous_commitment = tip.current_commitment
-new_commitment      = successor(previous_commitment, authorized transition)
-new_sequence        = tip.sequence + 1
-```
+## 5. Security invariants and limits
 
-The snapshot store holds encrypted balance state keyed by the resulting commitment. Plaintext roots, seeds, snapshot keys and balances remain with the owner device.
+The current credit source checks authorization, asset, policy, expiry, GPRU
+credit relation, Memo commitment, and global-root sequence. Receiver
+acceptance, Node verification, Cranker submission, funding confirmation, and
+TCAP transition confirmation are distinct lifecycle events. A confirmed
+funding transaction does not prove the later TCAP transition succeeded.
 
-## 5. Security invariants
-
-The protocol requires device authorization over canonical fields, one-time nullifiers, monotonic sequences, validity windows, exact policy and GPRU scope, and predecessor/successor commitment continuity. Treasury funding and intent acceptance are atomic. Receiver, Node and Cranker may be unavailable, but they cannot rewrite an accepted authorization or spend from it. Confidential debit and exit are proof-gated until conservation, destination-binding and liquidity proofs are enabled.
-
-Public state exposes only evidence required for verification: commitments, token identifiers, policy references, sequence values, nullifiers and validity data. TIN is bound to the receiving root through a one-way relationship and is not a public key for a TCAP balance.
+Confidential debit, exit, and TIN-to-TIN conservation require proofs of
+balance sufficiency, exact encrypted subtraction, range, destination
+binding, and reserve solvency. Those checks are not provided by the current
+hidden-head circuit. The shared root is publicly linkable across all
+transactions using that instruction, and wallet funding/exits expose their
+normal public transaction metadata.
 
 ## 6. Settlement domains and attestations
 

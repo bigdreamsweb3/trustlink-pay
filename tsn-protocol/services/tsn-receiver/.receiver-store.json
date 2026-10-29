@@ -1,24 +1,25 @@
 {
   "tsn_receiver_cranker_challenges": {
-    "7ff93840c3df7341429162b6d4248ad1702f98a1304c890750548fc3bf7da56b": {
+    "637e28bb8d4364a7283d5bd4472315cb4ca980e63b1cca8e2c9de9d913636550": {
       "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "nonce": "AYdUePgVfQCqJ8d26wg_jNeCnca7bVfNoOhHaGIvx_Y",
-      "expiresAt": "2026-10-29T09:39:40.230Z",
-      "used": false
+      "nonce": "_SsQvz6nu3g2I_X9qU2q7XpNQFJ8Bj-g6vc4sYSEpk4",
+      "expiresAt": "2026-10-29T17:18:31.046Z",
+      "used": true,
+      "usedAt": "2026-10-29T17:17:32.594Z"
     }
   },
   "tsn_receiver_cranker_rate_limits": {
-    "b9e7fd05655194ccfedc19eacec79d93916059dec1e83a73e8cade4ea34250a2": {
+    "24d85abd11632341c2bd0440fc33779dc9ea1c46b148da687dbf0a9f3391f912": {
       "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29887777",
-      "count": 10,
-      "updatedAt": "2026-10-29T09:37:53.865Z"
+      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29888236",
+      "count": 17,
+      "updatedAt": "2026-10-29T17:16:58.838Z"
     },
-    "af9af92508446fc55238a3206302246914f0a039707b5f7f665dfcd7e2dfe0ee": {
+    "f778754e40ab5b8f0c9a4b8b94b29bde400939676ca729c75bbb96f8f1602ce7": {
       "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29887778",
-      "count": 10,
-      "updatedAt": "2026-10-29T09:38:33.790Z"
+      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29888237",
+      "count": 7,
+      "updatedAt": "2026-10-29T17:17:32.697Z"
     }
   },
   "tsn_receiver_work": {
@@ -3198,12 +3199,366 @@
           "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa"
         }
       }
+    },
+    "1d365f9b-c861-4316-8305-0852dd4fdcd8": {
+      "id": "1d365f9b-c861-4316-8305-0852dd4fdcd8",
+      "kind": "TIN_OPERATION",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "526db1cdca6ae553a8dbbbb95a3e958772324f9782b4457afadbaee22402d6a7",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "7aab5ffc-e105-4787-b702-153aecf54ef5",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "xCnVIOykadGg00S1FMR45Wi+00K7PlKRTpD2ZyUOWM0wY0ImvkBXvgDtNGB8vWauVezQUrsYNFCLHiRkbe99BQ==",
+        "ownerIntentHash": "6a846d2cc7d458093a171f75714943244243df10bcf8a80139c7f1e29a538599",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: 6a846d2cc7d458093a171f75714943244243df10bcf8a80139c7f1e29a538599\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "3bf9710b89de7685d7bccb519c4dac38ccbd30ba569947d647b3c9c2895c38d9",
+        "expiry": 1793293333,
+        "lookupCommitment": "51ca9d94635c3e01d52b28b2f0ff5280a7610d2db2d3c38d1ba990dbb32d3a28",
+        "encryptedTinRecovery": "VFNOVElOMDTFaN6yNp3k1RbWWVnoj4Jn8v6g2apf+T3Hv90Z+safMigFbRkB5s/2906j5/V9vx6P406KSjT7XYxNQXbScrEaWYFiuReGWZ05SgYsf+Cn",
+        "encryptedIdentityEnvelope": "SURQ6S11fet0iHnULH5qTHpb7u//14/M5T/hoKvYg/Ue/P/0gEYCzVJ3zJasFaNaWj5u0SW0p6UcuqEVjP8vHxHTwKsJPKlr",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiMWIxNDRiMjAwY2FiZDc1ZTlmYjA5YmQxMjk0ZjFlYTRhMGMyMjFiYjIwMmMyMjE5ZDllMzJjMjE5YjlmNjExMiIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6IldXd3BFdU11dHdvLVFBV1RLWjlxMUNrQm16al9BTTNPRUxWTjdvdVlQVnVDQzN6ckwwdTh3TkVxdkYzcjF1bTEiLCJzZWVkTm9uY2UiOiJTellYSWVNYXotMkM1SDJFIiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiYmM0NmRmZjA0NGI1ZTU1MDY2NzlkZjIxYzBhZTc2NmI0MThlOWNmZjQ4NDg3MjZiMzNiZDU0NGFlNjhkNDczMyIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiJkODVkZGFiNDYxMWM1Yzk4NTA1ZDM1ZjJkMjc4YTRhMzIxMzllNWFhNTQ4NjA0YTAyNzYxMzYxOTJiMzdkNDYxIiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6ImIzYTUxODEzYzIzYTZjNDg1OTVkYWQ4ZjU0MmZkNGFjNGYzMzA1ZTJjNDI0YWNkZTk3OTdiNGQ2ZTgyY2I1ZDAifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "3bf9710b89de7685d7bccb519c4dac38ccbd30ba569947d647b3c9c2895c38d9",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "7e2a92e4dad73d21f9ff762fcd291dc77586194a1b3f01c416fea05bd790f56c",
+        "gpruElgamalKeyCommitment": "cbcf2cce055a6aad8f8e9c072dab0a6403408e81322a65d981b7b6c4fc796038",
+        "policyCommitment": "87531889fb2c7fd436719c801d64af52998cd9a0eb47f5660b7a065d430eea9c",
+        "lookupIssuanceProof": "62e830d06e368b7eb7de6223f167b15c6bf04ee15f72d1970c5c0bb53c1f213f"
+      },
+      "receivedAt": "2026-10-29T16:47:25.420Z",
+      "updatedAt": "2026-10-29T16:47:54.820Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "1d365f9b-c861-4316-8305-0852dd4fdcd8",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "526db1cdca6ae553a8dbbbb95a3e958772324f9782b4457afadbaee22402d6a7"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "1d365f9b-c861-4316-8305-0852dd4fdcd8",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "526db1cdca6ae553a8dbbbb95a3e958772324f9782b4457afadbaee22402d6a7",
+          "evidenceCommitment": "7047236fa6735cfcf945d1a0e3de54e34ac6204f808f9a524d00aa78d739c8d9",
+          "executionPayloadCommitment": "025289b65a57f74c39ea3e2a6dd06d316d7f35037b57186361ab94fbe2408c8f",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "1d365f9b-c861-4316-8305-0852dd4fdcd8",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-29T16:47:33.576174Z",
+          "signatureBase64": "r+m6yttczGHW1t3M5NvBbbNjjHffGFLzNBsN1JxbjHvqzVrfmVZ7gqP965cSVTGV8GxpG9rEopPZZE/69OAbBg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-29T16:47:33.435265+00:00",
+            "updatedAt": "2026-10-29T16:47:33.435265+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 1: missing required signature for instruction. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program log: Error: MissingRequiredSignature\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 4291 of 203000 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: missing required signature for instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "48c34a9a-baf3-4dd8-b6e3-48b05b6f56aa": {
+      "id": "48c34a9a-baf3-4dd8-b6e3-48b05b6f56aa",
+      "kind": "TIN_OPERATION",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "4fdbb1ac18f4ef93e8ab649c5afde07033ce799d363c77bcae945e9fbfcbe919",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "ebcb1a13-1a87-4e44-a0ab-597bbf6d8812",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "KKDJSHZLvWvkiirJ/l41ozC80phljFS7TQivWhGtC/dc6oyihdmDxdJ1K9hkpAZvSFZnT23dGmRDbCbm6neFCA==",
+        "ownerIntentHash": "df23297418073737a85da5919169853e936cd37ee94928b01619fe59e3851b58",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: df23297418073737a85da5919169853e936cd37ee94928b01619fe59e3851b58\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "6e96c053db37270e6f3466a60b1b162b0adc5adbdd9a837dec53b70eced65db7",
+        "expiry": 1793294239,
+        "lookupCommitment": "918c421915a09f0c5a8a1069c5984046d483fff4823f016dbee50ccb6d632843",
+        "encryptedTinRecovery": "VFNOVElOMDQo3XXx3SfviC78FyUX8Oq+e+/NTr7hzfQ0Mq8turD6Ns8XJzCu7t6dUT9Haj+TVYfKj8RPvp37zL8D5lP4NYgunPUXfmAHbCR5cSozS5Jx",
+        "encryptedIdentityEnvelope": "uRHyRD7O5TyACVFqm6KKU7w7FLHYPswEuo8oWa2UDh7ny9gMyrQgM1dQl30rIRhzB3Ux/tkH6un+IY28AitjilkAzQL/Bhbr",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiMTU4ZjljMDcxZWFkMmQxMzhjZDYzMjU1N2FhODdlY2EwMWNmMTJmMTMwZjhmMDM3NTRkMjE0ZWViZGVlNTE0NCIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6IlpULTRKcTBDaEJDUy0yNFJ6eW53UEN4VlVwTXN4MUZtYjV2SkpMRVVOYnRHZ1gwbnpwUXZOcHRMU1IxMFBfWE4iLCJzZWVkTm9uY2UiOiJWWmNFaUVyN1NXVkNqZ0lqIiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiMGZmMzU4MDczNmVhYzMzZWNiNTRhYjFhNGZkZGM4MTAxOTY2OGJkZGY1NjFlYTkwY2FkZGEwNjY3ZmVjZDAxMSIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiJmZGFkMjk1NDY4MDVhMjNkMGYzYzFiNTE0MDM1ZWZjZjA1NzZiMjI4YjA0MjI1ZDQyMjhkN2NjNDM4Y2ExOGM2IiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6ImRmYzc4NzNiOGNkZDUwZmVjN2I4YTNhZWRmYjMzYjA2OTRmYjA1ZWQ2ZDcwZTYxOGJkMmI3MjFiYWY4ZjgyMDcifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "6e96c053db37270e6f3466a60b1b162b0adc5adbdd9a837dec53b70eced65db7",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "e6d270c3bcb65f4446187772e99d9945b73fba5bc9a21bee5758aa0a03421259",
+        "gpruElgamalKeyCommitment": "de4c333cc1ae38af0f248a7ffed2e60121314f14af17d86d194c1c29e10caea2",
+        "policyCommitment": "6197cfda06b9f8b5772235fd3611f2c0865cc8c2e1f7c27cb508c783215130be",
+        "lookupIssuanceProof": "245bbfdbbb475f732f773ef51b5352e4c09907b417011c67f0d9a707b669b97f"
+      },
+      "receivedAt": "2026-10-29T17:02:33.063Z",
+      "updatedAt": "2026-10-29T17:02:56.744Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "48c34a9a-baf3-4dd8-b6e3-48b05b6f56aa",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "4fdbb1ac18f4ef93e8ab649c5afde07033ce799d363c77bcae945e9fbfcbe919"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "48c34a9a-baf3-4dd8-b6e3-48b05b6f56aa",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "4fdbb1ac18f4ef93e8ab649c5afde07033ce799d363c77bcae945e9fbfcbe919",
+          "evidenceCommitment": "5a2d86c14c4725e8b6ffd9317a3c4043b071edfd8b6fa0a0dadaac012b933013",
+          "executionPayloadCommitment": "8aff13941f5b60873cd4c5267d9c38b804373aecde58e3962d890f4c20496caf",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "48c34a9a-baf3-4dd8-b6e3-48b05b6f56aa",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-29T17:02:39.427669Z",
+          "signatureBase64": "XaighBLfcnIXt50JzjcMK9httffyzVqH/wkPXDP871zvSonI3PFO5PvK1G10sn7vZ6hfk9AlYawqas835+xwAw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-29T17:02:39.210187+00:00",
+            "updatedAt": "2026-10-29T17:02:39.210187+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 1: missing required signature for instruction. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program log: Error: MissingRequiredSignature\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 4291 of 203000 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: missing required signature for instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "6b264d14-f037-4540-851b-f4b8ce2f6d41": {
+      "id": "6b264d14-f037-4540-851b-f4b8ce2f6d41",
+      "kind": "TIN_OPERATION",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "54b3bf417dc60ebbce72e21ca6392cf9e8e9e57a90b8262ada228176e067affc",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "5823ea83-b015-4576-bd5f-1bd0e26e2b2b",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "KnSet7mPa+I4mnHlysiYJq2hxt2YoG1i/yPD/p0KeoDjLhV9JbrH8SNjzibeiuTuhC70hv7IUg88OgUG4AqVCQ==",
+        "ownerIntentHash": "b78f4d823528fdc29e36ad6cf0c01b719921d7503c981bbbc83d32779e42c0cb",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: b78f4d823528fdc29e36ad6cf0c01b719921d7503c981bbbc83d32779e42c0cb\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "968488a30f65e4519a1aca28b47869bcfd49563074ea5a27b17a036ee05eb26b",
+        "expiry": 1793294814,
+        "lookupCommitment": "90009d72b680a84716fea3a0d644c4d11f55db11fb81abee1090010ecdf2bc6e",
+        "encryptedTinRecovery": "VFNOVElOMDSKbs3RcqrvoMIbAR2Fmk5kIO4pkiRMJhv26vOYTJKxR4iP7bAAx/mjvR2cs6fEBJ5a3yfmN8dyAkcTgOANwMlmatM1p50DvudjJhdrf54r",
+        "encryptedIdentityEnvelope": "8FrrTO9HA9XGTig+D4LiIoQvVQnAfe8Z9kxckUNyJ+6wzFGJDBS7CvTyCCwFJiaqxpmZomwKgSJf20EZ7TE09tpQhePSdndG",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiOGQzOGYzNDg3MDBhZTJhZjczYTg4MWNmMWI2MTg5OWZjNTZlMmUxNjhhMTZjODgzYWIwOTc4YTYxZWIzMTFlZiIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6InFJdE03T3oxVDQ5UE43UjhfU1NTNlF6WGRfRlhCZVJkc2Z1MHJ0cHFOQ1NyMmxGTXBJMjdlX0ZkS2xmTTAtZ1kiLCJzZWVkTm9uY2UiOiJZRTJJN2JTaWEtNHV4bmJaIiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiZjllMDRhZjBkYjgwYjJmM2Q2YTQ5NjQ4Mjk4MDE1MjQ1YWQ1NzQwMDZjNmVhNTc5MWIzNzY3YmMxZjI3OWQyOCIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiIzMzcyMDBkMDlmOTU3OGQyYjU5MWFkMmE2YWVkOGYxN2I5ZDZkYTY1M2FlZWM5ZTliNjMyODQyOWM2YWE4YWE4IiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6IjZiYWZlMTQyZTFmZDI1OTVlZGUxZjEzYWY5MjIxZDVkYTZmNDgxYTUzZDI2MWM0NzIwZTg3OWY0MGIxMWU2NjEifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "968488a30f65e4519a1aca28b47869bcfd49563074ea5a27b17a036ee05eb26b",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "b08eaf6d172b6a8ed2d37700c794b123b8bb9339a16fd6ff5edf7de68ce6cd4b",
+        "gpruElgamalKeyCommitment": "ddf2998c7591f08db915be515a557a08f251f75b61a221d3dfa1b4cc360d4d46",
+        "policyCommitment": "022c08340b00b78ad74093694d6e34b9369fff252ac19adde7899faca9e0027c",
+        "lookupIssuanceProof": "f2439f7a5f4caac655f05ad225ddc553e3b4aaf810ec0b5196071a51c2856ef7"
+      },
+      "receivedAt": "2026-10-29T17:12:03.553Z",
+      "updatedAt": "2026-10-29T17:13:46.681Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "6b264d14-f037-4540-851b-f4b8ce2f6d41",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "54b3bf417dc60ebbce72e21ca6392cf9e8e9e57a90b8262ada228176e067affc"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "6b264d14-f037-4540-851b-f4b8ce2f6d41",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "54b3bf417dc60ebbce72e21ca6392cf9e8e9e57a90b8262ada228176e067affc",
+          "evidenceCommitment": "11adc67ff5024ce0b7e428bb283257fbe059fa7c081ba24a8d99b389d08b0dc5",
+          "executionPayloadCommitment": "9482b1560c4e20e376f03a6eb065f63ce5d5a1d62be2c1fcad5db7580dc52f90",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "6b264d14-f037-4540-851b-f4b8ce2f6d41",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-29T17:12:08.563505Z",
+          "signatureBase64": "M3m22sEx1BOq8OdgE5oo/cwW4GrigebmIo9QCAonCmuStayVOyztkX/qSZ+cMyxPUuMaKBVjz0+6u37a4sX+AQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-29T17:12:08.215140+00:00",
+            "updatedAt": "2026-10-29T17:12:08.215140+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 1: missing required signature for instruction. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program log: Error: MissingRequiredSignature\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 4291 of 203000 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: missing required signature for instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
     }
   },
   "tsn_receiver_state": {
     "6d17a1bece320dce49de1fc7045f2f37546cd6ee57081779eab757295595e619": {
       "key": "tsn:epoch",
-      "value": "{\"epoch_number\": 4, \"started_at\": \"2026-10-28T13:44:14.525842+00:00\"}"
+      "value": "{\"epoch_number\": 5, \"started_at\": \"2026-10-29T16:47:27.858468+00:00\"}"
     }
   },
   "tsn_receiver_state/0fe599e22c504175bfdaae6cab793f28179f1d272d7af57ff11c77b17cea1727/items": {
@@ -3308,6 +3663,18 @@
     "1520dadfc04842208e0a25f5724115cc55b7086bfe54f2af8326266c47118290": {
       "field": "0b84afa29d14f108684bfa623793e663947104323a5437820ccf854282761255",
       "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"Bm9wqMgaYBHZjeULtV7ZhgDjsDaTeeVDbPJ6J2AAzZpa\",\"nonce\":\"13c1009487ac7dc622a3605c336cd63e106362f79762a36632377862c7e55d1f\",\"consumedAt\":\"2026-10-24T14:43:11.084111+00:00\"}"
+    },
+    "145d78df8924490c7588d570dd9dc9688bd4d0d6a4f1f3166d56ea083c7c8f5c": {
+      "field": "c7339a71267a4694120d27af8b914b4ab869a8ceee984856558669090868195e",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"3bf9710b89de7685d7bccb519c4dac38ccbd30ba569947d647b3c9c2895c38d9\",\"consumedAt\":\"2026-10-29T16:47:33.435372+00:00\"}"
+    },
+    "fa4cf04b7ce446d353c447b71d7dbf69300b7b9678b37233083b7738bb0d6f92": {
+      "field": "1af42317f99f468076b788a65043ff1a475a35a78ba1fd663582a117cf9f8561",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"6e96c053db37270e6f3466a60b1b162b0adc5adbdd9a837dec53b70eced65db7\",\"consumedAt\":\"2026-10-29T17:02:39.210299+00:00\"}"
+    },
+    "c95a0516cfb6a4956ecb0fe2a023ed770d63e4fdb2b2f8f5db42428214b98dda": {
+      "field": "158d362786c45c9df4d78ba2ef4b4fa7b5cd0ac5479176edb2788743bc9acccf",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"968488a30f65e4519a1aca28b47869bcfd49563074ea5a27b17a036ee05eb26b\",\"consumedAt\":\"2026-10-29T17:12:08.215225+00:00\"}"
     }
   }
 }

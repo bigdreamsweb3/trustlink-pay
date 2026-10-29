@@ -16,12 +16,10 @@
 //! This verifier does not claim to validate encrypted-balance arithmetic.
 
 use anchor_lang::prelude::*;
-use ark_bn254::Fr;
-use ark_ff::{BigInteger, PrimeField};
 use groth16_solana::{groth16::{Groth16Verifier, Groth16Verifyingkey}};
-use light_poseidon::{Poseidon, PoseidonHasher};
 use solana_program::{
     hash::{hash, hashv},
+    poseidon::{hashv as poseidon_hashv, Endianness, Parameters},
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 
@@ -156,18 +154,23 @@ pub fn verify_transition(
     );
     require!(args.token_id > 0 && args.amount > 0 && args.authorization_commitment != [0; 32], HiddenHeadError::InvalidPublicInputs);
     require!(is_canonical_bn254_scalar(&args.authorization_commitment), HiddenHeadError::InvalidPublicInputs);
-    let mut action_hasher = Poseidon::<Fr>::new_circom(5)
+    let action_kind = scalar_bytes_from_u64(args.action_kind as u64);
+    let token_id = scalar_bytes_from_u64(args.token_id as u64);
+    let amount = scalar_bytes_from_u64(args.amount);
+    let action_inputs: [&[u8]; 5] = [
+        &action_kind,
+        &token_id,
+        &amount,
+        &args.authorization_commitment,
+        &args.public_inputs[4],
+    ];
+    let expected_action_commitment = poseidon_hashv(
+        Parameters::Bn254X5,
+        Endianness::BigEndian,
+        &action_inputs,
+    )
         .map_err(|_| error!(HiddenHeadError::InvalidPublicInputs))?;
-    let expected_action_commitment = action_hasher
-        .hash(&[
-            Fr::from(args.action_kind as u64),
-            Fr::from(args.token_id as u64),
-            Fr::from(args.amount),
-            Fr::from_be_bytes_mod_order(&args.authorization_commitment),
-            Fr::from_be_bytes_mod_order(&args.public_inputs[4]),
-        ])
-        .map_err(|_| error!(HiddenHeadError::InvalidPublicInputs))?;
-    let expected_action_bytes = field_bytes(expected_action_commitment);
+    let expected_action_bytes = expected_action_commitment.to_bytes();
     require!(args.public_inputs[3] == expected_action_bytes, HiddenHeadError::InvalidPublicInputs);
 
     let (memo_commitment, memo_balance_point) = validate_memo_instruction(&ctx.accounts.instructions)?;
@@ -316,9 +319,8 @@ fn is_canonical_bn254_scalar(value: &[u8; 32]) -> bool {
     value < &BN254_SCALAR_MODULUS_BE
 }
 
-fn field_bytes(value: Fr) -> [u8; 32] {
-    let bytes = value.into_bigint().to_bytes_be();
+fn scalar_bytes_from_u64(value: u64) -> [u8; 32] {
     let mut output = [0u8; 32];
-    output[32 - bytes.len()..].copy_from_slice(&bytes);
+    output[24..].copy_from_slice(&value.to_be_bytes());
     output
 }

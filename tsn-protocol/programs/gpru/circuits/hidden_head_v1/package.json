@@ -1,8 +1,19 @@
 {
+  "name": "@tsn/gpru-hidden-head-circuit-v1",
+  "private": true,
+  "version": "1.0.0",
   "devDependencies": {
     "circom2": "0.2.19",
     "circomlib": "2.0.5",
     "snarkjs": "0.7.6",
     "wasmcurves": "0.2.2"
+  },
+  "scripts": {
+    "circuit:compile": "circom2 main.circom --r1cs --wasm --sym -l node_modules -o build/hidden_head_v1",
+    "circuit:info": "snarkjs r1cs info build/hidden_head_v1/main.r1cs",
+    "setup:dev": "node scripts/setup-dev.mjs",
+    "export:verifier": "node scripts/export-verifier.mjs",
+    "prove": "node scripts/prove.mjs",
+    "verify": "node scripts/verify.mjs"
   }
 }

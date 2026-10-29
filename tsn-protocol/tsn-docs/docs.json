@@ -52,7 +52,13 @@
           },
           {
             "group": "Protocol Layers",
-            "pages": ["layers/tsn", "layers/tin", "layers/gpru", "layers/tcap"]
+            "pages": [
+              "layers/tsn",
+              "layers/tin",
+              "layers/gpru",
+              "layers/tcap",
+              "layers/dip"
+            ]
           },
           {
             "group": "Operators",

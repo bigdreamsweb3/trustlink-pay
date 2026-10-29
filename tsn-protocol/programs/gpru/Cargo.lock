@@ -2237,12 +2237,9 @@ name = "tsn-gpru-proof-contract"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "ark-bn254",
- "ark-ff",
  "curve25519-dalek",
  "getrandom 0.1.16",
  "groth16-solana",
- "light-poseidon",
  "sha3 0.9.1",
  "solana-program",
  "solana-zk-token-sdk",

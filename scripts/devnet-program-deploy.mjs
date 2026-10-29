@@ -175,6 +175,15 @@ function build(plan) {
   const rpc = resolveRpc(plan);
   const wallet = resolveWallet(plan);
   printPlan(plan, rpc, wallet);
+  runProgram("npm", ["run", "deploy:lockfiles:stabilize"], root, "Re-stabilize deploy lockfiles immediately before build", { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
+  const lockfilePath = join(root, plan.workspace, "Cargo.lock");
+  if (existsSync(lockfilePath)) {
+    const lockfile = readFileSync(lockfilePath, "utf8");
+    const lockVersion = lockfile.match(/^version = (\d+)$/m)?.[1];
+    if (lockVersion !== "3") {
+      throw new Error(`${lockfilePath} must use Cargo.lock format version 3 before the Solana/SBF 1.18.x build; found ${lockVersion ?? "unknown"}.`);
+    }
+  }
   if (plan.buildCommand) {
     runProgram(plan.buildCommand[0], plan.buildCommand.slice(1), join(root, plan.workspace), `Build ${plan.label} SBF program`, { ANCHOR_PROVIDER_URL: rpc, ANCHOR_WALLET: wallet, SOLANA_WALLET: wallet });
   } else {
@@ -304,9 +313,9 @@ const bootstrapEnv = { ANCHOR_PROVIDER_URL: bootstrapRpc, ANCHOR_WALLET: bootstr
 runProgram("npm", ["run", "deploy:lockfiles:stabilize"], root, "Stabilize Devnet lockfiles", bootstrapEnv);
 runProgram("npm", ["run", "deploy:doctor"], root, "Run Devnet deploy doctor", bootstrapEnv);
 
-for (const key of requested === "all" ? ["tsn", "tcap"] : [requested]) {
+for (const key of requested === "all" ? ["tsn", "tcap", "gpru"] : [requested]) {
   if (operation === "build") build(plans[key]);
   else deploy(plans[key]);
 }
 
-console.log(`\nDevnet ${operation} flow completed for: ` + (requested === "all" ? "TSN, TCap" : plans[requested].label));
+console.log(`\nDevnet ${operation} flow completed for: ` + (requested === "all" ? "TSN, TCap, GPRU" : plans[requested].label));

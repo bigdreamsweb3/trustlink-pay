@@ -30,3 +30,33 @@ The circuit imports `circomlib/circuits/poseidon.circom` and `circomlib/circuits
 The TIP route root and TCAP shared root layouts are protocol contracts and must be checked against their current account implementations before proving. The circuit has a 32-level TIP membership path and 128-level hidden-head and nullifier paths. Those depths, hash functions, leaf encodings, field endianness, and public-input order must match the on-chain root builders and proof witness service exactly; no end-to-end compatibility has yet been verified.
 
 For the prover, ceremony, key-conversion, and verifier-installation lifecycle, see the repository's [GPRU Groth16 prover and key artifacts guide](../../../../../docs/GROTH16-PROVER-AND-KEY-ARTIFACTS.md). The generated proving key is used off chain; the corresponding verifying key is stored in GPRU's global verifier PDA. Keep generated key material and private witnesses outside version control.
+
+## Local development prover and keys
+
+From the repository root, compile the circuit and generate a **single-machine development setup**:
+
+```powershell
+npm run gpru:circuit:compile
+npm run gpru:prover:setup:dev
+```
+
+The setup creates a local Powers of Tau file, a circuit-specific Groth16 proving key, `verification_key.json`, and `verifier-init-args.json` under `build/hidden_head_v1/dev/`. That directory is ignored by Git. The exported initializer uses the exact big-endian G1 and `c1 || c0` G2 byte layout expected by `groth16-solana 0.0.2`; its two commitments are computed with the same domain-separated SHA-256 inputs as GPRU's Rust source.
+
+To reuse an already prepared and independently verified phase-2 Powers of Tau file, set `GPRU_PTAU_FINAL_PATH` before `setup:dev`. The setup verifies the supplied file before circuit-specific key generation and records its filename and hash in `dev-setup.json`; it does not copy or modify the supplied file. For example, in PowerShell:
+
+```powershell
+$env:GPRU_PTAU_FINAL_PATH = "C:\path\to\powersOfTau28_hez_final_18.ptau"
+npm run gpru:prover:setup:dev
+Remove-Item Env:GPRU_PTAU_FINAL_PATH
+```
+
+This one-person development setup is for proving-tool and on-chain verifier integration only. It is not a production trusted setup, audit, or production verifier key. Do not initialize a production verifier from it. Production requires a publicly verifiable multi-party ceremony over the reviewed, pinned circuit build.
+
+Given a complete private witness JSON matching every signal in `main.circom`, produce and verify a proof with:
+
+```powershell
+npm run gpru:prover:prove:dev -- path\to\private-witness.json
+npm run gpru:prover:verify:dev
+```
+
+The witness provider and real TIP/TCAP sparse-map state integration are separate prerequisites. The scripts do not fabricate a witness, initialize the on-chain verifier, or enable the Node settlement path.

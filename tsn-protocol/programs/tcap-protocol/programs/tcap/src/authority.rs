@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use ark_bn254::Fr;
-use ark_ff::{BigInteger, PrimeField};
-use light_poseidon::{Poseidon, PoseidonHasher};
+use solana_program::poseidon::{hashv as poseidon_hashv, Endianness, Parameters};
 
 pub const TCAP_GLOBAL_CONFIG_SEED: &[u8] = b"tcap:global-config:v1";
 pub const TCAP_ASSET_REGISTRY_SEED: &[u8] = b"tcap:asset-registry:v1";
@@ -33,26 +31,15 @@ pub const TCAP_TIP_LIABILITY_V2_SEED: &[u8] = b"tcap:tip-liability:v2";
 pub fn empty_gpru_hidden_head_root_v1() -> Result<[u8; 32]> {
     let mut node = [0u8; 32];
     for _ in 0..128 {
-        let mut poseidon = Poseidon::<Fr>::new_circom(2)
-            .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))?;
-        let value = Fr::from_be_bytes_mod_order(&node);
-        let next = poseidon
-            .hash(&[value, value])
-            .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))?;
-        let bytes = next.into_bigint().to_bytes_be();
-        node = [0; 32];
-        node[32 - bytes.len()..].copy_from_slice(&bytes);
+        let inputs: [&[u8]; 2] = [&node, &node];
+        node = poseidon_hashv(Parameters::Bn254X5, Endianness::BigEndian, &inputs)
+            .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))?
+            .to_bytes();
     }
-    let mut poseidon = Poseidon::<Fr>::new_circom(2)
-        .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))?;
-    let value = Fr::from_be_bytes_mod_order(&node);
-    let root = poseidon
-        .hash(&[value, value])
-        .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))?;
-    let bytes = root.into_bigint().to_bytes_be();
-    let mut output = [0u8; 32];
-    output[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(output)
+    let inputs: [&[u8]; 2] = [&node, &node];
+    poseidon_hashv(Parameters::Bn254X5, Endianness::BigEndian, &inputs)
+        .map(|root| root.to_bytes())
+        .map_err(|_| error!(crate::error::TcapError::WrongTcapRoot))
 }
 
 pub fn derive_reserve_authority(asset_entry: &Pubkey) -> (Pubkey, u8) {

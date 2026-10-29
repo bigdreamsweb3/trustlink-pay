@@ -1,6 +1,6 @@
 # GPRU Groth16 prover and key artifacts
 
-This guide explains the proof-generation component used by GPRU's hidden-head V1 contract. The circuit and on-chain verifier interface exist in source, but this repository does not yet contain a compiled circuit, production proving/verifying keys, a prover service, or a verified deployment of the verifier configuration. The Node settlement authorization endpoint therefore fails closed until those pieces are built and connected.
+This guide explains the proof-generation component used by GPRU's hidden-head V1 contract. The current circuit source has been compiled locally with Circom 2.1.9 and `circomlib` 2.0.5; the generated output is ignored by Git. The repository does not contain production proving/verifying keys, a witness provider, a prover service, or a verified deployment of the verifier configuration. The Node settlement authorization endpoint therefore fails closed.
 
 ## What the prover does
 
@@ -35,7 +35,7 @@ The setup has toxic-waste risk: if all setup contributors retain or collude arou
 
 Use a pinned Circom compiler, pinned `circomlib`, and pinned `snarkjs` version. The required pipeline is:
 
-1. Compile `tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom` to R1CS, witness-calculator output, and symbols. Record compiler/library versions, build command, source hashes, and constraint count.
+1. Compile `tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom` to R1CS, witness-calculator output, and symbols. The current local compile reports 143,076 constraints, 143,346 wires, 308 private inputs, and 8 public inputs. Record compiler/library versions, build command, source hashes, and constraint count for every setup.
 2. Review the circuit constraints and public-input order. Confirm that the Rust verifier's eight-input layout and the generated verification key's input count match.
 3. Run the Powers of Tau and circuit-specific setup. Preserve the public ceremony transcript and contribution verification output; securely discard contributor secret randomness.
 4. Verify the final zkey against the exact R1CS and Powers of Tau artifact, then export the verification key. Record hashes for the final R1CS, WASM, zkey, and verification-key file.
@@ -48,13 +48,11 @@ Use a pinned Circom compiler, pinned `circomlib`, and pinned `snarkjs` version. 
 The following is a command template for a controlled development run. Pin and record tool versions first, choose the Powers of Tau power only after measuring the circuit, and write generated files to an ignored local build directory:
 
 ```sh
-circom circuits/hidden_head_v1/main.circom \
-  --r1cs --wasm --sym \
-  -l node_modules \
-  -o build/hidden_head_v1
-
-snarkjs r1cs info build/hidden_head_v1/main.r1cs
-snarkjs powersoftau new bn128 <power> build/hidden_head_v1/pot_0000.ptau -v
+npm --prefix tsn-protocol/programs/gpru/circuits/hidden_head_v1 ci
+npm run gpru:circuit:compile
+npm run gpru:circuit:info
+cd tsn-protocol/programs/gpru/circuits/hidden_head_v1
+snarkjs powersoftau new bn128 18 build/hidden_head_v1/pot_0000.ptau -v
 snarkjs powersoftau contribute \
   build/hidden_head_v1/pot_0000.ptau build/hidden_head_v1/pot_0001.ptau \
   --name="local development only" -v
@@ -90,7 +88,7 @@ snarkjs groth16 verify \
   build/hidden_head_v1/public.json build/hidden_head_v1/proof.json
 ```
 
-These commands create only a local experimental setup. `<power>` is intentionally unspecified until circuit sizing; do not copy an arbitrary ceremony size or use a development key for Devnet. The local proof must also be verified with GPRU's Rust verifier and exact point encoding before it is evidence of compatibility.
+The measured constraint count fits a power-18 Powers of Tau file. These commands create only a local experimental setup; a one-person local setup is not production ceremony evidence and must not be treated as production key material. The local proof must also be verified with GPRU's Rust verifier and exact point encoding before it is evidence of compatibility.
 
 ## Prover request and settlement flow
 
@@ -116,9 +114,19 @@ This is the intended proof path. At present the Node deliberately returns `GPRU_
 
 ## Repository status and completion gates
 
-The current source contains the Circom circuit, GPRU Groth16 verification and verifier-initialization instructions, and proof-shaped TSN/TCAP credit arguments. The circuit has not been compiled or independently reviewed; no setup artifacts or proving-key/verifying-key converter are present; there is no configured witness provider/prover; the on-chain verifier PDA has not been initialized as part of this work; and the SDK/Receiver/Node/Cranker path has not passed an end-to-end proof test. Debit and exit must remain disabled until their proof relation, authorization, payout/liquidity checks, and atomic root transition are verified together.
+The repository now includes scripts to create a **local development-only** Powers of Tau/Groth16 setup, export the verifying key into the byte layout required by `groth16-solana 0.0.2`, and calculate/prove/verify when supplied a complete circuit witness. The generated files live under the ignored `build/hidden_head_v1/dev/` directory. This is not a production ceremony or reviewed key. No real witness provider is connected to TIP/TCAP state, the on-chain verifier PDA has not been initialized, and the SDK/Receiver/Node/Cranker path has not passed an end-to-end proof test. Debit and exit must remain disabled until their proof relation, authorization, payout/liquidity checks, and atomic root transition are verified together.
 
 Do not enable the Node settlement path or deploy a new program build on the basis of these source files alone. Completion requires the artifact pipeline above, program and SDK builds, proof-vector verification, transaction-size/compute checks, security review, and explicit Devnet account/signature evidence.
+
+## Devnet program deployment command
+
+After those completion gates pass, deploy the TIP Registrar, TSN, TCAP, and GPRU programs from the repository root with:
+
+```sh
+npm run programs:devnet:deploy:all
+```
+
+This command uploads program binaries; it does not perform the Groth16 setup, initialize the GPRU verifier PDA, or configure the TSN Node prover. Those actions must be completed and verified before testing wallet-to-TIN credit. The deploy command is provided for the completed integration workflow and does not mean the current proof path is ready.
 
 ## Source files
 

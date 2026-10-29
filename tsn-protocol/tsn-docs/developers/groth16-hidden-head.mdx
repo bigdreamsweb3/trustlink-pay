@@ -15,29 +15,26 @@ Groth16 setup is circuit-specific. Compiling the Circom source produces an R1CS 
 
 ## Current status
 
-The repository contains the circuit source and GPRU verifier/initializer code. It does not yet contain compiled circuit output, production proving/verifying keys, the Rust point-encoding adapter, the private witness provider, or a working prover service. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; settlement remains disabled until these prerequisites and the complete proof path are verified.
+The circuit has been compiled locally with Circom 2.1.9 and `circomlib` 2.0.5. The compile reports 143,076 constraints, 143,346 wires, 308 private inputs, and 8 public inputs; generated output is ignored by Git. There are no setup keys, Rust point-encoding adapter, private witness provider, or working prover service. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; settlement remains disabled until these prerequisites and the complete proof path are verified.
 
 ## Local circuit toolchain
 
-Install and pin Circom 2, `circomlib`, and `snarkjs` in the development environment. Then compile from `tsn-protocol/programs/gpru`:
+Install the pinned Circom 2, `circomlib`, and `snarkjs` packages, then compile from the repository root:
 
 ```sh
-circom circuits/hidden_head_v1/main.circom \
-  --r1cs --wasm --sym \
-  -l node_modules \
-  -o build/hidden_head_v1
-
-snarkjs r1cs info build/hidden_head_v1/main.r1cs
+npm run gpru:circuit:install
+npm run gpru:circuit:compile
+npm run gpru:circuit:info
 ```
 
 Record compiler/library versions, build command, source hashes, and constraint count. Do not begin a trusted setup until the public-input order, path depths, hash functions, Pedersen arithmetic, and Rust verifier encoding have been reviewed.
 
 ## Local-only setup and proof commands
 
-The following command shape is for development only. Select `<power>` from the measured circuit size and use a coordinated multi-party ceremony for production:
+The following command shape is for development only. The current circuit fits power 18; use a coordinated multi-party ceremony for production:
 
 ```sh
-snarkjs powersoftau new bn128 <power> build/hidden_head_v1/pot_0000.ptau -v
+snarkjs powersoftau new bn128 18 build/hidden_head_v1/pot_0000.ptau -v
 snarkjs powersoftau contribute build/hidden_head_v1/pot_0000.ptau build/hidden_head_v1/pot_0001.ptau --name="local development only" -v
 snarkjs powersoftau prepare phase2 build/hidden_head_v1/pot_0001.ptau build/hidden_head_v1/pot_final.ptau -v
 snarkjs groth16 setup build/hidden_head_v1/main.r1cs build/hidden_head_v1/pot_final.ptau build/hidden_head_v1/hidden_head_0000.zkey

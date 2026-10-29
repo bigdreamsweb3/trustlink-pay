@@ -24,32 +24,60 @@ const artifact = "target/deploy/tins_program.so";
 const fallbackRpc = "https://api.devnet.solana.com";
 const candidates = [...new Set([configuredRpc, fallbackRpc])];
 
+function rpcLabel(rpc) {
+  const url = new URL(rpc);
+  return `${url.protocol}//${url.host}${url.pathname}`;
+}
+
+function errorMessage(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = error?.cause?.code;
+  return redact(code ? `${message} (${code})` : message);
+}
+
 async function checkRpc(rpc) {
-  const response = await fetch(rpc, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth", params: [] }),
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) throw new Error("RPC health check failed");
+  let response;
+  try {
+    response = await fetch(rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth", params: [] }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (error) {
+    throw new Error(`Request to ${rpcLabel(rpc)} failed: ${errorMessage(error)}`, { cause: error });
+  }
+  if (!response.ok) {
+    throw new Error(`Health check for ${rpcLabel(rpc)} returned HTTP ${response.status}.`);
+  }
   const body = await response.json();
-  if (body.error || body.result !== "ok") throw new Error("RPC health check failed");
+  if (body.error) {
+    throw new Error(`Health check for ${rpcLabel(rpc)} returned a JSON-RPC error.`);
+  }
+  if (body.result !== "ok") {
+    throw new Error(`Health check for ${rpcLabel(rpc)} returned an unexpected result.`);
+  }
 }
 
 let selectedRpc;
+const rpcFailures = [];
 for (const rpc of candidates) {
   try {
     await checkRpc(rpc);
     selectedRpc = rpc;
     break;
-  } catch {
+  } catch (error) {
+    rpcFailures.push(`${rpcLabel(rpc)}: ${errorMessage(error)}`);
     if (rpc === configuredRpc) {
-      console.log("TIP configured RPC is unavailable; checking public Devnet RPC.");
+      console.log(`TIP configured RPC check failed (${errorMessage(error)}); checking public Devnet RPC.`);
     }
   }
 }
 if (!selectedRpc) {
-  throw new Error("Configured TIP RPC and public Devnet RPC are unavailable; no deployment was attempted.");
+  throw new Error(
+    `Configured TIP RPC and public Devnet RPC are unavailable; no deployment was attempted.\n` +
+    rpcFailures.map((failure) => `- ${failure}`).join("\n"),
+  );
 }
 
 const safeRpc = selectedRpc.replace(/([?&](?:api-key|key|token)=)[^&\s]+/gi, "$1<redacted>");

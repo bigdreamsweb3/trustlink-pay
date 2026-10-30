@@ -1,0 +1,329 @@
+/* ═══════════════════════════════════════════════════════════════
+   TrustLink Pay: modern dapp layer
+   Loaded after globals.css and tsn.css. Restyles shared tokens and
+   components (cards, fields, buttons, headers, dock) to a compact,
+   Jupiter-style dapp look while keeping the TrustLink green accent.
+   Tailwind utilities live in a cascade layer, so rules here win.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Tokens: fix undefined / malformed variables, raise contrast ── */
+:root {
+  --font-ui:
+    "Inter", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui,
+    -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-code: var(--font-mono), "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  /* Previously referenced but never defined, or declared with invalid syntax */
+  --surface: #ffffff;
+  --bg-main: var(--bg-elevated);
+  --accent-hover: color-mix(in srgb, var(--accent) 80%, black);
+  --border: var(--field-border);
+  --field-bg: var(--field);
+  --panel-bg: var(--panel);
+
+  --r-card: 20px;
+  --r-ctl: 14px;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+
+  /* Light mode: clearer borders and readable secondary text */
+  --field-border: rgba(15, 26, 20, 0.1);
+  --muted: rgba(15, 26, 20, 0.62);
+  --text-faint: rgba(15, 26, 20, 0.54);
+}
+
+.dark {
+  --surface: #0f1715;
+  --bg-main: #070a09;
+  --accent-hover: color-mix(in srgb, var(--accent) 84%, white);
+
+  /* Dark mode: secondary text was ~36% opacity, below readable contrast */
+  --muted: rgba(236, 244, 239, 0.64);
+  --text-soft: rgba(236, 244, 239, 0.84);
+  --text-faint: rgba(236, 244, 239, 0.54);
+  --field-border: rgba(255, 255, 255, 0.09);
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --dock-border: rgba(255, 255, 255, 0.08);
+}
+
+/* ── 2. Typography: UI sans, mono kept for code and numbers ── */
+body,
+body.font-mono {
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+code,
+pre,
+kbd,
+samp,
+.tl-code,
+.tl-coord-text,
+.tl-balance-readout {
+  font-family: var(--font-code);
+}
+
+.tl-display {
+  font-family: var(--font-ui);
+  font-size: clamp(2rem, 5.4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.tl-h1 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tl-h2,
+:root .tl-h2 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.tl-h3 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tl-body,
+.tl-body-lg,
+.tl-body-sm {
+  font-family: var(--font-ui);
+}
+
+/* Eyebrow label becomes a small pill */
+.tl-meta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.dark .tl-meta-label {
+  color: var(--accent);
+}
+
+/* ── 3. Cards, modals, fields ── */
+.tl-panel,
+.tl-modal,
+.tl-phone-frame {
+  border: 1px solid var(--field-border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow);
+}
+
+.tl-panel {
+  background: var(--panel);
+  background-image: none;
+  backdrop-filter: none;
+}
+
+.dark .tl-panel {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.012) 100%
+  );
+}
+
+.tl-modal {
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  background-image: none;
+  backdrop-filter: blur(22px) saturate(1.15);
+}
+
+.tl-field {
+  border-radius: var(--r-ctl);
+  background: var(--surface-soft);
+  border: 1px solid var(--field-border);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.tl-field:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--field-border));
+}
+
+.tl-field-btn {
+  border-radius: 999px;
+  background: var(--surface-soft);
+  background-image: none;
+}
+
+.tl-badge {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+:where(input, textarea, select):focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+/* ── 4. Buttons: compact pills, sentence case ── */
+.tl-button-primary,
+.tl-button-secondary,
+.tl-button-transparent,
+.tl-button-danger,
+.tsn-button-transparent {
+  min-height: 40px;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 120ms ease,
+    box-shadow 160ms ease;
+}
+
+.tl-button-primary {
+  background: var(--accent);
+  color: #04110a;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.tl-button-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.tl-button-secondary {
+  background: transparent;
+  background-image: none;
+  color: var(--text);
+  border: 1px solid var(--field-border);
+}
+
+.tl-button-secondary:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--accent-border);
+}
+
+.tl-button-transparent,
+.tsn-button-transparent {
+  background: transparent;
+  background-image: none;
+  color: var(--text-soft);
+  border: 1px solid transparent;
+}
+
+.tl-button-transparent:hover:not(:disabled),
+.tsn-button-transparent:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text);
+  border-color: var(--field-border);
+}
+
+.tl-button-primary:active:not(:disabled),
+.tl-button-secondary:active:not(:disabled),
+.tl-button-transparent:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.tl-button-primary:disabled,
+.tl-button-secondary:disabled,
+.tl-button-transparent:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ── 5. Headers and dock ── */
+.tl-topbar,
+header.fixed,
+header.sticky {
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+header nav[aria-label="Landing page sections"] a {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+header a[href="/"] > span {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+nav[aria-label="Primary navigation"] {
+  border-radius: 26px;
+  border: 1px solid var(--dock-border);
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+
+/* ── 6. Focus and motion ── */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 75%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── 7. Scrollbars: slim, low contrast, brighter on hover ── */
+@supports selector(::-webkit-scrollbar) {
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 14%, transparent);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text) 32%, transparent);
+    background-clip: padding-box;
+  }
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text) 20%, transparent) transparent;
+  }
+}

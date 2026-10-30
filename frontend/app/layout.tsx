@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/app/providers";
 import "./globals.css";
 import "./tsn.css"
+import "./trustlink-modern.css";
 import { JetBrains_Mono } from 'next/font/google';
 import { GlobalGridBackground } from "@/src/components/layout/global-grid-bg";
 

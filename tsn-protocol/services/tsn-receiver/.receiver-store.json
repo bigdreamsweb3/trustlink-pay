@@ -1,25 +1,19 @@
 {
   "tsn_receiver_cranker_challenges": {
-    "637e28bb8d4364a7283d5bd4472315cb4ca980e63b1cca8e2c9de9d913636550": {
+    "cf3802dbaedbb1d797b8667bcac046f45840311184a8cd68ad98b7c2ead238d5": {
       "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "nonce": "_SsQvz6nu3g2I_X9qU2q7XpNQFJ8Bj-g6vc4sYSEpk4",
-      "expiresAt": "2026-10-29T17:18:31.046Z",
+      "nonce": "K3zXcZYOZJgSDFYdhrCOAjoJSrITZWr1tcsSbNG-ql8",
+      "expiresAt": "2026-10-30T15:33:07.158Z",
       "used": true,
-      "usedAt": "2026-10-29T17:17:32.594Z"
+      "usedAt": "2026-10-30T15:32:09.596Z"
     }
   },
   "tsn_receiver_cranker_rate_limits": {
-    "24d85abd11632341c2bd0440fc33779dc9ea1c46b148da687dbf0a9f3391f912": {
+    "83699cf07a79877616fda26aaef8456e672c95398d613545e6f9203d3cfe5ee3": {
       "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29888236",
-      "count": 17,
-      "updatedAt": "2026-10-29T17:16:58.838Z"
-    },
-    "f778754e40ab5b8f0c9a4b8b94b29bde400939676ca729c75bbb96f8f1602ce7": {
-      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
-      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29888237",
-      "count": 7,
-      "updatedAt": "2026-10-29T17:17:32.697Z"
+      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29889587",
+      "count": 26,
+      "updatedAt": "2026-10-30T15:47:59.360Z"
     }
   },
   "tsn_receiver_work": {
@@ -3553,12 +3547,482 @@
         "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 1: missing required signature for instruction. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program log: Error: MissingRequiredSignature\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 4291 of 203000 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: missing required signature for instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
       },
       "authorization": null
+    },
+    "e5ddc1c8-4e4d-4b3a-a448-45faa73541e6": {
+      "id": "e5ddc1c8-4e4d-4b3a-a448-45faa73541e6",
+      "kind": "TIN_OPERATION",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "906489239799250cfa50e0664a9cf79090737bb90f8e2e9e528a3046310280c4",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "f7f64a69-2d26-40c4-809c-fbf9c548ac26",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "0Uy9VmKMNStJG/1WPrSFRB4uc1MBQeCM+phh7ZUMlnyd6OK8CKWqj1XK3MLoUIV4xxOEm/l4TuAWSrUpq93PAA==",
+        "ownerIntentHash": "5c6576c52a3b44f5b427265126e7e02d6d97e9e4a20c080413968f803546db79",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: 5c6576c52a3b44f5b427265126e7e02d6d97e9e4a20c080413968f803546db79\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "4d68dbb148f265c3656e918e4b2718e65c4567351945122360de3243f3a0edf8",
+        "expiry": 1793368156,
+        "lookupCommitment": "3bd8dd8ea002aad4eeab2965129227ee331285b6df89a473849cc854ab5d7302",
+        "encryptedTinRecovery": "VFNOVElOMDT+9JbDfi7Sfy+Dc7LObZSzaRkUVnLBD7YqnbRp9YLfcZka7zruqaogxv26jsecCpriMjRw1uysjZbhrRiV0/5w99NF19xtjUg=",
+        "encryptedIdentityEnvelope": "DEVZoEcqcIh6KAaEArlEhB3K1DgpUGjVH9j35TFdoh590NNLCdWkCg7pZILMUslIG6wCfw4PMOTfQeXLLneul0A=",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiZGFkNGIxNmFkNmMzNTA0OWM4MWZiNjU4Yzg0Nzg1NjdhNGRmZDliMGI2NmQ5OWMyNjQ2NmZiNDg4YmQ3NWVhYyIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6Im5mVk9LdjZsMUEwVDc1Y0Y1SVFicHl5VDhmVlBCWGhJTG9yQkRwQXRBSzlJV3FOYWtBWXZhSnJSUjNfUG9QNG8iLCJzZWVkTm9uY2UiOiJwMm5WVU1NUnppSnZUcW9XIiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiZDZhNjE3MzkxMjRlYzQ4ODdjMjdlZTI1Njg5MzAyYTJiYTk3NjVlODZkZTQ4YTZmY2YyYTdlMGU1MGFmNDdkYyIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiIzYmIxNDgwYWM2YjFkZjdiNjJiODExMGY4MDY0ZTQxNjZmOGU4ZTNhYjhiZGQ1ZThmMzhmYWQ3YjhjM2Q2M2IzIiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6ImY1ZGFmMjcwMTlmMGFkNjI4MTAwNTRiY2NkZDBlMTUwNWM0NjU0ZTNjNTM2ZGRjYmZlMGE5ZmYxY2Y5OTZlMWIifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "4d68dbb148f265c3656e918e4b2718e65c4567351945122360de3243f3a0edf8",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "ca7156d935a98b6cd1ab68cada6c99a4ca5e959c8b092b118e9baffeedd5a876",
+        "gpruElgamalKeyCommitment": "3c5083be4307beb74a0b848252b8328113788eaa6e4515ad1c1f4db6a904c3d7",
+        "policyCommitment": "5b66b853102704730a6c302087edd0fbe9510646aa220c5f1d7815a5f97d5b0b",
+        "lookupIssuanceProof": "2ce03a38bd19c51f94d88bf823d8f080d5d941b025e261835ae9bb46a2702f96"
+      },
+      "receivedAt": "2026-10-30T13:34:33.960Z",
+      "updatedAt": "2026-10-30T13:35:05.736Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "e5ddc1c8-4e4d-4b3a-a448-45faa73541e6",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "906489239799250cfa50e0664a9cf79090737bb90f8e2e9e528a3046310280c4"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "e5ddc1c8-4e4d-4b3a-a448-45faa73541e6",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "906489239799250cfa50e0664a9cf79090737bb90f8e2e9e528a3046310280c4",
+          "evidenceCommitment": "f7373a423c974ede0bbdd8517e657e5a90cf9a6f57e119377a19963ccf4bd05d",
+          "executionPayloadCommitment": "eee6324da0797ba9a1b9cc0448ed3419d0ddf0a20f5807cb3e3d1f6017ce9dd2",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "e5ddc1c8-4e4d-4b3a-a448-45faa73541e6",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-30T13:34:42.351260Z",
+          "signatureBase64": "FIju7anX9ve6ARbhjM32RYxWLPtcwDuSYW+cyRsD1X4YDucwGaPBrpbXNfce7zW6Hiw0ZPAl7vnmfJwYmB/+CA==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-30T13:34:42.099974+00:00",
+            "updatedAt": "2026-10-30T13:34:42.099974+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 1: Program failed to complete. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 203000 of 203000 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: exceeded CUs meter at BPF instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "783e9cbc-f1fa-4a8c-8880-a1ae85fe2867": {
+      "id": "783e9cbc-f1fa-4a8c-8880-a1ae85fe2867",
+      "kind": "TIN_OPERATION",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "cac31243a553bfeba8af5cb96c300b873f99f3dc266c9164290fa1cc12b0ce19",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "d1d2eb83-d095-493f-8e92-0509fc132802",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "dqpW7cFZOQIgtXLWMvu9H4YXOPrAWsYTwzoSG2mzn6rITTCOGFQcNeVkpdoNgYm1HYjd55y1DYj2yiFj6vEYDA==",
+        "ownerIntentHash": "fc546f383030a260d73e3c230b31668e80f24557c243e052901fdf9502a9f749",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: fc546f383030a260d73e3c230b31668e80f24557c243e052901fdf9502a9f749\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "f9002aecd270a60581f9b66dd99edbbdf69f861f3de3a31d181aa2898f9142ae",
+        "expiry": 1793368642,
+        "lookupCommitment": "bd6b42ff9bab857701a67f38a6106aea517fcd356bcacd916e7025b31bb69a02",
+        "encryptedTinRecovery": "VFNOVElOMDSJ7tX5LODpq7N7Nmy4bzUkR47QBYwkwPZY4Q2o81/vIi/PkjKiyu9YUIfsitYHl1/QV3AnSQnwnn9D+fooNIvjJQ1IhrO4PqM=",
+        "encryptedIdentityEnvelope": "T4vcBO5SBso5HLyN6+eQW2QGMwGMat5oEhdEOguys/SxS0Y/oicWfeTzGE3M6BvgIoUZfv8iPgMWti8B4NbJ0tA=",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiZGY5MTVlNzRhYjZkYWMwY2E1ZDQwMWRjMzAzMTZmMmZlNGNlOWMyYzVmNGE3ODcxNmM4NTU1YTAwMWMyMzZkYiIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6IlJ4U2l1R3RwRHo3V29BcUZpMGRpMGUwTHlENTY0V0l1bExtV0FTVDZyU0prMVNkOEVCUGgyN1o2ZkhVWlRNTHQiLCJzZWVkTm9uY2UiOiJqLVNLM05yS0dKSVNUSWFsIiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiMzBhYjY2ZmI2MmI0MDJhZWMxYzEyMjdmMWM5ODgyNThhODFhYTczNmE0NGE5ODgwMzdkMzFhMTU4OGI1NjY1MSIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiI5ZGIwNWQwZGQzMDA1NjIwOGRkMTg3N2FkZWE2NmNmMzUyMzMyNWU2Nzg3NWY0NWFhMTE0MWQ4MWE1MGJmNWY5IiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6IjQ0NGMwY2NkMGE0ZDI4ZGRjOWZiZGRhNmRkZjEyZmUwZTJlNzhmZTU5NGYxMzYyNTZjODAzN2VjMzU0ZDhhOTgifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "f9002aecd270a60581f9b66dd99edbbdf69f861f3de3a31d181aa2898f9142ae",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "a25fc2e2dc4aa5f8cc7c5c34e75850aa4c3543215f007fb4e91861b41ce8cf35",
+        "gpruElgamalKeyCommitment": "93d3ff65bdf534034339ea549ed2941168a652025c8c46036a026217975d609f",
+        "policyCommitment": "d4b75ae4744025bf336a051329bb749d3e2adc3f322a512cdd8d868e9f6f0dfa",
+        "lookupIssuanceProof": "4b2e07d36aff15fbcf04713e65b861f3c82cb7f795d17c69d59b7f96ce79ad13"
+      },
+      "receivedAt": "2026-10-30T13:42:34.555Z",
+      "updatedAt": "2026-10-30T13:42:57.113Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "783e9cbc-f1fa-4a8c-8880-a1ae85fe2867",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "cac31243a553bfeba8af5cb96c300b873f99f3dc266c9164290fa1cc12b0ce19"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "783e9cbc-f1fa-4a8c-8880-a1ae85fe2867",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "cac31243a553bfeba8af5cb96c300b873f99f3dc266c9164290fa1cc12b0ce19",
+          "evidenceCommitment": "280d79a2db93fb17ccfb4975afd8b3bd8eccb8d3e6965d542ea8209e3476df03",
+          "executionPayloadCommitment": "132705090afd59663a90f425fa77d39f24a004484007a0b4d40d0fe851ef947b",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "783e9cbc-f1fa-4a8c-8880-a1ae85fe2867",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-30T13:42:38.520630Z",
+          "signatureBase64": "OZhDKaPNWV+svoqclaRr7cbaBkTiQ2SV2ZVbTxLKWifZoNdsRFroUTnan1LYqxyouARY9OvdBd3KbTNXEwwTDw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-30T13:42:38.304619+00:00",
+            "updatedAt": "2026-10-30T13:42:38.304619+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 2: Program failed to complete. \nLogs: \n[\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT invoke [1]\",\n  \"Program log: TINS entrypoint\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT consumed 1399850 of 1399850 compute units\",\n  \"Program TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT failed: exceeded CUs meter at BPF instruction\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "d3664a6c-fdd1-44fc-9518-99fe10fba703": {
+      "id": "d3664a6c-fdd1-44fc-9518-99fe10fba703",
+      "kind": "TIN_OPERATION",
+      "status": "CONFIRMED",
+      "stateVersion": 5,
+      "payloadCommitment": "35a59516916433fe85ac30490f095af3752f9010b4216f91822439289b4d45fd",
+      "payload": {
+        "intentType": "tin_creation",
+        "intentId": "2d52e2f9-09e6-4b85-adcc-af310dcd13af",
+        "ownerPubkey": "AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7",
+        "ownerSignature": "cT1Ohx8mpwj3wChzuMrEjnyT+dASJarfsM0l0Z09UYJyYJYs0vhvzPza6yZvDORjodeQ7hkRdvKmTdEMDNcFDg==",
+        "ownerIntentHash": "f9dc1aefe3f63092ec24a2bcca43be42d2ee4cee7c08b01a816c9f73f5518d27",
+        "ownerIntentMessage": "TrustLink TIN creation approval\n\nYou are approving the encrypted creation request for your TIN.\n\nREQUEST DETAILS\nIntent reference: f9dc1aefe3f63092ec24a2bcca43be42d2ee4cee7c08b01a816c9f73f5518d27\n\nProtocol: Transfer Identity Protocol (TIP)\n\nVersion: 1\n\nNEXT STEP\nTSN will verify this approval before submission to Solana.\n\nNo funds are transferred by this approval.",
+        "nonce": "a3201e0c19bb3d8dae78b9cddaab976471ccd498a388a779852085b016f8d595",
+        "expiry": 1793372982,
+        "lookupCommitment": "0f35bd2571dc84ac8a4c8da914b2c8d1277dec49541c229bb0a24a058b2e8003",
+        "encryptedTinRecovery": "VFNOVElOMDR/8wazYVOZ8tSmRGhs7Z/cZ7i9frgluFm1xerv9vLMaChG5IvZS6754rYbGGJJWCZEzNkxkVpbKCxGPYAnnHmRYUJCI5RVOmYpyTUdaTaXbw==",
+        "encryptedIdentityEnvelope": "FuuIR8L31WAXS+f56its3kWmdyLg39UDhMyCxYxND2vwut9wFk4rLmgIvmzp2IfEvDLemYr5s/SMg288nZucoIdlSrDTgUj97w==",
+        "encryptedMasterSeed": "eyJ2ZXJzaW9uIjoidHNuLXRpbi1tYXN0ZXItc2VlZC1lbnZlbG9wZSIsInByb3ZpZGVyIjoid2FsbGV0LW93bmVyLXNpZ25hdHVyZS12MSIsInRpbiI6InRpbi12MSIsInJvdXRlVmVyc2lvbiI6MSwicHJ1Q29uZmlndXJhdGlvbkhhc2giOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicmVzb3VyY2VDb21taXRtZW50IjoiN2FlOWZhZmFlOTY2ZjA4MzA0OGFmZDk1ZmU3MWJhYzJhMGFkNDAyMTU3YjI2YzJhYTQyMGE2MjA5OGQ2NzEzMyIsInNlZWRFbmNyeXB0aW9uQWxnb3JpdGhtIjoiYWVzLTI1Ni1nY20tbG9jYWwtbWFzdGVyLXNlZWQiLCJzZWVkQ2lwaGVydGV4dCI6IncxQUFSS1dWa2tTMnVjUFlxb3p1X2d4RG8wUzBpXzYzelU0YnpiUUFBTjJnVGY1RVA3OUE3NEZtYURJd09oanEiLCJzZWVkTm9uY2UiOiJsbTRPOTJ0eUVYREtJMjN1Iiwic2VlZENpcGhlcnRleHRDb21taXRtZW50IjoiYTkyNzBhYWFkOTgyNDEyOWYwNTM4OGQ0MDk5M2Q1N2E4MmI1OWY0NmUzYjllYTgxNTJlOTBhNTZjNGU4Y2NkOSIsInByb3RlY3RlZEtleSI6IndhbGxldC1vd25lci1zaWduYXR1cmUtZGVyaXZlZCIsInByb3RlY3RlZEtleUNvbW1pdG1lbnQiOiJmNjUyMDcyMzY0ZDcxYTBhZjg3ZjNiZjY4MDAwZWU5ZTkwYTRiNTVlNTFjZWY5MmM1NmVhMDY1N2Y3ZGM0ZDM5IiwiYWNjZXNzQ29udHJvbEhhc2giOiJmY2EwOWI3MjliZGRmMjVjMGJjMzkzNTc0OTc0MDI4MTEzNDkzMGVhMzZkNTI0YzI2ZmU2NzE1YTdmMjlmZmY0IiwiaW50ZWdyaXR5Q29tbWl0bWVudCI6IjNkODUyMjVhMzVmNjE5NjI3OGYzNTYwYzBjYjJhNWU2OTBjNWU3N2Q5NDUwY2I3OGM2ODk5N2NkYzMzMzFiMGUifQ==",
+        "encryptedMetadataHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "routeVersion": 1,
+        "routeNonce": "a3201e0c19bb3d8dae78b9cddaab976471ccd498a388a779852085b016f8d595",
+        "tipRouteVersion": 1,
+        "gpruElgamalKeyVersion": 1,
+        "gpruElgamalPublicKey": "c21c14f1ae1957333712026eac882fff14779c080bc96f75b1a5eec12703e94f",
+        "gpruElgamalKeyCommitment": "3d37ce486d1f5d69850d0e0ddd9234783096d5d11793e27c4b7c4e4db901c72e",
+        "policyCommitment": "7dd6a512a86b0a039f649fe5425bd76aaffeb5e99a67be15ca3d5f9438e692e3",
+        "lookupIssuanceProof": "6eef2b1fa7170af4caf4a33748028cc841f6c161fe4bdac7b3f8371d449d772a"
+      },
+      "receivedAt": "2026-10-30T14:54:54.416Z",
+      "updatedAt": "2026-10-30T14:55:14.855Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "hasPublicRouteEnvelope": false,
+        "verificationType": "TSN_TIN_OPERATION",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "d3664a6c-fdd1-44fc-9518-99fe10fba703",
+          "kind": "TIN_OPERATION",
+          "stateVersion": 2,
+          "payloadCommitment": "35a59516916433fe85ac30490f095af3752f9010b4216f91822439289b4d45fd"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "d3664a6c-fdd1-44fc-9518-99fe10fba703",
+          "workKind": "TIN_OPERATION",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "35a59516916433fe85ac30490f095af3752f9010b4216f91822439289b4d45fd",
+          "evidenceCommitment": "8b5a4bb627352f219ed241b6785351614157a95b9278453376fa5910ffc4a6f7",
+          "executionPayloadCommitment": "7930f95cf15f44637a6c6f305d2b4a8a046a4341cf3f282bbf5c0a9a699bcc5b",
+          "verificationType": "TSN_TIN_OPERATION",
+          "leaseId": "d3664a6c-fdd1-44fc-9518-99fe10fba703",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-30T14:54:56.210331Z",
+          "signatureBase64": "gdSbZ+IN8XtXE/3jsWTFuCSEokogncDxFAhOOcdFLDiYokVe5LmcCkO9rwUXlaACDN5CU88BlbYzd5sUqswZAw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "ownerSignatureMessageFormat": "readable-v1",
+            "createdAt": "2026-10-30T14:54:55.726753+00:00",
+            "updatedAt": "2026-10-30T14:54:55.726753+00:00",
+            "status": "pending_verification",
+            "verifierCranker": null,
+            "submitterCranker": null,
+            "feeMetadata": null,
+            "failureReason": null,
+            "onchainSignatures": [],
+            "displayNameStatus": "opaque_to_node",
+            "displayNameReadableByNode": false,
+            "envelopeChecks": {
+              "ownerAuthorization": {
+                "intentHashVerified": true,
+                "signatureVerified": true
+              },
+              "encryptedIdentityEnvelope": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedTinRecovery": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "encryptedMasterSeed": {
+                "present": true,
+                "base64Decoded": true,
+                "includedInOwnerIntentHash": true,
+                "ciphertextOpenedByNode": false
+              },
+              "gpruElgamalPublicKey": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              },
+              "gpruElgamalKeyCommitment": {
+                "present": true,
+                "includedInOwnerIntentHash": true
+              }
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "lookupIssuanceProof"
+          ]
+        }
+      },
+      "result": {
+        "stage": "TIN_V1_REGISTRY_CREATED",
+        "signature": "3r5TQHqc4kKJnoxeP36QVCqoEidqJsbpSfGwzFNEQ857Lxv8ZcJH6tuDRgcnaaC6HvbnQT7VW3m6XDTrCk7kNHuE",
+        "registry": "AatsNG4deJKdxjD5pPfeFw4PnTnQ7SmATBGK3qXyUU5W",
+        "stagedCreation": {
+          "stage": "6TGboyo7Ny74diroZH6KBnu3Qdoszad88rr1XayWhoFA",
+          "stagingSignatures": [
+            "2tn3wwg6mvRdYoYLBQwLy1pZTVtRVt47km73TNNToSTKqbGCvhNmQW3NZCEthvWjB2i58wezSR4W6wnuCJteqc8Q",
+            "3G3FEfENA5WJZGgXhG9wxpQHamidjamX8dkC39D5hQvmFPxqiJoawk6GtPKdSEV32GzKTes93jVaoq875rr4j1VA",
+            "wDaKeNp1FN8uuAKoLoD2QfKncQ27ewanfFHVck4T2mMbb86MHvSDK19HYm8rzFJrBVLi2unk19XYnKM3ZNEynmH",
+            "SX6GekxxmKGrGHt47LWezpbn4KJx696dPbE9UQbJgKhvrTzdormR1cJrJzbe8ZoRGS6LfdLCoUvQjy9wMyjgGAe",
+            "5VZ7DBPkGwG3KBp2JDUmosqkeUVMoGB7aSPf5ke4Pp5WezC26kohySbvvRB2jyBJWNyd1YULXD3fc3qXsibHvmqh"
+          ]
+        }
+      },
+      "authorization": null
+    },
+    "35a5dd40-3078-44df-be59-a96b771f39d8": {
+      "id": "35a5dd40-3078-44df-be59-a96b771f39d8",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "CONFIRMED",
+      "stateVersion": 5,
+      "payloadCommitment": "2d36e9b21ac65c04173563ca518476933877bc31b15a069a7d4ae465a033da1f",
+      "payload": {
+        "paymentId": "35a5dd40-3078-44df-be59-a96b771f39d8",
+        "recipientHash": "1e5a7e0bc8dc07c1c1a6f759b516d34686e92d9a5f4e5caa8da1e3484d04d75b",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "3iENa4tEC_4bUU58",
+          "ciphertext": "--dr1KOXXSDSSsWQAlSXDW8NYBzYTIiDqHeLLqcuHDE-SeorEfCCZu-1CrvI9vxFLYZ-AAZi3c1g4dEnyLjH9iXhbv1dUbdghCA4FzewIXRWakffJCAiGWnTZ_OdKegr-BsYcb0drVpEdqKDw9unhLvMIcvLzLrwd3yF-McCUVJVoBTj9Zj7CuyDZgnkDO5StpbQwyT6cVcIHloQNkjDY9U7hNVx88QG9mD2P7eUECnjz3iRHXdQtvMNp-JLPqd-enMfmoUB9SzaO2Exb-qnLkWjqZxQWetVct_JtAkLBx0Zv50vMsprbszbTBqRqIjtbQOLaOnZBrBVQNd84-JxnODfEjmaLnJxAmVjsLBr3A7aHwxCLhizbgvi6X9fQAJRImAPMef0NksddVhMWbypZ3YvV_E4pvMEzGilTO8-dDt2TRGLyy1Bucf7BREzgp2J44LPyfWiR7RGeu5uaOBuColzgdPZ9X8ufhIagCC5973XK3XF3deQJg2Whf1EVFj9KiQ-SVBZ0DTUFV3IJ1x4FW-2iejKK0OP7FnPrIWJHlEw5hLujjJwVE8TovL3F6dAOZ_PwC7yqpDLPkmwzyMvEAAhAYzmK-ASFjMsQpSkafsPynWae_uBTrlyFGbwT2ExSmzhoGzzAlBZIkXqZ1QU8FttBoB0Zf4vdP8RaDpocrSJba3pDupMewITzb-9PPy8oN1T4Y9auwhM8PLlYbAFTu-CBZa_JKHHdyX3R1pu_rJOcjzesIUp-NltqOmrmgirkCDTZvjEa91tbTxp7d1PSdmdr9v4ofv3p5kgukjmdQdc4GRAGWlugs-86-piwsWuYrSw7iwn5GmjqNNnm6OhMdgyaGXB_q4w8Rnc54IYKnEfJgF5gxiWgdCPJLh-rnwQ6k660mH96rk_GxGS7UB-LQCikr_ZMYiSlXokdOUHlavdkdmJjSz9XhfBiCdZvPe5EET-jsYg9OibAaTE12R0CxudRhGSTxGYxWVgZ_Xs3OHgC1QMzxQs0fLXTfin3Cya7TBj16EjAKWxEck8WXAUoZEZSb-f_TCxPmMGqCnNuESz4LOjzShk42N0r0AEkSO9RQ4fLMi-fTPjrRq-yQR8B6f3pGdYtfej2sMjpcJT0sV2PiCi97XIwOUWn8Ev2Mb0s1smnHxQCGXKYXb2iDILVMiug9t9zfA_ejJjWvtyCf2ObVRbZfcE2cJfT2Ipmoze7FBQUriFdMLtLpLfs-MLGj07Y_qe_4hUP-rLBgDxSqGrMl4T8T9GSTlzI0M-sEIpm1KK35aAKDmzy15p0jVZzMjGfiuvReCyO9fG2F2ajjqvOaYBvT9lX75Xy-B2_PvnJPfzXytAS0aOATLA8sSOFriW7y4GWlMEn494CoUyMX3iQL4Kb5jkmYSzjDQHTPtWhm3z8h-d310kOnK7XmcoMiwqhqzgPzygcZgg7VPF8eeYa96RQsmun7rSZLdMS0CZOYhnAT0KGnw2e4mY-Mg7Ndo3cFQWe6x7CHib5j5qtNJe_x0tpE_JYOvHl3xs5hmjrqNSX7iXAc5aIv_iyXNnFTHHy0OVCZH8xO5094a1TEruLrfBsCn4X2h1diqWSf03AgT04pOrPC0-m_eD_qHLnRZFONsmB3YkjL9QZNQuW2ZzL-uvD_KP-9CbPH36wfxrV-K4BKf0CIqdmSO3shPp2miXyk3mhuEeXgdQpGZOtMczR-v81LAppYnDsTC9gzs8x-mTv248wSPl8RFfDryRvD_jKEHn31L10S78tLAjs3-F3oOk3b99O_cp0FxEvuYPRZG8ptXR1A51eVBMVHMC5fB1x_X8jqbFLlpj5z_ShZM7DMRb98Lhfu44GFT6XZFzenz7Yn4iMgQ5Argco3H0npUA73-RquExhtxztTm_5tWb_yLRQ2J_m0DPiJtvTYTDQJgCjFI3R1gLMFow_EaWEwVeldwvZ19bemechQ4Wzw8GKVLK0nRws6lbEIvUh64Gz1vDFqA-ifYLi3KKeLfl_zrZKhIxRVyKkCi4oBKZv8PL_GHI_ECFuISMeG8rOc11Q6FgfFQHUlyUSkGDNdLB5iKjlwqRCCD_LlMRo7zzS9y9TTC9AbOSZNby8eT5eTsAsgt-PekLhaliLeCSPJhFFcKeN0zwnLqt1XUVVDjfK7xw7kzD5bBU-Mf5AYj3hjSbj0mAd8gl3kOrfwmojszV2oy1OU7Sz0CdWD6mca-UnVOsPk00iZAdTmvxzE60gis66AXcCe2i4qdLKsz9N1bkCImbQNWVdAbSLwDs6-aixHM",
+          "tag": "CicPrUhFdQFAmOWYKyYFDQ"
+        }
+      },
+      "receivedAt": "2026-10-30T14:58:45.486Z",
+      "updatedAt": "2026-10-30T14:58:59.997Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "35a5dd40-3078-44df-be59-a96b771f39d8",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "2d36e9b21ac65c04173563ca518476933877bc31b15a069a7d4ae465a033da1f",
+          "evidenceCommitment": "deaeca0113d91ae7ae5b8aa197b24cb34c745eccdd3a849682273972ba5e36ab",
+          "executionPayloadCommitment": "f202353626c260dfbb51dbb54eba0a1766f2b29cf7451ae1fb7a5456e3d2d509",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "35a5dd40-3078-44df-be59-a96b771f39d8",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-30T14:58:54.862631Z",
+          "signatureBase64": "rSU7QcAf8PYshBm+kraVVaV6gJN/nxbbl+Xm88CVoNUNE3VdN/EOhGf5OQ1B7tsXvnSPth8erj8kw4v0kZbeBQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 1
+          },
+          "changedFields": {},
+          "removedFields": [
+            "recipientHash",
+            "nodeEncryptedPayload"
+          ]
+        }
+      },
+      "result": {
+        "signature": "3Br6U1T9ud81vSzMxFbrKt3PsHbvLnNXYFvKrBPPBFgf67TZL7tWVv9A8VRnfUSC53ne6CBk5d57bCCVomEioJSN",
+        "stage": "TCAP_DEPOSIT_ASSET_V2_CONFIRMED"
+      },
+      "authorization": null
+    },
+    "settlement-264195b5510953eeb95f3c722cbb647b": {
+      "id": "settlement-264195b5510953eeb95f3c722cbb647b",
+      "kind": "SETTLEMENT",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "8cfc5a943f31305b672dbe341c1d4e7ff3fd56ec57ea27abaab9712bbcb19a64",
+      "payload": {
+        "paymentId": "35a5dd40-3078-44df-be59-a96b771f39d8",
+        "intentId": "35a5dd40-3078-44df-be59-a96b771f39d8",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-10-30T14:58:45.527Z",
+      "updatedAt": "2026-10-30T14:59:05.714Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "503: GPRU_GROTH16_PROVER_NOT_CONFIGURED: settlement requires a proof over the current hidden TIN head and authenticated-map witness; the legacy per-TIN memo scan cannot establish that the selected memo is latest",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "settlement-264195b5510953eeb95f3c722cbb647b",
+          "kind": "SETTLEMENT",
+          "stateVersion": 2,
+          "payloadCommitment": "8cfc5a943f31305b672dbe341c1d4e7ff3fd56ec57ea27abaab9712bbcb19a64"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "settlement-264195b5510953eeb95f3c722cbb647b",
+          "workKind": "SETTLEMENT",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "8cfc5a943f31305b672dbe341c1d4e7ff3fd56ec57ea27abaab9712bbcb19a64",
+          "evidenceCommitment": "f588d7619847222035a8df22f20a6e7ffc20227ee6a1eaabe548622e2f801fae",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "settlement-264195b5510953eeb95f3c722cbb647b",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-10-30T14:59:05.370937Z",
+          "signatureBase64": "pt3VRvxb8AfqSQ52wIaY6amX2rdWGMe0PaEOKGm6okoyi28/ZHnmHqi+k0TVfY1IO/3fqmjPEH3R5pXB/hHABQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
     }
   },
   "tsn_receiver_state": {
     "6d17a1bece320dce49de1fc7045f2f37546cd6ee57081779eab757295595e619": {
       "key": "tsn:epoch",
-      "value": "{\"epoch_number\": 5, \"started_at\": \"2026-10-29T16:47:27.858468+00:00\"}"
+      "value": "{\"epoch_number\": 6, \"started_at\": \"2026-10-30T13:05:23.846243+00:00\"}"
     }
   },
   "tsn_receiver_state/0fe599e22c504175bfdaae6cab793f28179f1d272d7af57ff11c77b17cea1727/items": {
@@ -3637,6 +4101,10 @@
     "dd7d89ca5661c6e2891d98e7fe76241a3c2d1da1f3a44044b27b84c26d13fd41": {
       "field": "eee9dd7fd3aeccfdd6bac8763b2f827e8ebbb96590edbca791dcbea869652892",
       "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"Bm9wqMgaYBHZjeULtV7ZhgDjsDaTeeVDbPJ6J2AAzZpa\",\"nonce\":\"9e4b02a2bcadb7e40330fb8b1ddd6b92\",\"usedAt\":\"2026-10-28T15:26:50.789447+00:00\"}"
+    },
+    "6dfaf44820b2e5174e598285ecad142e604f9ba0ddb47157032826ae917734e2": {
+      "field": "0bc0d56b3da8859107db1a166220d621ea491152cc502e32397db87ec7777140",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"1da80c5a3d2bfd6c378099d056b0ec48\",\"usedAt\":\"2026-10-30T14:58:51.542562+00:00\"}"
     }
   },
   "tsn_receiver_state/4ade1b026459fd5a7b132465cae4784c258f40b2c5a4a44a396450f59eff15e1/items": {
@@ -3675,6 +4143,28 @@
     "c95a0516cfb6a4956ecb0fe2a023ed770d63e4fdb2b2f8f5db42428214b98dda": {
       "field": "158d362786c45c9df4d78ba2ef4b4fa7b5cd0ac5479176edb2788743bc9acccf",
       "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"968488a30f65e4519a1aca28b47869bcfd49563074ea5a27b17a036ee05eb26b\",\"consumedAt\":\"2026-10-29T17:12:08.215225+00:00\"}"
+    },
+    "687dde7539e5b308735845c3e98c5919ed3557f683e43a17c004d388a5d60d75": {
+      "field": "e75c26406020335d4dc3984a828073e8367fe59cd0994f7eb61e9bdb5ad2124c",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"4d68dbb148f265c3656e918e4b2718e65c4567351945122360de3243f3a0edf8\",\"consumedAt\":\"2026-10-30T13:34:42.100075+00:00\"}"
+    },
+    "d79061b3798a293a136b30b21412075b17a961e76a5edd0f0803ec2a920f161b": {
+      "field": "96e6b964433a494c7ee50512277f19d7c9118921267a58e96b7fcb1dcee0781f",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"f9002aecd270a60581f9b66dd99edbbdf69f861f3de3a31d181aa2898f9142ae\",\"consumedAt\":\"2026-10-30T13:42:38.304699+00:00\"}"
+    },
+    "1d0c36e47882c87f72fd15fbb25517334a96ffd82378ed6c82e92190850f1e62": {
+      "field": "23f1df6e4730f77991b398af3f2867ec0d892e3a9d6fc70c417050899df788da",
+      "value": "{\"domain\":\"TSN_TIN_OPERATION\",\"intentType\":\"tin_creation\",\"ownerPubkey\":\"AJNAXEjh1aun8wEXj5fdFNCqECHfiVvw1XdzWDxmBLk7\",\"nonce\":\"a3201e0c19bb3d8dae78b9cddaab976471ccd498a388a779852085b016f8d595\",\"consumedAt\":\"2026-10-30T14:54:55.726833+00:00\"}"
+    }
+  },
+  "tsn_receiver_cranker_sessions": {
+    "hQ2hMi-3yBLlCZea3IzRfoa9OxsZR5Y9": {
+      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "tokenHash": "7041981159e14a89fb1b366b0ff86ac021b195c96a886fb9e17b5a584f808f6e",
+      "createdAt": "2026-10-30T15:32:09.621Z",
+      "expiresAt": "2026-10-30T16:02:09.621Z",
+      "lastSeenAt": "2026-10-30T15:47:59.309Z",
+      "lastCounter": 390
     }
   }
 }

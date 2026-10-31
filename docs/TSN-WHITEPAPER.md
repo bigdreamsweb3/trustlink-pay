@@ -144,11 +144,13 @@ transition digest. It does not create or update the legacy `TCapTinTipV1`
 account. The Memo commitment binds instruction bytes; it does not prove that
 those bytes represent a valid encrypted balance by itself.
 
-The Circom source defines eight public inputs: old/new global roots, Memo and
-action commitments, nullifier, TIP route root, and successor Pedersen balance
-point X/Y. Private witnesses hold route/head membership, sequence, map paths,
-and balance openings. The circuit source includes credit addition and
-debit/exit arithmetic constraints, but it has not been compiled or reviewed.
+The updated Circom source defines nine public inputs: old/new global roots,
+Memo and action commitments, nullifier, TIP route root, successor portfolio
+root, and selected-token successor Pedersen balance point X/Y. Private
+witnesses hold route/head membership, sequence, nested token-map paths, and
+balance openings. The balance points are commitments, not ciphertexts; the
+Memo body carries an owner-encrypted action record used to recover amounts.
+The updated circuit has not been recompiled or reviewed.
 No trusted setup artifacts, validated key converter, prover service, witness
 provider, initialized verifier, or end-to-end proof evidence is established.
 The ABI exposes action kind, token ID, and amount. The shared root is a common

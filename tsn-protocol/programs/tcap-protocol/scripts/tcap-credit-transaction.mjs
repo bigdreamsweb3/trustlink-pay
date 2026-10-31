@@ -268,52 +268,50 @@ export function buildCreditTcapTinTipV2Instruction(fields) {
   });
 }
 
-/** TSN CPI wrapper for V2. The wrapper carries only opaque tip-transition
- * material and never passes AcceptedIntent, epoch, receipt, or nullifier PDAs. */
+/** TSN wrapper for the canonical hidden-head proof transition. */
 export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
-  const pdas = deriveTcapPdas({ tipRootCommitment: fields.tipRootCommitment, authorizationDigest: fields.authorizationDigest, nullifier: fields.nullifier });
+  if (!Array.isArray(fields.proof?.publicInputs) || fields.proof.publicInputs.length !== 9) {
+    throw new Error("GPRU hidden-head V1 requires exactly nine public inputs");
+  }
+  const proofB = Buffer.from(fields.proof.proofB ?? "", "hex");
+  if (proofB.length !== 128) throw new Error("proof.proofB must be exactly 128 bytes");
+  if (fields.proof.actionKind !== 1 || Number(fields.proof.tokenId) !== Number(fields.tokenId)
+      || BigInt(fields.proof.amount) !== BigInt(fields.amountBaseUnits)) {
+    throw new Error("GPRU proof action must match the TCAP credit fields");
+  }
+  const authorizationDigest = bytes32(fields.authorizationDigest, "authorizationDigest");
+  const [authorizationSigner] = PublicKey.findProgramAddressSync(
+    [seed("tsn:tcap-authorization:v1"), authorizationDigest], TSN_PROGRAM_ID,
+  );
   const data = concat(
     discriminator("tsn_register_tcap_credit_authorization_v2"),
     bytes32(fields.authorizationDigest, "authorizationDigest"),
     u64(fields.validAfterSlot), u64(fields.expiresAtSlot),
-    bytes32(fields.previousCommitment, "previousCommitment"),
-    bytes32(fields.newCommitment, "newCommitment"),
-    u64(fields.sequence), u32(fields.tokenId),
-    bytes32(fields.policyCommitment, "policyCommitment"),
-    bytes32(fields.gpruScopeCommitment, "gpruScopeCommitment"),
-    bytes32(fields.nullifier, "nullifier"),
-    bytes32(fields.dnaKeyCommitment, "dnaKeyCommitment"),
-    bytes32(fields.dna, "dna"),
-    bytes32(fields.ephemeralPublicKey, "ephemeralPublicKey"),
-    bytes32(fields.oneTimePublicKey, "oneTimePublicKey"),
-    bytes32(fields.derivationProof.sharedPoint, "derivationProof.sharedPoint"),
-    bytes32(fields.derivationProof.generatorCommitment, "derivationProof.generatorCommitment"),
-    bytes32(fields.derivationProof.scanCommitment, "derivationProof.scanCommitment"),
-    bytes32(fields.derivationProof.response, "derivationProof.response"),
-    u64(fields.amountBaseUnits),
-    bytes64(fields.previousBalanceCiphertext, "previousBalanceCiphertext"),
-    bytes64(fields.balanceCiphertext, "balanceCiphertext"),
-    bytes64(fields.initialBalanceCiphertext, "initialBalanceCiphertext"),
-    bytes32(fields.initialBalanceProof.generatorCommitment, "initialBalanceProof.generatorCommitment"),
-    bytes32(fields.initialBalanceProof.keyCommitment, "initialBalanceProof.keyCommitment"),
-    bytes32(fields.initialBalanceProof.response, "initialBalanceProof.response"),
+    bytes32(fields.previousTcapRoot, "previousTcapRoot"), u64(fields.tcapRootSequence),
+    u32(fields.tokenId), u64(fields.amountBaseUnits), bytes32(fields.nullifier, "nullifier"),
+    ...fields.proof.publicInputs.map((value, index) => bytes32(value, `proof.publicInputs[${index}]`)),
+    bytes64(fields.proof.proofA, "proof.proofA"),
+    proofB,
+    bytes64(fields.proof.proofC, "proof.proofC"),
+    Buffer.from([fields.proof.actionKind]), u32(fields.proof.tokenId), u64(fields.proof.amount),
+    bytes32(fields.proof.authorizationCommitment, "proof.authorizationCommitment"),
   );
   return new TransactionInstruction({
     programId: TSN_PROGRAM_ID,
     keys: [
-      { pubkey: pubkey(fields.payer), isSigner: true, isWritable: true },
+      { pubkey: pubkey(fields.authority), isSigner: true, isWritable: true },
       { pubkey: pubkey(fields.motherEscrow), isSigner: false, isWritable: false },
       { pubkey: TCAP_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: TSN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: pdas.config, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.config), isSigner: false, isWritable: false },
       { pubkey: pubkey(fields.assetEntry), isSigner: false, isWritable: false },
-      { pubkey: pdas.tipRoot, isSigner: false, isWritable: false },
-      { pubkey: pdas.tip, isSigner: false, isWritable: true },
-      { pubkey: pdas.tsnAuthorizationSigner, isSigner: false, isWritable: false },
-      { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: pubkey(fields.tipRegistry), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.commitmentRoot), isSigner: false, isWritable: true },
+      { pubkey: pubkey(fields.reserveState), isSigner: false, isWritable: true },
+      { pubkey: authorizationSigner, isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.tipRouteRoot), isSigner: false, isWritable: false },
+      { pubkey: pubkey(fields.gpruVerifier), isSigner: false, isWritable: false },
       { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: GPRU_PROGRAM_ID, isSigner: false, isWritable: false },
     ],
     data,
   });

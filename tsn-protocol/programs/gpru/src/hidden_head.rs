@@ -1,19 +1,22 @@
 //! Groth16 contract for private TIN-head updates.
 //!
-//! A proof has eight public inputs, in this fixed order:
+//! A proof has nine public inputs, in this fixed order:
 //! 0. TCAP shared root before the action
 //! 1. TCAP shared root after the action
 //! 2. encrypted Memo commitment
 //! 3. action authorization commitment
 //! 4. one-time nullifier
 //! 5. TIP shared route-membership root
-//! 6. rerandomized successor Pedersen balance point X coordinate
-//! 7. rerandomized successor Pedersen balance point Y coordinate
+//! 6. successor root of the hidden per-TIN token portfolio
+//! 7. successor Pedersen balance point X coordinate for the selected token
+//! 8. successor Pedersen balance point Y coordinate for the selected token
 //!
 //! The circuit witness contains the hidden route membership, TIN/asset leaf,
 //! predecessor sequence and memo, sparse-map paths, and the nullifier
 //! non-membership path. The circuit source is in `circuits/hidden_head_v1`.
-//! This verifier does not claim to validate encrypted-balance arithmetic.
+//! The circuit verifies Pedersen commitment arithmetic; it does not treat
+//! those commitments as ciphertexts. Owner-readable amounts are carried as
+//! encrypted action records in the Memo and reconstructed by the owner.
 
 use anchor_lang::prelude::*;
 use groth16_solana::{groth16::{Groth16Verifier, Groth16Verifyingkey}};
@@ -33,7 +36,7 @@ pub const TIP_ROUTE_ROOT_SEED: &[u8] = b"tip:route-merkle-root:v1";
 pub const TIP_PROGRAM_ID: Pubkey = pubkey!("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
 pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 pub const TSN_PROGRAM_ID: Pubkey = pubkey!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
-pub const HIDDEN_HEAD_PUBLIC_INPUTS: usize = 8;
+pub const HIDDEN_HEAD_PUBLIC_INPUTS: usize = 9;
 pub const ACTION_KIND_CREDIT_V1: u8 = 1;
 pub const ACTION_KIND_DEBIT_V1: u8 = 2;
 pub const ACTION_KIND_EXIT_V1: u8 = 3;
@@ -56,7 +59,7 @@ pub struct GpruHiddenHeadVerifierV1 {
     pub beta_g2: [u8; 128],
     pub gamma_g2: [u8; 128],
     pub delta_g2: [u8; 128],
-    /// Groth16 IC points for the constant term plus eight public inputs.
+    /// Groth16 IC points for the constant term plus nine public inputs.
     pub ic: [[u8; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1],
 }
 
@@ -173,14 +176,16 @@ pub fn verify_transition(
     let expected_action_bytes = expected_action_commitment.to_bytes();
     require!(args.public_inputs[3] == expected_action_bytes, HiddenHeadError::InvalidPublicInputs);
 
-    let (memo_commitment, memo_balance_point) = validate_memo_instruction(&ctx.accounts.instructions)?;
+    let (memo_commitment, memo_binding) = validate_memo_instruction(&ctx.accounts.instructions)?;
     require!(
         args.public_inputs[2] == sha256_to_bn254_scalar(memo_commitment),
         HiddenHeadError::InvalidPublicInputs
     );
     require!(
-        args.public_inputs[6] == memo_balance_point.0
-            && args.public_inputs[7] == memo_balance_point.1,
+        args.public_inputs[3] == memo_binding.3
+            && args.public_inputs[6] == memo_binding.0
+            && args.public_inputs[7] == memo_binding.1
+            && args.public_inputs[8] == memo_binding.2,
         HiddenHeadError::InvalidPublicInputs
     );
 
@@ -247,7 +252,7 @@ fn validate_tip_route_root(account: &UncheckedAccount) -> Result<[u8; 32]> {
     Ok(root)
 }
 
-fn validate_memo_instruction(instructions: &UncheckedAccount) -> Result<([u8; 32], ([u8; 32], [u8; 32]))> {
+fn validate_memo_instruction(instructions: &UncheckedAccount) -> Result<([u8; 32], ([u8; 32], [u8; 32], [u8; 32], [u8; 32]))> {
     require_keys_eq!(
         instructions.key(),
         solana_program::sysvar::instructions::ID,
@@ -261,17 +266,27 @@ fn validate_memo_instruction(instructions: &UncheckedAccount) -> Result<([u8; 32
     require_keys_eq!(memo.program_id, memo_program_id, HiddenHeadError::InvalidPublicInputs);
     const PREFIX: &[u8] = b"TSN_GPRU_HEAD_V1:";
     let data = memo.data.as_slice();
-    require!(data.len() >= PREFIX.len() + 64 + 1 + 64 + 1, HiddenHeadError::InvalidPublicInputs);
+    require!(data.len() >= PREFIX.len() + 64 * 4 + 4, HiddenHeadError::InvalidPublicInputs);
     require!(&data[..PREFIX.len()] == PREFIX, HiddenHeadError::InvalidPublicInputs);
-    let x_start = PREFIX.len();
+    let root_start = PREFIX.len();
+    let root_end = root_start + 64;
+    let x_start = root_end + 1;
     let x_end = x_start + 64;
     let y_start = x_end + 1;
     let y_end = y_start + 64;
-    require!(data[x_end] == b':' && data[y_end] == b':', HiddenHeadError::InvalidPublicInputs);
+    let action_start = y_end + 1;
+    let action_end = action_start + 64;
+    require!(data[root_end] == b':' && data[x_end] == b':' && data[y_end] == b':' && data[action_end] == b':', HiddenHeadError::InvalidPublicInputs);
+    require!(data.len() > action_end + 1, HiddenHeadError::InvalidPublicInputs);
+    require!(data[action_end + 1..].iter().all(|byte| {
+        matches!(*byte, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-')
+    }), HiddenHeadError::InvalidPublicInputs);
+    let root = decode_hex_32(&data[root_start..root_end]).ok_or(HiddenHeadError::InvalidPublicInputs)?;
     let x = decode_hex_32(&data[x_start..x_end]).ok_or(HiddenHeadError::InvalidPublicInputs)?;
     let y = decode_hex_32(&data[y_start..y_end]).ok_or(HiddenHeadError::InvalidPublicInputs)?;
-    require!(is_canonical_bn254_scalar(&x) && is_canonical_bn254_scalar(&y), HiddenHeadError::InvalidPublicInputs);
-    Ok((hash(data).to_bytes(), (x, y)))
+    let action = decode_hex_32(&data[action_start..action_end]).ok_or(HiddenHeadError::InvalidPublicInputs)?;
+    require!(is_canonical_bn254_scalar(&root) && is_canonical_bn254_scalar(&x) && is_canonical_bn254_scalar(&y) && is_canonical_bn254_scalar(&action), HiddenHeadError::InvalidPublicInputs);
+    Ok((hash(data).to_bytes(), (root, x, y, action)))
 }
 
 fn decode_hex_32(value: &[u8]) -> Option<[u8; 32]> {

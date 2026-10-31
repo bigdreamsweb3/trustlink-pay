@@ -10,15 +10,17 @@ This page reports what the checked-in programs and service callers currently imp
 
 - **TIP/TIN registry:** TIN V1 registry and separate wallet recovery PDA; the registry includes a versioned GPRU ElGamal scan public key and commitment. TIP source also contains an append-only shared route Merkle root.
 - **GPRU:** One-time ElGamal DNA derivation and proof code; a Groth16 hidden-head verifier and Mother-authorized verifier initializer.
-- **TSN/TCAP credit ABI:** The TSN instruction passes a hidden-head proof to TCAP, which invokes GPRU before advancing the shared root and reserve liabilities atomically.
+- **TSNP/TCAP credit ABI:** The TSNP on-chain settlement program passes a hidden-head proof to TCAP, which invokes GPRU before advancing the shared root and reserve liabilities atomically. TSN names the full infrastructure.
 - **Memo state:** The encrypted Memo payload is transaction instruction data, not a persistent per-TIN TCAP balance account. No `TCapTinTipV1` PDA is created in this path.
 - **Ingress and execution services:** Receiver accepts and stores ingress work, Node verifies and authorizes work, and Cranker submits the exact authorized transaction. These statuses are distinct from chain confirmation.
 
 ## Important current limits
 
-The Node settlement authorization endpoint currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The repo has no compiled/reviewed circuit, generated proving/verifying keys, validated key converter, witness source, configured prover, initialized verifier account, or end-to-end proof evidence. The proof-shaped source ABI is not a live service path.
+The Node settlement authorization endpoint currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The circuit compiles locally, but the repository has no trusted proving/verifying-key configuration, authenticated-map witness source, configured proof-generation service, initialized verifier account, or end-to-end proof evidence. Local circuit compilation does not verify the SBF verifier, prove an authenticated state transition, or enable settlement.
 
-The circuit source includes balance-point arithmetic and range constraints, but has not been compiled or verified. The current ABI exposes action kind, token ID, and amount. The shared TCAP root is a common writable account and creates visible protocol-level ordering/linkage. Confidential debit and exit are not established as available end to end.
+The current circuit contract uses one hidden outer head per TIN and a nested token map of BabyJubjub Pedersen balance commitments. The public Memo prefix binds the successor portfolio root and selected-token point; the body contains an owner-encrypted action record. The SDK can decrypt and replay records when supplied the corresponding on-chain action fields. The previous public Ristretto ElGamal portfolio helper and native balance updater were removed because their arithmetic did not match the Groth16 statement. Confidential debit and exit are not established as available end to end.
+
+The source now describes one encrypted action record in each balance-changing Memo and one hidden per-TIN latest head in authenticated protocol state. GPRU verifies the selected Pedersen commitment successor and hidden-head transition. TCAP remains the authority for accepted assets, reserve/liquidity checks, and atomic root/liability updates. The Node still fails closed because a trusted latest-head/token-map witness provider and matching Groth16 prover setup are not configured.
 
 TIP still includes the route registry and TCAP still includes legacy `TCapTinTipV1` instructions. Their presence in source does not mean the active TSN credit caller uses a TCAP per-TIN tip account.
 

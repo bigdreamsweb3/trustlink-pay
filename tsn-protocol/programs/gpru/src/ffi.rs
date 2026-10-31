@@ -1,9 +1,6 @@
 //! C ABI for the TSN Node's Python `ctypes` adapter.
 
-use crate::{
-    balance::{add_credit_v1, encrypt_initial_balance_v1},
-    stealth_keys::{derive_node_dna_key_v1, derive_node_record_shared_point_v1},
-};
+use crate::stealth_keys::{derive_node_dna_key_v1, derive_node_record_shared_point_v1};
 use core::ptr;
 
 /// Derive an ephemeral public key and per-DNA ElGamal public key.
@@ -106,64 +103,3 @@ pub unsafe extern "C" fn tsn_gpru_derive_record_shared_point_v1(
     0
 }
 
-/// Encrypt the first credit to the registered GPRU ElGamal key and emit a
-/// public proof that the ciphertext encodes exactly `amount`.
-#[no_mangle]
-pub unsafe extern "C" fn tsn_gpru_encrypt_initial_balance_v1(
-    public_key: *const u8,
-    amount: u64,
-    randomness: *const u8,
-    ciphertext_out: *mut u8,
-    proof_out: *mut u8,
-) -> i32 {
-    if public_key.is_null()
-        || randomness.is_null()
-        || ciphertext_out.is_null()
-        || proof_out.is_null()
-    {
-        return 2;
-    }
-    let public: &[u8; 32] = match core::slice::from_raw_parts(public_key, 32).try_into() {
-        Ok(value) => value,
-        Err(_) => return 1,
-    };
-    let random: &[u8; 128] = match core::slice::from_raw_parts(randomness, 128).try_into() {
-        Ok(value) => value,
-        Err(_) => return 1,
-    };
-    let (ciphertext, proof) = match encrypt_initial_balance_v1(public, amount, random) {
-        Ok(value) => value,
-        Err(_) => return 1,
-    };
-    ptr::copy_nonoverlapping(ciphertext.as_ptr(), ciphertext_out, 64);
-    let proof_bytes = [
-        proof.generator_commitment,
-        proof.key_commitment,
-        proof.response,
-    ]
-    .concat();
-    ptr::copy_nonoverlapping(proof_bytes.as_ptr(), proof_out, proof_bytes.len());
-    0
-}
-
-/// Homomorphically add a verified public credit amount to an ElGamal balance.
-#[no_mangle]
-pub unsafe extern "C" fn tsn_gpru_add_balance_credit_v1(
-    ciphertext: *const u8,
-    amount: u64,
-    ciphertext_out: *mut u8,
-) -> i32 {
-    if ciphertext.is_null() || ciphertext_out.is_null() {
-        return 2;
-    }
-    let current: &[u8; 64] = match core::slice::from_raw_parts(ciphertext, 64).try_into() {
-        Ok(value) => value,
-        Err(_) => return 1,
-    };
-    let next = match add_credit_v1(current, amount) {
-        Ok(value) => value,
-        Err(_) => return 1,
-    };
-    ptr::copy_nonoverlapping(next.as_ptr(), ciphertext_out, 64);
-    0
-}

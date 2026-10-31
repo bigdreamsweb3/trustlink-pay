@@ -10,13 +10,13 @@ The proof is intended to show that the private per-TIN/asset predecessor is the 
 
 ## Hidden-head source path
 
-GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSN credit ABI carries the proof through TCAP to GPRU. The circuit has eight public inputs, including successor balance point X/Y. The circuit has not been compiled or reviewed; no proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
+GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSN credit ABI carries the proof through TCAP to GPRU. The updated circuit has nine public inputs, including the successor portfolio root and selected token's Pedersen balance point X/Y. Its Memo prefix binds those values and the action commitment; the body stores an owner-encrypted action record. The updated circuit has not been freshly compiled or reviewed; no matching proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
 
 ## Required balance-proof contract
 
-For a credit, a future integration must prove that the successor encrypted balance is the exact addition of the confirmed deposit to the authenticated predecessor. For a debit, it must prove that the prior balance covers the amount, the successor is the exact subtraction, and the result is in range. For an exit, TCAP must bind the proved debit to the public destination and enforce reserve solvency. A TIN-to-TIN transfer must prove source/destination conservation for the same asset.
+For a credit, the circuit proves that the successor Pedersen commitment is the confirmed amount added to the authenticated predecessor. For a debit, it proves that the prior balance covers the amount, the successor is the exact subtraction, and the result is in range. For an exit, TCAP must bind the proved debit to the public destination and enforce reserve solvency. A TIN-to-TIN transfer must prove source/destination conservation for the same asset.
 
-TCAP must perform its reserve-liability and replay-state updates atomically with the verified proof result. Client-side decryption or arithmetic may improve user feedback but cannot substitute for on-chain validation. A Memo commitment only binds bytes; it is not itself a proof that the encrypted bytes represent a valid balance transition.
+TCAP must perform its reserve-liability and replay-state updates atomically with the verified proof result. Client-side arithmetic cannot substitute for on-chain validation. The Memo commitment binds the complete bytes, while the circuit validates Pedersen arithmetic and hidden-head state; it does not prove that the Secretbox plaintext matches the action. Owner recovery cross-checks decrypted action fields against the on-chain instruction.
 
 ## Privacy boundary
 

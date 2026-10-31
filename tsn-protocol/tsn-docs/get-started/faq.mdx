@@ -22,7 +22,7 @@ The current proof-shaped TSN credit instruction calls TCAP `credit_gpru_memo_v1`
 
 ## What is the hidden-head proof?
 
-GPRU's Groth16 verifier checks a proof that the private route/asset head is current, updates it, binds a Memo, and inserts a nullifier. The circuit source includes balance-transition constraints. It has not been compiled or reviewed; the repository lacks generated keys, a prover, a witness source, an initialized verifier, and end-to-end execution evidence. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
+GPRU's Groth16 verifier checks a proof that a private TIN head is current, updates its nested token commitment map, binds the Memo, and inserts a nullifier. The updated circuit has nine public inputs and includes Pedersen balance-transition constraints. It has not been recompiled or reviewed; matching keys, a prover, a witness source, an initialized verifier, and end-to-end execution evidence are not established. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
 
 ## Is the hidden-head design unlinkable?
 

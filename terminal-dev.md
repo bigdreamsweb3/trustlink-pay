@@ -98,7 +98,7 @@ solana confirm <SIGNATURE> --url devnet
 
 # Use comments (#) to explain what each command does.
 
-node scripts/tin-lookup.mjs 1357701033 --rpc https://api.devnet.solana.com
+node scripts/tin-lookup.mjs 8801886318 --rpc https://api.devnet.solana.com
 
 # PROGRAM BUILD/DEPLOY SCRIPTS RUNNER
 
@@ -145,8 +145,36 @@ I found the key distinction: the verifier’s proof context can prove that a par
 
 For Solana’s ElGamal key format, if the stable public key is \(P=s^{-1}H\), Node can choose a random \(r\), publish \(E=rH\), and compute the shared point \(S=rP\). The owner computes the same \(S\) from \(E\) and their secret. Both derive a tweak \(t\) from \(S\) and the unique DNA, then use one-time public key \(P\_{\text{DNA}}=tP\); the owner recovers its matching secret as \(s/t\). Solana’s implementation defines its public key using the inverse secret scalar, which is why the matching secret derivation takes this form. Solana ElGamal implementation https://github.com/solana-program/zk-elgamal-proof/blob/main/zk-sdk/src/encryption/elgamal.rs
 
-<!-- ARC STARTED -->
+<!-- Groth16 circuit prover making -->
 
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ npm ci --prefix tsn-protocol/programs/gpru/circuits/hidden_head_v1
+GPRU_DEV_SETUP_DIR=/mnt/c/Users/codepara/Desktop/trust-link/tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev-run-20261031 npm run gpru:prover:setup:dev
+
+added 68 packages, and audited 69 packages in 5m
+
+16 packages are looking for funding
+run `npm fund` for details
+
+8 vulnerabilities (5 moderate, 3 high)
+
+To address issues that do not require attention, run:
+npm audit fix
+
+To address all issues (including breaking changes), run:
+npm audit fix --force
+
+Run `npm audit` for details.
+
+> trustlink-pay@1.0.0 gpru:prover:setup:dev
+> npm --prefix tsn-protocol/programs/gpru/circuits/hidden_head_v1 run setup:dev
+
+> @tsn/gpru-hidden-head-circuit-v1@1.0.0 setup:dev
+> node scripts/setup-dev.mjs
+
+[dev setup] Create local Powers of Tau ceremony
+[DEBUG] snarkJS: tauG1: 100000
+[DEBUG] snarkJS: tauG1: 200000
+[DEBUG] snarkJS: tauG1: 300000
 
 <!-- BUILDER QUEST -->
 

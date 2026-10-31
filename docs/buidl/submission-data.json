@@ -1,0 +1,92 @@
+{
+  "project_name": {
+    "value": "Dial on Arc",
+    "verified": true,
+    "source": "User-provided submission details"
+  },
+  "description": {
+    "value": "Dial on Arc lets you pay a number, not a wallet. A payer enters a 10-digit TIN, and USDC leaves Arc through Circle CCTP V2 toward the TSN reserve on Solana. TSN already creates and resolves TINs live on Solana Devnet through the TSN SDK. Dial adds the Arc deposit side: the Arc Testnet router records the payer, amount and an opaque route commitment, then burns the USDC through CCTP. The demo app uses a labelled stand-in resolver that produces a salted commitment. Real resolution needs TSN's protected lookup secret, so it runs on the TSN side, and the app is not wired to it yet. No real deposit has been sent through this router.\n\nArc exposes the payer address and amount, and timing can link activity. The TIN and recipient are never stored onchain. The TSN Node is trusted with the TIN-to-route mapping. What is not built yet is the bridge from Arc to TSN: the CCTP receive on Solana and the credit step. The DIP funds-safety design for that bridge is a specification, not implemented code.",
+    "verified": true,
+    "source": "User-provided corrected product description"
+  },
+  "repository_url": {
+    "value": "TO_FILL:https://github.com/<my-github-username>/dial-on-arc",
+    "verified": false,
+    "source": "Explicit user-provided placeholder"
+  },
+  "live_app_url": {
+    "value": null,
+    "verified": false,
+    "source": null
+  },
+  "arc_studio_project_url": {
+    "value": null,
+    "verified": false,
+    "source": null
+  },
+  "demo_video_url": {
+    "value": null,
+    "verified": false,
+    "source": null
+  },
+  "builder_profiles": {
+    "value": [
+      "https://github.com/bigdreamsweb3",
+      "https://x.com/0xbigdream"
+    ],
+    "verified": false,
+    "source": "README.md lines 280-281; user confirmation pending"
+  },
+  "dial_logo": {
+    "value": null,
+    "verified": false,
+    "source": null
+  },
+  "repository_note": "The current workspace remote is the TrustLink Pay / TSN monorepo, not the Dial submission repository. It lacks TSNArcDepositRouter.sol, PayPanel.tsx, and tsn-tin-pay-mark-v2.svg. Do not submit it as the Dial repository.",
+  "arc_testnet": {
+    "rpc_url": "https://rpc.testnet.arc.io",
+    "rpc_source": "https://docs.arc.io/arc/references/rpc-endpoints.md",
+    "chain_id": 5042002,
+    "chain_id_hex": "0x4cef52",
+    "router_address": "0x2e4c2fd26403d121bb5d1eb9a1dc6aaa3feda5f1",
+    "router_code_present": true,
+    "deploy_transaction": "0x4c2632c68a37de8ad44a3ec0ed8e1140c2e5ee15221a2d57e792c180982af3df",
+    "receipt_found": true,
+    "receipt_status": "0x1",
+    "receipt_to": "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789",
+    "receipt_contract_address": null,
+    "receipt_emits_router_log": true,
+    "receipt_note": "The outer transaction recipient is not the router and contractAddress is empty. A router-address log appears in the receipt; this alone does not establish the inner deployment path.",
+    "verified": true,
+    "verification_method": "Read-only JSON-RPC calls to the official Arc Testnet RPC"
+  },
+  "arc_testnet_network_comparison": {
+    "rpc_url": "https://rpc.testnet.arc.network",
+    "result": "Returned the same chain ID, non-empty router code, receipt status, receipt to, empty contractAddress, and router log as .io.",
+    "authoritative_endpoint": "https://rpc.testnet.arc.io",
+    "verified": true
+  },
+  "arc_mainnet": {
+    "rpc_url": "https://rpc.mainnet.arc.io",
+    "chain_id": 5042,
+    "chain_id_hex": "0x13b2",
+    "router_address": null,
+    "real_deposit_transaction": null,
+    "verified": false,
+    "note": "User-provided product description states no real deposit has been sent through this router."
+  },
+  "secret_scan_note": {
+    "tracked_environment_like_path": "tsn-protocol/services/tsn-node/.env copy",
+    "contents_included": false,
+    "secret_values_printed": false
+  },
+  "gaps_in_priority_order": [
+    "Provide and verify Arc mainnet router and real USDC transaction evidence if and when a real deposit is sent; no real deposit has been sent through the router.",
+    "Create a public repo named dial-on-arc containing only the Dial files, push it, then replace this placeholder.",
+    "Publish the Dial app and provide its live URL.",
+    "Provide the Arc Studio project URL.",
+    "Record and provide the demo video URL.",
+    "Provide the Dial logo asset or URL.",
+    "Confirm the intended public builder profile links for DoraHacks."
+  ]
+}

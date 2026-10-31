@@ -63,8 +63,9 @@ import {
 } from "@/src/lib/tin-spend-planner";
 import { loadTinTokenBalances } from "@/src/lib/tin-balance";
 import { resolveTinFromChain } from "@/src/lib/tins";
-import { resolveSolanaRpcUrl } from "@/src/lib/rpc";
-import { createPaymentAuthorization } from "@trustlink/tsn-sdk/payment-authorization";
+import { createSolanaConnection, resolveSolanaRpcUrl } from "@/src/lib/rpc";
+import { PublicKey } from "@solana/web3.js";
+import { createTcapAssetPaymentAuthorization } from "@trustlink/tsn-sdk/payment-authorization";
 import {
   buildTsnSponsoredSettlementTransaction,
   fetchTsnSettlementEpoch,
@@ -1223,7 +1224,10 @@ export function SendExperience() {
         tinSpendPlan?.fundingMode === "zk_pru_only_v2";
       const usesMixedPruWalletExecution =
         tinSpendPlan?.fundingMode === "mixed_zk_pru_wallet_v2";
-      const senderAuthorization = createPaymentAuthorization({
+      const senderAuthorization = await createTcapAssetPaymentAuthorization({
+        connection: createSolanaConnection(),
+        depositor: new PublicKey(walletAddress),
+        mint: new PublicKey(selectedToken.mintAddress),
         senderWallet: walletAddress,
         senderIdentity:
           (usesPruSpendExecution || usesMixedPruWalletExecution) && user.tin
@@ -1234,7 +1238,6 @@ export function SendExperience() {
           : `phone:${form.receiverPhone}|name:${recipientName}`,
         recipientRouteCommitment: recipientRoute.pruConfigurationHash,
         recipientRouteVersion: recipientRoute.routeVersion,
-        tokenMintAddress: selectedToken.mintAddress,
         amount: form.amount,
         senderFeeAmount,
         totalTokenRequiredUi,
@@ -1311,7 +1314,7 @@ export function SendExperience() {
           "NEXT_PUBLIC_TSN_CRANKER_FEE_PAYER is required so the SDK can build the sender co-signed sponsored settlement.",
         );
       }
-      const tokenDecimals = selectedToken.decimals ?? 6;
+      const tokenDecimals = senderAuthorization.asset.decimals;
       const settlementEpoch = await fetchTsnSettlementEpoch(
         resolveSolanaRpcUrl({ frontendSafe: true }),
       );

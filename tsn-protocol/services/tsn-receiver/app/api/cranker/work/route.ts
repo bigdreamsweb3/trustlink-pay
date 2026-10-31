@@ -11,7 +11,7 @@ function cleanUrl(value: string) {
 function errorStatus(error: unknown) {
   const message = error instanceof Error ? error.message : "ERROR";
   if (message === "UNAUTHORIZED_SERVICE") return 401;
-  if (message.includes("CRANKER_SIGNATURE") || message.includes("CRANKER_MOTHER") || message.includes("CRANKER_OPERATOR") || message.includes("CRANKER_ACCOUNT") || message.includes("CHALLENGE") || message.includes("REQUEST_EXPIRED")) return 401;
+  if (message.includes("CRANKER_SIGNATURE") || message.includes("CRANKER_PUBLIC_KEY") || message.includes("CRANKER_MOTHER") || message.includes("CRANKER_OPERATOR") || message.includes("CRANKER_ACCOUNT") || message.includes("CRANKER_SESSION") || message.includes("CRANKER_REQUEST") || message.includes("CHALLENGE") || message.includes("REQUEST_EXPIRED")) return 401;
   if (message.includes("RATE_LIMITED")) return 429;
   if (/fetch failed|ECONNRESET|network|timeout|temporarily unavailable/i.test(message)) return 503;
   if (message.includes("authorization service is unavailable")) return 503;

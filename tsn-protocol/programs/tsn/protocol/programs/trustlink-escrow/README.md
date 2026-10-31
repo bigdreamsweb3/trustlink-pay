@@ -1,6 +1,8 @@
-# TrustLink Escrow Program
+# TSNP — Transfer Settlement Network Protocol
 
-This is the TSN on-chain program.
+This is the on-chain settlement protocol program within the wider **TSN (Transfer Settlement Network)** infrastructure. TSNP validates settlement authorization and coordinates atomic settlement with TCAP. TSN refers to the complete network and its programs, Nodes, Receivers, Crankers, and SDKs.
+
+The Rust crate and Anchor module retain the internal name `trustlink_escrow` for source and ABI continuity. The deployed program ID, keypair, instruction names, and account layouts are unchanged by the TSNP identity.
 
 ## What Is This?
 
@@ -31,3 +33,4 @@ npm run tsn:program:deploy:devnet
 ```
 
 See `docs/DEPLOYMENT.md` for the current toolchain requirements.
+

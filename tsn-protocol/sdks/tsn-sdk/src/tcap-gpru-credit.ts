@@ -37,7 +37,7 @@ function fixedHex(value: string, byteLength: number, label: string): Buffer {
 }
 
 function serializeHiddenHeadProof(proof: GpruHiddenHeadProofV1): Buffer {
-  if (proof.publicInputs.length !== 8) throw new Error("GPRU hidden-head V1 requires exactly 8 public inputs");
+  if (proof.publicInputs.length !== 9) throw new Error("GPRU hidden-head V1 requires exactly 9 public inputs");
   if (![1, 2, 3].includes(proof.actionKind)) throw new Error("Unsupported GPRU hidden-head action kind");
   const action = Buffer.from([proof.actionKind]);
   return Buffer.concat([
@@ -76,6 +76,15 @@ export async function resolveTcapGpruDepositAccounts(connection: Connection, fie
       || !data.subarray(80, 112).equals(fields.mint.toBuffer())) {
     throw new Error("TCAP_ASSET_ENTRY_BINDING_MISMATCH");
   }
+  // TcapAssetEntryV1 stores tokenId at 44, decimals at 244, and its active,
+  // risk, pause, and deposit flags immediately after decimals. Resolve these
+  // values from TCAP so newly approved assets need no SDK hard-coded list.
+  const tokenId = data.readUInt32LE(44);
+  const decimals = data[244]!;
+  if (tokenId === 0 || decimals > 18 || data[245] !== 1 || data[247] !== 0
+      || data[283] !== 1 || data[284] !== 1 || data[285] !== 0) {
+    throw new Error("TCAP_ASSET_NOT_ACTIVE_FOR_DEPOSITS");
+  }
   const reserveState = new PublicKey(data.subarray(148, 180));
   const vault = new PublicKey(data.subarray(180, 212));
   const reserveAuthority = new PublicKey(data.subarray(212, 244));
@@ -83,7 +92,7 @@ export async function resolveTcapGpruDepositAccounts(connection: Connection, fie
     throw new Error("TCAP_ASSET_ENTRY_RESERVE_NOT_CONFIGURED");
   }
   const source = getAssociatedTokenAddressSync(fields.mint, fields.depositor, false, fields.tokenProgram);
-  return { depositor: fields.depositor, tcapProgramId: programId, config, registry, assetEntry, assetEntryAccount: entryAccount, reserveState, reserveAuthority, source, vault, mint: fields.mint, tokenProgram: fields.tokenProgram };
+  return { depositor: fields.depositor, tcapProgramId: programId, config, registry, assetEntry, assetEntryAccount: entryAccount, reserveState, reserveAuthority, source, vault, mint: fields.mint, tokenProgram: fields.tokenProgram, tokenId, decimals };
 }
 
 /** Builds only the sender-signed reserve deposit. TIP settlement is Node-owned. */

@@ -14,7 +14,7 @@ TIP is the Transfer Identity Protocol; a TIN is one 10-digit Transfer Identity N
 
 The checked-in TSN credit ABI passes a GPRU hidden-head Groth16 proof into TCAP. TCAP validates reserve and authorization conditions, invokes GPRU, then atomically advances one shared commitment root and reserve liabilities. The encrypted Memo remains transaction instruction data; the path does not create a per-TIN TCAP tip account.
 
-Node settlement authorization currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The circuit has eight public inputs and source constraints for balance transitions, but it has not been compiled or reviewed; trusted setup keys, a witness provider, prover service, initialized verifier, and end-to-end proof evidence are absent. The shared TCAP root is public and common to transitions; the design does not provide zero linkability. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head) for the artifact lifecycle.
+Node settlement authorization currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`. The updated circuit has nine public inputs for the shared roots, Memo/action commitments, nullifier, TIP root, successor portfolio root, and selected-token Pedersen point. It has not been recompiled or reviewed after this change; matching setup keys, a witness provider, prover service, initialized verifier, and end-to-end proof evidence are not established. The shared TCAP root is public and common to transitions, so this is not zero-linkable. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head) for the artifact lifecycle.
 
 ## Deployment and action status
 

@@ -14,7 +14,7 @@ The exports below are grouped by source module. The linked source is authoritati
 | --- | --- |
 | `client` | `TsnHttpClient` with `post`, `get`, `patch`, `postIntent`, `listPendingIntentWork`, `updateIntentStatus`. |
 | `network-status` | `getTsnNetworkStatus`; `TsnNetworkStatus`, `TsnServiceStatus`, and option types. |
-| `payment-authorization` | `createSenderPaymentAuthorizationMessage`, `createPaymentAuthorizationNonce`, `createPaymentAuthorizationExpiry`, `createPaymentAuthorization`, `createCrossChainPaymentAuthorization`, `buildPaymentAuthorizationIntentRequest`. Submit the resulting request with `TsnHttpClient.postIntent`; there is no `submitPaymentAuthorizationToMempool` helper. |
+| `payment-authorization` | `createSenderPaymentAuthorizationMessage`, `createPaymentAuthorizationNonce`, `createPaymentAuthorizationExpiry`, `createPaymentAuthorization`, `createTcapAssetPaymentAuthorization`, `createCrossChainPaymentAuthorization`, `buildPaymentAuthorizationIntentRequest`. `createTcapAssetPaymentAuthorization` resolves the active TCAP asset and its token ID/decimals before producing the signed payment message. Submit the resulting request with `TsnHttpClient.postIntent`; there is no `submitPaymentAuthorizationToMempool` helper. |
 | `wallet-transfer` | `buildTsnSplTokenTransferTransaction`. |
 | `cross-chain` | `validateCrossChainRecipient`, `validateCreditcoinPayoutAuthorization`, `validateCreditcoinDestination`, `createTinExitReplayKey`, `assertVerifiedDestinationLiquidity`, `CreditcoinRouteClient`, `loadCrossChainUiSnapshot`, `TsnCrossChainClient`. |
 | `tins` | TIN V1 registry lookup, creation-envelope, owner-recovery, creation intent, and submission helpers. The SDK does not expose retired plaintext TIN account decoders or direct-create instruction builders. |
@@ -44,20 +44,23 @@ The function probes local Node and Receiver candidates before their live candida
 ## Payment authorization
 
 ```ts
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   TsnHttpClient,
   buildPaymentAuthorizationIntentRequest,
-  createPaymentAuthorization,
+  createTcapAssetPaymentAuthorization,
 } from "@trustlink/tsn-sdk";
 
-const authorization = createPaymentAuthorization({
+const authorization = await createTcapAssetPaymentAuthorization({
+  connection: new Connection(rpcUrl, "confirmed"),
+  depositor: new PublicKey(senderWallet),
+  mint: new PublicKey(tokenMintAddress),
   senderWallet,
   senderIdentity: senderWallet,
   receiverIdentity: `tin:${recipientTin}`,
   recipientDisplayName: recipient.displayName,
   recipientDisplayNameSource: recipient.displayNameSource,
   recipientVerifiedCredentials: recipient.verifiedCredentials,
-  tokenMintAddress,
   amount,
   senderFeeAmount,
   totalTokenRequiredUi: amount + senderFeeAmount,
@@ -71,7 +74,8 @@ const request = buildPaymentAuthorizationIntentRequest({
   paymentId,
   recipientHash: recipientTin,
   recipientTin,
-  tokenMintAddress,
+  tokenMintAddress: authorization.asset.mint,
+  tokenDecimals: authorization.asset.decimals,
   senderWallet,
   senderAuthorizationMessage: authorization.message,
   senderAuthorizationSignature: signatureBase64,

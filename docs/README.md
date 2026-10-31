@@ -8,19 +8,20 @@ Read these documents in order:
 
 1. [Current architecture](./CURRENT-ARCHITECTURE.md) — checked-in TIP, GPRU, TSN, and TCAP contracts, wired credit behavior, and implementation limits.
 2. [GPRU hidden-head status](./gpru-tcap-route.md) — the shared-root proof path in source, its public inputs, privacy limits, and missing runtime wiring.
-3. [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) — what the prover does, how circuit-specific keys are created and installed, and which artifacts are still missing.
-4. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
-5. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
-6. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
-7. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
-8. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+3. [Groth16 proofs in TSN](./GROTH16-ON-TSN.md) — plain-language explanation of the hidden-head proof, keys, privacy boundary, and current runtime status.
+4. [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) — how circuit-specific keys are created and installed, and which artifacts are still missing.
+5. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
+6. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
+7. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
+8. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
+9. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
    The Node's signed verification receipt is checked by both Receiver and Cranker before execution.
-9. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
-10. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
-11. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
-12. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
-13. [Security](./SECURITY.md) — plain-language security principles.
-14. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
+10. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
+11. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
+12. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
+13. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
+14. [Security](./SECURITY.md) — plain-language security principles.
+15. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
 Supporting references:
 

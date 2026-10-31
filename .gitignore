@@ -189,3 +189,5 @@ protocol-tests/tcap-credit-devnet.env
 
 protocol-tests/ui/.env
 protocol-tests/ui/.env.local
+
+tsn-demo/

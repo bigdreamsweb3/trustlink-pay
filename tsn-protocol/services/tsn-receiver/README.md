@@ -77,17 +77,24 @@ TSN_RECEIVER_STATE_COLLECTION=tsn_receiver_state
 TSN_NODE_URL=https://<your-tsn-node-domain>
 ```
 
-Cranker lease APIs use Ed25519 challenge-response authentication. The Receiver
-does not maintain a per-Cranker allowlist and does not accept a Cranker API key.
-For each challenge, it derives the Mother Escrow and operator Cranker PDAs on
-Solana Devnet, reads both accounts, and verifies the Cranker account's operator,
-Mother Escrow, and `sha256("tsn_dna" || mother || operator || protocol_seed)`
-against the on-chain `dna_hash`. Any operator may join by registering its own
-Cranker PDA through the TSN protocol; no Receiver redeployment is required for
-operator onboarding or rotation. The EVM wallet is a separate gas signer and
-is not the Receiver admission identity. Legacy
-Cranker API-key authentication is disabled and is not part of the deployment
-configuration.
+Cranker APIs use Ed25519 challenge-response to establish a short-lived Receiver
+session. At session establishment, the Receiver reads the Mother Escrow and
+operator Cranker PDAs from Solana Devnet and validates the operator, Mother
+Escrow, and `sha256("tsn_dna" || mother || operator || protocol_seed)` against
+the on-chain `dna_hash`. The session lasts at most 30 minutes and expires after
+5 minutes without an authenticated request. Each API request remains signed by
+the Cranker key and carries a strictly increasing session counter; the Receiver
+checks that counter atomically to reject replayed requests without another
+Solana RPC lookup. The session token is random, retained only in the Cranker
+process, and stored by the Receiver only as a hash. A process restart, idle
+timeout, or maximum session lifetime requires a fresh on-chain DNA check.
+
+The Receiver does not maintain a per-Cranker allowlist and does not accept a
+Cranker API key. Any operator may join by registering its own Cranker PDA
+through the TSN protocol; no Receiver redeployment is required for operator
+onboarding or rotation. The EVM wallet is a separate gas signer and is not the
+Receiver admission identity. Legacy Cranker API-key authentication is disabled
+and is not part of the deployment configuration.
 
 Deploy the Realtime Database rules from this repository after creating the
 database in the Firebase project:

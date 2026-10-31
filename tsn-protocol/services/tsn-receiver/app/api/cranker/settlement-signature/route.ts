@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "ERROR";
-    const status = message.includes("UNAUTHORIZED_SERVICE") || /CRANKER_SIGNATURE|CRANKER_MOTHER|CRANKER_OPERATOR|CHALLENGE|REQUEST_EXPIRED/.test(message)
+    const status = message.includes("UNAUTHORIZED_SERVICE") || /CRANKER_SIGNATURE|CRANKER_PUBLIC_KEY|CRANKER_MOTHER|CRANKER_OPERATOR|CRANKER_SESSION|CRANKER_REQUEST|CHALLENGE|REQUEST_EXPIRED/.test(message)
       ? 401
       : message.includes("RATE_LIMITED") ? 429 : 409;
     return NextResponse.json({ error: message }, { status });

@@ -1,9 +1,13 @@
 use ark_bn254::Fr;
 use ark_ff::{BigInteger, PrimeField};
-use light_poseidon::{Poseidon, PoseidonHasher};
-use solana_program::{account_info::AccountInfo, program_error::ProgramError};
+use solana_program::{
+    account_info::AccountInfo,
+    poseidon::{hashv as poseidon_hashv, Endianness, Parameters},
+    program_error::ProgramError,
+};
 
 use crate::{error::Error, state::TipRouteMerkleRootV1};
+use crate::route_zero_hashes::ROUTE_ZERO_HASHES_V1;
 
 fn field_bytes(value: Fr) -> Result<[u8; 32], ProgramError> {
     let bytes = value.into_bigint().to_bytes_be();
@@ -15,16 +19,19 @@ fn field_bytes(value: Fr) -> Result<[u8; 32], ProgramError> {
     Ok(output)
 }
 
-fn field_from_bytes(value: &[u8; 32]) -> Fr {
-    Fr::from_be_bytes_mod_order(value)
+fn canonical_field_bytes(value: &[u8; 32]) -> Result<[u8; 32], ProgramError> {
+    field_bytes(Fr::from_be_bytes_mod_order(value))
 }
 
 fn poseidon2(left: &[u8; 32], right: &[u8; 32]) -> Result<[u8; 32], ProgramError> {
-    let mut poseidon = Poseidon::<Fr>::new_circom(2).map_err(|_| ProgramError::InvalidInstructionData)?;
-    let result = poseidon
-        .hash(&[field_from_bytes(left), field_from_bytes(right)])
-        .map_err(|_| ProgramError::InvalidInstructionData)?;
-    field_bytes(result)
+    // Preserve the previous Circom behavior: inputs were reduced modulo Fr
+    // before hashing. Solana's Poseidon syscall requires canonical field bytes.
+    let left = canonical_field_bytes(left)?;
+    let right = canonical_field_bytes(right)?;
+    let inputs: [&[u8]; 2] = [&left, &right];
+    poseidon_hashv(Parameters::Bn254X5, Endianness::BigEndian, &inputs)
+        .map(|hash| hash.to_bytes())
+        .map_err(|_| ProgramError::InvalidInstructionData)
 }
 
 fn route_leaf(
@@ -32,23 +39,13 @@ fn route_leaf(
     gpru_key_commitment: &[u8; 32],
     policy_commitment: &[u8; 32],
 ) -> Result<[u8; 32], ProgramError> {
-    let mut poseidon = Poseidon::<Fr>::new_circom(3).map_err(|_| ProgramError::InvalidInstructionData)?;
-    let result = poseidon
-        .hash(&[
-            field_from_bytes(lookup_commitment),
-            field_from_bytes(gpru_key_commitment),
-            field_from_bytes(policy_commitment),
-        ])
-        .map_err(|_| ProgramError::InvalidInstructionData)?;
-    field_bytes(result)
-}
-
-fn empty_root() -> Result<[u8; 32], ProgramError> {
-    let mut node = [0u8; 32];
-    for _ in 0..TipRouteMerkleRootV1::DEPTH {
-        node = poseidon2(&node, &node)?;
-    }
-    Ok(node)
+    let lookup_commitment = canonical_field_bytes(lookup_commitment)?;
+    let gpru_key_commitment = canonical_field_bytes(gpru_key_commitment)?;
+    let policy_commitment = canonical_field_bytes(policy_commitment)?;
+    let inputs: [&[u8]; 3] = [&lookup_commitment, &gpru_key_commitment, &policy_commitment];
+    poseidon_hashv(Parameters::Bn254X5, Endianness::BigEndian, &inputs)
+        .map(|hash| hash.to_bytes())
+        .map_err(|_| ProgramError::InvalidInstructionData)
 }
 
 pub fn append_route<'a>(
@@ -80,7 +77,7 @@ pub fn append_route<'a>(
         TipRouteMerkleRootV1 {
             version: TipRouteMerkleRootV1::VERSION,
             bump,
-            root: empty_root()?,
+            root: ROUTE_ZERO_HASHES_V1[TipRouteMerkleRootV1::DEPTH],
             leaf_count: 0,
             frontier: [[0; 32]; TipRouteMerkleRootV1::DEPTH],
         }
@@ -97,15 +94,14 @@ pub fn append_route<'a>(
     }
     let leaf_index = root.leaf_count as u32;
     let mut node = route_leaf(lookup_commitment, gpru_key_commitment, policy_commitment)?;
-    let mut zero = [0u8; 32];
     for level in 0..TipRouteMerkleRootV1::DEPTH {
+        let zero = &ROUTE_ZERO_HASHES_V1[level];
         if ((root.leaf_count >> level) & 1) == 0 {
             root.frontier[level] = node;
-            node = poseidon2(&node, &zero)?;
+            node = poseidon2(&node, zero)?;
         } else {
             node = poseidon2(&root.frontier[level], &node)?;
         }
-        zero = poseidon2(&zero, &zero)?;
     }
     root.root = node;
     root.leaf_count = root.leaf_count.checked_add(1).ok_or(Error::Overflow)?;

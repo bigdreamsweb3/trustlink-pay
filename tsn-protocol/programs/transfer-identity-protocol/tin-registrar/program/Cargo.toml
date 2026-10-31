@@ -36,7 +36,6 @@ codegen-units = 1
 solana-program = "=1.18.26"
 ark-bn254 = "=0.4.0"
 ark-ff = "=0.4.2"
-light-poseidon = "=0.2.0"
 num-traits = "0.2.14"
 num-derive = "0.3.3"
 borsh = "0.10.3"

@@ -2,7 +2,6 @@
 
 use anchor_lang::prelude::*;
 
-pub mod balance;
 pub mod hidden_head;
 #[path = "program.rs"]
 pub mod gpru_ix;
@@ -26,45 +25,8 @@ pub struct VerifyDnaKeyProof<'info> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct InitialBalanceProofArgsV1 {
-    pub generator_commitment: [u8; 32],
-    pub key_commitment: [u8; 32],
-    pub response: [u8; 32],
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct ApplyCreditTransitionArgsV1 {
-    pub amount: u64,
-    pub token_id: u32,
-    pub sequence: u64,
-    pub previous_tcap_root: [u8; 32],
-    pub tcap_root_sequence: u64,
-    pub policy_commitment: [u8; 32],
-    pub previous_commitment: [u8; 32],
-    pub new_commitment: [u8; 32],
-    pub memo_commitment: [u8; 32],
-    pub nullifier: [u8; 32],
-    pub authorization_digest: [u8; 32],
-    pub previous_balance_ciphertext: [u8; 64],
-    pub balance_ciphertext: [u8; 64],
-    pub initial_ciphertext: [u8; 64],
-    pub initial_proof: InitialBalanceProofArgsV1,
-}
-
-#[derive(Accounts)]
-#[instruction(args: ApplyCreditTransitionArgsV1)]
-pub struct ApplyCreditTransitionV1<'info> {
-    /// CHECK: GPRU validates the canonical TIP registry layout and key fields.
-    pub tip_registry: UncheckedAccount<'info>,
-    /// CHECK: shared TCAP commitment root used for atomic settlement replay checks.
-    pub commitment_root: UncheckedAccount<'info>,
-    /// CHECK: must be the canonical Instructions sysvar; used to authenticate TSN as the top-level caller.
-    pub instructions: UncheckedAccount<'info>,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct HiddenHeadProofArgsV1 {
-    pub public_inputs: [[u8; 32]; 8],
+    pub public_inputs: [[u8; 32]; hidden_head::HIDDEN_HEAD_PUBLIC_INPUTS],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],
@@ -128,13 +90,6 @@ pub mod tsn_gpru_proof_contract {
             one_time_public_key,
             proof,
         )
-    }
-
-    pub fn apply_credit_transition_v1(
-        ctx: Context<ApplyCreditTransitionV1>,
-        args: ApplyCreditTransitionArgsV1,
-    ) -> Result<()> {
-        gpru_ix::apply_credit_transition_v1(ctx, args)
     }
 
     /// Verify a zero-knowledge update of one hidden TIN head and a one-time

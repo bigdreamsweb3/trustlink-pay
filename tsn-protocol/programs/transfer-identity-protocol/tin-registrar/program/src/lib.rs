@@ -6,6 +6,7 @@ pub mod error;
 pub mod instruction_auto;
 pub mod processor;
 pub mod route_root;
+mod route_zero_hashes;
 pub mod state;
 pub mod utils;
 

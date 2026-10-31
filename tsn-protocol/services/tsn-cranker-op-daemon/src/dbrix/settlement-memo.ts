@@ -19,8 +19,11 @@ export function createDbrixSettlementMemoInstruction(params: {
   document: Record<string, unknown>;
   expectedSlots: unknown;
   expectedPayload: unknown;
+  expectedMemoPayload: unknown;
   expectedCommitment: unknown;
+  successorPortfolioRoot: string;
   successorBalancePoint: { x: string; y: string };
+  actionCommitment: string;
 }): TransactionInstruction {
   const slots = encodeToLedgerSlots(Buffer.from(stableJson(params.document), "utf8"));
   if (!Array.isArray(params.expectedSlots)
@@ -36,7 +39,10 @@ export function createDbrixSettlementMemoInstruction(params: {
     if (!/^[0-9a-f]{64}$/iu.test(value)) throw new Error(`${label} must be 32-byte hex`);
     return value.toLowerCase();
   };
-  const finalMemoPayload = `TSN_GPRU_HEAD_V1:${pointHex(params.successorBalancePoint.x, "successorBalancePoint.x")}:${pointHex(params.successorBalancePoint.y, "successorBalancePoint.y")}:${memoPayload}`;
+  const finalMemoPayload = `TSN_GPRU_HEAD_V1:${pointHex(params.successorPortfolioRoot, "successorPortfolioRoot")}:${pointHex(params.successorBalancePoint.x, "successorBalancePoint.x")}:${pointHex(params.successorBalancePoint.y, "successorBalancePoint.y")}:${pointHex(params.actionCommitment, "actionCommitment")}:${memoPayload}`;
+  if (finalMemoPayload !== params.expectedMemoPayload) {
+    throw new Error("Node GPRU Memo prefix or owner-encrypted payload differs from the proof-bound transition");
+  }
   const commitment = createHash("sha256").update(finalMemoPayload, "ascii").digest("hex");
   if (commitment !== String(params.expectedCommitment ?? "").toLowerCase()) {
     throw new Error("Node DBrix Memo commitment does not match the encoded record");

@@ -10,6 +10,8 @@ import { buildCreateIntentRequest } from "../dist/contracts.js";
 test("payment authorization binds the recipient TIN without route data", () => {
   const message = buildPaymentIntentMessage({
     amountBaseUnits: 1_250_000n,
+    tokenMintAddress: "11111111111111111111111111111111",
+    tokenDecimals: 6,
     recipientTin: "1234567890",
     feeBaseUnits: 5_000n,
     sender: "Main Wallet",
@@ -25,6 +27,8 @@ test("payment authorization binds the recipient TIN without route data", () => {
 test("payment authorization does not accept sender-supplied route data", () => {
   const message = buildPaymentIntentMessage({
     amountBaseUnits: 1n,
+    tokenMintAddress: "11111111111111111111111111111111",
+    tokenDecimals: 6,
     recipientTin: "1234567890",
     feeBaseUnits: 0n,
     sender: "Main Wallet",

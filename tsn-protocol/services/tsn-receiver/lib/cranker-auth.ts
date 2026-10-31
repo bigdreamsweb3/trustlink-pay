@@ -1,11 +1,14 @@
-import { createHash, createPublicKey, randomBytes, verify } from "node:crypto";
+import { createHash, createPublicKey, randomBytes, timingSafeEqual, verify } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { db } from "./firebase";
 
 const challengeCollection = db.collection(process.env.TSN_RECEIVER_CRANKER_CHALLENGE_COLLECTION ?? "tsn_receiver_cranker_challenges");
 const rateCollection = db.collection(process.env.TSN_RECEIVER_CRANKER_RATE_COLLECTION ?? "tsn_receiver_cranker_rate_limits");
+const sessionCollection = db.collection(process.env.TSN_RECEIVER_CRANKER_SESSION_COLLECTION ?? "tsn_receiver_cranker_sessions");
 const CHALLENGE_TTL_MS = 60_000;
+const CRANKER_SESSION_TTL_MS = 30 * 60_000;
+const CRANKER_SESSION_IDLE_TTL_MS = 5 * 60_000;
 const MAX_LEASE_ATTEMPTS_PER_MINUTE = 30;
 
 // This Receiver admission boundary is pinned to the verified Devnet TSN
@@ -135,26 +138,52 @@ function publicKeyObject(publicKey: string) {
 
 export async function issueCrankerChallenge(publicKey: string) {
   await assertMotherDnaCranker(publicKey);
-  await pruneCrankerChallenges();
+  await Promise.all([pruneCrankerChallenges(), pruneCrankerSessions()]);
   const nonce = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS).toISOString();
   await challengeCollection.doc(challengeId(publicKey, nonce)).create({ publicKey, nonce, expiresAt, used: false });
   return { nonce, expiresAt };
 }
 
-function canonicalRequest(method: string, path: string, timestamp: string, nonce: string, body: string) {
+function canonicalSessionRequest(method: string, path: string, timestamp: string, sessionId: string, counter: string, body: string) {
   const bodyHash = createHash("sha256").update(body, "utf8").digest("hex");
-  return `TSN_RECEIVER_CRANKER_V1|${method.toUpperCase()}|${path}|${timestamp}|${nonce}|${bodyHash}`;
+  return `TSN_RECEIVER_CRANKER_SESSION_REQUEST_V1|${method.toUpperCase()}|${path}|${timestamp}|${sessionId}|${counter}|${bodyHash}`;
 }
 
-export async function authenticateCrankerRequest(request: NextRequest, body: string, method: string, path: string) {
-  const publicKey = request.headers.get("x-cranker-public-key")?.trim() ?? "";
-  const nonce = request.headers.get("x-cranker-challenge")?.trim() ?? "";
-  const timestamp = request.headers.get("x-cranker-timestamp")?.trim() ?? "";
-  const signature = request.headers.get("x-cranker-signature")?.trim() ?? "";
-  await assertMotherDnaCranker(publicKey);
+function sessionChallengeMessage(publicKey: string, timestamp: string, nonce: string) {
+  return `TSN_RECEIVER_CRANKER_SESSION_V1|${publicKey}|${timestamp}|${nonce}`;
+}
+
+function validTimestamp(timestamp: string) {
   const timestampMs = Number(timestamp) * 1000;
-  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > CHALLENGE_TTL_MS) throw new Error("CRANKER_REQUEST_EXPIRED");
+  return Number.isFinite(timestampMs) && Math.abs(Date.now() - timestampMs) <= CHALLENGE_TTL_MS;
+}
+
+function decodeSignature(signature: string) {
+  if (!/^[A-Za-z0-9+/_-]{86,88}={0,2}$/.test(signature)) throw new Error("CRANKER_SIGNATURE_INVALID");
+  let bytes: Buffer;
+  try { bytes = Buffer.from(signature.replace(/-/g, "+").replace(/_/g, "/"), "base64"); }
+  catch { throw new Error("CRANKER_SIGNATURE_INVALID"); }
+  if (bytes.length !== 64) throw new Error("CRANKER_SIGNATURE_INVALID");
+  return bytes;
+}
+
+export async function issueCrankerSession(input: {
+  publicKey: string;
+  nonce: string;
+  timestamp: string;
+  signature: string;
+}) {
+  const { publicKey, nonce, timestamp, signature } = input;
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(publicKey)
+    || !/^[A-Za-z0-9_-]{43}$/.test(nonce)
+    || !/^\d{1,13}$/.test(timestamp)
+    || !signature) throw new Error("CRANKER_SESSION_INPUT_INVALID");
+  if (!validTimestamp(timestamp)) throw new Error("CRANKER_REQUEST_EXPIRED");
+  if (!verify(null, Buffer.from(sessionChallengeMessage(publicKey, timestamp, nonce)), publicKeyObject(publicKey), decodeSignature(signature))) {
+    throw new Error("CRANKER_SIGNATURE_INVALID");
+  }
+
   const reference = challengeCollection.doc(challengeId(publicKey, nonce));
   const consumed = await db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(reference);
@@ -163,10 +192,70 @@ export async function authenticateCrankerRequest(request: NextRequest, body: str
     return true;
   });
   if (!consumed) throw new Error("CRANKER_CHALLENGE_INVALID_OR_REPLAYED");
-  let signatureBytes: Buffer;
-  try { signatureBytes = Buffer.from(signature.replace(/-/g, "+").replace(/_/g, "/"), "base64"); } catch { throw new Error("CRANKER_SIGNATURE_INVALID"); }
-  if (signatureBytes.length !== 64 || !verify(null, Buffer.from(canonicalRequest(method, path, timestamp, nonce, body)), publicKeyObject(publicKey), signatureBytes)) throw new Error("CRANKER_SIGNATURE_INVALID");
+
+  const now = Date.now();
+  const sessionId = randomBytes(24).toString("base64url");
+  const token = randomBytes(32).toString("base64url");
+  const createdAt = new Date(now).toISOString();
+  const expiresAt = new Date(now + CRANKER_SESSION_TTL_MS).toISOString();
+  await sessionCollection.doc(sessionId).create({
+    publicKey,
+    tokenHash: createHash("sha256").update(token).digest("hex"),
+    createdAt,
+    expiresAt,
+    lastSeenAt: createdAt,
+    lastCounter: 0,
+  });
+  return { sessionId, token, expiresAt };
+}
+
+export async function authenticateCrankerRequest(request: NextRequest, body: string, method: string, path: string) {
+  const publicKey = request.headers.get("x-cranker-public-key")?.trim() ?? "";
+  const sessionId = request.headers.get("x-cranker-session-id")?.trim() ?? "";
+  const token = request.headers.get("x-cranker-session-token")?.trim() ?? "";
+  const counter = request.headers.get("x-cranker-counter")?.trim() ?? "";
+  const timestamp = request.headers.get("x-cranker-timestamp")?.trim() ?? "";
+  const signature = request.headers.get("x-cranker-signature")?.trim() ?? "";
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(publicKey)
+    || !/^[A-Za-z0-9_-]{32}$/.test(sessionId)
+    || !/^[A-Za-z0-9_-]{43}$/.test(token)
+    || !/^\d{1,16}$/.test(counter) || !/^\d{1,13}$/.test(timestamp) || !signature) throw new Error("CRANKER_SESSION_INPUT_INVALID");
+  if (!validTimestamp(timestamp)) throw new Error("CRANKER_REQUEST_EXPIRED");
+  const counterValue = Number(counter);
+  if (!Number.isSafeInteger(counterValue) || counterValue < 1) throw new Error("CRANKER_REQUEST_COUNTER_INVALID");
+  if (!verify(null, Buffer.from(canonicalSessionRequest(method, path, timestamp, sessionId, counter, body)), publicKeyObject(publicKey), decodeSignature(signature))) {
+    throw new Error("CRANKER_SIGNATURE_INVALID");
+  }
+
+  const reference = sessionCollection.doc(sessionId);
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+  const tokenHash = createHash("sha256").update(token).digest();
+  const result = await db.runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(reference);
+    if (!snapshot.exists || snapshot.get("publicKey") !== publicKey) return "CRANKER_SESSION_INVALID";
+    const storedHash = String(snapshot.get("tokenHash") ?? "");
+    if (!/^[0-9a-f]{64}$/i.test(storedHash) || !timingSafeEqual(Buffer.from(storedHash, "hex"), tokenHash)) return "CRANKER_SESSION_INVALID";
+    const expiresAt = Date.parse(String(snapshot.get("expiresAt") ?? ""));
+    const lastSeenAt = Date.parse(String(snapshot.get("lastSeenAt") ?? ""));
+    if (!Number.isFinite(expiresAt) || expiresAt <= now || !Number.isFinite(lastSeenAt) || now - lastSeenAt > CRANKER_SESSION_IDLE_TTL_MS) return "CRANKER_SESSION_EXPIRED";
+    const lastCounter = Number(snapshot.get("lastCounter") ?? 0);
+    if (!Number.isSafeInteger(lastCounter) || lastCounter < 0 || counterValue <= lastCounter) return "CRANKER_REQUEST_REPLAYED";
+    transaction.update(reference, { lastCounter: counterValue, lastSeenAt: nowIso });
+    return "OK";
+  });
+  if (result !== "OK") throw new Error(result);
   return publicKey;
+}
+
+async function pruneCrankerSessions() {
+  const now = Date.now();
+  const [expired, idle] = await Promise.all([
+    sessionCollection.where("expiresAt", "<=", new Date(now).toISOString()).limit(100).get(),
+    sessionCollection.where("lastSeenAt", "<=", new Date(now - CRANKER_SESSION_IDLE_TTL_MS).toISOString()).limit(100).get(),
+  ]);
+  const stale = new Map([...expired.docs, ...idle.docs].map((document: any) => [document.id, document.ref]));
+  await Promise.all([...stale.values()].map((reference: any) => reference?.delete()));
 }
 
 export async function enforceCrankerLeaseRateLimit(publicKey: string) {

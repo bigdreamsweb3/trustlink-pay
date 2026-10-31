@@ -92,6 +92,7 @@ template HiddenHeadTransitionV1() {
     signal input tipRouteRoot;
     // Freshly blinded output commitment; GPRU requires the same point in the
     // fixed Memo prefix, while the hidden map stores it as the successor head.
+    signal input successorPortfolioRoot;
     signal input successorBalanceX;
     signal input successorBalanceY;
 
@@ -102,15 +103,20 @@ template HiddenHeadTransitionV1() {
     signal input tipRouteIndex;
     signal input tipSiblings[32];
 
-    // Private latest-head state and its authenticated-map path.
+    // Private latest per-TIN portfolio head and its authenticated-map path.
     signal input accountPathKey;
-    signal input assetCommitment;
     signal input priorSequence;
     signal input predecessorMemoCommitment;
     signal input predecessorActionCommitment;
+    signal input predecessorPortfolioRoot;
+    signal input accountSiblings[128];
+
+    // Private token leaf and its path inside the per-TIN portfolio tree.
+    // The token tree root is committed once by the outer per-TIN head.
+    signal input isFirstToken;
     signal input predecessorBalanceX;
     signal input predecessorBalanceY;
-    signal input accountSiblings[128];
+    signal input portfolioSiblings[32];
 
     // Private nullifier-map path. The public nullifier is one-time and
     // independent of the TIN identity; an existing leaf must be empty.
@@ -122,7 +128,8 @@ template HiddenHeadTransitionV1() {
     signal input assetId;
     signal input amount;
     signal input authorizationCommitment;
-    signal input creditBlindingDelta;
+    signal input balanceBlindingDelta;
+    signal input balanceBlindingCarry;
     signal input predecessorBalance;
     signal input predecessorBlinding;
     signal input successorBalance;
@@ -141,19 +148,14 @@ template HiddenHeadTransitionV1() {
     for (var i = 0; i < 32; i++) tipPath.siblings[i] <== tipSiblings[i];
     tipPath.root === tipRouteRoot;
 
-    component accountKeyHash = Poseidon(2);
-    accountKeyHash.inputs[0] <== routeKeyCommitment;
-    accountKeyHash.inputs[1] <== assetCommitment;
-    accountKeyHash.out === accountPathKey;
+    routeKeyCommitment === accountPathKey;
 
-    component priorLeafHash = Poseidon(7);
+    component priorLeafHash = Poseidon(5);
     priorLeafHash.inputs[0] <== routeKeyCommitment;
-    priorLeafHash.inputs[1] <== assetCommitment;
-    priorLeafHash.inputs[2] <== priorSequence;
-    priorLeafHash.inputs[3] <== predecessorMemoCommitment;
-    priorLeafHash.inputs[4] <== predecessorActionCommitment;
-    priorLeafHash.inputs[5] <== predecessorBalanceX;
-    priorLeafHash.inputs[6] <== predecessorBalanceY;
+    priorLeafHash.inputs[1] <== priorSequence;
+    priorLeafHash.inputs[2] <== predecessorMemoCommitment;
+    priorLeafHash.inputs[3] <== predecessorActionCommitment;
+    priorLeafHash.inputs[4] <== predecessorPortfolioRoot;
 
     component isFirstHead = IsZero();
     isFirstHead.in <== priorSequence;
@@ -169,25 +171,60 @@ template HiddenHeadTransitionV1() {
     actionKindBits.in <== actionKind;
     component amountBits = Num2Bits(64);
     amountBits.in <== amount;
-    assetCommitment === assetId;
     isFirstHead.out * predecessorMemoCommitment === 0;
     isFirstHead.out * predecessorActionCommitment === 0;
-    isFirstHead.out * predecessorBalanceX === 0;
-    isFirstHead.out * (predecessorBalanceY - 1) === 0;
+    component firstTokenBits = Num2Bits(1);
+    firstTokenBits.in <== isFirstToken;
+    isFirstHead.out * (isFirstToken - 1) === 0;
+
+    // A zero-root ladder defines the empty accepted-token map. On a TIN's
+    // first action, both the old portfolio root and the selected token path
+    // must be empty; later actions authenticate the selected token leaf.
+    signal emptyPortfolioNodes[33];
+    component emptyPortfolioHashes[32];
+    emptyPortfolioNodes[0] <== 0;
+    for (var i = 0; i < 32; i++) {
+        emptyPortfolioHashes[i] = Poseidon(2);
+        emptyPortfolioHashes[i].inputs[0] <== emptyPortfolioNodes[i];
+        emptyPortfolioHashes[i].inputs[1] <== emptyPortfolioNodes[i];
+        emptyPortfolioNodes[i + 1] <== emptyPortfolioHashes[i].out;
+        isFirstHead.out * (portfolioSiblings[i] - emptyPortfolioNodes[i]) === 0;
+    }
+    isFirstHead.out * (predecessorPortfolioRoot - emptyPortfolioNodes[32]) === 0;
+
+    component priorTokenLeafHash = Poseidon(3);
+    priorTokenLeafHash.inputs[0] <== assetId;
+    priorTokenLeafHash.inputs[1] <== predecessorBalanceX;
+    priorTokenLeafHash.inputs[2] <== predecessorBalanceY;
+    component priorTokenPath = SparsePath32();
+    priorTokenPath.leaf <== (1 - isFirstToken) * priorTokenLeafHash.out;
+    priorTokenPath.index <== assetId;
+    for (var i = 0; i < 32; i++) priorTokenPath.siblings[i] <== portfolioSiblings[i];
+    priorTokenPath.root === predecessorPortfolioRoot;
+    isFirstToken * predecessorBalanceX === 0;
+    isFirstToken * (predecessorBalanceY - 1) === 0;
 
     component currentHeadPath = SparsePath128();
     currentHeadPath.leaf <== (1 - isFirstHead.out) * priorLeafHash.out;
     currentHeadPath.key <== accountPathKey;
     for (var i = 0; i < 128; i++) currentHeadPath.siblings[i] <== accountSiblings[i];
 
-    component nextLeafHash = Poseidon(7);
+    component successorTokenLeafHash = Poseidon(3);
+    successorTokenLeafHash.inputs[0] <== assetId;
+    successorTokenLeafHash.inputs[1] <== successorBalanceX;
+    successorTokenLeafHash.inputs[2] <== successorBalanceY;
+    component successorPortfolioPath = SparsePath32();
+    successorPortfolioPath.leaf <== successorTokenLeafHash.out;
+    successorPortfolioPath.index <== assetId;
+    for (var i = 0; i < 32; i++) successorPortfolioPath.siblings[i] <== portfolioSiblings[i];
+    successorPortfolioPath.root === successorPortfolioRoot;
+
+    component nextLeafHash = Poseidon(5);
     nextLeafHash.inputs[0] <== routeKeyCommitment;
-    nextLeafHash.inputs[1] <== assetCommitment;
-    nextLeafHash.inputs[2] <== nextSequence;
-    nextLeafHash.inputs[3] <== memoCommitment;
-    nextLeafHash.inputs[4] <== actionCommitment;
-    nextLeafHash.inputs[5] <== successorBalanceX;
-    nextLeafHash.inputs[6] <== successorBalanceY;
+    nextLeafHash.inputs[1] <== nextSequence;
+    nextLeafHash.inputs[2] <== memoCommitment;
+    nextLeafHash.inputs[3] <== actionCommitment;
+    nextLeafHash.inputs[4] <== successorPortfolioRoot;
 
     component nextHeadPath = SparsePath128();
     nextHeadPath.leaf <== nextLeafHash.out;
@@ -208,17 +245,32 @@ template HiddenHeadTransitionV1() {
     isExit.in[1] <== 3;
     isCredit.out + isDebit.out + isExit.out === 1;
     isFirstHead.out * (1 - isCredit.out) === 0;
+    isFirstToken * (1 - isCredit.out) === 0;
 
     // Credit: update the hidden Pedersen point homomorphically. The Node needs
     // neither the balance nor its blinding opening to add a confirmed amount.
     component deltaBound = LessThan(252);
-    deltaBound.in[0] <== creditBlindingDelta;
+    deltaBound.in[0] <== balanceBlindingDelta;
     deltaBound.in[1] <== BABYJUB_SUBORDER;
-    isCredit.out * (1 - deltaBound.out) === 0;
+    component deltaIsZero = IsZero();
+    deltaIsZero.in <== balanceBlindingDelta;
+    component priorBlindBound = LessThan(252);
+    priorBlindBound.in[0] <== predecessorBlinding;
+    priorBlindBound.in[1] <== BABYJUB_SUBORDER;
+    component nextBlindBound = LessThan(252);
+    nextBlindBound.in[0] <== successorBlinding;
+    nextBlindBound.in[1] <== BABYJUB_SUBORDER;
+    component carryBits = Num2Bits(1);
+    carryBits.in <== balanceBlindingCarry;
+    (1 - deltaBound.out) === 0;
+    deltaIsZero.out === 0;
+    (1 - priorBlindBound.out) === 0;
+    (1 - nextBlindBound.out) === 0;
+    predecessorBlinding + balanceBlindingDelta === successorBlinding + balanceBlindingCarry * BABYJUB_SUBORDER;
     component amountPoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
     amountPoint.scalar <== amount;
     component deltaPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
-    deltaPoint.scalar <== creditBlindingDelta;
+    deltaPoint.scalar <== balanceBlindingDelta;
     component creditPartial = BabyAdd();
     creditPartial.x1 <== predecessorBalanceX;
     creditPartial.y1 <== predecessorBalanceY;
@@ -238,14 +290,6 @@ template HiddenHeadTransitionV1() {
     oldBalanceBits.in <== predecessorBalance;
     component newBalanceBits = Num2Bits(64);
     newBalanceBits.in <== successorBalance;
-    component oldBlindBound = LessThan(252);
-    oldBlindBound.in[0] <== predecessorBlinding;
-    oldBlindBound.in[1] <== BABYJUB_SUBORDER;
-    component newBlindBound = LessThan(252);
-    newBlindBound.in[0] <== successorBlinding;
-    newBlindBound.in[1] <== BABYJUB_SUBORDER;
-    (isDebit.out + isExit.out) * (1 - oldBlindBound.out) === 0;
-    (isDebit.out + isExit.out) * (1 - newBlindBound.out) === 0;
     component oldValuePoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
     oldValuePoint.scalar <== predecessorBalance;
     component oldBlindPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
@@ -303,4 +347,4 @@ template HiddenHeadTransitionV1() {
     newRootHash.out === newGlobalRoot;
 }
 
-component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorBalanceX, successorBalanceY]} = HiddenHeadTransitionV1();
+component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorPortfolioRoot, successorBalanceX, successorBalanceY]} = HiddenHeadTransitionV1();

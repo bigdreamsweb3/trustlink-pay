@@ -4,7 +4,7 @@ GPRU's hidden-head V1 source is designed to prove that a private TIP route and a
 
 ## Proof interface
 
-The Groth16 circuit declares eight public inputs in this order: old TCAP root, new TCAP root, Memo commitment, action commitment, nullifier, TIP route root, successor balance-point X, and successor balance-point Y. The witness hides route membership, the per-TIN-and-asset head/sequence, sparse-map paths, and the prior nullifier state. The circuit source contains credit Pedersen-point addition and debit/exit balance-opening constraints, but those constraints have not passed circuit compilation or independent review.
+The Groth16 circuit declares nine public inputs in this order: old TCAP root, new TCAP root, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, successor balance-point X, and successor balance-point Y. The witness hides route membership, the one-per-TIN outer head/sequence, the nested token-map path, and the prior nullifier state. The balance arithmetic uses Pedersen commitments, not encrypted balance ciphertexts. The updated circuit has not passed a fresh compile or independent review.
 
 The public interface still reveals action kind, asset/token ID, amount, nullifier, both shared roots, the Memo commitment, TIP route root, and the successor point. All transitions write the same public TCAP root and expose global ordering; the design is not zero-linkability.
 

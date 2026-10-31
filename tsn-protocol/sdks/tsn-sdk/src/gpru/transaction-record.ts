@@ -19,6 +19,28 @@ export type GpruTransactionRecordEnvelopeV1 = {
   compression?: "deflate";
 };
 
+export type GpruBalanceActionRecordV1 = {
+  version: 1;
+  recordType: "tsn-gpru-balance-action-v1";
+  sequence: string;
+  previousMemoCommitment: string;
+  actionCommitment: string;
+  authorizationCommitment: string;
+  nullifier: string;
+  actionKind: 1 | 2 | 3;
+  tokenId: number;
+  amountBaseUnits: string;
+  balanceBlindingDelta: string;
+};
+
+export type GpruMemoBindingV1 = {
+  successorPortfolioRoot: string;
+  successorBalancePoint: { x: string; y: string };
+  actionCommitment: string;
+};
+
+const MEMO_BINDING_PREFIX = /^TSN_GPRU_HEAD_V1:([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):/iu;
+
 function assert32(value: Uint8Array, label: string): void {
   if (!(value instanceof Uint8Array) || value.length !== 32) {
     throw new Error(`${label} must be exactly 32 bytes`);
@@ -90,14 +112,101 @@ export function deriveGpruTransactionRecordKeyV1(params: {
 }
 
 /** Decodes the Base64URL Memo emitted from DBrix Ledger slots and decrypts the owner-only record. */
-export function decryptGpruLedgerMemoV1<T = Record<string, unknown>>(params: {
+export function parseGpruMemoBindingV1(memoPayload: string): GpruMemoBindingV1 {
+  const match = MEMO_BINDING_PREFIX.exec(memoPayload);
+  if (!match) throw new Error("Memo does not contain the GPRU portfolio-head V1 binding");
+  return {
+    successorPortfolioRoot: match[1]!.toLowerCase(),
+    successorBalancePoint: { x: match[2]!.toLowerCase(), y: match[3]!.toLowerCase() },
+    actionCommitment: match[4]!.toLowerCase(),
+  };
+}
+
+export function validateGpruBalanceActionRecordV1(value: unknown): GpruBalanceActionRecordV1 {
+  if (!value || typeof value !== "object") throw new Error("GPRU owner balance action record must be an object");
+  const record = value as Partial<GpruBalanceActionRecordV1>;
+  const expectedKeys = ["version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment", "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits", "balanceBlindingDelta"];
+  if (Object.keys(value).sort().join("|") !== expectedKeys.sort().join("|")) {
+    throw new Error("GPRU owner action record contains missing or unsupported fields");
+  }
+  if (record.version !== 1 || record.recordType !== "tsn-gpru-balance-action-v1") {
+    throw new Error("Unsupported GPRU owner balance action record");
+  }
+  if (!/^[1-9][0-9]*$/u.test(String(record.sequence))) throw new Error("GPRU action sequence must be a positive decimal integer");
+  if (!/^[0-9a-f]{64}$/u.test(String(record.previousMemoCommitment))) throw new Error("GPRU predecessor Memo commitment must be 32-byte lowercase hex");
+  if (!/^[0-9a-f]{64}$/u.test(String(record.actionCommitment))) throw new Error("GPRU action commitment must be 32-byte lowercase hex");
+  if (!/^[0-9a-f]{64}$/u.test(String(record.authorizationCommitment))) throw new Error("GPRU authorization commitment must be 32-byte lowercase hex");
+  if (!/^[0-9a-f]{64}$/u.test(String(record.nullifier))) throw new Error("GPRU nullifier must be 32-byte lowercase hex");
+  const bn254ScalarModulus = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+  if (BigInt(`0x${record.previousMemoCommitment}`) >= bn254ScalarModulus
+      || BigInt(`0x${record.actionCommitment}`) === 0n
+      || BigInt(`0x${record.actionCommitment}`) >= bn254ScalarModulus
+      || BigInt(`0x${record.authorizationCommitment}`) >= bn254ScalarModulus
+      || BigInt(`0x${record.nullifier}`) >= bn254ScalarModulus) {
+    throw new Error("GPRU Memo, action, authorization, and nullifier values must be canonical BN254 field elements");
+  }
+  if (![1, 2, 3].includes(Number(record.actionKind))) throw new Error("GPRU action kind must be credit (1), debit (2), or exit (3)");
+  if (!Number.isInteger(record.tokenId) || Number(record.tokenId) <= 0 || Number(record.tokenId) > 0xffff_ffff) {
+    throw new Error("GPRU action tokenId must be a positive u32");
+  }
+  if (!/^[1-9][0-9]*$/u.test(String(record.amountBaseUnits))) throw new Error("GPRU action amount must be a positive decimal integer");
+  if (!/^(0|[1-9][0-9]*)$/u.test(String(record.balanceBlindingDelta))) throw new Error("GPRU blinding delta must be a nonnegative decimal integer");
+  const sequence = BigInt(record.sequence!);
+  if (sequence > 0xffff_ffff_ffff_ffffn || BigInt(record.amountBaseUnits!) > 0xffff_ffff_ffff_ffffn) {
+    throw new Error("GPRU action sequence or amount exceeds u64");
+  }
+  const blind = BigInt(record.balanceBlindingDelta!);
+  const babyJubjubSuborder = 2736030358979909402780800718157159386076813972158567259200215660948447373041n;
+  if (blind === 0n || blind >= babyJubjubSuborder) throw new Error("GPRU blinding delta must be nonzero and inside the BabyJubjub scalar field");
+  const predecessor = record.previousMemoCommitment!.toLowerCase();
+  if ((sequence === 1n) !== (predecessor === "0".repeat(64))) {
+    throw new Error("First GPRU action must have no predecessor; later actions must name one");
+  }
+  return {
+    version: 1,
+    recordType: "tsn-gpru-balance-action-v1",
+    sequence: sequence.toString(),
+    previousMemoCommitment: predecessor,
+    actionCommitment: record.actionCommitment!.toLowerCase(),
+    authorizationCommitment: record.authorizationCommitment!.toLowerCase(),
+    nullifier: record.nullifier!.toLowerCase(),
+    actionKind: Number(record.actionKind) as 1 | 2 | 3,
+    tokenId: Number(record.tokenId),
+    amountBaseUnits: BigInt(record.amountBaseUnits!).toString(),
+    balanceBlindingDelta: blind.toString(),
+  };
+}
+
+/** Check the decrypted Memo record against the action values authenticated by the on-chain Groth16 statement. */
+export function assertGpruMemoActionMatchesProofV1(
+  record: GpruBalanceActionRecordV1,
+  proofAction: {
+    actionKind: 1 | 2 | 3;
+    tokenId: number;
+    amountBaseUnits: string;
+    actionCommitment: string;
+    authorizationCommitment: string;
+    nullifier: string;
+  },
+): void {
+  const validated = validateGpruBalanceActionRecordV1(record);
+  if (validated.actionKind !== proofAction.actionKind
+      || validated.tokenId !== proofAction.tokenId
+      || validated.amountBaseUnits !== BigInt(proofAction.amountBaseUnits).toString()
+      || validated.actionCommitment !== proofAction.actionCommitment.toLowerCase()
+      || validated.authorizationCommitment !== proofAction.authorizationCommitment.toLowerCase()
+      || validated.nullifier !== proofAction.nullifier.toLowerCase()) {
+    throw new Error("Decrypted GPRU Memo action does not match the on-chain proof statement");
+  }
+}
+
+export function decryptGpruLedgerMemoV1(params: {
   memoPayload: string;
   masterSeed: Uint8Array;
   gpruElgamalPublicKey: Uint8Array;
-}): T {
-  const prefix = /^TSN_GPRU_HEAD_V1:([0-9a-f]{64}):([0-9a-f]{64}):/iu;
-  const match = prefix.exec(params.memoPayload);
-  if (!match) throw new Error("Memo does not contain the GPRU hidden-head V1 binding");
+}): GpruBalanceActionRecordV1 {
+  parseGpruMemoBindingV1(params.memoPayload);
+  const match = MEMO_BINDING_PREFIX.exec(params.memoPayload)!;
   const ledgerPayload = params.memoPayload.slice(match[0].length);
   if (!/^[A-Za-z0-9_-]+$/u.test(ledgerPayload)) {
     throw new Error("GPRU Memo payload must be an unpadded Base64URL Ledger stream");
@@ -125,11 +234,18 @@ export function decryptGpruLedgerMemoV1<T = Record<string, unknown>>(params: {
     recordEphemeralPublicKey,
   });
   try {
-    return decrypt<T>(
+    const record = decrypt<unknown>(
       { data: envelope.data, nonce: envelope.nonce, ...(envelope.compression ? { compression: envelope.compression } : {}) } satisfies EncryptedData,
       key,
     );
+    const validated = validateGpruBalanceActionRecordV1(record);
+    const binding = parseGpruMemoBindingV1(params.memoPayload);
+    if (validated.actionCommitment !== binding.actionCommitment) {
+      throw new Error("Decrypted GPRU action commitment differs from the proof-bound Memo prefix");
+    }
+    return validated;
   } finally {
     key.fill(0);
   }
 }
+

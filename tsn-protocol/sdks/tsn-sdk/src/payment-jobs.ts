@@ -18,6 +18,7 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
   senderIdentity: string;
   receiverIdentity: string;
   tokenMintAddress: string;
+  tokenDecimals: number;
   amount: string | number;
   senderFeeAmount: number;
   totalTokenRequiredUi: number;
@@ -42,6 +43,7 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
     senderIdentity: params.senderIdentity,
     receiverIdentity: params.receiverIdentity,
     tokenMintAddress: params.tokenMintAddress,
+    tokenDecimals: params.tokenDecimals,
     amount: params.amount,
     senderFeeAmount: params.senderFeeAmount,
     totalTokenRequiredUi: params.totalTokenRequiredUi,

@@ -8,6 +8,11 @@ import {
   parseTokenAmountToBaseUnits,
   type VerifiedRecipientCredential,
 } from "./canonical-message.js";
+import type { Connection, PublicKey } from "@solana/web3.js";
+import {
+  GPRU_TCAP_PROGRAM_ID,
+  resolveTcapGpruDepositAccounts,
+} from "./tcap-gpru-credit.js";
 
 export function createSenderPaymentAuthorizationMessage(params: {
   senderWallet: string;
@@ -17,10 +22,11 @@ export function createSenderPaymentAuthorizationMessage(params: {
   recipientDisplayNameSource?: "owner-provided" | "not provided";
   recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[];
   tokenMintAddress: string;
+  /** Decimals from the active TCAP asset entry. */
+  tokenDecimals: number;
   amount: string | number;
   senderFeeAmount: string | number;
   totalTokenRequiredUi: number;
-  tokenDecimals?: number;
   nonce?: string;
   issuedAt: string;
   expiresAt?: string;
@@ -34,11 +40,13 @@ export function createSenderPaymentAuthorizationMessage(params: {
       "recipient TIN is required for canonical TSN payment authorization",
     );
   }
-  const decimals = params.tokenDecimals ?? 6;
+  const decimals = params.tokenDecimals;
   const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const feeBaseUnits = parseTokenAmountToBaseUnits(params.senderFeeAmount, decimals, { allowZero: true });
   return buildPaymentIntentMessage({
     amountBaseUnits,
+    tokenMintAddress: params.tokenMintAddress,
+    tokenDecimals: decimals,
     recipientTin,
     recipientDisplayName: params.recipientDisplayName,
     recipientDisplayNameSource: params.recipientDisplayNameSource,
@@ -71,10 +79,11 @@ export function createPaymentAuthorization(params: {
   recipientDisplayNameSource?: "owner-provided" | "not provided";
   recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[];
   tokenMintAddress: string;
+  /** Decimals from the active TCAP asset entry. */
+  tokenDecimals: number;
   amount: string | number;
   senderFeeAmount: string | number;
   totalTokenRequiredUi: number;
-  tokenDecimals?: number;
   nonce?: string;
   issuedAt?: string;
   expiresAt?: string;
@@ -83,8 +92,8 @@ export function createPaymentAuthorization(params: {
   const nonce = params.nonce ?? createPaymentAuthorizationNonce();
   const issuedAt = params.issuedAt ?? new Date().toISOString();
   const expiresAt = params.expiresAt ?? createPaymentAuthorizationExpiry();
-  const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, params.tokenDecimals ?? 6);
-  const feeBaseUnits = parseTokenAmountToBaseUnits(params.senderFeeAmount, params.tokenDecimals ?? 6, { allowZero: true });
+  const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, params.tokenDecimals);
+  const feeBaseUnits = parseTokenAmountToBaseUnits(params.senderFeeAmount, params.tokenDecimals, { allowZero: true });
   const message = createSenderPaymentAuthorizationMessage({
     ...params,
     nonce,
@@ -99,6 +108,37 @@ export function createPaymentAuthorization(params: {
     nonce,
     issuedAt,
     expiresAt,
+  };
+}
+
+/** Resolve the active TCAP asset first, then sign using its registered mint and decimals. */
+export async function createTcapAssetPaymentAuthorization(
+  params: Omit<Parameters<typeof createPaymentAuthorization>[0], "tokenMintAddress" | "tokenDecimals">
+    & { connection: Connection; depositor: PublicKey; mint: PublicKey; tcapProgramId?: PublicKey },
+) {
+  const mintAccount = await params.connection.getAccountInfo(params.mint, "confirmed");
+  if (!mintAccount) throw new Error("TOKEN_MINT_ACCOUNT_NOT_FOUND");
+  const tokenProgram = mintAccount.owner;
+  const asset = await resolveTcapGpruDepositAccounts(params.connection, {
+    depositor: params.depositor,
+    mint: params.mint,
+    tokenProgram,
+    tcapProgramId: params.tcapProgramId ?? GPRU_TCAP_PROGRAM_ID,
+  });
+  const authorization = createPaymentAuthorization({
+    ...params,
+    tokenMintAddress: params.mint.toBase58(),
+    tokenDecimals: asset.decimals,
+  });
+  return {
+    ...authorization,
+    asset: {
+      tokenId: asset.tokenId,
+      mint: params.mint.toBase58(),
+      tokenProgram: tokenProgram.toBase58(),
+      decimals: asset.decimals,
+      assetEntry: asset.assetEntry.toBase58(),
+    },
   };
 }
 
@@ -146,7 +186,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   recipientHash: string;
   recipientTin: string;
   tokenMintAddress: string;
-  tokenDecimals?: number;
+  tokenDecimals: number;
   senderWallet: string;
   senderAuthorizationMessage: string;
   senderAuthorizationSignature: string;
@@ -164,7 +204,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   recipientAmount?: number;
   source?: string;
 }): CreateIntentRequest {
-  const decimals = params.tokenDecimals ?? 6;
+  const decimals = params.tokenDecimals;
   const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const requestAmount = Number(params.amount);
   if (!Number.isFinite(requestAmount) || parseTokenAmountToBaseUnits(String(requestAmount), decimals) !== amountBaseUnits) {

@@ -9,13 +9,13 @@ This is an implementation guide for protocol developers. It describes how the hi
 
 ## What the prover and keys do
 
-The circuit defines the transition GPRU will accept. A proof generator receives the circuit's private witness and circuit-specific proving key, calculates the witness, and produces a succinct proof with eight public inputs. GPRU checks that proof using the matching verifying key installed in the global verifier account. TCAP calls GPRU before it advances the shared root and reserve liabilities.
+The circuit defines the transition GPRU will accept. A proof generator receives the circuit's private witness and circuit-specific proving key, calculates the witness, and produces a succinct proof with nine public inputs. GPRU checks that proof using the matching verifying key installed in the global verifier account. TCAP calls GPRU before it advances the shared root and reserve liabilities.
 
 Groth16 setup is circuit-specific. Compiling the Circom source produces an R1CS constraint system and a witness calculator. The Powers of Tau phase and circuit-specific phase produce the proving key and verifying key. Production setup must use a documented multi-party ceremony, verify contributions and the final zkey, and preserve public transcripts and artifact hashes. Keep setup secrets and private witness files out of source control. The proving key is not a user's private key, but must be integrity-controlled and matched to the deployed verifier key.
 
 ## Current status
 
-The circuit has been compiled locally with Circom 2.1.9 and `circomlib` 2.0.5. The compile reports 143,076 constraints, 143,346 wires, 308 private inputs, and 8 public inputs; generated output is ignored by Git. There are no setup keys, Rust point-encoding adapter, private witness provider, or working prover service. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; settlement remains disabled until these prerequisites and the complete proof path are verified.
+The circuit and public-input ABI changed to one hidden per-TIN head with a nested token commitment map. Previous compile counts and generated artifacts do not match the current source. Recompile the updated circuit before setup. Matching setup keys, a Rust point-encoding adapter, private witness provider, and working prover service are not established. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; settlement remains disabled until these prerequisites and the complete proof path are verified.
 
 ## Local circuit toolchain
 
@@ -27,11 +27,11 @@ npm run gpru:circuit:compile
 npm run gpru:circuit:info
 ```
 
-Record compiler/library versions, build command, source hashes, and constraint count. Do not begin a trusted setup until the public-input order, path depths, hash functions, Pedersen arithmetic, and Rust verifier encoding have been reviewed.
+Record compiler/library versions, build command, source hashes, and constraint count. Do not begin a trusted setup until the public-input order, path depths, hash functions, Pedersen arithmetic, Memo prefix, and Rust verifier encoding have been reviewed.
 
 ## Local-only setup and proof commands
 
-The following command shape is for development only. The current circuit fits power 18; use a coordinated multi-party ceremony for production:
+The following command shape is for development only. Choose the Powers of Tau power only after measuring the updated circuit; use a coordinated multi-party ceremony for production:
 
 ```sh
 snarkjs powersoftau new bn128 18 build/hidden_head_v1/pot_0000.ptau -v

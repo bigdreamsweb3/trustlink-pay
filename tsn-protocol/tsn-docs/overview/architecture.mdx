@@ -18,7 +18,7 @@ flowchart LR
     T -->|CPI| TCAP[TCAP: check asset, root, reserve, authorization]
     TCAP --> G[GPRU: verify hidden-head proof]
     TIP[TIP shared route root] --> G
-    M[Solana Memo: encrypted payload + successor point] --> G
+    M[Solana Memo: encrypted action + portfolio root + balance point + action commitment] --> G
     G -->|valid proof| TCAP
     TCAP -->|atomic state update| T
 ```
@@ -35,7 +35,7 @@ The proof uses the protocol-wide TIP route root and hides the selected route/hea
 
 ## Prover and circuit status
 
-The Circom source declares eight public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, and successor balance point X/Y. Its private witness covers TIP route membership, hidden per-route-and-asset head progression, nullifier-map paths, and balance openings. Credit addition and debit/exit arithmetic are represented in the circuit source, but it is not compiled or reviewed. The repository has no generated proving/verifying keys, validated key converter, witness provider, initialized verifier account, or end-to-end proof evidence. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
+The updated Circom source declares nine public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, and successor balance point X/Y. Its private witness covers TIP route membership, one hidden per-TIN outer head, a nested per-token commitment map, nullifier-map paths, and balance openings. The balance state uses Pedersen commitments; the DBrix Memo body carries an owner-encrypted action record for recovery. The circuit has not been recompiled or reviewed after this change. Matching proving/verifying keys, a validated key converter, witness provider, initialized verifier account, and end-to-end proof evidence are not established. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
 
 All transitions write the same TCAP root account. That common writable account and the public action fields, nullifier, roots, Memo commitment, route root, successor point, timing, and transaction accounts expose protocol-level linkage. The design is not zero-linkability.
 

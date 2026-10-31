@@ -5,13 +5,13 @@ description: "The hidden-head proof contract, its public inputs, and the prover 
 
 # GPRU hidden heads
 
-GPRU verifies a proof that a private TIP route and per-asset head are current, that the head advances to a Memo-bound successor, and that a one-time nullifier is inserted. TCAP remains the reserve and liability authority. Its single shared root is updated atomically with a settlement; this design does not create a per-TIN TCAP tip PDA.
+GPRU verifies a proof that a private TIP route and per-TIN portfolio head are current, that the selected token commitment advances to a Memo-bound successor, and that a one-time nullifier is inserted. TCAP remains the reserve and liability authority. Its single shared root is updated atomically with a settlement; this design does not create a per-TIN TCAP tip PDA.
 
 ## Proof interface in source
 
-The Circom circuit declares eight Groth16 public inputs in fixed order: old TCAP root, new TCAP root, Memo commitment, action commitment, nullifier, TIP route root, successor balance-point X, and successor balance-point Y. The private witness includes TIP membership, the hidden route/asset head and sequence, sparse-map paths, and the previous nullifier state.
+The updated Circom circuit declares nine Groth16 public inputs in fixed order: old TCAP root, new TCAP root, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, successor balance-point X, and successor balance-point Y. The private witness includes TIP membership, one hidden route head and sequence, the nested per-token map path, and the previous nullifier state.
 
-The circuit source expresses credit Pedersen-point addition and debit/exit balance-opening constraints. Those constraints have not yet been compiled, independently reviewed, or validated against generated proofs. The ABI exposes action kind, token ID, amount, nullifier, roots, Memo commitment, TIP route root, and successor point; transactions also expose account keys, timing, and Memo bytes. The design hides the selected route/head witness, not every transaction pattern.
+The circuit uses Pedersen commitments for token balance state. These are homomorphic commitments, not encrypted balances. The Memo prefix carries the successor portfolio root, selected-token point, and action commitment; the body carries an owner-encrypted action record for local balance recovery. The owner decrypts and replays the actions. The updated constraints have not yet been recompiled, independently reviewed, or validated against generated proofs. The ABI exposes action kind, token ID, amount, nullifier, roots, Memo commitment, TIP route root, and successor root/point; transactions also expose account keys, timing, and Memo bytes. The design hides the selected route/head witness, not every transaction pattern.
 
 ## Prover and setup artifacts
 

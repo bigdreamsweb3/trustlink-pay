@@ -14,7 +14,7 @@ The shared TCAP root is global and public. The proof is intended to show that th
 
 ## Hidden-head source checks
 
-GPRU source has a Groth16 verifier for a circuit that represents TIP route membership, hidden per-route-and-asset head advancement, Memo/action binding, nullifier non-membership, and balance-point arithmetic. The TSN/TCAP credit ABI carries the proof and TCAP calls the verifier before mutation. The circuit and proving workflow are not established as compiled, setup, initialized, or end-to-end verified; Node settlement authorization currently fails closed.
+GPRU source has a Groth16 verifier for a circuit that represents TIP route membership, one hidden per-TIN head, a nested token commitment update, Memo/action binding, nullifier non-membership, and Pedersen balance arithmetic. The TSN/TCAP credit ABI carries the proof and TCAP calls the verifier before mutation. The updated circuit and proving workflow are not established as recompiled, setup, initialized, or end-to-end verified; Node settlement authorization currently fails closed.
 
 The circuit source includes Pedersen balance addition for credit and private balance opening/subtraction constraints for debit and exit. These constraints are unverified. TCAP handles reserve solvency; debit and exit remain disabled until the full path is connected and verified. The ABI explicitly carries action kind, token ID, and amount. All transitions use the same writable TCAP root and expose global ordering; they are not zero-linkable.
 

@@ -4,17 +4,13 @@ use anchor_lang::prelude::*;
 use solana_program::hash::hashv;
 
 use crate::stealth_keys::{verify_node_dna_key_proof_v1, DnaKeyDerivationProofV1};
-use crate::{balance, ApplyCreditTransitionArgsV1, ApplyCreditTransitionV1};
 
 const TIP_PROGRAM_ID: Pubkey = pubkey!("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
-const TCAP_PROGRAM_ID: Pubkey = pubkey!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
-const TCAP_COMMITMENT_ROOT_SEED: &[u8] = b"tcap:commitment-root:v1";
 const TIN_V1_SEED: &[u8] = b"tin-v1";
 const TIN_V1_ACCOUNT_VERSION: u8 = 1;
 const ACTIVE_TIN_STATUS: u8 = 1;
 const TIP_ROUTE_VERSION_V1: u8 = 1;
 const GPRU_ELGAMAL_KEY_VERSION_V1: u8 = 1;
-const TSN_PROGRAM_ID: Pubkey = pubkey!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct DnaKeyProofV1 {
@@ -32,20 +28,6 @@ pub enum GpruProgramError {
     InvalidTipRegistry,
     #[msg("The TIP registry GPRU scan key commitment is invalid")]
     InvalidTipGpruKey,
-    #[msg("The balance transition is not authorized by the TSN settlement instruction")]
-    InvalidTsnCaller,
-    #[msg("The encrypted balance predecessor or sequence is invalid")]
-    InvalidBalancePredecessor,
-    #[msg("The encrypted balance transition is invalid")]
-    InvalidBalanceTransition,
-    #[msg("The first encrypted balance is not a valid encryption of the authorized amount")]
-    InvalidInitialBalanceProof,
-}
-
-struct TipRouteV1 {
-    scan_public_key: [u8; 32],
-    key_commitment: [u8; 32],
-    policy_commitment: [u8; 32],
 }
 
 struct TinDataCursor<'a> {
@@ -89,7 +71,7 @@ impl<'a> TinDataCursor<'a> {
 /// Read and authenticate the stable GPRU scan key directly from TIP state.
 /// The caller cannot substitute an arbitrary scan key for the route registered
 /// in the account, and a differently encoded account cannot pass as TIN V1.
-fn validate_tip_registry(tip_registry: &UncheckedAccount) -> Result<TipRouteV1> {
+fn validate_tip_registry(tip_registry: &UncheckedAccount) -> Result<[u8; 32]> {
     require_keys_eq!(
         *tip_registry.owner,
         TIP_PROGRAM_ID,
@@ -166,11 +148,7 @@ fn validate_tip_registry(tip_registry: &UncheckedAccount) -> Result<TipRouteV1> 
         GpruProgramError::InvalidTipGpruKey,
     );
 
-    Ok(TipRouteV1 {
-        scan_public_key,
-        key_commitment,
-        policy_commitment,
-    })
+    Ok(scan_public_key)
 }
 
 pub fn verify_dna_key_proof_v1(
@@ -180,7 +158,7 @@ pub fn verify_dna_key_proof_v1(
     one_time_public_key: [u8; 32],
     proof: DnaKeyProofV1,
 ) -> Result<()> {
-    let scan_public_key = validate_tip_registry(tip_registry)?.scan_public_key;
+    let scan_public_key = validate_tip_registry(tip_registry)?;
     let proof = DnaKeyDerivationProofV1 {
         shared_point: proof.shared_point,
         generator_commitment: proof.generator_commitment,
@@ -198,137 +176,5 @@ pub fn verify_dna_key_proof_v1(
     .map_err(|_| error!(GpruProgramError::InvalidDnaKeyProof))?;
 
     msg!("GPRU DNA ElGamal derivation proof verified");
-    Ok(())
-}
-
-pub fn apply_credit_transition_v1(
-    ctx: Context<ApplyCreditTransitionV1>,
-    args: ApplyCreditTransitionArgsV1,
-) -> Result<()> {
-    require_keys_eq!(
-        *ctx.accounts.instructions.key,
-        solana_program::sysvar::instructions::ID,
-        GpruProgramError::InvalidTsnCaller,
-    );
-    let current_index = solana_program::sysvar::instructions::load_current_index_checked(
-        &ctx.accounts.instructions.to_account_info(),
-    )?;
-    let top_level = solana_program::sysvar::instructions::load_instruction_at_checked(
-        current_index as usize,
-        &ctx.accounts.instructions.to_account_info(),
-    )?;
-    require_keys_eq!(
-        top_level.program_id,
-        TSN_PROGRAM_ID,
-        GpruProgramError::InvalidTsnCaller
-    );
-    let memo_instruction = solana_program::sysvar::instructions::load_instruction_at_checked(
-        current_index as usize + 1,
-        &ctx.accounts.instructions.to_account_info(),
-    )?;
-    let memo_program_id = pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
-    require_keys_eq!(memo_instruction.program_id, memo_program_id, GpruProgramError::InvalidTsnCaller);
-    require!(
-        args.amount > 0 && args.token_id > 0 && args.sequence > 0,
-        GpruProgramError::InvalidBalanceTransition
-    );
-    require!(
-        args.policy_commitment != [0; 32]
-            && args.previous_commitment != [0; 32]
-            && args.new_commitment != [0; 32]
-            && args.memo_commitment != [0; 32]
-            && args.nullifier != [0; 32]
-            && args.authorization_digest != [0; 32],
-        GpruProgramError::InvalidBalanceTransition
-    );
-
-    let route = validate_tip_registry(&ctx.accounts.tip_registry)?;
-    require!(
-        hashv(&[&memo_instruction.data]).to_bytes() == args.memo_commitment,
-        GpruProgramError::InvalidBalanceTransition
-    );
-    require!(
-        args.policy_commitment == route.policy_commitment,
-        GpruProgramError::InvalidTipGpruKey
-    );
-    require_keys_eq!(*ctx.accounts.commitment_root.owner, TCAP_PROGRAM_ID, GpruProgramError::InvalidBalancePredecessor);
-    let (expected_root, _) = Pubkey::find_program_address(&[TCAP_COMMITMENT_ROOT_SEED], &TCAP_PROGRAM_ID);
-    require_keys_eq!(expected_root, ctx.accounts.commitment_root.key(), GpruProgramError::InvalidBalancePredecessor);
-    let root_data = ctx.accounts.commitment_root.try_borrow_data()?;
-    let expected_root_discriminator = hashv(&[b"account:TcapCommitmentRootStateV1"]).to_bytes();
-    require!(root_data.len() == 124 && root_data[..8] == expected_root_discriminator[..8], GpruProgramError::InvalidBalancePredecessor);
-    let root = &root_data[8..];
-    let root_version = u16::from_le_bytes(root[0..2].try_into().map_err(|_| GpruProgramError::InvalidBalancePredecessor)?);
-    let current_root: [u8; 32] = root[4..36].try_into().map_err(|_| GpruProgramError::InvalidBalancePredecessor)?;
-    let current_root_sequence = u64::from_le_bytes(root[72..80].try_into().map_err(|_| GpruProgramError::InvalidBalancePredecessor)?);
-    let paused = root[114] != 0;
-    require!(root_version == 1 && !paused, GpruProgramError::InvalidBalancePredecessor);
-    require!(
-        args.previous_tcap_root == current_root
-            && args.tcap_root_sequence == current_root_sequence.checked_add(1).ok_or(GpruProgramError::InvalidBalancePredecessor)?,
-        GpruProgramError::InvalidBalancePredecessor
-    );
-    let is_first = args.sequence == 1;
-    let next_ciphertext = if is_first {
-        require!(
-            args.previous_commitment == route.key_commitment
-                && args.previous_balance_ciphertext == [0; 64],
-            GpruProgramError::InvalidBalancePredecessor
-        );
-        balance::verify_initial_balance_v1(
-            &route.scan_public_key,
-            args.amount,
-            &args.balance_ciphertext,
-            &balance::InitialBalanceProofV1 {
-                generator_commitment: args.initial_proof.generator_commitment,
-                key_commitment: args.initial_proof.key_commitment,
-                response: args.initial_proof.response,
-            },
-        )
-        .map_err(|_| error!(GpruProgramError::InvalidInitialBalanceProof))?;
-        require!(args.initial_ciphertext == args.balance_ciphertext, GpruProgramError::InvalidBalanceTransition);
-        args.balance_ciphertext
-    } else {
-        require!(
-            args.sequence > 1,
-            GpruProgramError::InvalidBalancePredecessor
-        );
-        let expected_predecessor = hashv(&[
-            b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0",
-            &route.key_commitment,
-            &args.token_id.to_le_bytes(),
-            &args.previous_balance_ciphertext,
-            &(args.sequence - 1).to_le_bytes(),
-            &args.policy_commitment,
-        ]).to_bytes();
-        require!(expected_predecessor == args.previous_commitment, GpruProgramError::InvalidBalancePredecessor);
-        require!(
-            args.initial_ciphertext == [0; 64]
-                && args.initial_proof.generator_commitment == [0; 32]
-                && args.initial_proof.key_commitment == [0; 32]
-                && args.initial_proof.response == [0; 32],
-            GpruProgramError::InvalidBalanceTransition
-        );
-        let expected = balance::add_credit_v1(&args.previous_balance_ciphertext, args.amount)
-            .map_err(|_| error!(GpruProgramError::InvalidBalanceTransition))?;
-        require!(args.balance_ciphertext == expected, GpruProgramError::InvalidBalanceTransition);
-        expected
-    };
-    let commitment = hashv(&[
-        b"TSN_GPRU_ELGAMAL_BALANCE_HEAD_V1\0",
-        &route.key_commitment,
-        &args.token_id.to_le_bytes(),
-        &next_ciphertext,
-        &args.sequence.to_le_bytes(),
-        &args.policy_commitment,
-    ]).to_bytes();
-    require!(
-        commitment == args.new_commitment,
-        GpruProgramError::InvalidBalanceTransition
-    );
-    msg!(
-        "GPRU validated TCAP encrypted credit successor; sequence={}",
-        args.sequence
-    );
     Ok(())
 }

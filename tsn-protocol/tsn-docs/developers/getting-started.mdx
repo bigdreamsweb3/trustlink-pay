@@ -92,21 +92,25 @@ clients or construct raw settlement instructions.
     The signed message binds the sender, recipient TIN and resolved display identity, amount, fee, nonce, expiry, and the TCAP deposit funding mode. The recipient route commitment is not supplied by the sender; Node resolves and verifies it from the current TIN V1 account.
 
     ```ts title="Build and sign the canonical authorization"
-    import { createPaymentAuthorization } from "@trustlink/tsn-sdk";
+    import { Connection, PublicKey } from "@solana/web3.js";
+    import { createTcapAssetPaymentAuthorization } from "@trustlink/tsn-sdk";
 
-    const authorization = createPaymentAuthorization({
+    const authorization = await createTcapAssetPaymentAuthorization({
+      connection: new Connection(rpcUrl, "confirmed"),
+      depositor: new PublicKey(senderWallet),
+      mint: new PublicKey(tokenMintAddress),
       senderWallet,
       senderIdentity: senderWallet,
       receiverIdentity: `tin:${recipientTin}`,
       recipientDisplayName: recipient.displayName,
       recipientDisplayNameSource: recipient.displayNameSource,
       recipientVerifiedCredentials: recipient.verifiedCredentials,
-      tokenMintAddress,
       amount,
       senderFeeAmount,
       totalTokenRequiredUi: amount + senderFeeAmount,
       fundingMode: "tcap_deposit_v2",
     });
+    // `authorization.asset` contains this active TCAP token's ID, mint, program, and decimals.
     const signature = await wallet.signMessage(
       new TextEncoder().encode(authorization.message),
     );
@@ -128,7 +132,8 @@ clients or construct raw settlement instructions.
       paymentId,
       recipientHash: recipientTin,
       recipientTin,
-      tokenMintAddress,
+      tokenMintAddress: authorization.asset.mint,
+      tokenDecimals: authorization.asset.decimals,
       senderWallet,
       senderAuthorizationMessage: authorization.message,
       senderAuthorizationSignature: Buffer.from(signature).toString("base64"),

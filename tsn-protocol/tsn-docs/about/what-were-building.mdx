@@ -8,9 +8,9 @@ TrustLink Labs builds open infrastructure for stablecoin payments. The current s
 
 ## Concrete artifacts
 
-### TSN protocol
+### TSNP on-chain protocol
 
-The Transfer Settlement Network is the coordination layer for payments. It includes:
+TSNP (Transfer Settlement Network Protocol) is the on-chain settlement protocol program within TSN (Transfer Settlement Network), the complete infrastructure. The TSN infrastructure includes:
 
 - Solana programs for intent acceptance, epoch treasury, and settlement enforcement.
 - TSN Receiver for durable ingress, work storage, and short leases.
@@ -23,7 +23,7 @@ The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A 
 
 ### GPRU authorization and routing
 
-GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and a Groth16 hidden-head verifier. The TSN/TCAP credit ABI carries the proof, but Node currently fails closed because no compiled circuit, key setup, witness source, or prover service is configured.
+GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and a Groth16 hidden-head verifier. A local circuit build exists, but Node currently fails closed because no trusted proving-key configuration, authenticated-map witness source, or proof-generation service is configured.
 
 ### TCAP
 

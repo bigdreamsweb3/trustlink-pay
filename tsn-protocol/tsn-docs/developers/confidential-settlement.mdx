@@ -20,7 +20,7 @@ The funding-derived commitment binds authorization to the source funding transac
 
 ## Hidden-head instruction status
 
-The TSN and TCAP source ABI carries the proof and TCAP calls the GPRU verifier. The circuit source has eight public inputs and includes Pedersen balance transition constraints, but the circuit has not been compiled or reviewed. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; generated proving/verifying keys, the key conversion adapter, witness source, initialized verifier account, and end-to-end proof execution are not established. Debit and exit remain disabled until their complete paths are verified.
+The TSN and TCAP source ABI carries the proof and TCAP calls the GPRU verifier. The updated circuit has nine public inputs and includes nested portfolio-root and Pedersen balance-transition constraints, but it has not been recompiled or reviewed. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; matching proving/verifying keys, the key conversion adapter, witness source, initialized verifier account, and end-to-end proof execution are not established. Debit and exit remain disabled until their complete paths are verified.
 
 ## Lifecycle evidence
 

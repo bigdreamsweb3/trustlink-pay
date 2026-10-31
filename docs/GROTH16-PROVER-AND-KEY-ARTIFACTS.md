@@ -1,10 +1,10 @@
 # GPRU Groth16 prover and key artifacts
 
-This guide explains the proof-generation component used by GPRU's hidden-head V1 contract. The current circuit source has been compiled locally with Circom 2.1.9 and `circomlib` 2.0.5; the generated output is ignored by Git. The repository does not contain production proving/verifying keys, a witness provider, a prover service, or a verified deployment of the verifier configuration. The Node settlement authorization endpoint therefore fails closed.
+This guide explains the proof-generation component used by GPRU's hidden-head V1 contract. The circuit and public-input ABI were recently changed to a single hidden per-TIN head with a nested token commitment map. Previously generated circuit artifacts do not match this source and must be regenerated. The repository does not contain production proving/verifying keys, a witness provider, a prover service, or a verified deployment of the verifier configuration. The Node settlement authorization endpoint therefore fails closed.
 
 ## What the prover does
 
-The circuit defines the exact statement that GPRU accepts. For one balance-changing action, a prover supplies private witness data for TIP route membership, the current hidden TIN-and-asset head, predecessor sequence and memo/action commitments, sparse-map paths, and the nullifier's unused path. The circuit checks the transition and emits a Groth16 proof plus eight public inputs. It does not reveal the private route or head witness.
+The circuit defines the exact statement that GPRU accepts. For one balance-changing action, a prover supplies private witness data for TIP route membership, the current hidden per-TIN head, predecessor sequence and Memo/action commitments, the predecessor portfolio root, the selected-token path, and the nullifier's unused path. The circuit checks the transition and emits a Groth16 proof plus nine public inputs. It does not reveal the private route or head witness.
 
 The prover is an off-chain program or service. It receives a valid witness and the circuit-specific proving key, computes the witness, and creates the proof. It cannot make an invalid transition pass: GPRU checks the proof against the verifying key stored in its global verifier PDA, and TCAP invokes that check before changing its shared root or reserve liabilities. If verification or any later TCAP condition fails, Solana rolls back the whole instruction transaction.
 
@@ -20,10 +20,11 @@ The order is fixed by `main.circom`, GPRU, TSN, and TCAP. Every proof producer a
 4. `actionCommitment` — Poseidon commitment to action kind, token ID, amount, authorization commitment, and nullifier.
 5. `nullifier` — one-time public value used to prevent reuse of this action.
 6. `tipRouteRoot` — the current shared TIP route-membership root.
-7. `successorBalanceX` — X coordinate of the successor Pedersen balance commitment.
-8. `successorBalanceY` — Y coordinate of the successor Pedersen balance commitment.
+7. `successorPortfolioRoot` — updated root of the hidden per-TIN token commitment map.
+8. `successorBalanceX` — X coordinate of the selected token's successor Pedersen commitment.
+9. `successorBalanceY` — Y coordinate of the selected token's successor Pedersen commitment.
 
-The GPRU verifier also checks that inputs 0 and 5 match the canonical TCAP and TIP accounts, inputs 2 and 6–7 match the Memo instruction, and input 3 matches the action fields passed by the caller. The Rust verifier expects canonical 32-byte big-endian BN254 scalar encodings. A producer must not reorder, truncate, or reinterpret these values.
+The Memo prefix is `TSN_GPRU_HEAD_V1:<successorPortfolioRoot>:<successorBalanceX>:<successorBalanceY>:<actionCommitment>:` followed by the DBrix Ledger stream. GPRU checks the prefix against public inputs 7, 8, 9, and 4 respectively, hashes the complete Memo for input 3, checks inputs 1 and 6 against canonical TCAP and TIP accounts, and recomputes input 4 from action fields. The Rust verifier expects canonical 32-byte big-endian BN254 scalar encodings. A producer must not reorder, truncate, or reinterpret these values.
 
 ## Proving and verifying keys
 
@@ -35,8 +36,8 @@ The setup has toxic-waste risk: if all setup contributors retain or collude arou
 
 Use a pinned Circom compiler, pinned `circomlib`, and pinned `snarkjs` version. The required pipeline is:
 
-1. Compile `tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom` to R1CS, witness-calculator output, and symbols. The current local compile reports 143,076 constraints, 143,346 wires, 308 private inputs, and 8 public inputs. Record compiler/library versions, build command, source hashes, and constraint count for every setup.
-2. Review the circuit constraints and public-input order. Confirm that the Rust verifier's eight-input layout and the generated verification key's input count match.
+1. Compile `tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom` to R1CS, witness-calculator output, and symbols. Record the compiler/library versions, build command, source hashes, and measured constraint count for this updated source; older metrics are stale.
+2. Review the circuit constraints and public-input order. Confirm that the Rust verifier's nine-input layout and the generated verification key's input count match.
 3. Run the Powers of Tau and circuit-specific setup. Preserve the public ceremony transcript and contribution verification output; securely discard contributor secret randomness.
 4. Verify the final zkey against the exact R1CS and Powers of Tau artifact, then export the verification key. Record hashes for the final R1CS, WASM, zkey, and verification-key file.
 5. Convert the exported verification key into the exact fixed-width G1/G2 byte encoding expected by `InitializeHiddenHeadVerifierArgsV1`. This adapter must be checked against the `groth16-solana` verifier's point format and proof serialization before any on-chain initialization. The repository does not yet provide this validated converter.
@@ -101,7 +102,7 @@ sequenceDiagram
     participant T as TCAP program
     participant G as GPRU verifier
     N->>P: public action + private route/head witness + memo bytes
-    P-->>N: proof + 8 ordered public inputs
+    P-->>N: proof + 9 ordered public inputs
     N->>C: Mother-authorized transition + proof (only after validation)
     C->>S: exact authorized transaction + Memo instruction
     S->>T: CPI with action, shared-root predecessor, proof

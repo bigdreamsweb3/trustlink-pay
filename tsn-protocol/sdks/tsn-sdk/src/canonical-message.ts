@@ -12,7 +12,6 @@ export const TSN_CANONICAL_DOMAIN_HASH = bytesToHex(
   sha256(utf8ToBytes("trustlink-pay:tsn:canonical-signing:v1")),
 );
 export const TSN_CANONICAL_DOMAIN_DISPLAY = `...${TSN_CANONICAL_DOMAIN_HASH.slice(-8)}`;
-const USDC_DECIMALS = 6n;
 
 /** Convert a human token amount to integer base units without floating-point rounding. */
 export function parseTokenAmountToBaseUnits(
@@ -128,14 +127,35 @@ function parseExpiry(value: string) {
   return date;
 }
 
-function parseUsdc(value: string, label: string) {
-  const match = value.match(/^(\d+)(?:\.(\d{1,6}))? USDC$/);
+function parseTokenAmount(value: string, label: string, decimals: number) {
+  const amountPattern = decimals === 0
+    ? /^(\d+)$/
+    : new RegExp(`^(\\d+)(?:\\.(\\d{1,${decimals}}))?$`);
+  const match = value.match(amountPattern);
   if (!match) {
-    throw new CanonicalMessageError(`${label} must be a decimal USDC amount`);
+    throw new CanonicalMessageError(`${label} must be a decimal token amount with at most ${decimals} fractional digits`);
   }
   const whole = BigInt(match[1]);
-  const fractional = BigInt((match[2] ?? "").padEnd(Number(USDC_DECIMALS), "0"));
-  return whole * 1_000_000n + fractional;
+  const scale = 10n ** BigInt(decimals);
+  const fractional = BigInt((match[2] ?? "").padEnd(decimals, "0") || "0");
+  return whole * scale + fractional;
+}
+
+function formatTokenBaseUnits(baseUnits: bigint, decimals: number) {
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
+    throw new CanonicalMessageError("Token decimals must be an integer from 0 through 18");
+  }
+  const scale = 10n ** BigInt(decimals);
+  const whole = baseUnits / scale;
+  if (decimals === 0) return whole.toString();
+  const fraction = (baseUnits % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return `${whole.toString()}${fraction ? `.${fraction}` : ".00"}`;
+}
+
+function parseUsdc(value: string, label: string) {
+  const match = value.match(/^(\d+)(?:\.(\d{1,6}))? USDC$/);
+  if (!match) throw new CanonicalMessageError(`${label} must be a decimal USDC amount`);
+  return BigInt(match[1]!) * 1_000_000n + BigInt((match[2] ?? "").padEnd(6, "0") || "0");
 }
 
 function formatUsdcBaseUnits(baseUnits: bigint) {
@@ -190,6 +210,8 @@ function canonicalDisplayName(value: string | undefined) {
 
 export function buildPaymentIntentMessage(params: {
   amountBaseUnits: bigint | string | number;
+  tokenMintAddress: string;
+  tokenDecimals: number;
   recipientTin: string;
   recipientDisplayName?: string;
   recipientDisplayNameSource?: "owner-provided" | "not provided";
@@ -199,13 +221,17 @@ export function buildPaymentIntentMessage(params: {
   nonce: string;
   expires: string | Date;
 }) {
+  const decimals = params.tokenDecimals;
+  if (!params.tokenMintAddress.trim()) throw new CanonicalMessageError("Token Mint is required");
   return buildMessage("Payment Intent", [
-    ["Amount", formatUsdcBaseUnits(BigInt(params.amountBaseUnits))],
+    ["Token Mint", params.tokenMintAddress.trim()],
+    ["Token Decimals", decimals],
+    ["Amount", formatTokenBaseUnits(BigInt(params.amountBaseUnits), decimals)],
     ["Recipient TIN", parseTin(params.recipientTin, "Recipient TIN")],
     ["Recipient Display Name", canonicalDisplayName(params.recipientDisplayName)],
     ["Recipient Display Name Source", params.recipientDisplayName?.trim() ? (params.recipientDisplayNameSource ?? "owner-provided") : "not provided"],
     ["Recipient Verified Credentials", canonicalRecipientCredentials(params.recipientVerifiedCredentials)],
-    ["Fee", formatUsdcBaseUnits(BigInt(params.feeBaseUnits))],
+    ["Fee", formatTokenBaseUnits(BigInt(params.feeBaseUnits), decimals)],
     ["Sender", params.sender],
     ["Nonce", params.nonce],
     ["Expires", params.expires instanceof Date ? params.expires : new Date(params.expires)],
@@ -214,13 +240,19 @@ export function buildPaymentIntentMessage(params: {
 
 export function parsePaymentIntentMessage(message: string) {
   const fields = parseMessage(message, "Payment Intent");
+  const tokenDecimals = Number(requireField(fields, "Token Decimals"));
+  if (!Number.isInteger(tokenDecimals) || tokenDecimals < 0 || tokenDecimals > 18) {
+    throw new CanonicalMessageError("Token Decimals must be an integer from 0 through 18");
+  }
   return {
-    amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
+    tokenMintAddress: requireField(fields, "Token Mint"),
+    tokenDecimals,
+    amountBaseUnits: parseTokenAmount(requireField(fields, "Amount"), "Amount", tokenDecimals),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
     recipientDisplayName: requireField(fields, "Recipient Display Name"),
     recipientDisplayNameSource: requireField(fields, "Recipient Display Name Source"),
     recipientVerifiedCredentials: JSON.parse(requireField(fields, "Recipient Verified Credentials")) as VerifiedRecipientCredential[],
-    feeBaseUnits: parseUsdc(requireField(fields, "Fee"), "Fee"),
+    feeBaseUnits: parseTokenAmount(requireField(fields, "Fee"), "Fee", tokenDecimals),
     sender: requireField(fields, "Sender"),
     nonce: requireField(fields, "Nonce"),
     expires: parseExpiry(requireField(fields, "Expires")),

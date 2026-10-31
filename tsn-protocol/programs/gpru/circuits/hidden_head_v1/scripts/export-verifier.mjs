@@ -37,8 +37,8 @@ function digest(parts) {
   return hash.digest();
 }
 
-if (!Array.isArray(vk.IC) || vk.IC.length !== 9) {
-  throw new Error(`Expected 9 IC points (constant + 8 public inputs), got ${vk.IC?.length ?? "none"}`);
+if (!Array.isArray(vk.IC) || vk.IC.length !== 10) {
+  throw new Error(`Expected 10 IC points (constant + 9 public inputs), got ${vk.IC?.length ?? "none"}`);
 }
 const alpha = g1(vk.vk_alpha_1, "vk_alpha_1");
 const beta = g2(vk.vk_beta_2, "vk_beta_2");
@@ -65,7 +65,7 @@ const args = {
   gamma_g2: bytes(gamma),
   delta_g2: bytes(delta),
   ic: ic.map(bytes),
-  public_input_count: 8,
+  public_input_count: 9,
 };
 for (const [name, value, length] of [["alpha_g1", alpha, 64], ["beta_g2", beta, 128], ["gamma_g2", gamma, 128], ["delta_g2", delta, 128]]) {
   if (value.length !== length) throw new Error(`${name} encoded to ${value.length} bytes, expected ${length}`);
@@ -74,4 +74,4 @@ await writeFile(outputPath, `${JSON.stringify(args, null, 2)}\n`, { flag: "wx" }
 console.log(`Wrote ${outputPath}`);
 console.log(`Circuit commitment: ${circuitCommitment.toString("hex")}`);
 console.log(`Verifying-key commitment: ${vkCommitment.toString("hex")}`);
-console.log("Encoded 9 IC points for the GPRU V1 verifier initializer.");
+console.log("Encoded 10 IC points for the GPRU V1 verifier initializer.");

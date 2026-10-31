@@ -13,7 +13,7 @@ const AUTHORIZATION_DOMAIN: &[u8] = b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct HiddenHeadProofArgsV1 {
-    pub public_inputs: [[u8; 32]; 8],
+    pub public_inputs: [[u8; 32]; 9],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],

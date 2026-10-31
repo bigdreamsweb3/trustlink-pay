@@ -1,4 +1,4 @@
-# TSN protocol architecture
+# TSN infrastructure architecture
 
 > **Scope note:** this runbook describes the separate epoch-treasury/opaque-slot payout and refund instruction family. It is not the current wallet-to-TIN GPRU/TCAP credit flow. See [Current architecture](./CURRENT-ARCHITECTURE.md) for that path.
 
@@ -10,7 +10,7 @@
 | Receiver | Authenticated ingress and opaque work leases. It stores only an allowlisted public coordination record. It has no public settlement or refund ingress. |
 | Node/Mother | Verifies funding and recipient authorization, stores the encrypted binding, derives the keyed slot, and signs short-lived DNA permits. |
 | Cranker | Uses the permit to submit the TSN settlement transaction. It cannot choose a source account, payment record, recipient binding, amount, or reimbursement destination. |
-| TSN program | Owns epoch treasury/ledger state, validates Mother-rooted permits, consumes slots/nullifiers, pays recipients, reimburses the exact vault, and processes refunds. |
+| TSNP program | Owns epoch treasury/ledger state, validates Mother-rooted permits, consumes slots/nullifiers, pays recipients, reimburses the exact vault, and processes refunds. |
 
 ## Lifecycle
 

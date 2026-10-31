@@ -4,7 +4,7 @@ sidebarTitle: "Mother Authority"
 description: "Learn how Mother Escrow coordinates epochs, materializes the one-time SettlementDna PDA, and enforces atomic settlement or refund through opaque slots."
 ---
 
-Mother Escrow is the TSN authority boundary for epoch coordination and ConfidentialSettlement authorization. It does not hold user balances or act as a payment escrow. Instead, it materializes a one-time SettlementDna PDA at a derived opaque slot, and the TSN program consumes that PDA on the first valid settlement or refund.
+Mother Escrow is the TSN authority boundary for epoch coordination and ConfidentialSettlement authorization. It does not hold user balances or act as a payment escrow. Instead, it materializes a one-time SettlementDna PDA at a derived opaque slot, and the TSNP program consumes that PDA on the first valid settlement or refund.
 
 > This page covers the epoch/opaque-slot instruction family. The current wallet-to-TIN credit call uses Mother authorization with GPRU validation and a TCAP shared-root transition; it does not use the `SettlementDna` or `EpochClaimSlot` as a per-TIN balance record.
 
@@ -18,7 +18,7 @@ For a confirmed intent, the Node derives an opaque deterministic slot with HMAC-
 
 Mother authority materializes the one-time `SettlementDna` PDA at the derived opaque slot. The lease version is stored inside the PDA and in every permit, so there can be only one live DNA for a slot at a time. An active DNA can be replaced only after its lease expires. A consumed DNA can never be replaced.
 
-The PDA is an on-chain voucher. It is not a payment escrow and contains no sender or payment identifier. Only the Mother authority can create it, and the TSN program consumes it on the first valid settlement or refund.
+The PDA is an on-chain voucher. It is not a payment escrow and contains no sender or payment identifier. Only the Mother authority can create it, and the TSNP program consumes it on the first valid settlement or refund.
 
 ## Node permit and lease
 
@@ -26,16 +26,16 @@ The Node signs a short-lived Ed25519 permit binding: opaque slot, commitment dig
 
 ## First valid operation wins
 
-The TSN program creates the `EpochClaimSlot` PDA from the epoch treasury and opaque slot only if it does not already exist. If a valid settlement arrives first, the slot is marked `SETTLED`. If a valid refund arrives first, the slot is marked `REFUNDED`. The account creation and write lock make settlement and refund mutually exclusive: the first valid transaction wins atomically and the other fails before any transfer.
+The TSNP program creates the `EpochClaimSlot` PDA from the epoch treasury and opaque slot only if it does not already exist. If a valid settlement arrives first, the slot is marked `SETTLED`. If a valid refund arrives first, the slot is marked `REFUNDED`. The account creation and write lock make settlement and refund mutually exclusive: the first valid transaction wins atomically and the other fails before any transfer.
 
 ## Mother authorization and TCAP credit source
 
 The current TSN credit instruction `register_tcap_credit_authorization_v2` is a Mother-authorized CPI path. It validates the Mother authority, verifies GPRU key and credit-transition proofs, and invokes TCAP `credit_gpru_memo_v1`. TCAP advances the shared `TcapCommitmentRootStateV1`; this instruction does not create or update a `TCapTinTipV1` PDA.
 
-The TSN program also retains epoch, `SettlementDna`, claim-slot, payout, and refund instruction families. Their presence in source does not establish that TSN XP's wallet-to-TIN credit route invokes them. Trace the current Node/Cranker payload and exact TSN instruction before attributing a specific transaction to those paths. GPRU/TCAP hidden-head instructions are also present in source but are not called by the current settlement services.
+The TSNP program also retains epoch, `SettlementDna`, claim-slot, payout, and refund instruction families. Their presence in source does not establish that TSN XP's wallet-to-TIN credit route invokes them. Trace the current Node/Cranker payload and exact TSN instruction before attributing a specific transaction to those paths. GPRU/TCAP hidden-head instructions are also present in source but are not called by the current settlement services.
 
 ## Related pages
 
 - [Epoch Treasury](/architecture/epoch-treasury) for protocol-controlled aggregate liability accounting
-- [TCAP](/architecture/tcap) for the shared-root credit transition and legacy tip instruction distinction
+- [TCAP](/layers/tcap) for the shared-root credit transition and legacy tip instruction distinction
 - [Security authority and keys](/security/authority-and-keys) for how Mother and Node keys are managed

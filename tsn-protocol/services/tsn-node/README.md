@@ -31,7 +31,7 @@ Copy `.env.example` to `.env` and configure:
 - `TSN_NODE_VERIFICATION_SIGNING_KEY` - dedicated Ed25519 private seed used to sign verification and rejection receipts
 - `TSN_MOTHER_AUTHORITY_KEYPAIR_PATH` - Mother authority Solana JSON keypair, kept only by the Node for signing validated TCAP settlement messages
 - `TSN_NODE_WAKE_TIMEOUT_MS` - Receiver wake request timeout (default `2500`)
-- `TSN_PROGRAM_ID` - TSN settlement program id scanned for epoch treasury and `CrankerVault` accounts
+- `TSN_PROGRAM_ID` - TSNP settlement program id scanned for epoch treasury and `CrankerVault` accounts
 - `TSN_RPC_URL` - Preferred endpoint for on-chain reads and settlement authorization checks; defaults to the TSN RPC gateway
 - `EPOCH_HOURS` - epoch duration, default `7`
 

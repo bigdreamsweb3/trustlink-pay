@@ -32,7 +32,7 @@ flowchart TD
   R[TSN Receiver<br/>durable ingress and work]
   N[TSN Node<br/>verification and route decisions]
   C[Cranker<br/>leased transaction submission]
-  P[TSN Program<br/>Solana enforcement]
+  P[TSNP program<br/>Solana enforcement]
   TCAP[TCAP<br/>Transfer Confidential Asset Protocol]
   SOL[Solana<br/>programs and accounts]
   LAB --> PAY
@@ -71,7 +71,7 @@ The TIP registry can associate a TIN with identity metadata, owner authority, ro
 
 ### GPRU and TCAP — current behavior and target integration
 
-The TSN/TCAP credit ABI carries a GPRU hidden-head Groth16 proof and atomically advances TCAP's shared root and reserve liabilities after verification. Node currently fails closed because the circuit, trusted setup artifacts, witness source, and prover are not configured. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. Confidential debit and exit are not established end to end.
+The TSNP/TCAP credit ABI carries a GPRU hidden-head Groth16 proof and atomically advances TCAP's shared root and reserve liabilities after verification. Node currently fails closed because the circuit, trusted setup artifacts, witness source, and prover are not configured. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. Confidential debit and exit are not established end to end.
 
 ### TCAP — Transfer Confidential Asset Protocol
 
@@ -89,7 +89,7 @@ sequenceDiagram
   participant R as TSN Receiver
   participant N as TSN Node
   participant C as Cranker
-  participant P as TSN Program
+  participant P as TSNP program
   D->>R: signed payment intent + commitment
   R->>N: verification work
   N->>N: verify signatures, route, amount, expiry, replay

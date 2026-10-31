@@ -43,7 +43,7 @@ Any circuit source or public-input change invalidates the previous circuit-speci
 
 ## Implementation status
 
-The source now defines the nine-input Pedersen commitment circuit, matching GPRU/TSN/TCAP proof argument sizes, the proof-bound Memo prefix, and SDK owner balance-history recovery. The former Ristretto ElGamal portfolio updater was removed because its ciphertext arithmetic was unrelated to the BabyJubjub circuit statement.
+The source now defines the nine-input Pedersen commitment circuit, matching GPRU/TSNP/TCAP proof argument sizes, the proof-bound Memo prefix, and SDK owner balance-history recovery. The former Ristretto ElGamal portfolio updater was removed because its ciphertext arithmetic was unrelated to the BabyJubjub circuit statement.
 
 Settlement remains fail-closed. The Node does not yet provide an authenticated latest-head and token-map witness or generate a proof for the current shared state. Recompile the updated circuit, generate matching proving/verifying-key artifacts, build and verify all SBF programs, configure the on-chain verifier, and implement the trusted witness/prover service before claiming live settlement support. No deployment or live transaction is implied by these source changes.
 

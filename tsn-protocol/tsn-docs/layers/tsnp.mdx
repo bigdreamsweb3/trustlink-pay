@@ -1,0 +1,21 @@
+---
+title: "TSNP: Transfer Settlement Network Protocol"
+sidebarTitle: "TSNP"
+description: "The on-chain settlement protocol within the wider TSN infrastructure."
+---
+
+# TSNP: Transfer Settlement Network Protocol
+
+TSN is the wider Transfer Settlement Network infrastructure. TSNP is its on-chain protocol program. TIP manages Transfer Identity Numbers and route records, GPRU provides transaction-specific cryptographic routing and proof verification, and TCAP governs accepted assets, reserves, and settlement liabilities. DIP defines the ingress boundary. These protocol layers remain distinct from the Receiver, Node, and Cranker services that coordinate work off chain.
+
+## On-chain role
+
+TSNP instructions enforce the authorization, account, and cross-program invocation checks declared by their program interface. A transaction's actual behavior depends on the specific instruction selected by the Node and submitted by the Cranker; the TSNP program name alone does not imply that every instruction family participates in every flow.
+
+For the current TIN credit source path, TSNP passes the hidden-head proof through TCAP, where TCAP invokes GPRU before applying its shared-root and liability transition. Node settlement authorization currently fails closed with `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, because the circuit-specific proving artifacts and witness/prover service are not configured. Therefore, source-level proof arguments do not establish an operational credit settlement.
+
+## Service boundary
+
+Receiver accepts and stores ingress work. Node verifies the request and prepares authorized work. A Cranker submits that exact work to Solana and pays transaction fees. Solana confirmation establishes whether the selected program instructions executed; it does not by itself prove that a separate funding or follow-up settlement stage succeeded.
+
+See [How it works](/overview/how-it-works), [TIP and TIN](/layers/tin), [GPRU](/layers/gpru), and [TCAP](/layers/tcap) for the individual contracts and their current limits.

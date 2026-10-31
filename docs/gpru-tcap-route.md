@@ -10,7 +10,7 @@ The public interface still reveals action kind, asset/token ID, amount, nullifie
 
 ## Prover and setup artifacts
 
-No compiled R1CS/WASM, production proving key, matching verifying-key artifact, setup transcript, validated verifying-key converter, witness provider, or prover service is currently available in the repository. Node settlement authorization returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so the service refuses to emit an authorization without the proof. The current TSN/TCAP source ABI carries the proof and GPRU verifier CPI, but that does not make settlement operational.
+No compiled R1CS/WASM, production proving key, matching verifying-key artifact, setup transcript, validated verifying-key converter, witness provider, or prover service is currently available in the repository. Node settlement authorization returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so the service refuses to emit an authorization without the proof. The current TSNP/TCAP source ABI carries the proof and GPRU verifier CPI, but that does not make settlement operational.
 
 The required lifecycle is documented in [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md): pin the circuit toolchain, compile and review the circuit, perform and verify a circuit-specific multi-party setup, generate and validate proofs, convert and commit the verification key in the Mother-authorized GPRU verifier PDA, configure a witness/prover service, and verify the complete path before enabling settlement.
 

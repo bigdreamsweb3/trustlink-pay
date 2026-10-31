@@ -1,10 +1,10 @@
 ---
 title: "TSN: Identity-First Settlement for Stablecoins on Solana"
 sidebarTitle: "Introduction"
-description: "TSN coordinates identity-based payment authorization and settlement on Solana, with separate TIP, GPRU, and TCAP protocol layers."
+description: "TSN is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital-asset transfers, built on Solana by TrustLink Labs."
 ---
 
-**Transfer Settlement Network (TSN)** is an identity-first, intent-based settlement layer for stablecoin and digital-asset transfers built on Solana by [**TrustLink Labs**](https://trust-link-tsn.mintlify.site/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. Its programs and services separate payment authorization, identity resolution, transaction verification, submission, and asset governance.
+**Transfer Settlement Network (TSN)** is an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital-asset transfers, built on Solana by [**TrustLink Labs**](https://trust-link-tsn.mintlify.site/about/trustlink-labs). TSN is TrustLink Labs' implementation of the **Decentralized Settlement Protocol (DESP)**. **TSNP (Transfer Settlement Network Protocol)** is the on-chain settlement protocol program within the wider TSN infrastructure. TIP manages transfer identities, including the 10-digit Transfer Identity Number (TIN); GPRU provides guarded privacy routing and proof verification; TCAP governs confidential asset and reserve transitions; and DIP defines deposit ingress. Circle's CCTP is a separate cross-chain transfer protocol used at supported ingress boundaries.
 
 ## Protocol boundaries
 
@@ -29,8 +29,8 @@ Program source, a successful build, a Devnet deployment, and a confirmed end-to-
   <Card title="GPRU" icon="key" href="/layers/gpru">
     GPRU verifies transaction-key proofs and is the on-chain verifier for the proof-shaped hidden-head credit ABI.
   </Card>
-  <Card title="TSN" icon="diagram-project" href="/layers/tsn">
-    TSN coordinates authorization, verification, leases, and exact transaction submission.
+  <Card title="TSNP" icon="diagram-project" href="/layers/tsnp">
+    TSNP enforces on-chain settlement rules; TSN services coordinate authorization, verification, leases, and exact transaction submission.
   </Card>
   <Card title="TCAP" icon="vault" href="/layers/tcap">
     TCAP governs assets, reserves, and the shared commitment root used by the current credit transition.
@@ -39,11 +39,11 @@ Program source, a successful build, a Devnet deployment, and a confirmed end-to-
 
 ## About TrustLink Labs
 
-TrustLink Labs builds TSN and TSN XP, a reference experience for interacting with the protocol and SDK. This documentation describes protocol behavior and distinguishes source code from verified deployment and transaction evidence.
+TrustLink Labs builds the TSN infrastructure and TSN XP, a reference experience for interacting with its protocols and SDKs. This documentation distinguishes source code from verified deployment and transaction evidence.
 
 <CardGroup cols={2}>
   <Card title="GitHub Organization" icon="github" href="https://github.com/Trustlink-Labs">Open-source repositories from TrustLink Labs.</Card>
   <Card title="Follow on X" icon="x-twitter" href="https://x.com/TrustLinkLabs">Protocol announcements and Devnet updates.</Card>
   <Card title="Blog" icon="rss" href="https://tsn-protocol.blogspot.com">Protocol explanations and research notes.</Card>
-  <Card title="Protocol Source" icon="code" href="https://github.com/Trustlink-Labs/TSN-Protocol">TSN protocol programs and services.</Card>
+  <Card title="Protocol Source" icon="code" href="https://github.com/Trustlink-Labs/TSN-Protocol">TSNP, TIP, GPRU, TCAP, DIP, and supporting TSN services.</Card>
 </CardGroup>

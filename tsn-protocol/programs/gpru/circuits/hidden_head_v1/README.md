@@ -22,11 +22,11 @@ The Memo starts with `TSN_GPRU_HEAD_V1:<portfolio-root>:<balance-x>:<balance-y>:
 
 The witness proves that the hidden active TIP route is a member of the shared TIP route root, the supplied route leaf is the current leaf in the old shared TCAP root, its sequence advances once, and a fresh nullifier is inserted. It also proves a token-map update under the predecessor portfolio root and binds the selected token's successor Pedersen point to the action:
 
-- Credit adds `amount * G` and a fresh, nonzero blinding delta to the predecessor point without opening the prior balance.
+- Credit adds `amount * G` and a fresh, nonzero blinding delta to the predecessor point. The prover needs the predecessor point but not the balance or its prior blinding opening; the owner applies the encrypted delta to its locally held opening.
 - Debit and exit open predecessor and successor balances privately, constrain both to unsigned 64-bit values, and prove the successor is nonnegative and differs by the authorized amount.
 - Other token commitments remain in the same nested map; a first credit for a token uses an empty token leaf.
 
-The circuit uses additive homomorphic **Pedersen commitments**, not encrypted balance ciphertexts. A commitment hides its opening but cannot be decrypted. Each Memo instead carries an owner-encrypted action record containing the token action and blinding delta. The circuit requires a nonzero delta and proves its modular relationship to the predecessor and successor openings on credit, debit, and exit. The owner decrypts the history and replays the actions to recover numeric balances. The commitment point in the Memo prefix is a proof binding, not an encryption.
+The circuit uses additive homomorphic **Pedersen commitments**, not encrypted balance ciphertexts. A commitment hides its opening but cannot be decrypted. Each Memo instead carries an owner-encrypted action record containing the token action and blinding delta. For credit, the fresh delta randomizes the successor point and the owner updates its known opening by adding that delta; the prover does not need the prior opening. Debit and exit proofs open predecessor and successor points privately, prove the amount subtraction and nonnegative successor, and bind the blinding transition. The owner decrypts the history and replays the actions to recover numeric balances. The commitment point in the Memo prefix is a proof binding, not an encryption.
 
 The circuit does not prove token custody, reserve solvency, or TCAP liquidity. TCAP must enforce accepted assets, authorization, reserve conditions, and the shared-root update atomically. The circuit source and ABI alone do not enable a settlement path.
 
@@ -43,4 +43,4 @@ npm run gpru:circuit:compile
 npm run gpru:prover:setup:dev
 ```
 
-The development setup is not a production ceremony. Any circuit source change requires recompilation, a new circuit-specific proving/verifying key pair, export of the verifier arguments, a matching GPRU verifier configuration, and a review of the exact public-input order. Existing setup artifacts do not match this source change. The Node remains fail-closed until it has a trusted latest-head/token-map witness provider and generates a matching proof.
+The development setup is not a production ceremony. This circuit change requires recompilation and a new circuit-specific proving/verifying key pair, followed by verifier-argument export, matching GPRU verifier configuration, and review of the exact public-input order. Existing 2026-10-31 setup artifacts are stale for this circuit change; generate the new setup into a new `GPRU_DEV_SETUP_DIR` so the old setup is preserved. The setup metadata binds the R1CS, witness-calculator WASM, proving key, and verification key, and the prover checks those hashes before generating a proof. The Node remains fail-closed until a trusted latest-head/token-map witness provider and matching proof generation are connected.

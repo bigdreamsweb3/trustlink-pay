@@ -1,8 +1,11 @@
 # Transfer Settlement Network
 
 This folder contains the TSN SDK, Mother Node services, RPC gateway, Cranker
-operator, and Solana programs. TSN is TrustLink Labs' implementation of the
-Decentralized Settlement Protocol (DESP) on Solana.
+operator, and Solana programs. TSN is TrustLink Labs' complete settlement
+infrastructure. TSNP (Transfer Settlement Network Protocol) is the on-chain
+settlement protocol program; TIP, GPRU, TCAP, and DIP are distinct protocol
+layers. CCTP is Circle's separate Cross-Chain Transfer Protocol and is used
+only at explicitly supported integrations.
 
 The current wallet-to-TIN credit flow separates the sender-authorized token
 deposit from the later GPRU-verified TCAP state transition. The SDK signs the
@@ -58,7 +61,7 @@ flowchart TB
         N --> O --> P --> Q
     end
 
-    subgraph PROGRAMS["6. Solana programs — GPRU, TSN and TCAP"]
+    subgraph PROGRAMS["6. Solana programs — TSNP, GPRU and TCAP"]
         direction TB
         R["TSN checks Mother authority and bindings<br/>Invokes GPRU with TIP registry, DNA,<br/>ephemeral/one-time public keys and DLEQ proof"]
         S["GPRU validates TIP route account and proof<br/>against its registered ElGamal scan key"]
@@ -113,14 +116,14 @@ balance arithmetic.
   architecture role is Mother Node.
 - A Cranker Node pays Solana fees and submits exact authorized transactions. It
   does not select sources, replan, decrypt envelopes, or sign for users.
-- The TSN Program checks Mother authority and transaction bindings, invokes
+- The TSNP program checks Mother authority and transaction bindings, invokes
   GPRU to validate the registered TIP route and one-time key proof, then
   authorizes the TCAP transition.
 - Solana validators provide execution, ordering, consensus, and finality. They
   are not Mother Nodes or Cranker Nodes.
 
-DeFi decentralizes financial services; DESP decentralizes settlement
-infrastructure.
+TSNP is the on-chain settlement protocol program within the wider TSN
+infrastructure; TIP, GPRU, TCAP, and DIP remain separate protocol layers.
 
 ## Start here
 

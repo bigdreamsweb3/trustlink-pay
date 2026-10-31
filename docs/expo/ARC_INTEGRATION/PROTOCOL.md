@@ -12,8 +12,10 @@ expected on-chain result, the spec is not ready to send.
 
 ## 1. The system, in the order data flows
 
-TSN (Transfer Settlement Network) is TrustLink Labs' implementation of DESP, the Decentralized Settlement
-Protocol. The design principle is that **identity, authorization, privacy routing, and asset accounting are
+TSN (Transfer Settlement Network) is TrustLink Labs' complete settlement infrastructure. TSNP (Transfer
+Settlement Network Protocol) is its on-chain settlement protocol program. TIP, GPRU, TCAP, and DIP have
+separate responsibilities; Circle's CCTP is an external cross-chain transfer protocol. The design principle
+is that **identity, authorization, privacy routing, and asset accounting are
 separate layers that never share a database**. Each layer owns specific data and nothing else.
 
 ### TIP — Transfer Identity Protocol (Solana)

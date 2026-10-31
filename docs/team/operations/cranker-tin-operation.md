@@ -11,7 +11,7 @@ receipt with `TSN_NODE_VERIFICATION_PUBLIC_KEY`. It checks the active lease and
 input/evidence commitments, then recomputes the exact Cranker execution-payload
 commitment before it acts. The Receiver also validates the receipt before
 storing the Node decision. This receipt is separate from the Node payout
-authorization that the TSN settlement program verifies on-chain.
+authorization that the TSNP settlement program verifies on-chain.
 
 For verified private `tin_creation` work, the daemon measures the complete
 transaction first. It submits `CreateTinV1` directly if it fits Solana's

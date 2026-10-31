@@ -15,7 +15,7 @@ for production funds, real stablecoins, or private keys that hold value.
 | TSN Receiver      | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | Intent ingress, durable work, leases, and evidence |
 | TSN Node          | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | Verification and Receiver work processing          |
 | TSN RPC Gateway   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | Controlled Solana RPC access                       |
-| TSN Protocol      | Solana Devnet program account                                                 | On-chain authorization and settlement              |
+| TSNP              | Solana Devnet program account                                                 | On-chain authorization and settlement              |
 
 Use these canonical Devnet endpoints:
 
@@ -48,7 +48,7 @@ flowchart TD
     E --> F["TSN Node verifies and publishes settlement work"]
     F --> G["Cranker leases verified work"]
     G --> H["Cranker submits the exact authorized Devnet transaction"]
-    H --> I["TSN Program verifies on-chain state"]
+    H --> I["TSNP program verifies on-chain state"]
     I --> J["Receiver stores signatures and final evidence"]
 ```
 
@@ -159,7 +159,7 @@ The operator configures:
 - a dedicated operator/fee-payer keypair;
 - the preferred Solana Devnet RPC and its matching WebSocket endpoint (the
   hosted TSN gateway by default; local gateway during local development);
-- the deployed TSN and TIN program IDs.
+- the deployed TSNP and TIP program IDs.
 
 Crankers verify the Node's signed decision receipt against the Receiver work
 before execution. They must not receive user private keys, master seeds,

@@ -1,7 +1,7 @@
 ---
 title: "TSN Authority and Key Boundaries"
 sidebarTitle: "Authority & Keys"
-description: "Key ownership and authorization boundaries across TIP, GPRU, TSN services, and TCAP."
+description: "Key ownership and authorization boundaries across TSNP, TIP, GPRU, TCAP, and TSN services."
 ---
 
 This page separates keys used by the current TIN credit path from keys and permits belonging to other TSN instruction families. Program source defines authorization; local key files and configuration do not by themselves prove an on-chain authority is accepted.
@@ -13,12 +13,12 @@ This page separates keys used by the current TIN credit path from keys and permi
 | Owner wallet signing key | User wallet | Authorizes owner actions and TIN recovery operations. It is not shared with Receiver, Node, or Cranker. |
 | TIP owner-recovery envelope | TIP recovery PDA; encrypted for owner recovery | Lets the connected owner recover the TIN locally through SDK functionality. The recovery PDA is separate from the main registry account. |
 | TIP GPRU scan public key | Public TIP route fields | Provides route material used in one-time DNA-key derivation. The corresponding owner secret remains on the owner side. |
-| Mother authority | Configured in TSN Mother Escrow | Authorizes the current TSN credit instruction's Mother-bound call. Its source role must not be conflated with the epoch `SettlementDna` PDA flow. |
+| Mother authority | Configured in TSN Mother Escrow | Authorizes the current TSNP credit instruction's Mother-bound call. Its source role must not be conflated with the epoch `SettlementDna` PDA flow. |
 | Cranker fee-payer key | Cranker operator | Pays Solana transaction fees. It does not grant authority to rewrite a signed or program-bound settlement. |
 
 ## GPRU key scope
 
-GPRU verifies a proof that binds transaction DNA to a one-time ElGamal public key using the TIP route key. This establishes the specified key-derivation relation. It does not by itself prove an encrypted balance is current, prove a valid balance arithmetic transition, or authorize a debit. The current TSN credit source separately calls GPRU's encrypted-credit relation verifier and then asks TCAP to advance its shared root.
+GPRU verifies a proof that binds transaction DNA to a one-time ElGamal public key using the TIP route key. This establishes the specified key-derivation relation. It does not by itself prove an encrypted balance is current, prove a valid balance arithmetic transition, or authorize a debit. The current TSNP credit source separately calls GPRU's encrypted-credit relation verifier and then asks TCAP to advance its shared root.
 
 The owner can use SDK recovery material to derive transaction-specific private keys locally. This key derivation alone is not an end-to-end balance-history reader or proof that a Memo is the latest for a TIN. The current source does not establish an authenticated per-TIN head or complete debit/exit proof system.
 
@@ -26,6 +26,6 @@ The owner can use SDK recovery material to derive transaction-specific private k
 
 TSN also contains epoch treasury, `SettlementDna`, opaque-slot, refund, and permit instruction families. Any Mother authority key, Node permit key, encrypted-binding key, or short-lived route reference used by those flows belongs to those specific service contracts. Do not assume every field or key in that family is used in the current TIN credit CPI; inspect the exact instruction and service payload for the flow being operated.
 
-Receiver and Cranker service authentication credentials authorize requests to those services, not token movement. TCAP and TSN on-chain programs enforce the relevant signer and account constraints for each instruction family.
+Receiver and Cranker service authentication credentials authorize requests to those services, not token movement. TCAP and TSNP on-chain programs enforce the relevant signer and account constraints for each instruction family.
 
 See [TIP/TIN/GPRU routing](/architecture/identity-and-routing), [Current architecture](/overview/architecture), and [Replay protection](/security/replay-protection).

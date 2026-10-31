@@ -11,7 +11,7 @@ The wallet-to-TIN credit route has separate service and on-chain checks. A rejec
 1. **Receiver ingress:** validates the request shape and stores authenticated work. Acceptance is not payment verification.
 2. **Node verification:** checks the signed request and funding evidence, resolves the TIN route through TIP, and prepares authorized work. Node verification is not on-chain settlement.
 3. **Cranker submission:** leases eligible work and submits the authorized transaction. A Cranker cannot repair stale owner-signed transaction data by changing its blockhash or payment fields; the sender must authorize a fresh transaction when required.
-4. **TSN/GPRU/TCAP execution:** TSN checks the Mother authorization, GPRU checks DNA-key derivation and encrypted-credit relation, and TCAP validates the approved asset, authorization signer, validity window, global root predecessor, and next sequence before advancing shared state.
+4. **TSNP/GPRU/TCAP execution:** TSNP checks the Mother authorization, GPRU checks DNA-key derivation and encrypted-credit relation, and TCAP validates the approved asset, authorization signer, validity window, global root predecessor, and next sequence before advancing shared state.
 5. **Confirmation:** only the transaction signature and resulting account state on the target cluster establish that the transition executed.
 
 ## Current guarantees and limits
@@ -20,6 +20,6 @@ TCAP's shared-root predecessor and sequence make a repeated stale global transit
 
 Transaction arguments, account keys, Memo ciphertext, signer, fee payer, and ordering remain visible on Solana. Do not claim zero linkability, private amount, or an authenticated latest Memo based only on the current credit source.
 
-Epoch treasury, `SettlementDna`, opaque slot, payout, and refund checks belong to separate TSN instruction families. Use those checks only when the transaction actually invokes that family.
+Epoch treasury, `SettlementDna`, opaque slot, payout, and refund checks belong to separate TSNP instruction families. Use those checks only when the transaction actually invokes that family.
 
 See [Security invariants](/security/invariants), [Replay protection](/security/replay-protection), and [Current architecture](/overview/architecture).

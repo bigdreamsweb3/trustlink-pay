@@ -1,4 +1,4 @@
-# TIP, GPRU, TSN, and TCAP: source-backed architecture
+# TSNP, TIP, GPRU, and TCAP: source-backed architecture within TSN
 
 This document describes the checked-in program and service contracts. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain.
 
@@ -6,12 +6,12 @@ This document describes the checked-in program and service contracts. Source cod
 
 - **TIP (Transfer Identity Protocol)** creates and resolves transfer identities. A **TIN (Transfer Identity Number)** is one 10-digit identity within TIP. TIP owns identity and route data; the TIN owner retains the recovery secret.
 - **GPRU (Guarded Privacy Routing Unit)** derives one-time DNA keys and verifies hidden-head Groth16 proofs. It does not custody TCAP assets.
-- **TSN (Transfer Settlement Network)** coordinates authenticated intent/work, Node verification, Mother authorization, and exact Cranker submission.
+- **TSN (Transfer Settlement Network)** is the complete infrastructure that coordinates authenticated intent/work, Node verification, Mother authorization, and exact Cranker submission.
 - **TCAP (Transfer Confidential Asset Protocol)** governs approved assets, reserve liabilities, and the shared commitment root. The root is protocol-wide, not a per-TIN balance account.
 
 ## Hidden-head credit ABI in source
 
-The TSN `register_tcap_credit_authorization_v2` instruction accepts a proof-shaped hidden-head argument and invokes TCAP's `credit_gpru_memo_v1`. TCAP validates the approved asset, Mother-derived authorization signer, validity window, current root and next sequence, then invokes GPRU `verify_hidden_head_transition_v1`. Only after proof verification does TCAP advance its shared root and move the matching amount from pending to settled reserve liabilities in the same transaction.
+The TSNP `register_tcap_credit_authorization_v2` instruction accepts a proof-shaped hidden-head argument and invokes TCAP's `credit_gpru_memo_v1`. TCAP validates the approved asset, Mother-derived authorization signer, validity window, current root and next sequence, then invokes GPRU `verify_hidden_head_transition_v1`. Only after proof verification does TCAP advance its shared root and move the matching amount from pending to settled reserve liabilities in the same transaction.
 
 GPRU checks the canonical TIP route root and TCAP root, binds the supplied proof to the Memo instruction following the TSN call, recomputes the action commitment, validates the portfolio-root/point/action prefix, and verifies the Groth16 proof. The updated circuit has nine public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, and successor balance point X/Y. Its private witness includes one hidden outer head per TIN plus a nested token commitment path, TIP route membership, sequence, and nullifier state. Balance state uses additive BabyJubjub Pedersen commitments; the Memo body contains an owner-encrypted action record used for balance recovery. The updated circuit has not yet been compiled or validated as a proof system.
 
@@ -35,7 +35,7 @@ Receiver acceptance, Node verification, Cranker submission, reserve-funding conf
 
 - TIP Registrar: `tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/`
 - GPRU program and circuit: `tsn-protocol/programs/gpru/src/` and `tsn-protocol/programs/gpru/circuits/hidden_head_v1/`
-- TSN authorization CPI: `tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs`
+- TSNP authorization CPI: `tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs`
 - TCAP atomic credit instruction: `tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs`
 - Prover/key lifecycle: `./GROTH16-PROVER-AND-KEY-ARTIFACTS.md`
 

@@ -16,7 +16,7 @@ The intended proof binds the update to a hidden per-TIN/asset head and inserts a
 
 ## Hidden-head verifier source
 
-The TSN/TCAP proof-shaped credit ABI calls the GPRU Groth16 verifier before mutation. The proof path remains non-operational until circuit compilation, trusted setup, proof generation, verifier initialization, and end-to-end validation are completed. The public ABI exposes action kind, token ID, and amount. All transitions touch the same shared TCAP root, which exposes global ordering and protocol-level linkage.
+The TSNP/TCAP proof-shaped credit ABI calls the GPRU Groth16 verifier before mutation. The proof path remains non-operational until circuit compilation, trusted setup, proof generation, verifier initialization, and end-to-end validation are completed. The public ABI exposes action kind, token ID, and amount. All transitions touch the same shared TCAP root, which exposes global ordering and protocol-level linkage.
 
 ## Safe retry behavior
 

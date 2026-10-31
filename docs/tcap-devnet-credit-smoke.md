@@ -109,7 +109,7 @@ and use matching non-zero commitments and nullifier values.
 ## What executes
 
 1. Initializes the deterministic TCAP tip if it does not exist.
-2. Submits `tsn_register_tcap_credit_authorization`, the TSN CPI wrapper that
+2. Submits `tsn_register_tcap_credit_authorization`, the TSNP CPI wrapper that
    invokes TCAP's `register_tsn_authorization_v1` with the TSN PDA signer.
 3. Submits `credit_tcap_tin_tip_v1` and consumes the receipt/nullifier.
 4. Encrypts and stores the local snapshot under `new_commitment`.
@@ -117,7 +117,7 @@ and use matching non-zero commitments and nullifier values.
    local private read.
 
 The wrapper is required because TCAP's authorization signer is a PDA owned by
-the approved TSN program; a normal external transaction cannot forge that
+the approved TSNP program; a normal external transaction cannot forge that
 signer. The path never invokes CrankerVault payout logic.
 
 ## Active-path boundary
@@ -148,7 +148,7 @@ The smoke defaults `TCAP_PROGRAM_ID` to the deployed Devnet program
 `tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF` and prints every missing variable
 in one checklist before failing.
 
-This flow exercises only the TSN CPI authorization and
+This flow exercises only the TSNP CPI authorization and
 `credit_tcap_tin_tip_v1`, followed by owner-local encrypted snapshot storage
 and read. It does not expose or call PRU funding/spend endpoints, confidential
 debits/exits, or CrankerVault payout settlement.
@@ -162,7 +162,7 @@ explicit wallet roles: governance may migrate the config and initialize the
 root, while the fixture wallet pays for the credit fixture. The bootstrap
 prints both public keys and every reused or created PDA. It stops with an exact
 `MISSING_DEPENDENCY` rather than fabricating commitments. Supply the governed
-mint, owner-authorized TSN/TCAP commitments, nullifier/digest values, and real
+mint, owner-authorized TSNP/TCAP commitments, nullifier/digest values, and real
 owner token balances:
 
 ```bash

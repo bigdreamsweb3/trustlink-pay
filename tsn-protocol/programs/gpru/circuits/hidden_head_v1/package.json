@@ -9,9 +9,10 @@
     "wasmcurves": "0.2.2"
   },
   "scripts": {
-    "circuit:compile": "circom2 main.circom --r1cs --wasm --sym -l node_modules -o build/hidden_head_v1",
+    "circuit:compile": "node node_modules/circom2/cli.js main.circom --r1cs --wasm --sym -l node_modules -o build/hidden_head_v1",
     "circuit:info": "snarkjs r1cs info build/hidden_head_v1/main.r1cs",
     "setup:dev": "node scripts/setup-dev.mjs",
+    "bind:wasm": "node scripts/bind-wasm.mjs",
     "export:verifier": "node scripts/export-verifier.mjs",
     "prove": "node scripts/prove.mjs",
     "verify": "node scripts/verify.mjs"

@@ -6,7 +6,7 @@ description: "Use the TypeScript SDK to connect an application to TSN, resolve T
 
 `@trustlink/tsn-sdk` is the application-facing TypeScript package for TSN. It provides service selection, TIP/TIN identity helpers, signed payment authorization builders, intent submission, wallet transaction utilities, and recovery functions. The SDK prepares and submits authorized requests; the TSN Node verifies work, the Receiver coordinates it, and a permissioned Cranker submits the authorized transaction.
 
-The package is currently maintained in the TSN Protocol workspace and is not published to the public npm registry. Use the repository build before importing it into an application:
+The package is currently maintained in the TSN infrastructure workspace and is not published to the public npm registry. Use the repository build before importing it into an application:
 
 ```bash title="Build the workspace SDK"
 npm --prefix tsn-protocol/sdks/tsn-sdk install

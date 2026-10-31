@@ -78,6 +78,8 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
         raise ValueError("GPRU Memo, action, authorization, and nullifier values must be canonical BN254 field elements")
     if int(action_commitment, 16) == 0:
         raise ValueError("GPRU action commitment cannot be zero")
+    if int(authorization_commitment, 16) == 0 or int(nullifier, 16) == 0:
+        raise ValueError("GPRU action authorization commitment and nullifier must be nonzero")
     if (sequence == 1) != (previous == ZERO_COMMITMENT):
         raise ValueError("First GPRU action must have no predecessor; later actions must name one")
     return {

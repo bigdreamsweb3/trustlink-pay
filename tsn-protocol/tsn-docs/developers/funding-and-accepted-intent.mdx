@@ -61,7 +61,7 @@ The permit expires no later than the Receiver lease. The Cranker receives only t
 
 ## AcceptedIntent PDA
 
-TSN creates the `AcceptedIntentV1` PDA and derives the root from a canonical field sequence documented in the accept-intent instruction. The TSN CPI wrapper requires that PDA, checks every bound field, and consumes the intent after the TCAP CPI succeeds.
+TSNP creates the `AcceptedIntentV1` PDA and derives the root from a canonical field sequence documented in the accept-intent instruction. The TSNP CPI wrapper requires that PDA, checks every bound field, and consumes the intent after the TCAP CPI succeeds.
 
 TCAP stores the same fields in its receipt and requires a `ConfidentialSettlement` transition before credit can consume it. A GPRU signature alone cannot substitute for this authorized CPI path.
 

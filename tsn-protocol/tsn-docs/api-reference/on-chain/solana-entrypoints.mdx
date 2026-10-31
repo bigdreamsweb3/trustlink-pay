@@ -4,7 +4,7 @@ sidebarTitle: "On-chain"
 description: "Reference the Solana program entrypoints that create TIN state, authorize settlement, manage Crankers, and preserve TSN accounting boundaries."
 ---
 
-Solana programs are the settlement authority for TSN. The Node and SDK prepare evidence and signed requests; only the deployed program can apply the resulting state transition.
+Solana programs are the settlement authority for the TSN infrastructure. The Node and SDK prepare evidence and signed requests; only the deployed program can apply the resulting state transition.
 
 ## TIN registrar
 
@@ -16,7 +16,7 @@ The TIN registrar source contains public instruction builders for TIN creation a
 | Platform registry | `initialize_platform_registry`, `upsert_verification_platform`, `remove_verification_platform` | Authority accounts and platform metadata. |
 | Identity links | `link_social_identity`, `link_sensitive_field`, `link_verified_social_identity` | Owner, registry, proof, and encrypted field accounts as defined in the source contexts. |
 
-## TSN settlement program
+## TSNP settlement program
 
 The TSN program exposes instruction entrypoints for Mother escrow, Cranker registration and vault state, accepted intents, funding, claims, epoch accounting, and the TCAP settlement boundary. Exact Anchor account contexts belong to the deployed IDL.
 
@@ -44,4 +44,4 @@ console.log(await connection.getAccountInfo(programId));
 
 TODO: publish generated IDL-derived account and argument tables for each deployed program after the current reorganized Anchor workspaces are synchronized. The source filenames and public instruction names above are confirmed; this page does not invent a positional account list.
 
-Source: [`TIN instruction builder`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/instruction_auto.rs#L281-L451), [`TSN Anchor entrypoints`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs#L10-L180), [`TSN instruction modules`](https://github.com/Trustlink-Labs/TSN-Protocol/tree/main/tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions), [`Cranker Solana helpers`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts)
+Source: [`TIN instruction builder`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/instruction_auto.rs#L281-L451), [`TSNP Anchor entrypoints`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs#L10-L180), [`TSNP instruction modules`](https://github.com/Trustlink-Labs/TSN-Protocol/tree/main/tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions), [`Cranker Solana helpers`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts)

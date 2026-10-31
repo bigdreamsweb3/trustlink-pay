@@ -10,7 +10,7 @@
 | `tsn-protocol/sdks/tsn-sdk/`                        | Planning, commitments, local authorization, and state policy |
 | `tsn-protocol/services/tsn-node/`                   | TSN Node implementation and intent/claim coordination        |
 | `tsn-protocol/services/tsn-cranker-op-daemon/`      | Cranker operator and fee-paying submission                   |
-| `tsn-protocol/programs/tsn/protocol/`               | Solana TSN Program and on-chain tests                        |
+| `tsn-protocol/programs/tsn/protocol/`               | Solana TSNP program and on-chain tests                        |
 | `tsn-protocol/programs/gpru/`                       | GPRU key-proof and encrypted-transition program              |
 | `tsn-protocol/programs/tcap-protocol/`              | TCAP asset, reserve, and shared-root instructions             |
 

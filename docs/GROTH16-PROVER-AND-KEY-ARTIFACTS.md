@@ -98,7 +98,7 @@ sequenceDiagram
     participant N as TSN Node / proof service
     participant P as Groth16 prover
     participant C as Cranker
-    participant S as TSN program
+    participant S as TSNP program
     participant T as TCAP program
     participant G as GPRU verifier
     N->>P: public action + private route/head witness + memo bytes

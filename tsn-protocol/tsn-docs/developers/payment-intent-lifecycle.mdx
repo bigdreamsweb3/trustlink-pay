@@ -14,7 +14,7 @@ sequenceDiagram
     participant R as Receiver
     participant N as TSN Node
     participant C as Cranker
-    participant S as TSN program
+    participant S as TSNP program
     participant G as GPRU
     participant T as TCAP
 
@@ -39,7 +39,7 @@ sequenceDiagram
 | Node verified | The Node accepted the request and prepared authorized work | Cranker submission or on-chain execution |
 | Cranker submitted | A transaction was sent to the configured Solana RPC | Confirmation or successful program execution |
 | Funding confirmed | The reserve deposit transaction confirmed | The later TCAP credit transition confirmed |
-| Credit confirmed | The TSN/GPRU/TCAP instruction completed on chain | That the app has indexed all prior Memo history or that confidential debit/exit is available |
+| Credit confirmed | The TSNP/GPRU/TCAP instruction completed on chain | That the app has indexed all prior Memo history or that confidential debit/exit is available |
 
 ## On-chain state and replay boundary
 

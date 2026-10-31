@@ -262,11 +262,16 @@ template HiddenHeadTransitionV1() {
     nextBlindBound.in[1] <== BABYJUB_SUBORDER;
     component carryBits = Num2Bits(1);
     carryBits.in <== balanceBlindingCarry;
+    signal requiresBalanceOpening;
+    requiresBalanceOpening <== isDebit.out + isExit.out;
     (1 - deltaBound.out) === 0;
     deltaIsZero.out === 0;
-    (1 - priorBlindBound.out) === 0;
-    (1 - nextBlindBound.out) === 0;
-    predecessorBlinding + balanceBlindingDelta === successorBlinding + balanceBlindingCarry * BABYJUB_SUBORDER;
+    // A credit prover only needs the predecessor commitment point and a fresh
+    // delta. The owner applies that delta to its locally recovered opening.
+    // Debit/exit proofs must open both points and preserve the blinding link.
+    requiresBalanceOpening * (1 - priorBlindBound.out) === 0;
+    requiresBalanceOpening * (1 - nextBlindBound.out) === 0;
+    requiresBalanceOpening * (predecessorBlinding + balanceBlindingDelta - successorBlinding - balanceBlindingCarry * BABYJUB_SUBORDER) === 0;
     component amountPoint = BalanceScalarMul(64, BALANCE_G_X, BALANCE_G_Y);
     amountPoint.scalar <== amount;
     component deltaPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);

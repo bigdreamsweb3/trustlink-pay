@@ -17,7 +17,7 @@ npm run network:status
 
 ## Clean Devnet order
 
-1. Deploy the pinned TCAP and TSN programs with the repository Devnet deployment workflow.
+1. Deploy the pinned TCAP and TSNP programs with the repository Devnet deployment workflow.
 2. Initialize or migrate TCAP config, the asset registry, and commitment root with the TCAP governance wallet.
 3. Confirm the live governance and registry authorities; do not assume a local key is authorized.
 4. Register a mint with `network:init-asset`. The command validates the mint owner, requires six decimals for the Devnet USDC example, and runs the governance lifecycle only after simulation succeeds.

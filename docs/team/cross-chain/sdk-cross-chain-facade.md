@@ -101,5 +101,7 @@ transaction hash when an onward route is active, and final recipient balance.
 Do not record a route as live from configuration alone; the registry and
 liquidity observation must be observed at test time.
 
-The architecture remains a DESP implemented through TSN: “DeFi decentralizes
-financial services; DESP decentralizes settlement infrastructure.”
+The cross-chain facade is part of the TSN infrastructure. TSNP supplies the
+Solana settlement protocol boundary; each destination and bridge retains its
+own verification and liquidity contracts. Circle's CCTP is an external
+protocol and must not be described as a TSNP component.

@@ -8,9 +8,9 @@ This page documents the current TSN credit CPI source. It is not a claim of curr
 
 ## Current instruction sequence
 
-The TSN instruction `register_tcap_credit_authorization_v2` validates the Mother authorization digest and signer and passes the hidden-head Groth16 proof to TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, validity slots, current shared-root value, next global sequence, pending liability, and reserve solvency, then invokes GPRU `verify_hidden_head_transition_v1`. If the proof is valid, TCAP advances the shared root and reserve liabilities atomically.
+The TSNP instruction `register_tcap_credit_authorization_v2` validates the Mother authorization digest and signer and passes the hidden-head Groth16 proof to TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, validity slots, current shared-root value, next global sequence, pending liability, and reserve solvency, then invokes GPRU `verify_hidden_head_transition_v1`. If the proof is valid, TCAP advances the shared root and reserve liabilities atomically.
 
-The settlement transaction includes a Memo instruction whose bytes and successor balance point are bound by the GPRU proof. The Memo is transaction data. This TSN instruction does not initialize or write `TCapTinTipV1` and does not store a private balance snapshot in TCAP.
+The settlement transaction includes a Memo instruction whose bytes and successor balance point are bound by the GPRU proof. The Memo is transaction data. This TSNP instruction does not initialize or write `TCapTinTipV1` and does not store a private balance snapshot in TCAP.
 
 ## Replay and latest-head boundary
 
@@ -20,7 +20,7 @@ The funding-derived commitment binds authorization to the source funding transac
 
 ## Hidden-head instruction status
 
-The TSN and TCAP source ABI carries the proof and TCAP calls the GPRU verifier. The updated circuit has nine public inputs and includes nested portfolio-root and Pedersen balance-transition constraints, but it has not been recompiled or reviewed. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; matching proving/verifying keys, the key conversion adapter, witness source, initialized verifier account, and end-to-end proof execution are not established. Debit and exit remain disabled until their complete paths are verified.
+The TSNP and TCAP source ABI carries the proof and TCAP calls the GPRU verifier. The updated circuit has nine public inputs and includes nested portfolio-root and Pedersen balance-transition constraints, but it has not been recompiled or reviewed. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; matching proving/verifying keys, the key conversion adapter, witness source, initialized verifier account, and end-to-end proof execution are not established. Debit and exit remain disabled until their complete paths are verified.
 
 ## Lifecycle evidence
 

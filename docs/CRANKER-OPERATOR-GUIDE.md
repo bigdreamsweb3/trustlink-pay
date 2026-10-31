@@ -21,7 +21,7 @@ flowchart TD
     R["TSN Receiver - verified non-secret work"]
     N["TSN Node - verification and lease eligibility"]
     C["Cranker - lease and submit exact work"]
-    S["Solana Devnet - TSN Program and controlled accounts"]
+    S["Solana Devnet - TSNP program and controlled accounts"]
     R --> N --> C --> S
 ```
 
@@ -53,7 +53,7 @@ transaction explicitly invokes those instructions.
 
 Before an operator starts a Cranker, the deployment owner must provide:
 
-1. A deployed TSN Program ID and matching build/IDL.
+1. A deployed TSNP program ID and matching build/IDL.
 2. A reachable TSN Receiver with Cranker work endpoints.
 3. A running or reachable TSN Node that verifies and publishes work.
 4. The current Receiver Cranker API credential. Obtain it from the
@@ -72,7 +72,7 @@ guide. Set `TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app`.
 ## Deployment boundary
 
 There is no separate “Cranker program” to deploy. The Cranker is a signed
-operator process that uses the already deployed TSN Program. Only the
+operator process that uses the already deployed TSNP program. Only the
 deployment owner should build or upgrade the on-chain program:
 
 ```bash
@@ -152,9 +152,9 @@ commit `.env`, `.env.local`, keypair JSON, Receiver credentials, or
 
 “Mother Escrow DNA” is a one-time, Mother-authorized settlement voucher. Its
 PDA derivation is public, but its fields are accepted only after Mother
-authority materializes the account and the TSN Program verifies the permit.
+authority materializes the account and the TSNP program verifies the permit.
 It is not a private key or a secret credential. The Mother address is
-determined by the deployed TSN Program ID and this fixed seed:
+determined by the deployed TSNP program ID and this fixed seed:
 
 ```text
 motherEscrow = PDA(["tsn_mother_escrow"], TSN_PROGRAM_ID)
@@ -201,7 +201,7 @@ records the addresses in local `operator-state.json`.
 
 Mother Escrow initialization is a deployment-owner operation, not something
 every untrusted operator should repeat. Run it once for a new Devnet program
-or when the TSN Program explicitly requires migration:
+or when the TSNP program explicitly requires migration:
 
 ```powershell
 npm run tsn:mother:init
@@ -209,7 +209,7 @@ npm run tsn:mother:init
 npm run tsn:mother:migrate
 ```
 
-The signer must have the authority required by the deployed TSN Program. A
+The signer must have the authority required by the deployed TSNP program. A
 Cranker operator cannot initialize or migrate Mother Escrow merely because it
 has an operator keypair. Confirm program ID and cluster before signing.
 
@@ -257,7 +257,7 @@ have been reviewed. To close it again:
 npm run policy:closed
 ```
 
-Do not describe a funded vault as a user wallet or as the TSN Program itself.
+Do not describe a funded vault as a user wallet or as the TSNP program itself.
 The vault is a controlled settlement account whose authority is enforced by
 the deployed program.
 
@@ -288,7 +288,7 @@ sequenceDiagram
     participant R as TSN Receiver
     participant N as TSN Node
     participant C as Cranker
-    participant S as TSN Program
+    participant S as TSNP program
     R->>N: sender-signed funding intent is available
     N-->>R: verify and publish AUTHORIZED_FUNDING
     C->>R: lease funding work
@@ -357,7 +357,7 @@ private commitment authority.
 - Keep keypair files, `.env`, Receiver API keys, and operator state private.
 - Never paste secrets into issue reports, logs, screenshots, or frontend config.
 - Run one daemon per operator identity to avoid lease races.
-- Pin the TSN Program ID and Solana cluster in deployment configuration.
+- Pin the TSNP program ID and Solana cluster in deployment configuration.
 - Review Mother Escrow, Cranker PDA, and vault addresses before funding.
 - Stop the daemon and rotate credentials if a key or API secret may be exposed.
 
@@ -366,7 +366,7 @@ private commitment authority.
 For each Devnet run, retain:
 
 - cluster and RPC endpoint label (never the API key);
-- TSN Program ID;
+- TSNP program ID;
 - operator public key, Mother Escrow PDA, Cranker PDA, and vault PDAs;
 - registration and vault initialization signatures;
 - Receiver work/lease identifiers;

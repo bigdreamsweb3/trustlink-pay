@@ -2,8 +2,9 @@
 
 This guide explains how the team should inspect Creditcoin, prepare a TSN
 route, and interpret deployment evidence. Creditcoin is the leader chain for
-the cross-chain layer, while TSN remains a DESP-oriented Transfer Settlement
-Network whose source accounting and native Solana settlement boundaries must
+the cross-chain layer, while TSN remains the complete Transfer Settlement
+Network infrastructure. TSNP is its on-chain settlement protocol program,
+whose source accounting and native Solana boundaries must
 not be silently replaced by an EVM contract.
 
 ## The two Creditcoin views

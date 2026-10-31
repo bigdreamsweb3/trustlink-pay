@@ -1,6 +1,6 @@
 # TrustLink Protocol Workspace
 
-This is the standalone Anchor workspace for TrustLink escrow + TSN program code.
+This is the standalone Anchor workspace for the TSNP on-chain settlement program.
 
 ## Layout
 
@@ -65,4 +65,4 @@ cd tsn/protocol
 anchor test
 ```
 
-Backend no longer owns protocol source files; it consumes the deployed program and TSN interfaces.
+Backend no longer owns protocol source files; it consumes the deployed TSNP program and TSN infrastructure interfaces.

@@ -14,6 +14,8 @@ The TSN `register_tcap_credit_authorization_v2` instruction calls TCAP `credit_g
 
 The root is one global TCAP account, not a per-TIN account. The proof is intended to establish that the hidden TIN/asset head is current and advance it while inserting a nullifier. The encrypted Memo remains transaction instruction data; TCAP does not store a per-TIN Memo history or balance snapshot PDA in this path.
 
+TSNP derives a transition nullifier from the signed reserve-funding transaction and binds it into the authorization digest passed to TCAP. TCAP includes that value in the global-root transition. This does not create a separate spent-funding account, and the shared root does not establish per-TIN ciphertext freshness.
+
 ## Runtime readiness
 
 The current Node settlement authorization endpoint returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so this source path cannot yet produce the proof required by TCAP. The circuit has not been compiled or reviewed, there are no generated trusted setup keys or configured prover/witness service, and the GPRU verifier account has not been initialized as part of this work. Do not treat proof-shaped instruction arguments as a live settlement feature.

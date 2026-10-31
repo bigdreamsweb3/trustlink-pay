@@ -142,7 +142,9 @@ export function validateGpruBalanceActionRecordV1(value: unknown): GpruBalanceAc
       || BigInt(`0x${record.actionCommitment}`) === 0n
       || BigInt(`0x${record.actionCommitment}`) >= bn254ScalarModulus
       || BigInt(`0x${record.authorizationCommitment}`) >= bn254ScalarModulus
-      || BigInt(`0x${record.nullifier}`) >= bn254ScalarModulus) {
+      || BigInt(`0x${record.nullifier}`) >= bn254ScalarModulus
+      || BigInt(`0x${record.authorizationCommitment}`) === 0n
+      || BigInt(`0x${record.nullifier}`) === 0n) {
     throw new Error("GPRU Memo, action, authorization, and nullifier values must be canonical BN254 field elements");
   }
   if (![1, 2, 3].includes(Number(record.actionKind))) throw new Error("GPRU action kind must be credit (1), debit (2), or exit (3)");

@@ -1,12 +1,12 @@
 ---
-title: "TIP, GPRU, TSN, and TCAP Architecture"
+title: "TSNP, TIP, GPRU, and TCAP Architecture"
 sidebarTitle: "Architecture"
 description: "Source-backed protocol roles and the proof-shaped hidden-head credit path, including its runtime readiness boundary."
 ---
 
 # Protocol architecture
 
-TIP identifies transfer identities and routes. TSN coordinates authorization and settlement work. GPRU verifies cryptographic proofs. TCAP governs approved assets, reserves, and shared replay state. The checked-in TSN/TCAP credit ABI is proof-shaped, while Node fails closed until a prover and setup artifacts are configured.
+TIP identifies transfer identities and routes. TSNP enforces on-chain authorization and settlement rules; TSN services coordinate work. GPRU verifies cryptographic proofs. TCAP governs approved assets, reserves, and shared replay state. The checked-in TSNP/TCAP credit ABI is proof-shaped, while Node fails closed until a prover and setup artifacts are configured.
 
 ```mermaid
 flowchart LR
@@ -14,7 +14,7 @@ flowchart LR
     R --> N[TSN Node: verify and request hidden-head proof]
     N --> P[Groth16 prover: private witness + proving key]
     P --> C[Cranker: submit exact authorized transaction]
-    C --> T[TSN Program: validate Mother authorization and pass proof]
+    C --> T[TSNP Program: validate Mother authorization and pass proof]
     T -->|CPI| TCAP[TCAP: check asset, root, reserve, authorization]
     TCAP --> G[GPRU: verify hidden-head proof]
     TIP[TIP shared route root] --> G

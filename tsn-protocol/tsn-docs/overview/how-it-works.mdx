@@ -14,7 +14,7 @@ sequenceDiagram
     participant R as Receiver
     participant N as TSN Node
     participant C as Cranker
-    participant T as TSN Program
+    participant T as TSNP program
     participant G as GPRU
     participant P as TIP
     participant A as TCAP
@@ -37,7 +37,7 @@ sequenceDiagram
 
 TCAP stores one shared global commitment root for this credit path, not a per-TIN latest-head account. The root transition prevents replay of the same global transition. The current caller still supplies GPRU's prior ciphertext; no persistent per-TIN head proves that it is the latest. The TIP registry is passed to GPRU during key proof verification, and the shared TCAP root is present in each credit transaction, so the current path is not unlinkable.
 
-The TSN/TCAP credit ABI carries the Groth16 hidden-head proof, but Node currently fails closed because no prover or witness provider is configured. The circuit source includes balance arithmetic constraints, but has not been compiled or reviewed. Action kind, token ID, amount, and other proof inputs remain public; debit and exit are not established as enabled.
+The TSNP/TCAP credit ABI carries the Groth16 hidden-head proof, but Node currently fails closed because no prover or witness provider is configured. The circuit source includes balance arithmetic constraints, but has not been compiled or reviewed. Action kind, token ID, amount, and other proof inputs remain public; debit and exit are not established as enabled.
 
 ## Lifecycle evidence
 

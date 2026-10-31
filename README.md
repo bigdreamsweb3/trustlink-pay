@@ -1,7 +1,10 @@
 # TrustLink Labs / TSN
 
-TrustLink Labs is building **TSN (Transfer Settlement Network)**, an
-identity-aware payment coordination and settlement infrastructure on Solana.
+TrustLink Labs is building **TSN (Transfer Settlement Network)**, the complete
+identity-aware settlement infrastructure on Solana. **TSNP (Transfer Settlement
+Network Protocol)** is its on-chain settlement protocol program. TIP, GPRU,
+TCAP, and DIP have separate responsibilities; Circle's CCTP is an external
+cross-chain protocol used only at supported integrations.
 **TSN XP** is the active user-facing experience being built on that network.
 The separately hosted TrustLink Pay site is an earlier application surface.
 **TCAP (Transfer Confidential Asset Protocol)** provides the commitment-backed private
@@ -10,7 +13,7 @@ balance accounting used by the current credit architecture.
 ## TrustLink Labs resources
 
 - [Earlier hosted TrustLink Pay application](https://trustlink-pay.vercel.app/)
-- [TSN Protocol research blog](https://tsn-protocol.blogspot.com/)
+- [TSN research blog](https://tsn-protocol.blogspot.com/)
 - [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
 - [Service hosting and deployment map](docs/SERVICE-HOSTING.md)
 - [Live testing and contributor guide](docs/GETTING-STARTED-LIVE.md)
@@ -38,7 +41,7 @@ architecture and must be deployed before it is used on Devnet.
 TIN identity
   -> GPRU ownership and route commitment
   -> TSN Node resolves and verifies the intent
-  -> Cranker funds the governed TSN/TCAP custody pool
+  -> Cranker funds the governed TSNP/TCAP custody pool
   -> TSN Node activates the opaque settlement intent
   -> Cranker vault pays the selected destination
   -> TSN verifies the proof and reimburses only the leased Cranker
@@ -80,7 +83,7 @@ flowchart TD
     end
 
     subgraph SOLANA["Solana — TSN, Epoch Treasury and TCAP programs"]
-        AA["16. TSN program verifies the funding accounts and exact amount"]
+        AA["16. TSNP program verifies the funding accounts and exact amount"]
         M["17. Treasury liability is recorded without a recipient TIN"]
         V["21. TSN verifies the leased settlement proof and one-time bindings"]
         W["22. TSN authorizes reimbursement only to the leased Cranker"]
@@ -258,7 +261,7 @@ Current Devnet program IDs:
 | `frontend/`                                         | Earlier TrustLink Pay application                              |
 | `backend/`                                          | API, application records and notifications                    |
 | `tsn-protocol/programs/transfer-identity-protocol/` | TIP/TIN registrar and SDK                                     |
-| `tsn-protocol/programs/`                            | Solana TSN, TCAP and TIP programs                             |
+| `tsn-protocol/programs/`                            | Solana TSNP, TCAP, TIP and GPRU programs                      |
 | `tsn-protocol/sdks/`                                | Canonical TSN SDK and Cranker SDK                             |
 | `tsn-protocol/services/`                            | Node, Receiver, RPC, Cranker, Cross-chain and UI services     |
 | `tsn-protocol/programs/tcap-protocol/`              | TCAP program, SDK and credit tooling                          |

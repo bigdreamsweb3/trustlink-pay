@@ -10,7 +10,7 @@ flowchart LR
     R --> N["Node: verify signed intent and route binding"]
     N -->|"redacted verified work"| R
     R --> C["Cranker: lease and submit only"]
-    C --> P["TSN Program: enforce proof and settlement"]
+    C --> P["TSNP program: enforce proof and settlement"]
     P --> R
 ```
 
@@ -27,7 +27,7 @@ flowchart LR
 - The **Cranker** can lease only verified work. It submits the exact
   sender-authorized funding transaction or the exact Node-authorized,
   lease-bound claim transaction and returns chain confirmation evidence.
-- The **TSN Program** is the final on-chain enforcement point for the lease,
+- The **TSNP program** is the final on-chain enforcement point for the lease,
   commitment, amount, mint, expiry, and one-time/replay state.
 
 ## Work lifecycle

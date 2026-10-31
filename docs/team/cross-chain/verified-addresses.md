@@ -27,7 +27,7 @@ Creditcoin runtime activity and is not a Solana transaction explorer.
 
 | Component | Address | Evidence | Status |
 | --- | --- | --- | --- |
-| TSN program | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | [Solana Explorer](https://explorer.solana.com/address/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V?cluster=devnet) | Verified executable account on Devnet |
+| TSNP program | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` | [Solana Explorer](https://explorer.solana.com/address/TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V?cluster=devnet) | Verified executable account on Devnet |
 | TIN program | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` | [Solana Explorer](https://explorer.solana.com/address/TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT?cluster=devnet) | Verified executable account on Devnet |
 | Devnet test stablecoin mint | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` | [Solana Explorer](https://explorer.solana.com/address/4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU?cluster=devnet) | Verified SPL mint fixture; not production USDC |
 | SPL Token Program | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | [Solana Explorer](https://explorer.solana.com/address/TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA?cluster=devnet) | Canonical program |

@@ -6,7 +6,7 @@ separately under `tsn-protocol/tsn-docs/`.
 
 Read these documents in order:
 
-1. [Current architecture](./CURRENT-ARCHITECTURE.md) — checked-in TIP, GPRU, TSN, and TCAP contracts, wired credit behavior, and implementation limits.
+1. [Current architecture](./CURRENT-ARCHITECTURE.md) — checked-in TSNP, TIP, GPRU, and TCAP contracts, wired credit behavior, and implementation limits.
 2. [GPRU hidden-head status](./gpru-tcap-route.md) — the shared-root proof path in source, its public inputs, privacy limits, and missing runtime wiring.
 3. [Groth16 proofs in TSN](./GROTH16-ON-TSN.md) — plain-language explanation of the hidden-head proof, keys, privacy boundary, and current runtime status.
 4. [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) — how circuit-specific keys are created and installed, and which artifacts are still missing.
@@ -47,9 +47,9 @@ Supporting references:
 
 - **TSN** is settlement and authorization coordination infrastructure.
 - **TIP** is the Transfer Identity Protocol; **TIN** is one 10-digit Transfer Identity Number within TIP.
-- **GPRU** is a standalone program with one-time ElGamal derivation and a Groth16 hidden-head verifier entrypoint in source. The TSN/TCAP credit ABI carries the proof-shaped arguments, but Node settlement authorization fails closed until a circuit-specific proving key, matching verifier setup, witness source, and prover service are available. The circuit and cross-service path are not validated end to end.
+- **GPRU** is a standalone program with one-time ElGamal derivation and a Groth16 hidden-head verifier entrypoint in source. The TSNP/TCAP credit ABI carries the proof-shaped arguments, but Node settlement authorization fails closed until a circuit-specific proving key, matching verifier setup, witness source, and prover service are available. The circuit and cross-service path are not validated end to end.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
-- **Mother** provides authorization under the applicable TSN instruction family; do not infer that epoch `ConfidentialSettlement`/slot instructions are part of the active TIN credit path.
+- **Mother** provides authorization under the applicable TSNP instruction family; do not infer that epoch `ConfidentialSettlement`/slot instructions are part of the active TIN credit path.
 - **Cranker** submits exact leased work and cannot rewrite the authorization.
 - **TCAP** is the Transfer Confidential Asset Protocol and governs assets, reserves, and liability accounting. The wired TSN credit path advances a single shared TCAP root after GPRU credit validation; it does not persist a per-TIN latest head. TCAP also contains legacy TIN-tip account/instruction code. The hidden-head root-advance instruction is separate and has no current TSN runtime caller.
 - **ZK-PRU** is retired historical material only. It is not a live receiving, spending or balance architecture; see [ZK-PRU retired](./ZK-PRU-RETIRED.md).

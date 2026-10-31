@@ -166,6 +166,6 @@ path being reproducible by a human following the README.
 - When you discover a conflict between this brief and the existing code, stop and report it rather than
   silently choosing one.
 - Escalate immediately if a task appears to require: changing the mint recipient semantics, touching
-  decimals handling, holding a key, deploying anywhere, or modifying the TSN protocol services.
+  decimals handling, holding a key, deploying anywhere, or modifying the TSN services.
 - State evidence levels honestly in docs and comments: source, build, deployment, and confirmed
   transaction are different things. Do not describe anything as live until a transaction proves it.

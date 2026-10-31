@@ -1,12 +1,12 @@
 ---
-title: "TSN FAQ: Protocol Boundaries and Current Status"
+title: "TSN Infrastructure FAQ: Protocol Boundaries and Current Status"
 sidebarTitle: "FAQ"
-description: "Answers about TIP, TIN, GPRU, TSN, TCAP, privacy limits, and current source status."
+description: "Answers about TSNP, TIP, TIN, GPRU, TCAP, privacy limits, and current source status."
 ---
 
 ## What is TSN?
 
-The Transfer Settlement Network coordinates payment authorization and settlement work across TIP identity resolution, Receiver ingress, Node verification, Cranker submission, and Solana programs.
+TSN (Transfer Settlement Network) is the full infrastructure. TSNP is its on-chain settlement protocol program; TIP, GPRU, and TCAP are separate protocol layers.
 
 ## Is TIP the same as TIN?
 
@@ -14,11 +14,11 @@ No. TIP is the Transfer Identity Protocol. A TIN is one 10-digit Transfer Identi
 
 ## What does the current GPRU credit verifier do?
 
-The current TSN credit ABI carries a hidden-head Groth16 proof through TCAP to GPRU. The circuit source represents route membership, latest-head advancement, a nullifier update, and balance transitions. Node currently fails closed because no prover/witness service or generated setup keys are configured.
+The current TSNP credit ABI carries a hidden-head Groth16 proof through TCAP to GPRU. The circuit source represents route membership, latest-head advancement, a nullifier update, and balance transitions. Node currently fails closed because no prover/witness service or generated setup keys are configured.
 
 ## Does the current credit path store a TCAP TIP PDA?
 
-The current proof-shaped TSN credit instruction calls TCAP `credit_gpru_memo_v1`, which verifies the GPRU proof before advancing one global TCAP commitment root and reserve liabilities. It does not initialize or update `TCapTinTipV1`. TCAP still contains older TIN-tip instructions in source; they are not part of this proof path.
+The current proof-shaped TSNP credit instruction calls TCAP `credit_gpru_memo_v1`, which verifies the GPRU proof before advancing one global TCAP commitment root and reserve liabilities. It does not initialize or update `TCapTinTipV1`. TCAP still contains older TIN-tip instructions in source; they are not part of this proof path.
 
 ## What is the hidden-head proof?
 

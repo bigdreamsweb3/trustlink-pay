@@ -9,5 +9,5 @@ Use this category for system boundaries and design authority.
 - [TSN whitepaper](../../TSN-WHITEPAPER.md)
 
 Architecture changes must preserve the Receiver/Node/Cranker separation and
-must identify whether the change belongs to DESP as a category or TSN as the
-TrustLink Labs implementation.
+identify whether the change belongs to TSNP, TIP, GPRU, TCAP, DIP, or a
+supporting TSN service. Treat Circle's CCTP as an external integration.

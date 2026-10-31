@@ -1,10 +1,10 @@
-# Transfer Settlement Network (TSN)
+# TSN Infrastructure and TSNP Protocol
 
-## A protocol for identity-aware settlement and private balance accounting
+## Identity-aware settlement infrastructure and private balance accounting
 
 ### Abstract
 
-The Transfer Settlement Network (TSN) is an intent-based protocol for stablecoin settlement. It separates payment identity, authorization, routing, settlement liability, and private-state verification so that an automated submitter can execute an authorized payment without custody of the owner's keys. The current TSN/TCAP credit ABI is shaped around a GPRU hidden-head Groth16 proof, while the Node settlement path fails closed because its prover and setup artifacts are not configured.
+TSN (Transfer Settlement Network) is TrustLink Labs' settlement infrastructure. TSNP (Transfer Settlement Network Protocol) is the on-chain settlement protocol program within that infrastructure. TIP manages transfer identities, GPRU provides guarded privacy routing and proof verification, TCAP governs confidential assets and reserve liabilities, and DIP defines deposit ingress. Circle's CCTP is a separate cross-chain transfer protocol used by supported integrations. The current TSNP/TCAP credit ABI carries a GPRU hidden-head Groth16 proof, while the Node settlement path fails closed because its prover and witness source are not configured.
 
 The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
 
@@ -20,14 +20,14 @@ Sender authorization and funding
     → Node TIP resolution and verification
     → Groth16 proof generation (not configured; fails closed)
     → Cranker submission of authorized work
-    → TSN passes proof to TCAP
+    → TSNP passes proof to TCAP
     → GPRU verifies hidden-head transition and Memo binding
     → TCAP atomically advances shared root and reserve liabilities
 ```
 
 TIP is the Transfer Identity Protocol; TIN is one 10-digit identity within
 TIP. GPRU (Guarded Privacy Routing Unit) is a standalone program with one-time
-ElGamal DNA-key verification and a Groth16 hidden-head verifier. The TSN/TCAP
+ElGamal DNA-key verification and a Groth16 hidden-head verifier. The TSNP/TCAP
 credit ABI carries its proof. TCAP (Transfer Confidential Asset Protocol)
 governs approved assets and reserves, and updates one global commitment root
 atomically with reserve liabilities. Node currently has no configured proof
@@ -113,7 +113,7 @@ The repository contains the following route categories. The wallet-to-TIN credit
 | Route | Settlement behavior |
 | --- | --- |
 | Wallet deposit → wallet exit | Public wallet transfer boundary; verify the exact program route and deployment. |
-| Wallet deposit → TIN credit | Proof-shaped TSN/TCAP source path; Node fails closed until Groth16 proving is configured. |
+| Wallet deposit → TIN credit | Proof-shaped TSNP/TCAP source path; Node fails closed until Groth16 proving is configured. |
 | TIN debit → TIN credit | Not established as operational; requires verified debit, credit, and conservation proofs. |
 | TIN debit → wallet exit | Not established as operational; requires verified affordability, destination binding, and reserve solvency. |
 | Solana → Creditcoin or another supported EVM network | Cross-chain source/deployment status is separate; see its own testnet evidence before treating it as operational. |

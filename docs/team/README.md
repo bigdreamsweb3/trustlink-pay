@@ -7,7 +7,7 @@ user material belongs under `tsn-protocol/tsn-docs/`.
 ## Categories
 
 - [Architecture](./architecture/README.md) — canonical system boundaries and terminology.
-- [Protocol](./protocol/README.md) — TIN, TCap, GPRU, TSN programs, and settlement rules.
+- [Protocol](./protocol/README.md) — TIN, TCap, GPRU, TSNP programs, and settlement rules.
 - [Cross-chain](./cross-chain/README.md) — Creditcoin, Attestcoin, destination liquidity, and EVM routes.
 - [Operations](./operations/README.md) — Receiver, TSN Nodes, Crankers, environments, and service operation.
 - [Testing and releases](./testing/README.md) — Devnet evidence, deployment gates, and release review.
@@ -30,12 +30,13 @@ architecture, and evidence. Move task lists, rollout debates, pending gates,
 placeholder configuration, and unresolved implementation notes into these team
 guides instead of exposing them in the public narrative.
 
-Use the canonical distinction: **Decentralized Settlement Protocol (DESP)** is
-the architectural category, while **TSN (Transfer Settlement Network)** is
-TrustLink Labs' implementation of decentralized settlement infrastructure.
-Preserve TIN, TCap, GPRU, Receiver, TSN Nodes, Crankers, settlement routing,
-and privacy-aware settlement coordination. DeFi decentralizes financial
-services; DESP decentralizes settlement infrastructure.
+Use the canonical distinction: **TSN (Transfer Settlement Network)** is the
+complete TrustLink Labs infrastructure; **TSNP (Transfer Settlement Network
+Protocol)** is its on-chain settlement protocol program. TIP, GPRU, TCAP, and
+DIP retain their distinct protocol roles. Circle's CCTP is an external
+cross-chain transfer protocol and should be named only for an actual CCTP
+integration. Preserve TIN, Receiver, Node, Cranker, settlement routing, and
+privacy boundaries without merging their responsibilities.
 
 ## Existing source documents
 

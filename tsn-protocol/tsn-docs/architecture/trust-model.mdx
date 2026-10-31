@@ -14,7 +14,7 @@ The current wallet-to-TIN credit path separates ingress, verification, transacti
 | Receiver | Accepts ingress, stores work, manages leases, and reports lifecycle state | It does not establish a confirmed TCAP state change. |
 | TSN Node | Verifies work, resolves TIP data, and prepares the authorized credit transaction | A Node decision is not a token movement. |
 | Cranker | Submits the authorized transaction and pays Solana fees | It cannot alter authorized transaction fields; failed or pending submission is not settlement. |
-| TSN program | Checks Mother authorization and invokes the protocol programs in the credit call | It is the on-chain entry point, not a source of owner secrets. |
+| TSNP program | Checks Mother authorization and invokes the protocol programs in the credit call | It is the on-chain entry point, not a source of owner secrets. |
 | GPRU | Checks DNA-key derivation and the supplied encrypted-credit relation | It does not persist a current per-TIN head in the active caller. |
 | TCAP | Checks the approved asset, authorization, validity, and shared-root predecessor/sequence; advances the root atomically | The shared root is global and does not identify the latest memo for a particular TIN. |
 

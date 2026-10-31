@@ -15,7 +15,7 @@ mainnet production guarantee.
 | TSN RPC Gateway        | Controlled Solana RPC access and upstream selection                                | Vercel                   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) |
 | TSN Node               | Stateless verification, route resolution, epoch work, and Receiver work processing | Wasmer                   | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node)               |
 | Cranker operator       | Leases verified work and submits the exact authorized Solana transaction           | Operator machine         | No public service URL                                                         | `tsn-protocol/services/tsn-cranker-op-daemon/`                                    |
-| TSN Program            | On-chain authorization, commitments, escrow, replay, and settlement state          | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/programs/tsn/protocol/`                                             |
+| TSNP program            | On-chain authorization, commitments, escrow, replay, and settlement state          | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/programs/tsn/protocol/`                                             |
 | TIP / TIN registrar    | On-chain Transfer Identity Number registry                                         | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/programs/transfer-identity-protocol/`                               |
 
 The Cranker is intentionally not hosted as a public API. An operator runs it
@@ -40,7 +40,7 @@ flowchart TD
     CRANKER --> RECEIVER
     CRANKER --> SOLANA_RPC["Solana Devnet RPC\noperator-selected endpoint"]
 
-    SOLANA_RPC --> PROGRAM["TSN Program\nSolana Devnet"]
+    SOLANA_RPC --> PROGRAM["TSNP program\nSolana Devnet"]
     PROGRAM --> RECEIPTS["On-chain signatures and state"]
     RECEIVER --> EVIDENCE["Non-secret work and evidence"]
 ```
@@ -56,13 +56,13 @@ flowchart TD
    back to the Receiver.
 5. A Cranker leases only verified work from the Receiver.
 6. The Cranker submits the exact authorized transaction and pays Solana fees.
-7. The TSN Program performs on-chain verification and state transitions.
+7. The TSNP program performs on-chain verification and state transitions.
 8. The Cranker and TSN Node return signatures and non-secret evidence to the
    Receiver.
 
 The Receiver stores coordination state; it does not become the cryptographic
 decision authority. The TSN Node verifies work; it does not replace the
-on-chain TSN Program. The Cranker submits transactions; it does not choose
+on-chain TSNP program. The Cranker submits transactions; it does not choose
 sources, rewrite amounts, decrypt user secrets, or decide that a payment is
 settled.
 
@@ -107,7 +107,7 @@ Cranker needs:
 - the live TSN Receiver URL and Cranker service credential;
 - a Cranker operator/fee-payer key held only by that operator;
 - a direct Solana Devnet RPC endpoint for transaction submission;
-- access to the public TSN Program ID and token metadata.
+- access to the public TSNP program ID and token metadata.
 
 From the repository root, the operator process is started with:
 
@@ -131,7 +131,7 @@ does not need to be reachable from the public internet.
   where browser access is required.
 - TSN Node: deploy the standalone Wasmer app from `tsn-node`.
 - Cranker: update the operator machine and restart its supervised process.
-- TSN/TIN Programs: deploy or upgrade explicitly on Solana Devnet; an HTTP
+- TSNP/TIP Programs: deploy or upgrade explicitly on Solana Devnet; an HTTP
   service deployment does not upgrade an on-chain program.
 
 After any service update, verify the service’s own logs and then submit a

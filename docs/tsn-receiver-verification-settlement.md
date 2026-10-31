@@ -14,7 +14,7 @@ payment and for a Cranker to submit an already-authorized transaction.
 | TSN Receiver | Durable inbox, status board, and short work lease service | Decide a payment is valid, choose a recipient, or sign a transaction |
 | TSN Node | Checks that the signed plan is real, current, and not replayed | Spend user funds or learn a TIN master seed |
 | Cranker | Pays network fees and submits the exact approved transaction | Change recipient, amount, asset, commitment, or expiry |
-| TSN Program | Solana rules that enforce the proof, lease, and one-time use | Hold a user's wallet key |
+| TSNP program | Solana rules that enforce the proof, lease, and one-time use | Hold a user's wallet key |
 
 ## What reaches the TSN Receiver
 
@@ -56,7 +56,7 @@ accepting the state transition, and the Cranker verifies it again against the
 exact allowlisted payload it receives. The shared Node API key still protects
 the internal endpoint; the signature lets the Receiver and Cranker detect a
 forged or modified verification record independently. Settlement payout
-authorizations use a separate Node signature that the TSN program validates
+authorizations use a separate Node signature that the TSNP program validates
 on-chain.
 
 ## What is kept, and what is removed
@@ -101,7 +101,7 @@ transaction. For a claim payout it submits the exact Node-authorized settlement
 transaction.
 
 The proof it sends back is the Solana transaction signature and confirmation
-result. The TSN Program verifies the binding rules on chain, including the
+result. The TSNP program verifies the binding rules on chain, including the
 lease holder, route commitment, mint, amount, expiry, and one-time/replay
 state. A valid signature alone is not enough if any of those rules do not
 match.
@@ -116,7 +116,7 @@ sequenceDiagram
     participant R as TSN Receiver
     participant N as TSN Node
     participant C as Cranker
-    participant P as Solana TSN Program
+    participant P as Solana TSNP program
 
     S->>R: Signed intent + route commitment/version
     R->>N: Lease received work

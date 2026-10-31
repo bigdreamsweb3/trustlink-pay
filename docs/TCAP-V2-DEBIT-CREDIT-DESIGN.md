@@ -1,16 +1,16 @@
 # TCAP balance transitions and GPRU proof boundary
 
-This document distinguishes the proof-shaped TSN/TCAP ABI from a working proof-generation system. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. Node currently fails closed because the Groth16 prover and witness provider are not configured.
+This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. Node currently fails closed because the Groth16 prover and witness provider are not configured.
 
 ## Current source behavior
 
-The TSN `register_tcap_credit_authorization_v2` instruction passes the hidden-head Groth16 proof to TCAP's `credit_gpru_memo_v1`. TCAP validates the shared-root predecessor and sequence, approved asset, authorization signer, validity window, pending liabilities, and reserve solvency, then invokes GPRU's `verify_hidden_head_transition_v1`. On proof success, TCAP advances the shared root and reserve liabilities atomically. The Memo is transaction instruction data bound by the proof.
+The TSNP `register_tcap_credit_authorization_v2` instruction passes the hidden-head Groth16 proof to TCAP's `credit_gpru_memo_v1`. TCAP validates the shared-root predecessor and sequence, approved asset, authorization signer, validity window, pending liabilities, and reserve solvency, then invokes GPRU's `verify_hidden_head_transition_v1`. On proof success, TCAP advances the shared root and reserve liabilities atomically. The Memo is transaction instruction data bound by the proof.
 
 The proof is intended to show that the private per-TIN/asset predecessor is the current head and to insert a nullifier as TCAP advances the global root. This does not create a per-TIN TCAP balance account. Memo history remains transaction data available through Solana transaction history.
 
 ## Hidden-head source path
 
-GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSN credit ABI carries the proof through TCAP to GPRU. The updated circuit has nine public inputs, including the successor portfolio root and selected token's Pedersen balance point X/Y. Its Memo prefix binds those values and the action commitment; the body stores an owner-encrypted action record. The updated circuit has not been freshly compiled or reviewed; no matching proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
+GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSNP credit ABI carries the proof through TCAP to GPRU. The updated circuit has nine public inputs, including the successor portfolio root and selected token's Pedersen balance point X/Y. Its Memo prefix binds those values and the action commitment; the body stores an owner-encrypted action record. The updated circuit has not been freshly compiled or reviewed; no matching proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
 
 ## Required balance-proof contract
 

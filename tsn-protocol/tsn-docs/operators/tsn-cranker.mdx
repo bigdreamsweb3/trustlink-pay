@@ -33,7 +33,7 @@ A Cranker must not:
 - authorize refunds (Node and Mother only)
 - expose Receiver API keys, operator secret keys, or private route material
 
-If a Cranker tampers with any bound field (amount, mint, recipient, commitments, sequence, policy, nullifier, expiry), the Mother-rooted permit breaks and the TSN program rejects the transaction before token movement.
+If a Cranker tampers with any bound field (amount, mint, recipient, commitments, sequence, policy, nullifier, expiry), the Mother-rooted permit breaks and the TSNP program rejects the transaction before token movement.
 
 ## What the Cranker sees
 
@@ -58,7 +58,7 @@ After the Cranker pays the recipient from its CrankerVault, TSN reimburses that 
 
 Before starting, the deployment owner must provide:
 
-1. A deployed TSN program ID and matching build / IDL
+1. A deployed TSNP program ID and matching build / IDL
 2. A reachable TSN Receiver with Cranker work endpoints
 3. A running or reachable TSN Node that verifies and publishes work
 4. The current Receiver Cranker API credential
@@ -70,7 +70,7 @@ The Cranker submits to Solana directly. The TSN RPC Gateway is used by browsers 
 
 ## Deployment boundary
 
-There is no separate Cranker program to deploy. A Cranker is a signed operator process that uses the already-deployed TSN program. Only the deployment owner should build or upgrade the on-chain program.
+There is no separate Cranker program to deploy. A Cranker is a signed operator process that uses the already-deployed TSNP program. Only the deployment owner should build or upgrade the on-chain program.
 
 ## Related
 
@@ -79,14 +79,14 @@ There is no separate Cranker program to deploy. A Cranker is a signed operator p
     The verification and permit-signing role implemented by `tsn-node`.
   </Card>
 
-<Card title="TSN Layer" icon="network-wired" href="/layers/tsn">
+<Card title="TSNP" icon="network-wired" href="/layers/tsnp">
   Program-level settlement, refund, and vault reimbursement.
 </Card>
 
 <Card
   title="Architecture"
   icon="diagram-project"
-  href="/how-it-works/architecture"
+  href="/overview/architecture"
 >
   End-to-end sequence diagram.
 </Card>

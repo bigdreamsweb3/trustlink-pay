@@ -64,7 +64,7 @@ destination route.
 
 ## TIN program deployment gate
 
-The private TIN registry is a separate Solana program from TSN escrow:
+The private TIN registry is a separate Solana program from the TSNP settlement program:
 
 ```text
 Program ID: TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT

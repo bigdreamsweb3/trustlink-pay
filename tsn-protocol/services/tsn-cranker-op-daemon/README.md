@@ -52,7 +52,7 @@ Node's Ed25519 attestation with `TSN_NODE_VERIFICATION_PUBLIC_KEY` and checks
 the signed commitment against the exact execution payload returned by the
 Receiver. Configure this public key from the Node verification keypair; the
 Cranker does not need the private signing key. Solana payout authorizations
-continue to use their separate Node signature, which the TSN program verifies
+continue to use their separate Node signature, which the TSNP program verifies
 on-chain.
 
 Before leasing work, startup checks the single configured TSN RPC gateway with

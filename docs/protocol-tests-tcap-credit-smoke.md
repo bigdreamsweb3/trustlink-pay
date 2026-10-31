@@ -54,7 +54,7 @@ transaction.
 
 ## Run the complete protocol-test orchestrator
 
-After TSN and TCAP are deployed and the required non-secret TCAP/Mother/epoch
+After TSNP and TCAP are deployed and the required non-secret TCAP/Mother/epoch
 accounts and authorization variables are set:
 
 ```powershell

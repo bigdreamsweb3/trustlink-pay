@@ -1,10 +1,10 @@
 ---
 title: "What TrustLink Labs Is Building: Protocols and Products"
 sidebarTitle: "What We're Building"
-description: "TrustLink Labs protocols and products: TSN, TIP/TIN, GPRU, TCAP, TSN XP, and the TSN SDK."
+description: "TrustLink Labs protocols and products: TSN infrastructure, TSNP, TIP/TIN, GPRU, TCAP, DIP, CCTP integrations, TSN XP, and SDKs."
 ---
 
-TrustLink Labs builds open infrastructure for stablecoin payments. The current stack includes protocol programs, network services, a reference application, and SDKs. Everything is developed on Solana and designed to separate identity, authorization, settlement, and private balance accounting into independent layers.
+TrustLink Labs builds settlement infrastructure called TSN. The stack includes TSNP (Transfer Settlement Network Protocol), TIP, GPRU, TCAP, and DIP, plus network services, a reference application, and SDKs. Circle's CCTP is an external cross-chain transfer protocol and is named only where a supported integration uses it. The layers separate identity, authorization, settlement, and private balance accounting.
 
 ## Concrete artifacts
 
@@ -44,7 +44,7 @@ The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity ope
     How TSN, TIN, GPRU, and TCAP fit together.
   </Card>
 
-  <Card title="TCAP deep dive" icon="lock" href="/architecture/tcap">
+  <Card title="TCAP" icon="lock" href="/layers/tcap">
     Shared-root proof-shaped credit transitions and their prover readiness boundary.
   </Card>
 

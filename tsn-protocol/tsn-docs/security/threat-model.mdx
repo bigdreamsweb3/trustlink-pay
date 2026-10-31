@@ -24,7 +24,7 @@ The shared TCAP root and sequence reject reapplication of the same global predec
 
 ## Hidden-head source boundary
 
-The TSN/TCAP credit ABI carries a Groth16 hidden-head proof and TCAP invokes the GPRU verifier before mutation. Node currently fails closed because the circuit has not been compiled/reviewed and no proving keys, witness source, or prover service are configured. Circuit source includes balance arithmetic constraints, but they are not verified. The instruction exposes action kind, token ID, amount, nullifier and other public inputs; every update uses the same writable TCAP root, so the design does not provide zero linkability.
+The TSNP/TCAP credit ABI carries a Groth16 hidden-head proof and TCAP invokes the GPRU verifier before mutation. Node currently fails closed because the circuit has not been compiled/reviewed and no proving keys, witness source, or prover service are configured. Circuit source includes balance arithmetic constraints, but they are not verified. The instruction exposes action kind, token ID, amount, nullifier and other public inputs; every update uses the same writable TCAP root, so the design does not provide zero linkability.
 
 ## Out of scope and evidence
 

@@ -1,4 +1,4 @@
-# DIP Ingress: CCTP deposits into TSN TCAP
+# DIP Ingress: Circle CCTP deposits into TCAP within TSN
 
 ## 1. Metadata
 
@@ -7,7 +7,7 @@
 - Systems touched: TSNArcDepositRouter (Arc), CCTP V2, TCAP `deposit_asset_v2`, TSN Node
 - Review tracker: [ ] Design  [ ] Security  [ ] Ops  [ ] Compliance
 
-This document is the deliverable for the Solana side. Arc Studio builds the Arc half only. The Solana program is written and deployed by the TSN team or Codex against this spec.
+This document is the deliverable for the Solana side. Arc Studio builds the Arc half only. The Solana program is written and deployed by the TSN infrastructure team against this spec.
 
 ## 2. Action items (living)
 
@@ -290,7 +290,7 @@ End to end gate: Arc Testnet burn, Circle sandbox attestation, `receive_deposit`
 
 ## 18. Stakeholders
 
-- TSN protocol team: ingress program, TCAP asset registration, Node mapping and credit.
+- TSN infrastructure team: DIP ingress, TCAP asset registration, Node mapping and credit.
 - Arc app owner: router v2, app changes, deployment.
 - Security reviewer: both sides before mainnet.
 

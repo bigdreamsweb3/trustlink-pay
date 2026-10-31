@@ -7,7 +7,8 @@ does not claim that community governance is already live on Creditcoin.
 
 ## Why community governance belongs in TSN
 
-TSN is a DESP-oriented Transfer Settlement Network. A new destination route
+TSN is the complete Transfer Settlement Network infrastructure. TSNP is the
+on-chain settlement protocol program. A new destination route
 changes settlement infrastructure: it introduces a new chain, token, executor,
 liquidity source, fee model, finality assumption, and operational dependency.
 Those choices should be visible to the people who operate, fund, build on, and
@@ -101,5 +102,6 @@ new route admission while existing settlements are reviewed. The community
 receives an incident summary and a decision to resume, replace, or retire the
 route.
 
-DeFi decentralizes financial services; DESP decentralizes settlement
-infrastructure.
+TSNP is the on-chain settlement protocol program within the wider TSN
+infrastructure. Route governance does not merge TSNP with TIP, GPRU, TCAP, or
+DIP.
